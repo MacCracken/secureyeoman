@@ -10,7 +10,7 @@
  * - Input validation on all parameters
  */
 
-import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import Fastify, { FastifyInstance, FastifyRequest } from 'fastify';
 import fastifyWebsocket from '@fastify/websocket';
 import { WebSocket } from 'ws';
 import { getLogger, type SecureLogger } from '../logging/logger.js';
@@ -32,7 +32,7 @@ export class GatewayServer {
   private readonly config: GatewayConfig;
   private readonly secureClaw: SecureClaw;
   private readonly app: FastifyInstance;
-  private readonly clients: Map<string, WebSocketClient> = new Map();
+  private readonly clients = new Map<string, WebSocketClient>();
   private logger: SecureLogger | null = null;
   private metricsInterval: NodeJS.Timeout | null = null;
   private clientIdCounter = 0;
@@ -47,7 +47,14 @@ export class GatewayServer {
       trustProxy: false, // Security: don't trust proxy headers
     });
     
-    this.setupMiddleware();
+    // Middleware and routes are set up in start()
+  }
+  
+  /**
+   * Initialize the server (register plugins, set up middleware)
+   */
+  private async init(): Promise<void> {
+    await this.setupMiddleware();
     this.setupRoutes();
   }
   
@@ -168,7 +175,7 @@ export class GatewayServer {
     });
     
     // Tasks endpoints
-    this.app.get('/api/v1/tasks', async (request: FastifyRequest<{
+    this.app.get('/api/v1/tasks', async (_request: FastifyRequest<{
       Querystring: { status?: string; limit?: string; offset?: string }
     }>) => {
       // TODO: Implement task storage and retrieval
@@ -178,7 +185,7 @@ export class GatewayServer {
       };
     });
     
-    this.app.get('/api/v1/tasks/:id', async (request: FastifyRequest<{
+    this.app.get('/api/v1/tasks/:id', async (_request: FastifyRequest<{
       Params: { id: string }
     }>) => {
       // TODO: Implement task retrieval by ID
@@ -186,7 +193,7 @@ export class GatewayServer {
     });
     
     // Security events
-    this.app.get('/api/v1/security/events', async (request: FastifyRequest<{
+    this.app.get('/api/v1/security/events', async (_request: FastifyRequest<{
       Querystring: { severity?: string; limit?: string }
     }>) => {
       // TODO: Implement security event retrieval
@@ -202,8 +209,8 @@ export class GatewayServer {
     });
     
     // WebSocket endpoint
-    this.app.get('/ws/metrics', { websocket: true }, (socket, request) => {
-      const clientId = `client_${++this.clientIdCounter}`;
+    this.app.get('/ws/metrics', { websocket: true }, (socket, _request) => {
+      const clientId = `client_${String(++this.clientIdCounter)}`;
       
       const client: WebSocketClient = {
         ws: socket,
@@ -252,7 +259,7 @@ export class GatewayServer {
         this.getLogger().debug('WebSocket client disconnected', { clientId });
       });
       
-      socket.on('error', (error) => {
+      socket.on('error', (error: Error) => {
         this.getLogger().error('WebSocket error', {
           clientId,
           error: error.message,
@@ -294,15 +301,17 @@ export class GatewayServer {
   private startMetricsBroadcast(): void {
     const intervalMs = 1000; // Every second
     
-    this.metricsInterval = setInterval(async () => {
-      try {
-        const metrics = await this.secureClaw.getMetrics();
-        this.broadcast('metrics', metrics);
-      } catch (error) {
-        this.getLogger().error('Failed to broadcast metrics', {
-          error: error instanceof Error ? error.message : 'Unknown',
-        });
-      }
+    this.metricsInterval = setInterval(() => {
+      void (async () => {
+        try {
+          const metrics = await this.secureClaw.getMetrics();
+          this.broadcast('metrics', metrics);
+        } catch (error) {
+          this.getLogger().error('Failed to broadcast metrics', {
+            error: error instanceof Error ? error.message : 'Unknown',
+          });
+        }
+      })();
     }, intervalMs);
     
     this.metricsInterval.unref();
@@ -312,6 +321,9 @@ export class GatewayServer {
    * Start the server
    */
   async start(): Promise<void> {
+    // Initialize plugins and routes
+    await this.init();
+    
     const host = this.config.host;
     const port = this.config.port;
     
@@ -346,7 +358,7 @@ export class GatewayServer {
     }
     
     // Close all WebSocket connections
-    for (const [clientId, client] of this.clients) {
+    for (const [_clientId, client] of this.clients) {
       try {
         client.ws.close(1000, 'Server shutting down');
       } catch {

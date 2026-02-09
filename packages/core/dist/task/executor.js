@@ -75,7 +75,7 @@ export class TaskExecutor {
             await this.auditChain.record({
                 event: 'task_rejected',
                 level: 'warn',
-                message: `Task rejected: ${validation.blockReason}`,
+                message: `Task rejected: ${validation.blockReason ?? 'validation failed'}`,
                 userId: context.userId,
                 correlationId: context.correlationId,
                 metadata: {
@@ -84,7 +84,7 @@ export class TaskExecutor {
                     reason: validation.blockReason,
                 },
             });
-            throw new Error(`Input validation failed: ${validation.blockReason}`);
+            throw new Error(`Input validation failed: ${validation.blockReason ?? 'unknown reason'}`);
         }
         // Check rate limit
         const rateLimitResult = this.rateLimiter.check('task_creation', context.userId, {
@@ -102,7 +102,7 @@ export class TaskExecutor {
                     retryAfter: rateLimitResult.retryAfter,
                 },
             });
-            throw new Error(`Rate limited. Retry after ${rateLimitResult.retryAfter} seconds`);
+            throw new Error(`Rate limited. Retry after ${String(rateLimitResult.retryAfter ?? 60)} seconds`);
         }
         // Check permissions
         const handler = this.handlers.get(create.type);
@@ -156,7 +156,7 @@ export class TaskExecutor {
         // Queue for execution
         return new Promise((resolve, reject) => {
             this.taskQueue.push({ task, context, resolve, reject });
-            this.processQueue();
+            void this.processQueue();
         });
     }
     /**
@@ -292,7 +292,7 @@ export class TaskExecutor {
             clearTimeout(timeoutId);
             this.activeTasks.delete(task.id);
             // Process next task in queue
-            this.processQueue();
+            void this.processQueue();
         }
     }
     /**

@@ -15,6 +15,7 @@ import { createValidator } from './security/input-validator.js';
 import { createRateLimiter } from './security/rate-limiter.js';
 import { initializeRBAC } from './security/rbac.js';
 import { createTaskExecutor } from './task/executor.js';
+import { createGatewayServer } from './gateway/server.js';
 /**
  * Main SecureClaw class
  */
@@ -27,6 +28,7 @@ export class SecureClaw {
     rateLimiter = null;
     rbac = null;
     taskExecutor = null;
+    gateway = null;
     initialized = false;
     startedAt = null;
     shutdownPromise = null;
@@ -84,8 +86,13 @@ export class SecureClaw {
             });
             this.initialized = true;
             this.startedAt = Date.now();
+            // Step 8: Start gateway if enabled
+            if (this.options.enableGateway) {
+                await this.startGateway();
+            }
             this.logger.info('SecureClaw initialized successfully', {
                 environment: this.config.core.environment,
+                gatewayEnabled: this.options.enableGateway ?? false,
             });
         }
         catch (error) {
@@ -154,7 +161,7 @@ export class SecureClaw {
     async getMetrics() {
         this.ensureInitialized();
         const auditStats = await this.auditChain.getStats();
-        const rateLimitStats = this.rateLimiter.getStats();
+        const _rateLimitStats = this.rateLimiter.getStats(); // TODO: Use in metrics
         return {
             timestamp: Date.now(),
             tasks: {
@@ -233,6 +240,50 @@ export class SecureClaw {
         return this.config;
     }
     /**
+     * Get the gateway server instance
+     */
+    getGateway() {
+        return this.gateway;
+    }
+    /**
+     * Start the gateway server
+     */
+    async startGateway() {
+        this.ensureInitialized();
+        if (this.gateway) {
+            throw new Error('Gateway is already running');
+        }
+        this.gateway = createGatewayServer({
+            config: this.config.gateway,
+            secureClaw: this,
+        });
+        await this.gateway.start();
+        this.logger.info('Gateway server started', {
+            host: this.config.gateway.host,
+            port: this.config.gateway.port,
+        });
+        await this.auditChain.record({
+            event: 'gateway_started',
+            level: 'info',
+            message: 'Gateway server started',
+            metadata: {
+                host: this.config.gateway.host,
+                port: this.config.gateway.port,
+            },
+        });
+    }
+    /**
+     * Stop the gateway server
+     */
+    async stopGateway() {
+        if (!this.gateway) {
+            return;
+        }
+        await this.gateway.stop();
+        this.gateway = null;
+        this.logger?.info('Gateway server stopped');
+    }
+    /**
      * Graceful shutdown
      */
     async shutdown() {
@@ -279,6 +330,11 @@ export class SecureClaw {
      * Clean up resources
      */
     async cleanup() {
+        // Stop gateway server
+        if (this.gateway) {
+            await this.gateway.stop();
+            this.gateway = null;
+        }
         // Stop rate limiter cleanup
         if (this.rateLimiter) {
             this.rateLimiter.stop();

@@ -127,7 +127,7 @@ export function TaskHistory() {
             </p>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setPage(p => Math.max(0, p - 1))}
+                onClick={() => { setPage(p => Math.max(0, p - 1)); }}
                 disabled={page === 0}
                 className="btn-ghost p-2 disabled:opacity-50"
               >
@@ -137,7 +137,7 @@ export function TaskHistory() {
                 Page {page + 1} of {totalPages}
               </span>
               <button
-                onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                onClick={() => { setPage(p => Math.min(totalPages - 1, p + 1)); }}
                 disabled={page >= totalPages - 1}
                 className="btn-ghost p-2 disabled:opacity-50"
               >

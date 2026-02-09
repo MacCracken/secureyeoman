@@ -35,12 +35,12 @@ export interface ValidationContext {
 }
 
 // Injection patterns to detect
-const INJECTION_PATTERNS: Array<{
+const INJECTION_PATTERNS: {
   name: string;
   pattern: RegExp;
   severity: 'low' | 'medium' | 'high';
   block: boolean;
-}> = [
+}[] = [
   // Prompt injection attempts
   {
     name: 'prompt_injection_system',
@@ -130,7 +130,7 @@ const INJECTION_PATTERNS: Array<{
   // Path traversal
   {
     name: 'path_traversal',
-    pattern: /\.\.[\/\\]/g,
+    pattern: /\.\.[/\\]/g,
     severity: 'high',
     block: true,
   },

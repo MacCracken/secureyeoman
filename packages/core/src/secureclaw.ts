@@ -10,11 +10,11 @@
  */
 
 import { loadConfig, validateSecrets, requireSecret, type LoadConfigOptions } from './config/loader.js';
-import { initializeLogger, getLogger, type SecureLogger } from './logging/logger.js';
+import { initializeLogger, type SecureLogger } from './logging/logger.js';
 import { AuditChain, InMemoryAuditStorage, type AuditChainStorage } from './logging/audit-chain.js';
 import { createValidator, type InputValidator } from './security/input-validator.js';
 import { createRateLimiter, type RateLimiter } from './security/rate-limiter.js';
-import { initializeRBAC, getRBAC, type RBAC } from './security/rbac.js';
+import { initializeRBAC, type RBAC } from './security/rbac.js';
 import { createTaskExecutor, type TaskExecutor, type TaskHandler, type ExecutionContext } from './task/executor.js';
 import { GatewayServer, createGatewayServer } from './gateway/server.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot } from '@friday/shared';
@@ -207,7 +207,7 @@ export class SecureClaw {
     this.ensureInitialized();
     
     const auditStats = await this.auditChain!.getStats();
-    const rateLimitStats = this.rateLimiter!.getStats();
+    const _rateLimitStats = this.rateLimiter!.getStats(); // TODO: Use in metrics
     
     return {
       timestamp: Date.now(),

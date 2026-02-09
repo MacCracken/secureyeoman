@@ -13,12 +13,15 @@ import { type SecureLogger } from './logging/logger.js';
 import { type AuditChainStorage } from './logging/audit-chain.js';
 import { type RBAC } from './security/rbac.js';
 import { type TaskHandler, type ExecutionContext } from './task/executor.js';
+import { GatewayServer } from './gateway/server.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot } from '@friday/shared';
 export interface SecureClawOptions {
     /** Configuration options */
     config?: LoadConfigOptions;
     /** Custom audit storage backend */
     auditStorage?: AuditChainStorage;
+    /** Enable gateway server on startup */
+    enableGateway?: boolean;
 }
 export interface SecureClawState {
     initialized: boolean;
@@ -38,6 +41,7 @@ export declare class SecureClaw {
     private rateLimiter;
     private rbac;
     private taskExecutor;
+    private gateway;
     private initialized;
     private startedAt;
     private shutdownPromise;
@@ -95,6 +99,18 @@ export declare class SecureClaw {
      * Get configuration
      */
     getConfig(): Config;
+    /**
+     * Get the gateway server instance
+     */
+    getGateway(): GatewayServer | null;
+    /**
+     * Start the gateway server
+     */
+    startGateway(): Promise<void>;
+    /**
+     * Stop the gateway server
+     */
+    stopGateway(): Promise<void>;
     /**
      * Graceful shutdown
      */

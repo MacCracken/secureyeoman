@@ -55,8 +55,8 @@ function createPinoOptions(config: LoggingConfig): LoggerOptions {
     formatters: {
       level: (label) => ({ level: label }),
       bindings: (bindings) => ({
-        pid: bindings['pid'],
-        hostname: bindings['hostname'],
+        pid: bindings.pid,
+        hostname: bindings.hostname,
         name: 'secureclaw',
       }),
     },
