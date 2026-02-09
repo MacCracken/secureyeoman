@@ -31,9 +31,9 @@ In engineering and historical contexts, a **Yeoman** represents:
 
 ---
 
-## SecureClaw Module
+## SecureYeoman Module
 
-**SecureClaw** is the security-hardened autonomous agent core of F.R.I.D.A.Y., inspired by [OpenClaw](https://github.com/openclaw/openclaw) but built from the ground up with enterprise-grade security and comprehensive observability.
+**SecureYeoman** is the security-hardened autonomous agent core of F.R.I.D.A.Y., inspired by [OpenClaw](https://github.com/openclaw/openclaw) but built from the ground up with enterprise-grade security and comprehensive observability.
 
 ### Key Features
 
@@ -47,20 +47,20 @@ In engineering and historical contexts, a **Yeoman** represents:
 
 ### Quick Links
 
-- [SecureClaw System Prompt](SECURECLAW.md) - Full specification and architecture
+- [SecureYeoman System Prompt](SECUREYEOMAN.md) - Full specification and architecture
 - [Development TODO](TODO.md) - Roadmap, next steps, and technical specifications
 
 ### Architecture Overview
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                  SecureClaw Dashboard                    │
-│           (React + TanStack + ReactFlow)                 │
+│             F.R.I.D.A.Yeoman Dashboard                  │
+│            (React + TanStack + ReactFlow)               │
 └─────────────────────────┬───────────────────────────────┘
                           │ WebSocket + REST
                           ▼
 ┌─────────────────────────────────────────────────────────┐
-│                  SecureClaw Gateway                      │
+│                  SecureYeoman Gateway                      │
 │  ┌─────────────┐ ┌─────────────┐ ┌─────────────┐       │
 │  │   Security  │ │   Metrics   │ │    Audit    │       │
 │  │    Layer    │ │  Collector  │ │    Chain    │       │
@@ -104,7 +104,7 @@ pnpm dev
 
 ### Documentation
 
-- [SecureClaw Specification](SECURECLAW.md) - Complete system architecture and prompt
+- [SecureYeoman Specification](SECUREYEOMAN.md) - Complete system architecture and prompt
 - [Development Roadmap](TODO.md) - Task list and technical considerations
 
 ---
@@ -114,7 +114,7 @@ pnpm dev
 ```
 friday/
 ├── README.md           # This file
-├── SECURECLAW.md       # SecureClaw agent specification
+├── SECUREYEOMAN.md       # SecureClaw agent specification
 ├── TODO.md             # Development roadmap
 ├── LICENSE             # MIT License
 ├── packages/
@@ -155,7 +155,7 @@ Security is our top priority. If you discover a security vulnerability, please r
 2. Email security concerns to the maintainers
 3. Allow time for a fix before public disclosure
 
-See [SECURECLAW.md](SECURECLAW.md) for our security architecture.
+See [SECUREYEOMAN.md](SECUREYEOMAN.md) for our security architecture.
 
 ---
 
