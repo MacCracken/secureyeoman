@@ -63,27 +63,27 @@ function loadEnvConfig() {
     const config = {};
     // Build core settings
     const core = {};
-    if (process.env['SECURECLAW_ENV']) {
-        core['environment'] = process.env['SECURECLAW_ENV'];
+    if (process.env.SECURECLAW_ENV) {
+        core.environment = process.env.SECURECLAW_ENV;
     }
-    if (process.env['SECURECLAW_LOG_LEVEL']) {
-        core['logLevel'] = process.env['SECURECLAW_LOG_LEVEL'];
+    if (process.env.SECURECLAW_LOG_LEVEL) {
+        core.logLevel = process.env.SECURECLAW_LOG_LEVEL;
     }
-    if (process.env['SECURECLAW_WORKSPACE']) {
-        core['workspace'] = process.env['SECURECLAW_WORKSPACE'];
+    if (process.env.SECURECLAW_WORKSPACE) {
+        core.workspace = process.env.SECURECLAW_WORKSPACE;
     }
     if (Object.keys(core).length > 0) {
         config.core = core;
     }
     // Build gateway settings
     const gateway = {};
-    if (process.env['SECURECLAW_HOST']) {
-        gateway['host'] = process.env['SECURECLAW_HOST'];
+    if (process.env.SECURECLAW_HOST) {
+        gateway.host = process.env.SECURECLAW_HOST;
     }
-    if (process.env['SECURECLAW_PORT']) {
-        const port = parseInt(process.env['SECURECLAW_PORT'], 10);
+    if (process.env.SECURECLAW_PORT) {
+        const port = parseInt(process.env.SECURECLAW_PORT, 10);
         if (!isNaN(port)) {
-            gateway['port'] = port;
+            gateway.port = port;
         }
     }
     if (Object.keys(gateway).length > 0) {
@@ -91,11 +91,11 @@ function loadEnvConfig() {
     }
     // Build model settings
     const model = {};
-    if (process.env['SECURECLAW_MODEL']) {
-        model['model'] = process.env['SECURECLAW_MODEL'];
+    if (process.env.SECURECLAW_MODEL) {
+        model.model = process.env.SECURECLAW_MODEL;
     }
-    if (process.env['SECURECLAW_PROVIDER']) {
-        model['provider'] = process.env['SECURECLAW_PROVIDER'];
+    if (process.env.SECURECLAW_PROVIDER) {
+        model.provider = process.env.SECURECLAW_PROVIDER;
     }
     if (Object.keys(model).length > 0) {
         config.model = model;

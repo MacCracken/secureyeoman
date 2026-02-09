@@ -28,8 +28,8 @@ function createPinoOptions(config) {
         formatters: {
             level: (label) => ({ level: label }),
             bindings: (bindings) => ({
-                pid: bindings['pid'],
-                hostname: bindings['hostname'],
+                pid: bindings.pid,
+                hostname: bindings.hostname,
                 name: 'secureclaw',
             }),
         },

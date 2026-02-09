@@ -11,10 +11,10 @@ async function main() {
   console.log('Starting SecureClaw example...\n');
   
   // Set required environment variables for testing
-  process.env['SECURECLAW_SIGNING_KEY'] = 'test-signing-key-at-least-32-chars-long';
-  process.env['SECURECLAW_TOKEN_SECRET'] = 'test-token-secret-at-least-32-chars';
-  process.env['SECURECLAW_ENCRYPTION_KEY'] = 'test-encryption-key-32-chars-min';
-  process.env['ANTHROPIC_API_KEY'] = 'sk-ant-test-key'; // Placeholder
+  process.env.SECURECLAW_SIGNING_KEY = 'test-signing-key-at-least-32-chars-long';
+  process.env.SECURECLAW_TOKEN_SECRET = 'test-token-secret-at-least-32-chars';
+  process.env.SECURECLAW_ENCRYPTION_KEY = 'test-encryption-key-32-chars-min';
+  process.env.ANTHROPIC_API_KEY = 'sk-ant-test-key'; // Placeholder
   
   try {
     // Create and initialize SecureClaw

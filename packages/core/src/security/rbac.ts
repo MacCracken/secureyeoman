@@ -10,7 +10,6 @@
 
 import { getLogger, type SecureLogger } from '../logging/logger.js';
 import {
-  Role,
   RoleSchema,
   type Permission,
   type RoleDefinition,
@@ -74,8 +73,8 @@ export interface PermissionResult {
 }
 
 export class RBAC {
-  private readonly roles: Map<string, RoleDefinition> = new Map();
-  private readonly permissionCache: Map<string, boolean> = new Map();
+  private readonly roles = new Map<string, RoleDefinition>();
+  private readonly permissionCache = new Map<string, boolean>();
   private readonly cacheMaxSize = 1000;
   private logger: SecureLogger | null = null;
   
@@ -197,7 +196,7 @@ export class RBAC {
   private checkRolePermissions(
     role: RoleDefinition,
     check: PermissionCheck,
-    visited: Set<string> = new Set()
+    visited = new Set<string>()
   ): PermissionResult {
     // Prevent circular inheritance
     if (visited.has(role.id)) {
@@ -228,7 +227,7 @@ export class RBAC {
           if (result.granted) {
             return {
               ...result,
-              reason: `Inherited from ${inheritedRole.name}: ${result.reason}`,
+              reason: `Inherited from ${inheritedRole.name}: ${result.reason ?? 'granted'}`,
             };
           }
         }
@@ -412,9 +411,7 @@ let rbacInstance: RBAC | null = null;
  * Get the global RBAC instance
  */
 export function getRBAC(): RBAC {
-  if (!rbacInstance) {
-    rbacInstance = new RBAC();
-  }
+  rbacInstance ??= new RBAC();
   return rbacInstance;
 }
 

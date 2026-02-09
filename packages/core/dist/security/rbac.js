@@ -182,7 +182,7 @@ export class RBAC {
                     if (result.granted) {
                         return {
                             ...result,
-                            reason: `Inherited from ${inheritedRole.name}: ${result.reason}`,
+                            reason: `Inherited from ${inheritedRole.name}: ${result.reason ?? 'granted'}`,
                         };
                     }
                 }
@@ -329,9 +329,7 @@ let rbacInstance = null;
  * Get the global RBAC instance
  */
 export function getRBAC() {
-    if (!rbacInstance) {
-        rbacInstance = new RBAC();
-    }
+    rbacInstance ??= new RBAC();
     return rbacInstance;
 }
 /**

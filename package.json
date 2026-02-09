@@ -10,9 +10,12 @@
   "scripts": {
     "build": "npm run build --workspaces",
     "dev": "npm run dev --workspace=@friday/core",
+    "dev:dashboard": "npm run dev --workspace=@friday/dashboard",
     "test": "npm run test --workspaces --if-present",
-    "lint": "eslint . --ext .ts,.tsx",
-    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "lint": "eslint packages/",
+    "lint:fix": "eslint packages/ --fix",
+    "format": "prettier --write \"packages/**/*.{ts,tsx,json}\"",
+    "format:check": "prettier --check \"packages/**/*.{ts,tsx,json}\"",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist",
     "security:audit": "npm audit --audit-level=moderate"
@@ -33,5 +36,15 @@
     "autonomous",
     "claude",
     "assistant"
-  ]
+  ],
+  "devDependencies": {
+    "@eslint/js": "^9.39.2",
+    "eslint": "^9.39.2",
+    "eslint-config-prettier": "^9.1.2",
+    "eslint-plugin-prettier": "^5.5.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.26",
+    "prettier": "^3.8.1",
+    "typescript-eslint": "^8.54.0"
+  }
 }

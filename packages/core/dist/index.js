@@ -22,6 +22,8 @@ export { SecretStore, createSecretStore, encrypt, decrypt, encryptValue, decrypt
 export { TaskExecutor, createTaskExecutor } from './task/executor.js';
 // Utilities
 export { sha256, hmacSha256, secureCompare, randomHex, uuidv7, generateSecureToken, sanitizeForLogging } from './utils/crypto.js';
+// Gateway
+export { GatewayServer, createGatewayServer, } from './gateway/server.js';
 // Re-export shared types
 export * from '@friday/shared';
 //# sourceMappingURL=index.js.map

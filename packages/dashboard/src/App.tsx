@@ -121,7 +121,7 @@ function App() {
         <div className="container mx-auto px-4">
           <div className="flex gap-4">
             <button
-              onClick={() => setActiveTab('overview')}
+              onClick={() => { setActiveTab('overview'); }}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'overview' 
                   ? 'border-primary text-primary' 
@@ -131,7 +131,7 @@ function App() {
               Overview
             </button>
             <button
-              onClick={() => setActiveTab('tasks')}
+              onClick={() => { setActiveTab('tasks'); }}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'tasks' 
                   ? 'border-primary text-primary' 
@@ -141,7 +141,7 @@ function App() {
               Tasks
             </button>
             <button
-              onClick={() => setActiveTab('security')}
+              onClick={() => { setActiveTab('security'); }}
               className={`px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                 activeTab === 'security' 
                   ? 'border-primary text-primary' 

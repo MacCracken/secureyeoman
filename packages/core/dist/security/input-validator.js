@@ -96,7 +96,7 @@ const INJECTION_PATTERNS = [
     // Path traversal
     {
         name: 'path_traversal',
-        pattern: /\.\.[\/\\]/g,
+        pattern: /\.\.[/\\]/g,
         severity: 'high',
         block: true,
     },

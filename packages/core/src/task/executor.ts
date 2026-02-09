@@ -20,7 +20,6 @@ import {
   type Task,
   type TaskCreate,
   type ResourceUsage,
-  type SecurityContext,
 } from '@friday/shared';
 
 export interface TaskExecutorConfig {
@@ -58,9 +57,9 @@ interface TaskEntry {
  */
 export class TaskExecutor {
   private readonly config: TaskExecutorConfig;
-  private readonly handlers: Map<TaskType, TaskHandler> = new Map();
-  private readonly activeTasks: Map<string, TaskEntry> = new Map();
-  private readonly taskQueue: Array<{ task: Task; context: ExecutionContext; resolve: (task: Task) => void; reject: (error: Error) => void }> = [];
+  private readonly handlers = new Map<TaskType, TaskHandler>();
+  private readonly activeTasks = new Map<string, TaskEntry>();
+  private readonly taskQueue: { task: Task; context: ExecutionContext; resolve: (task: Task) => void; reject: (error: Error) => void }[] = [];
   private readonly validator: InputValidator;
   private readonly rateLimiter: RateLimiter;
   private readonly auditChain: AuditChain;
@@ -127,7 +126,7 @@ export class TaskExecutor {
       await this.auditChain.record({
         event: 'task_rejected',
         level: 'warn',
-        message: `Task rejected: ${validation.blockReason}`,
+        message: `Task rejected: ${validation.blockReason ?? 'validation failed'}`,
         userId: context.userId,
         correlationId: context.correlationId,
         metadata: {
@@ -137,7 +136,7 @@ export class TaskExecutor {
         },
       });
       
-      throw new Error(`Input validation failed: ${validation.blockReason}`);
+      throw new Error(`Input validation failed: ${validation.blockReason ?? 'unknown reason'}`);
     }
     
     // Check rate limit
@@ -158,7 +157,7 @@ export class TaskExecutor {
         },
       });
       
-      throw new Error(`Rate limited. Retry after ${rateLimitResult.retryAfter} seconds`);
+      throw new Error(`Rate limited. Retry after ${String(rateLimitResult.retryAfter ?? 60)} seconds`);
     }
     
     // Check permissions
@@ -221,7 +220,7 @@ export class TaskExecutor {
     // Queue for execution
     return new Promise((resolve, reject) => {
       this.taskQueue.push({ task, context, resolve, reject });
-      this.processQueue();
+      void this.processQueue();
     });
   }
   
@@ -379,7 +378,7 @@ export class TaskExecutor {
       this.activeTasks.delete(task.id);
       
       // Process next task in queue
-      this.processQueue();
+      void this.processQueue();
     }
   }
   

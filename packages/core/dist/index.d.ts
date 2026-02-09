@@ -16,5 +16,6 @@ export { RBAC, getRBAC, initializeRBAC, PermissionDeniedError, type PermissionCh
 export { SecretStore, createSecretStore, encrypt, decrypt, encryptValue, decryptValue, type SecretStoreConfig, type EncryptedData, } from './security/secrets.js';
 export { TaskExecutor, createTaskExecutor, type TaskExecutorConfig, type ExecutionContext, type TaskHandler } from './task/executor.js';
 export { sha256, hmacSha256, secureCompare, randomHex, uuidv7, generateSecureToken, sanitizeForLogging } from './utils/crypto.js';
+export { GatewayServer, createGatewayServer, type GatewayServerOptions, } from './gateway/server.js';
 export * from '@friday/shared';
 //# sourceMappingURL=index.d.ts.map

@@ -229,7 +229,7 @@ export function deserializeEncrypted(buffer: Buffer): EncryptedData {
 export class SecretStore {
   private readonly storePath: string;
   private readonly masterKey: string;
-  private secrets: Map<string, string> = new Map();
+  private secrets = new Map<string, string>();
   private loaded = false;
   private logger: SecureLogger | null = null;
   

@@ -35,8 +35,8 @@ interface WindowEntry {
  * Sliding window rate limiter
  */
 export class RateLimiter {
-  private readonly windows: Map<string, WindowEntry> = new Map();
-  private readonly rules: Map<string, RateLimitRule> = new Map();
+  private readonly windows = new Map<string, WindowEntry>();
+  private readonly rules = new Map<string, RateLimitRule>();
   private readonly defaultRule: RateLimitRule;
   private logger: SecureLogger | null = null;
   private cleanupInterval: NodeJS.Timeout | null = null;
@@ -168,7 +168,7 @@ export class RateLimiter {
    * Returns the most restrictive result
    */
   checkMultiple(
-    rules: Array<{ name: string; key: string }>,
+    rules: { name: string; key: string }[],
     context?: { userId?: string; ipAddress?: string }
   ): RateLimitResult {
     let mostRestrictive: RateLimitResult = {

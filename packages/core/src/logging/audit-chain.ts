@@ -77,7 +77,7 @@ export class AuditChain {
   private readonly storage: AuditChainStorage;
   private readonly signingKey: string;
   private lastHash: string = GENESIS_HASH;
-  private initialized: boolean = false;
+  private initialized = false;
   private logger: SecureLogger | null = null;
   
   constructor(config: AuditChainConfig) {

@@ -51,10 +51,10 @@ export declare class RateLimiter {
      * Check multiple rules at once
      * Returns the most restrictive result
      */
-    checkMultiple(rules: Array<{
+    checkMultiple(rules: {
         name: string;
         key: string;
-    }>, context?: {
+    }[], context?: {
         userId?: string;
         ipAddress?: string;
     }): RateLimitResult;
