@@ -17,6 +17,7 @@ import { createRateLimiter, type RateLimiter } from './security/rate-limiter.js'
 import { initializeRBAC, type RBAC } from './security/rbac.js';
 import { createTaskExecutor, type TaskExecutor, type TaskHandler, type ExecutionContext } from './task/executor.js';
 import { GatewayServer, createGatewayServer } from './gateway/server.js';
+import { AIClient } from './ai/client.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot } from '@friday/shared';
 
 export interface SecureClawOptions {
@@ -46,6 +47,7 @@ export class SecureClaw {
   private rateLimiter: RateLimiter | null = null;
   private rbac: RBAC | null = null;
   private taskExecutor: TaskExecutor | null = null;
+  private aiClient: AIClient | null = null;
   private gateway: GatewayServer | null = null;
   private initialized = false;
   private startedAt: number | null = null;
@@ -97,7 +99,30 @@ export class SecureClaw {
       });
       await this.auditChain.initialize();
       this.logger.debug('Audit chain initialized');
-      
+
+      // Step 5.5: Initialize AI client
+      try {
+        this.aiClient = new AIClient(
+          {
+            model: this.config.model,
+            retryConfig: {
+              maxRetries: this.config.model.maxRetries,
+              baseDelayMs: this.config.model.retryDelayMs,
+            },
+          },
+          {
+            auditChain: this.auditChain,
+            logger: this.logger.child({ component: 'AIClient' }),
+          },
+        );
+        this.logger.debug('AI client initialized', { provider: this.config.model.provider });
+      } catch (error) {
+        // AI client failure is non-fatal — the system can run without AI
+        this.logger.warn('AI client initialization failed (non-fatal)', {
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+
       // Step 6: Initialize task executor
       this.taskExecutor = createTaskExecutor(
         this.validator,
@@ -208,7 +233,8 @@ export class SecureClaw {
     
     const auditStats = await this.auditChain!.getStats();
     const _rateLimitStats = this.rateLimiter!.getStats(); // TODO: Use in metrics
-    
+    const aiStats = this.aiClient?.getUsageStats();
+
     return {
       timestamp: Date.now(),
       tasks: {
@@ -232,13 +258,15 @@ export class SecureClaw {
         memoryLimitMb: 0,
         memoryPercent: 0,
         diskUsedMb: 0,
-        tokensUsedToday: 0,
-        tokensCachedToday: 0,
-        costUsdToday: 0,
-        costUsdMonth: 0,
-        apiCallsTotal: 0,
-        apiErrorsTotal: 0,
-        apiLatencyAvgMs: 0,
+        tokensUsedToday: aiStats?.tokensUsedToday ?? 0,
+        tokensCachedToday: aiStats?.tokensCachedToday ?? 0,
+        costUsdToday: aiStats?.costUsdToday ?? 0,
+        costUsdMonth: aiStats?.costUsdMonth ?? 0,
+        apiCallsTotal: aiStats?.apiCallsTotal ?? 0,
+        apiErrorsTotal: aiStats?.apiErrorsTotal ?? 0,
+        apiLatencyAvgMs: aiStats && aiStats.apiCallCount > 0
+          ? aiStats.apiLatencyTotalMs / aiStats.apiCallCount
+          : 0,
       },
       security: {
         authAttemptsTotal: 0,
@@ -283,6 +311,17 @@ export class SecureClaw {
     return this.rbac!;
   }
   
+  /**
+   * Get the AI client instance
+   */
+  getAIClient(): AIClient {
+    this.ensureInitialized();
+    if (!this.aiClient) {
+      throw new Error('AI client is not available. Check provider configuration and API keys.');
+    }
+    return this.aiClient;
+  }
+
   /**
    * Get configuration
    */

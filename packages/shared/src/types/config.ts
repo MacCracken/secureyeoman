@@ -168,20 +168,25 @@ export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
 
 // Model/AI configuration
 export const ModelConfigSchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'ollama']).default('anthropic'),
+  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama']).default('anthropic'),
   model: z.string().default('claude-sonnet-4-20250514'),
   apiKeyEnv: EnvVarRefSchema.default('ANTHROPIC_API_KEY'),
-  
+  baseUrl: z.string().url().optional(),
+
   // Request limits
   maxTokens: z.number().int().positive().max(200000).default(16384),
   temperature: z.number().min(0).max(2).default(0.7),
-  
+
   // Rate limiting for API calls
   maxRequestsPerMinute: z.number().int().positive().max(1000).default(60),
   maxTokensPerDay: z.number().int().positive().optional(),
-  
+
   // Timeout
   requestTimeoutMs: z.number().int().positive().max(300000).default(120000),
+
+  // Retry configuration
+  maxRetries: z.number().int().min(0).max(10).default(3),
+  retryDelayMs: z.number().int().positive().default(1000),
 });
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;

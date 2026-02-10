@@ -64,6 +64,34 @@ export {
   type MetricsQuery,
 } from './metrics.js';
 
+// AI types
+export {
+  TokenUsageSchema,
+  ToolParameterSchema,
+  ToolSchema,
+  ToolCallSchema,
+  ToolResultSchema,
+  AIMessageRoleSchema,
+  AIMessageSchema,
+  AIRequestSchema,
+  StopReasonSchema,
+  AIResponseSchema,
+  AIStreamChunkSchema,
+  AIProviderNameSchema,
+  type TokenUsage,
+  type ToolParameter,
+  type Tool,
+  type ToolCall,
+  type ToolResult,
+  type AIMessageRole,
+  type AIMessage,
+  type AIRequest,
+  type StopReason,
+  type AIResponse,
+  type AIStreamChunk,
+  type AIProviderName,
+} from './ai.js';
+
 // Config types
 export {
   CoreConfigSchema,

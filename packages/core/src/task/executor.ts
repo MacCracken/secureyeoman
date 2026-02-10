@@ -37,6 +37,7 @@ export interface ExecutionContext {
   correlationId?: string;
   ipAddress?: string;
   userAgent?: string;
+  aiClient?: import('../ai/client.js').AIClient;
 }
 
 export interface TaskHandler {

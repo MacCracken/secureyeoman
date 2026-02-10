@@ -88,6 +88,32 @@ export {
   sanitizeForLogging 
 } from './utils/crypto.js';
 
+// AI
+export {
+  AIClient,
+  type AIClientConfig,
+  type AIClientDeps,
+  type AIProvider,
+  BaseProvider,
+  type ProviderConfig,
+  AnthropicProvider,
+  OpenAIProvider,
+  GeminiProvider,
+  OllamaProvider,
+  RetryManager,
+  type RetryConfig,
+  CostCalculator,
+  UsageTracker,
+  type UsageStats,
+  type UsageRecord,
+  AIProviderError,
+  RateLimitError,
+  TokenLimitError,
+  InvalidResponseError,
+  ProviderUnavailableError,
+  AuthenticationError,
+} from './ai/index.js';
+
 // Gateway
 export {
   GatewayServer,
