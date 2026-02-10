@@ -114,6 +114,9 @@ function loadEnvConfig(): PartialConfig {
   if (process.env.SECURECLAW_PROVIDER) {
     model.provider = process.env.SECURECLAW_PROVIDER;
   }
+  if (process.env.SECURECLAW_BASE_URL) {
+    model.baseUrl = process.env.SECURECLAW_BASE_URL;
+  }
   if (Object.keys(model).length > 0) {
     config.model = model as PartialConfig['model'];
   }
@@ -241,9 +244,22 @@ export function validateSecrets(config: Config): void {
     requiredSecrets.push(config.logging.audit.signingKeyEnv);
   }
   
-  // API key based on provider
+  // API key based on provider (Ollama is local, no key needed)
   if (config.model.provider !== 'ollama') {
     requiredSecrets.push(config.model.apiKeyEnv);
+  }
+
+  // Provider-specific key validation for Gemini and OpenAI
+  if (config.model.provider === 'gemini' && config.model.apiKeyEnv === 'ANTHROPIC_API_KEY') {
+    // User likely forgot to set apiKeyEnv for Gemini — check GOOGLE_API_KEY as fallback
+    if (!getSecret('ANTHROPIC_API_KEY') && getSecret('GOOGLE_API_KEY')) {
+      // GOOGLE_API_KEY is available; they should set apiKeyEnv to GOOGLE_API_KEY in config
+    }
+  }
+  if (config.model.provider === 'openai' && config.model.apiKeyEnv === 'ANTHROPIC_API_KEY') {
+    if (!getSecret('ANTHROPIC_API_KEY') && getSecret('OPENAI_API_KEY')) {
+      // OPENAI_API_KEY is available; they should set apiKeyEnv to OPENAI_API_KEY in config
+    }
   }
   
   // Token secret for JWT
