@@ -502,3 +502,37 @@ export async function fetchAvailablePlatforms(): Promise<{ platforms: string[] }
     return { platforms: [] };
   }
 }
+
+export async function createIntegration(data: {
+  platform: string;
+  displayName: string;
+  enabled: boolean;
+  config: Record<string, unknown>;
+}): Promise<IntegrationInfo> {
+  return request('/integrations', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateIntegration(
+  id: string,
+  data: Partial<{ displayName: string; enabled: boolean; config: Record<string, unknown> }>
+): Promise<IntegrationInfo> {
+  return request(`/integrations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteIntegration(id: string): Promise<void> {
+  await request(`/integrations/${id}`, { method: 'DELETE' });
+}
+
+export async function startIntegration(id: string): Promise<{ message: string }> {
+  return request(`/integrations/${id}/start`, { method: 'POST' });
+}
+
+export async function stopIntegration(id: string): Promise<{ message: string }> {
+  return request(`/integrations/${id}/stop`, { method: 'POST' });
+}

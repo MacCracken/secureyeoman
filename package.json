@@ -16,7 +16,7 @@
     "lint:fix": "eslint packages/ --fix",
     "format": "prettier --write \"packages/**/*.{ts,tsx,json}\"",
     "format:check": "prettier --check \"packages/**/*.{ts,tsx,json}\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p packages/dashboard/tsconfig.json",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist",
     "security:audit": "npm audit --audit-level=moderate"
   },

@@ -34,6 +34,7 @@ import { TaskStorage } from './task/task-storage.js';
 import { IntegrationStorage } from './integrations/storage.js';
 import { IntegrationManager } from './integrations/manager.js';
 import { MessageRouter } from './integrations/message-router.js';
+import { TelegramIntegration } from './integrations/telegram/index.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot } from '@friday/shared';
 
 export interface SecureYeomanOptions {
@@ -373,6 +374,9 @@ export class SecureYeoman {
         integrationManager: this.integrationManager,
         integrationStorage: this.integrationStorage!,
       });
+      // Register platform adapters
+      this.integrationManager.registerPlatform('telegram', () => new TelegramIntegration());
+
       this.logger.debug('Integration manager and message router initialized');
 
       // Step 7: Record initialization in audit log

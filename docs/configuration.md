@@ -249,6 +249,28 @@ soul:
 
 ---
 
+## Integration Configuration
+
+Platform integrations (Telegram, Discord, etc.) are configured at runtime, not in the YAML config file. Bot tokens and credentials are stored in the SQLite integrations database and managed via the dashboard UI or REST API.
+
+```
+# Create a Telegram integration via API:
+POST /api/v1/integrations
+{
+  "platform": "telegram",
+  "displayName": "My Telegram Bot",
+  "enabled": true,
+  "config": { "botToken": "<your-bot-token>" }
+}
+
+# Then start it:
+POST /api/v1/integrations/:id/start
+```
+
+Or use the dashboard **Connections** page to connect with a form.
+
+---
+
 ## Environment Variables
 
 All security-sensitive values are referenced by environment variable name in the config file (never stored directly).

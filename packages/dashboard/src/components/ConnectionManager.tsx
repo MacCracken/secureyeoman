@@ -1,20 +1,75 @@
-import { useQuery } from '@tanstack/react-query';
+import { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Wifi, WifiOff, MessageCircle, Mail, Terminal, Globe, Radio, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
-import { fetchIntegrations, fetchAvailablePlatforms } from '../api/client';
+import {
+  fetchIntegrations,
+  fetchAvailablePlatforms,
+  createIntegration,
+  startIntegration,
+  stopIntegration,
+  deleteIntegration,
+} from '../api/client';
 import type { IntegrationInfo, IntegrationStatus } from '../types';
 
 interface PlatformMeta {
   name: string;
   description: string;
   icon: React.ReactNode;
+  fields: FormFieldDef[];
 }
 
+interface FormFieldDef {
+  key: string;
+  label: string;
+  type: 'text' | 'password';
+  placeholder: string;
+}
+
+const BASE_FIELDS: FormFieldDef[] = [
+  { key: 'displayName', label: 'Display Name', type: 'text', placeholder: 'Display Name' },
+];
+
+const TOKEN_FIELD: FormFieldDef = { key: 'botToken', label: 'Bot Token', type: 'password', placeholder: 'Bot Token' };
+
 const PLATFORM_META: Record<string, PlatformMeta> = {
-  telegram: { name: 'Telegram', description: 'Connect to Telegram Bot API for messaging', icon: <MessageCircle className="w-6 h-6" /> },
-  discord: { name: 'Discord', description: 'Integrate with Discord servers and channels', icon: <Radio className="w-6 h-6" /> },
-  slack: { name: 'Slack', description: 'Connect to Slack workspaces via Bot API', icon: <Mail className="w-6 h-6" /> },
-  cli: { name: 'CLI', description: 'Local command-line interface (built-in)', icon: <Terminal className="w-6 h-6" /> },
-  webhook: { name: 'Webhook', description: 'Generic HTTP webhook for custom integrations', icon: <Globe className="w-6 h-6" /> },
+  telegram: {
+    name: 'Telegram',
+    description: 'Connect to Telegram Bot API for messaging',
+    icon: <MessageCircle className="w-6 h-6" />,
+    fields: [...BASE_FIELDS, TOKEN_FIELD],
+  },
+  discord: {
+    name: 'Discord',
+    description: 'Integrate with Discord servers and channels',
+    icon: <Radio className="w-6 h-6" />,
+    fields: [...BASE_FIELDS, TOKEN_FIELD],
+  },
+  slack: {
+    name: 'Slack',
+    description: 'Connect to Slack workspaces via Bot API',
+    icon: <Mail className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      TOKEN_FIELD,
+      { key: 'appToken', label: 'App Token', type: 'password', placeholder: 'App Token' },
+    ],
+  },
+  cli: {
+    name: 'CLI',
+    description: 'Local command-line interface (built-in)',
+    icon: <Terminal className="w-6 h-6" />,
+    fields: BASE_FIELDS,
+  },
+  webhook: {
+    name: 'Webhook',
+    description: 'Generic HTTP webhook for custom integrations',
+    icon: <Globe className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      { key: 'webhookUrl', label: 'Webhook URL', type: 'text', placeholder: 'https://...' },
+      { key: 'secret', label: 'Secret', type: 'password', placeholder: 'Webhook Secret' },
+    ],
+  },
 };
 
 const STATUS_CONFIG: Record<IntegrationStatus, { color: string; icon: React.ReactNode; label: string }> = {
@@ -24,7 +79,25 @@ const STATUS_CONFIG: Record<IntegrationStatus, { color: string; icon: React.Reac
   configuring: { color: 'text-yellow-400', icon: <AlertCircle className="w-3.5 h-3.5" />, label: 'Configuring' },
 };
 
+function formatRelativeTime(dateString: string): string {
+  const now = Date.now();
+  const then = new Date(dateString).getTime();
+  const diffMs = now - then;
+  const diffSec = Math.floor(diffMs / 1000);
+  if (diffSec < 60) return `${diffSec}s ago`;
+  const diffMin = Math.floor(diffSec / 60);
+  if (diffMin < 60) return `${diffMin}m ago`;
+  const diffHr = Math.floor(diffMin / 60);
+  if (diffHr < 24) return `${diffHr}h ago`;
+  const diffDay = Math.floor(diffHr / 24);
+  return `${diffDay}d ago`;
+}
+
 export function ConnectionManager() {
+  const queryClient = useQueryClient();
+  const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
+  const [formData, setFormData] = useState<Record<string, string>>({});
+
   const { data: integrationsData } = useQuery({
     queryKey: ['integrations'],
     queryFn: fetchIntegrations,
@@ -40,11 +113,44 @@ export function ConnectionManager() {
   const availablePlatforms = new Set(platformsData?.platforms ?? []);
   const hasRegisteredPlatforms = availablePlatforms.size > 0;
 
-  // Build list of all platform cards: active integrations + unregistered platforms
   const activePlatformIds = new Set(integrations.map((i) => i.platform));
   const unregisteredPlatforms = Object.keys(PLATFORM_META).filter(
     (p) => !activePlatformIds.has(p)
   );
+
+  const createMut = useMutation({
+    mutationFn: async () => {
+      const meta = PLATFORM_META[connectingPlatform!];
+      const configFields = meta.fields.filter((f) => f.key !== 'displayName');
+      const config: Record<string, unknown> = {};
+      for (const field of configFields) {
+        if (formData[field.key]) config[field.key] = formData[field.key];
+      }
+      const integration = await createIntegration({
+        platform: connectingPlatform!,
+        displayName: formData.displayName || connectingPlatform!,
+        enabled: true,
+        config,
+      });
+      await startIntegration(integration.id);
+      return integration;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['integrations'] });
+      setConnectingPlatform(null);
+      setFormData({});
+    },
+  });
+
+  const handleConnect = (e: React.FormEvent) => {
+    e.preventDefault();
+    createMut.mutate();
+  };
+
+  const handleStartConnect = (platformId: string) => {
+    setConnectingPlatform(platformId);
+    setFormData({});
+  };
 
   return (
     <div className="space-y-6">
@@ -101,6 +207,50 @@ export function ConnectionManager() {
           {unregisteredPlatforms.map((platformId) => {
             const meta = PLATFORM_META[platformId];
             const isRegistered = availablePlatforms.has(platformId);
+
+            if (connectingPlatform === platformId) {
+              return (
+                <div key={platformId} className="card p-4 border-primary border-2">
+                  <h3 className="font-medium text-sm mb-3">Connect {meta.name}</h3>
+                  <form onSubmit={handleConnect} className="space-y-3">
+                    {meta.fields.map((field) => (
+                      <input
+                        key={field.key}
+                        type={field.type}
+                        placeholder={field.placeholder}
+                        value={formData[field.key] || ''}
+                        onChange={(e) =>
+                          { setFormData((prev) => ({ ...prev, [field.key]: e.target.value })); }
+                        }
+                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      />
+                    ))}
+                    {createMut.isError && (
+                      <p className="text-xs text-red-400">
+                        {createMut.error instanceof Error ? createMut.error.message : 'Connection failed'}
+                      </p>
+                    )}
+                    <div className="flex gap-2">
+                      <button
+                        type="submit"
+                        disabled={!formData.displayName || createMut.isPending}
+                        className="btn btn-primary text-xs px-3 py-1.5"
+                      >
+                        {createMut.isPending ? 'Connecting...' : 'Connect'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setConnectingPlatform(null); }}
+                        className="btn btn-ghost text-xs px-3 py-1.5"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              );
+            }
+
             return (
               <div
                 key={platformId}
@@ -120,6 +270,14 @@ export function ConnectionManager() {
                       </span>
                     </div>
                     <p className="text-xs text-muted mt-1">{meta.description}</p>
+                    {isRegistered && (
+                      <button
+                        onClick={() => { handleStartConnect(platformId); }}
+                        className="btn btn-primary text-xs px-3 py-1.5 mt-2"
+                      >
+                        Connect
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -132,12 +290,32 @@ export function ConnectionManager() {
 }
 
 function IntegrationCard({ integration }: { integration: IntegrationInfo }) {
+  const queryClient = useQueryClient();
   const meta = PLATFORM_META[integration.platform] ?? {
     name: integration.platform,
     description: '',
     icon: <Globe className="w-6 h-6" />,
+    fields: BASE_FIELDS,
   };
   const statusConfig = STATUS_CONFIG[integration.status];
+
+  const startMut = useMutation({
+    mutationFn: () => startIntegration(integration.id),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['integrations'] }); },
+  });
+
+  const stopMut = useMutation({
+    mutationFn: () => stopIntegration(integration.id),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['integrations'] }); },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: () => deleteIntegration(integration.id),
+    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['integrations'] }); },
+  });
+
+  const isConnected = integration.status === 'connected';
+  const isLoading = startMut.isPending || stopMut.isPending || deleteMut.isPending;
 
   return (
     <div className="card p-4">
@@ -156,13 +334,53 @@ function IntegrationCard({ integration }: { integration: IntegrationInfo }) {
           <p className="text-xs text-muted mt-1">{meta.name}</p>
           <div className="flex items-center gap-3 mt-2 text-xs text-muted">
             <span>{integration.messageCount} messages</span>
-            {integration.errorMessage && (
-              <span className="text-red-400 truncate" title={integration.errorMessage}>
-                {integration.errorMessage}
-              </span>
+            {integration.lastMessageAt && (
+              <span>Last: {formatRelativeTime(integration.lastMessageAt)}</span>
             )}
           </div>
+          {integration.errorMessage && (
+            <p className="text-xs text-red-400 mt-1 truncate" title={integration.errorMessage}>
+              {integration.errorMessage}
+            </p>
+          )}
+          {integration.status === 'error' && (
+            <button
+              onClick={() => { startMut.mutate(); }}
+              disabled={isLoading}
+              className="text-xs text-primary mt-1"
+            >
+              Retry
+            </button>
+          )}
         </div>
+      </div>
+      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border">
+        {isConnected ? (
+          <button
+            onClick={() => { stopMut.mutate(); }}
+            disabled={isLoading}
+            className="text-xs text-muted hover:text-destructive transition-colors"
+          >
+            Stop
+          </button>
+        ) : (
+          <button
+            onClick={() => { startMut.mutate(); }}
+            disabled={isLoading}
+            className="text-xs text-muted hover:text-primary transition-colors"
+          >
+            Start
+          </button>
+        )}
+        <button
+          onClick={() => {
+            if (confirm(`Delete ${integration.displayName}?`)) deleteMut.mutate();
+          }}
+          disabled={isLoading}
+          className="text-xs text-muted hover:text-destructive transition-colors ml-auto"
+        >
+          Delete
+        </button>
       </div>
     </div>
   );
