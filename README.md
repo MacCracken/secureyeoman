@@ -2,7 +2,7 @@
 
 > **F**ully **R**esponsive **I**ntegrated **D**igital **A**ssistant **Y**eoman
 
-[![CI](https://github.com/your-org/friday/actions/workflows/ci.yml/badge.svg)](https://github.com/your-org/friday/actions/workflows/ci.yml)
+[![CI](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
 [![Tests: 589](https://img.shields.io/badge/Tests-589%20Passing-brightgreen.svg)]()
