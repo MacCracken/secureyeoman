@@ -100,6 +100,35 @@ export class SQLiteAuditStorage implements AuditChainStorage {
       CREATE INDEX IF NOT EXISTS idx_event ON audit_entries(event);
       CREATE INDEX IF NOT EXISTS idx_task_id ON audit_entries(task_id);
       CREATE INDEX IF NOT EXISTS idx_correlation_id ON audit_entries(correlation_id);
+      CREATE INDEX IF NOT EXISTS idx_user_id ON audit_entries(user_id);
+
+      -- FTS5 virtual table for full-text search over event, message, and metadata
+      CREATE VIRTUAL TABLE IF NOT EXISTS audit_entries_fts USING fts5(
+        id UNINDEXED,
+        event,
+        message,
+        metadata,
+        content='audit_entries',
+        content_rowid='rowid'
+      );
+
+      -- Triggers to keep FTS index in sync with the main table
+      CREATE TRIGGER IF NOT EXISTS audit_entries_ai AFTER INSERT ON audit_entries BEGIN
+        INSERT INTO audit_entries_fts(rowid, id, event, message, metadata)
+        VALUES (new.rowid, new.id, new.event, new.message, COALESCE(new.metadata, ''));
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS audit_entries_ad AFTER DELETE ON audit_entries BEGIN
+        INSERT INTO audit_entries_fts(audit_entries_fts, rowid, id, event, message, metadata)
+        VALUES ('delete', old.rowid, old.id, old.event, old.message, COALESCE(old.metadata, ''));
+      END;
+
+      CREATE TRIGGER IF NOT EXISTS audit_entries_au AFTER UPDATE ON audit_entries BEGIN
+        INSERT INTO audit_entries_fts(audit_entries_fts, rowid, id, event, message, metadata)
+        VALUES ('delete', old.rowid, old.id, old.event, old.message, COALESCE(old.metadata, ''));
+        INSERT INTO audit_entries_fts(rowid, id, event, message, metadata)
+        VALUES (new.rowid, new.id, new.event, new.message, COALESCE(new.metadata, ''));
+      END;
     `);
   }
 
@@ -232,6 +261,40 @@ export class SQLiteAuditStorage implements AuditChainStorage {
     ).all(correlationId) as AuditRow[];
 
     return rows.map(rowToEntry);
+  }
+
+  /**
+   * Full-text search across event, message, and metadata fields
+   * using the FTS5 virtual table.
+   *
+   * The query string uses FTS5 query syntax (e.g. "error OR warning",
+   * "deploy*", phrase matching with quotes, etc.).
+   */
+  async searchFullText(
+    query: string,
+    opts: { limit?: number; offset?: number } = {},
+  ): Promise<AuditQueryResult> {
+    const limit = Math.min(opts.limit ?? 50, 1000);
+    const offset = opts.offset ?? 0;
+
+    const countRow = this.db.prepare(
+      `SELECT COUNT(*) as cnt FROM audit_entries_fts WHERE audit_entries_fts MATCH @query`
+    ).get({ query }) as { cnt: number };
+
+    const rows = this.db.prepare(
+      `SELECT ae.* FROM audit_entries ae
+       JOIN audit_entries_fts fts ON ae.rowid = fts.rowid
+       WHERE audit_entries_fts MATCH @query
+       ORDER BY fts.rank
+       LIMIT @limit OFFSET @offset`
+    ).all({ query, limit, offset }) as AuditRow[];
+
+    return {
+      entries: rows.map(rowToEntry),
+      total: countRow.cnt,
+      limit,
+      offset,
+    };
   }
 
   close(): void {

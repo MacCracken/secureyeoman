@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Wifi, WifiOff, MessageCircle, Mail, Terminal, Globe, Radio, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
+import { Wifi, WifiOff, MessageCircle, Mail, Terminal, Globe, Radio, CheckCircle, XCircle, AlertCircle, GitBranch } from 'lucide-react';
 import {
   fetchIntegrations,
   fetchAvailablePlatforms,
@@ -52,6 +52,16 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       ...BASE_FIELDS,
       TOKEN_FIELD,
       { key: 'appToken', label: 'App Token', type: 'password', placeholder: 'App Token' },
+    ],
+  },
+  github: {
+    name: 'GitHub',
+    description: 'Receive webhooks from GitHub repositories',
+    icon: <GitBranch className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      { key: 'personalAccessToken', label: 'Personal Access Token', type: 'password' as const, placeholder: 'ghp_...' },
+      { key: 'webhookSecret', label: 'Webhook Secret', type: 'password' as const, placeholder: 'Webhook Secret' },
     ],
   },
   cli: {

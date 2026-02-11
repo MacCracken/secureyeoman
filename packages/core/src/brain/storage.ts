@@ -155,6 +155,7 @@ export class BrainStorage {
 
       CREATE INDEX IF NOT EXISTS idx_memories_type ON memories(type);
       CREATE INDEX IF NOT EXISTS idx_memories_importance ON memories(importance DESC);
+      CREATE INDEX IF NOT EXISTS idx_memories_type_importance ON memories(type, importance DESC);
       CREATE INDEX IF NOT EXISTS idx_memories_expires ON memories(expires_at) WHERE expires_at IS NOT NULL;
 
       CREATE TABLE IF NOT EXISTS knowledge (
@@ -279,6 +280,15 @@ export class BrainStorage {
     this.db
       .prepare('UPDATE memories SET access_count = access_count + 1, last_accessed_at = ? WHERE id = ?')
       .run(Date.now(), id);
+  }
+
+  touchMemories(ids: string[]): void {
+    if (ids.length === 0) return;
+    const now = Date.now();
+    const placeholders = ids.map(() => '?').join(', ');
+    this.db
+      .prepare(`UPDATE memories SET access_count = access_count + 1, last_accessed_at = ? WHERE id IN (${placeholders})`)
+      .run(now, ...ids);
   }
 
   decayMemories(decayRate: number): number {

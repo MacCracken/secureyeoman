@@ -1881,7 +1881,7 @@ git clone https://github.com/MacCracken/FRIDAY.git
 cd friday
 
 # Install dependencies
-pnpm install
+npm install
 
 # Set required environment variables
 export SECUREYEOMAN_SIGNING_KEY="your-signing-key-at-least-32-chars"

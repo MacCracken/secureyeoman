@@ -37,7 +37,11 @@ import { TaskStorage } from './task/task-storage.js';
 import { IntegrationStorage } from './integrations/storage.js';
 import { IntegrationManager } from './integrations/manager.js';
 import { MessageRouter } from './integrations/message-router.js';
+import { ConversationManager } from './integrations/conversation.js';
 import { TelegramIntegration } from './integrations/telegram/index.js';
+import { DiscordIntegration } from './integrations/discord/index.js';
+import { SlackIntegration } from './integrations/slack/index.js';
+import { GitHubIntegration } from './integrations/github/index.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot } from '@friday/shared';
 
 export interface SecureYeomanOptions {
@@ -84,6 +88,7 @@ export class SecureYeoman {
   private integrationStorage: IntegrationStorage | null = null;
   private integrationManager: IntegrationManager | null = null;
   private messageRouter: MessageRouter | null = null;
+  private conversationManager: ConversationManager | null = null;
   private sandboxManager: SandboxManager | null = null;
   private taskStorage: TaskStorage | null = null;
   private initialized = false;
@@ -398,10 +403,12 @@ export class SecureYeoman {
       );
       this.logger.debug('Task executor initialized');
 
-      // Step 6.5: Wire up IntegrationManager + MessageRouter (needs taskExecutor)
+      // Step 6.5: Wire up IntegrationManager + MessageRouter + ConversationManager
+      this.conversationManager = new ConversationManager();
       this.integrationManager = new IntegrationManager(this.integrationStorage!, {
         logger: this.logger.child({ component: 'IntegrationManager' }),
         onMessage: async (msg) => {
+          this.conversationManager!.addMessage(msg);
           await this.messageRouter!.handleInbound(msg);
         },
       });
@@ -413,6 +420,11 @@ export class SecureYeoman {
       });
       // Register platform adapters
       this.integrationManager.registerPlatform('telegram', () => new TelegramIntegration());
+      this.integrationManager.registerPlatform('discord', () => new DiscordIntegration());
+      this.integrationManager.registerPlatform('slack', () => new SlackIntegration());
+      this.integrationManager.registerPlatform('github', () => new GitHubIntegration());
+      // Start auto-reconnect health checks
+      this.integrationManager.startHealthChecks();
 
       this.logger.debug('Integration manager and message router initialized');
 
@@ -880,6 +892,12 @@ export class SecureYeoman {
     if (this.taskStorage) {
       this.taskStorage.close();
       this.taskStorage = null;
+    }
+
+    // Close conversation manager
+    if (this.conversationManager) {
+      this.conversationManager.close();
+      this.conversationManager = null;
     }
 
     // Close integration manager + storage

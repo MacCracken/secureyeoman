@@ -1,0 +1,394 @@
+openapi: 3.1.0
+info:
+  title: FRIDAY API
+  version: 0.1.0
+  description: |
+    REST API for the FRIDAY (Fully Responsive Integrated Digital Assistant Yeoman)
+    agent system with SecureYeoman security framework.
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:3000
+    description: Local development
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags: [System]
+      security: []
+      responses:
+        "200":
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, enum: [ok, error] }
+                  version: { type: string }
+                  uptime: { type: number }
+
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      tags: [System]
+      security: []
+      responses:
+        "200":
+          description: Prometheus text exposition format
+          content:
+            text/plain:
+              schema:
+                type: string
+
+  /api/v1/auth/login:
+    post:
+      summary: Login
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password: { type: string }
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  refreshToken: { type: string }
+        "401": { description: Invalid credentials }
+        "429": { description: Rate limited }
+
+  /api/v1/auth/refresh:
+    post:
+      summary: Refresh token
+      tags: [Authentication]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken: { type: string }
+      responses:
+        "200":
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  accessToken: { type: string }
+                  refreshToken: { type: string }
+
+  /api/v1/auth/logout:
+    post:
+      summary: Logout
+      tags: [Authentication]
+      security: [BearerAuth: []]
+      responses:
+        "200": { description: Logged out }
+
+  /api/v1/metrics:
+    get:
+      summary: Get metrics snapshot
+      tags: [Metrics]
+      security: [BearerAuth: []]
+      responses:
+        "200":
+          description: Metrics snapshot
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MetricsSnapshot"
+
+  /api/v1/tasks:
+    get:
+      summary: List tasks
+      tags: [Tasks]
+      security: [BearerAuth: []]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: type
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200":
+          description: Task list
+
+  /api/v1/tasks/{id}:
+    get:
+      summary: Get task by ID
+      tags: [Tasks]
+      security: [BearerAuth: []]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Task details }
+        "404": { description: Task not found }
+
+  /api/v1/integrations:
+    get:
+      summary: List integrations
+      tags: [Integrations]
+      security: [BearerAuth: []]
+      parameters:
+        - name: platform
+          in: query
+          schema: { type: string, enum: [telegram, discord, slack, github] }
+        - name: enabled
+          in: query
+          schema: { type: string, enum: ["true", "false"] }
+      responses:
+        "200":
+          description: Integration list
+    post:
+      summary: Create integration
+      tags: [Integrations]
+      security: [BearerAuth: []]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IntegrationCreate"
+      responses:
+        "201": { description: Integration created }
+        "400": { description: Invalid platform or config }
+
+  /api/v1/integrations/platforms:
+    get:
+      summary: List available platforms
+      tags: [Integrations]
+      security: [BearerAuth: []]
+      responses:
+        "200":
+          description: Available platforms
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  platforms:
+                    type: array
+                    items: { type: string }
+
+  /api/v1/integrations/{id}:
+    get:
+      summary: Get integration
+      tags: [Integrations]
+      security: [BearerAuth: []]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Integration details }
+        "404": { description: Not found }
+    put:
+      summary: Update integration
+      tags: [Integrations]
+      security: [BearerAuth: []]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Updated }
+    delete:
+      summary: Delete integration
+      tags: [Integrations]
+      security: [BearerAuth: []]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Deleted }
+
+  /api/v1/integrations/{id}/start:
+    post:
+      summary: Start integration
+      tags: [Integrations]
+      security: [BearerAuth: []]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Started }
+
+  /api/v1/integrations/{id}/stop:
+    post:
+      summary: Stop integration
+      tags: [Integrations]
+      security: [BearerAuth: []]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Stopped }
+
+  /api/v1/integrations/{id}/messages:
+    get:
+      summary: List messages
+      tags: [Integrations]
+      security: [BearerAuth: []]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50 }
+        - name: offset
+          in: query
+          schema: { type: integer, default: 0 }
+      responses:
+        "200": { description: Message list }
+    post:
+      summary: Send message
+      tags: [Integrations]
+      security: [BearerAuth: []]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chatId, text]
+              properties:
+                chatId: { type: string }
+                text: { type: string }
+      responses:
+        "201": { description: Message sent }
+
+  /api/v1/webhooks/github/{id}:
+    post:
+      summary: GitHub webhook receiver
+      tags: [Webhooks]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Webhook received }
+        "400": { description: Invalid signature }
+
+  /api/v1/audit:
+    get:
+      summary: Query audit log
+      tags: [Audit]
+      security: [BearerAuth: []]
+      responses:
+        "200": { description: Audit entries }
+
+  /api/v1/audit/verify:
+    post:
+      summary: Verify audit chain integrity
+      tags: [Audit]
+      security: [BearerAuth: []]
+      responses:
+        "200":
+          description: Verification result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid: { type: boolean }
+                  entriesChecked: { type: integer }
+
+  /api/v1/security/events:
+    get:
+      summary: List security events
+      tags: [Security]
+      security: [BearerAuth: []]
+      responses:
+        "200": { description: Security events }
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    IntegrationCreate:
+      type: object
+      required: [platform, displayName, enabled]
+      properties:
+        platform:
+          type: string
+          enum: [telegram, discord, slack, github]
+        displayName:
+          type: string
+          maxLength: 100
+        enabled:
+          type: boolean
+        config:
+          type: object
+          additionalProperties: true
+
+    MetricsSnapshot:
+      type: object
+      properties:
+        timestamp: { type: number }
+        tasks:
+          type: object
+          properties:
+            total: { type: number }
+            queueDepth: { type: number }
+            inProgress: { type: number }
+            successRate: { type: number }
+        resources:
+          type: object
+          properties:
+            cpuPercent: { type: number }
+            memoryUsedMb: { type: number }
+            tokensUsedToday: { type: number }
+        security:
+          type: object
+          properties:
+            auditEntriesTotal: { type: number }
+            auditChainValid: { type: boolean }

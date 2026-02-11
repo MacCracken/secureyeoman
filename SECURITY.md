@@ -68,7 +68,7 @@ F.R.I.D.A.Y. includes several security features:
 For detailed information about our security architecture, see:
 
 - [Security Model](docs/security/security-model.md)
-- [Audit Procedures](docs/security/audit-procedures.md)
+- [Security Testing Guide](docs/guides/security-testing.md)
 - [Architecture Overview](docs/development/architecture.md)
 
 ## Security Best Practices

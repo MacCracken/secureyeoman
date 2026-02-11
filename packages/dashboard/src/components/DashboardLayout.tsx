@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
@@ -9,6 +9,7 @@ import {
   CheckCircle,
   XCircle,
   HardDrive,
+  Loader2,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -16,16 +17,19 @@ import { fetchMetrics, fetchHealth, fetchOnboardingStatus } from '../api/client'
 import { NavigationTabs } from './NavigationTabs';
 import { StatusBar } from './StatusBar';
 import { ErrorBoundary } from './common/ErrorBoundary';
-import { MetricsGraph } from './MetricsGraph';
-import { TaskHistory } from './TaskHistory';
-import { SecurityEvents } from './SecurityEvents';
-import { ResourceMonitor } from './ResourceMonitor';
 import { OnboardingWizard } from './OnboardingWizard';
-import { PersonalityEditor } from './PersonalityEditor';
-import { SkillsManager } from './SkillsManager';
-import { ConnectionManager } from './ConnectionManager';
-import { SettingsPage } from './SettingsPage';
 import type { MetricsSnapshot } from '../types';
+
+// Lazy-loaded route components — splits ReactFlow (~200KB) + Recharts (~100KB)
+// into separate chunks that only load when their routes are visited.
+const MetricsGraph = lazy(() => import('./MetricsGraph').then(m => ({ default: m.MetricsGraph })));
+const TaskHistory = lazy(() => import('./TaskHistory').then(m => ({ default: m.TaskHistory })));
+const SecurityEvents = lazy(() => import('./SecurityEvents').then(m => ({ default: m.SecurityEvents })));
+const ResourceMonitor = lazy(() => import('./ResourceMonitor').then(m => ({ default: m.ResourceMonitor })));
+const PersonalityEditor = lazy(() => import('./PersonalityEditor').then(m => ({ default: m.PersonalityEditor })));
+const SkillsManager = lazy(() => import('./SkillsManager').then(m => ({ default: m.SkillsManager })));
+const ConnectionManager = lazy(() => import('./ConnectionManager').then(m => ({ default: m.ConnectionManager })));
+const SettingsPage = lazy(() => import('./SettingsPage').then(m => ({ default: m.SettingsPage })));
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -115,16 +119,18 @@ export function DashboardLayout() {
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6 flex-1">
         <ErrorBoundary>
-          <Routes>
-            <Route path="/" element={<OverviewPage metrics={metrics} />} />
-            <Route path="/tasks" element={<TaskHistory />} />
-            <Route path="/security" element={<SecurityEvents metrics={metrics} />} />
-            <Route path="/personality" element={<PersonalityEditor />} />
-            <Route path="/skills" element={<SkillsManager />} />
-            <Route path="/connections" element={<ConnectionManager />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+          <Suspense fallback={<PageSkeleton />}>
+            <Routes>
+              <Route path="/" element={<OverviewPage metrics={metrics} />} />
+              <Route path="/tasks" element={<TaskHistory />} />
+              <Route path="/security" element={<SecurityEvents metrics={metrics} />} />
+              <Route path="/personality" element={<PersonalityEditor />} />
+              <Route path="/skills" element={<SkillsManager />} />
+              <Route path="/connections" element={<ConnectionManager />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
         </ErrorBoundary>
       </main>
 
@@ -197,6 +203,16 @@ function OverviewPage({ metrics }: { metrics?: MetricsSnapshot }) {
           <ResourceMonitor metrics={metrics} />
         </div>
       </div>
+    </div>
+  );
+}
+
+// ── PageSkeleton ──────────────────────────────────────────────────────
+
+function PageSkeleton() {
+  return (
+    <div className="flex items-center justify-center py-20">
+      <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
     </div>
   );
 }

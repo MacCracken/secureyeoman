@@ -5,31 +5,28 @@
 [![CI](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 589](https://img.shields.io/badge/Tests-589%20Passing-brightgreen.svg)]()
+[![Tests: 963](https://img.shields.io/badge/Tests-963-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
-[![Security Audit](https://img.shields.io/badge/Security%20Audit-Passing-brightgreen.svg)]()
-[![Coverage](https://img.shields.io/badge/Coverage-Reported-blue.svg)]()
 
 > A secure, local-first AI assistant with enterprise-grade protection and comprehensive observability.
 
 ---
 
-## ✨ Quick Start
+## Quick Start
 
 ```bash
-# Install and run in 3 commands
 git clone https://github.com/MacCracken/FRIDAY.git
 cd friday
-pnpm install && pnpm dev
+npm install && npm run dev
 ```
 
 Then open http://localhost:3000 and complete the onboarding wizard.
 
 ---
 
-## 🎯 What is F.R.I.D.A.Y.?
+## What is F.R.I.D.A.Y.?
 
 F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYeoman** core. Unlike traditional AI assistants, F.R.I.D.A.Y.:
 
@@ -41,48 +38,46 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 
 ---
 
-## 🚀 Key Features
+## Key Features
 
 | Category | Features |
 |----------|----------|
 | **Security** | RBAC, JWT/API key auth, AES-256-GCM encryption, sandboxed execution, rate limiting |
-| **Observability** | Comprehensive audit trails, real-time metrics, performance monitoring |
-| **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama (local) |
+| **Observability** | Cryptographic audit trails, Prometheus metrics, Grafana dashboards, log rotation |
+| **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama (local), fallback chains |
 | **User Experience** | React dashboard, personality editor, skills manager, WebSocket real-time updates |
-| **Integrations** | Plugin architecture, platform adapters (Telegram, Discord, Slack), message routing |
-| **Development** | TypeScript, full test coverage (589 tests), Docker support, CI/CD pipeline |
+| **Integrations** | Telegram, Discord, Slack, GitHub — plugin architecture with message routing |
+| **Development** | TypeScript, 963 tests across 59 files, Docker support, CI/CD pipeline |
 
 ---
 
-## 📋 Prerequisites
+## Prerequisites
 
 - **Node.js** 20 LTS or later
-- **pnpm** (recommended) or npm
+- **npm** (project uses npm workspaces)
 - **AI Provider API Key**: Anthropic, OpenAI, Google Gemini, or Ollama (local)
 
 ---
 
-## ⚙️ Installation
+## Installation
 
-### Standard Install
+### From Source
 
 ```bash
-# Clone and install
 git clone https://github.com/MacCracken/FRIDAY.git
 cd friday
-pnpm install
+npm install
 
 # Configure (copy .env.example to .env and edit)
 cp .env.example .env
 
 # Start the system
-pnpm dev
+npm run dev
 ```
 
-### Docker Install
+### Docker
 
 ```bash
-# Quick start with Docker Compose
 docker compose up
 
 # Or manual build
@@ -109,7 +104,7 @@ ANTHROPIC_API_KEY="sk-ant-..."
 
 ---
 
-## 🎮 Usage
+## Usage
 
 ### 1. Dashboard
 - Access: http://localhost:3000
@@ -118,10 +113,7 @@ ANTHROPIC_API_KEY="sk-ant-..."
 
 ### 2. CLI
 ```bash
-# Check health
 npx secureyeoman health
-
-# Create task
 npx secureyeoman task create --type execute --input '{"command": "echo hello"}'
 ```
 
@@ -139,18 +131,18 @@ curl -X POST http://localhost:18789/api/v1/tasks \
 
 ---
 
-## 📊 Development
+## Development
 
 ### Running Tests
 ```bash
-# All tests
-pnpm test          # 589 tests across 32 files
+# All tests (963 across 59 files)
+npm test
 
 # Coverage
-pnpm test -- --coverage
+npm test -- --coverage
 
-# Specific package
-pnpm test --workspace=@friday/core
+# Security + chaos tests
+npx vitest run tests/security/ tests/chaos/
 ```
 
 ### Project Structure
@@ -161,31 +153,42 @@ friday/
 │   ├── core/            # Agent engine, security, and integrations
 │   │   └── src/
 │   │       ├── ai/              # Multi-provider AI client
-│   │       ├── gateway/         # Fastify API server + auth
-│   │       ├── integrations/    # Platform adapter framework
+│   │       ├── brain/           # Memory, knowledge, skills
+│   │       ├── comms/           # E2E encrypted agent comms
+│   │       ├── gateway/         # Fastify API server + auth + Prometheus
+│   │       ├── integrations/    # Platform adapters (Telegram, Discord, Slack, GitHub)
+│   │       ├── logging/         # Audit chain + storage + file writer + rotation
 │   │       ├── security/        # RBAC, encryption, sandbox
-│   │       ├── soul/            # Personality + skills system
+│   │       ├── soul/            # Personality + identity
 │   │       └── task/            # Task executor + storage
 │   └── dashboard/       # React UI (Vite + Tailwind)
+├── tests/               # Security, load, and chaos tests
+├── deploy/              # Docker, Prometheus, Grafana, Loki configs
+├── scripts/             # Utility scripts
 ├── docs/                # Documentation
 └── .github/             # CI/CD workflows
 ```
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 | Topic | Link |
 |-------|------|
-| **Installation** | [Install Guide](docs/installation.md) |
+| **Getting Started** | [Getting Started Guide](docs/guides/getting-started.md) |
 | **Configuration** | [Config Reference](docs/configuration.md) |
 | **API Reference** | [REST & WebSocket](docs/api.md) |
-| **Development** | [TODO / Roadmap](TODO.md) • [Contributing](CONTRIBUTING.md) |
+| **Deployment** | [Deployment Guide](docs/deployment.md) |
+| **Integrations** | [Integration Setup](docs/guides/integrations.md) |
+| **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
+| **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
+| **Development** | [Roadmap](docs/development/roadmap.md) |
+| **Contributing** | [Contributing Guide](CONTRIBUTING.md) |
 | **Security** | [Security Policy](SECURITY.md) |
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for:
 
@@ -196,7 +199,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 ---
 
-## 🛡️ Security
+## Security
 
 Security is our top priority. For security issues:
 
@@ -204,27 +207,11 @@ Security is our top priority. For security issues:
 - Email: security@friday.dev
 - See our [Security Policy](SECURITY.md)
 
-Security features include:
-- Cryptographic audit trails
-- Role-based access control
-- Sandboxed execution
-- Input validation and sanitization
-- Rate limiting and threat detection
-
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the [MIT License](LICENSE).
-
----
-
-## 🔗 Links
-
-- **Documentation**: [docs/](docs/)
-- **Issues & Discussions**: [GitHub](https://github.com/MacCracken/FRIDAY)
-- **Community**: [GitHub Discussions](https://github.com/MacCracken/FRIDAY/discussions)
-- **Security**: [Security Policy](SECURITY.md)
 
 ---
 

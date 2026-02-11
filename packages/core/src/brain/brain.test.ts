@@ -163,6 +163,24 @@ describe('BrainStorage', () => {
       expect(updated?.lastAccessedAt).toBeGreaterThan(0);
     });
 
+    it('should batch-touch multiple memories in a single call', () => {
+      const m1 = storage.createMemory({ type: 'semantic', content: 'Memory 1', source: 'test' });
+      const m2 = storage.createMemory({ type: 'semantic', content: 'Memory 2', source: 'test' });
+      const m3 = storage.createMemory({ type: 'episodic', content: 'Memory 3', source: 'test' });
+
+      storage.touchMemories([m1.id, m2.id, m3.id]);
+
+      expect(storage.getMemory(m1.id)?.accessCount).toBe(1);
+      expect(storage.getMemory(m2.id)?.accessCount).toBe(1);
+      expect(storage.getMemory(m3.id)?.accessCount).toBe(1);
+      expect(storage.getMemory(m1.id)?.lastAccessedAt).toBeGreaterThan(0);
+    });
+
+    it('should handle empty array in touchMemories', () => {
+      // Should not throw
+      storage.touchMemories([]);
+    });
+
     it('should decay memories', () => {
       const m = storage.createMemory({
         type: 'semantic',
@@ -407,6 +425,19 @@ describe('BrainManager', () => {
       expect(updated?.accessCount).toBe(1);
     });
 
+    it('should batch-touch memories on recall', () => {
+      const m1 = manager.remember('semantic', 'First memory', 'test');
+      const m2 = manager.remember('semantic', 'Second memory', 'test');
+      const m3 = manager.remember('semantic', 'Third memory', 'test');
+
+      manager.recall({ type: 'semantic' });
+
+      // All memories should be touched in a single batch
+      expect(manager.getMemory(m1.id)?.accessCount).toBe(1);
+      expect(manager.getMemory(m2.id)?.accessCount).toBe(1);
+      expect(manager.getMemory(m3.id)?.accessCount).toBe(1);
+    });
+
     it('should throw when brain is disabled', () => {
       const mgr = new BrainManager(storage, defaultConfig({ enabled: false }), createDeps());
       expect(() => mgr.remember('semantic', 'Test', 'test')).toThrow('Brain is not enabled');
@@ -471,6 +502,17 @@ describe('BrainManager', () => {
     it('should return empty when no matches', () => {
       const context = manager.getRelevantContext('nonexistent topic xyz');
       expect(context).toBe('');
+    });
+
+    it('should batch-touch memories in getRelevantContext', () => {
+      const m1 = manager.remember('semantic', 'React component lifecycle', 'test');
+      const m2 = manager.remember('semantic', 'React hooks patterns', 'test');
+
+      manager.getRelevantContext('React');
+
+      // Both memories should have been touched via batch update
+      expect(manager.getMemory(m1.id)?.accessCount).toBe(1);
+      expect(manager.getMemory(m2.id)?.accessCount).toBe(1);
     });
   });
 

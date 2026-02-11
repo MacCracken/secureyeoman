@@ -16,7 +16,7 @@ We welcome contributions! This guide will help you get started.
 ### Prerequisites
 
 - Node.js 20 LTS or later
-- pnpm (recommended) or npm
+- npm (project uses npm workspaces)
 - Git
 
 ### First Time Setup
@@ -27,7 +27,7 @@ git clone https://github.com/MacCracken/FRIDAY.git
 cd friday
 
 # Install dependencies
-pnpm install
+npm install
 
 # Set required environment variables
 export SECUREYEOMAN_SIGNING_KEY="your-signing-key-at-least-32-chars"
@@ -37,20 +37,20 @@ export SECUREYEOMAN_ADMIN_PASSWORD="your-admin-password-at-least-32-chars"
 export ANTHROPIC_API_KEY="sk-ant-..."
 
 # Start development server
-pnpm dev
+npm run dev
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-pnpm test
+npm test
 
 # Run tests for specific package
-pnpm test --workspace=@friday/core
+npm test --workspace=@friday/core
 
 # Run tests with coverage
-pnpm test -- --coverage
+npm test -- --coverage
 ```
 
 ## Code Style
@@ -59,16 +59,16 @@ We use automated tools to maintain consistent code quality:
 
 ```bash
 # Lint code
-pnpm lint
+npm run lint
 
 # Fix linting issues
-pnpm lint:fix
+npm run lint:fix
 
 # Format code
-pnpm format
+npm run format
 
 # Check formatting
-pnpm format:check
+npm run format:check
 ```
 
 ### Style Guidelines
@@ -100,16 +100,16 @@ packages/
 
 ```bash
 # Unit tests
-pnpm test
+npm test
 
 # Integration tests
-pnpm test:integration
+npm test:integration
 
-# E2E tests
-pnpm test:e2e
+# Security + chaos tests
+npx vitest run tests/security/ tests/chaos/
 
 # Watch mode
-pnpm test -- --watch
+npm test -- --watch
 ```
 
 ### Test Coverage
@@ -214,9 +214,10 @@ See our [Roadmap](../development/roadmap.md) for current development priorities 
 
 ## Additional Resources
 
-- [Architecture Overview](../development/architecture.md)
-- [API Reference](../api/)
-- [Security Model](../security/security-model.md)
-- [Deployment Guide](../guides/deployment.md)
+- [Architecture Overview](docs/development/architecture.md)
+- [API Reference](docs/api/)
+- [Security Model](docs/security/security-model.md)
+- [Deployment Guide](docs/deployment.md)
+- [Troubleshooting Guide](docs/troubleshooting.md)
 
 Thank you for contributing to F.R.I.D.A.Y.!

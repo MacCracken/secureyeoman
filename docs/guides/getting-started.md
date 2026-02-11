@@ -1,11 +1,11 @@
 # Getting Started Guide
 
-> Quick start guide for installing and running F.R.I.D.A.Y.
+> How to install, configure, and run F.R.I.D.A.Y.
 
 ## Prerequisites
 
 - Node.js 20 LTS or later
-- pnpm (recommended) or npm
+- npm (project uses npm workspaces)
 - Git
 - API key for at least one AI provider (Anthropic, OpenAI, Google Gemini, or Ollama)
 
@@ -13,50 +13,14 @@
 
 ## Installation
 
-### Option 1: Quick Install (Recommended)
+### Option 1: From Source (Recommended)
 
 ```bash
-# Clone the repository
 git clone https://github.com/MacCracken/FRIDAY.git
 cd friday
-
-# Install dependencies
-pnpm install
-
-# Set environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# Start the system
-pnpm dev
-```
-
-### Option 2: Docker
-
-```bash
-# Clone the repository
-git clone https://github.com/MacCracken/FRIDAY.git
-cd friday
-
-# Create environment file
-cp .env.example .env
-# Edit .env with your configuration
-
-# Run with Docker Compose
-docker compose up
-```
-
-### Option 3: npm (if not using pnpm)
-
-```bash
-# Clone the repository
-git clone https://github.com/MacCracken/FRIDAY.git
-cd friday
-
-# Install dependencies
 npm install
 
-# Set environment variables
+# Create environment file
 cp .env.example .env
 # Edit .env with your configuration
 
@@ -64,51 +28,87 @@ cp .env.example .env
 npm run dev
 ```
 
+The dashboard will be available at http://localhost:3000 and the API at http://localhost:18789.
+
+### Option 2: Docker
+
+```bash
+git clone https://github.com/MacCracken/FRIDAY.git
+cd friday
+cp .env.example .env
+# Edit .env with your configuration
+
+# Run with Docker Compose
+docker compose up
+```
+
+Docker Compose starts two services:
+
+| Service | Port | Description |
+|---------|------|-------------|
+| `core` | 18789 | Gateway API + agent engine |
+| `dashboard` | 5173 | Vite dev server for the React dashboard |
+
+The core service runs as a non-root `friday` user with a persistent volume (`friday-data`) for SQLite databases.
+
+#### Manual Docker build
+
+```bash
+docker build -t friday .
+docker run -p 18789:18789 \
+  -e SECUREYEOMAN_SIGNING_KEY="your-32-char-signing-key" \
+  -e SECUREYEOMAN_TOKEN_SECRET="your-32-char-token-secret" \
+  -e SECUREYEOMAN_ENCRYPTION_KEY="your-32-char-encryption-key" \
+  -e SECUREYEOMAN_ADMIN_PASSWORD="your-32-char-admin-password" \
+  -e ANTHROPIC_API_KEY="sk-ant-..." \
+  friday
+```
+
 ---
 
 ## Configuration
 
-### Environment Variables
+### Required Environment Variables
 
-Create a `.env` file with the following required variables:
+All security keys must be at least 32 characters long. Generate your own -- do not reuse examples.
 
 ```bash
-# Required Security Keys (generate these yourself)
+# Required Security Keys
 SECUREYEOMAN_SIGNING_KEY="your-signing-key-at-least-32-characters-long"
 SECUREYEOMAN_TOKEN_SECRET="your-token-secret-at-least-32-characters-long"
 SECUREYEOMAN_ENCRYPTION_KEY="your-encryption-key-at-least-32-characters-long"
 SECUREYEOMAN_ADMIN_PASSWORD="your-admin-password-at-least-32-characters-long"
+```
 
-# Required: At least one AI provider
+| Variable | Purpose |
+|----------|---------|
+| `SECUREYEOMAN_SIGNING_KEY` | HMAC-SHA256 signing for the audit chain |
+| `SECUREYEOMAN_TOKEN_SECRET` | JWT token signing secret |
+| `SECUREYEOMAN_ENCRYPTION_KEY` | AES-256-GCM encryption at rest |
+| `SECUREYEOMAN_ADMIN_PASSWORD` | Admin login password for the dashboard and API |
+
+### AI Provider Keys
+
+At least one is required:
+
+```bash
 ANTHROPIC_API_KEY="sk-ant-..."
-# OR
+# or
 OPENAI_API_KEY="sk-..."
-# OR
+# or
 GOOGLE_GENERATIVE_AI_API_KEY="..."
-# OR (for local Ollama)
+# or (for local Ollama -- no key needed, just the URL)
 OLLAMA_BASE_URL="http://localhost:11434"
 ```
 
-### Optional Environment Variables
+### Optional Variables
 
 ```bash
-# Server Configuration
-PORT=18789
-HOST=127.0.0.1
-LOG_LEVEL=info
-
-# Dashboard
-DASHBOARD_PORT=3000
+PORT=18789              # Gateway port
+HOST=127.0.0.1          # Gateway bind address
+LOG_LEVEL=info          # trace|debug|info|warn|error
+DASHBOARD_PORT=3000     # Dashboard dev server port
 DASHBOARD_HOST=127.0.0.1
-
-# Database
-DATABASE_PATH="./data/friday.db"
-
-# Metrics
-PROMETHEUS_PORT=9090
-METRICS_ENABLED=true
-
-# Development
 NODE_ENV=development
 ```
 
@@ -153,17 +153,9 @@ dashboard:
   enabled: true
   port: 3000
   host: 127.0.0.1
-
-metrics:
-  enabled: true
-  export:
-    prometheus:
-      enabled: true
-      port: 9090
-    websocket:
-      enabled: true
-      port: 18790
 ```
+
+See [Configuration Reference](../configuration.md) for all available fields.
 
 ---
 
@@ -173,13 +165,13 @@ metrics:
 
 ```bash
 # Start core system and dashboard
-pnpm dev
+npm run dev
 
 # Or start core only
-pnpm dev:core
+npm run dev:core
 
 # Or start dashboard only (requires core running)
-pnpm dev:dashboard
+npm run dev:dashboard
 ```
 
 ### 2. Access the Dashboard
@@ -232,7 +224,7 @@ Expected response:
 ```json
 {
   "status": "healthy",
-  "timestamp": "2024-01-01T00:00:00.000Z",
+  "timestamp": "2026-02-11T00:00:00.000Z",
   "version": "0.1.0",
   "uptime": 3600
 }
@@ -241,9 +233,14 @@ Expected response:
 ### API Test
 
 ```bash
-# Get metrics
+# Login and get a token
+curl -X POST http://localhost:18789/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"password": "your-admin-password"}'
+
+# Fetch metrics with token
 curl http://localhost:18789/api/v1/metrics \
-  -H "Authorization: Bearer <your-jwt-token>"
+  -H "Authorization: Bearer <accessToken>"
 ```
 
 ### WebSocket Connection
@@ -262,9 +259,22 @@ ws.onopen = () => {
 
 ---
 
+## Running Tests
+
+```bash
+npm test              # All 963 tests across 59 files
+npm test -- --run     # Non-watch mode
+npm test -- --coverage
+
+# Security + chaos tests
+npx vitest run tests/security/ tests/chaos/
+```
+
+---
+
 ## Next Steps
 
-### 1. Configure AI Providers
+### Configure AI Providers
 
 Set up multiple AI providers for redundancy:
 
@@ -274,37 +284,17 @@ export OPENAI_API_KEY="sk-..."
 
 # Add Gemini
 export GOOGLE_GENERATIVE_AI_API_KEY="..."
-
-# Configure provider priority in config.yaml
-model:
-  provider: anthropic
-  fallback_providers: [openai, gemini, ollama]
 ```
 
-### 2. Set Up Integrations
+### Set Up Integrations
 
-Configure messaging platforms:
+Configure messaging platforms via the dashboard or API. See [Integration Setup Guide](integrations.md).
 
-```bash
-# Telegram Bot
-export TELEGRAM_BOT_TOKEN="..."
+### Customize Your Agent
 
-# Discord Bot
-export DISCORD_BOT_TOKEN="..."
-```
+Edit personality and skills in the dashboard Soul Manager page.
 
-### 3. Customize Your Agent
-
-Edit personality and skills in the dashboard or via API:
-
-```bash
-# Update agent name
-curl -X PUT http://localhost:18789/api/v1/soul/agent-name \
-  -H "Authorization: Bearer <token>" \
-  -d '{"name": "MyAssistant"}'
-```
-
-### 4. Explore the Dashboard
+### Explore the Dashboard
 
 - **Metrics View**: Real-time system performance
 - **Task History**: Browse and search past tasks
@@ -316,81 +306,35 @@ curl -X PUT http://localhost:18789/api/v1/soul/agent-name \
 
 ## Troubleshooting
 
-### Common Issues
-
-#### Port Already in Use
+### Port Already in Use
 
 ```bash
-# Check what's using the port
 lsof -i :18789
 lsof -i :3000
-
-# Kill the process or change the port
-export PORT=18790
-export DASHBOARD_PORT=3001
+# Kill the process or change ports via env vars
 ```
 
-#### Permission Denied
+### Database Locked
 
-```bash
-# Check file permissions
-ls -la ~/.secureyeoman/
+If another instance is running, stop it first. SQLite uses WAL mode and only supports a single writer.
 
-# Fix permissions if needed
-chmod 700 ~/.secureyeoman/
-chmod 600 ~/.secureyeoman/config.yaml
-```
+### AI Provider Connection Failed
 
-#### AI Provider Connection Failed
-
-```bash
-# Test API key
-curl -H "x-api-key: $ANTHROPIC_API_KEY" \
-  https://api.anthropic.com/v1/messages
-
-# Check network connectivity
-ping api.anthropic.com
-```
-
-#### Database Locked
-
-```bash
-# Check if another instance is running
-ps aux | grep secureyeoman
-
-# Remove lock file if needed
-rm ~/.secureyeoman/data/friday.db-wal
-```
-
-### Getting Help
-
-- **Documentation**: [Development Roadmap](../development/roadmap.md)
-- **Architecture**: [Architecture Overview](../development/architecture.md)
-- **Security**: [Security Model](../security/security-model.md)
+Verify your API key is valid and you have network access to the provider's API endpoint.
 
 ### Debug Mode
 
-Enable debug logging:
-
 ```bash
-export LOG_LEVEL=debug
-pnpm dev
+LOG_LEVEL=debug npm run dev
 ```
 
-Check logs for detailed error information.
+For more troubleshooting help, see the [Troubleshooting Guide](../troubleshooting.md).
 
 ---
 
 ## Production Deployment
 
-Key considerations for production:
-
-- Use environment variables instead of `.env` file
-- Enable TLS via `--tls` flag or config
-- Set up proper firewall rules
-- Configure backup and monitoring
-- Use process manager like PM2 or systemd
-- See `docs/configuration.md` for full configuration reference
+For production deployment considerations (systemd, Docker, reverse proxy, monitoring), see the [Deployment Guide](../deployment.md).
 
 ---
 
@@ -399,7 +343,5 @@ Key considerations for production:
 - [Configuration Reference](../configuration.md)
 - [API Reference](../api/)
 - [Security Model](../security/security-model.md)
-
----
-
-Welcome to F.R.I.D.A.Y.! Your secure digital assistant is ready to help. 🚀
+- [Deployment Guide](../deployment.md)
+- [Troubleshooting Guide](../troubleshooting.md)

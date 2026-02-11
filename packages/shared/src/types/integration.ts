@@ -13,6 +13,7 @@ export const PlatformSchema = z.enum([
   'telegram',
   'discord',
   'slack',
+  'github',
   'cli',
   'webhook',
 ]);
