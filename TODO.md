@@ -141,7 +141,7 @@ Timeline: ~12-16 weeks for MVP
 - [x] Working agent that can execute tasks via Claude API (+ OpenAI, Gemini, Ollama)
 - [x] Comprehensive logging with audit trail (audit chain + SQLite storage + query layer)
 - [x] Configuration system
-- [x] Test coverage > 80% (589 tests passing across 32 test files — all core modules covered)
+- [x] Test coverage > 80% (612 tests passing across 33 test files — all core modules covered)
 
 ---
 
@@ -151,7 +151,7 @@ Timeline: ~12-16 weeks for MVP
 
 **Duration**: 3-4 weeks
 
-**Status**: Sprints 1-3 complete. 589 tests passing across 32 files. Sandbox V1 (soft sandbox with path validation + resource tracking) done. Remaining: kernel-level enforcement (seccomp, Landlock via child process), macOS sandbox.
+**Status**: Sprints 1-3 complete. 612 tests passing across 33 files. Sandbox V1 (soft sandbox with path validation + resource tracking) done. Remaining: kernel-level enforcement (seccomp, Landlock via child process), macOS sandbox.
 
 ### Completed (built during P1)
 
@@ -424,7 +424,7 @@ Deferred:             P2-004 (mTLS), P2-009 (macOS sandbox), P2-014b (Redis)
 
 ### Tasks
 
-**Status**: ~95% complete. Full refactor done: App.tsx slimmed to routing-only (<30 lines), extracted DashboardLayout, StatusBar, NavigationTabs (memoized). ErrorBoundary wraps route content. ConfirmDialog replaces window.confirm(). Theme toggle (dark/light with localStorage persistence) working. Advanced task filtering (status + type). Responsive mobile layout with hamburger nav and stacked cards. Session timeout warning. All icon buttons have aria-labels. React Query optimized: global refetchInterval removed, per-query intervals set. ResourceMonitor accumulates real memory history. All 589 tests passing.
+**Status**: ~98% complete. Full refactor done: App.tsx slimmed to routing-only (<30 lines), extracted DashboardLayout, StatusBar, NavigationTabs (memoized). ErrorBoundary wraps route content. ConfirmDialog replaces window.confirm(). Theme toggle (dark/light with localStorage persistence) working. Advanced task filtering (status + type). Responsive mobile layout with hamburger nav and stacked cards. Session timeout warning. All icon buttons have aria-labels. React Query optimized: global refetchInterval removed, per-query intervals set. ResourceMonitor accumulates real memory history. ConnectionManager fully interactive with connect forms, start/stop/delete controls, error retry, and relative time display. All 612 tests passing.
 
 #### Project Setup
 - [x] **P3-001**: Initialize React project
@@ -488,13 +488,17 @@ Deferred:             P2-004 (mTLS), P2-009 (macOS sandbox), P2-014b (Redis)
   - [ ] Export and search
   - *Wired to live data via authenticated API calls*
 
-- [~] **P3-009**: ConnectionManager component
-  - [x] Platform cards with status (skeleton — coming-soon state)
-  - [ ] Connection wizard (blocked by P4-001/P4-002)
-  - [ ] Credential input forms (blocked by P4-001)
-  - [ ] Test connection button (blocked by P4-001)
-  - [x] Activity indicators (placeholder)
-  - [x] Error display (placeholder)
+- [x] **P3-009**: ConnectionManager component
+  - [x] Platform cards with status
+  - [x] Connect form with platform-specific fields (token, app token, webhook URL, secret)
+  - [x] Credential input forms (inline form replaces card on click)
+  - [x] Start/Stop controls on integration cards
+  - [x] Delete integration with confirmation
+  - [x] Error state with Retry button
+  - [x] Relative time display for last message activity
+  - [x] Loading states disable buttons during mutations
+  - [x] All mutations invalidate queries for live updates
+  - [ ] Test connection button (deferred)
 
 - [x] **P3-010**: ResourceMonitor component *(V1 — real history)*
   - [x] CPU/Memory gauges
@@ -570,7 +574,7 @@ Deferred:             P2-004 (mTLS), P2-009 (macOS sandbox), P2-014b (Redis)
 - [x] Real-time metrics visualization
 - [x] Task history browser *(live data + status/type filtering)*
 - [x] Security event monitor *(live data via authenticated API)*
-- [~] Connection management UI *(live status cards; config wizard blocked by P4-003+)*
+- [x] Connection management UI *(connect forms, start/stop/delete controls, live status)*
 - [x] Soul/personality management pages
 - [x] Responsive design (mobile hamburger nav, stacked cards, scrollable tables)
 
@@ -582,7 +586,7 @@ Deferred:             P2-004 (mTLS), P2-009 (macOS sandbox), P2-014b (Redis)
 
 **Duration**: 3-4 weeks
 
-**Status**: P4-001 and P4-002 complete. Ready for platform adapters (P4-003+).
+**Status**: P4-001, P4-002, and P4-003 (Telegram) complete. Ready for Discord (P4-004) and Slack (P4-005).
 
 ### Tasks
 
@@ -610,12 +614,16 @@ Deferred:             P2-004 (mTLS), P2-009 (macOS sandbox), P2-014b (Redis)
   - [ ] Reply threading and context preservation (deferred to P4-003+)
 
 #### Messaging Platforms
-- [ ] **P4-003**: Telegram integration
-  - Telegram Bot API client (grammy or node-telegram-bot-api)
-  - Webhook handler (Fastify route) + polling fallback
-  - Markdown message formatting
-  - Inline keyboards for skill/personality selection
-  - `/start`, `/help`, `/status` commands
+- [x] **P4-003**: Telegram integration
+  - [x] `TelegramIntegration` class implementing `Integration` interface
+  - [x] grammy Bot API with long-polling (webhook support deferred)
+  - [x] Markdown message formatting (`parse_mode: 'Markdown'`)
+  - [x] `/start`, `/help`, `/status` command handlers
+  - [x] Inbound text message normalization to `UnifiedMessage`
+  - [x] Factory registered in `SecureYeoman.initialize()`
+  - [x] 23 unit tests (`telegram.test.ts`)
+  - [ ] Inline keyboards for skill/personality selection (deferred)
+  - [ ] Photo/document/voice attachment handling (deferred)
 
 - [ ] **P4-004**: Discord integration
   - Discord.js v14 wrapper
