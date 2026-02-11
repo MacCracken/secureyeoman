@@ -2,7 +2,7 @@
 
 > Tracking open and deferred work items. For completed work, see [CHANGELOG.md](CHANGELOG.md).
 
-**Project Status**: Phases 1-5 complete. Security hardening complete. 1000+ tests across core and dashboard. All core features implemented.
+**Project Status**: v1.0.0 released. Phases 1-5 complete. Security hardening complete. 1000+ tests across core and dashboard. All core features implemented.
 
 ---
 

@@ -173,6 +173,7 @@ All core modules maintain >80% coverage thresholds.
 | Phase 3: Dashboard | 5 weeks | Complete |
 | Phase 4: Integrations | 4 weeks | Complete |
 | Phase 5: Production | 3 weeks | Complete |
+| **v1.0.0 MVP Release** | — | **Released 2026-02-11** |
 
 ---
 

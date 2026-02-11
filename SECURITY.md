@@ -4,8 +4,8 @@
 
 | Version | Supported          | Security Updates |
 |---------|--------------------|------------------|
-| 0.1.x   | :white_check_mark: | Yes              |
-| < 0.1.0 | :x:                | No               |
+| 1.0.x   | :white_check_mark: | Yes              |
+| < 1.0.0 | :x:                | No               |
 
 ## Reporting a Vulnerability
 
