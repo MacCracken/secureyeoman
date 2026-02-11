@@ -2,54 +2,57 @@
 
 > Tracking open and deferred work items. For completed work, see [CHANGELOG.md](CHANGELOG.md).
 
-**Project Status**: Phases 1-5 complete. 963 tests across 59 test files. All core features implemented.
+**Project Status**: Phases 1-5 complete. Security hardening complete. 1000+ tests across core and dashboard. All core features implemented.
 
 ---
 
 ## Deferred Dashboard Features
 
+- [x] Search bar — global search across tasks and security events with Ctrl+K shortcut
+- [x] Date range picker for TaskHistory — presets + custom date inputs
+- [x] Export functionality for TaskHistory — CSV and JSON export
+- [x] User profile dropdown — avatar dropdown with role, theme, sign out
+- [x] Notification bell — WebSocket-driven in-app notifications
+- [x] User preferences state management — React context + localStorage
+- [x] Security settings page — RBAC roles, rate limits, audit chain
+- [x] Notification settings page — event type toggles, sound on/off
+- [x] Log retention settings page — audit stats and retention config
+- [x] Message queue for offline WebSocket — buffering, reconnect banner
+- [x] Event acknowledgment and investigation workflow
 - [ ] Storybook for component development
-- [ ] Date range picker for TaskHistory
-- [ ] Export functionality for TaskHistory
-- [ ] User profile dropdown
-- [ ] Notification bell
-- [ ] Search bar
-- [ ] Test connection button for integrations
-- [ ] Security settings page (RBAC defaults, rate limit config)
-- [ ] Notification settings page
-- [ ] Log retention settings page
-- [ ] Message queue for offline WebSocket
-- [ ] User preferences state management
+- [ ] Test connection button for integrations (requires backend endpoint)
 - [ ] Node detail expansion in MetricsGraph
-- [ ] Event acknowledgment and investigation workflow in SecurityEvents
 
-## Deferred Security Features
+## Completed Security Hardening
 
-- [ ] Retention policy enforcement for audit logs
-- [ ] Encrypted config file support (config loader consuming SecretStore)
-- [ ] seccomp-bpf filter creation (requires native bindings)
-- [ ] Namespace isolation (PID, network, mount)
+- [x] Audit log retention policy enforcement — `enforceRetention()` with age and count limits
+- [x] Encrypted config file support — `.enc.yaml` detection, encrypt/decrypt CLI, round-trip tested
+- [x] seccomp-bpf filter creation — syscall allow/block lists, kernel detection, graceful fallback
+- [x] Namespace isolation — PID/network/mount via `unshare`, capability detection
 
-## Deferred Integration Features
+## Completed Production Features
 
-- [ ] Plugin loader with dynamic import (currently manual registration)
-- [ ] Zod-validated per-plugin config schema
-- [ ] Media handling (images, files, voice) with size limits
-- [ ] Reply threading and context preservation
+- [x] Remember me toggle — extended JWT (30-day), login checkbox, localStorage persistence
+- [x] Password reset flow — `POST /auth/reset-password`, session invalidation, audit logging
+- [x] 2FA (TOTP) — RFC 6238, setup/verify flow, recovery codes, login integration
+- [x] Release notes generation — conventional commit parser, `npm run release-notes`
+
+## Completed Integration Features
+
+- [x] Plugin loader with dynamic import — directory scanning, export validation
+- [x] Zod-validated per-plugin config schema — schema registration, descriptive errors
+- [x] Media handling — size limits, temp file management, content scanner hook
+- [x] Reply threading and context preservation — thread-scoped conversation contexts
+
+## Remaining Integration Features
+
 - [ ] Telegram inline keyboards, photo/document/voice attachments
 - [ ] Discord thread support for multi-turn conversations
 - [ ] Slack interactive messages (blocks, modals)
-- [ ] WhatsApp integration (P4-006)
-- [ ] Calendar integration (P4-008)
+- [ ] WhatsApp integration
+- [ ] Calendar integration
 - [ ] GitHub PR review automation via AI
 - [ ] GitHub code search and file browsing
-
-## Deferred Production Features
-
-- [ ] Release notes generation from conventional commits
-- [ ] Remember me toggle on login
-- [ ] Password reset flow
-- [ ] 2FA support
 
 ---
 
@@ -57,10 +60,13 @@
 
 ### v1.1 (Post-MVP)
 
+- [ ] HTML prompt injection protection — DOMPurify sanitization for user/LLM content
 - [ ] MCP protocol support (Model Context Protocol)
 - [ ] Skill marketplace — browse and install community skills
 - [ ] Custom dashboards — user-configurable layouts
 - [ ] Outbound webhooks for events
+- [ ] CLI enhancements — expanded command set, interactive mode, plugin management commands
+- [ ] CLI updates — config validation command, health check, integration management from CLI
 
 ### v1.2
 

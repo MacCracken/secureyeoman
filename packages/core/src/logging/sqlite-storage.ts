@@ -297,6 +297,42 @@ export class SQLiteAuditStorage implements AuditChainStorage {
     };
   }
 
+  /**
+   * Enforce retention policy by purging old entries.
+   * Returns the count of deleted entries.
+   */
+  enforceRetention(opts: { maxAgeDays?: number; maxEntries?: number } = {}): number {
+    const maxAgeDays = opts.maxAgeDays ?? 90;
+    const maxEntries = opts.maxEntries ?? 1_000_000;
+    let totalDeleted = 0;
+
+    // 1. Delete entries older than maxAgeDays
+    const cutoff = Date.now() - maxAgeDays * 86_400_000;
+    const ageResult = this.db
+      .prepare('DELETE FROM audit_entries WHERE timestamp < ?')
+      .run(cutoff);
+    totalDeleted += ageResult.changes;
+
+    // 2. If entry count exceeds maxEntries, delete oldest beyond limit
+    const countRow = this.db
+      .prepare('SELECT COUNT(*) as cnt FROM audit_entries')
+      .get() as { cnt: number };
+
+    if (countRow.cnt > maxEntries) {
+      const excess = countRow.cnt - maxEntries;
+      const overflowResult = this.db
+        .prepare(
+          `DELETE FROM audit_entries WHERE rowid IN (
+            SELECT rowid FROM audit_entries ORDER BY rowid ASC LIMIT ?
+          )`
+        )
+        .run(excess);
+      totalDeleted += overflowResult.changes;
+    }
+
+    return totalDeleted;
+  }
+
   close(): void {
     this.db.close();
   }

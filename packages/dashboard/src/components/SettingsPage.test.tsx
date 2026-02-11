@@ -13,6 +13,7 @@ vi.mock('../api/client', () => ({
   createApiKey: vi.fn(),
   revokeApiKey: vi.fn(),
   fetchSoulConfig: vi.fn(),
+  fetchAuditStats: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -22,6 +23,7 @@ const mockUpdateAgentName = vi.mocked(api.updateAgentName);
 const mockFetchApiKeys = vi.mocked(api.fetchApiKeys);
 const mockCreateApiKey = vi.mocked(api.createApiKey);
 const mockFetchSoulConfig = vi.mocked(api.fetchSoulConfig);
+const mockFetchAuditStats = vi.mocked(api.fetchAuditStats);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -50,6 +52,7 @@ describe('SettingsPage', () => {
     mockFetchAgentName.mockResolvedValue({ agentName: 'Friday' });
     mockFetchApiKeys.mockResolvedValue({ keys: [] });
     mockFetchSoulConfig.mockResolvedValue(createSoulConfig());
+    mockFetchAuditStats.mockResolvedValue({ totalEntries: 0, chainValid: true });
   });
 
   it('renders the Settings heading', async () => {

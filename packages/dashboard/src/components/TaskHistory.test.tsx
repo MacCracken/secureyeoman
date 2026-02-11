@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TaskHistory } from './TaskHistory';
 import { createTaskList } from '../test/mocks';
@@ -27,9 +28,11 @@ function createQueryClient() {
 function renderComponent() {
   const qc = createQueryClient();
   return render(
-    <QueryClientProvider client={qc}>
-      <TaskHistory />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <TaskHistory />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
@@ -161,5 +164,29 @@ describe('TaskHistory', () => {
 
     await screen.findByText('Run deployment script');
     expect(screen.queryByText(/Page/)).not.toBeInTheDocument();
+  });
+
+  // ── Date Range Tests ────────────────────────────────────────────
+
+  it('renders date range preset buttons', async () => {
+    renderComponent();
+    expect(await screen.findByText('Last hour')).toBeInTheDocument();
+    expect(screen.getByText('Last 24h')).toBeInTheDocument();
+    expect(screen.getByText('Last 7 days')).toBeInTheDocument();
+    expect(screen.getByText('All time')).toBeInTheDocument();
+  });
+
+  it('renders from and to date inputs', async () => {
+    renderComponent();
+    expect(await screen.findByLabelText('From date')).toBeInTheDocument();
+    expect(screen.getByLabelText('To date')).toBeInTheDocument();
+  });
+
+  // ── Export Tests ─────────────────────────────────────────────────
+
+  it('renders export CSV and JSON buttons', async () => {
+    renderComponent();
+    expect(await screen.findByLabelText('Export CSV')).toBeInTheDocument();
+    expect(screen.getByLabelText('Export JSON')).toBeInTheDocument();
   });
 });

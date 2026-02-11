@@ -1,11 +1,12 @@
 /**
  * Task History Component
  *
- * Displays historical task execution with filtering and pagination
+ * Displays historical task execution with filtering, date range, pagination, and export
  */
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import {
   Clock,
   CheckCircle,
@@ -15,6 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  Download,
+  Calendar,
 } from 'lucide-react';
 import { fetchTasks } from '../api/client';
 import type { Task } from '../types';
@@ -39,18 +42,75 @@ const STATUS_COLORS: Record<string, string> = {
 
 const TYPE_OPTIONS = ['execute', 'query', 'file', 'network', 'system'] as const;
 
+interface DatePreset {
+  label: string;
+  getRange: () => { from: string; to: string };
+}
+
+const DATE_PRESETS: DatePreset[] = [
+  {
+    label: 'Last hour',
+    getRange: () => ({
+      from: new Date(Date.now() - 3600000).toISOString(),
+      to: new Date().toISOString(),
+    }),
+  },
+  {
+    label: 'Last 24h',
+    getRange: () => ({
+      from: new Date(Date.now() - 86400000).toISOString(),
+      to: new Date().toISOString(),
+    }),
+  },
+  {
+    label: 'Last 7 days',
+    getRange: () => ({
+      from: new Date(Date.now() - 604800000).toISOString(),
+      to: new Date().toISOString(),
+    }),
+  },
+  {
+    label: 'All time',
+    getRange: () => ({ from: '', to: '' }),
+  },
+];
+
 export function TaskHistory() {
-  const [statusFilter, setStatusFilter] = useState<string>('');
-  const [typeFilter, setTypeFilter] = useState<string>('');
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const statusFilter = searchParams.get('status') ?? '';
+  const typeFilter = searchParams.get('type') ?? '';
+  const dateFrom = searchParams.get('from') ?? '';
+  const dateTo = searchParams.get('to') ?? '';
   const [page, setPage] = useState(0);
+  const [datePreset, setDatePreset] = useState<string>('Last 24h');
   const pageSize = 10;
 
+  const updateParams = useCallback(
+    (updates: Record<string, string>) => {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        for (const [key, value] of Object.entries(updates)) {
+          if (value) {
+            next.set(key, value);
+          } else {
+            next.delete(key);
+          }
+        }
+        return next;
+      });
+    },
+    [setSearchParams]
+  );
+
   const { data, isLoading } = useQuery({
-    queryKey: ['tasks', statusFilter, typeFilter, page],
+    queryKey: ['tasks', statusFilter, typeFilter, dateFrom, dateTo, page],
     queryFn: () =>
       fetchTasks({
         status: statusFilter || undefined,
         type: typeFilter || undefined,
+        from: dateFrom || undefined,
+        to: dateTo || undefined,
         limit: pageSize,
         offset: page * pageSize,
       }),
@@ -62,12 +122,74 @@ export function TaskHistory() {
   const totalPages = Math.ceil(total / pageSize);
 
   const resetFilters = () => {
-    setStatusFilter('');
-    setTypeFilter('');
+    setSearchParams({});
+    setPage(0);
+    setDatePreset('Last 24h');
+  };
+
+  const hasFilters = statusFilter || typeFilter || dateFrom || dateTo;
+
+  const handleDatePreset = (preset: DatePreset) => {
+    const { from, to } = preset.getRange();
+    setDatePreset(preset.label);
+    updateParams({ from, to });
     setPage(0);
   };
 
-  const hasFilters = statusFilter || typeFilter;
+  const handleCustomDate = (field: 'from' | 'to', value: string) => {
+    const iso = value ? new Date(value).toISOString() : '';
+    updateParams({ [field]: iso });
+    setDatePreset('');
+    setPage(0);
+  };
+
+  // ── Export ──────────────────────────────────────────────────
+  const exportData = useCallback(
+    async (format: 'csv' | 'json') => {
+      const allData = await fetchTasks({
+        status: statusFilter || undefined,
+        type: typeFilter || undefined,
+        from: dateFrom || undefined,
+        to: dateTo || undefined,
+        limit: 10000,
+        offset: 0,
+      });
+
+      let content: string;
+      let mimeType: string;
+      let ext: string;
+
+      if (format === 'json') {
+        content = JSON.stringify(allData.tasks, null, 2);
+        mimeType = 'application/json';
+        ext = 'json';
+      } else {
+        const headers = ['ID', 'Name', 'Type', 'Status', 'Duration (ms)', 'Created At'];
+        const rows = allData.tasks.map((t) => [
+          t.id,
+          `"${t.name.replace(/"/g, '""')}"`,
+          t.type,
+          t.status,
+          t.durationMs?.toString() ?? '',
+          new Date(t.createdAt).toISOString(),
+        ]);
+        content = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n');
+        mimeType = 'text/csv';
+        ext = 'csv';
+      }
+
+      const blob = new Blob([content], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tasks-export-${new Date().toISOString().slice(0, 10)}.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },
+    [statusFilter, typeFilter, dateFrom, dateTo]
+  );
 
   return (
     <div className="space-y-4">
@@ -81,7 +203,7 @@ export function TaskHistory() {
           <select
             value={statusFilter}
             onChange={(e) => {
-              setStatusFilter(e.target.value);
+              updateParams({ status: e.target.value });
               setPage(0);
             }}
             className="px-3 py-1.5 text-sm border rounded-md bg-background"
@@ -100,7 +222,7 @@ export function TaskHistory() {
           <select
             value={typeFilter}
             onChange={(e) => {
-              setTypeFilter(e.target.value);
+              updateParams({ type: e.target.value });
               setPage(0);
             }}
             className="px-3 py-1.5 text-sm border rounded-md bg-background"
@@ -123,6 +245,59 @@ export function TaskHistory() {
               Clear
             </button>
           )}
+        </div>
+      </div>
+
+      {/* Date Range Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+        <div className="flex items-center gap-2">
+          <Calendar className="w-4 h-4 text-muted-foreground" />
+          {DATE_PRESETS.map((preset) => (
+            <button
+              key={preset.label}
+              onClick={() => handleDatePreset(preset)}
+              className={`px-2 py-1 text-xs rounded-md border transition-colors ${
+                datePreset === preset.label
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'bg-background hover:bg-muted border-border'
+              }`}
+            >
+              {preset.label}
+            </button>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            type="date"
+            value={dateFrom ? dateFrom.slice(0, 10) : ''}
+            onChange={(e) => handleCustomDate('from', e.target.value)}
+            className="px-2 py-1 text-xs border rounded-md bg-background"
+            aria-label="From date"
+          />
+          <span className="text-xs text-muted-foreground">to</span>
+          <input
+            type="date"
+            value={dateTo ? dateTo.slice(0, 10) : ''}
+            onChange={(e) => handleCustomDate('to', e.target.value)}
+            className="px-2 py-1 text-xs border rounded-md bg-background"
+            aria-label="To date"
+          />
+        </div>
+        <div className="flex items-center gap-2 ml-auto">
+          <button
+            onClick={() => void exportData('csv')}
+            className="btn-ghost px-2 py-1 text-xs flex items-center gap-1"
+            aria-label="Export CSV"
+          >
+            <Download className="w-3 h-3" /> CSV
+          </button>
+          <button
+            onClick={() => void exportData('json')}
+            className="btn-ghost px-2 py-1 text-xs flex items-center gap-1"
+            aria-label="Export JSON"
+          >
+            <Download className="w-3 h-3" /> JSON
+          </button>
         </div>
       </div>
 

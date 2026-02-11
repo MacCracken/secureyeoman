@@ -5,6 +5,9 @@ import { useAuth } from '../hooks/useAuth';
 
 export function LoginPage() {
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(() =>
+    localStorage.getItem('friday_remember_me') === 'true'
+  );
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
@@ -18,7 +21,8 @@ export function LoginPage() {
     setIsSubmitting(true);
 
     try {
-      await login(password);
+      localStorage.setItem('friday_remember_me', String(rememberMe));
+      await login(password, rememberMe);
       navigate('/', { replace: true });
     } catch (err) {
       setError(
@@ -71,6 +75,17 @@ export function LoginPage() {
                          disabled:opacity-50"
             />
           </div>
+
+          <label className="flex items-center gap-2 text-sm text-foreground cursor-pointer">
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              disabled={isSubmitting}
+              className="rounded border-input"
+            />
+            Remember me
+          </label>
 
           <button
             type="submit"

@@ -1,6 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { loadConfig, getSecret, requireSecret, validateSecrets } from './loader.js';
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
+import { stringify as stringifyYaml } from 'yaml';
+import { loadConfig, getSecret, requireSecret, validateSecrets, encryptConfigFile, decryptConfigFile } from './loader.js';
 
 describe('loadConfig', () => {
   const originalEnv = process.env;
@@ -309,5 +313,68 @@ describe('validateSecrets', () => {
       expect(message).toContain(config.model.apiKeyEnv);
       expect(message).toContain(config.gateway.auth.tokenSecret);
     }
+  });
+});
+
+describe('encrypted config', () => {
+  const MASTER_KEY = 'test-master-key-at-least-16chars';
+  let tmpDir: string;
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(join(tmpdir(), 'friday-config-'));
+  });
+
+  afterEach(() => {
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it('should encrypt and decrypt a config file round-trip', () => {
+    const yamlPath = join(tmpDir, 'config.yaml');
+    const encPath = join(tmpDir, 'config.enc.yaml');
+
+    const partialConfig = { core: { environment: 'production' as const } };
+    writeFileSync(yamlPath, stringifyYaml(partialConfig), 'utf-8');
+
+    encryptConfigFile(yamlPath, encPath, MASTER_KEY);
+    const decrypted = decryptConfigFile(encPath, MASTER_KEY);
+    expect(decrypted).toContain('production');
+  });
+
+  it('should reject invalid master key on decrypt', () => {
+    const yamlPath = join(tmpDir, 'config.yaml');
+    const encPath = join(tmpDir, 'config.enc.yaml');
+
+    writeFileSync(yamlPath, stringifyYaml({ core: { logLevel: 'debug' } }), 'utf-8');
+    encryptConfigFile(yamlPath, encPath, MASTER_KEY);
+
+    expect(() => decryptConfigFile(encPath, 'wrong-key-wrong-key!')).toThrow();
+  });
+
+  it('should load encrypted config via loadConfig', () => {
+    const yamlPath = join(tmpDir, 'secureyeoman.yaml');
+    const encPath = join(tmpDir, 'secureyeoman.enc.yaml');
+
+    writeFileSync(yamlPath, stringifyYaml({ core: { environment: 'staging' as const } }), 'utf-8');
+    encryptConfigFile(yamlPath, encPath, MASTER_KEY);
+
+    const config = loadConfig({
+      configPath: encPath,
+      skipEnv: true,
+      configMasterKey: MASTER_KEY,
+    });
+
+    expect(config.core.environment).toBe('staging');
+  });
+
+  it('should fall back to plain YAML when no .enc extension', () => {
+    const yamlPath = join(tmpDir, 'config.yaml');
+    writeFileSync(yamlPath, stringifyYaml({ core: { environment: 'production' as const } }), 'utf-8');
+
+    const config = loadConfig({
+      configPath: yamlPath,
+      skipEnv: true,
+    });
+
+    expect(config.core.environment).toBe('production');
   });
 });

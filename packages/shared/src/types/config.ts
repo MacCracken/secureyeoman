@@ -95,6 +95,8 @@ const AuditConfigSchema = z.object({
   enabled: z.boolean().default(true),
   chainVerification: z.enum(['hourly', 'daily', 'never']).default('hourly'),
   signingKeyEnv: EnvVarRefSchema.default('SECUREYEOMAN_SIGNING_KEY'),
+  retentionDays: z.number().int().min(1).default(90),
+  maxEntries: z.number().int().min(1000).default(1_000_000),
 }).default({});
 
 // Logging configuration

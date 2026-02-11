@@ -6,6 +6,49 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## Security Hardening & Production Features
+
+### Added
+- **Audit log retention** — `enforceRetention()` on SQLiteAuditStorage with age-based (`maxAgeDays`) and count-based (`maxEntries`) purging; configurable via `security.audit.retentionDays` and `maxEntries` in shared config schema (4 tests)
+- **Password reset** — `POST /api/v1/auth/reset-password` endpoint; validates current password, enforces 32-char minimum, rotates token secret to invalidate all sessions, audit logged (4 tests)
+- **Remember me toggle** — extended JWT expiry (30-day access / 60-day refresh) when `rememberMe: true`; login checkbox with localStorage persistence on dashboard (2 tests)
+- **Encrypted config files** — `.enc.yaml` detection, `encryptConfigFile()` / `decryptConfigFile()` using AES-256-GCM, auto-discovery of encrypted variants in `loadConfig()` (4 tests)
+- **Plugin loader** — `PluginLoader` class scanning directories for integration plugins; validates `platform` + `createIntegration` exports; supports `.js`, `.mjs`, and directory plugins (5 tests)
+- **Zod plugin config** — `configSchema` on `Integration` interface; `IntegrationManager.registerPlatform()` accepts optional schema; `createIntegration()` validates config with descriptive errors (4 tests)
+- **2FA (TOTP)** — RFC 6238 implementation using Node.js crypto; setup/verify flow, ±1 step clock drift tolerance, 8 recovery codes, `otpauth://` URI builder; login returns `requiresTwoFactor` when enabled (16 tests)
+- **Reply threading** — thread-scoped conversation context via `threadId` in `ConversationManager`; independent context per thread with stale thread expiry (3 tests)
+- **Media handling** — `MediaHandler` class with size limit enforcement, temp file management, content scanner hook, base64 and URL download support (7 tests)
+- **Release notes** — `scripts/generate-release-notes.ts` conventional commit parser with type grouping and contributor list; `npm run release-notes` script (7 tests)
+- **seccomp-bpf** — syscall allow/block lists, kernel seccomp mode detection via `/proc/PID/status`, `isSyscallAllowed()` classifier (6 tests)
+- **Namespace isolation** — `unshare`-based PID/network/mount namespace isolation, capability detection, `runInNamespace()` with graceful fallback on non-Linux (6 tests)
+
+### Improved
+- **Core test coverage** — 918 tests passing (up from ~850), 1000+ total with dashboard
+
+---
+
+## Dashboard Polish & Deferred Features
+
+### Added
+- **Search bar** — `SearchBar.tsx` with global search across tasks and security events, debounced input (300ms), category-grouped dropdown results, `Ctrl+K`/`Cmd+K` keyboard shortcut, integrated into DashboardLayout header
+- **Date range picker** — TaskHistory now supports time-based filtering with presets (Last hour, Last 24h, Last 7 days, All time) plus custom date inputs; filters persisted in URL search params for shareability; `from`/`to` query parameters wired to API
+- **Export functionality** — TaskHistory CSV and JSON export buttons; client-side generation respecting all active filters (status, type, date range); browser download via `Blob` + `URL.createObjectURL`
+- **User profile dropdown** — Replaced plain logout/theme buttons in `StatusBar` with a dropdown menu showing username/role (parsed from JWT), theme toggle, and sign out; click-outside dismiss handler
+- **Notification bell** — `NotificationBell.tsx` subscribing to WebSocket `security` and `tasks` channels; unread count badge; dropdown with recent notifications; mark as read on click; clear all; read state persisted in `localStorage`
+- **User preferences** — `usePreferences.tsx` React context + hook with `localStorage` persistence; typed schema for theme, default filters, refresh interval, notification preferences, table page size
+- **Security settings page** — `SecuritySettings.tsx` at `/security-settings` route displaying RBAC roles/permissions (from `GET /auth/roles`), rate limiting stats, audit chain status/verification; navigation tab added
+- **Notification settings** — `NotificationSettings.tsx` with toggles for enable/disable, sound on/off, and per-event-type checkboxes; integrated into SettingsPage
+- **Log retention settings** — `LogRetentionSettings.tsx` showing total audit entries, DB size estimate, oldest entry; display-only retention policy config; integrated into SettingsPage
+- **WebSocket message queue** — `useWebSocket.ts` enhanced with offline message buffering (max 100), automatic channel re-subscription on reconnect, `reconnecting` state; "Reconnecting..." banner in DashboardLayout
+- **Event acknowledgment** — SecurityEvents now supports per-event Acknowledge button and Acknowledge All; investigation panel with full event metadata on click; acknowledged state persisted in `localStorage`
+- **API client extensions** — `fetchTasks` now supports `from`/`to` date params; added `fetchRoles()` and `fetchAuditStats()` endpoints
+
+### Improved
+- **Dashboard test coverage** — 82 tests across 9 test files (up from 57 across 5 files); new test files for SearchBar, NotificationBell, NotificationSettings, SecuritySettings
+- **Security** — Added HTML prompt injection protection to v1.1 roadmap (DOMPurify sanitization for user/LLM-generated content)
+
+---
+
 ## Phase Pre-MVP: Performance Optimization
 
 ### Improved
