@@ -210,7 +210,7 @@ For security issues, please see our [Security Policy](SECURITY.md).
 
 ## Development Phases
 
-See our [Roadmap](../development/roadmap.md) for current development priorities and phases.
+See our [Roadmap](docs/development/roadmap.md) for current development priorities and phases.
 
 ## Additional Resources
 

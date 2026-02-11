@@ -2,7 +2,29 @@
 
 All notable changes to F.R.I.D.A.Y. are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+---
+
+## [1.0.0] — 2026-02-11
+
+### MVP Release
+
+F.R.I.D.A.Y. v1.0.0 marks the first stable release of the **Fully Responsive Integrated Digital Assistant Yeoman** — a secure, local-first AI assistant with enterprise-grade protection and comprehensive observability.
+
+**Highlights:**
+
+- **5 development phases complete** — Foundation, Security, Infrastructure, Dashboard, Integrations, and Production Hardening
+- **Enterprise security** — RBAC, JWT/API key auth, AES-256-GCM encryption, sandboxed execution, 2FA (TOTP), audit trails with cryptographic integrity
+- **Multi-provider AI** — Anthropic Claude, OpenAI GPT, Google Gemini, and Ollama with model fallback chains
+- **React dashboard** — Real-time monitoring, task management, personality editor, skills manager, security events, responsive design
+- **Platform integrations** — Telegram, Discord, Slack, and GitHub with plugin architecture
+- **Production ready** — Docker packaging, CI/CD pipeline, Prometheus/Grafana observability, load/security/chaos testing
+- **1000+ tests** across 59+ files with >80% coverage thresholds
+- **0 npm vulnerabilities**
+
+All features from the pre-release development phases below are included in this release.
 
 ---
 
@@ -168,4 +190,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-*Last updated: February 2026*
+*Last updated: February 11, 2026*

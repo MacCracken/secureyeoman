@@ -225,7 +225,7 @@ Expected response:
 {
   "status": "healthy",
   "timestamp": "2026-02-11T00:00:00.000Z",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "uptime": 3600
 }
 ```

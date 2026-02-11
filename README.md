@@ -2,11 +2,12 @@
 
 > **F**ully **R**esponsive **I**ntegrated **D**igital **A**ssistant **Y**eoman
 
+[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](https://github.com/MacCracken/FRIDAY/releases/tag/v1.0.0)
 [![CI](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 963](https://img.shields.io/badge/Tests-963-brightgreen.svg)]()
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
+[![Tests: 1000+](https://img.shields.io/badge/Tests-1000%2B-brightgreen.svg)]()
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
@@ -47,7 +48,7 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 | **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama (local), fallback chains |
 | **User Experience** | React dashboard, personality editor, skills manager, WebSocket real-time updates |
 | **Integrations** | Telegram, Discord, Slack, GitHub — plugin architecture with message routing |
-| **Development** | TypeScript, 963 tests across 59 files, Docker support, CI/CD pipeline |
+| **Development** | TypeScript, 1000+ tests across 59+ files, Docker support, CI/CD pipeline |
 
 ---
 
@@ -135,7 +136,7 @@ curl -X POST http://localhost:18789/api/v1/tasks \
 
 ### Running Tests
 ```bash
-# All tests (963 across 59 files)
+# All tests (1000+ across 59+ files)
 npm test
 
 # Coverage
