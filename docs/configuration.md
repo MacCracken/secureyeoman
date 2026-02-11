@@ -284,6 +284,52 @@ Each entry in the `fallbacks` array configures an alternative model to try when 
 
 ---
 
+### logging
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `level` | enum | `"info"` | `trace`, `debug`, `info`, `warn`, `error` |
+| `format` | enum | `"json"` | `json` or `pretty` |
+
+### logging.output[] (file writer)
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `type` | enum | — | `file` or `stdout` |
+| `path` | string | — | Log file path (for `file` type) |
+| `rotation` | enum | `"daily"` | `hourly`, `daily`, or `weekly` |
+| `retention` | string | `"30d"` | Retention period |
+| `maxSize` | string | `"100MB"` | Max file size before rotation |
+
+### Log Rotation
+
+The `LogRotator` supports size-based and age-based rotation with optional gzip compression:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `maxSizeBytes` | number | `104857600` | Max log file size in bytes (100MB) |
+| `maxAgeDays` | number | `30` | Delete rotated files older than this |
+| `retentionDays` | number | `90` | Total retention period for rotated files |
+| `compressRotated` | boolean | `true` | Gzip compress rotated log files |
+
+### Prometheus Metrics
+
+The `/metrics` endpoint exposes Prometheus-compatible metrics. It is served on the main gateway port and does not require authentication by default.
+
+Configure via the `metrics.export.prometheus` section in the YAML config:
+
+```yaml
+metrics:
+  export:
+    prometheus:
+      enabled: true
+      path: /metrics
+```
+
+See `deploy/prometheus/alert-rules.yml` for pre-built alert rules and `deploy/grafana/friday-dashboard.json` for a Grafana dashboard.
+
+---
+
 ## Integration Configuration
 
 Platform integrations (Telegram, Discord, etc.) are configured at runtime, not in the YAML config file. Bot tokens and credentials are stored in the SQLite integrations database and managed via the dashboard UI or REST API.

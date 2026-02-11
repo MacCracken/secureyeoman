@@ -64,19 +64,28 @@ friday/
 │   │       ├── comms/          # E2E encrypted agent comms
 │   │       ├── soul/          # Personality + identity
 │   │       ├── task/          # Task execution + storage
-│   │       ├── integrations/  # Platform adapters (Telegram, etc.)
+│   │       ├── integrations/  # Platform adapters (Telegram, Discord, Slack, GitHub)
 │   │       └── utils/         # Crypto utilities
 │   └── dashboard/             # React dashboard
 │       └── src/
 │           ├── components/    # UI components
 │           ├── hooks/         # React hooks
 │           └── api/           # API client
+├── tests/                     # Security, load, and chaos tests
+│   ├── security/              # Injection, JWT, RBAC, rate limit tests
+│   ├── load/                  # k6 load test scripts
+│   └── chaos/                 # Database corruption, crash recovery tests
+├── deploy/                    # Deployment configurations
+│   ├── grafana/               # Grafana dashboard JSON
+│   ├── prometheus/            # Prometheus alert rules
+│   └── logging/               # Loki, Promtail, docker-compose configs
+├── scripts/                   # Utility scripts
 ├── docs/                      # Documentation
 │   ├── api/                   # API documentation
 │   ├── guides/                # User guides
 │   ├── security/              # Security docs
 │   └── development/           # Development docs
-└── site/                      # Project website
+└── .github/                   # CI/CD workflows
 ```
 
 ---
@@ -196,6 +205,52 @@ friday/
 - Resource usage tracking (memory peak, CPU time)
 - Violation detection and reporting
 - SandboxManager auto-detects platform capabilities and selects the appropriate implementation
+
+### 8. Integration Framework
+
+**Location**: `packages/core/src/integrations/`
+
+**Responsibilities**:
+- Platform adapter lifecycle management (init, start, stop, health)
+- Message normalization between platform-specific and unified formats
+- Message routing from inbound messages to AI and back to platform
+
+**Key Modules**:
+- `manager.ts` - IntegrationManager with factory registration and lifecycle control
+- `conversation.ts` - ConversationManager with per-platform context windows
+- `types.ts` - Integration, PlatformAdapter, UnifiedMessage interfaces
+
+**Platform Adapters**:
+- `telegram/` - grammy bot API with long-polling
+- `discord/` - discord.js v14 with slash commands and embeds
+- `slack/` - Slack Bolt with socket mode
+- `github/` - Octokit REST + webhook handler with signature verification
+
+### 9. Logging & File Writer
+
+**Location**: `packages/core/src/logging/`
+
+**Responsibilities**:
+- Structured JSON logging via Pino
+- Append-only JSONL file output
+- Log rotation with gzip compression
+- Full-text search via FTS5
+
+**Key Modules**:
+- `sqlite-storage.ts` - SQLite audit storage with WAL mode and FTS5
+- `file-writer.ts` - AppendOnlyLogWriter (JSONL, O_APPEND)
+- `log-rotation.ts` - LogRotator (size/age-based, gzip compression)
+
+### 10. Monitoring (Prometheus)
+
+**Location**: `packages/core/src/gateway/prometheus.ts`
+
+**Responsibilities**:
+- `/metrics` endpoint in Prometheus text exposition format
+- Task, resource, and security counter metrics
+- Integration with Grafana dashboards and alert rules
+
+**Deployment configs**: `deploy/prometheus/`, `deploy/grafana/`, `deploy/logging/`
 
 ---
 
@@ -322,7 +377,7 @@ Dashboard Display (WebSocket)
 
 ### 1. Monorepo vs Multi-repo
 
-**Decision**: Monorepo with pnpm workspaces
+**Decision**: Monorepo with npm workspaces
 
 **Rationale**:
 - Shared TypeScript types between packages

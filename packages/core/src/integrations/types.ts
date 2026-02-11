@@ -23,6 +23,9 @@ export interface Integration {
   /** Unique platform identifier */
   readonly platform: Platform;
 
+  /** Optional per-platform rate limit config */
+  readonly platformRateLimit?: PlatformRateLimit;
+
   /** Initialize the adapter (validate config, create SDK clients, etc.) */
   init(config: IntegrationConfig, deps: IntegrationDeps): Promise<void>;
 
@@ -39,6 +42,18 @@ export interface Integration {
   isHealthy(): boolean;
 }
 
+/**
+ * Webhook-capable integration (e.g. GitHub).
+ * Extends the base Integration with webhook-specific methods.
+ */
+export interface WebhookIntegration extends Integration {
+  /** The URL path this integration expects webhook POSTs on */
+  getWebhookPath(): string;
+
+  /** Verify a webhook payload signature */
+  verifyWebhook(payload: string, signature: string): boolean;
+}
+
 // ─── Platform Adapter ────────────────────────────────────────
 
 /**
@@ -52,6 +67,21 @@ export interface PlatformAdapter {
   /** Format an outbound message for the platform */
   formatOutbound(message: UnifiedMessage): unknown;
 }
+
+// ─── Rate Limiting ───────────────────────────────────────────
+
+export interface PlatformRateLimit {
+  /** Maximum messages per second for this platform */
+  maxPerSecond: number;
+}
+
+/** Default rate limits per platform */
+export const DEFAULT_RATE_LIMITS: Record<string, PlatformRateLimit> = {
+  telegram: { maxPerSecond: 30 },
+  discord: { maxPerSecond: 50 },
+  slack: { maxPerSecond: 1 },
+  github: { maxPerSecond: 30 },
+};
 
 // ─── Dependencies ────────────────────────────────────────────
 

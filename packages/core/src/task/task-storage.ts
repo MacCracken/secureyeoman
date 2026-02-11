@@ -280,33 +280,52 @@ export class TaskStorage {
   // ─── Stats ─────────────────────────────────────────────────
 
   getStats(): TaskStats {
-    const totalRow = this.db
-      .prepare('SELECT COUNT(*) as count FROM tasks')
-      .get() as { count: number };
+    // Consolidated query: total, per-status counts, and avg duration in one pass
+    const statsRow = this.db
+      .prepare(`
+        SELECT
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+          SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+          SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+          SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as running,
+          SUM(CASE WHEN status = 'timeout' THEN 1 ELSE 0 END) as timeout_count,
+          SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
+          AVG(CASE WHEN duration_ms IS NOT NULL THEN duration_ms END) as avg_duration
+        FROM tasks
+      `)
+      .get() as {
+        total: number;
+        completed: number;
+        failed: number;
+        pending: number;
+        running: number;
+        timeout_count: number;
+        cancelled: number;
+        avg_duration: number | null;
+      };
 
-    const statusRows = this.db
-      .prepare('SELECT status, COUNT(*) as count FROM tasks GROUP BY status')
-      .all() as Array<{ status: string; count: number }>;
-
+    // byType still needs its own GROUP BY query
     const typeRows = this.db
       .prepare('SELECT type, COUNT(*) as count FROM tasks GROUP BY type')
       .all() as Array<{ type: string; count: number }>;
 
-    const completedCount = statusRows.find(r => r.status === 'completed')?.count ?? 0;
-    const finishedCount = statusRows
-      .filter(r => ['completed', 'failed', 'timeout', 'cancelled'].includes(r.status))
-      .reduce((sum, r) => sum + r.count, 0);
+    const byStatus: Record<string, number> = {};
+    if (statsRow.completed > 0) byStatus.completed = statsRow.completed;
+    if (statsRow.failed > 0) byStatus.failed = statsRow.failed;
+    if (statsRow.pending > 0) byStatus.pending = statsRow.pending;
+    if (statsRow.running > 0) byStatus.running = statsRow.running;
+    if (statsRow.timeout_count > 0) byStatus.timeout = statsRow.timeout_count;
+    if (statsRow.cancelled > 0) byStatus.cancelled = statsRow.cancelled;
 
-    const avgRow = this.db
-      .prepare('SELECT AVG(duration_ms) as avg FROM tasks WHERE duration_ms IS NOT NULL')
-      .get() as { avg: number | null };
+    const finishedCount = statsRow.completed + statsRow.failed + statsRow.timeout_count + statsRow.cancelled;
 
     return {
-      total: totalRow.count,
-      byStatus: Object.fromEntries(statusRows.map(r => [r.status, r.count])),
+      total: statsRow.total,
+      byStatus,
       byType: Object.fromEntries(typeRows.map(r => [r.type, r.count])),
-      successRate: finishedCount > 0 ? completedCount / finishedCount : 0,
-      avgDurationMs: avgRow.avg ?? 0,
+      successRate: finishedCount > 0 ? statsRow.completed / finishedCount : 0,
+      avgDurationMs: statsRow.avg_duration ?? 0,
     };
   }
 

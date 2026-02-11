@@ -12,6 +12,7 @@
 
 import { readFileSync } from 'node:fs';
 import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import fastifyCompress from '@fastify/compress';
 import fastifyWebsocket from '@fastify/websocket';
 import { WebSocket } from 'ws';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
@@ -24,6 +25,7 @@ import { registerSoulRoutes } from '../soul/soul-routes.js';
 import { registerBrainRoutes } from '../brain/brain-routes.js';
 import { registerCommsRoutes } from '../comms/comms-routes.js';
 import { registerIntegrationRoutes } from '../integrations/integration-routes.js';
+import { formatPrometheusMetrics } from './prometheus.js';
 
 /**
  * Check if an IP address belongs to a private/loopback range.
@@ -63,6 +65,7 @@ export class GatewayServer {
   private logger: SecureLogger | null = null;
   private metricsInterval: NodeJS.Timeout | null = null;
   private clientIdCounter = 0;
+  private lastMetricsJson: string | null = null;
   
   constructor(options: GatewayServerOptions) {
     this.config = options.config;
@@ -122,6 +125,9 @@ export class GatewayServer {
   }
   
   private async setupMiddleware(): Promise<void> {
+    // Register compression plugin (gzip/brotli for JSON + text responses)
+    await this.app.register(fastifyCompress);
+
     // Register WebSocket plugin
     await this.app.register(fastifyWebsocket, {
       options: {
@@ -236,6 +242,17 @@ export class GatewayServer {
     } catch {
       // Integration manager may not be available — skip routes
     }
+
+    // Prometheus metrics endpoint (unauthenticated)
+    this.app.get('/metrics', async (_request, reply) => {
+      try {
+        const metrics = await this.secureYeoman.getMetrics();
+        const text = formatPrometheusMetrics(metrics);
+        return reply.type('text/plain; version=0.0.4; charset=utf-8').send(text);
+      } catch {
+        return reply.code(500).send('# Error collecting metrics\n');
+      }
+    });
 
     // Health check
     this.app.get('/health', async () => {
@@ -525,15 +542,40 @@ export class GatewayServer {
   }
   
   /**
+   * Check if any connected client is subscribed to the given channel
+   */
+  hasSubscribers(channel: string): boolean {
+    for (const [, client] of this.clients) {
+      if (client.channels.has(channel) && client.ws.readyState === WebSocket.OPEN) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
    * Start periodic metrics broadcast
    */
   private startMetricsBroadcast(): void {
-    const intervalMs = 1000; // Every second
-    
+    const intervalMs = 5000; // Every 5 seconds (matches dashboard polling)
+
     this.metricsInterval = setInterval(() => {
       void (async () => {
         try {
+          // Skip when no clients are subscribed to metrics
+          if (!this.hasSubscribers('metrics')) {
+            return;
+          }
+
           const metrics = await this.secureYeoman.getMetrics();
+          const json = JSON.stringify(metrics);
+
+          // Skip re-broadcast if payload hasn't changed
+          if (json === this.lastMetricsJson) {
+            return;
+          }
+          this.lastMetricsJson = json;
+
           this.broadcast('metrics', metrics);
         } catch (error) {
           this.getLogger().error('Failed to broadcast metrics', {
@@ -542,7 +584,7 @@ export class GatewayServer {
         }
       })();
     }, intervalMs);
-    
+
     this.metricsInterval.unref();
   }
   

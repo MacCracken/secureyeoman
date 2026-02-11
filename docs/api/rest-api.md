@@ -888,6 +888,88 @@ Responses include pagination metadata:
 
 ---
 
+### Integrations
+
+#### GET /api/v1/integrations/platforms
+
+List registered platform adapters.
+
+**Required Permissions**: `integrations.read`
+
+#### GET /api/v1/integrations
+
+List all configured integrations.
+
+**Required Permissions**: `integrations.read`
+
+#### POST /api/v1/integrations
+
+Create a new integration.
+
+**Required Permissions**: `integrations.write`
+
+**Request Body**
+```json
+{
+  "platform": "telegram",
+  "displayName": "My Bot",
+  "enabled": true,
+  "config": { "botToken": "..." }
+}
+```
+
+#### POST /api/v1/integrations/{id}/start
+
+Start an integration.
+
+**Required Permissions**: `integrations.write`
+
+#### POST /api/v1/integrations/{id}/stop
+
+Stop an integration.
+
+**Required Permissions**: `integrations.write`
+
+#### GET /api/v1/integrations/{id}/messages
+
+List messages for an integration.
+
+**Required Permissions**: `integrations.read`
+
+#### POST /api/v1/integrations/{id}/messages
+
+Send a message via an integration.
+
+**Required Permissions**: `integrations.write`
+
+---
+
+### Webhooks
+
+#### POST /api/v1/webhooks/github/{id}
+
+Receive GitHub webhook events. Verifies HMAC-SHA256 signature against the integration's webhook secret.
+
+**Authentication**: None (verified via webhook signature)
+
+**Headers**
+- `X-Hub-Signature-256`: HMAC-SHA256 signature
+- `X-GitHub-Event`: Event type (push, pull_request, issues, issue_comment)
+
+---
+
+### Prometheus Metrics
+
+#### GET /metrics
+
+Prometheus text exposition format metrics.
+
+**Authentication**: None
+
+**Response**: Prometheus text format with task, resource, and security metrics.
+
+---
+
 ## WebSocket API
 
 See [WebSocket Documentation](websocket-api.md) for real-time updates.

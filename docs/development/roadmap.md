@@ -88,10 +88,9 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 
 ## Phase 3: Dashboard
 
-**Status**: ~98% complete
+**Status**: Complete
 **Duration**: 5 weeks
 
-### Completed
 - React + Vite + TypeScript with URL routing (react-router-dom v7)
 - TanStack Query for server-state management
 - WebSocket client with auto-reconnection and channel subscriptions
@@ -107,54 +106,40 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 - Theme toggle (dark/light with localStorage persistence)
 - Settings page (agent identity, API key management, soul config overview)
 - DashboardLayout, StatusBar, NavigationTabs (memoized, 7 tabs)
-
-### Deferred
-- Storybook, mock data generators
-- Date range picker, export functionality
-- User profile dropdown, notification bell, search bar
-- Test connection button
+- 57 component tests across 5 files (Vitest + Testing Library + jsdom)
 
 ---
 
 ## Phase 4: Integrations
 
-**Status**: Framework + Telegram complete
-**Duration**: 3-4 weeks (2 weeks remaining)
+**Status**: Complete
+**Duration**: 4 weeks
 
-### Completed
 - Plugin architecture (`Integration` interface, `IntegrationManager`, `IntegrationStorage`, factory pattern)
 - Message abstraction (`UnifiedMessage`, `MessageAttachment`, `PlatformAdapter`, `MessageRouter`)
 - REST API routes for CRUD + start/stop + messages with RBAC
 - Telegram adapter (grammy, long-polling, `/start`/`help`/`status` commands, 23 tests)
+- Discord adapter (discord.js v14, slash commands, embeds, 19 tests)
+- Slack adapter (Slack Bolt, socket mode, slash commands, 18 tests)
+- GitHub adapter (Octokit, webhook handler, signature verification, 17 tests)
+- Conversation management, auto-reconnect, per-platform rate limiting
 - 24 integration framework tests
-
-### Remaining (moved to Phase 5 prompt)
-- Discord adapter (discord.js v14, slash commands, embeds, threads)
-- Slack adapter (@slack/bolt, socket mode, Block Kit)
-- GitHub adapter (@octokit, webhook handler, PR review, issue triage)
 
 ---
 
 ## Phase 5: Production Hardening
 
-**Status**: Partial (Docker + CI/CD done)
+**Status**: Complete
 **Duration**: 3 weeks
 
-### Completed
 - Docker packaging (multi-stage Dockerfile, docker-compose, non-root user, healthcheck)
-- CI/CD pipeline (lint -> typecheck -> test -> build -> security audit -> docker build, Node 20+22 matrix)
-- Documentation: installation.md, configuration.md, api/ reference
-
-### Remaining
-- Integration framework improvements (ConversationManager, auto-reconnect, per-platform rate limiter)
-- Remaining platform adapters (Discord, Slack, GitHub)
-- Load testing (k6 scripts for all API endpoints)
-- Security testing (injection, JWT manipulation, rate limit bypass, RBAC, audit integrity, sandbox escape)
+- CI/CD pipeline (lint, typecheck, test, build, security audit, docker build; Node 20+22 matrix)
+- Load testing (k6 scripts: API endpoints, auth flow, WebSocket, task creation)
+- Security testing (injection, JWT manipulation, rate limit bypass, RBAC, audit integrity; 63 tests)
+- Chaos testing (database corruption, crash recovery, resource exhaustion; 13 tests)
 - Prometheus metrics endpoint with Grafana dashboard and alert rules
-- Log aggregation configs (Loki + Promtail)
-- OpenAPI specification
-- Troubleshooting and deployment guides
-- Release script
+- Log aggregation (append-only JSONL file writer, log rotation with gzip, Loki + Promtail)
+- Documentation (getting started, configuration, API, OpenAPI 3.1, troubleshooting, deployment, integrations, security testing)
 
 ---
 
@@ -166,10 +151,13 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 | Security (auth, RBAC, crypto, rate limiter, sandbox) | ~250 | 10 |
 | Brain + Soul | ~130 | 4 |
 | Comms | ~40 | 1 |
-| Integrations (framework + Telegram) | ~47 | 2 |
+| Integrations (framework + all adapters) | ~101 | 6 |
 | Integration tests (E2E flows) | ~32 | 3 |
-| Dashboard | ~612 | 7+ |
-| **Total** | **~746 (core) + 612 (dashboard)** | **39+** |
+| Dashboard (component tests) | ~57 | 5 |
+| Security + Chaos tests | ~76 | 5+ |
+| File writer + Log rotation | ~27 | 2 |
+| Prometheus | ~5 | 1 |
+| **Total** | **~963** | **59** |
 
 All core modules maintain >80% coverage thresholds.
 
@@ -182,19 +170,19 @@ All core modules maintain >80% coverage thresholds.
 | Phase 1: Foundation | 3 weeks | Complete |
 | Phase 2: Security | 4 weeks | Complete |
 | Phase 2.5: Infrastructure | 1 week | Complete |
-| Phase 3: Dashboard | 5 weeks | ~98% Complete |
-| Phase 4: Integrations | 4 weeks | Framework + Telegram Complete |
-| Phase 5: Production | 3 weeks | Partial (Docker + CI/CD) |
+| Phase 3: Dashboard | 5 weeks | Complete |
+| Phase 4: Integrations | 4 weeks | Complete |
+| Phase 5: Production | 3 weeks | Complete |
 
 ---
 
 ## Future Enhancements
 
 ### v1.1 (Post-MVP)
+- ~~Performance optimization~~ (completed — code splitting, compression, query batching, broadcast throttling)
 - MCP protocol support
 - Skill marketplace
 - Custom dashboards
-- Performance optimization
 
 ### v1.2
 - Team workspaces
@@ -204,7 +192,6 @@ All core modules maintain >80% coverage thresholds.
 
 ### v2.0
 - Distributed deployment (Kubernetes)
-- Federation (cross-instance communication via E2E comms)
 - ML-based anomaly detection
 - Voice interface
 - Mobile app
@@ -217,7 +204,8 @@ All core modules maintain >80% coverage thresholds.
 - [API Reference](../api/)
 - [Security Model](../security/security-model.md)
 - [Configuration Reference](../configuration.md)
-- [Installation Guide](../installation.md)
+- [Getting Started Guide](../guides/getting-started.md)
+- [Changelog](../../CHANGELOG.md)
 
 ---
 

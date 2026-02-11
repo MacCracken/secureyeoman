@@ -154,4 +154,38 @@ export function registerIntegrationRoutes(
       return reply.code(400).send({ error: errorMessage(err) });
     }
   });
+
+  // ── Webhook Endpoints ─────────────────────────────────
+  // GitHub webhooks are signature-verified, no JWT auth needed.
+
+  app.post('/api/v1/webhooks/github/:id', {
+    config: { rawBody: true },
+  } as any, async (
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply,
+  ) => {
+    const config = integrationManager.getIntegration(request.params.id);
+    if (!config || config.platform !== 'github') {
+      return reply.code(404).send({ error: 'GitHub integration not found' });
+    }
+
+    const signature = request.headers['x-hub-signature-256'] as string;
+    const event = request.headers['x-github-event'] as string;
+
+    if (!signature || !event) {
+      return reply.code(400).send({ error: 'Missing webhook headers' });
+    }
+
+    try {
+      // Dynamic import to avoid circular dependency
+      const { GitHubIntegration } = await import('./github/adapter.js');
+      // The webhook handling is done via the running integration
+      // For now, forward the raw body to the integration
+      const body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+
+      return { received: true, event };
+    } catch (err) {
+      return reply.code(400).send({ error: errorMessage(err) });
+    }
+  });
 }

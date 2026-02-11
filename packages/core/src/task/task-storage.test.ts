@@ -232,5 +232,34 @@ describe('TaskStorage', () => {
       // avg of 100, 200, 500 = 266.67
       expect(stats.avgDurationMs).toBeCloseTo(266.67, 0);
     });
+
+    it('getStats should return correct counts with mixed statuses', () => {
+      // Insert tasks with all possible terminal statuses
+      storage.storeTask(makeTask({ id: 'c1', status: TaskStatus.COMPLETED, type: TaskType.QUERY }));
+      storage.storeTask(makeTask({ id: 'c2', status: TaskStatus.COMPLETED, type: TaskType.EXECUTE }));
+      storage.storeTask(makeTask({ id: 'c3', status: TaskStatus.COMPLETED, type: TaskType.QUERY }));
+      storage.storeTask(makeTask({ id: 'f1', status: TaskStatus.FAILED, type: TaskType.QUERY }));
+      storage.storeTask(makeTask({ id: 'p1', status: TaskStatus.PENDING, type: TaskType.FILE }));
+      storage.storeTask(makeTask({ id: 'r1', status: TaskStatus.RUNNING, type: TaskType.EXECUTE }));
+
+      // Add durations to some tasks
+      storage.updateTask('c1', { durationMs: 100 });
+      storage.updateTask('c2', { durationMs: 300 });
+      storage.updateTask('f1', { durationMs: 200 });
+
+      const stats = storage.getStats();
+      expect(stats.total).toBe(6);
+      expect(stats.byStatus.completed).toBe(3);
+      expect(stats.byStatus.failed).toBe(1);
+      expect(stats.byStatus.pending).toBe(1);
+      expect(stats.byStatus.running).toBe(1);
+      expect(stats.byType.query).toBe(3);
+      expect(stats.byType.execute).toBe(2);
+      expect(stats.byType.file).toBe(1);
+      // 3 completed out of 4 finished (3 completed + 1 failed)
+      expect(stats.successRate).toBeCloseTo(3 / 4, 5);
+      // avg of 100, 300, 200 = 200
+      expect(stats.avgDurationMs).toBeCloseTo(200, 0);
+    });
   });
 });

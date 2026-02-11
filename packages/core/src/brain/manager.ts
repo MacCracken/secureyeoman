@@ -72,9 +72,9 @@ export class BrainManager {
 
     const memories = this.storage.queryMemories(query);
 
-    // Touch accessed memories to keep them alive
-    for (const memory of memories) {
-      this.storage.touchMemory(memory.id);
+    // Batch-touch accessed memories to keep them alive (single query instead of N)
+    if (memories.length > 0) {
+      this.storage.touchMemories(memories.map(m => m.id));
     }
 
     return memories;
@@ -147,9 +147,10 @@ export class BrainManager {
     });
 
     if (memories.length > 0) {
+      // Batch-touch all memories in a single query instead of N individual updates
+      this.storage.touchMemories(memories.map(m => m.id));
       parts.push('### Memories');
       for (const memory of memories) {
-        this.storage.touchMemory(memory.id);
         parts.push(`- [${memory.type}] ${memory.content}`);
       }
     }
