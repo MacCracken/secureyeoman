@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.0.1] — 2026-02-11
+
+### Spirit System & Soul/Spirit/Brain/Body Hierarchy
+
+Adds the **Spirit** module — the agent's emotional core (passions, inspirations, pain points) — and establishes a clear hierarchy: **Soul > Spirit > Brain > Body**.
+
+### Added
+- **Spirit module** (`packages/core/src/spirit/`) — Full CRUD for passions, inspirations, and pains with SQLite-backed storage, manager, and REST API endpoints
+- **Spirit prompt composition** — `composeSpiritPrompt()` builds a Spirit section that is injected into the Soul prompt between personality and brain context
+- **Spirit REST API** — 15 endpoints under `/api/v1/spirit/` for passions, inspirations, pains, config, stats, and prompt preview
+- **Spirit schemas** — `SpiritConfigSchema`, `PassionSchema`, `InspirationSchema`, `PainSchema` with Create/Update variants in shared types
+- **Body stub** (`packages/core/src/body/`) — Placeholder module with `BodyConfigSchema` (enabled: false) for v2/v3 physical interfaces
+- **Agent hierarchy** — Soul > Spirit > Brain > Body architecture with Spirit integrated into prompt composition pipeline
+- **Spirit test suite** — Full coverage for storage, manager, and composition (40+ tests)
+
+### Changed
+- **SoulManager** now accepts optional `SpiritManager` and injects Spirit prompt section into `composeSoulPrompt()`
+- **SecureYeoman** initializes Spirit between Brain and Soul (init order: Brain → Spirit → Soul)
+- **Gateway server** registers Spirit routes alongside Soul and Brain routes
+- **Config schema** now includes `spirit` and `body` sections
+
+---
+
 ## [1.0.0] — 2026-02-11
 
 ### MVP Release

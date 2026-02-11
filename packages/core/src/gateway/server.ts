@@ -23,6 +23,7 @@ import { createAuthHook, createRbacHook } from './auth-middleware.js';
 import { registerAuthRoutes } from './auth-routes.js';
 import { registerSoulRoutes } from '../soul/soul-routes.js';
 import { registerBrainRoutes } from '../brain/brain-routes.js';
+import { registerSpiritRoutes } from '../spirit/spirit-routes.js';
 import { registerCommsRoutes } from '../comms/comms-routes.js';
 import { registerIntegrationRoutes } from '../integrations/integration-routes.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -214,6 +215,14 @@ export class GatewayServer {
       registerSoulRoutes(this.app, { soulManager });
     } catch {
       // Soul manager may not be available — skip routes
+    }
+
+    // Spirit routes
+    try {
+      const spiritManager = this.secureYeoman.getSpiritManager();
+      registerSpiritRoutes(this.app, { spiritManager });
+    } catch {
+      // Spirit manager may not be available — skip routes
     }
 
     // Brain routes

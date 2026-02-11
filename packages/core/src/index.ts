@@ -219,6 +219,24 @@ export {
   type SoulRoutesOptions,
 } from './soul/soul-routes.js';
 
+// Spirit
+export {
+  SpiritStorage,
+  SpiritManager,
+  type SpiritStats,
+  type SpiritManagerDeps,
+} from './spirit/index.js';
+
+export {
+  registerSpiritRoutes,
+  type SpiritRoutesOptions,
+} from './spirit/spirit-routes.js';
+
+// Body (stub — v2/v3)
+export {
+  type BodyConfig,
+} from './body/index.js';
+
 // Auth
 export {
   AuthStorage,

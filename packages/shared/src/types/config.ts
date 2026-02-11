@@ -8,7 +8,7 @@
  */
 
 import { z } from 'zod';
-import { SoulConfigSchema, BrainConfigSchema, CommsConfigSchema } from './soul.js';
+import { SoulConfigSchema, BrainConfigSchema, SpiritConfigSchema, BodyConfigSchema, CommsConfigSchema } from './soul.js';
 
 // Safe path validation (no path traversal)
 const SafePathSchema = z.string()
@@ -237,7 +237,9 @@ export const ConfigSchema = z.object({
   gateway: GatewayConfigSchema.default({}),
   model: ModelConfigSchema.default({}),
   soul: SoulConfigSchema,
+  spirit: SpiritConfigSchema,
   brain: BrainConfigSchema,
+  body: BodyConfigSchema,
   comms: CommsConfigSchema,
 });
 

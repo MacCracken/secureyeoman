@@ -32,6 +32,8 @@ import { SoulStorage } from './soul/storage.js';
 import { SoulManager } from './soul/manager.js';
 import { BrainStorage } from './brain/storage.js';
 import { BrainManager } from './brain/manager.js';
+import { SpiritStorage } from './spirit/storage.js';
+import { SpiritManager } from './spirit/manager.js';
 import { AgentComms } from './comms/agent-comms.js';
 import { TaskStorage } from './task/task-storage.js';
 import { IntegrationStorage } from './integrations/storage.js';
@@ -82,6 +84,8 @@ export class SecureYeoman {
   private rbacStorage: RBACStorage | null = null;
   private brainStorage: BrainStorage | null = null;
   private brainManager: BrainManager | null = null;
+  private spiritStorage: SpiritStorage | null = null;
+  private spiritManager: SpiritManager | null = null;
   private soulStorage: SoulStorage | null = null;
   private soulManager: SoulManager | null = null;
   private agentComms: AgentComms | null = null;
@@ -302,7 +306,21 @@ export class SecureYeoman {
       );
       this.logger.debug('Brain manager initialized');
 
-      // Step 5.7b: Initialize soul system (now depends on Brain)
+      // Step 5.7a: Initialize spirit system (between Brain and Soul)
+      this.spiritStorage = new SpiritStorage({
+        dbPath: `${this.config.core.dataDir}/spirit.db`,
+      });
+      this.spiritManager = new SpiritManager(
+        this.spiritStorage,
+        this.config.spirit,
+        {
+          auditChain: this.auditChain,
+          logger: this.logger.child({ component: 'SpiritManager' }),
+        },
+      );
+      this.logger.debug('Spirit manager initialized');
+
+      // Step 5.7b: Initialize soul system (now depends on Brain and Spirit)
       this.soulStorage = new SoulStorage({
         dbPath: `${this.config.core.dataDir}/soul.db`,
       });
@@ -314,6 +332,7 @@ export class SecureYeoman {
           logger: this.logger.child({ component: 'SoulManager' }),
         },
         this.brainManager,
+        this.spiritManager,
       );
       if (this.soulManager.needsOnboarding()) {
         if (!this.soulManager.getAgentName()) {
@@ -680,6 +699,17 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the spirit manager instance
+   */
+  getSpiritManager(): SpiritManager {
+    this.ensureInitialized();
+    if (!this.spiritManager) {
+      throw new Error('Spirit manager is not available');
+    }
+    return this.spiritManager;
+  }
+
+  /**
    * Get the soul manager instance
    */
   getSoulManager(): SoulManager {
@@ -921,6 +951,13 @@ export class SecureYeoman {
       this.soulStorage.close();
       this.soulStorage = null;
       this.soulManager = null;
+    }
+
+    // Close spirit storage
+    if (this.spiritStorage) {
+      this.spiritStorage.close();
+      this.spiritStorage = null;
+      this.spiritManager = null;
     }
 
     // Close brain storage

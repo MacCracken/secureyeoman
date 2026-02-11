@@ -107,6 +107,100 @@ export const BrainConfigSchema = z.object({
 
 export type BrainConfig = z.infer<typeof BrainConfigSchema>;
 
+// ─── Spirit Config ──────────────────────────────────────────
+
+export const SpiritConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  maxPassions: z.number().int().positive().max(100).default(20),
+  maxInspirations: z.number().int().positive().max(100).default(20),
+  maxPains: z.number().int().positive().max(100).default(20),
+}).default({});
+
+export type SpiritConfig = z.infer<typeof SpiritConfigSchema>;
+
+// ─── Passion ────────────────────────────────────────────────
+
+export const PassionSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).default(''),
+  intensity: z.number().min(0).max(1).default(0.5),
+  isActive: z.boolean().default(true),
+  createdAt: z.number().int().nonnegative(),
+  updatedAt: z.number().int().nonnegative(),
+});
+
+export type Passion = z.infer<typeof PassionSchema>;
+
+export const PassionCreateSchema = PassionSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type PassionCreate = z.infer<typeof PassionCreateSchema>;
+
+export const PassionUpdateSchema = PassionCreateSchema.partial();
+export type PassionUpdate = z.infer<typeof PassionUpdateSchema>;
+
+// ─── Inspiration ────────────────────────────────────────────
+
+export const InspirationSchema = z.object({
+  id: z.string().min(1),
+  source: z.string().min(1).max(200),
+  description: z.string().max(2000).default(''),
+  impact: z.number().min(0).max(1).default(0.5),
+  isActive: z.boolean().default(true),
+  createdAt: z.number().int().nonnegative(),
+  updatedAt: z.number().int().nonnegative(),
+});
+
+export type Inspiration = z.infer<typeof InspirationSchema>;
+
+export const InspirationCreateSchema = InspirationSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InspirationCreate = z.infer<typeof InspirationCreateSchema>;
+
+export const InspirationUpdateSchema = InspirationCreateSchema.partial();
+export type InspirationUpdate = z.infer<typeof InspirationUpdateSchema>;
+
+// ─── Pain ───────────────────────────────────────────────────
+
+export const PainSchema = z.object({
+  id: z.string().min(1),
+  trigger: z.string().min(1).max(200),
+  description: z.string().max(2000).default(''),
+  severity: z.number().min(0).max(1).default(0.5),
+  isActive: z.boolean().default(true),
+  createdAt: z.number().int().nonnegative(),
+  updatedAt: z.number().int().nonnegative(),
+});
+
+export type Pain = z.infer<typeof PainSchema>;
+
+export const PainCreateSchema = PainSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type PainCreate = z.infer<typeof PainCreateSchema>;
+
+export const PainUpdateSchema = PainCreateSchema.partial();
+export type PainUpdate = z.infer<typeof PainUpdateSchema>;
+
+// ─── Body Config (stub — v2/v3) ────────────────────────────
+
+export const BodyConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+}).default({});
+
+export type BodyConfig = z.infer<typeof BodyConfigSchema>;
+
 // ─── Comms Config ────────────────────────────────────────────
 
 export const MessageTypeSchema = z.enum([

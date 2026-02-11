@@ -10,6 +10,7 @@
 
 import type { SoulStorage } from './storage.js';
 import type { BrainManager } from '../brain/manager.js';
+import type { SpiritManager } from '../spirit/manager.js';
 import type {
   Personality,
   PersonalityCreate,
@@ -26,14 +27,16 @@ import type {
 export class SoulManager {
   private readonly storage: SoulStorage;
   private readonly brain: BrainManager | null;
+  private readonly spirit: SpiritManager | null;
   private readonly config: SoulConfig;
   private readonly deps: SoulManagerDeps;
 
-  constructor(storage: SoulStorage, config: SoulConfig, deps: SoulManagerDeps, brain?: BrainManager) {
+  constructor(storage: SoulStorage, config: SoulConfig, deps: SoulManagerDeps, brain?: BrainManager, spirit?: SpiritManager) {
     this.storage = storage;
     this.config = config;
     this.deps = deps;
     this.brain = brain ?? null;
+    this.spirit = spirit ?? null;
   }
 
   // ── Agent Name ─────────────────────────────────────────────
@@ -261,7 +264,15 @@ export class SoulManager {
       }
     }
 
-    // Brain context injection (NEW)
+    // Spirit context injection (passions, inspirations, pains)
+    if (this.spirit) {
+      const spiritPrompt = this.spirit.composeSpiritPrompt();
+      if (spiritPrompt) {
+        parts.push(spiritPrompt);
+      }
+    }
+
+    // Brain context injection
     if (this.brain && input) {
       const context = this.brain.getRelevantContext(input);
       if (context) {
@@ -320,6 +331,12 @@ export class SoulManager {
 
   getBrain(): BrainManager | null {
     return this.brain;
+  }
+
+  // ── Spirit Access ──────────────────────────────────────────
+
+  getSpirit(): SpiritManager | null {
+    return this.spirit;
   }
 
   // ── Cleanup ─────────────────────────────────────────────────
