@@ -10,6 +10,8 @@ import {
   fetchSoulConfig,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
+import { NotificationSettings } from './NotificationSettings';
+import { LogRetentionSettings } from './LogRetentionSettings';
 import type { ApiKey, ApiKeyCreateRequest, ApiKeyCreateResponse, SoulConfig } from '../types';
 
 function formatDate(ts: string): string {
@@ -296,6 +298,12 @@ export function SettingsPage() {
           </div>
         )}
       </div>
+
+      {/* Notification Preferences */}
+      <NotificationSettings />
+
+      {/* Log Retention */}
+      <LogRetentionSettings />
 
       {/* Soul System Config */}
       {soulConfig && (

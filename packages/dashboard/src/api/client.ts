@@ -170,7 +170,7 @@ async function request<T>(
 
 // ── Login / Logout ────────────────────────────────────────────────────
 
-export async function login(password: string): Promise<{
+export async function login(password: string, rememberMe = false): Promise<{
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
@@ -180,7 +180,7 @@ export async function login(password: string): Promise<{
     '/auth/login',
     {
       method: 'POST',
-      body: JSON.stringify({ password }),
+      body: JSON.stringify({ password, rememberMe }),
     },
     true
   );
@@ -280,12 +280,16 @@ export async function fetchMetrics(): Promise<MetricsSnapshot> {
 export async function fetchTasks(params?: {
   status?: string;
   type?: string;
+  from?: string;
+  to?: string;
   limit?: number;
   offset?: number;
 }): Promise<{ tasks: Task[]; total: number }> {
   const query = new URLSearchParams();
   if (params?.status) query.set('status', params.status);
   if (params?.type) query.set('type', params.type);
+  if (params?.from) query.set('from', params.from);
+  if (params?.to) query.set('to', params.to);
   if (params?.limit) query.set('limit', params.limit.toString());
   if (params?.offset) query.set('offset', params.offset.toString());
 
@@ -535,4 +539,32 @@ export async function startIntegration(id: string): Promise<{ message: string }>
 
 export async function stopIntegration(id: string): Promise<{ message: string }> {
   return request(`/integrations/${id}/stop`, { method: 'POST' });
+}
+
+// ─── Auth Roles ───────────────────────────────────────────────────
+
+export async function fetchRoles(): Promise<{
+  roles: Array<{ name: string; permissions: string[] }>;
+}> {
+  try {
+    return await request('/auth/roles');
+  } catch {
+    return { roles: [] };
+  }
+}
+
+// ─── Audit Stats ──────────────────────────────────────────────────
+
+export async function fetchAuditStats(): Promise<{
+  totalEntries: number;
+  oldestEntry?: number;
+  lastVerification?: number;
+  chainValid: boolean;
+  dbSizeEstimateMb?: number;
+}> {
+  try {
+    return await request('/audit/stats');
+  } catch {
+    return { totalEntries: 0, chainValid: false };
+  }
 }

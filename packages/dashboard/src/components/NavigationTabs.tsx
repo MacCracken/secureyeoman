@@ -9,6 +9,7 @@ const NAV_ITEMS: { to: string; label: string; end?: boolean }[] = [
   { to: '/personality', label: 'Personality' },
   { to: '/skills', label: 'Skills' },
   { to: '/connections', label: 'Connections' },
+  { to: '/security-settings', label: 'Security Config' },
   { to: '/settings', label: 'Settings' },
 ];
 

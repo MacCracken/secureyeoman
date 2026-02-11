@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { z } from 'zod';
 import { IntegrationStorage } from './storage.js';
 import { IntegrationManager } from './manager.js';
 import { MessageRouter } from './message-router.js';
@@ -334,6 +335,61 @@ describe('IntegrationManager', () => {
 
     await manager.stopAll();
     expect(manager.getRunningCount()).toBe(0);
+  });
+
+  // ── Zod config validation ──────────────────────────────────
+
+  it('should accept valid config when schema is registered', () => {
+    const schema = z.object({ botToken: z.string().min(1), chatId: z.number() });
+    manager.registerPlatform('telegram', () => createMockIntegration(), schema);
+
+    const config = manager.createIntegration({
+      platform: 'telegram',
+      displayName: 'Bot',
+      enabled: true,
+      config: { botToken: 'tok123', chatId: 42 },
+    });
+    expect(config.id).toBeDefined();
+  });
+
+  it('should reject invalid config with descriptive errors', () => {
+    const schema = z.object({ botToken: z.string().min(1), chatId: z.number() });
+    manager.registerPlatform('telegram', () => createMockIntegration(), schema);
+
+    expect(() =>
+      manager.createIntegration({
+        platform: 'telegram',
+        displayName: 'Bot',
+        enabled: true,
+        config: { botToken: '', chatId: 'not-a-number' },
+      })
+    ).toThrow(/Invalid config.*telegram/);
+  });
+
+  it('should detect missing required fields', () => {
+    const schema = z.object({ botToken: z.string(), webhookUrl: z.string().url() });
+    manager.registerPlatform('telegram', () => createMockIntegration(), schema);
+
+    expect(() =>
+      manager.createIntegration({
+        platform: 'telegram',
+        displayName: 'Bot',
+        enabled: true,
+        config: {},
+      })
+    ).toThrow(/Invalid config/);
+  });
+
+  it('should skip validation when no schema is registered', () => {
+    manager.registerPlatform('telegram', () => createMockIntegration());
+
+    const config = manager.createIntegration({
+      platform: 'telegram',
+      displayName: 'Bot',
+      enabled: true,
+      config: { anything: 'goes' },
+    });
+    expect(config.id).toBeDefined();
   });
 });
 

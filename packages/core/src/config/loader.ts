@@ -8,10 +8,10 @@
  * - Defaults are secure (e.g., sandbox enabled, strict validation)
  */
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { homedir } from 'node:os';
-import { parse as parseYaml } from 'yaml';
+import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { z } from 'zod';
 import {
   ConfigSchema,
@@ -20,6 +20,12 @@ import {
   type PartialConfig,
 } from '@friday/shared';
 import { KeyringManager } from '../security/keyring/manager.js';
+import {
+  encrypt,
+  decrypt,
+  serializeEncrypted,
+  deserializeEncrypted,
+} from '../security/secrets.js';
 
 // Default config file locations (checked in order)
 const DEFAULT_CONFIG_PATHS = [
@@ -29,6 +35,9 @@ const DEFAULT_CONFIG_PATHS = [
   '~/.secureyeoman/config.yaml',
   '/etc/secureyeoman/config.yaml',
 ];
+
+// Encrypted config extensions
+const ENCRYPTED_EXTENSIONS = ['.enc.yaml', '.encrypted.yaml'];
 
 /**
  * Expand ~ to home directory
@@ -41,26 +50,92 @@ function expandPath(path: string): string {
 }
 
 /**
- * Load configuration from a YAML file
+ * Check if a path refers to an encrypted config file
  */
-function loadConfigFile(path: string): PartialConfig | null {
+function isEncryptedConfig(path: string): boolean {
+  return ENCRYPTED_EXTENSIONS.some((ext) => path.endsWith(ext));
+}
+
+/**
+ * Load and decrypt an encrypted config file
+ */
+function loadEncryptedConfigFile(path: string, masterKey: string): PartialConfig {
   const expandedPath = expandPath(path);
-  
+  const fileData = readFileSync(expandedPath);
+  const encrypted = deserializeEncrypted(fileData);
+  const decrypted = decrypt(encrypted, masterKey);
+  const yamlContent = decrypted.toString('utf-8');
+  decrypted.fill(0);
+
+  const parsed = parseYaml(yamlContent) as unknown;
+  const result = PartialConfigSchema.safeParse(parsed);
+
+  if (!result.success) {
+    throw new Error(`Invalid configuration in ${expandedPath}: ${result.error.message}`);
+  }
+
+  return result.data;
+}
+
+/**
+ * Encrypt a YAML config file for secure storage
+ */
+export function encryptConfigFile(inputPath: string, outputPath: string, masterKey: string): void {
+  const expandedInput = expandPath(inputPath);
+  const expandedOutput = expandPath(outputPath);
+
+  const content = readFileSync(expandedInput, 'utf-8');
+  // Validate it's a valid config before encrypting
+  const parsed = parseYaml(content) as unknown;
+  PartialConfigSchema.parse(parsed);
+
+  const encrypted = encrypt(content, masterKey);
+  const serialized = serializeEncrypted(encrypted);
+  writeFileSync(expandedOutput, serialized, { mode: 0o600 });
+}
+
+/**
+ * Decrypt an encrypted config file for inspection
+ */
+export function decryptConfigFile(inputPath: string, masterKey: string): string {
+  const expandedInput = expandPath(inputPath);
+  const fileData = readFileSync(expandedInput);
+  const encrypted = deserializeEncrypted(fileData);
+  const decrypted = decrypt(encrypted, masterKey);
+  const content = decrypted.toString('utf-8');
+  decrypted.fill(0);
+  return content;
+}
+
+/**
+ * Load configuration from a YAML file (plain or encrypted)
+ */
+function loadConfigFile(path: string, masterKey?: string): PartialConfig | null {
+  const expandedPath = expandPath(path);
+
   if (!existsSync(expandedPath)) {
     return null;
   }
-  
+
+  // Handle encrypted config files
+  if (isEncryptedConfig(expandedPath)) {
+    if (!masterKey) {
+      throw new Error(`Encrypted config file found at ${expandedPath} but no master key provided (set SECUREYEOMAN_CONFIG_KEY)`);
+    }
+    return loadEncryptedConfigFile(expandedPath, masterKey);
+  }
+
   try {
     const content = readFileSync(expandedPath, 'utf-8');
     const parsed = parseYaml(content) as unknown;
-    
+
     // Validate against partial schema (allows missing fields)
     const result = PartialConfigSchema.safeParse(parsed);
-    
+
     if (!result.success) {
       throw new Error(`Invalid configuration in ${expandedPath}: ${result.error.message}`);
     }
-    
+
     return result.data;
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -160,6 +235,8 @@ export interface LoadConfigOptions {
   overrides?: PartialConfig;
   /** Skip environment variable loading */
   skipEnv?: boolean;
+  /** Master key for encrypted config files (defaults to SECUREYEOMAN_CONFIG_KEY env var) */
+  configMasterKey?: string;
 }
 
 /**
@@ -173,18 +250,26 @@ export interface LoadConfigOptions {
  */
 export function loadConfig(options: LoadConfigOptions = {}): Config {
   let fileConfig: PartialConfig = {};
-  
+  const masterKey = options.configMasterKey ?? process.env.SECUREYEOMAN_CONFIG_KEY;
+
   // Try to load config file
   if (options.configPath) {
-    const loaded = loadConfigFile(options.configPath);
+    const loaded = loadConfigFile(options.configPath, masterKey);
     if (!loaded) {
       throw new Error(`Config file not found: ${options.configPath}`);
     }
     fileConfig = loaded;
   } else {
-    // Auto-discover config file
-    for (const path of DEFAULT_CONFIG_PATHS) {
-      const loaded = loadConfigFile(path);
+    // Auto-discover config file (check encrypted variants first)
+    const allPaths = [
+      ...DEFAULT_CONFIG_PATHS.flatMap((p) =>
+        ENCRYPTED_EXTENSIONS.map((ext) => p.replace(/\.ya?ml$/, ext))
+      ),
+      ...DEFAULT_CONFIG_PATHS,
+    ];
+
+    for (const path of allPaths) {
+      const loaded = loadConfigFile(path, masterKey);
       if (loaded) {
         fileConfig = loaded;
         break;

@@ -15,6 +15,7 @@ import type { IntegrationStorage } from './storage.js';
 import type { Integration, IntegrationDeps, IntegrationRegistryEntry, PlatformRateLimit } from './types.js';
 import { DEFAULT_RATE_LIMITS } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
+import type { z } from 'zod';
 
 export interface IntegrationManagerDeps {
   logger: SecureLogger;
@@ -46,6 +47,7 @@ export class IntegrationManager {
   private readonly deps: IntegrationManagerDeps;
   private readonly registry = new Map<string, IntegrationRegistryEntry>();
   private readonly factories = new Map<Platform, () => Integration>();
+  private readonly configSchemas = new Map<Platform, z.ZodType>();
 
   // Auto-reconnect
   private healthCheckTimer: ReturnType<typeof setInterval> | null = null;
@@ -71,8 +73,11 @@ export class IntegrationManager {
 
   // ── Factory Registration ─────────────────────────────────
 
-  registerPlatform(platform: Platform, factory: () => Integration): void {
+  registerPlatform(platform: Platform, factory: () => Integration, configSchema?: z.ZodType): void {
     this.factories.set(platform, factory);
+    if (configSchema) {
+      this.configSchemas.set(platform, configSchema);
+    }
     this.deps.logger.info(`Registered integration platform: ${platform}`);
   }
 
@@ -86,6 +91,17 @@ export class IntegrationManager {
     if (!this.factories.has(data.platform)) {
       throw new Error(`Platform "${data.platform}" is not registered`);
     }
+
+    // Validate platform-specific config if schema is registered
+    const schema = this.configSchemas.get(data.platform);
+    if (schema && data.config) {
+      const result = schema.safeParse(data.config);
+      if (!result.success) {
+        const errors = result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ');
+        throw new Error(`Invalid config for platform "${data.platform}": ${errors}`);
+      }
+    }
+
     return this.storage.createIntegration(data);
   }
 

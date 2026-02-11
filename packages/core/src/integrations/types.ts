@@ -12,6 +12,7 @@ import type {
   Platform,
 } from '@friday/shared';
 import type { SecureLogger } from '../logging/logger.js';
+import type { z } from 'zod';
 
 // ─── Integration Lifecycle ───────────────────────────────────
 
@@ -25,6 +26,9 @@ export interface Integration {
 
   /** Optional per-platform rate limit config */
   readonly platformRateLimit?: PlatformRateLimit;
+
+  /** Optional Zod schema for validating this platform's config */
+  readonly configSchema?: z.ZodType;
 
   /** Initialize the adapter (validate config, create SDK clients, etc.) */
   init(config: IntegrationConfig, deps: IntegrationDeps): Promise<void>;

@@ -1,7 +1,8 @@
 /**
  * WebSocket Hook for Real-time Updates
  *
- * Connects to the SecureYeoman gateway for live metrics
+ * Connects to the SecureYeoman gateway for live metrics.
+ * Buffers subscription requests when disconnected and replays on reconnect.
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -9,20 +10,29 @@ import type { WebSocketMessage } from '../types.js';
 
 interface UseWebSocketReturn {
   connected: boolean;
+  reconnecting: boolean;
   lastMessage: WebSocketMessage | null;
   send: (message: unknown) => void;
   subscribe: (channels: string[]) => void;
   unsubscribe: (channels: string[]) => void;
 }
 
+const MAX_QUEUE_SIZE = 100;
+
 export function useWebSocket(path: string): UseWebSocketReturn {
   const [connected, setConnected] = useState(false);
+  const [reconnecting, setReconnecting] = useState(false);
   const [lastMessage, setLastMessage] = useState<WebSocketMessage | null>(null);
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttempts = useRef(0);
   const maxReconnectAttempts = 10;
   const baseReconnectDelay = 1000;
+
+  // Track subscribed channels for re-subscription
+  const subscribedChannelsRef = useRef<Set<string>>(new Set());
+  // Queue messages while disconnected
+  const messageQueueRef = useRef<unknown[]>([]);
 
   const connect = useCallback(() => {
     // Build WebSocket URL
@@ -37,15 +47,34 @@ export function useWebSocket(path: string): UseWebSocketReturn {
       ws.onopen = () => {
         console.log('WebSocket connected');
         setConnected(true);
+        setReconnecting(false);
         reconnectAttempts.current = 0;
 
-        // Subscribe to default channels
-        ws.send(
-          JSON.stringify({
-            type: 'subscribe',
-            payload: { channels: ['metrics', 'tasks', 'security'] },
-          })
-        );
+        // Re-subscribe to previously tracked channels
+        const channels = Array.from(subscribedChannelsRef.current);
+        if (channels.length > 0) {
+          ws.send(
+            JSON.stringify({
+              type: 'subscribe',
+              payload: { channels },
+            })
+          );
+        } else {
+          // Default subscriptions
+          ws.send(
+            JSON.stringify({
+              type: 'subscribe',
+              payload: { channels: ['metrics', 'tasks', 'security'] },
+            })
+          );
+          subscribedChannelsRef.current = new Set(['metrics', 'tasks', 'security']);
+        }
+
+        // Flush queued messages
+        const queue = messageQueueRef.current.splice(0);
+        for (const msg of queue) {
+          ws.send(JSON.stringify(msg));
+        }
       };
 
       ws.onmessage = (event) => {
@@ -64,6 +93,7 @@ export function useWebSocket(path: string): UseWebSocketReturn {
 
         // Attempt to reconnect with exponential backoff
         if (reconnectAttempts.current < maxReconnectAttempts) {
+          setReconnecting(true);
           const delay = baseReconnectDelay * Math.pow(2, reconnectAttempts.current);
           console.log(`Reconnecting in ${delay}ms...`);
 
@@ -71,6 +101,8 @@ export function useWebSocket(path: string): UseWebSocketReturn {
             reconnectAttempts.current++;
             connect();
           }, delay);
+        } else {
+          setReconnecting(false);
         }
       };
 
@@ -98,11 +130,19 @@ export function useWebSocket(path: string): UseWebSocketReturn {
   const send = useCallback((message: unknown) => {
     if (wsRef.current?.readyState === WebSocket.OPEN) {
       wsRef.current.send(JSON.stringify(message));
+    } else {
+      // Queue the message if disconnected
+      if (messageQueueRef.current.length < MAX_QUEUE_SIZE) {
+        messageQueueRef.current.push(message);
+      }
     }
   }, []);
 
   const subscribe = useCallback(
     (channels: string[]) => {
+      for (const ch of channels) {
+        subscribedChannelsRef.current.add(ch);
+      }
       send({
         type: 'subscribe',
         payload: { channels },
@@ -113,6 +153,9 @@ export function useWebSocket(path: string): UseWebSocketReturn {
 
   const unsubscribe = useCallback(
     (channels: string[]) => {
+      for (const ch of channels) {
+        subscribedChannelsRef.current.delete(ch);
+      }
       send({
         type: 'unsubscribe',
         payload: { channels },
@@ -123,6 +166,7 @@ export function useWebSocket(path: string): UseWebSocketReturn {
 
   return {
     connected,
+    reconnecting,
     lastMessage,
     send,
     subscribe,

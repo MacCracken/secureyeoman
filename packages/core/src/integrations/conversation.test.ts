@@ -119,4 +119,49 @@ describe('ConversationManager', () => {
     expect(defaultManager.getContext('telegram', 'chat1').messages).toHaveLength(1);
     defaultManager.close();
   });
+
+  // ── Thread-based context ──────────────────────────────────
+
+  it('should track replies within a thread separately', () => {
+    manager.addMessage(makeMessage({ text: 'main chat', metadata: {} }));
+    manager.addMessage(makeMessage({ text: 'thread msg 1', metadata: { threadId: 'thread_1' } }));
+    manager.addMessage(makeMessage({ text: 'thread msg 2', metadata: { threadId: 'thread_1' } }));
+
+    const mainCtx = manager.getContext('telegram', 'chat1');
+    expect(mainCtx.messages).toHaveLength(1);
+    expect(mainCtx.messages[0].text).toBe('main chat');
+
+    const threadCtx = manager.getContext('telegram', 'chat1', 'thread_1');
+    expect(threadCtx.messages).toHaveLength(2);
+    expect(threadCtx.key).toBe('telegram:chat1:thread_1');
+  });
+
+  it('should keep separate threads independent', () => {
+    manager.addMessage(makeMessage({ text: 'in thread A', metadata: { threadId: 'A' } }));
+    manager.addMessage(makeMessage({ text: 'in thread B', metadata: { threadId: 'B' } }));
+
+    const ctxA = manager.getContext('telegram', 'chat1', 'A');
+    const ctxB = manager.getContext('telegram', 'chat1', 'B');
+
+    expect(ctxA.messages).toHaveLength(1);
+    expect(ctxA.messages[0].text).toBe('in thread A');
+    expect(ctxB.messages).toHaveLength(1);
+    expect(ctxB.messages[0].text).toBe('in thread B');
+  });
+
+  it('should expire stale threads', () => {
+    manager.addMessage(makeMessage({
+      text: 'old thread',
+      metadata: { threadId: 'stale' },
+      timestamp: Date.now() - 120_000,
+    }));
+    manager.addMessage(makeMessage({
+      text: 'fresh thread',
+      metadata: { threadId: 'fresh' },
+    }));
+
+    manager.clearStale();
+    expect(manager.getConversationCount()).toBe(1);
+    expect(manager.getContext('telegram', 'chat1', 'fresh').messages).toHaveLength(1);
+  });
 });

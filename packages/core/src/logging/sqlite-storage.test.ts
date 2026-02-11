@@ -319,6 +319,57 @@ describe('SQLiteAuditStorage', () => {
     });
   });
 
+  describe('enforceRetention', () => {
+    it('should purge entries older than maxAgeDays', async () => {
+      const now = Date.now();
+      // Insert entries: 2 old (100 days ago), 1 recent
+      await storage.append(makeEntry({ id: 'old-1', timestamp: now - 100 * 86_400_000 }));
+      await storage.append(makeEntry({ id: 'old-2', timestamp: now - 95 * 86_400_000 }));
+      await storage.append(makeEntry({ id: 'recent', timestamp: now }));
+
+      const deleted = storage.enforceRetention({ maxAgeDays: 90 });
+      expect(deleted).toBe(2);
+      expect(await storage.count()).toBe(1);
+      const last = await storage.getLast();
+      expect(last!.id).toBe('recent');
+    });
+
+    it('should respect maxEntries limit', async () => {
+      for (let i = 0; i < 10; i++) {
+        await storage.append(makeEntry({ id: `entry-${i}`, timestamp: Date.now() + i }));
+      }
+
+      const deleted = storage.enforceRetention({ maxAgeDays: 9999, maxEntries: 5 });
+      expect(deleted).toBe(5);
+      expect(await storage.count()).toBe(5);
+    });
+
+    it('should record no deletions when within limits', async () => {
+      await storage.append(makeEntry({ timestamp: Date.now() }));
+      await storage.append(makeEntry({ timestamp: Date.now() }));
+
+      const deleted = storage.enforceRetention({ maxAgeDays: 90, maxEntries: 1_000_000 });
+      expect(deleted).toBe(0);
+      expect(await storage.count()).toBe(2);
+    });
+
+    it('should handle both age and count limits together', async () => {
+      const now = Date.now();
+      // 3 old entries + 8 recent = 11 total
+      for (let i = 0; i < 3; i++) {
+        await storage.append(makeEntry({ id: `old-${i}`, timestamp: now - 100 * 86_400_000 + i }));
+      }
+      for (let i = 0; i < 8; i++) {
+        await storage.append(makeEntry({ id: `new-${i}`, timestamp: now + i }));
+      }
+
+      // maxAgeDays=90 removes 3 old, then maxEntries=5 removes 3 more
+      const deleted = storage.enforceRetention({ maxAgeDays: 90, maxEntries: 5 });
+      expect(deleted).toBe(6);
+      expect(await storage.count()).toBe(5);
+    });
+  });
+
   describe('schema creation', () => {
     it('should create table and indexes on fresh DB', () => {
       const tmpDir = mkdtempSync(join(tmpdir(), 'audit-schema-'));

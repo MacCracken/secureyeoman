@@ -8,6 +8,7 @@
 import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 import { sha256, secureCompare, generateSecureToken, uuidv7 } from '../utils/crypto.js';
 import { TokenPayloadSchema, type Role } from '@friday/shared';
+import { generateTOTPSecret, verifyTOTP, generateRecoveryCodes, buildTOTPUri } from './totp.js';
 import type { AuthStorage, ApiKeyRow } from './auth-storage.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { RBAC } from './rbac.js';
@@ -31,6 +32,13 @@ export interface LoginResult {
   refreshToken: string;
   expiresIn: number;
   tokenType: 'Bearer';
+  requiresTwoFactor?: boolean;
+}
+
+export interface TwoFactorSetupResult {
+  secret: string;
+  uri: string;
+  recoveryCodes: string[];
 }
 
 export interface ApiKeyCreateResult {
@@ -86,6 +94,12 @@ export class AuthService {
   private readonly config: AuthServiceConfig;
   private readonly deps: AuthServiceDeps;
 
+  // 2FA state
+  private twoFactorSecret: string | null = null;
+  private twoFactorEnabled = false;
+  private recoveryCodes: Set<string> = new Set();
+  private pendingTwoFactorSecret: string | null = null;
+
   constructor(config: AuthServiceConfig, deps: AuthServiceDeps) {
     this.config = config;
     this.secret = new TextEncoder().encode(config.tokenSecret);
@@ -111,7 +125,7 @@ export class AuthService {
 
   // ── Login ────────────────────────────────────────────────────────
 
-  async login(password: string, ip: string): Promise<LoginResult> {
+  async login(password: string, ip: string, rememberMe = false): Promise<LoginResult> {
     // Rate-limit check
     const rl = await this.deps.rateLimiter.check('auth_attempts', ip, { ipAddress: ip });
     if (!rl.allowed) {
@@ -128,38 +142,28 @@ export class AuthService {
       throw new AuthError('Invalid credentials', 401);
     }
 
-    const role: Role = 'admin';
-    const permissions = buildPermissionStrings(role, this.deps.rbac);
-    const accessJti = uuidv7();
-    const refreshJti = uuidv7();
-
-    const accessToken = await this.signToken({
-      sub: ADMIN_USER_ID,
-      role,
-      permissions,
-      jti: accessJti,
-      type: 'access',
-    }, this.config.tokenExpirySeconds);
-
-    const refreshToken = await this.signToken({
-      sub: ADMIN_USER_ID,
-      role,
-      permissions,
-      jti: refreshJti,
-      type: 'refresh',
-    }, this.config.refreshTokenExpirySeconds);
+    // If 2FA is enabled, return a challenge instead of tokens
+    if (this.twoFactorEnabled) {
+      await this.audit('auth_success', 'Password verified, awaiting 2FA', {
+        ip,
+        userId: ADMIN_USER_ID,
+      });
+      return {
+        accessToken: '',
+        refreshToken: '',
+        expiresIn: 0,
+        tokenType: 'Bearer',
+        requiresTwoFactor: true,
+      };
+    }
 
     await this.audit('auth_success', 'Admin login', {
       ip,
       userId: ADMIN_USER_ID,
+      rememberMe,
     });
 
-    return {
-      accessToken,
-      refreshToken,
-      expiresIn: this.config.tokenExpirySeconds,
-      tokenType: 'Bearer',
-    };
+    return this.issueTokens(rememberMe);
   }
 
   // ── Refresh ──────────────────────────────────────────────────────
@@ -339,6 +343,152 @@ export class AuthService {
 
   cleanupExpiredTokens(): number {
     return this.deps.storage.cleanupExpiredTokens();
+  }
+
+  // ── Password Reset ──────────────────────────────────────────────
+
+  async resetPassword(currentPassword: string, newPassword: string): Promise<void> {
+    // Verify current password
+    const currentHash = sha256(currentPassword);
+    const expectedHash = sha256(this.config.adminPassword);
+
+    if (!secureCompare(currentHash, expectedHash)) {
+      await this.audit('auth_failure', 'Password reset failed: wrong current password', {
+        userId: ADMIN_USER_ID,
+      });
+      throw new AuthError('Current password is incorrect', 401);
+    }
+
+    // Validate new password strength (32+ chars)
+    if (newPassword.length < 32) {
+      throw new AuthError('New password must be at least 32 characters', 400);
+    }
+
+    // Update the stored admin password (login() hashes both sides for comparison)
+    (this.config as { adminPassword: string }).adminPassword = newPassword;
+
+    // Rotate token secret and clear previous to invalidate all existing sessions
+    const newSecret = generateSecureToken(32);
+    this.updateTokenSecret(newSecret);
+    this.clearPreviousSecret();
+
+    await this.audit('auth_success', 'Admin password reset — all sessions invalidated', {
+      userId: ADMIN_USER_ID,
+    });
+  }
+
+  // ── Two-Factor Authentication ────────────────────────────────────
+
+  isTwoFactorEnabled(): boolean {
+    return this.twoFactorEnabled;
+  }
+
+  async setupTwoFactor(): Promise<TwoFactorSetupResult> {
+    const secret = generateTOTPSecret();
+    this.pendingTwoFactorSecret = secret;
+
+    const uri = buildTOTPUri(secret, 'admin');
+    const codes = generateRecoveryCodes();
+
+    await this.audit('auth_success', '2FA setup initiated', {
+      userId: ADMIN_USER_ID,
+    });
+
+    return { secret, uri, recoveryCodes: codes };
+  }
+
+  async verifyAndEnableTwoFactor(code: string, recoveryCodes?: string[]): Promise<boolean> {
+    if (!this.pendingTwoFactorSecret) {
+      throw new AuthError('No 2FA setup in progress', 400);
+    }
+
+    if (!verifyTOTP(this.pendingTwoFactorSecret, code)) {
+      return false;
+    }
+
+    this.twoFactorSecret = this.pendingTwoFactorSecret;
+    this.twoFactorEnabled = true;
+    this.pendingTwoFactorSecret = null;
+    this.recoveryCodes = new Set(recoveryCodes ?? []);
+
+    await this.audit('auth_success', '2FA enabled', {
+      userId: ADMIN_USER_ID,
+    });
+
+    return true;
+  }
+
+  async verifyTwoFactorCode(code: string): Promise<LoginResult> {
+    if (!this.twoFactorEnabled || !this.twoFactorSecret) {
+      throw new AuthError('2FA is not enabled', 400);
+    }
+
+    // Check TOTP code
+    if (verifyTOTP(this.twoFactorSecret, code)) {
+      return this.issueTokens(false);
+    }
+
+    // Check recovery codes
+    if (this.recoveryCodes.has(code)) {
+      this.recoveryCodes.delete(code);
+      await this.audit('auth_success', '2FA recovery code used', {
+        userId: ADMIN_USER_ID,
+        remainingRecoveryCodes: this.recoveryCodes.size,
+      });
+      return this.issueTokens(false);
+    }
+
+    await this.audit('auth_failure', '2FA verification failed', {
+      userId: ADMIN_USER_ID,
+    });
+    throw new AuthError('Invalid 2FA code', 401);
+  }
+
+  async disableTwoFactor(): Promise<void> {
+    this.twoFactorSecret = null;
+    this.twoFactorEnabled = false;
+    this.recoveryCodes.clear();
+    this.pendingTwoFactorSecret = null;
+
+    await this.audit('auth_success', '2FA disabled', {
+      userId: ADMIN_USER_ID,
+    });
+  }
+
+  private async issueTokens(rememberMe: boolean): Promise<LoginResult> {
+    const role: Role = 'admin';
+    const permissions = buildPermissionStrings(role, this.deps.rbac);
+    const accessJti = uuidv7();
+    const refreshJti = uuidv7();
+
+    const REMEMBER_ME_ACCESS_SECONDS = 30 * 86400;
+    const REMEMBER_ME_REFRESH_SECONDS = 60 * 86400;
+
+    const accessExpiry = rememberMe ? REMEMBER_ME_ACCESS_SECONDS : this.config.tokenExpirySeconds;
+    const refreshExpiry = rememberMe ? REMEMBER_ME_REFRESH_SECONDS : this.config.refreshTokenExpirySeconds;
+
+    const accessToken = await this.signToken({
+      sub: ADMIN_USER_ID,
+      role,
+      permissions,
+      jti: accessJti,
+      type: 'access',
+    }, accessExpiry);
+
+    const refreshToken = await this.signToken({
+      sub: ADMIN_USER_ID,
+      role,
+      permissions,
+      jti: refreshJti,
+      type: 'refresh',
+    }, refreshExpiry);
+
+    return {
+      accessToken,
+      refreshToken,
+      expiresIn: accessExpiry,
+      tokenType: 'Bearer',
+    };
   }
 
   // ── Private helpers ──────────────────────────────────────────────

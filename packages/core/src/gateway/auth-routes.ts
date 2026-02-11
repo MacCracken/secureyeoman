@@ -21,16 +21,16 @@ export function registerAuthRoutes(
 
   // ── POST /api/v1/auth/login ───────────────────────────────────────
   app.post('/api/v1/auth/login', async (
-    request: FastifyRequest<{ Body: { password: string } }>,
+    request: FastifyRequest<{ Body: { password: string; rememberMe?: boolean } }>,
     reply: FastifyReply,
   ) => {
-    const { password } = request.body ?? {};
+    const { password, rememberMe } = request.body ?? {};
     if (!password || typeof password !== 'string') {
       return reply.code(400).send({ error: 'Password is required' });
     }
 
     try {
-      const result = await authService.login(password, request.ip);
+      const result = await authService.login(password, request.ip, !!rememberMe);
       return result;
     } catch (err) {
       if (err instanceof AuthError) {
@@ -73,6 +73,30 @@ export function registerAuthRoutes(
 
     await authService.logout(user.jti, user.userId, user.exp);
     return { message: 'Logged out' };
+  });
+
+  // ── POST /api/v1/auth/reset-password ─────────────────────────────
+  app.post('/api/v1/auth/reset-password', async (
+    request: FastifyRequest<{ Body: { currentPassword: string; newPassword: string } }>,
+    reply: FastifyReply,
+  ) => {
+    const { currentPassword, newPassword } = request.body ?? {};
+    if (!currentPassword || typeof currentPassword !== 'string') {
+      return reply.code(400).send({ error: 'Current password is required' });
+    }
+    if (!newPassword || typeof newPassword !== 'string') {
+      return reply.code(400).send({ error: 'New password is required' });
+    }
+
+    try {
+      await authService.resetPassword(currentPassword, newPassword);
+      return { message: 'Password reset successfully. All sessions have been invalidated.' };
+    } catch (err) {
+      if (err instanceof AuthError) {
+        return reply.code(err.statusCode).send({ error: err.message });
+      }
+      return reply.code(500).send({ error: 'Internal server error' });
+    }
   });
 
   // ── POST /api/v1/auth/api-keys ────────────────────────────────────

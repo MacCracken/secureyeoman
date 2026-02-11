@@ -18,7 +18,8 @@
     "format:check": "prettier --check \"packages/**/*.{ts,tsx,json}\"",
     "typecheck": "tsc --noEmit && tsc --noEmit -p packages/dashboard/tsconfig.json",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist",
-    "security:audit": "npm audit --audit-level=moderate"
+    "security:audit": "npm audit --audit-level=moderate",
+    "release-notes": "npx tsx scripts/generate-release-notes.ts"
   },
   "engines": {
     "node": ">=20.0.0"

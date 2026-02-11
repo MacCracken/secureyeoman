@@ -16,6 +16,8 @@ import { useWebSocket } from '../hooks/useWebSocket';
 import { fetchMetrics, fetchHealth, fetchOnboardingStatus } from '../api/client';
 import { NavigationTabs } from './NavigationTabs';
 import { StatusBar } from './StatusBar';
+import { SearchBar } from './SearchBar';
+import { NotificationBell } from './NotificationBell';
 import { ErrorBoundary } from './common/ErrorBoundary';
 import { OnboardingWizard } from './OnboardingWizard';
 import type { MetricsSnapshot } from '../types';
@@ -30,6 +32,7 @@ const PersonalityEditor = lazy(() => import('./PersonalityEditor').then(m => ({ 
 const SkillsManager = lazy(() => import('./SkillsManager').then(m => ({ default: m.SkillsManager })));
 const ConnectionManager = lazy(() => import('./ConnectionManager').then(m => ({ default: m.ConnectionManager })));
 const SettingsPage = lazy(() => import('./SettingsPage').then(m => ({ default: m.SettingsPage })));
+const SecuritySettings = lazy(() => import('./SecuritySettings').then(m => ({ default: m.SecuritySettings })));
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -61,7 +64,7 @@ export function DashboardLayout() {
     refetchInterval: 5000,
   });
 
-  const { connected } = useWebSocket('/ws/metrics');
+  const { connected, reconnecting } = useWebSocket('/ws/metrics');
 
   const { data: onboarding, refetch: refetchOnboarding } = useQuery({
     queryKey: ['onboarding'],
@@ -103,15 +106,27 @@ export function DashboardLayout() {
               </div>
             </div>
 
-            <StatusBar
-              isConnected={isConnected}
-              wsConnected={connected}
-              onRefresh={() => refetchMetrics()}
-              onLogout={() => void logout()}
-            />
+            <div className="flex items-center gap-4">
+              <SearchBar />
+              <NotificationBell />
+              <StatusBar
+                isConnected={isConnected}
+                wsConnected={connected}
+                onRefresh={() => refetchMetrics()}
+                onLogout={() => void logout()}
+              />
+            </div>
           </div>
         </div>
       </header>
+
+      {/* Reconnecting Banner */}
+      {reconnecting && (
+        <div className="bg-warning/10 border-b border-warning text-warning text-sm px-4 py-2 flex items-center gap-2">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Reconnecting to live updates...
+        </div>
+      )}
 
       {/* Navigation */}
       <NavigationTabs />
@@ -127,6 +142,7 @@ export function DashboardLayout() {
               <Route path="/personality" element={<PersonalityEditor />} />
               <Route path="/skills" element={<SkillsManager />} />
               <Route path="/connections" element={<ConnectionManager />} />
+              <Route path="/security-settings" element={<SecuritySettings />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

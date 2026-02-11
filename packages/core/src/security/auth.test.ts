@@ -209,6 +209,137 @@ describe('AuthService', () => {
     });
   });
 
+  // ── Remember Me ────────────────────────────────────────────────
+
+  describe('rememberMe', () => {
+    it('should return extended expiry when rememberMe is true', async () => {
+      const result = await service.login(ADMIN_PASSWORD, '127.0.0.1', true);
+      // 30 days = 2592000 seconds
+      expect(result.expiresIn).toBe(30 * 86400);
+    });
+
+    it('should return standard expiry when rememberMe is false', async () => {
+      const result = await service.login(ADMIN_PASSWORD, '127.0.0.1', false);
+      expect(result.expiresIn).toBe(3600);
+    });
+  });
+
+  // ── Password Reset ──────────────────────────────────────────────
+
+  describe('resetPassword', () => {
+    it('should reset password with correct current password', async () => {
+      const newPass = 'a-brand-new-password-that-is-at-least-32-chars';
+      await service.resetPassword(ADMIN_PASSWORD, newPass);
+
+      // Old password no longer works
+      await expect(service.login(ADMIN_PASSWORD, '127.0.0.1')).rejects.toThrow('Invalid credentials');
+
+      // New password works
+      const result = await service.login(newPass, '127.0.0.1');
+      expect(result.accessToken).toBeTruthy();
+    });
+
+    it('should reject reset with wrong current password', async () => {
+      await expect(
+        service.resetPassword('wrong', 'a-brand-new-password-that-is-at-least-32-chars')
+      ).rejects.toThrow('Current password is incorrect');
+    });
+
+    it('should reject weak new password (< 32 chars)', async () => {
+      await expect(
+        service.resetPassword(ADMIN_PASSWORD, 'short')
+      ).rejects.toThrow('New password must be at least 32 characters');
+    });
+
+    it('should invalidate existing tokens after reset', async () => {
+      const { accessToken } = await service.login(ADMIN_PASSWORD, '127.0.0.1');
+      const newPass = 'a-brand-new-password-that-is-at-least-32-chars';
+      await service.resetPassword(ADMIN_PASSWORD, newPass);
+
+      // Old token should fail (secret was rotated)
+      await expect(service.validateToken(accessToken)).rejects.toThrow();
+    });
+  });
+
+  // ── Two-Factor Authentication ──────────────────────────────────
+
+  describe('2FA', () => {
+    it('should set up and enable 2FA', async () => {
+      const { generateTOTP } = await import('./totp.js');
+      const setup = await service.setupTwoFactor();
+      expect(setup.secret).toBeTruthy();
+      expect(setup.uri).toContain('otpauth://totp/');
+      expect(setup.recoveryCodes).toHaveLength(10);
+
+      const code = generateTOTP(setup.secret);
+      const ok = await service.verifyAndEnableTwoFactor(code, setup.recoveryCodes);
+      expect(ok).toBe(true);
+      expect(service.isTwoFactorEnabled()).toBe(true);
+    });
+
+    it('should require 2FA code after login when enabled', async () => {
+      const { generateTOTP } = await import('./totp.js');
+      const setup = await service.setupTwoFactor();
+      const code = generateTOTP(setup.secret);
+      await service.verifyAndEnableTwoFactor(code, setup.recoveryCodes);
+
+      // Login should now return requiresTwoFactor
+      const result = await service.login(ADMIN_PASSWORD, '127.0.0.1');
+      expect(result.requiresTwoFactor).toBe(true);
+      expect(result.accessToken).toBe('');
+    });
+
+    it('should issue tokens after valid 2FA code', async () => {
+      const { generateTOTP } = await import('./totp.js');
+      const setup = await service.setupTwoFactor();
+      const setupCode = generateTOTP(setup.secret);
+      await service.verifyAndEnableTwoFactor(setupCode, setup.recoveryCodes);
+
+      const verifyCode = generateTOTP(setup.secret);
+      const result = await service.verifyTwoFactorCode(verifyCode);
+      expect(result.accessToken).toBeTruthy();
+      expect(result.tokenType).toBe('Bearer');
+    });
+
+    it('should accept recovery code and consume it', async () => {
+      const { generateTOTP } = await import('./totp.js');
+      const setup = await service.setupTwoFactor();
+      const code = generateTOTP(setup.secret);
+      await service.verifyAndEnableTwoFactor(code, setup.recoveryCodes);
+
+      const recoveryCode = setup.recoveryCodes[0];
+      const result = await service.verifyTwoFactorCode(recoveryCode);
+      expect(result.accessToken).toBeTruthy();
+
+      // Same recovery code should not work again
+      await expect(service.verifyTwoFactorCode(recoveryCode)).rejects.toThrow('Invalid 2FA code');
+    });
+
+    it('should reject invalid 2FA code', async () => {
+      const { generateTOTP } = await import('./totp.js');
+      const setup = await service.setupTwoFactor();
+      const code = generateTOTP(setup.secret);
+      await service.verifyAndEnableTwoFactor(code, setup.recoveryCodes);
+
+      await expect(service.verifyTwoFactorCode('000000')).rejects.toThrow('Invalid 2FA code');
+    });
+
+    it('should disable 2FA', async () => {
+      const { generateTOTP } = await import('./totp.js');
+      const setup = await service.setupTwoFactor();
+      const code = generateTOTP(setup.secret);
+      await service.verifyAndEnableTwoFactor(code, setup.recoveryCodes);
+
+      await service.disableTwoFactor();
+      expect(service.isTwoFactorEnabled()).toBe(false);
+
+      // Login should work without 2FA
+      const result = await service.login(ADMIN_PASSWORD, '127.0.0.1');
+      expect(result.accessToken).toBeTruthy();
+      expect(result.requiresTwoFactor).toBeUndefined();
+    });
+  });
+
   // ── Cleanup ───────────────────────────────────────────────────────
 
   describe('cleanupExpiredTokens', () => {

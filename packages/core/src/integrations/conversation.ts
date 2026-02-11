@@ -41,17 +41,23 @@ export class ConversationManager {
   }
 
   /**
-   * Build a conversation key from platform + chatId.
+   * Build a conversation key from platform + chatId + optional threadId.
+   * Thread IDs allow separate context per platform thread:
+   *   - Telegram: reply chain message IDs
+   *   - Discord: thread IDs
+   *   - Slack: thread_ts values
    */
-  private key(platform: string, chatId: string): string {
-    return `${platform}:${chatId}`;
+  private key(platform: string, chatId: string, threadId?: string): string {
+    return threadId ? `${platform}:${chatId}:${threadId}` : `${platform}:${chatId}`;
   }
 
   /**
    * Add a message to its conversation window.
+   * If the message has a threadId in its metadata, it's tracked in a separate thread context.
    */
   addMessage(message: UnifiedMessage): void {
-    const k = this.key(message.platform, message.chatId);
+    const threadId = (message.metadata as Record<string, unknown>)?.threadId as string | undefined;
+    const k = this.key(message.platform, message.chatId, threadId);
     let window = this.conversations.get(k);
     if (!window) {
       window = [];
@@ -66,10 +72,10 @@ export class ConversationManager {
   }
 
   /**
-   * Get the current conversation context for a chat.
+   * Get the current conversation context for a chat (optionally thread-scoped).
    */
-  getContext(platform: string, chatId: string): ConversationContext {
-    const k = this.key(platform, chatId);
+  getContext(platform: string, chatId: string, threadId?: string): ConversationContext {
+    const k = this.key(platform, chatId, threadId);
     const now = Date.now();
     const window = this.conversations.get(k) ?? [];
 

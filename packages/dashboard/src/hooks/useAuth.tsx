@@ -13,7 +13,7 @@ interface AuthContextValue {
   token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (password: string) => Promise<void>;
+  login: (password: string, rememberMe?: boolean) => Promise<void>;
   logout: () => Promise<void>;
 }
 
@@ -40,8 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
-  const login = useCallback(async (password: string) => {
-    const result = await apiLogin(password);
+  const login = useCallback(async (password: string, rememberMe?: boolean) => {
+    const result = await apiLogin(password, rememberMe);
     setAuthTokens(result.accessToken, result.refreshToken);
     setToken(result.accessToken);
   }, []);

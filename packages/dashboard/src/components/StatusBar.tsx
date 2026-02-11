@@ -1,6 +1,10 @@
-import { Activity, RefreshCw, LogOut, Sun, Moon } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import {
+  Activity, RefreshCw, LogOut, Sun, Moon, User, ChevronDown,
+} from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useSessionTimeout } from '../hooks/useSessionTimeout';
+import { getAccessToken } from '../api/client';
 
 interface StatusBarProps {
   isConnected: boolean;
@@ -9,9 +13,34 @@ interface StatusBarProps {
   onLogout: () => void;
 }
 
+function parseJwtRole(): string {
+  try {
+    const token = getAccessToken();
+    if (!token) return 'unknown';
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.role ?? 'user';
+  } catch {
+    return 'user';
+  }
+}
+
 export function StatusBar({ isConnected, wsConnected, onRefresh, onLogout }: StatusBarProps) {
   const { theme, toggle } = useTheme();
   const { showWarning, dismiss } = useSessionTimeout(3600);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const role = parseJwtRole();
+
+  // Click outside to close
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setProfileOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   return (
     <>
@@ -32,15 +61,6 @@ export function StatusBar({ isConnected, wsConnected, onRefresh, onLogout }: Sta
           </span>
         </div>
 
-        {/* Theme Toggle */}
-        <button
-          onClick={toggle}
-          className="btn-ghost p-2"
-          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
-        >
-          {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-        </button>
-
         {/* Refresh */}
         <button
           onClick={onRefresh}
@@ -50,14 +70,52 @@ export function StatusBar({ isConnected, wsConnected, onRefresh, onLogout }: Sta
           <RefreshCw className="w-4 h-4" />
         </button>
 
-        {/* Logout */}
-        <button
-          onClick={onLogout}
-          className="btn-ghost p-2"
-          aria-label="Sign out"
-        >
-          <LogOut className="w-4 h-4" />
-        </button>
+        {/* User Profile Dropdown */}
+        <div ref={dropdownRef} className="relative">
+          <button
+            onClick={() => setProfileOpen((v) => !v)}
+            className="btn-ghost p-2 flex items-center gap-1"
+            aria-label="User menu"
+            aria-expanded={profileOpen}
+            aria-haspopup="menu"
+          >
+            <User className="w-4 h-4" />
+            <ChevronDown className={`w-3 h-3 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {profileOpen && (
+            <div
+              className="absolute right-0 top-full mt-1 w-48 bg-card border rounded-md shadow-lg z-50"
+              role="menu"
+            >
+              {/* User info */}
+              <div className="px-3 py-2 border-b">
+                <p className="text-sm font-medium">Admin</p>
+                <p className="text-xs text-muted-foreground capitalize">{role}</p>
+              </div>
+
+              {/* Theme toggle */}
+              <button
+                onClick={() => { toggle(); setProfileOpen(false); }}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-colors"
+                role="menuitem"
+              >
+                {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {theme === 'dark' ? 'Light mode' : 'Dark mode'}
+              </button>
+
+              {/* Logout */}
+              <button
+                onClick={() => { setProfileOpen(false); onLogout(); }}
+                className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-colors text-destructive"
+                role="menuitem"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign out
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Session timeout warning */}
