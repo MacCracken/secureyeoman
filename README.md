@@ -2,7 +2,7 @@
 
 > **F**ully **R**esponsive **I**ntegrated **D**igital **A**ssistant **Y**eoman
 
-[![Version](https://img.shields.io/badge/Version-1.0.0-blue.svg)](https://github.com/MacCracken/FRIDAY/releases/tag/v1.0.0)
+[![Version](https://img.shields.io/badge/Version-1.0.1-blue.svg)](https://github.com/MacCracken/FRIDAY/releases/tag/v1.0.1)
 [![CI](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
@@ -47,6 +47,7 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 | **Observability** | Cryptographic audit trails, Prometheus metrics, Grafana dashboards, log rotation |
 | **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama (local), fallback chains |
 | **User Experience** | React dashboard, personality editor, skills manager, WebSocket real-time updates |
+| **Agent Architecture** | Soul (identity), Spirit (passions/inspirations/pains), Brain (memory/knowledge), Body (stub) |
 | **Integrations** | Telegram, Discord, Slack, GitHub — plugin architecture with message routing |
 | **Development** | TypeScript, 1000+ tests across 59+ files, Docker support, CI/CD pipeline |
 

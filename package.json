@@ -1,6 +1,6 @@
 {
   "name": "friday",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "F.R.I.D.A.Y. - Fully Responsive Integrated Digital Assistant Yeoman with SecureYeoman",
   "private": true,
   "type": "module",
