@@ -1,5 +1,7 @@
 /**
  * Spirit Module — Passions, Inspirations & Pains for FRIDAY
+ *
+ * In Our Image: No-Thing-Ness → The One (Soul) → The Plurality (Spirit/Brain/Body)
  */
 
 export { SpiritStorage } from './storage.js';

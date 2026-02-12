@@ -30,7 +30,7 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 - TypeScript project structure with strict mode, ESLint, Prettier, Vitest
 - Configuration management (YAML + env vars + Zod validation)
 - Base agent loop with task queue, event-driven architecture, graceful shutdown
-- Multi-provider AI integration (Anthropic, OpenAI, Gemini, Ollama)
+- Multi-provider AI integration (Anthropic, OpenAI, Gemini, Ollama, OpenCode Zen)
 - Structured logging with UUID v7, correlation IDs, SQLite WAL storage
 - Cryptographic audit chain (HMAC-SHA256, integrity verification)
 - Log query API with REST endpoint
@@ -105,7 +105,7 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 - Responsive mobile layout (hamburger nav, stacked cards, adaptive header/footer spacing)
 - Theme toggle (dark/light with localStorage persistence)
 - Settings page (agent identity, API key management, soul config overview)
-- DashboardLayout, StatusBar (inline reconnecting indicator), NavigationTabs (memoized, 9 tabs with overflow scroll)
+- DashboardLayout, StatusBar (inline reconnecting indicator), collapsible sidebar navigation (v1.2)
 - 57 component tests across 5 files (Vitest + Testing Library + jsdom)
 
 ---
@@ -175,22 +175,36 @@ All core modules maintain >80% coverage thresholds.
 | Phase 5: Production | 3 weeks | Complete |
 | v1.0.0 MVP Release| 2 Weeks | Complete |
 | **v1.1.1 Release** | — | **Released 2026-02-12** |
+| **v1.2.0 Release** | — | **In Progress** |
+
+---
+
+## v1.2: Advanced Features
+
+**Status**: Complete
+**Released**: 2026-02-12
+
+- ✅ Sidebar navigation (collapsible left-side panel replacing top tabs)
+- ✅ MCP protocol support (client + server with REST API)
+- ✅ Custom dashboards (drag-and-drop widget placement)
+- ✅ Audit report generator (JSON/HTML/CSV export)
+- ✅ Team workspaces (multi-team isolation with member management)
+- ✅ Cost optimization recommendations
+- ✅ A/B testing framework (experiment management with variant routing)
+- ✅ Skill marketplace (discovery, search, install, publish with signature verification)
+
+---
+
+## v1.3: Developer Experience
+
+**Status**: Planned
+**Target**: 2026 Q2
+
+- Code IDE — In-browser IDE with personality-driven vibe coding and personality switching
 
 ---
 
 ## Future Enhancements
-
-### v1.2
-- MCP protocol support
-- Custom dashboards
-- Audit report generator
-
-### v1.2
-- Team workspaces
-- Audit report generator
-- Cost optimization recommendations
-- A/B testing framework
-- Skill marketplace
 
 ### v2.0
 - Distributed deployment (Kubernetes)

@@ -469,8 +469,11 @@ describe('SoulManager', () => {
       expect(mgr.composeSoulPrompt()).toBe('');
     });
 
-    it('should return empty string with no personality and no skills and no agent name', () => {
-      expect(manager.composeSoulPrompt()).toBe('');
+    it('should return archetypes preamble with no personality and no skills and no agent name', () => {
+      const prompt = manager.composeSoulPrompt();
+      expect(prompt).toContain('In Our Image');
+      expect(prompt).toContain('No-Thing-Ness');
+      expect(prompt).not.toContain('Your name is');
     });
 
     it('should include agent name when different from personality name', () => {

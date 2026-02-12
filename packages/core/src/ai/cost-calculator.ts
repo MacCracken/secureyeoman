@@ -33,6 +33,14 @@ const PRICING: Record<string, ModelPricing> = {
   'gemini-2.0-flash': { inputPer1M: 0.1, outputPer1M: 0.4 },
   'gemini-1.5-pro': { inputPer1M: 1.25, outputPer1M: 5 },
   'gemini-1.5-flash': { inputPer1M: 0.075, outputPer1M: 0.3 },
+
+  // OpenCode Zen
+  'gpt-5.2': { inputPer1M: 1.75, outputPer1M: 14 },
+  'claude-sonnet-4-5': { inputPer1M: 3, outputPer1M: 15 },
+  'claude-haiku-4-5': { inputPer1M: 1, outputPer1M: 5 },
+  'gemini-3-flash': { inputPer1M: 0.5, outputPer1M: 3 },
+  'qwen3-coder': { inputPer1M: 0.45, outputPer1M: 1.5 },
+  'big-pickle': { inputPer1M: 0, outputPer1M: 0 },
 };
 
 // Fallback pricing per provider when model is unknown
@@ -41,6 +49,7 @@ const FALLBACK_PRICING: Record<string, ModelPricing> = {
   openai: { inputPer1M: 2.5, outputPer1M: 10 },
   gemini: { inputPer1M: 1.25, outputPer1M: 5 },
   ollama: { inputPer1M: 0, outputPer1M: 0 },
+  opencode: { inputPer1M: 1, outputPer1M: 5 },
 };
 
 export interface AvailableModel {
@@ -64,6 +73,12 @@ const MODEL_PROVIDER_MAP: Record<string, string> = {
   'gemini-2.0-flash': 'gemini',
   'gemini-1.5-pro': 'gemini',
   'gemini-1.5-flash': 'gemini',
+  'gpt-5.2': 'opencode',
+  'claude-sonnet-4-5': 'opencode',
+  'claude-haiku-4-5': 'opencode',
+  'gemini-3-flash': 'opencode',
+  'qwen3-coder': 'opencode',
+  'big-pickle': 'opencode',
 };
 
 /**

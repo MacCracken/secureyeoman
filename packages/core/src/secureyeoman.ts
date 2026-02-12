@@ -46,8 +46,21 @@ import { DiscordIntegration } from './integrations/discord/index.js';
 import { SlackIntegration } from './integrations/slack/index.js';
 import { GitHubIntegration } from './integrations/github/index.js';
 import { IMessageIntegration } from './integrations/imessage/index.js';
-import { HeartbeatManager } from './brain/heartbeat.js';
+import { HeartbeatManager } from './body/heartbeat.js';
 import { ExternalBrainSync } from './brain/external-sync.js';
+import { McpStorage } from './mcp/storage.js';
+import { McpClientManager } from './mcp/client.js';
+import { McpServer } from './mcp/server.js';
+import { AuditReportGenerator } from './reporting/audit-report.js';
+import { CostOptimizer } from './ai/cost-optimizer.js';
+import { DashboardStorage } from './dashboard/storage.js';
+import { DashboardManager } from './dashboard/manager.js';
+import { WorkspaceStorage } from './workspace/storage.js';
+import { WorkspaceManager } from './workspace/manager.js';
+import { ExperimentStorage } from './experiment/storage.js';
+import { ExperimentManager } from './experiment/manager.js';
+import { MarketplaceStorage } from './marketplace/storage.js';
+import { MarketplaceManager } from './marketplace/manager.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot } from '@friday/shared';
 
 export interface SecureYeomanOptions {
@@ -101,6 +114,19 @@ export class SecureYeoman {
   private conversationManager: ConversationManager | null = null;
   private sandboxManager: SandboxManager | null = null;
   private taskStorage: TaskStorage | null = null;
+  private mcpStorage: McpStorage | null = null;
+  private mcpClientManager: McpClientManager | null = null;
+  private mcpServer: McpServer | null = null;
+  private reportGenerator: AuditReportGenerator | null = null;
+  private costOptimizer: CostOptimizer | null = null;
+  private dashboardStorage: DashboardStorage | null = null;
+  private dashboardManager: DashboardManager | null = null;
+  private workspaceStorage: WorkspaceStorage | null = null;
+  private workspaceManager: WorkspaceManager | null = null;
+  private experimentStorage: ExperimentStorage | null = null;
+  private experimentManager: ExperimentManager | null = null;
+  private marketplaceStorage: MarketplaceStorage | null = null;
+  private marketplaceManager: MarketplaceManager | null = null;
   private initialized = false;
   private startedAt: number | null = null;
   private shutdownPromise: Promise<void> | null = null;
@@ -487,6 +513,69 @@ export class SecureYeoman {
         });
       }
 
+      // Step 6.8: Initialize MCP system (if enabled)
+      if (this.config.mcp?.enabled !== false) {
+        this.mcpStorage = new McpStorage({
+          dbPath: `${this.config.core.dataDir}/mcp.db`,
+        });
+        this.mcpClientManager = new McpClientManager(this.mcpStorage, {
+          logger: this.logger.child({ component: 'McpClient' }),
+        });
+        this.mcpServer = new McpServer({
+          logger: this.logger.child({ component: 'McpServer' }),
+          brainManager: this.brainManager ?? undefined,
+          soulManager: this.soulManager ?? undefined,
+        });
+        this.logger.debug('MCP system initialized');
+      }
+
+      // Step 6.9: Initialize reporting, dashboard, workspace, experiment, marketplace
+      this.reportGenerator = new AuditReportGenerator({
+        logger: this.logger.child({ component: 'AuditReportGenerator' }),
+        auditChain: this.auditChain,
+      });
+      this.logger.debug('Audit report generator initialized');
+
+      if (this.aiClient) {
+        this.costOptimizer = new CostOptimizer({
+          logger: this.logger.child({ component: 'CostOptimizer' }),
+          usageTracker: this.aiClient.getUsageTracker(),
+        });
+        this.logger.debug('Cost optimizer initialized');
+      }
+
+      this.dashboardStorage = new DashboardStorage({
+        dbPath: `${this.config.core.dataDir}/dashboards.db`,
+      });
+      this.dashboardManager = new DashboardManager(this.dashboardStorage, {
+        logger: this.logger.child({ component: 'DashboardManager' }),
+      });
+      this.logger.debug('Dashboard manager initialized');
+
+      this.workspaceStorage = new WorkspaceStorage({
+        dbPath: `${this.config.core.dataDir}/workspaces.db`,
+      });
+      this.workspaceManager = new WorkspaceManager(this.workspaceStorage, {
+        logger: this.logger.child({ component: 'WorkspaceManager' }),
+      });
+      this.logger.debug('Workspace manager initialized');
+
+      this.experimentStorage = new ExperimentStorage({
+        dbPath: `${this.config.core.dataDir}/experiments.db`,
+      });
+      this.experimentManager = new ExperimentManager(this.experimentStorage, {
+        logger: this.logger.child({ component: 'ExperimentManager' }),
+      });
+      this.logger.debug('Experiment manager initialized');
+
+      this.marketplaceStorage = new MarketplaceStorage({
+        dbPath: `${this.config.core.dataDir}/marketplace.db`,
+      });
+      this.marketplaceManager = new MarketplaceManager(this.marketplaceStorage, {
+        logger: this.logger.child({ component: 'MarketplaceManager' }),
+      });
+      this.logger.debug('Marketplace manager initialized');
+
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
         event: 'system_initialized',
@@ -818,6 +907,78 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the MCP storage instance
+   */
+  getMcpStorage(): McpStorage | null {
+    this.ensureInitialized();
+    return this.mcpStorage;
+  }
+
+  /**
+   * Get the MCP client manager instance
+   */
+  getMcpClientManager(): McpClientManager | null {
+    this.ensureInitialized();
+    return this.mcpClientManager;
+  }
+
+  /**
+   * Get the MCP server instance
+   */
+  getMcpServer(): McpServer | null {
+    this.ensureInitialized();
+    return this.mcpServer;
+  }
+
+  /**
+   * Get the audit report generator instance
+   */
+  getReportGenerator(): AuditReportGenerator | null {
+    this.ensureInitialized();
+    return this.reportGenerator;
+  }
+
+  /**
+   * Get the cost optimizer instance
+   */
+  getCostOptimizer(): CostOptimizer | null {
+    this.ensureInitialized();
+    return this.costOptimizer;
+  }
+
+  /**
+   * Get the dashboard manager instance
+   */
+  getDashboardManager(): DashboardManager | null {
+    this.ensureInitialized();
+    return this.dashboardManager;
+  }
+
+  /**
+   * Get the workspace manager instance
+   */
+  getWorkspaceManager(): WorkspaceManager | null {
+    this.ensureInitialized();
+    return this.workspaceManager;
+  }
+
+  /**
+   * Get the experiment manager instance
+   */
+  getExperimentManager(): ExperimentManager | null {
+    this.ensureInitialized();
+    return this.experimentManager;
+  }
+
+  /**
+   * Get the marketplace manager instance
+   */
+  getMarketplaceManager(): MarketplaceManager | null {
+    this.ensureInitialized();
+    return this.marketplaceManager;
+  }
+
+  /**
    * Get the integration storage instance
    */
   getIntegrationStorage(): IntegrationStorage {
@@ -1090,6 +1251,36 @@ export class SecureYeoman {
       this.brainStorage = null;
       this.brainManager = null;
     }
+
+    // Close v1.2 module storage
+    if (this.mcpStorage) {
+      this.mcpStorage.close();
+      this.mcpStorage = null;
+      this.mcpClientManager = null;
+      this.mcpServer = null;
+    }
+    if (this.dashboardStorage) {
+      this.dashboardStorage.close();
+      this.dashboardStorage = null;
+      this.dashboardManager = null;
+    }
+    if (this.workspaceStorage) {
+      this.workspaceStorage.close();
+      this.workspaceStorage = null;
+      this.workspaceManager = null;
+    }
+    if (this.experimentStorage) {
+      this.experimentStorage.close();
+      this.experimentStorage = null;
+      this.experimentManager = null;
+    }
+    if (this.marketplaceStorage) {
+      this.marketplaceStorage.close();
+      this.marketplaceStorage = null;
+      this.marketplaceManager = null;
+    }
+    this.reportGenerator = null;
+    this.costOptimizer = null;
 
     // Close auth storage
     if (this.authStorage) {

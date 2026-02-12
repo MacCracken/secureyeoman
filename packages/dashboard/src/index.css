@@ -24,7 +24,9 @@
   --input: 214.3 31.8% 91.4%;
   --ring: 199 89% 48%;
   --radius: 0.5rem;
-  
+  --sidebar-expanded: 240px;
+  --sidebar-collapsed: 64px;
+
   --success: 142 76% 36%;
   --warning: 38 92% 50%;
   --info: 217 91% 60%;
@@ -208,6 +210,30 @@ body {
 .badge-info {
   background-color: hsl(var(--info) / 0.2);
   color: hsl(217 91% 50%);
+}
+
+/* Sidebar tooltip for collapsed state */
+.sidebar-tooltip {
+  display: none;
+  position: absolute;
+  left: calc(100% + 8px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  white-space: nowrap;
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  border: 1px solid hsl(var(--border));
+  box-shadow: 0 2px 8px rgb(0 0 0 / 0.15);
+  z-index: 50;
+  pointer-events: none;
+}
+
+.group:hover .sidebar-tooltip {
+  display: block;
 }
 
 /* ReactFlow customization */

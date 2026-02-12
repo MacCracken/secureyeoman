@@ -156,6 +156,8 @@ export {
   RetryManager,
   type RetryConfig,
   CostCalculator,
+  CostOptimizer,
+  type CostOptimizerDeps,
   UsageTracker,
   type UsageStats,
   type UsageRecord,
@@ -171,10 +173,7 @@ export {
 export {
   BrainStorage,
   BrainManager,
-  HeartbeatManager,
   ExternalBrainSync,
-  type HeartbeatResult,
-  type HeartbeatCheckResult,
   type SyncResult,
   type Memory,
   type MemoryType,
@@ -214,6 +213,9 @@ export {
 
 // Soul
 export {
+  SACRED_ARCHETYPES,
+  composeArchetypesPreamble,
+  type Archetype,
   SoulStorage,
   SoulManager,
   type SoulManagerDeps,
@@ -238,8 +240,11 @@ export {
   type SpiritRoutesOptions,
 } from './spirit/spirit-routes.js';
 
-// Body (stub — v2/v3)
+// Body
 export {
+  HeartbeatManager,
+  type HeartbeatResult,
+  type HeartbeatCheckResult,
   type BodyConfig,
 } from './body/index.js';
 
@@ -292,6 +297,63 @@ export {
   createGatewayServer,
   type GatewayServerOptions,
 } from './gateway/server.js';
+
+// MCP
+export {
+  McpStorage,
+  McpClientManager,
+  type McpClientManagerDeps,
+  McpServer,
+  type McpServerDeps,
+  registerMcpRoutes,
+  type McpRoutesOptions,
+} from './mcp/index.js';
+
+// Reporting
+export {
+  AuditReportGenerator,
+  type AuditReportGeneratorDeps,
+  formatHtmlReport,
+  formatCsvReport,
+  registerReportRoutes,
+  type ReportRoutesOptions,
+} from './reporting/index.js';
+
+// Dashboard
+export {
+  DashboardStorage,
+  DashboardManager,
+  type DashboardManagerDeps,
+  registerDashboardRoutes,
+  type DashboardRoutesOptions,
+} from './dashboard/index.js';
+
+// Workspace
+export {
+  WorkspaceStorage,
+  WorkspaceManager,
+  type WorkspaceManagerDeps,
+  registerWorkspaceRoutes,
+  type WorkspaceRoutesOptions,
+} from './workspace/index.js';
+
+// Experiment
+export {
+  ExperimentStorage,
+  ExperimentManager,
+  type ExperimentManagerDeps,
+  registerExperimentRoutes,
+  type ExperimentRoutesOptions,
+} from './experiment/index.js';
+
+// Marketplace
+export {
+  MarketplaceStorage,
+  MarketplaceManager,
+  type MarketplaceManagerDeps,
+  registerMarketplaceRoutes,
+  type MarketplaceRoutesOptions,
+} from './marketplace/index.js';
 
 // Re-export shared types
 export * from '@friday/shared';

@@ -13,6 +13,7 @@ const PROVIDER_LABELS: Record<string, string> = {
   openai: 'OpenAI',
   gemini: 'Gemini',
   ollama: 'Ollama (Local)',
+  opencode: 'OpenCode (Zen)',
 };
 
 function formatPrice(inputPer1M: number, outputPer1M: number): string {

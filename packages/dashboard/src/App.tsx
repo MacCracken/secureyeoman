@@ -3,6 +3,7 @@ import { Shield } from 'lucide-react';
 import { DashboardLayout } from './components/DashboardLayout';
 import { LoginPage } from './pages/LoginPage';
 import { useAuth } from './hooks/useAuth';
+import { SidebarProvider } from './hooks/useSidebar';
 
 function App() {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
@@ -16,14 +17,16 @@ function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/login" element={
-        isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
-      } />
-      <Route path="/*" element={
-        isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />
-      } />
-    </Routes>
+    <SidebarProvider>
+      <Routes>
+        <Route path="/login" element={
+          isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
+        } />
+        <Route path="/*" element={
+          isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />
+        } />
+      </Routes>
+    </SidebarProvider>
   );
 }
 

@@ -7,19 +7,80 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### In Our Image: The Sacred Hierarchy of Life
+- **Sacred Archetypes** — Cosmological foundation (No-Thing-Ness → The One → The Plurality) baked into Soul prompt composition; every AI prompt now begins with the archetypal preamble grounding the "In Our Image" hierarchy
+- **Heartbeat moved to Body** — `HeartbeatManager` relocated from `brain/` to `body/`, making Body the owner of the agent's vital signs; Brain retains memory/knowledge, Body now owns periodic self-checks (system health, memory status, log anomalies, integration health)
+
+### Added
+- **OpenCode Zen provider** — 5th AI provider using OpenCode.ai's OpenAI-compatible gateway (`https://opencode.ai/zen/v1`); supports GPT 5.2, Claude Sonnet 4.5, Claude Haiku 4.5, Gemini 3 Flash, Qwen3 Coder, and Big Pickle (free); pricing, cost calculator entries, dashboard label, and unit tests included
+
+---
+
+## [1.2.0] — 2026-02-12
+
+### Dashboard Enhancements
+- **Collapsible sidebar navigation** — Left-side panel replacing top tabs with collapsible sections (Tasks, Brain, Connections, Settings, Reports, Experiments, Marketplace); toggle button, responsive mobile layout
+- **New dashboard pages** — Reports page (audit report generator with JSON/HTML/CSV export), Experiments page (A/B test management with variant comparison charts), Marketplace page (skill discovery with search, categories, install/uninstall)
+
+### MCP Protocol Support
+- **McpClientManager** — Connects to external MCP servers, discovers tools/resources, makes them available to F.R.I.D.A.Y.'s AI workflows
+- **McpServer** — Exposes F.R.I.D.A.Y.'s skills as MCP tools and knowledge as MCP resources via JSON-RPC 2.0 endpoint
+- **MCP REST API** — `/api/v1/mcp/` endpoints for CRUD, start/stop, list-tools, list-resources with RBAC enforcement
+- **MCP configuration** — `mcp.enabled`, `mcp.serverPort`, `mcp.exposeSkillsAsTools`, `mcp.exposeKnowledgeAsResources` in config schema
+- **SQLite storage** — `mcp_servers` table for server configurations
+
+### Audit & Reports
+- **Audit report generator** — Generate comprehensive audit reports with filters (time range, event type, user, severity); export to JSON, HTML, or CSV
+- **Cost optimization recommendations** — Analyze usage patterns and suggest model/config changes to reduce costs
+- **Reports REST API** — `/api/v1/reports/` endpoints for generating and exporting audit reports
+
+### Team Collaboration
+- **Team workspaces** — Workspace isolation with `WorkspaceManager` for multi-team deployments; distinct personalities, skills, knowledge per workspace
+- **Workspace membership** — Member management with workspace-level roles (workspace_admin, workspace_member, workspace_viewer)
+- **Workspace REST API** — `/api/v1/workspaces/` for CRUD, `/api/v1/workspaces/:id/members` for membership
+- **SQLite storage** — `workspaces` and `workspace_members` tables with foreign key constraints
+- **Dashboard workspace switcher** — Workspace selector in header, workspace settings page
+
+### A/B Testing Framework
+- **Experiment management** — Create experiments with multiple variants (control + treatments), traffic allocation, duration
+- **Variant routing** — Automatic traffic routing based on hash(userId), metric collection (latency, cost, success rate)
+- **Experiments REST API** — `/api/v1/experiments/` for CRUD, `/api/v1/experiments/:id/results` for aggregated stats with p-values
+- **SQLite storage** — `experiments`, `experiment_variants`, `experiment_metrics` tables
+
+### Skill Marketplace
+- **Marketplace** — Public registry of published skills with metadata (name, description, author, downloads, ratings)
+- **Skill operations** — Search, install (copy to local Brain), uninstall, publish (upload approved skills)
+- **Marketplace REST API** — `/api/v1/marketplace/` for search/install/uninstall, `/api/v1/marketplace/publish` for publishing
+- **Skill packaging** — JSON export with Ed25519 signature verification to prevent malicious injection
+- **SQLite storage** — `marketplace_skills` and `marketplace_installs` tables
+- **Moderation workflow** — Admin-only skill approval (pending → approved → published)
+
+### Custom Dashboards
+- **Dashboard customization** — Create custom dashboards with drag-and-drop widget placement
+- **Widget library** — Metrics graphs, task history, security events, resource monitors, custom charts
+- **Dashboard persistence** — Save/load custom layouts per user in SQLite
+
+### Security & API
+- **Route permission enforcement** — All new API endpoints (MCP, Reports, Experiments, Marketplace, Workspaces) enforce RBAC permissions
+- **Workspace-scoped RBAC** — Extended permission model with workspace-level roles alongside global roles
+
+---
+
 ## [1.0.1] — 2026-02-11
 
-### Spirit System & Soul/Spirit/Brain/Body Hierarchy
+### In Our Image: The Sacred Hierarchy of Life
 
-Adds the **Spirit** module — the agent's emotional core (passions, inspirations, pain points) — and establishes a clear hierarchy: **Soul > Spirit > Brain > Body**.
+Adds the **Spirit** module — the agent's emotional core (passions, inspirations, pain points) — and establishes the sacred hierarchy: **Soul > Spirit > Brain > Body**.
 
 ### Added
 - **Spirit module** (`packages/core/src/spirit/`) — Full CRUD for passions, inspirations, and pains with SQLite-backed storage, manager, and REST API endpoints
 - **Spirit prompt composition** — `composeSpiritPrompt()` builds a Spirit section that is injected into the Soul prompt between personality and brain context
 - **Spirit REST API** — 15 endpoints under `/api/v1/spirit/` for passions, inspirations, pains, config, stats, and prompt preview
 - **Spirit schemas** — `SpiritConfigSchema`, `PassionSchema`, `InspirationSchema`, `PainSchema` with Create/Update variants in shared types
-- **Body stub** (`packages/core/src/body/`) — Placeholder module with `BodyConfigSchema` (enabled: false) for v2/v3 physical interfaces
-- **Agent hierarchy** — Soul > Spirit > Brain > Body architecture with Spirit integrated into prompt composition pipeline
+- **Body module** (`packages/core/src/body/`) — Owns the agent's vital signs (Heartbeat) with `BodyConfigSchema` for v2/v3 physical interfaces
+- **In Our Image** — Soul > Spirit > Brain > Body sacred hierarchy with Spirit integrated into prompt composition pipeline
 - **Spirit test suite** — Full coverage for storage, manager, and composition (40+ tests)
 
 ### Changed

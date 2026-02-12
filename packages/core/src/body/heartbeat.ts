@@ -1,12 +1,14 @@
 /**
  * HeartbeatManager — Periodic self-check system for FRIDAY.
  *
+ * Part of the Body module — the agent's vital signs and physical life-checks.
+ *
  * Runs configurable checks on a timer (system health, memory status,
  * log anomalies, integration health) and records results as episodic
  * memories with source 'heartbeat'.
  */
 
-import type { BrainManager } from './manager.js';
+import type { BrainManager } from '../brain/manager.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { IntegrationManager } from '../integrations/manager.js';
 import type { SecureLogger } from '../logging/logger.js';

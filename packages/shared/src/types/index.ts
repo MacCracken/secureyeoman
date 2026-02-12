@@ -184,6 +184,88 @@ export {
   type UnifiedMessage,
 } from './integration.js';
 
+// MCP types
+export {
+  McpTransportSchema,
+  McpServerConfigSchema,
+  McpServerCreateSchema,
+  McpToolDefSchema,
+  McpResourceDefSchema,
+  McpConfigSchema,
+  type McpTransport,
+  type McpServerConfig,
+  type McpServerCreate,
+  type McpToolDef,
+  type McpResourceDef,
+  type McpConfig,
+} from './mcp.js';
+
+// Reporting types
+export {
+  ReportFormatSchema,
+  AuditReportOptionsSchema,
+  AuditReportSchema,
+  type ReportFormat,
+  type AuditReportOptions,
+  type AuditReport,
+} from './reporting.js';
+
+// Cost types
+export {
+  RecommendationPrioritySchema,
+  CostRecommendationSchema,
+  CostAnalysisSchema,
+  type RecommendationPriority,
+  type CostRecommendation,
+  type CostAnalysis,
+} from './cost.js';
+
+// Dashboard types
+export {
+  WidgetTypeSchema,
+  DashboardWidgetSchema,
+  CustomDashboardSchema,
+  CustomDashboardCreateSchema,
+  type WidgetType,
+  type DashboardWidget,
+  type CustomDashboard,
+  type CustomDashboardCreate,
+} from './dashboard.js';
+
+// Workspace types
+export {
+  WorkspaceRoleSchema,
+  WorkspaceMemberSchema,
+  WorkspaceSchema,
+  WorkspaceCreateSchema,
+  type WorkspaceRole,
+  type WorkspaceMember,
+  type Workspace,
+  type WorkspaceCreate,
+} from './workspace.js';
+
+// Experiment types
+export {
+  ExperimentStatusSchema,
+  VariantSchema,
+  ExperimentResultSchema,
+  ExperimentSchema,
+  ExperimentCreateSchema,
+  type ExperimentStatus,
+  type Variant,
+  type ExperimentResult,
+  type Experiment,
+  type ExperimentCreate,
+} from './experiment.js';
+
+// Marketplace types
+export {
+  MarketplaceSkillSchema,
+  MarketplaceSearchSchema,
+  type MarketplaceSkill,
+  type MarketplaceSearch,
+} from './marketplace.js';
+
 // Config types
 export {
   CoreConfigSchema,

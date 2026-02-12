@@ -21,6 +21,7 @@ import { AnthropicProvider } from './providers/anthropic.js';
 import { OpenAIProvider } from './providers/openai.js';
 import { GeminiProvider } from './providers/gemini.js';
 import { OllamaProvider } from './providers/ollama.js';
+import { OpenCodeProvider } from './providers/opencode.js';
 import { CostCalculator } from './cost-calculator.js';
 import { UsageTracker, type UsageStats } from './usage-tracker.js';
 import { TokenLimitError, RateLimitError, ProviderUnavailableError } from './errors.js';
@@ -212,6 +213,13 @@ export class AIClient {
   }
 
   /**
+   * Get the usage tracker instance (for cost optimizer integration).
+   */
+  getUsageTracker(): UsageTracker {
+    return this.usageTracker;
+  }
+
+  /**
    * Get the underlying provider name.
    */
   getProviderName(): AIProviderName {
@@ -389,6 +397,8 @@ export class AIClient {
         return new GeminiProvider(providerConfig, this.logger ?? undefined);
       case 'ollama':
         return new OllamaProvider(providerConfig, this.logger ?? undefined);
+      case 'opencode':
+        return new OpenCodeProvider(providerConfig, this.logger ?? undefined);
       default:
         throw new Error(`Unknown AI provider: ${config.model.provider}`);
     }
