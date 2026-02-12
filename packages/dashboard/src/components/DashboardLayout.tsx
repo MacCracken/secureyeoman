@@ -10,11 +10,13 @@ import {
   XCircle,
   HardDrive,
   Loader2,
+  Menu,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useSidebar } from '../hooks/useSidebar';
 import { useWebSocket } from '../hooks/useWebSocket';
 import { fetchMetrics, fetchHealth, fetchOnboardingStatus } from '../api/client';
-import { NavigationTabs } from './NavigationTabs';
+import { Sidebar } from './Sidebar';
 import { StatusBar } from './StatusBar';
 import { SearchBar } from './SearchBar';
 import { NotificationBell } from './NotificationBell';
@@ -34,9 +36,13 @@ const ConnectionManager = lazy(() => import('./ConnectionManager').then(m => ({ 
 const SettingsPage = lazy(() => import('./SettingsPage').then(m => ({ default: m.SettingsPage })));
 const SecuritySettings = lazy(() => import('./SecuritySettings').then(m => ({ default: m.SecuritySettings })));
 const ChatPage = lazy(() => import('./ChatPage').then(m => ({ default: m.ChatPage })));
+const ReportsPage = lazy(() => import('./ReportsPage').then(m => ({ default: m.ReportsPage })));
+const ExperimentsPage = lazy(() => import('./ExperimentsPage').then(m => ({ default: m.ExperimentsPage })));
+const MarketplacePage = lazy(() => import('./MarketplacePage').then(m => ({ default: m.MarketplacePage })));
 
 export function DashboardLayout() {
   const { logout } = useAuth();
+  const { collapsed, setMobileOpen } = useSidebar();
 
   // Local network check
   const [isLocalNetwork, setIsLocalNetwork] = useState(true);
@@ -94,68 +100,103 @@ export function DashboardLayout() {
   const isConnected = !healthError && health?.status === 'ok';
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="border-b bg-card relative">
-        <div className="container mx-auto px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-              <Shield className="w-7 h-7 sm:w-8 sm:h-8 text-primary flex-shrink-0" />
-              <div className="min-w-0">
-                <h1 className="text-lg sm:text-xl font-bold truncate">SecureYeoman</h1>
-                <p className="text-xs text-muted-foreground hidden sm:block">Performance Dashboard</p>
+    <div className="min-h-screen bg-background flex">
+      {/* Sidebar */}
+      <Sidebar />
+
+      {/* Main content column */}
+      <div
+        className="flex flex-col flex-1 min-h-screen transition-[margin-left] duration-200"
+        style={{
+          marginLeft: `var(--sidebar-collapsed)`,
+        }}
+      >
+        {/* Use CSS media query via class for responsive margin */}
+        <style>{`
+          @media (min-width: 768px) {
+            .sidebar-content-area {
+              margin-left: ${collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-expanded)'} !important;
+            }
+          }
+          @media (max-width: 767px) {
+            .sidebar-content-area {
+              margin-left: 0 !important;
+            }
+          }
+        `}</style>
+
+        <div className="sidebar-content-area flex flex-col flex-1 min-h-screen transition-[margin-left] duration-200" style={{ marginLeft: 0 }}>
+          {/* Header */}
+          <header className="border-b bg-card sticky top-0 z-20">
+            <div className="px-4 py-3 sm:py-4">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  {/* Mobile hamburger */}
+                  <button
+                    className="md:hidden btn-ghost p-2"
+                    onClick={() => setMobileOpen(true)}
+                    aria-label="Open navigation menu"
+                  >
+                    <Menu className="w-5 h-5" />
+                  </button>
+                  {/* Mobile-only logo */}
+                  <Shield className="w-7 h-7 text-primary flex-shrink-0 md:hidden" />
+                  <div className="min-w-0 md:hidden">
+                    <h1 className="text-lg font-bold truncate">SecureYeoman</h1>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 sm:gap-4">
+                  <div className="hidden md:block">
+                    <SearchBar />
+                  </div>
+                  <NotificationBell />
+                  <StatusBar
+                    isConnected={isConnected}
+                    wsConnected={connected}
+                    reconnecting={reconnecting}
+                    onRefresh={() => refetchMetrics()}
+                    onLogout={() => void logout()}
+                  />
+                </div>
               </div>
             </div>
+          </header>
 
-            <div className="flex items-center gap-2 sm:gap-4">
-              <div className="hidden md:block">
-                <SearchBar />
+          {/* Main Content */}
+          <main className="px-3 sm:px-4 py-4 sm:py-6 flex-1">
+            <ErrorBoundary>
+              <Suspense fallback={<PageSkeleton />}>
+                <Routes>
+                  <Route path="/" element={<OverviewPage metrics={metrics} />} />
+                  <Route path="/chat" element={<ChatPage />} />
+                  <Route path="/tasks" element={<TaskHistory />} />
+                  <Route path="/security" element={<SecurityEvents metrics={metrics} />} />
+                  <Route path="/personality" element={<PersonalityEditor />} />
+                  <Route path="/skills" element={<SkillsManager />} />
+                  <Route path="/connections" element={<ConnectionManager />} />
+                  <Route path="/reports" element={<ReportsPage />} />
+                  <Route path="/experiments" element={<ExperimentsPage />} />
+                  <Route path="/marketplace" element={<MarketplacePage />} />
+                  <Route path="/security-settings" element={<SecuritySettings />} />
+                  <Route path="/settings" element={<SettingsPage />} />
+                  <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
+          </main>
+
+          {/* Footer */}
+          <footer className="border-t bg-card">
+            <div className="px-3 sm:px-4 py-3 sm:py-4">
+              <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
+                <span>SecureYeoman v1.2.0</span>
+                <span className="hidden sm:inline">Local Network Only</span>
               </div>
-              <NotificationBell />
-              <StatusBar
-                isConnected={isConnected}
-                wsConnected={connected}
-                reconnecting={reconnecting}
-                onRefresh={() => refetchMetrics()}
-                onLogout={() => void logout()}
-              />
             </div>
-          </div>
+          </footer>
         </div>
-      </header>
-
-      {/* Navigation */}
-      <NavigationTabs />
-
-      {/* Main Content */}
-      <main className="container mx-auto px-3 sm:px-4 py-4 sm:py-6 flex-1">
-        <ErrorBoundary>
-          <Suspense fallback={<PageSkeleton />}>
-            <Routes>
-              <Route path="/" element={<OverviewPage metrics={metrics} />} />
-              <Route path="/chat" element={<ChatPage />} />
-              <Route path="/tasks" element={<TaskHistory />} />
-              <Route path="/security" element={<SecurityEvents metrics={metrics} />} />
-              <Route path="/personality" element={<PersonalityEditor />} />
-              <Route path="/skills" element={<SkillsManager />} />
-              <Route path="/connections" element={<ConnectionManager />} />
-              <Route path="/security-settings" element={<SecuritySettings />} />
-              <Route path="/settings" element={<SettingsPage />} />
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </Suspense>
-        </ErrorBoundary>
-      </main>
-
-      {/* Footer */}
-      <footer className="border-t bg-card">
-        <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
-          <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-            <span>SecureYeoman v0.1.0</span>
-            <span className="hidden sm:inline">Local Network Only</span>
-          </div>
-        </div>
-      </footer>
+      </div>
     </div>
   );
 }

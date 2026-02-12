@@ -1,8 +1,11 @@
 /**
- * Body Module — Stub Types (v2/v3)
+ * Body Module — Types
  *
- * The Body represents the agent's physical interfaces, sensors, and actuators.
- * This is a placeholder for future implementation.
+ * The Body represents the agent's vital signs (Heartbeat) and physical
+ * interfaces, sensors, and actuators.
+ *
+ * Current:
+ * - Heartbeat (periodic self-checks: system health, memory, logs, integrations)
  *
  * TODO (v2/v3):
  * - Sensor interfaces (camera, microphone, screen capture)

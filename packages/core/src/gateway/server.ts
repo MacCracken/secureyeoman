@@ -28,6 +28,12 @@ import { registerCommsRoutes } from '../comms/comms-routes.js';
 import { registerIntegrationRoutes } from '../integrations/integration-routes.js';
 import { registerChatRoutes } from '../ai/chat-routes.js';
 import { registerModelRoutes } from '../ai/model-routes.js';
+import { registerMcpRoutes } from '../mcp/mcp-routes.js';
+import { registerReportRoutes } from '../reporting/report-routes.js';
+import { registerDashboardRoutes } from '../dashboard/dashboard-routes.js';
+import { registerWorkspaceRoutes } from '../workspace/workspace-routes.js';
+import { registerExperimentRoutes } from '../experiment/experiment-routes.js';
+import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js';
 import { formatPrometheusMetrics } from './prometheus.js';
 
 /**
@@ -261,6 +267,68 @@ export class GatewayServer {
 
     // Model info + switch routes
     registerModelRoutes(this.app, { secureYeoman: this.secureYeoman });
+
+    // MCP routes
+    try {
+      const mcpStorage = this.secureYeoman.getMcpStorage();
+      const mcpClient = this.secureYeoman.getMcpClientManager();
+      const mcpServer = this.secureYeoman.getMcpServer();
+      if (mcpStorage && mcpClient && mcpServer) {
+        registerMcpRoutes(this.app, { mcpStorage, mcpClient, mcpServer });
+      }
+    } catch {
+      // MCP may not be available — skip routes
+    }
+
+    // Report routes
+    try {
+      const reportGenerator = this.secureYeoman.getReportGenerator();
+      if (reportGenerator) {
+        registerReportRoutes(this.app, { reportGenerator });
+      }
+    } catch {
+      // Report generator may not be available — skip routes
+    }
+
+    // Dashboard routes
+    try {
+      const dashboardManager = this.secureYeoman.getDashboardManager();
+      if (dashboardManager) {
+        registerDashboardRoutes(this.app, { dashboardManager });
+      }
+    } catch {
+      // Dashboard manager may not be available — skip routes
+    }
+
+    // Workspace routes
+    try {
+      const workspaceManager = this.secureYeoman.getWorkspaceManager();
+      if (workspaceManager) {
+        registerWorkspaceRoutes(this.app, { workspaceManager });
+      }
+    } catch {
+      // Workspace manager may not be available — skip routes
+    }
+
+    // Experiment routes
+    try {
+      const experimentManager = this.secureYeoman.getExperimentManager();
+      if (experimentManager) {
+        registerExperimentRoutes(this.app, { experimentManager });
+      }
+    } catch {
+      // Experiment manager may not be available — skip routes
+    }
+
+    // Marketplace routes
+    try {
+      const marketplaceManager = this.secureYeoman.getMarketplaceManager();
+      if (marketplaceManager) {
+        registerMarketplaceRoutes(this.app, { marketplaceManager });
+      }
+    } catch {
+      // Marketplace manager may not be available — skip routes
+    }
 
     // Prometheus metrics endpoint (unauthenticated)
     this.app.get('/metrics', async (_request, reply) => {

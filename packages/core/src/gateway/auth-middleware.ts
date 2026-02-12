@@ -159,6 +159,103 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/comms/log': {
     GET: { resource: 'comms', action: 'read' },
   },
+  // Model routes
+  '/api/v1/model/info': {
+    GET: { resource: 'model', action: 'read' },
+  },
+  '/api/v1/model/switch': {
+    POST: { resource: 'model', action: 'write' },
+  },
+  '/api/v1/model/cost-recommendations': {
+    GET: { resource: 'model', action: 'read' },
+  },
+  // MCP routes
+  '/api/v1/mcp/servers': {
+    GET: { resource: 'mcp', action: 'read' },
+    POST: { resource: 'mcp', action: 'write' },
+  },
+  '/api/v1/mcp/servers/:id': {
+    DELETE: { resource: 'mcp', action: 'write' },
+  },
+  '/api/v1/mcp/tools': {
+    GET: { resource: 'mcp', action: 'read' },
+  },
+  '/api/v1/mcp/tools/call': {
+    POST: { resource: 'mcp', action: 'execute' },
+  },
+  '/api/v1/mcp/resources': {
+    GET: { resource: 'mcp', action: 'read' },
+  },
+  // Report routes
+  '/api/v1/reports': {
+    GET: { resource: 'reports', action: 'read' },
+  },
+  '/api/v1/reports/generate': {
+    POST: { resource: 'reports', action: 'write' },
+  },
+  '/api/v1/reports/:id': {
+    GET: { resource: 'reports', action: 'read' },
+  },
+  '/api/v1/reports/:id/download': {
+    GET: { resource: 'reports', action: 'read' },
+  },
+  // Dashboard routes
+  '/api/v1/dashboards': {
+    GET: { resource: 'dashboards', action: 'read' },
+    POST: { resource: 'dashboards', action: 'write' },
+  },
+  '/api/v1/dashboards/:id': {
+    GET: { resource: 'dashboards', action: 'read' },
+    PUT: { resource: 'dashboards', action: 'write' },
+    DELETE: { resource: 'dashboards', action: 'write' },
+  },
+  // Workspace routes
+  '/api/v1/workspaces': {
+    GET: { resource: 'workspaces', action: 'read' },
+    POST: { resource: 'workspaces', action: 'write' },
+  },
+  '/api/v1/workspaces/:id': {
+    GET: { resource: 'workspaces', action: 'read' },
+    DELETE: { resource: 'workspaces', action: 'write' },
+  },
+  '/api/v1/workspaces/:id/members': {
+    POST: { resource: 'workspaces', action: 'write' },
+  },
+  '/api/v1/workspaces/:id/members/:userId': {
+    DELETE: { resource: 'workspaces', action: 'write' },
+  },
+  // Experiment routes
+  '/api/v1/experiments': {
+    GET: { resource: 'experiments', action: 'read' },
+    POST: { resource: 'experiments', action: 'write' },
+  },
+  '/api/v1/experiments/:id': {
+    GET: { resource: 'experiments', action: 'read' },
+    DELETE: { resource: 'experiments', action: 'write' },
+  },
+  '/api/v1/experiments/:id/start': {
+    POST: { resource: 'experiments', action: 'write' },
+  },
+  '/api/v1/experiments/:id/stop': {
+    POST: { resource: 'experiments', action: 'write' },
+  },
+  // Marketplace routes
+  '/api/v1/marketplace': {
+    GET: { resource: 'marketplace', action: 'read' },
+  },
+  '/api/v1/marketplace/publish': {
+    POST: { resource: 'marketplace', action: 'write' },
+  },
+  '/api/v1/marketplace/:id': {
+    GET: { resource: 'marketplace', action: 'read' },
+    DELETE: { resource: 'marketplace', action: 'write' },
+  },
+  '/api/v1/marketplace/:id/install': {
+    POST: { resource: 'marketplace', action: 'write' },
+  },
+  '/api/v1/marketplace/:id/uninstall': {
+    POST: { resource: 'marketplace', action: 'write' },
+  },
 };
 
 const PUBLIC_ROUTES = new Set(['/health', '/api/v1/auth/login', '/ws/metrics']);

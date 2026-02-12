@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { BrainManager } from './manager.js';
-import type { HeartbeatManager } from './heartbeat.js';
+import type { HeartbeatManager } from '../body/heartbeat.js';
 import type { ExternalBrainSync } from './external-sync.js';
 import type { MemoryType, MemoryQuery, KnowledgeQuery } from './types.js';
 

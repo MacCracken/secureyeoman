@@ -1,7 +1,10 @@
 /**
- * Soul Module — Personality + Skills for FRIDAY
+ * Soul Module — Personality, Skills & Sacred Archetypes for FRIDAY
+ *
+ * In Our Image: No-Thing-Ness → The One (Soul) → The Plurality (Spirit/Brain/Body)
  */
 
+export { SACRED_ARCHETYPES, composeArchetypesPreamble, type Archetype } from './archetypes.js';
 export { SoulStorage } from './storage.js';
 export { SoulManager } from './manager.js';
 

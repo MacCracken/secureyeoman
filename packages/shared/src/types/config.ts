@@ -9,6 +9,7 @@
 
 import { z } from 'zod';
 import { SoulConfigSchema, BrainConfigSchema, SpiritConfigSchema, BodyConfigSchema, CommsConfigSchema, HeartbeatConfigSchema, ExternalBrainConfigSchema } from './soul.js';
+import { McpConfigSchema } from './mcp.js';
 
 // Safe path validation (no path traversal)
 const SafePathSchema = z.string()
@@ -188,7 +189,7 @@ export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
 
 // Fallback model configuration (used when primary provider hits rate limits or is unavailable)
 export const FallbackModelConfigSchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama']),
+  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode']),
   model: z.string(),
   apiKeyEnv: EnvVarRefSchema,
   baseUrl: z.string().url().optional(),
@@ -201,7 +202,7 @@ export type FallbackModelConfig = z.infer<typeof FallbackModelConfigSchema>;
 
 // Model/AI configuration
 export const ModelConfigSchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama']).default('anthropic'),
+  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode']).default('anthropic'),
   model: z.string().default('claude-sonnet-4-20250514'),
   apiKeyEnv: EnvVarRefSchema.default('ANTHROPIC_API_KEY'),
   baseUrl: z.string().url().optional(),
@@ -243,6 +244,7 @@ export const ConfigSchema = z.object({
   comms: CommsConfigSchema,
   heartbeat: HeartbeatConfigSchema,
   externalBrain: ExternalBrainConfigSchema,
+  mcp: McpConfigSchema,
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

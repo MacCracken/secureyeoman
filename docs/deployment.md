@@ -28,7 +28,7 @@ export SECUREYEOMAN_ENCRYPTION_KEY="$(openssl rand -base64 32)"
 
 # Optional: AI provider
 export ANTHROPIC_API_KEY="sk-ant-..."
-# Or: OPENAI_API_KEY, GOOGLE_API_KEY
+# Or: OPENAI_API_KEY, GOOGLE_API_KEY, OPENCODE_API_KEY
 
 # Optional: Customization
 export SECUREYEOMAN_GATEWAY_PORT=18789

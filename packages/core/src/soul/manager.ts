@@ -4,10 +4,15 @@
  * Manages the full lifecycle of personalities and skills, including
  * creation, approval workflows, and prompt composition.
  *
+ * Prompt composition begins with the Sacred Archetypes preamble —
+ * the cosmological foundation (No-Thing-Ness → The One → The Plurality)
+ * that grounds the "In Our Image" hierarchy.
+ *
  * When a BrainManager is provided, skills are delegated to the Brain
  * and relevant context is injected into the composed prompt.
  */
 
+import { composeArchetypesPreamble } from './archetypes.js';
 import type { SoulStorage } from './storage.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { SpiritManager } from '../spirit/manager.js';
@@ -268,6 +273,10 @@ export class SoulManager {
     }
 
     const parts: string[] = [];
+
+    // Sacred archetypes — cosmological foundation
+    parts.push(composeArchetypesPreamble());
+
     const agentName = this.storage.getAgentName();
     const personality = this.storage.getActivePersonality();
 

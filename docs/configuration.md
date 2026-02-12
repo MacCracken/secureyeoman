@@ -159,7 +159,7 @@ gateway:
     adminPasswordEnv: SECUREYEOMAN_ADMIN_PASSWORD
 
 model:
-  provider: anthropic            # anthropic | openai | gemini | ollama
+  provider: anthropic            # anthropic | openai | gemini | ollama | opencode
   model: claude-sonnet-4-20250514
   apiKeyEnv: ANTHROPIC_API_KEY
   baseUrl: ""                    # optional override
@@ -276,7 +276,7 @@ Use the `--tls` CLI flag for development — it auto-generates a self-signed CA 
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `provider` | enum | `"anthropic"` | `anthropic`, `openai`, `gemini`, `ollama` |
+| `provider` | enum | `"anthropic"` | `anthropic`, `openai`, `gemini`, `ollama`, `opencode` |
 | `model` | string | varies | Model identifier for the chosen provider |
 | `maxTokens` | number | `16384` | Max tokens per response |
 | `temperature` | number | `0.7` | Sampling temperature (0.0–2.0) |
@@ -290,7 +290,7 @@ Each entry in the `fallbacks` array configures an alternative model to try when 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `provider` | enum | Yes | `anthropic`, `openai`, `gemini`, `ollama` |
+| `provider` | enum | Yes | `anthropic`, `openai`, `gemini`, `ollama`, `opencode` |
 | `model` | string | Yes | Model identifier for the provider |
 | `apiKeyEnv` | string | Yes | Environment variable holding the API key |
 | `baseUrl` | string | No | Provider base URL override |
@@ -306,6 +306,26 @@ Each entry in the `fallbacks` array configures an alternative model to try when 
 | `learningMode` | string[] | `["user_authored"]` | Allowed skill sources |
 | `maxSkills` | number | `50` | Maximum number of skills (max 200) |
 | `maxPromptTokens` | number | `4096` | Token budget for composed system prompt |
+
+### mcp
+
+Model Context Protocol support for tool/resource interoperability.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable MCP protocol support |
+| `serverPort` | number | `18790` | Port for MCP JSON-RPC server (1024–65535) |
+| `exposeSkillsAsTools` | boolean | `true` | Expose F.R.I.D.A.Y.'s skills as MCP tools |
+| `exposeKnowledgeAsResources` | boolean | `true` | Expose Brain knowledge as MCP resources |
+
+Example:
+```yaml
+mcp:
+  enabled: true
+  serverPort: 18790
+  exposeSkillsAsTools: true
+  exposeKnowledgeAsResources: true
+```
 
 ### heartbeat
 
@@ -439,6 +459,7 @@ All security-sensitive values are referenced by environment variable name in the
 | `OPENAI_API_KEY` | One AI key required | OpenAI GPT API key |
 | `GOOGLE_GENERATIVE_AI_API_KEY` | One AI key required | Google Gemini API key |
 | `OLLAMA_BASE_URL` | Optional | Ollama server URL (default: `http://localhost:11434`) |
+| `OPENCODE_API_KEY` | One AI key required | OpenCode Zen API key |
 | `PORT` | No | Gateway port override |
 | `HOST` | No | Gateway host override |
 | `LOG_LEVEL` | No | Log level override |

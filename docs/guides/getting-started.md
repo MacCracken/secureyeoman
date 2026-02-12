@@ -7,7 +7,7 @@
 - Node.js 20 LTS or later
 - npm (project uses npm workspaces)
 - Git
-- API key for at least one AI provider (Anthropic, OpenAI, Google Gemini, or Ollama)
+- API key for at least one AI provider (Anthropic, OpenAI, Google Gemini, OpenCode Zen, or Ollama)
 
 ---
 
@@ -97,6 +97,8 @@ ANTHROPIC_API_KEY="sk-ant-..."
 OPENAI_API_KEY="sk-..."
 # or
 GOOGLE_GENERATIVE_AI_API_KEY="..."
+# or
+OPENCODE_API_KEY="..."
 # or (for local Ollama -- no key needed, just the URL)
 OLLAMA_BASE_URL="http://localhost:11434"
 ```
@@ -301,6 +303,34 @@ Edit personality and skills in the dashboard Soul Manager page.
 - **Security Events**: Monitor security alerts
 - **Soul Manager**: Edit personality and skills
 - **Connections**: Configure platform integrations
+
+---
+
+## v1.2 Features
+
+F.R.I.D.A.Y. v1.2 adds powerful new capabilities for teams and advanced workflows:
+
+### MCP Protocol Support
+Connect to external tools via the Model Context Protocol (MCP). F.R.I.D.A.Y. can:
+- **Use external tools** from MCP servers (search engines, code interpreters, databases)
+- **Expose its own skills** as MCP tools for other systems to invoke
+
+Configure MCP servers in the dashboard or via the `/api/v1/mcp/` API.
+
+### Audit Reports
+Generate comprehensive audit reports with filtering by time range, event type, user, or severity. Export to JSON, HTML, or CSV for compliance and analysis.
+
+### Team Workspaces
+Multi-team support with workspace isolation. Each workspace has its own personality, skills, and access control. Perfect for shared F.R.I.D.A.Y. deployments across departments.
+
+### A/B Testing
+Compare model performance, prompt templates, or configuration changes. Create experiments with traffic allocation and automatic metric collection (latency, cost, success rate).
+
+### Skill Marketplace
+Discover and share skills with the community. Search, install, and publish skills with cryptographic signature verification.
+
+### Cost Optimization
+Get AI-powered recommendations to reduce costs based on your usage patterns. Suggests model changes, caching strategies, and configuration tweaks.
 
 ---
 

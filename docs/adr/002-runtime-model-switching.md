@@ -16,7 +16,7 @@ The AI model was fixed at startup via environment variables and the YAML config 
 
 Add a `switchModel(provider, model)` method to `SecureYeoman` that:
 
-- Validates the provider is one of: `anthropic`, `openai`, `gemini`, `ollama`
+- Validates the provider is one of: `anthropic`, `openai`, `gemini`, `ollama`, `opencode`
 - Creates a new `AIClient` instance with the updated provider and model, inheriting existing `maxTokens`, `temperature`, and other settings from the current config
 - Replaces the `this.aiClient` reference so all subsequent requests use the new model
 - Updates the in-memory config (via `this.config.model`) so `getConfig()` reflects the change

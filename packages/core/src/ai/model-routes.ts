@@ -51,7 +51,7 @@ export function registerModelRoutes(
       return reply.code(400).send({ error: 'provider and model are required' });
     }
 
-    const validProviders = ['anthropic', 'openai', 'gemini', 'ollama'];
+    const validProviders = ['anthropic', 'openai', 'gemini', 'ollama', 'opencode'];
     if (!validProviders.includes(provider)) {
       return reply.code(400).send({
         error: `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
@@ -64,6 +64,20 @@ export function registerModelRoutes(
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return reply.code(500).send({ error: `Failed to switch model: ${message}` });
+    }
+  });
+
+  // Cost optimization recommendations
+  app.get('/api/v1/model/cost-recommendations', async (_request, reply: FastifyReply) => {
+    try {
+      const costOptimizer = secureYeoman.getCostOptimizer();
+      if (!costOptimizer) {
+        return reply.code(503).send({ error: 'Cost optimizer not available (AI client not initialized)' });
+      }
+      return costOptimizer.analyze();
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return reply.code(500).send({ error: message });
     }
   });
 }

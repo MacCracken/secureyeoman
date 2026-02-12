@@ -34,7 +34,7 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 - **Prioritizes Security**: Enterprise-grade RBAC, encryption, sandboxing, and audit trails
 - **Respects Privacy**: Local-first architecture with data that never leaves your system
 - **Provides Observability**: Every action is logged with cryptographic integrity verification
-- **Offers Flexibility**: Multi-provider AI support (Anthropic, OpenAI, Gemini, Ollama)
+- **Offers Flexibility**: Multi-provider AI support (Anthropic, OpenAI, Gemini, Ollama, OpenCode Zen)
 - **Learns and Adapts**: Editable personality and learnable skills system
 
 ---
@@ -45,10 +45,15 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 |----------|----------|
 | **Security** | RBAC, JWT/API key auth, AES-256-GCM encryption, sandboxed execution, rate limiting |
 | **Observability** | Cryptographic audit trails, Prometheus metrics, Grafana dashboards, log rotation |
-| **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama (local), fallback chains |
+| **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama (local), OpenCode Zen, fallback chains |
 | **User Experience** | React dashboard, personality editor, skills manager, WebSocket real-time updates |
-| **Agent Architecture** | Soul (identity), Spirit (passions/inspirations/pains), Brain (memory/knowledge), Body (stub) |
+| **Agent Architecture** | Soul (identity/archetypes), Spirit (passions/inspirations/pains), Brain (memory/knowledge), Body (heartbeat/vital signs) |
 | **Integrations** | Telegram, Discord, Slack, GitHub — plugin architecture with message routing |
+| **MCP Protocol** | Connect to external MCP servers for tools/resources, expose F.R.I.D.A.Y. skills as MCP tools |
+| **Team Collaboration** | Workspaces with isolation, member management, workspace-scoped RBAC |
+| **Reports & Analytics** | Audit report generator (JSON/HTML/CSV), cost optimization recommendations |
+| **Experimentation** | A/B testing framework with variant routing and statistical analysis |
+| **Marketplace** | Skill discovery, search, install, publish with cryptographic signature verification |
 | **Development** | TypeScript, 1000+ tests across 59+ files, Docker support, CI/CD pipeline |
 
 ---
@@ -57,7 +62,7 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 
 - **Node.js** 20 LTS or later
 - **npm** (project uses npm workspaces)
-- **AI Provider API Key**: Anthropic, OpenAI, Google Gemini, or Ollama (local)
+- **AI Provider API Key**: Anthropic, OpenAI, Google Gemini, OpenCode Zen, or Ollama (local)
 
 ---
 
@@ -102,6 +107,7 @@ SECUREYEOMAN_ADMIN_PASSWORD="your-32-char-admin-password"
 ANTHROPIC_API_KEY="sk-ant-..."
 # or OPENAI_API_KEY="sk-..."
 # or GOOGLE_GENERATIVE_AI_API_KEY="..."
+# or OPENCODE_API_KEY="..."
 ```
 
 ---

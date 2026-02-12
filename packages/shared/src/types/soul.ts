@@ -280,7 +280,7 @@ export const ExternalBrainConfigSchema = z.object({
 
 export type ExternalBrainConfig = z.infer<typeof ExternalBrainConfigSchema>;
 
-// ─── Body Config (stub — v2/v3) ────────────────────────────
+// ─── Body Config (owns Heartbeat) ──────────────────────────
 
 export const BodyConfigSchema = z.object({
   enabled: z.boolean().default(false),
