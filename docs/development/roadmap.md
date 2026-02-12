@@ -173,23 +173,24 @@ All core modules maintain >80% coverage thresholds.
 | Phase 3: Dashboard | 5 weeks | Complete |
 | Phase 4: Integrations | 4 weeks | Complete |
 | Phase 5: Production | 3 weeks | Complete |
-| **v1.0.0 MVP Release** | — | **Released 2026-02-11** |
+| v1.0.0 MVP Release| 2 Weeks | Complete |
+| **v1.1.1 Release** | — | **Released 2026-02-12** |
 
 ---
 
 ## Future Enhancements
 
-### v1.1 (Post-MVP)
-- ~~Performance optimization~~ (completed — code splitting, compression, query batching, broadcast throttling)
+### v1.2
 - MCP protocol support
-- Skill marketplace
 - Custom dashboards
+- Audit report generator
 
 ### v1.2
 - Team workspaces
 - Audit report generator
 - Cost optimization recommendations
 - A/B testing framework
+- Skill marketplace
 
 ### v2.0
 - Distributed deployment (Kubernetes)
