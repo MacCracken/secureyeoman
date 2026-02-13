@@ -224,7 +224,7 @@ export function DashboardLayout() {
           <footer className="border-t bg-card">
             <div className="px-3 sm:px-4 py-3 sm:py-4">
               <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                <span>SecureYeoman v1.3.0</span>
+                <span>SecureYeoman v1.3.2</span>
                 <span className="hidden sm:inline">Local Network Only</span>
               </div>
             </div>
