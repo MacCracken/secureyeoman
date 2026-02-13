@@ -81,9 +81,7 @@ const API_KEY_PREFIX = 'sck_';
 function buildPermissionStrings(role: Role, rbac: RBAC): string[] {
   const roleDef = rbac.getRole(role);
   if (!roleDef) return [];
-  return roleDef.permissions.map(
-    (p) => `${p.resource}:${p.actions.join(',')}`,
-  );
+  return roleDef.permissions.map((p) => `${p.resource}:${p.actions.join(',')}`);
 }
 
 // ── Service ──────────────────────────────────────────────────────────
@@ -93,6 +91,11 @@ export class AuthService {
   private previousSecret: Uint8Array | null = null;
   private readonly config: AuthServiceConfig;
   private readonly deps: AuthServiceDeps;
+
+  // Auth stats
+  private authAttemptsTotal = 0;
+  private authSuccessTotal = 0;
+  private authFailuresTotal = 0;
 
   // 2FA state
   private twoFactorSecret: string | null = null;
@@ -104,6 +107,17 @@ export class AuthService {
     this.config = config;
     this.secret = new TextEncoder().encode(config.tokenSecret);
     this.deps = deps;
+  }
+
+  /**
+   * Get auth statistics
+   */
+  getStats(): { authAttemptsTotal: number; authSuccessTotal: number; authFailuresTotal: number } {
+    return {
+      authAttemptsTotal: this.authAttemptsTotal,
+      authSuccessTotal: this.authSuccessTotal,
+      authFailuresTotal: this.authFailuresTotal,
+    };
   }
 
   /**
@@ -126,9 +140,11 @@ export class AuthService {
   // ── Login ────────────────────────────────────────────────────────
 
   async login(password: string, ip: string, rememberMe = false): Promise<LoginResult> {
+    this.authAttemptsTotal++;
     // Rate-limit check
     const rl = await this.deps.rateLimiter.check('auth_attempts', ip, { ipAddress: ip });
     if (!rl.allowed) {
+      this.authFailuresTotal++;
       await this.audit('auth_failure', 'Rate limit exceeded on login', { ip });
       throw new AuthError('Too many login attempts. Try again later.', 429);
     }
@@ -139,6 +155,7 @@ export class AuthService {
     const expectedHash = this.config.adminPassword;
 
     if (!secureCompare(passwordHash, expectedHash)) {
+      this.authFailuresTotal++;
       await this.audit('auth_failure', 'Invalid admin password', { ip });
       throw new AuthError('Invalid credentials', 401);
     }
@@ -158,6 +175,7 @@ export class AuthService {
       };
     }
 
+    this.authSuccessTotal++;
     await this.audit('auth_success', 'Admin login', {
       ip,
       userId: ADMIN_USER_ID,
@@ -189,21 +207,27 @@ export class AuthService {
     const newAccessJti = uuidv7();
     const newRefreshJti = uuidv7();
 
-    const accessToken = await this.signToken({
-      sub: payload.sub as string,
-      role,
-      permissions,
-      jti: newAccessJti,
-      type: 'access',
-    }, this.config.tokenExpirySeconds);
+    const accessToken = await this.signToken(
+      {
+        sub: payload.sub as string,
+        role,
+        permissions,
+        jti: newAccessJti,
+        type: 'access',
+      },
+      this.config.tokenExpirySeconds
+    );
 
-    const newRefreshToken = await this.signToken({
-      sub: payload.sub as string,
-      role,
-      permissions,
-      jti: newRefreshJti,
-      type: 'refresh',
-    }, this.config.refreshTokenExpirySeconds);
+    const newRefreshToken = await this.signToken(
+      {
+        sub: payload.sub as string,
+        role,
+        permissions,
+        jti: newRefreshJti,
+        type: 'refresh',
+      },
+      this.config.refreshTokenExpirySeconds
+    );
 
     return {
       accessToken,
@@ -271,9 +295,7 @@ export class AuthService {
     const keyHash = sha256(rawKey);
     const keyPrefix = rawKey.slice(0, 8);
     const now = Date.now();
-    const expiresAt = opts.expiresInDays
-      ? now + opts.expiresInDays * 86_400_000
-      : null;
+    const expiresAt = opts.expiresInDays ? now + opts.expiresInDays * 86_400_000 : null;
 
     const row: ApiKeyRow = {
       id,
@@ -466,23 +488,31 @@ export class AuthService {
     const REMEMBER_ME_REFRESH_SECONDS = 60 * 86400;
 
     const accessExpiry = rememberMe ? REMEMBER_ME_ACCESS_SECONDS : this.config.tokenExpirySeconds;
-    const refreshExpiry = rememberMe ? REMEMBER_ME_REFRESH_SECONDS : this.config.refreshTokenExpirySeconds;
+    const refreshExpiry = rememberMe
+      ? REMEMBER_ME_REFRESH_SECONDS
+      : this.config.refreshTokenExpirySeconds;
 
-    const accessToken = await this.signToken({
-      sub: ADMIN_USER_ID,
-      role,
-      permissions,
-      jti: accessJti,
-      type: 'access',
-    }, accessExpiry);
+    const accessToken = await this.signToken(
+      {
+        sub: ADMIN_USER_ID,
+        role,
+        permissions,
+        jti: accessJti,
+        type: 'access',
+      },
+      accessExpiry
+    );
 
-    const refreshToken = await this.signToken({
-      sub: ADMIN_USER_ID,
-      role,
-      permissions,
-      jti: refreshJti,
-      type: 'refresh',
-    }, refreshExpiry);
+    const refreshToken = await this.signToken(
+      {
+        sub: ADMIN_USER_ID,
+        role,
+        permissions,
+        jti: refreshJti,
+        type: 'refresh',
+      },
+      refreshExpiry
+    );
 
     return {
       accessToken,
@@ -494,10 +524,7 @@ export class AuthService {
 
   // ── Private helpers ──────────────────────────────────────────────
 
-  private async signToken(
-    claims: Record<string, unknown>,
-    expirySeconds: number,
-  ): Promise<string> {
+  private async signToken(claims: Record<string, unknown>, expirySeconds: number): Promise<string> {
     return new SignJWT(claims)
       .setProtectedHeader({ alg: 'HS256' })
       .setIssuedAt()
@@ -531,7 +558,7 @@ export class AuthService {
   private async audit(
     event: string,
     message: string,
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, unknown>
   ): Promise<void> {
     try {
       await this.deps.auditChain.record({
