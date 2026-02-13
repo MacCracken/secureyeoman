@@ -23,9 +23,9 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
-import { fetchTasks, createTask, deleteTask, updateTask } from '../api/client';
+import { fetchTasks, createTask, deleteTask, updateTask, fetchHeartbeatTasks } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
-import type { Task } from '../types';
+import type { Task, HeartbeatTask } from '../types';
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   completed: <CheckCircle className="w-4 h-4 text-success" />,
@@ -131,6 +131,12 @@ export function TaskHistory() {
       }),
     staleTime: 5000,
     refetchInterval: false,
+  });
+
+  const { data: heartbeatData } = useQuery({
+    queryKey: ['heartbeat-tasks'],
+    queryFn: fetchHeartbeatTasks,
+    staleTime: 30000,
   });
 
   const createTaskMutation = useMutation({
@@ -567,18 +573,35 @@ export function TaskHistory() {
                   </td>
                 </tr>
               ) : (
-                tasks.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    onEdit={setEditTask}
-                    onDelete={(t) => {
-                      if (confirm(`Delete task "${t.name}"?`)) {
-                        deleteTaskMutation.mutate(t.id);
-                      }
-                    }}
-                  />
-                ))
+                <>
+                  {tasks.map((task) => (
+                    <TaskRow
+                      key={task.id}
+                      task={task}
+                      onEdit={setEditTask}
+                      onDelete={(t) => {
+                        if (confirm(`Delete task "${t.name}"?`)) {
+                          deleteTaskMutation.mutate(t.id);
+                        }
+                      }}
+                    />
+                  ))}
+                  {heartbeatData?.tasks && heartbeatData.tasks.length > 0 && (
+                    <>
+                      <tr className="bg-muted/30">
+                        <td
+                          colSpan={7}
+                          className="px-2 py-2 text-xs font-medium text-muted-foreground"
+                        >
+                          Heartbeat Tasks (Managed by Personality)
+                        </td>
+                      </tr>
+                      {heartbeatData.tasks.map((task) => (
+                        <HeartbeatTaskRow key={task.name} task={task} />
+                      ))}
+                    </>
+                  )}
+                </>
               )}
             </tbody>
           </table>
@@ -697,6 +720,69 @@ function TaskRow({
             </button>
           )}
         </div>
+      </td>
+    </tr>
+  );
+}
+
+function HeartbeatTaskRow({ task }: { task: HeartbeatTask }) {
+  const formatTime = (timestamp: number | null) => {
+    if (!timestamp) return 'Never';
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+
+    if (diffMs < 60000) return 'Just now';
+    if (diffMs < 3600000) return `${Math.floor(diffMs / 60000)}m ago`;
+    if (diffMs < 86400000) return `${Math.floor(diffMs / 3600000)}h ago`;
+    return date.toLocaleDateString();
+  };
+
+  const formatInterval = (ms: number) => {
+    if (ms < 60000) return `${Math.floor(ms / 1000)}s`;
+    if (ms < 3600000) return `${Math.floor(ms / 60000)}m`;
+    return `${Math.floor(ms / 3600000)}h`;
+  };
+
+  return (
+    <tr className="hover:bg-muted/30 transition-colors bg-muted/20">
+      <td className="px-2 py-3 font-mono text-xs hidden sm:table-cell text-muted-foreground">
+        heartbeat
+      </td>
+      <td className="px-2 py-3">
+        <div className="font-medium text-sm flex items-center gap-2">
+          {task.name}
+          <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+            Heartbeat
+          </span>
+        </div>
+        <div className="text-xs text-muted-foreground">
+          Every {formatInterval(task.intervalMs || 60000)}
+        </div>
+      </td>
+      <td className="px-2 py-3 hidden md:table-cell">
+        <span className="px-1.5 py-0.5 text-xs bg-muted rounded">{task.type}</span>
+      </td>
+      <td className="px-2 py-3">
+        <div className="flex items-center gap-1.5">
+          {task.enabled ? (
+            <CheckCircle className="w-4 h-4 text-success" />
+          ) : (
+            <XCircle className="w-4 h-4 text-muted-foreground" />
+          )}
+          <span className={`text-xs ${task.enabled ? 'text-success' : 'text-muted-foreground'}`}>
+            {task.enabled ? 'Active' : 'Disabled'}
+          </span>
+        </div>
+      </td>
+      <td className="px-2 py-3 font-mono text-xs hidden lg:table-cell text-muted-foreground">
+        {formatInterval(task.intervalMs || 60000)}
+      </td>
+      <td className="px-2 py-3 text-muted-foreground text-xs hidden sm:table-cell">
+        {formatTime(task.lastRunAt)}
+      </td>
+      <td className="px-2 py-3">
+        <span className="text-xs text-muted-foreground italic">Managed by Personality</span>
       </td>
     </tr>
   );
