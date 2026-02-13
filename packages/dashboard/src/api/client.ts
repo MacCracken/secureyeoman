@@ -346,6 +346,16 @@ export async function deleteTask(id: string): Promise<void> {
   });
 }
 
+export async function updateTask(
+  id: string,
+  data: { name?: string; type?: string; description?: string }
+): Promise<Task> {
+  return request(`/tasks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
 // ── Security ──────────────────────────────────────────────────────────
 
 export async function fetchSecurityEvents(params?: {

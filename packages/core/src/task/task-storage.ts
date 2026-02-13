@@ -144,7 +144,7 @@ export class TaskStorage {
            timeout_ms, created_at, started_at, completed_at, duration_ms)
          VALUES (@id, @correlation_id, @parent_task_id, @type, @name, @description,
            @input_hash, @status, @result_json, @resources_json, @security_context_json,
-           @timeout_ms, @created_at, @started_at, @completed_at, @duration_ms)`,
+           @timeout_ms, @created_at, @started_at, @completed_at, @duration_ms)`
       )
       .run({
         id: task.id,
@@ -175,7 +175,7 @@ export class TaskStorage {
       durationMs?: number;
       result?: Task['result'];
       resources?: ResourceUsage;
-    },
+    }
   ): boolean {
     const setClauses: string[] = [];
     const params: Record<string, unknown> = { id };
@@ -213,12 +213,15 @@ export class TaskStorage {
     return info.changes > 0;
   }
 
+  deleteTask(id: string): boolean {
+    const info = this.db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
+    return info.changes > 0;
+  }
+
   // ─── Read Operations ───────────────────────────────────────
 
   getTask(id: string): Task | null {
-    const row = this.db
-      .prepare('SELECT * FROM tasks WHERE id = ?')
-      .get(id) as TaskRow | undefined;
+    const row = this.db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRow | undefined;
     return row ? rowToTask(row) : null;
   }
 
@@ -282,7 +285,8 @@ export class TaskStorage {
   getStats(): TaskStats {
     // Consolidated query: total, per-status counts, and avg duration in one pass
     const statsRow = this.db
-      .prepare(`
+      .prepare(
+        `
         SELECT
           COUNT(*) as total,
           SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
@@ -293,17 +297,18 @@ export class TaskStorage {
           SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
           AVG(CASE WHEN duration_ms IS NOT NULL THEN duration_ms END) as avg_duration
         FROM tasks
-      `)
+      `
+      )
       .get() as {
-        total: number;
-        completed: number;
-        failed: number;
-        pending: number;
-        running: number;
-        timeout_count: number;
-        cancelled: number;
-        avg_duration: number | null;
-      };
+      total: number;
+      completed: number;
+      failed: number;
+      pending: number;
+      running: number;
+      timeout_count: number;
+      cancelled: number;
+      avg_duration: number | null;
+    };
 
     // byType still needs its own GROUP BY query
     const typeRows = this.db
@@ -318,12 +323,13 @@ export class TaskStorage {
     if (statsRow.timeout_count > 0) byStatus.timeout = statsRow.timeout_count;
     if (statsRow.cancelled > 0) byStatus.cancelled = statsRow.cancelled;
 
-    const finishedCount = statsRow.completed + statsRow.failed + statsRow.timeout_count + statsRow.cancelled;
+    const finishedCount =
+      statsRow.completed + statsRow.failed + statsRow.timeout_count + statsRow.cancelled;
 
     return {
       total: statsRow.total,
       byStatus,
-      byType: Object.fromEntries(typeRows.map(r => [r.type, r.count])),
+      byType: Object.fromEntries(typeRows.map((r) => [r.type, r.count])),
       successRate: finishedCount > 0 ? statsRow.completed / finishedCount : 0,
       avgDurationMs: statsRow.avg_duration ?? 0,
     };
