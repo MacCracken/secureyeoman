@@ -416,6 +416,57 @@ export class GatewayServer {
       }
     );
 
+    // Update task
+    this.app.put(
+      '/api/v1/tasks/:id',
+      async (
+        request: FastifyRequest<{
+          Params: { id: string };
+          Body: { name?: string; type?: string; description?: string };
+        }>,
+        reply: FastifyReply
+      ) => {
+        try {
+          const taskStorage = this.secureYeoman.getTaskStorage();
+          const task = taskStorage.getTask(request.params.id);
+          if (!task) {
+            return reply.code(404).send({ error: 'Task not found' });
+          }
+          const { name, type, description } = request.body;
+          if (name) task.name = name;
+          if (type) task.type = type as any;
+          if (description !== undefined) task.description = description;
+          taskStorage.storeTask(task);
+          return task;
+        } catch {
+          return reply.code(500).send({ error: 'Failed to update task' });
+        }
+      }
+    );
+
+    // Delete task
+    this.app.delete(
+      '/api/v1/tasks/:id',
+      async (
+        request: FastifyRequest<{
+          Params: { id: string };
+        }>,
+        reply: FastifyReply
+      ) => {
+        try {
+          const taskStorage = this.secureYeoman.getTaskStorage();
+          const task = taskStorage.getTask(request.params.id);
+          if (!task) {
+            return reply.code(404).send({ error: 'Task not found' });
+          }
+          taskStorage.deleteTask(request.params.id);
+          return { success: true };
+        } catch {
+          return reply.code(500).send({ error: 'Failed to delete task' });
+        }
+      }
+    );
+
     // Create task
     this.app.post(
       '/api/v1/tasks',

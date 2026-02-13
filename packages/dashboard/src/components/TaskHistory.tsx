@@ -23,7 +23,7 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
-import { fetchTasks, createTask, deleteTask } from '../api/client';
+import { fetchTasks, createTask, deleteTask, updateTask } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { Task } from '../types';
 
@@ -147,6 +147,20 @@ export function TaskHistory() {
     mutationFn: (id: string) => deleteTask(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
+    },
+  });
+
+  const updateTaskMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: { name?: string; type?: string; description?: string };
+    }) => updateTask(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setEditTask(null);
     },
   });
 
@@ -324,6 +338,75 @@ export function TaskHistory() {
                   className="btn btn-primary"
                 >
                   {createTaskMutation.isPending ? 'Creating...' : 'Create Task'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Task Dialog */}
+      {editTask && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background border rounded-lg p-6 w-full max-w-md shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Edit Task</h3>
+              <button onClick={() => setEditTask(null)} className="btn-ghost p-1 rounded">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Name *</label>
+                <input
+                  type="text"
+                  value={editTask.name}
+                  onChange={(e) => setEditTask({ ...editTask, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Type</label>
+                <select
+                  value={editTask.type}
+                  onChange={(e) => setEditTask({ ...editTask, type: e.target.value as any })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                >
+                  {TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <input
+                  type="text"
+                  value={editTask.description || ''}
+                  onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setEditTask(null)} className="btn btn-ghost">
+                  Cancel
+                </button>
+                <button
+                  onClick={() =>
+                    updateTaskMutation.mutate({
+                      id: editTask.id,
+                      data: {
+                        name: editTask.name,
+                        type: editTask.type,
+                        description: editTask.description || undefined,
+                      },
+                    })
+                  }
+                  disabled={!editTask.name.trim() || updateTaskMutation.isPending}
+                  className="btn btn-primary"
+                >
+                  {updateTaskMutation.isPending ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </div>
