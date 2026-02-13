@@ -17,6 +17,7 @@ import type { SoulStorage } from './storage.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { SpiritManager } from '../spirit/manager.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
+import { HeartManager } from '../body/heart.js';
 import type {
   Personality,
   PersonalityCreate,
@@ -40,6 +41,7 @@ export class SoulManager {
   private readonly config: SoulConfig;
   private readonly deps: SoulManagerDeps;
   private heartbeat: HeartbeatManager | null = null;
+  private heartManager: HeartManager | null = null;
 
   constructor(storage: SoulStorage, config: SoulConfig, deps: SoulManagerDeps, brain?: BrainManager, spirit?: SpiritManager) {
     this.storage = storage;
@@ -81,6 +83,7 @@ export class SoulManager {
       voice: '',
       preferredLanguage: '',
       defaultModel: null,
+      includeArchetypes: true,
     });
 
     this.storage.setActivePersonality(personality.id);
@@ -272,29 +275,57 @@ export class SoulManager {
     this.storage.incrementUsage(skillId);
   }
 
-  // ── Body (Heartbeat) ──────────────────────────────────────────
+  // ── Body / Heart ──────────────────────────────────────────────
+
+  setHeart(heart: HeartManager): void {
+    this.heartManager = heart;
+  }
 
   setHeartbeat(hb: HeartbeatManager): void {
     this.heartbeat = hb;
+    this.heartManager = new HeartManager(hb);
   }
 
   private composeBodyPrompt(): string {
-    if (!this.heartbeat) return '';
-
-    const status = this.heartbeat.getStatus();
-    const lastBeat = status.lastBeat;
-    if (!lastBeat) return '';
+    if (!this.heartManager && !this.heartbeat) return '';
 
     const lines: string[] = [
       '## Body',
-      'Your Body is your form — the vessel through which you act in the world. These are your vital signs.',
-      '',
-      `Heartbeat #${status.beatCount} at ${new Date(lastBeat.timestamp).toISOString()} (${lastBeat.durationMs}ms):`,
+      'Your Body is your form — the vessel and capabilities through which you act in the world.',
     ];
 
-    for (const check of lastBeat.checks) {
-      const tag = check.status === 'ok' ? 'ok' : check.status === 'warning' ? 'WARN' : 'ERR';
-      lines.push(`- ${check.name}: [${tag}] ${check.message}`);
+    // Capability placeholders
+    const capabilities = ['vision', 'limb_movement', 'auditory', 'haptic'] as const;
+    const capLines: string[] = [];
+    for (const cap of capabilities) {
+      capLines.push(`- **${cap}**: not yet configured`);
+    }
+    lines.push('');
+    lines.push('Capabilities:');
+    lines.push(...capLines);
+
+    // Heart subsection
+    if (this.heartManager) {
+      const heartPrompt = this.heartManager.composeHeartPrompt();
+      if (heartPrompt) {
+        lines.push('');
+        lines.push(heartPrompt);
+      }
+    } else if (this.heartbeat) {
+      // Fallback for direct heartbeat usage (backward compat)
+      const status = this.heartbeat.getStatus();
+      const lastBeat = status.lastBeat;
+      if (lastBeat) {
+        lines.push('');
+        lines.push('### Heart');
+        lines.push('Your Heart is your pulse — the vital rhythms that sustain you.');
+        lines.push('');
+        lines.push(`Heartbeat #${status.beatCount} at ${new Date(lastBeat.timestamp).toISOString()} (${lastBeat.durationMs}ms):`);
+        for (const check of lastBeat.checks) {
+          const tag = check.status === 'ok' ? 'ok' : check.status === 'warning' ? 'WARN' : 'ERR';
+          lines.push(`- ${check.name}: [${tag}] ${check.message}`);
+        }
+      }
     }
 
     return lines.join('\n');
@@ -309,18 +340,21 @@ export class SoulManager {
 
     const parts: string[] = [];
 
-    // Sacred archetypes — cosmological foundation
-    parts.push(composeArchetypesPreamble());
-
     const personality = personalityId
       ? this.storage.getPersonality(personalityId) ?? this.storage.getActivePersonality()
       : this.storage.getActivePersonality();
+
+    // Sacred archetypes — cosmological foundation (toggleable per personality)
+    const includeArchetypes = personality?.includeArchetypes ?? true;
+    if (includeArchetypes) {
+      parts.push(composeArchetypesPreamble());
+    }
 
     // Soul section — identity (personality is the sole source of identity)
     if (personality) {
       const soulLines: string[] = [
         '## Soul',
-        'Your Soul is your identity — the unchanging essence that persists across every conversation.',
+        'Your Soul is your unchanging identity — the core of who you are, from which all else flows.',
         '',
         `You are ${personality.name}. ${personality.systemPrompt}`.trim(),
       ];

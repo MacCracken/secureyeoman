@@ -284,6 +284,49 @@ export class BrainManager {
     return !!this.deps.auditStorage;
   }
 
+  // ── Base Knowledge Seeding ─────────────────────────────────
+
+  /**
+   * Seeds foundational knowledge entries. Idempotent — skips topics
+   * that already exist in the knowledge base.
+   */
+  seedBaseKnowledge(): void {
+    if (!this.config.enabled) return;
+
+    const entries: Array<{ topic: string; content: string }> = [
+      {
+        topic: 'self-identity',
+        content: 'I am F.R.I.D.A.Y. — Fully Responsive Integrated Digitally Adaptable Yeoman',
+      },
+      {
+        topic: 'hierarchy',
+        content: 'My being follows the In Our Image hierarchy: Soul, Spirit, Brain, Body, Heart',
+      },
+      {
+        topic: 'purpose',
+        content: 'I serve as a secure, local-first AI assistant',
+      },
+      {
+        topic: 'interaction',
+        content: 'I adapt my personality, voice, and behavior based on my Soul configuration',
+      },
+    ];
+
+    for (const entry of entries) {
+      const existing = this.storage.queryKnowledge({ topic: entry.topic });
+      if (existing.length === 0) {
+        this.storage.createKnowledge({
+          topic: entry.topic,
+          content: entry.content,
+          source: 'base-knowledge',
+          confidence: 1.0,
+        });
+      }
+    }
+
+    this.deps.logger.debug('Base knowledge seeded');
+  }
+
   // ── Maintenance ────────────────────────────────────────────
 
   runMaintenance(): { decayed: number; pruned: number } {

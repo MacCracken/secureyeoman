@@ -47,6 +47,7 @@ import { SlackIntegration } from './integrations/slack/index.js';
 import { GitHubIntegration } from './integrations/github/index.js';
 import { IMessageIntegration } from './integrations/imessage/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
+import { HeartManager } from './body/heart.js';
 import { ExternalBrainSync } from './brain/external-sync.js';
 import { McpStorage } from './mcp/storage.js';
 import { McpClientManager } from './mcp/client.js';
@@ -103,6 +104,7 @@ export class SecureYeoman {
   private brainStorage: BrainStorage | null = null;
   private brainManager: BrainManager | null = null;
   private heartbeatManager: HeartbeatManager | null = null;
+  private heartManager: HeartManager | null = null;
   private externalBrainSync: ExternalBrainSync | null = null;
   private spiritStorage: SpiritStorage | null = null;
   private spiritManager: SpiritManager | null = null;
@@ -341,6 +343,7 @@ export class SecureYeoman {
             : undefined,
         },
       );
+      this.brainManager.seedBaseKnowledge();
       this.logger.debug('Brain manager initialized');
 
       // Step 5.7a: Initialize spirit system (between Brain and Soul)
@@ -485,7 +488,7 @@ export class SecureYeoman {
 
       this.logger.debug('Integration manager and message router initialized');
 
-      // Step 6.6: Initialize heartbeat system
+      // Step 6.6: Initialize heartbeat + heart system
       if (this.config.heartbeat?.enabled !== false) {
         this.heartbeatManager = new HeartbeatManager(
           this.brainManager!,
@@ -494,9 +497,10 @@ export class SecureYeoman {
           this.config.heartbeat,
           this.integrationManager,
         );
-        this.soulManager!.setHeartbeat(this.heartbeatManager);
+        this.heartManager = new HeartManager(this.heartbeatManager);
+        this.soulManager!.setHeart(this.heartManager);
         this.heartbeatManager.start();
-        this.logger.debug('Heartbeat manager started', {
+        this.logger.debug('Heart manager started', {
           intervalMs: this.config.heartbeat.intervalMs,
         });
       }

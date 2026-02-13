@@ -1,8 +1,8 @@
 /**
  * Gateway Server for SecureYeoman
- * 
+ *
  * Provides REST API and WebSocket endpoints for the dashboard.
- * 
+ *
  * Security considerations:
  * - Local network only by default
  * - All endpoints protected by authentication (when enabled)
@@ -34,6 +34,7 @@ import { registerDashboardRoutes } from '../dashboard/dashboard-routes.js';
 import { registerWorkspaceRoutes } from '../workspace/workspace-routes.js';
 import { registerExperimentRoutes } from '../experiment/experiment-routes.js';
 import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js';
+import { registerTerminalRoutes } from './terminal-routes.js';
 import { formatPrometheusMetrics } from './prometheus.js';
 
 /**
@@ -75,12 +76,12 @@ export class GatewayServer {
   private metricsInterval: NodeJS.Timeout | null = null;
   private clientIdCounter = 0;
   private lastMetricsJson: string | null = null;
-  
+
   constructor(options: GatewayServerOptions) {
     this.config = options.config;
     this.secureYeoman = options.secureYeoman;
     this.authService = options.authService;
-    
+
     // Build HTTPS options when TLS is enabled
     const httpsOpts = this.config.tls.enabled
       ? (() => {
@@ -110,10 +111,10 @@ export class GatewayServer {
       bodyLimit: 1_048_576, // 1 MB max request body
       ...(httpsOpts ? { https: httpsOpts } : {}),
     });
-    
+
     // Middleware and routes are set up in start()
   }
-  
+
   /**
    * Initialize the server (register plugins, set up middleware)
    */
@@ -121,7 +122,7 @@ export class GatewayServer {
     await this.setupMiddleware();
     this.setupRoutes();
   }
-  
+
   private getLogger(): SecureLogger {
     if (!this.logger) {
       try {
@@ -132,7 +133,7 @@ export class GatewayServer {
     }
     return this.logger;
   }
-  
+
   private async setupMiddleware(): Promise<void> {
     // Register compression plugin (gzip/brotli for JSON + text responses)
     await this.app.register(fastifyCompress);
@@ -143,14 +144,14 @@ export class GatewayServer {
         maxPayload: 1048576, // 1MB max message size
       },
     });
-    
+
     // Local network check middleware
     this.app.addHook('onRequest', async (request, reply) => {
       const ip = request.ip;
 
       // Allow localhost and private network ranges (RFC 1918 + loopback)
       const isLocalNetwork = isPrivateIP(ip);
-      
+
       if (!isLocalNetwork) {
         this.getLogger().warn('Access denied from non-local IP', { ip });
         return reply.code(403).send({
@@ -159,14 +160,14 @@ export class GatewayServer {
         });
       }
     });
-    
+
     // CORS for local development
     this.app.addHook('onRequest', async (request, reply) => {
       const origin = request.headers.origin;
-      
+
       if (origin && this.config.cors.enabled) {
         const allowedOrigins = this.config.cors.origins;
-        
+
         if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
           reply.header('Access-Control-Allow-Origin', origin);
           reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
@@ -174,26 +175,23 @@ export class GatewayServer {
           reply.header('Access-Control-Allow-Credentials', 'true');
         }
       }
-      
+
       if (request.method === 'OPTIONS') {
         return reply.code(204).send();
       }
     });
-    
+
     // Auth + RBAC hooks (after CORS, before routes)
     if (this.authService) {
       const logger = this.getLogger();
-      this.app.addHook(
-        'onRequest',
-        createAuthHook({ authService: this.authService, logger }),
-      );
+      this.app.addHook('onRequest', createAuthHook({ authService: this.authService, logger }));
       this.app.addHook(
         'onRequest',
         createRbacHook({
           rbac: this.secureYeoman.getRBAC(),
           auditChain: this.secureYeoman.getAuditChain(),
           logger,
-        }),
+        })
       );
     }
 
@@ -207,7 +205,7 @@ export class GatewayServer {
       });
     });
   }
-  
+
   private setupRoutes(): void {
     // Auth routes
     if (this.authService) {
@@ -330,6 +328,9 @@ export class GatewayServer {
       // Marketplace manager may not be available — skip routes
     }
 
+    // Terminal routes (always available)
+    registerTerminalRoutes(this.app);
+
     // Prometheus metrics endpoint (unauthenticated)
     this.app.get('/metrics', async (_request, reply) => {
       try {
@@ -354,45 +355,56 @@ export class GatewayServer {
         },
       };
     });
-    
+
     // Metrics endpoint
     this.app.get('/api/v1/metrics', async () => {
       return this.secureYeoman.getMetrics();
     });
-    
-    // Tasks endpoints
-    this.app.get('/api/v1/tasks', async (request: FastifyRequest<{
-      Querystring: { status?: string; type?: string; limit?: string; offset?: string }
-    }>) => {
-      try {
-        const taskStorage = this.secureYeoman.getTaskStorage();
-        const q = request.query;
-        return taskStorage.listTasks({
-          status: q.status,
-          type: q.type,
-          limit: q.limit ? Number(q.limit) : 50,
-          offset: q.offset ? Number(q.offset) : 0,
-        });
-      } catch {
-        return { tasks: [], total: 0 };
-      }
-    });
 
-    this.app.get('/api/v1/tasks/:id', async (request: FastifyRequest<{
-      Params: { id: string }
-    }>, reply: FastifyReply) => {
-      try {
-        const taskStorage = this.secureYeoman.getTaskStorage();
-        const task = taskStorage.getTask(request.params.id);
-        if (!task) {
-          return reply.code(404).send({ error: 'Task not found' });
+    // Tasks endpoints
+    this.app.get(
+      '/api/v1/tasks',
+      async (
+        request: FastifyRequest<{
+          Querystring: { status?: string; type?: string; limit?: string; offset?: string };
+        }>
+      ) => {
+        try {
+          const taskStorage = this.secureYeoman.getTaskStorage();
+          const q = request.query;
+          return taskStorage.listTasks({
+            status: q.status,
+            type: q.type,
+            limit: q.limit ? Number(q.limit) : 50,
+            offset: q.offset ? Number(q.offset) : 0,
+          });
+        } catch {
+          return { tasks: [], total: 0 };
         }
-        return task;
-      } catch {
-        return reply.code(500).send({ error: 'Task storage not available' });
       }
-    });
-    
+    );
+
+    this.app.get(
+      '/api/v1/tasks/:id',
+      async (
+        request: FastifyRequest<{
+          Params: { id: string };
+        }>,
+        reply: FastifyReply
+      ) => {
+        try {
+          const taskStorage = this.secureYeoman.getTaskStorage();
+          const task = taskStorage.getTask(request.params.id);
+          if (!task) {
+            return reply.code(404).send({ error: 'Task not found' });
+          }
+          return task;
+        } catch {
+          return reply.code(500).send({ error: 'Task storage not available' });
+        }
+      }
+    );
+
     // Sandbox status
     this.app.get('/api/v1/sandbox/status', async () => {
       try {
@@ -437,110 +449,118 @@ export class GatewayServer {
     //
     // The response shape matches the audit query result but with the key
     // renamed to "events" for semantic clarity on the client side.
-    this.app.get('/api/v1/security/events', async (request: FastifyRequest<{
-      Querystring: {
-        severity?: string;
-        type?: string;
-        from?: string;
-        to?: string;
-        limit?: string;
-        offset?: string;
+    this.app.get(
+      '/api/v1/security/events',
+      async (
+        request: FastifyRequest<{
+          Querystring: {
+            severity?: string;
+            type?: string;
+            from?: string;
+            to?: string;
+            limit?: string;
+            offset?: string;
+          };
+        }>
+      ) => {
+        try {
+          const q = request.query;
+
+          // These are the audit event names that qualify as "security events".
+          // They align with the SecurityEventType enum in @friday/shared and
+          // cover authentication, authorisation, rate limiting, injection
+          // detection, sandbox violations, and configuration changes.
+          const SECURITY_EVENT_TYPES = [
+            'auth_success',
+            'auth_failure',
+            'rate_limit',
+            'injection_attempt',
+            'permission_denied',
+            'anomaly',
+            'sandbox_violation',
+            'config_change',
+            'secret_access',
+          ];
+
+          // Allow the caller to narrow by specific event types; fall back to
+          // all known security types when the parameter is omitted.
+          const eventFilter = q.type
+            ? q.type.split(',').filter((t) => SECURITY_EVENT_TYPES.includes(t))
+            : SECURITY_EVENT_TYPES;
+
+          // Map the optional severity query param to audit "level" values.
+          // The audit chain uses levels (warn, error, security) rather than
+          // the SecurityEvent severity enum, so this provides a useful filter
+          // without requiring a schema change.
+          const levelFilter = q.severity ? q.severity.split(',') : undefined;
+
+          const result = await this.secureYeoman.queryAuditLog({
+            event: eventFilter,
+            level: levelFilter,
+            from: q.from ? Number(q.from) : undefined,
+            to: q.to ? Number(q.to) : undefined,
+            limit: q.limit ? Number(q.limit) : 50,
+            offset: q.offset ? Number(q.offset) : 0,
+          });
+
+          // Return with "events" key for semantic clarity — the dashboard
+          // SecurityEvents component expects this shape.
+          return {
+            events: result.entries,
+            total: result.total,
+            limit: result.limit,
+            offset: result.offset,
+          };
+        } catch {
+          // If audit storage doesn't support querying (e.g. InMemoryAuditStorage
+          // not wired up), return an empty result rather than a 500 so the
+          // dashboard degrades gracefully.
+          return {
+            events: [],
+            total: 0,
+            limit: 50,
+            offset: 0,
+          };
+        }
       }
-    }>) => {
-      try {
+    );
+
+    // Audit log query
+    this.app.get(
+      '/api/v1/audit',
+      async (
+        request: FastifyRequest<{
+          Querystring: {
+            from?: string;
+            to?: string;
+            level?: string;
+            event?: string;
+            userId?: string;
+            taskId?: string;
+            limit?: string;
+            offset?: string;
+          };
+        }>
+      ) => {
         const q = request.query;
-
-        // These are the audit event names that qualify as "security events".
-        // They align with the SecurityEventType enum in @friday/shared and
-        // cover authentication, authorisation, rate limiting, injection
-        // detection, sandbox violations, and configuration changes.
-        const SECURITY_EVENT_TYPES = [
-          'auth_success',
-          'auth_failure',
-          'rate_limit',
-          'injection_attempt',
-          'permission_denied',
-          'anomaly',
-          'sandbox_violation',
-          'config_change',
-          'secret_access',
-        ];
-
-        // Allow the caller to narrow by specific event types; fall back to
-        // all known security types when the parameter is omitted.
-        const eventFilter = q.type
-          ? q.type.split(',').filter((t) => SECURITY_EVENT_TYPES.includes(t))
-          : SECURITY_EVENT_TYPES;
-
-        // Map the optional severity query param to audit "level" values.
-        // The audit chain uses levels (warn, error, security) rather than
-        // the SecurityEvent severity enum, so this provides a useful filter
-        // without requiring a schema change.
-        const levelFilter = q.severity
-          ? q.severity.split(',')
-          : undefined;
-
-        const result = await this.secureYeoman.queryAuditLog({
-          event: eventFilter,
-          level: levelFilter,
+        return this.secureYeoman.queryAuditLog({
           from: q.from ? Number(q.from) : undefined,
           to: q.to ? Number(q.to) : undefined,
-          limit: q.limit ? Number(q.limit) : 50,
-          offset: q.offset ? Number(q.offset) : 0,
+          level: q.level ? q.level.split(',') : undefined,
+          event: q.event ? q.event.split(',') : undefined,
+          userId: q.userId,
+          taskId: q.taskId,
+          limit: q.limit ? Number(q.limit) : undefined,
+          offset: q.offset ? Number(q.offset) : undefined,
         });
-
-        // Return with "events" key for semantic clarity — the dashboard
-        // SecurityEvents component expects this shape.
-        return {
-          events: result.entries,
-          total: result.total,
-          limit: result.limit,
-          offset: result.offset,
-        };
-      } catch {
-        // If audit storage doesn't support querying (e.g. InMemoryAuditStorage
-        // not wired up), return an empty result rather than a 500 so the
-        // dashboard degrades gracefully.
-        return {
-          events: [],
-          total: 0,
-          limit: 50,
-          offset: 0,
-        };
       }
-    });
-    
-    // Audit log query
-    this.app.get('/api/v1/audit', async (request: FastifyRequest<{
-      Querystring: {
-        from?: string;
-        to?: string;
-        level?: string;
-        event?: string;
-        userId?: string;
-        taskId?: string;
-        limit?: string;
-        offset?: string;
-      }
-    }>) => {
-      const q = request.query;
-      return this.secureYeoman.queryAuditLog({
-        from: q.from ? Number(q.from) : undefined,
-        to: q.to ? Number(q.to) : undefined,
-        level: q.level ? q.level.split(',') : undefined,
-        event: q.event ? q.event.split(',') : undefined,
-        userId: q.userId,
-        taskId: q.taskId,
-        limit: q.limit ? Number(q.limit) : undefined,
-        offset: q.offset ? Number(q.offset) : undefined,
-      });
-    });
+    );
 
     // Audit chain verification
     this.app.post('/api/v1/audit/verify', async () => {
       return this.secureYeoman.verifyAuditChain();
     });
-    
+
     // WebSocket endpoint — auth is handled via ?token= query param
     // (browser WebSocket API does not support custom headers)
     this.app.get('/ws/metrics', { websocket: true }, (socket, request) => {
@@ -568,27 +588,29 @@ export class GatewayServer {
       this.clients.set(clientId, client);
 
       this.getLogger().debug('WebSocket client connected', { clientId });
-      
+
       socket.on('message', (message: Buffer) => {
         try {
           const data = JSON.parse(message.toString()) as {
             type: string;
             payload?: { channels?: string[] };
           };
-          
+
           if (data.type === 'subscribe' && data.payload?.channels) {
             for (const channel of data.payload.channels) {
               client.channels.add(channel);
             }
-            socket.send(JSON.stringify({
-              type: 'ack',
-              channel: 'system',
-              payload: { subscribed: Array.from(client.channels) },
-              timestamp: Date.now(),
-              sequence: 0,
-            }));
+            socket.send(
+              JSON.stringify({
+                type: 'ack',
+                channel: 'system',
+                payload: { subscribed: Array.from(client.channels) },
+                timestamp: Date.now(),
+                sequence: 0,
+              })
+            );
           }
-          
+
           if (data.type === 'unsubscribe' && data.payload?.channels) {
             for (const channel of data.payload.channels) {
               client.channels.delete(channel);
@@ -601,12 +623,12 @@ export class GatewayServer {
           });
         }
       });
-      
+
       socket.on('close', () => {
         this.clients.delete(clientId);
         this.getLogger().debug('WebSocket client disconnected', { clientId });
       });
-      
+
       socket.on('error', (error: Error) => {
         this.getLogger().error('WebSocket error', {
           clientId,
@@ -615,7 +637,7 @@ export class GatewayServer {
       });
     });
   }
-  
+
   /**
    * Broadcast a message to all clients subscribed to a channel
    */
@@ -627,7 +649,7 @@ export class GatewayServer {
       timestamp: Date.now(),
       sequence: Date.now(), // Simple sequence number
     });
-    
+
     for (const [clientId, client] of this.clients) {
       if (client.channels.has(channel) && client.ws.readyState === WebSocket.OPEN) {
         try {
@@ -642,7 +664,7 @@ export class GatewayServer {
       }
     }
   }
-  
+
   /**
    * Check if any connected client is subscribed to the given channel
    */
@@ -689,20 +711,20 @@ export class GatewayServer {
 
     this.metricsInterval.unref();
   }
-  
+
   /**
    * Start the server
    */
   async start(): Promise<void> {
     // Initialize plugins and routes
     await this.init();
-    
+
     const host = this.config.host;
     const port = this.config.port;
-    
+
     try {
       await this.app.listen({ host, port });
-      
+
       const scheme = this.config.tls.enabled ? 'https' : 'http';
       this.getLogger().info('Gateway server started', {
         host,
@@ -711,10 +733,9 @@ export class GatewayServer {
         tls: this.config.tls.enabled,
         mtls: !!(this.config.tls.enabled && this.config.tls.caPath),
       });
-      
+
       // Start metrics broadcast
       this.startMetricsBroadcast();
-      
     } catch (error) {
       this.getLogger().error('Failed to start gateway server', {
         error: error instanceof Error ? error.message : 'Unknown',
@@ -722,7 +743,7 @@ export class GatewayServer {
       throw error;
     }
   }
-  
+
   /**
    * Stop the server
    */
@@ -732,7 +753,7 @@ export class GatewayServer {
       clearInterval(this.metricsInterval);
       this.metricsInterval = null;
     }
-    
+
     // Close all WebSocket connections
     for (const [_clientId, client] of this.clients) {
       try {
@@ -742,13 +763,13 @@ export class GatewayServer {
       }
     }
     this.clients.clear();
-    
+
     // Close Fastify
     await this.app.close();
-    
+
     this.getLogger().info('Gateway server stopped');
   }
-  
+
   /**
    * Get the number of connected clients
    */

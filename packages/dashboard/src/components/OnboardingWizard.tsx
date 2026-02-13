@@ -28,6 +28,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     sex: 'unspecified',
     voice: '',
     preferredLanguage: '',
+    includeArchetypes: true,
   });
   const [error, setError] = useState<string | null>(null);
 

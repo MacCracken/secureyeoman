@@ -103,6 +103,34 @@ export function registerBrainRoutes(
     }
   });
 
+  app.put('/api/v1/brain/knowledge/:id', async (
+    request: FastifyRequest<{
+      Params: { id: string };
+      Body: { content?: string; confidence?: number };
+    }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const { content, confidence } = request.body;
+      const knowledge = brainManager.updateKnowledge(request.params.id, { content, confidence });
+      return { knowledge };
+    } catch (err) {
+      return reply.code(400).send({ error: errorMessage(err) });
+    }
+  });
+
+  app.delete('/api/v1/brain/knowledge/:id', async (
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      brainManager.deleteKnowledge(request.params.id);
+      return { message: 'Knowledge entry deleted' };
+    } catch (err) {
+      return reply.code(404).send({ error: errorMessage(err) });
+    }
+  });
+
   // ── Stats ────────────────────────────────────────────────────
 
   app.get('/api/v1/brain/stats', async () => {
@@ -141,6 +169,38 @@ export function registerBrainRoutes(
       return { result };
     } catch (err) {
       return reply.code(500).send({ error: errorMessage(err) });
+    }
+  });
+
+  app.get('/api/v1/brain/heartbeat/tasks', async (
+    _request: FastifyRequest,
+    reply: FastifyReply,
+  ) => {
+    if (!heartbeatManager) {
+      return reply.code(503).send({ error: 'Heartbeat system not available' });
+    }
+    const status = heartbeatManager.getStatus();
+    return { tasks: status.tasks };
+  });
+
+  app.put('/api/v1/brain/heartbeat/tasks/:name', async (
+    request: FastifyRequest<{
+      Params: { name: string };
+      Body: { intervalMs?: number; enabled?: boolean; config?: Record<string, unknown> };
+    }>,
+    reply: FastifyReply,
+  ) => {
+    if (!heartbeatManager) {
+      return reply.code(503).send({ error: 'Heartbeat system not available' });
+    }
+    try {
+      const { intervalMs, enabled, config } = request.body;
+      heartbeatManager.updateTask(request.params.name, { intervalMs, enabled, config });
+      const status = heartbeatManager.getStatus();
+      const task = status.tasks.find(t => t.name === request.params.name);
+      return { task };
+    } catch (err) {
+      return reply.code(400).send({ error: errorMessage(err) });
     }
   });
 

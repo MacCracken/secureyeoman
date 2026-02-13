@@ -172,7 +172,7 @@ friday/
 
 **Responsibilities**:
 - Personality management (create, switch, update active personality)
-- Prompt composition following the "In Our Image" hierarchy (Soul > Spirit > Brain > Body)
+- Prompt composition following the "In Our Image" hierarchy (Soul > Spirit > Brain > Body > Heart)
 - Sacred archetypes cosmological preamble
 - User profile and owner context injection
 - Skill management (delegated to Brain when available)
@@ -212,19 +212,23 @@ The active personality is the sole source of identity in the composed prompt. Th
 **Key Modules**:
 - `storage.ts` - SQLite persistence for memories, knowledge, and skills
 - `manager.ts` - BrainManager with memory decay, pruning, and context retrieval
-- `brain-routes.ts` - REST API endpoints
+- `brain-routes.ts` - REST API endpoints including knowledge CRUD (PUT/DELETE), heartbeat task management, and external brain sync
+- `external-sync.ts` - ExternalBrainSync for exporting to Obsidian, Git Repo, or Filesystem
 
 ### 8. Body System
 
 **Location**: `packages/core/src/body/`
 
 **Responsibilities**:
-- Periodic self-checks (system health, memory status, log anomalies, integration health)
-- Heartbeat vital signs recorded as episodic memories
-- Body prompt injection (`## Body` section) into the composed Soul prompt
+- Physical form and capability management (vision, limb movement, auditory, haptic)
+- Heart subsystem for vital signs and periodic self-checks
+- Per-task heartbeat scheduling — each task has its own `intervalMs` so checks run at different frequencies
+- Reflective tasks that record episodic memories for self-improvement
+- Body prompt injection (`## Body` section with `### Heart` subsection) into the composed Soul prompt
 
 **Key Modules**:
-- `heartbeat.ts` - HeartbeatManager with configurable checks and intervals
+- `heart.ts` - HeartManager wrapping HeartbeatManager, owns `### Heart` prompt subsection including task schedule
+- `heartbeat.ts` - HeartbeatManager with per-task scheduling, `updateTask()`, reflective task handler, and `lastRunAt` tracking
 
 ### 9. Agent Communication (Comms)
 

@@ -127,6 +127,7 @@ export interface Personality {
   voice: string;
   preferredLanguage: string;
   defaultModel: DefaultModel | null;
+  includeArchetypes: boolean;
   isActive: boolean;
   createdAt: number;
   updatedAt: number;
@@ -141,6 +142,51 @@ export interface PersonalityCreate {
   voice?: string;
   preferredLanguage?: string;
   defaultModel?: DefaultModel | null;
+  includeArchetypes?: boolean;
+}
+
+// ─── Spirit Types ────────────────────────────────────────────
+
+export interface Passion {
+  id: string;
+  name: string;
+  description: string;
+  intensity: number;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Inspiration {
+  id: string;
+  source: string;
+  description: string;
+  impact: number;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Pain {
+  id: string;
+  trigger: string;
+  description: string;
+  severity: number;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+// ─── Brain Types ─────────────────────────────────────────────
+
+export interface KnowledgeEntry {
+  id: string;
+  topic: string;
+  content: string;
+  source: string;
+  confidence: number;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface Skill {
@@ -168,6 +214,15 @@ export interface SkillCreate {
   enabled?: boolean;
   source?: Skill['source'];
   status?: Skill['status'];
+}
+
+export interface HeartbeatTask {
+  name: string;
+  type: string;
+  enabled: boolean;
+  intervalMs?: number;
+  lastRunAt: number | null;
+  config: Record<string, unknown>;
 }
 
 export interface OnboardingStatus {

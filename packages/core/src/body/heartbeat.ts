@@ -3,9 +3,9 @@
  *
  * Part of the Body module — the agent's vital signs and physical life-checks.
  *
- * Runs configurable checks on a timer (system health, memory status,
- * log anomalies, integration health) and records results as episodic
- * memories with source 'heartbeat'.
+ * Runs configurable checks on a per-task timer (system health, memory status,
+ * log anomalies, integration health, reflective tasks) and records results as
+ * episodic memories with source 'heartbeat'.
  */
 
 import type { BrainManager } from '../brain/manager.js';
@@ -38,6 +38,7 @@ export class HeartbeatManager {
   private lastBeat: HeartbeatResult | null = null;
   private beatCount = 0;
   private running = false;
+  private taskLastRun: Map<string, number> = new Map();
 
   constructor(
     brain: BrainManager,
@@ -82,11 +83,17 @@ export class HeartbeatManager {
     const checks: HeartbeatCheckResult[] = [];
 
     const enabledChecks = this.config.checks.filter(c => c.enabled);
+    const dueChecks = enabledChecks.filter(c => {
+      const interval = c.intervalMs ?? this.config.intervalMs;
+      const lastRun = this.taskLastRun.get(c.name) ?? 0;
+      return (start - lastRun) >= interval;
+    });
 
-    for (const check of enabledChecks) {
+    for (const check of dueChecks) {
       try {
         const result = await this.runCheck(check);
         checks.push(result);
+        this.taskLastRun.set(check.name, start);
       } catch (err) {
         checks.push({
           name: check.name,
@@ -94,6 +101,7 @@ export class HeartbeatManager {
           status: 'error',
           message: err instanceof Error ? err.message : 'Check failed',
         });
+        this.taskLastRun.set(check.name, start);
       }
     }
 
@@ -106,31 +114,33 @@ export class HeartbeatManager {
     this.lastBeat = result;
     this.beatCount++;
 
-    // Record as episodic memory
-    const hasWarnings = checks.some(c => c.status === 'warning');
-    const hasErrors = checks.some(c => c.status === 'error');
-    const summary = checks.map(c => `${c.name}: ${c.status}`).join(', ');
+    if (checks.length > 0) {
+      // Record as episodic memory
+      const hasWarnings = checks.some(c => c.status === 'warning');
+      const hasErrors = checks.some(c => c.status === 'error');
+      const summary = checks.map(c => `${c.name}: ${c.status}`).join(', ');
 
-    this.brain.remember(
-      'episodic',
-      `Heartbeat #${this.beatCount}: ${summary}`,
-      'heartbeat',
-      { beatCount: String(this.beatCount) },
-      hasErrors ? 0.8 : hasWarnings ? 0.5 : 0.2,
-    );
+      this.brain.remember(
+        'episodic',
+        `Heartbeat #${this.beatCount}: ${summary}`,
+        'heartbeat',
+        { beatCount: String(this.beatCount) },
+        hasErrors ? 0.8 : hasWarnings ? 0.5 : 0.2,
+      );
 
-    // Log to audit chain
-    await this.auditChain.record({
-      event: 'heartbeat',
-      level: hasErrors ? 'warn' : 'info',
-      message: `Heartbeat #${this.beatCount} completed in ${result.durationMs}ms`,
-      metadata: {
-        beatCount: this.beatCount,
-        checksRun: checks.length,
-        hasWarnings,
-        hasErrors,
-      },
-    });
+      // Log to audit chain
+      await this.auditChain.record({
+        event: 'heartbeat',
+        level: hasErrors ? 'warn' : 'info',
+        message: `Heartbeat #${this.beatCount} completed in ${result.durationMs}ms`,
+        metadata: {
+          beatCount: this.beatCount,
+          checksRun: checks.length,
+          hasWarnings,
+          hasErrors,
+        },
+      });
+    }
 
     return result;
   }
@@ -145,6 +155,14 @@ export class HeartbeatManager {
     intervalMs: number;
     beatCount: number;
     lastBeat: HeartbeatResult | null;
+    tasks: Array<{
+      name: string;
+      type: string;
+      enabled: boolean;
+      intervalMs: number;
+      lastRunAt: number | null;
+      config: Record<string, unknown>;
+    }>;
   } {
     return {
       running: this.running,
@@ -152,7 +170,25 @@ export class HeartbeatManager {
       intervalMs: this.config.intervalMs,
       beatCount: this.beatCount,
       lastBeat: this.lastBeat,
+      tasks: this.config.checks.map(c => ({
+        name: c.name,
+        type: c.type,
+        enabled: c.enabled,
+        intervalMs: c.intervalMs ?? this.config.intervalMs,
+        lastRunAt: this.taskLastRun.get(c.name) ?? null,
+        config: c.config,
+      })),
     };
+  }
+
+  updateTask(name: string, data: { intervalMs?: number; enabled?: boolean; config?: Record<string, unknown> }): void {
+    const check = this.config.checks.find(c => c.name === name);
+    if (!check) {
+      throw new Error(`Task "${name}" not found`);
+    }
+    if (data.intervalMs !== undefined) check.intervalMs = data.intervalMs;
+    if (data.enabled !== undefined) check.enabled = data.enabled;
+    if (data.config !== undefined) check.config = data.config;
   }
 
   private async runCheck(check: HeartbeatCheck): Promise<HeartbeatCheckResult> {
@@ -165,6 +201,8 @@ export class HeartbeatManager {
         return this.checkLogAnomalies(check);
       case 'integration_health':
         return this.checkIntegrationHealth(check);
+      case 'reflective_task':
+        return this.runReflectiveTask(check);
       case 'custom':
         return {
           name: check.name,
@@ -174,6 +212,25 @@ export class HeartbeatManager {
           data: check.config,
         };
     }
+  }
+
+  private runReflectiveTask(check: HeartbeatCheck): HeartbeatCheckResult {
+    const prompt = (check.config.prompt as string) ?? 'reflect';
+
+    this.brain.remember(
+      'episodic',
+      `Reflective task: ${prompt}`,
+      'heartbeat',
+      { task: check.name },
+      0.4,
+    );
+
+    return {
+      name: check.name,
+      type: 'reflective_task',
+      status: 'ok',
+      message: `Reflection recorded: "${prompt}"`,
+    };
   }
 
   private checkSystemHealth(check: HeartbeatCheck): HeartbeatCheckResult {

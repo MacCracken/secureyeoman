@@ -1,7 +1,7 @@
 import { useRef, useEffect, useCallback, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Send, Loader2, Bot, User, ChevronDown } from 'lucide-react';
-import { fetchPersonalities, switchModel } from '../api/client';
+import { fetchPersonalities, switchModel, fetchModelInfo } from '../api/client';
 import { ModelWidget } from './ModelWidget';
 import { VoiceToggle } from './VoiceToggle';
 import { useChat } from '../hooks/useChat';
@@ -12,7 +12,6 @@ export function ChatPage() {
   const [showModelWidget, setShowModelWidget] = useState(false);
   const [showPersonalityPicker, setShowPersonalityPicker] = useState(false);
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string | null>(null);
-  const [modelOverridden, setModelOverridden] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -21,29 +20,47 @@ export function ChatPage() {
     queryFn: fetchPersonalities,
   });
 
+  const { data: modelInfoData } = useQuery({
+    queryKey: ['modelInfo'],
+    queryFn: fetchModelInfo,
+  });
+
+  const currentModel = modelInfoData?.current
+    ? `${modelInfoData.current.provider}/${modelInfoData.current.model}`
+    : null;
+
   const personalities = personalitiesData?.personalities ?? [];
   const activePersonality = personalities.find((p) => p.isActive);
   const effectivePersonalityId = selectedPersonalityId ?? activePersonality?.id ?? null;
-  const personality = personalities.find((p) => p.id === effectivePersonalityId) ?? activePersonality ?? null;
+  const personality =
+    personalities.find((p) => p.id === effectivePersonalityId) ?? activePersonality ?? null;
 
   const { messages, input, setInput, handleSend, isPending } = useChat({
     personalityId: effectivePersonalityId,
   });
   const voice = useVoice();
+  const queryClient = useQueryClient();
 
-  // Auto-switch model when personality changes (unless user manually overrode)
-  const prevPersonalityId = useRef(effectivePersonalityId);
+  // Switch to personality's default model when personality changes
   useEffect(() => {
-    if (effectivePersonalityId === prevPersonalityId.current) return;
-    prevPersonalityId.current = effectivePersonalityId;
-    setModelOverridden(false);
-
-    if (personality?.defaultModel && !modelOverridden) {
-      switchModel(personality.defaultModel).catch(() => {
-        // Silently fail — user can switch manually
-      });
+    if (personality?.defaultModel) {
+      switchModel({
+        provider: personality.defaultModel.provider,
+        model: personality.defaultModel.model,
+      })
+        .then(() => {
+          queryClient.invalidateQueries({ queryKey: ['modelInfo'] });
+        })
+        .catch(() => {
+          // Silently fail - user can manually switch if needed
+        });
     }
-  }, [effectivePersonalityId, personality?.defaultModel, modelOverridden]);
+  }, [effectivePersonalityId, queryClient]);
+
+  // Handle model switch via ModelWidget
+  const handleModelSwitch = useCallback(() => {
+    // Model widget handles its own state
+  }, []);
 
   // Feed voice transcript into input
   useEffect(() => {
@@ -79,7 +96,7 @@ export function ChatPage() {
         handleSend();
       }
     },
-    [handleSend],
+    [handleSend]
   );
 
   return (
@@ -114,6 +131,16 @@ export function ChatPage() {
                   onClick={() => {
                     setSelectedPersonalityId(p.id);
                     setShowPersonalityPicker(false);
+                    if (p.defaultModel) {
+                      switchModel({
+                        provider: p.defaultModel.provider,
+                        model: p.defaultModel.model,
+                      })
+                        .then(() => {
+                          queryClient.invalidateQueries({ queryKey: ['modelInfo'] });
+                        })
+                        .catch(() => {});
+                    }
                   }}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 text-left hover:bg-muted/50 transition-colors ${
                     p.id === effectivePersonalityId ? 'bg-primary/15 border-l-2 border-primary' : ''
@@ -147,7 +174,7 @@ export function ChatPage() {
             <div className="absolute right-0 top-full mt-2 z-50">
               <ModelWidget
                 onClose={() => setShowModelWidget(false)}
-                onModelSwitch={() => setModelOverridden(true)}
+                onModelSwitch={handleModelSwitch}
               />
             </div>
           )}
@@ -163,37 +190,27 @@ export function ChatPage() {
               <p className="text-sm">
                 Start a conversation{personality ? ` with ${personality.name}` : ''}.
               </p>
+              {currentModel && (
+                <p className="text-xs mt-1 text-primary/70">Using Model: {currentModel}</p>
+              )}
               <p className="text-xs mt-1">Messages are session-only and not persisted.</p>
             </div>
           </div>
         )}
 
         {messages.map((msg, i) => (
-          <div
-            key={i}
-            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-          >
+          <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             <div
               className={`max-w-[75%] rounded-lg px-4 py-3 ${
-                msg.role === 'user'
-                  ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted'
+                msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
               }`}
             >
               <div className="flex items-center gap-2 mb-1">
-                {msg.role === 'user' ? (
-                  <User className="w-3 h-3" />
-                ) : (
-                  <Bot className="w-3 h-3" />
-                )}
+                {msg.role === 'user' ? <User className="w-3 h-3" /> : <Bot className="w-3 h-3" />}
                 <span className="text-xs opacity-70">
-                  {msg.role === 'user' ? 'You' : personality?.name ?? 'Assistant'}
+                  {msg.role === 'user' ? 'You' : (personality?.name ?? 'Assistant')}
                 </span>
-                {msg.model && (
-                  <span className="text-xs opacity-50">
-                    {msg.model}
-                  </span>
-                )}
+                {msg.model && <span className="text-xs opacity-50">{msg.model}</span>}
               </div>
               <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
               {msg.tokensUsed !== undefined && (
@@ -212,9 +229,18 @@ export function ChatPage() {
                 <span className="text-xs opacity-70">{personality?.name ?? 'Assistant'}</span>
               </div>
               <div className="flex gap-1 mt-2">
-                <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                <span
+                  className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                  style={{ animationDelay: '0ms' }}
+                />
+                <span
+                  className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                  style={{ animationDelay: '150ms' }}
+                />
+                <span
+                  className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                  style={{ animationDelay: '300ms' }}
+                />
               </div>
             </div>
           </div>
