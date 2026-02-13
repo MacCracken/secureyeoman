@@ -45,6 +45,7 @@ const TEST_PERSONALITY: PersonalityCreate = {
   voice: '',
   preferredLanguage: '',
   defaultModel: null,
+  includeArchetypes: true,
 };
 
 const TEST_SKILL: SkillCreate = {
@@ -477,6 +478,23 @@ describe('SoulManager', () => {
       expect(prompt).not.toContain('Your name is');
     });
 
+    it('should skip preamble when includeArchetypes is false', () => {
+      const p = manager.createPersonality({ ...TEST_PERSONALITY, includeArchetypes: false });
+      manager.setPersonality(p.id);
+      const prompt = manager.composeSoulPrompt();
+      expect(prompt).not.toContain('In Our Image');
+      expect(prompt).not.toContain('No-Thing-Ness');
+      expect(prompt).toContain('## Soul');
+    });
+
+    it('should include preamble when includeArchetypes is true (default)', () => {
+      const p = manager.createPersonality(TEST_PERSONALITY);
+      manager.setPersonality(p.id);
+      const prompt = manager.composeSoulPrompt();
+      expect(prompt).toContain('In Our Image');
+      expect(prompt).toContain('No-Thing-Ness');
+    });
+
     it('should not inject agent name separately from personality', () => {
       manager.setAgentName('JARVIS');
       const p = manager.createPersonality({ ...TEST_PERSONALITY, name: 'TestBot' });
@@ -604,15 +622,15 @@ describe('SoulManager', () => {
 
       const prompt = manager.composeSoulPrompt();
       expect(prompt).toContain('## Soul');
-      expect(prompt).toContain('Your Soul is your identity');
+      expect(prompt).toContain('Your Soul is your unchanging identity');
     });
 
-    it('should include ## Body when heartbeat has fired', () => {
+    it('should include ## Body with capabilities and ### Heart when heartbeat has fired', () => {
       const mockHeartbeat = {
         getStatus: () => ({
           running: true,
           enabled: true,
-          intervalMs: 60000,
+          intervalMs: 30000,
           beatCount: 1,
           lastBeat: {
             timestamp: 1700000000000,
@@ -621,6 +639,10 @@ describe('SoulManager', () => {
               { name: 'system_health', type: 'system_health', status: 'ok' as const, message: 'All good' },
             ],
           },
+          tasks: [
+            { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 300000, lastRunAt: 1700000000000, config: {} },
+            { name: 'self_reflection', type: 'reflective_task', enabled: true, intervalMs: 1800000, lastRunAt: null, config: { prompt: 'reflect' } },
+          ],
         }),
         getLastBeat: () => null,
         start: () => {},
@@ -632,7 +654,13 @@ describe('SoulManager', () => {
       const prompt = manager.composeSoulPrompt();
       expect(prompt).toContain('## Body');
       expect(prompt).toContain('Your Body is your form');
+      expect(prompt).toContain('Capabilities:');
+      expect(prompt).toContain('### Heart');
+      expect(prompt).toContain('Your Heart is your pulse');
       expect(prompt).toContain('system_health: [ok] All good');
+      expect(prompt).toContain('Task schedule:');
+      expect(prompt).toContain('system_health: every 5m');
+      expect(prompt).toContain('self_reflection: every 30m');
     });
 
     it('should omit ## Body when no heartbeat is set', () => {

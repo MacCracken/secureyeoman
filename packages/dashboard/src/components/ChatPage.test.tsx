@@ -63,6 +63,7 @@ describe('ChatPage', () => {
         voice: '',
         preferredLanguage: '',
         defaultModel: null,
+        includeArchetypes: true,
         isActive: true,
         createdAt: Date.now(),
         updatedAt: Date.now(),
@@ -173,13 +174,13 @@ describe('ChatPage', () => {
           id: 'p-1', name: 'FRIDAY', description: 'Friendly AI',
           systemPrompt: '', traits: {}, sex: 'unspecified' as const,
           voice: '', preferredLanguage: '', defaultModel: null,
-          isActive: true, createdAt: Date.now(), updatedAt: Date.now(),
+          includeArchetypes: true, isActive: true, createdAt: Date.now(), updatedAt: Date.now(),
         },
         {
           id: 'p-2', name: 'JARVIS', description: 'Snarky butler',
           systemPrompt: '', traits: {}, sex: 'male' as const,
           voice: '', preferredLanguage: '', defaultModel: null,
-          isActive: false, createdAt: Date.now(), updatedAt: Date.now(),
+          includeArchetypes: true, isActive: false, createdAt: Date.now(), updatedAt: Date.now(),
         },
       ],
     });

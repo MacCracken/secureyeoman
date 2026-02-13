@@ -586,6 +586,34 @@ describe('BrainManager', () => {
     });
   });
 
+  describe('seedBaseKnowledge', () => {
+    it('should seed foundational knowledge entries', () => {
+      manager.seedBaseKnowledge();
+      const all = manager.queryKnowledge({});
+      expect(all.length).toBeGreaterThanOrEqual(4);
+
+      const topics = all.map(k => k.topic);
+      expect(topics).toContain('self-identity');
+      expect(topics).toContain('hierarchy');
+      expect(topics).toContain('purpose');
+      expect(topics).toContain('interaction');
+    });
+
+    it('should be idempotent on repeat calls', () => {
+      manager.seedBaseKnowledge();
+      const firstCount = manager.queryKnowledge({}).length;
+      manager.seedBaseKnowledge();
+      const secondCount = manager.queryKnowledge({}).length;
+      expect(secondCount).toBe(firstCount);
+    });
+
+    it('should not seed when brain is disabled', () => {
+      const mgr = new BrainManager(storage, defaultConfig({ enabled: false }), createDeps());
+      mgr.seedBaseKnowledge();
+      expect(storage.getKnowledgeCount()).toBe(0);
+    });
+  });
+
   describe('stats', () => {
     it('should return stats', () => {
       manager.remember('semantic', 'Test', 'test');

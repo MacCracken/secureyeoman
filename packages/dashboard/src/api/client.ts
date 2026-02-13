@@ -25,6 +25,11 @@ import type {
   McpServerConfig,
   McpToolDef,
   McpResourceDef,
+  Passion,
+  Inspiration,
+  Pain,
+  KnowledgeEntry,
+  HeartbeatTask,
 } from '../types.js';
 
 const API_BASE = '/api/v1';
@@ -178,7 +183,10 @@ async function request<T>(
 
 // ── Login / Logout ────────────────────────────────────────────────────
 
-export async function login(password: string, rememberMe = false): Promise<{
+export async function login(
+  password: string,
+  rememberMe = false
+): Promise<{
   accessToken: string;
   refreshToken: string;
   expiresIn: number;
@@ -340,8 +348,12 @@ export async function fetchSecurityEvents(params?: {
       type: (e.type as string) ?? (e.event as string) ?? 'unknown',
       severity: mapLevelToSeverity((e.severity as string) ?? (e.level as string)),
       message: (e.message as string) ?? '',
-      userId: (e.userId as string) ?? (e.metadata as Record<string, unknown>)?.userId as string | undefined,
-      ipAddress: (e.ipAddress as string) ?? (e.metadata as Record<string, unknown>)?.ip as string | undefined,
+      userId:
+        (e.userId as string) ??
+        ((e.metadata as Record<string, unknown>)?.userId as string | undefined),
+      ipAddress:
+        (e.ipAddress as string) ??
+        ((e.metadata as Record<string, unknown>)?.ip as string | undefined),
       timestamp: (e.timestamp as number) ?? 0,
       acknowledged: false,
     }));
@@ -634,6 +646,186 @@ export async function switchModel(data: {
   });
 }
 
+// ─── Spirit API ───────────────────────────────────────────────
+
+export async function fetchPassions(): Promise<{ passions: Passion[] }> {
+  try {
+    return await request('/spirit/passions');
+  } catch {
+    return { passions: [] };
+  }
+}
+
+export async function createPassion(data: {
+  name: string;
+  description?: string;
+  intensity?: number;
+  isActive?: boolean;
+}): Promise<{ passion: Passion }> {
+  return request('/spirit/passions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updatePassion(
+  id: string,
+  data: Partial<{ name: string; description: string; intensity: number; isActive: boolean }>
+): Promise<{ passion: Passion }> {
+  return request(`/spirit/passions/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deletePassion(id: string): Promise<void> {
+  await request(`/spirit/passions/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchInspirations(): Promise<{ inspirations: Inspiration[] }> {
+  try {
+    return await request('/spirit/inspirations');
+  } catch {
+    return { inspirations: [] };
+  }
+}
+
+export async function createInspiration(data: {
+  source: string;
+  description?: string;
+  impact?: number;
+  isActive?: boolean;
+}): Promise<{ inspiration: Inspiration }> {
+  return request('/spirit/inspirations', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateInspiration(
+  id: string,
+  data: Partial<{ source: string; description: string; impact: number; isActive: boolean }>
+): Promise<{ inspiration: Inspiration }> {
+  return request(`/spirit/inspirations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteInspiration(id: string): Promise<void> {
+  await request(`/spirit/inspirations/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchPains(): Promise<{ pains: Pain[] }> {
+  try {
+    return await request('/spirit/pains');
+  } catch {
+    return { pains: [] };
+  }
+}
+
+export async function createPainEntry(data: {
+  trigger: string;
+  description?: string;
+  severity?: number;
+  isActive?: boolean;
+}): Promise<{ pain: Pain }> {
+  return request('/spirit/pains', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updatePain(
+  id: string,
+  data: Partial<{ trigger: string; description: string; severity: number; isActive: boolean }>
+): Promise<{ pain: Pain }> {
+  return request(`/spirit/pains/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deletePain(id: string): Promise<void> {
+  await request(`/spirit/pains/${id}`, { method: 'DELETE' });
+}
+
+// ─── Brain API ────────────────────────────────────────────────
+
+export async function fetchKnowledge(): Promise<{ knowledge: KnowledgeEntry[] }> {
+  try {
+    return await request('/brain/knowledge');
+  } catch {
+    return { knowledge: [] };
+  }
+}
+
+export async function learnKnowledge(
+  topic: string,
+  content: string
+): Promise<{ entry: KnowledgeEntry }> {
+  return request('/brain/knowledge', {
+    method: 'POST',
+    body: JSON.stringify({ topic, content }),
+  });
+}
+
+export async function updateKnowledge(
+  id: string,
+  data: { content?: string; confidence?: number }
+): Promise<{ knowledge: KnowledgeEntry }> {
+  return request(`/brain/knowledge/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteKnowledge(id: string): Promise<{ message: string }> {
+  return request(`/brain/knowledge/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchHeartbeatTasks(): Promise<{ tasks: HeartbeatTask[] }> {
+  try {
+    return await request('/brain/heartbeat/tasks');
+  } catch {
+    return { tasks: [] };
+  }
+}
+
+export async function updateHeartbeatTask(
+  name: string,
+  data: { intervalMs?: number; enabled?: boolean; config?: Record<string, unknown> }
+): Promise<{ task: HeartbeatTask }> {
+  return request(`/brain/heartbeat/tasks/${encodeURIComponent(name)}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchExternalSyncStatus(): Promise<{
+  configured: boolean;
+  provider?: string;
+  path?: string;
+  lastSync?: { timestamp: number; entriesExported: number; errors: string[] } | null;
+  error?: string;
+}> {
+  try {
+    const result = await request<Record<string, unknown>>('/brain/sync/status');
+    return { configured: true, ...result } as {
+      configured: boolean;
+      provider?: string;
+      path?: string;
+      lastSync?: { timestamp: number; entriesExported: number; errors: string[] } | null;
+    };
+  } catch {
+    return { configured: false };
+  }
+}
+
+export async function triggerExternalSync(): Promise<{ result: Record<string, unknown> }> {
+  return request('/brain/sync', { method: 'POST' });
+}
+
 // ─── MCP Servers ──────────────────────────────────────────────
 
 export async function fetchMcpServers(): Promise<{ servers: McpServerConfig[]; total: number }> {
@@ -678,4 +870,23 @@ export async function fetchMcpResources(): Promise<{ resources: McpResourceDef[]
   } catch {
     return { resources: [] };
   }
+}
+
+// ─── Terminal API ───────────────────────────────────────────────
+
+export interface TerminalCommandResult {
+  output: string;
+  error: string;
+  exitCode: number;
+  cwd: string;
+}
+
+export async function executeTerminalCommand(
+  command: string,
+  cwd: string
+): Promise<TerminalCommandResult> {
+  return request('/terminal/execute', {
+    method: 'POST',
+    body: JSON.stringify({ command, cwd }),
+  });
 }

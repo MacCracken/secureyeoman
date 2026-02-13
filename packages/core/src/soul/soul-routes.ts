@@ -312,6 +312,7 @@ export function registerSoulRoutes(
         voice: request.body?.voice ?? defaults.voice,
         preferredLanguage: request.body?.preferredLanguage ?? defaults.preferredLanguage,
         defaultModel: request.body?.defaultModel ?? null,
+        includeArchetypes: request.body?.includeArchetypes ?? true,
       };
 
       const personality = soulManager.createPersonality(data);

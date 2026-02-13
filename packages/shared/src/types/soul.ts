@@ -27,6 +27,7 @@ export const PersonalitySchema = z.object({
   voice: z.string().max(200).default(''),
   preferredLanguage: z.string().max(100).default(''),
   defaultModel: DefaultModelSchema,
+  includeArchetypes: z.boolean().default(true),
   isActive: z.boolean().default(false),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
@@ -237,6 +238,7 @@ export const HeartbeatCheckTypeSchema = z.enum([
   'memory_status',
   'log_anomalies',
   'integration_health',
+  'reflective_task',
   'custom',
 ]);
 export type HeartbeatCheckType = z.infer<typeof HeartbeatCheckTypeSchema>;
@@ -245,6 +247,7 @@ export const HeartbeatCheckSchema = z.object({
   name: z.string().min(1).max(100),
   type: HeartbeatCheckTypeSchema,
   enabled: z.boolean().default(true),
+  intervalMs: z.number().int().min(30_000).max(86_400_000).optional(),
   config: z.record(z.string(), z.unknown()).default({}),
 });
 
@@ -252,11 +255,12 @@ export type HeartbeatCheck = z.infer<typeof HeartbeatCheckSchema>;
 
 export const HeartbeatConfigSchema = z.object({
   enabled: z.boolean().default(true),
-  intervalMs: z.number().int().min(5000).max(3_600_000).default(60_000),
+  intervalMs: z.number().int().min(5000).max(3_600_000).default(30_000),
   checks: z.array(HeartbeatCheckSchema).default([
-    { name: 'system_health', type: 'system_health', enabled: true, config: {} },
-    { name: 'memory_status', type: 'memory_status', enabled: true, config: {} },
-    { name: 'log_anomalies', type: 'log_anomalies', enabled: true, config: {} },
+    { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 300_000, config: {} },
+    { name: 'memory_status', type: 'memory_status', enabled: true, intervalMs: 600_000, config: {} },
+    { name: 'log_anomalies', type: 'log_anomalies', enabled: true, intervalMs: 300_000, config: {} },
+    { name: 'self_reflection', type: 'reflective_task', enabled: true, intervalMs: 1_800_000, config: { prompt: 'how can I help my user and improve myself, securely' } },
   ]),
 }).default({});
 
@@ -288,13 +292,33 @@ export const ExternalBrainConfigSchema = z.object({
 
 export type ExternalBrainConfig = z.infer<typeof ExternalBrainConfigSchema>;
 
-// ─── Body Config (owns Heartbeat) ──────────────────────────
+// ─── Body Config (owns Heart) ───────────────────────────────
+
+export const BodyCapabilitySchema = z.enum(['vision', 'limb_movement', 'auditory', 'haptic']);
+export type BodyCapability = z.infer<typeof BodyCapabilitySchema>;
 
 export const BodyConfigSchema = z.object({
   enabled: z.boolean().default(false),
+  capabilities: z.array(BodyCapabilitySchema).default([]),
+  heartEnabled: z.boolean().default(true),
 }).default({});
 
 export type BodyConfig = z.infer<typeof BodyConfigSchema>;
+
+// ─── Heart Config ───────────────────────────────────────────
+
+export const HeartConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  intervalMs: z.number().int().min(5000).max(3_600_000).default(30_000),
+  checks: z.array(HeartbeatCheckSchema).default([
+    { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 300_000, config: {} },
+    { name: 'memory_status', type: 'memory_status', enabled: true, intervalMs: 600_000, config: {} },
+    { name: 'log_anomalies', type: 'log_anomalies', enabled: true, intervalMs: 300_000, config: {} },
+    { name: 'self_reflection', type: 'reflective_task', enabled: true, intervalMs: 1_800_000, config: { prompt: 'how can I help my user and improve myself, securely' } },
+  ]),
+}).default({});
+
+export type HeartConfig = z.infer<typeof HeartConfigSchema>;
 
 // ─── Comms Config ────────────────────────────────────────────
 

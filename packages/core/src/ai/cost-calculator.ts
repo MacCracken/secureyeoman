@@ -262,8 +262,8 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
   const results = await Promise.allSettled(tasks.map((t) => t.promise));
 
   for (let i = 0; i < tasks.length; i++) {
-    const result = results[i];
-    const { provider } = tasks[i];
+    const result = results[i]!;
+    const { provider } = tasks[i]!;
     if (result.status === 'fulfilled' && result.value.length > 0) {
       grouped[provider] = result.value;
     }

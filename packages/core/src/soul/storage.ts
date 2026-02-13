@@ -22,6 +22,7 @@ interface PersonalityRow {
   voice: string;
   preferred_language: string;
   default_model: string;    // JSON | ''
+  include_archetypes: number; // 0 | 1
   is_active: number;        // 0 | 1
   created_at: number;
   updated_at: number;
@@ -62,6 +63,7 @@ function rowToPersonality(row: PersonalityRow): Personality {
     voice: row.voice,
     preferredLanguage: row.preferred_language,
     defaultModel: row.default_model ? safeJsonParse<Personality['defaultModel']>(row.default_model, null) : null,
+    includeArchetypes: row.include_archetypes === 1,
     isActive: row.is_active === 1,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -141,6 +143,7 @@ export class SoulStorage {
         voice TEXT NOT NULL DEFAULT '',
         preferred_language TEXT NOT NULL DEFAULT '',
         default_model TEXT NOT NULL DEFAULT '',
+        include_archetypes INTEGER NOT NULL DEFAULT 1,
         is_active INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL,
         updated_at INTEGER NOT NULL
@@ -180,6 +183,13 @@ export class SoulStorage {
     } catch {
       // Column already exists
     }
+
+    // Migration: add include_archetypes column (v1.5+)
+    try {
+      this.db.exec(`ALTER TABLE personalities ADD COLUMN include_archetypes INTEGER NOT NULL DEFAULT 1`);
+    } catch {
+      // Column already exists
+    }
   }
 
   // ── Personalities ─────────────────────────────────────────────
@@ -190,8 +200,8 @@ export class SoulStorage {
 
     this.db
       .prepare(
-        `INSERT INTO personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, is_active, created_at, updated_at)
-         VALUES (@id, @name, @description, @system_prompt, @traits, @sex, @voice, @preferred_language, @default_model, @is_active, @created_at, @updated_at)`,
+        `INSERT INTO personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, include_archetypes, is_active, created_at, updated_at)
+         VALUES (@id, @name, @description, @system_prompt, @traits, @sex, @voice, @preferred_language, @default_model, @include_archetypes, @is_active, @created_at, @updated_at)`,
       )
       .run({
         id,
@@ -203,6 +213,7 @@ export class SoulStorage {
         voice: data.voice ?? '',
         preferred_language: data.preferredLanguage ?? '',
         default_model: data.defaultModel ? JSON.stringify(data.defaultModel) : '',
+        include_archetypes: (data.includeArchetypes ?? true) ? 1 : 0,
         is_active: 0,
         created_at: now,
         updated_at: now,
@@ -258,6 +269,7 @@ export class SoulStorage {
            voice = @voice,
            preferred_language = @preferred_language,
            default_model = @default_model,
+           include_archetypes = @include_archetypes,
            updated_at = @updated_at
          WHERE id = @id`,
       )
@@ -273,6 +285,9 @@ export class SoulStorage {
         default_model: data.defaultModel !== undefined
           ? (data.defaultModel ? JSON.stringify(data.defaultModel) : '')
           : (existing.defaultModel ? JSON.stringify(existing.defaultModel) : ''),
+        include_archetypes: data.includeArchetypes !== undefined
+          ? (data.includeArchetypes ? 1 : 0)
+          : (existing.includeArchetypes ? 1 : 0),
         updated_at: now,
       });
 
