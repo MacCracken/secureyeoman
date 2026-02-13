@@ -11,6 +11,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.3] — 2026-02-13
+
+### Dashboard
+- **Task History — heartbeat task visibility** — Heartbeat tasks now always display in the task list, even when no user-created tasks exist; previously they were hidden behind a "No tasks found" message
+- **Task History — edit/delete for tasks** — Edit icon opens a dialog to modify task name, type, and description; delete icon uses a proper confirmation dialog instead of browser `confirm()`
+- **Task History — responsive layout** — Table columns adapt to screen sizes with responsive visibility classes
+
+### Fixed
+- **Backend task update** — PUT `/api/v1/tasks/:id` now correctly uses an UPDATE query instead of attempting a duplicate INSERT which caused UNIQUE constraint failures
+- **Date filter parsing** — Task list date filters now correctly parse ISO 8601 strings from the frontend; previously `Number()` coercion produced NaN which silently disabled all date filtering
+- **JSON input safety** — Create task dialog and auto-create flow now guard against invalid JSON input instead of throwing uncaught parse errors
+- **Type cast cleanup** — Removed `as any` type cast in task edit dialog
+
+### Code Quality
+- **ConfirmDialog usage** — Task deletion now uses the existing `ConfirmDialog` component for consistent UX instead of the browser's native `confirm()`
+- **Test coverage** — Added tests for heartbeat task rendering (with and without regular tasks), edit dialog, and delete confirmation
+
+---
+
+## [1.3.2] — 2026-02-13
+
+### Dashboard
+- **Task History — New Task creation** — Added "New Task" button with dialog for creating tasks (name, type, description, JSON input)
+- **Sidebar quick-create** — "New" button in sidebar for fast access to create personalities, tasks, skills, or experiments
+- **About dialog** — Replaced dashboard footer with About dialog accessible from user menu
+
+### Fixed
+- **Date filters on tasks endpoint** — Added `from`/`to` query parameter support to `GET /api/v1/tasks`
+- **Auto-refetch duplicate tasks** — Removed automatic refetch interval that caused duplicate task entries
+- **Notification toggle overflow** — Fixed toggle sizing that caused overflow outside container
+
+---
+
 ## [1.3.1] — 2026-02-12
 
 ### Dynamic Model Discovery
@@ -311,4 +344,4 @@ All features from the pre-release development phases below are included in this 
 
 ---
 
-*Last updated: February 12, 2026*
+*Last updated: February 13, 2026*

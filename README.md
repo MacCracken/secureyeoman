@@ -2,7 +2,7 @@
 
 > **F**ully **R**esponsive **I**ntegrated **D**igitally **A**daptable **Y**eoman
 
-[![Version](https://img.shields.io/badge/Version-1.3.1-blue.svg)](https://github.com/MacCracken/FRIDAY/releases/tag/v1.3.1)
+[![Version](https://img.shields.io/badge/Version-1.3.3-blue.svg)](https://github.com/MacCracken/FRIDAY/releases/tag/v1.3.3)
 [![CI](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
@@ -168,6 +168,8 @@ friday/
 │   │       ├── logging/         # Audit chain + storage + file writer + rotation
 │   │       ├── security/        # RBAC, encryption, sandbox
 │   │       ├── soul/            # Personality + identity
+│   │       ├── spirit/          # Emotional core (passions, inspirations, pains)
+│   │       ├── body/            # Vital signs (heartbeat, capture, health)
 │   │       └── task/            # Task executor + storage
 │   └── dashboard/       # React UI (Vite + Tailwind)
 ├── tests/               # Security, load, and chaos tests

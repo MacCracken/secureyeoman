@@ -2,6 +2,7 @@
 
 **Status**: Implemented
 **Date**: 2026-02-13
+**Version**: 1.3.2 — 1.3.3
 
 ## Context
 
@@ -127,6 +128,33 @@ A "New" button was added to the sidebar (between navigation and Live/Connected s
 
 Each option presents a form in the same dialog, then navigates to the appropriate page with pre-filled parameters.
 
+### 11. Task List - Edit/Delete and Heartbeat Tasks
+
+The Task History page now supports:
+- **Edit**: Click the edit icon to modify task name, type, and description
+- **Delete**: Click the delete icon to remove a task (with confirmation)
+- **Responsive**: Table columns adjust for different screen sizes
+- **Heartbeat Tasks**: Shows heartbeat tasks from the Personality separately as read-only entries marked as "Managed by Personality"
+
+### 12. About Dialog
+
+Removed the dashboard footer. User menu now includes an "About" option that opens a dialog showing:
+- Version (1.3.3)
+- Security status ("Local Network Only")
+- Connection status
+- F.R.I.D.A.Y. tagline
+
+### 13. Security Metrics
+
+Fixed security metrics to track and display real data:
+- Auth attempts/success/failures now tracked in AuthService
+- Metrics endpoint returns actual auth stats instead of zeros
+- Audit stats endpoint added for chain status verification
+
+### 14. Notification Toggle Fixes
+
+Fixed notification preference toggles that were rendering outside their container when enabled. Updated toggle sizing from `w-10 h-5` to `w-11 h-6`.
+
 ## Consequences
 
 - **Positive**: Clearer navigation structure with logical grouping
@@ -137,6 +165,10 @@ Each option presents a form in the same dialog, then navigates to the appropriat
 - **Positive**: Personality Editor provides direct capability management for Vision/Auditory
 - **Positive**: Task History now includes "New Task" button to create tasks directly
 - **Positive**: Quick-create "New" button in sidebar for fast access to create personalities, tasks, skills, or experiments
+- **Positive**: Task list now supports edit/delete with responsive layout
+- **Positive**: Heartbeat tasks visible in task list as read-only
+- **Positive**: Real-time auth stats in security metrics
+- **Positive**: About dialog accessible from user menu
 - **Neutral**: Requires users to learn new navigation pattern
 
 ---

@@ -213,6 +213,34 @@ export class TaskStorage {
     return info.changes > 0;
   }
 
+  updateTaskMetadata(
+    id: string,
+    updates: { name?: string; type?: string; description?: string }
+  ): boolean {
+    const setClauses: string[] = [];
+    const params: Record<string, unknown> = { id };
+
+    if (updates.name !== undefined) {
+      setClauses.push('name = @name');
+      params.name = updates.name;
+    }
+    if (updates.type !== undefined) {
+      setClauses.push('type = @type');
+      params.type = updates.type;
+    }
+    if (updates.description !== undefined) {
+      setClauses.push('description = @description');
+      params.description = updates.description || null;
+    }
+
+    if (setClauses.length === 0) return false;
+
+    const info = this.db
+      .prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = @id`)
+      .run(params);
+    return info.changes > 0;
+  }
+
   deleteTask(id: string): boolean {
     const info = this.db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
     return info.changes > 0;

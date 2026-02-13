@@ -2,7 +2,7 @@
 
 > Tracking open and deferred work items. For completed work, see [CHANGELOG.md](CHANGELOG.md).
 
-**Project Status**: v1.3.1 released. Phases 1-5 complete. Security hardening complete. 1000+ tests across core and dashboard. All core features implemented. Coding IDE view, voice interface, dashboard improvements, and dynamic model discovery shipped.
+**Project Status**: v1.3.3 released. Phases 1-5 complete. Security hardening complete. 1000+ tests across core and dashboard. All core features implemented. Coding IDE view, voice interface, dashboard improvements, dynamic model discovery, task CRUD, and heartbeat task visibility shipped.
 
 ---
 
