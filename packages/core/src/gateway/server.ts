@@ -368,7 +368,14 @@ export class GatewayServer {
       '/api/v1/tasks',
       async (
         request: FastifyRequest<{
-          Querystring: { status?: string; type?: string; limit?: string; offset?: string };
+          Querystring: {
+            status?: string;
+            type?: string;
+            from?: string;
+            to?: string;
+            limit?: string;
+            offset?: string;
+          };
         }>
       ) => {
         try {
@@ -377,6 +384,8 @@ export class GatewayServer {
           return taskStorage.listTasks({
             status: q.status,
             type: q.type,
+            from: q.from ? Number(q.from) : undefined,
+            to: q.to ? Number(q.to) : undefined,
             limit: q.limit ? Number(q.limit) : 50,
             offset: q.offset ? Number(q.offset) : 0,
           });
