@@ -53,6 +53,7 @@ import { McpClientManager } from './mcp/client.js';
 import { McpServer } from './mcp/server.js';
 import { AuditReportGenerator } from './reporting/audit-report.js';
 import { CostOptimizer } from './ai/cost-optimizer.js';
+import { PROVIDER_KEY_ENV } from './ai/cost-calculator.js';
 import { DashboardStorage } from './dashboard/storage.js';
 import { DashboardManager } from './dashboard/manager.js';
 import { WorkspaceStorage } from './workspace/storage.js';
@@ -1007,6 +1008,7 @@ export class SecureYeoman {
       ...currentModelConfig,
       provider: provider as typeof currentModelConfig.provider,
       model,
+      apiKeyEnv: PROVIDER_KEY_ENV[provider] ?? currentModelConfig.apiKeyEnv,
     };
 
     try {
