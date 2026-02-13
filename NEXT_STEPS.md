@@ -31,4 +31,15 @@ See [CHANGELOG.md](CHANGELOG.md) for full details.
 
 ---
 
+## Screen Capture Implementation (Security-Critical)
+
+A comprehensive secure screen capture system is being planned. See:
+- [Implementation Plan](docs/planning/screen-capture/IMPLEMENTATION_PLAN.md)
+- [ADR 014](docs/adr/014-screen-capture-security-architecture.md) - Security Architecture
+- [ADR 015](docs/adr/015-rbac-capture-permissions.md) - RBAC Permissions
+- [ADR 016](docs/adr/016-user-consent-capture.md) - User Consent Flow
+- [ADR 017](docs/adr/017-sandboxed-capture-execution.md) - Sandboxed Execution
+
+---
+
 *See [docs/development/roadmap.md](docs/development/roadmap.md) for the full roadmap.*

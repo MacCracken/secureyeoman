@@ -4,8 +4,8 @@
  * Displays historical task execution with filtering, date range, pagination, and export
  */
 
-import { useState, useCallback } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useCallback, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import {
   Clock,
@@ -18,8 +18,11 @@ import {
   Filter,
   Download,
   Calendar,
+  Plus,
+  X,
 } from 'lucide-react';
-import { fetchTasks } from '../api/client';
+import { fetchTasks, createTask } from '../api/client';
+import { ConfirmDialog } from './common/ConfirmDialog';
 import type { Task } from '../types';
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
@@ -76,6 +79,7 @@ const DATE_PRESETS: DatePreset[] = [
 ];
 
 export function TaskHistory() {
+  const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const statusFilter = searchParams.get('status') ?? '';
@@ -85,6 +89,15 @@ export function TaskHistory() {
   const [page, setPage] = useState(0);
   const [datePreset, setDatePreset] = useState<string>('Last 24h');
   const pageSize = 10;
+
+  // Create task dialog state
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [newTask, setNewTask] = useState({
+    name: '',
+    type: 'execute',
+    description: '',
+    input: '',
+  });
 
   const updateParams = useCallback(
     (updates: Record<string, string>) => {
@@ -116,6 +129,40 @@ export function TaskHistory() {
       }),
     refetchInterval: 5000,
   });
+
+  const createTaskMutation = useMutation({
+    mutationFn: (data: { name: string; type?: string; description?: string; input?: unknown }) =>
+      createTask(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
+      setShowCreateDialog(false);
+      setNewTask({ name: '', type: 'execute', description: '', input: '' });
+    },
+  });
+
+  // Handle query params for quick create from sidebar
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      const pName = searchParams.get('name') || '';
+      const pType = searchParams.get('type') || 'execute';
+      const pDescription = searchParams.get('description') || '';
+      const pInput = searchParams.get('input') || '';
+      if (pName) {
+        setNewTask({ name: pName, type: pType, description: pDescription, input: pInput });
+        setTimeout(
+          () =>
+            createTaskMutation.mutate({
+              name: pName,
+              type: pType,
+              description: pDescription || undefined,
+              input: pInput ? JSON.parse(pInput) : undefined,
+            }),
+          0
+        );
+      }
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, createTaskMutation]);
 
   const tasks = data?.tasks ?? [];
   const total = data?.total ?? 0;
@@ -193,9 +240,97 @@ export function TaskHistory() {
 
   return (
     <div className="space-y-4">
+      {/* Create Task Dialog */}
+      {showCreateDialog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-background border rounded-lg p-6 w-full max-w-md shadow-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">Create New Task</h3>
+              <button onClick={() => setShowCreateDialog(false)} className="btn-ghost p-1 rounded">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Name *</label>
+                <input
+                  type="text"
+                  value={newTask.name}
+                  onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                  placeholder="e.g., Run backup"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Type</label>
+                <select
+                  value={newTask.type}
+                  onChange={(e) => setNewTask({ ...newTask, type: e.target.value })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                >
+                  {TYPE_OPTIONS.map((t) => (
+                    <option key={t} value={t}>
+                      {t}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Description</label>
+                <input
+                  type="text"
+                  value={newTask.description}
+                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  className="w-full px-3 py-2 rounded border bg-background"
+                  placeholder="Optional description"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">Input (JSON)</label>
+                <textarea
+                  value={newTask.input}
+                  onChange={(e) => setNewTask({ ...newTask, input: e.target.value })}
+                  className="w-full px-3 py-2 rounded border bg-background font-mono text-sm"
+                  rows={3}
+                  placeholder='{"key": "value"}'
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button onClick={() => setShowCreateDialog(false)} className="btn btn-ghost">
+                  Cancel
+                </button>
+                <button
+                  onClick={() =>
+                    createTaskMutation.mutate({
+                      name: newTask.name,
+                      type: newTask.type,
+                      description: newTask.description || undefined,
+                      input: newTask.input ? JSON.parse(newTask.input) : undefined,
+                    })
+                  }
+                  disabled={!newTask.name.trim() || createTaskMutation.isPending}
+                  className="btn btn-primary"
+                >
+                  {createTaskMutation.isPending ? 'Creating...' : 'Create Task'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Header + Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold">Task History</h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold">Task History</h2>
+          <button
+            onClick={() => setShowCreateDialog(true)}
+            className="btn btn-primary text-sm px-3 py-1.5 flex items-center gap-1"
+          >
+            <Plus className="w-4 h-4" />
+            New Task
+          </button>
+        </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Filter className="w-4 h-4 text-muted-foreground" />
 

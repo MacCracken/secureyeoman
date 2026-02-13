@@ -247,9 +247,11 @@ const validationPipeline = {
 const rbacSystem = {
   roles: {
     admin: { permissions: ["*"] },
-    operator: { permissions: ["tasks.*", "metrics.read"] },
-    auditor: { permissions: ["audit.*", "metrics.read"] },
-    viewer: { permissions: ["metrics.read", "tasks.read"] }
+    operator: { permissions: ["tasks.*", "metrics.read", "capture.screen"] },
+    auditor: { permissions: ["audit.*", "metrics.read", "capture.review"] },
+    viewer: { permissions: ["metrics.read", "tasks.read"] },
+    capture_operator: { permissions: ["capture.screen", "capture.camera"] },
+    security_auditor: { permissions: ["capture.review", "audit.*"] }
   },
   middleware: "enforce_permissions_on_all_routes"
 };
@@ -315,6 +317,54 @@ const encryptionConfig = {
 | **Resource Scoping** | Permissions tied to specific resources | Unauthorized access |
 | **Permission Caching** | LRU cache with invalidation | Performance vs security balance |
 | **Audit Logging** | All access attempts logged | Accountability |
+
+### 2.1 Capture Permissions
+
+Screen capture is a high-risk operation requiring specialized permissions:
+
+#### Capture Resources
+```typescript
+type CaptureResource =
+  | 'capture.screen'      // Screen recording/capture
+  | 'capture.camera'      // Camera/microphone access
+  | 'capture.clipboard'   // Clipboard access
+  | 'capture.keystrokes'; // Keystroke logging (highly restricted)
+```
+
+#### Capture Actions
+```typescript
+type CaptureAction =
+  | 'capture'     // Initiate capture
+  | 'stream'      // Stream live feed
+  | 'configure'   // Change capture settings
+  | 'review';     // Review captured data
+```
+
+#### Permission Conditions
+Capture permissions support conditional enforcement:
+
+```typescript
+// Operator: Can capture screen for up to 5 minutes
+{
+  resource: 'capture.screen',
+  actions: ['capture', 'configure', 'review'],
+  conditions: [{ field: 'duration', operator: 'lte', value: 300 }]
+}
+
+// Capture Operator: Extended limits (30 minutes)
+{
+  resource: 'capture.screen',
+  actions: ['capture', 'stream', 'configure', 'review'],
+  conditions: [{ field: 'duration', operator: 'lte', value: 1800 }]
+}
+```
+
+#### Security Principles for Capture
+1. **Deny by Default** - No capture without explicit permission
+2. **Time Limits** - All capture permissions have duration limits
+3. **Role Isolation** - Viewer role has no capture access
+4. **Condition Enforcement** - Duration, purpose, and scope conditions are strictly evaluated
+5. **Audit Trail** - Every permission check is logged
 
 ### 3. Input Validation Controls
 

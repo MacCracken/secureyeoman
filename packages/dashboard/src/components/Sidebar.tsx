@@ -4,32 +4,30 @@ import {
   Shield,
   LayoutDashboard,
   MessageSquare,
-  ListTodo,
   ShieldAlert,
   Brain,
   Zap,
   Cable,
   Code,
-  Blocks,
-  ShieldCheck,
   Settings,
   PanelLeftOpen,
   PanelLeftClose,
-  FileText,
   FlaskConical,
-  Store,
   RefreshCw,
   Activity,
-  Loader2,
   User,
   ChevronDown,
   LogOut,
   Sun,
   Moon,
+  Plus,
+  Info,
+  X,
 } from 'lucide-react';
 import { useSidebar } from '../hooks/useSidebar';
 import { useTheme } from '../hooks/useTheme';
 import { getAccessToken } from '../api/client';
+import { NewEntityDialog } from './NewEntityDialog';
 
 export interface SidebarProps {
   isConnected: boolean;
@@ -39,21 +37,52 @@ export interface SidebarProps {
   onLogout: () => void;
 }
 
-const NAV_ITEMS: { to: string; label: string; icon: React.ReactNode; end?: boolean }[] = [
+const NAV_ITEMS: {
+  to?: string;
+  label: string;
+  icon: React.ReactNode;
+  end?: boolean;
+  subItems?: { to: string; label: string }[];
+}[] = [
   { to: '/', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" />, end: true },
   { to: '/chat', label: 'Chat', icon: <MessageSquare className="w-5 h-5" /> },
   { to: '/code', label: 'Code', icon: <Code className="w-5 h-5" /> },
-  { to: '/tasks', label: 'Tasks', icon: <ListTodo className="w-5 h-5" /> },
-  { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
+  {
+    label: 'Security',
+    icon: <ShieldAlert className="w-5 h-5" />,
+    subItems: [
+      { to: '/security', label: 'Overview' },
+      { to: '/tasks', label: 'Tasks' },
+      { to: '/reports', label: 'Reports' },
+    ],
+  },
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
-  { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
-  { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
-  { to: '/mcp', label: 'MCP Servers', icon: <Blocks className="w-5 h-5" /> },
-  { to: '/reports', label: 'Reports', icon: <FileText className="w-5 h-5" /> },
+  {
+    label: 'Skills',
+    icon: <Zap className="w-5 h-5" />,
+    subItems: [
+      { to: '/skills', label: 'Overview' },
+      { to: '/marketplace', label: 'Marketplace' },
+    ],
+  },
+  {
+    label: 'Connections',
+    icon: <Cable className="w-5 h-5" />,
+    subItems: [
+      { to: '/connections', label: 'Messaging' },
+      { to: '/mcp', label: 'MCP Servers' },
+    ],
+  },
   { to: '/experiments', label: 'Experiments', icon: <FlaskConical className="w-5 h-5" /> },
-  { to: '/marketplace', label: 'Marketplace', icon: <Store className="w-5 h-5" /> },
-  { to: '/security-settings', label: 'Security Config', icon: <ShieldCheck className="w-5 h-5" /> },
-  { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
+  {
+    label: 'Settings',
+    icon: <Settings className="w-5 h-5" />,
+    subItems: [
+      { to: '/settings', label: 'General' },
+      { to: '/security-settings', label: 'Security' },
+      { to: '/api-keys', label: 'API Keys' },
+    ],
+  },
 ];
 
 const navLinkClass = (isActive: boolean, collapsed: boolean) =>
@@ -85,15 +114,18 @@ export function Sidebar({
   const { theme, toggle: toggleTheme } = useTheme();
   const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
+  const [aboutOpen, setAboutOpen] = useState(false);
+  const [newDialogOpen, setNewDialogOpen] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string | null>('Settings');
   const profileRef = useRef<HTMLDivElement>(null);
   const role = parseJwtRole();
 
-  // Close mobile overlay on route change
+  const isSectionExpanded = (label: string) => !collapsed && expandedSection === label;
+
   useEffect(() => {
     setMobileOpen(false);
   }, [location.pathname, setMobileOpen]);
 
-  // Click outside to close profile dropdown
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (profileRef.current && !profileRef.current.contains(e.target as Node)) {
@@ -106,7 +138,6 @@ export function Sidebar({
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
-      {/* Logo area with refresh button */}
       <div className="flex items-center gap-2.5 px-4 py-5 border-b border-border">
         <Shield className="w-7 h-7 text-primary flex-shrink-0" />
         <span
@@ -128,32 +159,99 @@ export function Sidebar({
         )}
       </div>
 
-      {/* Navigation */}
       <nav
         className={`flex-1 px-3 py-4 overflow-y-auto ${collapsed ? 'overflow-hidden scrollbar-hide space-y-0.5' : 'space-y-1'}`}
       >
-        {NAV_ITEMS.map(({ to, label, icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            className={({ isActive }) => navLinkClass(isActive, collapsed)}
-          >
-            <span className="w-5 h-5 flex-shrink-0">{icon}</span>
-            <span
-              className={`transition-opacity duration-200 ${
-                collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
-              }`}
+        {NAV_ITEMS.map((item) => {
+          if (item.subItems) {
+            const isExpanded = isSectionExpanded(item.label);
+            return (
+              <div key={item.label}>
+                <button
+                  onClick={() => setExpandedSection(isExpanded ? null : item.label)}
+                  className={navLinkClass(false, collapsed)}
+                  disabled={collapsed}
+                >
+                  <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
+                  <span
+                    className={`flex-1 transition-opacity duration-200 ${
+                      collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                    }`}
+                  >
+                    {item.label}
+                  </span>
+                  {!collapsed && (
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    />
+                  )}
+                </button>
+                {isExpanded && (
+                  <div className="ml-6 mt-1 space-y-1">
+                    {item.subItems.map((sub) => (
+                      <NavLink
+                        key={sub.to}
+                        to={sub.to}
+                        className={({ isActive }) =>
+                          `group relative flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-all duration-200 ${
+                            isActive
+                              ? 'bg-primary/10 text-primary'
+                              : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                          }`
+                        }
+                      >
+                        <span
+                          className={`transition-opacity duration-200 ${
+                            collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                          }`}
+                        >
+                          {sub.label}
+                        </span>
+                      </NavLink>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          }
+
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to!}
+              end={item.end}
+              className={({ isActive }) => navLinkClass(isActive, collapsed)}
             >
-              {label}
-            </span>
-            {/* Collapsed tooltip */}
-            {collapsed && <span className="sidebar-tooltip">{label}</span>}
-          </NavLink>
-        ))}
+              <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
+              <span
+                className={`transition-opacity duration-200 ${
+                  collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+                }`}
+              >
+                {item.label}
+              </span>
+              {collapsed && item.label && <span className="sidebar-tooltip">{item.label}</span>}
+            </NavLink>
+          );
+        })}
       </nav>
 
-      {/* Live & Connected status - above collapse */}
+      <div className={`${collapsed ? 'px-2 py-2' : 'px-3 py-2'} border-t border-border`}>
+        <button
+          onClick={() => setNewDialogOpen(true)}
+          className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200`}
+        >
+          <Plus className="w-4 h-4" />
+          <span
+            className={`transition-opacity duration-200 ${
+              collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
+            }`}
+          >
+            New
+          </span>
+        </button>
+      </div>
+
       <div
         className={`py-2 border-t border-border flex items-center gap-3 ${collapsed ? 'px-3 justify-center' : 'px-5 justify-between'}`}
       >
@@ -175,7 +273,6 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Toggle button */}
       <div className={`border-t border-border ${collapsed ? 'px-3 py-2' : 'px-5 py-2'}`}>
         <button
           onClick={toggleCollapse}
@@ -195,7 +292,6 @@ export function Sidebar({
         </button>
       </div>
 
-      {/* User profile */}
       <div
         ref={profileRef}
         className={`relative border-t border-border ${collapsed ? 'px-3 py-2' : 'px-5 py-2'}`}
@@ -231,13 +327,11 @@ export function Sidebar({
             } bg-card border rounded-md shadow-lg z-50`}
             role="menu"
           >
-            {/* User info */}
             <div className="px-3 py-2 border-b">
               <p className="text-sm font-medium">Admin</p>
               <p className="text-xs text-muted-foreground capitalize">{role}</p>
             </div>
 
-            {/* Theme toggle */}
             <button
               onClick={() => {
                 toggleTheme();
@@ -250,7 +344,18 @@ export function Sidebar({
               {theme === 'dark' ? 'Light mode' : 'Dark mode'}
             </button>
 
-            {/* Logout */}
+            <button
+              onClick={() => {
+                setProfileOpen(false);
+                setAboutOpen(true);
+              }}
+              className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-all duration-200"
+              role="menuitem"
+            >
+              <Info className="w-4 h-4" />
+              About
+            </button>
+
             <button
               onClick={() => {
                 setProfileOpen(false);
@@ -270,7 +375,6 @@ export function Sidebar({
 
   return (
     <>
-      {/* Desktop sidebar */}
       <aside
         className="hidden md:flex flex-col fixed left-0 top-0 h-screen bg-card border-r border-border z-30 transition-[width] duration-200 ease-[cubic-bezier(0.4,0,0.2,1)]"
         style={{ width: collapsed ? 'var(--sidebar-collapsed)' : 'var(--sidebar-expanded)' }}
@@ -278,7 +382,6 @@ export function Sidebar({
         {sidebarContent}
       </aside>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <>
           <div
@@ -292,6 +395,46 @@ export function Sidebar({
             {sidebarContent}
           </aside>
         </>
+      )}
+
+      <NewEntityDialog open={newDialogOpen} onClose={() => setNewDialogOpen(false)} />
+
+      {aboutOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+          onClick={() => setAboutOpen(false)}
+        >
+          <div
+            className="bg-background border rounded-lg p-6 w-full max-w-sm shadow-lg"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold">About SecureYeoman</h3>
+              <button onClick={() => setAboutOpen(false)} className="btn-ghost p-1 rounded">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between py-2 border-b">
+                <span className="text-sm text-muted-foreground">Version</span>
+                <span className="text-sm font-medium">1.3.2</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b">
+                <span className="text-sm text-muted-foreground">Security</span>
+                <span className="text-sm font-medium text-success">Local Network Only</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b">
+                <span className="text-sm text-muted-foreground">Status</span>
+                <span className="text-sm font-medium text-success">Connected</span>
+              </div>
+              <div className="pt-2">
+                <p className="text-xs text-muted text-center">
+                  F.R.I.D.A.Y. — Your AI Security Companion
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );

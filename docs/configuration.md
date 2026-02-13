@@ -329,12 +329,13 @@ mcp:
 
 ### heartbeat
 
-Periodic self-check system that monitors system health, memory status, and log anomalies.
+Periodic self-check system that monitors system health, memory status, log anomalies, and triggers proactive actions.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable the heartbeat system |
 | `intervalMs` | number | `60000` | Check interval in milliseconds (min: 5000, max: 3600000) |
+| `defaultActions` | array | `[]` | Global actions to run for all checks (see below) |
 | `checks` | array | *(see below)* | List of checks to run each heartbeat |
 
 #### heartbeat.checks[]
@@ -342,11 +343,169 @@ Periodic self-check system that monitors system health, memory status, and log a
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `name` | string | — | Display name for the check |
-| `type` | enum | — | `system_health`, `memory_status`, `log_anomalies`, `integration_health`, `custom` |
+| `type` | enum | — | `system_health`, `memory_status`, `log_anomalies`, `integration_health`, `reflective_task`, `llm_analysis`, `custom` |
 | `enabled` | boolean | `true` | Whether this check is active |
+| `intervalMs` | number | — | Optional: Override global interval for this check |
+| `schedule` | object | — | Optional: Conditional scheduling (see below) |
 | `config` | object | `{}` | Type-specific configuration |
+| `actions` | array | `[]` | Actions to trigger based on check results |
 
-Default checks: `system_health`, `memory_status`, `log_anomalies`.
+Default checks: `system_health`, `memory_status`, `log_anomalies`, `self_reflection`.
+
+#### heartbeat.checks[].schedule
+
+Conditional scheduling constraints for when a check should run:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `daysOfWeek` | string[] | — | Array of days: `mon`, `tue`, `wed`, `thu`, `fri`, `sat`, `sun` |
+| `activeHours.start` | string | — | Start time in `HH:mm` format (e.g., `"09:00"`) |
+| `activeHours.end` | string | — | End time in `HH:mm` format (e.g., `"17:00"`) |
+| `activeHours.timezone` | string | `"UTC"` | Timezone for active hours |
+
+#### heartbeat.checks[].actions[]
+
+Proactive actions triggered based on check results:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `condition` | enum | — | When to trigger: `always`, `on_ok`, `on_warning`, `on_error` |
+| `action` | enum | — | Action type: `webhook`, `notify`, `remember`, `execute`, `llm_analyze` |
+| `config` | object | — | Action-specific configuration |
+
+**Action: webhook**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `url` | string | — | Webhook URL (supports env var interpolation) |
+| `method` | enum | `"POST"` | HTTP method: `GET`, `POST`, `PUT` |
+| `headers` | object | `{}` | Additional HTTP headers |
+| `timeoutMs` | number | `30000` | Request timeout (1000–60000) |
+| `retryCount` | number | `2` | Retry attempts on failure (0–5) |
+| `retryDelayMs` | number | `1000` | Delay between retries (100–10000) |
+
+**Action: notify**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `channel` | enum | — | Channel: `email`, `slack`, `telegram`, `discord`, `console` |
+| `recipients` | string[] | — | List of recipients (channel-specific) |
+| `messageTemplate` | string | — | Message template with placeholders: `{{check.name}}`, `{{result.status}}`, `{{result.message}}` |
+
+**Action: remember**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `importance` | number | `0.5` | Memory importance (0.0–1.0) |
+| `category` | string | `"heartbeat_alert"` | Memory category/tag |
+| `memoryType` | enum | `"episodic"` | Memory type: `episodic`, `semantic` |
+
+**Action: execute**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `command` | string | — | Command to execute |
+| `args` | string[] | `[]` | Command arguments |
+| `timeoutMs` | number | `60000` | Execution timeout (1000–300000) |
+| `captureOutput` | boolean | `true` | Capture stdout/stderr |
+
+**Action: llm_analyze**
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `prompt` | string | — | Analysis prompt |
+| `model` | string | — | Optional: Model override (defaults to cheapest available) |
+| `maxTokens` | number | `500` | Max tokens for analysis (max: 10000) |
+| `temperature` | number | `0.3` | Sampling temperature (0.0–2.0) |
+| `expectedOutput` | enum | `"summary"` | Expected output: `boolean`, `categorize`, `extract`, `summary` |
+
+### Proactive Heartbeat Examples
+
+**Business Hours Health Check with Slack Alert:**
+
+```yaml
+heartbeat:
+  checks:
+    - name: business_health
+      type: system_health
+      enabled: true
+      intervalMs: 300000  # Every 5 minutes
+      schedule:
+        daysOfWeek: [mon, tue, wed, thu, fri]
+        activeHours:
+          start: "09:00"
+          end: "17:00"
+          timezone: "America/New_York"
+      actions:
+        - condition: on_error
+          action: notify
+          config:
+            channel: slack
+            recipients: ["#alerts"]
+            messageTemplate: "🚨 FRIDAY health check failed: {{result.message}}"
+```
+
+**Disk Space Monitor with Webhook:**
+
+```yaml
+heartbeat:
+  checks:
+    - name: disk_space
+      type: system_health
+      enabled: true
+      intervalMs: 600000  # Every 10 minutes
+      actions:
+        - condition: on_warning
+          action: webhook
+          config:
+            url: "${WEBHOOK_URL}/alerts"
+            method: POST
+            headers:
+              Authorization: "Bearer ${ALERT_TOKEN}"
+            retryCount: 3
+```
+
+**Log Anomaly Detection with PagerDuty:**
+
+```yaml
+heartbeat:
+  defaultActions:
+    - condition: on_error
+      action: webhook
+      config:
+        url: "${PAGERDUTY_URL}/incidents"
+        method: POST
+        headers:
+          Authorization: "Token token=${PAGERDUTY_TOKEN}"
+  checks:
+    - name: error_monitor
+      type: log_anomalies
+      enabled: true
+      intervalMs: 300000
+    - name: integration_health
+      type: integration_health
+      enabled: true
+      intervalMs: 60000
+```
+
+**Self-Reflection with Memory Recording:**
+
+```yaml
+heartbeat:
+  checks:
+    - name: self_reflection
+      type: reflective_task
+      enabled: true
+      intervalMs: 1800000  # Every 30 minutes
+      config:
+        prompt: "Reflect on recent interactions and identify opportunities for improvement"
+      actions:
+        - condition: always
+          action: remember
+          config:
+            importance: 0.6
+            category: self_improvement
+```
 
 ### externalBrain
 

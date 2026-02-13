@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter } from 'react-router-dom';
 import { SecurityEvents } from './SecurityEvents';
 import { createMetricsSnapshot, createSecurityEventList } from '../test/mocks';
 
@@ -29,9 +30,11 @@ function createQueryClient() {
 function renderComponent(metrics = createMetricsSnapshot()) {
   const qc = createQueryClient();
   return render(
-    <QueryClientProvider client={qc}>
-      <SecurityEvents metrics={metrics} />
-    </QueryClientProvider>
+    <BrowserRouter>
+      <QueryClientProvider client={qc}>
+        <SecurityEvents metrics={metrics} />
+      </QueryClientProvider>
+    </BrowserRouter>
   );
 }
 
@@ -69,20 +72,20 @@ describe('SecurityEvents', () => {
   it('renders authentication stats from metrics', async () => {
     renderComponent();
     expect(await screen.findByText('Authentication')).toBeInTheDocument();
-    expect(screen.getByText('45')).toBeInTheDocument();  // authAttemptsTotal
-    expect(screen.getByText('42')).toBeInTheDocument();  // authSuccessTotal
+    expect(screen.getByText('45')).toBeInTheDocument(); // authAttemptsTotal
+    expect(screen.getByText('42')).toBeInTheDocument(); // authSuccessTotal
     // authFailuresTotal = 3 and activeSessions = 2 may appear multiple times in the DOM
     // so we use getAllByText to verify presence
-    expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1);   // authFailuresTotal
-    expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1);   // activeSessions
+    expect(screen.getAllByText('3').length).toBeGreaterThanOrEqual(1); // authFailuresTotal
+    expect(screen.getAllByText('2').length).toBeGreaterThanOrEqual(1); // activeSessions
   });
 
   it('renders threat summary stats from metrics', async () => {
     renderComponent();
     expect(await screen.findByText('Threat Summary')).toBeInTheDocument();
-    expect(screen.getByText('8')).toBeInTheDocument();   // rateLimitHitsTotal
-    expect(screen.getByText('1')).toBeInTheDocument();   // injectionAttemptsTotal
-    expect(screen.getByText('5')).toBeInTheDocument();   // permissionDenialsTotal
+    expect(screen.getByText('8')).toBeInTheDocument(); // rateLimitHitsTotal
+    expect(screen.getByText('1')).toBeInTheDocument(); // injectionAttemptsTotal
+    expect(screen.getByText('5')).toBeInTheDocument(); // permissionDenialsTotal
   });
 
   it('shows "No security events recorded" when events list is empty', async () => {
@@ -98,7 +101,9 @@ describe('SecurityEvents', () => {
     expect(await screen.findByText('Successful login')).toBeInTheDocument();
     expect(screen.getByText('Failed login attempt')).toBeInTheDocument();
     expect(screen.getByText('Rate limit exceeded for API endpoint')).toBeInTheDocument();
-    expect(screen.getByText('SQL injection attempt detected in query parameter')).toBeInTheDocument();
+    expect(
+      screen.getByText('SQL injection attempt detected in query parameter')
+    ).toBeInTheDocument();
   });
 
   it('displays event type formatted with spaces instead of underscores', async () => {
@@ -139,9 +144,11 @@ describe('SecurityEvents', () => {
   it('renders with undefined metrics gracefully', async () => {
     const qc = createQueryClient();
     render(
-      <QueryClientProvider client={qc}>
-        <SecurityEvents metrics={undefined} />
-      </QueryClientProvider>
+      <BrowserRouter>
+        <QueryClientProvider client={qc}>
+          <SecurityEvents metrics={undefined} />
+        </QueryClientProvider>
+      </BrowserRouter>
     );
     // Should show 0 for all stats
     expect(await screen.findByText('Authentication')).toBeInTheDocument();

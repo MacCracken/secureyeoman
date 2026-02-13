@@ -20,8 +20,10 @@ import {
 import { fetchPersonalities, executeTerminalCommand } from '../api/client';
 import { useChat } from '../hooks/useChat';
 import { useVoice } from '../hooks/useVoice';
+import { usePushToTalk } from '../hooks/usePushToTalk';
 import { useTheme } from '../hooks/useTheme';
 import { VoiceToggle } from './VoiceToggle';
+import { VoiceOverlay } from './VoiceOverlay';
 import type { Personality, ChatMessage } from '../types';
 
 type MonacoEditor = Parameters<OnMount>[0];
@@ -98,6 +100,15 @@ export function CodePage() {
     personalityId: effectivePersonalityId,
   });
   const voice = useVoice();
+
+  const ptt = usePushToTalk(
+    { hotkey: 'ctrl+shift+v', maxDurationMs: 60000, silenceTimeoutMs: 2000 },
+    (transcript) => {
+      if (transcript) {
+        setInput(input + transcript);
+      }
+    }
+  );
 
   useEffect(() => {
     loader.config({ paths: { vs: '/vs' } });
@@ -208,6 +219,84 @@ export function CodePage() {
     setInput(`\`\`\`${language}\n${text}\n\`\`\``);
   }, [language, setInput]);
 
+  const RUN_COMMANDS: Record<string, string> = {
+    python: 'python3',
+    python3: 'python3',
+    py: 'python3',
+    javascript: 'node',
+    js: 'node',
+    typescript: 'npx ts-node',
+    ts: 'npx ts-node',
+    bash: 'bash',
+    sh: 'bash',
+    shell: 'bash',
+    ruby: 'ruby',
+    go: 'go run',
+    rust: '', // cargo run needs project structure
+  };
+
+  const handleRunCode = useCallback(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const selection = editor.getSelection();
+    let code = '';
+    if (selection && !selection.isEmpty()) {
+      code = editor.getModel()?.getValueInRange(selection) ?? '';
+    } else {
+      code = editor.getValue();
+    }
+
+    if (!code.trim()) return;
+
+    const ext = filename.split('.').pop()?.toLowerCase() ?? '';
+    const runner = RUN_COMMANDS[ext] || RUN_COMMANDS[language] || 'node';
+
+    const filePath = `${cwd}/${filename}`;
+
+    if (!runner) {
+      setTerminalHistory((prev) => [
+        ...prev,
+        {
+          id: Math.random().toString(36).substring(7),
+          command: filename,
+          output: '',
+          error: `No runner configured for ${language || ext}. Try saving to a file and running manually.`,
+          exitCode: 1,
+          timestamp: Date.now(),
+        },
+      ]);
+      return;
+    }
+
+    const escapedCode = code.replace(/'/g, "'\\''").replace(/"/g, '\\"');
+    const writeCommand = `cat << 'FRIDAY_EOF' > "${filePath}"\n${code}\nFRIDAY_EOF`;
+
+    const runCommand = runner.includes(' ') ? `${runner} ${filePath}` : `${runner} "${filePath}"`;
+
+    terminalMutation.mutate(
+      { command: `${writeCommand} && ${runCommand}`, cwd },
+      {
+        onSuccess: (result) => {
+          setTerminalHistory((prev) => [
+            ...prev,
+            {
+              id: Math.random().toString(36).substring(7),
+              command: filename,
+              output: result.output,
+              error: result.error,
+              exitCode: result.exitCode,
+              timestamp: Date.now(),
+            },
+          ]);
+          if (result.cwd) {
+            setCwd(result.cwd);
+          }
+        },
+      }
+    );
+  }, [filename, language, cwd, terminalMutation]);
+
   const handleInsertAtCursor = useCallback((msg: ChatMessage) => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -297,6 +386,15 @@ export function CodePage() {
                 {language}
               </span>
               <div className="flex-1" />
+              <button
+                onClick={handleRunCode}
+                disabled={terminalMutation.isPending || !editorContent.trim()}
+                className="btn-ghost text-xs px-2 sm:px-3 py-1.5 rounded border hover:border-primary flex items-center gap-1"
+                title="Run code in terminal"
+              >
+                <Play className="w-3 h-3" />
+                <span className="hidden sm:inline">Run</span>
+              </button>
               <button
                 onClick={handleSendToChat}
                 className="btn-ghost text-xs px-2 sm:px-3 py-1.5 rounded border hover:border-primary"
@@ -498,6 +596,14 @@ export function CodePage() {
                 </button>
               </div>
             </div>
+
+            <VoiceOverlay
+              isActive={ptt.isActive}
+              audioLevel={ptt.audioLevel}
+              duration={ptt.duration}
+              transcript={ptt.transcript}
+              error={ptt.error}
+            />
           </div>
         </div>
 

@@ -13,7 +13,6 @@ coverage
 *.tgz
 site
 TODO.md
-SECUREYEOMAN.md
 CONTRIBUTING.md
 LICENSE
 .dockerignore

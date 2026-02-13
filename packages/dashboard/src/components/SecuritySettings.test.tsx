@@ -68,7 +68,7 @@ describe('SecuritySettings', () => {
 
   it('renders the heading', async () => {
     renderComponent();
-    expect(await screen.findByText('Security Settings')).toBeInTheDocument();
+    expect(await screen.findByText('Security')).toBeInTheDocument();
   });
 
   it('displays roles and permissions', async () => {

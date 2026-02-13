@@ -8,7 +8,17 @@
 import Database from 'better-sqlite3';
 import { mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import type { Personality, PersonalityCreate, PersonalityUpdate, Skill, SkillCreate, SkillUpdate, UserProfile, UserProfileCreate, UserProfileUpdate } from './types.js';
+import type {
+  Personality,
+  PersonalityCreate,
+  PersonalityUpdate,
+  Skill,
+  SkillCreate,
+  SkillUpdate,
+  UserProfile,
+  UserProfileCreate,
+  UserProfileUpdate,
+} from './types.js';
 import type { SkillFilter } from './types.js';
 import { uuidv7 } from '../utils/crypto.js';
 
@@ -17,13 +27,13 @@ interface PersonalityRow {
   name: string;
   description: string;
   system_prompt: string;
-  traits: string;           // JSON
+  traits: string; // JSON
   sex: string;
   voice: string;
   preferred_language: string;
-  default_model: string;    // JSON | ''
+  default_model: string; // JSON | ''
   include_archetypes: number; // 0 | 1
-  is_active: number;        // 0 | 1
+  is_active: number; // 0 | 1
   created_at: number;
   updated_at: number;
 }
@@ -33,9 +43,9 @@ interface SkillRow {
   name: string;
   description: string;
   instructions: string;
-  tools: string;             // JSON
-  trigger_patterns: string;  // JSON
-  enabled: number;           // 0 | 1
+  tools: string; // JSON
+  trigger_patterns: string; // JSON
+  enabled: number; // 0 | 1
   source: string;
   status: string;
   usage_count: number;
@@ -62,7 +72,9 @@ function rowToPersonality(row: PersonalityRow): Personality {
     sex: row.sex as Personality['sex'],
     voice: row.voice,
     preferredLanguage: row.preferred_language,
-    defaultModel: row.default_model ? safeJsonParse<Personality['defaultModel']>(row.default_model, null) : null,
+    defaultModel: row.default_model
+      ? safeJsonParse<Personality['defaultModel']>(row.default_model, null)
+      : null,
     includeArchetypes: row.include_archetypes === 1,
     isActive: row.is_active === 1,
     createdAt: row.created_at,
@@ -75,7 +87,7 @@ interface UserRow {
   name: string;
   nickname: string;
   relationship: string;
-  preferences: string;   // JSON
+  preferences: string; // JSON
   notes: string;
   created_at: number;
   updated_at: number;
@@ -102,6 +114,16 @@ function rowToSkill(row: SkillRow): Skill {
     instructions: row.instructions,
     tools: safeJsonParse<Skill['tools']>(row.tools, []),
     triggerPatterns: safeJsonParse<string[]>(row.trigger_patterns, []),
+    // ADR 021: Skill Actions
+    actions: [],
+    // ADR 022: Skill Triggers
+    triggers: [],
+    // Dependencies
+    dependencies: [],
+    provides: [],
+    // Security
+    requireApproval: false,
+    allowedPermissions: [],
     enabled: row.enabled === 1,
     source: row.source as Skill['source'],
     status: row.status as Skill['status'],
@@ -186,7 +208,9 @@ export class SoulStorage {
 
     // Migration: add include_archetypes column (v1.5+)
     try {
-      this.db.exec(`ALTER TABLE personalities ADD COLUMN include_archetypes INTEGER NOT NULL DEFAULT 1`);
+      this.db.exec(
+        `ALTER TABLE personalities ADD COLUMN include_archetypes INTEGER NOT NULL DEFAULT 1`
+      );
     } catch {
       // Column already exists
     }
@@ -201,7 +225,7 @@ export class SoulStorage {
     this.db
       .prepare(
         `INSERT INTO personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, include_archetypes, is_active, created_at, updated_at)
-         VALUES (@id, @name, @description, @system_prompt, @traits, @sex, @voice, @preferred_language, @default_model, @include_archetypes, @is_active, @created_at, @updated_at)`,
+         VALUES (@id, @name, @description, @system_prompt, @traits, @sex, @voice, @preferred_language, @default_model, @include_archetypes, @is_active, @created_at, @updated_at)`
       )
       .run({
         id,
@@ -225,16 +249,16 @@ export class SoulStorage {
   }
 
   getPersonality(id: string): Personality | null {
-    const row = this.db
-      .prepare('SELECT * FROM personalities WHERE id = ?')
-      .get(id) as PersonalityRow | undefined;
+    const row = this.db.prepare('SELECT * FROM personalities WHERE id = ?').get(id) as
+      | PersonalityRow
+      | undefined;
     return row ? rowToPersonality(row) : null;
   }
 
   getActivePersonality(): Personality | null {
-    const row = this.db
-      .prepare('SELECT * FROM personalities WHERE is_active = 1 LIMIT 1')
-      .get() as PersonalityRow | undefined;
+    const row = this.db.prepare('SELECT * FROM personalities WHERE is_active = 1 LIMIT 1').get() as
+      | PersonalityRow
+      | undefined;
     return row ? rowToPersonality(row) : null;
   }
 
@@ -271,7 +295,7 @@ export class SoulStorage {
            default_model = @default_model,
            include_archetypes = @include_archetypes,
            updated_at = @updated_at
-         WHERE id = @id`,
+         WHERE id = @id`
       )
       .run({
         id,
@@ -282,12 +306,22 @@ export class SoulStorage {
         sex: data.sex ?? existing.sex,
         voice: data.voice ?? existing.voice,
         preferred_language: data.preferredLanguage ?? existing.preferredLanguage,
-        default_model: data.defaultModel !== undefined
-          ? (data.defaultModel ? JSON.stringify(data.defaultModel) : '')
-          : (existing.defaultModel ? JSON.stringify(existing.defaultModel) : ''),
-        include_archetypes: data.includeArchetypes !== undefined
-          ? (data.includeArchetypes ? 1 : 0)
-          : (existing.includeArchetypes ? 1 : 0),
+        default_model:
+          data.defaultModel !== undefined
+            ? data.defaultModel
+              ? JSON.stringify(data.defaultModel)
+              : ''
+            : existing.defaultModel
+              ? JSON.stringify(existing.defaultModel)
+              : '',
+        include_archetypes:
+          data.includeArchetypes !== undefined
+            ? data.includeArchetypes
+              ? 1
+              : 0
+            : existing.includeArchetypes
+              ? 1
+              : 0,
         updated_at: now,
       });
 
@@ -297,9 +331,7 @@ export class SoulStorage {
   }
 
   deletePersonality(id: string): boolean {
-    const info = this.db
-      .prepare('DELETE FROM personalities WHERE id = ?')
-      .run(id);
+    const info = this.db.prepare('DELETE FROM personalities WHERE id = ?').run(id);
     return info.changes > 0;
   }
 
@@ -311,9 +343,9 @@ export class SoulStorage {
   }
 
   getPersonalityCount(): number {
-    const row = this.db
-      .prepare('SELECT COUNT(*) as count FROM personalities')
-      .get() as { count: number };
+    const row = this.db.prepare('SELECT COUNT(*) as count FROM personalities').get() as {
+      count: number;
+    };
     return row.count;
   }
 
@@ -326,7 +358,7 @@ export class SoulStorage {
     this.db
       .prepare(
         `INSERT INTO skills (id, name, description, instructions, tools, trigger_patterns, enabled, source, status, usage_count, last_used_at, created_at, updated_at)
-         VALUES (@id, @name, @description, @instructions, @tools, @trigger_patterns, @enabled, @source, @status, 0, NULL, @created_at, @updated_at)`,
+         VALUES (@id, @name, @description, @instructions, @tools, @trigger_patterns, @enabled, @source, @status, 0, NULL, @created_at, @updated_at)`
       )
       .run({
         id,
@@ -348,9 +380,9 @@ export class SoulStorage {
   }
 
   getSkill(id: string): Skill | null {
-    const row = this.db
-      .prepare('SELECT * FROM skills WHERE id = ?')
-      .get(id) as SkillRow | undefined;
+    const row = this.db.prepare('SELECT * FROM skills WHERE id = ?').get(id) as
+      | SkillRow
+      | undefined;
     return row ? rowToSkill(row) : null;
   }
 
@@ -373,7 +405,7 @@ export class SoulStorage {
            source = @source,
            status = @status,
            updated_at = @updated_at
-         WHERE id = @id`,
+         WHERE id = @id`
       )
       .run({
         id,
@@ -382,7 +414,7 @@ export class SoulStorage {
         instructions: data.instructions ?? existing.instructions,
         tools: JSON.stringify(data.tools ?? existing.tools),
         trigger_patterns: JSON.stringify(data.triggerPatterns ?? existing.triggerPatterns),
-        enabled: data.enabled !== undefined ? (data.enabled ? 1 : 0) : (existing.enabled ? 1 : 0),
+        enabled: data.enabled !== undefined ? (data.enabled ? 1 : 0) : existing.enabled ? 1 : 0,
         source: data.source ?? existing.source,
         status: data.status ?? existing.status,
         updated_at: now,
@@ -394,9 +426,7 @@ export class SoulStorage {
   }
 
   deleteSkill(id: string): boolean {
-    const info = this.db
-      .prepare('DELETE FROM skills WHERE id = ?')
-      .run(id);
+    const info = this.db.prepare('DELETE FROM skills WHERE id = ?').run(id);
     return info.changes > 0;
   }
 
@@ -425,7 +455,9 @@ export class SoulStorage {
 
   getEnabledSkills(): Skill[] {
     const rows = this.db
-      .prepare("SELECT * FROM skills WHERE enabled = 1 AND status = 'active' ORDER BY usage_count DESC, created_at DESC")
+      .prepare(
+        "SELECT * FROM skills WHERE enabled = 1 AND status = 'active' ORDER BY usage_count DESC, created_at DESC"
+      )
       .all() as SkillRow[];
     return rows.map(rowToSkill);
   }
@@ -444,18 +476,16 @@ export class SoulStorage {
   }
 
   getSkillCount(): number {
-    const row = this.db
-      .prepare('SELECT COUNT(*) as count FROM skills')
-      .get() as { count: number };
+    const row = this.db.prepare('SELECT COUNT(*) as count FROM skills').get() as { count: number };
     return row.count;
   }
 
   // ── Soul Meta ───────────────────────────────────────────────────
 
   getAgentName(): string | null {
-    const row = this.db
-      .prepare('SELECT value FROM soul_meta WHERE key = ?')
-      .get('agent_name') as { value: string } | undefined;
+    const row = this.db.prepare('SELECT value FROM soul_meta WHERE key = ?').get('agent_name') as
+      | { value: string }
+      | undefined;
     return row?.value ?? null;
   }
 
@@ -463,7 +493,7 @@ export class SoulStorage {
     this.db
       .prepare(
         `INSERT INTO soul_meta (key, value, updated_at) VALUES ('agent_name', @value, @updated_at)
-         ON CONFLICT(key) DO UPDATE SET value = @value, updated_at = @updated_at`,
+         ON CONFLICT(key) DO UPDATE SET value = @value, updated_at = @updated_at`
       )
       .run({ value: name, updated_at: Date.now() });
   }
@@ -477,7 +507,7 @@ export class SoulStorage {
     this.db
       .prepare(
         `INSERT INTO users (id, name, nickname, relationship, preferences, notes, created_at, updated_at)
-         VALUES (@id, @name, @nickname, @relationship, @preferences, @notes, @created_at, @updated_at)`,
+         VALUES (@id, @name, @nickname, @relationship, @preferences, @notes, @created_at, @updated_at)`
       )
       .run({
         id,
@@ -496,9 +526,7 @@ export class SoulStorage {
   }
 
   getUser(id: string): UserProfile | null {
-    const row = this.db
-      .prepare('SELECT * FROM users WHERE id = ?')
-      .get(id) as UserRow | undefined;
+    const row = this.db.prepare('SELECT * FROM users WHERE id = ?').get(id) as UserRow | undefined;
     return row ? rowToUser(row) : null;
   }
 
@@ -532,7 +560,7 @@ export class SoulStorage {
            preferences = @preferences,
            notes = @notes,
            updated_at = @updated_at
-         WHERE id = @id`,
+         WHERE id = @id`
       )
       .run({
         id,
@@ -550,16 +578,12 @@ export class SoulStorage {
   }
 
   deleteUser(id: string): boolean {
-    const info = this.db
-      .prepare('DELETE FROM users WHERE id = ?')
-      .run(id);
+    const info = this.db.prepare('DELETE FROM users WHERE id = ?').run(id);
     return info.changes > 0;
   }
 
   listUsers(): UserProfile[] {
-    const rows = this.db
-      .prepare('SELECT * FROM users ORDER BY created_at DESC')
-      .all() as UserRow[];
+    const rows = this.db.prepare('SELECT * FROM users ORDER BY created_at DESC').all() as UserRow[];
     return rows.map(rowToUser);
   }
 

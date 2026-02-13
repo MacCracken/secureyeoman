@@ -1,27 +1,44 @@
 /**
  * SecureYeoman - Main Entry Point
- * 
+ *
  * The primary class that initializes and coordinates all SecureYeoman components.
- * 
+ *
  * Security considerations:
  * - All components are initialized in secure order
  * - Secrets are validated before startup
  * - Graceful shutdown ensures audit trail is complete
  */
 
-import { loadConfig, validateSecrets, requireSecret, initializeKeyring, type LoadConfigOptions } from './config/loader.js';
+import {
+  loadConfig,
+  validateSecrets,
+  requireSecret,
+  initializeKeyring,
+  type LoadConfigOptions,
+} from './config/loader.js';
 import type { KeyringManager } from './security/keyring/manager.js';
 import { SecretRotationManager } from './security/rotation/manager.js';
 import { RotationStorage } from './security/rotation/rotation-storage.js';
 import type { SecretMetadata } from './security/rotation/types.js';
 import { initializeLogger, type SecureLogger } from './logging/logger.js';
-import { AuditChain, InMemoryAuditStorage, type AuditChainStorage, type AuditQueryOptions, type AuditQueryResult } from './logging/audit-chain.js';
+import {
+  AuditChain,
+  InMemoryAuditStorage,
+  type AuditChainStorage,
+  type AuditQueryOptions,
+  type AuditQueryResult,
+} from './logging/audit-chain.js';
 import { SQLiteAuditStorage } from './logging/sqlite-storage.js';
 import { createValidator, type InputValidator } from './security/input-validator.js';
 import { createRateLimiter, type RateLimiterLike } from './security/rate-limiter.js';
 import { initializeRBAC, type RBAC } from './security/rbac.js';
 import { RBACStorage } from './security/rbac-storage.js';
-import { createTaskExecutor, type TaskExecutor, type TaskHandler, type ExecutionContext } from './task/executor.js';
+import {
+  createTaskExecutor,
+  type TaskExecutor,
+  type TaskHandler,
+  type ExecutionContext,
+} from './task/executor.js';
 import { SandboxManager, type SandboxManagerConfig } from './sandbox/manager.js';
 import type { SandboxOptions } from './sandbox/types.js';
 import { GatewayServer, createGatewayServer } from './gateway/server.js';
@@ -133,9 +150,9 @@ export class SecureYeoman {
   private initialized = false;
   private startedAt: number | null = null;
   private shutdownPromise: Promise<void> | null = null;
-  
+
   constructor(private readonly options: SecureYeomanOptions = {}) {}
-  
+
   /**
    * Initialize SecureYeoman
    * Must be called before any other operations
@@ -144,11 +161,11 @@ export class SecureYeoman {
     if (this.initialized) {
       throw new Error('SecureYeoman is already initialized');
     }
-    
+
     try {
       // Step 1: Load and validate configuration
       this.config = loadConfig(this.options.config);
-      
+
       // Step 2: Initialize logger first (needed for other components)
       this.logger = initializeLogger(this.config.logging);
       this.logger.info('SecureYeoman initializing', {
@@ -164,10 +181,7 @@ export class SecureYeoman {
         this.config.security.encryption.keyEnv,
         this.config.model.apiKeyEnv,
       ];
-      this.keyringManager = initializeKeyring(
-        this.config.security.secretBackend,
-        knownSecretKeys,
-      );
+      this.keyringManager = initializeKeyring(this.config.security.secretBackend, knownSecretKeys);
       this.logger.debug('Keyring initialized', {
         backend: this.keyringManager.getProvider().name,
       });
@@ -175,7 +189,7 @@ export class SecureYeoman {
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
       this.logger.debug('Secrets validated');
-      
+
       // Step 4: Initialize security components
       //
       // RBAC is now backed by SQLite persistent storage.  Custom role
@@ -188,18 +202,20 @@ export class SecureYeoman {
       });
       this.rbac = initializeRBAC(undefined, this.rbacStorage);
       this.logger.debug('RBAC initialized with persistent storage');
-      
+
       this.validator = createValidator(this.config.security);
       this.logger.debug('Input validator initialized');
-      
+
       this.rateLimiter = createRateLimiter(this.config.security);
       this.logger.debug('Rate limiter initialized');
-      
+
       // Step 5: Initialize audit chain
       const signingKey = requireSecret(this.config.logging.audit.signingKeyEnv);
-      const storage = this.options.auditStorage ?? new SQLiteAuditStorage({
-        dbPath: `${this.config.core.dataDir}/audit.db`,
-      });
+      const storage =
+        this.options.auditStorage ??
+        new SQLiteAuditStorage({
+          dbPath: `${this.config.core.dataDir}/audit.db`,
+        });
       this.auditStorage = storage;
 
       this.auditChain = new AuditChain({
@@ -231,7 +247,7 @@ export class SecureYeoman {
           rbac: this.rbac!,
           rateLimiter: this.rateLimiter!,
           logger: this.logger.child({ component: 'AuthService' }),
-        },
+        }
       );
       this.logger.debug('Auth service initialized');
 
@@ -254,27 +270,43 @@ export class SecureYeoman {
         const secretDefs: SecretMetadata[] = [
           {
             name: this.config.gateway.auth.tokenSecret,
-            createdAt: now, expiresAt: now + tokenRotDays * 86_400_000,
-            rotatedAt: null, rotationIntervalDays: tokenRotDays,
-            autoRotate: true, source: 'internal', category: 'jwt',
+            createdAt: now,
+            expiresAt: now + tokenRotDays * 86_400_000,
+            rotatedAt: null,
+            rotationIntervalDays: tokenRotDays,
+            autoRotate: true,
+            source: 'internal',
+            category: 'jwt',
           },
           {
             name: this.config.logging.audit.signingKeyEnv,
-            createdAt: now, expiresAt: now + signingRotDays * 86_400_000,
-            rotatedAt: null, rotationIntervalDays: signingRotDays,
-            autoRotate: true, source: 'internal', category: 'audit_signing',
+            createdAt: now,
+            expiresAt: now + signingRotDays * 86_400_000,
+            rotatedAt: null,
+            rotationIntervalDays: signingRotDays,
+            autoRotate: true,
+            source: 'internal',
+            category: 'audit_signing',
           },
           {
             name: this.config.gateway.auth.adminPasswordEnv,
-            createdAt: now, expiresAt: null,
-            rotatedAt: null, rotationIntervalDays: null,
-            autoRotate: false, source: 'external', category: 'admin',
+            createdAt: now,
+            expiresAt: null,
+            rotatedAt: null,
+            rotationIntervalDays: null,
+            autoRotate: false,
+            source: 'external',
+            category: 'admin',
           },
           {
             name: this.config.security.encryption.keyEnv,
-            createdAt: now, expiresAt: null,
-            rotatedAt: null, rotationIntervalDays: null,
-            autoRotate: false, source: 'external', category: 'encryption',
+            createdAt: now,
+            expiresAt: null,
+            rotatedAt: null,
+            rotationIntervalDays: null,
+            autoRotate: false,
+            source: 'external',
+            category: 'encryption',
           },
         ];
 
@@ -318,7 +350,7 @@ export class SecureYeoman {
           {
             auditChain: this.auditChain,
             logger: this.logger.child({ component: 'AIClient' }),
-          },
+          }
         );
         this.logger.debug('AI client initialized', { provider: this.config.model.provider });
       } catch (error) {
@@ -332,17 +364,14 @@ export class SecureYeoman {
       this.brainStorage = new BrainStorage({
         dbPath: `${this.config.core.dataDir}/brain.db`,
       });
-      this.brainManager = new BrainManager(
-        this.brainStorage,
-        this.config.brain,
-        {
-          auditChain: this.auditChain,
-          logger: this.logger.child({ component: 'BrainManager' }),
-          auditStorage: (this.auditStorage && 'query' in this.auditStorage && 'searchFullText' in this.auditStorage)
-            ? this.auditStorage as unknown as import('./brain/types.js').AuditStorage
+      this.brainManager = new BrainManager(this.brainStorage, this.config.brain, {
+        auditChain: this.auditChain,
+        logger: this.logger.child({ component: 'BrainManager' }),
+        auditStorage:
+          this.auditStorage && 'query' in this.auditStorage && 'searchFullText' in this.auditStorage
+            ? (this.auditStorage as unknown as import('./brain/types.js').AuditStorage)
             : undefined,
-        },
-      );
+      });
       this.brainManager.seedBaseKnowledge();
       this.logger.debug('Brain manager initialized');
 
@@ -350,14 +379,10 @@ export class SecureYeoman {
       this.spiritStorage = new SpiritStorage({
         dbPath: `${this.config.core.dataDir}/spirit.db`,
       });
-      this.spiritManager = new SpiritManager(
-        this.spiritStorage,
-        this.config.spirit,
-        {
-          auditChain: this.auditChain,
-          logger: this.logger.child({ component: 'SpiritManager' }),
-        },
-      );
+      this.spiritManager = new SpiritManager(this.spiritStorage, this.config.spirit, {
+        auditChain: this.auditChain,
+        logger: this.logger.child({ component: 'SpiritManager' }),
+      });
       this.logger.debug('Spirit manager initialized');
 
       // Step 5.7b: Initialize soul system (now depends on Brain and Spirit)
@@ -372,7 +397,7 @@ export class SecureYeoman {
           logger: this.logger.child({ component: 'SoulManager' }),
         },
         this.brainManager,
-        this.spiritManager,
+        this.spiritManager
       );
       if (this.soulManager.needsOnboarding()) {
         if (!this.soulManager.getAgentName()) {
@@ -385,13 +410,10 @@ export class SecureYeoman {
 
       // Step 5.7c: Initialize agent comms (if enabled)
       if (this.config.comms?.enabled) {
-        this.agentComms = new AgentComms(
-          this.config.comms,
-          {
-            logger: this.logger.child({ component: 'AgentComms' }),
-            auditChain: this.auditChain,
-          },
-        );
+        this.agentComms = new AgentComms(this.config.comms, {
+          logger: this.logger.child({ component: 'AgentComms' }),
+          auditChain: this.auditChain,
+        });
         await this.agentComms.init({
           keyStorePath: `${this.config.core.dataDir}/agent-keys.json`,
           dbPath: `${this.config.core.dataDir}/comms.db`,
@@ -458,7 +480,7 @@ export class SecureYeoman {
         undefined,
         sandbox,
         sandboxOpts,
-        this.taskStorage,
+        this.taskStorage
       );
       this.logger.debug('Task executor initialized');
 
@@ -495,7 +517,7 @@ export class SecureYeoman {
           this.auditChain,
           this.logger.child({ component: 'HeartbeatManager' }),
           this.config.heartbeat,
-          this.integrationManager,
+          this.integrationManager
         );
         this.heartManager = new HeartManager(this.heartbeatManager);
         this.soulManager!.setHeart(this.heartManager);
@@ -510,7 +532,7 @@ export class SecureYeoman {
         this.externalBrainSync = new ExternalBrainSync(
           this.brainManager!,
           this.config.externalBrain,
-          this.logger.child({ component: 'ExternalBrainSync' }),
+          this.logger.child({ component: 'ExternalBrainSync' })
         );
         this.externalBrainSync.start();
         this.logger.debug('External brain sync initialized', {
@@ -592,20 +614,19 @@ export class SecureYeoman {
           version: this.config.version,
         },
       });
-      
+
       this.initialized = true;
       this.startedAt = Date.now();
-      
+
       // Step 8: Start gateway if enabled
       if (this.options.enableGateway) {
         await this.startGateway();
       }
-      
+
       this.logger.info('SecureYeoman initialized successfully', {
         environment: this.config.core.environment,
         gatewayEnabled: this.options.enableGateway ?? false,
       });
-      
     } catch (error) {
       // Log initialization failure if logger is available
       if (this.logger) {
@@ -613,21 +634,21 @@ export class SecureYeoman {
           error: error instanceof Error ? error.message : 'Unknown error',
         });
       }
-      
+
       // Clean up any partially initialized components
       await this.cleanup();
-      
+
       throw error;
     }
   }
-  
+
   /**
    * Check if SecureYeoman is initialized
    */
   isInitialized(): boolean {
     return this.initialized;
   }
-  
+
   /**
    * Get current state
    */
@@ -639,7 +660,7 @@ export class SecureYeoman {
       config: this.config ?? loadConfig(this.options.config),
     };
   }
-  
+
   /**
    * Check if all components are healthy
    */
@@ -647,11 +668,11 @@ export class SecureYeoman {
     if (!this.initialized) {
       return false;
     }
-    
+
     // Add more health checks as needed
     return true;
   }
-  
+
   /**
    * Register a task handler
    */
@@ -659,7 +680,7 @@ export class SecureYeoman {
     this.ensureInitialized();
     this.taskExecutor!.registerHandler(handler);
   }
-  
+
   /**
    * Submit a task for execution
    */
@@ -667,7 +688,7 @@ export class SecureYeoman {
     this.ensureInitialized();
     return this.taskExecutor!.submit(create, context);
   }
-  
+
   /**
    * Cancel a running task
    */
@@ -675,13 +696,13 @@ export class SecureYeoman {
     this.ensureInitialized();
     return this.taskExecutor!.cancel(taskId, context);
   }
-  
+
   /**
    * Get current metrics snapshot
    */
   async getMetrics(): Promise<Partial<MetricsSnapshot>> {
     this.ensureInitialized();
-    
+
     // Gather statistics from each subsystem to build a comprehensive
     // metrics snapshot. Each subsystem exposes its own getStats() method
     // that returns monotonically increasing counters and point-in-time
@@ -721,9 +742,10 @@ export class SecureYeoman {
         costUsdMonth: aiStats?.costUsdMonth ?? 0,
         apiCallsTotal: aiStats?.apiCallsTotal ?? 0,
         apiErrorsTotal: aiStats?.apiErrorsTotal ?? 0,
-        apiLatencyAvgMs: aiStats && aiStats.apiCallCount > 0
-          ? aiStats.apiLatencyTotalMs / aiStats.apiCallCount
-          : 0,
+        apiLatencyAvgMs:
+          aiStats && aiStats.apiCallCount > 0
+            ? aiStats.apiLatencyTotalMs / aiStats.apiCallCount
+            : 0,
       },
       security: {
         authAttemptsTotal: 0,
@@ -748,16 +770,22 @@ export class SecureYeoman {
       },
     };
   }
-  
+
   /**
    * Query audit log entries
    */
   async queryAuditLog(options: AuditQueryOptions = {}): Promise<AuditQueryResult> {
     this.ensureInitialized();
-    if (!this.auditStorage || !('query' in this.auditStorage) || typeof (this.auditStorage as Record<string, unknown>).query !== 'function') {
+    if (
+      !this.auditStorage ||
+      !('query' in this.auditStorage) ||
+      typeof (this.auditStorage as Record<string, unknown>).query !== 'function'
+    ) {
       throw new Error('Audit storage does not support querying');
     }
-    return (this.auditStorage as { query(opts: AuditQueryOptions): Promise<AuditQueryResult> }).query(options);
+    return (
+      this.auditStorage as { query(opts: AuditQueryOptions): Promise<AuditQueryResult> }
+    ).query(options);
   }
 
   /**
@@ -767,7 +795,7 @@ export class SecureYeoman {
     this.ensureInitialized();
     return this.auditChain!.verify();
   }
-  
+
   /**
    * Get the logger instance
    */
@@ -775,7 +803,7 @@ export class SecureYeoman {
     this.ensureInitialized();
     return this.logger!;
   }
-  
+
   /**
    * Get the RBAC instance
    */
@@ -783,7 +811,7 @@ export class SecureYeoman {
     this.ensureInitialized();
     return this.rbac!;
   }
-  
+
   /**
    * Get the audit chain instance
    */
@@ -883,6 +911,13 @@ export class SecureYeoman {
       throw new Error('Task storage is not available');
     }
     return this.taskStorage;
+  }
+
+  /**
+   * Get the task executor instance
+   */
+  getTaskExecutor(): TaskExecutor | null {
+    return this.taskExecutor;
   }
 
   /**
@@ -1004,7 +1039,9 @@ export class SecureYeoman {
 
     const validProviders = ['anthropic', 'openai', 'gemini', 'ollama', 'opencode'];
     if (!validProviders.includes(provider)) {
-      throw new Error(`Invalid provider: ${provider}. Must be one of: ${validProviders.join(', ')}`);
+      throw new Error(
+        `Invalid provider: ${provider}. Must be one of: ${validProviders.join(', ')}`
+      );
     }
 
     const currentModelConfig = this.config!.model;
@@ -1028,7 +1065,7 @@ export class SecureYeoman {
         {
           auditChain: this.auditChain ?? undefined,
           logger: this.logger?.child({ component: 'AIClient' }),
-        },
+        }
       );
 
       // Update the in-memory config so getConfig() reflects the change
@@ -1059,37 +1096,37 @@ export class SecureYeoman {
     this.ensureInitialized();
     return this.config!;
   }
-  
+
   /**
    * Get the gateway server instance
    */
   getGateway(): GatewayServer | null {
     return this.gateway;
   }
-  
+
   /**
    * Start the gateway server
    */
   async startGateway(): Promise<void> {
     this.ensureInitialized();
-    
+
     if (this.gateway) {
       throw new Error('Gateway is already running');
     }
-    
+
     this.gateway = createGatewayServer({
       config: this.config!.gateway,
       secureYeoman: this,
       authService: this.authService ?? undefined,
     });
-    
+
     await this.gateway.start();
-    
+
     this.logger!.info('Gateway server started', {
       host: this.config!.gateway.host,
       port: this.config!.gateway.port,
     });
-    
+
     await this.auditChain!.record({
       event: 'gateway_started',
       level: 'info',
@@ -1100,7 +1137,7 @@ export class SecureYeoman {
       },
     });
   }
-  
+
   /**
    * Stop the gateway server
    */
@@ -1108,13 +1145,13 @@ export class SecureYeoman {
     if (!this.gateway) {
       return;
     }
-    
+
     await this.gateway.stop();
     this.gateway = null;
-    
+
     this.logger?.info('Gateway server stopped');
   }
-  
+
   /**
    * Graceful shutdown
    */
@@ -1122,11 +1159,11 @@ export class SecureYeoman {
     if (this.shutdownPromise) {
       return this.shutdownPromise;
     }
-    
+
     this.shutdownPromise = this.performShutdown();
     return this.shutdownPromise;
   }
-  
+
   /**
    * Perform the actual shutdown
    */
@@ -1134,9 +1171,9 @@ export class SecureYeoman {
     if (!this.initialized) {
       return;
     }
-    
+
     this.logger?.info('SecureYeoman shutting down');
-    
+
     try {
       // Record shutdown in audit log
       if (this.auditChain) {
@@ -1149,12 +1186,11 @@ export class SecureYeoman {
           },
         });
       }
-      
+
       // Clean up components
       await this.cleanup();
-      
+
       this.logger?.info('SecureYeoman shutdown complete');
-      
     } catch (error) {
       this.logger?.error('Error during shutdown', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -1163,7 +1199,7 @@ export class SecureYeoman {
       this.initialized = false;
     }
   }
-  
+
   /**
    * Clean up resources
    */
@@ -1173,12 +1209,12 @@ export class SecureYeoman {
       await this.gateway.stop();
       this.gateway = null;
     }
-    
+
     // Stop rate limiter cleanup
     if (this.rateLimiter) {
       this.rateLimiter.stop();
     }
-    
+
     // Clear RBAC cache and close persistent storage
     if (this.rbac) {
       this.rbac.clearCache();
@@ -1297,12 +1333,16 @@ export class SecureYeoman {
     }
 
     // Close audit storage if it supports closing
-    if (this.auditStorage && 'close' in this.auditStorage && typeof (this.auditStorage as Record<string, unknown>).close === 'function') {
+    if (
+      this.auditStorage &&
+      'close' in this.auditStorage &&
+      typeof (this.auditStorage as Record<string, unknown>).close === 'function'
+    ) {
       (this.auditStorage as { close(): void }).close();
       this.auditStorage = null;
     }
   }
-  
+
   /**
    * Ensure SecureYeoman is initialized before operations
    */

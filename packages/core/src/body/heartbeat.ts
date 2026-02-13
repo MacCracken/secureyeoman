@@ -6,13 +6,62 @@
  * Runs configurable checks on a per-task timer (system health, memory status,
  * log anomalies, integration health, reflective tasks) and records results as
  * episodic memories with source 'heartbeat'.
+ *
+ * PROACTIVE FEATURES (v2.0):
+ * - Action triggers: Execute actions based on check results
+ * - Webhook integration: Notify external systems
+ * - Conditional scheduling: Day-of-week and active hours
+ * - LLM-driven analysis: Complex pattern detection with cheap models
  */
 
 import type { BrainManager } from '../brain/manager.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { IntegrationManager } from '../integrations/manager.js';
 import type { SecureLogger } from '../logging/logger.js';
-import type { HeartbeatConfig, HeartbeatCheck } from '@friday/shared';
+// Type definitions for proactive heartbeat features
+// These extend the shared types with action and scheduling capabilities
+
+type HeartbeatActionCondition = 'always' | 'on_warning' | 'on_error' | 'on_ok';
+type HeartbeatActionType = 'webhook' | 'notify' | 'remember' | 'execute' | 'llm_analyze';
+
+interface HeartbeatActionTrigger {
+  condition: HeartbeatActionCondition;
+  action: HeartbeatActionType;
+  config: Record<string, unknown>;
+}
+
+interface HeartbeatSchedule {
+  daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
+  activeHours?: {
+    start: string; // "HH:mm" format
+    end: string;
+    timezone?: string;
+  };
+}
+
+interface HeartbeatCheck {
+  name: string;
+  type:
+    | 'system_health'
+    | 'memory_status'
+    | 'log_anomalies'
+    | 'integration_health'
+    | 'reflective_task'
+    | 'llm_analysis'
+    | 'custom';
+  enabled: boolean;
+  intervalMs?: number;
+  schedule?: HeartbeatSchedule;
+  config: Record<string, unknown>;
+  actions?: HeartbeatActionTrigger[];
+}
+
+interface HeartbeatConfig {
+  enabled: boolean;
+  intervalMs: number;
+  defaultActions?: HeartbeatActionTrigger[];
+  checks: HeartbeatCheck[];
+}
 
 export interface HeartbeatCheckResult {
   name: string;
@@ -39,19 +88,378 @@ export class HeartbeatManager {
   private beatCount = 0;
   private running = false;
   private taskLastRun: Map<string, number> = new Map();
+  private actionHistory: Map<string, number> = new Map(); // Track last action execution per check
 
   constructor(
     brain: BrainManager,
     auditChain: AuditChain,
     logger: SecureLogger,
     config: HeartbeatConfig,
-    integrationManager?: IntegrationManager,
+    integrationManager?: IntegrationManager
   ) {
     this.brain = brain;
     this.auditChain = auditChain;
     this.logger = logger;
     this.config = config;
     this.integrationManager = integrationManager ?? null;
+  }
+
+  /**
+   * Check if a check should run based on conditional scheduling
+   */
+  private shouldRunAccordingToSchedule(check: HeartbeatCheck): boolean {
+    if (!check.schedule) return true;
+
+    const now = new Date();
+
+    // Check day of week
+    if (check.schedule.daysOfWeek && check.schedule.daysOfWeek.length > 0) {
+      const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      const currentDay = days[now.getDay()];
+      if (!check.schedule.daysOfWeek.includes(currentDay as any)) {
+        return false;
+      }
+    }
+
+    // Check active hours
+    if (check.schedule.activeHours) {
+      const { start, end, timezone = 'UTC' } = check.schedule.activeHours;
+
+      // Convert to timezone (simple implementation - uses UTC for now)
+      // For production, use a library like date-fns-tz
+      const currentHour = now.getUTCHours();
+      const currentMinute = now.getUTCMinutes();
+      const startParts = start.split(':').map(Number);
+      const endParts = end.split(':').map(Number);
+      const startHour = startParts[0] ?? 0;
+      const startMinute = startParts[1] ?? 0;
+      const endHour = endParts[0] ?? 23;
+      const endMinute = endParts[1] ?? 59;
+
+      const currentTime = currentHour * 60 + currentMinute;
+      const startTime = startHour * 60 + startMinute;
+      const endTime = endHour * 60 + endMinute;
+
+      if (endTime > startTime) {
+        // Normal range (e.g., 09:00-17:00)
+        if (currentTime < startTime || currentTime > endTime) {
+          return false;
+        }
+      } else {
+        // Overnight range (e.g., 22:00-06:00)
+        if (currentTime < startTime && currentTime > endTime) {
+          return false;
+        }
+      }
+    }
+
+    return true;
+  }
+
+  /**
+   * Execute action triggers based on check result
+   */
+  private async executeActions(check: HeartbeatCheck, result: HeartbeatCheckResult): Promise<void> {
+    // Merge check-specific actions with default actions
+    const defaultActions = this.config.defaultActions || [];
+    const checkActions = check.actions || [];
+    const allActions = [...defaultActions, ...checkActions];
+
+    if (allActions.length === 0) return;
+
+    for (const trigger of allActions) {
+      // Check if condition matches
+      if (!this.conditionMatches(trigger.condition, result.status)) {
+        continue;
+      }
+
+      // Execute the action
+      try {
+        await this.executeAction(trigger, check, result);
+      } catch (err) {
+        this.logger.error('Action execution failed', {
+          check: check.name,
+          action: trigger.action,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      }
+    }
+  }
+
+  /**
+   * Check if trigger condition matches the result status
+   */
+  private conditionMatches(
+    condition: HeartbeatActionCondition,
+    status: 'ok' | 'warning' | 'error'
+  ): boolean {
+    switch (condition) {
+      case 'always':
+        return true;
+      case 'on_ok':
+        return status === 'ok';
+      case 'on_warning':
+        return status === 'warning';
+      case 'on_error':
+        return status === 'error';
+      default:
+        return false;
+    }
+  }
+
+  /**
+   * Execute a single action based on its type
+   */
+  private async executeAction(
+    trigger: HeartbeatActionTrigger,
+    check: HeartbeatCheck,
+    result: HeartbeatCheckResult
+  ): Promise<void> {
+    const config = trigger.config as Record<string, unknown>;
+
+    switch (trigger.action) {
+      case 'webhook':
+        await this.executeWebhookAction(config, check, result);
+        break;
+      case 'notify':
+        await this.executeNotifyAction(config, check, result);
+        break;
+      case 'remember':
+        await this.executeRememberAction(config, check, result);
+        break;
+      case 'execute':
+        await this.executeCommandAction(config, check, result);
+        break;
+      case 'llm_analyze':
+        await this.executeLLMAnalyzeAction(config, check, result);
+        break;
+      default:
+        this.logger.warn('Unknown action type', { action: trigger.action });
+    }
+  }
+
+  /**
+   * Execute webhook action
+   */
+  private async executeWebhookAction(
+    config: Record<string, unknown>,
+    check: HeartbeatCheck,
+    result: HeartbeatCheckResult
+  ): Promise<void> {
+    const url = config.url as string;
+    const method = (config.method as string) || 'POST';
+    const headers = (config.headers as Record<string, string>) || {};
+    const timeoutMs = (config.timeoutMs as number) || 30000;
+    const retryCount = (config.retryCount as number) || 2;
+    const retryDelayMs = (config.retryDelayMs as number) || 1000;
+
+    const payload = {
+      check: {
+        name: check.name,
+        type: check.type,
+      },
+      result: {
+        status: result.status,
+        message: result.message,
+        data: result.data,
+        timestamp: Date.now(),
+      },
+      source: 'friday-heartbeat',
+    };
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= retryCount; attempt++) {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+        const response = await fetch(url, {
+          method,
+          headers: {
+            'Content-Type': 'application/json',
+            ...headers,
+          },
+          body: JSON.stringify(payload),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        this.logger.info('Webhook executed successfully', {
+          check: check.name,
+          url,
+          attempt: attempt + 1,
+        });
+        return;
+      } catch (err) {
+        lastError = err instanceof Error ? err : new Error(String(err));
+
+        if (attempt < retryCount) {
+          this.logger.warn('Webhook failed, retrying', {
+            check: check.name,
+            attempt: attempt + 1,
+            error: lastError.message,
+          });
+          await this.sleep(retryDelayMs * (attempt + 1)); // Exponential backoff
+        }
+      }
+    }
+
+    throw lastError || new Error('Webhook failed after retries');
+  }
+
+  /**
+   * Execute notification action
+   */
+  private async executeNotifyAction(
+    config: Record<string, unknown>,
+    check: HeartbeatCheck,
+    result: HeartbeatCheckResult
+  ): Promise<void> {
+    const channel = config.channel as string;
+    const recipients = (config.recipients as string[]) || [];
+    const messageTemplate =
+      (config.messageTemplate as string) ||
+      `Heartbeat check "${check.name}" returned ${result.status}: ${result.message}`;
+
+    const message = messageTemplate
+      .replace('{{check.name}}', check.name)
+      .replace('{{check.type}}', check.type)
+      .replace('{{result.status}}', result.status)
+      .replace('{{result.message}}', result.message);
+
+    // Console notification (always available)
+    if (channel === 'console') {
+      console.log(`[HEARTBEAT ALERT] ${message}`);
+      return;
+    }
+
+    // Integration-based notifications
+    if (!this.integrationManager) {
+      this.logger.warn('Integration manager not available for notification', {
+        channel,
+        check: check.name,
+      });
+      return;
+    }
+
+    // Route to appropriate integration
+    switch (channel) {
+      case 'slack':
+        // TODO: Implement Slack integration
+        this.logger.info('Slack notification would be sent', { message, recipients });
+        break;
+      case 'telegram':
+        // TODO: Implement Telegram integration
+        this.logger.info('Telegram notification would be sent', { message, recipients });
+        break;
+      case 'discord':
+        // TODO: Implement Discord integration
+        this.logger.info('Discord notification would be sent', { message, recipients });
+        break;
+      case 'email':
+        // TODO: Implement email integration
+        this.logger.info('Email notification would be sent', { message, recipients });
+        break;
+      default:
+        this.logger.warn('Unknown notification channel', { channel });
+    }
+  }
+
+  /**
+   * Execute remember action
+   */
+  private async executeRememberAction(
+    config: Record<string, unknown>,
+    check: HeartbeatCheck,
+    result: HeartbeatCheckResult
+  ): Promise<void> {
+    const importance = (config.importance as number) || 0.5;
+    const category = (config.category as string) || 'heartbeat_alert';
+    const memoryType = (config.memoryType as 'episodic' | 'semantic') || 'episodic';
+
+    const content = `Heartbeat alert from "${check.name}": ${result.status} - ${result.message}`;
+
+    this.brain.remember(
+      memoryType,
+      content,
+      category,
+      {
+        checkName: check.name,
+        checkType: check.type,
+        resultStatus: result.status,
+        resultData: result.data ? JSON.stringify(result.data) : '',
+      },
+      importance
+    );
+
+    this.logger.info('Memory recorded from heartbeat action', {
+      check: check.name,
+      category,
+      importance,
+    });
+  }
+
+  /**
+   * Execute command action
+   */
+  private async executeCommandAction(
+    config: Record<string, unknown>,
+    check: HeartbeatCheck,
+    result: HeartbeatCheckResult
+  ): Promise<void> {
+    // Command execution would require careful security review
+    // For now, log that it would be executed
+    const command = config.command as string;
+    const args = (config.args as string[]) || [];
+
+    this.logger.info('Command execution requested (requires security review)', {
+      check: check.name,
+      command,
+      args,
+      result: result.status,
+    });
+
+    // TODO: Implement secure command execution with sandboxing
+    throw new Error('Command execution not yet implemented - requires security review');
+  }
+
+  /**
+   * Execute LLM analysis action
+   */
+  private async executeLLMAnalyzeAction(
+    config: Record<string, unknown>,
+    check: HeartbeatCheck,
+    result: HeartbeatCheckResult
+  ): Promise<void> {
+    // LLM analysis requires AI provider integration
+    // For now, log that it would be executed
+    const prompt = (config?.prompt as string) ?? '';
+    const model = config?.model as string | undefined;
+    const maxTokens = (config?.maxTokens as number) || 500;
+
+    this.logger.info('LLM analysis requested', {
+      check: check.name,
+      model: model || 'default',
+      maxTokens,
+      promptLength: prompt?.length,
+    });
+
+    // TODO: Implement LLM analysis with cheap model defaults
+    // This would integrate with the AI provider system
+    throw new Error('LLM analysis action not yet implemented');
+  }
+
+  /**
+   * Utility: Sleep for specified milliseconds
+   */
+  private sleep(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   start(): void {
@@ -82,26 +490,44 @@ export class HeartbeatManager {
     const start = Date.now();
     const checks: HeartbeatCheckResult[] = [];
 
-    const enabledChecks = this.config.checks.filter(c => c.enabled);
-    const dueChecks = enabledChecks.filter(c => {
+    const enabledChecks = this.config.checks.filter((c) => c.enabled);
+    const dueChecks = enabledChecks.filter((c) => {
+      // Check if enough time has passed
       const interval = c.intervalMs ?? this.config.intervalMs;
       const lastRun = this.taskLastRun.get(c.name) ?? 0;
-      return (start - lastRun) >= interval;
+      const timeDue = start - lastRun >= interval;
+
+      // Check schedule constraints (day of week, active hours)
+      const scheduleOk = this.shouldRunAccordingToSchedule(c);
+
+      return timeDue && scheduleOk;
     });
 
     for (const check of dueChecks) {
+      let result: HeartbeatCheckResult;
       try {
-        const result = await this.runCheck(check);
+        result = await this.runCheck(check);
         checks.push(result);
         this.taskLastRun.set(check.name, start);
       } catch (err) {
-        checks.push({
+        result = {
           name: check.name,
           type: check.type,
           status: 'error',
           message: err instanceof Error ? err.message : 'Check failed',
-        });
+        };
+        checks.push(result);
         this.taskLastRun.set(check.name, start);
+      }
+
+      // Execute any configured actions based on result
+      try {
+        await this.executeActions(check, result);
+      } catch (err) {
+        this.logger.error('Action execution failed for check', {
+          check: check.name,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
       }
     }
 
@@ -116,16 +542,16 @@ export class HeartbeatManager {
 
     if (checks.length > 0) {
       // Record as episodic memory
-      const hasWarnings = checks.some(c => c.status === 'warning');
-      const hasErrors = checks.some(c => c.status === 'error');
-      const summary = checks.map(c => `${c.name}: ${c.status}`).join(', ');
+      const hasWarnings = checks.some((c) => c.status === 'warning');
+      const hasErrors = checks.some((c) => c.status === 'error');
+      const summary = checks.map((c) => `${c.name}: ${c.status}`).join(', ');
 
       this.brain.remember(
         'episodic',
         `Heartbeat #${this.beatCount}: ${summary}`,
         'heartbeat',
         { beatCount: String(this.beatCount) },
-        hasErrors ? 0.8 : hasWarnings ? 0.5 : 0.2,
+        hasErrors ? 0.8 : hasWarnings ? 0.5 : 0.2
       );
 
       // Log to audit chain
@@ -170,7 +596,7 @@ export class HeartbeatManager {
       intervalMs: this.config.intervalMs,
       beatCount: this.beatCount,
       lastBeat: this.lastBeat,
-      tasks: this.config.checks.map(c => ({
+      tasks: this.config.checks.map((c) => ({
         name: c.name,
         type: c.type,
         enabled: c.enabled,
@@ -181,8 +607,11 @@ export class HeartbeatManager {
     };
   }
 
-  updateTask(name: string, data: { intervalMs?: number; enabled?: boolean; config?: Record<string, unknown> }): void {
-    const check = this.config.checks.find(c => c.name === name);
+  updateTask(
+    name: string,
+    data: { intervalMs?: number; enabled?: boolean; config?: Record<string, unknown> }
+  ): void {
+    const check = this.config.checks.find((c) => c.name === name);
     if (!check) {
       throw new Error(`Task "${name}" not found`);
     }
@@ -211,6 +640,13 @@ export class HeartbeatManager {
           message: 'Custom check placeholder',
           data: check.config,
         };
+      default:
+        return {
+          name: check.name,
+          type: check.type,
+          status: 'error',
+          message: `Unknown check type: ${check.type}`,
+        };
     }
   }
 
@@ -222,7 +658,7 @@ export class HeartbeatManager {
       `Reflective task: ${prompt}`,
       'heartbeat',
       { task: check.name },
-      0.4,
+      0.4
     );
 
     return {

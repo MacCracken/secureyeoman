@@ -17,6 +17,7 @@ export const PlatformSchema = z.enum([
   'cli',
   'webhook',
   'imessage',
+  'googlechat',
 ]);
 export type Platform = z.infer<typeof PlatformSchema>;
 

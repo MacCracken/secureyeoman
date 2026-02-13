@@ -267,43 +267,33 @@ describe('RBAC', () => {
           {
             resource: 'documents',
             actions: ['read'],
-            conditions: [
-              { field: 'department', operator: 'eq', value: 'engineering' },
-            ],
+            conditions: [{ field: 'department', operator: 'eq', value: 'engineering' }],
           },
           {
             resource: 'budget',
             actions: ['read'],
-            conditions: [
-              { field: 'amount', operator: 'lte', value: 10000 },
-            ],
+            conditions: [{ field: 'amount', operator: 'lte', value: 10000 }],
           },
         ],
       });
     });
 
     it('should grant permission when condition is met', () => {
-      const result = rbac.checkPermission(
-        'conditional',
-        {
-          resource: 'documents',
-          action: 'read',
-          context: { department: 'engineering' },
-        }
-      );
+      const result = rbac.checkPermission('conditional', {
+        resource: 'documents',
+        action: 'read',
+        context: { department: 'engineering' },
+      });
 
       expect(result.granted).toBe(true);
     });
 
     it('should deny permission when condition is not met', () => {
-      const result = rbac.checkPermission(
-        'conditional',
-        {
-          resource: 'documents',
-          action: 'read',
-          context: { department: 'sales' },
-        }
-      );
+      const result = rbac.checkPermission('conditional', {
+        resource: 'documents',
+        action: 'read',
+        context: { department: 'sales' },
+      });
 
       expect(result.granted).toBe(false);
     });
@@ -311,29 +301,23 @@ describe('RBAC', () => {
     it('should support numeric conditions (lte)', () => {
       // Clear cache to ensure fresh permission checks
       rbac.clearCache();
-      
-      const grantedResult = rbac.checkPermission(
-        'conditional',
-        {
-          resource: 'budget',
-          action: 'read',
-          context: { amount: 5000 },
-        }
-      );
+
+      const grantedResult = rbac.checkPermission('conditional', {
+        resource: 'budget',
+        action: 'read',
+        context: { amount: 5000 },
+      });
       expect(grantedResult.granted).toBe(true);
 
       // Clear cache again before checking denial case
       // (cache key doesn't include context, so different context values share cache)
       rbac.clearCache();
-      
-      const deniedResult = rbac.checkPermission(
-        'conditional',
-        {
-          resource: 'budget',
-          action: 'read',
-          context: { amount: 15000 },
-        }
-      );
+
+      const deniedResult = rbac.checkPermission('conditional', {
+        resource: 'budget',
+        action: 'read',
+        context: { amount: 15000 },
+      });
       expect(deniedResult.granted).toBe(false);
     });
   });
@@ -466,5 +450,264 @@ describe('RBAC Singleton', () => {
 
     expect(role).toBeDefined();
     expect(role?.id).toBe('role_super');
+  });
+});
+
+describe('Capture Permissions', () => {
+  let rbac: RBAC;
+
+  beforeEach(() => {
+    rbac = new RBAC();
+  });
+
+  describe('Default Role Capture Permissions', () => {
+    it('should grant admin full capture access via wildcard', () => {
+      const screenResult = rbac.checkPermission('admin', {
+        resource: 'capture.screen',
+        action: 'capture',
+      });
+      expect(screenResult.granted).toBe(true);
+
+      const cameraResult = rbac.checkPermission('admin', {
+        resource: 'capture.camera',
+        action: 'stream',
+      });
+      expect(cameraResult.granted).toBe(true);
+    });
+
+    it('should grant operator capture.screen:capture within time limit', () => {
+      const result = rbac.checkPermission('operator', {
+        resource: 'capture.screen',
+        action: 'capture',
+        context: { duration: 60 },
+      });
+      expect(result.granted).toBe(true);
+    });
+
+    it('should deny operator capture exceeding time limit', () => {
+      rbac.clearCache();
+      const result = rbac.checkPermission('operator', {
+        resource: 'capture.screen',
+        action: 'capture',
+        context: { duration: 600 }, // 10 minutes, exceeds 5 minute limit
+      });
+      expect(result.granted).toBe(false);
+    });
+
+    it('should deny operator capture.camera:stream (not in actions)', () => {
+      const result = rbac.checkPermission('operator', {
+        resource: 'capture.camera',
+        action: 'stream',
+      });
+      expect(result.granted).toBe(false);
+    });
+
+    it('should grant auditor capture.screen:review only', () => {
+      const reviewResult = rbac.checkPermission('auditor', {
+        resource: 'capture.screen',
+        action: 'review',
+      });
+      expect(reviewResult.granted).toBe(true);
+
+      const captureResult = rbac.checkPermission('auditor', {
+        resource: 'capture.screen',
+        action: 'capture',
+      });
+      expect(captureResult.granted).toBe(false);
+    });
+
+    it('should deny viewer all capture permissions', () => {
+      const resources = ['capture.screen', 'capture.camera', 'capture.clipboard'];
+      const actions = ['capture', 'stream', 'configure', 'review'];
+
+      for (const resource of resources) {
+        for (const action of actions) {
+          const result = rbac.checkPermission('viewer', {
+            resource,
+            action,
+          });
+          expect(result.granted).toBe(false);
+        }
+      }
+    });
+  });
+
+  describe('Capture Roles', () => {
+    it('should support capture_operator role with extended limits', () => {
+      rbac.defineRole({
+        id: 'role_capture_operator',
+        name: 'Capture Operator',
+        description: 'Extended capture permissions',
+        permissions: [
+          {
+            resource: 'capture.screen',
+            actions: ['capture', 'stream'],
+            conditions: [{ field: 'duration', operator: 'lte', value: 1800 }],
+          },
+        ],
+        inheritFrom: ['role_operator'],
+      });
+
+      // Should have extended time limit
+      rbac.clearCache();
+      const extendedResult = rbac.checkPermission('capture_operator', {
+        resource: 'capture.screen',
+        action: 'capture',
+        context: { duration: 1200 }, // 20 minutes
+      });
+      expect(extendedResult.granted).toBe(true);
+
+      // Should inherit operator permissions
+      const taskResult = rbac.checkPermission('capture_operator', {
+        resource: 'tasks',
+        action: 'execute',
+      });
+      expect(taskResult.granted).toBe(true);
+    });
+
+    it('should support security_auditor role for compliance', () => {
+      rbac.defineRole({
+        id: 'role_security_auditor',
+        name: 'Security Auditor',
+        description: 'Review captured data',
+        permissions: [
+          { resource: 'capture.screen', actions: ['review'] },
+          { resource: 'capture.camera', actions: ['review'] },
+          { resource: 'audit', actions: ['read', 'verify'] },
+        ],
+      });
+
+      // Can review captures
+      const screenReview = rbac.checkPermission('security_auditor', {
+        resource: 'capture.screen',
+        action: 'review',
+      });
+      expect(screenReview.granted).toBe(true);
+
+      // Cannot capture
+      const screenCapture = rbac.checkPermission('security_auditor', {
+        resource: 'capture.screen',
+        action: 'capture',
+      });
+      expect(screenCapture.granted).toBe(false);
+    });
+  });
+
+  describe('Resource Isolation', () => {
+    beforeEach(() => {
+      rbac.defineRole({
+        id: 'role_screen_only',
+        name: 'ScreenOnly',
+        description: 'Only screen capture',
+        permissions: [{ resource: 'capture.screen', actions: ['capture'] }],
+      });
+    });
+
+    it('should enforce resource isolation between capture types', () => {
+      // Screen allowed
+      const screenResult = rbac.checkPermission('screen_only', {
+        resource: 'capture.screen',
+        action: 'capture',
+      });
+      expect(screenResult.granted).toBe(true);
+
+      // Camera denied
+      const cameraResult = rbac.checkPermission('screen_only', {
+        resource: 'capture.camera',
+        action: 'capture',
+      });
+      expect(cameraResult.granted).toBe(false);
+
+      // Clipboard denied
+      const clipboardResult = rbac.checkPermission('screen_only', {
+        resource: 'capture.clipboard',
+        action: 'capture',
+      });
+      expect(clipboardResult.granted).toBe(false);
+    });
+  });
+
+  describe('Permission Conditions', () => {
+    beforeEach(() => {
+      rbac.defineRole({
+        id: 'role_conditional_capture',
+        name: 'ConditionalCapture',
+        description: 'Capture with conditions',
+        permissions: [
+          {
+            resource: 'capture.screen',
+            actions: ['capture'],
+            conditions: [
+              { field: 'duration', operator: 'lte', value: 300 },
+              { field: 'purpose', operator: 'eq', value: 'support' },
+            ],
+          },
+        ],
+      });
+    });
+
+    it('should grant when all conditions are met', () => {
+      const result = rbac.checkPermission('conditional_capture', {
+        resource: 'capture.screen',
+        action: 'capture',
+        context: { duration: 60, purpose: 'support' },
+      });
+      expect(result.granted).toBe(true);
+    });
+
+    it('should deny when duration condition fails', () => {
+      rbac.clearCache();
+      const result = rbac.checkPermission('conditional_capture', {
+        resource: 'capture.screen',
+        action: 'capture',
+        context: { duration: 600, purpose: 'support' },
+      });
+      expect(result.granted).toBe(false);
+    });
+
+    it('should deny when purpose condition fails', () => {
+      rbac.clearCache();
+      const result = rbac.checkPermission('conditional_capture', {
+        resource: 'capture.screen',
+        action: 'capture',
+        context: { duration: 60, purpose: 'malicious' },
+      });
+      expect(result.granted).toBe(false);
+    });
+  });
+
+  describe('requirePermission for Capture', () => {
+    it('should not throw for valid capture permission', () => {
+      expect(() =>
+        rbac.requirePermission('admin', {
+          resource: 'capture.screen',
+          action: 'capture',
+        })
+      ).not.toThrow();
+    });
+
+    it('should throw PermissionDeniedError for invalid capture permission', () => {
+      expect(() =>
+        rbac.requirePermission('viewer', {
+          resource: 'capture.screen',
+          action: 'capture',
+        })
+      ).toThrow(PermissionDeniedError);
+    });
+
+    it('should include capture resource and action in error', () => {
+      try {
+        rbac.requirePermission('viewer', {
+          resource: 'capture.screen',
+          action: 'capture',
+        });
+        expect.fail('Should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(PermissionDeniedError);
+        const permError = error as PermissionDeniedError;
+        expect(permError.resource).toBe('capture.screen');
+        expect(permError.action).toBe('capture');
+      }
+    });
   });
 });

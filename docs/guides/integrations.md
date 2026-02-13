@@ -10,6 +10,7 @@ FRIDAY supports multiple platform integrations for receiving and responding to m
 | Discord  | Stable | Slash commands, embeds, guild messages |
 | Slack    | Stable | Socket mode, slash commands, mentions |
 | GitHub   | Stable | Webhooks, issue comments, PR events |
+| Google Chat | Beta | Bot messages, card messages, space integration |
 | iMessage | Beta   | macOS only, AppleScript send, chat.db polling |
 
 ## Telegram
@@ -133,6 +134,39 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 ### Sending Responses
 FRIDAY responds to GitHub events by posting comments. The `chatId` format is:
 `owner/repo/issues/123` or `owner/repo/pulls/456`
+
+## Google Chat
+
+### Setup
+1. Create a Google Cloud project and enable the **Google Chat API**
+2. Create a **Chat app** with bot identity
+3. Configure authentication and get a **Bot Token**
+4. Add the bot to a Google Chat space
+5. Create an integration:
+
+```bash
+curl -X POST http://localhost:18789/api/v1/integrations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "googlechat",
+    "displayName": "FRIDAY Google Chat",
+    "enabled": true,
+    "config": {
+      "botToken": "ya29...",
+      "spaceId": "spaces/..."
+    }
+  }'
+```
+
+### Config Options
+- `botToken` (required) — Google Chat API bot token
+- `spaceId` (optional) — Default space to post messages to
+
+### Features
+- Text messages to spaces
+- Card messages with interactive buttons
+- Thread replies
 
 ## iMessage (macOS)
 

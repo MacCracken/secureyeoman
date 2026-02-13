@@ -185,7 +185,7 @@ friday/
 |-------|------|
 | **Getting Started** | [Getting Started Guide](docs/guides/getting-started.md) |
 | **Configuration** | [Config Reference](docs/configuration.md) |
-| **API Reference** | [REST & WebSocket](docs/api.md) |
+| **API Reference** | [REST API](docs/api/rest-api.md) / [WebSocket API](docs/api/websocket-api.md) |
 | **Deployment** | [Deployment Guide](docs/deployment.md) |
 | **Integrations** | [Integration Setup](docs/guides/integrations.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
