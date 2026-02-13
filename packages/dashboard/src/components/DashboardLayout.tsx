@@ -25,21 +25,41 @@ import type { MetricsSnapshot } from '../types';
 
 // Lazy-loaded route components — splits ReactFlow (~200KB) + Recharts (~100KB)
 // into separate chunks that only load when their routes are visited.
-const MetricsGraph = lazy(() => import('./MetricsGraph').then(m => ({ default: m.MetricsGraph })));
-const TaskHistory = lazy(() => import('./TaskHistory').then(m => ({ default: m.TaskHistory })));
-const SecurityEvents = lazy(() => import('./SecurityEvents').then(m => ({ default: m.SecurityEvents })));
-const ResourceMonitor = lazy(() => import('./ResourceMonitor').then(m => ({ default: m.ResourceMonitor })));
-const PersonalityEditor = lazy(() => import('./PersonalityEditor').then(m => ({ default: m.PersonalityEditor })));
-const SkillsManager = lazy(() => import('./SkillsManager').then(m => ({ default: m.SkillsManager })));
-const ConnectionManager = lazy(() => import('./ConnectionManager').then(m => ({ default: m.ConnectionManager })));
-const McpManager = lazy(() => import('./McpManager').then(m => ({ default: m.McpManager })));
-const CodePage = lazy(() => import('./CodePage').then(m => ({ default: m.CodePage })));
-const SettingsPage = lazy(() => import('./SettingsPage').then(m => ({ default: m.SettingsPage })));
-const SecuritySettings = lazy(() => import('./SecuritySettings').then(m => ({ default: m.SecuritySettings })));
-const ChatPage = lazy(() => import('./ChatPage').then(m => ({ default: m.ChatPage })));
-const ReportsPage = lazy(() => import('./ReportsPage').then(m => ({ default: m.ReportsPage })));
-const ExperimentsPage = lazy(() => import('./ExperimentsPage').then(m => ({ default: m.ExperimentsPage })));
-const MarketplacePage = lazy(() => import('./MarketplacePage').then(m => ({ default: m.MarketplacePage })));
+const MetricsGraph = lazy(() =>
+  import('./MetricsGraph').then((m) => ({ default: m.MetricsGraph }))
+);
+const TaskHistory = lazy(() => import('./TaskHistory').then((m) => ({ default: m.TaskHistory })));
+const SecurityEvents = lazy(() =>
+  import('./SecurityEvents').then((m) => ({ default: m.SecurityEvents }))
+);
+const ResourceMonitor = lazy(() =>
+  import('./ResourceMonitor').then((m) => ({ default: m.ResourceMonitor }))
+);
+const PersonalityEditor = lazy(() =>
+  import('./PersonalityEditor').then((m) => ({ default: m.PersonalityEditor }))
+);
+const SkillsManager = lazy(() =>
+  import('./SkillsManager').then((m) => ({ default: m.SkillsManager }))
+);
+const ConnectionManager = lazy(() =>
+  import('./ConnectionManager').then((m) => ({ default: m.ConnectionManager }))
+);
+const McpManager = lazy(() => import('./McpManager').then((m) => ({ default: m.McpManager })));
+const CodePage = lazy(() => import('./CodePage').then((m) => ({ default: m.CodePage })));
+const SettingsPage = lazy(() =>
+  import('./SettingsPage').then((m) => ({ default: m.SettingsPage }))
+);
+const SecuritySettings = lazy(() =>
+  import('./SecuritySettings').then((m) => ({ default: m.SecuritySettings }))
+);
+const ChatPage = lazy(() => import('./ChatPage').then((m) => ({ default: m.ChatPage })));
+const ReportsPage = lazy(() => import('./ReportsPage').then((m) => ({ default: m.ReportsPage })));
+const ExperimentsPage = lazy(() =>
+  import('./ExperimentsPage').then((m) => ({ default: m.ExperimentsPage }))
+);
+const MarketplacePage = lazy(() =>
+  import('./MarketplacePage').then((m) => ({ default: m.MarketplacePage }))
+);
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -81,7 +101,13 @@ export function DashboardLayout() {
   });
 
   if (onboarding?.needed) {
-    return <OnboardingWizard onComplete={() => { void refetchOnboarding(); }} />;
+    return (
+      <OnboardingWizard
+        onComplete={() => {
+          void refetchOnboarding();
+        }}
+      />
+    );
   }
 
   if (!isLocalNetwork) {
@@ -132,9 +158,12 @@ export function DashboardLayout() {
           }
         `}</style>
 
-        <div className="sidebar-content-area flex flex-col flex-1 min-h-screen transition-[margin-left] duration-200" style={{ marginLeft: 0 }}>
+        <div
+          className="sidebar-content-area flex flex-col flex-1 min-h-0 transition-[margin-left] duration-200"
+          style={{ marginLeft: 0 }}
+        >
           {/* Header */}
-          <header className="border-b bg-card sticky top-0 z-20">
+          <header className="border-b bg-card sticky top-0 z-20 shrink-0">
             <div className="px-4 py-3 sm:py-4">
               <div className="flex items-center justify-between gap-2">
                 {/* Mobile: hamburger + logo */}
@@ -167,7 +196,7 @@ export function DashboardLayout() {
           </header>
 
           {/* Main Content */}
-          <main className="px-3 sm:px-4 py-4 sm:py-6 flex-1">
+          <main className="px-2 sm:px-3 py-3 sm:py-4 flex-1">
             <ErrorBoundary>
               <Suspense fallback={<PageSkeleton />}>
                 <Routes>
@@ -217,7 +246,11 @@ function OverviewPage({ metrics }: { metrics?: MetricsSnapshot }) {
           title="Tasks Today"
           value={metrics?.tasks?.total ?? 0}
           icon={<Activity className="w-5 h-5" />}
-          trend={metrics?.tasks?.successRate ? `${(metrics.tasks.successRate * 100).toFixed(1)}% success` : undefined}
+          trend={
+            metrics?.tasks?.successRate
+              ? `${(metrics.tasks.successRate * 100).toFixed(1)}% success`
+              : undefined
+          }
           trendUp={metrics?.tasks?.successRate ? metrics.tasks.successRate > 0.9 : undefined}
         />
         <StatCard
@@ -294,24 +327,24 @@ function StatCard({ title, value, icon, trend, trendUp, subtitle }: StatCardProp
         <div>
           <p className="text-sm text-muted-foreground">{title}</p>
           <p className="text-xl sm:text-2xl font-bold mt-1 truncate">{value}</p>
-          {subtitle && (
-            <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>
-          )}
+          {subtitle && <p className="text-xs text-muted-foreground mt-1">{subtitle}</p>}
           {trend && (
-            <p className={`text-xs mt-1 flex items-center gap-1 ${
-              trendUp === true ? 'text-success' :
-              trendUp === false ? 'text-destructive' :
-              'text-muted-foreground'
-            }`}>
+            <p
+              className={`text-xs mt-1 flex items-center gap-1 ${
+                trendUp === true
+                  ? 'text-success'
+                  : trendUp === false
+                    ? 'text-destructive'
+                    : 'text-muted-foreground'
+              }`}
+            >
               {trendUp === true && <CheckCircle className="w-3 h-3" />}
               {trendUp === false && <XCircle className="w-3 h-3" />}
               {trend}
             </p>
           )}
         </div>
-        <div className="p-2 bg-primary/10 rounded-lg text-primary">
-          {icon}
-        </div>
+        <div className="p-2 bg-primary/10 rounded-lg text-primary">{icon}</div>
       </div>
     </div>
   );
