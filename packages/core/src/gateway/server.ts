@@ -28,6 +28,8 @@ import { registerCommsRoutes } from '../comms/comms-routes.js';
 import { registerIntegrationRoutes } from '../integrations/integration-routes.js';
 import { registerChatRoutes } from '../ai/chat-routes.js';
 import { registerModelRoutes } from '../ai/model-routes.js';
+import { uuidv7, sha256 } from '../utils/crypto.js';
+import { Task, TaskType, TaskStatus } from '@friday/shared';
 import { registerMcpRoutes } from '../mcp/mcp-routes.js';
 import { registerReportRoutes } from '../reporting/report-routes.js';
 import { registerDashboardRoutes } from '../dashboard/dashboard-routes.js';
@@ -401,6 +403,84 @@ export class GatewayServer {
           return task;
         } catch {
           return reply.code(500).send({ error: 'Task storage not available' });
+        }
+      }
+    );
+
+    // Create task
+    this.app.post(
+      '/api/v1/tasks',
+      async (
+        request: FastifyRequest<{
+          Body: {
+            type?: string;
+            name: string;
+            description?: string;
+            input?: unknown;
+            timeoutMs?: number;
+            correlationId?: string;
+            parentTaskId?: string;
+          };
+        }>,
+        reply: FastifyReply
+      ) => {
+        try {
+          const taskStorage = this.secureYeoman.getTaskStorage();
+          const taskExecutor = this.secureYeoman.getTaskExecutor();
+
+          const {
+            name,
+            type = 'execute',
+            description,
+            input,
+            timeoutMs,
+            correlationId,
+            parentTaskId,
+          } = request.body;
+
+          if (!name) {
+            return reply.code(400).send({ error: 'Task name is required' });
+          }
+
+          const task: Task = {
+            id: uuidv7(),
+            type: type as TaskType,
+            name,
+            description,
+            status: TaskStatus.PENDING,
+            createdAt: Date.now(),
+            inputHash: sha256(JSON.stringify(input ?? {})),
+            securityContext: { userId: 'api', role: 'operator', permissionsUsed: [] },
+            timeoutMs: timeoutMs ?? 300000,
+            correlationId,
+            parentTaskId,
+          };
+
+          taskStorage.storeTask(task);
+
+          if (taskExecutor) {
+            try {
+              await taskExecutor.submit(
+                {
+                  type: type as TaskType,
+                  name,
+                  description,
+                  input,
+                  timeoutMs,
+                  correlationId,
+                  parentTaskId,
+                },
+                { userId: 'api', role: 'operator' }
+              );
+            } catch (err) {
+              this.getLogger().warn('Task created but failed to enqueue', { error: String(err) });
+            }
+          }
+
+          return reply.code(201).send(task);
+        } catch (err) {
+          this.getLogger().error('Failed to create task', { error: String(err) });
+          return reply.code(500).send({ error: 'Failed to create task' });
         }
       }
     );

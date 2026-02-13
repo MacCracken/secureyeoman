@@ -10,11 +10,13 @@ import { createTaskList } from '../test/mocks';
 // ── Mock API client ──────────────────────────────────────────────
 vi.mock('../api/client', () => ({
   fetchTasks: vi.fn(),
+  createTask: vi.fn(),
 }));
 
 import * as api from '../api/client';
 
 const mockFetchTasks = vi.mocked(api.fetchTasks);
+const mockCreateTask = vi.mocked(api.createTask);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -114,9 +116,7 @@ describe('TaskHistory', () => {
     const statusSelect = await screen.findByLabelText('Filter by status');
     await user.selectOptions(statusSelect, 'failed');
 
-    expect(mockFetchTasks).toHaveBeenCalledWith(
-      expect.objectContaining({ status: 'failed' })
-    );
+    expect(mockFetchTasks).toHaveBeenCalledWith(expect.objectContaining({ status: 'failed' }));
   });
 
   it('calls fetchTasks with type filter when changed', async () => {
@@ -126,9 +126,7 @@ describe('TaskHistory', () => {
     const typeSelect = await screen.findByLabelText('Filter by type');
     await user.selectOptions(typeSelect, 'query');
 
-    expect(mockFetchTasks).toHaveBeenCalledWith(
-      expect.objectContaining({ type: 'query' })
-    );
+    expect(mockFetchTasks).toHaveBeenCalledWith(expect.objectContaining({ type: 'query' }));
   });
 
   it('shows Clear button when a filter is active and resets on click', async () => {
@@ -189,5 +187,86 @@ describe('TaskHistory', () => {
     renderComponent();
     expect(await screen.findByLabelText('Export CSV')).toBeInTheDocument();
     expect(screen.getByLabelText('Export JSON')).toBeInTheDocument();
+  });
+
+  // ── Create Task Tests ─────────────────────────────────────────────
+
+  it('renders New Task button', async () => {
+    renderComponent();
+    expect(await screen.findByText('New Task')).toBeInTheDocument();
+  });
+
+  it('opens create dialog when New Task button is clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    const newTaskButton = await screen.findByText('New Task');
+    await user.click(newTaskButton);
+
+    expect(screen.getByText('Create New Task')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('e.g., Run backup')).toBeInTheDocument();
+  });
+
+  it('can fill in the create task form', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.click(screen.getByText('New Task'));
+
+    const nameInput = screen.getByPlaceholderText('e.g., Run backup');
+    await user.type(nameInput, 'My New Task');
+
+    expect(nameInput).toHaveValue('My New Task');
+  });
+
+  it('calls createTask when form is submitted', async () => {
+    const user = userEvent.setup();
+    mockCreateTask.mockResolvedValue({
+      id: 'new-task-id',
+      name: 'My New Task',
+      type: 'execute',
+      status: 'pending',
+      createdAt: Date.now(),
+    });
+    renderComponent();
+
+    await user.click(screen.getByText('New Task'));
+
+    const nameInput = screen.getByPlaceholderText('e.g., Run backup');
+    await user.type(nameInput, 'My New Task');
+
+    await user.click(screen.getByText('Create Task'));
+
+    expect(mockCreateTask).toHaveBeenCalled();
+  });
+
+  it('closes dialog after successful task creation', async () => {
+    const user = userEvent.setup();
+    mockCreateTask.mockResolvedValue({
+      id: 'new-task-id',
+      name: 'My New Task',
+      type: 'execute',
+      status: 'pending',
+      createdAt: Date.now(),
+    });
+    renderComponent();
+
+    await user.click(screen.getByText('New Task'));
+
+    const nameInput = screen.getByPlaceholderText('e.g., Run backup');
+    await user.type(nameInput, 'My New Task');
+
+    await user.click(screen.getByText('Create Task'));
+
+    expect(screen.queryByText('Create New Task')).not.toBeInTheDocument();
+  });
+
+  it('disables create button when name is empty', async () => {
+    renderComponent();
+
+    await userEvent.setup().click(screen.getByText('New Task'));
+
+    const createButton = screen.getByText('Create Task');
+    expect(createButton).toBeDisabled();
   });
 });

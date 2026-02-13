@@ -112,6 +112,16 @@ function rowToSkill(row: SkillRow): Skill {
     instructions: row.instructions,
     tools: safeJsonParse<Skill['tools']>(row.tools, []),
     triggerPatterns: safeJsonParse<string[]>(row.trigger_patterns, []),
+    // ADR 021: Skill Actions
+    actions: [],
+    // ADR 022: Skill Triggers
+    triggers: [],
+    // Dependencies
+    dependencies: [],
+    provides: [],
+    // Security
+    requireApproval: false,
+    allowedPermissions: [],
     enabled: row.enabled === 1,
     source: row.source as Skill['source'],
     status: row.status as Skill['status'],
@@ -204,7 +214,7 @@ export class BrainStorage {
     this.db
       .prepare(
         `INSERT INTO memories (id, type, content, source, context, importance, access_count, last_accessed_at, expires_at, created_at, updated_at)
-         VALUES (@id, @type, @content, @source, @context, @importance, 0, NULL, @expires_at, @created_at, @updated_at)`,
+         VALUES (@id, @type, @content, @source, @context, @importance, 0, NULL, @expires_at, @created_at, @updated_at)`
       )
       .run({
         id,
@@ -224,16 +234,14 @@ export class BrainStorage {
   }
 
   getMemory(id: string): Memory | null {
-    const row = this.db
-      .prepare('SELECT * FROM memories WHERE id = ?')
-      .get(id) as MemoryRow | undefined;
+    const row = this.db.prepare('SELECT * FROM memories WHERE id = ?').get(id) as
+      | MemoryRow
+      | undefined;
     return row ? rowToMemory(row) : null;
   }
 
   deleteMemory(id: string): boolean {
-    const info = this.db
-      .prepare('DELETE FROM memories WHERE id = ?')
-      .run(id);
+    const info = this.db.prepare('DELETE FROM memories WHERE id = ?').run(id);
     return info.changes > 0;
   }
 
@@ -278,7 +286,9 @@ export class BrainStorage {
 
   touchMemory(id: string): void {
     this.db
-      .prepare('UPDATE memories SET access_count = access_count + 1, last_accessed_at = ? WHERE id = ?')
+      .prepare(
+        'UPDATE memories SET access_count = access_count + 1, last_accessed_at = ? WHERE id = ?'
+      )
       .run(Date.now(), id);
   }
 
@@ -287,7 +297,9 @@ export class BrainStorage {
     const now = Date.now();
     const placeholders = ids.map(() => '?').join(', ');
     this.db
-      .prepare(`UPDATE memories SET access_count = access_count + 1, last_accessed_at = ? WHERE id IN (${placeholders})`)
+      .prepare(
+        `UPDATE memories SET access_count = access_count + 1, last_accessed_at = ? WHERE id IN (${placeholders})`
+      )
       .run(now, ...ids);
   }
 
@@ -300,7 +312,7 @@ export class BrainStorage {
       .prepare(
         `UPDATE memories SET importance = MAX(0, importance - @decayRate), updated_at = @now
          WHERE (last_accessed_at IS NULL OR last_accessed_at < @threshold)
-           AND importance > 0`,
+           AND importance > 0`
       )
       .run({
         decayRate,
@@ -320,9 +332,9 @@ export class BrainStorage {
   }
 
   getMemoryCount(): number {
-    const row = this.db
-      .prepare('SELECT COUNT(*) as count FROM memories')
-      .get() as { count: number };
+    const row = this.db.prepare('SELECT COUNT(*) as count FROM memories').get() as {
+      count: number;
+    };
     return row.count;
   }
 
@@ -346,7 +358,7 @@ export class BrainStorage {
     this.db
       .prepare(
         `INSERT INTO knowledge (id, topic, content, source, confidence, supersedes, created_at, updated_at)
-         VALUES (@id, @topic, @content, @source, @confidence, NULL, @created_at, @updated_at)`,
+         VALUES (@id, @topic, @content, @source, @confidence, NULL, @created_at, @updated_at)`
       )
       .run({
         id,
@@ -364,9 +376,9 @@ export class BrainStorage {
   }
 
   getKnowledge(id: string): KnowledgeEntry | null {
-    const row = this.db
-      .prepare('SELECT * FROM knowledge WHERE id = ?')
-      .get(id) as KnowledgeRow | undefined;
+    const row = this.db.prepare('SELECT * FROM knowledge WHERE id = ?').get(id) as
+      | KnowledgeRow
+      | undefined;
     return row ? rowToKnowledge(row) : null;
   }
 
@@ -398,14 +410,17 @@ export class BrainStorage {
     return rows.map(rowToKnowledge);
   }
 
-  updateKnowledge(id: string, data: { content?: string; confidence?: number; supersedes?: string }): KnowledgeEntry {
+  updateKnowledge(
+    id: string,
+    data: { content?: string; confidence?: number; supersedes?: string }
+  ): KnowledgeEntry {
     const existing = this.getKnowledge(id);
     if (!existing) throw new Error(`Knowledge not found: ${id}`);
 
     const now = Date.now();
     this.db
       .prepare(
-        `UPDATE knowledge SET content = @content, confidence = @confidence, supersedes = @supersedes, updated_at = @updated_at WHERE id = @id`,
+        `UPDATE knowledge SET content = @content, confidence = @confidence, supersedes = @supersedes, updated_at = @updated_at WHERE id = @id`
       )
       .run({
         id,
@@ -419,16 +434,14 @@ export class BrainStorage {
   }
 
   deleteKnowledge(id: string): boolean {
-    const info = this.db
-      .prepare('DELETE FROM knowledge WHERE id = ?')
-      .run(id);
+    const info = this.db.prepare('DELETE FROM knowledge WHERE id = ?').run(id);
     return info.changes > 0;
   }
 
   getKnowledgeCount(): number {
-    const row = this.db
-      .prepare('SELECT COUNT(*) as count FROM knowledge')
-      .get() as { count: number };
+    const row = this.db.prepare('SELECT COUNT(*) as count FROM knowledge').get() as {
+      count: number;
+    };
     return row.count;
   }
 
@@ -441,7 +454,7 @@ export class BrainStorage {
     this.db
       .prepare(
         `INSERT INTO skills (id, name, description, instructions, tools, trigger_patterns, enabled, source, status, usage_count, last_used_at, created_at, updated_at)
-         VALUES (@id, @name, @description, @instructions, @tools, @trigger_patterns, @enabled, @source, @status, 0, NULL, @created_at, @updated_at)`,
+         VALUES (@id, @name, @description, @instructions, @tools, @trigger_patterns, @enabled, @source, @status, 0, NULL, @created_at, @updated_at)`
       )
       .run({
         id,
@@ -463,9 +476,9 @@ export class BrainStorage {
   }
 
   getSkill(id: string): Skill | null {
-    const row = this.db
-      .prepare('SELECT * FROM skills WHERE id = ?')
-      .get(id) as SkillRow | undefined;
+    const row = this.db.prepare('SELECT * FROM skills WHERE id = ?').get(id) as
+      | SkillRow
+      | undefined;
     return row ? rowToSkill(row) : null;
   }
 
@@ -486,7 +499,7 @@ export class BrainStorage {
            source = @source,
            status = @status,
            updated_at = @updated_at
-         WHERE id = @id`,
+         WHERE id = @id`
       )
       .run({
         id,
@@ -495,7 +508,7 @@ export class BrainStorage {
         instructions: data.instructions ?? existing.instructions,
         tools: JSON.stringify(data.tools ?? existing.tools),
         trigger_patterns: JSON.stringify(data.triggerPatterns ?? existing.triggerPatterns),
-        enabled: data.enabled !== undefined ? (data.enabled ? 1 : 0) : (existing.enabled ? 1 : 0),
+        enabled: data.enabled !== undefined ? (data.enabled ? 1 : 0) : existing.enabled ? 1 : 0,
         source: data.source ?? existing.source,
         status: data.status ?? existing.status,
         updated_at: now,
@@ -505,9 +518,7 @@ export class BrainStorage {
   }
 
   deleteSkill(id: string): boolean {
-    const info = this.db
-      .prepare('DELETE FROM skills WHERE id = ?')
-      .run(id);
+    const info = this.db.prepare('DELETE FROM skills WHERE id = ?').run(id);
     return info.changes > 0;
   }
 
@@ -536,7 +547,9 @@ export class BrainStorage {
 
   getEnabledSkills(): Skill[] {
     const rows = this.db
-      .prepare("SELECT * FROM skills WHERE enabled = 1 AND status = 'active' ORDER BY usage_count DESC, created_at DESC")
+      .prepare(
+        "SELECT * FROM skills WHERE enabled = 1 AND status = 'active' ORDER BY usage_count DESC, created_at DESC"
+      )
       .all() as SkillRow[];
     return rows.map(rowToSkill);
   }
@@ -555,18 +568,16 @@ export class BrainStorage {
   }
 
   getSkillCount(): number {
-    const row = this.db
-      .prepare('SELECT COUNT(*) as count FROM skills')
-      .get() as { count: number };
+    const row = this.db.prepare('SELECT COUNT(*) as count FROM skills').get() as { count: number };
     return row.count;
   }
 
   // ── Brain Meta ───────────────────────────────────────────────
 
   getMeta(key: string): string | null {
-    const row = this.db
-      .prepare('SELECT value FROM brain_meta WHERE key = ?')
-      .get(key) as { value: string } | undefined;
+    const row = this.db.prepare('SELECT value FROM brain_meta WHERE key = ?').get(key) as
+      | { value: string }
+      | undefined;
     return row?.value ?? null;
   }
 
@@ -574,7 +585,7 @@ export class BrainStorage {
     this.db
       .prepare(
         `INSERT INTO brain_meta (key, value, updated_at) VALUES (@key, @value, @updated_at)
-         ON CONFLICT(key) DO UPDATE SET value = @value, updated_at = @updated_at`,
+         ON CONFLICT(key) DO UPDATE SET value = @value, updated_at = @updated_at`
       )
       .run({ key, value, updated_at: Date.now() });
   }

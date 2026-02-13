@@ -2,6 +2,29 @@
 
 > Complete API documentation for F.R.I.D.A.Y. SecureYeoman system
 
+This documentation covers the complete API surface. For real-time events, see:
+- [WebSocket API](websocket-api.md) - Real-time WebSocket channels
+
+## Quick Links
+
+| Category | Description |
+|----------|-------------|
+| [Authentication](#authentication) | JWT and API key auth |
+| [Tasks](#tasks) | Task CRUD and execution |
+| [Metrics](#metrics) | System metrics and monitoring |
+| [Soul](#soul-system) | Personality and skills |
+| [Integrations](#integrations) | Platform integrations |
+
+## Related Documentation
+
+- [Getting Started Guide](../guides/getting-started.md)
+- [Configuration Reference](../configuration.md)
+- [Deployment Guide](../deployment.md)
+- [Troubleshooting Guide](../troubleshooting.md)
+- [Security Model](../security/security-model.md)
+
+---
+
 ## Base URL
 
 ```

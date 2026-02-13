@@ -20,8 +20,10 @@ import {
   Eye,
   Check,
   X,
+  Settings,
 } from 'lucide-react';
 import { fetchSecurityEvents, verifyAuditChain } from '../api/client';
+import { Link } from 'react-router-dom';
 import type { MetricsSnapshot, SecurityEvent } from '../types';
 
 interface SecurityEventsProps {
@@ -222,19 +224,26 @@ export function SecurityEvents({ metrics }: SecurityEventsProps) {
       {/* Recent Events */}
       <div className="card">
         <div className="p-4 border-b flex items-center justify-between">
-          <h3 className="font-medium">Recent Security Events</h3>
-          {unacknowledgedCount > 0 && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">{unacknowledgedCount} unacknowledged</span>
-              <button
-                onClick={acknowledgeAll}
-                className="btn-ghost px-2 py-1 text-xs flex items-center gap-1"
-                aria-label="Acknowledge all events"
-              >
-                <Check className="w-3 h-3" /> Ack All
-              </button>
-            </div>
-          )}
+          <div className="flex items-center gap-3">
+            <h3 className="font-medium">Recent Security Events</h3>
+            {unacknowledgedCount > 0 && (
+              <>
+                <span className="text-xs text-muted-foreground">
+                  {unacknowledgedCount} unacknowledged
+                </span>
+                <button
+                  onClick={acknowledgeAll}
+                  className="btn-ghost px-2 py-1 text-xs flex items-center gap-1"
+                  aria-label="Acknowledge all events"
+                >
+                  <Check className="w-3 h-3" /> Ack All
+                </button>
+              </>
+            )}
+          </div>
+          <Link to="/security-settings" className="btn-ghost p-2" aria-label="Security settings">
+            <Settings className="w-4 h-4" />
+          </Link>
         </div>
         <div className="divide-y">
           {events.length === 0 ? (
@@ -328,13 +337,7 @@ function EventRow({ event, isAcknowledged, onAcknowledge, onInvestigate }: Event
   );
 }
 
-function InvestigationPanel({
-  event,
-  onClose,
-}: {
-  event: SecurityEvent;
-  onClose: () => void;
-}) {
+function InvestigationPanel({ event, onClose }: { event: SecurityEvent; onClose: () => void }) {
   return (
     <div className="card border-primary">
       <div className="p-4 border-b flex items-center justify-between">

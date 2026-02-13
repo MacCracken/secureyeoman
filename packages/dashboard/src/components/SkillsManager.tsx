@@ -1,8 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import {
-  Wrench, Plus, Edit2, Trash2, ToggleLeft, ToggleRight,
-  ThumbsUp, ThumbsDown, Filter,
+  Wrench,
+  Plus,
+  Edit2,
+  Trash2,
+  ToggleLeft,
+  ToggleRight,
+  ThumbsUp,
+  ThumbsDown,
+  Filter,
 } from 'lucide-react';
 import {
   fetchSkills,
@@ -19,8 +27,10 @@ import type { Skill, SkillCreate } from '../types';
 
 function formatDate(ts: number): string {
   return new Date(ts).toLocaleDateString(undefined, {
-    month: 'short', day: 'numeric',
-    hour: '2-digit', minute: '2-digit',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
   });
 }
 
@@ -38,6 +48,7 @@ const STATUS_BADGES: Record<string, string> = {
 
 export function SkillsManager() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [editing, setEditing] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterSource, setFilterSource] = useState<string>('');
@@ -54,25 +65,32 @@ export function SkillsManager() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['skills', filterStatus, filterSource],
-    queryFn: () => fetchSkills({
-      status: filterStatus || undefined,
-      source: filterSource || undefined,
-    }),
+    queryFn: () =>
+      fetchSkills({
+        status: filterStatus || undefined,
+        source: filterSource || undefined,
+      }),
   });
 
   const skills = data?.skills ?? [];
-  const pendingCount = skills.filter(s => s.status === 'pending_approval').length;
+  const pendingCount = skills.filter((s) => s.status === 'pending_approval').length;
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['skills'] });
 
   const createMut = useMutation({
     mutationFn: (d: SkillCreate) => createSkill(d),
-    onSuccess: () => { invalidate(); setEditing(null); },
+    onSuccess: () => {
+      invalidate();
+      setEditing(null);
+    },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, d }: { id: string; d: Partial<SkillCreate> }) => updateSkill(id, d),
-    onSuccess: () => { invalidate(); setEditing(null); },
+    onSuccess: () => {
+      invalidate();
+      setEditing(null);
+    },
   });
 
   const deleteMut = useMutation({
@@ -80,10 +98,42 @@ export function SkillsManager() {
     onSuccess: invalidate,
   });
 
-  const enableMut = useMutation({ mutationFn: (id: string) => enableSkill(id), onSuccess: invalidate });
-  const disableMut = useMutation({ mutationFn: (id: string) => disableSkill(id), onSuccess: invalidate });
-  const approveMut = useMutation({ mutationFn: (id: string) => approveSkill(id), onSuccess: invalidate });
-  const rejectMut = useMutation({ mutationFn: (id: string) => rejectSkill(id), onSuccess: invalidate });
+  const enableMut = useMutation({
+    mutationFn: (id: string) => enableSkill(id),
+    onSuccess: invalidate,
+  });
+  const disableMut = useMutation({
+    mutationFn: (id: string) => disableSkill(id),
+    onSuccess: invalidate,
+  });
+  const approveMut = useMutation({
+    mutationFn: (id: string) => approveSkill(id),
+    onSuccess: invalidate,
+  });
+  const rejectMut = useMutation({
+    mutationFn: (id: string) => rejectSkill(id),
+    onSuccess: invalidate,
+  });
+
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      const pName = searchParams.get('name') || '';
+      const pDescription = searchParams.get('description') || '';
+      const pTrigger = searchParams.get('trigger') || '';
+      const pAction = searchParams.get('action') || '';
+      setForm({
+        name: pName,
+        description: pDescription,
+        instructions: pAction,
+        triggerPatterns: pTrigger ? pTrigger.split(',').map((t) => t.trim()) : [],
+        enabled: true,
+        source: 'user',
+      });
+      setTriggerInput(pTrigger);
+      setEditing('new');
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const startEdit = (s: Skill) => {
     setForm({
@@ -99,7 +149,14 @@ export function SkillsManager() {
   };
 
   const startCreate = () => {
-    setForm({ name: '', description: '', instructions: '', triggerPatterns: [], enabled: true, source: 'user' });
+    setForm({
+      name: '',
+      description: '',
+      instructions: '',
+      triggerPatterns: [],
+      enabled: true,
+      source: 'user',
+    });
     setTriggerInput('');
     setEditing('new');
   };
@@ -107,7 +164,7 @@ export function SkillsManager() {
   const handleSave = () => {
     const patterns = triggerInput
       .split(',')
-      .map(s => s.trim())
+      .map((s) => s.trim())
       .filter(Boolean);
     const data = { ...form, triggerPatterns: patterns };
     if (editing === 'new') {
@@ -155,7 +212,7 @@ export function SkillsManager() {
         <Filter className="w-4 h-4 text-muted-foreground" />
         <select
           value={filterStatus}
-          onChange={e => setFilterStatus(e.target.value)}
+          onChange={(e) => setFilterStatus(e.target.value)}
           className="px-2 py-1 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           aria-label="Filter by status"
         >
@@ -166,7 +223,7 @@ export function SkillsManager() {
         </select>
         <select
           value={filterSource}
-          onChange={e => setFilterSource(e.target.value)}
+          onChange={(e) => setFilterSource(e.target.value)}
           className="px-2 py-1 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           aria-label="Filter by source"
         >
@@ -189,7 +246,7 @@ export function SkillsManager() {
             <input
               type="text"
               value={form.name}
-              onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               maxLength={100}
               placeholder="e.g., Code Review"
@@ -201,7 +258,7 @@ export function SkillsManager() {
             <input
               type="text"
               value={form.description}
-              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               maxLength={1000}
               placeholder="What this skill does"
@@ -212,7 +269,7 @@ export function SkillsManager() {
             <label className="block text-sm font-medium mb-1">Instructions</label>
             <textarea
               value={form.instructions}
-              onChange={e => setForm(f => ({ ...f, instructions: e.target.value }))}
+              onChange={(e) => setForm((f) => ({ ...f, instructions: e.target.value }))}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
               rows={4}
               maxLength={8000}
@@ -228,7 +285,7 @@ export function SkillsManager() {
             <input
               type="text"
               value={triggerInput}
-              onChange={e => setTriggerInput(e.target.value)}
+              onChange={(e) => setTriggerInput(e.target.value)}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="Comma-separated patterns, e.g., review code, check PR, analyze diff"
             />
@@ -238,7 +295,9 @@ export function SkillsManager() {
           </div>
 
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setEditing(null)} className="btn btn-ghost">Cancel</button>
+            <button onClick={() => setEditing(null)} className="btn btn-ghost">
+              Cancel
+            </button>
             <button
               onClick={handleSave}
               disabled={!form.name?.trim() || createMut.isPending || updateMut.isPending}
@@ -252,7 +311,7 @@ export function SkillsManager() {
 
       {/* Skills List */}
       <div className="space-y-3">
-        {skills.map(s => (
+        {skills.map((s) => (
           <div key={s.id} className="card p-4">
             <div className="flex items-start justify-between">
               <div className="flex-1 min-w-0">
@@ -272,7 +331,9 @@ export function SkillsManager() {
                 {s.triggerPatterns.length > 0 && (
                   <div className="flex gap-1 mt-2 flex-wrap">
                     {s.triggerPatterns.map((p, i) => (
-                      <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded">{p}</span>
+                      <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded">
+                        {p}
+                      </span>
                     ))}
                   </div>
                 )}
@@ -307,11 +368,15 @@ export function SkillsManager() {
                 {/* Enable/Disable toggle */}
                 {s.status !== 'pending_approval' && (
                   <button
-                    onClick={() => s.enabled ? disableMut.mutate(s.id) : enableMut.mutate(s.id)}
+                    onClick={() => (s.enabled ? disableMut.mutate(s.id) : enableMut.mutate(s.id))}
                     className={`btn-ghost p-2 ${s.enabled ? 'text-success' : 'text-muted-foreground'}`}
                     aria-label={s.enabled ? `Disable skill ${s.name}` : `Enable skill ${s.name}`}
                   >
-                    {s.enabled ? <ToggleRight className="w-5 h-5" /> : <ToggleLeft className="w-5 h-5" />}
+                    {s.enabled ? (
+                      <ToggleRight className="w-5 h-5" />
+                    ) : (
+                      <ToggleLeft className="w-5 h-5" />
+                    )}
                   </button>
                 )}
 

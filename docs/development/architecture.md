@@ -22,7 +22,9 @@
 │                   FRIDAY Dashboard                      │
 │            (React + TanStack + ReactFlow)               │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐  │
-│  │ Overview │ │   Chat   │ │  Tasks   │ │  Settings │  │
+│  │ Overview │ │   Chat   │ │  Tasks   │ │  General  │ │
+ │  │          │ │          │ │          │ │  Security │ │
+ │  │          │ │          │ │          │ │API Keys   │ │
 │  └──────────┘ └────┬─────┘ └──────────┘ └───────────┘  │
 └─────────────────────┼─────────────────────────────────┘
                       │ WebSocket + REST

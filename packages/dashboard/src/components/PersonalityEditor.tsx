@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import {
   User,
   Plus,
@@ -38,6 +39,8 @@ import {
   fetchHeartbeatTasks,
   updateHeartbeatTask,
   fetchExternalSyncStatus,
+  fetchExternalBrainConfig,
+  updateExternalBrainConfig,
   triggerExternalSync,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
@@ -356,6 +359,29 @@ function BrainSection() {
     queryFn: fetchExternalSyncStatus,
   });
 
+  const { data: brainConfig, refetch: refetchBrainConfig } = useQuery({
+    queryKey: ['externalBrainConfig'],
+    queryFn: fetchExternalBrainConfig,
+  });
+
+  const [showConfigForm, setShowConfigForm] = useState(false);
+  const [configForm, setConfigForm] = useState({
+    enabled: true,
+    provider: 'filesystem',
+    path: '',
+    subdir: '',
+    syncIntervalMs: 0,
+  });
+
+  const configMut = useMutation({
+    mutationFn: (data: typeof configForm) => updateExternalBrainConfig(data),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['externalBrainConfig'] });
+      void queryClient.invalidateQueries({ queryKey: ['externalSync'] });
+      setShowConfigForm(false);
+    },
+  });
+
   const learnMut = useMutation({
     mutationFn: () => learnKnowledge(teachTopic, teachContent),
     onSuccess: () => {
@@ -544,39 +570,135 @@ function BrainSection() {
       {/* External Knowledge Base */}
       <div className="border-t pt-3 mt-3">
         <h4 className="text-sm font-medium mb-2">External Knowledge Base</h4>
-        {syncStatus?.configured ? (
+        {syncStatus?.configured || brainConfig?.configured ? (
           <div className="space-y-2">
             <div className="text-xs space-y-1">
               <p>
-                Provider: <strong>{syncStatus.provider}</strong>
+                Provider:{' '}
+                <strong>{syncStatus?.provider || brainConfig?.provider || 'Unknown'}</strong>
               </p>
-              {syncStatus.path && (
+              {(syncStatus as { path?: string })?.path && (
                 <p>
-                  Path: <code className="bg-muted px-1 rounded">{syncStatus.path}</code>
+                  Path:{' '}
+                  <code className="bg-muted px-1 rounded">
+                    {(syncStatus as { path?: string })?.path || brainConfig?.path}
+                  </code>
                 </p>
               )}
-              {syncStatus.lastSync && (
+              {(syncStatus as { lastSync?: { timestamp: number; entriesExported: number } | null })
+                ?.lastSync && (
                 <p>
-                  Last sync: {relativeTime(syncStatus.lastSync.timestamp)} (
-                  {syncStatus.lastSync.entriesExported} entries exported)
+                  Last sync:{' '}
+                  {relativeTime(
+                    (syncStatus as { lastSync?: { timestamp: number } }).lastSync?.timestamp ?? 0
+                  )}{' '}
+                  (
+                  {(syncStatus as { lastSync?: { entriesExported: number } }).lastSync
+                    ?.entriesExported ?? 0}{' '}
+                  entries exported)
                 </p>
               )}
             </div>
-            <button
-              onClick={() => syncMut.mutate()}
-              disabled={syncMut.isPending}
-              className="btn btn-primary text-xs px-2 py-1 flex items-center gap-1"
-            >
-              <RefreshCw className={`w-3 h-3 ${syncMut.isPending ? 'animate-spin' : ''}`} />
-              {syncMut.isPending ? 'Syncing...' : 'Sync Now'}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => syncMut.mutate()}
+                disabled={syncMut.isPending}
+                className="btn btn-primary text-xs px-2 py-1 flex items-center gap-1"
+              >
+                <RefreshCw className={`w-3 h-3 ${syncMut.isPending ? 'animate-spin' : ''}`} />
+                {syncMut.isPending ? 'Syncing...' : 'Sync Now'}
+              </button>
+              <button
+                onClick={() => setShowConfigForm(!showConfigForm)}
+                className="btn btn-ghost text-xs px-2 py-1"
+              >
+                Configure
+              </button>
+            </div>
+          </div>
+        ) : showConfigForm ? (
+          <div className="space-y-3">
+            <p className="text-xs text-muted-foreground">
+              Configure external brain sync to export memories and knowledge.
+            </p>
+            <div className="grid gap-2">
+              <label className="text-xs">
+                Provider
+                <select
+                  value={configForm.provider}
+                  onChange={(e) => setConfigForm({ ...configForm, provider: e.target.value })}
+                  className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
+                >
+                  <option value="filesystem">Filesystem</option>
+                  <option value="obsidian">Obsidian</option>
+                  <option value="git_repo">Git Repo</option>
+                </select>
+              </label>
+              <label className="text-xs">
+                Path
+                <input
+                  type="text"
+                  value={configForm.path}
+                  onChange={(e) => setConfigForm({ ...configForm, path: e.target.value })}
+                  placeholder="/path/to/vault or /path/to/notes"
+                  className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
+                />
+              </label>
+              <label className="text-xs">
+                Subdirectory (optional)
+                <input
+                  type="text"
+                  value={configForm.subdir}
+                  onChange={(e) => setConfigForm({ ...configForm, subdir: e.target.value })}
+                  placeholder="e.g., 30 - Resources/FRIDAY"
+                  className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
+                />
+              </label>
+              <label className="text-xs">
+                Sync Interval (minutes, 0 = manual only)
+                <input
+                  type="number"
+                  value={configForm.syncIntervalMs / 60000}
+                  onChange={(e) =>
+                    setConfigForm({
+                      ...configForm,
+                      syncIntervalMs: parseInt(e.target.value || '0', 10) * 60000,
+                    })
+                  }
+                  min={0}
+                  max={1440}
+                  className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
+                />
+              </label>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => configMut.mutate(configForm)}
+                disabled={!configForm.path || configMut.isPending}
+                className="btn btn-primary text-xs px-3 py-1"
+              >
+                {configMut.isPending ? 'Saving...' : 'Save Configuration'}
+              </button>
+              <button
+                onClick={() => setShowConfigForm(false)}
+                className="btn btn-ghost text-xs px-3 py-1"
+              >
+                Cancel
+              </button>
+            </div>
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">
-            External brain sync is not configured. You can configure it in{' '}
-            <code className="bg-muted px-1 rounded">friday.config.ts</code> with supported
-            providers: Obsidian, Git Repo, Filesystem.
-          </p>
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground">
+              External brain sync is not configured. Configure it to export memories and knowledge.
+            </p>
+            <button
+              onClick={() => setShowConfigForm(true)}
+              className="btn btn-primary text-xs px-3 py-1"
+            >
+              Configure External Sync
+            </button>
+          </div>
         )}
       </div>
     </CollapsibleSection>
@@ -713,20 +835,97 @@ function HeartbeatTasksSection() {
 function BodySection() {
   const capabilities = ['vision', 'limb_movement', 'auditory', 'haptic'] as const;
 
+  const [enabledCaps, setEnabledCaps] = useState<Record<string, boolean>>({
+    vision: false,
+    auditory: false,
+  });
+
+  const capabilityInfo: Record<string, { icon: string; description: string; available: boolean }> =
+    {
+      vision: {
+        icon: '👁️',
+        description: 'Screen capture and visual input',
+        available: true,
+      },
+      limb_movement: {
+        icon: '⌨️',
+        description: 'Keyboard/mouse control and system commands',
+        available: false,
+      },
+      auditory: {
+        icon: '👂',
+        description: 'Microphone input and audio output',
+        available: true,
+      },
+      haptic: {
+        icon: '🖐️',
+        description: 'Tactile feedback and notifications',
+        available: false,
+      },
+    };
+
+  const toggleCapability = (cap: string) => {
+    setEnabledCaps((prev) => ({ ...prev, [cap]: !prev[cap] }));
+  };
+
   return (
     <CollapsibleSection title="Body — Capabilities & Heart">
       <div>
         <h4 className="text-sm font-medium mb-2">Capabilities</h4>
-        <div className="space-y-1">
-          {capabilities.map((cap) => (
-            <div
-              key={cap}
-              className="text-sm bg-muted px-2 py-1 rounded flex items-center justify-between"
-            >
-              <span className="capitalize">{cap.replace('_', ' ')}</span>
-              <span className="text-xs text-muted-foreground">not configured</span>
-            </div>
-          ))}
+        <div className="space-y-2">
+          {capabilities.map((cap) => {
+            const info = capabilityInfo[cap];
+            const isEnabled = enabledCaps[cap] ?? false;
+            const isConfigurable = info.available && (cap === 'vision' || cap === 'auditory');
+
+            return (
+              <div
+                key={cap}
+                className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                  isEnabled
+                    ? 'bg-success/5 border-success/30'
+                    : info.available
+                      ? 'bg-muted/50 border-border'
+                      : 'bg-muted/30 border-border opacity-60'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span className="text-base">{info.icon}</span>
+                  <div>
+                    <span className="capitalize font-medium">{cap.replace('_', ' ')}</span>
+                    <p className="text-xs text-muted-foreground">{info.description}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!info.available ? (
+                    <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                      Not available
+                    </span>
+                  ) : isConfigurable ? (
+                    <label
+                      className="relative inline-flex items-center cursor-pointer"
+                      title={isEnabled ? 'Enabled' : 'Disabled'}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isEnabled}
+                        onChange={() => toggleCapability(cap)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                      <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
+                        {isEnabled ? 'Enabled' : 'Disabled'}
+                      </span>
+                    </label>
+                  ) : (
+                    <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                      Available
+                    </span>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
       <div>
@@ -741,6 +940,7 @@ function BodySection() {
 
 export function PersonalityEditor() {
   const queryClient = useQueryClient();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [editing, setEditing] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Personality | null>(null);
@@ -819,6 +1019,22 @@ export function PersonalityEditor() {
       setActivateError(err.message || 'Failed to activate personality');
     },
   });
+
+  useEffect(() => {
+    if (searchParams.get('create') === 'true') {
+      const pName = searchParams.get('name') || '';
+      const pDescription = searchParams.get('description') || '';
+      const pModel = searchParams.get('model') || '';
+      setForm((prev) => ({
+        ...prev,
+        name: pName,
+        description: pDescription,
+        defaultModel: pModel || null,
+      }));
+      setEditing('new');
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const startEdit = (p: Personality) => {
     setForm({

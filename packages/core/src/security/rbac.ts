@@ -1,6 +1,6 @@
 /**
  * Role-Based Access Control (RBAC) for SecureYeoman
- * 
+ *
  * Security considerations:
  * - Deny by default - all permissions must be explicitly granted
  * - Role hierarchy with inheritance
@@ -9,12 +9,9 @@
  */
 
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
-import {
-  RoleSchema,
-  type Permission,
-  type RoleDefinition,
-} from '@friday/shared';
+import { RoleSchema, type Permission, type RoleDefinition } from '@friday/shared';
 import type { RBACStorage } from './rbac-storage.js';
+import type { CaptureResource, CaptureAction, CaptureScope } from '../body/types.js';
 
 // Default role definitions
 const DEFAULT_ROLES: RoleDefinition[] = [
@@ -22,9 +19,7 @@ const DEFAULT_ROLES: RoleDefinition[] = [
     id: 'role_admin',
     name: 'Administrator',
     description: 'Full system access',
-    permissions: [
-      { resource: '*', actions: ['*'] },
-    ],
+    permissions: [{ resource: '*', actions: ['*'] }],
   },
   {
     id: 'role_operator',
@@ -36,6 +31,19 @@ const DEFAULT_ROLES: RoleDefinition[] = [
       { resource: 'metrics', actions: ['read'] },
       { resource: 'logs', actions: ['read'] },
       { resource: 'soul', actions: ['read', 'write'] },
+      // Voice permissions
+      { resource: 'voice', actions: ['listen', 'tts'] },
+      // Capture permissions with time limits (5 minutes max)
+      {
+        resource: 'capture.screen',
+        actions: ['capture', 'configure', 'review'],
+        conditions: [{ field: 'duration', operator: 'lte', value: 300 }],
+      },
+      {
+        resource: 'capture.camera',
+        actions: ['capture'],
+        conditions: [{ field: 'duration', operator: 'lte', value: 60 }],
+      },
     ],
   },
   {
@@ -48,6 +56,9 @@ const DEFAULT_ROLES: RoleDefinition[] = [
       { resource: 'metrics', actions: ['read'] },
       { resource: 'security_events', actions: ['read'] },
       { resource: 'tasks', actions: ['read'] },
+      // Review captured data for compliance
+      { resource: 'capture.screen', actions: ['review'] },
+      { resource: 'capture.camera', actions: ['review'] },
     ],
   },
   {
@@ -59,7 +70,77 @@ const DEFAULT_ROLES: RoleDefinition[] = [
       { resource: 'tasks', actions: ['read'] },
       { resource: 'connections', actions: ['read'] },
       { resource: 'soul', actions: ['read'] },
+      // No capture permissions - deny by default
     ],
+  },
+];
+
+/**
+ * Extended role definitions including capture-specific roles
+ * @see ADR 015: RBAC Permissions for Capture
+ */
+export const CAPTURE_ROLES: RoleDefinition[] = [
+  {
+    id: 'role_capture_operator',
+    name: 'Capture Operator',
+    description: 'Can perform screen capture with extended time limits',
+    permissions: [
+      {
+        resource: 'capture.screen',
+        actions: ['capture', 'stream', 'configure', 'review'],
+        conditions: [{ field: 'duration', operator: 'lte', value: 1800 }], // 30 min
+      },
+      {
+        resource: 'capture.camera',
+        actions: ['capture', 'stream'],
+        conditions: [{ field: 'duration', operator: 'lte', value: 300 }], // 5 min
+      },
+      {
+        resource: 'capture.clipboard',
+        actions: ['capture'],
+      },
+    ],
+    inheritFrom: ['role_operator'], // Inherits all operator permissions
+  },
+  {
+    id: 'role_security_auditor',
+    name: 'Security Auditor',
+    description: 'Can review captured data and security audit logs',
+    permissions: [
+      { resource: 'capture.screen', actions: ['review'] },
+      { resource: 'capture.camera', actions: ['review'] },
+      { resource: 'capture.clipboard', actions: ['review'] },
+      { resource: 'audit', actions: ['read', 'verify', 'export'] },
+      { resource: 'security_events', actions: ['read', 'export'] },
+      { resource: 'logs', actions: ['read', 'export'] },
+    ],
+  },
+];
+
+/**
+ * Voice permissions for hands-free interaction
+ * @see ADR 019: Voice Wake Architecture
+ */
+export const VOICE_PERMISSIONS = {
+  'voice:listen': { description: 'Use speech-to-text for voice input' },
+  'voice:wake': { description: 'Enable always-on voice wake listening' },
+  'voice:ptt': { description: 'Use push-to-talk voice capture' },
+  'voice:talk': { description: 'Use continuous talk mode' },
+  'voice:tts': { description: 'Use text-to-speech for responses' },
+} as const;
+
+export type VoicePermission = keyof typeof VOICE_PERMISSIONS;
+
+/**
+ * Extended role definitions for voice operators
+ */
+export const VOICE_ROLES: RoleDefinition[] = [
+  {
+    id: 'role_voice_operator',
+    name: 'Voice Operator',
+    description: 'Can use all voice features including wake and talk mode',
+    permissions: [{ resource: 'voice', actions: ['listen', 'tts', 'wake', 'ptt', 'talk'] }],
+    inheritFrom: ['role_operator'],
   },
 ];
 
@@ -113,6 +194,16 @@ export class RBAC {
       this.roles.set(role.id, role);
     }
 
+    // Load capture-specific roles
+    for (const role of CAPTURE_ROLES) {
+      this.roles.set(role.id, role);
+    }
+
+    // Load voice-specific roles
+    for (const role of VOICE_ROLES) {
+      this.roles.set(role.id, role);
+    }
+
     // If persistent storage is provided, load any previously saved custom
     // roles and user-role assignments into memory so they're immediately
     // available for permission checks.
@@ -134,7 +225,7 @@ export class RBAC {
       }
     }
   }
-  
+
   private getLogger(): SecureLogger {
     if (!this.logger) {
       try {
@@ -145,7 +236,7 @@ export class RBAC {
     }
     return this.logger;
   }
-  
+
   /**
    * Add or update a role definition.
    *
@@ -188,51 +279,45 @@ export class RBAC {
     }
     return removed;
   }
-  
+
   /**
    * Get a role definition by ID or name
    */
   getRole(roleIdOrName: string): RoleDefinition | undefined {
     // Try by ID first
     let role = this.roles.get(roleIdOrName);
-    
+
     if (!role) {
       // Try by name (convert to role_name format)
       const roleId = `role_${roleIdOrName.toLowerCase()}`;
       role = this.roles.get(roleId);
     }
-    
+
     return role;
   }
-  
+
   /**
    * Check if a role has permission for an action on a resource
    */
-  checkPermission(
-    roleIdOrName: string,
-    check: PermissionCheck,
-    userId?: string
-  ): PermissionResult {
+  checkPermission(roleIdOrName: string, check: PermissionCheck, userId?: string): PermissionResult {
     // Validate role name
     const roleParseResult = RoleSchema.safeParse(roleIdOrName.toLowerCase());
-    const normalizedRole = roleParseResult.success 
-      ? roleIdOrName.toLowerCase() 
-      : roleIdOrName;
-    
+    const normalizedRole = roleParseResult.success ? roleIdOrName.toLowerCase() : roleIdOrName;
+
     // Check cache first
     const cacheKey = `${normalizedRole}:${check.resource}:${check.action}`;
     const cached = this.permissionCache.get(cacheKey);
-    
+
     if (cached !== undefined) {
       return {
         granted: cached,
         reason: cached ? 'Cached grant' : 'Cached denial',
       };
     }
-    
+
     // Get role definition
     const role = this.getRole(normalizedRole);
-    
+
     if (!role) {
       this.logPermissionCheck(userId, check, false, 'Role not found');
       return {
@@ -240,19 +325,19 @@ export class RBAC {
         reason: `Role not found: ${normalizedRole}`,
       };
     }
-    
+
     // Check permissions
     const result = this.checkRolePermissions(role, check);
-    
+
     // Cache the result
     this.cacheResult(cacheKey, result.granted);
-    
+
     // Log the check
     this.logPermissionCheck(userId, check, result.granted, result.reason);
-    
+
     return result;
   }
-  
+
   /**
    * Check permissions for a role (including inherited)
    */
@@ -269,7 +354,7 @@ export class RBAC {
       };
     }
     visited.add(role.id);
-    
+
     // Check direct permissions
     for (const permission of role.permissions) {
       if (this.matchesPermission(permission, check)) {
@@ -280,7 +365,7 @@ export class RBAC {
         };
       }
     }
-    
+
     // Check inherited roles
     if (role.inheritFrom) {
       for (const inheritedRoleId of role.inheritFrom) {
@@ -296,38 +381,37 @@ export class RBAC {
         }
       }
     }
-    
+
     // Default deny
     return {
       granted: false,
       reason: 'No matching permission found',
     };
   }
-  
+
   /**
    * Check if a permission matches a check
    */
   private matchesPermission(permission: Permission, check: PermissionCheck): boolean {
     // Check resource match (supports wildcards)
-    const resourceMatch = 
+    const resourceMatch =
       permission.resource === '*' ||
       permission.resource === check.resource ||
-      (permission.resource.endsWith('*') && 
-       check.resource.startsWith(permission.resource.slice(0, -1)));
-    
+      (permission.resource.endsWith('*') &&
+        check.resource.startsWith(permission.resource.slice(0, -1)));
+
     if (!resourceMatch) {
       return false;
     }
-    
+
     // Check action match (supports wildcards)
     const actionMatch =
-      permission.actions.includes('*') ||
-      permission.actions.includes(check.action);
-    
+      permission.actions.includes('*') || permission.actions.includes(check.action);
+
     if (!actionMatch) {
       return false;
     }
-    
+
     // Check conditions if present
     if (permission.conditions && check.context) {
       for (const condition of permission.conditions) {
@@ -341,10 +425,10 @@ export class RBAC {
         }
       }
     }
-    
+
     return true;
   }
-  
+
   /**
    * Evaluate a permission condition
    */
@@ -362,26 +446,34 @@ export class RBAC {
       case 'nin':
         return Array.isArray(condition.value) && !condition.value.includes(actualValue);
       case 'gt':
-        return typeof actualValue === 'number' && 
-               typeof condition.value === 'number' && 
-               actualValue > condition.value;
+        return (
+          typeof actualValue === 'number' &&
+          typeof condition.value === 'number' &&
+          actualValue > condition.value
+        );
       case 'gte':
-        return typeof actualValue === 'number' && 
-               typeof condition.value === 'number' && 
-               actualValue >= condition.value;
+        return (
+          typeof actualValue === 'number' &&
+          typeof condition.value === 'number' &&
+          actualValue >= condition.value
+        );
       case 'lt':
-        return typeof actualValue === 'number' && 
-               typeof condition.value === 'number' && 
-               actualValue < condition.value;
+        return (
+          typeof actualValue === 'number' &&
+          typeof condition.value === 'number' &&
+          actualValue < condition.value
+        );
       case 'lte':
-        return typeof actualValue === 'number' && 
-               typeof condition.value === 'number' && 
-               actualValue <= condition.value;
+        return (
+          typeof actualValue === 'number' &&
+          typeof condition.value === 'number' &&
+          actualValue <= condition.value
+        );
       default:
         return false;
     }
   }
-  
+
   /**
    * Cache a permission result
    */
@@ -393,17 +485,17 @@ export class RBAC {
         this.permissionCache.delete(firstKey);
       }
     }
-    
+
     this.permissionCache.set(key, granted);
   }
-  
+
   /**
    * Clear the permission cache
    */
   clearCache(): void {
     this.permissionCache.clear();
   }
-  
+
   /**
    * Log a permission check for audit
    */
@@ -422,7 +514,7 @@ export class RBAC {
       reason,
     });
   }
-  
+
   /**
    * Get all defined roles
    */
@@ -433,19 +525,11 @@ export class RBAC {
   /**
    * Require permission (throws if denied)
    */
-  requirePermission(
-    roleIdOrName: string,
-    check: PermissionCheck,
-    userId?: string
-  ): void {
+  requirePermission(roleIdOrName: string, check: PermissionCheck, userId?: string): void {
     const result = this.checkPermission(roleIdOrName, check, userId);
 
     if (!result.granted) {
-      throw new PermissionDeniedError(
-        check.resource,
-        check.action,
-        result.reason
-      );
+      throw new PermissionDeniedError(check.resource, check.action, result.reason);
     }
   }
 
@@ -570,7 +654,7 @@ export class PermissionDeniedError extends Error {
   public readonly resource: string;
   public readonly action: string;
   public readonly reason?: string;
-  
+
   constructor(resource: string, action: string, reason?: string) {
     super(`Permission denied: ${action} on ${resource}${reason ? ` (${reason})` : ''}`);
     this.name = 'PermissionDeniedError';

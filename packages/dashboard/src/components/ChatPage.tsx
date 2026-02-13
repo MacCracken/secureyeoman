@@ -4,8 +4,10 @@ import { Send, Loader2, Bot, User, ChevronDown } from 'lucide-react';
 import { fetchPersonalities, switchModel, fetchModelInfo } from '../api/client';
 import { ModelWidget } from './ModelWidget';
 import { VoiceToggle } from './VoiceToggle';
+import { VoiceOverlay } from './VoiceOverlay';
 import { useChat } from '../hooks/useChat';
 import { useVoice } from '../hooks/useVoice';
+import { usePushToTalk } from '../hooks/usePushToTalk';
 import type { Personality } from '../types';
 
 export function ChatPage() {
@@ -39,6 +41,16 @@ export function ChatPage() {
     personalityId: effectivePersonalityId,
   });
   const voice = useVoice();
+
+  const ptt = usePushToTalk(
+    { hotkey: 'ctrl+shift+v', maxDurationMs: 60000, silenceTimeoutMs: 2000 },
+    (transcript) => {
+      if (transcript) {
+        setInput(input + transcript);
+      }
+    }
+  );
+
   const queryClient = useQueryClient();
 
   // Switch to personality's default model when personality changes
@@ -281,6 +293,13 @@ export function ChatPage() {
             )}
           </button>
         </div>
+        <VoiceOverlay
+          isActive={ptt.isActive}
+          audioLevel={ptt.audioLevel}
+          duration={ptt.duration}
+          transcript={ptt.transcript}
+          error={ptt.error}
+        />
       </div>
     </div>
   );

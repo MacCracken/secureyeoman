@@ -1,6 +1,21 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Wifi, WifiOff, MessageCircle, Mail, Terminal, Globe, Radio, CheckCircle, XCircle, AlertCircle, GitBranch } from 'lucide-react';
+import {
+  Wifi,
+  WifiOff,
+  MessageCircle,
+  MessageSquare,
+  Mail,
+  Terminal,
+  Globe,
+  Radio,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  GitBranch,
+  HelpCircle,
+  ExternalLink,
+} from 'lucide-react';
 import {
   fetchIntegrations,
   fetchAvailablePlatforms,
@@ -16,6 +31,8 @@ interface PlatformMeta {
   description: string;
   icon: React.ReactNode;
   fields: FormFieldDef[];
+  helpUrl?: string;
+  setupSteps?: string[];
 }
 
 interface FormFieldDef {
@@ -23,26 +40,49 @@ interface FormFieldDef {
   label: string;
   type: 'text' | 'password';
   placeholder: string;
+  helpText?: string;
 }
 
 const BASE_FIELDS: FormFieldDef[] = [
   { key: 'displayName', label: 'Display Name', type: 'text', placeholder: 'Display Name' },
 ];
 
-const TOKEN_FIELD: FormFieldDef = { key: 'botToken', label: 'Bot Token', type: 'password', placeholder: 'Bot Token' };
+const TOKEN_FIELD: FormFieldDef = {
+  key: 'botToken',
+  label: 'Bot Token',
+  type: 'password',
+  placeholder: 'Bot Token',
+};
 
 const PLATFORM_META: Record<string, PlatformMeta> = {
   telegram: {
     name: 'Telegram',
     description: 'Connect to Telegram Bot API for messaging',
     icon: <MessageCircle className="w-6 h-6" />,
-    fields: [...BASE_FIELDS, TOKEN_FIELD],
+    fields: [...BASE_FIELDS, { ...TOKEN_FIELD, helpText: 'Get from @BotFather on Telegram' }],
+    helpUrl: '/docs/guides/integrations#telegram',
+    setupSteps: [
+      'Open Telegram and search for @BotFather',
+      'Send /newbot to create a new bot',
+      'Copy the bot token provided',
+      'Paste the token above and connect',
+    ],
   },
   discord: {
     name: 'Discord',
     description: 'Integrate with Discord servers and channels',
     icon: <Radio className="w-6 h-6" />,
-    fields: [...BASE_FIELDS, TOKEN_FIELD],
+    fields: [
+      ...BASE_FIELDS,
+      { ...TOKEN_FIELD, helpText: 'Bot token from Discord Developer Portal' },
+    ],
+    helpUrl: '/docs/guides/integrations#discord',
+    setupSteps: [
+      'Go to Discord Developer Portal',
+      'Create a new application and add a bot',
+      'Enable Message Content Intent',
+      'Copy the bot token and use it above',
+    ],
   },
   slack: {
     name: 'Slack',
@@ -50,8 +90,21 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
     icon: <Mail className="w-6 h-6" />,
     fields: [
       ...BASE_FIELDS,
-      TOKEN_FIELD,
-      { key: 'appToken', label: 'App Token', type: 'password', placeholder: 'App Token' },
+      { ...TOKEN_FIELD, helpText: 'Bot token (xoxb-...) from Slack App' },
+      {
+        key: 'appToken',
+        label: 'App Token',
+        type: 'password',
+        placeholder: 'xapp-...',
+        helpText: 'App-level token for Socket Mode',
+      },
+    ],
+    helpUrl: '/docs/guides/integrations#slack',
+    setupSteps: [
+      'Create app at api.slack.com',
+      'Enable Socket Mode',
+      'Add bot token scopes: chat:write, app_mentions:read',
+      'Install to workspace and copy tokens',
     ],
   },
   github: {
@@ -60,8 +113,27 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
     icon: <GitBranch className="w-6 h-6" />,
     fields: [
       ...BASE_FIELDS,
-      { key: 'personalAccessToken', label: 'Personal Access Token', type: 'password' as const, placeholder: 'ghp_...' },
-      { key: 'webhookSecret', label: 'Webhook Secret', type: 'password' as const, placeholder: 'Webhook Secret' },
+      {
+        key: 'personalAccessToken',
+        label: 'Personal Access Token',
+        type: 'password' as const,
+        placeholder: 'ghp_...',
+        helpText: 'Token with repo scope',
+      },
+      {
+        key: 'webhookSecret',
+        label: 'Webhook Secret',
+        type: 'password' as const,
+        placeholder: 'Webhook Secret',
+        helpText: 'Secret to verify webhook authenticity',
+      },
+    ],
+    helpUrl: '/docs/guides/integrations#github',
+    setupSteps: [
+      'Generate a Personal Access Token at github.com/settings/tokens',
+      'Create a webhook in repo Settings > Webhooks',
+      'Set URL to your /api/v1/webhooks/github endpoint',
+      'Select events: push, pull_request, issues',
     ],
   },
   cli: {
@@ -69,6 +141,11 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
     description: 'Local command-line interface (built-in)',
     icon: <Terminal className="w-6 h-6" />,
     fields: BASE_FIELDS,
+    helpUrl: '/docs/guides/getting-started',
+    setupSteps: [
+      'CLI is built-in and always available',
+      'Use secureyeoman CLI or REST API to interact',
+    ],
   },
   webhook: {
     name: 'Webhook',
@@ -76,17 +153,75 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
     icon: <Globe className="w-6 h-6" />,
     fields: [
       ...BASE_FIELDS,
-      { key: 'webhookUrl', label: 'Webhook URL', type: 'text', placeholder: 'https://...' },
-      { key: 'secret', label: 'Secret', type: 'password', placeholder: 'Webhook Secret' },
+      {
+        key: 'webhookUrl',
+        label: 'Webhook URL',
+        type: 'text',
+        placeholder: 'https://...',
+        helpText: 'URL that will receive POST requests',
+      },
+      {
+        key: 'secret',
+        label: 'Secret',
+        type: 'password',
+        placeholder: 'Webhook Secret',
+        helpText: 'Used to sign/verify requests',
+      },
+    ],
+    helpUrl: '/docs/guides/integrations#webhook',
+    setupSteps: [
+      'Configure your external service to send webhooks',
+      'Set the URL to your /api/v1/webhooks/custom endpoint',
+      'Optionally set a secret for request verification',
+      'Test the connection by triggering an event',
+    ],
+  },
+  googlechat: {
+    name: 'Google Chat',
+    description: 'Connect to Google Chat spaces via Bot API',
+    icon: <MessageSquare className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      { ...TOKEN_FIELD, helpText: 'Service account JSON key or Bot token' },
+      {
+        key: 'spaceId',
+        label: 'Space ID',
+        type: 'text',
+        placeholder: 'Spaces/...',
+        helpText: 'The Google Chat space to connect to',
+      },
+    ],
+    helpUrl: '/docs/guides/integrations#google-chat',
+    setupSteps: [
+      'Go to Google Cloud Console',
+      'Create a project and enable Google Chat API',
+      'Create a Service Account and download JSON key',
+      'Configure Chat API: add bot, set permissions',
+      'Copy the Space ID from the Chat space URL',
     ],
   },
 };
 
-const STATUS_CONFIG: Record<IntegrationStatus, { color: string; icon: React.ReactNode; label: string }> = {
-  connected: { color: 'text-green-400', icon: <CheckCircle className="w-3.5 h-3.5" />, label: 'Connected' },
-  disconnected: { color: 'text-muted', icon: <XCircle className="w-3.5 h-3.5" />, label: 'Disconnected' },
+const STATUS_CONFIG: Record<
+  IntegrationStatus,
+  { color: string; icon: React.ReactNode; label: string }
+> = {
+  connected: {
+    color: 'text-green-400',
+    icon: <CheckCircle className="w-3.5 h-3.5" />,
+    label: 'Connected',
+  },
+  disconnected: {
+    color: 'text-muted',
+    icon: <XCircle className="w-3.5 h-3.5" />,
+    label: 'Disconnected',
+  },
   error: { color: 'text-red-400', icon: <AlertCircle className="w-3.5 h-3.5" />, label: 'Error' },
-  configuring: { color: 'text-yellow-400', icon: <AlertCircle className="w-3.5 h-3.5" />, label: 'Configuring' },
+  configuring: {
+    color: 'text-yellow-400',
+    icon: <AlertCircle className="w-3.5 h-3.5" />,
+    label: 'Configuring',
+  },
 };
 
 function formatRelativeTime(dateString: string): string {
@@ -124,9 +259,7 @@ export function ConnectionManager() {
   const hasRegisteredPlatforms = availablePlatforms.size > 0;
 
   const activePlatformIds = new Set(integrations.map((i) => i.platform));
-  const unregisteredPlatforms = Object.keys(PLATFORM_META).filter(
-    (p) => !activePlatformIds.has(p)
-  );
+  const unregisteredPlatforms = Object.keys(PLATFORM_META).filter((p) => !activePlatformIds.has(p));
 
   const createMut = useMutation({
     mutationFn: async () => {
@@ -190,8 +323,8 @@ export function ConnectionManager() {
             <div>
               <p className="font-medium text-sm">No platform adapters registered</p>
               <p className="text-xs text-muted mt-1">
-                Platform adapters (Telegram, Discord, etc.) need to be installed and registered.
-                See the integration documentation for setup instructions.
+                Platform adapters (Telegram, Discord, etc.) need to be installed and registered. See
+                the integration documentation for setup instructions.
               </p>
             </div>
           </div>
@@ -219,25 +352,63 @@ export function ConnectionManager() {
             const isRegistered = availablePlatforms.has(platformId);
 
             if (connectingPlatform === platformId) {
+              const meta = PLATFORM_META[platformId];
+              const showHelp = meta.setupSteps || meta.helpUrl;
               return (
                 <div key={platformId} className="card p-4 border-primary border-2">
-                  <h3 className="font-medium text-sm mb-3">Connect {meta.name}</h3>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-medium text-sm">Connect {meta.name}</h3>
+                    {showHelp && (
+                      <a
+                        href={meta.helpUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-primary hover:underline flex items-center gap-1"
+                      >
+                        <ExternalLink className="w-3 h-3" />
+                        Docs
+                      </a>
+                    )}
+                  </div>
+                  {meta.setupSteps && (
+                    <div className="mb-4 p-3 bg-surface rounded-md">
+                      <p className="text-xs font-medium text-muted mb-2">Setup Steps</p>
+                      <ol className="text-xs space-y-1">
+                        {meta.setupSteps.map((step, idx) => (
+                          <li key={idx} className="flex gap-2">
+                            <span className="text-muted">{idx + 1}.</span>
+                            <span>{step}</span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  )}
                   <form onSubmit={handleConnect} className="space-y-3">
                     {meta.fields.map((field) => (
-                      <input
-                        key={field.key}
-                        type={field.type}
-                        placeholder={field.placeholder}
-                        value={formData[field.key] || ''}
-                        onChange={(e) =>
-                          { setFormData((prev) => ({ ...prev, [field.key]: e.target.value })); }
-                        }
-                        className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      />
+                      <div key={field.key}>
+                        <label className="text-xs text-muted block mb-1">{field.label}</label>
+                        <input
+                          type={field.type}
+                          placeholder={field.placeholder}
+                          value={formData[field.key] || ''}
+                          onChange={(e) => {
+                            setFormData((prev) => ({ ...prev, [field.key]: e.target.value }));
+                          }}
+                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        />
+                        {field.helpText && (
+                          <p className="text-xs text-muted mt-1 flex items-center gap-1">
+                            <HelpCircle className="w-3 h-3" />
+                            {field.helpText}
+                          </p>
+                        )}
+                      </div>
                     ))}
                     {createMut.isError && (
                       <p className="text-xs text-red-400">
-                        {createMut.error instanceof Error ? createMut.error.message : 'Connection failed'}
+                        {createMut.error instanceof Error
+                          ? createMut.error.message
+                          : 'Connection failed'}
                       </p>
                     )}
                     <div className="flex gap-2">
@@ -250,7 +421,9 @@ export function ConnectionManager() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => { setConnectingPlatform(null); }}
+                        onClick={() => {
+                          setConnectingPlatform(null);
+                        }}
                         className="btn btn-ghost text-xs px-3 py-1.5"
                       >
                         Cancel
@@ -267,22 +440,24 @@ export function ConnectionManager() {
                 className={`card p-4 ${isRegistered ? '' : 'opacity-60 cursor-not-allowed'}`}
               >
                 <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-surface text-muted">
-                    {meta.icon}
-                  </div>
+                  <div className="p-2 rounded-lg bg-surface text-muted">{meta.icon}</div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h3 className="font-medium text-sm">{meta.name}</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${
-                        isRegistered ? 'bg-green-500/10 text-green-400' : 'bg-surface text-muted'
-                      }`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${
+                          isRegistered ? 'bg-green-500/10 text-green-400' : 'bg-surface text-muted'
+                        }`}
+                      >
                         {isRegistered ? 'Available' : 'Coming Soon'}
                       </span>
                     </div>
                     <p className="text-xs text-muted mt-1">{meta.description}</p>
                     {isRegistered && (
                       <button
-                        onClick={() => { handleStartConnect(platformId); }}
+                        onClick={() => {
+                          handleStartConnect(platformId);
+                        }}
                         className="btn btn-primary text-xs px-3 py-1.5 mt-2"
                       >
                         Connect
@@ -311,17 +486,23 @@ function IntegrationCard({ integration }: { integration: IntegrationInfo }) {
 
   const startMut = useMutation({
     mutationFn: () => startIntegration(integration.id),
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['integrations'] }); },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['integrations'] });
+    },
   });
 
   const stopMut = useMutation({
     mutationFn: () => stopIntegration(integration.id),
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['integrations'] }); },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['integrations'] });
+    },
   });
 
   const deleteMut = useMutation({
     mutationFn: () => deleteIntegration(integration.id),
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['integrations'] }); },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['integrations'] });
+    },
   });
 
   const isConnected = integration.status === 'connected';
@@ -330,9 +511,7 @@ function IntegrationCard({ integration }: { integration: IntegrationInfo }) {
   return (
     <div className="card p-4">
       <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-surface text-muted">
-          {meta.icon}
-        </div>
+        <div className="p-2 rounded-lg bg-surface text-muted">{meta.icon}</div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
             <h3 className="font-medium text-sm">{integration.displayName}</h3>
@@ -355,7 +534,9 @@ function IntegrationCard({ integration }: { integration: IntegrationInfo }) {
           )}
           {integration.status === 'error' && (
             <button
-              onClick={() => { startMut.mutate(); }}
+              onClick={() => {
+                startMut.mutate();
+              }}
               disabled={isLoading}
               className="text-xs text-primary mt-1"
             >
@@ -367,7 +548,9 @@ function IntegrationCard({ integration }: { integration: IntegrationInfo }) {
       <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border">
         {isConnected ? (
           <button
-            onClick={() => { stopMut.mutate(); }}
+            onClick={() => {
+              stopMut.mutate();
+            }}
             disabled={isLoading}
             className="text-xs text-muted hover:text-destructive transition-colors"
           >
@@ -375,7 +558,9 @@ function IntegrationCard({ integration }: { integration: IntegrationInfo }) {
           </button>
         ) : (
           <button
-            onClick={() => { startMut.mutate(); }}
+            onClick={() => {
+              startMut.mutate();
+            }}
             disabled={isLoading}
             className="text-xs text-muted hover:text-primary transition-colors"
           >

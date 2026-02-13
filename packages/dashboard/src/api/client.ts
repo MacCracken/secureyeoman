@@ -327,6 +327,19 @@ export async function fetchTask(id: string): Promise<Task | null> {
   }
 }
 
+export async function createTask(data: {
+  name: string;
+  type?: string;
+  description?: string;
+  input?: unknown;
+  timeoutMs?: number;
+}): Promise<Task> {
+  return await request<Task>('/tasks', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
 // ── Security ──────────────────────────────────────────────────────────
 
 export async function fetchSecurityEvents(params?: {
@@ -825,6 +838,35 @@ export async function fetchExternalSyncStatus(): Promise<{
 
 export async function triggerExternalSync(): Promise<{ result: Record<string, unknown> }> {
   return request('/brain/sync', { method: 'POST' });
+}
+
+export interface ExternalBrainConfig {
+  configured: boolean;
+  enabled?: boolean;
+  provider?: string;
+  path?: string;
+}
+
+export async function fetchExternalBrainConfig(): Promise<ExternalBrainConfig> {
+  try {
+    const result = await request<ExternalBrainConfig>('/brain/sync/config');
+    return result;
+  } catch {
+    return { configured: false };
+  }
+}
+
+export async function updateExternalBrainConfig(config: {
+  enabled?: boolean;
+  provider?: string;
+  path?: string;
+  subdir?: string;
+  syncIntervalMs?: number;
+}): Promise<{ success: boolean }> {
+  return request('/brain/sync/config', {
+    method: 'PUT',
+    body: JSON.stringify(config),
+  });
 }
 
 // ─── MCP Servers ──────────────────────────────────────────────

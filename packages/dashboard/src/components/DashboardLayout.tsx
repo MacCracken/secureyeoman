@@ -52,6 +52,9 @@ const SettingsPage = lazy(() =>
 const SecuritySettings = lazy(() =>
   import('./SecuritySettings').then((m) => ({ default: m.SecuritySettings }))
 );
+const ApiKeysSettings = lazy(() =>
+  import('./ApiKeysSettings').then((m) => ({ default: m.ApiKeysSettings }))
+);
 const ChatPage = lazy(() => import('./ChatPage').then((m) => ({ default: m.ChatPage })));
 const ReportsPage = lazy(() => import('./ReportsPage').then((m) => ({ default: m.ReportsPage })));
 const ExperimentsPage = lazy(() =>
@@ -213,22 +216,13 @@ export function DashboardLayout() {
                   <Route path="/experiments" element={<ExperimentsPage />} />
                   <Route path="/marketplace" element={<MarketplacePage />} />
                   <Route path="/security-settings" element={<SecuritySettings />} />
+                  <Route path="/api-keys" element={<ApiKeysSettings />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
               </Suspense>
             </ErrorBoundary>
           </main>
-
-          {/* Footer */}
-          <footer className="border-t bg-card">
-            <div className="px-3 sm:px-4 py-3 sm:py-4">
-              <div className="flex items-center justify-between text-xs sm:text-sm text-muted-foreground">
-                <span>SecureYeoman v1.3.2</span>
-                <span className="hidden sm:inline">Local Network Only</span>
-              </div>
-            </div>
-          </footer>
         </div>
       </div>
     </div>

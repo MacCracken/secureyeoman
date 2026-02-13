@@ -104,9 +104,24 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 - Session timeout warning, ErrorBoundary, ConfirmDialog
 - Responsive mobile layout (hamburger nav, stacked cards, adaptive header/footer spacing)
 - Theme toggle (dark/light with localStorage persistence)
-- Settings page (agent identity, API key management, soul config overview)
+- Settings page restructured with expandable sidebar (General, Security, API Keys)
+- API Keys management moved to dedicated page with create/revoke functionality
+- Agent identity moved to Personality section (ADR 024)
 - DashboardLayout, StatusBar (inline reconnecting indicator), collapsible sidebar navigation (v1.2)
 - 57 component tests across 5 files (Vitest + Testing Library + jsdom)
+
+---
+
+## v1.3.3 (2026-02-13)
+
+- **Code Editor**: Run button executes code directly in terminal with language-specific runtimes (python3, node, npx ts-node, bash, ruby, go run)
+- **Personality Editor**: Body section now shows Vision/Auditory capability toggles when available
+- **Task History**: New Task button to create and execute tasks directly from the dashboard
+- Push-to-talk voice mode with keyboard shortcuts (Ctrl+Shift+V)
+- Voice overlay component for visual feedback during recording
+- Screen capture sandbox architecture (darwin, linux, windows)
+- Permission orchestrator with platform-specific implementations
+- Skill executor and scheduler with cron/interval support
 
 ---
 

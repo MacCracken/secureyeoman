@@ -1,6 +1,6 @@
 /**
  * Configuration Loader for SecureYeoman
- * 
+ *
  * Security considerations:
  * - Config files are validated against strict schemas
  * - Environment variables are used for secrets (never stored in config)
@@ -13,19 +13,9 @@ import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { z } from 'zod';
-import {
-  ConfigSchema,
-  PartialConfigSchema,
-  type Config,
-  type PartialConfig,
-} from '@friday/shared';
+import { ConfigSchema, PartialConfigSchema, type Config, type PartialConfig } from '@friday/shared';
 import { KeyringManager } from '../security/keyring/manager.js';
-import {
-  encrypt,
-  decrypt,
-  serializeEncrypted,
-  deserializeEncrypted,
-} from '../security/secrets.js';
+import { encrypt, decrypt, serializeEncrypted, deserializeEncrypted } from '../security/secrets.js';
 
 // Default config file locations (checked in order)
 const DEFAULT_CONFIG_PATHS = [
@@ -120,7 +110,9 @@ function loadConfigFile(path: string, masterKey?: string): PartialConfig | null 
   // Handle encrypted config files
   if (isEncryptedConfig(expandedPath)) {
     if (!masterKey) {
-      throw new Error(`Encrypted config file found at ${expandedPath} but no master key provided (set SECUREYEOMAN_CONFIG_KEY)`);
+      throw new Error(
+        `Encrypted config file found at ${expandedPath} but no master key provided (set SECUREYEOMAN_CONFIG_KEY)`
+      );
     }
     return loadEncryptedConfigFile(expandedPath, masterKey);
   }
@@ -141,7 +133,9 @@ function loadConfigFile(path: string, masterKey?: string): PartialConfig | null 
     if (error instanceof z.ZodError) {
       throw error;
     }
-    throw new Error(`Failed to load config from ${expandedPath}: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    throw new Error(
+      `Failed to load config from ${expandedPath}: ${error instanceof Error ? error.message : 'Unknown error'}`
+    );
   }
 }
 
@@ -151,7 +145,7 @@ function loadConfigFile(path: string, masterKey?: string): PartialConfig | null 
  */
 function loadEnvConfig(): PartialConfig {
   const config: PartialConfig = {};
-  
+
   // Build core settings
   const core: Record<string, unknown> = {};
   if (process.env.SECUREYEOMAN_ENV) {
@@ -166,7 +160,7 @@ function loadEnvConfig(): PartialConfig {
   if (Object.keys(core).length > 0) {
     config.core = core as PartialConfig['core'];
   }
-  
+
   // Build gateway settings
   const gateway: Record<string, unknown> = {};
   if (process.env.SECUREYEOMAN_HOST) {
@@ -181,7 +175,7 @@ function loadEnvConfig(): PartialConfig {
   if (Object.keys(gateway).length > 0) {
     config.gateway = gateway as PartialConfig['gateway'];
   }
-  
+
   // Build model settings
   const model: Record<string, unknown> = {};
   if (process.env.SECUREYEOMAN_MODEL) {
@@ -196,7 +190,35 @@ function loadEnvConfig(): PartialConfig {
   if (Object.keys(model).length > 0) {
     config.model = model as PartialConfig['model'];
   }
-  
+
+  // Build external brain settings
+  const externalBrain: Record<string, unknown> = {};
+  if (process.env.SECUREYEOMAN_EXTERNAL_BRAIN_ENABLED === 'true') {
+    externalBrain.enabled = true;
+  }
+  if (process.env.SECUREYEOMAN_EXTERNAL_BRAIN_PROVIDER) {
+    const validProviders = ['obsidian', 'git_repo', 'filesystem'];
+    const provider = process.env.SECUREYEOMAN_EXTERNAL_BRAIN_PROVIDER;
+    if (validProviders.includes(provider)) {
+      externalBrain.provider = provider;
+    }
+  }
+  if (process.env.SECUREYEOMAN_EXTERNAL_BRAIN_PATH) {
+    externalBrain.path = process.env.SECUREYEOMAN_EXTERNAL_BRAIN_PATH;
+  }
+  if (process.env.SECUREYEOMAN_EXTERNAL_BRAIN_SUBDIR) {
+    externalBrain.subdir = process.env.SECUREYEOMAN_EXTERNAL_BRAIN_SUBDIR;
+  }
+  if (process.env.SECUREYEOMAN_EXTERNAL_BRAIN_SYNC_INTERVAL_MS) {
+    const interval = parseInt(process.env.SECUREYEOMAN_EXTERNAL_BRAIN_SYNC_INTERVAL_MS, 10);
+    if (!isNaN(interval)) {
+      externalBrain.syncIntervalMs = interval;
+    }
+  }
+  if (Object.keys(externalBrain).length > 0) {
+    config.externalBrain = externalBrain as PartialConfig['externalBrain'];
+  }
+
   return config;
 }
 
@@ -206,11 +228,16 @@ function loadEnvConfig(): PartialConfig {
  */
 function mergeConfigs(base: PartialConfig, override: PartialConfig): PartialConfig {
   const result: PartialConfig = { ...base };
-  
+
   for (const [key, value] of Object.entries(override)) {
     const baseValue = result[key as keyof PartialConfig];
-    
-    if (value !== undefined && typeof value === 'object' && !Array.isArray(value) && value !== null) {
+
+    if (
+      value !== undefined &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      value !== null
+    ) {
       if (typeof baseValue === 'object' && !Array.isArray(baseValue) && baseValue !== null) {
         // Recursively merge objects
         (result as Record<string, unknown>)[key] = mergeConfigs(
@@ -224,7 +251,7 @@ function mergeConfigs(base: PartialConfig, override: PartialConfig): PartialConf
       (result as Record<string, unknown>)[key] = value;
     }
   }
-  
+
   return result;
 }
 
@@ -241,7 +268,7 @@ export interface LoadConfigOptions {
 
 /**
  * Load and validate configuration
- * 
+ *
  * Loading order (later overrides earlier):
  * 1. Default values from schema
  * 2. Config file (explicit path or auto-discovered)
@@ -276,22 +303,22 @@ export function loadConfig(options: LoadConfigOptions = {}): Config {
       }
     }
   }
-  
+
   // Load env config
   const envConfig = options.skipEnv ? {} : loadEnvConfig();
-  
+
   // Merge configs
   let mergedConfig = mergeConfigs(fileConfig, envConfig);
-  
+
   if (options.overrides) {
     mergedConfig = mergeConfigs(mergedConfig, options.overrides);
   }
-  
+
   // Validate and apply defaults
   const result = ConfigSchema.safeParse(mergedConfig);
 
   if (!result.success) {
-    const errors = result.error.errors.map(e => `  ${e.path.join('.')}: ${e.message}`).join('\n');
+    const errors = result.error.errors.map((e) => `  ${e.path.join('.')}: ${e.message}`).join('\n');
     throw new Error(`Invalid configuration:\n${errors}`);
   }
 
@@ -310,7 +337,7 @@ export function loadConfig(options: LoadConfigOptions = {}): Config {
  */
 export function initializeKeyring(
   backend: 'auto' | 'keyring' | 'env' | 'file',
-  knownKeys: string[],
+  knownKeys: string[]
 ): KeyringManager {
   const manager = new KeyringManager();
   manager.initialize(backend, knownKeys);
@@ -343,12 +370,12 @@ export function requireSecret(envVarName: string): string {
  */
 export function validateSecrets(config: Config): void {
   const requiredSecrets: string[] = [];
-  
+
   // Always require signing key for audit chain
   if (config.logging.audit.enabled) {
     requiredSecrets.push(config.logging.audit.signingKeyEnv);
   }
-  
+
   // API key based on provider (Ollama is local, no key needed)
   if (config.model.provider !== 'ollama') {
     requiredSecrets.push(config.model.apiKeyEnv);
@@ -366,7 +393,7 @@ export function validateSecrets(config: Config): void {
       // OPENAI_API_KEY is available; they should set apiKeyEnv to OPENAI_API_KEY in config
     }
   }
-  
+
   // Warn (don't fail) on missing fallback API keys
   if (config.model.fallbacks) {
     for (const fb of config.model.fallbacks) {
@@ -381,14 +408,14 @@ export function validateSecrets(config: Config): void {
 
   // Admin password for bootstrap auth
   requiredSecrets.push(config.gateway.auth.adminPasswordEnv);
-  
+
   // Check encryption key if enabled
   if (config.security.encryption.enabled) {
     requiredSecrets.push(config.security.encryption.keyEnv);
   }
-  
-  const missing = requiredSecrets.filter(name => !getSecret(name));
-  
+
+  const missing = requiredSecrets.filter((name) => !getSecret(name));
+
   if (missing.length > 0) {
     throw new Error(`Missing required secrets:\n  ${missing.join('\n  ')}`);
   }

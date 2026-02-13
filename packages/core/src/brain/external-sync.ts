@@ -68,6 +68,32 @@ export class ExternalBrainSync {
     }
   }
 
+  /** Check if sync is enabled */
+  isEnabled(): boolean {
+    return this.config.enabled;
+  }
+
+  /** Get the configured provider */
+  getProvider(): string {
+    return this.config.provider;
+  }
+
+  /** Get the configured path */
+  getPath(): string {
+    return this.config.path;
+  }
+
+  /** Update configuration dynamically */
+  async updateConfig(config: Partial<ExternalBrainConfig>): Promise<void> {
+    Object.assign(this.config, config);
+
+    // Restart sync if needed
+    this.stop();
+    if (this.config.enabled && this.config.syncIntervalMs > 0) {
+      this.start();
+    }
+  }
+
   /** Run a full sync: export all memories and knowledge to the configured path. */
   async sync(): Promise<SyncResult> {
     const start = Date.now();
@@ -148,7 +174,13 @@ export class ExternalBrainSync {
   }
 
   /** Get current status of the external sync system. */
-  getStatus(): { enabled: boolean; provider: string; path: string; autoSync: boolean; lastSync: SyncResult | null } {
+  getStatus(): {
+    enabled: boolean;
+    provider: string;
+    path: string;
+    autoSync: boolean;
+    lastSync: SyncResult | null;
+  } {
     return {
       enabled: this.config.enabled,
       provider: this.config.provider,
@@ -177,7 +209,7 @@ export class ExternalBrainSync {
       }
       const tags = [`${tag}memory`, `${tag}${memory.type}`];
       if (memory.source) tags.push(`${tag}source/${memory.source}`);
-      parts.push(`tags: [${tags.map(t => `"#${t}"`).join(', ')}]`);
+      parts.push(`tags: [${tags.map((t) => `"#${t}"`).join(', ')}]`);
       parts.push('---');
       parts.push('');
     }
@@ -214,8 +246,11 @@ export class ExternalBrainSync {
       if (entry.supersedes) {
         parts.push(`supersedes: "${entry.supersedes}"`);
       }
-      const tags = [`${tag}knowledge`, `${tag}topic/${entry.topic.replace(/\s+/g, '-').toLowerCase()}`];
-      parts.push(`tags: [${tags.map(t => `"#${t}"`).join(', ')}]`);
+      const tags = [
+        `${tag}knowledge`,
+        `${tag}topic/${entry.topic.replace(/\s+/g, '-').toLowerCase()}`,
+      ];
+      parts.push(`tags: [${tags.map((t) => `"#${t}"`).join(', ')}]`);
       parts.push('---');
       parts.push('');
     }

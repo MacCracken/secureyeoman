@@ -29,7 +29,7 @@ export function SecuritySettings() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-lg font-semibold">Security Settings</h2>
+      <h2 className="text-lg font-semibold">Security</h2>
 
       {/* RBAC Defaults */}
       <div className="card">
@@ -43,7 +43,9 @@ export function SecuritySettings() {
               <Loader2 className="w-4 h-4 animate-spin" /> Loading roles...
             </div>
           ) : roles.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No roles configured or endpoint not available.</p>
+            <p className="text-sm text-muted-foreground">
+              No roles configured or endpoint not available.
+            </p>
           ) : (
             <div className="space-y-3">
               {roles.map((role) => (
@@ -135,7 +137,9 @@ export function SecuritySettings() {
               {auditStats?.lastVerification && (
                 <div>
                   <p className="text-sm text-muted-foreground">Last Verification</p>
-                  <p className="text-sm">{new Date(auditStats.lastVerification).toLocaleString()}</p>
+                  <p className="text-sm">
+                    {new Date(auditStats.lastVerification).toLocaleString()}
+                  </p>
                 </div>
               )}
               {auditStats?.dbSizeEstimateMb !== undefined && (
