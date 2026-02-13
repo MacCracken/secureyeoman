@@ -181,8 +181,15 @@ export function CodePage() {
     setLanguage(detectLanguage(filename));
   }, [filename]);
 
-  const handleEditorMount: OnMount = (editor) => {
+  useEffect(() => {
+    if (editorRef.current) {
+      editorRef.current.updateOptions({ theme: theme === 'dark' ? 'vs-dark' : 'vs' });
+    }
+  }, [theme]);
+
+  const handleEditorMount: OnMount = (editor, monaco) => {
     editorRef.current = editor;
+    editor.updateOptions({ theme: theme === 'dark' ? 'vs-dark' : 'vs' });
   };
 
   const handleSendToChat = useCallback(() => {
@@ -337,7 +344,7 @@ export function CodePage() {
               <Editor
                 height="100%"
                 language={language}
-                theme={theme === 'dark' ? 'vs-dark' : 'light'}
+                theme={theme === 'dark' ? 'vs-dark' : 'vs'}
                 value={editorContent}
                 onChange={(value) => setEditorContent(value ?? '')}
                 onMount={handleEditorMount}
@@ -519,7 +526,11 @@ export function CodePage() {
           </div>
 
           {/* Terminal output */}
-          <div className="flex-1 overflow-y-auto px-3 py-2 font-mono text-xs space-y-1 bg-black text-white">
+          <div
+            className={`flex-1 overflow-y-auto px-3 py-2 font-mono text-xs space-y-1 ${
+              theme === 'dark' ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'
+            }`}
+          >
             {terminalHistory.length === 0 && !terminalInput && (
               <div className="text-muted-foreground opacity-50">
                 # Terminal ready. Type commands below.
@@ -528,19 +539,35 @@ export function CodePage() {
             {terminalHistory.map((entry) => (
               <div key={entry.id} className="space-y-1">
                 <div className="flex items-start gap-1">
-                  <span className="text-green-400">➜</span>
-                  <span className="text-blue-400">{cwd}</span>
-                  <span className="text-white">$</span>
-                  <span className="text-white">{entry.command}</span>
+                  <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>➜</span>
+                  <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>
+                    {cwd}
+                  </span>
+                  <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>$</span>
+                  <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+                    {entry.command}
+                  </span>
                 </div>
                 {entry.output && (
-                  <div className="text-gray-300 whitespace-pre-wrap pl-4">{entry.output}</div>
+                  <div
+                    className={`whitespace-pre-wrap pl-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                  >
+                    {entry.output}
+                  </div>
                 )}
                 {entry.error && (
-                  <div className="text-red-400 whitespace-pre-wrap pl-4">{entry.error}</div>
+                  <div
+                    className={`whitespace-pre-wrap pl-4 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}
+                  >
+                    {entry.error}
+                  </div>
                 )}
                 {entry.exitCode !== 0 && (
-                  <div className="text-red-500 text-[10px] pl-4">Exit code: {entry.exitCode}</div>
+                  <div
+                    className={`text-[10px] pl-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`}
+                  >
+                    Exit code: {entry.exitCode}
+                  </div>
                 )}
               </div>
             ))}
@@ -552,9 +579,9 @@ export function CodePage() {
             )}
             {/* Current input line */}
             <div className="flex items-center gap-1">
-              <span className="text-green-400">➜</span>
-              <span className="text-blue-400">{cwd}</span>
-              <span className="text-white">$</span>
+              <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>➜</span>
+              <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>{cwd}</span>
+              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>$</span>
               <input
                 ref={terminalInputRef}
                 type="text"
@@ -563,7 +590,7 @@ export function CodePage() {
                 onKeyDown={handleTerminalKeyDown}
                 placeholder="Type command..."
                 disabled={terminalMutation.isPending}
-                className="flex-1 bg-transparent border-none px-0 py-0 text-xs font-mono focus:outline-none text-white placeholder:text-gray-500 disabled:opacity-50"
+                className={`flex-1 bg-transparent border-none px-0 py-0 text-xs font-mono focus:outline-none ${theme === 'dark' ? 'text-white placeholder:text-gray-500' : 'text-gray-900 placeholder:text-gray-400'} disabled:opacity-50`}
               />
             </div>
             <div ref={terminalEndRef} />
