@@ -712,6 +712,11 @@ export class SecureYeoman {
     const rateLimitStats = this.rateLimiter!.getStats();
     const aiStats = this.aiClient?.getUsageStats();
     const taskStats = this.taskStorage?.getStats();
+    const authStats = this.authService?.getStats() ?? {
+      authAttemptsTotal: 0,
+      authSuccessTotal: 0,
+      authFailuresTotal: 0,
+    };
 
     return {
       timestamp: Date.now(),
@@ -748,9 +753,9 @@ export class SecureYeoman {
             : 0,
       },
       security: {
-        authAttemptsTotal: 0,
-        authSuccessTotal: 0,
-        authFailuresTotal: 0,
+        authAttemptsTotal: authStats.authAttemptsTotal,
+        authSuccessTotal: authStats.authSuccessTotal,
+        authFailuresTotal: authStats.authFailuresTotal,
         activeSessions: 0,
         permissionChecksTotal: 0,
         permissionDenialsTotal: 0,
