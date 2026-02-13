@@ -13,6 +13,9 @@ import {
   FolderOpen,
   Play,
   Trash2,
+  ChevronRight,
+  File,
+  Folder,
 } from 'lucide-react';
 import { fetchPersonalities, executeTerminalCommand } from '../api/client';
 import { useChat } from '../hooks/useChat';
@@ -69,7 +72,9 @@ export function CodePage() {
   const { theme } = useTheme();
   const [filename, setFilename] = useState('untitled.ts');
   const [language, setLanguage] = useState(() => detectLanguage('untitled.ts'));
-  const [editorContent, setEditorContent] = useState('');
+  const [filesPanelOpen, setFilesPanelOpen] = useState(false);
+  const [cwd, setCwd] = useState('/home/user');
+  const files = [{ name: 'untitled.ts', path: `${cwd}/untitled.ts` }];
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string | null>(null);
   const [terminalCwd, setTerminalCwd] = useState('/home/user');
   const [terminalInput, setTerminalInput] = useState('');
@@ -253,6 +258,15 @@ export function CodePage() {
           <div className="flex flex-col flex-1 lg:flex-[60] min-h-[250px] lg:min-h-0 border rounded-lg overflow-hidden bg-card">
             {/* Editor toolbar */}
             <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30 flex-wrap">
+              <button
+                onClick={() => setFilesPanelOpen(!filesPanelOpen)}
+                className="btn-ghost p-1 rounded"
+                title="Toggle files panel"
+              >
+                <ChevronRight
+                  className={`w-4 h-4 transition-transform ${filesPanelOpen ? 'rotate-90' : ''}`}
+                />
+              </button>
               <input
                 type="text"
                 value={filename}
@@ -272,6 +286,41 @@ export function CodePage() {
                 <span className="hidden sm:inline">Send to Chat</span>
                 <span className="sm:hidden">Send</span>
               </button>
+            </div>
+
+            {/* Collapsible Files Panel */}
+            <div
+              className={`border-b bg-muted transition-all ${filesPanelOpen ? 'max-h-48' : 'max-h-0'} overflow-hidden`}
+            >
+              <div className="px-3 py-2 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Folder className="w-3 h-3 text-muted-foreground" />
+                  <input
+                    type="text"
+                    value={cwd}
+                    onChange={(e) => {
+                      const newCwd = e.target.value;
+                      setCwd(newCwd);
+                    }}
+                    className="flex-1 bg-transparent border border-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
+                    placeholder="/path/to/folder"
+                  />
+                </div>
+                <div className="space-y-1">
+                  {files.map((file) => (
+                    <button
+                      key={file.path}
+                      onClick={() => setFilename(file.name)}
+                      className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs font-mono text-left hover:bg-muted/50 ${
+                        filename === file.name ? 'bg-primary/10 text-primary' : ''
+                      }`}
+                    >
+                      <File className="w-3 h-3 flex-shrink-0" />
+                      <span className="truncate">{file.path}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
 
             {/* Monaco Editor placeholder */}
