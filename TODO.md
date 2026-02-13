@@ -2,7 +2,7 @@
 
 > Tracking open and deferred work items. For completed work, see [CHANGELOG.md](CHANGELOG.md).
 
-**Project Status**: v1.0.0 released. Phases 1-5 complete. Security hardening complete. 1000+ tests across core and dashboard. All core features implemented.
+**Project Status**: v1.3.0 released. Phases 1-5 complete. Security hardening complete. 1000+ tests across core and dashboard. All core features implemented. Coding IDE view, voice interface, and dashboard improvements shipped.
 
 ---
 
@@ -56,30 +56,35 @@
 
 ---
 
+## Completed in v1.2.0
+
+- [x] MCP protocol support (Model Context Protocol)
+- [x] Skill marketplace — browse and install community skills
+- [x] Custom dashboards — user-configurable layouts
+- [x] Team workspaces — multi-user collaboration
+- [x] Audit report generator — compliance report export
+- [x] Cost optimization — token usage recommendations
+- [x] A/B testing — model comparison experiments
+
+## Completed in v1.3.0
+
+- [x] Coding IDE view — Monaco editor with personality-scoped chat sidebar
+- [x] Voice interface — browser-native SpeechRecognition + speechSynthesis
+- [x] Dashboard improvements — enhanced layout, status bar updates
+
 ## Future Enhancements
 
-### v1.1 (Post-MVP)
+### v1.4
 
 - [ ] HTML prompt injection protection — DOMPurify sanitization for user/LLM content
-- [ ] MCP protocol support (Model Context Protocol)
-- [ ] Skill marketplace — browse and install community skills
-- [ ] Custom dashboards — user-configurable layouts
 - [ ] Outbound webhooks for events
 - [ ] CLI enhancements — expanded command set, interactive mode, plugin management commands
 - [ ] CLI updates — config validation command, health check, integration management from CLI
-
-### v1.2
-
-- [ ] Team workspaces — multi-user collaboration
-- [ ] Audit report generator — compliance report export
-- [ ] Cost optimization — token usage recommendations
-- [ ] A/B testing — model comparison experiments
 
 ### v2.0
 
 - [ ] Distributed deployment — Kubernetes-native
 - [ ] ML-based anomaly detection — advanced threat detection
-- [ ] Voice interface — speech-to-text interaction
 - [ ] Mobile app — native iOS/Android dashboard
 
 ---

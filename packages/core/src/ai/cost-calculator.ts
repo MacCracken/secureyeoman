@@ -88,9 +88,9 @@ const MODEL_PROVIDER_MAP: Record<string, string> = {
 export const PROVIDER_KEY_ENV: Record<string, string | null> = {
   anthropic: 'ANTHROPIC_API_KEY',
   openai: 'OPENAI_API_KEY',
-  gemini: 'GOOGLE_API_KEY',
+  gemini: 'GOOGLE_GENERATIVE_AI_API_KEY',
   opencode: 'OPENCODE_API_KEY',
-  ollama: null, // no key needed
+  ollama: 'OLLAMA_HOST', // presence indicates Ollama is configured
 };
 
 /**
@@ -115,7 +115,7 @@ export function getAvailableModels(onlyAvailable = false): Record<string, Availa
     });
   }
 
-  // Always include ollama as a provider option
+  // Add ollama placeholder if not already populated from pricing table
   if (!grouped['ollama']) {
     grouped['ollama'] = [{
       provider: 'ollama',
@@ -128,8 +128,8 @@ export function getAvailableModels(onlyAvailable = false): Record<string, Availa
   if (onlyAvailable) {
     for (const provider of Object.keys(grouped)) {
       const keyEnv = PROVIDER_KEY_ENV[provider];
-      // If the provider requires a key and it's not set, remove it
-      if (keyEnv !== null && keyEnv !== undefined && !process.env[keyEnv]) {
+      // If the provider's env var is not set, remove it
+      if (keyEnv && !process.env[keyEnv]) {
         delete grouped[provider];
       }
     }

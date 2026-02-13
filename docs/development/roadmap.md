@@ -175,7 +175,8 @@ All core modules maintain >80% coverage thresholds.
 | Phase 5: Production | 3 weeks | Complete |
 | v1.0.0 MVP Release| 2 Weeks | Complete |
 | **v1.1.1 Release** | — | **Released 2026-02-12** |
-| **v1.2.0 Release** | — | **In Progress** |
+| **v1.2.0 Release** | — | **Complete** |
+| **v1.3.0 Release** | — | **Complete (released 2026-02-12)** |
 
 ---
 
@@ -197,10 +198,12 @@ All core modules maintain >80% coverage thresholds.
 
 ## v1.3: Developer Experience
 
-**Status**: Planned
-**Target**: 2026 Q2
+**Status**: Complete
+**Released**: 2026-02-12
 
-- Code IDE — In-browser IDE with personality-driven vibe coding and personality switching
+- ✅ Coding IDE view — Monaco editor with personality-scoped chat sidebar, `useChat` hook extraction
+- ✅ Voice interface — browser-native SpeechRecognition + speechSynthesis, localStorage persistence, graceful degradation
+- ✅ Dashboard improvements — enhanced layout, status bar updates
 
 ---
 
@@ -209,7 +212,6 @@ All core modules maintain >80% coverage thresholds.
 ### v2.0
 - Distributed deployment (Kubernetes)
 - ML-based anomaly detection
-- Voice interface
 - Mobile app
 
 ---

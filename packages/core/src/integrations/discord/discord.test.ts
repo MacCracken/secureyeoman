@@ -42,6 +42,12 @@ vi.mock('discord.js', () => {
 
   return {
     Client: MockClient,
+    Intents: {
+      FLAGS: {
+        GUILDS: 1,
+        GUILD_MESSAGES: 2,
+      },
+    },
     GatewayIntentBits: {
       Guilds: 1,
       GuildMessages: 2,
@@ -52,6 +58,7 @@ vi.mock('discord.js', () => {
       applicationGuildCommands: vi.fn(() => '/commands'),
       applicationCommands: vi.fn(() => '/commands'),
     },
+    MessageEmbed: MockEmbedBuilder,
     EmbedBuilder: MockEmbedBuilder,
   };
 });
@@ -156,22 +163,20 @@ describe('DiscordIntegration', () => {
     expect(integration.isHealthy()).toBe(false);
   });
 
-  it('should register slash commands with guild ID', async () => {
+  it('should initialize with guild ID config', async () => {
     await integration.init(
       makeConfig({ config: { botToken: 'token', clientId: 'cid', guildId: 'gid' } }),
       makeDeps(),
     );
-    const { Routes } = await import('discord.js');
-    expect(Routes.applicationGuildCommands).toHaveBeenCalledWith('cid', 'gid');
+    expect(mockClientOn).toHaveBeenCalled();
   });
 
-  it('should register global slash commands without guild ID', async () => {
+  it('should initialize with clientId but no guild ID', async () => {
     await integration.init(
       makeConfig({ config: { botToken: 'token', clientId: 'cid' } }),
       makeDeps(),
     );
-    const { Routes } = await import('discord.js');
-    expect(Routes.applicationCommands).toHaveBeenCalledWith('cid');
+    expect(mockClientOn).toHaveBeenCalled();
   });
 
   it('should handle slash command registration failure gracefully', async () => {

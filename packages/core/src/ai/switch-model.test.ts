@@ -11,7 +11,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 // We test the validation logic that switchModel uses
 describe('switchModel validation', () => {
-  const validProviders = ['anthropic', 'openai', 'gemini', 'ollama'];
+  const validProviders = ['anthropic', 'openai', 'gemini', 'ollama', 'opencode'];
 
   it('should accept all valid providers', () => {
     for (const provider of validProviders) {
@@ -45,6 +45,9 @@ describe('AIClient creation for model switch', () => {
   }));
   vi.mock('./providers/ollama.js', () => ({
     OllamaProvider: class { name = 'ollama'; chat = vi.fn(); chatStream = vi.fn(); },
+  }));
+  vi.mock('./providers/opencode.js', () => ({
+    OpenCodeProvider: class { name = 'opencode'; chat = vi.fn(); chatStream = vi.fn(); },
   }));
 
   it('can create AIClient with anthropic provider', async () => {

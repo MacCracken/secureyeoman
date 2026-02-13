@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { SettingsPage } from './SettingsPage';
 import { createApiKey, createSoulConfig } from '../test/mocks';
 
@@ -15,6 +16,7 @@ vi.mock('../api/client', () => ({
   revokeApiKey: vi.fn(),
   fetchSoulConfig: vi.fn(),
   fetchAuditStats: vi.fn(),
+  fetchMcpServers: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -25,6 +27,7 @@ const mockFetchApiKeys = vi.mocked(api.fetchApiKeys);
 const mockCreateApiKey = vi.mocked(api.createApiKey);
 const mockFetchSoulConfig = vi.mocked(api.fetchSoulConfig);
 const mockFetchAuditStats = vi.mocked(api.fetchAuditStats);
+const mockFetchMcpServers = vi.mocked(api.fetchMcpServers);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -39,9 +42,11 @@ function createQueryClient() {
 function renderComponent() {
   const qc = createQueryClient();
   return render(
-    <QueryClientProvider client={qc}>
-      <SettingsPage />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={qc}>
+        <SettingsPage />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
@@ -54,6 +59,7 @@ describe('SettingsPage', () => {
     mockFetchApiKeys.mockResolvedValue({ keys: [] });
     mockFetchSoulConfig.mockResolvedValue(createSoulConfig());
     mockFetchAuditStats.mockResolvedValue({ totalEntries: 0, chainValid: true });
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
   });
 
   it('renders the Settings heading', async () => {
@@ -119,7 +125,8 @@ describe('SettingsPage', () => {
     renderComponent();
 
     expect(await screen.findByText('Soul System')).toBeInTheDocument();
-    expect(screen.getByText('Enabled')).toBeInTheDocument();
+    const enabledElements = screen.getAllByText('Enabled');
+    expect(enabledElements.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('observe, suggest')).toBeInTheDocument();
     expect(screen.getByText('50')).toBeInTheDocument();
     expect(screen.getByText('4,096')).toBeInTheDocument();
