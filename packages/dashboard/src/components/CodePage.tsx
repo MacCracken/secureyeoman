@@ -16,6 +16,7 @@ import {
   ChevronRight,
   File,
   Folder,
+  Mic,
 } from 'lucide-react';
 import { fetchPersonalities, executeTerminalCommand } from '../api/client';
 import { useChat } from '../hooks/useChat';
@@ -583,6 +584,22 @@ export function CodePage() {
                   rows={1}
                   className="flex-1 resize-none rounded border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
                 />
+                <button
+                  onClick={voice.toggleVoice}
+                  disabled={!voice.supported}
+                  className={`btn px-3 py-2 rounded disabled:opacity-50 ${
+                    voice.voiceEnabled ? 'btn-primary' : 'btn-ghost'
+                  }`}
+                  title={voice.voiceEnabled ? 'Voice enabled' : 'Enable voice'}
+                >
+                  {voice.isListening ? (
+                    <Mic className="w-3 h-3 animate-pulse" />
+                  ) : voice.voiceEnabled ? (
+                    <Mic className="w-3 h-3" />
+                  ) : (
+                    <Mic className="w-3 h-3 opacity-50" />
+                  )}
+                </button>
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isPending}
