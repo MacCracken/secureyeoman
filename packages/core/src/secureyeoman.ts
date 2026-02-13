@@ -996,7 +996,7 @@ export class SecureYeoman {
   switchModel(provider: string, model: string): void {
     this.ensureInitialized();
 
-    const validProviders = ['anthropic', 'openai', 'gemini', 'ollama'];
+    const validProviders = ['anthropic', 'openai', 'gemini', 'ollama', 'opencode'];
     if (!validProviders.includes(provider)) {
       throw new Error(`Invalid provider: ${provider}. Must be one of: ${validProviders.join(', ')}`);
     }

@@ -56,7 +56,7 @@ secureyeoman --log-level debug         # Verbose logging
 ### Complete Example
 
 ```yaml
-version: "1.0"
+version: "1.3"
 
 core:
   name: "SecureYeoman"

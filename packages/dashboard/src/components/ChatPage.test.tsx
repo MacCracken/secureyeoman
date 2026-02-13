@@ -141,7 +141,7 @@ describe('ChatPage', () => {
     const user = userEvent.setup();
     renderComponent();
 
-    const modelButton = screen.getByText('Model Info');
+    const modelButton = screen.getByText('Model');
     await user.click(modelButton);
 
     expect(screen.getByTestId('model-widget')).toBeInTheDocument();

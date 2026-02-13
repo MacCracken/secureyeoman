@@ -115,7 +115,7 @@ describe('ModelWidget', () => {
     await user.click(screen.getByText(/Ollama/));
 
     await waitFor(() => {
-      expect(screen.getByText(/Free \(local\)/)).toBeInTheDocument();
+      expect(screen.getByText('Free')).toBeInTheDocument();
     });
   });
 });

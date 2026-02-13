@@ -1,7 +1,21 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterAll } from 'vitest';
 import Fastify from 'fastify';
 import { registerModelRoutes } from './model-routes.js';
 import type { SecureYeoman } from '../secureyeoman.js';
+
+// Set provider env vars so getAvailableModels(true) includes all providers
+const ENV_KEYS = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GOOGLE_GENERATIVE_AI_API_KEY', 'OPENCODE_API_KEY', 'OLLAMA_HOST'];
+const savedEnv: Record<string, string | undefined> = {};
+for (const key of ENV_KEYS) {
+  savedEnv[key] = process.env[key];
+  process.env[key] = process.env[key] ?? 'test-value';
+}
+afterAll(() => {
+  for (const key of ENV_KEYS) {
+    if (savedEnv[key] === undefined) delete process.env[key];
+    else process.env[key] = savedEnv[key];
+  }
+});
 
 function createMockSecureYeoman(overrides: Partial<{
   switchModelError: string | null;
@@ -52,6 +66,7 @@ describe('Model Routes', () => {
     expect(body.available.openai).toBeDefined();
     expect(body.available.gemini).toBeDefined();
     expect(body.available.ollama).toBeDefined();
+    expect(body.available.opencode).toBeDefined();
   });
 
   it('GET /api/v1/model/info has correct model structure', async () => {

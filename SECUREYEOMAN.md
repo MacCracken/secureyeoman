@@ -1414,7 +1414,7 @@ const RECOVERY_PROCEDURES = {
 ```yaml
 # ~/.secureyeoman/config.yaml
 
-version: "1.0"
+version: "1.3"
 
 # Core settings
 core:

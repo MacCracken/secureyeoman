@@ -88,7 +88,7 @@ export function ChatPage() {
               onClick={() => setShowModelWidget((v) => !v)}
               className="btn-ghost text-xs px-3 py-1.5 rounded-full border"
             >
-              Model Info
+              Model
             </button>
             {showModelWidget && (
               <div className="absolute right-0 top-full mt-2 z-50">
