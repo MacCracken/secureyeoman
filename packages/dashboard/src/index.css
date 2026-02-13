@@ -25,7 +25,7 @@
   --ring: 199 89% 48%;
   --radius: 0.5rem;
   --sidebar-expanded: 240px;
-  --sidebar-collapsed: 90px;
+  --sidebar-collapsed: 70px;
 
   --success: 142 76% 36%;
   --warning: 38 92% 50%;
@@ -317,4 +317,13 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background-color: hsl(var(--muted-foreground) / 0.5);
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
 }

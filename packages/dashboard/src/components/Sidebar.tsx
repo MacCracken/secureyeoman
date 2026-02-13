@@ -57,7 +57,7 @@ const NAV_ITEMS: { to: string; label: string; icon: React.ReactNode; end?: boole
 ];
 
 const navLinkClass = (isActive: boolean, collapsed: boolean) =>
-  `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+  `group relative flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
     isActive
       ? 'bg-primary/10 text-primary'
       : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
@@ -130,7 +130,7 @@ export function Sidebar({
 
       {/* Navigation */}
       <nav
-        className={`flex-1 px-3 py-4 overflow-y-auto ${collapsed ? 'space-y-0.5' : 'space-y-1'}`}
+        className={`flex-1 px-3 py-4 overflow-y-auto ${collapsed ? 'overflow-hidden scrollbar-hide space-y-0.5' : 'space-y-1'}`}
       >
         {NAV_ITEMS.map(({ to, label, icon, end }) => (
           <NavLink
@@ -139,7 +139,7 @@ export function Sidebar({
             end={end}
             className={({ isActive }) => navLinkClass(isActive, collapsed)}
           >
-            <span className="flex-shrink-0">{icon}</span>
+            <span className="w-5 h-5 flex-shrink-0">{icon}</span>
             <span
               className={`transition-opacity duration-200 ${
                 collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
@@ -179,7 +179,7 @@ export function Sidebar({
       <div className={`border-t border-border ${collapsed ? 'px-3 py-2' : 'px-5 py-2'}`}>
         <button
           onClick={toggleCollapse}
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors ${
+          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200 ${
             collapsed ? 'justify-center' : ''
           }`}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -202,7 +202,7 @@ export function Sidebar({
       >
         <button
           onClick={() => setProfileOpen((v) => !v)}
-          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors ${
+          className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200 ${
             collapsed ? 'justify-center' : ''
           }`}
           aria-label="User menu"
@@ -243,7 +243,7 @@ export function Sidebar({
                 toggleTheme();
                 setProfileOpen(false);
               }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-colors"
+              className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-all duration-200"
               role="menuitem"
             >
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
@@ -256,7 +256,7 @@ export function Sidebar({
                 setProfileOpen(false);
                 onLogout();
               }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-colors text-destructive"
+              className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-all duration-200 text-destructive"
               role="menuitem"
             >
               <LogOut className="w-4 h-4" />
