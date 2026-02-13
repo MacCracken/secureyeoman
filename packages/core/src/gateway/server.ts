@@ -381,11 +381,19 @@ export class GatewayServer {
         try {
           const taskStorage = this.secureYeoman.getTaskStorage();
           const q = request.query;
+          const parseTimestamp = (val?: string): number | undefined => {
+            if (!val) return undefined;
+            const num = Number(val);
+            if (!Number.isNaN(num)) return num;
+            const ms = new Date(val).getTime();
+            return Number.isNaN(ms) ? undefined : ms;
+          };
+
           return taskStorage.listTasks({
             status: q.status,
             type: q.type,
-            from: q.from ? Number(q.from) : undefined,
-            to: q.to ? Number(q.to) : undefined,
+            from: parseTimestamp(q.from),
+            to: parseTimestamp(q.to),
             limit: q.limit ? Number(q.limit) : 50,
             offset: q.offset ? Number(q.offset) : 0,
           });
@@ -433,11 +441,8 @@ export class GatewayServer {
             return reply.code(404).send({ error: 'Task not found' });
           }
           const { name, type, description } = request.body;
-          if (name) task.name = name;
-          if (type) task.type = type as any;
-          if (description !== undefined) task.description = description;
-          taskStorage.storeTask(task);
-          return task;
+          taskStorage.updateTaskMetadata(request.params.id, { name, type, description });
+          return taskStorage.getTask(request.params.id);
         } catch {
           return reply.code(500).send({ error: 'Failed to update task' });
         }

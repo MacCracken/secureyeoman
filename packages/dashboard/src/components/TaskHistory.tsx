@@ -171,6 +171,7 @@ export function TaskHistory() {
   });
 
   const [editTask, setEditTask] = useState<Task | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Task | null>(null);
 
   // Handle query params for quick create from sidebar
   useEffect(() => {
@@ -181,13 +182,19 @@ export function TaskHistory() {
       const pInput = searchParams.get('input') || '';
       if (pName) {
         setNewTask({ name: pName, type: pType, description: pDescription, input: pInput });
+        let parsedInput: unknown;
+        try {
+          parsedInput = pInput ? JSON.parse(pInput) : undefined;
+        } catch {
+          parsedInput = undefined;
+        }
         setTimeout(
           () =>
             createTaskMutation.mutate({
               name: pName,
               type: pType,
               description: pDescription || undefined,
-              input: pInput ? JSON.parse(pInput) : undefined,
+              input: parsedInput,
             }),
           0
         );
@@ -332,14 +339,20 @@ export function TaskHistory() {
                   Cancel
                 </button>
                 <button
-                  onClick={() =>
+                  onClick={() => {
+                    let parsedInput: unknown;
+                    try {
+                      parsedInput = newTask.input ? JSON.parse(newTask.input) : undefined;
+                    } catch {
+                      return; // Invalid JSON — do not submit
+                    }
                     createTaskMutation.mutate({
                       name: newTask.name,
                       type: newTask.type,
                       description: newTask.description || undefined,
-                      input: newTask.input ? JSON.parse(newTask.input) : undefined,
-                    })
-                  }
+                      input: parsedInput,
+                    });
+                  }}
                   disabled={!newTask.name.trim() || createTaskMutation.isPending}
                   className="btn btn-primary"
                 >
@@ -350,6 +363,20 @@ export function TaskHistory() {
           </div>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        open={deleteTarget !== null}
+        title="Delete Task"
+        message={deleteTarget ? `Are you sure you want to delete "${deleteTarget.name}"?` : ''}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (deleteTarget) deleteTaskMutation.mutate(deleteTarget.id);
+          setDeleteTarget(null);
+        }}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
       {/* Edit Task Dialog */}
       {editTask && (
@@ -375,7 +402,7 @@ export function TaskHistory() {
                 <label className="block text-sm font-medium mb-1">Type</label>
                 <select
                   value={editTask.type}
-                  onChange={(e) => setEditTask({ ...editTask, type: e.target.value as any })}
+                  onChange={(e) => setEditTask({ ...editTask, type: e.target.value })}
                   className="w-full px-3 py-2 rounded border bg-background"
                 >
                   {TYPE_OPTIONS.map((t) => (
@@ -566,24 +593,21 @@ export function TaskHistory() {
                     <p className="mt-2">Loading tasks...</p>
                   </td>
                 </tr>
-              ) : tasks.length === 0 ? (
-                <tr>
-                  <td colSpan={7} className="px-2 py-8 text-center text-muted-foreground">
-                    No tasks found
-                  </td>
-                </tr>
               ) : (
                 <>
+                  {tasks.length === 0 && !heartbeatData?.tasks?.length && (
+                    <tr>
+                      <td colSpan={7} className="px-2 py-8 text-center text-muted-foreground">
+                        No tasks found
+                      </td>
+                    </tr>
+                  )}
                   {tasks.map((task) => (
                     <TaskRow
                       key={task.id}
                       task={task}
                       onEdit={setEditTask}
-                      onDelete={(t) => {
-                        if (confirm(`Delete task "${t.name}"?`)) {
-                          deleteTaskMutation.mutate(t.id);
-                        }
-                      }}
+                      onDelete={(t) => setDeleteTarget(t)}
                     />
                   ))}
                   {heartbeatData?.tasks && heartbeatData.tasks.length > 0 && (

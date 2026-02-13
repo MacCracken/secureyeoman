@@ -11,12 +11,18 @@ import { createTaskList } from '../test/mocks';
 vi.mock('../api/client', () => ({
   fetchTasks: vi.fn(),
   createTask: vi.fn(),
+  deleteTask: vi.fn(),
+  updateTask: vi.fn(),
+  fetchHeartbeatTasks: vi.fn(),
 }));
 
 import * as api from '../api/client';
 
 const mockFetchTasks = vi.mocked(api.fetchTasks);
 const mockCreateTask = vi.mocked(api.createTask);
+const mockUpdateTask = vi.mocked(api.updateTask);
+const mockDeleteTask = vi.mocked(api.deleteTask);
+const mockFetchHeartbeatTasks = vi.mocked(api.fetchHeartbeatTasks);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -45,6 +51,7 @@ describe('TaskHistory', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchHeartbeatTasks.mockResolvedValue({ tasks: [] });
   });
 
   it('renders the Task History heading', async () => {
@@ -268,5 +275,195 @@ describe('TaskHistory', () => {
 
     const createButton = screen.getByText('Create Task');
     expect(createButton).toBeDisabled();
+  });
+
+  // ── Heartbeat Task Tests ──────────────────────────────────────────
+
+  it('renders heartbeat tasks alongside regular tasks', async () => {
+    const tasks = createTaskList(2);
+    mockFetchTasks.mockResolvedValue({ tasks, total: 2 });
+    mockFetchHeartbeatTasks.mockResolvedValue({
+      tasks: [
+        {
+          name: 'system_health',
+          type: 'system_health',
+          enabled: true,
+          intervalMs: 300000,
+          lastRunAt: Date.now() - 60000,
+          config: {},
+        },
+        {
+          name: 'memory_status',
+          type: 'memory_status',
+          enabled: false,
+          intervalMs: 600000,
+          lastRunAt: null,
+          config: {},
+        },
+      ],
+    });
+    renderComponent();
+
+    // Regular tasks show
+    expect(await screen.findByText('Run deployment script')).toBeInTheDocument();
+
+    // Heartbeat section header shows
+    expect(screen.getByText('Heartbeat Tasks (Managed by Personality)')).toBeInTheDocument();
+
+    // Heartbeat tasks show (name appears in both name cell and type badge)
+    expect(screen.getAllByText('system_health').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('memory_status').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows heartbeat tasks even when no regular tasks exist', async () => {
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchHeartbeatTasks.mockResolvedValue({
+      tasks: [
+        {
+          name: 'system_health',
+          type: 'system_health',
+          enabled: true,
+          intervalMs: 300000,
+          lastRunAt: Date.now() - 60000,
+          config: {},
+        },
+      ],
+    });
+    renderComponent();
+
+    // "No tasks found" should NOT show when heartbeat tasks exist
+    expect(screen.queryByText('No tasks found')).not.toBeInTheDocument();
+
+    // Heartbeat section and task should be visible
+    expect(await screen.findByText('Heartbeat Tasks (Managed by Personality)')).toBeInTheDocument();
+    expect(screen.getAllByText('system_health').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows "No tasks found" only when no regular AND no heartbeat tasks exist', async () => {
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchHeartbeatTasks.mockResolvedValue({ tasks: [] });
+    renderComponent();
+
+    expect(await screen.findByText('No tasks found')).toBeInTheDocument();
+  });
+
+  it('shows heartbeat Active/Disabled status', async () => {
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchHeartbeatTasks.mockResolvedValue({
+      tasks: [
+        {
+          name: 'enabled_task',
+          type: 'system_health',
+          enabled: true,
+          intervalMs: 300000,
+          lastRunAt: null,
+          config: {},
+        },
+        {
+          name: 'disabled_task',
+          type: 'memory_status',
+          enabled: false,
+          intervalMs: 600000,
+          lastRunAt: null,
+          config: {},
+        },
+      ],
+    });
+    renderComponent();
+
+    expect(await screen.findByText('Active')).toBeInTheDocument();
+    expect(screen.getByText('Disabled')).toBeInTheDocument();
+  });
+
+  // ── Edit Task Tests ────────────────────────────────────────────────
+
+  it('opens edit dialog when edit button is clicked', async () => {
+    const user = userEvent.setup();
+    const tasks = createTaskList(1);
+    mockFetchTasks.mockResolvedValue({ tasks, total: 1 });
+    renderComponent();
+
+    await screen.findByText('Run deployment script');
+    const editButton = screen.getByTitle('Edit task');
+    await user.click(editButton);
+
+    expect(screen.getByText('Edit Task')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('Run deployment script')).toBeInTheDocument();
+  });
+
+  it('calls updateTask when edit form is saved', async () => {
+    const user = userEvent.setup();
+    const tasks = createTaskList(1);
+    mockFetchTasks.mockResolvedValue({ tasks, total: 1 });
+    mockUpdateTask.mockResolvedValue({
+      ...tasks[0],
+      name: 'Updated Name',
+    });
+    renderComponent();
+
+    await screen.findByText('Run deployment script');
+    await user.click(screen.getByTitle('Edit task'));
+
+    const nameInput = screen.getByDisplayValue('Run deployment script');
+    await user.clear(nameInput);
+    await user.type(nameInput, 'Updated Name');
+
+    await user.click(screen.getByText('Save'));
+
+    expect(mockUpdateTask).toHaveBeenCalledWith(
+      tasks[0].id,
+      expect.objectContaining({ name: 'Updated Name' })
+    );
+  });
+
+  // ── Delete Task Tests ──────────────────────────────────────────────
+
+  it('shows confirmation dialog when delete is clicked', async () => {
+    const user = userEvent.setup();
+    const tasks = createTaskList(1);
+    mockFetchTasks.mockResolvedValue({ tasks, total: 1 });
+    renderComponent();
+
+    await screen.findByText('Run deployment script');
+    const deleteButton = screen.getByTitle('Delete task');
+    await user.click(deleteButton);
+
+    expect(screen.getByText('Delete Task')).toBeInTheDocument();
+    expect(screen.getByText(/Are you sure you want to delete/)).toBeInTheDocument();
+  });
+
+  it('calls deleteTask when confirmation is accepted', async () => {
+    const user = userEvent.setup();
+    const tasks = createTaskList(1);
+    mockFetchTasks.mockResolvedValue({ tasks, total: 1 });
+    mockDeleteTask.mockResolvedValue(undefined);
+    renderComponent();
+
+    await screen.findByText('Run deployment script');
+    await user.click(screen.getByTitle('Delete task'));
+
+    // Click the Delete button in the confirmation dialog
+    const deleteConfirmButton = screen.getByRole('button', { name: 'Delete' });
+    await user.click(deleteConfirmButton);
+
+    expect(mockDeleteTask).toHaveBeenCalledWith(tasks[0].id);
+  });
+
+  it('dismisses delete confirmation when Cancel is clicked', async () => {
+    const user = userEvent.setup();
+    const tasks = createTaskList(1);
+    mockFetchTasks.mockResolvedValue({ tasks, total: 1 });
+    renderComponent();
+
+    await screen.findByText('Run deployment script');
+    await user.click(screen.getByTitle('Delete task'));
+
+    expect(screen.getByText('Delete Task')).toBeInTheDocument();
+
+    // Click Cancel
+    const cancelButtons = screen.getAllByText('Cancel');
+    await user.click(cancelButtons[cancelButtons.length - 1]);
+
+    expect(screen.queryByText(/Are you sure you want to delete/)).not.toBeInTheDocument();
   });
 });
