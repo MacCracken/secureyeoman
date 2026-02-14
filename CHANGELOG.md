@@ -11,6 +11,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] — 2026-02-13
+
+### Security Hardening
+- **HTTP security headers** — All responses now include `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 0`, `Referrer-Policy: strict-origin-when-cross-origin`, and `Permissions-Policy`; HSTS header added when TLS is active
+- **CORS wildcard fix** — Wildcard (`*`) CORS origins no longer set `Access-Control-Allow-Credentials: true` (violates Fetch spec and allowed any origin to make credentialed requests); explicit origins now include `Vary: Origin` for correct cache behavior
+- **WebSocket channel authorization** — WebSocket token validation is now properly awaited (was fire-and-forget); authenticated user's role is stored on the client and checked against RBAC `CHANNEL_PERMISSIONS` on subscribe — viewers can no longer subscribe to `audit` or `security` channels
+- **WebSocket heartbeat** — 30-second ping/pong cycle terminates unresponsive connections after 60 seconds of silence; cleanup on server stop
+
+### MCP Service (`@friday/mcp`)
+- **Auto-token** — MCP service now self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` instead of requiring a manually-configured `MCP_CORE_TOKEN`. No user intervention needed for local/internal MCP.
+- **New package** — Standalone MCP (Model Context Protocol) service exposing FRIDAY capabilities as 22+ tools, 7 resources, and 4 prompts
+- **Tools** — `knowledge_search`, `knowledge_get`, `knowledge_store`, `memory_recall`, `task_create`, `task_list`, `task_get`, `task_cancel`, `system_health`, `system_metrics`, `system_config`, `integration_list`, `integration_send`, `integration_status`, `personality_get`, `personality_switch`, `skill_list`, `skill_execute`, `audit_query`, `audit_verify`, `audit_stats`, `fs_read`, `fs_write`, `fs_list`, `fs_search`
+- **Resources** — `friday://knowledge/all`, `friday://knowledge/{id}`, `friday://personality/active`, `friday://personality/{id}`, `friday://config/current`, `friday://audit/recent`, `friday://audit/stats`
+- **Prompts** — `friday:compose-prompt`, `friday:plan-task`, `friday:analyze-code`, `friday:review-security`
+- **Transports** — Streamable HTTP (primary), SSE, and stdio (for Claude Desktop)
+- **Security** — JWT auth delegation via core's `/api/v1/auth/verify`, per-tool rate limiting, input injection detection, secret redaction, audit logging
+- **Auto-registration** — Self-registers with core's MCP Servers page on boot (including full tool manifest); deregisters on shutdown
+- **Tool manifest** — Tools are sent during auto-registration so core can display them without speaking MCP protocol
+- **Dashboard** — JSON API dashboard at `/dashboard` with tool/resource/prompt catalogs and logs
+- **Filesystem tools** — Opt-in sandboxed file ops with path validation, symlink protection, and admin-only access
+- **212 tests** across 26 test files covering tools, resources, prompts, middleware, auth, registration, transports, dashboard, and e2e
+
+### Core
+- **Auth verify endpoint** — `POST /api/v1/auth/verify` validates JWT tokens and returns user info; enables service-to-service auth for the MCP package
+- **MCP tool registration** — `McpClientManager.registerTools()` accepts tool manifests during auto-registration; tools show in dashboard immediately
+- **MCP server toggle** — `PATCH /api/v1/mcp/servers/:id` enables/disables MCP servers; disabling clears discovered tools
+- **MCP storage update** — `McpStorage.updateServer()` method for toggling server enabled state
+
+### Integrations
+- **CLI adapter** — Built-in CLI / REST API now registers as a connectable integration on the dashboard; lightweight passthrough adapter with 100 msg/s rate limit (14 tests)
+- **Generic Webhook adapter** — Outbound POSTs to configurable URL with optional HMAC-SHA256 signing; inbound `POST /api/v1/webhooks/custom/:id` endpoint with signature verification and UnifiedMessage normalization (23 tests)
+- **Google Chat registration** — Google Chat adapter (previously unregistered) now wired into `IntegrationManager`; promoted from Beta to Stable (20 tests)
+- **IntegrationManager.getAdapter()** — New method to retrieve the running adapter instance by integration ID; used by the custom webhook inbound route (2 tests)
+- **Default rate limits** — Added `googlechat` (5/s), `cli` (100/s), and `webhook` (30/s) to `DEFAULT_RATE_LIMITS`
+
+### Dashboard
+- **MCP server enable/disable toggle** — Server cards now show a clickable enabled/disabled badge to toggle state via PATCH API
+- **MCP responsive layout** — Server grid and header adapt to small screens with proper wrapping and truncation
+- **Alphabetical platform sorting** — Available Platforms and Configured Integrations on the Connections > Messaging page are now sorted alphabetically by display name
+- **Removed dead doc links** — Removed broken `helpUrl` links from platform cards (docs are not served by the dashboard); cleaned up unused `ExternalLink` import and `helpUrl` interface field
+
+### Documentation
+- **Integration guide updated** — Added CLI and Webhook setup guides with config options, inbound/outbound examples, and rate limits; promoted Google Chat to Stable; table now lists all 8 platforms alphabetically
+- **REST API docs** — Added `POST /api/v1/webhooks/custom/{id}` endpoint documentation
+- **ADR 025** — Architecture decision record for CLI, Webhook, and Google Chat integration completion
+
+---
+
 ## [1.3.3] — 2026-02-13
 
 ### Dashboard

@@ -237,12 +237,16 @@ export {
   McpServerCreateSchema,
   McpToolDefSchema,
   McpResourceDefSchema,
+  McpToolManifestSchema,
+  McpServiceConfigSchema,
   McpConfigSchema,
   type McpTransport,
   type McpServerConfig,
   type McpServerCreate,
   type McpToolDef,
   type McpResourceDef,
+  type McpToolManifest,
+  type McpServiceConfig,
   type McpConfig,
 } from './mcp.js';
 

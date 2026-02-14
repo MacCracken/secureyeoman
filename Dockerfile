@@ -8,6 +8,7 @@ COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/core/package.json packages/core/
 COPY packages/dashboard/package.json packages/dashboard/
+COPY packages/mcp/package.json packages/mcp/
 
 # Install all deps (including devDeps for build)
 RUN npm ci
@@ -17,8 +18,9 @@ COPY tsconfig.json ./
 COPY packages/shared/ packages/shared/
 COPY packages/core/ packages/core/
 COPY packages/dashboard/ packages/dashboard/
+COPY packages/mcp/ packages/mcp/
 
-# Build: shared → core → dashboard
+# Build: shared → core → dashboard → mcp
 RUN npm run build
 
 # Stage 2: Runtime
@@ -35,6 +37,7 @@ COPY package.json package-lock.json ./
 COPY packages/shared/package.json packages/shared/
 COPY packages/core/package.json packages/core/
 COPY packages/dashboard/package.json packages/dashboard/
+COPY packages/mcp/package.json packages/mcp/
 
 # Install production deps only
 RUN npm ci --omit=dev && npm cache clean --force
@@ -43,9 +46,11 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --from=builder /app/packages/shared/dist/ packages/shared/dist/
 COPY --from=builder /app/packages/core/dist/ packages/core/dist/
 COPY --from=builder /app/packages/dashboard/dist/ packages/dashboard/dist/
+COPY --from=builder /app/packages/mcp/dist/ packages/mcp/dist/
 
-# Gateway port
+# Gateway port (core) and MCP port
 EXPOSE 18789
+EXPOSE 3001
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:18789/health || exit 1

@@ -915,6 +915,16 @@ export async function deleteMcpServer(id: string): Promise<void> {
   await request(`/mcp/servers/${id}`, { method: 'DELETE' });
 }
 
+export async function patchMcpServer(
+  id: string,
+  data: { enabled: boolean }
+): Promise<{ server: McpServerConfig }> {
+  return request(`/mcp/servers/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
 export async function fetchMcpTools(): Promise<{ tools: McpToolDef[]; total: number }> {
   try {
     return await request('/mcp/tools');

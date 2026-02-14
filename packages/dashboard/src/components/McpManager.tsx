@@ -16,6 +16,7 @@ import {
   fetchMcpServers,
   addMcpServer,
   deleteMcpServer,
+  patchMcpServer,
   fetchMcpTools,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
@@ -100,6 +101,15 @@ export function McpManager() {
     },
   });
 
+  const toggleMut = useMutation({
+    mutationFn: ({ id, enabled }: { id: string; enabled: boolean }) =>
+      patchMcpServer(id, { enabled }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['mcpServers'] });
+      void queryClient.invalidateQueries({ queryKey: ['mcpTools'] });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     addMut.mutate();
@@ -145,24 +155,24 @@ export function McpManager() {
       />
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
+          <h2 className="text-lg sm:text-xl font-semibold text-primary flex items-center gap-2">
             <Blocks className="w-5 h-5" />
             MCP Servers
           </h2>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Manage external Model Context Protocol servers
           </p>
         </div>
         <div className="flex items-center gap-3">
           {serversData && (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
               {servers.filter((s) => s.enabled).length} enabled / {serversData.total} configured
             </span>
           )}
           <button
-            className="btn btn-primary text-sm px-3 py-1.5 flex items-center gap-1"
+            className="btn btn-primary text-sm px-3 py-1.5 flex items-center gap-1 whitespace-nowrap"
             onClick={() => {
               setShowAddForm(!showAddForm);
               setForm(EMPTY_FORM);
@@ -322,7 +332,7 @@ export function McpManager() {
       {servers.length > 0 ? (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted-foreground">Configured Servers</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4">
             {servers.map((server) => {
               const serverTools = tools.filter((t) => t.serverId === server.id);
               return (
@@ -331,7 +341,9 @@ export function McpManager() {
                   server={server}
                   toolCount={serverTools.length}
                   onDelete={() => setDeleteTarget(server)}
+                  onToggle={(enabled) => toggleMut.mutate({ id: server.id, enabled })}
                   isDeleting={deleteMut.isPending}
+                  isToggling={toggleMut.isPending}
                 />
               );
             })}
@@ -397,12 +409,16 @@ function ServerCard({
   server,
   toolCount,
   onDelete,
+  onToggle,
   isDeleting,
+  isToggling,
 }: {
   server: McpServerConfig;
   toolCount: number;
   onDelete: () => void;
+  onToggle: (enabled: boolean) => void;
   isDeleting: boolean;
+  isToggling: boolean;
 }) {
   const transportIcon =
     server.transport === 'stdio' ? (
@@ -412,38 +428,43 @@ function ServerCard({
     );
 
   return (
-    <div className="card p-4">
-      <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-surface text-muted-foreground">
+    <div className={`card p-3 sm:p-4 ${!server.enabled ? 'opacity-60' : ''}`}>
+      <div className="flex items-start gap-2 sm:gap-3">
+        <div className="p-1.5 sm:p-2 rounded-lg bg-surface text-muted-foreground shrink-0">
           {transportIcon}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <h3 className="font-medium text-sm truncate">{server.name}</h3>
-            <span
-              className={`text-xs flex items-center gap-1 ${
-                server.enabled ? 'text-green-400' : 'text-muted-foreground'
+            <button
+              onClick={() => onToggle(!server.enabled)}
+              disabled={isToggling}
+              className={`text-xs flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full transition-colors ${
+                server.enabled
+                  ? 'text-green-400 hover:bg-green-400/10'
+                  : 'text-muted-foreground hover:bg-muted/50'
               }`}
+              title={server.enabled ? 'Click to disable' : 'Click to enable'}
             >
               {server.enabled ? (
                 <><Power className="w-3 h-3" /> Enabled</>
               ) : (
                 <><PowerOff className="w-3 h-3" /> Disabled</>
               )}
-            </span>
+            </button>
           </div>
           {server.description && (
             <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{server.description}</p>
           )}
-          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-xs text-muted-foreground">
             <span className="px-1.5 py-0.5 rounded bg-muted/50">{server.transport}</span>
             {server.transport === 'stdio' && server.command && (
-              <span className="truncate font-mono">{server.command}</span>
+              <span className="truncate font-mono max-w-[120px] sm:max-w-[200px]">{server.command}</span>
             )}
             {server.transport !== 'stdio' && server.url && (
-              <span className="truncate font-mono">{server.url}</span>
+              <span className="truncate font-mono max-w-[120px] sm:max-w-[200px]">{server.url}</span>
             )}
-            <span>{toolCount} tools</span>
+            <span className="shrink-0">{toolCount} tools</span>
           </div>
         </div>
       </div>

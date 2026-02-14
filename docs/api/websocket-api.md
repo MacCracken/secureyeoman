@@ -13,7 +13,7 @@ Production: wss://your-domain.com/ws
 
 ### Authentication
 
-WebSocket connections require authentication via query parameters:
+WebSocket connections require authentication via query parameters. The token is validated **before** the connection is accepted — if validation fails, the socket is closed with code `4401`.
 
 ```javascript
 // With JWT token
@@ -22,6 +22,8 @@ const ws = new WebSocket('ws://localhost:18789/ws?token=<jwt-token>');
 // With API key
 const ws = new WebSocket('ws://localhost:18789/ws?api_key=<api-key>');
 ```
+
+The authenticated user's `userId` and `role` are extracted from the token and stored on the connection. These are used for channel-level authorization (see below).
 
 ---
 
@@ -132,6 +134,21 @@ const ws = new WebSocket('ws://localhost:18789/ws?api_key=<api-key>');
 ---
 
 ## Channels
+
+### Channel Authorization
+
+Channels are subject to RBAC permission checks. When a client sends a `subscribe` message, each requested channel is checked against the user's role. Unauthorized channels are silently skipped — the `ack` response contains only the channels that were actually subscribed.
+
+| Channel | Required Permission | Minimum Role |
+|---------|-------------------|--------------|
+| `metrics` | `metrics:read` | `viewer` |
+| `tasks` | `tasks:read` | `viewer` |
+| `audit` | `audit:read` | `auditor` / `admin` |
+| `security` | `security_events:read` | `admin` |
+| `connections` | *(no restriction)* | any authenticated |
+| `system` | *(no restriction)* | any authenticated |
+
+Channels not in the permissions map are allowed by default for extensibility.
 
 ### metrics
 
@@ -310,7 +327,7 @@ System health and status events.
 ```json
 {
   "event_type": "startup",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "uptime_seconds": 0,
   "capabilities": {
     "sandbox": true,
@@ -519,21 +536,18 @@ asyncio.run(main())
 
 ### Connection Health Monitoring
 
-```typescript
-// Ping/Pong for connection health
-setInterval(() => {
-  if (ws.readyState === WebSocket.OPEN) {
-    ws.send(JSON.stringify({ type: 'ping' }));
-  }
-}, 30000);
+The server sends WebSocket-level `ping` frames every 30 seconds. Clients that do not respond with a `pong` within 60 seconds are automatically terminated. Most WebSocket libraries handle pong responses automatically — no application-level code is needed.
 
-// Handle pong responses
-ws.addEventListener('message', (event) => {
-  const message = JSON.parse(event.data);
-  if (message.type === 'pong') {
-    // Connection is healthy
-  }
+If you want to detect connection health from the client side, you can listen for the `ping` event (Node.js) or rely on the browser's built-in pong handling:
+
+```typescript
+// Node.js: ws library handles pong automatically, but you can listen:
+ws.on('ping', () => {
+  // Server is alive — pong is sent automatically by the ws library
 });
+
+// Browser: WebSocket API handles ping/pong transparently at the protocol level.
+// No application code needed. If the connection drops, the 'close' event fires.
 ```
 
 ---
@@ -552,11 +566,12 @@ Exceeding limits will result in connection termination.
 
 ## Security Considerations
 
-- **Authentication Required**: All connections must authenticate
-- **Authorization**: Users can only access channels they have permission for
+- **Authentication Required**: All connections must authenticate via JWT or API key; token is validated before the connection is accepted
+- **Channel Authorization**: Subscriptions are checked against RBAC permissions — users can only receive data from channels their role permits (see [Channel Authorization](#channel-authorization))
+- **Heartbeat**: Server pings every 30 seconds; unresponsive connections are terminated after 60 seconds
 - **Message Validation**: All messages are validated server-side
 - **No Raw Commands**: Commands go through validation and authorization
-- **Connection Logging**: All connections and messages are audited
+- **Connection Logging**: All connections and disconnections are audited
 
 ---
 

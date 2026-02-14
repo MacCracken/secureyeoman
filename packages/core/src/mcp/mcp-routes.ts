@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { McpClientManager } from './client.js';
 import type { McpStorage } from './storage.js';
 import type { McpServer } from './server.js';
+import type { McpToolManifest } from '@friday/shared';
 
 export interface McpRoutesOptions {
   mcpStorage: McpStorage;
@@ -26,19 +27,59 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     return { servers, total: servers.length };
   });
 
-  // Add a new MCP server
+  // Add a new MCP server (with optional tool manifest)
   app.post('/api/v1/mcp/servers', async (request: FastifyRequest<{
-    Body: { name: string; description?: string; transport?: string; command?: string; args?: string[]; url?: string; env?: Record<string, string>; enabled?: boolean }
+    Body: {
+      name: string;
+      description?: string;
+      transport?: string;
+      command?: string;
+      args?: string[];
+      url?: string;
+      env?: Record<string, string>;
+      enabled?: boolean;
+      tools?: McpToolManifest[];
+    }
   }>, reply: FastifyReply) => {
     try {
-      const server = mcpStorage.addServer(request.body as any);
-      if (server.enabled) {
+      const { tools, ...serverData } = request.body;
+      const server = mcpStorage.addServer(serverData as any);
+
+      // Register tools if provided in the request
+      if (tools && Array.isArray(tools) && tools.length > 0) {
+        mcpClient.registerTools(server.id, server.name, tools);
+      } else if (server.enabled) {
+        // Attempt protocol-based discovery for servers that didn't provide tools
         await mcpClient.discoverTools(server.id);
       }
+
       return reply.code(201).send({ server });
     } catch (err) {
       return reply.code(400).send({ error: errorMessage(err) });
     }
+  });
+
+  // Toggle MCP server enabled/disabled
+  app.patch('/api/v1/mcp/servers/:id', async (request: FastifyRequest<{
+    Params: { id: string };
+    Body: { enabled: boolean }
+  }>, reply: FastifyReply) => {
+    const server = mcpStorage.getServer(request.params.id);
+    if (!server) {
+      return reply.code(404).send({ error: 'MCP server not found' });
+    }
+
+    const updated = mcpStorage.updateServer(request.params.id, { enabled: request.body.enabled });
+    if (!updated) {
+      return reply.code(500).send({ error: 'Failed to update server' });
+    }
+
+    // If disabling, clear discovered tools
+    if (!request.body.enabled) {
+      mcpClient.clearTools(request.params.id);
+    }
+
+    return { server: mcpStorage.getServer(request.params.id) };
   });
 
   // Delete an MCP server
@@ -49,6 +90,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     if (!deleted) {
       return reply.code(404).send({ error: 'MCP server not found' });
     }
+    mcpClient.clearTools(request.params.id);
     return { message: 'Server removed' };
   });
 

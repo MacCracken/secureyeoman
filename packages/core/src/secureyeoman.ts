@@ -63,6 +63,9 @@ import { DiscordIntegration } from './integrations/discord/index.js';
 import { SlackIntegration } from './integrations/slack/index.js';
 import { GitHubIntegration } from './integrations/github/index.js';
 import { IMessageIntegration } from './integrations/imessage/index.js';
+import { GoogleChatIntegration } from './integrations/googlechat/index.js';
+import { CliIntegration } from './integrations/cli/index.js';
+import { GenericWebhookIntegration } from './integrations/webhook/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
 import { HeartManager } from './body/heart.js';
 import { ExternalBrainSync } from './brain/external-sync.js';
@@ -505,6 +508,9 @@ export class SecureYeoman {
       this.integrationManager.registerPlatform('slack', () => new SlackIntegration());
       this.integrationManager.registerPlatform('github', () => new GitHubIntegration());
       this.integrationManager.registerPlatform('imessage', () => new IMessageIntegration());
+      this.integrationManager.registerPlatform('googlechat', () => new GoogleChatIntegration());
+      this.integrationManager.registerPlatform('cli', () => new CliIntegration());
+      this.integrationManager.registerPlatform('webhook', () => new GenericWebhookIntegration());
       // Start auto-reconnect health checks
       this.integrationManager.startHealthChecks();
 

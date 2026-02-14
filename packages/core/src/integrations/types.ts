@@ -86,6 +86,9 @@ export const DEFAULT_RATE_LIMITS: Record<string, PlatformRateLimit> = {
   slack: { maxPerSecond: 1 },
   github: { maxPerSecond: 30 },
   imessage: { maxPerSecond: 5 },
+  googlechat: { maxPerSecond: 5 },
+  cli: { maxPerSecond: 100 },
+  webhook: { maxPerSecond: 30 },
 };
 
 // ─── Dependencies ────────────────────────────────────────────

@@ -38,18 +38,25 @@ cd friday
 cp .env.example .env
 # Edit .env with your configuration
 
-# Run with Docker Compose
+# Run with Docker Compose (core + dashboard)
 docker compose up
+
+# Run with MCP service included
+docker compose --profile mcp up
+
+# Run everything (core + dashboard + mcp)
+docker compose --profile full up
 ```
 
-Docker Compose starts two services:
+Docker Compose starts these services:
 
-| Service | Port | Description |
-|---------|------|-------------|
-| `core` | 18789 | Gateway API + agent engine |
-| `dashboard` | 3000 | Vite dev server for the React dashboard |
+| Service | Port | Profile | Description |
+|---------|------|---------|-------------|
+| `core` | 18789 | *(default)* | Gateway API + agent engine |
+| `dashboard` | 3000 | *(default)* | Vite dev server for the React dashboard |
+| `mcp` | 3001 | `mcp` / `full` | MCP protocol server (tools, resources, prompts) |
 
-The core service runs as a non-root `friday` user with a persistent volume (`friday-data`) for SQLite databases.
+The core service runs as a non-root `friday` user with a persistent volume (`friday-data`) for SQLite databases. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token setup needed.
 
 #### Manual Docker build
 
@@ -119,7 +126,7 @@ NODE_ENV=development
 For advanced configuration, create `~/.secureyeoman/config.yaml`:
 
 ```yaml
-version: "1.3"
+version: "1.4"
 core:
   name: "F.R.I.D.A.Y."
   environment: development
@@ -174,6 +181,9 @@ npm run dev:core
 
 # Or start dashboard only (requires core running)
 npm run dev:dashboard
+
+# Or start MCP service only (requires core running)
+npm run dev:mcp
 ```
 
 ### 2. Access the Dashboard
@@ -227,7 +237,7 @@ Expected response:
 {
   "status": "healthy",
   "timestamp": "2026-02-11T00:00:00.000Z",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "uptime": 3600
 }
 ```
@@ -271,6 +281,70 @@ npm test -- --coverage
 # Security + chaos tests
 npx vitest run tests/security/ tests/chaos/
 ```
+
+---
+
+## MCP Service (Optional)
+
+The MCP service (`@friday/mcp`) exposes FRIDAY's capabilities as MCP tools, resources, and prompts for use with Claude Desktop and other MCP clients.
+
+### 1. Configure Environment
+
+The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET`. No manual token needed — just enable it:
+
+```bash
+# MCP Service
+MCP_ENABLED=true
+# SECUREYEOMAN_TOKEN_SECRET is already set for core — MCP uses it automatically
+```
+
+All other MCP variables have sensible defaults. See [Configuration Reference](../configuration.md) for the full list.
+
+### 2. Start the MCP Service
+
+**Local development:**
+
+```bash
+npm run dev:mcp
+```
+
+**Docker:**
+
+```bash
+docker compose --profile mcp up
+```
+
+### 3. Verify
+
+```bash
+# Health check
+curl http://localhost:3001/dashboard
+
+# Should return server status with tool/resource/prompt counts
+```
+
+The MCP service auto-registers with core on startup. You'll see it listed in the dashboard's MCP Servers page.
+
+### 4. Claude Desktop (stdio)
+
+For Claude Desktop integration, add to your Claude Desktop config:
+
+```json
+{
+  "mcpServers": {
+    "friday": {
+      "command": "node",
+      "args": ["packages/mcp/dist/cli.js", "--transport", "stdio"],
+      "env": {
+        "MCP_CORE_URL": "http://127.0.0.1:18789",
+        "SECUREYEOMAN_TOKEN_SECRET": "<your-token-secret>"
+      }
+    }
+  }
+}
+```
+
+For full MCP configuration details, see the [Integration Setup Guide](integrations.md#mcp-service-fridaymcp).
 
 ---
 

@@ -60,7 +60,17 @@ interface WebSocketClient {
   ws: WebSocket;
   channels: Set<string>;
   userId?: string;
+  role?: string;
+  lastPong: number;
 }
+
+/** Channel → minimum required RBAC resource:action for WebSocket subscriptions */
+const CHANNEL_PERMISSIONS: Record<string, { resource: string; action: string }> = {
+  metrics: { resource: 'metrics', action: 'read' },
+  audit: { resource: 'audit', action: 'read' },
+  tasks: { resource: 'tasks', action: 'read' },
+  security: { resource: 'security_events', action: 'read' },
+};
 
 export interface GatewayServerOptions {
   config: GatewayConfig;
@@ -76,6 +86,7 @@ export class GatewayServer {
   private readonly clients = new Map<string, WebSocketClient>();
   private logger: SecureLogger | null = null;
   private metricsInterval: NodeJS.Timeout | null = null;
+  private heartbeatInterval: NodeJS.Timeout | null = null;
   private clientIdCounter = 0;
   private lastMetricsJson: string | null = null;
 
@@ -163,6 +174,19 @@ export class GatewayServer {
       }
     });
 
+    // Security headers
+    this.app.addHook('onRequest', async (_request, reply) => {
+      reply.header('X-Content-Type-Options', 'nosniff');
+      reply.header('X-Frame-Options', 'DENY');
+      reply.header('X-XSS-Protection', '0');
+      reply.header('Referrer-Policy', 'strict-origin-when-cross-origin');
+      reply.header('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+      if (this.config.tls.enabled) {
+        reply.header('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+      }
+    });
+
     // CORS for local development
     this.app.addHook('onRequest', async (request, reply) => {
       const origin = request.headers.origin;
@@ -170,11 +194,18 @@ export class GatewayServer {
       if (origin && this.config.cors.enabled) {
         const allowedOrigins = this.config.cors.origins;
 
-        if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+        if (allowedOrigins.includes('*')) {
+          reply.header('Access-Control-Allow-Origin', '*');
+          // Do NOT set Allow-Credentials with wildcard origin
+        } else if (allowedOrigins.includes(origin)) {
           reply.header('Access-Control-Allow-Origin', origin);
+          reply.header('Access-Control-Allow-Credentials', 'true');
+          reply.header('Vary', 'Origin');
+        }
+
+        if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
           reply.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
           reply.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key');
-          reply.header('Access-Control-Allow-Credentials', 'true');
         }
       }
 
@@ -277,9 +308,14 @@ export class GatewayServer {
       const mcpServer = this.secureYeoman.getMcpServer();
       if (mcpStorage && mcpClient && mcpServer) {
         registerMcpRoutes(this.app, { mcpStorage, mcpClient, mcpServer });
+        this.getLogger().info('MCP routes registered');
+      } else {
+        this.getLogger().warn('MCP routes skipped — MCP system not initialized');
       }
-    } catch {
-      // MCP may not be available — skip routes
+    } catch (err) {
+      this.getLogger().error('MCP routes failed to register', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // Report routes
@@ -351,7 +387,7 @@ export class GatewayServer {
       const state = this.secureYeoman.getState();
       return {
         status: state.healthy ? 'ok' : 'error',
-        version: '0.1.0',
+        version: '1.4.0',
         uptime: state.startedAt ? Date.now() - state.startedAt : 0,
         checks: {
           database: true,
@@ -716,8 +752,9 @@ export class GatewayServer {
 
     // WebSocket endpoint — auth is handled via ?token= query param
     // (browser WebSocket API does not support custom headers)
-    this.app.get('/ws/metrics', { websocket: true }, (socket, request) => {
+    this.app.get('/ws/metrics', { websocket: true }, async (socket, request) => {
       // Validate token from query string
+      let authUser: { userId: string; role: string } | undefined;
       if (this.authService) {
         const url = new URL(request.url, `http://${request.hostname}`);
         const token = url.searchParams.get('token');
@@ -725,10 +762,13 @@ export class GatewayServer {
           socket.close(4401, 'Missing authentication token');
           return;
         }
-        // Fire-and-forget async validation; close on failure
-        void this.authService.validateToken(token).catch(() => {
+        try {
+          const user = await this.authService.validateToken(token);
+          authUser = { userId: user.userId, role: user.role };
+        } catch {
           socket.close(4401, 'Invalid authentication token');
-        });
+          return;
+        }
       }
 
       const clientId = `client_${String(++this.clientIdCounter)}`;
@@ -736,11 +776,18 @@ export class GatewayServer {
       const client: WebSocketClient = {
         ws: socket,
         channels: new Set(),
+        userId: authUser?.userId,
+        role: authUser?.role,
+        lastPong: Date.now(),
       };
 
       this.clients.set(clientId, client);
 
-      this.getLogger().debug('WebSocket client connected', { clientId });
+      this.getLogger().debug('WebSocket client connected', { clientId, userId: authUser?.userId });
+
+      socket.on('pong', () => {
+        client.lastPong = Date.now();
+      });
 
       socket.on('message', (message: Buffer) => {
         try {
@@ -750,14 +797,21 @@ export class GatewayServer {
           };
 
           if (data.type === 'subscribe' && data.payload?.channels) {
+            const subscribed: string[] = [];
             for (const channel of data.payload.channels) {
+              const perm = CHANNEL_PERMISSIONS[channel];
+              if (perm && client.role) {
+                const result = this.secureYeoman.getRBAC().checkPermission(client.role, perm);
+                if (!result.granted) continue;
+              }
               client.channels.add(channel);
+              subscribed.push(channel);
             }
             socket.send(
               JSON.stringify({
                 type: 'ack',
                 channel: 'system',
-                payload: { subscribed: Array.from(client.channels) },
+                payload: { subscribed },
                 timestamp: Date.now(),
                 sequence: 0,
               })
@@ -889,6 +943,20 @@ export class GatewayServer {
 
       // Start metrics broadcast
       this.startMetricsBroadcast();
+
+      // Start WebSocket heartbeat (ping every 30s, terminate after 60s without pong)
+      this.heartbeatInterval = setInterval(() => {
+        const now = Date.now();
+        for (const [id, client] of this.clients) {
+          if (now - client.lastPong > 60_000) {
+            client.ws.terminate();
+            this.clients.delete(id);
+          } else {
+            client.ws.ping();
+          }
+        }
+      }, 30_000);
+      this.heartbeatInterval.unref();
     } catch (error) {
       this.getLogger().error('Failed to start gateway server', {
         error: error instanceof Error ? error.message : 'Unknown',
@@ -901,6 +969,12 @@ export class GatewayServer {
    * Stop the server
    */
   async stop(): Promise<void> {
+    // Stop heartbeat
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+
     // Stop metrics broadcast
     if (this.metricsInterval) {
       clearInterval(this.metricsInterval);

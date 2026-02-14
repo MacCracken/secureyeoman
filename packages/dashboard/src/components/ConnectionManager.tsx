@@ -14,7 +14,6 @@ import {
   AlertCircle,
   GitBranch,
   HelpCircle,
-  ExternalLink,
 } from 'lucide-react';
 import {
   fetchIntegrations,
@@ -31,7 +30,6 @@ interface PlatformMeta {
   description: string;
   icon: React.ReactNode;
   fields: FormFieldDef[];
-  helpUrl?: string;
   setupSteps?: string[];
 }
 
@@ -60,7 +58,6 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
     description: 'Connect to Telegram Bot API for messaging',
     icon: <MessageCircle className="w-6 h-6" />,
     fields: [...BASE_FIELDS, { ...TOKEN_FIELD, helpText: 'Get from @BotFather on Telegram' }],
-    helpUrl: '/docs/guides/integrations#telegram',
     setupSteps: [
       'Open Telegram and search for @BotFather',
       'Send /newbot to create a new bot',
@@ -76,7 +73,6 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       ...BASE_FIELDS,
       { ...TOKEN_FIELD, helpText: 'Bot token from Discord Developer Portal' },
     ],
-    helpUrl: '/docs/guides/integrations#discord',
     setupSteps: [
       'Go to Discord Developer Portal',
       'Create a new application and add a bot',
@@ -99,7 +95,6 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
         helpText: 'App-level token for Socket Mode',
       },
     ],
-    helpUrl: '/docs/guides/integrations#slack',
     setupSteps: [
       'Create app at api.slack.com',
       'Enable Socket Mode',
@@ -128,7 +123,6 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
         helpText: 'Secret to verify webhook authenticity',
       },
     ],
-    helpUrl: '/docs/guides/integrations#github',
     setupSteps: [
       'Generate a Personal Access Token at github.com/settings/tokens',
       'Create a webhook in repo Settings > Webhooks',
@@ -141,7 +135,6 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
     description: 'Local command-line interface (built-in)',
     icon: <Terminal className="w-6 h-6" />,
     fields: BASE_FIELDS,
-    helpUrl: '/docs/guides/getting-started',
     setupSteps: [
       'CLI is built-in and always available',
       'Use secureyeoman CLI or REST API to interact',
@@ -168,7 +161,6 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
         helpText: 'Used to sign/verify requests',
       },
     ],
-    helpUrl: '/docs/guides/integrations#webhook',
     setupSteps: [
       'Configure your external service to send webhooks',
       'Set the URL to your /api/v1/webhooks/custom endpoint',
@@ -191,7 +183,6 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
         helpText: 'The Google Chat space to connect to',
       },
     ],
-    helpUrl: '/docs/guides/integrations#google-chat',
     setupSteps: [
       'Go to Google Cloud Console',
       'Create a project and enable Google Chat API',
@@ -254,12 +245,16 @@ export function ConnectionManager() {
     queryFn: fetchAvailablePlatforms,
   });
 
-  const integrations = integrationsData?.integrations ?? [];
+  const integrations = [...(integrationsData?.integrations ?? [])].sort((a, b) =>
+    a.displayName.localeCompare(b.displayName)
+  );
   const availablePlatforms = new Set(platformsData?.platforms ?? []);
   const hasRegisteredPlatforms = availablePlatforms.size > 0;
 
   const activePlatformIds = new Set(integrations.map((i) => i.platform));
-  const unregisteredPlatforms = Object.keys(PLATFORM_META).filter((p) => !activePlatformIds.has(p));
+  const unregisteredPlatforms = Object.keys(PLATFORM_META)
+    .filter((p) => !activePlatformIds.has(p))
+    .sort((a, b) => PLATFORM_META[a].name.localeCompare(PLATFORM_META[b].name));
 
   const createMut = useMutation({
     mutationFn: async () => {
@@ -353,22 +348,10 @@ export function ConnectionManager() {
 
             if (connectingPlatform === platformId) {
               const meta = PLATFORM_META[platformId];
-              const showHelp = meta.setupSteps || meta.helpUrl;
               return (
                 <div key={platformId} className="card p-4 border-primary border-2">
                   <div className="flex items-center justify-between mb-3">
                     <h3 className="font-medium text-sm">Connect {meta.name}</h3>
-                    {showHelp && (
-                      <a
-                        href={meta.helpUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-xs text-primary hover:underline flex items-center gap-1"
-                      >
-                        <ExternalLink className="w-3 h-3" />
-                        Docs
-                      </a>
-                    )}
                   </div>
                   {meta.setupSteps && (
                     <div className="mb-4 p-3 bg-surface rounded-md">
