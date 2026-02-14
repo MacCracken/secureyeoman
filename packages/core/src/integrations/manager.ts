@@ -222,6 +222,11 @@ export class IntegrationManager {
     return this.registry.size;
   }
 
+  /** Get the running adapter instance for an integration (or null). */
+  getAdapter(id: string): Integration | null {
+    return this.registry.get(id)?.integration ?? null;
+  }
+
   startHealthChecks(): void {
     if (this.healthCheckTimer) return;
     this.healthCheckTimer = setInterval(

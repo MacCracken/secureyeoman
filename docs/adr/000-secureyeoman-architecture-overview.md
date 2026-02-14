@@ -129,6 +129,8 @@ This ADR serves as the foundation. Specific architectural decisions are document
 - **ADR 016**: User Consent Capture
 - **ADR 017**: Sandboxed Capture Execution
 - **ADR 018**: Proactive Heartbeat Enhancements
+- **ADR 025**: CLI, Webhook, and Google Chat Integration Completion
+- **ADR 026**: MCP Service Package (`@friday/mcp`)
 
 ## Consequences
 

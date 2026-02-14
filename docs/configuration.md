@@ -56,7 +56,7 @@ secureyeoman --log-level debug         # Verbose logging
 ### Complete Example
 
 ```yaml
-version: "1.3"
+version: "1.4"
 
 core:
   name: "SecureYeoman"
@@ -272,6 +272,14 @@ When `tls.caPath` is provided, the server enables mutual TLS (mTLS): clients mus
 
 Use the `--tls` CLI flag for development — it auto-generates a self-signed CA and server certificate in `~/.secureyeoman/dev-certs/`.
 
+#### Security Headers
+
+The gateway automatically sets HTTP security headers on every response (`X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`, `Permissions-Policy`). When TLS is enabled, `Strict-Transport-Security` (HSTS) is also set. These headers are unconditional and require no configuration.
+
+#### CORS Credentials
+
+When `cors.origins` contains `'*'` (wildcard), `Access-Control-Allow-Credentials` is **not** set — per the Fetch spec, browsers reject credentialed requests with wildcard origins. To use `credentials: 'include'` in your frontend, list the exact origin(s) instead of `'*'`.
+
 ### model
 
 | Field | Type | Default | Description |
@@ -307,13 +315,13 @@ Each entry in the `fallbacks` array configures an alternative model to try when 
 | `maxSkills` | number | `50` | Maximum number of skills (max 200) |
 | `maxPromptTokens` | number | `4096` | Token budget for composed system prompt |
 
-### mcp
+### mcp (in-process, legacy)
 
-Model Context Protocol support for tool/resource interoperability.
+Model Context Protocol support for tool/resource interoperability via the in-process MCP server.
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `enabled` | boolean | `false` | Enable MCP protocol support |
+| `enabled` | boolean | `true` | Enable in-process MCP protocol support |
 | `serverPort` | number | `18790` | Port for MCP JSON-RPC server (1024–65535) |
 | `exposeSkillsAsTools` | boolean | `true` | Expose F.R.I.D.A.Y.'s skills as MCP tools |
 | `exposeKnowledgeAsResources` | boolean | `true` | Expose Brain knowledge as MCP resources |
@@ -326,6 +334,29 @@ mcp:
   exposeSkillsAsTools: true
   exposeKnowledgeAsResources: true
 ```
+
+### MCP Service (`@friday/mcp`)
+
+The standalone MCP service package provides full MCP protocol compliance with 22+ tools, 7 resources, 4 prompts, and 3 transports. It runs as a separate process and communicates with core via REST API.
+
+Configuration is via environment variables (not the YAML config file):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_ENABLED` | `true` | Master kill switch — set to `false` to prevent startup |
+| `MCP_PORT` | `3001` | HTTP server port (1024–65535) |
+| `MCP_HOST` | `127.0.0.1` | Bind address |
+| `MCP_TRANSPORT` | `streamable-http` | Transport mode: `streamable-http`, `sse`, `stdio` |
+| `MCP_AUTO_REGISTER` | `true` | Auto-register with core's MCP server list on startup |
+| `MCP_CORE_URL` | `http://127.0.0.1:18789` | Core gateway URL |
+| `MCP_EXPOSE_FILESYSTEM` | `false` | Enable filesystem tools (`fs_read`, `fs_write`, `fs_list`, `fs_search`) — admin-only |
+| `MCP_ALLOWED_PATHS` | *(empty)* | Comma-separated paths allowed for filesystem tools |
+| `MCP_RATE_LIMIT_PER_TOOL` | `30` | Max tool calls per second per tool (1–1000) |
+| `MCP_LOG_LEVEL` | `info` | Log level: `trace`, `debug`, `info`, `warn`, `error`, `fatal` |
+
+**Authentication:** The MCP service self-mints a service JWT on startup using the shared `SECUREYEOMAN_TOKEN_SECRET`. No manual token configuration is needed — just ensure `SECUREYEOMAN_TOKEN_SECRET` is set in your `.env` file (it's the same secret used by core for JWT signing).
+
+See the [Getting Started Guide](guides/getting-started.md#mcp-service-optional) for step-by-step setup instructions.
 
 ### heartbeat
 
@@ -611,7 +642,7 @@ All security-sensitive values are referenced by environment variable name in the
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `SECUREYEOMAN_SIGNING_KEY` | Yes | Audit chain HMAC-SHA256 signing key (32+ chars) |
-| `SECUREYEOMAN_TOKEN_SECRET` | Yes | JWT signing secret (32+ chars) |
+| `SECUREYEOMAN_TOKEN_SECRET` | Yes | JWT signing secret (32+ chars); also used by MCP service to self-mint a service JWT |
 | `SECUREYEOMAN_ENCRYPTION_KEY` | Yes | AES-256-GCM encryption key (32+ chars) |
 | `SECUREYEOMAN_ADMIN_PASSWORD` | Yes | Admin login password (32+ chars) |
 | `ANTHROPIC_API_KEY` | One AI key required | Anthropic Claude API key |
@@ -623,3 +654,13 @@ All security-sensitive values are referenced by environment variable name in the
 | `HOST` | No | Gateway host override |
 | `LOG_LEVEL` | No | Log level override |
 | `NODE_ENV` | No | Node environment (`development`, `production`) |
+| `MCP_ENABLED` | No | Enable the MCP service (default: `true`) |
+| `MCP_PORT` | No | MCP service port (default: `3001`) |
+| `MCP_HOST` | No | MCP service bind address (default: `127.0.0.1`) |
+| `MCP_TRANSPORT` | No | MCP transport: `streamable-http`, `sse`, `stdio` |
+| `MCP_AUTO_REGISTER` | No | Auto-register MCP service with core (default: `true`) |
+| `MCP_CORE_URL` | No | Core gateway URL (default: `http://127.0.0.1:18789`) |
+| `MCP_EXPOSE_FILESYSTEM` | No | Enable MCP filesystem tools (default: `false`) |
+| `MCP_ALLOWED_PATHS` | No | Comma-separated allowed filesystem paths |
+| `MCP_RATE_LIMIT_PER_TOOL` | No | MCP tool rate limit per second (default: `30`) |
+| `MCP_LOG_LEVEL` | No | MCP service log level (default: `info`) |

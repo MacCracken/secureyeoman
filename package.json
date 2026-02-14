@@ -1,6 +1,6 @@
 {
   "name": "friday",
-  "version": "1.3.3",
+  "version": "1.4.0",
   "description": "F.R.I.D.A.Y. - Fully Responsive Integrated Digitally Adaptable Yeoman with SecureYeoman",
   "private": true,
   "type": "module",
@@ -11,6 +11,7 @@
     "build": "npm run build --workspaces",
     "dev": "npm run dev --workspace=@friday/core",
     "dev:dashboard": "npm run dev --workspace=@friday/dashboard",
+    "dev:mcp": "npm run dev --workspace=@friday/mcp",
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint packages/",
     "lint:fix": "eslint packages/ --fix",

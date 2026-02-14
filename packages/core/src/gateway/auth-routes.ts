@@ -136,6 +136,24 @@ export function registerAuthRoutes(
     return { keys };
   });
 
+  // ── POST /api/v1/auth/verify ──────────────────────────────────
+  app.post('/api/v1/auth/verify', async (
+    request: FastifyRequest<{ Body: { token: string } }>,
+    reply: FastifyReply,
+  ) => {
+    const { token } = request.body ?? {};
+    if (!token || typeof token !== 'string') {
+      return reply.code(400).send({ error: 'Token is required' });
+    }
+
+    try {
+      const user = await authService.validateToken(token);
+      return { valid: true, userId: user.userId, role: user.role, permissions: user.permissions };
+    } catch {
+      return { valid: false };
+    }
+  });
+
   // ── DELETE /api/v1/auth/api-keys/:id ──────────────────────────────
   app.delete('/api/v1/auth/api-keys/:id', async (
     request: FastifyRequest<{ Params: { id: string } }>,

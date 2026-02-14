@@ -77,6 +77,7 @@ describe('Auth Middleware', () => {
     app.get('/api/v1/audit', async (req) => ({ user: req.authUser?.userId }));
     app.post('/api/v1/audit/verify', async (req) => ({ user: req.authUser?.userId }));
     app.get('/api/v1/security/events', async (req) => ({ user: req.authUser?.userId }));
+    app.post('/api/v1/auth/verify', async (req) => ({ user: req.authUser?.userId }));
     app.post('/api/v1/auth/api-keys', async (req) => ({ user: req.authUser?.userId }));
     app.get('/api/v1/auth/api-keys', async (req) => ({ user: req.authUser?.userId }));
     app.delete('/api/v1/auth/api-keys/:id', async (req) => ({ user: req.authUser?.userId }));
@@ -239,6 +240,41 @@ describe('Auth Middleware', () => {
         headers: { authorization: `Bearer ${token}` },
       });
       expect(res.statusCode).toBe(200);
+    });
+  });
+
+  // ── Auth verify endpoint RBAC ──────────────────────────────────
+
+  describe('auth verify', () => {
+    it('admin can access POST /api/v1/auth/verify', async () => {
+      const token = await loginAndGetToken();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/verify',
+        headers: { authorization: `Bearer ${token}` },
+        payload: {},
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('viewer cannot access POST /api/v1/auth/verify (admin-only)', async () => {
+      const key = await createViewerApiKey();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/verify',
+        headers: { 'x-api-key': key },
+        payload: {},
+      });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('unauthenticated cannot access POST /api/v1/auth/verify', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/verify',
+        payload: {},
+      });
+      expect(res.statusCode).toBe(401);
     });
   });
 

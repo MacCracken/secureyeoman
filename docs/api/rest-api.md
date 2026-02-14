@@ -14,6 +14,7 @@ This documentation covers the complete API surface. For real-time events, see:
 | [Metrics](#metrics) | System metrics and monitoring |
 | [Soul](#soul-system) | Personality and skills |
 | [Integrations](#integrations) | Platform integrations |
+| [MCP Servers](#mcp-servers) | MCP server management and tool discovery |
 
 ## Related Documentation
 
@@ -69,7 +70,7 @@ Health check endpoint - no authentication required.
 {
   "status": "healthy",
   "timestamp": "2026-02-11T00:00:00.000Z",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "uptime": 3600
 }
 ```
@@ -126,6 +127,37 @@ Logout and revoke refresh token.
 ```json
 {
   "message": "Logged out successfully"
+}
+```
+
+#### POST /api/v1/auth/verify
+
+Validate a JWT token and return user info. Used for service-to-service auth (e.g., MCP service).
+
+**Headers**
+- `Authorization: Bearer <admin-or-service-token>`
+
+**Request Body**
+```json
+{
+  "token": "<jwt-token-to-verify>"
+}
+```
+
+**Response (valid)**
+```json
+{
+  "valid": true,
+  "userId": "admin",
+  "role": "admin",
+  "permissions": ["*"]
+}
+```
+
+**Response (invalid)**
+```json
+{
+  "valid": false
 }
 ```
 
@@ -1413,6 +1445,186 @@ Receive GitHub webhook events. Verifies HMAC-SHA256 signature against the integr
 **Headers**
 - `X-Hub-Signature-256`: HMAC-SHA256 signature
 - `X-GitHub-Event`: Event type (push, pull_request, issues, issue_comment)
+
+#### POST /api/v1/webhooks/custom/{id}
+
+Receive generic webhook events. Optionally verifies HMAC-SHA256 signature if a `secret` is configured on the integration.
+
+**Authentication**: None (verified via webhook signature if secret configured)
+
+**Headers**
+- `X-Webhook-Signature` (optional): `sha256=<hex digest>` HMAC-SHA256 signature
+
+**Request Body** (JSON)
+```json
+{
+  "senderId": "external-system",
+  "senderName": "CI Pipeline",
+  "chatId": "channel-1",
+  "text": "Build passed",
+  "metadata": {}
+}
+```
+
+---
+
+### MCP Servers
+
+#### GET /api/v1/mcp/servers
+
+List configured MCP servers.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "servers": [
+    {
+      "id": "01234abc...",
+      "name": "FRIDAY Internal MCP",
+      "description": "Built-in MCP server",
+      "transport": "streamable-http",
+      "url": "http://127.0.0.1:3001",
+      "enabled": true,
+      "createdAt": 1700000000000,
+      "updatedAt": 1700000000000
+    }
+  ],
+  "total": 1
+}
+```
+
+#### POST /api/v1/mcp/servers
+
+Add a new MCP server. Optionally include a tool manifest to register tools without protocol discovery.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "name": "My MCP Server",
+  "description": "Optional description",
+  "transport": "stdio",
+  "command": "npx",
+  "args": ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"],
+  "env": {},
+  "enabled": true,
+  "tools": [
+    { "name": "tool_name", "description": "What the tool does" }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Server display name |
+| `description` | string | No | Short description |
+| `transport` | string | No | `stdio`, `sse`, or `streamable-http` (default: `stdio`) |
+| `command` | string | No | Command for stdio transport |
+| `args` | string[] | No | Arguments for stdio command |
+| `url` | string | No | URL for SSE / streamable-http transport |
+| `env` | object | No | Environment variables |
+| `enabled` | boolean | No | Whether server is enabled (default: true) |
+| `tools` | array | No | Pre-register tool manifest (skips protocol discovery) |
+
+**Response** (201)
+```json
+{
+  "server": { "id": "...", "name": "My MCP Server", "..." : "..." }
+}
+```
+
+#### PATCH /api/v1/mcp/servers/{id}
+
+Toggle an MCP server enabled/disabled. When disabling, discovered tools are cleared.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "enabled": false
+}
+```
+
+**Response**
+```json
+{
+  "server": { "id": "...", "name": "...", "enabled": false, "..." : "..." }
+}
+```
+
+#### DELETE /api/v1/mcp/servers/{id}
+
+Remove an MCP server and clear its discovered tools.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "message": "Server removed"
+}
+```
+
+#### GET /api/v1/mcp/tools
+
+List all discovered tools from connected MCP servers.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "tools": [
+    {
+      "name": "knowledge_search",
+      "description": "Search the FRIDAY knowledge base",
+      "inputSchema": {},
+      "serverId": "abc123",
+      "serverName": "FRIDAY Internal MCP"
+    }
+  ],
+  "total": 22
+}
+```
+
+#### POST /api/v1/mcp/tools/call
+
+Call a tool on an MCP server.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "serverId": "abc123",
+  "toolName": "knowledge_search",
+  "args": { "query": "TypeScript" }
+}
+```
+
+**Response**
+```json
+{
+  "result": { "..." : "..." }
+}
+```
+
+#### GET /api/v1/mcp/resources
+
+List exposed resources from MCP servers.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "resources": []
+}
+```
 
 ---
 

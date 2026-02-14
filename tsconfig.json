@@ -50,12 +50,15 @@
       "@friday/core": ["packages/core/src"],
       "@friday/core/*": ["packages/core/src/*"],
       "@friday/shared": ["packages/shared/src"],
-      "@friday/shared/*": ["packages/shared/src/*"]
+      "@friday/shared/*": ["packages/shared/src/*"],
+      "@friday/mcp": ["packages/mcp/src"],
+      "@friday/mcp/*": ["packages/mcp/src/*"]
     }
   },
   "include": [
     "packages/core/src/**/*.ts",
-    "packages/shared/src/**/*.ts"
+    "packages/shared/src/**/*.ts",
+    "packages/mcp/src/**/*.ts"
   ],
   "exclude": [
     "node_modules",

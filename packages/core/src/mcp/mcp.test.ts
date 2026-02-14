@@ -50,6 +50,26 @@ describe('McpStorage', () => {
   it('should return false for deleting non-existent server', () => {
     expect(storage.deleteServer('nonexistent')).toBe(false);
   });
+
+  it('should update server enabled status', () => {
+    const server = storage.addServer({ name: 'Toggle Me', enabled: true });
+    expect(storage.getServer(server.id)!.enabled).toBe(true);
+
+    expect(storage.updateServer(server.id, { enabled: false })).toBe(true);
+    expect(storage.getServer(server.id)!.enabled).toBe(false);
+
+    expect(storage.updateServer(server.id, { enabled: true })).toBe(true);
+    expect(storage.getServer(server.id)!.enabled).toBe(true);
+  });
+
+  it('should return false for updating non-existent server', () => {
+    expect(storage.updateServer('nonexistent', { enabled: false })).toBe(false);
+  });
+
+  it('should return false for empty update', () => {
+    const server = storage.addServer({ name: 'No Op' });
+    expect(storage.updateServer(server.id, {})).toBe(false);
+  });
 });
 
 describe('McpClientManager', () => {
@@ -75,6 +95,43 @@ describe('McpClientManager', () => {
 
   it('should get all tools across servers', () => {
     expect(client.getAllTools()).toEqual([]);
+  });
+
+  it('should register and retrieve tools from manifest', () => {
+    const server = storage.addServer({ name: 'MCP Service', enabled: true });
+    client.registerTools(server.id, 'MCP Service', [
+      { name: 'knowledge_search', description: 'Search knowledge' },
+      { name: 'task_list', description: 'List tasks' },
+    ]);
+
+    const tools = client.getAllTools();
+    expect(tools).toHaveLength(2);
+    expect(tools[0].name).toBe('knowledge_search');
+    expect(tools[0].serverId).toBe(server.id);
+    expect(tools[0].serverName).toBe('MCP Service');
+    expect(tools[1].name).toBe('task_list');
+  });
+
+  it('should clear tools for a server', () => {
+    const server = storage.addServer({ name: 'Clearable', enabled: true });
+    client.registerTools(server.id, 'Clearable', [
+      { name: 'tool_a', description: 'A' },
+    ]);
+    expect(client.getAllTools()).toHaveLength(1);
+
+    client.clearTools(server.id);
+    expect(client.getAllTools()).toHaveLength(0);
+  });
+
+  it('should return pre-registered tools on discoverTools', async () => {
+    const server = storage.addServer({ name: 'Pre-registered', enabled: true });
+    client.registerTools(server.id, 'Pre-registered', [
+      { name: 'tool_x', description: 'X' },
+    ]);
+
+    const tools = await client.discoverTools(server.id);
+    expect(tools).toHaveLength(1);
+    expect(tools[0].name).toBe('tool_x');
   });
 
   it('should refresh all servers', async () => {

@@ -188,4 +188,38 @@ export function registerIntegrationRoutes(
       return reply.code(400).send({ error: errorMessage(err) });
     }
   });
+
+  // ── Generic Webhook Inbound ─────────────────────────────
+  // Custom webhook endpoint for the generic webhook integration.
+
+  app.post('/api/v1/webhooks/custom/:id', async (
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply,
+  ) => {
+    const config = integrationManager.getIntegration(request.params.id);
+    if (!config || config.platform !== 'webhook') {
+      return reply.code(404).send({ error: 'Webhook integration not found' });
+    }
+
+    const signature = request.headers['x-webhook-signature'] as string | undefined;
+    const body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+
+    try {
+      const { GenericWebhookIntegration } = await import('./webhook/adapter.js');
+      const adapter = integrationManager.getAdapter(request.params.id);
+      if (!adapter || !(adapter instanceof GenericWebhookIntegration)) {
+        return reply.code(400).send({ error: 'Webhook integration is not running' });
+      }
+
+      if (!adapter.verifyWebhook(body, signature ?? '')) {
+        return reply.code(401).send({ error: 'Invalid webhook signature' });
+      }
+
+      const parsed = typeof request.body === 'string' ? JSON.parse(request.body) : request.body;
+      await adapter.handleInbound(parsed as Record<string, unknown>);
+      return { received: true };
+    } catch (err) {
+      return reply.code(400).send({ error: errorMessage(err) });
+    }
+  });
 }

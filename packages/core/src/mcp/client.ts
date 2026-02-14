@@ -2,7 +2,7 @@
  * MCP Client Manager — connects to external MCP servers, discovers tools
  */
 
-import type { McpServerConfig, McpToolDef, McpResourceDef } from '@friday/shared';
+import type { McpServerConfig, McpToolDef, McpResourceDef, McpToolManifest } from '@friday/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import { McpStorage } from './storage.js';
 
@@ -21,16 +21,36 @@ export class McpClientManager {
     this.logger = deps.logger;
   }
 
+  /**
+   * Register tools provided by an MCP server during auto-registration.
+   * This avoids the need for core to speak the MCP protocol.
+   */
+  registerTools(serverId: string, serverName: string, tools: McpToolManifest[]): void {
+    const mcpTools: McpToolDef[] = tools.map((t) => ({
+      name: t.name,
+      description: t.description ?? '',
+      inputSchema: t.inputSchema ?? {},
+      serverId,
+      serverName,
+    }));
+    this.discoveredTools.set(serverId, mcpTools);
+    this.logger.info('Registered tools from MCP server', { serverId, serverName, count: mcpTools.length });
+  }
+
   async discoverTools(serverId: string): Promise<McpToolDef[]> {
     const server = this.storage.getServer(serverId);
     if (!server || !server.enabled) return [];
 
-    // Simulate tool discovery from MCP server
-    // In production, this would establish transport and call tools/list
-    const tools: McpToolDef[] = [];
-    this.discoveredTools.set(serverId, tools);
-    this.logger.debug('Discovered tools from MCP server', { serverId, count: tools.length });
-    return tools;
+    // If tools were already registered (e.g. via auto-registration), return those
+    const existing = this.discoveredTools.get(serverId);
+    if (existing && existing.length > 0) {
+      return existing;
+    }
+
+    // For servers that didn't provide tools upfront, return empty
+    // Full MCP protocol discovery would require the MCP SDK client
+    this.logger.debug('No pre-registered tools for MCP server', { serverId });
+    return [];
   }
 
   async discoverResources(serverId: string): Promise<McpResourceDef[]> {
@@ -78,5 +98,13 @@ export class McpClientManager {
         await this.discoverResources(server.id);
       }
     }
+  }
+
+  /**
+   * Clear tools for a server (e.g. on deregistration).
+   */
+  clearTools(serverId: string): void {
+    this.discoveredTools.delete(serverId);
+    this.discoveredResources.delete(serverId);
   }
 }

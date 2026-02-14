@@ -227,6 +227,41 @@ rate_limiting:
       on_exceed: block_30m
 ```
 
+#### HTTP Security Headers
+
+The gateway sets the following headers on every response automatically:
+
+| Header | Value | Purpose |
+|--------|-------|---------|
+| `X-Content-Type-Options` | `nosniff` | Prevents MIME-type sniffing |
+| `X-Frame-Options` | `DENY` | Prevents clickjacking via iframes |
+| `X-XSS-Protection` | `0` | Disables legacy XSS auditor (CSP supersedes) |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` | Limits referrer leakage to third parties |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` | Disables unnecessary browser APIs |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` | HSTS — only when TLS is enabled |
+
+These headers are unconditional and not configurable. There is no legitimate reason to disable them on an API server.
+
+#### CORS Policy
+
+CORS is enforced with the following rules:
+- **Wildcard origins** (`*`): `Access-Control-Allow-Origin: *` is set, but `Access-Control-Allow-Credentials` is **never** set (per the Fetch spec, browsers reject credentialed requests with wildcard origins)
+- **Explicit origins**: The request origin is reflected back with `Access-Control-Allow-Credentials: true` and `Vary: Origin`
+- **Unlisted origins**: No CORS headers are set — the browser blocks the request
+
+#### WebSocket Channel Authorization
+
+WebSocket connections are authenticated via JWT token in the query string. The token is validated before the connection is accepted. The user's role is then used to enforce RBAC on channel subscriptions:
+
+| Channel | RBAC Resource | RBAC Action |
+|---------|--------------|-------------|
+| `metrics` | `metrics` | `read` |
+| `tasks` | `tasks` | `read` |
+| `audit` | `audit` | `read` |
+| `security` | `security_events` | `read` |
+
+Unauthorized channels are silently skipped during subscription. A 30-second ping/pong heartbeat terminates unresponsive connections after 60 seconds.
+
 ### Layer 2: Application Security
 
 #### Input Validation Pipeline

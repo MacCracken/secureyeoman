@@ -44,6 +44,9 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/security/events': {
     GET: { resource: 'security_events', action: 'read' },
   },
+  '/api/v1/auth/verify': {
+    POST: { resource: '*', action: '*' },
+  },
   '/api/v1/auth/api-keys': {
     POST: { resource: '*', action: '*' },
     GET: { resource: '*', action: '*' },

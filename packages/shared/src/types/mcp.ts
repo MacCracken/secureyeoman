@@ -6,33 +6,10 @@
 
 import { z } from 'zod';
 
-// ─── MCP Server Config ──────────────────────────────────────
+// ─── MCP Transport ─────────────────────────────────────────
 
 export const McpTransportSchema = z.enum(['stdio', 'sse', 'streamable-http']);
 export type McpTransport = z.infer<typeof McpTransportSchema>;
-
-export const McpServerConfigSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1).max(200),
-  description: z.string().max(1000).default(''),
-  transport: McpTransportSchema.default('stdio'),
-  command: z.string().max(4096).optional(),
-  args: z.array(z.string()).default([]),
-  url: z.string().url().optional(),
-  env: z.record(z.string(), z.string()).default({}),
-  enabled: z.boolean().default(true),
-  createdAt: z.number().int().nonnegative(),
-  updatedAt: z.number().int().nonnegative(),
-});
-
-export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
-
-export const McpServerCreateSchema = McpServerConfigSchema.omit({
-  id: true,
-  createdAt: true,
-  updatedAt: true,
-});
-export type McpServerCreate = z.infer<typeof McpServerCreateSchema>;
 
 // ─── MCP Tool Definition ────────────────────────────────────
 
@@ -59,10 +36,65 @@ export const McpResourceDefSchema = z.object({
 
 export type McpResourceDef = z.infer<typeof McpResourceDefSchema>;
 
+// ─── MCP Tool Manifest (without server info — provided during registration) ──
+
+export const McpToolManifestSchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).default(''),
+  inputSchema: z.record(z.string(), z.unknown()).default({}),
+});
+
+export type McpToolManifest = z.infer<typeof McpToolManifestSchema>;
+
+// ─── MCP Server Config ──────────────────────────────────────
+
+export const McpServerConfigSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1).max(200),
+  description: z.string().max(1000).default(''),
+  transport: McpTransportSchema.default('stdio'),
+  command: z.string().max(4096).optional(),
+  args: z.array(z.string()).default([]),
+  url: z.string().url().optional(),
+  env: z.record(z.string(), z.string()).default({}),
+  enabled: z.boolean().default(true),
+  createdAt: z.number().int().nonnegative(),
+  updatedAt: z.number().int().nonnegative(),
+});
+
+export type McpServerConfig = z.infer<typeof McpServerConfigSchema>;
+
+export const McpServerCreateSchema = McpServerConfigSchema.omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+}).extend({
+  tools: z.array(McpToolManifestSchema).optional(),
+});
+export type McpServerCreate = z.infer<typeof McpServerCreateSchema>;
+
+// ─── MCP Service Config (for @friday/mcp package) ──────────
+
+export const McpServiceConfigSchema = z.object({
+  enabled: z.boolean().default(true),
+  port: z.number().int().min(1024).max(65535).default(3001),
+  host: z.string().default('127.0.0.1'),
+  transport: McpTransportSchema.default('streamable-http'),
+  autoRegister: z.boolean().default(true),
+  coreUrl: z.string().url().default('http://127.0.0.1:18789'),
+  tokenSecret: z.string().min(32).optional(),
+  exposeFilesystem: z.boolean().default(false),
+  allowedPaths: z.array(z.string()).default([]),
+  rateLimitPerTool: z.number().int().min(1).max(1000).default(30),
+  logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
+});
+
+export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;
+
 // ─── MCP Config Section ─────────────────────────────────────
 
 export const McpConfigSchema = z.object({
-  enabled: z.boolean().default(false),
+  enabled: z.boolean().default(true),
   serverPort: z.number().int().min(1024).max(65535).default(3001),
   exposeSkillsAsTools: z.boolean().default(true),
   exposeKnowledgeAsResources: z.boolean().default(true),

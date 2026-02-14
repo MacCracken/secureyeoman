@@ -105,8 +105,29 @@ docker run -d \
 
 ### Docker Compose
 
+```bash
+# Core + dashboard (default)
+docker compose up -d
+
+# Include MCP service
+docker compose --profile mcp up -d
+
+# All services
+docker compose --profile full up -d
+```
+
+The `docker-compose.yml` defines three services:
+
+| Service | Port | Profile | Description |
+|---------|------|---------|-------------|
+| `core` | 18789 | *(default)* | Agent engine + REST API |
+| `dashboard` | 3000 | *(default)* | React dashboard (dev server) |
+| `mcp` | 3001 | `mcp` / `full` | MCP protocol server |
+
+The MCP service is opt-in via Docker Compose profiles. Set `MCP_ENABLED=true` in `.env` before starting it. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token configuration needed.
+
 ```yaml
-version: "3.8"
+# Minimal docker-compose.yml (for reference)
 services:
   friday:
     build: .
@@ -117,11 +138,60 @@ services:
     env_file: .env
     restart: unless-stopped
 
+  mcp:
+    build: .
+    command: ["node", "packages/mcp/dist/cli.js"]
+    ports:
+      - "3001:3001"
+    env_file: .env
+    environment:
+      MCP_CORE_URL: "http://friday:18789"
+    depends_on:
+      friday:
+        condition: service_healthy
+    profiles: [mcp]
+    restart: unless-stopped
+
 volumes:
   friday-data:
 ```
 
+### systemd (MCP Service)
+
+If running the MCP service as a standalone systemd unit alongside core:
+
+```ini
+# /etc/systemd/system/friday-mcp.service
+[Unit]
+Description=FRIDAY MCP Service
+After=friday.service
+Requires=friday.service
+
+[Service]
+Type=simple
+User=friday
+Group=friday
+WorkingDirectory=/opt/friday
+ExecStart=/usr/bin/node packages/mcp/dist/cli.js
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/etc/friday/env
+
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/opt/friday/data
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
+```
+
 ## Reverse Proxy
+
+### Security Headers
+
+The gateway automatically sets standard HTTP security headers on every response (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy`, and HSTS when TLS is active). You do **not** need to duplicate these in your reverse proxy configuration. If your proxy adds the same headers, the gateway's values will take precedence (or you may get duplicate headers depending on your proxy config).
 
 ### nginx
 
@@ -155,6 +225,19 @@ server {
         proxy_pass http://127.0.0.1:18789;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+    }
+
+    # MCP service (if running)
+    location /mcp/ {
+        proxy_pass http://127.0.0.1:3001;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        # SSE support
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_read_timeout 86400;
     }
 
     # Prometheus metrics

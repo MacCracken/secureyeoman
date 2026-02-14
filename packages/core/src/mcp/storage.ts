@@ -72,6 +72,27 @@ export class McpStorage {
     return rows.map((r) => this.rowToConfig(r));
   }
 
+  updateServer(id: string, update: { enabled?: boolean }): boolean {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    if (update.enabled !== undefined) {
+      fields.push('enabled = ?');
+      values.push(update.enabled ? 1 : 0);
+    }
+
+    if (fields.length === 0) return false;
+
+    fields.push('updated_at = ?');
+    values.push(Date.now());
+    values.push(id);
+
+    const result = this.db.prepare(
+      `UPDATE mcp_servers SET ${fields.join(', ')} WHERE id = ?`
+    ).run(...values);
+    return result.changes > 0;
+  }
+
   deleteServer(id: string): boolean {
     const result = this.db.prepare('DELETE FROM mcp_servers WHERE id = ?').run(id);
     return result.changes > 0;

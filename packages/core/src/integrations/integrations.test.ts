@@ -324,6 +324,29 @@ describe('IntegrationManager', () => {
     expect(manager.getIntegration(config.id)).toBeNull();
   });
 
+  it('should return adapter via getAdapter when running', async () => {
+    const mockIntegration = createMockIntegration();
+    manager.registerPlatform('telegram', () => mockIntegration);
+    const config = manager.createIntegration({
+      platform: 'telegram',
+      displayName: 'Bot',
+      enabled: true,
+      config: {},
+    });
+
+    expect(manager.getAdapter(config.id)).toBeNull();
+
+    await manager.startIntegration(config.id);
+    expect(manager.getAdapter(config.id)).toBe(mockIntegration);
+
+    await manager.stopIntegration(config.id);
+    expect(manager.getAdapter(config.id)).toBeNull();
+  });
+
+  it('should return null from getAdapter for unknown id', () => {
+    expect(manager.getAdapter('non-existent')).toBeNull();
+  });
+
   it('should report running count', async () => {
     manager.registerPlatform('telegram', () => createMockIntegration());
     const c1 = manager.createIntegration({ platform: 'telegram', displayName: 'Bot 1', enabled: true, config: {} });
