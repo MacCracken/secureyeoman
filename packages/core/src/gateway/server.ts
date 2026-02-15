@@ -37,6 +37,7 @@ import { registerWorkspaceRoutes } from '../workspace/workspace-routes.js';
 import { registerExperimentRoutes } from '../experiment/experiment-routes.js';
 import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js';
 import { registerTerminalRoutes } from './terminal-routes.js';
+import { registerConversationRoutes } from '../chat/conversation-routes.js';
 import { formatPrometheusMetrics } from './prometheus.js';
 
 /**
@@ -370,6 +371,16 @@ export class GatewayServer {
 
     // Terminal routes (always available)
     registerTerminalRoutes(this.app);
+
+    // Conversation routes
+    try {
+      const conversationStorage = this.secureYeoman.getConversationStorage();
+      if (conversationStorage) {
+        registerConversationRoutes(this.app, { conversationStorage });
+      }
+    } catch {
+      // Conversation storage may not be available — skip routes
+    }
 
     // Prometheus metrics endpoint (unauthenticated)
     this.app.get('/metrics', async (_request, reply) => {

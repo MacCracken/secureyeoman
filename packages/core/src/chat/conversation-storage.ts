@@ -30,6 +30,7 @@ interface MessageRow {
   provider: string | null;
   tokens_used: number | null;
   attachments_json: string;
+  brain_context_json: string | null;
   created_at: number;
 }
 
@@ -44,6 +45,12 @@ export interface Conversation {
   updatedAt: number;
 }
 
+export interface BrainContextMeta {
+  memoriesUsed: number;
+  knowledgeUsed: number;
+  contextSnippets: string[];
+}
+
 export interface ConversationMessage {
   id: string;
   conversationId: string;
@@ -53,6 +60,7 @@ export interface ConversationMessage {
   provider: string | null;
   tokensUsed: number | null;
   attachments: { type: 'image'; data: string; mimeType: string }[];
+  brainContext: BrainContextMeta | null;
   createdAt: number;
 }
 
@@ -87,6 +95,7 @@ function rowToMessage(row: MessageRow): ConversationMessage {
     provider: row.provider,
     tokensUsed: row.tokens_used,
     attachments: safeJsonParse(row.attachments_json, []),
+    brainContext: row.brain_context_json ? safeJsonParse<BrainContextMeta | null>(row.brain_context_json, null) : null,
     createdAt: row.created_at,
   };
 }
@@ -128,11 +137,18 @@ export class ConversationStorage {
         provider TEXT,
         tokens_used INTEGER,
         attachments_json TEXT NOT NULL DEFAULT '[]',
+        brain_context_json TEXT,
         created_at INTEGER NOT NULL
       );
 
       CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at ASC);
     `);
+
+    // Migration: add brain_context_json column if missing (existing DBs)
+    const cols = this.db.pragma('table_info(messages)') as Array<{ name: string }>;
+    if (!cols.some((c) => c.name === 'brain_context_json')) {
+      this.db.exec('ALTER TABLE messages ADD COLUMN brain_context_json TEXT');
+    }
   }
 
   // ── Conversations ──────────────────────────────────────────
@@ -218,6 +234,7 @@ export class ConversationStorage {
     provider?: string | null;
     tokensUsed?: number | null;
     attachments?: { type: 'image'; data: string; mimeType: string }[];
+    brainContext?: BrainContextMeta | null;
   }): ConversationMessage {
     const now = Date.now();
     const id = uuidv7();
@@ -225,8 +242,8 @@ export class ConversationStorage {
     const addMsg = this.db.transaction(() => {
       this.db
         .prepare(
-          `INSERT INTO messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, created_at)
-           VALUES (@id, @conversation_id, @role, @content, @model, @provider, @tokens_used, @attachments_json, @created_at)`
+          `INSERT INTO messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, created_at)
+           VALUES (@id, @conversation_id, @role, @content, @model, @provider, @tokens_used, @attachments_json, @brain_context_json, @created_at)`
         )
         .run({
           id,
@@ -237,6 +254,7 @@ export class ConversationStorage {
           provider: data.provider ?? null,
           tokens_used: data.tokensUsed ?? null,
           attachments_json: JSON.stringify(data.attachments ?? []),
+          brain_context_json: data.brainContext ? JSON.stringify(data.brainContext) : null,
           created_at: now,
         });
 

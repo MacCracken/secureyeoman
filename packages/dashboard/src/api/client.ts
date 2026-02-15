@@ -679,6 +679,7 @@ export async function sendChatMessage(data: {
   personalityId?: string;
   editorContent?: string;
   saveAsMemory?: boolean;
+  conversationId?: string;
 }): Promise<ChatResponse> {
   return request('/chat', {
     method: 'POST',
@@ -1053,27 +1054,43 @@ export async function executeTerminalCommand(
   });
 }
 
-// ─── Conversations (stub) ─────────────────────────────────────
+// ─── Conversations API ────────────────────────────────────────
 
-export interface Conversation {
-  id: string;
-  title: string;
-  messageCount?: number;
-  createdAt: number;
-  updatedAt: number;
-}
+import type { Conversation, ConversationDetail, ConversationMessageResponse } from '../types.js';
+export type { Conversation, ConversationDetail, ConversationMessageResponse };
 
 export async function fetchConversations(options?: {
   limit?: number;
   offset?: number;
-}): Promise<{ conversations: Conversation[] }> {
-  return { conversations: [] };
+}): Promise<{ conversations: Conversation[]; total: number }> {
+  const params = new URLSearchParams();
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.offset) params.set('offset', String(options.offset));
+  const qs = params.toString();
+  return request(`/conversations${qs ? `?${qs}` : ''}`);
 }
 
-export async function deleteConversation(id: string): Promise<void> {
-  return undefined;
+export async function fetchConversation(id: string): Promise<ConversationDetail> {
+  return request(`/conversations/${id}`);
+}
+
+export async function createConversation(
+  title: string,
+  personalityId?: string,
+): Promise<Conversation> {
+  return request('/conversations', {
+    method: 'POST',
+    body: JSON.stringify({ title, personalityId }),
+  });
+}
+
+export async function deleteConversation(id: string): Promise<{ success: boolean }> {
+  return request(`/conversations/${id}`, { method: 'DELETE' });
 }
 
 export async function renameConversation(id: string, title: string): Promise<Conversation> {
-  return { id, title, createdAt: Date.now(), updatedAt: Date.now() };
+  return request(`/conversations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title }),
+  });
 }
