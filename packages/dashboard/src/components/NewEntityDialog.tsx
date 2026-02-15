@@ -47,14 +47,14 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
   const renderSelect = () => (
     <div className="grid grid-cols-2 gap-3">
       {[
+        { key: 'task', icon: ListTodo, label: 'Task', desc: 'Schedule a new task' },
+        { key: 'skill', icon: Zap, label: 'Skill', desc: 'Create a new skill' },
         {
           key: 'personality',
           icon: Brain,
           label: 'Personality',
           desc: 'Create a new AI personality',
         },
-        { key: 'task', icon: ListTodo, label: 'Task', desc: 'Schedule a new task' },
-        { key: 'skill', icon: Zap, label: 'Skill', desc: 'Create a new skill' },
         { key: 'experiment', icon: FlaskConical, label: 'Experiment', desc: 'Try a new feature' },
       ].map(({ key, icon: Icon, label, desc }) => (
         <button

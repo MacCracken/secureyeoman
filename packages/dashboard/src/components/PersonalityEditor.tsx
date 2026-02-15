@@ -921,10 +921,10 @@ function BodySection({
   });
 
   const creationItems = [
-    { key: 'skills' as const, label: 'New Skills', icon: '🧠' },
     { key: 'tasks' as const, label: 'New Tasks', icon: '📋' },
-    { key: 'experiments' as const, label: 'New Experiments', icon: '🧪' },
+    { key: 'skills' as const, label: 'New Skills', icon: '🧠' },
     { key: 'personalities' as const, label: 'New Personalities', icon: '👤' },
+    { key: 'experiments' as const, label: 'New Experiments', icon: '🧪' },
   ];
 
   const allEnabled = creationItems.every((item) => creationConfig[item.key]);
