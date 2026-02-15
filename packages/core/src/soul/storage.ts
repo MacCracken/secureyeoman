@@ -321,6 +321,7 @@ export class SoulStorage {
            preferred_language = @preferred_language,
            default_model = @default_model,
            include_archetypes = @include_archetypes,
+           body = @body,
            updated_at = @updated_at
          WHERE id = @id`
       )
@@ -349,6 +350,21 @@ export class SoulStorage {
             : existing.includeArchetypes
               ? 1
               : 0,
+        body: data.body
+          ? JSON.stringify(data.body)
+          : JSON.stringify(
+              existing.body ?? {
+                enabled: false,
+                capabilities: [],
+                heartEnabled: true,
+                creationConfig: {
+                  skills: false,
+                  tasks: false,
+                  personalities: false,
+                  experiments: false,
+                },
+              }
+            ),
         updated_at: now,
       });
 
