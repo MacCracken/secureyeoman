@@ -930,9 +930,23 @@ function BodySection({
   };
 
   return (
-    <CollapsibleSection title="Body — Capabilities">
+    <CollapsibleSection title="Body — Capabilities" defaultOpen={false}>
       <div>
-        <h4 className="text-sm font-medium mb-2">Capabilities</h4>
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="text-sm font-medium">Capabilities</h4>
+          <div className="flex items-center gap-4">
+            <span className="text-xs text-muted-foreground">MCP</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allowConnections}
+                onChange={(e) => onAllowConnectionsChange(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+            </label>
+          </div>
+        </div>
         <div className="space-y-2">
           {capabilities.map((cap) => {
             const info = capabilityInfo[cap];
