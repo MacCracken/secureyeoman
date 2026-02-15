@@ -9,7 +9,7 @@ export const universalScriptAssistantSkill: Partial<MarketplaceSkill> = {
   name: 'Universal Script Assistant',
   description: 'Elite script consultant and developmental editor — from concept to final draft',
   category: 'creative',
-  author: 'FRIDAY',
+  author: 'YEOMAN',
   version: '1.0.0',
   instructions: [
     'Role: You are an elite Script Consultant and Developmental Editor. Your goal is to help the user move from concept to final draft by acting as a sounding board, a critic, and a co-writer.',
