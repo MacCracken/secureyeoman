@@ -888,7 +888,6 @@ function BodySection({
     queryFn: () => fetch('/api/v1/mcp/servers').then((r) => r.json()),
   });
   const servers = serversData?.servers ?? [];
-  const enabledServers = servers.filter((s: { enabled: boolean }) => s.enabled);
 
   const [enabledCaps, setEnabledCaps] = useState<Record<string, boolean>>({
     vision: false,
@@ -1031,24 +1030,8 @@ function BodySection({
       </div>
 
       {/* MCP Connections */}
-      <div className="mt-4 pt-4 border-t border-border">
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-medium">MCP Connections</h4>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={allowConnections}
-              onChange={(e) => onAllowConnectionsChange(e.target.checked)}
-              className="sr-only peer"
-            />
-            <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-            <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
-              {allowConnections ? 'Allowed' : 'Disabled'}
-            </span>
-          </label>
-        </div>
-
-        {allowConnections && (
+      {allowConnections && (
+        <CollapsibleSection title="MCP Connections" defaultOpen={true}>
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
               Select which MCP servers this personality can use:
@@ -1056,13 +1039,13 @@ function BodySection({
 
             {serversLoading ? (
               <p className="text-xs text-muted-foreground">Loading servers...</p>
-            ) : enabledServers.length === 0 ? (
-              <p className="text-xs text-destructive">
-                No MCP servers enabled. Enable servers in Connections &gt; MCP Server.
+            ) : servers.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No MCP servers configured. Add servers in Connections &gt; MCP Server.
               </p>
             ) : (
               <div className="space-y-2">
-                {enabledServers.map((server: { id: string; name: string; description: string }) => (
+                {servers.map((server: { id: string; name: string; description: string }) => (
                   <label
                     key={server.id}
                     className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${
@@ -1095,15 +1078,9 @@ function BodySection({
                 ))}
               </div>
             )}
-
-            {selectedServers.length === 0 && enabledServers.length > 0 && (
-              <p className="text-xs text-destructive">
-                Select at least one MCP server to enable MCP tools.
-              </p>
-            )}
           </div>
-        )}
-      </div>
+        </CollapsibleSection>
+      )}
 
       <CollapsibleSection title="Resource Creation" defaultOpen={false}>
         <div className="flex items-center justify-between mb-2">
