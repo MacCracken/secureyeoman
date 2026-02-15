@@ -564,6 +564,13 @@ export class SecureYeoman {
       this.reportGenerator = new AuditReportGenerator({
         logger: this.logger.child({ component: 'AuditReportGenerator' }),
         auditChain: this.auditChain,
+        queryAuditLog: (opts) => this.queryAuditLog(opts),
+        queryTasks: this.taskStorage
+          ? (filter) => this.taskStorage!.listTasks(filter)
+          : undefined,
+        queryHeartbeatTasks: this.heartbeatManager
+          ? () => this.heartbeatManager!.getStatus().tasks
+          : undefined,
       });
       this.logger.debug('Audit report generator initialized');
 

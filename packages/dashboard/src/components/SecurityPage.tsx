@@ -39,7 +39,11 @@ import {
   deleteTask,
   updateTask,
   fetchHeartbeatTasks,
+  fetchReports,
+  generateReport,
+  downloadReport,
 } from '../api/client';
+import type { ReportSummary } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { MetricsSnapshot, SecurityEvent, AuditEntry, Task, HeartbeatTask } from '../types';
 
@@ -91,39 +95,6 @@ const STATUS_COLORS: Record<string, string> = {
   pending: 'badge',
   cancelled: 'badge',
 };
-
-interface ReportSummary {
-  id: string;
-  title: string;
-  format: string;
-  generatedAt: number;
-  entryCount: number;
-  sizeBytes: number;
-}
-
-async function fetchReports(): Promise<{ reports: ReportSummary[]; total: number }> {
-  const res = await fetch('/api/v1/reports', {
-    headers: { Authorization: `Bearer ${localStorage.getItem('friday_token')}` },
-  });
-  if (!res.ok) throw new Error('Failed to fetch reports');
-  return res.json();
-}
-
-async function generateReport(opts: {
-  title: string;
-  format: string;
-}): Promise<{ report: ReportSummary }> {
-  const res = await fetch('/api/v1/reports/generate', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${localStorage.getItem('friday_token')}`,
-    },
-    body: JSON.stringify(opts),
-  });
-  if (!res.ok) throw new Error('Failed to generate report');
-  return res.json();
-}
 
 export function SecurityPage() {
   const location = useLocation();
@@ -972,6 +943,22 @@ function ReportsTab() {
     },
   });
 
+  const handleDownload = async (report: ReportSummary) => {
+    try {
+      const blob = await downloadReport(report.id);
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `report-${report.id}.${report.format}`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch {
+      // download failed silently
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -1006,23 +993,44 @@ function ReportsTab() {
             ) : (
               <Plus className="w-4 h-4" />
             )}
-            Generate
+            {mutation.isPending ? 'Generating...' : 'Generate'}
           </button>
         </div>
       </div>
+
+      {mutation.isPending && (
+        <div className="card p-4 flex items-center gap-3 border-primary/30 bg-primary/5">
+          <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          <p className="text-sm text-primary">Generating report, please wait...</p>
+        </div>
+      )}
+
+      {mutation.isError && (
+        <div className="card p-4 flex items-center gap-3 border-destructive/30 bg-destructive/5">
+          <XCircle className="w-5 h-5 text-destructive" />
+          <p className="text-sm text-destructive">Failed to generate report. Please try again.</p>
+        </div>
+      )}
+
+      {mutation.isSuccess && !mutation.isPending && (
+        <div className="card p-4 flex items-center gap-3 border-green-500/30 bg-green-500/5">
+          <CheckCircle className="w-5 h-5 text-green-500" />
+          <p className="text-sm text-green-600">Report generated successfully.</p>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      ) : !data?.reports.length ? (
+      ) : !data?.reports.length && !mutation.isPending ? (
         <div className="card p-12 text-center">
           <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">No reports generated yet</p>
         </div>
       ) : (
         <div className="space-y-3">
-          {data.reports.map((report) => (
+          {data?.reports.map((report) => (
             <div key={report.id} className="card p-4 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <FileText className="w-5 h-5 text-primary" />
@@ -1034,7 +1042,7 @@ function ReportsTab() {
                   </p>
                 </div>
               </div>
-              <button className="btn btn-ghost text-xs">
+              <button className="btn btn-ghost text-xs" onClick={() => handleDownload(report)}>
                 <Download className="w-4 h-4 mr-1" />
                 Download
               </button>

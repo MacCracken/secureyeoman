@@ -30,6 +30,7 @@ const DEFAULT_ROLES: RoleDefinition[] = [
       { resource: 'connections', actions: ['read', 'write', 'delete', 'test'] },
       { resource: 'metrics', actions: ['read'] },
       { resource: 'logs', actions: ['read'] },
+      { resource: 'reports', actions: ['read', 'write'] },
       { resource: 'soul', actions: ['read', 'write'] },
       // Voice permissions
       { resource: 'voice', actions: ['listen', 'tts'] },
@@ -55,6 +56,7 @@ const DEFAULT_ROLES: RoleDefinition[] = [
       { resource: 'audit', actions: ['read', 'export', 'verify'] },
       { resource: 'metrics', actions: ['read'] },
       { resource: 'security_events', actions: ['read'] },
+      { resource: 'reports', actions: ['read', 'write'] },
       { resource: 'tasks', actions: ['read'] },
       // Review captured data for compliance
       { resource: 'capture.screen', actions: ['review'] },
