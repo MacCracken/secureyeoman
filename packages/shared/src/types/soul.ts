@@ -569,11 +569,23 @@ export type ExternalBrainConfig = z.infer<typeof ExternalBrainConfigSchema>;
 export const BodyCapabilitySchema = z.enum(['vision', 'limb_movement', 'auditory', 'haptic']);
 export type BodyCapability = z.infer<typeof BodyCapabilitySchema>;
 
+export const CreationConfigSchema = z
+  .object({
+    skills: z.boolean().default(false),
+    tasks: z.boolean().default(false),
+    personalities: z.boolean().default(false),
+    experiments: z.boolean().default(false),
+  })
+  .default({});
+
+export type CreationConfig = z.infer<typeof CreationConfigSchema>;
+
 export const BodyConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
     capabilities: z.array(BodyCapabilitySchema).default([]),
     heartEnabled: z.boolean().default(true),
+    creationConfig: CreationConfigSchema.default({}),
   })
   .default({});
 
