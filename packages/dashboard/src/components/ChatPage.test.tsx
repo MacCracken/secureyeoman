@@ -116,8 +116,20 @@ describe('ChatPage', () => {
     expect(screen.getByText(/Start a conversation/)).toBeInTheDocument();
   });
 
-  it('renders conversation sidebar', () => {
+  it('renders sidebar toggle button', () => {
     renderComponent();
+    expect(screen.getByTestId('sidebar-toggle')).toBeInTheDocument();
+  });
+
+  it('opens conversation sidebar on toggle click', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    // Sidebar collapsed by default
+    expect(screen.queryByTestId('conversation-sidebar')).not.toBeInTheDocument();
+
+    // Open it
+    await user.click(screen.getByTestId('sidebar-toggle'));
     expect(screen.getByTestId('conversation-sidebar')).toBeInTheDocument();
     expect(screen.getByTestId('new-chat-btn')).toBeInTheDocument();
   });
@@ -131,7 +143,11 @@ describe('ChatPage', () => {
       total: 2,
     });
 
+    const user = userEvent.setup();
     renderComponent();
+
+    // Open sidebar
+    await user.click(screen.getByTestId('sidebar-toggle'));
 
     await waitFor(() => {
       expect(screen.getByText('First chat')).toBeInTheDocument();
@@ -376,7 +392,8 @@ describe('ChatPage', () => {
       expect(screen.getByText('Hello!')).toBeInTheDocument();
     });
 
-    // Click New Chat
+    // Open sidebar and click New Chat
+    await user.click(screen.getByTestId('sidebar-toggle'));
     await user.click(screen.getByTestId('new-chat-btn'));
 
     // Messages should be cleared
@@ -385,7 +402,11 @@ describe('ChatPage', () => {
   });
 
   it('shows "No conversations yet" when list is empty', async () => {
+    const user = userEvent.setup();
     renderComponent();
+
+    // Open sidebar
+    await user.click(screen.getByTestId('sidebar-toggle'));
 
     await waitFor(() => {
       expect(screen.getByText('No conversations yet')).toBeInTheDocument();
