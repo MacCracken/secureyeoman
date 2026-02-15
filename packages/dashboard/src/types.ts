@@ -331,6 +331,33 @@ export interface BrainContext {
   contextSnippets: string[];
 }
 
+// ─── Conversation Types ─────────────────────────────────────
+
+export interface Conversation {
+  id: string;
+  title: string;
+  personalityId: string | null;
+  messageCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ConversationMessageResponse {
+  id: string;
+  conversationId: string;
+  role: 'user' | 'assistant';
+  content: string;
+  model: string | null;
+  provider: string | null;
+  tokensUsed: number | null;
+  brainContext: BrainContext | null;
+  createdAt: number;
+}
+
+export interface ConversationDetail extends Conversation {
+  messages: ConversationMessageResponse[];
+}
+
 // ─── Chat Types ─────────────────────────────────────────────
 
 export interface ChatMessage {
@@ -350,6 +377,7 @@ export interface ChatResponse {
   provider: string;
   tokensUsed?: number;
   brainContext?: BrainContext;
+  conversationId?: string;
 }
 
 // ─── Code Session Types ─────────────────────────────────────

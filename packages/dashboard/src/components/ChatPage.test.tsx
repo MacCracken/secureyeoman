@@ -13,6 +13,11 @@ vi.mock('../api/client', () => ({
   fetchModelInfo: vi.fn(),
   switchModel: vi.fn(),
   rememberChatMessage: vi.fn(),
+  fetchConversations: vi.fn(),
+  fetchConversation: vi.fn(),
+  createConversation: vi.fn(),
+  deleteConversation: vi.fn(),
+  renameConversation: vi.fn(),
 }));
 
 // ── Mock ModelWidget to keep test focused ────────────────────────
@@ -29,6 +34,11 @@ import * as api from '../api/client';
 const mockFetchPersonalities = vi.mocked(api.fetchPersonalities);
 const mockSendChatMessage = vi.mocked(api.sendChatMessage);
 const mockRememberChatMessage = vi.mocked(api.rememberChatMessage);
+const mockFetchConversations = vi.mocked(api.fetchConversations);
+const mockFetchConversation = vi.mocked(api.fetchConversation);
+const mockCreateConversation = vi.mocked(api.createConversation);
+const mockDeleteConversation = vi.mocked(api.deleteConversation);
+const mockRenameConversation = vi.mocked(api.renameConversation);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -49,29 +59,49 @@ function renderComponent() {
   );
 }
 
+const defaultPersonality = {
+  id: 'p-1',
+  name: 'FRIDAY',
+  description: 'Friendly AI assistant',
+  systemPrompt: 'You are FRIDAY.',
+  traits: {},
+  sex: 'unspecified' as const,
+  voice: '',
+  preferredLanguage: '',
+  defaultModel: null,
+  includeArchetypes: true,
+  isActive: true,
+  createdAt: Date.now(),
+  updatedAt: Date.now(),
+};
+
 // ── Tests ────────────────────────────────────────────────────────
 
 describe('ChatPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockFetchPersonalities.mockResolvedValue({
-      personalities: [{
-        id: 'p-1',
-        name: 'FRIDAY',
-        description: 'Friendly AI assistant',
-        systemPrompt: 'You are FRIDAY.',
-        traits: {},
-        sex: 'unspecified',
-        voice: '',
-        preferredLanguage: '',
-        defaultModel: null,
-        includeArchetypes: true,
-        isActive: true,
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      }],
+      personalities: [defaultPersonality],
     });
     mockSendChatMessage.mockResolvedValue(createChatResponse());
+    mockFetchConversations.mockResolvedValue({ conversations: [], total: 0 });
+    mockFetchConversation.mockResolvedValue({
+      id: 'conv-new',
+      title: 'Hello!',
+      personalityId: null,
+      messageCount: 0,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      messages: [],
+    });
+    mockCreateConversation.mockResolvedValue({
+      id: 'conv-new',
+      title: 'Hello!',
+      personalityId: null,
+      messageCount: 0,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+    });
   });
 
   it('renders the Chat heading with personality name', async () => {
@@ -84,6 +114,29 @@ describe('ChatPage', () => {
   it('renders empty state message', () => {
     renderComponent();
     expect(screen.getByText(/Start a conversation/)).toBeInTheDocument();
+  });
+
+  it('renders conversation sidebar', () => {
+    renderComponent();
+    expect(screen.getByTestId('conversation-sidebar')).toBeInTheDocument();
+    expect(screen.getByTestId('new-chat-btn')).toBeInTheDocument();
+  });
+
+  it('renders conversation list from API', async () => {
+    mockFetchConversations.mockResolvedValue({
+      conversations: [
+        { id: 'conv-1', title: 'First chat', personalityId: null, messageCount: 5, createdAt: Date.now(), updatedAt: Date.now() },
+        { id: 'conv-2', title: 'Second chat', personalityId: null, messageCount: 3, createdAt: Date.now(), updatedAt: Date.now() },
+      ],
+      total: 2,
+    });
+
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText('First chat')).toBeInTheDocument();
+      expect(screen.getByText('Second chat')).toBeInTheDocument();
+    });
   });
 
   it('sends a message and displays the response', async () => {
@@ -103,6 +156,25 @@ describe('ChatPage', () => {
     await waitFor(() => {
       expect(screen.getByText('Hello! I am FRIDAY, your AI assistant.')).toBeInTheDocument();
     });
+  });
+
+  it('auto-creates conversation on first message send', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    const textarea = screen.getByPlaceholderText(/Message/);
+    await user.type(textarea, 'Hello!{enter}');
+
+    await waitFor(() => {
+      expect(mockCreateConversation).toHaveBeenCalledWith('Hello!', expect.anything());
+    });
+
+    // The sendChatMessage should include the conversationId
+    await waitFor(() => {
+      expect(mockSendChatMessage).toHaveBeenCalled();
+    });
+    const chatCall = mockSendChatMessage.mock.calls[0][0];
+    expect(chatCall.conversationId).toBe('conv-new');
   });
 
   it('shows the user message in the chat', async () => {
@@ -172,12 +244,7 @@ describe('ChatPage', () => {
   it('switches personality and sends correct personalityId', async () => {
     mockFetchPersonalities.mockResolvedValue({
       personalities: [
-        {
-          id: 'p-1', name: 'FRIDAY', description: 'Friendly AI',
-          systemPrompt: '', traits: {}, sex: 'unspecified' as const,
-          voice: '', preferredLanguage: '', defaultModel: null,
-          includeArchetypes: true, isActive: true, createdAt: Date.now(), updatedAt: Date.now(),
-        },
+        defaultPersonality,
         {
           id: 'p-2', name: 'JARVIS', description: 'Snarky butler',
           systemPrompt: '', traits: {}, sex: 'male' as const,
@@ -293,5 +360,41 @@ describe('ChatPage', () => {
 
     // Button should now show "Remembered"
     expect(screen.getByText('Remembered')).toBeInTheDocument();
+  });
+
+  // ── Conversation management tests ──────────────────────────
+
+  it('New Chat button clears messages', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    // Send a message first
+    const textarea = screen.getByPlaceholderText(/Message/);
+    await user.type(textarea, 'Hello!{enter}');
+
+    await waitFor(() => {
+      expect(screen.getByText('Hello!')).toBeInTheDocument();
+    });
+
+    // Click New Chat
+    await user.click(screen.getByTestId('new-chat-btn'));
+
+    // Messages should be cleared
+    expect(screen.queryByText('Hello!')).not.toBeInTheDocument();
+    expect(screen.getByText(/Start a conversation/)).toBeInTheDocument();
+  });
+
+  it('shows "No conversations yet" when list is empty', async () => {
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText('No conversations yet')).toBeInTheDocument();
+    });
+  });
+
+  it('shows saved conversations text instead of session-only notice', () => {
+    renderComponent();
+    expect(screen.getByText('Conversations are automatically saved.')).toBeInTheDocument();
+    expect(screen.queryByText(/session-only/)).not.toBeInTheDocument();
   });
 });

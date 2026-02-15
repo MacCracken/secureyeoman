@@ -83,6 +83,7 @@ import { ExperimentStorage } from './experiment/storage.js';
 import { ExperimentManager } from './experiment/manager.js';
 import { MarketplaceStorage } from './marketplace/storage.js';
 import { MarketplaceManager } from './marketplace/manager.js';
+import { ConversationStorage } from './chat/conversation-storage.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot, AuditEntry } from '@friday/shared';
 
 export interface SecureYeomanOptions {
@@ -150,6 +151,7 @@ export class SecureYeoman {
   private experimentManager: ExperimentManager | null = null;
   private marketplaceStorage: MarketplaceStorage | null = null;
   private marketplaceManager: MarketplaceManager | null = null;
+  private chatConversationStorage: ConversationStorage | null = null;
   private initialized = false;
   private startedAt: number | null = null;
   private shutdownPromise: Promise<void> | null = null;
@@ -611,6 +613,12 @@ export class SecureYeoman {
       });
       this.marketplaceManager.seedBuiltinSkills();
       this.logger.debug('Marketplace manager initialized');
+
+      // Step 6.10: Initialize conversation storage
+      this.chatConversationStorage = new ConversationStorage({
+        dbPath: `${this.config.core.dataDir}/conversations.db`,
+      });
+      this.logger.debug('Conversation storage initialized');
 
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
@@ -1077,6 +1085,11 @@ export class SecureYeoman {
     return this.marketplaceManager;
   }
 
+  getConversationStorage(): ConversationStorage | null {
+    this.ensureInitialized();
+    return this.chatConversationStorage;
+  }
+
   /**
    * Get the integration storage instance
    */
@@ -1379,6 +1392,10 @@ export class SecureYeoman {
       this.marketplaceStorage.close();
       this.marketplaceStorage = null;
       this.marketplaceManager = null;
+    }
+    if (this.chatConversationStorage) {
+      this.chatConversationStorage.close();
+      this.chatConversationStorage = null;
     }
     this.reportGenerator = null;
     this.costOptimizer = null;

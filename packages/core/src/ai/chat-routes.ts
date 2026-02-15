@@ -19,6 +19,7 @@ interface ChatRequestBody {
   history?: Array<{ role: string; content: string }>;
   personalityId?: string;
   saveAsMemory?: boolean;
+  conversationId?: string;
 }
 
 interface RememberRequestBody {
@@ -42,7 +43,7 @@ export function registerChatRoutes(
     request: FastifyRequest<{ Body: ChatRequestBody }>,
     reply: FastifyReply,
   ) => {
-    const { message, history, personalityId, saveAsMemory } = request.body;
+    const { message, history, personalityId, saveAsMemory, conversationId } = request.body;
 
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return reply.code(400).send({ error: 'Message is required' });
@@ -150,6 +151,31 @@ export function registerChatRoutes(
     try {
       const response = await aiClient.chat(aiRequest, { source: 'dashboard_chat' });
 
+      // Persist messages to conversation storage when conversationId is provided
+      if (conversationId) {
+        try {
+          const convStorage = secureYeoman.getConversationStorage();
+          if (convStorage) {
+            convStorage.addMessage({
+              conversationId,
+              role: 'user',
+              content: message.trim(),
+            });
+            convStorage.addMessage({
+              conversationId,
+              role: 'assistant',
+              content: response.content,
+              model: response.model,
+              provider: response.provider,
+              tokensUsed: response.usage.totalTokens,
+              brainContext,
+            });
+          }
+        } catch {
+          // Conversation storage not available — skip persistence
+        }
+      }
+
       // Optionally store the exchange as an episodic memory
       if (saveAsMemory) {
         try {
@@ -172,6 +198,7 @@ export function registerChatRoutes(
         provider: response.provider,
         tokensUsed: response.usage.totalTokens,
         brainContext,
+        conversationId: conversationId ?? undefined,
       };
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Unknown error';

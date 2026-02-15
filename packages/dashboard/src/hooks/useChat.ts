@@ -1,11 +1,12 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
-import { sendChatMessage } from '../api/client';
+import { sendChatMessage, createConversation, fetchConversation } from '../api/client';
 import type { ChatMessage } from '../types';
 
 export interface UseChatOptions {
   personalityId?: string | null;
   editorContent?: string;
+  conversationId?: string | null;
 }
 
 export interface UseChatReturn {
@@ -15,11 +16,61 @@ export interface UseChatReturn {
   handleSend: () => void;
   isPending: boolean;
   clearMessages: () => void;
+  conversationId: string | null;
+  isLoadingConversation: boolean;
 }
 
 export function useChat(options?: UseChatOptions): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(
+    options?.conversationId ?? null,
+  );
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
+  const prevExternalId = useRef<string | null | undefined>(undefined);
+  // Track IDs we auto-created so we don't re-fetch them
+  const autoCreatedIds = useRef(new Set<string>());
+
+  // Load existing conversation when the external conversationId changes
+  useEffect(() => {
+    const newId = options?.conversationId ?? null;
+    if (prevExternalId.current === newId) return;
+    prevExternalId.current = newId;
+
+    setActiveConversationId(newId);
+
+    if (!newId) {
+      setMessages([]);
+      return;
+    }
+
+    // Skip fetch for conversations we just created (messages already in state)
+    if (autoCreatedIds.current.has(newId)) {
+      return;
+    }
+
+    setIsLoadingConversation(true);
+    fetchConversation(newId)
+      .then((detail) => {
+        setMessages(
+          detail.messages.map((m) => ({
+            role: m.role as 'user' | 'assistant',
+            content: m.content,
+            timestamp: m.createdAt,
+            model: m.model ?? undefined,
+            provider: m.provider ?? undefined,
+            tokensUsed: m.tokensUsed ?? undefined,
+            brainContext: m.brainContext ?? undefined,
+          })),
+        );
+      })
+      .catch(() => {
+        setMessages([]);
+      })
+      .finally(() => {
+        setIsLoadingConversation(false);
+      });
+  }, [options?.conversationId]);
 
   const chatMutation = useMutation({
     mutationFn: sendChatMessage,
@@ -49,7 +100,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     },
   });
 
-  const handleSend = useCallback(() => {
+  const handleSend = useCallback(async () => {
     const trimmed = input.trim();
     if (!trimmed || chatMutation.isPending) return;
 
@@ -62,6 +113,23 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
 
+    // Auto-create conversation on first send if none exists
+    let convId = activeConversationId;
+    if (!convId) {
+      try {
+        const title = trimmed.length > 60 ? trimmed.slice(0, 57) + '...' : trimmed;
+        const conv = await createConversation(
+          title,
+          options?.personalityId ?? undefined,
+        );
+        convId = conv.id;
+        autoCreatedIds.current.add(convId);
+        setActiveConversationId(convId);
+      } catch {
+        // Failed to create conversation — continue without persistence
+      }
+    }
+
     const history = [...messages, userMessage].map((m) => ({
       role: m.role,
       content: m.content,
@@ -72,11 +140,14 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       history: history.slice(0, -1),
       editorContent: options?.editorContent,
       ...(options?.personalityId ? { personalityId: options.personalityId } : {}),
+      ...(convId ? { conversationId: convId } : {}),
     });
-  }, [input, messages, chatMutation, options]);
+  }, [input, messages, chatMutation, options, activeConversationId]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
+    setActiveConversationId(null);
+    autoCreatedIds.current.clear();
   }, []);
 
   return {
@@ -86,5 +157,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     handleSend,
     isPending: chatMutation.isPending,
     clearMessages,
+    conversationId: activeConversationId,
+    isLoadingConversation,
   };
 }
