@@ -43,6 +43,7 @@ export function ChatPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState('');
+  const [memoryEnabled, setMemoryEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -87,6 +88,7 @@ export function ChatPage() {
     useChat({
       personalityId: effectivePersonalityId,
       conversationId: selectedConversationId,
+      memoryEnabled,
     });
 
   // Refresh conversation list when a new conversation is created
@@ -243,16 +245,6 @@ export function ChatPage() {
 
   return (
     <div className="flex h-[calc(100vh-220px)] max-h-[800px] gap-0 relative">
-      {/* Sidebar toggle button */}
-      <button
-        onClick={() => setSidebarOpen((v) => !v)}
-        className="absolute top-0 left-0 z-20 p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors"
-        data-testid="sidebar-toggle"
-        title={sidebarOpen ? 'Hide conversations' : 'Show conversations'}
-      >
-        {sidebarOpen ? <PanelLeftClose className="w-5 h-5" /> : <PanelLeftOpen className="w-5 h-5" />}
-      </button>
-
       {/* Conversation Sidebar — collapsible */}
       {sidebarOpen && (
         <>
@@ -265,6 +257,7 @@ export function ChatPage() {
             className="fixed left-0 top-0 bottom-0 w-72 bg-background z-30 border-r p-3 flex flex-col sm:static sm:w-64 sm:z-auto sm:p-0 sm:pr-3"
             data-testid="conversation-sidebar"
           >
+            {/* Mobile header */}
             <div className="flex items-center justify-between mb-2 sm:hidden">
               <span className="text-sm font-semibold">Conversations</span>
               <button
@@ -352,15 +345,33 @@ export function ChatPage() {
               ))}
 
               {!conversationsLoading && conversations.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">No conversations yet</p>
+                <p className="text-xs text-muted-foreground text-center py-4">
+                  No conversations yet
+                </p>
               )}
             </div>
           </div>
         </>
       )}
 
+      {/* Sidebar toggle button - positioned to the left of the sidebar */}
+      <button
+        onClick={() => setSidebarOpen((v) => !v)}
+        className={`absolute top-0 z-20 p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors ${
+          sidebarOpen ? 'left-64 sm:left-64' : 'left-0'
+        }`}
+        data-testid="sidebar-toggle"
+        title={sidebarOpen ? 'Hide conversations' : 'Show conversations'}
+      >
+        {sidebarOpen ? (
+          <PanelLeftClose className="w-5 h-5" />
+        ) : (
+          <PanelLeftOpen className="w-5 h-5" />
+        )}
+      </button>
+
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col min-w-0 pl-8">
+      <div className={`flex-1 flex flex-col min-w-0 ${sidebarOpen ? 'pl-12 sm:pl-68' : 'pl-8'}`}>
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b mb-4">
           <div className="relative">
@@ -427,7 +438,19 @@ export function ChatPage() {
             )}
           </div>
 
-          <div className="relative">
+          <div className="relative flex items-center gap-2">
+            <button
+              onClick={() => setMemoryEnabled((v) => !v)}
+              className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
+                memoryEnabled
+                  ? 'bg-primary/15 border-primary text-primary'
+                  : 'btn-ghost text-muted-foreground'
+              }`}
+              title={memoryEnabled ? 'Memory is on — conversations are remembered and recalled' : 'Memory is off — no memory access or saving'}
+            >
+              <Brain className="w-3.5 h-3.5" />
+              {memoryEnabled ? 'Memory On' : 'Memory Off'}
+            </button>
             <button
               onClick={() => setShowModelWidget((v) => !v)}
               className="btn-ghost text-xs px-3 py-1.5 rounded-full border"

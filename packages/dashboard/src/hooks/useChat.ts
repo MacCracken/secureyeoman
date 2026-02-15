@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendChatMessage, createConversation, fetchConversation } from '../api/client';
 import type { ChatMessage } from '../types';
 
@@ -7,6 +7,7 @@ export interface UseChatOptions {
   personalityId?: string | null;
   editorContent?: string;
   conversationId?: string | null;
+  memoryEnabled?: boolean;
 }
 
 export interface UseChatReturn {
@@ -30,6 +31,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
   const prevExternalId = useRef<string | null | undefined>(undefined);
   // Track IDs we auto-created so we don't re-fetch them
   const autoCreatedIds = useRef(new Set<string>());
+  const queryClient = useQueryClient();
 
   // Load existing conversation when the external conversationId changes
   useEffect(() => {
@@ -87,6 +89,8 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
           brainContext: response.brainContext,
         },
       ]);
+      // Refresh conversation list so sidebar shows updated message counts / ordering
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
     onError: (error: Error) => {
       setMessages((prev) => [
@@ -125,6 +129,8 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
         convId = conv.id;
         autoCreatedIds.current.add(convId);
         setActiveConversationId(convId);
+        // Immediately refresh conversation list so the new conversation appears in the sidebar
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
       } catch {
         // Failed to create conversation — continue without persistence
       }
@@ -135,14 +141,17 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       content: m.content,
     }));
 
+    const memoryOn = options?.memoryEnabled ?? true;
     chatMutation.mutate({
       message: trimmed,
       history: history.slice(0, -1),
       editorContent: options?.editorContent,
       ...(options?.personalityId ? { personalityId: options.personalityId } : {}),
       ...(convId ? { conversationId: convId } : {}),
+      memoryEnabled: memoryOn,
+      saveAsMemory: memoryOn,
     });
-  }, [input, messages, chatMutation, options, activeConversationId]);
+  }, [input, messages, chatMutation, options, activeConversationId, queryClient]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);

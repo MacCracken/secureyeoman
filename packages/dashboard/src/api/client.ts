@@ -679,6 +679,7 @@ export async function sendChatMessage(data: {
   personalityId?: string;
   editorContent?: string;
   saveAsMemory?: boolean;
+  memoryEnabled?: boolean;
   conversationId?: string;
 }): Promise<ChatResponse> {
   return request('/chat', {
