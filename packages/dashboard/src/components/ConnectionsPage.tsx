@@ -49,9 +49,6 @@ import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo } f
 
 const LOCAL_MCP_NAME = 'YEOMAN MCP';
 
-const GIT_TOOL_PREFIXES = ['git_', 'github_'];
-const FS_TOOL_PREFIXES = ['fs_'];
-
 type TransportType = 'stdio' | 'sse' | 'streamable-http';
 
 interface AddServerForm {
@@ -367,21 +364,7 @@ export function ConnectionsPage() {
   const hasRegisteredPlatforms = availablePlatforms.size > 0;
 
   const localServer = servers.find((s) => s.name === LOCAL_MCP_NAME);
-
-  const tools = allTools.filter((tool) => {
-    if (tool.serverId === localServer?.id) {
-      if (!featureConfig?.exposeGit && GIT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) {
-        return false;
-      }
-      if (
-        !featureConfig?.exposeFilesystem &&
-        FS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
-      ) {
-        return false;
-      }
-    }
-    return true;
-  });
+  const tools = allTools;
 
   const externalServers = servers.filter((s) => s.name !== LOCAL_MCP_NAME);
   const activePlatformIds = new Set(integrations.map((i) => i.platform));
@@ -1441,7 +1424,7 @@ function LocalServerCard({
         {featureConfig && server.enabled && (
           <p className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Info className="w-2.5 h-2.5" />
-            Toggles trigger automatic MCP reload
+            Feature toggles control which tool categories are available. To grant a personality access, edit the personality and enable MCP connections.
           </p>
         )}
         <button

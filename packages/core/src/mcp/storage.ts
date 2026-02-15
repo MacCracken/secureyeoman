@@ -6,6 +6,16 @@ import Database from 'better-sqlite3';
 import type { McpServerConfig, McpServerCreate, McpToolDef } from '@friday/shared';
 import { uuidv7 } from '../utils/crypto.js';
 
+export interface McpFeatureConfig {
+  exposeGit: boolean;
+  exposeFilesystem: boolean;
+}
+
+const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
+  exposeGit: false,
+  exposeFilesystem: false,
+};
+
 export class McpStorage {
   private db: Database.Database;
 
@@ -39,6 +49,12 @@ export class McpStorage {
         input_schema TEXT DEFAULT '{}',
         PRIMARY KEY (server_id, name),
         FOREIGN KEY (server_id) REFERENCES mcp_servers(id) ON DELETE CASCADE
+      )
+    `);
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS mcp_config (
+        key TEXT PRIMARY KEY,
+        value TEXT NOT NULL
       )
     `);
   }
@@ -160,6 +176,32 @@ export class McpStorage {
    */
   deleteTools(serverId: string): void {
     this.db.prepare('DELETE FROM mcp_server_tools WHERE server_id = ?').run(serverId);
+  }
+
+  getConfig(): McpFeatureConfig {
+    const rows = this.db.prepare('SELECT key, value FROM mcp_config').all() as Array<{ key: string; value: string }>;
+    const config = { ...MCP_CONFIG_DEFAULTS };
+    for (const row of rows) {
+      if (row.key in config) {
+        (config as Record<string, unknown>)[row.key] = JSON.parse(row.value);
+      }
+    }
+    return config;
+  }
+
+  setConfig(partial: Partial<McpFeatureConfig>): McpFeatureConfig {
+    const upsert = this.db.prepare(
+      'INSERT INTO mcp_config (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value'
+    );
+    const tx = this.db.transaction(() => {
+      for (const [key, value] of Object.entries(partial)) {
+        if (value !== undefined) {
+          upsert.run(key, JSON.stringify(value));
+        }
+      }
+    });
+    tx();
+    return this.getConfig();
   }
 
   close(): void {
