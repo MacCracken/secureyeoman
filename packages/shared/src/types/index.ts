@@ -173,6 +173,7 @@ export {
   ExternalBrainProviderSchema,
   ExternalBrainConfigSchema,
   BodyConfigSchema,
+  CreationConfigSchema,
   MessageTypeSchema,
   CommsConfigSchema,
   type UserRelationship,
@@ -206,6 +207,7 @@ export {
   type PainCreate,
   type PainUpdate,
   type BodyConfig,
+  type CreationConfig,
   type MessageType,
   type CommsConfig,
 } from './soul.js';

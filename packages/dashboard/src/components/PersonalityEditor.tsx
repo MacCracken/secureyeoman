@@ -930,6 +930,36 @@ function BodySection() {
           })}
         </div>
       </div>
+
+      {/* Creation Controls */}
+      <div className="mt-4 pt-4 border-t border-border">
+        <h4 className="text-sm font-medium mb-2">Resource Creation</h4>
+        <p className="text-xs text-muted-foreground mb-3">
+          Allow this personality to autonomously create new skills, tasks, experiments, and
+          personalities.
+        </p>
+        <div className="space-y-2">
+          {[
+            { key: 'skills', label: 'New Skills', icon: '🧠' },
+            { key: 'tasks', label: 'New Tasks', icon: '📋' },
+            { key: 'experiments', label: 'New Experiments', icon: '🧪' },
+            { key: 'personalities', label: 'New Personalities', icon: '👤' },
+          ].map((item) => (
+            <div
+              key={item.key}
+              className="text-sm px-3 py-2 rounded flex items-center justify-between border bg-muted/50 border-border"
+            >
+              <div className="flex items-center gap-2">
+                <span className="text-base">{item.icon}</span>
+                <span className="font-medium">{item.label}</span>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
+                Coming soon
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
     </CollapsibleSection>
   );
 }
