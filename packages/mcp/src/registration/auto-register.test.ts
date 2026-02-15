@@ -37,11 +37,14 @@ describe('AutoRegistration', () => {
 
     const id = await reg.register();
     expect(id).toBe('mcp-123');
-    expect(client.post).toHaveBeenCalledWith('/api/v1/mcp/servers', expect.objectContaining({
-      name: 'FRIDAY Internal MCP',
-      transport: 'streamable-http',
-      enabled: true,
-    }));
+    expect(client.post).toHaveBeenCalledWith(
+      '/api/v1/mcp/servers',
+      expect.objectContaining({
+        name: 'YEOMAN MCP',
+        transport: 'streamable-http',
+        enabled: true,
+      })
+    );
   });
 
   it('should include tool manifest in registration', async () => {
