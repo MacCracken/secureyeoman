@@ -870,7 +870,7 @@ function BodySection() {
   };
 
   return (
-    <CollapsibleSection title="Body — Capabilities & Heart">
+    <CollapsibleSection title="Body — Capabilities">
       <div>
         <h4 className="text-sm font-medium mb-2">Capabilities</h4>
         <div className="space-y-2">
@@ -930,6 +930,13 @@ function BodySection() {
           })}
         </div>
       </div>
+    </CollapsibleSection>
+  );
+}
+
+function HeartSection() {
+  return (
+    <CollapsibleSection title="Heart — Pulse">
       <div>
         <h4 className="text-sm font-medium mb-2">Heartbeat Tasks</h4>
         <HeartbeatTasksSection />
@@ -1302,6 +1309,9 @@ export function PersonalityEditor() {
 
           {/* Body Section */}
           <BodySection />
+
+          {/* Heart Section */}
+          <HeartSection />
 
           {showActivateToggle && (
             <label className="flex items-center gap-2 cursor-pointer">
