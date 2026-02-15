@@ -1,13 +1,10 @@
 /**
- * Task Storage — SQLite-backed persistence for task history.
+ * Task Storage — PostgreSQL-backed persistence for task history.
  *
- * Follows the same patterns as AuthStorage, SoulStorage, and RotationStorage:
- *   WAL mode, prepared statements, explicit close().
+ * Uses PgBaseStorage for connection pooling and query helpers.
  */
 
-import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { PgBaseStorage } from '../storage/pg-base.js';
 import type { Task, ResourceUsage, SecurityContext, TaskError } from '@friday/shared';
 
 // ─── Row Types ───────────────────────────────────────────────
@@ -21,9 +18,9 @@ interface TaskRow {
   description: string | null;
   input_hash: string;
   status: string;
-  result_json: string | null;
-  resources_json: string | null;
-  security_context_json: string;
+  result_json: unknown | null;
+  resources_json: unknown | null;
+  security_context_json: unknown;
   timeout_ms: number;
   created_at: number;
   started_at: number | null;
@@ -33,23 +30,14 @@ interface TaskRow {
 
 // ─── Helpers ─────────────────────────────────────────────────
 
-function safeJsonParse<T>(json: string | null, fallback: T): T {
-  if (!json) return fallback;
-  try {
-    return JSON.parse(json) as T;
-  } catch {
-    return fallback;
-  }
-}
-
 function rowToTask(row: TaskRow): Task {
-  const result = safeJsonParse<Task['result']>(row.result_json, undefined);
-  const resources = safeJsonParse<ResourceUsage | undefined>(row.resources_json, undefined);
-  const securityContext = safeJsonParse<SecurityContext>(row.security_context_json, {
+  const result = (row.result_json as Task['result']) ?? undefined;
+  const resources = (row.resources_json as ResourceUsage | undefined) ?? undefined;
+  const securityContext = (row.security_context_json as SecurityContext) ?? {
     userId: 'unknown',
     role: 'viewer',
     permissionsUsed: [],
-  });
+  };
 
   return {
     id: row.id,
@@ -93,80 +81,42 @@ export interface TaskStats {
 
 // ─── TaskStorage ─────────────────────────────────────────────
 
-export class TaskStorage {
-  private db: Database.Database;
-
-  constructor(opts: { dbPath?: string } = {}) {
-    const dbPath = opts.dbPath ?? ':memory:';
-
-    if (dbPath !== ':memory:') {
-      mkdirSync(dirname(dbPath), { recursive: true });
-    }
-
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('foreign_keys = ON');
-
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS tasks (
-        id TEXT PRIMARY KEY,
-        correlation_id TEXT,
-        parent_task_id TEXT,
-        type TEXT NOT NULL,
-        name TEXT NOT NULL,
-        description TEXT,
-        input_hash TEXT NOT NULL,
-        status TEXT NOT NULL DEFAULT 'pending',
-        result_json TEXT,
-        resources_json TEXT,
-        security_context_json TEXT NOT NULL,
-        timeout_ms INTEGER NOT NULL DEFAULT 300000,
-        created_at INTEGER NOT NULL,
-        started_at INTEGER,
-        completed_at INTEGER,
-        duration_ms INTEGER
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_tasks_status ON tasks(status);
-      CREATE INDEX IF NOT EXISTS idx_tasks_type ON tasks(type);
-      CREATE INDEX IF NOT EXISTS idx_tasks_created_at ON tasks(created_at);
-      CREATE INDEX IF NOT EXISTS idx_tasks_correlation_id ON tasks(correlation_id);
-    `);
+export class TaskStorage extends PgBaseStorage {
+  constructor() {
+    super();
   }
 
   // ─── Write Operations ──────────────────────────────────────
 
-  storeTask(task: Task): void {
-    this.db
-      .prepare(
-        `INSERT INTO tasks (id, correlation_id, parent_task_id, type, name, description,
-           input_hash, status, result_json, resources_json, security_context_json,
-           timeout_ms, created_at, started_at, completed_at, duration_ms)
-         VALUES (@id, @correlation_id, @parent_task_id, @type, @name, @description,
-           @input_hash, @status, @result_json, @resources_json, @security_context_json,
-           @timeout_ms, @created_at, @started_at, @completed_at, @duration_ms)`
-      )
-      .run({
-        id: task.id,
-        correlation_id: task.correlationId ?? null,
-        parent_task_id: task.parentTaskId ?? null,
-        type: task.type,
-        name: task.name,
-        description: task.description ?? null,
-        input_hash: task.inputHash,
-        status: task.status,
-        result_json: task.result ? JSON.stringify(task.result) : null,
-        resources_json: task.resources ? JSON.stringify(task.resources) : null,
-        security_context_json: JSON.stringify(task.securityContext),
-        timeout_ms: task.timeoutMs,
-        created_at: task.createdAt,
-        started_at: task.startedAt ?? null,
-        completed_at: task.completedAt ?? null,
-        duration_ms: task.durationMs ?? null,
-      });
+  async storeTask(task: Task): Promise<void> {
+    await this.query(
+      `INSERT INTO task.tasks
+         (id, correlation_id, parent_task_id, type, name, description,
+          input_hash, status, result_json, resources_json, security_context_json,
+          timeout_ms, created_at, started_at, completed_at, duration_ms)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+      [
+        task.id,
+        task.correlationId ?? null,
+        task.parentTaskId ?? null,
+        task.type,
+        task.name,
+        task.description ?? null,
+        task.inputHash,
+        task.status,
+        task.result ? JSON.stringify(task.result) : null,
+        task.resources ? JSON.stringify(task.resources) : null,
+        JSON.stringify(task.securityContext),
+        task.timeoutMs,
+        task.createdAt,
+        task.startedAt ?? null,
+        task.completedAt ?? null,
+        task.durationMs ?? null,
+      ],
+    );
   }
 
-  updateTask(
+  async updateTask(
     id: string,
     updates: {
       status?: string;
@@ -175,197 +125,215 @@ export class TaskStorage {
       durationMs?: number;
       result?: Task['result'];
       resources?: ResourceUsage;
-    }
-  ): boolean {
+    },
+  ): Promise<boolean> {
     const setClauses: string[] = [];
-    const params: Record<string, unknown> = { id };
+    const params: unknown[] = [];
+    let counter = 1;
 
     if (updates.status !== undefined) {
-      setClauses.push('status = @status');
-      params.status = updates.status;
+      setClauses.push(`status = $${counter++}`);
+      params.push(updates.status);
     }
     if (updates.startedAt !== undefined) {
-      setClauses.push('started_at = @started_at');
-      params.started_at = updates.startedAt;
+      setClauses.push(`started_at = $${counter++}`);
+      params.push(updates.startedAt);
     }
     if (updates.completedAt !== undefined) {
-      setClauses.push('completed_at = @completed_at');
-      params.completed_at = updates.completedAt;
+      setClauses.push(`completed_at = $${counter++}`);
+      params.push(updates.completedAt);
     }
     if (updates.durationMs !== undefined) {
-      setClauses.push('duration_ms = @duration_ms');
-      params.duration_ms = updates.durationMs;
+      setClauses.push(`duration_ms = $${counter++}`);
+      params.push(updates.durationMs);
     }
     if (updates.result !== undefined) {
-      setClauses.push('result_json = @result_json');
-      params.result_json = JSON.stringify(updates.result);
+      setClauses.push(`result_json = $${counter++}`);
+      params.push(JSON.stringify(updates.result));
     }
     if (updates.resources !== undefined) {
-      setClauses.push('resources_json = @resources_json');
-      params.resources_json = JSON.stringify(updates.resources);
+      setClauses.push(`resources_json = $${counter++}`);
+      params.push(JSON.stringify(updates.resources));
     }
 
     if (setClauses.length === 0) return false;
 
-    const info = this.db
-      .prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = @id`)
-      .run(params);
-    return info.changes > 0;
+    params.push(id);
+    const rowCount = await this.execute(
+      `UPDATE task.tasks SET ${setClauses.join(', ')} WHERE id = $${counter}`,
+      params,
+    );
+    return rowCount > 0;
   }
 
-  updateTaskMetadata(
+  async updateTaskMetadata(
     id: string,
-    updates: { name?: string; type?: string; description?: string }
-  ): boolean {
+    updates: { name?: string; type?: string; description?: string },
+  ): Promise<boolean> {
     const setClauses: string[] = [];
-    const params: Record<string, unknown> = { id };
+    const params: unknown[] = [];
+    let counter = 1;
 
     if (updates.name !== undefined) {
-      setClauses.push('name = @name');
-      params.name = updates.name;
+      setClauses.push(`name = $${counter++}`);
+      params.push(updates.name);
     }
     if (updates.type !== undefined) {
-      setClauses.push('type = @type');
-      params.type = updates.type;
+      setClauses.push(`type = $${counter++}`);
+      params.push(updates.type);
     }
     if (updates.description !== undefined) {
-      setClauses.push('description = @description');
-      params.description = updates.description || null;
+      setClauses.push(`description = $${counter++}`);
+      params.push(updates.description || null);
     }
 
     if (setClauses.length === 0) return false;
 
-    const info = this.db
-      .prepare(`UPDATE tasks SET ${setClauses.join(', ')} WHERE id = @id`)
-      .run(params);
-    return info.changes > 0;
+    params.push(id);
+    const rowCount = await this.execute(
+      `UPDATE task.tasks SET ${setClauses.join(', ')} WHERE id = $${counter}`,
+      params,
+    );
+    return rowCount > 0;
   }
 
-  deleteTask(id: string): boolean {
-    const info = this.db.prepare('DELETE FROM tasks WHERE id = ?').run(id);
-    return info.changes > 0;
+  async deleteTask(id: string): Promise<boolean> {
+    const rowCount = await this.execute(
+      'DELETE FROM task.tasks WHERE id = $1',
+      [id],
+    );
+    return rowCount > 0;
   }
 
   // ─── Read Operations ───────────────────────────────────────
 
-  getTask(id: string): Task | null {
-    const row = this.db.prepare('SELECT * FROM tasks WHERE id = ?').get(id) as TaskRow | undefined;
+  async getTask(id: string): Promise<Task | null> {
+    const row = await this.queryOne<TaskRow>(
+      'SELECT * FROM task.tasks WHERE id = $1',
+      [id],
+    );
     return row ? rowToTask(row) : null;
   }
 
-  listTasks(filter?: TaskFilter): { tasks: Task[]; total: number } {
-    let countQuery = 'SELECT COUNT(*) as count FROM tasks WHERE 1=1';
-    let dataQuery = 'SELECT * FROM tasks WHERE 1=1';
-    const params: Record<string, unknown> = {};
+  async listTasks(filter?: TaskFilter): Promise<{ tasks: Task[]; total: number }> {
+    let countQuery = 'SELECT COUNT(*) as count FROM task.tasks WHERE 1=1';
+    let dataQuery = 'SELECT * FROM task.tasks WHERE 1=1';
+    const params: unknown[] = [];
+    let counter = 1;
 
     if (filter?.status) {
-      const clause = ' AND status = @status';
+      const clause = ` AND status = $${counter++}`;
       countQuery += clause;
       dataQuery += clause;
-      params.status = filter.status;
+      params.push(filter.status);
     }
     if (filter?.type) {
-      const clause = ' AND type = @type';
+      const clause = ` AND type = $${counter++}`;
       countQuery += clause;
       dataQuery += clause;
-      params.type = filter.type;
+      params.push(filter.type);
     }
     if (filter?.userId) {
-      const clause = " AND json_extract(security_context_json, '$.userId') = @userId";
+      const clause = ` AND security_context_json->>'userId' = $${counter++}`;
       countQuery += clause;
       dataQuery += clause;
-      params.userId = filter.userId;
+      params.push(filter.userId);
     }
     if (filter?.from) {
-      const clause = ' AND created_at >= @from';
+      const clause = ` AND created_at >= $${counter++}`;
       countQuery += clause;
       dataQuery += clause;
-      params.from = filter.from;
+      params.push(filter.from);
     }
     if (filter?.to) {
-      const clause = ' AND created_at <= @to';
+      const clause = ` AND created_at <= $${counter++}`;
       countQuery += clause;
       dataQuery += clause;
-      params.to = filter.to;
+      params.push(filter.to);
     }
 
-    const totalRow = this.db.prepare(countQuery).get(params) as { count: number };
+    const totalRow = await this.queryOne<{ count: string }>(countQuery, params);
+    const total = parseInt(totalRow?.count ?? '0', 10);
 
     dataQuery += ' ORDER BY created_at DESC';
+
+    // Clone params for the data query (which may add limit/offset)
+    const dataParams = [...params];
+
     if (filter?.limit) {
-      dataQuery += ' LIMIT @limit';
-      params.limit = filter.limit;
+      dataQuery += ` LIMIT $${counter++}`;
+      dataParams.push(filter.limit);
     }
     if (filter?.offset) {
-      dataQuery += ' OFFSET @offset';
-      params.offset = filter.offset;
+      dataQuery += ` OFFSET $${counter++}`;
+      dataParams.push(filter.offset);
     }
 
-    const rows = this.db.prepare(dataQuery).all(params) as TaskRow[];
+    const rows = await this.queryMany<TaskRow>(dataQuery, dataParams);
     return {
       tasks: rows.map(rowToTask),
-      total: totalRow.count,
+      total,
     };
   }
 
   // ─── Stats ─────────────────────────────────────────────────
 
-  getStats(): TaskStats {
-    // Consolidated query: total, per-status counts, and avg duration in one pass
-    const statsRow = this.db
-      .prepare(
-        `
-        SELECT
-          COUNT(*) as total,
-          SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-          SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
-          SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-          SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as running,
-          SUM(CASE WHEN status = 'timeout' THEN 1 ELSE 0 END) as timeout_count,
-          SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
-          AVG(CASE WHEN duration_ms IS NOT NULL THEN duration_ms END) as avg_duration
-        FROM tasks
-      `
-      )
-      .get() as {
-      total: number;
-      completed: number;
-      failed: number;
-      pending: number;
-      running: number;
-      timeout_count: number;
-      cancelled: number;
+  async getStats(): Promise<TaskStats> {
+    const statsRow = await this.queryOne<{
+      total: string;
+      completed: string;
+      failed: string;
+      pending: string;
+      running: string;
+      timeout_count: string;
+      cancelled: string;
       avg_duration: number | null;
-    };
+    }>(
+      `SELECT
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+        SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as running,
+        SUM(CASE WHEN status = 'timeout' THEN 1 ELSE 0 END) as timeout_count,
+        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
+        AVG(CASE WHEN duration_ms IS NOT NULL THEN duration_ms END) as avg_duration
+      FROM task.tasks`,
+    );
+
+    if (!statsRow) {
+      return { total: 0, byStatus: {}, byType: {}, successRate: 0, avgDurationMs: 0 };
+    }
+
+    const total = parseInt(statsRow.total, 10);
+    const completed = parseInt(statsRow.completed, 10);
+    const failed = parseInt(statsRow.failed, 10);
+    const pending = parseInt(statsRow.pending, 10);
+    const running = parseInt(statsRow.running, 10);
+    const timeoutCount = parseInt(statsRow.timeout_count, 10);
+    const cancelled = parseInt(statsRow.cancelled, 10);
 
     // byType still needs its own GROUP BY query
-    const typeRows = this.db
-      .prepare('SELECT type, COUNT(*) as count FROM tasks GROUP BY type')
-      .all() as Array<{ type: string; count: number }>;
+    const typeRows = await this.queryMany<{ type: string; count: string }>(
+      'SELECT type, COUNT(*) as count FROM task.tasks GROUP BY type',
+    );
 
     const byStatus: Record<string, number> = {};
-    if (statsRow.completed > 0) byStatus.completed = statsRow.completed;
-    if (statsRow.failed > 0) byStatus.failed = statsRow.failed;
-    if (statsRow.pending > 0) byStatus.pending = statsRow.pending;
-    if (statsRow.running > 0) byStatus.running = statsRow.running;
-    if (statsRow.timeout_count > 0) byStatus.timeout = statsRow.timeout_count;
-    if (statsRow.cancelled > 0) byStatus.cancelled = statsRow.cancelled;
+    if (completed > 0) byStatus.completed = completed;
+    if (failed > 0) byStatus.failed = failed;
+    if (pending > 0) byStatus.pending = pending;
+    if (running > 0) byStatus.running = running;
+    if (timeoutCount > 0) byStatus.timeout = timeoutCount;
+    if (cancelled > 0) byStatus.cancelled = cancelled;
 
-    const finishedCount =
-      statsRow.completed + statsRow.failed + statsRow.timeout_count + statsRow.cancelled;
+    const finishedCount = completed + failed + timeoutCount + cancelled;
 
     return {
-      total: statsRow.total,
+      total,
       byStatus,
-      byType: Object.fromEntries(typeRows.map((r) => [r.type, r.count])),
-      successRate: finishedCount > 0 ? statsRow.completed / finishedCount : 0,
+      byType: Object.fromEntries(typeRows.map((r) => [r.type, parseInt(r.count, 10)])),
+      successRate: finishedCount > 0 ? completed / finishedCount : 0,
       avgDurationMs: statsRow.avg_duration ?? 0,
     };
-  }
-
-  // ─── Lifecycle ─────────────────────────────────────────────
-
-  close(): void {
-    this.db.close();
   }
 }

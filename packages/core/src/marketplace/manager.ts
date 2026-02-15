@@ -24,22 +24,24 @@ export class MarketplaceManager {
     this.brainManager = deps.brainManager;
   }
 
-  search(query?: string, category?: string, limit?: number, offset?: number) {
-    return this.storage.search(query, category, limit, offset);
+  async search(query?: string, category?: string, limit?: number, offset?: number) {
+    return await this.storage.search(query, category, limit, offset);
   }
 
-  getSkill(id: string): MarketplaceSkill | null { return this.storage.getSkill(id); }
+  async getSkill(id: string): Promise<MarketplaceSkill | null> {
+    return await this.storage.getSkill(id);
+  }
 
-  install(id: string): boolean {
-    const skill = this.storage.getSkill(id);
+  async install(id: string): Promise<boolean> {
+    const skill = await this.storage.getSkill(id);
     if (!skill) return false;
     if (skill.installed) return true;
-    const ok = this.storage.setInstalled(id, true);
+    const ok = await this.storage.setInstalled(id, true);
     if (ok) {
       this.logger.info('Marketplace skill installed', { id });
       if (this.brainManager) {
         try {
-          this.brainManager.createSkill(SkillCreateSchema.parse({
+          await this.brainManager.createSkill(SkillCreateSchema.parse({
             name: skill.name,
             description: skill.description,
             instructions: skill.instructions,
@@ -59,17 +61,17 @@ export class MarketplaceManager {
     return ok;
   }
 
-  uninstall(id: string): boolean {
-    const skill = this.storage.getSkill(id);
-    const ok = this.storage.setInstalled(id, false);
+  async uninstall(id: string): Promise<boolean> {
+    const skill = await this.storage.getSkill(id);
+    const ok = await this.storage.setInstalled(id, false);
     if (ok) {
       this.logger.info('Marketplace skill uninstalled', { id });
       if (this.brainManager && skill) {
         try {
-          const brainSkills = this.brainManager.listSkills({ source: 'marketplace' });
+          const brainSkills = await this.brainManager.listSkills({ source: 'marketplace' });
           const match = brainSkills.find(s => s.name === skill.name);
           if (match) {
-            this.brainManager.deleteSkill(match.id);
+            await this.brainManager.deleteSkill(match.id);
             this.logger.info('Brain skill removed (marketplace uninstall)', { id, brainSkillId: match.id });
           }
         } catch (err) {
@@ -83,19 +85,19 @@ export class MarketplaceManager {
     return ok;
   }
 
-  publish(data: Partial<MarketplaceSkill>): MarketplaceSkill {
-    const skill = this.storage.addSkill(data);
+  async publish(data: Partial<MarketplaceSkill>): Promise<MarketplaceSkill> {
+    const skill = await this.storage.addSkill(data);
     this.logger.info('Skill published to marketplace', { id: skill.id, name: skill.name });
     return skill;
   }
 
-  delete(id: string): boolean {
-    const ok = this.storage.delete(id);
+  async delete(id: string): Promise<boolean> {
+    const ok = await this.storage.delete(id);
     if (ok) this.logger.info('Marketplace skill removed', { id });
     return ok;
   }
 
-  seedBuiltinSkills(): void {
-    this.storage.seedBuiltinSkills();
+  async seedBuiltinSkills(): Promise<void> {
+    await this.storage.seedBuiltinSkills();
   }
 }

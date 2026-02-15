@@ -611,6 +611,28 @@ export async function deleteIntegration(id: string): Promise<void> {
   await request(`/integrations/${id}`, { method: 'DELETE' });
 }
 
+export async function claimGmailOAuth(data: {
+  connectionToken: string;
+  displayName: string;
+  enableRead: boolean;
+  enableSend: boolean;
+  labelFilter: 'all' | 'label' | 'custom';
+  labelName?: string;
+}): Promise<{
+  success: boolean;
+  config: {
+    platform: string;
+    displayName: string;
+    enabled: boolean;
+    config: Record<string, unknown>;
+  };
+}> {
+  return request('/auth/oauth/claim', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  }, true);
+}
+
 export async function startIntegration(id: string): Promise<{ message: string }> {
   return request(`/integrations/${id}/start`, { method: 'POST' });
 }

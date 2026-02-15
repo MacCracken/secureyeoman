@@ -23,7 +23,7 @@ export function registerSpiritRoutes(
   // ── Passions ──────────────────────────────────────────────────
 
   app.get('/api/v1/spirit/passions', async () => {
-    const passions = spiritManager.listPassions();
+    const passions = await spiritManager.listPassions();
     return { passions };
   });
 
@@ -32,7 +32,7 @@ export function registerSpiritRoutes(
     reply: FastifyReply,
   ) => {
     try {
-      const passion = spiritManager.createPassion(request.body);
+      const passion = await spiritManager.createPassion(request.body);
       return reply.code(201).send({ passion });
     } catch (err) {
       return reply.code(400).send({ error: errorMessage(err) });
@@ -43,7 +43,7 @@ export function registerSpiritRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const passion = spiritManager.getPassion(request.params.id);
+    const passion = await spiritManager.getPassion(request.params.id);
     if (!passion) {
       return reply.code(404).send({ error: 'Passion not found' });
     }
@@ -55,7 +55,7 @@ export function registerSpiritRoutes(
     reply: FastifyReply,
   ) => {
     try {
-      const passion = spiritManager.updatePassion(request.params.id, request.body);
+      const passion = await spiritManager.updatePassion(request.params.id, request.body);
       return { passion };
     } catch (err) {
       return reply.code(404).send({ error: errorMessage(err) });
@@ -66,7 +66,7 @@ export function registerSpiritRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const deleted = spiritManager.deletePassion(request.params.id);
+    const deleted = await spiritManager.deletePassion(request.params.id);
     if (!deleted) {
       return reply.code(404).send({ error: 'Passion not found' });
     }
@@ -76,7 +76,7 @@ export function registerSpiritRoutes(
   // ── Inspirations ──────────────────────────────────────────────
 
   app.get('/api/v1/spirit/inspirations', async () => {
-    const inspirations = spiritManager.listInspirations();
+    const inspirations = await spiritManager.listInspirations();
     return { inspirations };
   });
 
@@ -85,7 +85,7 @@ export function registerSpiritRoutes(
     reply: FastifyReply,
   ) => {
     try {
-      const inspiration = spiritManager.createInspiration(request.body);
+      const inspiration = await spiritManager.createInspiration(request.body);
       return reply.code(201).send({ inspiration });
     } catch (err) {
       return reply.code(400).send({ error: errorMessage(err) });
@@ -96,7 +96,7 @@ export function registerSpiritRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const inspiration = spiritManager.getInspiration(request.params.id);
+    const inspiration = await spiritManager.getInspiration(request.params.id);
     if (!inspiration) {
       return reply.code(404).send({ error: 'Inspiration not found' });
     }
@@ -108,7 +108,7 @@ export function registerSpiritRoutes(
     reply: FastifyReply,
   ) => {
     try {
-      const inspiration = spiritManager.updateInspiration(request.params.id, request.body);
+      const inspiration = await spiritManager.updateInspiration(request.params.id, request.body);
       return { inspiration };
     } catch (err) {
       return reply.code(404).send({ error: errorMessage(err) });
@@ -119,7 +119,7 @@ export function registerSpiritRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const deleted = spiritManager.deleteInspiration(request.params.id);
+    const deleted = await spiritManager.deleteInspiration(request.params.id);
     if (!deleted) {
       return reply.code(404).send({ error: 'Inspiration not found' });
     }
@@ -129,7 +129,7 @@ export function registerSpiritRoutes(
   // ── Pains ─────────────────────────────────────────────────────
 
   app.get('/api/v1/spirit/pains', async () => {
-    const pains = spiritManager.listPains();
+    const pains = await spiritManager.listPains();
     return { pains };
   });
 
@@ -138,7 +138,7 @@ export function registerSpiritRoutes(
     reply: FastifyReply,
   ) => {
     try {
-      const pain = spiritManager.createPain(request.body);
+      const pain = await spiritManager.createPain(request.body);
       return reply.code(201).send({ pain });
     } catch (err) {
       return reply.code(400).send({ error: errorMessage(err) });
@@ -149,7 +149,7 @@ export function registerSpiritRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const pain = spiritManager.getPain(request.params.id);
+    const pain = await spiritManager.getPain(request.params.id);
     if (!pain) {
       return reply.code(404).send({ error: 'Pain not found' });
     }
@@ -161,7 +161,7 @@ export function registerSpiritRoutes(
     reply: FastifyReply,
   ) => {
     try {
-      const pain = spiritManager.updatePain(request.params.id, request.body);
+      const pain = await spiritManager.updatePain(request.params.id, request.body);
       return { pain };
     } catch (err) {
       return reply.code(404).send({ error: errorMessage(err) });
@@ -172,7 +172,7 @@ export function registerSpiritRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const deleted = spiritManager.deletePain(request.params.id);
+    const deleted = await spiritManager.deletePain(request.params.id);
     if (!deleted) {
       return reply.code(404).send({ error: 'Pain not found' });
     }
@@ -189,14 +189,14 @@ export function registerSpiritRoutes(
   // ── Stats ─────────────────────────────────────────────────────
 
   app.get('/api/v1/spirit/stats', async () => {
-    const stats = spiritManager.getStats();
+    const stats = await spiritManager.getStats();
     return { stats };
   });
 
   // ── Prompt Preview ────────────────────────────────────────────
 
   app.get('/api/v1/spirit/prompt/preview', async () => {
-    const prompt = spiritManager.composeSpiritPrompt();
+    const prompt = await spiritManager.composeSpiritPrompt();
     return { prompt, charCount: prompt.length, estimatedTokens: Math.ceil(prompt.length / 4) };
   });
 }

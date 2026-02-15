@@ -10,7 +10,9 @@
  * - Input validation on all parameters
  */
 
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fastifyCompress from '@fastify/compress';
 import fastifyWebsocket from '@fastify/websocket';
@@ -21,6 +23,7 @@ import type { GatewayConfig } from '@friday/shared';
 import type { AuthService } from '../security/auth.js';
 import { createAuthHook, createRbacHook } from './auth-middleware.js';
 import { registerAuthRoutes } from './auth-routes.js';
+import { registerOAuthRoutes, OAuthService } from './oauth-routes.js';
 import { registerSoulRoutes } from '../soul/soul-routes.js';
 import { registerBrainRoutes } from '../brain/brain-routes.js';
 import { registerSpiritRoutes } from '../spirit/spirit-routes.js';
@@ -39,6 +42,20 @@ import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js'
 import { registerTerminalRoutes } from './terminal-routes.js';
 import { registerConversationRoutes } from '../chat/conversation-routes.js';
 import { formatPrometheusMetrics } from './prometheus.js';
+
+/** Read version from the closest package.json (core → root). */
+function getPackageVersion(): string {
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  for (const rel of ['../../package.json', '../../../../package.json']) {
+    const p = resolve(__dirname, rel);
+    if (existsSync(p)) {
+      try {
+        return JSON.parse(readFileSync(p, 'utf-8')).version ?? '0.0.0';
+      } catch { /* fall through */ }
+    }
+  }
+  return '0.0.0';
+}
 
 /**
  * Check if an IP address belongs to a private/loopback range.
@@ -249,6 +266,14 @@ export class GatewayServer {
       });
     }
 
+    // OAuth routes
+    if (this.authService) {
+      const oauthService = new OAuthService();
+      const scheme = this.config.tls.enabled ? 'https' : 'http';
+      const baseUrl = `${scheme}://${this.config.host === '0.0.0.0' ? 'localhost' : this.config.host}:${this.config.port}`;
+      registerOAuthRoutes(this.app, { authService: this.authService, oauthService, baseUrl });
+    }
+
     // Soul routes
     try {
       const soulManager = this.secureYeoman.getSoulManager();
@@ -398,7 +423,7 @@ export class GatewayServer {
       const state = this.secureYeoman.getState();
       return {
         status: state.healthy ? 'ok' : 'error',
-        version: '1.5.1',
+        version: getPackageVersion(),
         uptime: state.startedAt ? Date.now() - state.startedAt : 0,
         checks: {
           database: true,

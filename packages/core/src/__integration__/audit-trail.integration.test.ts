@@ -5,23 +5,35 @@
  * persistence across instances, and auth operation auditing.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach } from 'vitest';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import {
   createTestStack,
   TEST_SIGNING_KEY,
+  setupTestDb,
+  teardownTestDb,
+  truncateAllTables,
   type TestStack,
 } from './helpers.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { SQLiteAuditStorage } from '../logging/sqlite-storage.js';
 
+beforeAll(async () => {
+  await setupTestDb();
+});
+
+afterAll(async () => {
+  await teardownTestDb();
+});
+
 describe('Audit Trail Integration', () => {
   let stack: TestStack;
 
   beforeEach(async () => {
-    stack = createTestStack();
+    await truncateAllTables();
+    stack = await createTestStack();
     await stack.auditChain.initialize();
   });
 

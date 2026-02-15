@@ -1,13 +1,14 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { AuthService } from '../security/auth.js';
 import { AuthStorage } from '../security/auth-storage.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
-import { RBAC } from '../security/rbac.js';
+import { RBAC, initializeRBAC } from '../security/rbac.js';
 import { RateLimiter } from '../security/rate-limiter.js';
 import { createAuthHook, createRbacHook } from './auth-middleware.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { sha256 } from '../utils/crypto.js';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 const TOKEN_SECRET = 'test-token-secret-at-least-32chars!!';
 const ADMIN_PASSWORD_RAW = 'test-admin-password-32chars!!';
@@ -23,6 +24,14 @@ function noopLogger(): SecureLogger {
   };
 }
 
+beforeAll(async () => {
+  await setupTestDb();
+});
+
+afterAll(async () => {
+  await teardownTestDb();
+});
+
 describe('Auth Middleware', () => {
   let app: FastifyInstance;
   let authStorage: AuthStorage;
@@ -32,11 +41,12 @@ describe('Auth Middleware', () => {
   let auditChain: AuditChain;
 
   beforeEach(async () => {
+    await truncateAllTables();
     authStorage = new AuthStorage();
     const auditStorage = new InMemoryAuditStorage();
     auditChain = new AuditChain({ storage: auditStorage, signingKey: SIGNING_KEY });
     await auditChain.initialize();
-    rbac = new RBAC();
+    rbac = await initializeRBAC();
     rateLimiter = new RateLimiter({ defaultWindowMs: 60000, defaultMaxRequests: 100 });
     rateLimiter.addRule({
       name: 'auth_attempts',
@@ -89,7 +99,6 @@ describe('Auth Middleware', () => {
 
   afterEach(async () => {
     await app.close();
-    authStorage.close();
     rateLimiter.stop();
   });
 

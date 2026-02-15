@@ -385,7 +385,7 @@ export class HeartbeatManager {
 
     const content = `Heartbeat alert from "${check.name}": ${result.status} - ${result.message}`;
 
-    this.brain.remember(
+    await this.brain.remember(
       memoryType,
       content,
       category,
@@ -546,7 +546,7 @@ export class HeartbeatManager {
       const hasErrors = checks.some((c) => c.status === 'error');
       const summary = checks.map((c) => `${c.name}: ${c.status}`).join(', ');
 
-      this.brain.remember(
+      await this.brain.remember(
         'episodic',
         `Heartbeat #${this.beatCount}: ${summary}`,
         'heartbeat',
@@ -650,10 +650,10 @@ export class HeartbeatManager {
     }
   }
 
-  private runReflectiveTask(check: HeartbeatCheck): HeartbeatCheckResult {
+  private async runReflectiveTask(check: HeartbeatCheck): Promise<HeartbeatCheckResult> {
     const prompt = (check.config.prompt as string) ?? 'reflect';
 
-    this.brain.remember(
+    await this.brain.remember(
       'episodic',
       `Reflective task: ${prompt}`,
       'heartbeat',
@@ -669,8 +669,8 @@ export class HeartbeatManager {
     };
   }
 
-  private checkSystemHealth(check: HeartbeatCheck): HeartbeatCheckResult {
-    const stats = this.brain.getStats();
+  private async checkSystemHealth(check: HeartbeatCheck): Promise<HeartbeatCheckResult> {
+    const stats = await this.brain.getStats();
     const memUsage = process.memoryUsage();
 
     const heapUsedMb = Math.round(memUsage.heapUsed / 1024 / 1024);
@@ -699,8 +699,8 @@ export class HeartbeatManager {
     };
   }
 
-  private checkMemoryStatus(check: HeartbeatCheck): HeartbeatCheckResult {
-    const maintenance = this.brain.runMaintenance();
+  private async checkMemoryStatus(check: HeartbeatCheck): Promise<HeartbeatCheckResult> {
+    const maintenance = await this.brain.runMaintenance();
 
     let status: HeartbeatCheckResult['status'] = 'ok';
     let message = `Maintenance: ${maintenance.decayed} decayed, ${maintenance.pruned} pruned`;

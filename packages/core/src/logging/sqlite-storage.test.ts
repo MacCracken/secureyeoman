@@ -1,10 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
-import { tmpdir } from 'node:os';
-import Database from 'better-sqlite3';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { SQLiteAuditStorage } from './sqlite-storage.js';
 import type { AuditEntry } from '@friday/shared';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 function makeEntry(overrides: Partial<AuditEntry> = {}): AuditEntry {
   return {
@@ -28,12 +25,17 @@ function makeEntry(overrides: Partial<AuditEntry> = {}): AuditEntry {
 describe('SQLiteAuditStorage', () => {
   let storage: SQLiteAuditStorage;
 
-  beforeEach(() => {
-    storage = new SQLiteAuditStorage(); // defaults to :memory:
+  beforeAll(async () => {
+    await setupTestDb();
   });
 
-  afterEach(() => {
-    storage.close();
+  beforeEach(async () => {
+    await truncateAllTables();
+    storage = new SQLiteAuditStorage();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
   });
 
   describe('append and getLast', () => {
@@ -162,7 +164,7 @@ describe('SQLiteAuditStorage', () => {
     });
   });
 
-  describe('query', () => {
+  describe('queryEntries', () => {
     beforeEach(async () => {
       const now = 1000000;
       await storage.append(makeEntry({ event: 'login', level: 'info', timestamp: now, userId: 'alice', taskId: crypto.randomUUID() }));
@@ -173,7 +175,7 @@ describe('SQLiteAuditStorage', () => {
     });
 
     it('should return all entries with default options', async () => {
-      const result = await storage.query();
+      const result = await storage.queryEntries();
       expect(result.total).toBe(5);
       expect(result.entries).toHaveLength(5);
       expect(result.limit).toBe(50);
@@ -181,29 +183,29 @@ describe('SQLiteAuditStorage', () => {
     });
 
     it('should filter by time range', async () => {
-      const result = await storage.query({ from: 1000100, to: 1000300 });
+      const result = await storage.queryEntries({ from: 1000100, to: 1000300 });
       expect(result.total).toBe(3);
       expect(result.entries).toHaveLength(3);
     });
 
     it('should filter by level', async () => {
-      const result = await storage.query({ level: ['error', 'security'] });
+      const result = await storage.queryEntries({ level: ['error', 'security'] });
       expect(result.total).toBe(2);
     });
 
     it('should filter by event', async () => {
-      const result = await storage.query({ event: ['login'] });
+      const result = await storage.queryEntries({ event: ['login'] });
       expect(result.total).toBe(2);
     });
 
     it('should filter by userId', async () => {
-      const result = await storage.query({ userId: 'alice' });
+      const result = await storage.queryEntries({ userId: 'alice' });
       expect(result.total).toBe(3);
     });
 
     it('should support pagination', async () => {
-      const page1 = await storage.query({ limit: 2, offset: 0, order: 'asc' });
-      const page2 = await storage.query({ limit: 2, offset: 2, order: 'asc' });
+      const page1 = await storage.queryEntries({ limit: 2, offset: 0, order: 'asc' });
+      const page2 = await storage.queryEntries({ limit: 2, offset: 2, order: 'asc' });
       expect(page1.entries).toHaveLength(2);
       expect(page2.entries).toHaveLength(2);
       expect(page1.entries[0].id).not.toBe(page2.entries[0].id);
@@ -211,14 +213,14 @@ describe('SQLiteAuditStorage', () => {
     });
 
     it('should order descending by default', async () => {
-      const result = await storage.query();
+      const result = await storage.queryEntries();
       expect(result.entries[0].timestamp).toBeGreaterThanOrEqual(
         result.entries[result.entries.length - 1].timestamp
       );
     });
 
     it('should cap limit at 1000', async () => {
-      const result = await storage.query({ limit: 5000 });
+      const result = await storage.queryEntries({ limit: 5000 });
       expect(result.limit).toBe(1000);
     });
   });
@@ -249,73 +251,36 @@ describe('SQLiteAuditStorage', () => {
     });
   });
 
-  describe('WAL mode', () => {
-    it('should have WAL journal mode enabled', () => {
-      // Access the db through a fresh connection to the same path
-      const tmpDir = mkdtempSync(join(tmpdir(), 'audit-wal-'));
-      const dbPath = join(tmpDir, 'test.db');
-      const s = new SQLiteAuditStorage({ dbPath });
-      try {
-        const db = new Database(dbPath);
-        const result = db.pragma('journal_mode') as { journal_mode: string }[];
-        expect(result[0].journal_mode).toBe('wal');
-        db.close();
-      } finally {
-        s.close();
-        rmSync(tmpDir, { recursive: true, force: true });
-      }
-    });
-  });
+  describe('persistence (shared pool)', () => {
+    it('should preserve data across multiple storage instances', async () => {
+      const entry = makeEntry({ message: 'persisted' });
+      await storage.append(entry);
 
-  describe('persistence', () => {
-    it('should preserve data across reopen', async () => {
-      const tmpDir = mkdtempSync(join(tmpdir(), 'audit-persist-'));
-      const dbPath = join(tmpDir, 'test.db');
-
-      try {
-        const s1 = new SQLiteAuditStorage({ dbPath });
-        const entry = makeEntry({ message: 'persisted' });
-        await s1.append(entry);
-        s1.close();
-
-        const s2 = new SQLiteAuditStorage({ dbPath });
-        expect(await s2.count()).toBe(1);
-        const last = await s2.getLast();
-        expect(last!.message).toBe('persisted');
-        expect(last!.id).toBe(entry.id);
-        s2.close();
-      } finally {
-        rmSync(tmpDir, { recursive: true, force: true });
-      }
+      // Create a second instance — shares the same pool
+      const s2 = new SQLiteAuditStorage();
+      expect(await s2.count()).toBe(1);
+      const last = await s2.getLast();
+      expect(last!.message).toBe('persisted');
+      expect(last!.id).toBe(entry.id);
     });
 
-    it('should return correct getLast after reopen for chain continuation', async () => {
-      const tmpDir = mkdtempSync(join(tmpdir(), 'audit-chain-'));
-      const dbPath = join(tmpDir, 'test.db');
+    it('should return correct getLast for chain continuation across instances', async () => {
+      const e1 = makeEntry({ message: 'first' });
+      const e2 = makeEntry({
+        message: 'second',
+        integrity: {
+          version: '1.0.0',
+          signature: 'b'.repeat(64),
+          previousEntryHash: 'c'.repeat(64),
+        },
+      });
+      await storage.append(e1);
+      await storage.append(e2);
 
-      try {
-        const s1 = new SQLiteAuditStorage({ dbPath });
-        const e1 = makeEntry({ message: 'first' });
-        const e2 = makeEntry({
-          message: 'second',
-          integrity: {
-            version: '1.0.0',
-            signature: 'b'.repeat(64),
-            previousEntryHash: 'c'.repeat(64),
-          },
-        });
-        await s1.append(e1);
-        await s1.append(e2);
-        s1.close();
-
-        const s2 = new SQLiteAuditStorage({ dbPath });
-        const last = await s2.getLast();
-        expect(last!.id).toBe(e2.id);
-        expect(last!.integrity.previousEntryHash).toBe('c'.repeat(64));
-        s2.close();
-      } finally {
-        rmSync(tmpDir, { recursive: true, force: true });
-      }
+      const s2 = new SQLiteAuditStorage();
+      const last = await s2.getLast();
+      expect(last!.id).toBe(e2.id);
+      expect(last!.integrity.previousEntryHash).toBe('c'.repeat(64));
     });
   });
 
@@ -327,7 +292,7 @@ describe('SQLiteAuditStorage', () => {
       await storage.append(makeEntry({ id: 'old-2', timestamp: now - 95 * 86_400_000 }));
       await storage.append(makeEntry({ id: 'recent', timestamp: now }));
 
-      const deleted = storage.enforceRetention({ maxAgeDays: 90 });
+      const deleted = await storage.enforceRetention({ maxAgeDays: 90 });
       expect(deleted).toBe(2);
       expect(await storage.count()).toBe(1);
       const last = await storage.getLast();
@@ -339,7 +304,7 @@ describe('SQLiteAuditStorage', () => {
         await storage.append(makeEntry({ id: `entry-${i}`, timestamp: Date.now() + i }));
       }
 
-      const deleted = storage.enforceRetention({ maxAgeDays: 9999, maxEntries: 5 });
+      const deleted = await storage.enforceRetention({ maxAgeDays: 9999, maxEntries: 5 });
       expect(deleted).toBe(5);
       expect(await storage.count()).toBe(5);
     });
@@ -348,7 +313,7 @@ describe('SQLiteAuditStorage', () => {
       await storage.append(makeEntry({ timestamp: Date.now() }));
       await storage.append(makeEntry({ timestamp: Date.now() }));
 
-      const deleted = storage.enforceRetention({ maxAgeDays: 90, maxEntries: 1_000_000 });
+      const deleted = await storage.enforceRetention({ maxAgeDays: 90, maxEntries: 1_000_000 });
       expect(deleted).toBe(0);
       expect(await storage.count()).toBe(2);
     });
@@ -364,41 +329,9 @@ describe('SQLiteAuditStorage', () => {
       }
 
       // maxAgeDays=90 removes 3 old, then maxEntries=5 removes 3 more
-      const deleted = storage.enforceRetention({ maxAgeDays: 90, maxEntries: 5 });
+      const deleted = await storage.enforceRetention({ maxAgeDays: 90, maxEntries: 5 });
       expect(deleted).toBe(6);
       expect(await storage.count()).toBe(5);
-    });
-  });
-
-  describe('schema creation', () => {
-    it('should create table and indexes on fresh DB', () => {
-      const tmpDir = mkdtempSync(join(tmpdir(), 'audit-schema-'));
-      const dbPath = join(tmpDir, 'test.db');
-
-      try {
-        const s = new SQLiteAuditStorage({ dbPath });
-        const db = new Database(dbPath);
-
-        const tables = db.prepare(
-          "SELECT name FROM sqlite_master WHERE type='table' AND name='audit_entries'"
-        ).all();
-        expect(tables).toHaveLength(1);
-
-        const indexes = db.prepare(
-          "SELECT name FROM sqlite_master WHERE type='index' AND name LIKE 'idx_%'"
-        ).all() as { name: string }[];
-        const indexNames = indexes.map(i => i.name).sort();
-        expect(indexNames).toContain('idx_timestamp');
-        expect(indexNames).toContain('idx_level');
-        expect(indexNames).toContain('idx_event');
-        expect(indexNames).toContain('idx_task_id');
-        expect(indexNames).toContain('idx_correlation_id');
-
-        db.close();
-        s.close();
-      } finally {
-        rmSync(tmpDir, { recursive: true, force: true });
-      }
     });
   });
 });

@@ -1,142 +1,98 @@
 /**
- * Rotation Storage — SQLite-backed metadata and previous-value storage
+ * Rotation Storage — PostgreSQL-backed metadata and previous-value storage
  * for secret rotation grace periods.
  */
 
-import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { PgBaseStorage } from '../../storage/pg-base.js';
 import type { SecretMetadata } from './types.js';
 
-export class RotationStorage {
-  private db: Database.Database;
-
-  constructor(opts: { dbPath?: string } = {}) {
-    const dbPath = opts.dbPath ?? ':memory:';
-
-    if (dbPath !== ':memory:') {
-      mkdirSync(dirname(dbPath), { recursive: true });
-    }
-
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('foreign_keys = ON');
-
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS secret_metadata (
-        name TEXT PRIMARY KEY,
-        created_at INTEGER NOT NULL,
-        expires_at INTEGER,
-        rotated_at INTEGER,
-        rotation_interval_days INTEGER,
-        auto_rotate INTEGER NOT NULL DEFAULT 0,
-        source TEXT NOT NULL DEFAULT 'external',
-        category TEXT NOT NULL DEFAULT 'encryption'
-      );
-
-      CREATE TABLE IF NOT EXISTS secret_previous_values (
-        name TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        stored_at INTEGER NOT NULL,
-        expires_at INTEGER NOT NULL
-      );
-    `);
+export class RotationStorage extends PgBaseStorage {
+  constructor() {
+    super();
   }
 
-  upsert(meta: SecretMetadata): void {
-    this.db
-      .prepare(
-        `INSERT INTO secret_metadata (name, created_at, expires_at, rotated_at, rotation_interval_days, auto_rotate, source, category)
-         VALUES (@name, @created_at, @expires_at, @rotated_at, @rotation_interval_days, @auto_rotate, @source, @category)
-         ON CONFLICT(name) DO UPDATE SET
-           expires_at = @expires_at,
-           rotated_at = @rotated_at,
-           rotation_interval_days = @rotation_interval_days,
-           auto_rotate = @auto_rotate,
-           source = @source,
-           category = @category`,
-      )
-      .run({
-        name: meta.name,
-        created_at: meta.createdAt,
-        expires_at: meta.expiresAt,
-        rotated_at: meta.rotatedAt,
-        rotation_interval_days: meta.rotationIntervalDays,
-        auto_rotate: meta.autoRotate ? 1 : 0,
-        source: meta.source,
-        category: meta.category,
-      });
+  async upsert(meta: SecretMetadata): Promise<void> {
+    await this.query(
+      `INSERT INTO rotation.secret_metadata
+         (name, created_at, expires_at, rotated_at, rotation_interval_days, auto_rotate, source, category)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT (name) DO UPDATE SET
+         expires_at = $3,
+         rotated_at = $4,
+         rotation_interval_days = $5,
+         auto_rotate = $6,
+         source = $7,
+         category = $8`,
+      [
+        meta.name,
+        meta.createdAt,
+        meta.expiresAt,
+        meta.rotatedAt,
+        meta.rotationIntervalDays,
+        meta.autoRotate,
+        meta.source,
+        meta.category,
+      ],
+    );
   }
 
-  get(name: string): SecretMetadata | null {
-    const row = this.db
-      .prepare('SELECT * FROM secret_metadata WHERE name = ?')
-      .get(name) as Record<string, unknown> | undefined;
-
+  async get(name: string): Promise<SecretMetadata | null> {
+    const row = await this.queryOne<Record<string, unknown>>(
+      'SELECT * FROM rotation.secret_metadata WHERE name = $1',
+      [name],
+    );
     return row ? this.rowToMeta(row) : null;
   }
 
-  getAll(): SecretMetadata[] {
-    const rows = this.db
-      .prepare('SELECT * FROM secret_metadata ORDER BY name')
-      .all() as Record<string, unknown>[];
-
+  async getAll(): Promise<SecretMetadata[]> {
+    const rows = await this.queryMany<Record<string, unknown>>(
+      'SELECT * FROM rotation.secret_metadata ORDER BY name',
+    );
     return rows.map((r) => this.rowToMeta(r));
   }
 
-  updateRotation(name: string, rotatedAt: number, expiresAt: number | null): void {
-    this.db
-      .prepare(
-        'UPDATE secret_metadata SET rotated_at = ?, expires_at = ? WHERE name = ?',
-      )
-      .run(rotatedAt, expiresAt, name);
+  async updateRotation(name: string, rotatedAt: number, expiresAt: number | null): Promise<void> {
+    await this.query(
+      'UPDATE rotation.secret_metadata SET rotated_at = $1, expires_at = $2 WHERE name = $3',
+      [rotatedAt, expiresAt, name],
+    );
   }
 
-  storePreviousValue(name: string, value: string, gracePeriodMs: number): void {
+  async storePreviousValue(name: string, value: string, gracePeriodMs: number): Promise<void> {
     const now = Date.now();
-    this.db
-      .prepare(
-        `INSERT INTO secret_previous_values (name, value, stored_at, expires_at)
-         VALUES (@name, @value, @stored_at, @expires_at)
-         ON CONFLICT(name) DO UPDATE SET
-           value = @value,
-           stored_at = @stored_at,
-           expires_at = @expires_at`,
-      )
-      .run({
-        name,
-        value,
-        stored_at: now,
-        expires_at: now + gracePeriodMs,
-      });
+    await this.query(
+      `INSERT INTO rotation.previous_values (name, value, stored_at, expires_at)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (name) DO UPDATE SET
+         value = $2,
+         stored_at = $3,
+         expires_at = $4`,
+      [name, value, now, now + gracePeriodMs],
+    );
   }
 
-  getPreviousValue(name: string): string | null {
-    const row = this.db
-      .prepare(
-        'SELECT value, expires_at FROM secret_previous_values WHERE name = ?',
-      )
-      .get(name) as { value: string; expires_at: number } | undefined;
+  async getPreviousValue(name: string): Promise<string | null> {
+    const row = await this.queryOne<{ value: string; expires_at: number }>(
+      'SELECT value, expires_at FROM rotation.previous_values WHERE name = $1',
+      [name],
+    );
 
     if (!row) return null;
 
     // Expired?
     if (row.expires_at < Date.now()) {
-      this.clearPreviousValue(name);
+      await this.clearPreviousValue(name);
       return null;
     }
 
     return row.value;
   }
 
-  clearPreviousValue(name: string): void {
-    this.db
-      .prepare('DELETE FROM secret_previous_values WHERE name = ?')
-      .run(name);
-  }
-
-  close(): void {
-    this.db.close();
+  async clearPreviousValue(name: string): Promise<void> {
+    await this.query(
+      'DELETE FROM rotation.previous_values WHERE name = $1',
+      [name],
+    );
   }
 
   private rowToMeta(row: Record<string, unknown>): SecretMetadata {
@@ -146,7 +102,7 @@ export class RotationStorage {
       expiresAt: (row.expires_at as number) ?? null,
       rotatedAt: (row.rotated_at as number) ?? null,
       rotationIntervalDays: (row.rotation_interval_days as number) ?? null,
-      autoRotate: (row.auto_rotate as number) === 1,
+      autoRotate: row.auto_rotate as boolean,
       source: row.source as 'internal' | 'external',
       category: row.category as SecretMetadata['category'],
     };

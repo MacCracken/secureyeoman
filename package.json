@@ -1,6 +1,6 @@
 {
   "name": "friday",
-  "version": "1.5.1",
+  "version": "2026.2.15",
   "description": "F.R.I.D.A.Y. - Fully Responsive Integrated Digitally Adaptable Yeoman with SecureYeoman",
   "private": true,
   "type": "module",
@@ -20,7 +20,8 @@
     "typecheck": "tsc --noEmit && tsc --noEmit -p packages/dashboard/tsconfig.json",
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist",
     "security:audit": "npm audit --audit-level=moderate",
-    "release-notes": "npx tsx scripts/generate-release-notes.ts"
+    "release-notes": "npx tsx scripts/generate-release-notes.ts",
+    "version:set": "bash scripts/set-version.sh"
   },
   "engines": {
     "node": ">=20.0.0"

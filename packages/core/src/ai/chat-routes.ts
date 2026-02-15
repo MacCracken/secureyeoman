@@ -64,8 +64,8 @@ export function registerChatRoutes(
     if (memoryEnabled) {
       try {
         const brainManager = secureYeoman.getBrainManager();
-        const memories = brainManager.recall({ search: message, limit: 5 });
-        const knowledge = brainManager.queryKnowledge({ search: message, limit: 5 });
+        const memories = await brainManager.recall({ search: message, limit: 5 });
+        const knowledge = await brainManager.queryKnowledge({ search: message, limit: 5 });
         const snippets: string[] = [];
         for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
         for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
@@ -81,8 +81,8 @@ export function registerChatRoutes(
 
     const soulManager = secureYeoman.getSoulManager();
     const systemPrompt = memoryEnabled
-      ? soulManager.composeSoulPrompt(message, personalityId)
-      : soulManager.composeSoulPrompt(undefined, personalityId);
+      ? await soulManager.composeSoulPrompt(message, personalityId)
+      : await soulManager.composeSoulPrompt(undefined, personalityId);
 
     const messages: AIRequest['messages'] = [];
 
@@ -107,12 +107,12 @@ export function registerChatRoutes(
     const tools: Tool[] = [];
 
     // Skill-based tools
-    tools.push(...soulManager.getActiveTools());
+    tools.push(...await soulManager.getActiveTools());
 
     // MCP tools filtered by personality config
     const personality = personalityId
-      ? (soulManager.getPersonality(personalityId) ?? soulManager.getActivePersonality())
-      : soulManager.getActivePersonality();
+      ? ((await soulManager.getPersonality(personalityId)) ?? (await soulManager.getActivePersonality()))
+      : await soulManager.getActivePersonality();
 
     const mcpClient = secureYeoman.getMcpClientManager();
     const mcpStorage = secureYeoman.getMcpStorage();
@@ -120,7 +120,7 @@ export function registerChatRoutes(
     if (personality?.body?.enabled && mcpClient && mcpStorage) {
       const selectedServers = personality.body.selectedServers ?? [];
       const perPersonalityFeatures = personality.body.mcpFeatures ?? { exposeGit: false, exposeFilesystem: false };
-      const globalConfig = mcpStorage.getConfig();
+      const globalConfig = await mcpStorage.getConfig();
 
       if (selectedServers.length > 0) {
         const allMcpTools: McpToolDef[] = mcpClient.getAllTools();
@@ -161,12 +161,12 @@ export function registerChatRoutes(
         try {
           const convStorage = secureYeoman.getConversationStorage();
           if (convStorage) {
-            convStorage.addMessage({
+            await convStorage.addMessage({
               conversationId,
               role: 'user',
               content: message.trim(),
             });
-            convStorage.addMessage({
+            await convStorage.addMessage({
               conversationId,
               role: 'assistant',
               content: response.content,
@@ -185,7 +185,7 @@ export function registerChatRoutes(
       if (memoryEnabled && saveAsMemory) {
         try {
           const brainManager = secureYeoman.getBrainManager();
-          brainManager.remember(
+          await brainManager.remember(
             'episodic',
             `User: ${message.trim()}\nAssistant: ${response.content}`,
             'dashboard_chat',
@@ -225,7 +225,7 @@ export function registerChatRoutes(
 
     try {
       const brainManager = secureYeoman.getBrainManager();
-      const memory = brainManager.remember('episodic', content.trim(), 'dashboard_chat', context);
+      const memory = await brainManager.remember('episodic', content.trim(), 'dashboard_chat', context);
       return { memory };
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Brain is not available';

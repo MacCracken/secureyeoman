@@ -204,25 +204,33 @@ export class RBAC {
       this.roles.set(role.id, role);
     }
 
-    // If persistent storage is provided, load any previously saved custom
-    // roles and user-role assignments into memory so they're immediately
-    // available for permission checks.
     if (storage) {
       this.storage = storage;
+    }
+  }
 
-      // Merge persisted custom role definitions on top of defaults.
-      // Persisted roles override defaults when IDs collide — this allows
-      // admins to customise the built-in roles via the API.
-      const persistedRoles = storage.getAllRoleDefinitions();
-      for (const role of persistedRoles) {
-        this.roles.set(role.id, role);
-      }
+  /**
+   * Load persisted role definitions and user-role assignments from storage.
+   *
+   * Must be called after construction when a storage backend is provided.
+   * This is separated from the constructor because the storage methods are
+   * now async (PostgreSQL-backed).
+   */
+  async loadFromStorage(): Promise<void> {
+    if (!this.storage) return;
 
-      // Load active user-role assignments into the in-memory map.
-      const assignments = storage.listActiveAssignments();
-      for (const assignment of assignments) {
-        this.userRoles.set(assignment.userId, assignment.roleId);
-      }
+    // Merge persisted custom role definitions on top of defaults.
+    // Persisted roles override defaults when IDs collide — this allows
+    // admins to customise the built-in roles via the API.
+    const persistedRoles = await this.storage.getAllRoleDefinitions();
+    for (const role of persistedRoles) {
+      this.roles.set(role.id, role);
+    }
+
+    // Load active user-role assignments into the in-memory map.
+    const assignments = await this.storage.listActiveAssignments();
+    for (const assignment of assignments) {
+      this.userRoles.set(assignment.userId, assignment.roleId);
     }
   }
 
@@ -245,13 +253,13 @@ export class RBAC {
    * cache is invalidated because the new/updated role may change the
    * outcome of cached permission checks.
    */
-  defineRole(role: RoleDefinition): void {
+  async defineRole(role: RoleDefinition): Promise<void> {
     this.roles.set(role.id, role);
     this.clearCache(); // Invalidate cache on role change
 
-    // Persist to SQLite when storage is available.
+    // Persist to storage when available.
     if (this.storage) {
-      this.storage.saveRoleDefinition(role);
+      await this.storage.saveRoleDefinition(role);
     }
 
     this.getLogger().info('Role defined', { roleId: role.id, roleName: role.name });
@@ -265,14 +273,14 @@ export class RBAC {
    * referencing this role — the application layer should handle that to
    * avoid dangling references.
    */
-  removeRole(roleId: string): boolean {
+  async removeRole(roleId: string): Promise<boolean> {
     const removed = this.roles.delete(roleId);
     if (removed) {
       this.clearCache();
 
       // Remove from persistent storage as well.
       if (this.storage) {
-        this.storage.deleteRoleDefinition(roleId);
+        await this.storage.deleteRoleDefinition(roleId);
       }
 
       this.getLogger().info('Role removed', { roleId });
@@ -550,7 +558,7 @@ export class RBAC {
    * @param assignedBy — Who is performing the assignment (for audit trail).
    * @throws Error if the roleId doesn't refer to a known role definition.
    */
-  assignUserRole(userId: string, roleId: string, assignedBy: string): void {
+  async assignUserRole(userId: string, roleId: string, assignedBy: string): Promise<void> {
     // Validate that the role actually exists before assigning it.
     const role = this.roles.get(roleId);
     if (!role) {
@@ -564,9 +572,9 @@ export class RBAC {
     // may have changed.
     this.clearCache();
 
-    // Persist to SQLite when storage is available.
+    // Persist to storage when available.
     if (this.storage) {
-      this.storage.assignRole(userId, roleId, assignedBy);
+      await this.storage.assignRole(userId, roleId, assignedBy);
     }
 
     this.getLogger().info('User role assigned', { userId, roleId, assignedBy });
@@ -580,14 +588,14 @@ export class RBAC {
    *
    * @returns true if the user had an active role that was revoked.
    */
-  revokeUserRole(userId: string): boolean {
+  async revokeUserRole(userId: string): Promise<boolean> {
     const had = this.userRoles.delete(userId);
 
     if (had) {
       this.clearCache();
 
       if (this.storage) {
-        this.storage.revokeRole(userId);
+        await this.storage.revokeRole(userId);
       }
 
       this.getLogger().info('User role revoked', { userId });
@@ -628,17 +636,18 @@ export class RBAC {
    * Includes both active and revoked assignments, ordered newest first.
    * Returns an empty array when no persistent storage is configured.
    */
-  getUserRoleHistory(userId: string): Array<{
+  async getUserRoleHistory(userId: string): Promise<Array<{
     roleId: string;
     assignedBy: string;
     assignedAt: number;
     revokedAt: number | null;
-  }> {
+  }>> {
     if (!this.storage) {
       return [];
     }
 
-    return this.storage.getAssignmentHistory(userId).map((row) => ({
+    const history = await this.storage.getAssignmentHistory(userId);
+    return history.map((row) => ({
       roleId: row.role_id,
       assignedBy: row.assigned_by,
       assignedAt: row.assigned_at,
@@ -691,12 +700,15 @@ export function getRBAC(): RBAC {
  *                      When omitted, the RBAC system operates in-memory only
  *                      (backwards compatible with the previous behaviour).
  */
-export function initializeRBAC(customRoles?: RoleDefinition[], storage?: RBACStorage): RBAC {
+export async function initializeRBAC(customRoles?: RoleDefinition[], storage?: RBACStorage): Promise<RBAC> {
   rbacInstance = new RBAC(storage);
+
+  // Load persisted roles and assignments from storage (async).
+  await rbacInstance.loadFromStorage();
 
   if (customRoles) {
     for (const role of customRoles) {
-      rbacInstance.defineRole(role);
+      await rbacInstance.defineRole(role);
     }
   }
 

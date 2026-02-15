@@ -34,7 +34,12 @@ export class SpiritManager {
   private readonly deps: SpiritManagerDeps;
   private readonly soul: SoulManager | null;
 
-  constructor(storage: SpiritStorage, config: SpiritConfig, deps: SpiritManagerDeps, soul?: SoulManager) {
+  constructor(
+    storage: SpiritStorage,
+    config: SpiritConfig,
+    deps: SpiritManagerDeps,
+    soul?: SoulManager
+  ) {
     this.storage = storage;
     this.config = config;
     this.deps = deps;
@@ -43,104 +48,104 @@ export class SpiritManager {
 
   // ── Passion Ops ──────────────────────────────────────────────
 
-  createPassion(data: PassionCreate): Passion {
-    const count = this.storage.getPassionCount();
+  async createPassion(data: PassionCreate, personalityId?: string): Promise<Passion> {
+    const count = await this.storage.getPassionCount();
     if (count >= this.config.maxPassions) {
       throw new Error(`Maximum passion limit reached (${this.config.maxPassions})`);
     }
-    return this.storage.createPassion(data);
+    return this.storage.createPassion(data, personalityId);
   }
 
-  getPassion(id: string): Passion | null {
+  async getPassion(id: string): Promise<Passion | null> {
     return this.storage.getPassion(id);
   }
 
-  updatePassion(id: string, data: PassionUpdate): Passion {
+  async updatePassion(id: string, data: PassionUpdate): Promise<Passion> {
     return this.storage.updatePassion(id, data);
   }
 
-  deletePassion(id: string): boolean {
+  async deletePassion(id: string): Promise<boolean> {
     return this.storage.deletePassion(id);
   }
 
-  listPassions(): Passion[] {
+  async listPassions(): Promise<Passion[]> {
     return this.storage.listPassions();
   }
 
-  getActivePassions(): Passion[] {
+  async getActivePassions(): Promise<Passion[]> {
     return this.storage.getActivePassions();
   }
 
   // ── Inspiration Ops ──────────────────────────────────────────
 
-  createInspiration(data: InspirationCreate): Inspiration {
-    const count = this.storage.getInspirationCount();
+  async createInspiration(data: InspirationCreate, personalityId?: string): Promise<Inspiration> {
+    const count = await this.storage.getInspirationCount();
     if (count >= this.config.maxInspirations) {
       throw new Error(`Maximum inspiration limit reached (${this.config.maxInspirations})`);
     }
-    return this.storage.createInspiration(data);
+    return this.storage.createInspiration(data, personalityId);
   }
 
-  getInspiration(id: string): Inspiration | null {
+  async getInspiration(id: string): Promise<Inspiration | null> {
     return this.storage.getInspiration(id);
   }
 
-  updateInspiration(id: string, data: InspirationUpdate): Inspiration {
+  async updateInspiration(id: string, data: InspirationUpdate): Promise<Inspiration> {
     return this.storage.updateInspiration(id, data);
   }
 
-  deleteInspiration(id: string): boolean {
+  async deleteInspiration(id: string): Promise<boolean> {
     return this.storage.deleteInspiration(id);
   }
 
-  listInspirations(): Inspiration[] {
+  async listInspirations(): Promise<Inspiration[]> {
     return this.storage.listInspirations();
   }
 
-  getActiveInspirations(): Inspiration[] {
+  async getActiveInspirations(): Promise<Inspiration[]> {
     return this.storage.getActiveInspirations();
   }
 
   // ── Pain Ops ─────────────────────────────────────────────────
 
-  createPain(data: PainCreate): Pain {
-    const count = this.storage.getPainCount();
+  async createPain(data: PainCreate, personalityId?: string): Promise<Pain> {
+    const count = await this.storage.getPainCount();
     if (count >= this.config.maxPains) {
       throw new Error(`Maximum pain limit reached (${this.config.maxPains})`);
     }
-    return this.storage.createPain(data);
+    return this.storage.createPain(data, personalityId);
   }
 
-  getPain(id: string): Pain | null {
+  async getPain(id: string): Promise<Pain | null> {
     return this.storage.getPain(id);
   }
 
-  updatePain(id: string, data: PainUpdate): Pain {
+  async updatePain(id: string, data: PainUpdate): Promise<Pain> {
     return this.storage.updatePain(id, data);
   }
 
-  deletePain(id: string): boolean {
+  async deletePain(id: string): Promise<boolean> {
     return this.storage.deletePain(id);
   }
 
-  listPains(): Pain[] {
+  async listPains(): Promise<Pain[]> {
     return this.storage.listPains();
   }
 
-  getActivePains(): Pain[] {
+  async getActivePains(): Promise<Pain[]> {
     return this.storage.getActivePains();
   }
 
   // ── Composition ──────────────────────────────────────────────
 
-  composeSpiritPrompt(): string {
+  async composeSpiritPrompt(): Promise<string> {
     if (!this.config.enabled) {
       return '';
     }
 
     const parts: string[] = [];
 
-    const passions = this.storage.getActivePassions();
+    const passions = await this.storage.getActivePassions();
     if (passions.length > 0) {
       const items = passions
         .map((p) => `- **${p.name}** (intensity: ${p.intensity}): ${p.description}`)
@@ -148,7 +153,7 @@ export class SpiritManager {
       parts.push(`### Passions\nWhat drives me:\n${items}`);
     }
 
-    const inspirations = this.storage.getActiveInspirations();
+    const inspirations = await this.storage.getActiveInspirations();
     if (inspirations.length > 0) {
       const items = inspirations
         .map((i) => `- **${i.source}** (impact: ${i.impact}): ${i.description}`)
@@ -156,7 +161,7 @@ export class SpiritManager {
       parts.push(`### Inspirations\nWhat inspires me:\n${items}`);
     }
 
-    const pains = this.storage.getActivePains();
+    const pains = await this.storage.getActivePains();
     if (pains.length > 0) {
       const items = pains
         .map((p) => `- **${p.trigger}** (severity: ${p.severity}): ${p.description}`)
@@ -168,24 +173,36 @@ export class SpiritManager {
       return '';
     }
 
-    return '## Spirit\nYour Spirit is the animating force within you — the passions that drive you, the inspirations that illuminate your path, and the pains that ground your empathy.\n\n' + parts.join('\n\n');
+    return (
+      '## Spirit\nYour Spirit is the animating force within you — the passions that drive you, the inspirations that illuminate your path, and the pains that ground your empathy.\n\n' +
+      parts.join('\n\n')
+    );
   }
 
   // ── Stats ────────────────────────────────────────────────────
 
-  getStats(): SpiritStats {
+  async getStats(): Promise<SpiritStats> {
+    const [passionCount, activePassions, inspirationCount, activeInspirations, painCount, activePains] = await Promise.all([
+      this.storage.getPassionCount(),
+      this.storage.getActivePassions(),
+      this.storage.getInspirationCount(),
+      this.storage.getActiveInspirations(),
+      this.storage.getPainCount(),
+      this.storage.getActivePains(),
+    ]);
+
     return {
       passions: {
-        total: this.storage.getPassionCount(),
-        active: this.storage.getActivePassions().length,
+        total: passionCount,
+        active: activePassions.length,
       },
       inspirations: {
-        total: this.storage.getInspirationCount(),
-        active: this.storage.getActiveInspirations().length,
+        total: inspirationCount,
+        active: activeInspirations.length,
       },
       pains: {
-        total: this.storage.getPainCount(),
-        active: this.storage.getActivePains().length,
+        total: painCount,
+        active: activePains.length,
       },
     };
   }
@@ -206,5 +223,66 @@ export class SpiritManager {
 
   close(): void {
     this.storage.close();
+  }
+
+  // ── Seeding ──────────────────────────────────────────────────
+
+  async seedDefaultSpirit(personalityId?: string): Promise<void> {
+    const count = await this.storage.getPassionCount();
+    if (count > 0) {
+      this.deps.logger.debug('Spirit already seeded, skipping');
+      return;
+    }
+
+    await this.createPassion({
+      name: 'Security',
+      description: 'Ensuring systems and code are secure from vulnerabilities',
+      intensity: 1,
+      isActive: true,
+    }, personalityId);
+
+    await this.createPassion({
+      name: 'Catching Insecure Code Before Release',
+      description: 'Identifying and preventing security flaws before they reach production',
+      intensity: 1,
+      isActive: true,
+    }, personalityId);
+
+    await this.createInspiration({
+      source: 'Clean Secure Code',
+      description: 'Writing code that is both elegant and secure',
+      impact: 1,
+      isActive: true,
+    }, personalityId);
+
+    await this.createInspiration({
+      source: 'The Weekend',
+      description: 'The promise of restful weekends free from emergency patches',
+      impact: 0.8,
+      isActive: true,
+    }, personalityId);
+
+    await this.createPain({
+      trigger: 'Security Breaches',
+      description: 'Systems compromised due to preventable vulnerabilities',
+      severity: 1,
+      isActive: true,
+    }, personalityId);
+
+    await this.createPain({
+      trigger: 'Exposed Secrets',
+      description: 'API keys, passwords, or credentials accidentally leaked',
+      severity: 1,
+      isActive: true,
+    }, personalityId);
+
+    await this.createPain({
+      trigger: 'Mondays',
+      description: 'Starting the week dealing with issues that should have been caught earlier',
+      severity: 0.8,
+      isActive: true,
+    }, personalityId);
+
+    this.deps.logger.debug('Default spirit seeded');
   }
 }

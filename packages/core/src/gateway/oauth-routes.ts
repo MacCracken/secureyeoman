@@ -35,6 +35,10 @@ export interface OAuthServiceConfig {
     clientId: string;
     clientSecret: string;
   };
+  gmail?: {
+    clientId: string;
+    clientSecret: string;
+  };
 }
 
 const OAUTH_STATES = new Map<string, OAuthState>();
@@ -61,7 +65,34 @@ const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
     userInfoUrl: 'https://api.github.com/user',
     scopes: ['read:user', 'user:email'],
   },
+  gmail: {
+    id: 'gmail',
+    name: 'Gmail',
+    clientId: '',
+    clientSecret: '',
+    authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    userInfoUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
+    scopes: [
+      'openid',
+      'email',
+      'profile',
+      'https://www.googleapis.com/auth/gmail.readonly',
+      'https://www.googleapis.com/auth/gmail.send',
+      'https://www.googleapis.com/auth/gmail.modify',
+    ],
+  },
 };
+
+/** Short-lived store for Gmail OAuth tokens pending integration creation */
+interface PendingGmailTokens {
+  accessToken: string;
+  refreshToken: string;
+  email: string;
+  createdAt: number;
+}
+const PENDING_GMAIL_TOKENS = new Map<string, PendingGmailTokens>();
+const PENDING_TOKEN_EXPIRY_MS = 10 * 60 * 1000;
 
 export class OAuthService {
   private config: OAuthServiceConfig;
@@ -97,6 +128,22 @@ export class OAuthService {
       if (provider) {
         provider.clientId = env.GITHUB_OAUTH_CLIENT_ID;
         provider.clientSecret = env.GITHUB_OAUTH_CLIENT_SECRET;
+      }
+    }
+
+    // Gmail OAuth — dedicated env vars, falls back to Google OAuth creds
+    const gmailClientId = env.GMAIL_OAUTH_CLIENT_ID || env.GOOGLE_OAUTH_CLIENT_ID;
+    const gmailClientSecret = env.GMAIL_OAUTH_CLIENT_SECRET || env.GOOGLE_OAUTH_CLIENT_SECRET;
+    if (gmailClientId && gmailClientSecret) {
+      this.config.gmail = {
+        clientId: gmailClientId,
+        clientSecret: gmailClientSecret,
+      };
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      const provider = OAUTH_PROVIDERS['gmail'];
+      if (provider) {
+        provider.clientId = gmailClientId;
+        provider.clientSecret = gmailClientSecret;
       }
     }
   }
@@ -209,7 +256,7 @@ export class OAuthService {
 
     const data = (await response.json()) as Record<string, unknown>;
 
-    if (providerId === 'google') {
+    if (providerId === 'google' || providerId === 'gmail') {
       return {
         // eslint-disable-next-line @typescript-eslint/no-base-to-string
         id: String(data.id ?? ''),
@@ -285,6 +332,12 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         state,
       });
 
+      // Gmail needs offline access for refresh tokens
+      if (providerId === 'gmail') {
+        params.set('access_type', 'offline');
+        params.set('prompt', 'consent');
+      }
+
       return reply.redirect(`${provider.authorizeUrl}?${params.toString()}`);
     }
   );
@@ -322,11 +375,29 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
 
         const connectionToken = oauthService.generateOAuthConnectionToken(providerId, userInfo.id);
 
+        // Gmail: store tokens server-side for the claim endpoint
+        if (providerId === 'gmail') {
+          PENDING_GMAIL_TOKENS.set(connectionToken, {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken || '',
+            email: userInfo.email || '',
+            createdAt: Date.now(),
+          });
+          setTimeout(() => PENDING_GMAIL_TOKENS.delete(connectionToken), PENDING_TOKEN_EXPIRY_MS);
+
+          return await reply.redirect(
+            `/connections/email?connected=true&provider=gmail&email=${encodeURIComponent(userInfo.email || '')}&token=${connectionToken}`
+          );
+        }
+
         return await reply.redirect(
           `/connections/oauth?connected=true&provider=${providerId}&token=${connectionToken}`
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
+        if (providerId === 'gmail') {
+          return reply.redirect(`/connections/email?error=${encodeURIComponent(message)}`);
+        }
         return reply.redirect(`/connections/oauth?error=${encodeURIComponent(message)}`);
       }
     }
@@ -353,6 +424,62 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       }
 
       return { message: `Disconnected from ${provider}` };
+    }
+  );
+
+  // Gmail OAuth token claim — creates the integration from stored tokens
+  app.post(
+    '/api/v1/auth/oauth/claim',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          connectionToken: string;
+          displayName: string;
+          enableRead: boolean;
+          enableSend: boolean;
+          labelFilter: 'all' | 'label' | 'custom';
+          labelName?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      const body = request.body ?? ({} as Record<string, unknown>);
+      const { connectionToken, displayName, enableRead, enableSend, labelFilter, labelName } = body;
+
+      if (!connectionToken) {
+        return reply.code(400).send({ error: 'connectionToken is required' });
+      }
+
+      const pending = PENDING_GMAIL_TOKENS.get(connectionToken);
+      if (!pending) {
+        return reply.code(404).send({ error: 'Token expired or invalid. Please reconnect.' });
+      }
+
+      if (Date.now() - pending.createdAt > PENDING_TOKEN_EXPIRY_MS) {
+        PENDING_GMAIL_TOKENS.delete(connectionToken);
+        return reply.code(410).send({ error: 'Token expired. Please reconnect.' });
+      }
+
+      PENDING_GMAIL_TOKENS.delete(connectionToken);
+
+      return {
+        success: true,
+        config: {
+          platform: 'gmail',
+          displayName: displayName || pending.email,
+          enabled: true,
+          config: {
+            accessToken: pending.accessToken,
+            refreshToken: pending.refreshToken,
+            email: pending.email,
+            enableRead: enableRead ?? true,
+            enableSend: enableSend ?? false,
+            labelFilter: labelFilter ?? 'all',
+            labelName: labelName ?? undefined,
+          },
+        },
+      };
     }
   );
 }

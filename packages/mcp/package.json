@@ -1,6 +1,6 @@
 {
   "name": "@friday/mcp",
-  "version": "1.5.1",
+  "version": "2026.2.15",
   "description": "FRIDAY MCP (Model Context Protocol) Service",
   "type": "module",
   "main": "./dist/index.js",

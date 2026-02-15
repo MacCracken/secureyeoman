@@ -23,6 +23,9 @@ COPY packages/mcp/ packages/mcp/
 # Build: shared → core → dashboard → mcp
 RUN npm run build
 
+# Copy SQL migration files (TypeScript doesn't copy non-TS assets)
+RUN cp packages/core/src/storage/migrations/*.sql packages/core/dist/storage/migrations/
+
 # Stage 2: Runtime
 FROM node:20-alpine
 

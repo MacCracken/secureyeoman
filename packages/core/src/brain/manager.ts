@@ -34,18 +34,18 @@ export class BrainManager {
 
   // ── Memory Operations ──────────────────────────────────────
 
-  remember(type: MemoryType, content: string, source: string, context?: Record<string, string>, importance?: number): Memory {
+  async remember(type: MemoryType, content: string, source: string, context?: Record<string, string>, importance?: number): Promise<Memory> {
     if (!this.config.enabled) {
       throw new Error('Brain is not enabled');
     }
 
-    const count = this.storage.getMemoryCount();
+    const count = await this.storage.getMemoryCount();
     if (count >= this.config.maxMemories) {
       // Prune lowest-importance memory before adding new one
-      const lowest = this.storage.queryMemories({ limit: 1, minImportance: 0 });
+      const lowest = await this.storage.queryMemories({ limit: 1, minImportance: 0 });
       const toPrune = lowest[lowest.length - 1];
       if (toPrune) {
-        this.storage.deleteMemory(toPrune.id);
+        await this.storage.deleteMemory(toPrune.id);
       }
     }
 
@@ -65,37 +65,37 @@ export class BrainManager {
     return this.storage.createMemory(data);
   }
 
-  recall(query: MemoryQuery): Memory[] {
+  async recall(query: MemoryQuery): Promise<Memory[]> {
     if (!this.config.enabled) {
       return [];
     }
 
-    const memories = this.storage.queryMemories(query);
+    const memories = await this.storage.queryMemories(query);
 
     // Batch-touch accessed memories to keep them alive (single query instead of N)
     if (memories.length > 0) {
-      this.storage.touchMemories(memories.map(m => m.id));
+      await this.storage.touchMemories(memories.map(m => m.id));
     }
 
     return memories;
   }
 
-  forget(id: string): void {
-    this.storage.deleteMemory(id);
+  async forget(id: string): Promise<void> {
+    await this.storage.deleteMemory(id);
   }
 
-  getMemory(id: string): Memory | null {
+  async getMemory(id: string): Promise<Memory | null> {
     return this.storage.getMemory(id);
   }
 
   // ── Knowledge Operations ───────────────────────────────────
 
-  learn(topic: string, content: string, source: string, confidence?: number): KnowledgeEntry {
+  async learn(topic: string, content: string, source: string, confidence?: number): Promise<KnowledgeEntry> {
     if (!this.config.enabled) {
       throw new Error('Brain is not enabled');
     }
 
-    const count = this.storage.getKnowledgeCount();
+    const count = await this.storage.getKnowledgeCount();
     if (count >= this.config.maxKnowledge) {
       throw new Error(`Maximum knowledge limit reached (${this.config.maxKnowledge})`);
     }
@@ -108,31 +108,31 @@ export class BrainManager {
     });
   }
 
-  lookup(topic: string): KnowledgeEntry[] {
+  async lookup(topic: string): Promise<KnowledgeEntry[]> {
     if (!this.config.enabled) {
       return [];
     }
     return this.storage.queryKnowledge({ topic });
   }
 
-  queryKnowledge(query: KnowledgeQuery): KnowledgeEntry[] {
+  async queryKnowledge(query: KnowledgeQuery): Promise<KnowledgeEntry[]> {
     if (!this.config.enabled) {
       return [];
     }
     return this.storage.queryKnowledge(query);
   }
 
-  updateKnowledge(id: string, data: { content?: string; confidence?: number; supersedes?: string }): KnowledgeEntry {
+  async updateKnowledge(id: string, data: { content?: string; confidence?: number; supersedes?: string }): Promise<KnowledgeEntry> {
     return this.storage.updateKnowledge(id, data);
   }
 
-  deleteKnowledge(id: string): void {
-    this.storage.deleteKnowledge(id);
+  async deleteKnowledge(id: string): Promise<void> {
+    await this.storage.deleteKnowledge(id);
   }
 
   // ── Prompt Integration ─────────────────────────────────────
 
-  getRelevantContext(input: string, limit?: number): string {
+  async getRelevantContext(input: string, limit?: number): Promise<string> {
     if (!this.config.enabled) {
       return '';
     }
@@ -141,14 +141,14 @@ export class BrainManager {
     const contentParts: string[] = [];
 
     // Search memories relevant to the input
-    const memories = this.storage.queryMemories({
+    const memories = await this.storage.queryMemories({
       search: input,
       limit: Math.ceil(maxItems / 2),
     });
 
     if (memories.length > 0) {
       // Batch-touch all memories in a single query instead of N individual updates
-      this.storage.touchMemories(memories.map(m => m.id));
+      await this.storage.touchMemories(memories.map(m => m.id));
       const memLines = ['### Memories'];
       for (const memory of memories) {
         memLines.push(`- [${memory.type}] ${memory.content}`);
@@ -157,7 +157,7 @@ export class BrainManager {
     }
 
     // Search knowledge relevant to the input
-    const knowledge = this.storage.queryKnowledge({
+    const knowledge = await this.storage.queryKnowledge({
       search: input,
       limit: Math.floor(maxItems / 2) || 1,
     });
@@ -180,36 +180,36 @@ export class BrainManager {
 
   // ── Skill Operations (moved from SoulManager) ──────────────
 
-  createSkill(data: SkillCreate): Skill {
+  async createSkill(data: SkillCreate): Promise<Skill> {
     return this.storage.createSkill(data);
   }
 
-  updateSkill(id: string, data: SkillUpdate): Skill {
+  async updateSkill(id: string, data: SkillUpdate): Promise<Skill> {
     return this.storage.updateSkill(id, data);
   }
 
-  deleteSkill(id: string): void {
-    this.storage.deleteSkill(id);
+  async deleteSkill(id: string): Promise<void> {
+    await this.storage.deleteSkill(id);
   }
 
-  getSkill(id: string): Skill | null {
+  async getSkill(id: string): Promise<Skill | null> {
     return this.storage.getSkill(id);
   }
 
-  listSkills(filter?: SkillFilter): Skill[] {
+  async listSkills(filter?: SkillFilter): Promise<Skill[]> {
     return this.storage.listSkills(filter);
   }
 
-  enableSkill(id: string): void {
-    this.storage.updateSkill(id, { enabled: true });
+  async enableSkill(id: string): Promise<void> {
+    await this.storage.updateSkill(id, { enabled: true });
   }
 
-  disableSkill(id: string): void {
-    this.storage.updateSkill(id, { enabled: false });
+  async disableSkill(id: string): Promise<void> {
+    await this.storage.updateSkill(id, { enabled: false });
   }
 
-  approveSkill(id: string): Skill {
-    const skill = this.storage.getSkill(id);
+  async approveSkill(id: string): Promise<Skill> {
+    const skill = await this.storage.getSkill(id);
     if (!skill) throw new Error(`Skill not found: ${id}`);
     if (skill.status !== 'pending_approval') {
       throw new Error(`Skill is not pending approval (status: ${skill.status})`);
@@ -217,32 +217,32 @@ export class BrainManager {
     return this.storage.updateSkill(id, { status: 'active' });
   }
 
-  rejectSkill(id: string): void {
-    const skill = this.storage.getSkill(id);
+  async rejectSkill(id: string): Promise<void> {
+    const skill = await this.storage.getSkill(id);
     if (!skill) throw new Error(`Skill not found: ${id}`);
     if (skill.status !== 'pending_approval') {
       throw new Error(`Skill is not pending approval (status: ${skill.status})`);
     }
-    this.storage.deleteSkill(id);
+    await this.storage.deleteSkill(id);
   }
 
-  incrementSkillUsage(skillId: string): void {
-    this.storage.incrementUsage(skillId);
+  async incrementSkillUsage(skillId: string): Promise<void> {
+    await this.storage.incrementUsage(skillId);
   }
 
-  getActiveSkills(): Skill[] {
+  async getActiveSkills(): Promise<Skill[]> {
     if (!this.config.enabled) {
       return [];
     }
     return this.storage.getEnabledSkills();
   }
 
-  getActiveTools(): Tool[] {
+  async getActiveTools(): Promise<Tool[]> {
     if (!this.config.enabled) {
       return [];
     }
 
-    const skills = this.storage.getEnabledSkills();
+    const skills = await this.storage.getEnabledSkills();
     const tools: Tool[] = [];
     for (const skill of skills) {
       if (skill.tools && skill.tools.length > 0) {
@@ -252,15 +252,15 @@ export class BrainManager {
     return tools;
   }
 
-  getSkillCount(): number {
+  async getSkillCount(): Promise<number> {
     return this.storage.getSkillCount();
   }
 
-  getPendingSkills(): Skill[] {
+  async getPendingSkills(): Promise<Skill[]> {
     return this.storage.getPendingSkills();
   }
 
-  getEnabledSkills(): Skill[] {
+  async getEnabledSkills(): Promise<Skill[]> {
     return this.storage.getEnabledSkills();
   }
 
@@ -270,7 +270,7 @@ export class BrainManager {
     if (!this.deps.auditStorage) {
       throw new Error('Audit storage is not available in BrainManager');
     }
-    return this.deps.auditStorage.query(opts);
+    return this.deps.auditStorage.queryEntries(opts);
   }
 
   async searchAuditLogs(query: string, opts?: { limit?: number; offset?: number }): Promise<AuditQueryResult> {
@@ -290,7 +290,7 @@ export class BrainManager {
    * Seeds foundational knowledge entries. Idempotent — skips topics
    * that already exist in the knowledge base.
    */
-  seedBaseKnowledge(): void {
+  async seedBaseKnowledge(): Promise<void> {
     if (!this.config.enabled) return;
 
     const entries: Array<{ topic: string; content: string }> = [
@@ -313,9 +313,9 @@ export class BrainManager {
     ];
 
     for (const entry of entries) {
-      const existing = this.storage.queryKnowledge({ topic: entry.topic });
+      const existing = await this.storage.queryKnowledge({ topic: entry.topic });
       if (existing.length === 0) {
-        this.storage.createKnowledge({
+        await this.storage.createKnowledge({
           topic: entry.topic,
           content: entry.content,
           source: 'base-knowledge',
@@ -329,9 +329,9 @@ export class BrainManager {
 
   // ── Maintenance ────────────────────────────────────────────
 
-  runMaintenance(): { decayed: number; pruned: number } {
-    const decayed = this.storage.decayMemories(this.config.importanceDecayRate);
-    const pruned = this.storage.pruneExpiredMemories();
+  async runMaintenance(): Promise<{ decayed: number; pruned: number }> {
+    const decayed = await this.storage.decayMemories(this.config.importanceDecayRate);
+    const pruned = await this.storage.pruneExpiredMemories();
 
     this.deps.logger.debug('Brain maintenance completed', { decayed, pruned });
 
@@ -340,7 +340,7 @@ export class BrainManager {
 
   // ── Stats ──────────────────────────────────────────────────
 
-  getStats(): BrainStats {
+  async getStats(): Promise<BrainStats> {
     return this.storage.getStats();
   }
 

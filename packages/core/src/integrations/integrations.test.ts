@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, vi } from 'vitest';
 import { z } from 'zod';
 import { IntegrationStorage } from './storage.js';
 import { IntegrationManager } from './manager.js';
@@ -6,6 +6,7 @@ import { MessageRouter } from './message-router.js';
 import type { Integration, IntegrationDeps } from './types.js';
 import type { IntegrationConfig, UnifiedMessage } from '@friday/shared';
 import type { SecureLogger } from '../logging/logger.js';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -30,22 +31,27 @@ function createMockIntegration(overrides?: Partial<Integration>): Integration {
   };
 }
 
+beforeAll(async () => {
+  await setupTestDb();
+});
+
+afterAll(async () => {
+  await teardownTestDb();
+});
+
 // ── IntegrationStorage Tests ─────────────────────────────────────
 
 describe('IntegrationStorage', () => {
   let storage: IntegrationStorage;
 
-  beforeEach(() => {
-    storage = new IntegrationStorage(); // :memory:
-  });
-
-  afterEach(() => {
-    storage.close();
+  beforeEach(async () => {
+    await truncateAllTables();
+    storage = new IntegrationStorage();
   });
 
   describe('integration CRUD', () => {
-    it('should create and retrieve an integration', () => {
-      const config = storage.createIntegration({
+    it('should create and retrieve an integration', async () => {
+      const config = await storage.createIntegration({
         platform: 'telegram',
         displayName: 'My Telegram Bot',
         enabled: true,
@@ -61,67 +67,67 @@ describe('IntegrationStorage', () => {
       expect(config.messageCount).toBe(0);
     });
 
-    it('should list integrations', () => {
-      storage.createIntegration({ platform: 'telegram', displayName: 'Bot 1', enabled: true, config: {} });
-      storage.createIntegration({ platform: 'discord', displayName: 'Bot 2', enabled: false, config: {} });
+    it('should list integrations', async () => {
+      await storage.createIntegration({ platform: 'telegram', displayName: 'Bot 1', enabled: true, config: {} });
+      await storage.createIntegration({ platform: 'discord', displayName: 'Bot 2', enabled: false, config: {} });
 
-      const all = storage.listIntegrations();
+      const all = await storage.listIntegrations();
       expect(all).toHaveLength(2);
 
-      const telegram = storage.listIntegrations({ platform: 'telegram' });
+      const telegram = await storage.listIntegrations({ platform: 'telegram' });
       expect(telegram).toHaveLength(1);
       expect(telegram[0].platform).toBe('telegram');
 
-      const enabled = storage.listIntegrations({ enabled: true });
+      const enabled = await storage.listIntegrations({ enabled: true });
       expect(enabled).toHaveLength(1);
     });
 
-    it('should update an integration', () => {
-      const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: false, config: {} });
-      const updated = storage.updateIntegration(config.id, { displayName: 'Updated Bot', enabled: true });
+    it('should update an integration', async () => {
+      const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: false, config: {} });
+      const updated = await storage.updateIntegration(config.id, { displayName: 'Updated Bot', enabled: true });
       expect(updated).not.toBeNull();
       expect(updated!.displayName).toBe('Updated Bot');
       expect(updated!.enabled).toBe(true);
     });
 
-    it('should delete an integration', () => {
-      const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: false, config: {} });
-      expect(storage.deleteIntegration(config.id)).toBe(true);
-      expect(storage.getIntegration(config.id)).toBeNull();
+    it('should delete an integration', async () => {
+      const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: false, config: {} });
+      expect(await storage.deleteIntegration(config.id)).toBe(true);
+      expect(await storage.getIntegration(config.id)).toBeNull();
     });
 
-    it('should return null for non-existent integration', () => {
-      expect(storage.getIntegration('non-existent')).toBeNull();
+    it('should return null for non-existent integration', async () => {
+      expect(await storage.getIntegration('non-existent')).toBeNull();
     });
 
-    it('should return false when deleting non-existent', () => {
-      expect(storage.deleteIntegration('non-existent')).toBe(false);
+    it('should return false when deleting non-existent', async () => {
+      expect(await storage.deleteIntegration('non-existent')).toBe(false);
     });
   });
 
   describe('status updates', () => {
-    it('should update status to connected', () => {
-      const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
-      storage.updateStatus(config.id, 'connected');
-      const updated = storage.getIntegration(config.id)!;
+    it('should update status to connected', async () => {
+      const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
+      await storage.updateStatus(config.id, 'connected');
+      const updated = (await storage.getIntegration(config.id))!;
       expect(updated.status).toBe('connected');
       expect(updated.connectedAt).toBeDefined();
     });
 
-    it('should update status with error message', () => {
-      const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
-      storage.updateStatus(config.id, 'error', 'Connection timeout');
-      const updated = storage.getIntegration(config.id)!;
+    it('should update status with error message', async () => {
+      const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
+      await storage.updateStatus(config.id, 'error', 'Connection timeout');
+      const updated = (await storage.getIntegration(config.id))!;
       expect(updated.status).toBe('error');
       expect(updated.errorMessage).toBe('Connection timeout');
     });
   });
 
   describe('message storage', () => {
-    it('should store and retrieve messages', () => {
-      const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
+    it('should store and retrieve messages', async () => {
+      const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
 
-      storage.storeMessage({
+      await storage.storeMessage({
         integrationId: config.id,
         platform: 'telegram',
         direction: 'inbound',
@@ -134,22 +140,22 @@ describe('IntegrationStorage', () => {
         timestamp: Date.now(),
       });
 
-      const messages = storage.listMessages(config.id);
+      const messages = await storage.listMessages(config.id);
       expect(messages).toHaveLength(1);
       expect(messages[0].text).toBe('Hello!');
       expect(messages[0].senderId).toBe('user123');
       expect(messages[0].direction).toBe('inbound');
 
       // Check message count incremented
-      const updated = storage.getIntegration(config.id)!;
+      const updated = (await storage.getIntegration(config.id))!;
       expect(updated.messageCount).toBe(1);
     });
 
-    it('should paginate messages', () => {
-      const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
+    it('should paginate messages', async () => {
+      const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
 
       for (let i = 0; i < 5; i++) {
-        storage.storeMessage({
+        await storage.storeMessage({
           integrationId: config.id,
           platform: 'telegram',
           direction: 'inbound',
@@ -163,13 +169,13 @@ describe('IntegrationStorage', () => {
         });
       }
 
-      const page = storage.listMessages(config.id, { limit: 2, offset: 0 });
+      const page = await storage.listMessages(config.id, { limit: 2, offset: 0 });
       expect(page).toHaveLength(2);
     });
 
-    it('should cascade delete messages when integration is deleted', () => {
-      const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
-      storage.storeMessage({
+    it('should cascade delete messages when integration is deleted', async () => {
+      const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
+      await storage.storeMessage({
         integrationId: config.id,
         platform: 'telegram',
         direction: 'inbound',
@@ -182,8 +188,8 @@ describe('IntegrationStorage', () => {
         timestamp: Date.now(),
       });
 
-      storage.deleteIntegration(config.id);
-      const messages = storage.listMessages(config.id);
+      await storage.deleteIntegration(config.id);
+      const messages = await storage.listMessages(config.id);
       expect(messages).toHaveLength(0);
     });
   });
@@ -196,7 +202,8 @@ describe('IntegrationManager', () => {
   let manager: IntegrationManager;
   const onMessage = vi.fn().mockResolvedValue(undefined);
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await truncateAllTables();
     storage = new IntegrationStorage();
     manager = new IntegrationManager(storage, {
       logger: noopLogger(),
@@ -204,25 +211,21 @@ describe('IntegrationManager', () => {
     });
   });
 
-  afterEach(async () => {
-    await manager.close();
-  });
-
   it('should register platforms', () => {
     manager.registerPlatform('telegram', () => createMockIntegration());
     expect(manager.getAvailablePlatforms()).toContain('telegram');
   });
 
-  it('should create integration only for registered platforms', () => {
-    expect(() => manager.createIntegration({
+  it('should create integration only for registered platforms', async () => {
+    await expect(manager.createIntegration({
       platform: 'telegram',
       displayName: 'Bot',
       enabled: true,
       config: {},
-    })).toThrow('not registered');
+    })).rejects.toThrow('not registered');
 
     manager.registerPlatform('telegram', () => createMockIntegration());
-    const config = manager.createIntegration({
+    const config = await manager.createIntegration({
       platform: 'telegram',
       displayName: 'Bot',
       enabled: true,
@@ -234,7 +237,7 @@ describe('IntegrationManager', () => {
   it('should start and stop an integration', async () => {
     const mockIntegration = createMockIntegration();
     manager.registerPlatform('telegram', () => mockIntegration);
-    const config = manager.createIntegration({
+    const config = await manager.createIntegration({
       platform: 'telegram',
       displayName: 'Bot',
       enabled: true,
@@ -254,7 +257,7 @@ describe('IntegrationManager', () => {
 
   it('should not start a disabled integration', async () => {
     manager.registerPlatform('telegram', () => createMockIntegration());
-    const config = manager.createIntegration({
+    const config = await manager.createIntegration({
       platform: 'telegram',
       displayName: 'Bot',
       enabled: false,
@@ -269,7 +272,7 @@ describe('IntegrationManager', () => {
       start: vi.fn().mockRejectedValue(new Error('Connection failed')),
     });
     manager.registerPlatform('telegram', () => mockIntegration);
-    const config = manager.createIntegration({
+    const config = await manager.createIntegration({
       platform: 'telegram',
       displayName: 'Bot',
       enabled: true,
@@ -280,7 +283,7 @@ describe('IntegrationManager', () => {
     expect(manager.isRunning(config.id)).toBe(false);
 
     // Status should be error
-    const updated = manager.getIntegration(config.id)!;
+    const updated = (await manager.getIntegration(config.id))!;
     expect(updated.status).toBe('error');
     expect(updated.errorMessage).toBe('Connection failed');
   });
@@ -288,7 +291,7 @@ describe('IntegrationManager', () => {
   it('should send messages through running integration', async () => {
     const mockIntegration = createMockIntegration();
     manager.registerPlatform('telegram', () => mockIntegration);
-    const config = manager.createIntegration({
+    const config = await manager.createIntegration({
       platform: 'telegram',
       displayName: 'Bot',
       enabled: true,
@@ -308,7 +311,7 @@ describe('IntegrationManager', () => {
   it('should delete and stop a running integration', async () => {
     const mockIntegration = createMockIntegration();
     manager.registerPlatform('telegram', () => mockIntegration);
-    const config = manager.createIntegration({
+    const config = await manager.createIntegration({
       platform: 'telegram',
       displayName: 'Bot',
       enabled: true,
@@ -316,18 +319,18 @@ describe('IntegrationManager', () => {
     });
 
     await manager.startIntegration(config.id);
-    manager.deleteIntegration(config.id);
+    await manager.deleteIntegration(config.id);
     // stopIntegration is called asynchronously inside deleteIntegration
     // Wait a tick for it to complete
     await new Promise((r) => setTimeout(r, 10));
     expect(manager.isRunning(config.id)).toBe(false);
-    expect(manager.getIntegration(config.id)).toBeNull();
+    expect(await manager.getIntegration(config.id)).toBeNull();
   });
 
   it('should return adapter via getAdapter when running', async () => {
     const mockIntegration = createMockIntegration();
     manager.registerPlatform('telegram', () => mockIntegration);
-    const config = manager.createIntegration({
+    const config = await manager.createIntegration({
       platform: 'telegram',
       displayName: 'Bot',
       enabled: true,
@@ -349,8 +352,8 @@ describe('IntegrationManager', () => {
 
   it('should report running count', async () => {
     manager.registerPlatform('telegram', () => createMockIntegration());
-    const c1 = manager.createIntegration({ platform: 'telegram', displayName: 'Bot 1', enabled: true, config: {} });
-    const c2 = manager.createIntegration({ platform: 'telegram', displayName: 'Bot 2', enabled: true, config: {} });
+    const c1 = await manager.createIntegration({ platform: 'telegram', displayName: 'Bot 1', enabled: true, config: {} });
+    const c2 = await manager.createIntegration({ platform: 'telegram', displayName: 'Bot 2', enabled: true, config: {} });
 
     await manager.startIntegration(c1.id);
     await manager.startIntegration(c2.id);
@@ -362,11 +365,11 @@ describe('IntegrationManager', () => {
 
   // ── Zod config validation ──────────────────────────────────
 
-  it('should accept valid config when schema is registered', () => {
+  it('should accept valid config when schema is registered', async () => {
     const schema = z.object({ botToken: z.string().min(1), chatId: z.number() });
     manager.registerPlatform('telegram', () => createMockIntegration(), schema);
 
-    const config = manager.createIntegration({
+    const config = await manager.createIntegration({
       platform: 'telegram',
       displayName: 'Bot',
       enabled: true,
@@ -375,38 +378,38 @@ describe('IntegrationManager', () => {
     expect(config.id).toBeDefined();
   });
 
-  it('should reject invalid config with descriptive errors', () => {
+  it('should reject invalid config with descriptive errors', async () => {
     const schema = z.object({ botToken: z.string().min(1), chatId: z.number() });
     manager.registerPlatform('telegram', () => createMockIntegration(), schema);
 
-    expect(() =>
+    await expect(
       manager.createIntegration({
         platform: 'telegram',
         displayName: 'Bot',
         enabled: true,
         config: { botToken: '', chatId: 'not-a-number' },
       })
-    ).toThrow(/Invalid config.*telegram/);
+    ).rejects.toThrow(/Invalid config.*telegram/);
   });
 
-  it('should detect missing required fields', () => {
+  it('should detect missing required fields', async () => {
     const schema = z.object({ botToken: z.string(), webhookUrl: z.string().url() });
     manager.registerPlatform('telegram', () => createMockIntegration(), schema);
 
-    expect(() =>
+    await expect(
       manager.createIntegration({
         platform: 'telegram',
         displayName: 'Bot',
         enabled: true,
         config: {},
       })
-    ).toThrow(/Invalid config/);
+    ).rejects.toThrow(/Invalid config/);
   });
 
-  it('should skip validation when no schema is registered', () => {
+  it('should skip validation when no schema is registered', async () => {
     manager.registerPlatform('telegram', () => createMockIntegration());
 
-    const config = manager.createIntegration({
+    const config = await manager.createIntegration({
       platform: 'telegram',
       displayName: 'Bot',
       enabled: true,
@@ -425,7 +428,8 @@ describe('MessageRouter', () => {
   const mockSubmit = vi.fn();
   const onMessage = vi.fn().mockResolvedValue(undefined);
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await truncateAllTables();
     storage = new IntegrationStorage();
     integrationManager = new IntegrationManager(storage, {
       logger: noopLogger(),
@@ -449,12 +453,8 @@ describe('MessageRouter', () => {
     });
   });
 
-  afterEach(async () => {
-    await integrationManager.close();
-  });
-
   it('should store inbound messages', async () => {
-    const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
+    const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
 
     await router.handleInbound({
       id: 'msg_1',
@@ -470,13 +470,13 @@ describe('MessageRouter', () => {
       timestamp: Date.now(),
     });
 
-    const messages = storage.listMessages(config.id);
+    const messages = await storage.listMessages(config.id);
     expect(messages).toHaveLength(1);
     expect(messages[0].text).toBe('Hello bot!');
   });
 
   it('should submit a task for inbound messages', async () => {
-    const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
+    const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
 
     await router.handleInbound({
       id: 'msg_1',
@@ -498,7 +498,7 @@ describe('MessageRouter', () => {
   });
 
   it('should skip empty messages', async () => {
-    const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
+    const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
 
     await router.handleInbound({
       id: 'msg_1',
@@ -518,7 +518,7 @@ describe('MessageRouter', () => {
   });
 
   it('should handle task submission failure gracefully', async () => {
-    const config = storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
+    const config = await storage.createIntegration({ platform: 'telegram', displayName: 'Bot', enabled: true, config: {} });
     mockSubmit.mockRejectedValue(new Error('Task executor error'));
 
     // Should not throw

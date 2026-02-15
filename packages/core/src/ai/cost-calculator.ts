@@ -12,6 +12,8 @@ import { AnthropicProvider } from './providers/anthropic.js';
 import { OpenAIProvider } from './providers/openai.js';
 import { OllamaProvider } from './providers/ollama.js';
 import { OpenCodeProvider } from './providers/opencode.js';
+import { LMStudioProvider } from './providers/lmstudio.js';
+import { LocalAIProvider } from './providers/localai.js';
 
 interface ModelPricing {
   inputPer1M: number;
@@ -53,6 +55,8 @@ const FALLBACK_PRICING: Record<string, ModelPricing> = {
   gemini: { inputPer1M: 1.25, outputPer1M: 5 },
   ollama: { inputPer1M: 0, outputPer1M: 0 },
   opencode: { inputPer1M: 1, outputPer1M: 5 },
+  lmstudio: { inputPer1M: 0, outputPer1M: 0 },
+  localai: { inputPer1M: 0, outputPer1M: 0 },
 };
 
 export interface AvailableModel {
@@ -92,6 +96,8 @@ export const PROVIDER_KEY_ENV: Record<string, string | null> = {
   gemini: 'GOOGLE_GENERATIVE_AI_API_KEY',
   opencode: 'OPENCODE_API_KEY',
   ollama: 'OLLAMA_HOST', // presence indicates Ollama is configured
+  lmstudio: 'LMSTUDIO_BASE_URL', // presence indicates LM Studio is configured
+  localai: 'LOCALAI_BASE_URL', // presence indicates LocalAI is configured
 };
 
 /**
@@ -116,14 +122,16 @@ export function getAvailableModels(onlyAvailable = false): Record<string, Availa
     });
   }
 
-  // Add ollama placeholder if not already populated from pricing table
-  if (!grouped['ollama']) {
-    grouped['ollama'] = [{
-      provider: 'ollama',
-      model: 'local',
-      inputPer1M: 0,
-      outputPer1M: 0,
-    }];
+  // Add local provider placeholders if not already populated from pricing table
+  for (const localProvider of ['ollama', 'lmstudio', 'localai']) {
+    if (!grouped[localProvider]) {
+      grouped[localProvider] = [{
+        provider: localProvider,
+        model: 'local',
+        inputPer1M: 0,
+        outputPer1M: 0,
+      }];
+    }
   }
 
   if (onlyAvailable) {
@@ -258,6 +266,36 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
     });
   }
 
+  const lmstudioBase = process.env['LMSTUDIO_BASE_URL'];
+  if (lmstudioBase) {
+    tasks.push({
+      provider: 'lmstudio',
+      promise: LMStudioProvider.fetchAvailableModels(lmstudioBase).then((models) =>
+        models.map((m) => ({
+          provider: 'lmstudio',
+          model: m.id,
+          inputPer1M: 0,
+          outputPer1M: 0,
+        })),
+      ),
+    });
+  }
+
+  const localaiBase = process.env['LOCALAI_BASE_URL'];
+  if (localaiBase) {
+    tasks.push({
+      provider: 'localai',
+      promise: LocalAIProvider.fetchAvailableModels(localaiBase).then((models) =>
+        models.map((m) => ({
+          provider: 'localai',
+          model: m.id,
+          inputPer1M: 0,
+          outputPer1M: 0,
+        })),
+      ),
+    });
+  }
+
   // Fetch all in parallel
   const results = await Promise.allSettled(tasks.map((t) => t.promise));
 
@@ -299,7 +337,7 @@ export class CostCalculator {
    * Calculate cost in USD for a given provider, model, and token usage.
    */
   calculate(provider: AIProviderName, model: string, usage: TokenUsage): number {
-    if (provider === 'ollama') {
+    if (provider === 'ollama' || provider === 'lmstudio' || provider === 'localai') {
       return 0;
     }
 

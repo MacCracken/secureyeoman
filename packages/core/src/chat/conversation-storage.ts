@@ -1,13 +1,10 @@
 /**
- * Conversation Storage — SQLite-backed persistence for chat conversations.
+ * Conversation Storage — PostgreSQL-backed persistence for chat conversations.
  *
- * Follows the same patterns as BrainStorage:
- *   WAL mode, prepared statements, explicit close().
+ * Uses PgBaseStorage base class with shared connection pool.
  */
 
-import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 
 // ── Row Types ────────────────────────────────────────────────
@@ -29,8 +26,8 @@ interface MessageRow {
   model: string | null;
   provider: string | null;
   tokens_used: number | null;
-  attachments_json: string;
-  brain_context_json: string | null;
+  attachments_json: unknown;
+  brain_context_json: unknown | null;
   created_at: number;
 }
 
@@ -66,9 +63,11 @@ export interface ConversationMessage {
 
 // ── Helpers ──────────────────────────────────────────────────
 
-function safeJsonParse<T>(json: string, fallback: T): T {
+function safeJsonParse<T>(json: unknown, fallback: T): T {
+  if (json === null || json === undefined) return fallback;
+  if (typeof json === 'object') return json as T;
   try {
-    return JSON.parse(json) as T;
+    return JSON.parse(json as string) as T;
   } catch {
     return fallback;
   }
@@ -102,131 +101,82 @@ function rowToMessage(row: MessageRow): ConversationMessage {
 
 // ── ConversationStorage ──────────────────────────────────────
 
-export class ConversationStorage {
-  private db: Database.Database;
-
-  constructor(opts: { dbPath?: string } = {}) {
-    const dbPath = opts.dbPath ?? ':memory:';
-
-    if (dbPath !== ':memory:') {
-      mkdirSync(dirname(dbPath), { recursive: true });
-    }
-
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('foreign_keys = ON');
-
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS conversations (
-        id TEXT PRIMARY KEY,
-        title TEXT NOT NULL,
-        personality_id TEXT,
-        message_count INTEGER NOT NULL DEFAULT 0,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_conversations_updated ON conversations(updated_at DESC);
-
-      CREATE TABLE IF NOT EXISTS messages (
-        id TEXT PRIMARY KEY,
-        conversation_id TEXT NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-        role TEXT NOT NULL CHECK(role IN ('user', 'assistant')),
-        content TEXT NOT NULL,
-        model TEXT,
-        provider TEXT,
-        tokens_used INTEGER,
-        attachments_json TEXT NOT NULL DEFAULT '[]',
-        brain_context_json TEXT,
-        created_at INTEGER NOT NULL
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_messages_conversation ON messages(conversation_id, created_at ASC);
-    `);
-
-    // Migration: add brain_context_json column if missing (existing DBs)
-    const cols = this.db.pragma('table_info(messages)') as Array<{ name: string }>;
-    if (!cols.some((c) => c.name === 'brain_context_json')) {
-      this.db.exec('ALTER TABLE messages ADD COLUMN brain_context_json TEXT');
-    }
+export class ConversationStorage extends PgBaseStorage {
+  constructor() {
+    super();
   }
 
   // ── Conversations ──────────────────────────────────────────
 
-  createConversation(data: { title: string; personalityId?: string | null }): Conversation {
+  async createConversation(data: { title: string; personalityId?: string | null }): Promise<Conversation> {
     const now = Date.now();
     const id = uuidv7();
 
-    this.db
-      .prepare(
-        `INSERT INTO conversations (id, title, personality_id, message_count, created_at, updated_at)
-         VALUES (@id, @title, @personality_id, 0, @created_at, @updated_at)`
-      )
-      .run({
-        id,
-        title: data.title,
-        personality_id: data.personalityId ?? null,
-        created_at: now,
-        updated_at: now,
-      });
+    await this.execute(
+      `INSERT INTO chat.conversations (id, title, personality_id, message_count, created_at, updated_at)
+       VALUES ($1, $2, $3, 0, $4, $5)`,
+      [id, data.title, data.personalityId ?? null, now, now],
+    );
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return this.getConversation(id)!;
+    return (await this.getConversation(id))!;
   }
 
-  getConversation(id: string): Conversation | null {
-    const row = this.db.prepare('SELECT * FROM conversations WHERE id = ?').get(id) as
-      | ConversationRow
-      | undefined;
+  async getConversation(id: string): Promise<Conversation | null> {
+    const row = await this.queryOne<ConversationRow>(
+      'SELECT * FROM chat.conversations WHERE id = $1',
+      [id],
+    );
     return row ? rowToConversation(row) : null;
   }
 
-  listConversations(opts: { limit?: number; offset?: number } = {}): {
+  async listConversations(opts: { limit?: number; offset?: number } = {}): Promise<{
     conversations: Conversation[];
     total: number;
-  } {
+  }> {
     const limit = opts.limit ?? 50;
     const offset = opts.offset ?? 0;
 
-    const totalRow = this.db
-      .prepare('SELECT COUNT(*) as count FROM conversations')
-      .get() as { count: number };
+    const totalRow = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM chat.conversations',
+    );
 
-    const rows = this.db
-      .prepare('SELECT * FROM conversations ORDER BY updated_at DESC LIMIT ? OFFSET ?')
-      .all(limit, offset) as ConversationRow[];
+    const rows = await this.queryMany<ConversationRow>(
+      'SELECT * FROM chat.conversations ORDER BY updated_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset],
+    );
 
     return {
       conversations: rows.map(rowToConversation),
-      total: totalRow.count,
+      total: Number(totalRow?.count ?? 0),
     };
   }
 
-  updateConversation(id: string, data: { title?: string }): Conversation {
-    const existing = this.getConversation(id);
+  async updateConversation(id: string, data: { title?: string }): Promise<Conversation> {
+    const existing = await this.getConversation(id);
     if (!existing) throw new Error(`Conversation not found: ${id}`);
 
     const now = Date.now();
-    this.db
-      .prepare('UPDATE conversations SET title = @title, updated_at = @updated_at WHERE id = @id')
-      .run({
-        id,
-        title: data.title ?? existing.title,
-        updated_at: now,
-      });
+    await this.execute(
+      'UPDATE chat.conversations SET title = $1, updated_at = $2 WHERE id = $3',
+      [data.title ?? existing.title, now, id],
+    );
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return this.getConversation(id)!;
+    return (await this.getConversation(id))!;
   }
 
-  deleteConversation(id: string): boolean {
-    const info = this.db.prepare('DELETE FROM conversations WHERE id = ?').run(id);
-    return info.changes > 0;
+  async deleteConversation(id: string): Promise<boolean> {
+    const changes = await this.execute(
+      'DELETE FROM chat.conversations WHERE id = $1',
+      [id],
+    );
+    return changes > 0;
   }
 
   // ── Messages ───────────────────────────────────────────────
 
-  addMessage(data: {
+  async addMessage(data: {
     conversationId: string;
     role: 'user' | 'assistant';
     content: string;
@@ -235,65 +185,61 @@ export class ConversationStorage {
     tokensUsed?: number | null;
     attachments?: { type: 'image'; data: string; mimeType: string }[];
     brainContext?: BrainContextMeta | null;
-  }): ConversationMessage {
+  }): Promise<ConversationMessage> {
     const now = Date.now();
     const id = uuidv7();
 
-    const addMsg = this.db.transaction(() => {
-      this.db
-        .prepare(
-          `INSERT INTO messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, created_at)
-           VALUES (@id, @conversation_id, @role, @content, @model, @provider, @tokens_used, @attachments_json, @brain_context_json, @created_at)`
-        )
-        .run({
+    await this.withTransaction(async (client) => {
+      await client.query(
+        `INSERT INTO chat.messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        [
           id,
-          conversation_id: data.conversationId,
-          role: data.role,
-          content: data.content,
-          model: data.model ?? null,
-          provider: data.provider ?? null,
-          tokens_used: data.tokensUsed ?? null,
-          attachments_json: JSON.stringify(data.attachments ?? []),
-          brain_context_json: data.brainContext ? JSON.stringify(data.brainContext) : null,
-          created_at: now,
-        });
+          data.conversationId,
+          data.role,
+          data.content,
+          data.model ?? null,
+          data.provider ?? null,
+          data.tokensUsed ?? null,
+          JSON.stringify(data.attachments ?? []),
+          data.brainContext ? JSON.stringify(data.brainContext) : null,
+          now,
+        ],
+      );
 
-      this.db
-        .prepare(
-          'UPDATE conversations SET message_count = message_count + 1, updated_at = ? WHERE id = ?'
-        )
-        .run(now, data.conversationId);
+      await client.query(
+        'UPDATE chat.conversations SET message_count = message_count + 1, updated_at = $1 WHERE id = $2',
+        [now, data.conversationId],
+      );
     });
 
-    addMsg();
-
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    return this.getMessage(id)!;
+    return (await this.getMessage(id))!;
   }
 
-  getMessage(id: string): ConversationMessage | null {
-    const row = this.db.prepare('SELECT * FROM messages WHERE id = ?').get(id) as
-      | MessageRow
-      | undefined;
+  async getMessage(id: string): Promise<ConversationMessage | null> {
+    const row = await this.queryOne<MessageRow>(
+      'SELECT * FROM chat.messages WHERE id = $1',
+      [id],
+    );
     return row ? rowToMessage(row) : null;
   }
 
-  getMessages(conversationId: string, opts: { limit?: number; offset?: number } = {}): ConversationMessage[] {
+  async getMessages(conversationId: string, opts: { limit?: number; offset?: number } = {}): Promise<ConversationMessage[]> {
     const limit = opts.limit ?? 1000;
     const offset = opts.offset ?? 0;
 
-    const rows = this.db
-      .prepare(
-        'SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ? OFFSET ?'
-      )
-      .all(conversationId, limit, offset) as MessageRow[];
+    const rows = await this.queryMany<MessageRow>(
+      'SELECT * FROM chat.messages WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3',
+      [conversationId, limit, offset],
+    );
 
     return rows.map(rowToMessage);
   }
 
   // ── Cleanup ────────────────────────────────────────────────
 
-  close(): void {
-    this.db.close();
+  override close(): void {
+    // no-op — pool lifecycle is managed globally
   }
 }

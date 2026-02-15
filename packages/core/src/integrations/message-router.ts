@@ -36,7 +36,7 @@ export class MessageRouter {
     logger.info(`Inbound message from ${message.platform}:${message.chatId} by ${message.senderName}`);
 
     // Store the inbound message
-    integrationStorage.storeMessage({
+    await integrationStorage.storeMessage({
       integrationId: message.integrationId,
       platform: message.platform,
       direction: 'inbound',

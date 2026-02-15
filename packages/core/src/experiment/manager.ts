@@ -19,29 +19,44 @@ export class ExperimentManager {
     this.logger = deps.logger;
   }
 
-  create(data: ExperimentCreate): Experiment { const exp = this.storage.create(data); this.logger.info('Experiment created', { id: exp.id }); return exp; }
-  get(id: string): Experiment | null { return this.storage.get(id); }
-  list(): Experiment[] { return this.storage.list(); }
-  delete(id: string): boolean { const ok = this.storage.delete(id); if (ok) this.logger.info('Experiment deleted', { id }); return ok; }
+  async create(data: ExperimentCreate): Promise<Experiment> {
+    const exp = await this.storage.create(data);
+    this.logger.info('Experiment created', { id: exp.id });
+    return exp;
+  }
 
-  start(id: string): Experiment | null {
-    const exp = this.storage.get(id);
+  async get(id: string): Promise<Experiment | null> {
+    return await this.storage.get(id);
+  }
+
+  async list(): Promise<Experiment[]> {
+    return await this.storage.list();
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const ok = await this.storage.delete(id);
+    if (ok) this.logger.info('Experiment deleted', { id });
+    return ok;
+  }
+
+  async start(id: string): Promise<Experiment | null> {
+    const exp = await this.storage.get(id);
     if (!exp || exp.status === 'running') return exp;
-    const updated = this.storage.update(id, { status: 'running', startedAt: Date.now() });
+    const updated = await this.storage.update(id, { status: 'running', startedAt: Date.now() });
     this.logger.info('Experiment started', { id });
     return updated;
   }
 
-  stop(id: string): Experiment | null {
-    const exp = this.storage.get(id);
+  async stop(id: string): Promise<Experiment | null> {
+    const exp = await this.storage.get(id);
     if (!exp || exp.status !== 'running') return exp;
-    const updated = this.storage.update(id, { status: 'completed', completedAt: Date.now() });
+    const updated = await this.storage.update(id, { status: 'completed', completedAt: Date.now() });
     this.logger.info('Experiment stopped', { id });
     return updated;
   }
 
-  selectVariant(experimentId: string): string | null {
-    const exp = this.storage.get(experimentId);
+  async selectVariant(experimentId: string): Promise<string | null> {
+    const exp = await this.storage.get(experimentId);
     if (!exp || exp.status !== 'running' || exp.variants.length === 0) return null;
     const rand = Math.random() * 100;
     let cumulative = 0;

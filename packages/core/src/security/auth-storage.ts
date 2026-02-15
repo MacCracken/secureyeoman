@@ -1,13 +1,10 @@
 /**
- * Auth Storage — SQLite-backed storage for token blacklist and API keys.
+ * Auth Storage — PostgreSQL-backed storage for token blacklist and API keys.
  *
- * Follows the same patterns as SQLiteAuditStorage:
- *   WAL mode, prepared statements, explicit close().
+ * Uses PgBaseStorage base class with shared connection pool.
  */
 
-import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { PgBaseStorage } from '../storage/pg-base.js';
 
 export interface ApiKeyRow {
   id: string;
@@ -22,83 +19,63 @@ export interface ApiKeyRow {
   last_used_at: number | null;
 }
 
-export class AuthStorage {
-  private db: Database.Database;
-
-  constructor(opts: { dbPath?: string } = {}) {
-    const dbPath = opts.dbPath ?? ':memory:';
-
-    if (dbPath !== ':memory:') {
-      mkdirSync(dirname(dbPath), { recursive: true });
-    }
-
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('foreign_keys = ON');
-
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS revoked_tokens (
-        jti TEXT PRIMARY KEY,
-        user_id TEXT NOT NULL,
-        revoked_at INTEGER NOT NULL,
-        expires_at INTEGER NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS api_keys (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        key_hash TEXT NOT NULL UNIQUE,
-        key_prefix TEXT NOT NULL,
-        role TEXT NOT NULL,
-        user_id TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        expires_at INTEGER,
-        revoked_at INTEGER,
-        last_used_at INTEGER
-      );
-    `);
+export class AuthStorage extends PgBaseStorage {
+  constructor() {
+    super();
   }
 
   // ── Token revocation ───────────────────────────────────────────────
 
-  revokeToken(jti: string, userId: string, expiresAt: number): void {
-    this.db
-      .prepare(
-        `INSERT OR IGNORE INTO revoked_tokens (jti, user_id, revoked_at, expires_at)
-         VALUES (@jti, @user_id, @revoked_at, @expires_at)`,
-      )
-      .run({ jti, user_id: userId, revoked_at: Date.now(), expires_at: expiresAt });
+  async revokeToken(jti: string, userId: string, expiresAt: number): Promise<void> {
+    await this.execute(
+      `INSERT INTO auth.revoked_tokens (jti, user_id, revoked_at, expires_at)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT(jti) DO NOTHING`,
+      [jti, userId, Date.now(), expiresAt],
+    );
   }
 
-  isTokenRevoked(jti: string): boolean {
-    const row = this.db
-      .prepare('SELECT 1 FROM revoked_tokens WHERE jti = ?')
-      .get(jti) as { 1: number } | undefined;
-    return row !== undefined;
+  async isTokenRevoked(jti: string): Promise<boolean> {
+    const row = await this.queryOne<{ jti: string }>(
+      'SELECT jti FROM auth.revoked_tokens WHERE jti = $1',
+      [jti],
+    );
+    return row !== null;
   }
 
-  cleanupExpiredTokens(): number {
-    const info = this.db
-      .prepare('DELETE FROM revoked_tokens WHERE expires_at < ?')
-      .run(Date.now());
-    return info.changes;
+  async cleanupExpiredTokens(): Promise<number> {
+    return this.execute(
+      'DELETE FROM auth.revoked_tokens WHERE expires_at < $1',
+      [Date.now()],
+    );
   }
 
   // ── API keys ───────────────────────────────────────────────────────
 
-  storeApiKey(row: ApiKeyRow): void {
-    this.db
-      .prepare(
-        `INSERT INTO api_keys (id, name, key_hash, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at)
-         VALUES (@id, @name, @key_hash, @key_prefix, @role, @user_id, @created_at, @expires_at, @revoked_at, @last_used_at)`,
-      )
-      .run(row);
+  async storeApiKey(row: ApiKeyRow): Promise<void> {
+    await this.execute(
+      `INSERT INTO auth.api_keys (id, name, key_hash, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        row.id,
+        row.name,
+        row.key_hash,
+        row.key_prefix,
+        row.role,
+        row.user_id,
+        row.created_at,
+        row.expires_at,
+        row.revoked_at,
+        row.last_used_at,
+      ],
+    );
   }
 
-  findApiKeyByHash(hash: string): ApiKeyRow | null {
-    const row = this.db
-      .prepare('SELECT * FROM api_keys WHERE key_hash = ? AND revoked_at IS NULL')
-      .get(hash) as ApiKeyRow | undefined;
+  async findApiKeyByHash(hash: string): Promise<ApiKeyRow | null> {
+    const row = await this.queryOne<ApiKeyRow>(
+      'SELECT * FROM auth.api_keys WHERE key_hash = $1 AND revoked_at IS NULL',
+      [hash],
+    );
 
     if (!row) return null;
 
@@ -110,32 +87,35 @@ export class AuthStorage {
     return row;
   }
 
-  listApiKeys(userId?: string): Omit<ApiKeyRow, 'key_hash'>[] {
-    const query = userId
-      ? 'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM api_keys WHERE user_id = ? ORDER BY created_at DESC'
-      : 'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM api_keys ORDER BY created_at DESC';
+  async listApiKeys(userId?: string): Promise<Omit<ApiKeyRow, 'key_hash'>[]> {
+    if (userId) {
+      return this.queryMany<Omit<ApiKeyRow, 'key_hash'>>(
+        'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys WHERE user_id = $1 ORDER BY created_at DESC',
+        [userId],
+      );
+    }
 
-    const rows = userId
-      ? this.db.prepare(query).all(userId)
-      : this.db.prepare(query).all();
-
-    return rows as Omit<ApiKeyRow, 'key_hash'>[];
+    return this.queryMany<Omit<ApiKeyRow, 'key_hash'>>(
+      'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys ORDER BY created_at DESC',
+    );
   }
 
-  revokeApiKey(id: string): boolean {
-    const info = this.db
-      .prepare('UPDATE api_keys SET revoked_at = ? WHERE id = ? AND revoked_at IS NULL')
-      .run(Date.now(), id);
-    return info.changes > 0;
+  async revokeApiKey(id: string): Promise<boolean> {
+    const changes = await this.execute(
+      'UPDATE auth.api_keys SET revoked_at = $1 WHERE id = $2 AND revoked_at IS NULL',
+      [Date.now(), id],
+    );
+    return changes > 0;
   }
 
-  updateLastUsed(id: string, ts: number): void {
-    this.db
-      .prepare('UPDATE api_keys SET last_used_at = ? WHERE id = ?')
-      .run(ts, id);
+  async updateLastUsed(id: string, ts: number): Promise<void> {
+    await this.execute(
+      'UPDATE auth.api_keys SET last_used_at = $1 WHERE id = $2',
+      [ts, id],
+    );
   }
 
-  close(): void {
-    this.db.close();
+  override close(): void {
+    // no-op — pool lifecycle is managed globally
   }
 }

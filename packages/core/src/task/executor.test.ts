@@ -8,7 +8,7 @@ import { TaskType } from '@friday/shared';
 
 const SIGNING_KEY = 'a'.repeat(64);
 
-function createTestSetup() {
+async function createTestSetup() {
   const storage = new InMemoryAuditStorage();
   const auditChain = new AuditChain({ storage, signingKey: SIGNING_KEY });
   const validator = new InputValidator({
@@ -31,7 +31,7 @@ function createTestSetup() {
   });
 
   // Initialize RBAC globally (executor uses getRBAC())
-  initializeRBAC();
+  await initializeRBAC();
 
   const executor = createTaskExecutor(validator, rateLimiter, auditChain);
   return { executor, auditChain, validator, rateLimiter, storage };
@@ -58,7 +58,7 @@ describe('TaskExecutor', () => {
   let rateLimiter: RateLimiter;
 
   beforeEach(async () => {
-    const setup = createTestSetup();
+    const setup = await createTestSetup();
     executor = setup.executor;
     auditChain = setup.auditChain;
     rateLimiter = setup.rateLimiter;
@@ -171,7 +171,7 @@ describe('TaskExecutor', () => {
       executor.registerHandler(slowHandler);
 
       // Create executor with very short timeout
-      const { executor: fastExecutor, auditChain: ac, rateLimiter: rl } = createTestSetup();
+      const { executor: fastExecutor, auditChain: ac, rateLimiter: rl } = await createTestSetup();
       await ac.initialize();
 
       const shortTimeoutExecutor = createTaskExecutor(
@@ -251,7 +251,7 @@ describe('TaskExecutor', () => {
     });
 
     it('should execute tasks sequentially with maxConcurrent=1', async () => {
-      const { auditChain: ac, rateLimiter: rl } = createTestSetup();
+      const { auditChain: ac, rateLimiter: rl } = await createTestSetup();
       await ac.initialize();
 
       const singleExecutor = createTaskExecutor(

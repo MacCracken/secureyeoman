@@ -20,6 +20,9 @@ import { registerAuthRoutes } from '../gateway/auth-routes.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { SecurityConfig } from '@friday/shared';
 import { sha256 } from '../utils/crypto.js';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
+
+export { setupTestDb, teardownTestDb, truncateAllTables };
 
 // ── Constants ──────────────────────────────────────────────────────
 
@@ -57,11 +60,11 @@ export interface TestStack {
   cleanup: () => void;
 }
 
-export function createTestStack(): TestStack {
+export async function createTestStack(): Promise<TestStack> {
   const logger = noopLogger();
   const auditStorage = new InMemoryAuditStorage();
   const auditChain = new AuditChain({ storage: auditStorage, signingKey: TEST_SIGNING_KEY });
-  const rbac = initializeRBAC();
+  const rbac = await initializeRBAC();
   const rateLimiter = createRateLimiter({
     rateLimiting: {
       enabled: true,

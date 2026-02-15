@@ -19,10 +19,35 @@ export class WorkspaceManager {
     this.logger = deps.logger;
   }
 
-  create(data: WorkspaceCreate): Workspace { const ws = this.storage.create(data); this.logger.info('Workspace created', { id: ws.id }); return ws; }
-  get(id: string): Workspace | null { return this.storage.get(id); }
-  list(): Workspace[] { return this.storage.list(); }
-  delete(id: string): boolean { const ok = this.storage.delete(id); if (ok) this.logger.info('Workspace deleted', { id }); return ok; }
-  addMember(workspaceId: string, userId: string, role?: string): WorkspaceMember { const m = this.storage.addMember(workspaceId, userId, role); this.logger.info('Member added to workspace', { workspaceId, userId }); return m; }
-  removeMember(workspaceId: string, userId: string): boolean { const ok = this.storage.removeMember(workspaceId, userId); if (ok) this.logger.info('Member removed from workspace', { workspaceId, userId }); return ok; }
+  async create(data: WorkspaceCreate): Promise<Workspace> {
+    const ws = await this.storage.create(data);
+    this.logger.info('Workspace created', { id: ws.id });
+    return ws;
+  }
+
+  async get(id: string): Promise<Workspace | null> {
+    return await this.storage.get(id);
+  }
+
+  async list(): Promise<Workspace[]> {
+    return await this.storage.list();
+  }
+
+  async delete(id: string): Promise<boolean> {
+    const ok = await this.storage.delete(id);
+    if (ok) this.logger.info('Workspace deleted', { id });
+    return ok;
+  }
+
+  async addMember(workspaceId: string, userId: string, role?: string): Promise<WorkspaceMember> {
+    const m = await this.storage.addMember(workspaceId, userId, role);
+    this.logger.info('Member added to workspace', { workspaceId, userId });
+    return m;
+  }
+
+  async removeMember(workspaceId: string, userId: string): Promise<boolean> {
+    const ok = await this.storage.removeMember(workspaceId, userId);
+    if (ok) this.logger.info('Member removed from workspace', { workspaceId, userId });
+    return ok;
+  }
 }

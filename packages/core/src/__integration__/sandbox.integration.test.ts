@@ -12,7 +12,7 @@ import type { SandboxOptions } from '../sandbox/types.js';
 
 const SIGNING_KEY = 'a'.repeat(64);
 
-function createTestInfra() {
+async function createTestInfra() {
   const storage = new InMemoryAuditStorage();
   const auditChain = new AuditChain({ storage, signingKey: SIGNING_KEY });
   const validator = new InputValidator({
@@ -31,7 +31,7 @@ function createTestInfra() {
     keyType: 'user',
     onExceed: 'reject',
   });
-  initializeRBAC();
+  await initializeRBAC();
   return { storage, auditChain, validator, rateLimiter };
 }
 
@@ -59,7 +59,7 @@ describe('Sandbox Integration', () => {
 
   describe('Task execution with NoopSandbox', () => {
     it('should execute a task through NoopSandbox', async () => {
-      const infra = createTestInfra();
+      const infra = await createTestInfra();
       rateLimiter = infra.rateLimiter;
       await infra.auditChain.initialize();
 
@@ -88,7 +88,7 @@ describe('Sandbox Integration', () => {
 
   describe('Task execution with LinuxSandbox', () => {
     it('should execute a task through LinuxSandbox', async () => {
-      const infra = createTestInfra();
+      const infra = await createTestInfra();
       rateLimiter = infra.rateLimiter;
       await infra.auditChain.initialize();
 
@@ -153,7 +153,7 @@ describe('Sandbox Integration', () => {
 
   describe('Violation audit logging', () => {
     it('should log sandbox violations to audit chain', async () => {
-      const infra = createTestInfra();
+      const infra = await createTestInfra();
       rateLimiter = infra.rateLimiter;
       await infra.auditChain.initialize();
 

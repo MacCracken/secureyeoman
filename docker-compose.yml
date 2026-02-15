@@ -1,4 +1,22 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: friday
+      POSTGRES_USER: friday
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-friday_dev}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U friday"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+
   core:
     build: .
     ports:
@@ -9,12 +27,23 @@ services:
     environment:
       SECUREYEOMAN_HOST: "0.0.0.0"
       NODE_ENV: production
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-friday_dev}
+      DATABASE_HOST: postgres
+      GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
+      GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET:-}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      GMAIL_OAUTH_CLIENT_ID: ${GMAIL_OAUTH_CLIENT_ID:-}
+      GMAIL_OAUTH_CLIENT_SECRET: ${GMAIL_OAUTH_CLIENT_SECRET:-}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:18789/health"]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
+    depends_on:
+      postgres:
+        condition: service_healthy
     restart: unless-stopped
 
   mcp:
@@ -66,5 +95,6 @@ services:
         condition: service_healthy
 
 volumes:
+  pgdata:
   friday-data:
   dashboard-node-modules:

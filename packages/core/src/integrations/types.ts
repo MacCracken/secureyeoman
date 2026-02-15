@@ -87,6 +87,7 @@ export const DEFAULT_RATE_LIMITS: Record<string, PlatformRateLimit> = {
   github: { maxPerSecond: 30 },
   imessage: { maxPerSecond: 5 },
   googlechat: { maxPerSecond: 5 },
+  gmail: { maxPerSecond: 2 },
   cli: { maxPerSecond: 100 },
   webhook: { maxPerSecond: 30 },
 };

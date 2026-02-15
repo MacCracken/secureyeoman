@@ -27,12 +27,12 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
   // ── Personality ─────────────────────────────────────────────
 
   app.get('/api/v1/soul/personality', async () => {
-    const personality = soulManager.getActivePersonality();
+    const personality = await soulManager.getActivePersonality();
     return { personality };
   });
 
   app.get('/api/v1/soul/personalities', async () => {
-    const personalities = soulManager.listPersonalities();
+    const personalities = await soulManager.listPersonalities();
     return { personalities };
   });
 
@@ -40,7 +40,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/personalities',
     async (request: FastifyRequest<{ Body: PersonalityCreate }>, reply: FastifyReply) => {
       try {
-        const personality = soulManager.createPersonality(request.body);
+        const personality = await soulManager.createPersonality(request.body);
         return await reply.code(201).send({ personality });
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -55,7 +55,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       reply: FastifyReply
     ) => {
       try {
-        const personality = soulManager.updatePersonality(request.params.id, request.body);
+        const personality = await soulManager.updatePersonality(request.params.id, request.body);
         return { personality };
       } catch (err) {
         return reply.code(404).send({ error: errorMessage(err) });
@@ -67,7 +67,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/personalities/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        soulManager.deletePersonality(request.params.id);
+        await soulManager.deletePersonality(request.params.id);
         return { message: 'Personality deleted' };
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -79,8 +79,8 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/personalities/:id/activate',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        soulManager.setPersonality(request.params.id);
-        const personality = soulManager.getActivePersonality();
+        await soulManager.setPersonality(request.params.id);
+        const personality = await soulManager.getActivePersonality();
         return { personality };
       } catch (err) {
         return reply.code(404).send({ error: errorMessage(err) });
@@ -94,7 +94,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/skills',
     async (request: FastifyRequest<{ Querystring: { status?: string; source?: string } }>) => {
       const { status, source } = request.query;
-      const skills = soulManager.listSkills({ status, source });
+      const skills = await soulManager.listSkills({ status, source });
       return { skills };
     }
   );
@@ -103,7 +103,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/skills',
     async (request: FastifyRequest<{ Body: SkillCreate }>, reply: FastifyReply) => {
       try {
-        const skill = soulManager.createSkill(request.body);
+        const skill = await soulManager.createSkill(request.body);
         return await reply.code(201).send({ skill });
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -118,7 +118,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       reply: FastifyReply
     ) => {
       try {
-        const skill = soulManager.updateSkill(request.params.id, request.body);
+        const skill = await soulManager.updateSkill(request.params.id, request.body);
         return { skill };
       } catch (err) {
         return reply.code(404).send({ error: errorMessage(err) });
@@ -130,7 +130,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/skills/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        soulManager.deleteSkill(request.params.id);
+        await soulManager.deleteSkill(request.params.id);
         return { message: 'Skill deleted' };
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -142,7 +142,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/skills/:id/enable',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        soulManager.enableSkill(request.params.id);
+        await soulManager.enableSkill(request.params.id);
         return { message: 'Skill enabled' };
       } catch (err) {
         return reply.code(404).send({ error: errorMessage(err) });
@@ -154,7 +154,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/skills/:id/disable',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        soulManager.disableSkill(request.params.id);
+        await soulManager.disableSkill(request.params.id);
         return { message: 'Skill disabled' };
       } catch (err) {
         return reply.code(404).send({ error: errorMessage(err) });
@@ -166,7 +166,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/skills/:id/approve',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        const skill = soulManager.approveSkill(request.params.id);
+        const skill = await soulManager.approveSkill(request.params.id);
         return { skill };
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -178,7 +178,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/skills/:id/reject',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        soulManager.rejectSkill(request.params.id);
+        await soulManager.rejectSkill(request.params.id);
         return { message: 'Skill rejected' };
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -189,19 +189,19 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
   // ── Users ──────────────────────────────────────────────────
 
   app.get('/api/v1/soul/users', async () => {
-    const users = soulManager.listUsers();
+    const users = await soulManager.listUsers();
     return { users };
   });
 
   app.get('/api/v1/soul/owner', async () => {
-    const owner = soulManager.getOwner();
+    const owner = await soulManager.getOwner();
     return { owner };
   });
 
   app.get(
     '/api/v1/soul/users/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-      const user = soulManager.getUser(request.params.id);
+      const user = await soulManager.getUser(request.params.id);
       if (!user) {
         return reply.code(404).send({ error: 'User not found' });
       }
@@ -213,7 +213,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/users',
     async (request: FastifyRequest<{ Body: UserProfileCreate }>, reply: FastifyReply) => {
       try {
-        const user = soulManager.createUser(request.body);
+        const user = await soulManager.createUser(request.body);
         return await reply.code(201).send({ user });
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -228,7 +228,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       reply: FastifyReply
     ) => {
       try {
-        const user = soulManager.updateUser(request.params.id, request.body);
+        const user = await soulManager.updateUser(request.params.id, request.body);
         return { user };
       } catch (err) {
         return reply.code(404).send({ error: errorMessage(err) });
@@ -240,7 +240,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/users/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        const deleted = soulManager.deleteUser(request.params.id);
+        const deleted = await soulManager.deleteUser(request.params.id);
         if (!deleted) {
           return await reply.code(404).send({ error: 'User not found' });
         }
@@ -257,8 +257,8 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/prompt/preview',
     async (request: FastifyRequest<{ Querystring: { personalityId?: string } }>) => {
       const { personalityId } = request.query;
-      const prompt = soulManager.composeSoulPrompt(undefined, personalityId);
-      const tools = soulManager.getActiveTools();
+      const prompt = await soulManager.composeSoulPrompt(undefined, personalityId);
+      const tools = await soulManager.getActiveTools();
       return {
         prompt,
         tools,
@@ -278,7 +278,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
   // ── Agent Name ─────────────────────────────────────────────
 
   app.get('/api/v1/soul/agent-name', async () => {
-    const agentName = soulManager.getAgentName();
+    const agentName = await soulManager.getAgentName();
     return { agentName };
   });
 
@@ -286,8 +286,8 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/agent-name',
     async (request: FastifyRequest<{ Body: { agentName: string } }>, reply: FastifyReply) => {
       try {
-        soulManager.setAgentName(request.body.agentName);
-        return { agentName: soulManager.getAgentName() };
+        await soulManager.setAgentName(request.body.agentName);
+        return { agentName: await soulManager.getAgentName() };
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
       }
@@ -297,9 +297,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
   // ── Onboarding ──────────────────────────────────────────────
 
   app.get('/api/v1/soul/onboarding/status', async () => {
-    const needed = soulManager.needsOnboarding();
-    const agentName = soulManager.getAgentName();
-    const personality = soulManager.getActivePersonality();
+    const needed = await soulManager.needsOnboarding();
+    const agentName = await soulManager.getAgentName();
+    const personality = await soulManager.getActivePersonality();
     return { needed, agentName, personality };
   });
 
@@ -312,7 +312,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       try {
         // Step 1: Set agent name (first item in onboarding)
         const agentName = request.body?.agentName ?? request.body?.name ?? 'FRIDAY';
-        soulManager.setAgentName(agentName);
+        await soulManager.setAgentName(agentName);
 
         const defaults = {
           name: agentName,
@@ -333,7 +333,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
           voice: request.body?.voice ?? defaults.voice,
           preferredLanguage: request.body?.preferredLanguage ?? defaults.preferredLanguage,
           defaultModel: request.body?.defaultModel ?? null,
-          includeArchetypes: request.body?.includeArchetypes ?? true,
+          includeArchetypes: request.body?.includeArchetypes ?? agentName === 'FRIDAY',
           body: request.body?.body ?? {
             enabled: false,
             capabilities: [],
@@ -349,12 +349,12 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
           },
         };
 
-        const personality = soulManager.createPersonality(data);
-        soulManager.setPersonality(personality.id);
+        const personality = await soulManager.createPersonality(data);
+        await soulManager.setPersonality(personality.id);
 
         return await reply.code(201).send({
-          agentName: soulManager.getAgentName(),
-          personality: soulManager.getActivePersonality(),
+          agentName: await soulManager.getAgentName(),
+          personality: await soulManager.getActivePersonality(),
         });
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });

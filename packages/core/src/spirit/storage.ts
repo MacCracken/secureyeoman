@@ -1,13 +1,10 @@
 /**
- * Spirit Storage — SQLite-backed storage for passions, inspirations, and pains.
+ * Spirit Storage — PostgreSQL-backed storage for passions, inspirations, and pains.
  *
- * Follows the same patterns as SoulStorage:
- *   WAL mode, prepared statements, explicit close().
+ * Extends PgBaseStorage for shared pool access, async methods, and transactions.
  */
 
-import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { PgBaseStorage } from '../storage/pg-base.js';
 import type {
   Passion, PassionCreate, PassionUpdate,
   Inspiration, InspirationCreate, InspirationUpdate,
@@ -17,30 +14,33 @@ import { uuidv7 } from '../utils/crypto.js';
 
 interface PassionRow {
   id: string;
+  personality_id: string | null;
   name: string;
   description: string;
   intensity: number;
-  is_active: number;
+  is_active: boolean;
   created_at: number;
   updated_at: number;
 }
 
 interface InspirationRow {
   id: string;
+  personality_id: string | null;
   source: string;
   description: string;
   impact: number;
-  is_active: number;
+  is_active: boolean;
   created_at: number;
   updated_at: number;
 }
 
 interface PainRow {
   id: string;
+  personality_id: string | null;
   trigger_name: string;
   description: string;
   severity: number;
-  is_active: number;
+  is_active: boolean;
   created_at: number;
   updated_at: number;
 }
@@ -51,7 +51,7 @@ function rowToPassion(row: PassionRow): Passion {
     name: row.name,
     description: row.description,
     intensity: row.intensity,
-    isActive: row.is_active === 1,
+    isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -63,7 +63,7 @@ function rowToInspiration(row: InspirationRow): Inspiration {
     source: row.source,
     description: row.description,
     impact: row.impact,
-    isActive: row.is_active === 1,
+    isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -75,360 +75,349 @@ function rowToPain(row: PainRow): Pain {
     trigger: row.trigger_name,
     description: row.description,
     severity: row.severity,
-    isActive: row.is_active === 1,
+    isActive: row.is_active,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
-export class SpiritStorage {
-  private db: Database.Database;
-
-  constructor(opts: { dbPath?: string } = {}) {
-    const dbPath = opts.dbPath ?? ':memory:';
-
-    if (dbPath !== ':memory:') {
-      mkdirSync(dirname(dbPath), { recursive: true });
-    }
-
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('foreign_keys = ON');
-
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS passions (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT '',
-        intensity REAL NOT NULL DEFAULT 0.5,
-        is_active INTEGER NOT NULL DEFAULT 1,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS inspirations (
-        id TEXT PRIMARY KEY,
-        source TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT '',
-        impact REAL NOT NULL DEFAULT 0.5,
-        is_active INTEGER NOT NULL DEFAULT 1,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS pains (
-        id TEXT PRIMARY KEY,
-        trigger_name TEXT NOT NULL,
-        description TEXT NOT NULL DEFAULT '',
-        severity REAL NOT NULL DEFAULT 0.5,
-        is_active INTEGER NOT NULL DEFAULT 1,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS spirit_meta (
-        key TEXT PRIMARY KEY,
-        value TEXT NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-    `);
-  }
-
+export class SpiritStorage extends PgBaseStorage {
   // ── Passions ─────────────────────────────────────────────────
 
-  createPassion(data: PassionCreate): Passion {
+  async createPassion(data: PassionCreate, personalityId?: string): Promise<Passion> {
     const now = Date.now();
     const id = uuidv7();
 
-    this.db
-      .prepare(
-        `INSERT INTO passions (id, name, description, intensity, is_active, created_at, updated_at)
-         VALUES (@id, @name, @description, @intensity, @is_active, @created_at, @updated_at)`,
-      )
-      .run({
+    await this.query(
+      `INSERT INTO spirit.passions (id, personality_id, name, description, intensity, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
         id,
-        name: data.name,
-        description: data.description ?? '',
-        intensity: data.intensity ?? 0.5,
-        is_active: data.isActive !== false ? 1 : 0,
-        created_at: now,
-        updated_at: now,
-      });
+        personalityId ?? null,
+        data.name,
+        data.description ?? '',
+        data.intensity ?? 0.5,
+        data.isActive !== false,
+        now,
+        now,
+      ],
+    );
 
-    const result = this.getPassion(id);
+    const result = await this.getPassion(id);
     if (!result) throw new Error(`Failed to retrieve passion after insert: ${id}`);
     return result;
   }
 
-  getPassion(id: string): Passion | null {
-    const row = this.db
-      .prepare('SELECT * FROM passions WHERE id = ?')
-      .get(id) as PassionRow | undefined;
+  async getPassion(id: string): Promise<Passion | null> {
+    const row = await this.queryOne<PassionRow>(
+      'SELECT * FROM spirit.passions WHERE id = $1',
+      [id],
+    );
     return row ? rowToPassion(row) : null;
   }
 
-  updatePassion(id: string, data: PassionUpdate): Passion {
-    const existing = this.getPassion(id);
+  async updatePassion(id: string, data: PassionUpdate): Promise<Passion> {
+    const existing = await this.getPassion(id);
     if (!existing) {
       throw new Error(`Passion not found: ${id}`);
     }
 
     const now = Date.now();
-    this.db
-      .prepare(
-        `UPDATE passions SET
-           name = @name,
-           description = @description,
-           intensity = @intensity,
-           is_active = @is_active,
-           updated_at = @updated_at
-         WHERE id = @id`,
-      )
-      .run({
+    await this.execute(
+      `UPDATE spirit.passions SET
+         name = $1,
+         description = $2,
+         intensity = $3,
+         is_active = $4,
+         updated_at = $5
+       WHERE id = $6`,
+      [
+        data.name ?? existing.name,
+        data.description ?? existing.description,
+        data.intensity ?? existing.intensity,
+        data.isActive !== undefined ? data.isActive : existing.isActive,
+        now,
         id,
-        name: data.name ?? existing.name,
-        description: data.description ?? existing.description,
-        intensity: data.intensity ?? existing.intensity,
-        is_active: data.isActive !== undefined ? (data.isActive ? 1 : 0) : (existing.isActive ? 1 : 0),
-        updated_at: now,
-      });
+      ],
+    );
 
-    const result = this.getPassion(id);
+    const result = await this.getPassion(id);
     if (!result) throw new Error(`Failed to retrieve passion after update: ${id}`);
     return result;
   }
 
-  deletePassion(id: string): boolean {
-    const info = this.db
-      .prepare('DELETE FROM passions WHERE id = ?')
-      .run(id);
-    return info.changes > 0;
+  async deletePassion(id: string): Promise<boolean> {
+    const count = await this.execute(
+      'DELETE FROM spirit.passions WHERE id = $1',
+      [id],
+    );
+    return count > 0;
   }
 
-  listPassions(): Passion[] {
-    const rows = this.db
-      .prepare('SELECT * FROM passions ORDER BY intensity DESC, created_at DESC')
-      .all() as PassionRow[];
+  async listPassions(personalityId?: string): Promise<Passion[]> {
+    if (personalityId) {
+      const rows = await this.queryMany<PassionRow>(
+        'SELECT * FROM spirit.passions WHERE personality_id = $1 ORDER BY intensity DESC, created_at DESC',
+        [personalityId],
+      );
+      return rows.map(rowToPassion);
+    }
+    const rows = await this.queryMany<PassionRow>(
+      'SELECT * FROM spirit.passions ORDER BY intensity DESC, created_at DESC',
+    );
     return rows.map(rowToPassion);
   }
 
-  getActivePassions(): Passion[] {
-    const rows = this.db
-      .prepare('SELECT * FROM passions WHERE is_active = 1 ORDER BY intensity DESC, created_at DESC')
-      .all() as PassionRow[];
+  async getActivePassions(personalityId?: string): Promise<Passion[]> {
+    if (personalityId) {
+      const rows = await this.queryMany<PassionRow>(
+        'SELECT * FROM spirit.passions WHERE is_active = true AND personality_id = $1 ORDER BY intensity DESC, created_at DESC',
+        [personalityId],
+      );
+      return rows.map(rowToPassion);
+    }
+    const rows = await this.queryMany<PassionRow>(
+      'SELECT * FROM spirit.passions WHERE is_active = true ORDER BY intensity DESC, created_at DESC',
+    );
     return rows.map(rowToPassion);
   }
 
-  getPassionCount(): number {
-    const row = this.db
-      .prepare('SELECT COUNT(*) as count FROM passions')
-      .get() as { count: number };
-    return row.count;
+  async getPassionCount(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM spirit.passions',
+    );
+    return Number(row?.count ?? 0);
   }
 
   // ── Inspirations ─────────────────────────────────────────────
 
-  createInspiration(data: InspirationCreate): Inspiration {
+  async createInspiration(data: InspirationCreate, personalityId?: string): Promise<Inspiration> {
     const now = Date.now();
     const id = uuidv7();
 
-    this.db
-      .prepare(
-        `INSERT INTO inspirations (id, source, description, impact, is_active, created_at, updated_at)
-         VALUES (@id, @source, @description, @impact, @is_active, @created_at, @updated_at)`,
-      )
-      .run({
+    await this.query(
+      `INSERT INTO spirit.inspirations (id, personality_id, source, description, impact, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
         id,
-        source: data.source,
-        description: data.description ?? '',
-        impact: data.impact ?? 0.5,
-        is_active: data.isActive !== false ? 1 : 0,
-        created_at: now,
-        updated_at: now,
-      });
+        personalityId ?? null,
+        data.source,
+        data.description ?? '',
+        data.impact ?? 0.5,
+        data.isActive !== false,
+        now,
+        now,
+      ],
+    );
 
-    const result = this.getInspiration(id);
+    const result = await this.getInspiration(id);
     if (!result) throw new Error(`Failed to retrieve inspiration after insert: ${id}`);
     return result;
   }
 
-  getInspiration(id: string): Inspiration | null {
-    const row = this.db
-      .prepare('SELECT * FROM inspirations WHERE id = ?')
-      .get(id) as InspirationRow | undefined;
+  async getInspiration(id: string): Promise<Inspiration | null> {
+    const row = await this.queryOne<InspirationRow>(
+      'SELECT * FROM spirit.inspirations WHERE id = $1',
+      [id],
+    );
     return row ? rowToInspiration(row) : null;
   }
 
-  updateInspiration(id: string, data: InspirationUpdate): Inspiration {
-    const existing = this.getInspiration(id);
+  async updateInspiration(id: string, data: InspirationUpdate): Promise<Inspiration> {
+    const existing = await this.getInspiration(id);
     if (!existing) {
       throw new Error(`Inspiration not found: ${id}`);
     }
 
     const now = Date.now();
-    this.db
-      .prepare(
-        `UPDATE inspirations SET
-           source = @source,
-           description = @description,
-           impact = @impact,
-           is_active = @is_active,
-           updated_at = @updated_at
-         WHERE id = @id`,
-      )
-      .run({
+    await this.execute(
+      `UPDATE spirit.inspirations SET
+         source = $1,
+         description = $2,
+         impact = $3,
+         is_active = $4,
+         updated_at = $5
+       WHERE id = $6`,
+      [
+        data.source ?? existing.source,
+        data.description ?? existing.description,
+        data.impact ?? existing.impact,
+        data.isActive !== undefined ? data.isActive : existing.isActive,
+        now,
         id,
-        source: data.source ?? existing.source,
-        description: data.description ?? existing.description,
-        impact: data.impact ?? existing.impact,
-        is_active: data.isActive !== undefined ? (data.isActive ? 1 : 0) : (existing.isActive ? 1 : 0),
-        updated_at: now,
-      });
+      ],
+    );
 
-    const result = this.getInspiration(id);
+    const result = await this.getInspiration(id);
     if (!result) throw new Error(`Failed to retrieve inspiration after update: ${id}`);
     return result;
   }
 
-  deleteInspiration(id: string): boolean {
-    const info = this.db
-      .prepare('DELETE FROM inspirations WHERE id = ?')
-      .run(id);
-    return info.changes > 0;
+  async deleteInspiration(id: string): Promise<boolean> {
+    const count = await this.execute(
+      'DELETE FROM spirit.inspirations WHERE id = $1',
+      [id],
+    );
+    return count > 0;
   }
 
-  listInspirations(): Inspiration[] {
-    const rows = this.db
-      .prepare('SELECT * FROM inspirations ORDER BY impact DESC, created_at DESC')
-      .all() as InspirationRow[];
+  async listInspirations(personalityId?: string): Promise<Inspiration[]> {
+    if (personalityId) {
+      const rows = await this.queryMany<InspirationRow>(
+        'SELECT * FROM spirit.inspirations WHERE personality_id = $1 ORDER BY impact DESC, created_at DESC',
+        [personalityId],
+      );
+      return rows.map(rowToInspiration);
+    }
+    const rows = await this.queryMany<InspirationRow>(
+      'SELECT * FROM spirit.inspirations ORDER BY impact DESC, created_at DESC',
+    );
     return rows.map(rowToInspiration);
   }
 
-  getActiveInspirations(): Inspiration[] {
-    const rows = this.db
-      .prepare('SELECT * FROM inspirations WHERE is_active = 1 ORDER BY impact DESC, created_at DESC')
-      .all() as InspirationRow[];
+  async getActiveInspirations(personalityId?: string): Promise<Inspiration[]> {
+    if (personalityId) {
+      const rows = await this.queryMany<InspirationRow>(
+        'SELECT * FROM spirit.inspirations WHERE is_active = true AND personality_id = $1 ORDER BY impact DESC, created_at DESC',
+        [personalityId],
+      );
+      return rows.map(rowToInspiration);
+    }
+    const rows = await this.queryMany<InspirationRow>(
+      'SELECT * FROM spirit.inspirations WHERE is_active = true ORDER BY impact DESC, created_at DESC',
+    );
     return rows.map(rowToInspiration);
   }
 
-  getInspirationCount(): number {
-    const row = this.db
-      .prepare('SELECT COUNT(*) as count FROM inspirations')
-      .get() as { count: number };
-    return row.count;
+  async getInspirationCount(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM spirit.inspirations',
+    );
+    return Number(row?.count ?? 0);
   }
 
   // ── Pains ────────────────────────────────────────────────────
 
-  createPain(data: PainCreate): Pain {
+  async createPain(data: PainCreate, personalityId?: string): Promise<Pain> {
     const now = Date.now();
     const id = uuidv7();
 
-    this.db
-      .prepare(
-        `INSERT INTO pains (id, trigger_name, description, severity, is_active, created_at, updated_at)
-         VALUES (@id, @trigger_name, @description, @severity, @is_active, @created_at, @updated_at)`,
-      )
-      .run({
+    await this.query(
+      `INSERT INTO spirit.pains (id, personality_id, trigger_name, description, severity, is_active, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
         id,
-        trigger_name: data.trigger,
-        description: data.description ?? '',
-        severity: data.severity ?? 0.5,
-        is_active: data.isActive !== false ? 1 : 0,
-        created_at: now,
-        updated_at: now,
-      });
+        personalityId ?? null,
+        data.trigger,
+        data.description ?? '',
+        data.severity ?? 0.5,
+        data.isActive !== false,
+        now,
+        now,
+      ],
+    );
 
-    const result = this.getPain(id);
+    const result = await this.getPain(id);
     if (!result) throw new Error(`Failed to retrieve pain after insert: ${id}`);
     return result;
   }
 
-  getPain(id: string): Pain | null {
-    const row = this.db
-      .prepare('SELECT * FROM pains WHERE id = ?')
-      .get(id) as PainRow | undefined;
+  async getPain(id: string): Promise<Pain | null> {
+    const row = await this.queryOne<PainRow>(
+      'SELECT * FROM spirit.pains WHERE id = $1',
+      [id],
+    );
     return row ? rowToPain(row) : null;
   }
 
-  updatePain(id: string, data: PainUpdate): Pain {
-    const existing = this.getPain(id);
+  async updatePain(id: string, data: PainUpdate): Promise<Pain> {
+    const existing = await this.getPain(id);
     if (!existing) {
       throw new Error(`Pain not found: ${id}`);
     }
 
     const now = Date.now();
-    this.db
-      .prepare(
-        `UPDATE pains SET
-           trigger_name = @trigger_name,
-           description = @description,
-           severity = @severity,
-           is_active = @is_active,
-           updated_at = @updated_at
-         WHERE id = @id`,
-      )
-      .run({
+    await this.execute(
+      `UPDATE spirit.pains SET
+         trigger_name = $1,
+         description = $2,
+         severity = $3,
+         is_active = $4,
+         updated_at = $5
+       WHERE id = $6`,
+      [
+        data.trigger ?? existing.trigger,
+        data.description ?? existing.description,
+        data.severity ?? existing.severity,
+        data.isActive !== undefined ? data.isActive : existing.isActive,
+        now,
         id,
-        trigger_name: data.trigger ?? existing.trigger,
-        description: data.description ?? existing.description,
-        severity: data.severity ?? existing.severity,
-        is_active: data.isActive !== undefined ? (data.isActive ? 1 : 0) : (existing.isActive ? 1 : 0),
-        updated_at: now,
-      });
+      ],
+    );
 
-    const result = this.getPain(id);
+    const result = await this.getPain(id);
     if (!result) throw new Error(`Failed to retrieve pain after update: ${id}`);
     return result;
   }
 
-  deletePain(id: string): boolean {
-    const info = this.db
-      .prepare('DELETE FROM pains WHERE id = ?')
-      .run(id);
-    return info.changes > 0;
+  async deletePain(id: string): Promise<boolean> {
+    const count = await this.execute(
+      'DELETE FROM spirit.pains WHERE id = $1',
+      [id],
+    );
+    return count > 0;
   }
 
-  listPains(): Pain[] {
-    const rows = this.db
-      .prepare('SELECT * FROM pains ORDER BY severity DESC, created_at DESC')
-      .all() as PainRow[];
+  async listPains(personalityId?: string): Promise<Pain[]> {
+    if (personalityId) {
+      const rows = await this.queryMany<PainRow>(
+        'SELECT * FROM spirit.pains WHERE personality_id = $1 ORDER BY severity DESC, created_at DESC',
+        [personalityId],
+      );
+      return rows.map(rowToPain);
+    }
+    const rows = await this.queryMany<PainRow>(
+      'SELECT * FROM spirit.pains ORDER BY severity DESC, created_at DESC',
+    );
     return rows.map(rowToPain);
   }
 
-  getActivePains(): Pain[] {
-    const rows = this.db
-      .prepare('SELECT * FROM pains WHERE is_active = 1 ORDER BY severity DESC, created_at DESC')
-      .all() as PainRow[];
+  async getActivePains(personalityId?: string): Promise<Pain[]> {
+    if (personalityId) {
+      const rows = await this.queryMany<PainRow>(
+        'SELECT * FROM spirit.pains WHERE is_active = true AND personality_id = $1 ORDER BY severity DESC, created_at DESC',
+        [personalityId],
+      );
+      return rows.map(rowToPain);
+    }
+    const rows = await this.queryMany<PainRow>(
+      'SELECT * FROM spirit.pains WHERE is_active = true ORDER BY severity DESC, created_at DESC',
+    );
     return rows.map(rowToPain);
   }
 
-  getPainCount(): number {
-    const row = this.db
-      .prepare('SELECT COUNT(*) as count FROM pains')
-      .get() as { count: number };
-    return row.count;
+  async getPainCount(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM spirit.pains',
+    );
+    return Number(row?.count ?? 0);
   }
 
   // ── Spirit Meta ──────────────────────────────────────────────
 
-  getMeta(key: string): string | null {
-    const row = this.db
-      .prepare('SELECT value FROM spirit_meta WHERE key = ?')
-      .get(key) as { value: string } | undefined;
+  async getMeta(key: string): Promise<string | null> {
+    const row = await this.queryOne<{ value: string }>(
+      'SELECT value FROM spirit.meta WHERE key = $1',
+      [key],
+    );
     return row?.value ?? null;
   }
 
-  setMeta(key: string, value: string): void {
-    this.db
-      .prepare(
-        `INSERT INTO spirit_meta (key, value, updated_at) VALUES (@key, @value, @updated_at)
-         ON CONFLICT(key) DO UPDATE SET value = @value, updated_at = @updated_at`,
-      )
-      .run({ key, value, updated_at: Date.now() });
-  }
-
-  close(): void {
-    this.db.close();
+  async setMeta(key: string, value: string): Promise<void> {
+    await this.execute(
+      `INSERT INTO spirit.meta (key, value, updated_at) VALUES ($1, $2, $3)
+       ON CONFLICT(key) DO UPDATE SET value = $2, updated_at = $3`,
+      [key, value, Date.now()],
+    );
   }
 }

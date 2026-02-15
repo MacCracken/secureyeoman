@@ -29,7 +29,7 @@ export function registerCommsRoutes(
   // ── Peers ────────────────────────────────────────────────────
 
   app.get('/api/v1/comms/peers', async () => {
-    const peers = agentComms.listPeers();
+    const peers = await agentComms.listPeers();
     return { peers };
   });
 
@@ -38,7 +38,7 @@ export function registerCommsRoutes(
     reply: FastifyReply,
   ) => {
     try {
-      agentComms.addPeer(request.body);
+      await agentComms.addPeer(request.body);
       return reply.code(201).send({ message: 'Peer added' });
     } catch (err) {
       return reply.code(400).send({ error: errorMessage(err) });
@@ -49,7 +49,7 @@ export function registerCommsRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const removed = agentComms.removePeer(request.params.id);
+    const removed = await agentComms.removePeer(request.params.id);
     if (!removed) {
       return reply.code(404).send({ error: 'Peer not found' });
     }
@@ -63,7 +63,7 @@ export function registerCommsRoutes(
     reply: FastifyReply,
   ) => {
     try {
-      const payload = agentComms.decryptMessage(request.body);
+      const payload = await agentComms.decryptMessage(request.body);
       return { acknowledged: true, type: payload.type };
     } catch (err) {
       return reply.code(400).send({ error: errorMessage(err) });
@@ -78,7 +78,7 @@ export function registerCommsRoutes(
   ) => {
     try {
       const { toAgentId, payload } = request.body;
-      const encrypted = agentComms.encryptMessage(toAgentId, payload);
+      const encrypted = await agentComms.encryptMessage(toAgentId, payload);
       return reply.code(201).send({ message: encrypted });
     } catch (err) {
       return reply.code(400).send({ error: errorMessage(err) });
@@ -93,7 +93,7 @@ export function registerCommsRoutes(
     }>,
   ) => {
     const q = request.query;
-    const log = agentComms.getMessageLog({
+    const log = await agentComms.getMessageLog({
       peerId: q.peerId,
       type: q.type as import('./types.js').MessageType | undefined,
       limit: q.limit ? Number(q.limit) : undefined,

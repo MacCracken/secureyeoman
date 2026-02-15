@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { BrainStorage } from './storage.js';
 import { BrainManager } from './manager.js';
 import type { BrainConfig } from '@friday/shared';
 import type { BrainManagerDeps } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -43,17 +44,22 @@ function createDeps(): BrainManagerDeps {
 describe('BrainStorage', () => {
   let storage: BrainStorage;
 
-  beforeEach(() => {
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+
+  beforeEach(async () => {
+    await truncateAllTables();
     storage = new BrainStorage();
   });
 
-  afterEach(() => {
-    storage.close();
+  afterAll(async () => {
+    await teardownTestDb();
   });
 
   describe('memories', () => {
-    it('should create and retrieve a memory', () => {
-      const m = storage.createMemory({
+    it('should create and retrieve a memory', async () => {
+      const m = await storage.createMemory({
         type: 'episodic',
         content: 'User asked about deploying to production',
         source: 'conversation',
@@ -65,16 +71,16 @@ describe('BrainStorage', () => {
       expect(m.importance).toBe(0.5);
       expect(m.accessCount).toBe(0);
 
-      const retrieved = storage.getMemory(m.id);
+      const retrieved = await storage.getMemory(m.id);
       expect(retrieved).toEqual(m);
     });
 
-    it('should return null for non-existent memory', () => {
-      expect(storage.getMemory('nonexistent')).toBeNull();
+    it('should return null for non-existent memory', async () => {
+      expect(await storage.getMemory('nonexistent')).toBeNull();
     });
 
-    it('should create memory with custom importance', () => {
-      const m = storage.createMemory({
+    it('should create memory with custom importance', async () => {
+      const m = await storage.createMemory({
         type: 'semantic',
         content: 'Project uses React 18',
         source: 'observation',
@@ -83,8 +89,8 @@ describe('BrainStorage', () => {
       expect(m.importance).toBe(0.9);
     });
 
-    it('should create memory with context', () => {
-      const m = storage.createMemory({
+    it('should create memory with context', async () => {
+      const m = await storage.createMemory({
         type: 'preference',
         content: 'User prefers concise answers',
         source: 'user',
@@ -93,9 +99,9 @@ describe('BrainStorage', () => {
       expect(m.context).toEqual({ userId: 'user1', topic: 'style' });
     });
 
-    it('should create memory with expiration', () => {
+    it('should create memory with expiration', async () => {
       const expires = Date.now() + 86_400_000;
-      const m = storage.createMemory({
+      const m = await storage.createMemory({
         type: 'episodic',
         content: 'Temporary event',
         source: 'event',
@@ -104,136 +110,136 @@ describe('BrainStorage', () => {
       expect(m.expiresAt).toBe(expires);
     });
 
-    it('should delete a memory', () => {
-      const m = storage.createMemory({
+    it('should delete a memory', async () => {
+      const m = await storage.createMemory({
         type: 'semantic',
         content: 'Test',
         source: 'test',
       });
-      expect(storage.deleteMemory(m.id)).toBe(true);
-      expect(storage.getMemory(m.id)).toBeNull();
+      expect(await storage.deleteMemory(m.id)).toBe(true);
+      expect(await storage.getMemory(m.id)).toBeNull();
     });
 
-    it('should return false deleting non-existent memory', () => {
-      expect(storage.deleteMemory('nonexistent')).toBe(false);
+    it('should return false deleting non-existent memory', async () => {
+      expect(await storage.deleteMemory('nonexistent')).toBe(false);
     });
 
-    it('should query memories by type', () => {
-      storage.createMemory({ type: 'episodic', content: 'Event 1', source: 'test' });
-      storage.createMemory({ type: 'semantic', content: 'Fact 1', source: 'test' });
-      storage.createMemory({ type: 'episodic', content: 'Event 2', source: 'test' });
+    it('should query memories by type', async () => {
+      await storage.createMemory({ type: 'episodic', content: 'Event 1', source: 'test' });
+      await storage.createMemory({ type: 'semantic', content: 'Fact 1', source: 'test' });
+      await storage.createMemory({ type: 'episodic', content: 'Event 2', source: 'test' });
 
-      const episodic = storage.queryMemories({ type: 'episodic' });
+      const episodic = await storage.queryMemories({ type: 'episodic' });
       expect(episodic).toHaveLength(2);
     });
 
-    it('should query memories by search', () => {
-      storage.createMemory({ type: 'semantic', content: 'React 18 framework', source: 'test' });
-      storage.createMemory({ type: 'semantic', content: 'Vue 3 framework', source: 'test' });
+    it('should query memories by search', async () => {
+      await storage.createMemory({ type: 'semantic', content: 'React 18 framework', source: 'test' });
+      await storage.createMemory({ type: 'semantic', content: 'Vue 3 framework', source: 'test' });
 
-      const results = storage.queryMemories({ search: 'React' });
+      const results = await storage.queryMemories({ search: 'React' });
       expect(results).toHaveLength(1);
       expect(results[0].content).toContain('React');
     });
 
-    it('should query memories with minImportance', () => {
-      storage.createMemory({ type: 'semantic', content: 'Low', source: 'test', importance: 0.2 });
-      storage.createMemory({ type: 'semantic', content: 'High', source: 'test', importance: 0.8 });
+    it('should query memories with minImportance', async () => {
+      await storage.createMemory({ type: 'semantic', content: 'Low', source: 'test', importance: 0.2 });
+      await storage.createMemory({ type: 'semantic', content: 'High', source: 'test', importance: 0.8 });
 
-      const results = storage.queryMemories({ minImportance: 0.5 });
+      const results = await storage.queryMemories({ minImportance: 0.5 });
       expect(results).toHaveLength(1);
       expect(results[0].content).toBe('High');
     });
 
-    it('should query memories with limit', () => {
+    it('should query memories with limit', async () => {
       for (let i = 0; i < 5; i++) {
-        storage.createMemory({ type: 'episodic', content: `Event ${i}`, source: 'test' });
+        await storage.createMemory({ type: 'episodic', content: `Event ${i}`, source: 'test' });
       }
-      const results = storage.queryMemories({ limit: 3 });
+      const results = await storage.queryMemories({ limit: 3 });
       expect(results).toHaveLength(3);
     });
 
-    it('should touch memory (update access count)', () => {
-      const m = storage.createMemory({ type: 'semantic', content: 'Test', source: 'test' });
-      storage.touchMemory(m.id);
-      storage.touchMemory(m.id);
+    it('should touch memory (update access count)', async () => {
+      const m = await storage.createMemory({ type: 'semantic', content: 'Test', source: 'test' });
+      await storage.touchMemory(m.id);
+      await storage.touchMemory(m.id);
 
-      const updated = storage.getMemory(m.id);
+      const updated = await storage.getMemory(m.id);
       expect(updated?.accessCount).toBe(2);
       expect(updated?.lastAccessedAt).toBeGreaterThan(0);
     });
 
-    it('should batch-touch multiple memories in a single call', () => {
-      const m1 = storage.createMemory({ type: 'semantic', content: 'Memory 1', source: 'test' });
-      const m2 = storage.createMemory({ type: 'semantic', content: 'Memory 2', source: 'test' });
-      const m3 = storage.createMemory({ type: 'episodic', content: 'Memory 3', source: 'test' });
+    it('should batch-touch multiple memories in a single call', async () => {
+      const m1 = await storage.createMemory({ type: 'semantic', content: 'Memory 1', source: 'test' });
+      const m2 = await storage.createMemory({ type: 'semantic', content: 'Memory 2', source: 'test' });
+      const m3 = await storage.createMemory({ type: 'episodic', content: 'Memory 3', source: 'test' });
 
-      storage.touchMemories([m1.id, m2.id, m3.id]);
+      await storage.touchMemories([m1.id, m2.id, m3.id]);
 
-      expect(storage.getMemory(m1.id)?.accessCount).toBe(1);
-      expect(storage.getMemory(m2.id)?.accessCount).toBe(1);
-      expect(storage.getMemory(m3.id)?.accessCount).toBe(1);
-      expect(storage.getMemory(m1.id)?.lastAccessedAt).toBeGreaterThan(0);
+      expect((await storage.getMemory(m1.id))?.accessCount).toBe(1);
+      expect((await storage.getMemory(m2.id))?.accessCount).toBe(1);
+      expect((await storage.getMemory(m3.id))?.accessCount).toBe(1);
+      expect((await storage.getMemory(m1.id))?.lastAccessedAt).toBeGreaterThan(0);
     });
 
-    it('should handle empty array in touchMemories', () => {
+    it('should handle empty array in touchMemories', async () => {
       // Should not throw
-      storage.touchMemories([]);
+      await storage.touchMemories([]);
     });
 
-    it('should decay memories', () => {
-      const m = storage.createMemory({
+    it('should decay memories', async () => {
+      const m = await storage.createMemory({
         type: 'semantic',
         content: 'Old fact',
         source: 'test',
         importance: 0.5,
       });
 
-      const decayed = storage.decayMemories(0.1);
+      const decayed = await storage.decayMemories(0.1);
       expect(decayed).toBe(1);
 
-      const updated = storage.getMemory(m.id);
+      const updated = await storage.getMemory(m.id);
       expect(updated?.importance).toBe(0.4);
     });
 
-    it('should prune expired memories', () => {
-      storage.createMemory({
+    it('should prune expired memories', async () => {
+      await storage.createMemory({
         type: 'episodic',
         content: 'Expired',
         source: 'test',
         expiresAt: Date.now() - 1000,
       });
-      storage.createMemory({
+      await storage.createMemory({
         type: 'semantic',
         content: 'Active',
         source: 'test',
       });
 
-      const pruned = storage.pruneExpiredMemories();
+      const pruned = await storage.pruneExpiredMemories();
       expect(pruned).toBe(1);
-      expect(storage.getMemoryCount()).toBe(1);
+      expect(await storage.getMemoryCount()).toBe(1);
     });
 
-    it('should count memories', () => {
-      expect(storage.getMemoryCount()).toBe(0);
-      storage.createMemory({ type: 'semantic', content: 'Test', source: 'test' });
-      expect(storage.getMemoryCount()).toBe(1);
+    it('should count memories', async () => {
+      expect(await storage.getMemoryCount()).toBe(0);
+      await storage.createMemory({ type: 'semantic', content: 'Test', source: 'test' });
+      expect(await storage.getMemoryCount()).toBe(1);
     });
 
-    it('should count memories by type', () => {
-      storage.createMemory({ type: 'episodic', content: 'E1', source: 'test' });
-      storage.createMemory({ type: 'episodic', content: 'E2', source: 'test' });
-      storage.createMemory({ type: 'semantic', content: 'S1', source: 'test' });
+    it('should count memories by type', async () => {
+      await storage.createMemory({ type: 'episodic', content: 'E1', source: 'test' });
+      await storage.createMemory({ type: 'episodic', content: 'E2', source: 'test' });
+      await storage.createMemory({ type: 'semantic', content: 'S1', source: 'test' });
 
-      const counts = storage.getMemoryCountByType();
+      const counts = await storage.getMemoryCountByType();
       expect(counts.episodic).toBe(2);
       expect(counts.semantic).toBe(1);
     });
   });
 
   describe('knowledge', () => {
-    it('should create and retrieve knowledge', () => {
-      const k = storage.createKnowledge({
+    it('should create and retrieve knowledge', async () => {
+      const k = await storage.createKnowledge({
         topic: 'deployment',
         content: 'Production uses Docker Compose',
         source: 'documentation',
@@ -242,16 +248,16 @@ describe('BrainStorage', () => {
       expect(k.topic).toBe('deployment');
       expect(k.confidence).toBe(0.8);
 
-      const retrieved = storage.getKnowledge(k.id);
+      const retrieved = await storage.getKnowledge(k.id);
       expect(retrieved).toEqual(k);
     });
 
-    it('should return null for non-existent knowledge', () => {
-      expect(storage.getKnowledge('nonexistent')).toBeNull();
+    it('should return null for non-existent knowledge', async () => {
+      expect(await storage.getKnowledge('nonexistent')).toBeNull();
     });
 
-    it('should create knowledge with custom confidence', () => {
-      const k = storage.createKnowledge({
+    it('should create knowledge with custom confidence', async () => {
+      const k = await storage.createKnowledge({
         topic: 'api',
         content: 'REST endpoint on port 18789',
         source: 'config',
@@ -260,61 +266,61 @@ describe('BrainStorage', () => {
       expect(k.confidence).toBe(1.0);
     });
 
-    it('should query knowledge by topic', () => {
-      storage.createKnowledge({ topic: 'deployment', content: 'Docker', source: 'test' });
-      storage.createKnowledge({ topic: 'security', content: 'TLS', source: 'test' });
+    it('should query knowledge by topic', async () => {
+      await storage.createKnowledge({ topic: 'deployment', content: 'Docker', source: 'test' });
+      await storage.createKnowledge({ topic: 'security', content: 'TLS', source: 'test' });
 
-      const results = storage.queryKnowledge({ topic: 'deployment' });
+      const results = await storage.queryKnowledge({ topic: 'deployment' });
       expect(results).toHaveLength(1);
       expect(results[0].topic).toBe('deployment');
     });
 
-    it('should query knowledge by search', () => {
-      storage.createKnowledge({ topic: 'tech', content: 'Uses React 18', source: 'test' });
-      storage.createKnowledge({ topic: 'tech', content: 'Uses Vue 3', source: 'test' });
+    it('should query knowledge by search', async () => {
+      await storage.createKnowledge({ topic: 'tech', content: 'Uses React 18', source: 'test' });
+      await storage.createKnowledge({ topic: 'tech', content: 'Uses Vue 3', source: 'test' });
 
-      const results = storage.queryKnowledge({ search: 'React' });
+      const results = await storage.queryKnowledge({ search: 'React' });
       expect(results).toHaveLength(1);
     });
 
-    it('should update knowledge', () => {
-      const k = storage.createKnowledge({
+    it('should update knowledge', async () => {
+      const k = await storage.createKnowledge({
         topic: 'api',
         content: 'Port 3000',
         source: 'test',
       });
-      const updated = storage.updateKnowledge(k.id, { content: 'Port 18789', confidence: 0.95 });
+      const updated = await storage.updateKnowledge(k.id, { content: 'Port 18789', confidence: 0.95 });
       expect(updated.content).toBe('Port 18789');
       expect(updated.confidence).toBe(0.95);
     });
 
-    it('should update knowledge with supersedes', () => {
-      const old = storage.createKnowledge({ topic: 'api', content: 'v1', source: 'test' });
-      const newer = storage.createKnowledge({ topic: 'api', content: 'v2', source: 'test' });
-      const updated = storage.updateKnowledge(newer.id, { supersedes: old.id });
+    it('should update knowledge with supersedes', async () => {
+      const old = await storage.createKnowledge({ topic: 'api', content: 'v1', source: 'test' });
+      const newer = await storage.createKnowledge({ topic: 'api', content: 'v2', source: 'test' });
+      const updated = await storage.updateKnowledge(newer.id, { supersedes: old.id });
       expect(updated.supersedes).toBe(old.id);
     });
 
-    it('should throw when updating non-existent knowledge', () => {
-      expect(() => storage.updateKnowledge('nonexistent', { content: 'X' })).toThrow('Knowledge not found');
+    it('should throw when updating non-existent knowledge', async () => {
+      await expect(storage.updateKnowledge('nonexistent', { content: 'X' })).rejects.toThrow('Knowledge not found');
     });
 
-    it('should delete knowledge', () => {
-      const k = storage.createKnowledge({ topic: 'test', content: 'Test', source: 'test' });
-      expect(storage.deleteKnowledge(k.id)).toBe(true);
-      expect(storage.getKnowledge(k.id)).toBeNull();
+    it('should delete knowledge', async () => {
+      const k = await storage.createKnowledge({ topic: 'test', content: 'Test', source: 'test' });
+      expect(await storage.deleteKnowledge(k.id)).toBe(true);
+      expect(await storage.getKnowledge(k.id)).toBeNull();
     });
 
-    it('should count knowledge', () => {
-      expect(storage.getKnowledgeCount()).toBe(0);
-      storage.createKnowledge({ topic: 'test', content: 'Test', source: 'test' });
-      expect(storage.getKnowledgeCount()).toBe(1);
+    it('should count knowledge', async () => {
+      expect(await storage.getKnowledgeCount()).toBe(0);
+      await storage.createKnowledge({ topic: 'test', content: 'Test', source: 'test' });
+      expect(await storage.getKnowledgeCount()).toBe(1);
     });
   });
 
   describe('skills', () => {
-    it('should create and retrieve a skill', () => {
-      const s = storage.createSkill({
+    it('should create and retrieve a skill', async () => {
+      const s = await storage.createSkill({
         name: 'code-review',
         description: 'Reviews code',
         instructions: 'Review the code carefully.',
@@ -327,48 +333,48 @@ describe('BrainStorage', () => {
       expect(s.id).toBeDefined();
       expect(s.name).toBe('code-review');
 
-      const retrieved = storage.getSkill(s.id);
+      const retrieved = await storage.getSkill(s.id);
       expect(retrieved).toEqual(s);
     });
 
-    it('should list enabled skills', () => {
-      storage.createSkill({ name: 's1', enabled: true, source: 'user', status: 'active' });
-      storage.createSkill({ name: 's2', enabled: false, source: 'user', status: 'active' });
+    it('should list enabled skills', async () => {
+      await storage.createSkill({ name: 's1', enabled: true, source: 'user', status: 'active' });
+      await storage.createSkill({ name: 's2', enabled: false, source: 'user', status: 'active' });
 
-      const enabled = storage.getEnabledSkills();
+      const enabled = await storage.getEnabledSkills();
       expect(enabled).toHaveLength(1);
       expect(enabled[0].name).toBe('s1');
     });
 
-    it('should increment usage', () => {
-      const s = storage.createSkill({ name: 's1', source: 'user', status: 'active' });
-      storage.incrementUsage(s.id);
-      const updated = storage.getSkill(s.id);
+    it('should increment usage', async () => {
+      const s = await storage.createSkill({ name: 's1', source: 'user', status: 'active' });
+      await storage.incrementUsage(s.id);
+      const updated = await storage.getSkill(s.id);
       expect(updated?.usageCount).toBe(1);
     });
   });
 
   describe('brain meta', () => {
-    it('should get and set meta', () => {
-      expect(storage.getMeta('test')).toBeNull();
-      storage.setMeta('test', 'value');
-      expect(storage.getMeta('test')).toBe('value');
+    it('should get and set meta', async () => {
+      expect(await storage.getMeta('test')).toBeNull();
+      await storage.setMeta('test', 'value');
+      expect(await storage.getMeta('test')).toBe('value');
     });
 
-    it('should overwrite meta', () => {
-      storage.setMeta('key', 'v1');
-      storage.setMeta('key', 'v2');
-      expect(storage.getMeta('key')).toBe('v2');
+    it('should overwrite meta', async () => {
+      await storage.setMeta('key', 'v1');
+      await storage.setMeta('key', 'v2');
+      expect(await storage.getMeta('key')).toBe('v2');
     });
   });
 
   describe('stats', () => {
-    it('should return brain stats', () => {
-      storage.createMemory({ type: 'semantic', content: 'Test', source: 'test' });
-      storage.createKnowledge({ topic: 'test', content: 'Test', source: 'test' });
-      storage.createSkill({ name: 's1', source: 'user', status: 'active' });
+    it('should return brain stats', async () => {
+      await storage.createMemory({ type: 'semantic', content: 'Test', source: 'test' });
+      await storage.createKnowledge({ topic: 'test', content: 'Test', source: 'test' });
+      await storage.createSkill({ name: 's1', source: 'user', status: 'active' });
 
-      const stats = storage.getStats();
+      const stats = await storage.getStats();
       expect(stats.memories.total).toBe(1);
       expect(stats.knowledge.total).toBe(1);
       expect(stats.skills.total).toBe(1);
@@ -382,214 +388,219 @@ describe('BrainManager', () => {
   let storage: BrainStorage;
   let manager: BrainManager;
 
-  beforeEach(() => {
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+
+  beforeEach(async () => {
+    await truncateAllTables();
     storage = new BrainStorage();
     manager = new BrainManager(storage, defaultConfig(), createDeps());
   });
 
-  afterEach(() => {
-    storage.close();
+  afterAll(async () => {
+    await teardownTestDb();
   });
 
   describe('memory operations', () => {
-    it('should remember and recall', () => {
-      const m = manager.remember('semantic', 'React is a UI framework', 'learning');
+    it('should remember and recall', async () => {
+      const m = await manager.remember('semantic', 'React is a UI framework', 'learning');
       expect(m.type).toBe('semantic');
 
-      const recalled = manager.recall({ type: 'semantic' });
+      const recalled = await manager.recall({ type: 'semantic' });
       expect(recalled).toHaveLength(1);
       expect(recalled[0].content).toContain('React');
     });
 
-    it('should forget a memory', () => {
-      const m = manager.remember('episodic', 'Test event', 'test');
-      manager.forget(m.id);
-      expect(manager.getMemory(m.id)).toBeNull();
+    it('should forget a memory', async () => {
+      const m = await manager.remember('episodic', 'Test event', 'test');
+      await manager.forget(m.id);
+      expect(await manager.getMemory(m.id)).toBeNull();
     });
 
-    it('should add expiration to episodic memories', () => {
-      const m = manager.remember('episodic', 'Event', 'test');
+    it('should add expiration to episodic memories', async () => {
+      const m = await manager.remember('episodic', 'Event', 'test');
       expect(m.expiresAt).toBeGreaterThan(Date.now());
     });
 
-    it('should not add expiration to semantic memories', () => {
-      const m = manager.remember('semantic', 'Fact', 'test');
+    it('should not add expiration to semantic memories', async () => {
+      const m = await manager.remember('semantic', 'Fact', 'test');
       expect(m.expiresAt).toBeNull();
     });
 
-    it('should touch memories on recall', () => {
-      const m = manager.remember('semantic', 'Test', 'test');
-      manager.recall({ type: 'semantic' });
+    it('should touch memories on recall', async () => {
+      const m = await manager.remember('semantic', 'Test', 'test');
+      await manager.recall({ type: 'semantic' });
 
-      const updated = manager.getMemory(m.id);
+      const updated = await manager.getMemory(m.id);
       expect(updated?.accessCount).toBe(1);
     });
 
-    it('should batch-touch memories on recall', () => {
-      const m1 = manager.remember('semantic', 'First memory', 'test');
-      const m2 = manager.remember('semantic', 'Second memory', 'test');
-      const m3 = manager.remember('semantic', 'Third memory', 'test');
+    it('should batch-touch memories on recall', async () => {
+      const m1 = await manager.remember('semantic', 'First memory', 'test');
+      const m2 = await manager.remember('semantic', 'Second memory', 'test');
+      const m3 = await manager.remember('semantic', 'Third memory', 'test');
 
-      manager.recall({ type: 'semantic' });
+      await manager.recall({ type: 'semantic' });
 
       // All memories should be touched in a single batch
-      expect(manager.getMemory(m1.id)?.accessCount).toBe(1);
-      expect(manager.getMemory(m2.id)?.accessCount).toBe(1);
-      expect(manager.getMemory(m3.id)?.accessCount).toBe(1);
+      expect((await manager.getMemory(m1.id))?.accessCount).toBe(1);
+      expect((await manager.getMemory(m2.id))?.accessCount).toBe(1);
+      expect((await manager.getMemory(m3.id))?.accessCount).toBe(1);
     });
 
-    it('should throw when brain is disabled', () => {
+    it('should throw when brain is disabled', async () => {
       const mgr = new BrainManager(storage, defaultConfig({ enabled: false }), createDeps());
-      expect(() => mgr.remember('semantic', 'Test', 'test')).toThrow('Brain is not enabled');
+      await expect(mgr.remember('semantic', 'Test', 'test')).rejects.toThrow('Brain is not enabled');
     });
 
-    it('should return empty on recall when disabled', () => {
+    it('should return empty on recall when disabled', async () => {
       const mgr = new BrainManager(storage, defaultConfig({ enabled: false }), createDeps());
-      expect(mgr.recall({})).toEqual([]);
+      expect(await mgr.recall({})).toEqual([]);
     });
   });
 
   describe('knowledge operations', () => {
-    it('should learn and lookup', () => {
-      manager.learn('deployment', 'Uses Docker', 'docs');
-      const results = manager.lookup('deployment');
+    it('should learn and lookup', async () => {
+      await manager.learn('deployment', 'Uses Docker', 'docs');
+      const results = await manager.lookup('deployment');
       expect(results).toHaveLength(1);
       expect(results[0].content).toBe('Uses Docker');
     });
 
-    it('should throw when max knowledge reached', () => {
+    it('should throw when max knowledge reached', async () => {
       const mgr = new BrainManager(storage, defaultConfig({ maxKnowledge: 2 }), createDeps());
-      mgr.learn('t1', 'c1', 's');
-      mgr.learn('t2', 'c2', 's');
-      expect(() => mgr.learn('t3', 'c3', 's')).toThrow('Maximum knowledge limit');
+      await mgr.learn('t1', 'c1', 's');
+      await mgr.learn('t2', 'c2', 's');
+      await expect(mgr.learn('t3', 'c3', 's')).rejects.toThrow('Maximum knowledge limit');
     });
 
-    it('should update knowledge', () => {
-      const k = manager.learn('api', 'Port 3000', 'test');
-      const updated = manager.updateKnowledge(k.id, { content: 'Port 18789' });
+    it('should update knowledge', async () => {
+      const k = await manager.learn('api', 'Port 3000', 'test');
+      const updated = await manager.updateKnowledge(k.id, { content: 'Port 18789' });
       expect(updated.content).toBe('Port 18789');
     });
 
-    it('should delete knowledge', () => {
-      const k = manager.learn('test', 'Test', 'test');
-      manager.deleteKnowledge(k.id);
-      expect(manager.lookup('test')).toHaveLength(0);
+    it('should delete knowledge', async () => {
+      const k = await manager.learn('test', 'Test', 'test');
+      await manager.deleteKnowledge(k.id);
+      expect(await manager.lookup('test')).toHaveLength(0);
     });
 
-    it('should query knowledge', () => {
-      manager.learn('tech', 'React 18', 'test');
-      manager.learn('tech', 'Vue 3', 'test');
+    it('should query knowledge', async () => {
+      await manager.learn('tech', 'React 18', 'test');
+      await manager.learn('tech', 'Vue 3', 'test');
 
-      const results = manager.queryKnowledge({ search: 'React' });
+      const results = await manager.queryKnowledge({ search: 'React' });
       expect(results).toHaveLength(1);
     });
   });
 
   describe('prompt integration', () => {
-    it('should return relevant context for input', () => {
-      manager.remember('semantic', 'React is used for the frontend', 'observation');
-      manager.learn('frontend', 'React 18 framework', 'docs');
+    it('should return relevant context for input', async () => {
+      await manager.remember('semantic', 'React is used for the frontend', 'observation');
+      await manager.learn('frontend', 'React 18 framework', 'docs');
 
-      const context = manager.getRelevantContext('React');
+      const context = await manager.getRelevantContext('React');
       expect(context).toContain('## Brain');
       expect(context).toContain('Your Brain is your mind');
       expect(context).toContain('### Memories');
       expect(context).toContain('React');
     });
 
-    it('should return empty when disabled', () => {
+    it('should return empty when disabled', async () => {
       const mgr = new BrainManager(storage, defaultConfig({ enabled: false }), createDeps());
-      expect(mgr.getRelevantContext('anything')).toBe('');
+      expect(await mgr.getRelevantContext('anything')).toBe('');
     });
 
-    it('should return empty when no matches', () => {
-      const context = manager.getRelevantContext('nonexistent topic xyz');
+    it('should return empty when no matches', async () => {
+      const context = await manager.getRelevantContext('nonexistent topic xyz');
       expect(context).toBe('');
     });
 
-    it('should batch-touch memories in getRelevantContext', () => {
-      const m1 = manager.remember('semantic', 'React component lifecycle', 'test');
-      const m2 = manager.remember('semantic', 'React hooks patterns', 'test');
+    it('should batch-touch memories in getRelevantContext', async () => {
+      const m1 = await manager.remember('semantic', 'React component lifecycle', 'test');
+      const m2 = await manager.remember('semantic', 'React hooks patterns', 'test');
 
-      manager.getRelevantContext('React');
+      await manager.getRelevantContext('React');
 
       // Both memories should have been touched via batch update
-      expect(manager.getMemory(m1.id)?.accessCount).toBe(1);
-      expect(manager.getMemory(m2.id)?.accessCount).toBe(1);
+      expect((await manager.getMemory(m1.id))?.accessCount).toBe(1);
+      expect((await manager.getMemory(m2.id))?.accessCount).toBe(1);
     });
   });
 
   describe('skill operations', () => {
-    it('should create and get skills', () => {
-      const s = manager.createSkill({ name: 'test-skill', source: 'user', status: 'active' });
-      expect(manager.getSkill(s.id)?.name).toBe('test-skill');
+    it('should create and get skills', async () => {
+      const s = await manager.createSkill({ name: 'test-skill', source: 'user', status: 'active' });
+      expect((await manager.getSkill(s.id))?.name).toBe('test-skill');
     });
 
-    it('should list and filter skills', () => {
-      manager.createSkill({ name: 's1', source: 'user', status: 'active' });
-      manager.createSkill({ name: 's2', source: 'ai_proposed', status: 'pending_approval' });
+    it('should list and filter skills', async () => {
+      await manager.createSkill({ name: 's1', source: 'user', status: 'active' });
+      await manager.createSkill({ name: 's2', source: 'ai_proposed', status: 'pending_approval' });
 
-      expect(manager.listSkills()).toHaveLength(2);
-      expect(manager.listSkills({ source: 'user' })).toHaveLength(1);
+      expect(await manager.listSkills()).toHaveLength(2);
+      expect(await manager.listSkills({ source: 'user' })).toHaveLength(1);
     });
 
-    it('should enable and disable skills', () => {
-      const s = manager.createSkill({ name: 's1', source: 'user', status: 'active' });
-      manager.disableSkill(s.id);
-      expect(manager.getSkill(s.id)?.enabled).toBe(false);
-      manager.enableSkill(s.id);
-      expect(manager.getSkill(s.id)?.enabled).toBe(true);
+    it('should enable and disable skills', async () => {
+      const s = await manager.createSkill({ name: 's1', source: 'user', status: 'active' });
+      await manager.disableSkill(s.id);
+      expect((await manager.getSkill(s.id))?.enabled).toBe(false);
+      await manager.enableSkill(s.id);
+      expect((await manager.getSkill(s.id))?.enabled).toBe(true);
     });
 
-    it('should approve pending skills', () => {
-      const s = manager.createSkill({ name: 's1', source: 'ai_proposed', status: 'pending_approval', enabled: false });
-      const approved = manager.approveSkill(s.id);
+    it('should approve pending skills', async () => {
+      const s = await manager.createSkill({ name: 's1', source: 'ai_proposed', status: 'pending_approval', enabled: false });
+      const approved = await manager.approveSkill(s.id);
       expect(approved.status).toBe('active');
     });
 
-    it('should reject pending skills', () => {
-      const s = manager.createSkill({ name: 's1', source: 'ai_proposed', status: 'pending_approval', enabled: false });
-      manager.rejectSkill(s.id);
-      expect(manager.getSkill(s.id)).toBeNull();
+    it('should reject pending skills', async () => {
+      const s = await manager.createSkill({ name: 's1', source: 'ai_proposed', status: 'pending_approval', enabled: false });
+      await manager.rejectSkill(s.id);
+      expect(await manager.getSkill(s.id)).toBeNull();
     });
 
-    it('should throw when approving non-pending skill', () => {
-      const s = manager.createSkill({ name: 's1', source: 'user', status: 'active' });
-      expect(() => manager.approveSkill(s.id)).toThrow('not pending approval');
+    it('should throw when approving non-pending skill', async () => {
+      const s = await manager.createSkill({ name: 's1', source: 'user', status: 'active' });
+      await expect(manager.approveSkill(s.id)).rejects.toThrow('not pending approval');
     });
 
-    it('should get active tools from enabled skills', () => {
-      manager.createSkill({
+    it('should get active tools from enabled skills', async () => {
+      await manager.createSkill({
         name: 's1',
         source: 'user',
         status: 'active',
         tools: [{ name: 'search', description: 'Search', parameters: { type: 'object', properties: {} } }],
       });
-      const tools = manager.getActiveTools();
+      const tools = await manager.getActiveTools();
       expect(tools).toHaveLength(1);
       expect(tools[0].name).toBe('search');
     });
 
-    it('should increment skill usage', () => {
-      const s = manager.createSkill({ name: 's1', source: 'user', status: 'active' });
-      manager.incrementSkillUsage(s.id);
-      expect(manager.getSkill(s.id)?.usageCount).toBe(1);
+    it('should increment skill usage', async () => {
+      const s = await manager.createSkill({ name: 's1', source: 'user', status: 'active' });
+      await manager.incrementSkillUsage(s.id);
+      expect((await manager.getSkill(s.id))?.usageCount).toBe(1);
     });
   });
 
   describe('maintenance', () => {
-    it('should run maintenance (decay + prune)', () => {
-      manager.remember('episodic', 'Old event', 'test');
-      const result = manager.runMaintenance();
+    it('should run maintenance (decay + prune)', async () => {
+      await manager.remember('episodic', 'Old event', 'test');
+      const result = await manager.runMaintenance();
       expect(result).toHaveProperty('decayed');
       expect(result).toHaveProperty('pruned');
     });
   });
 
   describe('seedBaseKnowledge', () => {
-    it('should seed foundational knowledge entries', () => {
-      manager.seedBaseKnowledge();
-      const all = manager.queryKnowledge({});
+    it('should seed foundational knowledge entries', async () => {
+      await manager.seedBaseKnowledge();
+      const all = await manager.queryKnowledge({});
       expect(all.length).toBeGreaterThanOrEqual(4);
 
       const topics = all.map(k => k.topic);
@@ -599,27 +610,27 @@ describe('BrainManager', () => {
       expect(topics).toContain('interaction');
     });
 
-    it('should be idempotent on repeat calls', () => {
-      manager.seedBaseKnowledge();
-      const firstCount = manager.queryKnowledge({}).length;
-      manager.seedBaseKnowledge();
-      const secondCount = manager.queryKnowledge({}).length;
+    it('should be idempotent on repeat calls', async () => {
+      await manager.seedBaseKnowledge();
+      const firstCount = (await manager.queryKnowledge({})).length;
+      await manager.seedBaseKnowledge();
+      const secondCount = (await manager.queryKnowledge({})).length;
       expect(secondCount).toBe(firstCount);
     });
 
-    it('should not seed when brain is disabled', () => {
+    it('should not seed when brain is disabled', async () => {
       const mgr = new BrainManager(storage, defaultConfig({ enabled: false }), createDeps());
-      mgr.seedBaseKnowledge();
-      expect(storage.getKnowledgeCount()).toBe(0);
+      await mgr.seedBaseKnowledge();
+      expect(await storage.getKnowledgeCount()).toBe(0);
     });
   });
 
   describe('stats', () => {
-    it('should return stats', () => {
-      manager.remember('semantic', 'Test', 'test');
-      manager.learn('topic', 'Content', 'test');
+    it('should return stats', async () => {
+      await manager.remember('semantic', 'Test', 'test');
+      await manager.learn('topic', 'Content', 'test');
 
-      const stats = manager.getStats();
+      const stats = await manager.getStats();
       expect(stats.memories.total).toBe(1);
       expect(stats.knowledge.total).toBe(1);
     });

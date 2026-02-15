@@ -40,15 +40,15 @@ export class SecretRotationManager {
   /**
    * Track a secret by upserting its metadata.
    */
-  trackSecret(meta: SecretMetadata): void {
-    this.storage.upsert(meta);
+  async trackSecret(meta: SecretMetadata): Promise<void> {
+    await this.storage.upsert(meta);
   }
 
   /**
    * Get the rotation status of all tracked secrets.
    */
-  getStatus(): RotationStatus[] {
-    const all = this.storage.getAll();
+  async getStatus(): Promise<RotationStatus[]> {
+    const all = await this.storage.getAll();
     const now = Date.now();
 
     return all.map((m) => {
@@ -91,7 +91,7 @@ export class SecretRotationManager {
    * Check all secrets and auto-rotate those that are due.
    */
   async checkAndRotate(): Promise<void> {
-    const statuses = this.getStatus();
+    const statuses = await this.getStatus();
 
     for (const s of statuses) {
       if (s.status === 'rotation_due' && s.autoRotate) {
@@ -110,7 +110,7 @@ export class SecretRotationManager {
    * invoke onRotate callback.
    */
   async rotateSecret(name: string): Promise<string> {
-    const meta = this.storage.get(name);
+    const meta = await this.storage.get(name);
     if (!meta) {
       throw new Error(`Secret not tracked: ${name}`);
     }
@@ -126,7 +126,7 @@ export class SecretRotationManager {
       const gracePeriodMs = meta.category === 'jwt'
         ? 3600_000 // 1 hour grace for JWT (token expiry)
         : 300_000; // 5 minutes for other secrets
-      this.storage.storePreviousValue(name, currentValue, gracePeriodMs);
+      await this.storage.storePreviousValue(name, currentValue, gracePeriodMs);
     }
 
     // Update env with new value
@@ -137,7 +137,7 @@ export class SecretRotationManager {
     const newExpiresAt = meta.rotationIntervalDays
       ? now + meta.rotationIntervalDays * MS_PER_DAY
       : null;
-    this.storage.updateRotation(name, now, newExpiresAt);
+    await this.storage.updateRotation(name, now, newExpiresAt);
 
     // Notify consumers
     await this.callbacks.onRotate?.(name, newValue);
@@ -148,8 +148,8 @@ export class SecretRotationManager {
   /**
    * Get the previous value for a secret (during grace period).
    */
-  getPreviousValue(name: string): string | null {
-    return this.storage.getPreviousValue(name);
+  async getPreviousValue(name: string): Promise<string | null> {
+    return await this.storage.getPreviousValue(name);
   }
 
   /**

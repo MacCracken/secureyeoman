@@ -5,7 +5,7 @@
  * and RBAC enforcement.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import {
   createTestStack,
@@ -18,6 +18,7 @@ import { registerSoulRoutes } from '../soul/soul-routes.js';
 import { SoulStorage } from '../soul/storage.js';
 import { SoulManager } from '../soul/manager.js';
 import type { SoulConfig } from '@friday/shared';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 function defaultSoulConfig(overrides?: Partial<SoulConfig>): SoulConfig {
   return {
@@ -62,11 +63,16 @@ describe('Soul Integration', () => {
   let soulStorage: SoulStorage;
   let soulManager: SoulManager;
 
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+
   beforeEach(async () => {
-    stack = createTestStack();
+    await truncateAllTables();
+    stack = await createTestStack();
     await stack.auditChain.initialize();
 
-    soulStorage = new SoulStorage(); // :memory:
+    soulStorage = new SoulStorage();
     soulManager = new SoulManager(soulStorage, defaultSoulConfig(), {
       auditChain: stack.auditChain,
       logger: stack.logger,
@@ -77,8 +83,11 @@ describe('Soul Integration', () => {
 
   afterEach(async () => {
     await app.close();
-    soulStorage.close();
     stack.cleanup();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
   });
 
   // ── Auth required ──────────────────────────────────────────

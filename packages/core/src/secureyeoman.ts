@@ -64,6 +64,7 @@ import { SlackIntegration } from './integrations/slack/index.js';
 import { GitHubIntegration } from './integrations/github/index.js';
 import { IMessageIntegration } from './integrations/imessage/index.js';
 import { GoogleChatIntegration } from './integrations/googlechat/index.js';
+import { GmailIntegration } from './integrations/gmail/index.js';
 import { CliIntegration } from './integrations/cli/index.js';
 import { GenericWebhookIntegration } from './integrations/webhook/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
@@ -84,6 +85,9 @@ import { ExperimentManager } from './experiment/manager.js';
 import { MarketplaceStorage } from './marketplace/storage.js';
 import { MarketplaceManager } from './marketplace/manager.js';
 import { ConversationStorage } from './chat/conversation-storage.js';
+import { initPoolFromConfig } from './storage/pg-pool.js';
+import { runMigrations } from './storage/migrations/runner.js';
+import { closePool } from './storage/pg-pool.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot, AuditEntry } from '@friday/shared';
 
 export interface SecureYeomanOptions {
@@ -191,6 +195,11 @@ export class SecureYeoman {
         backend: this.keyringManager.getProvider().name,
       });
 
+      // Step 2.1: Initialize PostgreSQL pool and run migrations
+      initPoolFromConfig(this.config.core.database);
+      await runMigrations();
+      this.logger.debug('PostgreSQL pool initialized and migrations applied');
+
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
       this.logger.debug('Secrets validated');
@@ -202,10 +211,8 @@ export class SecureYeoman {
       // from the database on construction, so roles created via the API
       // survive process restarts.  The storage file lives alongside the
       // other per-component databases in the configured data directory.
-      this.rbacStorage = new RBACStorage({
-        dbPath: `${this.config.core.dataDir}/rbac.db`,
-      });
-      this.rbac = initializeRBAC(undefined, this.rbacStorage);
+      this.rbacStorage = new RBACStorage();
+      this.rbac = await initializeRBAC(undefined, this.rbacStorage);
       this.logger.debug('RBAC initialized with persistent storage');
 
       this.validator = createValidator(this.config.security);
@@ -218,9 +225,7 @@ export class SecureYeoman {
       const signingKey = requireSecret(this.config.logging.audit.signingKeyEnv);
       const storage =
         this.options.auditStorage ??
-        new SQLiteAuditStorage({
-          dbPath: `${this.config.core.dataDir}/audit.db`,
-        });
+        new SQLiteAuditStorage();
       this.auditStorage = storage;
 
       this.auditChain = new AuditChain({
@@ -231,9 +236,7 @@ export class SecureYeoman {
       this.logger.debug('Audit chain initialized');
 
       // Step 5.5: Initialize auth service
-      this.authStorage = new AuthStorage({
-        dbPath: `${this.config.core.dataDir}/auth.db`,
-      });
+      this.authStorage = new AuthStorage();
 
       const tokenSecret = requireSecret(this.config.gateway.auth.tokenSecret);
       const adminPasswordRaw = requireSecret(this.config.gateway.auth.adminPasswordEnv);
@@ -258,9 +261,7 @@ export class SecureYeoman {
 
       // Step 5.55: Initialize secret rotation (if enabled)
       if (this.config.security.rotation.enabled) {
-        this.rotationStorage = new RotationStorage({
-          dbPath: `${this.config.core.dataDir}/rotation.db`,
-        });
+        this.rotationStorage = new RotationStorage();
 
         this.rotationManager = new SecretRotationManager(this.rotationStorage, {
           checkIntervalMs: this.config.security.rotation.checkIntervalMs,
@@ -316,7 +317,7 @@ export class SecureYeoman {
         ];
 
         for (const def of secretDefs) {
-          this.rotationManager.trackSecret(def);
+          await this.rotationManager.trackSecret(def);
         }
 
         // Wire rotation callbacks
@@ -366,24 +367,19 @@ export class SecureYeoman {
       }
 
       // Step 5.7: Initialize brain system
-      this.brainStorage = new BrainStorage({
-        dbPath: `${this.config.core.dataDir}/brain.db`,
-      });
+      this.brainStorage = new BrainStorage();
       this.brainManager = new BrainManager(this.brainStorage, this.config.brain, {
         auditChain: this.auditChain,
         logger: this.logger.child({ component: 'BrainManager' }),
         auditStorage:
-          this.auditStorage && 'query' in this.auditStorage && 'searchFullText' in this.auditStorage
+          this.auditStorage && 'queryEntries' in this.auditStorage && 'searchFullText' in this.auditStorage
             ? (this.auditStorage as unknown as import('./brain/types.js').AuditStorage)
             : undefined,
       });
-      this.brainManager.seedBaseKnowledge();
       this.logger.debug('Brain manager initialized');
 
       // Step 5.7a: Initialize spirit system (between Brain and Soul)
-      this.spiritStorage = new SpiritStorage({
-        dbPath: `${this.config.core.dataDir}/spirit.db`,
-      });
+      this.spiritStorage = new SpiritStorage();
       this.spiritManager = new SpiritManager(this.spiritStorage, this.config.spirit, {
         auditChain: this.auditChain,
         logger: this.logger.child({ component: 'SpiritManager' }),
@@ -391,9 +387,7 @@ export class SecureYeoman {
       this.logger.debug('Spirit manager initialized');
 
       // Step 5.7b: Initialize soul system (now depends on Brain and Spirit)
-      this.soulStorage = new SoulStorage({
-        dbPath: `${this.config.core.dataDir}/soul.db`,
-      });
+      this.soulStorage = new SoulStorage();
       this.soulManager = new SoulManager(
         this.soulStorage,
         this.config.soul,
@@ -404,11 +398,15 @@ export class SecureYeoman {
         this.brainManager,
         this.spiritManager
       );
-      if (this.soulManager.needsOnboarding()) {
-        if (!this.soulManager.getAgentName()) {
-          this.soulManager.setAgentName('FRIDAY');
+      if (await this.soulManager.needsOnboarding()) {
+        if (!await this.soulManager.getAgentName()) {
+          await this.soulManager.setAgentName('FRIDAY');
         }
-        this.soulManager.createDefaultPersonality();
+        await this.soulManager.createDefaultPersonality();
+        if (await this.soulManager.getAgentName() === 'FRIDAY') {
+          await this.brainManager.seedBaseKnowledge();
+          await this.spiritManager.seedDefaultSpirit();
+        }
         this.logger.debug('Soul default personality created (onboarding)');
       }
       this.logger.debug('Soul manager initialized');
@@ -427,9 +425,7 @@ export class SecureYeoman {
       }
 
       // Step 5.75: Initialize integration system
-      this.integrationStorage = new IntegrationStorage({
-        dbPath: `${this.config.core.dataDir}/integrations.db`,
-      });
+      this.integrationStorage = new IntegrationStorage();
       // IntegrationManager + MessageRouter are fully wired after task executor
       // is available (see post-step-6 below). For now just store the storage.
       this.logger.debug('Integration storage initialized');
@@ -456,9 +452,7 @@ export class SecureYeoman {
       });
 
       // Step 5.9: Initialize task storage
-      this.taskStorage = new TaskStorage({
-        dbPath: `${this.config.core.dataDir}/tasks.db`,
-      });
+      this.taskStorage = new TaskStorage();
       this.logger.debug('Task storage initialized');
 
       // Step 6: Initialize task executor
@@ -511,6 +505,7 @@ export class SecureYeoman {
       this.integrationManager.registerPlatform('github', () => new GitHubIntegration());
       this.integrationManager.registerPlatform('imessage', () => new IMessageIntegration());
       this.integrationManager.registerPlatform('googlechat', () => new GoogleChatIntegration());
+      this.integrationManager.registerPlatform('gmail', () => new GmailIntegration());
       this.integrationManager.registerPlatform('cli', () => new CliIntegration());
       this.integrationManager.registerPlatform('webhook', () => new GenericWebhookIntegration());
       // Start auto-reconnect health checks
@@ -551,9 +546,7 @@ export class SecureYeoman {
 
       // Step 6.8: Initialize MCP system (if enabled)
       if (this.config.mcp?.enabled !== false) {
-        this.mcpStorage = new McpStorage({
-          dbPath: `${this.config.core.dataDir}/mcp.db`,
-        });
+        this.mcpStorage = new McpStorage();
         this.mcpClientManager = new McpClientManager(this.mcpStorage, {
           logger: this.logger.child({ component: 'McpClient' }),
         });
@@ -580,44 +573,34 @@ export class SecureYeoman {
         this.logger.debug('Cost optimizer initialized');
       }
 
-      this.dashboardStorage = new DashboardStorage({
-        dbPath: `${this.config.core.dataDir}/dashboards.db`,
-      });
+      this.dashboardStorage = new DashboardStorage();
       this.dashboardManager = new DashboardManager(this.dashboardStorage, {
         logger: this.logger.child({ component: 'DashboardManager' }),
       });
       this.logger.debug('Dashboard manager initialized');
 
-      this.workspaceStorage = new WorkspaceStorage({
-        dbPath: `${this.config.core.dataDir}/workspaces.db`,
-      });
+      this.workspaceStorage = new WorkspaceStorage();
       this.workspaceManager = new WorkspaceManager(this.workspaceStorage, {
         logger: this.logger.child({ component: 'WorkspaceManager' }),
       });
       this.logger.debug('Workspace manager initialized');
 
-      this.experimentStorage = new ExperimentStorage({
-        dbPath: `${this.config.core.dataDir}/experiments.db`,
-      });
+      this.experimentStorage = new ExperimentStorage();
       this.experimentManager = new ExperimentManager(this.experimentStorage, {
         logger: this.logger.child({ component: 'ExperimentManager' }),
       });
       this.logger.debug('Experiment manager initialized');
 
-      this.marketplaceStorage = new MarketplaceStorage({
-        dbPath: `${this.config.core.dataDir}/marketplace.db`,
-      });
+      this.marketplaceStorage = new MarketplaceStorage();
       this.marketplaceManager = new MarketplaceManager(this.marketplaceStorage, {
         logger: this.logger.child({ component: 'MarketplaceManager' }),
         brainManager: this.brainManager ?? undefined,
       });
-      this.marketplaceManager.seedBuiltinSkills();
+      await this.marketplaceManager.seedBuiltinSkills();
       this.logger.debug('Marketplace manager initialized');
 
       // Step 6.10: Initialize conversation storage
-      this.chatConversationStorage = new ConversationStorage({
-        dbPath: `${this.config.core.dataDir}/conversations.db`,
-      });
+      this.chatConversationStorage = new ConversationStorage();
       this.logger.debug('Conversation storage initialized');
 
       // Step 7: Record initialization in audit log
@@ -727,7 +710,7 @@ export class SecureYeoman {
     const auditStats = await this.auditChain!.getStats();
     const rateLimitStats = this.rateLimiter!.getStats();
     const aiStats = this.aiClient?.getUsageStats();
-    const taskStats = this.taskStorage?.getStats();
+    const taskStats = await this.taskStorage?.getStats();
     const authStats = this.authService?.getStats() ?? {
       authAttemptsTotal: 0,
       authSuccessTotal: 0,
@@ -799,14 +782,14 @@ export class SecureYeoman {
     this.ensureInitialized();
     if (
       !this.auditStorage ||
-      !('query' in this.auditStorage) ||
-      typeof (this.auditStorage as Record<string, unknown>).query !== 'function'
+      !('queryEntries' in this.auditStorage) ||
+      typeof (this.auditStorage as Record<string, unknown>).queryEntries !== 'function'
     ) {
       throw new Error('Audit storage does not support querying');
     }
     return (
-      this.auditStorage as { query(opts: AuditQueryOptions): Promise<AuditQueryResult> }
-    ).query(options);
+      this.auditStorage as { queryEntries(opts: AuditQueryOptions): Promise<AuditQueryResult> }
+    ).queryEntries(options);
   }
 
   /**
@@ -863,10 +846,10 @@ export class SecureYeoman {
    * Enforce retention policy, deleting entries beyond the given limits.
    * Returns the number of deleted entries.
    */
-  enforceAuditRetention(opts: { maxAgeDays?: number; maxEntries?: number }): number {
+  async enforceAuditRetention(opts: { maxAgeDays?: number; maxEntries?: number }): Promise<number> {
     this.ensureInitialized();
     if (this.auditStorage && this.auditStorage instanceof SQLiteAuditStorage) {
-      return this.auditStorage.enforceRetention(opts);
+      return await this.auditStorage.enforceRetention(opts);
     }
     return 0;
   }
@@ -874,7 +857,11 @@ export class SecureYeoman {
   /**
    * Export audit entries as a JSON array for backup.
    */
-  async exportAuditLog(opts?: { from?: number; to?: number; limit?: number }): Promise<AuditEntry[]> {
+  async exportAuditLog(opts?: {
+    from?: number;
+    to?: number;
+    limit?: number;
+  }): Promise<AuditEntry[]> {
     this.ensureInitialized();
     const result = await this.queryAuditLog({
       from: opts?.from,
@@ -1108,7 +1095,7 @@ export class SecureYeoman {
   switchModel(provider: string, model: string): void {
     this.ensureInitialized();
 
-    const validProviders = ['anthropic', 'openai', 'gemini', 'ollama', 'opencode'];
+    const validProviders = ['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai'];
     if (!validProviders.includes(provider)) {
       throw new Error(
         `Invalid provider: ${provider}. Must be one of: ${validProviders.join(', ')}`
@@ -1416,6 +1403,9 @@ export class SecureYeoman {
       (this.auditStorage as { close(): void }).close();
       this.auditStorage = null;
     }
+
+    // Close PostgreSQL pool
+    await closePool();
   }
 
   /**

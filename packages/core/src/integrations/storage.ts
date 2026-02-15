@@ -1,13 +1,10 @@
 /**
- * Integration Storage — SQLite-backed storage for integration configs and messages.
+ * Integration Storage — PostgreSQL-backed storage for integration configs and messages.
  *
- * Follows the same patterns as SoulStorage:
- *   WAL mode, prepared statements, explicit close().
+ * Uses PgBaseStorage for connection pooling and query helpers.
  */
 
-import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
+import { PgBaseStorage } from '../storage/pg-base.js';
 import type {
   IntegrationConfig,
   IntegrationCreate,
@@ -24,9 +21,9 @@ interface IntegrationRow {
   id: string;
   platform: string;
   display_name: string;
-  enabled: number; // 0 | 1
+  enabled: boolean;
   status: string;
-  config: string; // JSON
+  config: Record<string, unknown>; // JSONB — already parsed
   connected_at: number | null;
   last_message_at: number | null;
   message_count: number;
@@ -44,31 +41,23 @@ interface MessageRow {
   sender_name: string;
   chat_id: string;
   text: string;
-  attachments: string; // JSON
+  attachments: unknown[]; // JSONB — already parsed
   reply_to_message_id: string | null;
   platform_message_id: string | null;
-  metadata: string; // JSON
+  metadata: Record<string, unknown>; // JSONB — already parsed
   timestamp: number;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────
-
-function safeJsonParse<T>(json: string, fallback: T): T {
-  try {
-    return JSON.parse(json) as T;
-  } catch {
-    return fallback;
-  }
-}
 
 function rowToConfig(row: IntegrationRow): IntegrationConfig {
   return {
     id: row.id,
     platform: row.platform as Platform,
     displayName: row.display_name,
-    enabled: row.enabled === 1,
+    enabled: row.enabled,
     status: row.status as IntegrationStatus,
-    config: safeJsonParse<Record<string, unknown>>(row.config, {}),
+    config: row.config ?? {},
     connectedAt: row.connected_at ?? undefined,
     lastMessageAt: row.last_message_at ?? undefined,
     messageCount: row.message_count,
@@ -88,202 +77,196 @@ function rowToMessage(row: MessageRow): UnifiedMessage {
     senderName: row.sender_name,
     chatId: row.chat_id,
     text: row.text,
-    attachments: safeJsonParse(row.attachments, []),
+    attachments: (row.attachments as UnifiedMessage['attachments']) ?? [],
     replyToMessageId: row.reply_to_message_id ?? undefined,
     platformMessageId: row.platform_message_id ?? undefined,
-    metadata: safeJsonParse(row.metadata, {}),
+    metadata: row.metadata ?? {},
     timestamp: row.timestamp,
   };
 }
 
 // ─── IntegrationStorage ──────────────────────────────────────
 
-export class IntegrationStorage {
-  private db: Database.Database;
-
-  constructor(opts: { dbPath?: string } = {}) {
-    const dbPath = opts.dbPath ?? ':memory:';
-
-    if (dbPath !== ':memory:') {
-      mkdirSync(dirname(dbPath), { recursive: true });
-    }
-
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('foreign_keys = ON');
-
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS integrations (
-        id TEXT PRIMARY KEY,
-        platform TEXT NOT NULL,
-        display_name TEXT NOT NULL,
-        enabled INTEGER NOT NULL DEFAULT 0,
-        status TEXT NOT NULL DEFAULT 'disconnected',
-        config TEXT NOT NULL DEFAULT '{}',
-        connected_at INTEGER,
-        last_message_at INTEGER,
-        message_count INTEGER NOT NULL DEFAULT 0,
-        error_message TEXT,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS integration_messages (
-        id TEXT PRIMARY KEY,
-        integration_id TEXT NOT NULL,
-        platform TEXT NOT NULL,
-        direction TEXT NOT NULL,
-        sender_id TEXT NOT NULL DEFAULT '',
-        sender_name TEXT NOT NULL DEFAULT '',
-        chat_id TEXT NOT NULL DEFAULT '',
-        text TEXT NOT NULL DEFAULT '',
-        attachments TEXT NOT NULL DEFAULT '[]',
-        reply_to_message_id TEXT,
-        platform_message_id TEXT,
-        metadata TEXT NOT NULL DEFAULT '{}',
-        timestamp INTEGER NOT NULL,
-        FOREIGN KEY (integration_id) REFERENCES integrations(id) ON DELETE CASCADE
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_messages_integration ON integration_messages(integration_id);
-      CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON integration_messages(timestamp);
-    `);
+export class IntegrationStorage extends PgBaseStorage {
+  constructor() {
+    super();
   }
 
   // ── Integration CRUD ─────────────────────────────────────
 
-  createIntegration(data: IntegrationCreate): IntegrationConfig {
+  async createIntegration(data: IntegrationCreate): Promise<IntegrationConfig> {
     const now = Date.now();
     const id = uuidv7();
 
-    this.db.prepare(`
-      INSERT INTO integrations (id, platform, display_name, enabled, status, config, created_at, updated_at)
-      VALUES (?, ?, ?, ?, 'disconnected', ?, ?, ?)
-    `).run(
-      id,
-      data.platform,
-      data.displayName,
-      data.enabled ? 1 : 0,
-      JSON.stringify(data.config ?? {}),
-      now,
-      now,
+    await this.query(
+      `INSERT INTO integration.integrations
+         (id, platform, display_name, enabled, status, config, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, 'disconnected', $5, $6, $7)`,
+      [
+        id,
+        data.platform,
+        data.displayName,
+        data.enabled ?? false,
+        JSON.stringify(data.config ?? {}),
+        now,
+        now,
+      ],
     );
 
-    return this.getIntegration(id)!;
+    return (await this.getIntegration(id))!;
   }
 
-  getIntegration(id: string): IntegrationConfig | null {
-    const row = this.db.prepare('SELECT * FROM integrations WHERE id = ?').get(id) as IntegrationRow | undefined;
+  async getIntegration(id: string): Promise<IntegrationConfig | null> {
+    const row = await this.queryOne<IntegrationRow>(
+      'SELECT * FROM integration.integrations WHERE id = $1',
+      [id],
+    );
     return row ? rowToConfig(row) : null;
   }
 
-  listIntegrations(filter?: { platform?: Platform; enabled?: boolean }): IntegrationConfig[] {
-    let sql = 'SELECT * FROM integrations WHERE 1=1';
+  async listIntegrations(filter?: { platform?: Platform; enabled?: boolean }): Promise<IntegrationConfig[]> {
+    let sql = 'SELECT * FROM integration.integrations WHERE 1=1';
     const params: unknown[] = [];
+    let counter = 1;
 
     if (filter?.platform) {
-      sql += ' AND platform = ?';
+      sql += ` AND platform = $${counter++}`;
       params.push(filter.platform);
     }
     if (filter?.enabled !== undefined) {
-      sql += ' AND enabled = ?';
-      params.push(filter.enabled ? 1 : 0);
+      sql += ` AND enabled = $${counter++}`;
+      params.push(filter.enabled);
     }
 
     sql += ' ORDER BY created_at DESC';
-    const rows = this.db.prepare(sql).all(...params) as IntegrationRow[];
+    const rows = await this.queryMany<IntegrationRow>(sql, params);
     return rows.map(rowToConfig);
   }
 
-  updateIntegration(id: string, data: IntegrationUpdate): IntegrationConfig | null {
-    const existing = this.getIntegration(id);
+  async updateIntegration(id: string, data: IntegrationUpdate): Promise<IntegrationConfig | null> {
+    const existing = await this.getIntegration(id);
     if (!existing) return null;
 
     const now = Date.now();
-    const fields: string[] = ['updated_at = ?'];
-    const params: unknown[] = [now];
+    const fields: string[] = [];
+    const params: unknown[] = [];
+    let counter = 1;
 
-    if (data.platform !== undefined) { fields.push('platform = ?'); params.push(data.platform); }
-    if (data.displayName !== undefined) { fields.push('display_name = ?'); params.push(data.displayName); }
-    if (data.enabled !== undefined) { fields.push('enabled = ?'); params.push(data.enabled ? 1 : 0); }
-    if (data.config !== undefined) { fields.push('config = ?'); params.push(JSON.stringify(data.config)); }
+    fields.push(`updated_at = $${counter++}`);
+    params.push(now);
 
-    this.db.prepare(`UPDATE integrations SET ${fields.join(', ')} WHERE id = ?`).run(...params, id);
+    if (data.platform !== undefined) {
+      fields.push(`platform = $${counter++}`);
+      params.push(data.platform);
+    }
+    if (data.displayName !== undefined) {
+      fields.push(`display_name = $${counter++}`);
+      params.push(data.displayName);
+    }
+    if (data.enabled !== undefined) {
+      fields.push(`enabled = $${counter++}`);
+      params.push(data.enabled);
+    }
+    if (data.config !== undefined) {
+      fields.push(`config = $${counter++}`);
+      params.push(JSON.stringify(data.config));
+    }
+
+    params.push(id);
+    await this.query(
+      `UPDATE integration.integrations SET ${fields.join(', ')} WHERE id = $${counter}`,
+      params,
+    );
     return this.getIntegration(id);
   }
 
-  deleteIntegration(id: string): boolean {
-    const result = this.db.prepare('DELETE FROM integrations WHERE id = ?').run(id);
-    return result.changes > 0;
+  async deleteIntegration(id: string): Promise<boolean> {
+    const rowCount = await this.execute(
+      'DELETE FROM integration.integrations WHERE id = $1',
+      [id],
+    );
+    return rowCount > 0;
   }
 
   // ── Status updates ───────────────────────────────────────
 
-  updateStatus(id: string, status: IntegrationStatus, errorMessage?: string): void {
+  async updateStatus(id: string, status: IntegrationStatus, errorMessage?: string): Promise<void> {
     const now = Date.now();
-    const fields = ['status = ?', 'updated_at = ?'];
-    const params: unknown[] = [status, now];
+    const fields: string[] = [];
+    const params: unknown[] = [];
+    let counter = 1;
+
+    fields.push(`status = $${counter++}`);
+    params.push(status);
+
+    fields.push(`updated_at = $${counter++}`);
+    params.push(now);
 
     if (status === 'connected') {
-      fields.push('connected_at = ?', 'error_message = NULL');
+      fields.push(`connected_at = $${counter++}`);
       params.push(now);
+      fields.push('error_message = NULL');
     }
     if (errorMessage !== undefined) {
-      fields.push('error_message = ?');
+      fields.push(`error_message = $${counter++}`);
       params.push(errorMessage);
     }
 
-    this.db.prepare(`UPDATE integrations SET ${fields.join(', ')} WHERE id = ?`).run(...params, id);
+    params.push(id);
+    await this.query(
+      `UPDATE integration.integrations SET ${fields.join(', ')} WHERE id = $${counter}`,
+      params,
+    );
   }
 
-  incrementMessageCount(id: string): void {
+  async incrementMessageCount(id: string): Promise<void> {
     const now = Date.now();
-    this.db.prepare(`
-      UPDATE integrations SET message_count = message_count + 1, last_message_at = ?, updated_at = ? WHERE id = ?
-    `).run(now, now, id);
+    await this.query(
+      `UPDATE integration.integrations
+       SET message_count = message_count + 1, last_message_at = $1, updated_at = $2
+       WHERE id = $3`,
+      [now, now, id],
+    );
   }
 
   // ── Message Storage ──────────────────────────────────────
 
-  storeMessage(message: Omit<UnifiedMessage, 'id'>): UnifiedMessage {
+  async storeMessage(message: Omit<UnifiedMessage, 'id'>): Promise<UnifiedMessage> {
     const id = uuidv7();
 
-    this.db.prepare(`
-      INSERT INTO integration_messages
-        (id, integration_id, platform, direction, sender_id, sender_name, chat_id, text, attachments, reply_to_message_id, platform_message_id, metadata, timestamp)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      message.integrationId,
-      message.platform,
-      message.direction,
-      message.senderId,
-      message.senderName,
-      message.chatId,
-      message.text,
-      JSON.stringify(message.attachments),
-      message.replyToMessageId ?? null,
-      message.platformMessageId ?? null,
-      JSON.stringify(message.metadata),
-      message.timestamp,
+    await this.query(
+      `INSERT INTO integration.messages
+         (id, integration_id, platform, direction, sender_id, sender_name, chat_id,
+          text, attachments, reply_to_message_id, platform_message_id, metadata, timestamp)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [
+        id,
+        message.integrationId,
+        message.platform,
+        message.direction,
+        message.senderId,
+        message.senderName,
+        message.chatId,
+        message.text,
+        JSON.stringify(message.attachments),
+        message.replyToMessageId ?? null,
+        message.platformMessageId ?? null,
+        JSON.stringify(message.metadata),
+        message.timestamp,
+      ],
     );
 
-    this.incrementMessageCount(message.integrationId);
+    await this.incrementMessageCount(message.integrationId);
     return { ...message, id };
   }
 
-  listMessages(integrationId: string, opts?: { limit?: number; offset?: number }): UnifiedMessage[] {
+  async listMessages(integrationId: string, opts?: { limit?: number; offset?: number }): Promise<UnifiedMessage[]> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
-    const rows = this.db.prepare(
-      'SELECT * FROM integration_messages WHERE integration_id = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?'
-    ).all(integrationId, limit, offset) as MessageRow[];
+    const rows = await this.queryMany<MessageRow>(
+      'SELECT * FROM integration.messages WHERE integration_id = $1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3',
+      [integrationId, limit, offset],
+    );
     return rows.map(rowToMessage);
-  }
-
-  // ── Lifecycle ────────────────────────────────────────────
-
-  close(): void {
-    this.db.close();
   }
 }

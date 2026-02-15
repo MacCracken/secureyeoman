@@ -1,23 +1,10 @@
 /**
- * Comms Storage — SQLite-backed storage for peer agents and message logs.
+ * Comms Storage — PostgreSQL-backed storage for peer agents and message logs.
  */
 
-import Database from 'better-sqlite3';
-import { mkdirSync } from 'node:fs';
-import { dirname } from 'node:path';
 import type { AgentIdentity, MessageType, MessageLogQuery } from './types.js';
+import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
-
-interface PeerRow {
-  id: string;
-  name: string;
-  public_key: string;
-  signing_key: string;
-  endpoint: string;
-  capabilities: string;
-  last_seen_at: number;
-  created_at: number;
-}
 
 interface MessageLogRow {
   id: string;
@@ -28,182 +15,141 @@ interface MessageLogRow {
   timestamp: number;
 }
 
-function rowToPeer(row: PeerRow): AgentIdentity {
+function rowToPeer(row: Record<string, unknown>): AgentIdentity {
   return {
-    id: row.id,
-    name: row.name,
-    publicKey: row.public_key,
-    signingKey: row.signing_key,
-    endpoint: row.endpoint,
-    capabilities: JSON.parse(row.capabilities) as string[],
-    lastSeenAt: row.last_seen_at,
+    id: row.id as string,
+    name: row.name as string,
+    publicKey: row.public_key as string,
+    signingKey: row.signing_key as string,
+    endpoint: row.endpoint as string,
+    capabilities: row.capabilities as string[],
+    lastSeenAt: row.last_seen_at as number,
   };
 }
 
-export class CommsStorage {
-  private db: Database.Database;
-
-  constructor(opts: { dbPath?: string } = {}) {
-    const dbPath = opts.dbPath ?? ':memory:';
-
-    if (dbPath !== ':memory:') {
-      mkdirSync(dirname(dbPath), { recursive: true });
-    }
-
-    this.db = new Database(dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.db.pragma('foreign_keys = ON');
-
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS peers (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        public_key TEXT NOT NULL,
-        signing_key TEXT NOT NULL,
-        endpoint TEXT NOT NULL,
-        capabilities TEXT NOT NULL DEFAULT '[]',
-        last_seen_at INTEGER NOT NULL,
-        created_at INTEGER NOT NULL
-      );
-
-      CREATE TABLE IF NOT EXISTS message_log (
-        id TEXT PRIMARY KEY,
-        direction TEXT NOT NULL CHECK(direction IN ('sent','received')),
-        peer_agent_id TEXT NOT NULL,
-        message_type TEXT NOT NULL,
-        encrypted_payload TEXT NOT NULL,
-        timestamp INTEGER NOT NULL
-      );
-
-      CREATE INDEX IF NOT EXISTS idx_message_log_peer ON message_log(peer_agent_id);
-      CREATE INDEX IF NOT EXISTS idx_message_log_time ON message_log(timestamp DESC);
-    `);
+export class CommsStorage extends PgBaseStorage {
+  constructor() {
+    super();
   }
 
   // ── Peers ────────────────────────────────────────────────────
 
-  addPeer(identity: AgentIdentity): void {
+  async addPeer(identity: AgentIdentity): Promise<void> {
     const now = Date.now();
-    this.db
-      .prepare(
-        `INSERT INTO peers (id, name, public_key, signing_key, endpoint, capabilities, last_seen_at, created_at)
-         VALUES (@id, @name, @public_key, @signing_key, @endpoint, @capabilities, @last_seen_at, @created_at)
-         ON CONFLICT(id) DO UPDATE SET
-           name = @name, public_key = @public_key, signing_key = @signing_key,
-           endpoint = @endpoint, capabilities = @capabilities, last_seen_at = @last_seen_at`,
-      )
-      .run({
-        id: identity.id,
-        name: identity.name,
-        public_key: identity.publicKey,
-        signing_key: identity.signingKey,
-        endpoint: identity.endpoint,
-        capabilities: JSON.stringify(identity.capabilities),
-        last_seen_at: identity.lastSeenAt,
-        created_at: now,
-      });
+    await this.execute(
+      `INSERT INTO comms.peers
+        (id, name, public_key, signing_key, endpoint, capabilities, last_seen_at, created_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+       ON CONFLICT(id) DO UPDATE SET
+         name = $2, public_key = $3, signing_key = $4,
+         endpoint = $5, capabilities = $6, last_seen_at = $7`,
+      [
+        identity.id,
+        identity.name,
+        identity.publicKey,
+        identity.signingKey,
+        identity.endpoint,
+        JSON.stringify(identity.capabilities),
+        identity.lastSeenAt,
+        now,
+      ],
+    );
   }
 
-  getPeer(id: string): AgentIdentity | null {
-    const row = this.db
-      .prepare('SELECT * FROM peers WHERE id = ?')
-      .get(id) as PeerRow | undefined;
+  async getPeer(id: string): Promise<AgentIdentity | null> {
+    const row = await this.queryOne<Record<string, unknown>>(
+      'SELECT * FROM comms.peers WHERE id = $1',
+      [id],
+    );
     return row ? rowToPeer(row) : null;
   }
 
-  listPeers(): AgentIdentity[] {
-    const rows = this.db
-      .prepare('SELECT * FROM peers ORDER BY last_seen_at DESC')
-      .all() as PeerRow[];
+  async listPeers(): Promise<AgentIdentity[]> {
+    const rows = await this.queryMany<Record<string, unknown>>(
+      'SELECT * FROM comms.peers ORDER BY last_seen_at DESC',
+    );
     return rows.map(rowToPeer);
   }
 
-  removePeer(id: string): boolean {
-    const info = this.db
-      .prepare('DELETE FROM peers WHERE id = ?')
-      .run(id);
-    return info.changes > 0;
+  async removePeer(id: string): Promise<boolean> {
+    const changes = await this.execute(
+      'DELETE FROM comms.peers WHERE id = $1',
+      [id],
+    );
+    return changes > 0;
   }
 
-  updatePeerLastSeen(id: string): void {
-    this.db
-      .prepare('UPDATE peers SET last_seen_at = ? WHERE id = ?')
-      .run(Date.now(), id);
+  async updatePeerLastSeen(id: string): Promise<void> {
+    await this.execute(
+      'UPDATE comms.peers SET last_seen_at = $1 WHERE id = $2',
+      [Date.now(), id],
+    );
   }
 
-  getPeerCount(): number {
-    const row = this.db
-      .prepare('SELECT COUNT(*) as count FROM peers')
-      .get() as { count: number };
-    return row.count;
+  async getPeerCount(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM comms.peers',
+    );
+    return parseInt(row?.count ?? '0', 10);
   }
 
   // ── Message Log ──────────────────────────────────────────────
 
-  logMessage(
+  async logMessage(
     direction: 'sent' | 'received',
     peerAgentId: string,
     messageType: MessageType,
     encryptedPayload: string,
-  ): string {
+  ): Promise<string> {
     const id = uuidv7();
-    this.db
-      .prepare(
-        `INSERT INTO message_log (id, direction, peer_agent_id, message_type, encrypted_payload, timestamp)
-         VALUES (@id, @direction, @peer_agent_id, @message_type, @encrypted_payload, @timestamp)`,
-      )
-      .run({
-        id,
-        direction,
-        peer_agent_id: peerAgentId,
-        message_type: messageType,
-        encrypted_payload: encryptedPayload,
-        timestamp: Date.now(),
-      });
+    await this.execute(
+      `INSERT INTO comms.message_log
+        (id, direction, peer_agent_id, message_type, encrypted_payload, timestamp)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [id, direction, peerAgentId, messageType, encryptedPayload, Date.now()],
+    );
     return id;
   }
 
-  queryMessageLog(query: MessageLogQuery = {}): MessageLogRow[] {
-    let sql = 'SELECT * FROM message_log WHERE 1=1';
-    const params: Record<string, unknown> = {};
+  async queryMessageLog(query: MessageLogQuery = {}): Promise<MessageLogRow[]> {
+    let paramIdx = 1;
+    let sql = 'SELECT * FROM comms.message_log WHERE 1=1';
+    const params: unknown[] = [];
 
     if (query.peerId) {
-      sql += ' AND peer_agent_id = @peerId';
-      params.peerId = query.peerId;
+      sql += ` AND peer_agent_id = $${paramIdx}`;
+      params.push(query.peerId);
+      paramIdx += 1;
     }
     if (query.type) {
-      sql += ' AND message_type = @type';
-      params.type = query.type;
+      sql += ` AND message_type = $${paramIdx}`;
+      params.push(query.type);
+      paramIdx += 1;
     }
 
     sql += ' ORDER BY timestamp DESC';
 
     if (query.limit) {
-      sql += ' LIMIT @limit';
-      params.limit = query.limit;
+      sql += ` LIMIT $${paramIdx}`;
+      params.push(query.limit);
+      paramIdx += 1;
     }
 
-    return this.db.prepare(sql).all(params) as MessageLogRow[];
+    return this.queryMany<MessageLogRow>(sql, params);
   }
 
-  pruneOldMessages(retentionDays: number): number {
+  async pruneOldMessages(retentionDays: number): Promise<number> {
     const cutoff = Date.now() - retentionDays * 86_400_000;
-    const info = this.db
-      .prepare('DELETE FROM message_log WHERE timestamp < ?')
-      .run(cutoff);
-    return info.changes;
+    return this.execute(
+      'DELETE FROM comms.message_log WHERE timestamp < $1',
+      [cutoff],
+    );
   }
 
-  getMessageCount(): number {
-    const row = this.db
-      .prepare('SELECT COUNT(*) as count FROM message_log')
-      .get() as { count: number };
-    return row.count;
-  }
-
-  // ── Cleanup ──────────────────────────────────────────────────
-
-  close(): void {
-    this.db.close();
+  async getMessageCount(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM comms.message_log',
+    );
+    return parseInt(row?.count ?? '0', 10);
   }
 }

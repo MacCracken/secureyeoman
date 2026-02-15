@@ -33,7 +33,7 @@ export class AgentComms {
 
   async init(opts: { keyStorePath?: string; dbPath?: string } = {}): Promise<void> {
     this.crypto = new AgentCrypto(opts.keyStorePath);
-    this.storage = new CommsStorage({ dbPath: opts.dbPath });
+    this.storage = new CommsStorage();
     this.deps.logger.debug('Agent comms initialized', {
       agentId: this.agentId,
       publicKey: this.crypto.publicKey.slice(0, 20) + '...',
@@ -55,36 +55,36 @@ export class AgentComms {
 
   // ── Peer Management ────────────────────────────────────────
 
-  addPeer(identity: AgentIdentity): void {
+  async addPeer(identity: AgentIdentity): Promise<void> {
     if (!this.storage) throw new Error('Agent comms not initialized');
-    if (this.storage.getPeerCount() >= this.config.maxPeers) {
+    if (await this.storage.getPeerCount() >= this.config.maxPeers) {
       throw new Error(`Maximum peer limit reached (${this.config.maxPeers})`);
     }
-    this.storage.addPeer(identity);
+    await this.storage.addPeer(identity);
     this.deps.logger.debug('Peer added', { peerId: identity.id, name: identity.name });
   }
 
-  getPeer(id: string): AgentIdentity | null {
+  async getPeer(id: string): Promise<AgentIdentity | null> {
     if (!this.storage) throw new Error('Agent comms not initialized');
-    return this.storage.getPeer(id);
+    return await this.storage.getPeer(id);
   }
 
-  listPeers(): AgentIdentity[] {
+  async listPeers(): Promise<AgentIdentity[]> {
     if (!this.storage) throw new Error('Agent comms not initialized');
-    return this.storage.listPeers();
+    return await this.storage.listPeers();
   }
 
-  removePeer(id: string): boolean {
+  async removePeer(id: string): Promise<boolean> {
     if (!this.storage) throw new Error('Agent comms not initialized');
-    return this.storage.removePeer(id);
+    return await this.storage.removePeer(id);
   }
 
   // ── Message Operations ─────────────────────────────────────
 
-  encryptMessage(toAgentId: string, payload: MessagePayload): EncryptedMessage {
+  async encryptMessage(toAgentId: string, payload: MessagePayload): Promise<EncryptedMessage> {
     if (!this.crypto || !this.storage) throw new Error('Agent comms not initialized');
 
-    const peer = this.storage.getPeer(toAgentId);
+    const peer = await this.storage.getPeer(toAgentId);
     if (!peer) throw new Error(`Unknown peer: ${toAgentId}`);
 
     // 1. Sanitize payload
@@ -98,7 +98,7 @@ export class AgentComms {
     const signature = this.crypto.signData(dataToSign);
 
     // 4. Log locally
-    this.storage.logMessage('sent', toAgentId, payload.type, JSON.stringify(encrypted));
+    await this.storage.logMessage('sent', toAgentId, payload.type, JSON.stringify(encrypted));
 
     const message: EncryptedMessage = {
       id: uuidv7(),
@@ -119,11 +119,11 @@ export class AgentComms {
     return message;
   }
 
-  decryptMessage(encrypted: EncryptedMessage): MessagePayload {
+  async decryptMessage(encrypted: EncryptedMessage): Promise<MessagePayload> {
     if (!this.crypto || !this.storage) throw new Error('Agent comms not initialized');
 
     // 1. Verify sender is known
-    const sender = this.storage.getPeer(encrypted.fromAgentId);
+    const sender = await this.storage.getPeer(encrypted.fromAgentId);
     if (!sender) throw new Error(`Unknown sender: ${encrypted.fromAgentId}`);
 
     // 2. Verify signature
@@ -141,14 +141,14 @@ export class AgentComms {
     });
 
     // 4. Log locally
-    this.storage.logMessage('received', encrypted.fromAgentId, payload.type, JSON.stringify({
+    await this.storage.logMessage('received', encrypted.fromAgentId, payload.type, JSON.stringify({
       ephemeralPublicKey: encrypted.ephemeralPublicKey,
       nonce: encrypted.nonce,
       ciphertext: encrypted.ciphertext,
     }));
 
     // 5. Update peer last seen
-    this.storage.updatePeerLastSeen(encrypted.fromAgentId);
+    await this.storage.updatePeerLastSeen(encrypted.fromAgentId);
 
     this.deps.logger.debug('Message decrypted', {
       fromAgent: encrypted.fromAgentId,
@@ -160,15 +160,15 @@ export class AgentComms {
 
   // ── Message Log ────────────────────────────────────────────
 
-  getMessageLog(query?: MessageLogQuery): Array<{
+  async getMessageLog(query?: MessageLogQuery): Promise<Array<{
     id: string;
     direction: string;
     peerAgentId: string;
     messageType: string;
     timestamp: number;
-  }> {
+  }>> {
     if (!this.storage) throw new Error('Agent comms not initialized');
-    const rows = this.storage.queryMessageLog(query);
+    const rows = await this.storage.queryMessageLog(query);
     return rows.map((r) => ({
       id: r.id,
       direction: r.direction,
@@ -180,9 +180,9 @@ export class AgentComms {
 
   // ── Maintenance ────────────────────────────────────────────
 
-  runMaintenance(): { pruned: number } {
+  async runMaintenance(): Promise<{ pruned: number }> {
     if (!this.storage) return { pruned: 0 };
-    const pruned = this.storage.pruneOldMessages(this.config.messageRetentionDays);
+    const pruned = await this.storage.pruneOldMessages(this.config.messageRetentionDays);
     return { pruned };
   }
 

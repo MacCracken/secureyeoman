@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest';
 import { AuthService, AuthError } from './auth.js';
 import { AuthStorage } from './auth-storage.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
@@ -6,6 +6,7 @@ import { RBAC } from './rbac.js';
 import { RateLimiter } from './rate-limiter.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { sha256 } from '../utils/crypto.js';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 const TOKEN_SECRET = 'test-token-secret-at-least-32chars!!';
 const ADMIN_PASSWORD_RAW = 'test-admin-password-32chars!!';
@@ -28,7 +29,12 @@ describe('AuthService', () => {
   let rateLimiter: RateLimiter;
   let service: AuthService;
 
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+
   beforeEach(async () => {
+    await truncateAllTables();
     authStorage = new AuthStorage();
     const auditStorage = new InMemoryAuditStorage();
     auditChain = new AuditChain({ storage: auditStorage, signingKey: SIGNING_KEY });
@@ -61,8 +67,11 @@ describe('AuthService', () => {
   });
 
   afterEach(() => {
-    authStorage.close();
     rateLimiter.stop();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
   });
 
   // ── Login ─────────────────────────────────────────────────────────
@@ -194,7 +203,7 @@ describe('AuthService', () => {
     it('should list keys without exposing hashes', async () => {
       await service.createApiKey({ name: 'k1', role: 'viewer', userId: 'admin' });
       await service.createApiKey({ name: 'k2', role: 'admin', userId: 'admin' });
-      const keys = service.listApiKeys('admin');
+      const keys = await service.listApiKeys('admin');
       expect(keys).toHaveLength(2);
       expect((keys[0] as Record<string, unknown>).key_hash).toBeUndefined();
     });
@@ -347,9 +356,9 @@ describe('AuthService', () => {
   describe('cleanupExpiredTokens', () => {
     it('should delete expired revoked tokens', async () => {
       // Revoke a token with past expiry
-      authStorage.revokeToken('old-jti', 'admin', Date.now() - 1000);
-      authStorage.revokeToken('fresh-jti', 'admin', Date.now() + 3600_000);
-      const cleaned = service.cleanupExpiredTokens();
+      await authStorage.revokeToken('old-jti', 'admin', Date.now() - 1000);
+      await authStorage.revokeToken('fresh-jti', 'admin', Date.now() + 3600_000);
+      const cleaned = await service.cleanupExpiredTokens();
       expect(cleaned).toBe(1);
     });
   });
