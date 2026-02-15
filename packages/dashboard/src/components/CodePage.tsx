@@ -351,7 +351,7 @@ export function CodePage() {
   }, []);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-180px)]">
+    <div className="flex flex-col h-[calc(100vh-100px)] sm:h-[calc(100vh-140px)]">
       {/* Page header */}
       <div className="flex items-center gap-3 pb-3 border-b mb-3">
         <Code2 className="w-6 h-6 text-primary" />
@@ -565,20 +565,20 @@ export function CodePage() {
 
             {/* Chat input */}
             <div className="border-t px-3 py-2">
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-end">
                 <textarea
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
                   placeholder={`Message ${currentPersonality?.name ?? 'assistant'}...`}
                   disabled={isPending}
-                  rows={1}
-                  className="flex-1 resize-none rounded border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                  rows={3}
+                  className="flex-1 resize-none rounded border bg-background px-3 py-2 text-xs focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
                 />
                 <button
                   onClick={voice.toggleVoice}
                   disabled={!voice.supported}
-                  className={`btn px-3 py-2 rounded disabled:opacity-50 ${
+                  className={`btn px-3 py-2 rounded disabled:opacity-50 h-[52px] ${
                     voice.voiceEnabled ? 'btn-primary' : 'btn-ghost'
                   }`}
                   title={voice.voiceEnabled ? 'Voice enabled' : 'Enable voice'}
@@ -594,7 +594,7 @@ export function CodePage() {
                 <button
                   onClick={handleSend}
                   disabled={!input.trim() || isPending}
-                  className="btn-primary px-3 py-2 rounded disabled:opacity-50"
+                  className="btn-primary px-3 py-2 rounded disabled:opacity-50 h-[52px]"
                 >
                   {isPending ? (
                     <Loader2 className="w-3 h-3 animate-spin" />

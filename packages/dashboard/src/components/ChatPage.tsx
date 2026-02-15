@@ -244,7 +244,7 @@ export function ChatPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-220px)] max-h-[800px] gap-0 relative">
+    <div className="flex h-[calc(100vh-100px)] sm:h-[calc(100vh-140px)] gap-0 relative">
       {/* Conversation Sidebar — collapsible */}
       {sidebarOpen && (
         <>
@@ -446,7 +446,11 @@ export function ChatPage() {
                   ? 'bg-primary/15 border-primary text-primary'
                   : 'btn-ghost text-muted-foreground'
               }`}
-              title={memoryEnabled ? 'Memory is on — conversations are remembered and recalled' : 'Memory is off — no memory access or saving'}
+              title={
+                memoryEnabled
+                  ? 'Memory is on — conversations are remembered and recalled'
+                  : 'Memory is off — no memory access or saving'
+              }
             >
               <Brain className="w-3.5 h-3.5" />
               {memoryEnabled ? 'Memory On' : 'Memory Off'}
@@ -614,7 +618,7 @@ export function ChatPage() {
 
         {/* Input area */}
         <div className="border-t pt-4">
-          <div className="flex gap-2 sm:gap-3">
+          <div className="flex gap-2 sm:gap-3 items-end">
             {hasVision && (
               <button
                 className="btn-ghost p-3 rounded-lg text-muted-foreground hover:text-foreground"
@@ -630,8 +634,8 @@ export function ChatPage() {
               onKeyDown={handleKeyDown}
               placeholder={`Message ${personality?.name ?? 'the assistant'}...`}
               disabled={isPending}
-              rows={1}
-              className="flex-1 resize-none rounded-lg border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
+              rows={3}
+              className="flex-1 resize-none rounded-lg border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50 min-h-[80px] max-h-[200px]"
             />
             {hasAuditory && (
               <VoiceToggle
@@ -645,7 +649,7 @@ export function ChatPage() {
             <button
               onClick={handleSend}
               disabled={!input.trim() || isPending}
-              className="btn-primary px-4 py-3 rounded-lg disabled:opacity-50"
+              className="btn-primary px-4 py-3 rounded-lg disabled:opacity-50 h-[52px]"
             >
               {isPending ? (
                 <Loader2 className="w-4 h-4 animate-spin" />
