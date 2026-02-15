@@ -19,6 +19,7 @@ interface ChatRequestBody {
   history?: Array<{ role: string; content: string }>;
   personalityId?: string;
   saveAsMemory?: boolean;
+  memoryEnabled?: boolean;
   conversationId?: string;
 }
 
@@ -43,7 +44,7 @@ export function registerChatRoutes(
     request: FastifyRequest<{ Body: ChatRequestBody }>,
     reply: FastifyReply,
   ) => {
-    const { message, history, personalityId, saveAsMemory, conversationId } = request.body;
+    const { message, history, personalityId, saveAsMemory, memoryEnabled = true, conversationId } = request.body;
 
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       return reply.code(400).send({ error: 'Message is required' });
@@ -60,24 +61,28 @@ export function registerChatRoutes(
 
     // Gather Brain context metadata (best-effort — Brain may not be available)
     let brainContext: BrainContextMeta = { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
-    try {
-      const brainManager = secureYeoman.getBrainManager();
-      const memories = brainManager.recall({ search: message, limit: 5 });
-      const knowledge = brainManager.queryKnowledge({ search: message, limit: 5 });
-      const snippets: string[] = [];
-      for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
-      for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
-      brainContext = {
-        memoriesUsed: memories.length,
-        knowledgeUsed: knowledge.length,
-        contextSnippets: snippets,
-      };
-    } catch {
-      // Brain not available — brainContext stays empty
+    if (memoryEnabled) {
+      try {
+        const brainManager = secureYeoman.getBrainManager();
+        const memories = brainManager.recall({ search: message, limit: 5 });
+        const knowledge = brainManager.queryKnowledge({ search: message, limit: 5 });
+        const snippets: string[] = [];
+        for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
+        for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
+        brainContext = {
+          memoriesUsed: memories.length,
+          knowledgeUsed: knowledge.length,
+          contextSnippets: snippets,
+        };
+      } catch {
+        // Brain not available — brainContext stays empty
+      }
     }
 
     const soulManager = secureYeoman.getSoulManager();
-    const systemPrompt = soulManager.composeSoulPrompt(message, personalityId);
+    const systemPrompt = memoryEnabled
+      ? soulManager.composeSoulPrompt(message, personalityId)
+      : soulManager.composeSoulPrompt(undefined, personalityId);
 
     const messages: AIRequest['messages'] = [];
 
@@ -177,7 +182,7 @@ export function registerChatRoutes(
       }
 
       // Optionally store the exchange as an episodic memory
-      if (saveAsMemory) {
+      if (memoryEnabled && saveAsMemory) {
         try {
           const brainManager = secureYeoman.getBrainManager();
           brainManager.remember(
