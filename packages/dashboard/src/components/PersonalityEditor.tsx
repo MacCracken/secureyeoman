@@ -14,6 +14,8 @@ import {
   Save,
   RefreshCw,
   Clock,
+  GitBranch,
+  FolderOpen,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -53,6 +55,8 @@ import type {
   KnowledgeEntry,
   HeartbeatTask,
 } from '../types';
+
+const LOCAL_MCP_NAME = 'YEOMAN MCP';
 
 const TRAIT_OPTIONS: Record<string, string[]> = {
   formality: ['casual', 'balanced', 'formal'],
@@ -865,6 +869,10 @@ interface BodySectionProps {
   onAllowConnectionsChange: (enabled: boolean) => void;
   selectedServers: string[];
   onSelectedServersChange: (servers: string[]) => void;
+  enabledCaps: Record<string, boolean>;
+  onEnabledCapsChange: (caps: Record<string, boolean>) => void;
+  mcpFeatures: { exposeGit: boolean; exposeFilesystem: boolean };
+  onMcpFeaturesChange: (features: { exposeGit: boolean; exposeFilesystem: boolean }) => void;
   creationConfig: { skills: boolean; tasks: boolean; personalities: boolean; experiments: boolean };
   onCreationConfigChange: (config: {
     skills: boolean;
@@ -879,6 +887,10 @@ function BodySection({
   onAllowConnectionsChange,
   selectedServers,
   onSelectedServersChange,
+  enabledCaps,
+  onEnabledCapsChange,
+  mcpFeatures,
+  onMcpFeaturesChange,
   creationConfig,
   onCreationConfigChange,
 }: BodySectionProps) {
@@ -888,12 +900,6 @@ function BodySection({
     queryFn: () => fetch('/api/v1/mcp/servers').then((r) => r.json()),
   });
   const servers = serversData?.servers ?? [];
-
-  const [enabledCaps, setEnabledCaps] = useState<Record<string, boolean>>({
-    vision: false,
-    limb_movement: false,
-    auditory: false,
-  });
 
   const creationItems = [
     { key: 'skills' as const, label: 'New Skills', icon: '🧠' },
@@ -946,28 +952,12 @@ function BodySection({
     };
 
   const toggleCapability = (cap: string) => {
-    setEnabledCaps((prev) => ({ ...prev, [cap]: !prev[cap] }));
+    onEnabledCapsChange({ ...enabledCaps, [cap]: !enabledCaps[cap] });
   };
 
   return (
     <CollapsibleSection title="Body - Endowments" defaultOpen={false}>
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-muted-foreground">Capabilities</span>
-          <div className="flex items-center gap-4">
-            <span className="text-xs text-muted-foreground">MCP</span>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                checked={allowConnections}
-                onChange={(e) => onAllowConnectionsChange(e.target.checked)}
-                className="sr-only peer"
-              />
-              <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-            </label>
-          </div>
-        </div>
-
         <CollapsibleSection title="Capabilities" defaultOpen={false}>
           <div className="space-y-2">
             {capabilities.map((cap) => {
@@ -1030,57 +1020,107 @@ function BodySection({
       </div>
 
       {/* MCP Connections */}
-      {allowConnections && (
-        <CollapsibleSection title="MCP Connections" defaultOpen={true}>
-          <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Select which MCP servers this personality can use:
-            </p>
-
-            {serversLoading ? (
-              <p className="text-xs text-muted-foreground">Loading servers...</p>
-            ) : servers.length === 0 ? (
-              <p className="text-xs text-muted-foreground">
-                No MCP servers configured. Add servers in Connections &gt; MCP Server.
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {servers.map((server: { id: string; name: string; description: string }) => (
-                  <label
-                    key={server.id}
-                    className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${
-                      selectedServers.includes(server.id)
-                        ? 'bg-success/5 border-success/30'
-                        : 'bg-muted/30 border-border hover:bg-muted/50'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedServers.includes(server.id)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          onSelectedServersChange([...selectedServers, server.id]);
-                        } else {
-                          onSelectedServersChange(selectedServers.filter((id) => id !== server.id));
-                        }
-                      }}
-                      className="w-3.5 h-3.5 rounded accent-primary"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-medium">{server.name}</span>
-                      {server.description && (
-                        <p className="text-[10px] text-muted-foreground truncate">
-                          {server.description}
-                        </p>
-                      )}
-                    </div>
-                  </label>
-                ))}
-              </div>
-            )}
+      <CollapsibleSection title="MCP Connections" defaultOpen={false}>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium">Enable MCP connections</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={allowConnections}
+                onChange={(e) => onAllowConnectionsChange(e.target.checked)}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+            </label>
           </div>
-        </CollapsibleSection>
-      )}
+
+          {allowConnections && (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Select which MCP servers this personality can use:
+              </p>
+
+              {serversLoading ? (
+                <p className="text-xs text-muted-foreground">Loading servers...</p>
+              ) : servers.length === 0 ? (
+                <p className="text-xs text-muted-foreground">
+                  No MCP servers configured. Add servers in Connections &gt; MCP Server.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {servers.map((server: { id: string; name: string; description: string }) => {
+                    const isSelected = selectedServers.includes(server.id);
+                    const isYeoman = server.name === LOCAL_MCP_NAME;
+
+                    return (
+                      <div key={server.id}>
+                        <label
+                          className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${
+                            isSelected
+                              ? 'bg-success/5 border-success/30'
+                              : 'bg-muted/30 border-border hover:bg-muted/50'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                onSelectedServersChange([...selectedServers, server.id]);
+                              } else {
+                                onSelectedServersChange(selectedServers.filter((id) => id !== server.id));
+                              }
+                            }}
+                            className="w-3.5 h-3.5 rounded accent-primary"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span className="text-xs font-medium">{server.name}</span>
+                            {server.description && (
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                {server.description}
+                              </p>
+                            )}
+                          </div>
+                        </label>
+
+                        {/* Per-personality feature toggles for YEOMAN MCP */}
+                        {isYeoman && isSelected && (
+                          <div className="ml-6 mt-1 space-y-1">
+                            <p className="text-[10px] text-muted-foreground mb-1">
+                              Tool categories this personality can access:
+                            </p>
+                            <label className="flex items-center gap-2 p-1.5 rounded bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+                              <GitBranch className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-xs flex-1">Git & GitHub</span>
+                              <input
+                                type="checkbox"
+                                checked={mcpFeatures.exposeGit}
+                                onChange={(e) => onMcpFeaturesChange({ ...mcpFeatures, exposeGit: e.target.checked })}
+                                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                              />
+                            </label>
+                            <label className="flex items-center gap-2 p-1.5 rounded bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+                              <FolderOpen className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-xs flex-1">Filesystem</span>
+                              <input
+                                type="checkbox"
+                                checked={mcpFeatures.exposeFilesystem}
+                                onChange={(e) => onMcpFeaturesChange({ ...mcpFeatures, exposeFilesystem: e.target.checked })}
+                                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                              />
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </CollapsibleSection>
 
       <CollapsibleSection title="Resource Creation" defaultOpen={false}>
         <div className="flex items-center justify-between mb-2">
@@ -1186,6 +1226,16 @@ export function PersonalityEditor() {
 
   const [allowConnections, setAllowConnections] = useState(false);
   const [selectedServers, setSelectedServers] = useState<string[]>([]);
+  const [enabledCaps, setEnabledCaps] = useState<Record<string, boolean>>({
+    vision: false,
+    limb_movement: false,
+    auditory: false,
+    haptic: false,
+  });
+  const [mcpFeatures, setMcpFeatures] = useState<{ exposeGit: boolean; exposeFilesystem: boolean }>({
+    exposeGit: false,
+    exposeFilesystem: false,
+  });
 
   const { data: personalitiesData, isLoading } = useQuery({
     queryKey: ['personalities'],
@@ -1291,6 +1341,17 @@ export function PersonalityEditor() {
     });
     setAllowConnections(body.enabled ?? false);
     setSelectedServers(body.selectedServers ?? []);
+    const caps = body.capabilities ?? [];
+    setEnabledCaps({
+      vision: caps.includes('vision'),
+      limb_movement: caps.includes('limb_movement'),
+      auditory: caps.includes('auditory'),
+      haptic: caps.includes('haptic'),
+    });
+    setMcpFeatures({
+      exposeGit: body.mcpFeatures?.exposeGit ?? false,
+      exposeFilesystem: body.mcpFeatures?.exposeFilesystem ?? false,
+    });
     setSetActiveOnSave(false);
     setEditing(p.id);
   };
@@ -1317,20 +1378,26 @@ export function PersonalityEditor() {
     setCreationConfig({ skills: false, tasks: false, personalities: false, experiments: false });
     setAllowConnections(false);
     setSelectedServers([]);
+    setEnabledCaps({ vision: false, limb_movement: false, auditory: false, haptic: false });
+    setMcpFeatures({ exposeGit: false, exposeFilesystem: false });
     setSetActiveOnSave(false);
     setEditing('new');
   };
 
   const handleSave = () => {
+    const capabilities = Object.entries(enabledCaps)
+      .filter(([, enabled]) => enabled)
+      .map(([cap]) => cap);
     const formWithBody = {
       ...form,
       body: {
         ...form.body,
         enabled: allowConnections,
-        capabilities: [],
+        capabilities,
         heartEnabled: true,
         creationConfig,
         selectedServers,
+        mcpFeatures,
       },
     };
     if (editing === 'new') {
@@ -1568,6 +1635,10 @@ export function PersonalityEditor() {
             onAllowConnectionsChange={setAllowConnections}
             selectedServers={selectedServers}
             onSelectedServersChange={setSelectedServers}
+            enabledCaps={enabledCaps}
+            onEnabledCapsChange={setEnabledCaps}
+            mcpFeatures={mcpFeatures}
+            onMcpFeaturesChange={setMcpFeatures}
             creationConfig={creationConfig}
             onCreationConfigChange={setCreationConfig}
           />

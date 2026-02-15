@@ -14,10 +14,9 @@ export interface McpRoutesOptions {
   mcpServer: McpServer;
 }
 
-const mcpFeatureConfig = {
-  exposeGit: false,
-  exposeFilesystem: false,
-};
+const LOCAL_MCP_NAME = 'YEOMAN MCP';
+const GIT_TOOL_PREFIXES = ['git_', 'github_'];
+const FS_TOOL_PREFIXES = ['fs_'];
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Unknown error';
@@ -124,11 +123,30 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     }
   );
 
-  // List all discovered tools (from external servers)
+  // List all discovered tools (from external servers), filtered by feature config
   app.get('/api/v1/mcp/tools', async () => {
     const external = mcpClient.getAllTools();
     const exposed = mcpServer.getExposedTools();
-    return { tools: [...external, ...exposed], total: external.length + exposed.length };
+    const allTools = [...external, ...exposed];
+
+    // Find the YEOMAN MCP server to get its ID
+    const servers = mcpStorage.listServers();
+    const localServer = servers.find((s) => s.name === LOCAL_MCP_NAME);
+    const config = mcpStorage.getConfig();
+
+    const tools = allTools.filter((tool) => {
+      if (localServer && tool.serverId === localServer.id) {
+        if (!config.exposeGit && GIT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) {
+          return false;
+        }
+        if (!config.exposeFilesystem && FS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) {
+          return false;
+        }
+      }
+      return true;
+    });
+
+    return { tools, total: tools.length };
   });
 
   // Call a tool on an MCP server
@@ -160,12 +178,12 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     return { resources: [...external, ...exposed] };
   });
 
-  // Get MCP feature config
+  // Get MCP feature config (persisted in SQLite)
   app.get('/api/v1/mcp/config', async () => {
-    return mcpFeatureConfig;
+    return mcpStorage.getConfig();
   });
 
-  // Update MCP feature config
+  // Update MCP feature config (persisted in SQLite)
   app.patch(
     '/api/v1/mcp/config',
     async (
@@ -173,13 +191,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         Body: { exposeGit?: boolean; exposeFilesystem?: boolean };
       }>
     ) => {
-      if (request.body.exposeGit !== undefined) {
-        mcpFeatureConfig.exposeGit = request.body.exposeGit;
-      }
-      if (request.body.exposeFilesystem !== undefined) {
-        mcpFeatureConfig.exposeFilesystem = request.body.exposeFilesystem;
-      }
-      return mcpFeatureConfig;
+      return mcpStorage.setConfig(request.body);
     }
   );
 }

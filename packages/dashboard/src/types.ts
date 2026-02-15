@@ -140,6 +140,10 @@ export interface Personality {
       experiments?: boolean;
     };
     selectedServers?: string[];
+    mcpFeatures?: {
+      exposeGit?: boolean;
+      exposeFilesystem?: boolean;
+    };
   };
   createdAt: number;
   updatedAt: number;
@@ -166,6 +170,10 @@ export interface PersonalityCreate {
       experiments?: boolean;
     };
     selectedServers?: string[];
+    mcpFeatures?: {
+      exposeGit?: boolean;
+      exposeFilesystem?: boolean;
+    };
   };
 }
 
