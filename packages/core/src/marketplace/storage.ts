@@ -1,9 +1,9 @@
 /**
- * Marketplace Storage — SQLite local skill registry
+ * Marketplace Storage — PostgreSQL local skill registry
  */
 
-import Database from 'better-sqlite3';
 import type { MarketplaceSkill } from '@friday/shared';
+import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 import {
   summarizeTextSkill,
@@ -11,37 +11,12 @@ import {
   veteranFinancialManagerSkill,
 } from './skills/index.js';
 
-export class MarketplaceStorage {
-  private db: Database.Database;
-
-  constructor(opts: { dbPath: string }) {
-    this.db = new Database(opts.dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.init();
+export class MarketplaceStorage extends PgBaseStorage {
+  constructor() {
+    super();
   }
 
-  private init(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS marketplace_skills (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT DEFAULT '',
-        version TEXT DEFAULT '1.0.0',
-        author TEXT DEFAULT '',
-        category TEXT DEFAULT 'general',
-        tags TEXT DEFAULT '[]',
-        download_count INTEGER DEFAULT 0,
-        rating REAL DEFAULT 0,
-        instructions TEXT DEFAULT '',
-        tools TEXT DEFAULT '[]',
-        installed INTEGER DEFAULT 0,
-        published_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `);
-  }
-
-  addSkill(data: Partial<MarketplaceSkill>): MarketplaceSkill {
+  async addSkill(data: Partial<MarketplaceSkill>): Promise<MarketplaceSkill> {
     const now = Date.now();
     const id = data.id ?? uuidv7();
     const skill: MarketplaceSkill = {
@@ -60,11 +35,11 @@ export class MarketplaceStorage {
       publishedAt: data.publishedAt ?? now,
       updatedAt: data.updatedAt ?? now,
     };
-    this.db
-      .prepare(
-        'INSERT INTO marketplace_skills (id, name, description, version, author, category, tags, download_count, rating, instructions, tools, installed, published_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
-      )
-      .run(
+    await this.execute(
+      `INSERT INTO marketplace.skills
+        (id, name, description, version, author, category, tags, download_count, rating, instructions, tools, installed, published_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+      [
         id,
         skill.name,
         skill.description,
@@ -76,54 +51,70 @@ export class MarketplaceStorage {
         skill.rating,
         skill.instructions,
         JSON.stringify(skill.tools),
-        skill.installed ? 1 : 0,
+        skill.installed,
         skill.publishedAt,
-        skill.updatedAt
-      );
+        skill.updatedAt,
+      ],
+    );
     return skill;
   }
 
-  getSkill(id: string): MarketplaceSkill | null {
-    const row = this.db.prepare('SELECT * FROM marketplace_skills WHERE id = ?').get(id) as
-      | Record<string, unknown>
-      | undefined;
+  async getSkill(id: string): Promise<MarketplaceSkill | null> {
+    const row = await this.queryOne<Record<string, unknown>>(
+      'SELECT * FROM marketplace.skills WHERE id = $1',
+      [id],
+    );
     return row ? this.rowToSkill(row) : null;
   }
 
-  search(
+  async search(
     query?: string,
     category?: string,
     limit = 20,
-    offset = 0
-  ): { skills: MarketplaceSkill[]; total: number } {
-    let sql = 'SELECT * FROM marketplace_skills WHERE 1=1';
+    offset = 0,
+  ): Promise<{ skills: MarketplaceSkill[]; total: number }> {
+    let paramIdx = 1;
+    let where = ' WHERE 1=1';
     const params: unknown[] = [];
+
     if (query) {
-      sql += ' AND (name LIKE ? OR description LIKE ?)';
+      where += ` AND (name LIKE $${paramIdx} OR description LIKE $${paramIdx + 1})`;
       params.push(`%${query}%`, `%${query}%`);
+      paramIdx += 2;
     }
     if (category) {
-      sql += ' AND category = ?';
+      where += ` AND category = $${paramIdx}`;
       params.push(category);
+      paramIdx += 1;
     }
-    const countSql = sql.replace('SELECT *', 'SELECT COUNT(*) as count');
-    const total = (this.db.prepare(countSql).get(...params) as { count: number }).count;
-    sql += ' ORDER BY download_count DESC LIMIT ? OFFSET ?';
+
+    const countRow = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM marketplace.skills${where}`,
+      params,
+    );
+    const total = parseInt(countRow?.count ?? '0', 10);
+
+    const fullSql = `SELECT * FROM marketplace.skills${where} ORDER BY download_count DESC LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`;
     params.push(limit, offset);
-    const rows = this.db.prepare(sql).all(...params) as Record<string, unknown>[];
+
+    const rows = await this.queryMany<Record<string, unknown>>(fullSql, params);
     return { skills: rows.map((r) => this.rowToSkill(r)), total };
   }
 
-  setInstalled(id: string, installed: boolean): boolean {
-    return (
-      this.db
-        .prepare('UPDATE marketplace_skills SET installed = ?, updated_at = ? WHERE id = ?')
-        .run(installed ? 1 : 0, Date.now(), id).changes > 0
+  async setInstalled(id: string, installed: boolean): Promise<boolean> {
+    const changes = await this.execute(
+      'UPDATE marketplace.skills SET installed = $1, updated_at = $2 WHERE id = $3',
+      [installed, Date.now(), id],
     );
+    return changes > 0;
   }
 
-  delete(id: string): boolean {
-    return this.db.prepare('DELETE FROM marketplace_skills WHERE id = ?').run(id).changes > 0;
+  async delete(id: string): Promise<boolean> {
+    const changes = await this.execute(
+      'DELETE FROM marketplace.skills WHERE id = $1',
+      [id],
+    );
+    return changes > 0;
   }
 
   private rowToSkill(row: Record<string, unknown>): MarketplaceSkill {
@@ -134,18 +125,18 @@ export class MarketplaceStorage {
       version: (row.version as string) ?? '1.0.0',
       author: (row.author as string) ?? '',
       category: (row.category as string) ?? 'general',
-      tags: JSON.parse((row.tags as string) || '[]'),
+      tags: row.tags as string[],
       downloadCount: (row.download_count as number) ?? 0,
       rating: (row.rating as number) ?? 0,
       instructions: (row.instructions as string) ?? '',
-      tools: JSON.parse((row.tools as string) || '[]'),
-      installed: row.installed === 1,
+      tools: row.tools as MarketplaceSkill['tools'],
+      installed: row.installed as boolean,
       publishedAt: row.published_at as number,
       updatedAt: row.updated_at as number,
     };
   }
 
-  seedBuiltinSkills(): void {
+  async seedBuiltinSkills(): Promise<void> {
     const BUILTIN_SKILLS = [
       summarizeTextSkill,
       universalScriptAssistantSkill,
@@ -153,16 +144,13 @@ export class MarketplaceStorage {
     ];
     for (const skill of BUILTIN_SKILLS) {
       if (!skill.name) continue;
-      const exists = this.db
-        .prepare('SELECT 1 FROM marketplace_skills WHERE name = ? AND author = ?')
-        .get(skill.name, skill.author);
+      const exists = await this.queryOne(
+        'SELECT 1 FROM marketplace.skills WHERE name = $1 AND author = $2',
+        [skill.name, skill.author],
+      );
       if (!exists) {
-        this.addSkill(skill);
+        await this.addSkill(skill);
       }
     }
-  }
-
-  close(): void {
-    this.db.close();
   }
 }

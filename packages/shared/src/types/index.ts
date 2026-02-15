@@ -340,4 +340,6 @@ export {
   type ModelConfig,
   type Config,
   type PartialConfig,
+  DatabaseConfigSchema,
+  type DatabaseConfig,
 } from './config.js';

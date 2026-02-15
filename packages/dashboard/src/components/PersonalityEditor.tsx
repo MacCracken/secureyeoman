@@ -1433,7 +1433,7 @@ export function PersonalityEditor() {
       voice: '',
       preferredLanguage: '',
       defaultModel: null,
-      includeArchetypes: true,
+      includeArchetypes: false,
       body,
     });
     setCreationConfig({ skills: false, tasks: false, personalities: false, experiments: false });
@@ -1670,17 +1670,19 @@ export function PersonalityEditor() {
               </p>
             </div>
 
-            <label
-              className="flex items-center gap-2 cursor-pointer"
-              data-testid="archetype-toggle"
-            >
-              <input
-                type="checkbox"
-                checked={form.includeArchetypes ?? true}
-                onChange={(e) => setForm((f) => ({ ...f, includeArchetypes: e.target.checked }))}
-                className="rounded border-muted-foreground"
-              />
-              <span className="text-sm">Include Sacred Archetypes preamble in prompt</span>
+            <label className="flex flex-col gap-1 cursor-pointer" data-testid="archetype-toggle">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.includeArchetypes ?? false}
+                  onChange={(e) => setForm((f) => ({ ...f, includeArchetypes: e.target.checked }))}
+                  className="rounded border-muted-foreground"
+                />
+                <span className="text-sm">Include Sacred Archetypes</span>
+              </div>
+              <span className="text-xs text-muted-foreground ml-6">
+                Preamble is presented in prompt
+              </span>
             </label>
           </CollapsibleSection>
 

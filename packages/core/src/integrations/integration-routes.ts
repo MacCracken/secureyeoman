@@ -37,7 +37,7 @@ export function registerIntegrationRoutes(
     if (request.query.platform) filter.platform = request.query.platform;
     if (request.query.enabled !== undefined) filter.enabled = request.query.enabled === 'true';
 
-    const integrations = integrationManager.listIntegrations(filter);
+    const integrations = await integrationManager.listIntegrations(filter);
     return {
       integrations,
       total: integrations.length,
@@ -51,7 +51,7 @@ export function registerIntegrationRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const integration = integrationManager.getIntegration(request.params.id);
+    const integration = await integrationManager.getIntegration(request.params.id);
     if (!integration) {
       return reply.code(404).send({ error: 'Integration not found' });
     }
@@ -69,7 +69,7 @@ export function registerIntegrationRoutes(
     reply: FastifyReply,
   ) => {
     try {
-      const integration = integrationManager.createIntegration(request.body);
+      const integration = await integrationManager.createIntegration(request.body);
       return reply.code(201).send({ integration });
     } catch (err) {
       return reply.code(400).send({ error: errorMessage(err) });
@@ -82,7 +82,7 @@ export function registerIntegrationRoutes(
     request: FastifyRequest<{ Params: { id: string }; Body: IntegrationUpdate }>,
     reply: FastifyReply,
   ) => {
-    const integration = integrationManager.updateIntegration(request.params.id, request.body);
+    const integration = await integrationManager.updateIntegration(request.params.id, request.body);
     if (!integration) {
       return reply.code(404).send({ error: 'Integration not found' });
     }
@@ -95,7 +95,7 @@ export function registerIntegrationRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const deleted = integrationManager.deleteIntegration(request.params.id);
+    const deleted = await integrationManager.deleteIntegration(request.params.id);
     if (!deleted) {
       return reply.code(404).send({ error: 'Integration not found' });
     }
@@ -135,7 +135,7 @@ export function registerIntegrationRoutes(
   ) => {
     const limit = request.query.limit ? parseInt(request.query.limit, 10) : 50;
     const offset = request.query.offset ? parseInt(request.query.offset, 10) : 0;
-    const messages = integrationStorage.listMessages(request.params.id, { limit, offset });
+    const messages = await integrationStorage.listMessages(request.params.id, { limit, offset });
     return { messages };
   });
 
@@ -164,7 +164,7 @@ export function registerIntegrationRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const config = integrationManager.getIntegration(request.params.id);
+    const config = await integrationManager.getIntegration(request.params.id);
     if (!config || config.platform !== 'github') {
       return reply.code(404).send({ error: 'GitHub integration not found' });
     }
@@ -196,7 +196,7 @@ export function registerIntegrationRoutes(
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply,
   ) => {
-    const config = integrationManager.getIntegration(request.params.id);
+    const config = await integrationManager.getIntegration(request.params.id);
     if (!config || config.platform !== 'webhook') {
       return reply.code(404).send({ error: 'Webhook integration not found' });
     }

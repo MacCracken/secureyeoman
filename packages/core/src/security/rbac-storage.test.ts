@@ -1,5 +1,5 @@
 /**
- * Tests for RBACStorage — SQLite-backed persistent storage for role
+ * Tests for RBACStorage — PostgreSQL-backed persistent storage for role
  * definitions and user-role assignments.
  *
  * These tests verify:
@@ -10,20 +10,25 @@
  *   - Edge cases (unknown roles, double revokes, empty state)
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { RBACStorage } from './rbac-storage.js';
 import type { RoleDefinition } from '@friday/shared';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 describe('RBACStorage', () => {
   let storage: RBACStorage;
 
-  beforeEach(() => {
-    // Use in-memory SQLite for test isolation — no disk I/O.
-    storage = new RBACStorage({ dbPath: ':memory:' });
+  beforeAll(async () => {
+    await setupTestDb();
   });
 
-  afterEach(() => {
-    storage.close();
+  beforeEach(async () => {
+    await truncateAllTables();
+    storage = new RBACStorage();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
   });
 
   // ── Role definitions ─────────────────────────────────────────────────
@@ -39,10 +44,10 @@ describe('RBACStorage', () => {
       ],
     };
 
-    it('should save and retrieve a role definition', () => {
-      storage.saveRoleDefinition(testRole);
+    it('should save and retrieve a role definition', async () => {
+      await storage.saveRoleDefinition(testRole);
 
-      const retrieved = storage.getRoleDefinition('role_test');
+      const retrieved = await storage.getRoleDefinition('role_test');
       expect(retrieved).not.toBeNull();
       expect(retrieved!.id).toBe('role_test');
       expect(retrieved!.name).toBe('Test Role');
@@ -54,13 +59,13 @@ describe('RBACStorage', () => {
       });
     });
 
-    it('should return null for non-existent role', () => {
-      const result = storage.getRoleDefinition('role_nonexistent');
+    it('should return null for non-existent role', async () => {
+      const result = await storage.getRoleDefinition('role_nonexistent');
       expect(result).toBeNull();
     });
 
-    it('should upsert when saving an existing role', () => {
-      storage.saveRoleDefinition(testRole);
+    it('should upsert when saving an existing role', async () => {
+      await storage.saveRoleDefinition(testRole);
 
       // Update the role
       const updatedRole: RoleDefinition = {
@@ -68,15 +73,15 @@ describe('RBACStorage', () => {
         name: 'Updated Test Role',
         permissions: [{ resource: 'everything', actions: ['*'] }],
       };
-      storage.saveRoleDefinition(updatedRole);
+      await storage.saveRoleDefinition(updatedRole);
 
-      const retrieved = storage.getRoleDefinition('role_test');
+      const retrieved = await storage.getRoleDefinition('role_test');
       expect(retrieved!.name).toBe('Updated Test Role');
       expect(retrieved!.permissions).toHaveLength(1);
       expect(retrieved!.permissions[0].resource).toBe('everything');
     });
 
-    it('should save roles with inheritance', () => {
+    it('should save roles with inheritance', async () => {
       const childRole: RoleDefinition = {
         id: 'role_child',
         name: 'Child Role',
@@ -84,42 +89,42 @@ describe('RBACStorage', () => {
         inheritFrom: ['role_test', 'role_admin'],
       };
 
-      storage.saveRoleDefinition(childRole);
+      await storage.saveRoleDefinition(childRole);
 
-      const retrieved = storage.getRoleDefinition('role_child');
+      const retrieved = await storage.getRoleDefinition('role_child');
       expect(retrieved!.inheritFrom).toEqual(['role_test', 'role_admin']);
     });
 
-    it('should handle roles without optional fields', () => {
+    it('should handle roles without optional fields', async () => {
       const minimalRole: RoleDefinition = {
         id: 'role_minimal',
         name: 'Minimal',
         permissions: [],
       };
 
-      storage.saveRoleDefinition(minimalRole);
+      await storage.saveRoleDefinition(minimalRole);
 
-      const retrieved = storage.getRoleDefinition('role_minimal');
+      const retrieved = await storage.getRoleDefinition('role_minimal');
       expect(retrieved!.description).toBeUndefined();
       expect(retrieved!.inheritFrom).toBeUndefined();
     });
 
-    it('should delete a role definition', () => {
-      storage.saveRoleDefinition(testRole);
+    it('should delete a role definition', async () => {
+      await storage.saveRoleDefinition(testRole);
 
-      const deleted = storage.deleteRoleDefinition('role_test');
+      const deleted = await storage.deleteRoleDefinition('role_test');
       expect(deleted).toBe(true);
 
-      const retrieved = storage.getRoleDefinition('role_test');
+      const retrieved = await storage.getRoleDefinition('role_test');
       expect(retrieved).toBeNull();
     });
 
-    it('should return false when deleting non-existent role', () => {
-      const deleted = storage.deleteRoleDefinition('role_nonexistent');
+    it('should return false when deleting non-existent role', async () => {
+      const deleted = await storage.deleteRoleDefinition('role_nonexistent');
       expect(deleted).toBe(false);
     });
 
-    it('should list all role definitions ordered by creation time', () => {
+    it('should list all role definitions ordered by creation time', async () => {
       const role1: RoleDefinition = {
         id: 'role_first',
         name: 'First',
@@ -131,17 +136,17 @@ describe('RBACStorage', () => {
         permissions: [{ resource: 'data', actions: ['read'] }],
       };
 
-      storage.saveRoleDefinition(role1);
-      storage.saveRoleDefinition(role2);
+      await storage.saveRoleDefinition(role1);
+      await storage.saveRoleDefinition(role2);
 
-      const all = storage.getAllRoleDefinitions();
+      const all = await storage.getAllRoleDefinitions();
       expect(all).toHaveLength(2);
       expect(all[0].id).toBe('role_first');
       expect(all[1].id).toBe('role_second');
     });
 
-    it('should return empty array when no roles are defined', () => {
-      const all = storage.getAllRoleDefinitions();
+    it('should return empty array when no roles are defined', async () => {
+      const all = await storage.getAllRoleDefinitions();
       expect(all).toEqual([]);
     });
   });
@@ -149,28 +154,28 @@ describe('RBACStorage', () => {
   // ── User-role assignments ────────────────────────────────────────────
 
   describe('User-role assignments', () => {
-    it('should assign a role to a user', () => {
-      storage.assignRole('user_1', 'role_operator', 'admin');
+    it('should assign a role to a user', async () => {
+      await storage.assignRole('user_1', 'role_operator', 'admin');
 
-      const role = storage.getActiveRole('user_1');
+      const role = await storage.getActiveRole('user_1');
       expect(role).toBe('role_operator');
     });
 
-    it('should return null for user with no assignment', () => {
-      const role = storage.getActiveRole('user_unknown');
+    it('should return null for user with no assignment', async () => {
+      const role = await storage.getActiveRole('user_unknown');
       expect(role).toBeNull();
     });
 
-    it('should automatically revoke old role when reassigning', () => {
-      storage.assignRole('user_1', 'role_operator', 'admin');
-      storage.assignRole('user_1', 'role_admin', 'admin');
+    it('should automatically revoke old role when reassigning', async () => {
+      await storage.assignRole('user_1', 'role_operator', 'admin');
+      await storage.assignRole('user_1', 'role_admin', 'admin');
 
       // Active role should be the new one
-      const role = storage.getActiveRole('user_1');
+      const role = await storage.getActiveRole('user_1');
       expect(role).toBe('role_admin');
 
       // History should show both assignments
-      const history = storage.getAssignmentHistory('user_1');
+      const history = await storage.getAssignmentHistory('user_1');
       expect(history).toHaveLength(2);
 
       // Find the active and revoked entries regardless of ordering
@@ -185,38 +190,38 @@ describe('RBACStorage', () => {
       expect(revoked!.role_id).toBe('role_operator');
     });
 
-    it('should revoke a role assignment', () => {
-      storage.assignRole('user_1', 'role_operator', 'admin');
+    it('should revoke a role assignment', async () => {
+      await storage.assignRole('user_1', 'role_operator', 'admin');
 
-      const revoked = storage.revokeRole('user_1');
+      const revoked = await storage.revokeRole('user_1');
       expect(revoked).toBe(true);
 
-      const role = storage.getActiveRole('user_1');
+      const role = await storage.getActiveRole('user_1');
       expect(role).toBeNull();
     });
 
-    it('should return false when revoking non-existent assignment', () => {
-      const revoked = storage.revokeRole('user_nonexistent');
+    it('should return false when revoking non-existent assignment', async () => {
+      const revoked = await storage.revokeRole('user_nonexistent');
       expect(revoked).toBe(false);
     });
 
-    it('should return false when revoking already-revoked assignment', () => {
-      storage.assignRole('user_1', 'role_operator', 'admin');
-      storage.revokeRole('user_1');
+    it('should return false when revoking already-revoked assignment', async () => {
+      await storage.assignRole('user_1', 'role_operator', 'admin');
+      await storage.revokeRole('user_1');
 
-      const secondRevoke = storage.revokeRole('user_1');
+      const secondRevoke = await storage.revokeRole('user_1');
       expect(secondRevoke).toBe(false);
     });
 
-    it('should list all active assignments', () => {
-      storage.assignRole('user_1', 'role_operator', 'admin');
-      storage.assignRole('user_2', 'role_viewer', 'admin');
-      storage.assignRole('user_3', 'role_auditor', 'admin');
+    it('should list all active assignments', async () => {
+      await storage.assignRole('user_1', 'role_operator', 'admin');
+      await storage.assignRole('user_2', 'role_viewer', 'admin');
+      await storage.assignRole('user_3', 'role_auditor', 'admin');
 
       // Revoke one
-      storage.revokeRole('user_2');
+      await storage.revokeRole('user_2');
 
-      const active = storage.listActiveAssignments();
+      const active = await storage.listActiveAssignments();
       expect(active).toHaveLength(2);
 
       const userIds = active.map((a) => a.userId);
@@ -225,37 +230,37 @@ describe('RBACStorage', () => {
       expect(userIds).not.toContain('user_2');
     });
 
-    it('should return empty array when no active assignments exist', () => {
-      const active = storage.listActiveAssignments();
+    it('should return empty array when no active assignments exist', async () => {
+      const active = await storage.listActiveAssignments();
       expect(active).toEqual([]);
     });
 
-    it('should list users by role', () => {
-      storage.assignRole('user_1', 'role_operator', 'admin');
-      storage.assignRole('user_2', 'role_operator', 'admin');
-      storage.assignRole('user_3', 'role_viewer', 'admin');
+    it('should list users by role', async () => {
+      await storage.assignRole('user_1', 'role_operator', 'admin');
+      await storage.assignRole('user_2', 'role_operator', 'admin');
+      await storage.assignRole('user_3', 'role_viewer', 'admin');
 
-      const operators = storage.getUsersByRole('role_operator');
+      const operators = await storage.getUsersByRole('role_operator');
       expect(operators).toHaveLength(2);
       expect(operators).toContain('user_1');
       expect(operators).toContain('user_2');
 
-      const viewers = storage.getUsersByRole('role_viewer');
+      const viewers = await storage.getUsersByRole('role_viewer');
       expect(viewers).toHaveLength(1);
       expect(viewers).toContain('user_3');
     });
 
-    it('should return empty array for role with no users', () => {
-      const users = storage.getUsersByRole('role_nonexistent');
+    it('should return empty array for role with no users', async () => {
+      const users = await storage.getUsersByRole('role_nonexistent');
       expect(users).toEqual([]);
     });
 
-    it('should preserve assignment history after multiple changes', () => {
-      storage.assignRole('user_1', 'role_viewer', 'admin');
-      storage.assignRole('user_1', 'role_operator', 'admin');
-      storage.assignRole('user_1', 'role_admin', 'system');
+    it('should preserve assignment history after multiple changes', async () => {
+      await storage.assignRole('user_1', 'role_viewer', 'admin');
+      await storage.assignRole('user_1', 'role_operator', 'admin');
+      await storage.assignRole('user_1', 'role_admin', 'system');
 
-      const history = storage.getAssignmentHistory('user_1');
+      const history = await storage.getAssignmentHistory('user_1');
       expect(history).toHaveLength(3);
 
       // Only the latest should be active
@@ -271,19 +276,19 @@ describe('RBACStorage', () => {
       expect(revokedRoles).toEqual(['role_operator', 'role_viewer']);
     });
 
-    it('should track assignedBy for audit trail', () => {
-      storage.assignRole('user_1', 'role_operator', 'admin_alice');
+    it('should track assignedBy for audit trail', async () => {
+      await storage.assignRole('user_1', 'role_operator', 'admin_alice');
 
-      const history = storage.getAssignmentHistory('user_1');
+      const history = await storage.getAssignmentHistory('user_1');
       expect(history[0].assigned_by).toBe('admin_alice');
     });
 
-    it('should include assignedAt in active assignments listing', () => {
+    it('should include assignedAt in active assignments listing', async () => {
       const before = Date.now();
-      storage.assignRole('user_1', 'role_operator', 'admin');
+      await storage.assignRole('user_1', 'role_operator', 'admin');
       const after = Date.now();
 
-      const active = storage.listActiveAssignments();
+      const active = await storage.listActiveAssignments();
       expect(active).toHaveLength(1);
       expect(active[0].assignedAt).toBeGreaterThanOrEqual(before);
       expect(active[0].assignedAt).toBeLessThanOrEqual(after);
@@ -304,10 +309,11 @@ describe('RBACStorage', () => {
         description: 'Custom operations role',
         permissions: [{ resource: 'custom', actions: ['read', 'execute'] }],
       };
-      storage.saveRoleDefinition(customRole);
+      await storage.saveRoleDefinition(customRole);
 
-      // Create RBAC with storage — should load the custom role
+      // Create RBAC with storage and load persisted data
       const rbac = new RBAC(storage);
+      await rbac.loadFromStorage();
 
       const result = rbac.checkPermission('custom_ops', {
         resource: 'custom',
@@ -320,10 +326,11 @@ describe('RBACStorage', () => {
       const { RBAC } = await import('./rbac.js');
 
       // Save a user-role assignment to storage
-      storage.assignRole('user_test', 'role_operator', 'admin');
+      await storage.assignRole('user_test', 'role_operator', 'admin');
 
-      // Create RBAC with storage — should load the assignment
+      // Create RBAC with storage and load persisted data
       const rbac = new RBAC(storage);
+      await rbac.loadFromStorage();
 
       const role = rbac.getUserRole('user_test');
       expect(role).toBe('role_operator');
@@ -333,16 +340,17 @@ describe('RBACStorage', () => {
       const { RBAC } = await import('./rbac.js');
 
       const rbac = new RBAC(storage);
+      await rbac.loadFromStorage();
 
       // Define a role through RBAC — should persist to storage
-      rbac.defineRole({
+      await rbac.defineRole({
         id: 'role_dynamic',
         name: 'Dynamic',
         permissions: [{ resource: 'dynamic', actions: ['read'] }],
       });
 
       // Verify it's in storage
-      const persisted = storage.getRoleDefinition('role_dynamic');
+      const persisted = await storage.getRoleDefinition('role_dynamic');
       expect(persisted).not.toBeNull();
       expect(persisted!.name).toBe('Dynamic');
     });
@@ -351,29 +359,31 @@ describe('RBACStorage', () => {
       const { RBAC } = await import('./rbac.js');
 
       const rbac = new RBAC(storage);
+      await rbac.loadFromStorage();
 
-      rbac.assignUserRole('user_new', 'role_admin', 'system');
+      await rbac.assignUserRole('user_new', 'role_admin', 'system');
 
       // Verify in-memory
       expect(rbac.getUserRole('user_new')).toBe('role_admin');
 
       // Verify in storage
-      expect(storage.getActiveRole('user_new')).toBe('role_admin');
+      expect(await storage.getActiveRole('user_new')).toBe('role_admin');
     });
 
     it('should persist role revocations', async () => {
       const { RBAC } = await import('./rbac.js');
 
       const rbac = new RBAC(storage);
+      await rbac.loadFromStorage();
 
-      rbac.assignUserRole('user_temp', 'role_viewer', 'admin');
-      rbac.revokeUserRole('user_temp');
+      await rbac.assignUserRole('user_temp', 'role_viewer', 'admin');
+      await rbac.revokeUserRole('user_temp');
 
       // In-memory should be cleared
       expect(rbac.getUserRole('user_temp')).toBeUndefined();
 
       // Storage should show revoked
-      expect(storage.getActiveRole('user_temp')).toBeNull();
+      expect(await storage.getActiveRole('user_temp')).toBeNull();
     });
   });
 });

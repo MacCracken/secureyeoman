@@ -195,12 +195,12 @@ export class AuthService {
     }
 
     const jti = payload.jti as string;
-    if (this.deps.storage.isTokenRevoked(jti)) {
+    if (await this.deps.storage.isTokenRevoked(jti)) {
       throw new AuthError('Refresh token has been revoked', 401);
     }
 
     // Consume old refresh token (single-use rotation)
-    this.deps.storage.revokeToken(jti, payload.sub as string, payload.exp as number);
+    await this.deps.storage.revokeToken(jti, payload.sub as string, payload.exp as number);
 
     const role = payload.role as Role;
     const permissions = buildPermissionStrings(role, this.deps.rbac);
@@ -240,7 +240,7 @@ export class AuthService {
   // ── Logout ───────────────────────────────────────────────────────
 
   async logout(jti: string, userId: string, exp: number): Promise<void> {
-    this.deps.storage.revokeToken(jti, userId, exp);
+    await this.deps.storage.revokeToken(jti, userId, exp);
     await this.audit('auth_success', 'User logout', { userId });
   }
 
@@ -254,7 +254,7 @@ export class AuthService {
     }
 
     const jti = payload.jti as string;
-    if (this.deps.storage.isTokenRevoked(jti)) {
+    if (await this.deps.storage.isTokenRevoked(jti)) {
       throw new AuthError('Token has been revoked', 401);
     }
 
@@ -310,7 +310,7 @@ export class AuthService {
       last_used_at: null,
     };
 
-    this.deps.storage.storeApiKey(row);
+    await this.deps.storage.storeApiKey(row);
 
     await this.audit('auth_success', 'API key created', {
       userId: opts.userId,
@@ -332,13 +332,13 @@ export class AuthService {
 
   async validateApiKey(rawKey: string): Promise<AuthUser> {
     const keyHash = sha256(rawKey);
-    const row = this.deps.storage.findApiKeyByHash(keyHash);
+    const row = await this.deps.storage.findApiKeyByHash(keyHash);
 
     if (!row) {
       throw new AuthError('Invalid API key', 401);
     }
 
-    this.deps.storage.updateLastUsed(row.id, Date.now());
+    await this.deps.storage.updateLastUsed(row.id, Date.now());
 
     const role = row.role as Role;
     const permissions = buildPermissionStrings(role, this.deps.rbac);
@@ -353,19 +353,19 @@ export class AuthService {
   }
 
   async revokeApiKey(keyId: string, userId: string): Promise<boolean> {
-    const ok = this.deps.storage.revokeApiKey(keyId);
+    const ok = await this.deps.storage.revokeApiKey(keyId);
     if (ok) {
       await this.audit('auth_success', 'API key revoked', { userId, keyId });
     }
     return ok;
   }
 
-  listApiKeys(userId?: string) {
-    return this.deps.storage.listApiKeys(userId);
+  async listApiKeys(userId?: string) {
+    return await this.deps.storage.listApiKeys(userId);
   }
 
-  cleanupExpiredTokens(): number {
-    return this.deps.storage.cleanupExpiredTokens();
+  async cleanupExpiredTokens(): Promise<number> {
+    return await this.deps.storage.cleanupExpiredTokens();
   }
 
   // ── Password Reset ──────────────────────────────────────────────

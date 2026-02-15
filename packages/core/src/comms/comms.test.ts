@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { AgentCrypto, sanitizePayload } from './crypto.js';
 import { CommsStorage } from './storage.js';
 import { AgentComms } from './agent-comms.js';
 import type { MessagePayload, AgentCommsDeps } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -25,6 +26,14 @@ function createDeps(): AgentCommsDeps {
     logger: noopLogger(),
   };
 }
+
+beforeAll(async () => {
+  await setupTestDb();
+});
+
+afterAll(async () => {
+  await teardownTestDb();
+});
 
 // ── AgentCrypto Tests ─────────────────────────────────────────────
 
@@ -200,16 +209,13 @@ describe('sanitizePayload', () => {
 describe('CommsStorage', () => {
   let storage: CommsStorage;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await truncateAllTables();
     storage = new CommsStorage();
   });
 
-  afterEach(() => {
-    storage.close();
-  });
-
   describe('peers', () => {
-    it('should add and retrieve a peer', () => {
+    it('should add and retrieve a peer', async () => {
       const peer = {
         id: 'agent-1',
         name: 'FRIDAY-Alpha',
@@ -219,112 +225,112 @@ describe('CommsStorage', () => {
         capabilities: ['task_execution'],
         lastSeenAt: Date.now(),
       };
-      storage.addPeer(peer);
+      await storage.addPeer(peer);
 
-      const retrieved = storage.getPeer('agent-1');
+      const retrieved = await storage.getPeer('agent-1');
       expect(retrieved?.name).toBe('FRIDAY-Alpha');
       expect(retrieved?.capabilities).toEqual(['task_execution']);
     });
 
-    it('should return null for non-existent peer', () => {
-      expect(storage.getPeer('nonexistent')).toBeNull();
+    it('should return null for non-existent peer', async () => {
+      expect(await storage.getPeer('nonexistent')).toBeNull();
     });
 
-    it('should list peers', () => {
-      storage.addPeer({
+    it('should list peers', async () => {
+      await storage.addPeer({
         id: 'a1', name: 'Agent1', publicKey: 'k1', signingKey: 'sk1',
         endpoint: 'http://a1', capabilities: [], lastSeenAt: Date.now(),
       });
-      storage.addPeer({
+      await storage.addPeer({
         id: 'a2', name: 'Agent2', publicKey: 'k2', signingKey: 'sk2',
         endpoint: 'http://a2', capabilities: [], lastSeenAt: Date.now(),
       });
 
-      expect(storage.listPeers()).toHaveLength(2);
+      expect(await storage.listPeers()).toHaveLength(2);
     });
 
-    it('should remove a peer', () => {
-      storage.addPeer({
+    it('should remove a peer', async () => {
+      await storage.addPeer({
         id: 'a1', name: 'Agent1', publicKey: 'k1', signingKey: 'sk1',
         endpoint: 'http://a1', capabilities: [], lastSeenAt: Date.now(),
       });
-      expect(storage.removePeer('a1')).toBe(true);
-      expect(storage.getPeer('a1')).toBeNull();
+      expect(await storage.removePeer('a1')).toBe(true);
+      expect(await storage.getPeer('a1')).toBeNull();
     });
 
-    it('should return false removing non-existent peer', () => {
-      expect(storage.removePeer('nonexistent')).toBe(false);
+    it('should return false removing non-existent peer', async () => {
+      expect(await storage.removePeer('nonexistent')).toBe(false);
     });
 
-    it('should update peer on re-add (upsert)', () => {
+    it('should update peer on re-add (upsert)', async () => {
       const peer = {
         id: 'a1', name: 'Agent1', publicKey: 'k1', signingKey: 'sk1',
         endpoint: 'http://a1', capabilities: [], lastSeenAt: Date.now(),
       };
-      storage.addPeer(peer);
-      storage.addPeer({ ...peer, name: 'Agent1-Updated' });
+      await storage.addPeer(peer);
+      await storage.addPeer({ ...peer, name: 'Agent1-Updated' });
 
-      const retrieved = storage.getPeer('a1');
+      const retrieved = await storage.getPeer('a1');
       expect(retrieved?.name).toBe('Agent1-Updated');
-      expect(storage.getPeerCount()).toBe(1);
+      expect(await storage.getPeerCount()).toBe(1);
     });
 
-    it('should update peer last seen', () => {
-      storage.addPeer({
+    it('should update peer last seen', async () => {
+      await storage.addPeer({
         id: 'a1', name: 'Agent1', publicKey: 'k1', signingKey: 'sk1',
         endpoint: 'http://a1', capabilities: [], lastSeenAt: 1000,
       });
-      storage.updatePeerLastSeen('a1');
+      await storage.updatePeerLastSeen('a1');
 
-      const updated = storage.getPeer('a1');
+      const updated = await storage.getPeer('a1');
       expect(updated?.lastSeenAt).toBeGreaterThan(1000);
     });
 
-    it('should count peers', () => {
-      expect(storage.getPeerCount()).toBe(0);
-      storage.addPeer({
+    it('should count peers', async () => {
+      expect(await storage.getPeerCount()).toBe(0);
+      await storage.addPeer({
         id: 'a1', name: 'Agent1', publicKey: 'k1', signingKey: 'sk1',
         endpoint: 'http://a1', capabilities: [], lastSeenAt: Date.now(),
       });
-      expect(storage.getPeerCount()).toBe(1);
+      expect(await storage.getPeerCount()).toBe(1);
     });
   });
 
   describe('message log', () => {
-    it('should log a message', () => {
-      const id = storage.logMessage('sent', 'agent-2', 'task_request', '{"encrypted":"data"}');
+    it('should log a message', async () => {
+      const id = await storage.logMessage('sent', 'agent-2', 'task_request', '{"encrypted":"data"}');
       expect(id).toBeDefined();
     });
 
-    it('should query message log', () => {
-      storage.logMessage('sent', 'agent-2', 'task_request', '{"e":"d1"}');
-      storage.logMessage('received', 'agent-2', 'task_response', '{"e":"d2"}');
-      storage.logMessage('sent', 'agent-3', 'status_update', '{"e":"d3"}');
+    it('should query message log', async () => {
+      await storage.logMessage('sent', 'agent-2', 'task_request', '{"e":"d1"}');
+      await storage.logMessage('received', 'agent-2', 'task_response', '{"e":"d2"}');
+      await storage.logMessage('sent', 'agent-3', 'status_update', '{"e":"d3"}');
 
-      const all = storage.queryMessageLog();
+      const all = await storage.queryMessageLog();
       expect(all).toHaveLength(3);
 
-      const fromAgent2 = storage.queryMessageLog({ peerId: 'agent-2' });
+      const fromAgent2 = await storage.queryMessageLog({ peerId: 'agent-2' });
       expect(fromAgent2).toHaveLength(2);
 
-      const tasks = storage.queryMessageLog({ type: 'task_request' });
+      const tasks = await storage.queryMessageLog({ type: 'task_request' });
       expect(tasks).toHaveLength(1);
 
-      const limited = storage.queryMessageLog({ limit: 2 });
+      const limited = await storage.queryMessageLog({ limit: 2 });
       expect(limited).toHaveLength(2);
     });
 
-    it('should prune old messages', () => {
-      storage.logMessage('sent', 'agent-2', 'task_request', '{"e":"d1"}');
+    it('should prune old messages', async () => {
+      await storage.logMessage('sent', 'agent-2', 'task_request', '{"e":"d1"}');
       // This test just checks the method runs without error
-      const pruned = storage.pruneOldMessages(30);
+      const pruned = await storage.pruneOldMessages(30);
       expect(pruned).toBe(0); // Nothing old enough
     });
 
-    it('should count messages', () => {
-      expect(storage.getMessageCount()).toBe(0);
-      storage.logMessage('sent', 'agent-2', 'task_request', '{"e":"d1"}');
-      expect(storage.getMessageCount()).toBe(1);
+    it('should count messages', async () => {
+      expect(await storage.getMessageCount()).toBe(0);
+      await storage.logMessage('sent', 'agent-2', 'task_request', '{"e":"d1"}');
+      expect(await storage.getMessageCount()).toBe(1);
     });
   });
 });
@@ -336,6 +342,7 @@ describe('AgentComms', () => {
   let bob: AgentComms;
 
   beforeEach(async () => {
+    await truncateAllTables();
     alice = new AgentComms(
       { enabled: true, agentName: 'Alice', listenForPeers: true, maxPeers: 10, messageRetentionDays: 30 },
       createDeps(),
@@ -349,11 +356,6 @@ describe('AgentComms', () => {
     await bob.init();
   });
 
-  afterEach(() => {
-    alice.close();
-    bob.close();
-  });
-
   it('should generate identity', () => {
     const identity = alice.getIdentity();
     expect(identity.name).toBe('Alice');
@@ -361,26 +363,26 @@ describe('AgentComms', () => {
     expect(identity.signingKey).toBeDefined();
   });
 
-  it('should add and list peers', () => {
+  it('should add and list peers', async () => {
     const bobIdentity = bob.getIdentity();
-    alice.addPeer(bobIdentity);
+    await alice.addPeer(bobIdentity);
 
-    const peers = alice.listPeers();
+    const peers = await alice.listPeers();
     expect(peers).toHaveLength(1);
     expect(peers[0].name).toBe('Bob');
   });
 
-  it('should remove a peer', () => {
+  it('should remove a peer', async () => {
     const bobIdentity = bob.getIdentity();
-    alice.addPeer(bobIdentity);
-    expect(alice.removePeer(bobIdentity.id)).toBe(true);
-    expect(alice.listPeers()).toHaveLength(0);
+    await alice.addPeer(bobIdentity);
+    expect(await alice.removePeer(bobIdentity.id)).toBe(true);
+    expect(await alice.listPeers()).toHaveLength(0);
   });
 
-  it('should encrypt and decrypt messages between agents', () => {
+  it('should encrypt and decrypt messages between agents', async () => {
     // Register each other as peers
-    alice.addPeer(bob.getIdentity());
-    bob.addPeer(alice.getIdentity());
+    await alice.addPeer(bob.getIdentity());
+    await bob.addPeer(alice.getIdentity());
 
     const payload: MessagePayload = {
       type: 'task_request',
@@ -389,20 +391,20 @@ describe('AgentComms', () => {
     };
 
     // Alice encrypts for Bob
-    const encrypted = alice.encryptMessage(bob.getIdentity().id, payload);
+    const encrypted = await alice.encryptMessage(bob.getIdentity().id, payload);
     expect(encrypted.ciphertext).toBeDefined();
     expect(encrypted.signature).toBeDefined();
 
     // Bob decrypts
-    const decrypted = bob.decryptMessage(encrypted);
+    const decrypted = await bob.decryptMessage(encrypted);
     expect(decrypted.type).toBe('task_request');
     expect(decrypted.content).toBe('Please run the tests');
     expect(decrypted.metadata.priority).toBe('high');
   });
 
-  it('should sanitize secrets before encrypting', () => {
-    alice.addPeer(bob.getIdentity());
-    bob.addPeer(alice.getIdentity());
+  it('should sanitize secrets before encrypting', async () => {
+    await alice.addPeer(bob.getIdentity());
+    await bob.addPeer(alice.getIdentity());
 
     const payload: MessagePayload = {
       type: 'task_request',
@@ -410,8 +412,8 @@ describe('AgentComms', () => {
       metadata: { apiKey: 'secret-value' },
     };
 
-    const encrypted = alice.encryptMessage(bob.getIdentity().id, payload);
-    const decrypted = bob.decryptMessage(encrypted);
+    const encrypted = await alice.encryptMessage(bob.getIdentity().id, payload);
+    const decrypted = await bob.decryptMessage(encrypted);
 
     // Content should be sanitized
     expect(decrypted.content).toContain('[REDACTED]');
@@ -419,8 +421,8 @@ describe('AgentComms', () => {
     expect(decrypted.metadata.apiKey).toBe('[REDACTED]');
   });
 
-  it('should reject messages from unknown senders', () => {
-    alice.addPeer(bob.getIdentity());
+  it('should reject messages from unknown senders', async () => {
+    await alice.addPeer(bob.getIdentity());
     // Bob does NOT add Alice as a peer
 
     const payload: MessagePayload = {
@@ -429,23 +431,23 @@ describe('AgentComms', () => {
       metadata: {},
     };
 
-    const encrypted = alice.encryptMessage(bob.getIdentity().id, payload);
-    expect(() => bob.decryptMessage(encrypted)).toThrow('Unknown sender');
+    const encrypted = await alice.encryptMessage(bob.getIdentity().id, payload);
+    await expect(bob.decryptMessage(encrypted)).rejects.toThrow('Unknown sender');
   });
 
-  it('should reject messages to unknown recipients', () => {
+  it('should reject messages to unknown recipients', async () => {
     const payload: MessagePayload = {
       type: 'task_request',
       content: 'Hello',
       metadata: {},
     };
 
-    expect(() => alice.encryptMessage('unknown-agent', payload)).toThrow('Unknown peer');
+    await expect(alice.encryptMessage('unknown-agent', payload)).rejects.toThrow('Unknown peer');
   });
 
-  it('should log sent and received messages', () => {
-    alice.addPeer(bob.getIdentity());
-    bob.addPeer(alice.getIdentity());
+  it('should log sent and received messages', async () => {
+    await alice.addPeer(bob.getIdentity());
+    await bob.addPeer(alice.getIdentity());
 
     const payload: MessagePayload = {
       type: 'knowledge_share',
@@ -453,32 +455,29 @@ describe('AgentComms', () => {
       metadata: {},
     };
 
-    alice.encryptMessage(bob.getIdentity().id, payload);
+    await alice.encryptMessage(bob.getIdentity().id, payload);
 
-    const aliceLog = alice.getMessageLog();
+    const aliceLog = await alice.getMessageLog();
     expect(aliceLog).toHaveLength(1);
     expect(aliceLog[0].direction).toBe('sent');
   });
 
-  it('should enforce max peers limit', () => {
+  it('should enforce max peers limit', async () => {
     const comms = new AgentComms(
       { enabled: true, agentName: 'Test', listenForPeers: true, maxPeers: 1, messageRetentionDays: 30 },
       createDeps(),
     );
-    // Need to init to use addPeer
-    comms.init().then(() => {
-      comms.addPeer(bob.getIdentity());
-      expect(() => comms.addPeer(alice.getIdentity())).toThrow('Maximum peer limit');
-      comms.close();
-    });
+    await comms.init();
+    await comms.addPeer(bob.getIdentity());
+    await expect(comms.addPeer(alice.getIdentity())).rejects.toThrow('Maximum peer limit');
   });
 
-  it('should throw when not initialized', () => {
+  it('should throw when not initialized', async () => {
     const comms = new AgentComms(
       { enabled: true, agentName: 'Test', listenForPeers: true, maxPeers: 10, messageRetentionDays: 30 },
       createDeps(),
     );
     expect(() => comms.getIdentity()).toThrow('not initialized');
-    expect(() => comms.addPeer(bob.getIdentity())).toThrow('not initialized');
+    await expect(comms.addPeer(bob.getIdentity())).rejects.toThrow('not initialized');
   });
 });

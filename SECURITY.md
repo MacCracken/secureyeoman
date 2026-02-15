@@ -2,12 +2,9 @@
 
 ## Supported Versions
 
-| Version | Supported          | Security Updates |
-|---------|--------------------|------------------|
-| 1.5.x   | :white_check_mark: | Yes              |
-| 1.4.x   | :white_check_mark: | Security fixes   |
-| 1.3.x   | :x:                | No               |
-| < 1.3.0 | :x:                | No               |
+| Version    | Supported          | Security Updates |
+|------------|--------------------|------------------|
+| 2026.2.x   | :white_check_mark: | Yes              |
 
 ## Reporting a Vulnerability
 

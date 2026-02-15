@@ -46,7 +46,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (q.minImportance) query.minImportance = Number(q.minImportance);
       if (q.limit) query.limit = Number(q.limit);
 
-      const memories = brainManager.recall(query);
+      const memories = await brainManager.recall(query);
       return { memories };
     }
   );
@@ -67,7 +67,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     ) => {
       try {
         const { type, content, source, context, importance } = request.body;
-        const memory = brainManager.remember(type, content, source, context, importance);
+        const memory = await brainManager.remember(type, content, source, context, importance);
         return await reply.code(201).send({ memory });
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -79,7 +79,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/memories/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        brainManager.forget(request.params.id);
+        await brainManager.forget(request.params.id);
         return { message: 'Memory deleted' };
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -103,7 +103,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (q.minConfidence) query.minConfidence = Number(q.minConfidence);
       if (q.limit) query.limit = Number(q.limit);
 
-      const knowledge = brainManager.queryKnowledge(query);
+      const knowledge = await brainManager.queryKnowledge(query);
       return { knowledge };
     }
   );
@@ -118,7 +118,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     ) => {
       try {
         const { topic, content, source, confidence } = request.body;
-        const entry = brainManager.learn(topic, content, source, confidence);
+        const entry = await brainManager.learn(topic, content, source, confidence);
         return await reply.code(201).send({ knowledge: entry });
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -137,7 +137,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     ) => {
       try {
         const { content, confidence } = request.body;
-        const knowledge = brainManager.updateKnowledge(request.params.id, { content, confidence });
+        const knowledge = await brainManager.updateKnowledge(request.params.id, { content, confidence });
         return { knowledge };
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -149,7 +149,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/knowledge/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
-        brainManager.deleteKnowledge(request.params.id);
+        await brainManager.deleteKnowledge(request.params.id);
         return { message: 'Knowledge entry deleted' };
       } catch (err) {
         return reply.code(404).send({ error: errorMessage(err) });
@@ -160,14 +160,14 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
   // ── Stats ────────────────────────────────────────────────────
 
   app.get('/api/v1/brain/stats', async () => {
-    const stats = brainManager.getStats();
+    const stats = await brainManager.getStats();
     return { stats };
   });
 
   // ── Maintenance ──────────────────────────────────────────────
 
   app.post('/api/v1/brain/maintenance', async () => {
-    const result = brainManager.runMaintenance();
+    const result = await brainManager.runMaintenance();
     return { result };
   });
 
@@ -205,7 +205,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         return reply.code(503).send({ error: 'Heartbeat system not available' });
       }
       const status = heartbeatManager.getStatus();
-      const activePersonality = soulManager?.getActivePersonality() ?? null;
+      const activePersonality = (await soulManager?.getActivePersonality()) ?? null;
       const tasks = status.tasks.map((t) => ({
         ...t,
         personalityId: activePersonality?.id ?? null,
@@ -246,7 +246,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         return reply.code(503).send({ error: 'Heartbeat system not available' });
       }
       const limit = request.query.limit ? Number(request.query.limit) : 10;
-      const memories = brainManager.recall({ source: 'heartbeat', limit });
+      const memories = await brainManager.recall({ source: 'heartbeat', limit });
       return { history: memories };
     }
   );

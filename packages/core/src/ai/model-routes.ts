@@ -51,7 +51,7 @@ export function registerModelRoutes(
       return reply.code(400).send({ error: 'provider and model are required' });
     }
 
-    const validProviders = ['anthropic', 'openai', 'gemini', 'ollama', 'opencode'];
+    const validProviders = ['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai'];
     if (!validProviders.includes(provider)) {
       return reply.code(400).send({
         error: `Invalid provider. Must be one of: ${validProviders.join(', ')}`,

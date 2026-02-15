@@ -173,6 +173,18 @@ Types:
 - [ ] PR description explains changes
 - [ ] Breaking changes documented
 
+## Versioning
+
+F.R.I.D.A.Y. uses **calendar versioning** (`YYYY.M.D`). The version is the release date — e.g., `2026.2.15` for February 15, 2026.
+
+To bump the version across all packages:
+
+```bash
+npm run version:set -- 2026.3.1
+```
+
+The core server reads its version from `package.json` at runtime, so only `package.json` files need updating.
+
 ## Documentation
 
 ### Documentation Structure
@@ -207,17 +219,5 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) and follow it in all inter
 ### Security
 
 For security issues, please see our [Security Policy](SECURITY.md).
-
-## Development Phases
-
-See our [Roadmap](docs/development/roadmap.md) for current development priorities and phases.
-
-## Additional Resources
-
-- [Architecture Overview](docs/development/architecture.md)
-- [API Reference](docs/api/)
-- [Security Model](docs/security/security-model.md)
-- [Deployment Guide](docs/deployment.md)
-- [Troubleshooting Guide](docs/troubleshooting.md)
 
 Thank you for contributing to F.R.I.D.A.Y.!

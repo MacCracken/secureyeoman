@@ -40,6 +40,7 @@ import {
   fetchIntegrations,
   fetchAvailablePlatforms,
   createIntegration,
+  claimGmailOAuth,
   startIntegration,
   stopIntegration,
   deleteIntegration,
@@ -215,6 +216,12 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'Test the connection by triggering an event',
     ],
   },
+  gmail: {
+    name: 'Gmail',
+    description: 'Connect your Gmail account for email messaging',
+    icon: <Mail className="w-6 h-6" />,
+    fields: BASE_FIELDS,
+  },
   googlechat: {
     name: 'Google Chat',
     description: 'Connect to Google Chat spaces via Bot API',
@@ -240,7 +247,7 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
   },
 };
 
-type TabType = 'messaging' | 'mcp' | 'oauth';
+type TabType = 'messaging' | 'email' | 'mcp' | 'oauth';
 
 const STATUS_CONFIG: Record<
   IntegrationInfo['status'],
@@ -284,6 +291,7 @@ export function ConnectionsPage() {
 
   const getInitialTab = (): TabType => {
     const path = location.pathname;
+    if (path.includes('/email')) return 'email';
     if (path.includes('/mcp')) return 'mcp';
     if (path.includes('/oauth')) return 'oauth';
     return 'messaging';
@@ -369,7 +377,7 @@ export function ConnectionsPage() {
   const externalServers = servers.filter((s) => s.name !== LOCAL_MCP_NAME);
   const activePlatformIds = new Set(integrations.map((i) => i.platform));
   const unregisteredPlatforms = Object.keys(PLATFORM_META)
-    .filter((p) => !activePlatformIds.has(p))
+    .filter((p) => !activePlatformIds.has(p) && p !== 'gmail')
     .sort((a, b) => PLATFORM_META[a].name.localeCompare(PLATFORM_META[b].name));
 
   const toolsByServer = tools.reduce<Record<string, McpToolDef[]>>((acc, tool) => {
@@ -551,6 +559,7 @@ export function ConnectionsPage() {
         {(
           [
             ['messaging', 'Messaging', <MessageCircle key="msg" className="w-4 h-4" />],
+            ['email', 'Email', <Mail key="email" className="w-4 h-4" />],
             ['mcp', 'MCP Servers', <Wrench key="mcp" className="w-4 h-4" />],
             ['oauth', 'OAuth', <ArrowRightLeft key="oauth" className="w-4 h-4" />],
           ] as [TabType, string, React.ReactNode][]
@@ -591,6 +600,20 @@ export function ConnectionsPage() {
           onCreateIntegration={createIntegrationMut.mutate}
           isCreating={createIntegrationMut.isPending}
           createError={createIntegrationMut.error}
+          onStart={startIntegrationMut.mutate}
+          onStop={stopIntegrationMut.mutate}
+          onDelete={(id) => {
+            setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+          }}
+          isStarting={startIntegrationMut.isPending}
+          isStopping={stopIntegrationMut.isPending}
+          isDeleting={deleteIntegrationMut.isPending}
+        />
+      )}
+
+      {activeTab === 'email' && (
+        <EmailTab
+          integrations={integrations.filter((i) => i.platform === 'gmail')}
           onStart={startIntegrationMut.mutate}
           onStop={stopIntegrationMut.mutate}
           onDelete={(id) => {
@@ -1520,6 +1543,309 @@ function ServerCard({
           Remove
         </button>
       </div>
+    </div>
+  );
+}
+
+function EmailTab({
+  integrations,
+  onStart,
+  onStop,
+  onDelete,
+  isStarting,
+  isStopping,
+  isDeleting,
+}: {
+  integrations: IntegrationInfo[];
+  onStart: (id: string) => void;
+  onStop: (id: string) => void;
+  onDelete: (id: string) => void;
+  isStarting: boolean;
+  isStopping: boolean;
+  isDeleting: boolean;
+}) {
+  const queryClient = useQueryClient();
+  const location = useLocation();
+  const [showConfig, setShowConfig] = useState(false);
+  const [gmailForm, setGmailForm] = useState({
+    displayName: '',
+    enableRead: true,
+    enableSend: false,
+    labelFilter: 'all' as 'all' | 'label' | 'custom',
+    labelName: '',
+  });
+  const [claimError, setClaimError] = useState<string | null>(null);
+
+  // Parse OAuth callback params
+  const searchParams = new URLSearchParams(location.search);
+  const isConnected = searchParams.get('connected') === 'true';
+  const oauthEmail = searchParams.get('email') || '';
+  const connectionToken = searchParams.get('token') || '';
+  const oauthError = searchParams.get('error');
+
+  // Pre-fill display name from email
+  useEffect(() => {
+    if (oauthEmail && !gmailForm.displayName) {
+      setGmailForm((f) => ({ ...f, displayName: oauthEmail }));
+    }
+  }, [oauthEmail]);
+
+  // Show config form when we get a successful OAuth callback
+  useEffect(() => {
+    if (isConnected && connectionToken) {
+      setShowConfig(true);
+    }
+  }, [isConnected, connectionToken]);
+
+  const claimMut = useMutation({
+    mutationFn: async () => {
+      setClaimError(null);
+      const result = await claimGmailOAuth({
+        connectionToken,
+        displayName: gmailForm.displayName,
+        enableRead: gmailForm.enableRead,
+        enableSend: gmailForm.enableSend,
+        labelFilter: gmailForm.labelFilter,
+        labelName: gmailForm.labelFilter !== 'all' ? gmailForm.labelName : undefined,
+      });
+
+      // Create the integration using the claimed config
+      const integration = await createIntegration(result.config);
+      await startIntegration(integration.id);
+      return integration;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['integrations'] });
+      setShowConfig(false);
+      // Clear URL params
+      window.history.replaceState({}, '', '/connections/email');
+    },
+    onError: (err: Error) => {
+      setClaimError(err.message || 'Failed to set up Gmail integration');
+    },
+  });
+
+  const hasGmail = integrations.length > 0;
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted">
+        Connect your Gmail account for direct email integration. Friday can read incoming emails
+        and optionally send replies on your behalf.
+      </p>
+
+      {oauthError && (
+        <div className="p-3 rounded border border-destructive bg-destructive/10 text-destructive text-sm">
+          Gmail connection error: {decodeURIComponent(oauthError)}
+        </div>
+      )}
+
+      {/* Connected Gmail integrations */}
+      {hasGmail && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted">Connected Accounts</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {integrations.map((integration) => (
+              <IntegrationCard
+                key={integration.id}
+                integration={integration}
+                onStart={onStart}
+                onStop={onStop}
+                onDelete={onDelete}
+                isStarting={isStarting}
+                isStopping={isStopping}
+                isDeleting={isDeleting}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Config form after OAuth callback */}
+      {showConfig && (
+        <div className="card p-4 border-primary border-2">
+          <div className="flex items-center gap-2 mb-3">
+            <Mail className="w-5 h-5 text-primary" />
+            <h3 className="font-medium text-sm">Configure Gmail — {oauthEmail}</h3>
+          </div>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              claimMut.mutate();
+            }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="text-xs text-muted block mb-1">Display Name</label>
+              <input
+                type="text"
+                value={gmailForm.displayName}
+                onChange={(e) => setGmailForm((f) => ({ ...f, displayName: e.target.value }))}
+                placeholder="e.g. My Gmail"
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <label className="flex items-center gap-2.5 p-3 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex-1">
+                  <span className="text-xs font-medium block">Read Emails</span>
+                  <span className="text-xs text-muted">Poll inbox for new messages</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={gmailForm.enableRead}
+                  onChange={(e) => setGmailForm((f) => ({ ...f, enableRead: e.target.checked }))}
+                  className="w-4 h-4 rounded accent-primary"
+                />
+              </label>
+              <label className="flex items-center gap-2.5 p-3 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+                <div className="flex-1">
+                  <span className="text-xs font-medium block">Send Emails</span>
+                  <span className="text-xs text-muted">Allow sending replies</span>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={gmailForm.enableSend}
+                  onChange={(e) => setGmailForm((f) => ({ ...f, enableSend: e.target.checked }))}
+                  className="w-4 h-4 rounded accent-primary"
+                />
+              </label>
+            </div>
+
+            <div>
+              <label className="text-xs text-muted block mb-1">Inbox Filter</label>
+              <select
+                value={gmailForm.labelFilter}
+                onChange={(e) =>
+                  setGmailForm((f) => ({
+                    ...f,
+                    labelFilter: e.target.value as 'all' | 'label' | 'custom',
+                  }))
+                }
+                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="all">All Inbox</option>
+                <option value="label">Specific Label</option>
+                <option value="custom">Custom App Label (auto-created)</option>
+              </select>
+              <p className="text-xs text-muted mt-1 flex items-center gap-1">
+                <HelpCircle className="w-3 h-3" />
+                {gmailForm.labelFilter === 'all'
+                  ? 'Process all incoming inbox messages'
+                  : gmailForm.labelFilter === 'label'
+                    ? 'Only process messages with this Gmail label'
+                    : 'Auto-creates a dedicated label for Friday'}
+              </p>
+            </div>
+
+            {gmailForm.labelFilter !== 'all' && (
+              <div>
+                <label className="text-xs text-muted block mb-1">Label Name</label>
+                <input
+                  type="text"
+                  value={gmailForm.labelName}
+                  onChange={(e) => setGmailForm((f) => ({ ...f, labelName: e.target.value }))}
+                  placeholder={
+                    gmailForm.labelFilter === 'custom'
+                      ? `friday.${oauthEmail}`
+                      : 'e.g. Friday'
+                  }
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+              </div>
+            )}
+
+            {claimError && (
+              <p className="text-xs text-red-400">{claimError}</p>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={!gmailForm.displayName || claimMut.isPending}
+                className="btn btn-primary text-xs px-3 py-1.5"
+              >
+                {claimMut.isPending ? (
+                  <span className="flex items-center gap-1">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Setting up...
+                  </span>
+                ) : (
+                  'Finish Setup'
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowConfig(false);
+                  window.history.replaceState({}, '', '/connections/email');
+                }}
+                className="btn btn-ghost text-xs px-3 py-1.5"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Connect button */}
+      {!showConfig && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium text-muted">Add Email Account</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="card p-4">
+              <div className="flex items-start gap-3">
+                <div className="p-2 rounded-lg bg-surface text-muted">
+                  <Mail className="w-6 h-6" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium text-sm">Gmail</h3>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/10 text-green-400">
+                      Available
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted mt-1">
+                    Connect your Gmail account for email messaging
+                  </p>
+                  <div className="mt-3 p-3 bg-surface rounded-md">
+                    <p className="text-xs font-medium text-muted mb-2">How it works</p>
+                    <ol className="text-xs space-y-1">
+                      <li className="flex gap-2">
+                        <span className="text-muted">1.</span>
+                        <span>Click &quot;Connect with Google&quot; to authorize</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-muted">2.</span>
+                        <span>Grant permissions to read and/or send emails</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-muted">3.</span>
+                        <span>Configure read/send preferences and label filter</span>
+                      </li>
+                      <li className="flex gap-2">
+                        <span className="text-muted">4.</span>
+                        <span>Gmail will be polled every 30 seconds for new messages</span>
+                      </li>
+                    </ol>
+                  </div>
+                  <button
+                    onClick={() => {
+                      window.location.href = '/api/v1/auth/oauth/gmail';
+                    }}
+                    className="btn btn-primary text-xs px-3 py-1.5 mt-3 flex items-center gap-1.5"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    Connect with Google
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

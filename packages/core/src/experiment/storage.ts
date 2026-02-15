@@ -1,81 +1,110 @@
 /**
- * Experiment Storage — SQLite persistence for A/B tests
+ * Experiment Storage — PostgreSQL persistence for A/B tests
  */
 
-import Database from 'better-sqlite3';
 import type { Experiment, ExperimentCreate } from '@friday/shared';
+import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 
-export class ExperimentStorage {
-  private db: Database.Database;
-
-  constructor(opts: { dbPath: string }) {
-    this.db = new Database(opts.dbPath);
-    this.db.pragma('journal_mode = WAL');
-    this.init();
+export class ExperimentStorage extends PgBaseStorage {
+  constructor() {
+    super();
   }
 
-  private init(): void {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS experiments (
-        id TEXT PRIMARY KEY,
-        name TEXT NOT NULL,
-        description TEXT DEFAULT '',
-        status TEXT DEFAULT 'draft',
-        variants TEXT DEFAULT '[]',
-        results TEXT DEFAULT '[]',
-        started_at INTEGER,
-        completed_at INTEGER,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      )
-    `);
-  }
-
-  create(data: ExperimentCreate): Experiment {
+  async create(data: ExperimentCreate): Promise<Experiment> {
     const now = Date.now();
     const id = uuidv7();
     const exp: Experiment = {
-      id, name: data.name, description: data.description ?? '', status: data.status ?? 'draft',
-      variants: data.variants, results: [], startedAt: null, completedAt: null, createdAt: now, updatedAt: now,
+      id,
+      name: data.name,
+      description: data.description ?? '',
+      status: data.status ?? 'draft',
+      variants: data.variants,
+      results: [],
+      startedAt: null,
+      completedAt: null,
+      createdAt: now,
+      updatedAt: now,
     };
-    this.db.prepare('INSERT INTO experiments (id, name, description, status, variants, results, started_at, completed_at, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-      id, exp.name, exp.description, exp.status, JSON.stringify(exp.variants), '[]', null, null, now, now
+    await this.execute(
+      `INSERT INTO experiment.experiments
+        (id, name, description, status, variants, results, started_at, completed_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        id,
+        exp.name,
+        exp.description,
+        exp.status,
+        JSON.stringify(exp.variants),
+        '[]',
+        null,
+        null,
+        now,
+        now,
+      ],
     );
     return exp;
   }
 
-  get(id: string): Experiment | null {
-    const row = this.db.prepare('SELECT * FROM experiments WHERE id = ?').get(id) as Record<string, unknown> | undefined;
+  async get(id: string): Promise<Experiment | null> {
+    const row = await this.queryOne<Record<string, unknown>>(
+      'SELECT * FROM experiment.experiments WHERE id = $1',
+      [id],
+    );
     return row ? this.rowToExperiment(row) : null;
   }
 
-  list(): Experiment[] {
-    return (this.db.prepare('SELECT * FROM experiments ORDER BY created_at DESC').all() as Record<string, unknown>[]).map(r => this.rowToExperiment(r));
+  async list(): Promise<Experiment[]> {
+    const rows = await this.queryMany<Record<string, unknown>>(
+      'SELECT * FROM experiment.experiments ORDER BY created_at DESC',
+    );
+    return rows.map((r) => this.rowToExperiment(r));
   }
 
-  update(id: string, data: Partial<Experiment>): Experiment | null {
-    const existing = this.get(id);
+  async update(id: string, data: Partial<Experiment>): Promise<Experiment | null> {
+    const existing = await this.get(id);
     if (!existing) return null;
     const updated = { ...existing, ...data, updatedAt: Date.now() };
-    this.db.prepare('UPDATE experiments SET name = ?, description = ?, status = ?, variants = ?, results = ?, started_at = ?, completed_at = ?, updated_at = ? WHERE id = ?').run(
-      updated.name, updated.description, updated.status, JSON.stringify(updated.variants), JSON.stringify(updated.results), updated.startedAt, updated.completedAt, updated.updatedAt, id
+    await this.execute(
+      `UPDATE experiment.experiments
+       SET name = $1, description = $2, status = $3, variants = $4, results = $5,
+           started_at = $6, completed_at = $7, updated_at = $8
+       WHERE id = $9`,
+      [
+        updated.name,
+        updated.description,
+        updated.status,
+        JSON.stringify(updated.variants),
+        JSON.stringify(updated.results),
+        updated.startedAt,
+        updated.completedAt,
+        updated.updatedAt,
+        id,
+      ],
     );
     return updated;
   }
 
-  delete(id: string): boolean {
-    return this.db.prepare('DELETE FROM experiments WHERE id = ?').run(id).changes > 0;
+  async delete(id: string): Promise<boolean> {
+    const changes = await this.execute(
+      'DELETE FROM experiment.experiments WHERE id = $1',
+      [id],
+    );
+    return changes > 0;
   }
 
   private rowToExperiment(row: Record<string, unknown>): Experiment {
     return {
-      id: row.id as string, name: row.name as string, description: (row.description as string) ?? '',
-      status: (row.status as Experiment['status']) ?? 'draft', variants: JSON.parse((row.variants as string) || '[]'),
-      results: JSON.parse((row.results as string) || '[]'), startedAt: (row.started_at as number) ?? null,
-      completedAt: (row.completed_at as number) ?? null, createdAt: row.created_at as number, updatedAt: row.updated_at as number,
+      id: row.id as string,
+      name: row.name as string,
+      description: (row.description as string) ?? '',
+      status: (row.status as Experiment['status']) ?? 'draft',
+      variants: row.variants as Experiment['variants'],
+      results: row.results as Experiment['results'],
+      startedAt: (row.started_at as number) ?? null,
+      completedAt: (row.completed_at as number) ?? null,
+      createdAt: row.created_at as number,
+      updatedAt: row.updated_at as number,
     };
   }
-
-  close(): void { this.db.close(); }
 }

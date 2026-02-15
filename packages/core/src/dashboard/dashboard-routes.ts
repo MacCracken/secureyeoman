@@ -17,7 +17,7 @@ export function registerDashboardRoutes(app: FastifyInstance, opts: DashboardRou
   const { dashboardManager } = opts;
 
   app.get('/api/v1/dashboards', async () => {
-    const dashboards = dashboardManager.list();
+    const dashboards = await dashboardManager.list();
     return { dashboards, total: dashboards.length };
   });
 
@@ -25,7 +25,7 @@ export function registerDashboardRoutes(app: FastifyInstance, opts: DashboardRou
     Body: { name: string; description?: string; widgets?: unknown[]; isDefault?: boolean }
   }>, reply: FastifyReply) => {
     try {
-      const dashboard = dashboardManager.create(request.body as any);
+      const dashboard = await dashboardManager.create(request.body as any);
       return reply.code(201).send({ dashboard });
     } catch (err) {
       return reply.code(400).send({ error: errorMessage(err) });
@@ -33,7 +33,7 @@ export function registerDashboardRoutes(app: FastifyInstance, opts: DashboardRou
   });
 
   app.get('/api/v1/dashboards/:id', async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-    const dashboard = dashboardManager.get(request.params.id);
+    const dashboard = await dashboardManager.get(request.params.id);
     if (!dashboard) return reply.code(404).send({ error: 'Dashboard not found' });
     return { dashboard };
   });
@@ -41,7 +41,7 @@ export function registerDashboardRoutes(app: FastifyInstance, opts: DashboardRou
   app.put('/api/v1/dashboards/:id', async (request: FastifyRequest<{
     Params: { id: string }; Body: { name?: string; description?: string; widgets?: unknown[]; isDefault?: boolean }
   }>, reply: FastifyReply) => {
-    const dashboard = dashboardManager.update(request.params.id, request.body as any);
+    const dashboard = await dashboardManager.update(request.params.id, request.body as any);
     if (!dashboard) return reply.code(404).send({ error: 'Dashboard not found' });
     return { dashboard };
   });

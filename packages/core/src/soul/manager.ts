@@ -59,27 +59,31 @@ export class SoulManager {
 
   // ── Agent Name ─────────────────────────────────────────────
 
-  getAgentName(): string | null {
+  async getAgentName(): Promise<string | null> {
     return this.storage.getAgentName();
   }
 
-  setAgentName(name: string): void {
+  async setAgentName(name: string): Promise<void> {
     if (!name || name.trim().length === 0) {
       throw new Error('Agent name cannot be empty');
     }
-    this.storage.setAgentName(name.trim());
+    await this.storage.setAgentName(name.trim());
   }
 
   // ── Onboarding ──────────────────────────────────────────────
 
-  needsOnboarding(): boolean {
-    return this.storage.getAgentName() === null || this.storage.getPersonalityCount() === 0;
+  async needsOnboarding(): Promise<boolean> {
+    const [agentName, personalityCount] = await Promise.all([
+      this.storage.getAgentName(),
+      this.storage.getPersonalityCount(),
+    ]);
+    return agentName === null || personalityCount === 0;
   }
 
-  createDefaultPersonality(): Personality {
-    const agentName = this.storage.getAgentName() ?? 'FRIDAY';
+  async createDefaultPersonality(): Promise<Personality> {
+    const agentName = (await this.storage.getAgentName()) ?? 'FRIDAY';
 
-    const personality = this.storage.createPersonality({
+    const personality = await this.storage.createPersonality({
       name: agentName,
       description: 'Friendly, Reliable, Intelligent Digitally Adaptable Yeoman',
       systemPrompt: `You are ${agentName}, a helpful and security-conscious AI assistant. You are direct, technically precise, and proactive about identifying risks.`,
@@ -88,7 +92,7 @@ export class SoulManager {
       voice: '',
       preferredLanguage: '',
       defaultModel: null,
-      includeArchetypes: true,
+      includeArchetypes: agentName === 'FRIDAY',
       body: {
         enabled: false,
         capabilities: [],
@@ -99,107 +103,107 @@ export class SoulManager {
       },
     });
 
-    this.storage.setActivePersonality(personality.id);
-    return this.storage.getPersonality(personality.id)!;
+    await this.storage.setActivePersonality(personality.id);
+    return (await this.storage.getPersonality(personality.id))!;
   }
 
   // ── Personality ─────────────────────────────────────────────
 
-  getPersonality(id: string): Personality | null {
+  async getPersonality(id: string): Promise<Personality | null> {
     return this.storage.getPersonality(id);
   }
 
-  getActivePersonality(): Personality | null {
+  async getActivePersonality(): Promise<Personality | null> {
     return this.storage.getActivePersonality();
   }
 
-  setPersonality(id: string): void {
-    this.storage.setActivePersonality(id);
+  async setPersonality(id: string): Promise<void> {
+    await this.storage.setActivePersonality(id);
   }
 
-  createPersonality(data: PersonalityCreate): Personality {
+  async createPersonality(data: PersonalityCreate): Promise<Personality> {
     return this.storage.createPersonality(data);
   }
 
-  updatePersonality(id: string, data: PersonalityUpdate): Personality {
+  async updatePersonality(id: string, data: PersonalityUpdate): Promise<Personality> {
     return this.storage.updatePersonality(id, data);
   }
 
-  deletePersonality(id: string): void {
-    const personality = this.storage.getPersonality(id);
+  async deletePersonality(id: string): Promise<void> {
+    const personality = await this.storage.getPersonality(id);
     if (personality?.isActive) {
       throw new Error('Cannot delete the active personality');
     }
-    this.storage.deletePersonality(id);
+    await this.storage.deletePersonality(id);
   }
 
-  listPersonalities(): Personality[] {
+  async listPersonalities(): Promise<Personality[]> {
     return this.storage.listPersonalities();
   }
 
   // ── Skills (delegated to Brain when available) ────────────
 
-  createSkill(data: SkillCreate): Skill {
+  async createSkill(data: SkillCreate): Promise<Skill> {
     if (this.brain) {
       return this.brain.createSkill(data);
     }
-    const count = this.storage.getSkillCount();
+    const count = await this.storage.getSkillCount();
     if (count >= this.config.maxSkills) {
       throw new Error(`Maximum skill limit reached (${this.config.maxSkills})`);
     }
     return this.storage.createSkill(data);
   }
 
-  updateSkill(id: string, data: SkillUpdate): Skill {
+  async updateSkill(id: string, data: SkillUpdate): Promise<Skill> {
     if (this.brain) {
       return this.brain.updateSkill(id, data);
     }
     return this.storage.updateSkill(id, data);
   }
 
-  deleteSkill(id: string): void {
+  async deleteSkill(id: string): Promise<void> {
     if (this.brain) {
-      this.brain.deleteSkill(id);
+      await this.brain.deleteSkill(id);
       return;
     }
-    this.storage.deleteSkill(id);
+    await this.storage.deleteSkill(id);
   }
 
-  enableSkill(id: string): void {
+  async enableSkill(id: string): Promise<void> {
     if (this.brain) {
-      this.brain.enableSkill(id);
+      await this.brain.enableSkill(id);
       return;
     }
-    this.storage.updateSkill(id, { enabled: true });
+    await this.storage.updateSkill(id, { enabled: true });
   }
 
-  disableSkill(id: string): void {
+  async disableSkill(id: string): Promise<void> {
     if (this.brain) {
-      this.brain.disableSkill(id);
+      await this.brain.disableSkill(id);
       return;
     }
-    this.storage.updateSkill(id, { enabled: false });
+    await this.storage.updateSkill(id, { enabled: false });
   }
 
-  listSkills(filter?: SkillFilter): Skill[] {
+  async listSkills(filter?: SkillFilter): Promise<Skill[]> {
     if (this.brain) {
       return this.brain.listSkills(filter);
     }
     return this.storage.listSkills(filter);
   }
 
-  getSkill(id: string): Skill | null {
+  async getSkill(id: string): Promise<Skill | null> {
     if (this.brain) {
       return this.brain.getSkill(id);
     }
     return this.storage.getSkill(id);
   }
 
-  approveSkill(id: string): Skill {
+  async approveSkill(id: string): Promise<Skill> {
     if (this.brain) {
       return this.brain.approveSkill(id);
     }
-    const skill = this.storage.getSkill(id);
+    const skill = await this.storage.getSkill(id);
     if (!skill) {
       throw new Error(`Skill not found: ${id}`);
     }
@@ -209,54 +213,54 @@ export class SoulManager {
     return this.storage.updateSkill(id, { status: 'active' });
   }
 
-  rejectSkill(id: string): void {
+  async rejectSkill(id: string): Promise<void> {
     if (this.brain) {
-      this.brain.rejectSkill(id);
+      await this.brain.rejectSkill(id);
       return;
     }
-    const skill = this.storage.getSkill(id);
+    const skill = await this.storage.getSkill(id);
     if (!skill) {
       throw new Error(`Skill not found: ${id}`);
     }
     if (skill.status !== 'pending_approval') {
       throw new Error(`Skill is not pending approval (status: ${skill.status})`);
     }
-    this.storage.deleteSkill(id);
+    await this.storage.deleteSkill(id);
   }
 
   // ── Users ──────────────────────────────────────────────────
 
-  getUser(id: string): UserProfile | null {
+  async getUser(id: string): Promise<UserProfile | null> {
     return this.storage.getUser(id);
   }
 
-  getUserByName(name: string): UserProfile | null {
+  async getUserByName(name: string): Promise<UserProfile | null> {
     return this.storage.getUserByName(name);
   }
 
-  getOwner(): UserProfile | null {
+  async getOwner(): Promise<UserProfile | null> {
     return this.storage.getOwner();
   }
 
-  createUser(data: UserProfileCreate): UserProfile {
+  async createUser(data: UserProfileCreate): Promise<UserProfile> {
     return this.storage.createUser(data);
   }
 
-  updateUser(id: string, data: UserProfileUpdate): UserProfile {
+  async updateUser(id: string, data: UserProfileUpdate): Promise<UserProfile> {
     return this.storage.updateUser(id, data);
   }
 
-  deleteUser(id: string): boolean {
+  async deleteUser(id: string): Promise<boolean> {
     return this.storage.deleteUser(id);
   }
 
-  listUsers(): UserProfile[] {
+  async listUsers(): Promise<UserProfile[]> {
     return this.storage.listUsers();
   }
 
   // ── Learning ────────────────────────────────────────────────
 
-  proposeSkill(data: Omit<SkillCreate, 'source' | 'status'>): Skill {
+  async proposeSkill(data: Omit<SkillCreate, 'source' | 'status'>): Promise<Skill> {
     if (!this.config.learningMode.includes('ai_proposed')) {
       throw new Error('AI-proposed learning mode is not enabled');
     }
@@ -268,7 +272,7 @@ export class SoulManager {
     });
   }
 
-  learnSkill(data: Omit<SkillCreate, 'source' | 'status'>): Skill {
+  async learnSkill(data: Omit<SkillCreate, 'source' | 'status'>): Promise<Skill> {
     if (!this.config.learningMode.includes('autonomous')) {
       throw new Error('Autonomous learning mode is not enabled');
     }
@@ -280,12 +284,12 @@ export class SoulManager {
     });
   }
 
-  incrementSkillUsage(skillId: string): void {
+  async incrementSkillUsage(skillId: string): Promise<void> {
     if (this.brain) {
-      this.brain.incrementSkillUsage(skillId);
+      await this.brain.incrementSkillUsage(skillId);
       return;
     }
-    this.storage.incrementUsage(skillId);
+    await this.storage.incrementUsage(skillId);
   }
 
   // ── Body / Heart ──────────────────────────────────────────────
@@ -322,12 +326,17 @@ export class SoulManager {
 
     // MCP Connections — list selected servers and feature toggles
     const selectedServers = personality?.body?.selectedServers ?? [];
-    const mcpFeatures = personality?.body?.mcpFeatures ?? { exposeGit: false, exposeFilesystem: false };
+    const mcpFeatures = personality?.body?.mcpFeatures ?? {
+      exposeGit: false,
+      exposeFilesystem: false,
+    };
     if (selectedServers.length > 0) {
       lines.push('');
       lines.push('### MCP Connections');
       lines.push(`Connected servers: ${selectedServers.join(', ')}`);
-      lines.push(`Tool categories — Git: ${mcpFeatures.exposeGit ? 'enabled' : 'disabled'}, Filesystem: ${mcpFeatures.exposeFilesystem ? 'enabled' : 'disabled'}`);
+      lines.push(
+        `Tool categories — Git: ${mcpFeatures.exposeGit ? 'enabled' : 'disabled'}, Filesystem: ${mcpFeatures.exposeFilesystem ? 'enabled' : 'disabled'}`
+      );
     }
 
     // Creation Permissions
@@ -372,7 +381,7 @@ export class SoulManager {
 
   // ── Composition ─────────────────────────────────────────────
 
-  composeSoulPrompt(input?: string, personalityId?: string): string {
+  async composeSoulPrompt(input?: string, personalityId?: string): Promise<string> {
     if (!this.config.enabled) {
       return '';
     }
@@ -380,8 +389,8 @@ export class SoulManager {
     const parts: string[] = [];
 
     const personality = personalityId
-      ? (this.storage.getPersonality(personalityId) ?? this.storage.getActivePersonality())
-      : this.storage.getActivePersonality();
+      ? ((await this.storage.getPersonality(personalityId)) ?? (await this.storage.getActivePersonality()))
+      : await this.storage.getActivePersonality();
 
     // Sacred archetypes — cosmological foundation (toggleable per personality)
     const includeArchetypes = personality?.includeArchetypes ?? true;
@@ -420,7 +429,7 @@ export class SoulManager {
     }
 
     // User context injection
-    const owner = this.storage.getOwner();
+    const owner = await this.storage.getOwner();
     if (owner) {
       const userParts: string[] = [`Owner: ${owner.name}`];
       if (owner.nickname) userParts.push(`Nickname: ${owner.nickname}`);
@@ -434,7 +443,7 @@ export class SoulManager {
 
     // Spirit context injection (passions, inspirations, pains)
     if (this.spirit) {
-      const spiritPrompt = this.spirit.composeSpiritPrompt();
+      const spiritPrompt = await this.spirit.composeSpiritPrompt();
       if (spiritPrompt) {
         parts.push(spiritPrompt);
       }
@@ -442,7 +451,7 @@ export class SoulManager {
 
     // Brain context injection
     if (this.brain && input) {
-      const context = this.brain.getRelevantContext(input);
+      const context = await this.brain.getRelevantContext(input);
       if (context) {
         parts.push(context);
       }
@@ -455,7 +464,7 @@ export class SoulManager {
     }
 
     // Skills from Brain or Soul storage
-    const skills = this.brain ? this.brain.getActiveSkills() : this.storage.getEnabledSkills();
+    const skills = this.brain ? await this.brain.getActiveSkills() : await this.storage.getEnabledSkills();
 
     for (const skill of skills) {
       if (skill.instructions) {
@@ -474,7 +483,7 @@ export class SoulManager {
     return prompt;
   }
 
-  getActiveTools(): Tool[] {
+  async getActiveTools(): Promise<Tool[]> {
     if (!this.config.enabled) {
       return [];
     }
@@ -483,7 +492,7 @@ export class SoulManager {
       return this.brain.getActiveTools();
     }
 
-    const skills = this.storage.getEnabledSkills();
+    const skills = await this.storage.getEnabledSkills();
     const tools: Tool[] = [];
     for (const skill of skills) {
       if (skill.tools && skill.tools.length > 0) {

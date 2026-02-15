@@ -24,11 +24,11 @@ export class McpServer {
     this.soulManager = deps.soulManager;
   }
 
-  getExposedTools(): McpToolDef[] {
+  async getExposedTools(): Promise<McpToolDef[]> {
     const tools: McpToolDef[] = [];
 
     if (this.soulManager) {
-      const skills = this.soulManager.listSkills({ status: 'active' });
+      const skills = await this.soulManager.listSkills({ status: 'active' });
       for (const skill of skills) {
         tools.push({
           name: `friday_skill_${skill.id}`,

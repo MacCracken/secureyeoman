@@ -16,7 +16,7 @@ import type { SecureLogger } from '../logging/logger.js';
 import type { AuditQueryOptions, AuditQueryResult } from '../logging/sqlite-storage.js';
 
 export interface AuditStorage {
-  query(opts: AuditQueryOptions): Promise<AuditQueryResult>;
+  queryEntries(opts: AuditQueryOptions): Promise<AuditQueryResult>;
   searchFullText(query: string, opts?: { limit?: number; offset?: number }): Promise<AuditQueryResult>;
 }
 

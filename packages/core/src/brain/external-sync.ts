@@ -114,7 +114,7 @@ export class ExternalBrainSync {
 
     // Sync memories
     if (this.config.syncMemories) {
-      const memories = this.brain.recall({ limit: 10000 });
+      const memories = await this.brain.recall({ limit: 10000 });
       const memoryIds = new Set<string>();
 
       for (const memory of memories) {
@@ -132,7 +132,7 @@ export class ExternalBrainSync {
 
     // Sync knowledge
     if (this.config.syncKnowledge) {
-      const knowledge = this.brain.queryKnowledge({ limit: 10000 });
+      const knowledge = await this.brain.queryKnowledge({ limit: 10000 });
       const knowledgeIds = new Set<string>();
 
       for (const entry of knowledge) {

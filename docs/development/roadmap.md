@@ -1,6 +1,6 @@
 # Development Roadmap
 
-> Development phases, timeline, and progress for F.R.I.D.A.Y.
+> Development phases and progress for F.R.I.D.A.Y.
 
 ---
 
@@ -25,12 +25,11 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 ## Phase 1: Foundation
 
 **Status**: Complete
-**Duration**: 3 weeks
 
 - TypeScript project structure with strict mode, ESLint, Prettier, Vitest
 - Configuration management (YAML + env vars + Zod validation)
 - Base agent loop with task queue, event-driven architecture, graceful shutdown
-- Multi-provider AI integration (Anthropic, OpenAI, Gemini, Ollama, OpenCode Zen)
+- Multi-provider AI integration (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen)
 - Structured logging with UUID v7, correlation IDs, SQLite WAL storage
 - Cryptographic audit chain (HMAC-SHA256, integrity verification)
 - Log query API with REST endpoint
@@ -40,7 +39,6 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 ## Phase 2: Security Layer
 
 **Status**: Complete
-**Duration**: 4 weeks
 
 ### Authentication & Authorization
 - RBAC with role definitions (Admin, Operator, Auditor, Viewer), inheritance, persistent storage
@@ -74,7 +72,6 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 ## Phase 2.5: Core Infrastructure Gaps
 
 **Status**: Complete
-**Duration**: 1 week
 
 - CLI entry point (`--port`, `--host`, `--config`, `--log-level`, `--tls`)
 - SQLite task storage with filtering, pagination, and metrics
@@ -89,7 +86,6 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 ## Phase 3: Dashboard
 
 **Status**: Complete
-**Duration**: 5 weeks
 
 - React + Vite + TypeScript with URL routing (react-router-dom v7)
 - TanStack Query for server-state management
@@ -101,60 +97,40 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 - ResourceMonitor with CPU/Memory gauges, token/cost tracking, real history
 - Soul/Personality UI (onboarding wizard, personality editor, skills manager)
 - Login page with JWT auth, automatic token refresh on 401
+- Coding IDE view (Monaco editor with personality-scoped AI chat sidebar)
+- Voice interface (browser-native SpeechRecognition + speechSynthesis)
 - Session timeout warning, ErrorBoundary, ConfirmDialog
-- Responsive mobile layout (hamburger nav, stacked cards, adaptive header/footer spacing)
-- Theme toggle (dark/light with localStorage persistence)
-- Settings page restructured with expandable sidebar (General, Security, API Keys)
-- API Keys management moved to dedicated page with create/revoke functionality
-- Agent identity moved to Personality section (ADR 024)
-- DashboardLayout, StatusBar (inline reconnecting indicator), collapsible sidebar navigation (v1.2)
-- 57 component tests across 5 files (Vitest + Testing Library + jsdom)
-
----
-
-## v1.3.3 (2026-02-13)
-
-- **Code Editor**: Run button executes code directly in terminal with language-specific runtimes (python3, node, npx ts-node, bash, ruby, go run)
-- **Personality Editor**: Body section now shows Vision/Auditory capability toggles when available
-- **Task History**: New Task button to create and execute tasks directly from the dashboard
-- Push-to-talk voice mode with keyboard shortcuts (Ctrl+Shift+V)
-- Voice overlay component for visual feedback during recording
-- Screen capture sandbox architecture (darwin, linux, windows)
-- Permission orchestrator with platform-specific implementations
-- Skill executor and scheduler with cron/interval support
+- Responsive mobile layout, dark/light theme
 
 ---
 
 ## Phase 4: Integrations
 
 **Status**: Complete
-**Duration**: 4 weeks
 
 - Plugin architecture (`Integration` interface, `IntegrationManager`, `IntegrationStorage`, factory pattern)
 - Message abstraction (`UnifiedMessage`, `MessageAttachment`, `PlatformAdapter`, `MessageRouter`)
 - REST API routes for CRUD + start/stop + messages with RBAC
-- Telegram adapter (grammy, long-polling, `/start`/`help`/`status` commands, 23 tests)
-- Discord adapter (discord.js v14, slash commands, embeds, 19 tests)
-- Slack adapter (Slack Bolt, socket mode, slash commands, 18 tests)
-- GitHub adapter (Octokit, webhook handler, signature verification, 17 tests)
+- Telegram, Discord, Slack, GitHub, Google Chat, CLI, Generic Webhook adapters
 - Conversation management, auto-reconnect, per-platform rate limiting
-- 24 integration framework tests
 
 ---
 
 ## Phase 5: Production Hardening
 
 **Status**: Complete
-**Duration**: 3 weeks
 
 - Docker packaging (multi-stage Dockerfile, docker-compose, non-root user, healthcheck)
 - CI/CD pipeline (lint, typecheck, test, build, security audit, docker build; Node 20+22 matrix)
 - Load testing (k6 scripts: API endpoints, auth flow, WebSocket, task creation)
-- Security testing (injection, JWT manipulation, rate limit bypass, RBAC, audit integrity; 63 tests)
-- Chaos testing (database corruption, crash recovery, resource exhaustion; 13 tests)
+- Security testing (injection, JWT manipulation, rate limit bypass, RBAC, audit integrity)
+- Chaos testing (database corruption, crash recovery, resource exhaustion)
 - Prometheus metrics endpoint with Grafana dashboard and alert rules
 - Log aggregation (append-only JSONL file writer, log rotation with gzip, Loki + Promtail)
-- Documentation (getting started, configuration, API, OpenAPI 3.1, troubleshooting, deployment, integrations, security testing)
+- MCP service (`@friday/mcp`) — 22+ tools, 7 resources, 4 prompts
+- Skill marketplace with cryptographic signature verification
+- Team workspaces with workspace-scoped RBAC
+- A/B testing framework, audit report generator, cost optimization
 
 ---
 
@@ -174,110 +150,20 @@ All core modules maintain >80% coverage thresholds.
 
 ## Timeline Summary
 
-| Phase | Duration | Status |
-|-------|----------|--------|
-| Phase 1: Foundation | 3 weeks | Complete |
-| Phase 2: Security | 4 weeks | Complete |
-| Phase 2.5: Infrastructure | 1 week | Complete |
-| Phase 3: Dashboard | 5 weeks | Complete |
-| Phase 4: Integrations | 4 weeks | Complete |
-| Phase 5: Production | 3 weeks | Complete |
-| v1.0.0 MVP Release| 2 Weeks | Complete |
-| **v1.1.1 Release** | — | **Released 2026-02-12** |
-| **v1.2.0 Release** | — | **Complete** |
-| **v1.3.0 Release** | — | **Complete (released 2026-02-12)** |
-| **v1.3.1 Release** | — | **Complete (released 2026-02-12)** |
-| **v1.3.3 Release** | — | **Complete (released 2026-02-13)** |
-| **v1.4.0 Release** | — | **Complete (released 2026-02-13)** |
-| **v1.4.1 Release** | — | **Complete (released 2026-02-13)** |
-| **v1.5.0 Release** | — | **Complete (released 2026-02-13)** |
-| **v1.5.1 Release** | — | **Complete (released 2026-02-14)** |
-
----
-
-## v1.2: Advanced Features
-
-**Status**: Complete
-**Released**: 2026-02-12
-
-- ✅ Sidebar navigation (collapsible left-side panel replacing top tabs)
-- ✅ MCP protocol support (client + server with REST API)
-- ✅ Custom dashboards (drag-and-drop widget placement)
-- ✅ Audit report generator (JSON/HTML/CSV export)
-- ✅ Team workspaces (multi-team isolation with member management)
-- ✅ Cost optimization recommendations
-- ✅ A/B testing framework (experiment management with variant routing)
-- ✅ Skill marketplace (discovery, search, install, publish with signature verification)
-
----
-
-## v1.3: Developer Experience
-
-**Status**: Complete
-**Released**: 2026-02-12
-
-- ✅ Coding IDE view — Monaco editor with personality-scoped chat sidebar, `useChat` hook extraction
-- ✅ Voice interface — browser-native SpeechRecognition + speechSynthesis, localStorage persistence, graceful degradation
-- ✅ Dashboard improvements — enhanced layout, status bar updates
-
----
-
-## v1.3.1: Dynamic Model Discovery
-
-**Status**: Complete
-**Released**: 2026-02-12
-
-- ✅ Dynamic model discovery for all providers — `fetchAvailableModels()` on Anthropic, OpenAI, Ollama, OpenCode (matching Gemini's existing pattern)
-- ✅ Parallel provider fetching — `getAvailableModelsAsync()` queries all configured providers simultaneously via `Promise.allSettled`
-- ✅ Dashboard dropdown highlighting — lighter blue highlight with left border on active personality and model selections
-- ✅ Sidebar collapsed spacing — reduced icon spacing when sidebar is collapsed
-
----
-
-## v1.4.0: Security & MCP
-
-**Status**: Complete
-**Released**: 2026-02-13
-
-- ✅ HTTP security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, HSTS)
-- ✅ CORS wildcard + credentials fix (Fetch spec compliance)
-- ✅ WebSocket channel RBAC authorization (role-based subscribe filtering)
-- ✅ WebSocket heartbeat ping/pong (30s cycle, 60s dead connection cleanup)
-- ✅ MCP service package (`@friday/mcp`) — 22+ tools, 7 resources, 4 prompts, auto-registration
-- ✅ CLI, Webhook, Google Chat integrations
-- ✅ Auth verify endpoint for service-to-service JWT delegation
-
----
-
-## v1.4.1: Dashboard & Marketplace Polish
-
-**Status**: Complete
-**Released**: 2026-02-13
-
-- ✅ Marketplace skill installation → Brain skill sync
-- ✅ Notification toggle CSS fix (circle overflow)
-- ✅ Log retention settings — editable policy with backend enforcement
-- ✅ Audit log JSON export/download
-- ✅ MCP tool persistence (SQLite-backed; toggle off/on restores tools)
-
----
-
-## v1.5.0: Marketplace & MCP Reliability
-
-**Status**: Complete
-**Released**: 2026-02-13
-
-- ✅ Universal Script Assistant — builtin marketplace skill (screenwriting consultant with 4 modes)
-- ✅ Marketplace dashboard auth fix — switched from wrong localStorage key to shared `request()` with proper auth
-- ✅ Marketplace type alignment — `MarketplaceSkill.tools` uses `ToolSchema`; `createSkill` uses `SkillCreateSchema.parse()`
-- ✅ MCP robust tool restore — `restoreTools()` bypasses `server.enabled` guard on toggle re-enable
-- ✅ Anomaly detection test flakiness fix (time-of-day dependent)
+| Milestone | Status |
+|-----------|--------|
+| Phase 1: Foundation | Complete |
+| Phase 2: Security | Complete |
+| Phase 2.5: Infrastructure | Complete |
+| Phase 3: Dashboard | Complete |
+| Phase 4: Integrations | Complete |
+| Phase 5: Production | Complete |
+| **2026.2.15 Release** | **Released 2026-02-15** |
 
 ---
 
 ## Future Enhancements
 
-### v2.0
 - Distributed deployment (Kubernetes)
 - ML-based anomaly detection
 - Mobile app

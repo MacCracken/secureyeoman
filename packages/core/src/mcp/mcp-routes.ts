@@ -27,7 +27,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
 
   // List configured MCP servers
   app.get('/api/v1/mcp/servers', async () => {
-    const servers = mcpStorage.listServers();
+    const servers = await mcpStorage.listServers();
     return { servers, total: servers.length };
   });
 
@@ -56,7 +56,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         const { tools, ...serverData } = request.body;
 
         // Upsert: if a server with the same name exists, reuse it
-        const existing = mcpStorage.findServerByName(serverData.name);
+        const existing = await mcpStorage.findServerByName(serverData.name);
         let server: typeof existing & {};
         let statusCode = 201;
 
@@ -64,12 +64,12 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           server = existing;
           statusCode = 200;
         } else {
-          server = mcpStorage.addServer(serverData as any);
+          server = await mcpStorage.addServer(serverData as any);
         }
 
         // Register/update tools if provided in the request
         if (tools && Array.isArray(tools) && tools.length > 0) {
-          mcpClient.registerTools(server.id, server.name, tools);
+          await mcpClient.registerTools(server.id, server.name, tools);
         } else if (server.enabled) {
           // Attempt protocol-based discovery for servers that didn't provide tools
           await mcpClient.discoverTools(server.id);
@@ -92,12 +92,12 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       }>,
       reply: FastifyReply
     ) => {
-      const server = mcpStorage.getServer(request.params.id);
+      const server = await mcpStorage.getServer(request.params.id);
       if (!server) {
         return reply.code(404).send({ error: 'MCP server not found' });
       }
 
-      const updated = mcpStorage.updateServer(request.params.id, { enabled: request.body.enabled });
+      const updated = await mcpStorage.updateServer(request.params.id, { enabled: request.body.enabled });
       if (!updated) {
         return reply.code(500).send({ error: 'Failed to update server' });
       }
@@ -107,10 +107,10 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         mcpClient.clearTools(request.params.id);
       } else {
         // Enabling: restore tools directly from DB (bypasses enabled guard)
-        mcpClient.restoreTools(request.params.id);
+        await mcpClient.restoreTools(request.params.id);
       }
 
-      const serverAfter = mcpStorage.getServer(request.params.id);
+      const serverAfter = await mcpStorage.getServer(request.params.id);
       const tools = request.body.enabled
         ? mcpClient.getAllTools().filter((t) => t.serverId === request.params.id)
         : [];
@@ -127,11 +127,11 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       }>,
       reply: FastifyReply
     ) => {
-      const deleted = mcpStorage.deleteServer(request.params.id);
+      const deleted = await mcpStorage.deleteServer(request.params.id);
       if (!deleted) {
         return reply.code(404).send({ error: 'MCP server not found' });
       }
-      mcpClient.deleteTools(request.params.id);
+      await mcpClient.deleteTools(request.params.id);
       return { message: 'Server removed' };
     }
   );
@@ -139,13 +139,13 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
   // List all discovered tools (from external servers), filtered by feature config
   app.get('/api/v1/mcp/tools', async () => {
     const external = mcpClient.getAllTools();
-    const exposed = mcpServer.getExposedTools();
+    const exposed = await mcpServer.getExposedTools();
     const allTools = [...external, ...exposed];
 
     // Find the YEOMAN MCP server to get its ID
-    const servers = mcpStorage.listServers();
+    const servers = await mcpStorage.listServers();
     const localServer = servers.find((s) => s.name === LOCAL_MCP_NAME);
-    const config = mcpStorage.getConfig();
+    const config = await mcpStorage.getConfig();
 
     const tools = allTools.filter((tool) => {
       if (localServer && tool.serverId === localServer.id) {
@@ -193,7 +193,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
 
   // Get MCP feature config (persisted in SQLite)
   app.get('/api/v1/mcp/config', async () => {
-    return mcpStorage.getConfig();
+    return await mcpStorage.getConfig();
   });
 
   // Update MCP feature config (persisted in SQLite)
@@ -204,7 +204,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         Body: { exposeGit?: boolean; exposeFilesystem?: boolean };
       }>
     ) => {
-      return mcpStorage.setConfig(request.body);
+      return await mcpStorage.setConfig(request.body);
     }
   );
 }

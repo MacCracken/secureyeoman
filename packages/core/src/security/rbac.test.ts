@@ -72,8 +72,8 @@ describe('RBAC', () => {
   });
 
   describe('Role Management', () => {
-    it('should allow defining custom roles', () => {
-      rbac.defineRole({
+    it('should allow defining custom roles', async () => {
+      await rbac.defineRole({
         id: 'role_custom',
         name: 'Custom',
         description: 'A custom role',
@@ -88,8 +88,8 @@ describe('RBAC', () => {
       expect(result.granted).toBe(true);
     });
 
-    it('should allow removing roles', () => {
-      rbac.defineRole({
+    it('should allow removing roles', async () => {
+      await rbac.defineRole({
         id: 'role_temporary',
         name: 'Temporary',
         description: 'A temporary role',
@@ -99,15 +99,15 @@ describe('RBAC', () => {
       const beforeRemoval = rbac.getRole('temporary');
       expect(beforeRemoval).toBeDefined();
 
-      const removed = rbac.removeRole('role_temporary');
+      const removed = await rbac.removeRole('role_temporary');
       expect(removed).toBe(true);
 
       const afterRemoval = rbac.getRole('temporary');
       expect(afterRemoval).toBeUndefined();
     });
 
-    it('should return false when removing non-existent role', () => {
-      const removed = rbac.removeRole('role_nonexistent');
+    it('should return false when removing non-existent role', async () => {
+      const removed = await rbac.removeRole('role_nonexistent');
       expect(removed).toBe(false);
     });
 
@@ -175,8 +175,8 @@ describe('RBAC', () => {
       expect(result.reason).toBe('No matching permission found');
     });
 
-    it('should support resource prefix wildcards', () => {
-      rbac.defineRole({
+    it('should support resource prefix wildcards', async () => {
+      await rbac.defineRole({
         id: 'role_prefix_test',
         name: 'PrefixTest',
         description: 'Test prefix wildcards',
@@ -198,15 +198,15 @@ describe('RBAC', () => {
   });
 
   describe('Role Inheritance', () => {
-    it('should inherit permissions from parent roles', () => {
-      rbac.defineRole({
+    it('should inherit permissions from parent roles', async () => {
+      await rbac.defineRole({
         id: 'role_base',
         name: 'Base',
         description: 'Base role',
         permissions: [{ resource: 'base_resource', actions: ['read'] }],
       });
 
-      rbac.defineRole({
+      await rbac.defineRole({
         id: 'role_extended',
         name: 'Extended',
         description: 'Extended role',
@@ -230,8 +230,8 @@ describe('RBAC', () => {
       expect(inheritedResult.reason).toContain('Inherited from');
     });
 
-    it('should handle circular inheritance gracefully', () => {
-      rbac.defineRole({
+    it('should handle circular inheritance gracefully', async () => {
+      await rbac.defineRole({
         id: 'role_circular_a',
         name: 'CircularA',
         description: 'Circular A',
@@ -239,7 +239,7 @@ describe('RBAC', () => {
         inheritFrom: ['role_circular_b'],
       });
 
-      rbac.defineRole({
+      await rbac.defineRole({
         id: 'role_circular_b',
         name: 'CircularB',
         description: 'Circular B',
@@ -258,8 +258,8 @@ describe('RBAC', () => {
   });
 
   describe('Permission Conditions', () => {
-    beforeEach(() => {
-      rbac.defineRole({
+    beforeEach(async () => {
+      await rbac.defineRole({
         id: 'role_conditional',
         name: 'Conditional',
         description: 'Role with conditional permissions',
@@ -340,7 +340,7 @@ describe('RBAC', () => {
       expect(secondResult.reason).toContain('Cached');
     });
 
-    it('should clear cache when role is modified', () => {
+    it('should clear cache when role is modified', async () => {
       // Prime the cache
       rbac.checkPermission('admin', {
         resource: 'test',
@@ -348,7 +348,7 @@ describe('RBAC', () => {
       });
 
       // Modify a role
-      rbac.defineRole({
+      await rbac.defineRole({
         id: 'role_new',
         name: 'New',
         description: 'New role',
@@ -429,13 +429,13 @@ describe('RBAC Singleton', () => {
     expect(instance1).toBe(instance2);
   });
 
-  it('should create new instance with initializeRBAC', () => {
+  it('should create new instance with initializeRBAC', async () => {
     const original = getRBAC();
-    const newInstance = initializeRBAC();
+    const newInstance = await initializeRBAC();
     expect(newInstance).not.toBe(original);
   });
 
-  it('should support custom roles in initializeRBAC', () => {
+  it('should support custom roles in initializeRBAC', async () => {
     const customRoles = [
       {
         id: 'role_super',
@@ -445,7 +445,7 @@ describe('RBAC Singleton', () => {
       },
     ];
 
-    const instance = initializeRBAC(customRoles);
+    const instance = await initializeRBAC(customRoles);
     const role = instance.getRole('super');
 
     expect(role).toBeDefined();
@@ -533,8 +533,8 @@ describe('Capture Permissions', () => {
   });
 
   describe('Capture Roles', () => {
-    it('should support capture_operator role with extended limits', () => {
-      rbac.defineRole({
+    it('should support capture_operator role with extended limits', async () => {
+      await rbac.defineRole({
         id: 'role_capture_operator',
         name: 'Capture Operator',
         description: 'Extended capture permissions',
@@ -565,8 +565,8 @@ describe('Capture Permissions', () => {
       expect(taskResult.granted).toBe(true);
     });
 
-    it('should support security_auditor role for compliance', () => {
-      rbac.defineRole({
+    it('should support security_auditor role for compliance', async () => {
+      await rbac.defineRole({
         id: 'role_security_auditor',
         name: 'Security Auditor',
         description: 'Review captured data',
@@ -594,8 +594,8 @@ describe('Capture Permissions', () => {
   });
 
   describe('Resource Isolation', () => {
-    beforeEach(() => {
-      rbac.defineRole({
+    beforeEach(async () => {
+      await rbac.defineRole({
         id: 'role_screen_only',
         name: 'ScreenOnly',
         description: 'Only screen capture',
@@ -628,8 +628,8 @@ describe('Capture Permissions', () => {
   });
 
   describe('Permission Conditions', () => {
-    beforeEach(() => {
-      rbac.defineRole({
+    beforeEach(async () => {
+      await rbac.defineRole({
         id: 'role_conditional_capture',
         name: 'ConditionalCapture',
         description: 'Capture with conditions',

@@ -139,5 +139,5 @@ export type AIStreamChunk = z.infer<typeof AIStreamChunkSchema>;
 
 // ─── Provider Enum ────────────────────────────────────────────
 
-export const AIProviderNameSchema = z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode']);
+export const AIProviderNameSchema = z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai']);
 export type AIProviderName = z.infer<typeof AIProviderNameSchema>;

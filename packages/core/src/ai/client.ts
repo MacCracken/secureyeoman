@@ -22,6 +22,8 @@ import { OpenAIProvider } from './providers/openai.js';
 import { GeminiProvider } from './providers/gemini.js';
 import { OllamaProvider } from './providers/ollama.js';
 import { OpenCodeProvider } from './providers/opencode.js';
+import { LMStudioProvider } from './providers/lmstudio.js';
+import { LocalAIProvider } from './providers/localai.js';
 import { CostCalculator } from './cost-calculator.js';
 import { UsageTracker, type UsageStats } from './usage-tracker.js';
 import { TokenLimitError, RateLimitError, ProviderUnavailableError } from './errors.js';
@@ -378,7 +380,8 @@ export class AIClient {
   }
 
   private createProvider(config: AIClientConfig): AIProvider {
-    const apiKey = config.model.provider !== 'ollama'
+    const noKeyProviders = ['ollama', 'lmstudio', 'localai'];
+    const apiKey = !noKeyProviders.includes(config.model.provider)
       ? getSecret(config.model.apiKeyEnv)
       : undefined;
 
@@ -399,6 +402,10 @@ export class AIClient {
         return new OllamaProvider(providerConfig, this.logger ?? undefined);
       case 'opencode':
         return new OpenCodeProvider(providerConfig, this.logger ?? undefined);
+      case 'lmstudio':
+        return new LMStudioProvider(providerConfig, this.logger ?? undefined);
+      case 'localai':
+        return new LocalAIProvider(providerConfig, this.logger ?? undefined);
       default:
         throw new Error(`Unknown AI provider: ${config.model.provider}`);
     }

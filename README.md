@@ -2,7 +2,7 @@
 
 > **F**ully **R**esponsive **I**ntegrated **D**igitally **A**daptable **Y**eoman
 
-[![Version](https://img.shields.io/badge/Version-1.5.1-blue.svg)](https://github.com/MacCracken/FRIDAY/releases/tag/v1.5.1)
+[![Version](https://img.shields.io/badge/Version-2026.2.15-blue.svg)](https://github.com/MacCracken/FRIDAY/releases/tag/v2026.2.15)
 [![CI](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
@@ -46,7 +46,7 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 |----------|----------|
 | **Security** | RBAC (Admin/Operator/Auditor/Viewer), JWT + API key auth, mTLS, AES-256-GCM encryption at rest, sandboxed execution (Landlock/macOS sandbox), rate limiting (per-user, per-IP, global), HTTP security headers (HSTS, CSP, X-Frame-Options), CORS policy enforcement |
 | **Observability** | Cryptographic audit trails (HMAC-SHA256 chain), Prometheus metrics, Grafana dashboards, structured JSONL log rotation, audit retention enforcement, audit export |
-| **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama (local), OpenCode Zen; automatic fallback chains on rate limits/outages; dynamic model discovery |
+| **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama, LM Studio, LocalAI (local), OpenCode Zen; automatic fallback chains on rate limits/outages; dynamic model discovery |
 | **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); metrics graphs, task history, security events, personality editor, skills manager, code editor (Monaco), notification & retention settings |
 | **Agent Architecture** | Soul (identity/archetypes/personality), Spirit (passions/inspirations/pains), Brain (memory/knowledge/skills with decay & pruning), Body (heartbeat/vital signs/screen capture) |
 | **Integrations** | Telegram, Discord, Slack, GitHub, Google Chat, CLI, Generic Webhook — plugin architecture with unified message routing |
@@ -259,7 +259,7 @@ friday/
 │   └── mcp/             # Standalone MCP service (22+ tools, 7 resources, 4 prompts)
 ├── tests/               # Security, load (k6), and chaos tests
 ├── deploy/              # Docker, Prometheus, Grafana, Loki configs
-├── docs/                # Documentation + ADRs (28 decision records)
+├── docs/                # Documentation + ADRs (31 decision records)
 │   ├── api/             # REST API + WebSocket API + OpenAPI 3.1 spec
 │   ├── adr/             # Architecture Decision Records
 │   ├── guides/          # Getting started, integrations
@@ -312,6 +312,18 @@ npm run build --workspace=@friday/core
 npm run build --workspace=@friday/dashboard
 npm run build --workspace=@friday/mcp
 ```
+
+### Versioning
+
+F.R.I.D.A.Y. uses **calendar versioning** in the format `YYYY.M.D` (e.g., `2026.2.15` for February 15, 2026). The version reflects the release date, not a semver progression.
+
+To update the version across all packages:
+
+```bash
+npm run version:set -- 2026.3.1
+```
+
+This updates all `package.json` files in the monorepo. The core server reads its version from `package.json` at runtime, so no source changes are needed.
 
 ---
 

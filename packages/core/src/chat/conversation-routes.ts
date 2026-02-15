@@ -25,7 +25,7 @@ export function registerConversationRoutes(
     ) => {
       const limit = request.query.limit ? Number(request.query.limit) : 50;
       const offset = request.query.offset ? Number(request.query.offset) : 0;
-      return conversationStorage.listConversations({ limit, offset });
+      return await conversationStorage.listConversations({ limit, offset });
     },
   );
 
@@ -42,7 +42,7 @@ export function registerConversationRoutes(
       if (!title || typeof title !== 'string' || title.trim().length === 0) {
         return reply.code(400).send({ error: 'Title is required' });
       }
-      const conversation = conversationStorage.createConversation({
+      const conversation = await conversationStorage.createConversation({
         title: title.trim(),
         personalityId,
       });
@@ -60,13 +60,13 @@ export function registerConversationRoutes(
       }>,
       reply: FastifyReply,
     ) => {
-      const conversation = conversationStorage.getConversation(request.params.id);
+      const conversation = await conversationStorage.getConversation(request.params.id);
       if (!conversation) {
         return reply.code(404).send({ error: 'Conversation not found' });
       }
       const limit = request.query.limit ? Number(request.query.limit) : 1000;
       const offset = request.query.offset ? Number(request.query.offset) : 0;
-      const messages = conversationStorage.getMessages(request.params.id, { limit, offset });
+      const messages = await conversationStorage.getMessages(request.params.id, { limit, offset });
       return { ...conversation, messages };
     },
   );
@@ -86,7 +86,7 @@ export function registerConversationRoutes(
         return reply.code(400).send({ error: 'Title is required' });
       }
       try {
-        const conversation = conversationStorage.updateConversation(request.params.id, {
+        const conversation = await conversationStorage.updateConversation(request.params.id, {
           title: title.trim(),
         });
         return conversation;
@@ -105,7 +105,7 @@ export function registerConversationRoutes(
       }>,
       reply: FastifyReply,
     ) => {
-      const deleted = conversationStorage.deleteConversation(request.params.id);
+      const deleted = await conversationStorage.deleteConversation(request.params.id);
       if (!deleted) {
         return reply.code(404).send({ error: 'Conversation not found' });
       }

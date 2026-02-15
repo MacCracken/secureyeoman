@@ -1,90 +1,96 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { ConversationStorage } from './conversation-storage.js';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 describe('ConversationStorage', () => {
   let storage: ConversationStorage;
 
-  beforeEach(() => {
-    storage = new ConversationStorage(); // in-memory
+  beforeAll(async () => {
+    await setupTestDb();
   });
 
-  afterEach(() => {
-    storage.close();
+  beforeEach(async () => {
+    await truncateAllTables();
+    storage = new ConversationStorage();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
   });
 
   // ── Conversation CRUD ──────────────────────────────────────────
 
-  it('creates and retrieves a conversation', () => {
-    const conv = storage.createConversation({ title: 'Test Chat' });
+  it('creates and retrieves a conversation', async () => {
+    const conv = await storage.createConversation({ title: 'Test Chat' });
     expect(conv.id).toBeTruthy();
     expect(conv.title).toBe('Test Chat');
     expect(conv.messageCount).toBe(0);
     expect(conv.personalityId).toBeNull();
 
-    const fetched = storage.getConversation(conv.id);
+    const fetched = await storage.getConversation(conv.id);
     expect(fetched).toEqual(conv);
   });
 
-  it('creates a conversation with personalityId', () => {
-    const conv = storage.createConversation({ title: 'With personality', personalityId: 'p-1' });
+  it('creates a conversation with personalityId', async () => {
+    const conv = await storage.createConversation({ title: 'With personality', personalityId: 'p-1' });
     expect(conv.personalityId).toBe('p-1');
   });
 
-  it('lists conversations ordered by updated_at DESC', () => {
-    const c1 = storage.createConversation({ title: 'First' });
-    const c2 = storage.createConversation({ title: 'Second' });
+  it('lists conversations ordered by updated_at DESC', async () => {
+    const c1 = await storage.createConversation({ title: 'First' });
+    const c2 = await storage.createConversation({ title: 'Second' });
 
     // Add a message to c1 to give it a later updated_at
-    storage.addMessage({ conversationId: c1.id, role: 'user', content: 'bump' });
+    await storage.addMessage({ conversationId: c1.id, role: 'user', content: 'bump' });
 
-    const { conversations, total } = storage.listConversations();
+    const { conversations, total } = await storage.listConversations();
     expect(total).toBe(2);
     // c1 was updated last (via addMessage), so it should come first
     expect(conversations[0].id).toBe(c1.id);
     expect(conversations[1].id).toBe(c2.id);
   });
 
-  it('paginates conversations', () => {
+  it('paginates conversations', async () => {
     for (let i = 0; i < 5; i++) {
-      storage.createConversation({ title: `Chat ${i}` });
+      await storage.createConversation({ title: `Chat ${i}` });
     }
 
-    const page1 = storage.listConversations({ limit: 2, offset: 0 });
+    const page1 = await storage.listConversations({ limit: 2, offset: 0 });
     expect(page1.conversations).toHaveLength(2);
     expect(page1.total).toBe(5);
 
-    const page2 = storage.listConversations({ limit: 2, offset: 2 });
+    const page2 = await storage.listConversations({ limit: 2, offset: 2 });
     expect(page2.conversations).toHaveLength(2);
   });
 
-  it('updates a conversation title', () => {
-    const conv = storage.createConversation({ title: 'Old Title' });
-    const updated = storage.updateConversation(conv.id, { title: 'New Title' });
+  it('updates a conversation title', async () => {
+    const conv = await storage.createConversation({ title: 'Old Title' });
+    const updated = await storage.updateConversation(conv.id, { title: 'New Title' });
     expect(updated.title).toBe('New Title');
     expect(updated.updatedAt).toBeGreaterThanOrEqual(conv.updatedAt);
   });
 
-  it('throws when updating non-existent conversation', () => {
-    expect(() => storage.updateConversation('nonexistent', { title: 'X' }))
-      .toThrow('Conversation not found');
+  it('throws when updating non-existent conversation', async () => {
+    await expect(storage.updateConversation('nonexistent', { title: 'X' }))
+      .rejects.toThrow('Conversation not found');
   });
 
-  it('deletes a conversation', () => {
-    const conv = storage.createConversation({ title: 'To Delete' });
-    expect(storage.deleteConversation(conv.id)).toBe(true);
-    expect(storage.getConversation(conv.id)).toBeNull();
+  it('deletes a conversation', async () => {
+    const conv = await storage.createConversation({ title: 'To Delete' });
+    expect(await storage.deleteConversation(conv.id)).toBe(true);
+    expect(await storage.getConversation(conv.id)).toBeNull();
   });
 
-  it('returns false when deleting non-existent conversation', () => {
-    expect(storage.deleteConversation('nonexistent')).toBe(false);
+  it('returns false when deleting non-existent conversation', async () => {
+    expect(await storage.deleteConversation('nonexistent')).toBe(false);
   });
 
   // ── Message CRUD ───────────────────────────────────────────────
 
-  it('adds and retrieves messages', () => {
-    const conv = storage.createConversation({ title: 'Chat' });
+  it('adds and retrieves messages', async () => {
+    const conv = await storage.createConversation({ title: 'Chat' });
 
-    const userMsg = storage.addMessage({
+    const userMsg = await storage.addMessage({
       conversationId: conv.id,
       role: 'user',
       content: 'Hello!',
@@ -93,7 +99,7 @@ describe('ConversationStorage', () => {
     expect(userMsg.content).toBe('Hello!');
     expect(userMsg.conversationId).toBe(conv.id);
 
-    const assistantMsg = storage.addMessage({
+    const assistantMsg = await storage.addMessage({
       conversationId: conv.id,
       role: 'assistant',
       content: 'Hi there!',
@@ -104,32 +110,32 @@ describe('ConversationStorage', () => {
     expect(assistantMsg.model).toBe('claude-sonnet');
     expect(assistantMsg.tokensUsed).toBe(150);
 
-    const messages = storage.getMessages(conv.id);
+    const messages = await storage.getMessages(conv.id);
     expect(messages).toHaveLength(2);
     expect(messages[0].role).toBe('user');
     expect(messages[1].role).toBe('assistant');
   });
 
-  it('increments messageCount when adding messages', () => {
-    const conv = storage.createConversation({ title: 'Chat' });
-    storage.addMessage({ conversationId: conv.id, role: 'user', content: 'Hi' });
-    storage.addMessage({ conversationId: conv.id, role: 'assistant', content: 'Hello' });
+  it('increments messageCount when adding messages', async () => {
+    const conv = await storage.createConversation({ title: 'Chat' });
+    await storage.addMessage({ conversationId: conv.id, role: 'user', content: 'Hi' });
+    await storage.addMessage({ conversationId: conv.id, role: 'assistant', content: 'Hello' });
 
-    const updated = storage.getConversation(conv.id);
+    const updated = await storage.getConversation(conv.id);
     expect(updated?.messageCount).toBe(2);
   });
 
-  it('cascades message deletion when conversation is deleted', () => {
-    const conv = storage.createConversation({ title: 'Chat' });
-    const msg = storage.addMessage({ conversationId: conv.id, role: 'user', content: 'Hi' });
-    storage.deleteConversation(conv.id);
-    expect(storage.getMessage(msg.id)).toBeNull();
+  it('cascades message deletion when conversation is deleted', async () => {
+    const conv = await storage.createConversation({ title: 'Chat' });
+    const msg = await storage.addMessage({ conversationId: conv.id, role: 'user', content: 'Hi' });
+    await storage.deleteConversation(conv.id);
+    expect(await storage.getMessage(msg.id)).toBeNull();
   });
 
   // ── Brain Context ──────────────────────────────────────────────
 
-  it('persists brainContext on messages', () => {
-    const conv = storage.createConversation({ title: 'Brain Test' });
+  it('persists brainContext on messages', async () => {
+    const conv = await storage.createConversation({ title: 'Brain Test' });
 
     const brainContext = {
       memoriesUsed: 2,
@@ -137,7 +143,7 @@ describe('ConversationStorage', () => {
       contextSnippets: ['[episodic] likes TypeScript', '[coding] TS is typed JS'],
     };
 
-    const msg = storage.addMessage({
+    const msg = await storage.addMessage({
       conversationId: conv.id,
       role: 'assistant',
       content: 'Response with brain context',
@@ -147,14 +153,14 @@ describe('ConversationStorage', () => {
     expect(msg.brainContext).toEqual(brainContext);
 
     // Verify it roundtrips through getMessages
-    const messages = storage.getMessages(conv.id);
+    const messages = await storage.getMessages(conv.id);
     expect(messages[0].brainContext).toEqual(brainContext);
   });
 
-  it('returns null brainContext when not provided', () => {
-    const conv = storage.createConversation({ title: 'No Brain' });
+  it('returns null brainContext when not provided', async () => {
+    const conv = await storage.createConversation({ title: 'No Brain' });
 
-    const msg = storage.addMessage({
+    const msg = await storage.addMessage({
       conversationId: conv.id,
       role: 'user',
       content: 'Hello',

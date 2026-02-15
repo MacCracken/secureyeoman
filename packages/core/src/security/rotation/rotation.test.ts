@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest';
 import { RotationStorage } from './rotation-storage.js';
 import { SecretRotationManager } from './manager.js';
 import type { SecretMetadata } from './types.js';
@@ -9,6 +9,7 @@ import { RBAC } from '../rbac.js';
 import { RateLimiter } from '../rate-limiter.js';
 import type { SecureLogger } from '../../logging/logger.js';
 import { sha256 } from '../../utils/crypto.js';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../../test-setup.js';
 
 const SIGNING_KEY = 'a]&3Gk9$mQ#vL7@pR!wZ5*xN2^bT8+dF';
 const TOKEN_SECRET = 'test-token-secret-at-least-32chars!!';
@@ -38,70 +39,75 @@ function makeMeta(overrides: Partial<SecretMetadata> = {}): SecretMetadata {
   };
 }
 
+beforeAll(async () => {
+  await setupTestDb();
+});
+
+afterAll(async () => {
+  await teardownTestDb();
+});
+
 // ── RotationStorage ─────────────────────────────────────────────────
 
 describe('RotationStorage', () => {
   let storage: RotationStorage;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await truncateAllTables();
     storage = new RotationStorage();
   });
 
-  afterEach(() => {
-    storage.close();
-  });
-
-  it('upsert and get secret metadata', () => {
+  it('upsert and get secret metadata', async () => {
     const meta = makeMeta({ name: 'MY_KEY' });
-    storage.upsert(meta);
-    const result = storage.get('MY_KEY');
+    await storage.upsert(meta);
+    const result = await storage.get('MY_KEY');
     expect(result).not.toBeNull();
     expect(result!.name).toBe('MY_KEY');
     expect(result!.autoRotate).toBe(false);
   });
 
-  it('getAll returns all tracked secrets', () => {
-    storage.upsert(makeMeta({ name: 'A' }));
-    storage.upsert(makeMeta({ name: 'B' }));
-    storage.upsert(makeMeta({ name: 'C' }));
-    expect(storage.getAll()).toHaveLength(3);
+  it('getAll returns all tracked secrets', async () => {
+    await storage.upsert(makeMeta({ name: 'A' }));
+    await storage.upsert(makeMeta({ name: 'B' }));
+    await storage.upsert(makeMeta({ name: 'C' }));
+    expect(await storage.getAll()).toHaveLength(3);
   });
 
-  it('upsert updates existing entry', () => {
-    storage.upsert(makeMeta({ name: 'X', autoRotate: false }));
-    storage.upsert(makeMeta({ name: 'X', autoRotate: true }));
-    const result = storage.get('X');
+  it('upsert updates existing entry', async () => {
+    await storage.upsert(makeMeta({ name: 'X', autoRotate: false }));
+    await storage.upsert(makeMeta({ name: 'X', autoRotate: true }));
+    const result = await storage.get('X');
     expect(result!.autoRotate).toBe(true);
   });
 
-  it('updateRotation changes rotatedAt and expiresAt', () => {
-    storage.upsert(makeMeta({ name: 'R' }));
+  it('updateRotation changes rotatedAt and expiresAt', async () => {
+    await storage.upsert(makeMeta({ name: 'R' }));
     const now = Date.now();
-    storage.updateRotation('R', now, now + 86400000);
-    const result = storage.get('R');
+    await storage.updateRotation('R', now, now + 86400000);
+    const result = await storage.get('R');
     expect(result!.rotatedAt).toBe(now);
     expect(result!.expiresAt).toBe(now + 86400000);
   });
 
-  it('storePreviousValue and getPreviousValue', () => {
-    storage.storePreviousValue('S', 'old-value', 60000);
-    expect(storage.getPreviousValue('S')).toBe('old-value');
+  it('storePreviousValue and getPreviousValue', async () => {
+    await storage.storePreviousValue('S', 'old-value', 60000);
+    expect(await storage.getPreviousValue('S')).toBe('old-value');
   });
 
-  it('getPreviousValue returns null for expired values', () => {
+  it('getPreviousValue returns null for expired values', async () => {
     // Store with 0ms grace period (already expired)
-    storage.storePreviousValue('S', 'old-value', -1);
-    expect(storage.getPreviousValue('S')).toBeNull();
+    await storage.storePreviousValue('S', 'old-value', -1);
+    expect(await storage.getPreviousValue('S')).toBeNull();
   });
 
-  it('clearPreviousValue removes the stored value', () => {
-    storage.storePreviousValue('S', 'old-value', 60000);
-    storage.clearPreviousValue('S');
-    expect(storage.getPreviousValue('S')).toBeNull();
+  it('clearPreviousValue removes the stored value', async () => {
+    await storage.storePreviousValue('S', 'old-value', 60000);
+    await storage.clearPreviousValue('S');
+    expect(await storage.getPreviousValue('S')).toBeNull();
   });
 
-  it('get returns null for non-existent key', () => {
-    expect(storage.get('NONEXISTENT')).toBeNull();
+  it('get returns null for non-existent key', async () => {
+    expect(await storage.get('NONEXISTENT')).toBeNull();
   });
 });
 
@@ -111,7 +117,8 @@ describe('SecretRotationManager', () => {
   let storage: RotationStorage;
   let manager: SecretRotationManager;
 
-  beforeEach(() => {
+  beforeEach(async () => {
+    await truncateAllTables();
     storage = new RotationStorage();
     manager = new SecretRotationManager(storage, {
       checkIntervalMs: 60000,
@@ -121,49 +128,48 @@ describe('SecretRotationManager', () => {
 
   afterEach(() => {
     manager.stop();
-    storage.close();
   });
 
-  it('trackSecret stores metadata', () => {
-    manager.trackSecret(makeMeta({ name: 'TRACKED' }));
-    expect(storage.get('TRACKED')).not.toBeNull();
+  it('trackSecret stores metadata', async () => {
+    await manager.trackSecret(makeMeta({ name: 'TRACKED' }));
+    expect(await storage.get('TRACKED')).not.toBeNull();
   });
 
-  it('getStatus returns "ok" for non-expiring secret', () => {
-    manager.trackSecret(makeMeta({ name: 'OK_SECRET' }));
-    const statuses = manager.getStatus();
+  it('getStatus returns "ok" for non-expiring secret', async () => {
+    await manager.trackSecret(makeMeta({ name: 'OK_SECRET' }));
+    const statuses = await manager.getStatus();
     expect(statuses).toHaveLength(1);
     expect(statuses[0].status).toBe('ok');
   });
 
-  it('getStatus returns "expired" for past-expiry secret', () => {
-    manager.trackSecret(makeMeta({
+  it('getStatus returns "expired" for past-expiry secret', async () => {
+    await manager.trackSecret(makeMeta({
       name: 'EXPIRED',
       expiresAt: Date.now() - 86400000,
     }));
-    const statuses = manager.getStatus();
+    const statuses = await manager.getStatus();
     expect(statuses[0].status).toBe('expired');
   });
 
-  it('getStatus returns "expiring_soon" when within warning window', () => {
-    manager.trackSecret(makeMeta({
+  it('getStatus returns "expiring_soon" when within warning window', async () => {
+    await manager.trackSecret(makeMeta({
       name: 'EXPIRING',
       expiresAt: Date.now() + 3 * 86400000, // 3 days, warning is 7
     }));
-    const statuses = manager.getStatus();
+    const statuses = await manager.getStatus();
     expect(statuses[0].status).toBe('expiring_soon');
     expect(statuses[0].daysUntilExpiry).toBeLessThanOrEqual(4);
   });
 
-  it('getStatus returns "rotation_due" for overdue auto-rotate secret', () => {
-    manager.trackSecret(makeMeta({
+  it('getStatus returns "rotation_due" for overdue auto-rotate secret', async () => {
+    await manager.trackSecret(makeMeta({
       name: 'DUE',
       autoRotate: true,
       rotationIntervalDays: 1,
       createdAt: Date.now() - 2 * 86400000, // created 2 days ago
       expiresAt: Date.now() + 86400000,
     }));
-    const statuses = manager.getStatus();
+    const statuses = await manager.getStatus();
     expect(statuses[0].status).toBe('rotation_due');
   });
 
@@ -171,7 +177,7 @@ describe('SecretRotationManager', () => {
     const envKey = '__ROTATE_TEST__';
     process.env[envKey] = 'old-secret';
 
-    manager.trackSecret(makeMeta({
+    await manager.trackSecret(makeMeta({
       name: envKey,
       autoRotate: true,
       rotationIntervalDays: 1,
@@ -182,7 +188,7 @@ describe('SecretRotationManager', () => {
     expect(newValue).toBeDefined();
 
     // Previous value should be stored
-    expect(manager.getPreviousValue(envKey)).toBe('old-secret');
+    expect(await manager.getPreviousValue(envKey)).toBe('old-secret');
 
     // Env should have new value
     expect(process.env[envKey]).not.toBe('old-secret');
@@ -201,7 +207,7 @@ describe('SecretRotationManager', () => {
     const onRotate = vi.fn();
     manager.setCallbacks({ onRotate });
 
-    manager.trackSecret(makeMeta({
+    await manager.trackSecret(makeMeta({
       name: envKey,
       autoRotate: true,
       rotationIntervalDays: 1,
@@ -220,7 +226,7 @@ describe('SecretRotationManager', () => {
     const onWarning = vi.fn();
     manager.setCallbacks({ onWarning });
 
-    manager.trackSecret(makeMeta({
+    await manager.trackSecret(makeMeta({
       name: 'WARN_SECRET',
       expiresAt: Date.now() + 3 * 86400000,
     }));
@@ -244,6 +250,7 @@ describe('JWT dual-key verification (grace period)', () => {
   let authStorage: AuthStorage;
 
   beforeEach(async () => {
+    await truncateAllTables();
     authStorage = new AuthStorage();
     const auditStorage = new InMemoryAuditStorage();
     const auditChain = new AuditChain({ storage: auditStorage, signingKey: SIGNING_KEY });
@@ -264,10 +271,6 @@ describe('JWT dual-key verification (grace period)', () => {
         logger: noopLogger(),
       },
     );
-  });
-
-  afterEach(() => {
-    authStorage.close();
   });
 
   it('tokens signed with old key still validate after rotation', async () => {

@@ -87,7 +87,7 @@ export class IntegrationManager {
 
   // ── Config CRUD ──────────────────────────────────────────
 
-  createIntegration(data: IntegrationCreate): IntegrationConfig {
+  async createIntegration(data: IntegrationCreate): Promise<IntegrationConfig> {
     if (!this.factories.has(data.platform)) {
       throw new Error(`Platform "${data.platform}" is not registered`);
     }
@@ -102,34 +102,34 @@ export class IntegrationManager {
       }
     }
 
-    return this.storage.createIntegration(data);
+    return await this.storage.createIntegration(data);
   }
 
-  getIntegration(id: string): IntegrationConfig | null {
-    return this.storage.getIntegration(id);
+  async getIntegration(id: string): Promise<IntegrationConfig | null> {
+    return await this.storage.getIntegration(id);
   }
 
-  listIntegrations(filter?: { platform?: Platform; enabled?: boolean }): IntegrationConfig[] {
-    return this.storage.listIntegrations(filter);
+  async listIntegrations(filter?: { platform?: Platform; enabled?: boolean }): Promise<IntegrationConfig[]> {
+    return await this.storage.listIntegrations(filter);
   }
 
-  updateIntegration(id: string, data: IntegrationUpdate): IntegrationConfig | null {
-    return this.storage.updateIntegration(id, data);
+  async updateIntegration(id: string, data: IntegrationUpdate): Promise<IntegrationConfig | null> {
+    return await this.storage.updateIntegration(id, data);
   }
 
-  deleteIntegration(id: string): boolean {
+  async deleteIntegration(id: string): Promise<boolean> {
     // Stop if running
     const entry = this.registry.get(id);
     if (entry) {
       void this.stopIntegration(id);
     }
-    return this.storage.deleteIntegration(id);
+    return await this.storage.deleteIntegration(id);
   }
 
   // ── Lifecycle ────────────────────────────────────────────
 
   async startIntegration(id: string): Promise<void> {
-    const config = this.storage.getIntegration(id);
+    const config = await this.storage.getIntegration(id);
     if (!config) throw new Error(`Integration ${id} not found`);
     if (!config.enabled) throw new Error(`Integration ${id} is disabled`);
 
@@ -160,13 +160,13 @@ export class IntegrationManager {
       entry.healthy = true;
       entry.startedAt = Date.now();
       this.registry.set(id, entry);
-      this.storage.updateStatus(id, 'connected');
+      await this.storage.updateStatus(id, 'connected');
       this.reconnectState.delete(id);
 
       this.deps.logger.info(`Integration started: ${config.displayName} (${config.platform})`);
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
-      this.storage.updateStatus(id, 'error', message);
+      await this.storage.updateStatus(id, 'error', message);
       this.deps.logger.error(`Failed to start integration ${id}: ${message}`);
       throw err;
     }
@@ -185,12 +185,12 @@ export class IntegrationManager {
     this.registry.delete(id);
     this.reconnectState.delete(id);
     this.rateBuckets.delete(id);
-    this.storage.updateStatus(id, 'disconnected');
+    await this.storage.updateStatus(id, 'disconnected');
     this.deps.logger.info(`Integration stopped: ${id}`);
   }
 
   async startAll(): Promise<void> {
-    const enabled = this.storage.listIntegrations({ enabled: true });
+    const enabled = await this.storage.listIntegrations({ enabled: true });
     for (const config of enabled) {
       try {
         await this.startIntegration(config.id);
@@ -268,7 +268,7 @@ export class IntegrationManager {
     if (state.retryCount >= this.autoReconnect.maxRetries) {
       this.deps.logger.error(`Integration ${id} exceeded max reconnect retries (${this.autoReconnect.maxRetries}), setting error status`);
       this.registry.delete(id);
-      this.storage.updateStatus(id, 'error', 'Max reconnect retries exceeded');
+      await this.storage.updateStatus(id, 'error', 'Max reconnect retries exceeded');
       this.reconnectState.delete(id);
       return;
     }
@@ -343,7 +343,7 @@ export class IntegrationManager {
 
     const platformMessageId = await entry.integration.sendMessage(chatId, text, metadata);
 
-    this.storage.storeMessage({
+    await this.storage.storeMessage({
       integrationId,
       platform: entry.config.platform,
       direction: 'outbound',
@@ -365,6 +365,6 @@ export class IntegrationManager {
   async close(): Promise<void> {
     this.stopHealthChecks();
     await this.stopAll();
-    this.storage.close();
+    await this.storage.close();
   }
 }

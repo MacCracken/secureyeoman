@@ -5,22 +5,34 @@
  * and endpoint accessibility via Fastify inject().
  */
 
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach } from 'vitest';
 import {
   createTestStack,
   createTestGateway,
   loginAndGetToken,
   TEST_ADMIN_PASSWORD,
+  setupTestDb,
+  teardownTestDb,
+  truncateAllTables,
   type TestStack,
 } from './helpers.js';
 import type { FastifyInstance } from 'fastify';
+
+beforeAll(async () => {
+  await setupTestDb();
+});
+
+afterAll(async () => {
+  await teardownTestDb();
+});
 
 describe('Gateway API Integration', () => {
   let stack: TestStack;
   let app: FastifyInstance;
 
   beforeEach(async () => {
-    stack = createTestStack();
+    await truncateAllTables();
+    stack = await createTestStack();
     await stack.auditChain.initialize();
     app = await createTestGateway(stack);
   });

@@ -19,28 +19,28 @@ export class DashboardManager {
     this.logger = deps.logger;
   }
 
-  create(data: CustomDashboardCreate): CustomDashboard {
-    const dashboard = this.storage.create(data);
+  async create(data: CustomDashboardCreate): Promise<CustomDashboard> {
+    const dashboard = await this.storage.create(data);
     this.logger.info('Custom dashboard created', { id: dashboard.id, name: dashboard.name });
     return dashboard;
   }
 
-  get(id: string): CustomDashboard | null {
-    return this.storage.get(id);
+  async get(id: string): Promise<CustomDashboard | null> {
+    return await this.storage.get(id);
   }
 
-  list(): CustomDashboard[] {
-    return this.storage.list();
+  async list(): Promise<CustomDashboard[]> {
+    return await this.storage.list();
   }
 
-  update(id: string, data: Partial<CustomDashboardCreate>): CustomDashboard | null {
-    const updated = this.storage.update(id, data);
+  async update(id: string, data: Partial<CustomDashboardCreate>): Promise<CustomDashboard | null> {
+    const updated = await this.storage.update(id, data);
     if (updated) this.logger.info('Custom dashboard updated', { id });
     return updated;
   }
 
-  delete(id: string): boolean {
-    const deleted = this.storage.delete(id);
+  async delete(id: string): Promise<boolean> {
+    const deleted = await this.storage.delete(id);
     if (deleted) this.logger.info('Custom dashboard deleted', { id });
     return deleted;
   }

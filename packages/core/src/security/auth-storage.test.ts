@@ -1,59 +1,65 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { AuthStorage } from './auth-storage.js';
 import { sha256, uuidv7 } from '../utils/crypto.js';
+import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 describe('AuthStorage', () => {
   let storage: AuthStorage;
 
-  beforeEach(() => {
-    storage = new AuthStorage(); // :memory:
+  beforeAll(async () => {
+    await setupTestDb();
   });
 
-  afterEach(() => {
-    storage.close();
+  beforeEach(async () => {
+    await truncateAllTables();
+    storage = new AuthStorage();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
   });
 
   // ── Token revocation ──────────────────────────────────────────────
 
   describe('token revocation', () => {
-    it('should report a token as not revoked when absent', () => {
-      expect(storage.isTokenRevoked('nonexistent-jti')).toBe(false);
+    it('should report a token as not revoked when absent', async () => {
+      expect(await storage.isTokenRevoked('nonexistent-jti')).toBe(false);
     });
 
-    it('should revoke a token and report it as revoked', () => {
+    it('should revoke a token and report it as revoked', async () => {
       const jti = uuidv7();
-      storage.revokeToken(jti, 'admin', Date.now() + 3600_000);
-      expect(storage.isTokenRevoked(jti)).toBe(true);
+      await storage.revokeToken(jti, 'admin', Date.now() + 3600_000);
+      expect(await storage.isTokenRevoked(jti)).toBe(true);
     });
 
-    it('should handle duplicate revocation gracefully (INSERT OR IGNORE)', () => {
+    it('should handle duplicate revocation gracefully (INSERT OR IGNORE)', async () => {
       const jti = uuidv7();
       const exp = Date.now() + 3600_000;
-      storage.revokeToken(jti, 'admin', exp);
-      storage.revokeToken(jti, 'admin', exp); // should not throw
-      expect(storage.isTokenRevoked(jti)).toBe(true);
+      await storage.revokeToken(jti, 'admin', exp);
+      await storage.revokeToken(jti, 'admin', exp); // should not throw
+      expect(await storage.isTokenRevoked(jti)).toBe(true);
     });
   });
 
   // ── Expired token cleanup ─────────────────────────────────────────
 
   describe('cleanupExpiredTokens', () => {
-    it('should delete tokens whose expires_at is in the past', () => {
+    it('should delete tokens whose expires_at is in the past', async () => {
       const jti1 = uuidv7();
       const jti2 = uuidv7();
       // jti1 expired
-      storage.revokeToken(jti1, 'admin', Date.now() - 1000);
+      await storage.revokeToken(jti1, 'admin', Date.now() - 1000);
       // jti2 still valid
-      storage.revokeToken(jti2, 'admin', Date.now() + 3600_000);
+      await storage.revokeToken(jti2, 'admin', Date.now() + 3600_000);
 
-      const cleaned = storage.cleanupExpiredTokens();
+      const cleaned = await storage.cleanupExpiredTokens();
       expect(cleaned).toBe(1);
-      expect(storage.isTokenRevoked(jti1)).toBe(false);
-      expect(storage.isTokenRevoked(jti2)).toBe(true);
+      expect(await storage.isTokenRevoked(jti1)).toBe(false);
+      expect(await storage.isTokenRevoked(jti2)).toBe(true);
     });
 
-    it('should return 0 when nothing to clean', () => {
-      expect(storage.cleanupExpiredTokens()).toBe(0);
+    it('should return 0 when nothing to clean', async () => {
+      expect(await storage.cleanupExpiredTokens()).toBe(0);
     });
   });
 
@@ -73,72 +79,72 @@ describe('AuthStorage', () => {
       last_used_at: overrides.last_used_at ?? null,
     });
 
-    it('should store and retrieve a key by hash', () => {
+    it('should store and retrieve a key by hash', async () => {
       const row = makeRow();
-      storage.storeApiKey(row);
-      const found = storage.findApiKeyByHash(row.key_hash);
+      await storage.storeApiKey(row);
+      const found = await storage.findApiKeyByHash(row.key_hash);
       expect(found).not.toBeNull();
       expect(found!.id).toBe(row.id);
       expect(found!.name).toBe('test-key');
     });
 
-    it('should return null for unknown hash', () => {
-      expect(storage.findApiKeyByHash('nonexistent')).toBeNull();
+    it('should return null for unknown hash', async () => {
+      expect(await storage.findApiKeyByHash('nonexistent')).toBeNull();
     });
 
-    it('should not return a revoked key', () => {
+    it('should not return a revoked key', async () => {
       const row = makeRow({ revoked_at: Date.now() });
-      storage.storeApiKey(row);
-      expect(storage.findApiKeyByHash(row.key_hash)).toBeNull();
+      await storage.storeApiKey(row);
+      expect(await storage.findApiKeyByHash(row.key_hash)).toBeNull();
     });
 
-    it('should not return an expired key', () => {
+    it('should not return an expired key', async () => {
       const row = makeRow({ expires_at: Date.now() - 1000 });
-      storage.storeApiKey(row);
-      expect(storage.findApiKeyByHash(row.key_hash)).toBeNull();
+      await storage.storeApiKey(row);
+      expect(await storage.findApiKeyByHash(row.key_hash)).toBeNull();
     });
 
-    it('should list keys for a specific user', () => {
-      storage.storeApiKey(makeRow({ id: uuidv7(), key_hash: sha256('a'), user_id: 'alice' }));
-      storage.storeApiKey(makeRow({ id: uuidv7(), key_hash: sha256('b'), user_id: 'bob' }));
-      storage.storeApiKey(makeRow({ id: uuidv7(), key_hash: sha256('c'), user_id: 'alice' }));
+    it('should list keys for a specific user', async () => {
+      await storage.storeApiKey(makeRow({ id: uuidv7(), key_hash: sha256('a'), user_id: 'alice' }));
+      await storage.storeApiKey(makeRow({ id: uuidv7(), key_hash: sha256('b'), user_id: 'bob' }));
+      await storage.storeApiKey(makeRow({ id: uuidv7(), key_hash: sha256('c'), user_id: 'alice' }));
 
-      const aliceKeys = storage.listApiKeys('alice');
+      const aliceKeys = await storage.listApiKeys('alice');
       expect(aliceKeys).toHaveLength(2);
       expect(aliceKeys.every((k) => k.user_id === 'alice')).toBe(true);
       // Should not contain key_hash
       expect((aliceKeys[0] as Record<string, unknown>).key_hash).toBeUndefined();
     });
 
-    it('should list all keys without userId filter', () => {
-      storage.storeApiKey(makeRow({ id: uuidv7(), key_hash: sha256('a'), user_id: 'alice' }));
-      storage.storeApiKey(makeRow({ id: uuidv7(), key_hash: sha256('b'), user_id: 'bob' }));
+    it('should list all keys without userId filter', async () => {
+      await storage.storeApiKey(makeRow({ id: uuidv7(), key_hash: sha256('a'), user_id: 'alice' }));
+      await storage.storeApiKey(makeRow({ id: uuidv7(), key_hash: sha256('b'), user_id: 'bob' }));
 
-      const keys = storage.listApiKeys();
+      const keys = await storage.listApiKeys();
       expect(keys).toHaveLength(2);
     });
 
-    it('should revoke a key', () => {
+    it('should revoke a key', async () => {
       const row = makeRow();
-      storage.storeApiKey(row);
+      await storage.storeApiKey(row);
 
-      const ok = storage.revokeApiKey(row.id);
+      const ok = await storage.revokeApiKey(row.id);
       expect(ok).toBe(true);
-      expect(storage.findApiKeyByHash(row.key_hash)).toBeNull();
+      expect(await storage.findApiKeyByHash(row.key_hash)).toBeNull();
     });
 
-    it('should return false when revoking a non-existent key', () => {
-      expect(storage.revokeApiKey('nonexistent')).toBe(false);
+    it('should return false when revoking a non-existent key', async () => {
+      expect(await storage.revokeApiKey('nonexistent')).toBe(false);
     });
 
-    it('should update last_used_at', () => {
+    it('should update last_used_at', async () => {
       const row = makeRow();
-      storage.storeApiKey(row);
+      await storage.storeApiKey(row);
 
       const now = Date.now();
-      storage.updateLastUsed(row.id, now);
+      await storage.updateLastUsed(row.id, now);
 
-      const found = storage.findApiKeyByHash(row.key_hash);
+      const found = await storage.findApiKeyByHash(row.key_hash);
       expect(found!.last_used_at).toBe(now);
     });
   });

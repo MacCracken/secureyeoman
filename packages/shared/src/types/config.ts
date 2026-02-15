@@ -24,6 +24,19 @@ const SafePathSchema = z.string()
 const EnvVarRefSchema = z.string()
   .regex(/^[A-Z][A-Z0-9_]*$/, 'Must be a valid environment variable name');
 
+// Database configuration
+export const DatabaseConfigSchema = z.object({
+  host: z.string().default('localhost'),
+  port: z.number().default(5432),
+  database: z.string().default('friday'),
+  user: z.string().default('friday'),
+  passwordEnv: z.string().default('POSTGRES_PASSWORD'),
+  ssl: z.boolean().default(false),
+  poolSize: z.number().default(20),
+}).default({});
+
+export type DatabaseConfig = z.infer<typeof DatabaseConfigSchema>;
+
 // Core configuration
 export const CoreConfigSchema = z.object({
   name: z.string().default('SecureYeoman'),
@@ -31,6 +44,7 @@ export const CoreConfigSchema = z.object({
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error']).default('info'),
   workspace: SafePathSchema.default('~/.secureyeoman/workspace'),
   dataDir: SafePathSchema.default('~/.secureyeoman/data'),
+  database: DatabaseConfigSchema,
 });
 
 export type CoreConfig = z.infer<typeof CoreConfigSchema>;
@@ -189,7 +203,7 @@ export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
 
 // Fallback model configuration (used when primary provider hits rate limits or is unavailable)
 export const FallbackModelConfigSchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode']),
+  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai']),
   model: z.string(),
   apiKeyEnv: EnvVarRefSchema,
   baseUrl: z.string().url().optional(),
@@ -202,7 +216,7 @@ export type FallbackModelConfig = z.infer<typeof FallbackModelConfigSchema>;
 
 // Model/AI configuration
 export const ModelConfigSchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode']).default('anthropic'),
+  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai']).default('anthropic'),
   model: z.string().default('claude-sonnet-4-20250514'),
   apiKeyEnv: EnvVarRefSchema.default('ANTHROPIC_API_KEY'),
   baseUrl: z.string().url().optional(),

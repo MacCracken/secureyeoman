@@ -22,7 +22,8 @@ export default defineConfig({
         statements: 80,
       },
     },
-    testTimeout: 10000,
-    hookTimeout: 10000,
+    testTimeout: 30000,
+    hookTimeout: 30000,
+    fileParallelism: false,
   },
 });
