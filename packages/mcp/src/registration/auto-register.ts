@@ -29,8 +29,8 @@ export class AutoRegistration {
       const toolManifest = getToolManifest(this.config);
 
       const result = await this.client.post<{ server: RegisteredServer }>('/api/v1/mcp/servers', {
-        name: 'FRIDAY Internal MCP',
-        description: 'Built-in MCP server exposing FRIDAY tools, resources, and prompts',
+        name: 'YEOMAN MCP',
+        description: 'Built-in MCP server exposing YEOMAN tools, resources, and prompts',
         transport: this.config.transport,
         url: `http://${this.config.host}:${this.config.port}`,
         enabled: true,
