@@ -1086,6 +1086,44 @@ export async function uninstallMarketplaceSkill(id: string): Promise<{ message: 
   return request(`/marketplace/${id}/uninstall`, { method: 'POST' });
 }
 
+// ─── Reports API ────────────────────────────────────────────────
+
+export interface ReportSummary {
+  id: string;
+  title: string;
+  format: string;
+  generatedAt: number;
+  entryCount: number;
+  sizeBytes: number;
+}
+
+export async function fetchReports(): Promise<{ reports: ReportSummary[]; total: number }> {
+  try {
+    return await request('/reports');
+  } catch {
+    return { reports: [], total: 0 };
+  }
+}
+
+export async function generateReport(opts: {
+  title: string;
+  format: string;
+}): Promise<{ report: ReportSummary }> {
+  return request('/reports/generate', {
+    method: 'POST',
+    body: JSON.stringify(opts),
+  });
+}
+
+export async function downloadReport(reportId: string): Promise<Blob> {
+  const headers: Record<string, string> = {};
+  const token = getAccessToken();
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/reports/${reportId}/download`, { headers });
+  if (!res.ok) throw new Error(`Download failed: ${res.status}`);
+  return res.blob();
+}
+
 // ─── Terminal API ───────────────────────────────────────────────
 
 export interface TerminalCommandResult {
