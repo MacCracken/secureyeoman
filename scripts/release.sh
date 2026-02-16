@@ -66,7 +66,7 @@ echo ""
 
 echo "── Bumping version to $VERSION..."
 
-for pkg in package.json packages/shared/package.json packages/core/package.json packages/dashboard/package.json; do
+for pkg in package.json packages/shared/package.json packages/core/package.json packages/dashboard/package.json packages/mcp/package.json; do
   if [ -f "$pkg" ]; then
     # Use node to safely update JSON
     node -e "

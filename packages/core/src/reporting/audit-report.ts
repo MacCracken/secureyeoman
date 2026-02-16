@@ -64,7 +64,7 @@ export class AuditReportGenerator {
 
     // 2. Query audit log entries
     const queryOpts: AuditQueryOptions = {
-      limit: options.maxEntries ?? 10000,
+      limit: options.maxEntries,
       offset: 0,
       order: 'asc',
     };
@@ -106,11 +106,11 @@ export class AuditReportGenerator {
     const totalEntries = auditEntries.length + tasks.length + heartbeatTasks.length;
 
     let content: string;
-    const format: ReportFormat = options.format ?? 'json';
+    const format: ReportFormat = options.format;
 
     switch (format) {
       case 'html':
-        content = formatHtmlReport(options.title ?? 'Security Report', reportData);
+        content = formatHtmlReport(options.title, reportData);
         break;
       case 'csv':
         content = formatCsvReport(reportData);
@@ -128,7 +128,7 @@ export class AuditReportGenerator {
 
     const report: AuditReport & { content: string } = {
       id,
-      title: options.title ?? 'Security Report',
+      title: options.title,
       format,
       generatedAt: Date.now(),
       entryCount: totalEntries,

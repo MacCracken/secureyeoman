@@ -8,19 +8,45 @@ function escapeHtml(str: string): string {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+function str(val: unknown): string {
+  if (typeof val === 'string') return val;
+  if (typeof val === 'number' || typeof val === 'boolean') return String(val);
+  return '';
+}
+
+function num(val: unknown): number | undefined {
+  return typeof val === 'number' ? val : undefined;
+}
+
+function bool(val: unknown): boolean {
+  return val === true;
+}
+
+function formatTs(val: unknown): string {
+  const n = num(val);
+  return n ? new Date(n).toISOString() : '';
+}
+
+function field(entry: unknown, key: string): unknown {
+  if (entry != null && typeof entry === 'object') {
+    return (entry as Record<string, unknown>)[key];
+  }
+  return undefined;
+}
+
 export function formatHtmlReport(title: string, data: ReportData): string {
   const { auditEntries, tasks, heartbeatTasks, chainValid } = data;
 
-  const auditRows = auditEntries.map((e: any) =>
-    `<tr><td>${escapeHtml(e?.id ?? '')}</td><td>${escapeHtml(e?.event ?? '')}</td><td>${escapeHtml(e?.level ?? '')}</td><td>${escapeHtml(e?.message ?? '')}</td><td>${e?.timestamp ? new Date(e.timestamp).toISOString() : ''}</td></tr>`
+  const auditRows = auditEntries.map((e) =>
+    `<tr><td>${escapeHtml(str(field(e, 'id')))}</td><td>${escapeHtml(str(field(e, 'event')))}</td><td>${escapeHtml(str(field(e, 'level')))}</td><td>${escapeHtml(str(field(e, 'message')))}</td><td>${formatTs(field(e, 'timestamp'))}</td></tr>`
   ).join('\n');
 
-  const taskRows = tasks.map((t: any) =>
-    `<tr><td>${escapeHtml(t?.id ?? '')}</td><td>${escapeHtml(t?.name ?? '')}</td><td>${escapeHtml(t?.type ?? '')}</td><td>${escapeHtml(t?.status ?? '')}</td><td>${t?.createdAt ? new Date(t.createdAt).toISOString() : ''}</td></tr>`
+  const taskRows = tasks.map((t) =>
+    `<tr><td>${escapeHtml(str(field(t, 'id')))}</td><td>${escapeHtml(str(field(t, 'name')))}</td><td>${escapeHtml(str(field(t, 'type')))}</td><td>${escapeHtml(str(field(t, 'status')))}</td><td>${formatTs(field(t, 'createdAt'))}</td></tr>`
   ).join('\n');
 
-  const heartbeatRows = heartbeatTasks.map((h: any) =>
-    `<tr><td>${escapeHtml(h?.name ?? '')}</td><td>${escapeHtml(h?.type ?? '')}</td><td>${h?.enabled ? 'Yes' : 'No'}</td><td>${h?.intervalMs ?? ''}</td><td>${h?.lastRunAt ? new Date(h.lastRunAt).toISOString() : 'Never'}</td></tr>`
+  const heartbeatRows = heartbeatTasks.map((h) =>
+    `<tr><td>${escapeHtml(str(field(h, 'name')))}</td><td>${escapeHtml(str(field(h, 'type')))}</td><td>${bool(field(h, 'enabled')) ? 'Yes' : 'No'}</td><td>${String(num(field(h, 'intervalMs')) ?? '')}</td><td>${formatTs(field(h, 'lastRunAt')) || 'Never'}</td></tr>`
   ).join('\n');
 
   return `<!DOCTYPE html>
@@ -44,9 +70,9 @@ export function formatHtmlReport(title: string, data: ReportData): string {
 <div class="summary">
   <p><strong>Generated:</strong> ${new Date().toISOString()}</p>
   <p><strong>Audit Chain:</strong> <span class="${chainValid ? 'chain-valid' : 'chain-invalid'}">${chainValid ? 'Valid' : 'Invalid / Unverified'}</span></p>
-  <p><strong>Audit Entries:</strong> ${auditEntries.length}</p>
-  <p><strong>Tasks:</strong> ${tasks.length}</p>
-  <p><strong>Heartbeat Tasks:</strong> ${heartbeatTasks.length}</p>
+  <p><strong>Audit Entries:</strong> ${String(auditEntries.length)}</p>
+  <p><strong>Tasks:</strong> ${String(tasks.length)}</p>
+  <p><strong>Heartbeat Tasks:</strong> ${String(heartbeatTasks.length)}</p>
 </div>
 
 <h2>Audit Log</h2>
@@ -77,27 +103,27 @@ export function formatCsvReport(data: ReportData): string {
   // Audit entries section
   lines.push('# Audit Log');
   lines.push('id,event,level,message,timestamp');
-  for (const e of auditEntries as any[]) {
-    const msg = String(e?.message ?? '').replace(/"/g, '""');
-    lines.push(`"${e?.id ?? ''}","${e?.event ?? ''}","${e?.level ?? ''}","${msg}","${e?.timestamp ? new Date(e.timestamp).toISOString() : ''}"`);
+  for (const e of auditEntries) {
+    const msg = str(field(e, 'message')).replace(/"/g, '""');
+    lines.push(`"${str(field(e, 'id'))}","${str(field(e, 'event'))}","${str(field(e, 'level'))}","${msg}","${formatTs(field(e, 'timestamp'))}"`);
   }
 
   // Tasks section
   lines.push('');
   lines.push('# Task History');
   lines.push('id,name,type,status,createdAt');
-  for (const t of tasks as any[]) {
-    const name = String(t?.name ?? '').replace(/"/g, '""');
-    lines.push(`"${t?.id ?? ''}","${name}","${t?.type ?? ''}","${t?.status ?? ''}","${t?.createdAt ? new Date(t.createdAt).toISOString() : ''}"`);
+  for (const t of tasks) {
+    const name = str(field(t, 'name')).replace(/"/g, '""');
+    lines.push(`"${str(field(t, 'id'))}","${name}","${str(field(t, 'type'))}","${str(field(t, 'status'))}","${formatTs(field(t, 'createdAt'))}"`);
   }
 
   // Heartbeat tasks section
   lines.push('');
   lines.push('# Heartbeat Tasks');
   lines.push('name,type,enabled,intervalMs,lastRunAt');
-  for (const h of heartbeatTasks as any[]) {
-    const name = String(h?.name ?? '').replace(/"/g, '""');
-    lines.push(`"${name}","${h?.type ?? ''}","${h?.enabled ?? ''}","${h?.intervalMs ?? ''}","${h?.lastRunAt ? new Date(h.lastRunAt).toISOString() : ''}"`);
+  for (const h of heartbeatTasks) {
+    const name = str(field(h, 'name')).replace(/"/g, '""');
+    lines.push(`"${name}","${str(field(h, 'type'))}","${String(bool(field(h, 'enabled')))}","${String(num(field(h, 'intervalMs')) ?? '')}","${formatTs(field(h, 'lastRunAt'))}"`);
   }
 
   return lines.join('\n');
