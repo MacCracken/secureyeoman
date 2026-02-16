@@ -347,7 +347,20 @@ function OverviewPage({ metrics, health }: { metrics?: MetricsSnapshot; health?:
 
           {/* Metrics Graph */}
           <ErrorBoundary fallbackTitle="Graph failed to render">
-            <MetricsGraph metrics={metrics} health={health} mcpServers={mcpServers} />
+            <MetricsGraph
+              metrics={metrics}
+              health={health}
+              mcpServers={mcpServers}
+              onNodeClick={(nodeId) => {
+                const routes: Record<string, string> = {
+                  security: '/security?tab=overview',
+                  audit: '/security?tab=audit',
+                  tasks: '/security?tab=tasks',
+                  mcp: '/mcp',
+                };
+                navigate(routes[nodeId] ?? `/security?tab=nodes&node=${nodeId}`);
+              }}
+            />
           </ErrorBoundary>
         </div>
       </div>

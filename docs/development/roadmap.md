@@ -91,7 +91,7 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 - TanStack Query for server-state management
 - WebSocket client with auto-reconnection and channel subscriptions
 - Overview page with stat cards (tasks, heartbeat, audit, memory), services status panel (core, Postgres, audit chain, MCP, uptime, version)
-- MetricsGraph (ReactFlow with custom node types, live connection edges for health/database/MCP/security status)
+- MetricsGraph (ReactFlow with custom node types, live connection edges for health/database/MCP/security status, click-to-detail node expansion via System Details tab)
 - TaskHistory with advanced filtering (status + type), live data
 - SecurityEvents with severity-based styling, live data, heartbeat task viewer
 - ConnectionManager with connect forms, start/stop/delete, error retry

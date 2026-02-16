@@ -23,6 +23,7 @@ interface MetricsGraphProps {
   metrics?: MetricsSnapshot;
   health?: HealthStatus;
   mcpServers?: McpServerConfig[];
+  onNodeClick?: (nodeId: string) => void;
 }
 
 // Custom node component with explicit handles for all four sides
@@ -34,7 +35,7 @@ function SystemNode({ data }: { data: { label: string; value: string | number; i
   }[data.status];
 
   return (
-    <div className={`px-3 py-2 sm:px-4 sm:py-3 rounded-lg border-2 ${statusColor} min-w-[120px] sm:min-w-[140px]`}>
+    <div className={`px-3 py-2 sm:px-4 sm:py-3 rounded-lg border-2 ${statusColor} min-w-[120px] sm:min-w-[140px] cursor-pointer`}>
       <Handle type="target" position={Position.Left} style={{ visibility: 'hidden' }} />
       <Handle type="source" position={Position.Right} style={{ visibility: 'hidden' }} />
       <Handle type="target" position={Position.Top} id="top" style={{ visibility: 'hidden' }} />
@@ -52,7 +53,7 @@ const nodeTypes: NodeTypes = {
   system: SystemNode,
 };
 
-export function MetricsGraph({ metrics, health, mcpServers }: MetricsGraphProps) {
+export function MetricsGraph({ metrics, health, mcpServers, onNodeClick }: MetricsGraphProps) {
   const dbConnected = health?.checks?.database ?? false;
   const auditValid = health?.checks?.auditChain ?? false;
   const coreOk = health?.status === 'ok';
@@ -214,6 +215,7 @@ export function MetricsGraph({ metrics, health, mcpServers }: MetricsGraphProps)
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        onNodeClick={(_, node) => onNodeClick?.(node.id)}
         fitView
         fitViewOptions={{ padding: 0.2 }}
         attributionPosition="bottom-left"
