@@ -98,7 +98,7 @@ beforeEach(() => {
   mockFetchHeartbeatTasks.mockResolvedValue({ tasks: [] });
   mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
   mockFetchReports.mockResolvedValue({ reports: [], total: 0 });
-  mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0 });
+  mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 20, offset: 0 });
 });
 
 // ── Tests ────────────────────────────────────────────────────────────
