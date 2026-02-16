@@ -276,6 +276,15 @@ export interface HeartbeatTask {
   personalityName?: string | null;
 }
 
+export interface HeartbeatStatus {
+  running: boolean;
+  enabled: boolean;
+  intervalMs: number;
+  beatCount: number;
+  lastBeat: { timestamp: number; results: Record<string, unknown> } | null;
+  tasks: HeartbeatTask[];
+}
+
 export interface OnboardingStatus {
   needed: boolean;
   agentName: string | null;

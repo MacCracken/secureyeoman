@@ -218,6 +218,7 @@ curl -X POST http://localhost:18789/api/v1/tasks \
 
 ### 5. Monitor in Real-Time
 
+- The **Overview** page shows stat cards (tasks, heartbeat beats, audit entries, memory), a services status panel (core, Postgres, audit chain, MCP servers, uptime, version), and a system flow graph with live connection edges
 - Watch task execution in the dashboard
 - View metrics and resource usage
 - Check security events in the audit log

@@ -467,7 +467,10 @@ function TasksTab() {
   });
 
   const heartbeatTasks = heartbeatData?.tasks ?? [];
-  const [heartbeatOpen, setHeartbeatOpen] = useState(false);
+  const [heartbeatOpen, setHeartbeatOpen] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('heartbeat') === '1';
+  });
   const activeCount = heartbeatTasks.filter((t) => t.enabled).length;
 
   return (

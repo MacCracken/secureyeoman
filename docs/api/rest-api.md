@@ -12,6 +12,7 @@ This documentation covers the complete API surface. For real-time events, see:
 | [Authentication](#authentication) | JWT and API key auth |
 | [Tasks](#tasks) | Task CRUD and execution |
 | [Metrics](#metrics) | System metrics and monitoring |
+| [Brain](#brain-system) | Memory, knowledge, heartbeat, and sync |
 | [Soul](#soul-system) | Personality and skills |
 | [Integrations](#integrations) | Platform integrations |
 | [MCP Servers](#mcp-servers) | MCP server management and tool discovery |
@@ -1058,7 +1059,7 @@ Run brain maintenance (decay and prune expired memories).
 
 #### GET /api/v1/brain/heartbeat/status
 
-Get heartbeat system status.
+Get heartbeat system status including all configured tasks.
 
 **Response**
 ```json
@@ -1069,11 +1070,74 @@ Get heartbeat system status.
   "beatCount": 42,
   "lastBeat": {
     "timestamp": 1700100000000,
-    "durationMs": 15,
-    "checks": [
-      { "name": "system_health", "type": "system_health", "status": "ok", "message": "Memories: 150, Knowledge: 45, Heap: 64/128MB" },
-      { "name": "memory_status", "type": "memory_status", "status": "ok", "message": "Maintenance: 2 decayed, 0 pruned" }
-    ]
+    "results": { "system_health": "ok", "memory_status": "ok" }
+  },
+  "tasks": [
+    {
+      "name": "system_health",
+      "type": "system_health",
+      "enabled": true,
+      "intervalMs": 300000,
+      "lastRunAt": 1700100000000,
+      "config": {}
+    },
+    {
+      "name": "memory_status",
+      "type": "memory_status",
+      "enabled": true,
+      "intervalMs": 600000,
+      "lastRunAt": 1700099400000,
+      "config": {}
+    }
+  ]
+}
+```
+
+#### GET /api/v1/brain/heartbeat/tasks
+
+List all heartbeat tasks with their scheduling configuration.
+
+**Response**
+```json
+{
+  "tasks": [
+    {
+      "name": "system_health",
+      "type": "system_health",
+      "enabled": true,
+      "intervalMs": 300000,
+      "lastRunAt": 1700100000000,
+      "config": {},
+      "personalityId": null,
+      "personalityName": null
+    }
+  ]
+}
+```
+
+#### PUT /api/v1/brain/heartbeat/tasks/:name
+
+Update a heartbeat task's configuration.
+
+**Request Body**
+```json
+{
+  "intervalMs": 600000,
+  "enabled": true,
+  "config": {}
+}
+```
+
+**Response**
+```json
+{
+  "task": {
+    "name": "system_health",
+    "type": "system_health",
+    "enabled": true,
+    "intervalMs": 600000,
+    "lastRunAt": 1700100000000,
+    "config": {}
   }
 }
 ```

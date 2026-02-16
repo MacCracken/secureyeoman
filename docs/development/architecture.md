@@ -160,11 +160,12 @@ friday/
 
 **Key Components**:
 - `DashboardLayout` - Responsive shell with adaptive header, nav, and footer
+- `OverviewPage` - Stat cards (tasks, heartbeat, audit, memory), services status panel (core, Postgres, audit chain, MCP, uptime, version), and system flow graph
 - `StatusBar` - Inline connection/WebSocket/reconnecting status indicators
 - `NavigationTabs` - 9-tab nav with horizontal overflow scroll and mobile hamburger
-- `MetricsGraph` - ReactFlow visualization
+- `MetricsGraph` - ReactFlow visualization with live connection edges reflecting health, database, MCP, and security status; accepts `metrics`, `health`, and `mcpServers` props
 - `TaskHistory` - Historical task browser
-- `SecurityEvents` - Audit log viewer
+- `SecurityEvents` - Audit log viewer with heartbeat task section (auto-expandable via URL param)
 - `ConnectionManager` - Platform integration UI
 - `ChatPage` - Conversational AI interface
 

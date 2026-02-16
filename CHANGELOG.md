@@ -40,7 +40,10 @@ F.R.I.D.A.Y. — **Fully Responsive Integrated Digitally Adaptable Yeoman** — 
 #### Dashboard
 - React + Vite + Tailwind + TanStack Query
 - Real-time WebSocket updates with channel-based RBAC
-- Metrics graphs (ReactFlow), task history, security events, resource monitor
+- Overview page with stat cards (Tasks Today, Active Tasks, Heartbeat, Audit Entries, Memory Usage)
+- Services status panel (Core, Database/Postgres, Audit Chain, MCP Servers, Uptime, Version)
+- System flow graph (ReactFlow) with live connection edges reflecting health, database, MCP, and security status
+- Task history, security events, resource monitor
 - Personality editor, skills manager, code editor (Monaco) with AI chat sidebar
 - Voice interface (push-to-talk, speech recognition and synthesis)
 - Notification bell, search bar (Ctrl+K), user preferences

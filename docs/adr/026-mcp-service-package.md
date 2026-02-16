@@ -92,6 +92,7 @@ A lightweight dashboard served by the MCP service's Fastify instance. Access req
 ### Neutral
 - Existing `McpClientManager` in core continues to work for connecting to external MCP servers
 - Existing dashboard MCP Servers page continues to work; the internal server just appears as another entry
+- Dashboard Overview services status panel shows enabled/total MCP server count; system flow graph displays an MCP Servers node with live connection edges
 - The `@friday/shared` MCP types are extended but not broken
 
 ## Test Plan
