@@ -7,17 +7,17 @@
 ## Development Phases
 
 ```
-Phase 1          Phase 2          Phase 2.5        Phase 3          Phase 4          Phase 5
-Foundation       Security         Infrastructure   Dashboard        Integrations     Production
-   |                |                |                |                |                |
-   v                v                v                v                v                v
-[Core Agent] -> [RBAC/Crypto] -> [Brain/Comms] -> [React UI] -> [Platforms] -> [Hardening]
-   |                |                |                |                |                |
-   +- Task Loop     +- Encryption    +- CLI           +- Metrics       +- Telegram      +- Load Testing
-   +- Logging       +- Sandbox       +- Brain/Soul    +- History       +- Discord       +- Security Testing
-   +- Config        +- Validation    +- E2E Comms     +- Connections   +- Slack         +- Prometheus
-   +- Storage       +- Rate Limit    +- Fallbacks     +- Security      +- GitHub        +- Docs
-   +- AI Providers  +- mTLS          +- Task Storage  +- Soul UI       +- Webhooks      +- Deployment
+Phase 1          Phase 2          Phase 2.5        Phase 3          Phase 4          Phase 5          Phase 6
+Foundation       Security         Infrastructure   Dashboard        Integrations     Production       Cognitive
+   |                |                |                |                |                |                |
+   v                v                v                v                v                v                v
+[Core Agent] -> [RBAC/Crypto] -> [Brain/Comms] -> [React UI] -> [Platforms] -> [Hardening] -> [Intelligence]
+   |                |                |                |                |                |                |
+   +- Task Loop     +- Encryption    +- CLI           +- Metrics       +- Telegram      +- Load Testing  +- Vector Memory
+   +- Logging       +- Sandbox       +- Brain/Soul    +- History       +- Discord       +- Security Test +- Consolidation
+   +- Config        +- Validation    +- E2E Comms     +- Connections   +- Slack         +- Prometheus    +- History Compress
+   +- Storage       +- Rate Limit    +- Fallbacks     +- Security      +- GitHub        +- Docs          +- Sub-Agents
+   +- AI Providers  +- mTLS          +- Task Storage  +- Soul UI       +- Webhooks      +- Deployment    +- Hooks/Code Exec
 ```
 
 ---
@@ -160,6 +160,224 @@ All core modules maintain >80% coverage thresholds.
 | Phase 4: Integrations | Complete |
 | Phase 5: Production | Complete |
 | **2026.2.15 Release** | **Released 2026-02-15** |
+| Phase 6.1a: Vector Memory | Planned |
+| Phase 6.1b: Memory Consolidation | Planned |
+| Phase 6.2: History Compression | Planned |
+| Phase 6.3: Sub-Agent Delegation | Planned |
+| Phase 6.4a: Lifecycle Hooks | Planned |
+| Phase 6.4b: Code Execution | Planned |
+
+---
+
+## Phase 6: Cognitive Architecture
+
+**Status**: Planned | **ADRs**: 031–036
+**Inspired by**: Comparative analysis with [agent-zero](https://github.com/agent0ai/agent-zero) cognitive patterns
+
+```
+Phase 6.1           Phase 6.2           Phase 6.3           Phase 6.4
+Memory              Context             Multi-Agent          Extensibility
+Foundations         Intelligence        Architecture         & Execution
+    |                   |                   |                   |
+    v                   v                   v                   v
+[Vector Memory] -> [History       ] -> [Sub-Agent   ] -> [Hooks      ]
+[Consolidation]    [Compression   ]    [Delegation  ]    [Code Exec  ]
+    |                   |                   |                   |
+    +- Embeddings       +- 3-tier compress  +- Specialized      +- 24 lifecycle hooks
+    +- FAISS/Qdrant     +- LLM summarize    |  profiles         +- TS plugins + events
+    +- Semantic recall  +- Persistent DB    +- Context isolation +- Sandboxed runtimes
+    +- LLM dedup        +- Token budgeting  +- RBAC inheritance  +- Approval flow
+```
+
+---
+
+### Phase 6.1: Memory Foundations
+
+#### 6.1a — Vector Memory with Semantic Embeddings — [ADR 031](../adr/031-vector-semantic-memory.md)
+
+**Priority**: Highest | **Complexity**: High
+
+Upgrade the Brain from keyword/category-based lookups to vector-based semantic similarity search.
+
+**Decisions**:
+- **Embedding providers**: Configurable — local-first (SentenceTransformers) or API-based (OpenAI, Gemini). Users choose one or both, following the MCP model of offering enterprise in-house capability
+- **Vector backends**: FAISS (default, in-process) and Qdrant (distributed deployments). ChromaDB reserved as future option
+- **Integration**: Extends existing BrainStorage — vector indexing alongside current SQLite, not replacing it
+- **Retrieval**: Cosine similarity with configurable thresholds, metadata filtering via existing Brain query patterns
+
+**Deliverables**:
+- [ ] Embedding provider abstraction (local + API)
+- [ ] FAISS vector store adapter
+- [ ] Qdrant vector store adapter
+- [ ] BrainStorage extension for vector-indexed memories and knowledge
+- [ ] Migration path for existing Brain data
+- [ ] Configuration in `secureyeoman.yaml` under `brain.vector`
+- [ ] Dashboard UI for similarity search exploration
+
+#### 6.1b — LLM-Powered Memory Consolidation — [ADR 032](../adr/032-memory-consolidation.md)
+
+**Priority**: High | **Complexity**: Medium | **Depends on**: 6.1a
+
+Prevent memory bloat through intelligent deduplication — an LLM analyzes similar memories and decides whether to merge, replace, update, or keep them separate.
+
+**Decisions**:
+- **Trigger model**: Hybrid — quick similarity check on every memory save (fast near-duplicate detection), plus scheduled deep consolidation for broader semantic merging
+- **Schedule**: User-configurable interval via settings UI (default: daily)
+- **Safety**: 0.9 similarity threshold for destructive REPLACE actions, race condition protection, 60s timeout per batch, fallback to direct insertion on failure
+- **Actions**: MERGE, REPLACE, KEEP_SEPARATE, UPDATE, SKIP — decided by utility LLM call
+
+**Deliverables**:
+- [ ] ConsolidationManager with on-save quick check
+- [ ] Scheduled deep consolidation job (configurable interval)
+- [ ] LLM consolidation prompt templates
+- [ ] Settings UI for schedule configuration
+- [ ] Audit trail entries for all consolidation actions
+- [ ] Metrics: consolidation runs, merges performed, memory count trends
+
+---
+
+### Phase 6.2: Context Intelligence
+
+#### Progressive History Compression — [ADR 033](../adr/033-progressive-history-compression.md)
+
+**Priority**: High | **Complexity**: Medium
+
+Replace hard truncation with intelligent multi-tier history compression so the agent maintains coherent context across long and multi-session conversations.
+
+**Decisions**:
+- **Persistence**: Compressed history stored in SQLite, survives restarts — enables long-running multi-session conversations
+- **Tiers**: Message → Topic → Bulk, with percentage-based token allocation (50% current topic, 30% historical topics, 20% bulk archives)
+- **Compression escalation**: Large message truncation → LLM summarization → bulk merging (groups of 3) → oldest bulk removal
+- **Scope**: Per-conversation, per-platform — integrates with existing ConversationManager
+
+**Deliverables**:
+- [ ] HistoryCompressor with 3-tier compression pipeline
+- [ ] Token counting integration (reuse existing AI cost calculator)
+- [ ] LLM summarization prompts for topic/bulk compression
+- [ ] SQLite schema for persistent compressed history
+- [ ] ConversationManager integration
+- [ ] Configuration: tier allocation percentages, max tokens per tier
+- [ ] Dashboard: conversation history viewer with compression indicators
+
+---
+
+### Phase 6.3: Multi-Agent Architecture
+
+#### Sub-Agent Delegation System — [ADR 034](../adr/034-sub-agent-delegation.md)
+
+**Priority**: Medium | **Complexity**: High
+
+Enable the primary agent to spawn subordinate agents with specialized personas for focused subtask execution.
+
+**Decisions**:
+- **Profiles**: Specialized — sub-agents get distinct prompt profiles optimized for their task type (researcher, coder, analyst, etc.), not inheriting parent Soul
+- **Context isolation**: Each sub-agent gets its own conversation context, sealed after completion to prevent bleed into parent
+- **Hierarchy**: Configurable max depth (default: 3); sub-agents can delegate further
+- **Resource control**: Sub-agents inherit parent's RBAC scope (cannot escalate), with per-agent token budgets
+
+**Deliverables**:
+- [ ] SubAgentManager: spawn, monitor, collect results
+- [ ] Agent profile definitions (Markdown prompt files per profile)
+- [ ] Default profiles: researcher, coder, analyst, summarizer
+- [ ] Context isolation and sealing mechanism
+- [ ] Token budget tracking per sub-agent
+- [ ] RBAC inheritance and delegation rules
+- [ ] Dashboard: sub-agent execution tree visualization
+- [ ] MCP tools: `delegate_task`, `list_sub_agents`, `get_delegation_result`
+
+---
+
+### Phase 6.4: Extensibility & Execution
+
+#### 6.4a — Lifecycle Extension Hooks — [ADR 035](../adr/035-lifecycle-extension-hooks.md)
+
+**Priority**: Medium | **Complexity**: Medium
+
+Expose 20+ lifecycle hooks that let users inject custom logic at key stages without modifying core code.
+
+**Decisions**:
+- **Dual system**: TypeScript plugin modules for deep customization + EventEmitter/webhook emission for lightweight integrations. Plugin authors can also emit custom events
+- **Discovery**: Filesystem-based — `extensions/` directory with numeric prefix ordering (`_10_`, `_50_`)
+- **Override**: User extensions in `~/.secureyeoman/extensions/` override built-in defaults with same filename
+
+**Hook categories**:
+
+| Phase | Hooks |
+|-------|-------|
+| Agent lifecycle | `agent_init`, `agent_shutdown` |
+| Message loop | `message_loop_start`, `message_loop_end`, `prompt_assembly_before`, `prompt_assembly_after` |
+| LLM calls | `before_llm_call`, `after_llm_call`, `stream_chunk`, `stream_end` |
+| Tool execution | `tool_execute_before`, `tool_execute_after` |
+| Memory | `memory_save_before`, `memory_save_after`, `memory_recall_before` |
+| Sub-agent | `delegation_before`, `delegation_after`, `sub_agent_sealed` |
+| Integration | `message_received`, `message_sent`, `platform_connected` |
+| Security | `auth_success`, `auth_failure`, `rate_limit_hit` |
+
+**Deliverables**:
+- [ ] ExtensionManager with filesystem discovery and loading
+- [ ] Hook registry with typed signatures per hook point
+- [ ] EventEmitter integration for lightweight subscribers
+- [ ] Webhook dispatch for external hook consumers
+- [ ] User extension directory support with override semantics
+- [ ] Documentation: hook catalog, extension authoring guide
+- [ ] Example extensions: logging enhancer, custom memory filter, Slack notifier
+
+#### 6.4b — Sandboxed Code Execution Tool — [ADR 036](../adr/036-sandboxed-code-execution.md)
+
+**Priority**: Medium | **Complexity**: Medium
+
+Let the agent write and execute code (Python, Node.js, shell) within the existing Landlock/seccomp sandbox to solve novel problems dynamically.
+
+**Decisions**:
+- **Sandbox**: Always enabled — leverages existing Landlock (Linux) and macOS sandbox infrastructure. Not optional
+- **User opt-in**: The personality's ability to *create* code requires explicit enablement:
+  - Config toggle: `security.codeExecution.enabled` in `secureyeoman.yaml` (admin-only)
+  - Auto-approve toggle: `security.codeExecution.autoApprove` — if `false` (default), every execution requires per-execution user approval via dashboard prompt
+  - If `autoApprove: true`, executions proceed without prompting (for trusted/automated environments)
+- **Runtimes**: Python (child process), Node.js (isolated-vm), shell (sandboxed subprocess)
+- **Persistent sessions**: Shell sessions survive across commands within a conversation
+- **Limits**: Configurable max execution time (default 180s), max output size (default 1MB), memory limits via existing sandbox config
+
+**Deliverables**:
+- [ ] CodeExecutionTool with multi-runtime support
+- [ ] Approval flow: dashboard prompt for per-execution approval when autoApprove is off
+- [ ] Persistent session manager (session pool per conversation)
+- [ ] Output streaming to dashboard via WebSocket
+- [ ] Streaming secrets filter for code output (prevent API key leakage in stdout)
+- [ ] MCP tools: `execute_code`, `list_sessions`, `kill_session`
+- [ ] Configuration schema under `security.codeExecution`
+- [ ] Audit trail entries for all code executions (input code + output captured)
+
+---
+
+### Phase 6 Dependency Graph
+
+```
+Phase 6.1                  Phase 6.2              Phase 6.3              Phase 6.4
+┌──────────┐              ┌──────────┐           ┌──────────┐           ┌──────────┐
+│6.1a Vector│──────┬──────│6.2 History│           │6.4a Hooks│           │          │
+│  Memory   │      │      │ Compress  │           │          │           │          │
+└──────────┘      │      └──────────┘           └──────────┘           │          │
+                   │                                                     │          │
+┌──────────┐      │      ┌──────────┐                                  │6.4b Code │
+│6.1b Memory│◄─────┘      │6.3 Sub-  │                                  │  Exec    │
+│  Consol.  │             │  Agents  │                                  │          │
+└──────────┘             └──────────┘                                  └──────────┘
+
+  6.1b depends on 6.1a — all others are independent but ordered by value
+```
+
+---
+
+### Phase 6 Success Metrics
+
+| Metric | Target |
+|--------|--------|
+| Memory recall relevance (semantic vs keyword) | 40% improvement in retrieval precision |
+| Context coherence over 50+ message conversations | No critical context loss |
+| Complex task completion (multi-step) | 30% improvement with sub-agent delegation |
+| Extension adoption | 5+ community extensions within 3 months of hook release |
+| Code execution task coverage | 25% of tasks benefit from dynamic code generation |
 
 ---
 
@@ -168,6 +386,9 @@ All core modules maintain >80% coverage thresholds.
 - Distributed deployment (Kubernetes)
 - ML-based anomaly detection
 - Mobile app
+- Browser automation agent (Playwright/Puppeteer with vision model)
+- A2A protocol interoperability (after sub-agent delegation proves out)
+- ChromaDB as additional vector backend option
 
 ---
 
