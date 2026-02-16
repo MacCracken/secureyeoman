@@ -47,7 +47,7 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 | **Security** | RBAC (Admin/Operator/Auditor/Viewer), JWT + API key auth, mTLS, AES-256-GCM encryption at rest, sandboxed execution (Landlock/macOS sandbox), rate limiting (per-user, per-IP, global), HTTP security headers (HSTS, CSP, X-Frame-Options), CORS policy enforcement |
 | **Observability** | Cryptographic audit trails (HMAC-SHA256 chain), Prometheus metrics, Grafana dashboards, structured JSONL log rotation, audit retention enforcement, audit export |
 | **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama, LM Studio, LocalAI (local), OpenCode Zen; automatic fallback chains on rate limits/outages; dynamic model discovery |
-| **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); metrics graphs, task history, security events, personality editor, skills manager, code editor (Monaco), notification & retention settings |
+| **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); overview with stat cards (tasks, heartbeat, audit, memory) and services status panel (core, Postgres, audit chain, MCP); system flow graph (ReactFlow) with live connection edges; task history, security events, resource monitor, personality editor, skills manager, code editor (Monaco), notification & retention settings |
 | **Agent Architecture** | Soul (identity/archetypes/personality), Spirit (passions/inspirations/pains), Brain (memory/knowledge/skills with decay & pruning), Body (heartbeat/vital signs/screen capture) |
 | **Integrations** | Telegram, Discord, Slack, GitHub, Google Chat, Gmail, Email (IMAP/SMTP), CLI, Generic Webhook — plugin architecture with unified message routing |
 | **MCP Protocol** | Standalone `@friday/mcp` service (22+ tools, 7 resources, 4 prompts); auto-registers with core; streamable HTTP, SSE, and stdio transports; connect external MCP servers with persistent tool discovery |
@@ -62,10 +62,10 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 ## Architecture
 
 ```
-┌──────────────────────────────────────────────────────────┐
-│                      Dashboard (React)                    │
-│  Metrics | Tasks | Security | Personality | Code | Chat  │
-└───────────────────────┬──────────────────────────────────┘
+┌───────────────────────────────────────────────────────────┐
+│                       Dashboard (React)                    │
+│  Overview | Tasks | Security | Personality | Code | Chat  │
+└───────────────────────┬───────────────────────────────────┘
                         │ REST + WebSocket
 ┌───────────────────────▼──────────────────────────────────┐
 │                  Gateway (Fastify)                         │
@@ -185,10 +185,10 @@ See [.env.example](.env.example) for all options.
 
 Access http://localhost:3000 after starting the system. The dashboard provides:
 
-- **Metrics**: Real-time system metrics with interactive graphs
+- **Overview**: Stat cards (tasks, heartbeat beats, audit entries, memory), services status (core, Postgres, audit chain, MCP servers, uptime, version), and system flow graph with live connection edges
 - **Tasks**: Task history with create/edit/delete, filtering, and live updates
-- **Security**: Security event log with severity filtering
-- **Connections**: Integration management (connect/start/stop platforms)
+- **Security**: Security event log with severity filtering, heartbeat task viewer
+- **Connections**: Integration management (connect/start/stop platforms), MCP server management
 - **Personality**: Identity editor, archetype selector, skill builder
 - **Code**: Monaco editor with personality-scoped AI chat sidebar
 - **Settings**: Notification preferences, log retention policy, API key management, audit export

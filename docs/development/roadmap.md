@@ -90,9 +90,10 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 - React + Vite + TypeScript with URL routing (react-router-dom v7)
 - TanStack Query for server-state management
 - WebSocket client with auto-reconnection and channel subscriptions
-- MetricsGraph (ReactFlow with custom node types and real-time updates)
+- Overview page with stat cards (tasks, heartbeat, audit, memory), services status panel (core, Postgres, audit chain, MCP, uptime, version)
+- MetricsGraph (ReactFlow with custom node types, live connection edges for health/database/MCP/security status)
 - TaskHistory with advanced filtering (status + type), live data
-- SecurityEvents with severity-based styling, live data
+- SecurityEvents with severity-based styling, live data, heartbeat task viewer
 - ConnectionManager with connect forms, start/stop/delete, error retry
 - ResourceMonitor with CPU/Memory gauges, token/cost tracking, real history
 - Soul/Personality UI (onboarding wizard, personality editor, skills manager)

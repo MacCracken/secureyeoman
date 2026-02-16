@@ -24,7 +24,7 @@ Additionally, the Code Editor required manual "Send to Chat" workflow for runnin
 The sidebar now uses expandable/collapsible sections with sub-items for logical grouping:
 
 ```
-Overview                    → Dashboard overview
+Overview                    → Dashboard overview (stat cards, services status, system flow graph)
 Chat                       → Chat interface
 Code                       → Code editor
 

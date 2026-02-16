@@ -30,6 +30,7 @@ import type {
   Pain,
   KnowledgeEntry,
   HeartbeatTask,
+  HeartbeatStatus,
   Memory,
 } from '../types.js';
 
@@ -918,6 +919,21 @@ export async function fetchHeartbeatTasks(): Promise<{ tasks: HeartbeatTask[] }>
     return await request('/brain/heartbeat/tasks');
   } catch {
     return { tasks: [] };
+  }
+}
+
+export async function fetchHeartbeatStatus(): Promise<HeartbeatStatus> {
+  try {
+    return await request<HeartbeatStatus>('/brain/heartbeat/status');
+  } catch {
+    return {
+      running: false,
+      enabled: false,
+      intervalMs: 0,
+      beatCount: 0,
+      lastBeat: null,
+      tasks: [],
+    };
   }
 }
 

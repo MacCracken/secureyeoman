@@ -44,11 +44,22 @@ New `reflective_task` check type added to `HeartbeatCheckTypeSchema`. The handle
 
 The existing `ExternalBrainSync` infrastructure (already in `brain-routes.ts`) is now surfaced in the PersonalityEditor's Brain section, showing sync status and a "Sync Now" button when configured.
 
+### 6. Dashboard Heartbeat Visibility
+
+The dashboard Overview page displays heartbeat status as a stat card showing:
+- **Beat count** as the primary value
+- **Enabled/total tasks** as a subtitle
+- **Running/Stopped** status indicator (color-coded green/red)
+- Clicking the card navigates to Security > Tasks with the Heartbeat Tasks section auto-expanded (`/security?tab=tasks&heartbeat=1`)
+
+A `HeartbeatStatus` type was added to the dashboard types (`packages/dashboard/src/types.ts`) and a `fetchHeartbeatStatus` API client function fetches `GET /api/v1/brain/heartbeat/status`.
+
 ## Consequences
 
 - Heartbeat checks run at appropriate frequencies instead of a one-size-fits-all interval
 - Beats with no due tasks are no-ops (no memory/audit recording)
 - The Heart prompt now includes a "Task schedule" section showing frequency and last run per task
+- Heartbeat status is visible at a glance from the dashboard overview
 - Knowledge entries are fully editable from the dashboard with appropriate safeguards for primary entries
 - External brain sync is visible in the UI without any backend changes
 - The PersonalityEditor personality list uses a responsive 2-column grid when not in edit mode
