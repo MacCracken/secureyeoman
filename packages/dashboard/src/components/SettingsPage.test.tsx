@@ -56,7 +56,7 @@ describe('SettingsPage', () => {
 
   it('renders the Settings heading', async () => {
     renderComponent();
-    expect(await screen.findByText('General Settings')).toBeInTheDocument();
+    expect(await screen.findByText('Settings')).toBeInTheDocument();
     expect(screen.getByText('System configuration and preferences')).toBeInTheDocument();
   });
 

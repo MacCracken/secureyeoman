@@ -1,8 +1,6 @@
-version: "3.8"
-
 services:
   loki:
-    image: grafana/loki:2.9.0
+    image: grafana/loki:3.4.2
     ports:
       - "3100:3100"
     volumes:
@@ -11,7 +9,7 @@ services:
     restart: unless-stopped
 
   promtail:
-    image: grafana/promtail:2.9.0
+    image: grafana/promtail:3.4.2
     volumes:
       - ./promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/log:/var/log:ro
@@ -22,11 +20,11 @@ services:
     restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:10.0.0
+    image: grafana/grafana:11.5.2
     ports:
       - "3001:3000"
     environment:
-      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_ADMIN_PASSWORD:-admin}
       - GF_AUTH_ANONYMOUS_ENABLED=true
       - GF_AUTH_ANONYMOUS_ORG_ROLE=Viewer
     volumes:
@@ -36,7 +34,7 @@ services:
     restart: unless-stopped
 
   prometheus:
-    image: prom/prometheus:v2.47.0
+    image: prom/prometheus:v3.2.1
     ports:
       - "9090:9090"
     volumes:
