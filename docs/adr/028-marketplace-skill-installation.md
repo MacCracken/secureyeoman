@@ -24,9 +24,13 @@ ADR 007 introduced the Skill Marketplace concept with search, browse, and instal
 - `SkillSourceSchema` is extended from `['user', 'ai_proposed', 'ai_learned']` to include `'marketplace'`.
 - The dashboard SkillsManager shows a "Marketplace" label and filter option for marketplace-sourced skills.
 
-### Seed built-in example skill
+### Seed built-in example skills
 
-- `MarketplaceStorage.seedBuiltinSkills()` idempotently inserts a "Summarize Text" utility skill.
+- `MarketplaceStorage.seedBuiltinSkills()` idempotently inserts built-in skills on first launch:
+  - **Summarize Text** - Utility skill that condenses long text into clear, concise summaries
+  - **Universal Script Assistant** - Helps write and debug scripts across languages
+  - **Veteran Financial Manager/Trader** - Financial analysis with 25+ years market experience
+  - **Senior Web Designer** - UI/UX review with 15+ years experience, CRO, and accessibility expertise
 - Called during `SecureYeoman.initialize()` after marketplace manager creation.
 
 ## Consequences
@@ -34,4 +38,4 @@ ADR 007 introduced the Skill Marketplace concept with search, browse, and instal
 - Marketplace skills are now first-class Brain skills, visible in the Skills view and included in prompt composition.
 - The `marketplace` source type allows users to distinguish marketplace-installed skills from user-created or AI-proposed ones.
 - Uninstalling a marketplace skill cleanly removes it from both the marketplace registry and Brain storage.
-- The seeded example skill provides immediate value on first launch.
+- The seeded built-in skills provide immediate value on first launch across utility, development, finance, and design categories.

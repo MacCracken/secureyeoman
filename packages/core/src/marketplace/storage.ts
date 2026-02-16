@@ -9,6 +9,7 @@ import {
   summarizeTextSkill,
   universalScriptAssistantSkill,
   veteranFinancialManagerSkill,
+  seniorWebDesignerSkill,
 } from './skills/index.js';
 
 export class MarketplaceStorage extends PgBaseStorage {
@@ -54,7 +55,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         skill.installed,
         skill.publishedAt,
         skill.updatedAt,
-      ],
+      ]
     );
     return skill;
   }
@@ -62,7 +63,7 @@ export class MarketplaceStorage extends PgBaseStorage {
   async getSkill(id: string): Promise<MarketplaceSkill | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM marketplace.skills WHERE id = $1',
-      [id],
+      [id]
     );
     return row ? this.rowToSkill(row) : null;
   }
@@ -71,7 +72,7 @@ export class MarketplaceStorage extends PgBaseStorage {
     query?: string,
     category?: string,
     limit = 20,
-    offset = 0,
+    offset = 0
   ): Promise<{ skills: MarketplaceSkill[]; total: number }> {
     let paramIdx = 1;
     let where = ' WHERE 1=1';
@@ -90,7 +91,7 @@ export class MarketplaceStorage extends PgBaseStorage {
 
     const countRow = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM marketplace.skills${where}`,
-      params,
+      params
     );
     const total = parseInt(countRow?.count ?? '0', 10);
 
@@ -104,16 +105,13 @@ export class MarketplaceStorage extends PgBaseStorage {
   async setInstalled(id: string, installed: boolean): Promise<boolean> {
     const changes = await this.execute(
       'UPDATE marketplace.skills SET installed = $1, updated_at = $2 WHERE id = $3',
-      [installed, Date.now(), id],
+      [installed, Date.now(), id]
     );
     return changes > 0;
   }
 
   async delete(id: string): Promise<boolean> {
-    const changes = await this.execute(
-      'DELETE FROM marketplace.skills WHERE id = $1',
-      [id],
-    );
+    const changes = await this.execute('DELETE FROM marketplace.skills WHERE id = $1', [id]);
     return changes > 0;
   }
 
@@ -141,12 +139,13 @@ export class MarketplaceStorage extends PgBaseStorage {
       summarizeTextSkill,
       universalScriptAssistantSkill,
       veteranFinancialManagerSkill,
+      seniorWebDesignerSkill,
     ];
     for (const skill of BUILTIN_SKILLS) {
       if (!skill.name) continue;
       const exists = await this.queryOne(
         'SELECT 1 FROM marketplace.skills WHERE name = $1 AND author = $2',
-        [skill.name, skill.author],
+        [skill.name, skill.author]
       );
       if (!exists) {
         await this.addSkill(skill);

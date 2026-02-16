@@ -11,7 +11,12 @@ import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -20,11 +25,22 @@ function noopLogger(): SecureLogger {
 function createBrainManager(): { brainStorage: BrainStorage; brainManager: BrainManager } {
   const brainStorage = new BrainStorage();
   const auditStorage = new InMemoryAuditStorage();
-  const auditChain = new AuditChain({ storage: auditStorage, signingKey: 'test-signing-key-must-be-at-least-32-chars!!' });
-  const brainManager = new BrainManager(brainStorage, {
-    enabled: true, maxMemories: 10000, maxKnowledge: 5000,
-    memoryRetentionDays: 90, importanceDecayRate: 0.01, contextWindowMemories: 10,
-  }, { auditChain, logger: noopLogger() });
+  const auditChain = new AuditChain({
+    storage: auditStorage,
+    signingKey: 'test-signing-key-must-be-at-least-32-chars!!',
+  });
+  const brainManager = new BrainManager(
+    brainStorage,
+    {
+      enabled: true,
+      maxMemories: 10000,
+      maxKnowledge: 5000,
+      memoryRetentionDays: 90,
+      importanceDecayRate: 0.01,
+      contextWindowMemories: 10,
+    },
+    { auditChain, logger: noopLogger() }
+  );
   return { brainStorage, brainManager };
 }
 
@@ -74,11 +90,15 @@ describe('MarketplaceStorage', () => {
 
   it('should seed builtin skills', async () => {
     await storage.seedBuiltinSkills();
-    const { skills } = await storage.search('Summarize');
-    expect(skills).toHaveLength(1);
-    expect(skills[0].name).toBe('Summarize Text');
-    expect(skills[0].author).toBe('YEOMAN');
-    expect(skills[0].category).toBe('utilities');
+    const { skills, total } = await storage.search();
+    expect(total).toBe(4);
+    const summarizeSkill = skills.find((s) => s.name === 'Summarize Text');
+    expect(summarizeSkill).toBeDefined();
+    expect(summarizeSkill!.author).toBe('YEOMAN');
+    expect(summarizeSkill!.category).toBe('utilities');
+    const designerSkill = skills.find((s) => s.name === 'Senior Web Designer');
+    expect(designerSkill).toBeDefined();
+    expect(designerSkill!.category).toBe('design');
   });
 
   it('should be idempotent when seeding builtin skills', async () => {
@@ -118,9 +138,10 @@ describe('MarketplaceManager', () => {
 
   it('should seed builtin skills via manager', async () => {
     await manager.seedBuiltinSkills();
-    const { skills } = await manager.search('Summarize');
-    expect(skills).toHaveLength(1);
-    expect(skills[0].name).toBe('Summarize Text');
+    const { skills, total } = await manager.search();
+    expect(total).toBe(4);
+    const summarizeSkill = skills.find((s) => s.name === 'Summarize Text');
+    expect(summarizeSkill).toBeDefined();
   });
 });
 
@@ -158,7 +179,10 @@ describe('MarketplaceManager with BrainManager', () => {
   });
 
   it('should remove the brain skill on uninstall', async () => {
-    const skill = await manager.publish({ name: 'Removable Skill', instructions: 'Instructions here' });
+    const skill = await manager.publish({
+      name: 'Removable Skill',
+      instructions: 'Instructions here',
+    });
     await manager.install(skill.id);
     expect(await brainManager.listSkills({ source: 'marketplace' })).toHaveLength(1);
 
