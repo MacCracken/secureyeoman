@@ -163,7 +163,7 @@ friday/
 - `OverviewPage` - Stat cards (tasks, heartbeat, audit, memory), services status panel (core, Postgres, audit chain, MCP, uptime, version), and system flow graph
 - `StatusBar` - Inline connection/WebSocket/reconnecting status indicators
 - `NavigationTabs` - 9-tab nav with horizontal overflow scroll and mobile hamburger
-- `MetricsGraph` - ReactFlow visualization with live connection edges reflecting health, database, MCP, and security status; accepts `metrics`, `health`, and `mcpServers` props
+- `MetricsGraph` - ReactFlow visualization with live connection edges reflecting health, database, MCP, and security status; accepts `metrics`, `health`, `mcpServers`, and `onNodeClick` props; clicking nodes navigates to existing detail views or the Security > System Details tab
 - `TaskHistory` - Historical task browser
 - `SecurityEvents` - Audit log viewer with heartbeat task section (auto-expandable via URL param)
 - `ConnectionManager` - Platform integration UI

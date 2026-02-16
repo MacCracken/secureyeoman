@@ -8,7 +8,7 @@
 
 - [ ] Storybook for component development
 - [ ] Test connection button for integrations (requires backend endpoint)
-- [ ] Node detail expansion in MetricsGraph
+- [x] Node detail expansion in MetricsGraph
 - [ ] HTML prompt injection protection (DOMPurify sanitization)
 
 ## Integrations
