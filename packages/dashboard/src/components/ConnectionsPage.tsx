@@ -1280,26 +1280,109 @@ function MessagingTab({
   isTesting: boolean;
   testResult: { id: string; ok: boolean; message: string } | null;
 }) {
+  const [showAddPicker, setShowAddPicker] = useState(false);
+
+  // Platforms available to add (registered in core, not yet connected, and have metadata)
+  const addablePlatforms = unregisteredPlatforms.filter((p) => platformsData.has(p));
+
   return (
     <div className="space-y-6">
-      {!hasRegisteredPlatforms && (
-        <div className="card p-4 border-l-4 border-l-yellow-500 bg-yellow-500/5">
-          <div className="flex items-start gap-3">
-            <AlertCircle className="w-5 h-5 text-yellow-500 mt-0.5" />
-            <div>
-              <p className="font-medium text-sm">No platform adapters registered</p>
-              <p className="text-xs text-muted mt-1">
-                Platform adapters (Telegram, Discord, etc.) need to be installed and registered. See
-                the integration documentation for setup instructions.
-              </p>
+      {/* ── Connect form (inline, replaces picker when a platform is selected) ── */}
+      {connectingPlatform && PLATFORM_META[connectingPlatform] && (
+        <div className="card p-4 border-primary border-2">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-surface text-muted">
+                {PLATFORM_META[connectingPlatform].icon}
+              </div>
+              <h3 className="font-medium text-sm">Connect {PLATFORM_META[connectingPlatform].name}</h3>
             </div>
           </div>
+          {PLATFORM_META[connectingPlatform].setupSteps && (
+            <div className="mb-4 p-3 bg-surface rounded-md">
+              <p className="text-xs font-medium text-muted mb-2">Setup Steps</p>
+              <ol className="text-xs space-y-1">
+                {PLATFORM_META[connectingPlatform].setupSteps!.map((step, idx) => (
+                  <li key={idx} className="flex gap-2">
+                    <span className="text-muted">{idx + 1}.</span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          )}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              onCreateIntegration();
+            }}
+            className="space-y-3"
+          >
+            {PLATFORM_META[connectingPlatform].fields.map((field) => (
+              <div key={field.key}>
+                <label className="text-xs text-muted block mb-1">{field.label}</label>
+                <input
+                  type={field.type}
+                  placeholder={field.placeholder}
+                  value={formData[field.key] || ''}
+                  onChange={(e) => {
+                    onFormDataChange({ ...formData, [field.key]: e.target.value });
+                  }}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                />
+                {field.helpText && (
+                  <p className="text-xs text-muted mt-1 flex items-center gap-1">
+                    <HelpCircle className="w-3 h-3" />
+                    {field.helpText}
+                  </p>
+                )}
+              </div>
+            ))}
+            {createError && (
+              <p className="text-xs text-red-400">
+                {createError.message || 'Connection failed'}
+              </p>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="submit"
+                disabled={!formData.displayName || isCreating}
+                className="btn btn-primary text-xs px-3 py-1.5"
+              >
+                {isCreating ? 'Connecting...' : 'Connect'}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onConnectPlatform(null);
+                  setShowAddPicker(false);
+                }}
+                className="btn btn-ghost text-xs px-3 py-1.5"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
         </div>
       )}
 
-      {integrations.length > 0 && (
+      {/* ── Connected integrations grid ── */}
+      {integrations.length > 0 ? (
         <div className="space-y-3">
-          <h3 className="text-sm font-medium text-muted">Configured Integrations</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium text-muted">
+              {integrations.length} Connected
+            </h3>
+            {addablePlatforms.length > 0 && !connectingPlatform && (
+              <button
+                onClick={() => setShowAddPicker(!showAddPicker)}
+                className="btn btn-primary text-xs px-3 py-1.5 flex items-center gap-1"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Add
+              </button>
+            )}
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {integrations.map((integration) => (
               <IntegrationCard
@@ -1318,125 +1401,60 @@ function MessagingTab({
             ))}
           </div>
         </div>
-      )}
-
-      <div className="space-y-3">
-        <h3 className="text-sm font-medium text-muted">Available Platforms</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-          {unregisteredPlatforms.map((platformId) => {
-            const meta = PLATFORM_META[platformId];
-            const isRegistered = platformsData.has(platformId);
-
-            if (connectingPlatform === platformId) {
-              return (
-                <div key={platformId} className="card p-4 border-primary border-2">
-                  <div className="flex items-center justify-between mb-3">
-                    <h3 className="font-medium text-sm">Connect {meta.name}</h3>
-                  </div>
-                  {meta.setupSteps && (
-                    <div className="mb-4 p-3 bg-surface rounded-md">
-                      <p className="text-xs font-medium text-muted mb-2">Setup Steps</p>
-                      <ol className="text-xs space-y-1">
-                        {meta.setupSteps.map((step, idx) => (
-                          <li key={idx} className="flex gap-2">
-                            <span className="text-muted">{idx + 1}.</span>
-                            <span>{step}</span>
-                          </li>
-                        ))}
-                      </ol>
-                    </div>
-                  )}
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      onCreateIntegration();
-                    }}
-                    className="space-y-3"
-                  >
-                    {meta.fields.map((field) => (
-                      <div key={field.key}>
-                        <label className="text-xs text-muted block mb-1">{field.label}</label>
-                        <input
-                          type={field.type}
-                          placeholder={field.placeholder}
-                          value={formData[field.key] || ''}
-                          onChange={(e) => {
-                            onFormDataChange({ ...formData, [field.key]: e.target.value });
-                          }}
-                          className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        />
-                        {field.helpText && (
-                          <p className="text-xs text-muted mt-1 flex items-center gap-1">
-                            <HelpCircle className="w-3 h-3" />
-                            {field.helpText}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                    {createError && (
-                      <p className="text-xs text-red-400">
-                        {createError.message || 'Connection failed'}
-                      </p>
-                    )}
-                    <div className="flex gap-2">
-                      <button
-                        type="submit"
-                        disabled={!formData.displayName || isCreating}
-                        className="btn btn-primary text-xs px-3 py-1.5"
-                      >
-                        {isCreating ? 'Connecting...' : 'Connect'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onConnectPlatform(null);
-                        }}
-                        className="btn btn-ghost text-xs px-3 py-1.5"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              );
-            }
-
-            return (
-              <div
-                key={platformId}
-                className={`card p-4 ${isRegistered ? '' : 'opacity-60 cursor-not-allowed'}`}
-              >
-                <div className="flex items-start gap-3">
-                  <div className="p-2 rounded-lg bg-surface text-muted">{meta.icon}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="font-medium text-sm">{meta.name}</h3>
-                      <span
-                        className={`text-xs px-2 py-0.5 rounded-full ${
-                          isRegistered ? 'bg-green-500/10 text-green-400' : 'bg-surface text-muted'
-                        }`}
-                      >
-                        {isRegistered ? 'Available' : 'Coming Soon'}
-                      </span>
-                    </div>
-                    <p className="text-xs text-muted mt-1">{meta.description}</p>
-                    {isRegistered && (
-                      <button
-                        onClick={() => {
-                          onConnectPlatform(platformId);
-                        }}
-                        className="btn btn-primary text-xs px-3 py-1.5 mt-2"
-                      >
-                        Connect
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+      ) : !connectingPlatform ? (
+        <div className="text-center py-12 space-y-3">
+          <Cable className="w-10 h-10 text-muted-foreground mx-auto" />
+          <p className="text-sm text-muted-foreground">No integrations connected yet</p>
+          {addablePlatforms.length > 0 && (
+            <button
+              onClick={() => setShowAddPicker(true)}
+              className="btn btn-primary text-xs px-4 py-2 inline-flex items-center gap-1.5"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Add Integration
+            </button>
+          )}
         </div>
-      </div>
+      ) : null}
+
+      {/* ── Add-integration picker (compact dropdown-style list) ── */}
+      {showAddPicker && !connectingPlatform && addablePlatforms.length > 0 && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-medium">Choose a platform</h3>
+            <button
+              onClick={() => setShowAddPicker(false)}
+              className="text-xs text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {addablePlatforms.map((platformId) => {
+              const meta = PLATFORM_META[platformId];
+              if (!meta) return null;
+              return (
+                <button
+                  key={platformId}
+                  onClick={() => {
+                    onConnectPlatform(platformId);
+                    setShowAddPicker(false);
+                  }}
+                  className="flex items-center gap-2.5 p-2.5 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
+                >
+                  <div className="p-1.5 rounded bg-surface text-muted shrink-0">
+                    {meta.icon}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{meta.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{meta.description}</p>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

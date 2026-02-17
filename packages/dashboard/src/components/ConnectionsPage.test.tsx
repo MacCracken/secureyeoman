@@ -120,10 +120,11 @@ describe('ConnectionsPage', () => {
     expect(screen.getByText('GitHub')).toBeInTheDocument();
   });
 
-  it('shows info banner when no platforms registered', async () => {
+  it('shows empty state when no integrations connected', async () => {
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });
+    mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     renderComponent();
-    expect(await screen.findByText('No platform adapters registered')).toBeInTheDocument();
+    expect(await screen.findByText('No integrations connected yet')).toBeInTheDocument();
   });
 
   it('shows messaging integrations when available', async () => {
