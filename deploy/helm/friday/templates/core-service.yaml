@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "friday.fullname" . }}-core
+  namespace: {{ include "friday.namespace" . }}
+  labels:
+    {{- include "friday.componentLabels" (dict "context" . "component" "core") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.core.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "friday.selectorLabels" (dict "context" . "component" "core") | nindent 4 }}

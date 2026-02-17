@@ -743,11 +743,47 @@ All A2A messages use the existing comms crypto layer:
 
 ---
 
+## Kubernetes Security
+
+When deployed on Kubernetes, additional security controls are applied:
+
+### Pod Security
+
+- **Non-root execution**: All pods run as non-root users (UID 1000 for core/MCP, UID 101 for nginx dashboard)
+- **Read-only root filesystem**: Writable paths limited to `/tmp`, `/app/data`, and nginx cache directories
+- **Capability dropping**: All Linux capabilities dropped (`capabilities.drop: ["ALL"]`)
+- **Privilege escalation**: Blocked (`allowPrivilegeEscalation: false`)
+- **Seccomp profile**: `RuntimeDefault` applied to all pods
+
+### Network Policies
+
+When enabled, strict ingress/egress rules apply:
+
+| Service | Ingress From | Egress To |
+|---------|-------------|-----------|
+| Core | Dashboard, MCP, Ingress Controller | Managed DB (:5432), AI APIs (:443), DNS |
+| MCP | Ingress Controller | Core only, DNS |
+| Dashboard | Ingress Controller | Core only, DNS |
+
+### Secrets Management
+
+- **Default**: Kubernetes Secrets (base64-encoded, suitable for sealed-secrets)
+- **Production**: ExternalSecret CRD integration with AWS Secrets Manager, GCP Secret Manager, or Azure Key Vault
+- Secrets are never stored in values files; use `--set` flags or external secret operators
+
+### TLS
+
+- Ingress TLS termination via cert-manager (Let's Encrypt or custom CA)
+- Internal service-to-service communication is plaintext within the cluster network (standard for K8s)
+
+---
+
 ## Related Documentation
 
 - [API Security](../api/rest-api.md#authentication)
 - [Architecture Overview](../development/architecture.md)
 - [Configuration Reference](../configuration.md)
+- [Kubernetes Deployment Guide](../guides/kubernetes-deployment.md)
 
 ---
 

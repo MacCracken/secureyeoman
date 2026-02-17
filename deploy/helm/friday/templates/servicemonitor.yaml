@@ -1,0 +1,18 @@
+{{- if .Values.monitoring.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ include "friday.fullname" . }}-core
+  namespace: {{ include "friday.namespace" . }}
+  labels:
+    {{- include "friday.componentLabels" (dict "context" . "component" "core") | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "friday.selectorLabels" (dict "context" . "component" "core") | nindent 6 }}
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
+{{- end }}

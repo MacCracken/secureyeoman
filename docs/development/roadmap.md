@@ -760,9 +760,39 @@ Learning        Assistance        Input/Output
 
 ---
 
+## Phase 9: Kubernetes Deployment — [ADR 042](../adr/042-kubernetes-deployment.md)
+
+**Status**: Complete
+
+Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design (EKS/GKE/AKS), GHCR image registry, and managed PostgreSQL support.
+
+**Decisions**:
+- **Packaging**: Helm Chart (over raw manifests or Kustomize) for templating and environment overrides
+- **Registry**: GitHub Container Registry (GHCR) for image hosting
+- **Cloud support**: Cloud-agnostic — EKS, GKE, AKS all supported via values overrides
+- **Database**: External managed PostgreSQL (RDS/Cloud SQL/Azure Database)
+- **Observability**: Prometheus Operator CRDs (ServiceMonitor, PrometheusRule), Grafana sidecar dashboards
+
+**Deliverables**:
+- [x] Helm chart with templates for core, MCP, dashboard deployments
+- [x] Production nginx Dockerfile for dashboard SPA
+- [x] Ingress with TLS (cert-manager), WebSocket support
+- [x] HPA (core 2-10 replicas, MCP 1-5 replicas on CPU)
+- [x] PodDisruptionBudgets for all services
+- [x] NetworkPolicies (deny-all default, explicit allow rules)
+- [x] SecurityContext hardening (non-root, read-only FS, drop all caps, seccomp RuntimeDefault)
+- [x] ServiceMonitor + PrometheusRule (9 alert rules migrated)
+- [x] Grafana dashboard ConfigMap with sidecar auto-discovery
+- [x] ExternalSecret CRD support (AWS/GCP/Azure)
+- [x] CI/CD: GHCR image push on tags, Helm lint in CI
+- [x] Values files for dev, staging, production environments
+- [x] Kubernetes smoke test (kind/k3d)
+- [x] Deployment guide and ADRs
+
+---
+
 ## Future Enhancements
 
-- Distributed deployment (Kubernetes)
 - ML-based anomaly detection
 - Mobile app (native iOS/Android)
 - Browser automation agent (Playwright/Puppeteer with vision model)
