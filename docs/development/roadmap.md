@@ -4,278 +4,281 @@
 
 ---
 
-## Development Phases
+## Timeline
+
+| Phase | Name | Release | Status |
+|-------|------|---------|--------|
+| 1 | Foundation | 2026.2.15 | Complete |
+| 2 | Security | 2026.2.15 | Complete |
+| 3 | Infrastructure | 2026.2.15 | Complete |
+| 4 | Dashboard | 2026.2.15 | Complete |
+| 5 | Integrations & Platforms | 2026.2.15 | Complete |
+| 6 | Production Hardening | 2026.2.15 | Complete |
+| | **Release 2026.2.15** | **2026-02-15** | **Released** |
+| 7 | Cognitive & Memory | 2026.2.16 | Complete |
+| 8 | Extensions & Intelligence | 2026.2.16 | Complete |
+| | **Release 2026.2.16** | **2026-02-16** | **Released** |
+| 9 | WebMCP & Browser Tools | 2026.2.17 | Complete |
+| 10 | Kubernetes Deployment | 2026.2.17 | Complete |
+| | **Release 2026.2.17** | **2026-02-17** | **Released** |
+| 11 | Dashboard UX | — | Complete |
+| 12 | Expanded Integrations | — | Complete |
+| 13 | Dashboard & Tooling | — | In Progress |
+
+---
+
+## Phase Overview
 
 ```
-Phase 1          Phase 2          Phase 2.5        Phase 3          Phase 4          Phase 5          Phase 6          Phase 8          Phase 9          Phase 10         Phase 11
-Foundation       Security         Infrastructure   Dashboard        Integrations     Production       Cognitive        WebMCP           Kubernetes       Dashboard UX     Expanded
-   |                |                |                |                |                |                |                |                |                |                |
-   v                v                v                v                v                v                v                v                v                v                v
-[Core Agent] -> [RBAC/Crypto] -> [Brain/Comms] -> [React UI] -> [Platforms] -> [Hardening] -> [Intelligence] -> [Web Tools] -> [K8s Deploy] -> [UX Polish] -> [Integrations+]
-   |                |                |                |                |                |                |                |                |                |                |
-   +- Task Loop     +- Encryption    +- CLI           +- Metrics       +- Telegram      +- Load Testing  +- Vector Memory +- Web Scraping  +- Helm Chart    +- Cost Analytics +- Mistral AI
-   +- Logging       +- Sandbox       +- Brain/Soul    +- History       +- Discord       +- Security Test +- Consolidation +- Web Search    +- GHCR Images   +- Exec Tree     +- Jira/AWS/Azure
-   +- Config        +- Validation    +- E2E Comms     +- Connections   +- Slack         +- Prometheus    +- History Comp. +- Browser       +- HPA/PDB       +- Memory Trends  +- MCP Pre-builts
-   +- Storage       +- Rate Limit    +- Fallbacks     +- Security      +- GitHub        +- Docs          +- Sub-Agents    +- Health Monitor+- NetworkPolicy  +- Audit Filters  +- Tab Consolidation
-   +- AI Providers  +- mTLS          +- Task Storage  +- Soul UI       +- Webhooks      +- Deployment    +- Hooks/CodeExec+- Credentials   +- Observability
+Phase 1       Phase 2       Phase 3       Phase 4       Phase 5       Phase 6
+Foundation    Security      Infra         Dashboard     Integrations  Production
+   |             |             |             |             |             |
+   v             v             v             v             v             v
+[Core Agent] [RBAC/Crypto] [Brain/Comms] [React UI]   [Platforms]   [Hardening]
+                                    ── Release 2026.2.15 ──
+
+Phase 7       Phase 8       Phase 9       Phase 10      Phase 11      Phase 12
+Cognitive     Extensions    WebMCP        Kubernetes    Dashboard UX  Integrations+
+   |             |             |             |             |             |
+   v             v             v             v             v             v
+[Memory/AI]  [Hooks/A2A]   [Web Tools]   [K8s Deploy]  [UX Polish]   [Expand]
+     ── Release 2026.2.16 ──       ── Release 2026.2.17 ──
 ```
 
 ---
 
-## Phase 1: Foundation
+## Phase 1: Foundation — [ADR 000](../adr/000-secureyeoman-architecture-overview.md)
 
 **Status**: Complete
 
-- TypeScript project structure with strict mode, ESLint, Prettier, Vitest
-- Configuration management (YAML + env vars + Zod validation)
-- Base agent loop with task queue, event-driven architecture, graceful shutdown
-- Multi-provider AI integration (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen, DeepSeek, Mistral)
-- Structured logging with UUID v7, correlation IDs, SQLite WAL storage
-- Cryptographic audit chain (HMAC-SHA256, integrity verification)
-- Log query API with REST endpoint
+- [x] TypeScript project structure with strict mode, ESLint, Prettier, Vitest
+- [x] Configuration management (YAML + env vars + Zod validation)
+- [x] Base agent loop with task queue, event-driven architecture, graceful shutdown
+- [x] Multi-provider AI integration (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen, DeepSeek, Mistral)
+- [x] Structured logging with UUID v7, correlation IDs, SQLite WAL storage
+- [x] Cryptographic audit chain (HMAC-SHA256, integrity verification)
+- [x] Log query API with REST endpoint
 
 ---
 
-## Phase 2: Security Layer
+## Phase 2: Security — [ADR 015](../adr/015-rbac-capture-permissions.md), [ADR 027](../adr/027-gateway-security-hardening.md)
 
 **Status**: Complete
 
 ### Authentication & Authorization
-- RBAC with role definitions (Admin, Operator, Auditor, Viewer), inheritance, persistent storage
-- Full RBAC management via REST API (role CRUD, user-role assignments), Dashboard UI, and CLI (`secureyeoman role`)
-- JWT authentication with refresh token rotation, blacklisting
-- API key authentication with rate limiting and revocation
-- Gateway middleware for per-route RBAC enforcement
+- [x] RBAC with role definitions (Admin, Operator, Auditor, Viewer), inheritance, persistent storage
+- [x] Full RBAC management via REST API (role CRUD, user-role assignments), Dashboard UI, and CLI (`secureyeoman role`)
+- [x] JWT authentication with refresh token rotation, blacklisting
+- [x] API key authentication with rate limiting and revocation
+- [x] Gateway middleware for per-route RBAC enforcement
 
 ### Encryption & Secrets
-- AES-256-GCM encryption at rest with scrypt KDF
-- System keyring integration (macOS Keychain, Linux Secret Service)
-- Secret rotation with dual-key JWT verification and grace periods
+- [x] AES-256-GCM encryption at rest with scrypt KDF
+- [x] System keyring integration (macOS Keychain, Linux Secret Service)
+- [x] Secret rotation with dual-key JWT verification and grace periods
 
 ### Input Validation & Protection
-- Input validation pipeline (size limits, encoding normalization, injection detection)
-- Prompt injection defense (6 pattern families, blocking + warning modes)
-- Rate limiting with sliding window counters (per-user, per-IP, per-API-key, global)
+- [x] Input validation pipeline (size limits, encoding normalization, injection detection)
+- [x] Prompt injection defense (6 pattern families, blocking + warning modes)
+- [x] Rate limiting with sliding window counters (per-user, per-IP, per-API-key, global)
 
 ### Sandboxing
-- Cross-platform sandbox abstraction (`Sandbox` interface, `SandboxManager`)
-- Linux: V1 soft sandbox + V2 Landlock kernel enforcement via forked worker
-- macOS: `sandbox-exec` profile generation with deny-default policy
-- NoopSandbox fallback with warning
+- [x] Cross-platform sandbox abstraction (`Sandbox` interface, `SandboxManager`)
+- [x] Linux: V1 soft sandbox + V2 Landlock kernel enforcement via forked worker
+- [x] macOS: `sandbox-exec` profile generation with deny-default policy
+- [x] NoopSandbox fallback with warning
 
 ### Additional
-- Soul system (personality, skills, onboarding, 18 REST endpoints)
-- mTLS with client certificate authentication
-- Redis-backed distributed rate limiting
+- [x] Soul system (personality, skills, onboarding, 18 REST endpoints)
+- [x] mTLS with client certificate authentication
+- [x] Redis-backed distributed rate limiting
 
 ---
 
-## Phase 2.5: Core Infrastructure Gaps
+## Phase 3: Infrastructure — [ADR 004](../adr/004-mcp-protocol.md)
 
 **Status**: Complete
 
-- CLI entry point (`--port`, `--host`, `--config`, `--log-level`, `--tls`)
-- SQLite task storage with filtering, pagination, and metrics
-- Security events query API
-- Rate limit metrics integration
-- Brain system (memory, knowledge, skills with decay and pruning)
-- E2E encrypted inter-agent communication (X25519 + Ed25519 + AES-256-GCM)
-- Model fallback chain on rate limits (429) / provider unavailability (502/503)
+- [x] CLI entry point (`--port`, `--host`, `--config`, `--log-level`, `--tls`)
+- [x] SQLite task storage with filtering, pagination, and metrics
+- [x] Security events query API
+- [x] Rate limit metrics integration
+- [x] Brain system (memory, knowledge, skills with decay and pruning)
+- [x] E2E encrypted inter-agent communication (X25519 + Ed25519 + AES-256-GCM)
+- [x] Model fallback chain on rate limits (429) / provider unavailability (502/503)
 
 ---
 
-## Phase 3: Dashboard
+## Phase 4: Dashboard — [ADR 001](../adr/001-dashboard-chat.md), [ADR 008](../adr/008-coding-ide-view.md), [ADR 009](../adr/009-voice-interface.md)
 
 **Status**: Complete
 
-- React + Vite + TypeScript with URL routing (react-router-dom v7)
-- TanStack Query for server-state management
-- WebSocket client with auto-reconnection and channel subscriptions
-- Overview page with stat cards (tasks, heartbeat, audit, memory), services status panel (core, Postgres, audit chain, MCP, uptime, version)
-- MetricsGraph (ReactFlow with custom node types, live connection edges for health/database/MCP/security status, click-to-detail node expansion via System Details tab)
-- TaskHistory with advanced filtering (status + type), live data
-- SecurityEvents with severity-based styling, live data, heartbeat task viewer
-- ConnectionManager with connect forms, start/stop/delete, error retry
-- ResourceMonitor with CPU/Memory gauges, token/cost tracking, real history
-- Soul/Personality UI (onboarding wizard, personality editor, skills manager)
-- Login page with JWT auth, automatic token refresh on 401
-- Coding IDE view (Monaco editor with personality-scoped AI chat sidebar)
-- Voice interface (browser-native SpeechRecognition + speechSynthesis)
-- Session timeout warning, ErrorBoundary, ConfirmDialog
-- Responsive mobile layout, dark/light theme
+- [x] React + Vite + TypeScript with URL routing (react-router-dom v7)
+- [x] TanStack Query for server-state management
+- [x] WebSocket client with auto-reconnection and channel subscriptions
+- [x] Overview page with stat cards (tasks, heartbeat, audit, memory), services status panel
+- [x] MetricsGraph (ReactFlow with custom node types, live connection edges, click-to-detail)
+- [x] TaskHistory with advanced filtering (status + type), live data
+- [x] SecurityEvents with severity-based styling, live data, heartbeat task viewer
+- [x] ConnectionManager with connect forms, start/stop/delete, error retry
+- [x] ResourceMonitor with CPU/Memory gauges, token/cost tracking, real history
+- [x] Soul/Personality UI (onboarding wizard, personality editor, skills manager)
+- [x] Login page with JWT auth, automatic token refresh on 401
+- [x] Coding IDE view (Monaco editor with personality-scoped AI chat sidebar)
+- [x] Voice interface (browser-native SpeechRecognition + speechSynthesis)
+- [x] Session timeout warning, ErrorBoundary, ConfirmDialog
+- [x] Responsive mobile layout, dark/light theme
 
 ---
 
-## Phase 4: Integrations
+## Phase 5: Integrations & Platforms — [ADR 025](../adr/025-cli-webhook-googlechat-integrations.md), [ADR 030](../adr/030-unified-connections-oauth.md)
 
 **Status**: Complete
 
-- Plugin architecture (`Integration` interface, `IntegrationManager`, `IntegrationStorage`, factory pattern)
-- Message abstraction (`UnifiedMessage`, `MessageAttachment`, `PlatformAdapter`, `MessageRouter`)
-- REST API routes for CRUD + start/stop + messages with RBAC
-- Telegram, Discord, Slack, GitHub, Google Chat, CLI, Generic Webhook adapters
-- Conversation management, auto-reconnect, per-platform rate limiting
+### Architecture
+- [x] Plugin architecture (`Integration` interface, `IntegrationManager`, `IntegrationStorage`, factory pattern)
+- [x] Message abstraction (`UnifiedMessage`, `MessageAttachment`, `PlatformAdapter`, `MessageRouter`)
+- [x] REST API routes for CRUD + start/stop + messages with RBAC
+- [x] Conversation management, auto-reconnect, per-platform rate limiting
+
+### Messaging Platforms (8)
+
+| Platform | Status |
+|----------|--------|
+| Telegram | Stable |
+| Discord | Stable |
+| Slack | Stable |
+| Google Chat | Stable |
+| WhatsApp | Stable |
+| Signal | Stable |
+| Microsoft Teams | Stable |
+| iMessage | Beta |
+
+### MCP Ecosystem — [ADR 026](../adr/026-mcp-service-package.md)
+
+| Transport | Status |
+|----------|--------|
+| stdio (local) | Supported |
+| streamable-http | Supported |
+| SSE | Supported |
+
+- [x] MCP Server Discovery — Auto-discover tools from registered servers
+- [x] Tool Routing — Route tool calls to appropriate external MCP server
+- [x] Remote Server Support — First-class support for HTTP-based remote MCP servers
+- [x] Dashboard UI — Server registration, tool browser, status indicators, credential management
 
 ---
 
-## Phase 4.5: Integration Expansion
+## Phase 6: Production Hardening
 
 **Status**: Complete
 
-Expand integrations across multiple categories to reach parity with platforms like OpenClawd AI.
+- [x] Load testing and performance benchmarks
+- [x] Security testing and vulnerability scanning
+- [x] Prometheus metrics integration
+- [x] Documentation (API reference, guides, ADRs)
+- [x] Deployment configuration and Docker support
 
-### Integration Categories
+---
 
-#### Messaging (Complete: 8)
+## Phase 7: Cognitive & Memory — [ADR 031](../adr/031-vector-semantic-memory.md), [ADR 032](../adr/032-memory-consolidation.md), [ADR 033](../adr/033-progressive-history-compression.md), [ADR 034](../adr/034-sub-agent-delegation.md)
 
-| Platform | Status | Priority |
-|----------|--------|----------|
-| Telegram | ✅ Stable | — |
-| Discord | ✅ Stable | — |
-| Slack | ✅ Stable | — |
-| Google Chat | ✅ Stable | — |
-| iMessage | 🟡 Beta | — |
-| WhatsApp | ✅ Stable | — |
-| Signal | ✅ Stable | — |
-| Microsoft Teams | ✅ Stable | — |
+**Status**: Complete
 
-### Adaptive Learning (7.1)
+### Vector Memory
+- [x] FAISS and Qdrant vector store backends
+- [x] Semantic search across memories with similarity scoring
+- [x] Embedding pipeline with batched indexing
 
+### Memory Consolidation
+- [x] Scheduled consolidation with cron-based triggers
+- [x] Deep consolidation via LLM-driven memory merging
+- [x] FlaggedIds persistence across restarts
+
+### History Compression
+- [x] Progressive conversation compression (summary chains)
+- [x] Token budget management for long conversations
+
+### Sub-Agent Delegation
+- [x] Sub-agent spawning with budget limits and depth controls
+- [x] Execution tree tracking with status and results
+- [x] Parent-child lifecycle management
+
+### RBAC Management
+- [x] Full RBAC management via REST API, Dashboard UI, and CLI (`secureyeoman role`)
+
+---
+
+## Phase 8: Extensions & Intelligence — [ADR 035](../adr/035-lifecycle-extension-hooks.md), [ADR 036](../adr/036-sandboxed-code-execution.md), [ADR 037](../adr/037-a2a-protocol.md), [ADR 040](../adr/040-proactive-assistance.md), [ADR 041](../adr/041-multimodal-io.md)
+
+**Status**: Complete
+
+### Lifecycle Hooks
+- [x] Hook registration system with typed extension points
+- [x] Pre/post hooks for task execution, message handling, memory operations
+
+### Code Execution
+- [x] Sandboxed code execution in isolated environments
+- [x] Language support with timeout enforcement
+
+### A2A Protocol
+- [x] Agent-to-agent communication protocol
+- [x] Service discovery and capability negotiation
+
+### Integration Expansion
+- [x] DeepSeek AI provider
+- [x] Google Calendar integration
+- [x] Notion integration
+- [x] GitLab integration
+
+### Adaptive Learning
 - [x] Feedback collection system (inline ratings, explicit corrections)
 - [x] User preference profile (stored in Brain as 'preference' memories)
 - [x] Behavioral pattern analyzer (conversation analysis)
 - [x] Adaptive response tuning (preference injection into system prompt)
 
-### Proactive Assistance — [ADR 040](../adr/040-proactive-assistance.md)
-
+### Proactive Assistance
 - [x] Trigger system with 5 types: schedule, event, pattern, webhook, llm
 - [x] Suggestion queue with approve/dismiss/expire lifecycle
 - [x] 5 built-in triggers (daily standup, weekly review, idle check-in, memory insight, webhook alert)
-- [x] Pattern learning — LLM analysis of Brain memories to surface recurring behavioral patterns
-- [x] Dashboard UI — trigger manager, suggestion queue, pattern explorer, status panel
+- [x] Pattern learning — LLM analysis of Brain memories for recurring patterns
+- [x] Dashboard UI — trigger manager, suggestion queue, pattern explorer
 - [x] Security gate (`allowProactive` policy flag, default: false)
-- [x] WebSocket push for real-time suggestion delivery to dashboard
+- [x] WebSocket push for real-time suggestion delivery
 
-### MCP Ecosystem Expansion
-
-**Status**: Mostly Complete | **Reference**: [MCP Servers Directory](https://mcpservers.org/)
-
-Connect SecureYeoman to external MCP servers from the ecosystem for extended capabilities.
-
-#### Currently Supported
-| Transport | Status |
-|----------|--------|
-| stdio (local) | ✅ |
-| streamable-http | ✅ |
-| SSE | ✅ |
-
-#### External MCP Categories to Support
-
-| Category | Example Servers | Priority |
-|----------|---------------|----------|
-| **Web Scraping** | Bright Data, Firecrawl, Browserbase | High |
-| **Search** | Exa, Tavily, DuckDuckGo | High |
-| **Development** | Playwright, Chrome DevTools, E2B | High |
-| **Database** | Supabase, PostgreSQL, SQLite | Medium |
-| **Cloud** | Cloudflare Workers, AWS, Azure | Medium |
-| **Communication** | Slack, Discord, Notion | Medium |
-| **Productivity** | Linear, Jira, Todoist | Medium |
-| **Finance** | Alpha Vantage, Yahoo Finance | Low |
-| **Code Analysis** | Context7, DeepWiki, CIE | Low |
-
-#### Deliverables
-
-- [x] **MCP Server Discovery** — Auto-discover tools from registered servers
-- [x] **Tool Routing** — Route tool calls to appropriate external MCP server
-- [x] **Remote Server Support** — First-class support for HTTP-based remote MCP servers
-- [x] **Server Health Monitoring** — Periodic health checks, latency tracking, auto-disable on failure threshold
-- [x] **Credential Management** — AES-256-GCM encrypted credential storage per server, secure injection into server environment
-- [x] **Dashboard UI** — Server registration, tool browser, status indicators, feature toggles, credential management
-- [x] ~~**Pre-built Integrations**~~ — Moved to [Phase 11: MCP Pre-built Integrations](#mcp-pre-built-integrations)
-
-#### Example Integrations
-
-```
-# Bright Data (Web Scraping)
-command: "npx"
-args: ["@brightdata/mcp"]
-env: { API_TOKEN: "..." }
-
-# Exa (AI Search)
-command: "npx"
-args: ["exa-mcp-server"]
-env: { EXA_API_KEY: "..." }
-
-# E2B (Code Execution)
-command: "npx"
-args: ["@e2b/mcp-server"]
-env: { E2B_API_KEY: "..." }
-
-# Supabase (Database)
-url: "https://mcp.supabase.io"
-```
-
-### Multimodal I/O — [ADR 041](../adr/041-multimodal-io.md)
-
+### Multimodal I/O
 - [x] Multimodal type system (Vision, STT, TTS, ImageGen schemas + job tracking)
 - [x] MultimodalManager with OpenAI TTS/STT and DALL-E integration
 - [x] REST API routes (analyze, transcribe, speak, generate)
-- [x] PostgreSQL job storage with stats
-- [x] Extension hooks (image-analyzed, audio-transcribed, speech-generated, image-generated)
-- [x] Security gate (`allowMultimodal` policy flag)
-- [x] Vocalization capability toggle in Personality Editor
-- [x] Vision processing pipeline for inline images (Discord, Slack, Telegram adapters)
-- [x] Voice message transcription in integration adapters (auto-STT for voice messages)
-- [x] Voice output for integration responses (TTS audio attachments in Telegram/Discord)
+- [x] Vision processing pipeline for inline images (Discord, Slack, Telegram)
+- [x] Voice message transcription (auto-STT for voice messages)
+- [x] Voice output for integration responses (TTS audio attachments)
 - [x] Image generation tool exposure via MCP (5 multimodal MCP tools)
-- [x] Dashboard multimodal job viewer (consolidated into Agents page as sub-tab)
-- [x] Per-personality TTS voice/model selection (personality voice → OpenAI TTS voice)
+- [x] Per-personality TTS voice/model selection
 
 ---
 
-## Timeline Summary
-
-| Milestone | Status |
-|-----------|--------|
-| Phase 1: Foundation | Complete |
-| Phase 2: Security | Complete |
-| Phase 2.5: Infrastructure | Complete |
-| Phase 3: Dashboard | Complete |
-| Phase 4: Integrations | Complete |
-| Phase 4.5: Integration Expansion | Complete |
-| Phase 5: Production | Complete |
-| **2026.2.15 Release** | **Released 2026-02-15** |
-| Phase 6.1a: Vector Memory | Complete |
-| Phase 6.1b: Memory Consolidation | Complete |
-| Phase 6.2: History Compression | Complete |
-| Phase 6.3: Sub-Agent Delegation | Complete |
-| RBAC Management (API + Dashboard + CLI) | Complete |
-| **2026.2.16 Release** | **Released 2026-02-16** |
-| Phase 6.4a: Lifecycle Hooks | Complete |
-| Phase 6.4b: Code Execution | Complete |
-| Phase 6.5: A2A Protocol | Complete |
-| Phase 7: Integration Expansion | Complete (DeepSeek, Google Calendar, Notion, GitLab) |
-| Phase 7.1: Adaptive Learning | Complete |
-| Phase 7.2: Proactive Assistance | Complete |
-| Phase 7.3: Multimodal I/O | Complete |
-| Phase 8.1: Web Scraping Tools | Complete |
-| Phase 8.2: Web Search Tools | Complete |
-| Phase 8.3: Browser Automation | Complete (Playwright) |
-| Phase 8.6: MCP Infrastructure (Health/Credentials) | Complete |
-| Phase 8.5: Anti-Bot & Proxy Integration | Complete |
-| Phase 9: Kubernetes Deployment | Complete |
-| Phase 8.8: Memory/Brain Hardening | Complete |
-| **2026.2.17 Release** | **Released 2026-02-17** |
-| Phase 10: Dashboard UX Enhancements | Complete |
-| Phase 11: Expanded Integrations | Complete |
-| Phase 12: Deferred Dashboard & Tooling | In Progress |
-
----
-
-## Phase 8.5: Anti-Bot & Proxy Integration — [ADR 044](../adr/044-anti-bot-proxy-integration.md)
+## Phase 9: WebMCP & Browser Tools — [ADR 038](../adr/038-webmcp-ecosystem-tools.md), [ADR 044](../adr/044-anti-bot-proxy-integration.md), [ADR 045](../adr/045-memory-audit-hardening.md)
 
 **Status**: Complete
 
+### Web Scraping
+- [x] Web scraping tools with HTML-to-markdown conversion
+- [x] URL allowlists and content extraction
+
+### Web Search
+- [x] Web search tools with multiple provider support
+- [x] Result ranking and deduplication
+
+### Browser Automation
+- [x] Playwright-based browser automation
+- [x] Screenshot capture and DOM interaction
+
+### MCP Infrastructure
+- [x] Server health monitoring — periodic checks, latency tracking, auto-disable on failure
+- [x] Credential management — AES-256-GCM encrypted storage per server, secure injection
+
+### Anti-Bot & Proxy
 - [x] Proxy rotation (Bright Data, ScrapingBee, ScraperAPI) with round-robin/random strategies
 - [x] CAPTCHA detection (heuristic response analysis)
 - [x] Retry logic with exponential backoff + jitter
@@ -283,14 +286,7 @@ url: "https://mcp.supabase.io"
 - [x] Browser proxy integration (Playwright)
 - [x] Feature toggle: `MCP_PROXY_ENABLED` (default: false)
 
----
-
-## Phase 8.8: Memory/Brain Hardening — [ADR 045](../adr/045-memory-audit-hardening.md)
-
-**Status**: Complete
-
-Comprehensive audit and hardening of the Brain/Memory system addressing 20+ issues.
-
+### Memory/Brain Hardening
 - [x] Fix critical pruning bug (deleted highest instead of lowest importance)
 - [x] SQL injection fix via parameterized JSONB path queries
 - [x] Content size limits (`maxContentLength` config, default 4096)
@@ -298,33 +294,21 @@ Comprehensive audit and hardening of the Brain/Memory system addressing 20+ issu
 - [x] FAISS vector store `compact()` for phantom vector cleanup
 - [x] Vector store sync on memory prune/maintenance
 - [x] Importance floor pruning (`importanceFloor` config, default 0.05)
-- [x] Consolidation flaggedIds persistence across restarts
-- [x] Full 5-field cron matching for consolidation scheduler
 - [x] Deep consolidation timeout enforcement via `Promise.race()`
 - [x] Qdrant proper typing and auto-reconnect
-- [x] External sync pagination (PAGE_SIZE=500)
 - [x] Brain route rate limiting (60/min mutations, 5/min admin ops)
-- [x] Query limit cap (MAX_QUERY_LIMIT=200) on all GET routes
 - [x] Input validation on POST/PUT brain routes
 - [x] 18 missing brain routes added to RBAC permission map
 - [x] Path traversal validation on sync config updates
 
 ---
 
-## Phase 9: Kubernetes Deployment — [ADR 042](../adr/042-kubernetes-deployment.md)
+## Phase 10: Kubernetes Deployment — [ADR 042](../adr/042-kubernetes-deployment.md), [ADR 043](../adr/043-kubernetes-observability.md)
 
 **Status**: Complete
 
 Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design (EKS/GKE/AKS), GHCR image registry, and managed PostgreSQL support.
 
-**Decisions**:
-- **Packaging**: Helm Chart (over raw manifests or Kustomize) for templating and environment overrides
-- **Registry**: GitHub Container Registry (GHCR) for image hosting
-- **Cloud support**: Cloud-agnostic — EKS, GKE, AKS all supported via values overrides
-- **Database**: External managed PostgreSQL (RDS/Cloud SQL/Azure Database)
-- **Observability**: Prometheus Operator CRDs (ServiceMonitor, PrometheusRule), Grafana sidecar dashboards
-
-**Deliverables**:
 - [x] Helm chart with templates for core, MCP, dashboard deployments
 - [x] Production nginx Dockerfile for dashboard SPA
 - [x] Ingress with TLS (cert-manager), WebSocket support
@@ -338,36 +322,29 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 - [x] CI/CD: GHCR image push on tags, Helm lint in CI
 - [x] Values files for dev, staging, production environments
 - [x] Kubernetes smoke test (kind/k3d)
-- [x] Deployment guide and ADRs
 
 ---
 
-## Phase 10: Dashboard UX Enhancements
+## Phase 11: Dashboard UX — [ADR 039](../adr/039-inline-form-pattern.md)
 
 **Status**: Complete
 
-Focused dashboard improvements: cost analytics, agent visualization, memory trends, and audit log enhancements.
-
 ### Costs View
-
-- [x] **Cost Analytics Page** — New page linked from Dashboard Overview estimated costs card; token usage by provider, daily/weekly/monthly trends, cost projections
+- [x] Cost Analytics Page — token usage by provider, daily/weekly/monthly trends, cost projections
 
 ### Agent Visualization
-
-- [x] **Inline Form Pattern** — Replaced modal dialogs with inline collapsible card forms on Sub-Agents, Extensions, and A2A pages (ADR 039)
-- [x] **Sub-Agent Execution Tree** — Visual tree of spawned sub-agents with status, depth, and results; budget consumption per agent (subview of Dashboard > Sub-Agents)
+- [x] Inline Form Pattern — replaced modal dialogs with inline collapsible card forms on Sub-Agents, Extensions, and A2A pages
+- [x] Sub-Agent Execution Tree — visual tree of spawned sub-agents with status, depth, results, and budget consumption
 
 ### Memory & Intelligence
-
-- [x] **Memory Consolidation Panel** — View consolidation runs, merged memories, trends chart (memory count over time), and manual trigger option
+- [x] Memory Consolidation Panel — consolidation runs, merged memories, trends chart, manual trigger
 
 ### Security & Audit
-
-- [x] **Audit Log Enhancements** — Date-range filtering and saved filter presets (extends existing Security > Audit Log)
+- [x] Audit Log Enhancements — date-range filtering and saved filter presets
 
 ---
 
-## Phase 11: Expanded Integrations
+## Phase 12: Expanded Integrations — [ADR 046](../adr/046-phase11-mistral-devtools-mcp-prebuilts.md)
 
 **Status**: Complete
 
@@ -385,37 +362,29 @@ Focused dashboard improvements: cost analytics, agent visualization, memory tren
 ### Connections Page Consolidation
 - [x] Restructured tabs: Integrations (Messaging/Email/Calendar/DevOps/OAuth sub-tabs) + MCP
 
+### Integration Management UI
+- [x] Connected-only integration cards with status indicators, connect/disconnect flows, compact add-picker
+
 ---
 
-## Phase 12: Deferred Dashboard & Tooling
+## Phase 13: Dashboard & Tooling
 
 **Status**: In Progress
 
-Items deferred from Phase 10 for future implementation.
-
-### Integration Management
-
-- [x] **Integration Management UI** — Connected-only integration cards with status indicators, connect/disconnect flows, compact add-picker for new integrations
-
 ### Memory & Intelligence
-
 - [ ] **Vector Memory Explorer** — Dashboard view for semantic search across memories with similarity scores, embedding visualization, and manual memory entry
 
 ### Developer Tools
-
 - [ ] **Lifecycle Hook Debugger** — Hook registration view, execution log, and test trigger for each hook point
 
-### WebMCP Dashboard (from Phase 8.7)
-
+### WebMCP Dashboard
 - [ ] **Web Scraper Configuration Panel** — UI for configuring scraping jobs, URL allowlists, and proxy settings
 - [ ] **Browser Automation Session Manager** — View active browser sessions, screenshots, and session lifecycle controls
 
 ### Component Development
-
 - [ ] **Storybook** — Component development environment for dashboard UI components
 
 ### Administration
-
 - [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
 
 ---
@@ -429,13 +398,15 @@ Items deferred from Phase 10 for future implementation.
 ### Research Areas
 
 - Sandbox: gVisor, WASM isolation (Landlock already implemented)
-- Encryption: HSM integration (AES-256-GCM + libsodium already implemented)
+- Encryption: HSM integration (AES-256-GCM already implemented)
 - Visualization: WebGL for large graphs, layout algorithms (Dagre, ELK)
 - Real-time: CRDT for collaborative editing (Redis pub/sub already implemented)
 
 ---
 
 ## Related Documentation
+
+- [Architecture Overview](../adr/000-secureyeoman-architecture-overview.md)
 - [API Reference](../api/)
 - [Security Model](../security/security-model.md)
 - [Configuration Reference](../configuration.md)
