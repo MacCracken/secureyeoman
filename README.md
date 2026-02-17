@@ -1,6 +1,6 @@
-# F.R.I.D.A.Y.
+# SECUREYEOMAN
 
-> **F**ully **R**esponsive **I**ntegrated **D**igitally **A**daptable **Y**eoman
+> Comes with default Agent Personality F.R.I.D.A.Y. **F**ully **R**esponsive **I**ntegrated **D**igitally **A**daptable **Y**eoman
 
 [![Version](https://img.shields.io/badge/Version-2026.2.16-blue.svg)](https://github.com/MacCracken/FRIDAY/releases/tag/v2026.2.16)
 [![CI](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml)
@@ -28,9 +28,9 @@ Then open http://localhost:3000 and complete the onboarding wizard.
 
 ---
 
-## What is F.R.I.D.A.Y.?
+## What is SECUREYEOMAN?
 
-F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYeoman** core. Unlike traditional AI assistants, F.R.I.D.A.Y.:
+SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYeoman** core. Unlike traditional AI assistants, SECUREYEOMAN:
 
 - **Prioritizes Security**: Enterprise-grade RBAC, encryption, sandboxing, and audit trails
 - **Respects Privacy**: Local-first architecture with data that never leaves your system
