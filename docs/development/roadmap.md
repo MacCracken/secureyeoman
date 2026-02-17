@@ -7,16 +7,16 @@
 ## Development Phases
 
 ```
-Phase 1          Phase 2          Phase 2.5        Phase 3          Phase 4          Phase 5          Phase 6          Phase 8          Phase 9          Phase 10
-Foundation       Security         Infrastructure   Dashboard        Integrations     Production       Cognitive        WebMCP           Kubernetes       Dashboard UX
-   |                |                |                |                |                |                |                |                |                |
-   v                v                v                v                v                v                v                v                v                v
-[Core Agent] -> [RBAC/Crypto] -> [Brain/Comms] -> [React UI] -> [Platforms] -> [Hardening] -> [Intelligence] -> [Web Tools] -> [K8s Deploy] -> [UX Polish]
-   |                |                |                |                |                |                |                |                |                |
-   +- Task Loop     +- Encryption    +- CLI           +- Metrics       +- Telegram      +- Load Testing  +- Vector Memory +- Web Scraping  +- Helm Chart    +- Cost Analytics
-   +- Logging       +- Sandbox       +- Brain/Soul    +- History       +- Discord       +- Security Test +- Consolidation +- Web Search    +- GHCR Images   +- Exec Tree
-   +- Config        +- Validation    +- E2E Comms     +- Connections   +- Slack         +- Prometheus    +- History Comp. +- Browser (WIP) +- HPA/PDB       +- Memory Trends
-   +- Storage       +- Rate Limit    +- Fallbacks     +- Security      +- GitHub        +- Docs          +- Sub-Agents    +- Health Monitor+- NetworkPolicy  +- Audit Filters
+Phase 1          Phase 2          Phase 2.5        Phase 3          Phase 4          Phase 5          Phase 6          Phase 8          Phase 9          Phase 10         Phase 11
+Foundation       Security         Infrastructure   Dashboard        Integrations     Production       Cognitive        WebMCP           Kubernetes       Dashboard UX     Expanded
+   |                |                |                |                |                |                |                |                |                |                |
+   v                v                v                v                v                v                v                v                v                v                v
+[Core Agent] -> [RBAC/Crypto] -> [Brain/Comms] -> [React UI] -> [Platforms] -> [Hardening] -> [Intelligence] -> [Web Tools] -> [K8s Deploy] -> [UX Polish] -> [Integrations+]
+   |                |                |                |                |                |                |                |                |                |                |
+   +- Task Loop     +- Encryption    +- CLI           +- Metrics       +- Telegram      +- Load Testing  +- Vector Memory +- Web Scraping  +- Helm Chart    +- Cost Analytics +- Mistral AI
+   +- Logging       +- Sandbox       +- Brain/Soul    +- History       +- Discord       +- Security Test +- Consolidation +- Web Search    +- GHCR Images   +- Exec Tree     +- Jira/AWS/Azure
+   +- Config        +- Validation    +- E2E Comms     +- Connections   +- Slack         +- Prometheus    +- History Comp. +- Browser       +- HPA/PDB       +- Memory Trends  +- MCP Pre-builts
+   +- Storage       +- Rate Limit    +- Fallbacks     +- Security      +- GitHub        +- Docs          +- Sub-Agents    +- Health Monitor+- NetworkPolicy  +- Audit Filters  +- Tab Consolidation
    +- AI Providers  +- mTLS          +- Task Storage  +- Soul UI       +- Webhooks      +- Deployment    +- Hooks/CodeExec+- Credentials   +- Observability
 ```
 
@@ -267,8 +267,8 @@ url: "https://mcp.supabase.io"
 | Phase 8.8: Memory/Brain Hardening | Complete |
 | **2026.2.17 Release** | **Released 2026-02-17** |
 | Phase 10: Dashboard UX Enhancements | Complete |
-| Phase 11: Expanded Integrations (Partial) | In Progress |
-| Phase 12: Deferred Dashboard & Tooling | Planned |
+| Phase 11: Expanded Integrations | Complete |
+| Phase 12: Deferred Dashboard & Tooling | In Progress |
 
 ---
 
@@ -367,35 +367,35 @@ Focused dashboard improvements: cost analytics, agent visualization, memory tren
 
 ---
 
-## Phase 11: Expanded Integrations (Partial)
+## Phase 11: Expanded Integrations
 
-**Status**: In Progress
+**Status**: Complete
 
 ### AI Providers
-- Mistral AI provider (OpenAI-compatible, mistral-large/medium/small/codestral/nemo) — **Complete**
+- [x] Mistral AI provider (OpenAI-compatible, mistral-large/medium/small/codestral/nemo)
 
 ### Developer Tool Integrations
-- Jira integration (REST API v3, Basic Auth, webhook support) — **Complete**
-- AWS integration (Lambda invoke, STS identity, SigV4 signing) — **Complete**
-- Azure DevOps integration (Work items, builds, PAT auth, webhooks) — **Complete**
+- [x] Jira integration (REST API v3, Basic Auth, webhook support)
+- [x] AWS integration (Lambda invoke, STS identity, SigV4 signing)
+- [x] Azure DevOps integration (Work items, builds, PAT auth, webhooks)
 
 ### MCP Pre-built Integrations
-- One-click connect for Bright Data, Exa, E2B, Supabase — **Complete**
+- [x] One-click connect for Bright Data, Exa, E2B, Supabase
 
 ### Connections Page Consolidation
-- Restructured tabs: Integrations (Messaging/Email/Calendar/DevOps/OAuth sub-tabs) + MCP — **Complete**
+- [x] Restructured tabs: Integrations (Messaging/Email/Calendar/DevOps/OAuth sub-tabs) + MCP
 
 ---
 
 ## Phase 12: Deferred Dashboard & Tooling
 
-**Status**: Planned
+**Status**: In Progress
 
 Items deferred from Phase 10 for future implementation.
 
 ### Integration Management
 
-- [ ] **Integration Management UI** — Visual integration grid by category (Messaging, Productivity, Dev Tools, Services) with status indicators, connect/disconnect flows, and health metrics
+- [x] **Integration Management UI** — Connected-only integration cards with status indicators, connect/disconnect flows, compact add-picker for new integrations
 
 ### Memory & Intelligence
 
@@ -424,15 +424,14 @@ Items deferred from Phase 10 for future implementation.
 
 - ML-based anomaly detection
 - Mobile app (native iOS/Android)
-- Browser automation agent (Playwright/Puppeteer with vision model)
 - ChromaDB as additional vector backend option
 
 ### Research Areas
 
-- Sandbox: seccomp vs eBPf, gVisor, WASM isolation
-- Encryption: libsodium vs WebCrypto, HSM integration
+- Sandbox: gVisor, WASM isolation (Landlock already implemented)
+- Encryption: HSM integration (AES-256-GCM + libsodium already implemented)
 - Visualization: WebGL for large graphs, layout algorithms (Dagre, ELK)
-- Real-time: Redis pub/sub, CRDT for collaborative editing
+- Real-time: CRDT for collaborative editing (Redis pub/sub already implemented)
 
 ---
 
