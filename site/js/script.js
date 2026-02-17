@@ -1,4 +1,4 @@
-// F.R.I.D.A.Y. Site JavaScript
+// SecureYeoman Site JavaScript
 // Modern interactions and animations
 
 (function () {
