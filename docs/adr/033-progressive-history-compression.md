@@ -6,7 +6,7 @@ Implemented
 
 ## Context
 
-The ConversationManager tracks message history per platform/channel, but long conversations either exhaust context windows or are hard-truncated, losing critical earlier context. Multi-session conversations have no continuity — restarting FRIDAY loses all conversational state.
+The ConversationManager tracks message history per platform/channel, but long conversations either exhaust context windows or are hard-truncated, losing critical earlier context. Multi-session conversations have no continuity — restarting SecureYeoman loses all conversational state.
 
 Agent Zero's 3-tier compression system (Message → Topic → Bulk) with percentage-based token allocation demonstrates an effective approach to graceful context degradation over long conversations.
 

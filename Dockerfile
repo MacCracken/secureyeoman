@@ -2,7 +2,7 @@
 FROM node:20-alpine AS builder
 
 LABEL org.opencontainers.image.source="https://github.com/MacCracken/secureyeoman"
-LABEL org.opencontainers.image.description="F.R.I.D.A.Y. — Fully Responsive Integrated Digitally Adaptable Yeoman"
+LABEL org.opencontainers.image.description="SecureYeoman — Secure, local-first AI assistant"
 LABEL org.opencontainers.image.licenses="MIT"
 
 WORKDIR /app

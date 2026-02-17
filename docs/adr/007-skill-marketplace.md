@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Skills are the foundation of F.R.I.D.A.Y.'s extensibility, but every user reinventing common skills (e.g., "send email", "parse CSV", "search GitHub") is inefficient. A marketplace enables discovery and sharing.
+Skills are the foundation of SecureYeoman's extensibility, but every user reinventing common skills (e.g., "send email", "parse CSV", "search GitHub") is inefficient. A marketplace enables discovery and sharing.
 
 ## Decision
 

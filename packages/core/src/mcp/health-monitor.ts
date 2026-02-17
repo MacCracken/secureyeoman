@@ -93,7 +93,7 @@ export class McpHealthMonitor {
         const response = await fetch(server.url, {
           method: 'GET',
           signal: AbortSignal.timeout(this.config.timeoutMs),
-          headers: { 'User-Agent': 'FRIDAY-HealthCheck/1.0' },
+          headers: { 'User-Agent': 'SecureYeoman-HealthCheck/1.0' },
         });
         if (!response.ok && response.status !== 405) {
           throw new Error(`HTTP ${response.status}`);

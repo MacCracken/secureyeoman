@@ -1,5 +1,5 @@
 /**
- * Spirit Module — Passions, Inspirations & Pains for FRIDAY
+ * Spirit Module — Passions, Inspirations & Pains for SecureYeoman
  *
  * In Our Image: No-Thing-Ness → The One (Soul) → The Plurality (Spirit/Brain/Body)
  */

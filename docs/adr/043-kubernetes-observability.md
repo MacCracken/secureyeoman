@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-F.R.I.D.A.Y. already has a comprehensive observability stack for Docker deployments (Prometheus, Grafana, Loki/Promtail with 9 alert rules and a custom dashboard). When deploying to Kubernetes, we need to integrate with the Kubernetes-native observability ecosystem.
+SecureYeoman already has a comprehensive observability stack for Docker deployments (Prometheus, Grafana, Loki/Promtail with 9 alert rules and a custom dashboard). When deploying to Kubernetes, we need to integrate with the Kubernetes-native observability ecosystem.
 
 ## Decision
 

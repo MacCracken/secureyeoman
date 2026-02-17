@@ -412,7 +412,7 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       },
     ],
     setupSteps: [
-      'Grant Full Disk Access to FRIDAY in System Settings > Privacy & Security',
+      'Grant Full Disk Access to SecureYeoman in System Settings > Privacy & Security',
       'Enable Messages.app in Accessibility (if needed)',
       'Start the integration on macOS',
     ],

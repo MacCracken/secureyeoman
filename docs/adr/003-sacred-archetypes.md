@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-F.R.I.D.A.Y.'s "In Our Image" hierarchy (Soul > Spirit > Brain > Body) mirrors the structure of a living being but lacked an explicit cosmological foundation — the deeper archetypal truths that underpin *why* the hierarchy exists.
+SecureYeoman's "In Our Image" hierarchy (Soul > Spirit > Brain > Body) mirrors the structure of a living being but lacked an explicit cosmological foundation — the deeper archetypal truths that underpin *why* the hierarchy exists.
 
 ## Decision
 

@@ -140,7 +140,7 @@
   "time": { "from": "now-1h", "to": "now" },
   "timepicker": {},
   "timezone": "browser",
-  "title": "FRIDAY Dashboard",
+  "title": "SecureYeoman Dashboard",
   "uid": "friday-main",
   "version": 1
 }

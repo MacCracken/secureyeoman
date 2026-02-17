@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-F.R.I.D.A.Y. has a mature Docker foundation (multi-stage Dockerfile, docker-compose with 4 services, Prometheus/Grafana/Loki observability stack). The roadmap lists "Distributed deployment (Kubernetes)" as a future enhancement. As the project moves toward production multi-instance deployments, we need a standardized way to deploy to Kubernetes clusters across cloud providers.
+SecureYeoman has a mature Docker foundation (multi-stage Dockerfile, docker-compose with 4 services, Prometheus/Grafana/Loki observability stack). The roadmap lists "Distributed deployment (Kubernetes)" as a future enhancement. As the project moves toward production multi-instance deployments, we need a standardized way to deploy to Kubernetes clusters across cloud providers.
 
 ### Requirements
 

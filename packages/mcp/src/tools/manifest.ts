@@ -14,7 +14,7 @@ export interface ToolManifestEntry {
 export function getToolManifest(): ToolManifestEntry[] {
   return [
     // Brain tools
-    { name: 'knowledge_search', description: 'Search the FRIDAY knowledge base' },
+    { name: 'knowledge_search', description: 'Search the SecureYeoman knowledge base' },
     { name: 'knowledge_get', description: 'Get a specific knowledge entry by ID' },
     { name: 'knowledge_store', description: 'Store a new knowledge entry' },
     { name: 'memory_recall', description: 'Recall memories matching a query' },

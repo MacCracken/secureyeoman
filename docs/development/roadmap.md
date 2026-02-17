@@ -1,6 +1,6 @@
 # Development Roadmap
 
-> Development phases and progress for F.R.I.D.A.Y.
+> Development phases and progress for SecureYeoman
 
 ---
 
@@ -237,7 +237,7 @@ Expand integrations across multiple categories to reach parity with platforms li
 
 **Status**: Planned | **Reference**: [MCP Servers Directory](https://mcpservers.org/)
 
-Connect FRIDAY to external MCP servers from the ecosystem for extended capabilities.
+Connect SecureYeoman to external MCP servers from the ecosystem for extended capabilities.
 
 #### Currently Supported
 | Transport | Status |
@@ -378,7 +378,7 @@ All core modules maintain >80% coverage thresholds.
 
 **Status**: In Progress (8.1, 8.2, 8.3, 8.6, 8.7 Complete; 8.4–8.5 Planned) | **Reference**: [Bright Data MCP](https://github.com/brightdata/brightdata-mcp)
 
-Enable FRIDAY with real-time web browsing, scraping, and browser automation capabilities.
+Enable SecureYeoman with real-time web browsing, scraping, and browser automation capabilities.
 
 ### Inspiration
 
@@ -676,7 +676,7 @@ Let the agent write and execute code (Python, Node.js, shell) within the existin
 
 **Priority**: Low | **Complexity**: High | **Depends on**: 6.3
 
-Enable FRIDAY instances to discover and delegate tasks to other FRIDAY (or compatible) agents over the network using a standardized Agent-to-Agent protocol.
+Enable SecureYeoman instances to discover and delegate tasks to other SecureYeoman (or compatible) agents over the network using a standardized Agent-to-Agent protocol.
 
 **Decisions**:
 - **Protocol**: Extend existing E2E encrypted comms layer with delegation-specific message types (task offer, accept, result, status)
@@ -815,7 +815,7 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 
 **Priority**: High | **Complexity**: High
 
-Enable FRIDAY to learn from interactions and improve its understanding of user preferences, working patterns, and communication styles over time.
+Enable SecureYeoman to learn from interactions and improve its understanding of user preferences, working patterns, and communication styles over time.
 
 **Decisions**:
 - **Learning approach**: Implicit (behavioral patterns) + Explicit (user feedback/ratings)
@@ -836,7 +836,7 @@ Enable FRIDAY to learn from interactions and improve its understanding of user p
 
 **Priority**: Medium | **Complexity**: Medium | **Status**: Complete
 
-Enable FRIDAY to anticipate user needs and take initiative based on learned patterns and context.
+Enable SecureYeoman to anticipate user needs and take initiative based on learned patterns and context.
 
 **Decisions**:
 - **Trigger types**: 5 types — `schedule` (cron/interval), `event` (internal hooks), `pattern` (Brain-detected), `webhook` (external HTTP), `llm` (LLM-evaluated condition)

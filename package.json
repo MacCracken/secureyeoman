@@ -1,7 +1,7 @@
 {
   "name": "friday",
   "version": "2026.2.16",
-  "description": "F.R.I.D.A.Y. - Fully Responsive Integrated Digitally Adaptable Yeoman with SecureYeoman",
+  "description": "SecureYeoman — Secure, local-first AI assistant",
   "private": true,
   "type": "module",
   "workspaces": [
@@ -31,7 +31,7 @@
     "url": "https://github.com/MacCracken/secureyeoman.git"
   },
   "license": "MIT",
-  "author": "F.R.I.D.A.Y. Project Contributors",
+  "author": "SecureYeoman Project Contributors",
   "keywords": [
     "ai",
     "agent",

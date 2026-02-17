@@ -1,6 +1,6 @@
 # Configuration Reference
 
-> All YAML configuration fields, environment variables, and CLI flags for F.R.I.D.A.Y.
+> All YAML configuration fields, environment variables, and CLI flags for SecureYeoman
 
 ---
 
@@ -428,7 +428,7 @@ Model Context Protocol support for tool/resource interoperability via the in-pro
 |-------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable in-process MCP protocol support |
 | `serverPort` | number | `18790` | Port for MCP JSON-RPC server (1024–65535) |
-| `exposeSkillsAsTools` | boolean | `true` | Expose F.R.I.D.A.Y.'s skills as MCP tools |
+| `exposeSkillsAsTools` | boolean | `true` | Expose SecureYeoman's skills as MCP tools |
 | `exposeKnowledgeAsResources` | boolean | `true` | Expose Brain knowledge as MCP resources |
 
 Example:
@@ -590,7 +590,7 @@ heartbeat:
           config:
             channel: slack
             recipients: ["#alerts"]
-            messageTemplate: "🚨 FRIDAY health check failed: {{result.message}}"
+            messageTemplate: "🚨 SecureYeoman health check failed: {{result.message}}"
 ```
 
 **Disk Space Monitor with Webhook:**

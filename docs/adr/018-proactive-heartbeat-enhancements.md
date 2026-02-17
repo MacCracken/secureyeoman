@@ -5,7 +5,7 @@ Proposed
 
 ## Context
 
-Our current heartbeat system (ADR 013) provides excellent deterministic monitoring with per-task scheduling. However, comparing with OpenClaw's approach reveals opportunities to make FRIDAY more **proactive** — not just monitoring, but automatically taking action when conditions are met.
+Our current heartbeat system (ADR 013) provides excellent deterministic monitoring with per-task scheduling. However, comparing with OpenClaw's approach reveals opportunities to make SecureYeoman more **proactive** — not just monitoring, but automatically taking action when conditions are met.
 
 Current limitations:
 1. Checks only record status; they don't trigger automated responses
@@ -16,7 +16,7 @@ Current limitations:
 
 ## Decision
 
-We will enhance the heartbeat system with **proactive capabilities** while maintaining FRIDAY's deterministic, cost-efficient foundation:
+We will enhance the heartbeat system with **proactive capabilities** while maintaining SecureYeoman's deterministic, cost-efficient foundation:
 
 ### 1. Action Triggers
 Add configurable actions that execute when check conditions are met:
@@ -79,7 +79,7 @@ Following OpenClaw's pattern, LLM checks should:
 ## Consequences
 
 ### Positive
-- FRIDAY becomes truly proactive — detects issues AND acts on them
+- SecureYeoman becomes truly proactive — detects issues AND acts on them
 - Better integration with external monitoring systems (PagerDuty, Slack, etc.)
 - More flexible scheduling reduces unnecessary check execution
 - LLM checks enable complex pattern detection without code changes

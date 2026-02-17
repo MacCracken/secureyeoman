@@ -5,7 +5,7 @@
 
 ## Context
 
-Users want hands-free interaction with F.R.I.D.A.Y. — not just push-to-talk, but always-on listening that responds to wake words. This is a core capability in OpenClaw that we need to implement while maintaining our security-first principles.
+Users want hands-free interaction with SecureYeoman — not just push-to-talk, but always-on listening that responds to wake words. This is a core capability in OpenClaw that we need to implement while maintaining our security-first principles.
 
 ## Decision
 

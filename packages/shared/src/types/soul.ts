@@ -1,5 +1,5 @@
 /**
- * Soul Types for FRIDAY
+ * Soul Types for SecureYeoman
  *
  * Personality and Skills system that composes into AI system prompts.
  * Personalities define character traits; Skills define learnable capabilities.

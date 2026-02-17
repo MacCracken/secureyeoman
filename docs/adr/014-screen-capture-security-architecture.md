@@ -6,7 +6,7 @@ Proposed
 
 ## Context
 
-F.R.I.D.A.Y. requires screen capture capabilities to support visual assistance, debugging, and automation use cases. However, screen capture is a high-risk operation that could expose sensitive information, violate user privacy, or be exploited by malicious actors if not properly secured.
+SecureYeoman requires screen capture capabilities to support visual assistance, debugging, and automation use cases. However, screen capture is a high-risk operation that could expose sensitive information, violate user privacy, or be exploited by malicious actors if not properly secured.
 
 OpenClaw demonstrates one approach to screen capture: companion devices connect via WebSocket and can execute `screen.record` commands with pairing-based approval. While effective, this model lacks:
 - Fine-grained access control beyond device pairing

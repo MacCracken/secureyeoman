@@ -6,7 +6,7 @@
 
 ## Context
 
-Users requested an in-browser coding environment integrated with F.R.I.D.A.Y.'s AI chat capabilities. The goal was to allow personality-driven "vibe coding" where users write code alongside an AI assistant scoped to a chosen personality.
+Users requested an in-browser coding environment integrated with SecureYeoman's AI chat capabilities. The goal was to allow personality-driven "vibe coding" where users write code alongside an AI assistant scoped to a chosen personality.
 
 ## Decision
 

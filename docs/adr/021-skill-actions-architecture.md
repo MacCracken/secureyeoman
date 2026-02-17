@@ -5,7 +5,7 @@
 
 ## Context
 
-F.R.I.D.A.Y.'s Soul system currently provides skills that compose into AI system prompts, but they cannot execute real actions. OpenClaw's skill system demonstrates that skills can execute code, make API calls, and perform file operations — transforming the agent from a chatbot into an autonomous assistant.
+SecureYeoman's Soul system currently provides skills that compose into AI system prompts, but they cannot execute real actions. OpenClaw's skill system demonstrates that skills can execute code, make API calls, and perform file operations — transforming the agent from a chatbot into an autonomous assistant.
 
 This ADR establishes the architecture for skill actions while maintaining security-first principles.
 

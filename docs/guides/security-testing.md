@@ -1,6 +1,6 @@
 # Security Testing Guide
 
-FRIDAY includes comprehensive security, load, and chaos testing suites.
+SecureYeoman includes comprehensive security, load, and chaos testing suites.
 
 ## Security Tests
 
@@ -43,7 +43,7 @@ sudo apt-get update && sudo apt-get install k6
 ### Running Load Tests
 
 ```bash
-# Start the FRIDAY server first
+# Start the SecureYeoman server first
 npm run dev --workspace=@friday/core
 
 # Run all load tests

@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-Organizations need to isolate F.R.I.D.A.Y. deployments per team while sharing infrastructure. A single instance should support multiple teams with distinct personalities, skills, and access control.
+Organizations need to isolate SecureYeoman deployments per team while sharing infrastructure. A single instance should support multiple teams with distinct personalities, skills, and access control.
 
 ## Decision
 

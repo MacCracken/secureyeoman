@@ -51,7 +51,7 @@ sudo systemctl start friday
 ```ini
 # /etc/systemd/system/friday.service
 [Unit]
-Description=FRIDAY Agent
+Description=SecureYeoman Agent
 After=network.target
 
 [Service]
@@ -163,7 +163,7 @@ If running the MCP service as a standalone systemd unit alongside core:
 ```ini
 # /etc/systemd/system/friday-mcp.service
 [Unit]
-Description=FRIDAY MCP Service
+Description=SecureYeoman MCP Service
 After=friday.service
 Requires=friday.service
 

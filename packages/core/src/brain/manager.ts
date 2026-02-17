@@ -1,5 +1,5 @@
 /**
- * BrainManager — Memory, knowledge, and skill management for FRIDAY.
+ * BrainManager — Memory, knowledge, and skill management for SecureYeoman.
  *
  * The Brain is the cognitive infrastructure: memory, knowledge, skills,
  * and learned patterns. The Soul composes the final prompt from Brain

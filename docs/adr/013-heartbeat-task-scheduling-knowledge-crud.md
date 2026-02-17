@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-The heartbeat system ran all checks on a single global interval (`intervalMs`). This meant every check — from lightweight system health pings to expensive memory maintenance — ran at the same frequency. As we added a new `reflective_task` type (where FRIDAY periodically records self-improvement prompts as episodic memories), the need for per-task scheduling became clear: reflection should run every 30 minutes, not every 60 seconds.
+The heartbeat system ran all checks on a single global interval (`intervalMs`). This meant every check — from lightweight system health pings to expensive memory maintenance — ran at the same frequency. As we added a new `reflective_task` type (where SecureYeoman periodically records self-improvement prompts as episodic memories), the need for per-task scheduling became clear: reflection should run every 30 minutes, not every 60 seconds.
 
 Separately, the Brain's knowledge base only supported "teach" (create) operations from the dashboard. Users had no way to edit content, adjust confidence, or delete entries. The 4 base knowledge entries (self-identity, hierarchy, purpose, interaction) needed special protection as "PRIMARY" entries.
 
@@ -26,7 +26,7 @@ The tick interval (how often the scheduler runs) defaults to 30 seconds.
 
 ### 2. Reflective Task Type
 
-New `reflective_task` check type added to `HeartbeatCheckTypeSchema`. The handler extracts a `prompt` from the check's `config` and records it as an episodic memory. This enables FRIDAY's self-improvement loop.
+New `reflective_task` check type added to `HeartbeatCheckTypeSchema`. The handler extracts a `prompt` from the check's `config` and records it as an episodic memory. This enables SecureYeoman's self-improvement loop.
 
 ### 3. Task Management API
 

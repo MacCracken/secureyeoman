@@ -51,7 +51,7 @@ We will coordinate public disclosure with you:
 
 ### Built-in Protections
 
-F.R.I.D.A.Y. includes several security features:
+SecureYeoman includes several security features:
 
 - **Input Validation**: All inputs are validated and sanitized
 - **Authentication**: JWT and API key authentication
@@ -142,7 +142,7 @@ In case of a security incident:
 
 ## Security Acknowledgments
 
-We want to thank all security researchers who have helped make F.R.I.D.A.Y. more secure:
+We want to thank all security researchers who have helped make SecureYeoman more secure:
 
 - Those who have responsibly disclosed vulnerabilities
 - Security researchers who have reviewed our code
@@ -164,7 +164,7 @@ This security policy outlines our responsible disclosure process. By reporting a
 
 ### Liability
 
-F.R.I.D.A.Y. is provided "as is" without warranties. See our [LICENSE](LICENSE) for more details.
+SecureYeoman is provided "as is" without warranties. See our [LICENSE](LICENSE) for more details.
 
 ## Contact
 
@@ -176,4 +176,4 @@ For security-related questions:
 
 For non-security issues, please use our regular [support channels](https://github.com/MacCracken/secureyeoman/issues).
 
-Thank you for helping keep F.R.I.D.A.Y. secure!
+Thank you for helping keep SecureYeoman secure!

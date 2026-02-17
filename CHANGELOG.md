@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to F.R.I.D.A.Y. are documented in this file.
+All notable changes to SecureYeoman are documented in this file.
 
 ---
 
@@ -353,7 +353,7 @@ All notable changes to F.R.I.D.A.Y. are documented in this file.
 
 ### Initial Release
 
-F.R.I.D.A.Y. — **Fully Responsive Integrated Digitally Adaptable Yeoman** — a secure, local-first AI assistant with enterprise-grade protection and comprehensive observability.
+SecureYeoman — a secure, local-first AI assistant with enterprise-grade protection and comprehensive observability.
 
 #### Security
 - RBAC (Admin/Operator/Auditor/Viewer) with role inheritance and persistent storage

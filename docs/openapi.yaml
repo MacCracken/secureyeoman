@@ -1,10 +1,10 @@
 openapi: 3.1.0
 info:
-  title: FRIDAY API
+  title: SecureYeoman API
   version: 1.5.1
   description: |
-    REST API for the FRIDAY (Fully Responsive Integrated Digitally Adaptable Yeoman)
-    agent system with SecureYeoman security framework.
+    REST API for SecureYeoman, a secure, local-first AI assistant
+    with enterprise-grade protection.
   license:
     name: MIT
 

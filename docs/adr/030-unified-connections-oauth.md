@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-The FRIDAY dashboard previously had separate tabs for managing messaging integrations (`/connections`) and MCP servers (`/mcp`). This created a fragmented user experience where users had to navigate between different sections to manage all their connections.
+The SecureYeoman dashboard previously had separate tabs for managing messaging integrations (`/connections`) and MCP servers (`/mcp`). This created a fragmented user experience where users had to navigate between different sections to manage all their connections.
 
 Additionally, there was no support for OAuth-based authentication connections, which is a common requirement for modern integrations.
 

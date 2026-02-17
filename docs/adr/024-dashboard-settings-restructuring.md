@@ -142,7 +142,7 @@ Removed the dashboard footer. User menu now includes an "About" option that open
 - Version (1.3.3)
 - Security status ("Local Network Only")
 - Connection status
-- F.R.I.D.A.Y. tagline
+- SecureYeoman tagline
 
 ### 13. Security Metrics
 

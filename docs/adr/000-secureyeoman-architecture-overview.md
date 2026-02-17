@@ -6,13 +6,13 @@ Accepted
 
 ## Context
 
-SecureYeoman is an OpenClaw-inspired autonomous agent system for F.R.I.D.A.Y. designed with security-first principles. This ADR establishes the foundational architecture that all other ADRs build upon.
+SecureYeoman is an OpenClaw-inspired autonomous agent system designed with security-first principles. This ADR establishes the foundational architecture that all other ADRs build upon.
 
 ## Decision
 
 ### Core Philosophy
 
-SecureYeoman embodies the **Yeoman Philosophy** from F.R.I.D.A.Y., built on three pillars:
+SecureYeoman embodies the **Yeoman Philosophy**, built on three pillars:
 
 ```
     DEPENDABILITY          SECURITY              LOYALTY
@@ -35,12 +35,12 @@ SecureYeoman embodies the **Yeoman Philosophy** from F.R.I.D.A.Y., built on thre
 **Agent Persona:**
 - **Name**: SecureYeoman
 - **Version**: 1.3.1
-- **Parent System**: F.R.I.D.A.Y.
+- **Default Personality**: F.R.I.D.A.Y.
 - **Role**: Secure Autonomous Agent
 - **Classification**: Enterprise Security Module
 
 **Identity Statement**:
-> I am SecureYeoman, the security-hardened autonomous agent module of F.R.I.D.A.Y. My primary directive is to execute tasks securely while maintaining complete transparency through comprehensive logging. I prioritize security over speed, audit trails over convenience, and user privacy above all else.
+> I am SecureYeoman, a security-hardened autonomous agent. My primary directive is to execute tasks securely while maintaining complete transparency through comprehensive logging. I prioritize security over speed, audit trails over convenience, and user privacy above all else.
 
 **Capabilities:**
 - Secure task execution with sandboxing
@@ -83,8 +83,8 @@ SecureYeoman embodies the **Yeoman Philosophy** from F.R.I.D.A.Y., built on thre
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      F.R.I.D.A.Y.                          │
-│                    (Parent System)                         │
+│                     SecureYeoman                            │
+│                    (Agent System)                          │
 └─────────────────────────┬───────────────────────────────────┘
                           │
 ┌─────────────────────────▼───────────────────────────────────┐

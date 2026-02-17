@@ -46,7 +46,7 @@ describe('ApiKeysSettings', () => {
     mockFetchApiKeys.mockResolvedValue({ keys: [] });
     renderComponent();
     expect(
-      await screen.findByText('Manage API keys for programmatic access to FRIDAY')
+      await screen.findByText('Manage API keys for programmatic access to SecureYeoman')
     ).toBeInTheDocument();
   });
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * CLI entry point for the FRIDAY MCP service.
+ * CLI entry point for the SecureYeoman MCP service.
  */
 
 import { loadConfig } from './config/config.js';

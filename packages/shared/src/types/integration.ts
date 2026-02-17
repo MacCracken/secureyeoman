@@ -1,5 +1,5 @@
 /**
- * Integration Types for FRIDAY
+ * Integration Types for SecureYeoman
  *
  * Platform integrations (Telegram, Discord, Slack, etc.) and unified messaging.
  * Follows the same Zod-schema-first pattern as soul.ts and task.ts.

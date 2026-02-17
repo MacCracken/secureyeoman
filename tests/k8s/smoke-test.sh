@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Kubernetes smoke test for F.R.I.D.A.Y.
+# Kubernetes smoke test for SecureYeoman
 # Deploys the Helm chart to a local kind/k3d cluster and validates health.
 #
 # Prerequisites: kind (or k3d), kubectl, helm
@@ -26,7 +26,7 @@ cleanup() {
 
 trap cleanup EXIT
 
-echo "=== F.R.I.D.A.Y. Kubernetes Smoke Test ==="
+echo "=== SecureYeoman Kubernetes Smoke Test ==="
 
 # Create cluster if it doesn't exist
 if command -v kind &>/dev/null; then

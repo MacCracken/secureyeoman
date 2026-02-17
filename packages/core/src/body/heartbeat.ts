@@ -1,5 +1,5 @@
 /**
- * HeartbeatManager — Periodic self-check system for FRIDAY.
+ * HeartbeatManager — Periodic self-check system for SecureYeoman.
  *
  * Part of the Body module — the agent's vital signs and physical life-checks.
  *

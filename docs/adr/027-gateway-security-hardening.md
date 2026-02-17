@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-A security audit comparing FRIDAY against OpenClaw identified several hardening gaps in the gateway server. FRIDAY already has strong authentication (JWT + mTLS + API keys), RBAC, audit chain, encryption at rest, and input validation — but it was missing standard HTTP security headers, had a CORS wildcard bug, and WebSocket subscriptions bypassed RBAC entirely. These are P0/P1 fixes.
+A security audit comparing SecureYeoman against OpenClaw identified several hardening gaps in the gateway server. SecureYeoman already has strong authentication (JWT + mTLS + API keys), RBAC, audit chain, encryption at rest, and input validation — but it was missing standard HTTP security headers, had a CORS wildcard bug, and WebSocket subscriptions bypassed RBAC entirely. These are P0/P1 fixes.
 
 ### Problems Identified
 

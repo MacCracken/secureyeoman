@@ -7,7 +7,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "FRIDAY API error rate is above 5%"
+          summary: "SecureYeoman API error rate is above 5%"
           description: "API error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
 
       - alert: FridayHighLatency
@@ -16,7 +16,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "FRIDAY API latency is high"
+          summary: "SecureYeoman API latency is high"
           description: "Average API latency is {{ $value }}ms."
 
       - alert: FridayHighMemory
@@ -25,7 +25,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "FRIDAY memory usage is high"
+          summary: "SecureYeoman memory usage is high"
           description: "Memory usage is {{ $value }}MB."
 
       - alert: FridayTaskQueueBacklog
@@ -34,7 +34,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "FRIDAY task queue backlog is growing"
+          summary: "SecureYeoman task queue backlog is growing"
           description: "Task queue depth is {{ $value }}."
 
       - alert: FridayAuditChainInvalid
@@ -43,7 +43,7 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "FRIDAY audit chain integrity failure"
+          summary: "SecureYeoman audit chain integrity failure"
           description: "Audit chain verification has failed. Possible data tampering."
 
       - alert: FridayRateLimitSpike
@@ -52,7 +52,7 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "FRIDAY rate limiting is triggering frequently"
+          summary: "SecureYeoman rate limiting is triggering frequently"
           description: "Rate limit hits: {{ $value }} per second."
 
       - alert: FridayDown
@@ -61,8 +61,8 @@ groups:
         labels:
           severity: critical
         annotations:
-          summary: "FRIDAY is down"
-          description: "FRIDAY has been unreachable for more than 1 minute."
+          summary: "SecureYeoman is down"
+          description: "SecureYeoman has been unreachable for more than 1 minute."
 
       - alert: FridayAuthFailureSpike
         expr: rate(friday_auth_failures_total[5m]) > 5
@@ -79,5 +79,5 @@ groups:
         labels:
           severity: warning
         annotations:
-          summary: "FRIDAY daily cost exceeds $50"
+          summary: "SecureYeoman daily cost exceeds $50"
           description: "Current daily cost: ${{ $value }}."
