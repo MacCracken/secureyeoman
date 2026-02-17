@@ -71,7 +71,7 @@ export function parseCommit(line: string): ParsedCommit | null {
 
   return {
     type: match[1],
-    scope: match[2] || undefined,
+    scope: match[2] ?? undefined,
     description: match[3],
     hash: hash.slice(0, 7),
     author,
@@ -97,12 +97,13 @@ export function generateMarkdown(commits: ParsedCommit[], tag?: string): string 
   // Order: features first, then bug fixes, then rest
   const order = Object.values(TYPE_LABELS);
   const sortedKeys = [...grouped.keys()].sort(
-    (a, b) => (order.indexOf(a) === -1 ? 999 : order.indexOf(a)) -
-              (order.indexOf(b) === -1 ? 999 : order.indexOf(b)),
+    (a, b) => (order.includes(a) ? order.indexOf(a) : 999) -
+              (order.includes(b) ? order.indexOf(b) : 999),
   );
 
   for (const label of sortedKeys) {
-    const group = grouped.get(label)!;
+    const group = grouped.get(label);
+    if (!group) continue;
     lines.push(`## ${label}\n`);
     for (const c of group) {
       const scope = c.scope ? `**${c.scope}**: ` : '';

@@ -37,7 +37,7 @@ vi.mock('nodemailer', () => {
   };
 });
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const { __mockSendMail: mockSendMail } = (await import('nodemailer')) as any;
 
 // ── Helpers ───────────────────────────────────────────────────

@@ -6,7 +6,9 @@
     "packages/mcp/src/**/*.ts",
     "packages/core/vitest.config.ts",
     "packages/mcp/vitest.config.ts",
-    "vitest.config.ts"
+    "vitest.config.ts",
+    "tests/**/*.ts",
+    "scripts/**/*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -21,7 +21,7 @@ vi.mock('../utils/crypto.js', () => ({
 import { MultimodalStorage } from './storage.js';
 
 // Access the mock pool
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+ 
 const { __mockPool: mockPool } = (await import('../storage/pg-pool.js')) as any;
 
 describe('MultimodalStorage', () => {
