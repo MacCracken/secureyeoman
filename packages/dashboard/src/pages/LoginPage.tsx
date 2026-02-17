@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Shield, AlertTriangle, Loader2 } from 'lucide-react';
+import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { Logo } from '../components/Logo';
 
 export function LoginPage() {
   const [password, setPassword] = useState('');
@@ -39,8 +40,8 @@ export function LoginPage() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <div className="card w-full max-w-sm p-8">
         <div className="flex flex-col items-center mb-6">
-          <Shield className="w-12 h-12 text-primary mb-3" />
-          <h1 className="text-xl font-bold">SecureYeoman</h1>
+          <Logo size={48} />
+          <h1 className="text-xl font-bold mt-3">SecureYeoman</h1>
           <p className="text-sm text-muted-foreground mt-1">
             Enter your admin password to continue
           </p>

@@ -31,6 +31,7 @@ import {
 import { useSidebar } from '../hooks/useSidebar';
 import { useTheme } from '../hooks/useTheme';
 import { getAccessToken } from '../api/client';
+import { Logo } from './Logo';
 import { NewEntityDialog } from './NewEntityDialog';
 import {
   fetchExtensionConfig,
@@ -181,7 +182,7 @@ export function Sidebar({
   const sidebarContent = (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-2.5 px-4 py-5 border-b border-border">
-        <Shield className="w-7 h-7 text-primary flex-shrink-0" />
+        <Logo size={28} />
         <span
           className={`font-bold text-lg whitespace-nowrap transition-opacity duration-200 flex-1 ${
             collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'

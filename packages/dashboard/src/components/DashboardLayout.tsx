@@ -31,6 +31,7 @@ import {
 import { Sidebar } from './Sidebar';
 import { SearchBar } from './SearchBar';
 import { NotificationBell } from './NotificationBell';
+import { Logo } from './Logo';
 import { ErrorBoundary } from './common/ErrorBoundary';
 import { OnboardingWizard } from './OnboardingWizard';
 import type { MetricsSnapshot, HealthStatus } from '../types';
@@ -185,7 +186,7 @@ export function DashboardLayout() {
                   >
                     <Menu className="w-5 h-5" />
                   </button>
-                  <Shield className="w-7 h-7 text-primary flex-shrink-0" />
+                  <Logo size={28} />
                   <div className="min-w-0">
                     <h1 className="text-lg font-bold truncate">SecureYeoman</h1>
                   </div>
