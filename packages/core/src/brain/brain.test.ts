@@ -250,13 +250,70 @@ describe('BrainStorage', () => {
       });
 
       const pruned = await storage.pruneExpiredMemories();
-      expect(pruned).toBe(1);
+      expect(pruned).toHaveLength(1);
       expect(await storage.getMemoryCount()).toBe(1);
     });
 
     it('should count memories', async () => {
       expect(await storage.getMemoryCount()).toBe(0);
       await storage.createMemory({ type: 'semantic', content: 'Test', source: 'test' });
+      expect(await storage.getMemoryCount()).toBe(1);
+    });
+
+    it('should query memories with sortDirection asc', async () => {
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'Low importance',
+        source: 'test',
+        importance: 0.2,
+      });
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'High importance',
+        source: 'test',
+        importance: 0.9,
+      });
+
+      const results = await storage.queryMemories({ sortDirection: 'asc' });
+      expect(results[0].content).toBe('Low importance');
+      expect(results[1].content).toBe('High importance');
+    });
+
+    it('should query memories with offset', async () => {
+      for (let i = 0; i < 5; i++) {
+        await storage.createMemory({
+          type: 'episodic',
+          content: `Event ${i}`,
+          source: 'test',
+          importance: (i + 1) * 0.1,
+        });
+      }
+      const results = await storage.queryMemories({ limit: 2, offset: 2 });
+      expect(results).toHaveLength(2);
+    });
+
+    it('should reject invalid context keys (SQL injection prevention)', async () => {
+      await expect(
+        storage.queryMemories({ context: { "'; DROP TABLE--": 'val' } })
+      ).rejects.toThrow('Invalid context key');
+    });
+
+    it('should prune by importance floor', async () => {
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'Very low',
+        source: 'test',
+        importance: 0.01,
+      });
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'Normal',
+        source: 'test',
+        importance: 0.5,
+      });
+
+      const pruned = await storage.pruneByImportanceFloor(0.05);
+      expect(pruned).toHaveLength(1);
       expect(await storage.getMemoryCount()).toBe(1);
     });
 
@@ -488,6 +545,31 @@ describe('BrainManager', () => {
       expect((await manager.getMemory(m3.id))?.accessCount).toBe(1);
     });
 
+    it('should reject oversized content', async () => {
+      const mgr = new BrainManager(storage, defaultConfig(), createDeps());
+      const oversized = 'x'.repeat(5000);
+      await expect(mgr.remember('semantic', oversized, 'test')).rejects.toThrow(
+        'exceeds maximum length'
+      );
+    });
+
+    it('should prune lowest-importance memory when at capacity', async () => {
+      const mgr = new BrainManager(storage, defaultConfig({ maxMemories: 3 }), createDeps());
+      await mgr.remember('semantic', 'Low priority', 'test', {}, 0.1);
+      await mgr.remember('semantic', 'Medium priority', 'test', {}, 0.5);
+      await mgr.remember('semantic', 'High priority', 'test', {}, 0.9);
+
+      // At capacity — adding a new one should prune the lowest (0.1)
+      await mgr.remember('semantic', 'New entry', 'test', {}, 0.6);
+
+      const all = await mgr.recall({});
+      expect(all).toHaveLength(3);
+      const contents = all.map((m) => m.content);
+      expect(contents).not.toContain('Low priority');
+      expect(contents).toContain('High priority');
+      expect(contents).toContain('New entry');
+    });
+
     it('should throw when brain is disabled', async () => {
       const mgr = new BrainManager(storage, defaultConfig({ enabled: false }), createDeps());
       await expect(mgr.remember('semantic', 'Test', 'test')).rejects.toThrow(
@@ -507,6 +589,13 @@ describe('BrainManager', () => {
       const results = await manager.lookup('deployment');
       expect(results).toHaveLength(1);
       expect(results[0].content).toBe('Uses Docker');
+    });
+
+    it('should reject oversized knowledge content', async () => {
+      const oversized = 'x'.repeat(5000);
+      await expect(manager.learn('topic', oversized, 'test')).rejects.toThrow(
+        'exceeds maximum length'
+      );
     });
 
     it('should throw when max knowledge reached', async () => {
@@ -647,6 +736,12 @@ describe('BrainManager', () => {
       const result = await manager.runMaintenance();
       expect(result).toHaveProperty('decayed');
       expect(result).toHaveProperty('pruned');
+    });
+
+    it('should return vectorSynced in maintenance result', async () => {
+      await manager.remember('episodic', 'Event', 'test');
+      const result = await manager.runMaintenance();
+      expect(result).toHaveProperty('vectorSynced');
     });
   });
 

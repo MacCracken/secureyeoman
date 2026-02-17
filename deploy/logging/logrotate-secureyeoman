@@ -1,0 +1,24 @@
+/var/log/secureyeoman/*.log {
+    daily
+    rotate 14
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 secureyeoman secureyeoman
+    sharedscripts
+    postrotate
+        # Send SIGHUP to reload log handles
+        [ -f /var/run/secureyeoman.pid ] && kill -HUP $(cat /var/run/secureyeoman.pid) 2>/dev/null || true
+    endscript
+}
+
+/var/log/secureyeoman/audit/*.jsonl {
+    daily
+    rotate 90
+    compress
+    delaycompress
+    missingok
+    notifempty
+    create 0640 secureyeoman secureyeoman
+}

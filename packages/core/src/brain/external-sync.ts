@@ -112,37 +112,47 @@ export class ExternalBrainSync {
     let knowledgeWritten = 0;
     let knowledgeRemoved = 0;
 
-    // Sync memories
-    if (this.config.syncMemories) {
-      const memories = await this.brain.recall({ limit: 10000 });
-      const memoryIds = new Set<string>();
+    const PAGE_SIZE = 500;
 
-      for (const memory of memories) {
-        const filename = this.sanitizeFilename(`${memory.id}.md`);
-        const filepath = join(memoriesDir, filename);
-        const content = this.memoryToMarkdown(memory);
-        writeFileSync(filepath, content, 'utf-8');
-        memoryIds.add(filename);
-        memoriesWritten++;
-      }
+    // Sync memories (paginated)
+    if (this.config.syncMemories) {
+      const memoryIds = new Set<string>();
+      let offset = 0;
+      let batch;
+      do {
+        batch = await this.brain.recall({ limit: PAGE_SIZE, offset });
+        for (const memory of batch) {
+          const filename = this.sanitizeFilename(`${memory.id}.md`);
+          const filepath = join(memoriesDir, filename);
+          const content = this.memoryToMarkdown(memory);
+          writeFileSync(filepath, content, 'utf-8');
+          memoryIds.add(filename);
+          memoriesWritten++;
+        }
+        offset += PAGE_SIZE;
+      } while (batch.length === PAGE_SIZE);
 
       // Remove stale files
       memoriesRemoved = this.removeStaleFiles(memoriesDir, memoryIds);
     }
 
-    // Sync knowledge
+    // Sync knowledge (paginated)
     if (this.config.syncKnowledge) {
-      const knowledge = await this.brain.queryKnowledge({ limit: 10000 });
       const knowledgeIds = new Set<string>();
-
-      for (const entry of knowledge) {
-        const filename = this.sanitizeFilename(`${entry.id}.md`);
-        const filepath = join(knowledgeDir, filename);
-        const content = this.knowledgeToMarkdown(entry);
-        writeFileSync(filepath, content, 'utf-8');
-        knowledgeIds.add(filename);
-        knowledgeWritten++;
-      }
+      let offset = 0;
+      let batch;
+      do {
+        batch = await this.brain.queryKnowledge({ limit: PAGE_SIZE });
+        for (const entry of batch) {
+          const filename = this.sanitizeFilename(`${entry.id}.md`);
+          const filepath = join(knowledgeDir, filename);
+          const content = this.knowledgeToMarkdown(entry);
+          writeFileSync(filepath, content, 'utf-8');
+          knowledgeIds.add(filename);
+          knowledgeWritten++;
+        }
+        offset += PAGE_SIZE;
+      } while (batch.length === PAGE_SIZE);
 
       // Remove stale files
       knowledgeRemoved = this.removeStaleFiles(knowledgeDir, knowledgeIds);

@@ -2,15 +2,15 @@ services:
   postgres:
     image: pgvector/pgvector:pg16
     environment:
-      POSTGRES_DB: friday
-      POSTGRES_USER: friday
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-friday_dev}
+      POSTGRES_DB: secureyeoman
+      POSTGRES_USER: secureyeoman
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secureyeoman_dev}
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U friday"]
+      test: ["CMD-SHELL", "pg_isready -U secureyeoman"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -24,12 +24,12 @@ services:
     ports:
       - "18789:18789"
     volumes:
-      - friday-data:/app/data
+      - secureyeoman-data:/app/data
     env_file: .env
     environment:
       SECUREYEOMAN_HOST: "0.0.0.0"
       NODE_ENV: production
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-friday_dev}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secureyeoman_dev}
       DATABASE_HOST: postgres
       GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
       GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET:-}
@@ -110,5 +110,5 @@ services:
 
 volumes:
   pgdata:
-  friday-data:
+  secureyeoman-data:
   dashboard-node-modules:

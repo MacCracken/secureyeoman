@@ -6,7 +6,7 @@ rule_files:
   - "alert-rules.yml"
 
 scrape_configs:
-  - job_name: "friday"
+  - job_name: "secureyeoman"
     static_configs:
       - targets: ["host.docker.internal:18789"]
     metrics_path: /metrics

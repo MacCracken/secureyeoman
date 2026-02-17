@@ -14,7 +14,7 @@ OpenClaw demonstrates one approach to screen capture: companion devices connect 
 - Sandboxed execution isolation
 - Platform-native permission integration
 
-Friday's security-first architecture requires a more comprehensive approach.
+SecureYeoman's security-first architecture requires a more comprehensive approach.
 
 ## Decision
 

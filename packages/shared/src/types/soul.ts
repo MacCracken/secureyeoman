@@ -392,6 +392,8 @@ export const BrainConfigSchema = z
     memoryRetentionDays: z.number().min(1).max(365).default(90),
     importanceDecayRate: z.number().min(0).max(1).default(0.01),
     contextWindowMemories: z.number().min(0).max(50).default(10),
+    maxContentLength: z.number().min(100).max(65536).default(4096),
+    importanceFloor: z.number().min(0).max(1).default(0.05),
     vector: VectorConfigSchema,
     consolidation: ConsolidationConfigSchema,
   })

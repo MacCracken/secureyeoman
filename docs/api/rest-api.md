@@ -607,7 +607,7 @@ Download the full audit log as a JSON file.
 
 **Required Permissions**: `audit.read`
 
-**Response**: JSON file download with `Content-Disposition: attachment; filename=friday-audit-export-<date>.json`
+**Response**: JSON file download with `Content-Disposition: attachment; filename=secureyeoman-audit-export-<date>.json`
 
 ```json
 {
@@ -768,7 +768,7 @@ Get current agent name.
 **Response**
 ```json
 {
-  "name": "FRIDAY"
+  "name": "SecureYeoman"
 }
 ```
 
@@ -1642,7 +1642,7 @@ Send an encrypted message to a peer.
 ```json
 {
   "type": "chat",
-  "content": "Hello from FRIDAY",
+  "content": "Hello from SecureYeoman",
   "metadata": {}
 }
 ```
@@ -1690,7 +1690,7 @@ Send a message to a personality and receive an AI response. When `personalityId`
 ```json
 {
   "role": "assistant",
-  "content": "I'm FRIDAY, your AI assistant. I can help with...",
+  "content": "I'm SecureYeoman, your AI assistant. I can help with...",
   "model": "claude-sonnet-4-20250514",
   "provider": "anthropic",
   "tokensUsed": 256

@@ -264,6 +264,7 @@ url: "https://mcp.supabase.io"
 | Phase 8.6: MCP Infrastructure (Health/Credentials) | Complete |
 | Phase 8.5: Anti-Bot & Proxy Integration | Complete |
 | Phase 9: Kubernetes Deployment | Complete |
+| Phase 8.8: Memory/Brain Hardening | Complete |
 | **2026.2.17 Release** | **Released 2026-02-17** |
 | Phase 10: Dashboard UX Enhancements | Planned |
 | Phase 11: Integration Expansion | Planned |
@@ -280,6 +281,32 @@ url: "https://mcp.supabase.io"
 - [x] Geo-targeting via ISO country codes
 - [x] Browser proxy integration (Playwright)
 - [x] Feature toggle: `MCP_PROXY_ENABLED` (default: false)
+
+---
+
+## Phase 8.8: Memory/Brain Hardening — [ADR 045](../adr/045-memory-audit-hardening.md)
+
+**Status**: Complete
+
+Comprehensive audit and hardening of the Brain/Memory system addressing 20+ issues.
+
+- [x] Fix critical pruning bug (deleted highest instead of lowest importance)
+- [x] SQL injection fix via parameterized JSONB path queries
+- [x] Content size limits (`maxContentLength` config, default 4096)
+- [x] Prompt injection sanitization in `getRelevantContext()`
+- [x] FAISS vector store `compact()` for phantom vector cleanup
+- [x] Vector store sync on memory prune/maintenance
+- [x] Importance floor pruning (`importanceFloor` config, default 0.05)
+- [x] Consolidation flaggedIds persistence across restarts
+- [x] Full 5-field cron matching for consolidation scheduler
+- [x] Deep consolidation timeout enforcement via `Promise.race()`
+- [x] Qdrant proper typing and auto-reconnect
+- [x] External sync pagination (PAGE_SIZE=500)
+- [x] Brain route rate limiting (60/min mutations, 5/min admin ops)
+- [x] Query limit cap (MAX_QUERY_LIMIT=200) on all GET routes
+- [x] Input validation on POST/PUT brain routes
+- [x] 18 missing brain routes added to RBAC permission map
+- [x] Path traversal validation on sync config updates
 
 ---
 

@@ -2,7 +2,7 @@
  * Qdrant Vector Store
  *
  * Uses @qdrant/js-client-rest for remote Qdrant vector search.
- * Auto-creates collection on first use.
+ * Auto-creates collection on first use. Auto-reconnects on failure.
  */
 
 import type { VectorStore, VectorResult } from './types.js';
@@ -13,8 +13,16 @@ export interface QdrantStoreConfig {
   dimensions: number;
 }
 
+interface QdrantClientLike {
+  getCollection(name: string): Promise<{ points_count?: number }>;
+  createCollection(name: string, opts: unknown): Promise<unknown>;
+  upsert(collection: string, opts: unknown): Promise<unknown>;
+  search(collection: string, opts: unknown): Promise<{ id: string | number; score: number; payload?: Record<string, unknown> }[]>;
+  delete(collection: string, opts: unknown): Promise<unknown>;
+}
+
 export class QdrantVectorStore implements VectorStore {
-  private client: any = null;
+  private client: QdrantClientLike | null = null;
   private readonly url: string;
   private readonly collection: string;
   private readonly dimensions: number;
@@ -27,11 +35,11 @@ export class QdrantVectorStore implements VectorStore {
   }
 
   private async ensureInitialized(): Promise<void> {
-    if (this.initialized) return;
+    if (this.initialized && this.client) return;
 
     try {
       const qdrantModule = await import('@qdrant/js-client-rest');
-      this.client = new qdrantModule.QdrantClient({ url: this.url });
+      this.client = new qdrantModule.QdrantClient({ url: this.url }) as unknown as QdrantClientLike;
     } catch {
       throw new Error(
         '@qdrant/js-client-rest not installed. Install with: npm install @qdrant/js-client-rest'
@@ -53,18 +61,42 @@ export class QdrantVectorStore implements VectorStore {
     this.initialized = true;
   }
 
+  private async withReconnect<T>(operation: () => Promise<T>): Promise<T> {
+    try {
+      return await operation();
+    } catch (err) {
+      // Reset initialization state and retry once
+      this.initialized = false;
+      this.client = null;
+      await this.ensureInitialized();
+      return operation();
+    }
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      await this.ensureInitialized();
+      await this.client!.getCollection(this.collection);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async insert(id: string, vector: number[], metadata?: Record<string, unknown>): Promise<void> {
     await this.ensureInitialized();
 
-    await this.client.upsert(this.collection, {
-      points: [
-        {
-          id,
-          vector,
-          payload: metadata ?? {},
-        },
-      ],
-    });
+    await this.withReconnect(() =>
+      this.client!.upsert(this.collection, {
+        points: [
+          {
+            id,
+            vector,
+            payload: metadata ?? {},
+          },
+        ],
+      })
+    );
   }
 
   async insertBatch(
@@ -72,25 +104,29 @@ export class QdrantVectorStore implements VectorStore {
   ): Promise<void> {
     await this.ensureInitialized();
 
-    await this.client.upsert(this.collection, {
-      points: items.map((item) => ({
-        id: item.id,
-        vector: item.vector,
-        payload: item.metadata ?? {},
-      })),
-    });
+    await this.withReconnect(() =>
+      this.client!.upsert(this.collection, {
+        points: items.map((item) => ({
+          id: item.id,
+          vector: item.vector,
+          payload: item.metadata ?? {},
+        })),
+      })
+    );
   }
 
   async search(vector: number[], limit: number, threshold?: number): Promise<VectorResult[]> {
     await this.ensureInitialized();
 
-    const results = await this.client.search(this.collection, {
-      vector,
-      limit,
-      score_threshold: threshold,
-    });
+    const results = await this.withReconnect(() =>
+      this.client!.search(this.collection, {
+        vector,
+        limit,
+        score_threshold: threshold,
+      })
+    );
 
-    return results.map((r: any) => ({
+    return results.map((r) => ({
       id: String(r.id),
       score: r.score,
       metadata: r.payload,
@@ -101,9 +137,11 @@ export class QdrantVectorStore implements VectorStore {
     await this.ensureInitialized();
 
     try {
-      await this.client.delete(this.collection, {
-        points: [id],
-      });
+      await this.withReconnect(() =>
+        this.client!.delete(this.collection, {
+          points: [id],
+        })
+      );
       return true;
     } catch {
       return false;
@@ -113,7 +151,9 @@ export class QdrantVectorStore implements VectorStore {
   async count(): Promise<number> {
     await this.ensureInitialized();
 
-    const info = await this.client.getCollection(this.collection);
+    const info = await this.withReconnect(() =>
+      this.client!.getCollection(this.collection)
+    );
     return info.points_count ?? 0;
   }
 

@@ -17,8 +17,8 @@ COPY packages/shared/ packages/shared/
 COPY packages/dashboard/ packages/dashboard/
 
 # Build shared first, then dashboard
-RUN npm run build --workspace=@friday/shared && \
-    npm run build --workspace=@friday/dashboard
+RUN npm run build --workspace=@secureyeoman/shared && \
+    npm run build --workspace=@secureyeoman/dashboard
 
 # Stage 2: Serve with nginx
 FROM nginx:1.27-alpine

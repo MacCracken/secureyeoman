@@ -1,0 +1,18 @@
+{{- if .Values.dashboard.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "secureyeoman.fullname" . }}-dashboard
+  namespace: {{ include "secureyeoman.namespace" . }}
+  labels:
+    {{- include "secureyeoman.componentLabels" (dict "context" . "component" "dashboard") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.dashboard.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "secureyeoman.selectorLabels" (dict "context" . "component" "dashboard") | nindent 4 }}
+{{- end }}

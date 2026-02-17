@@ -44,7 +44,7 @@ sudo apt-get update && sudo apt-get install k6
 
 ```bash
 # Start the SecureYeoman server first
-npm run dev --workspace=@friday/core
+npm run dev --workspace=@secureyeoman/core
 
 # Run all load tests
 bash tests/load/run.sh

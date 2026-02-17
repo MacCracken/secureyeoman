@@ -12,7 +12,7 @@ RBAC and platform permissions provide authorization checks, but they don't captu
 - Why it's needed
 - Who will see it
 
-OpenClaw uses device pairing with per-node execution approval, which is coarse-grained. Friday needs a more user-centric model with:
+OpenClaw uses device pairing with per-node execution approval, which is coarse-grained. SecureYeoman needs a more user-centric model with:
 - Per-capture approval (not per-device)
 - Clear visibility into capture scope
 - Ability to revoke consent mid-capture

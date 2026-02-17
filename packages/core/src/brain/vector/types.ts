@@ -28,6 +28,9 @@ export interface VectorStore {
   /** Get the number of stored vectors. */
   count(): Promise<number>;
 
+  /** Optional: compact the index by rebuilding without deleted entries. */
+  compact?(): Promise<void>;
+
   /** Shut down and release resources. */
   close(): Promise<void>;
 }

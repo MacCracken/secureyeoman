@@ -203,16 +203,25 @@ export class BrainStorage extends PgBaseStorage {
     }
     if (query.context) {
       for (const [key, value] of Object.entries(query.context)) {
-        sql += ` AND context::jsonb->>'${key}' = $${idx++}`;
-        params.push(value);
+        if (!/^[a-zA-Z0-9_-]+$/.test(key)) {
+          throw new Error(`Invalid context key: ${key}`);
+        }
+        sql += ` AND context::jsonb->>$${idx++} = $${idx++}`;
+        params.push(key, value);
       }
     }
 
-    sql += ' ORDER BY importance DESC, updated_at DESC';
+    const sortDir = query.sortDirection === 'asc' ? 'ASC' : 'DESC';
+    sql += ` ORDER BY importance ${sortDir}, updated_at ${sortDir}`;
 
     if (query.limit) {
       sql += ` LIMIT $${idx++}`;
       params.push(query.limit);
+    }
+
+    if (query.offset) {
+      sql += ` OFFSET $${idx++}`;
+      params.push(query.offset);
     }
 
     const rows = await this.queryMany<MemoryRow>(sql, params);
@@ -250,12 +259,21 @@ export class BrainStorage extends PgBaseStorage {
     return count;
   }
 
-  async pruneExpiredMemories(): Promise<number> {
+  async pruneExpiredMemories(): Promise<string[]> {
     const now = Date.now();
-    return this.execute(
-      'DELETE FROM brain.memories WHERE expires_at IS NOT NULL AND expires_at < $1',
+    const rows = await this.queryMany<{ id: string }>(
+      'DELETE FROM brain.memories WHERE expires_at IS NOT NULL AND expires_at < $1 RETURNING id',
       [now]
     );
+    return rows.map((r) => r.id);
+  }
+
+  async pruneByImportanceFloor(floor: number): Promise<string[]> {
+    const rows = await this.queryMany<{ id: string }>(
+      'DELETE FROM brain.memories WHERE importance < $1 AND importance > 0 RETURNING id',
+      [floor]
+    );
+    return rows.map((r) => r.id);
   }
 
   async getMemoryCount(): Promise<number> {

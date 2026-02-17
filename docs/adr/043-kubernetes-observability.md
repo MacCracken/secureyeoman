@@ -17,7 +17,7 @@ SecureYeoman already has a comprehensive observability stack for Docker deployme
 ### Prometheus Operator CRDs
 
 We use `ServiceMonitor` and `PrometheusRule` CRDs (from the Prometheus Operator) because:
-- **Auto-discovery**: ServiceMonitor automatically configures Prometheus to scrape `friday-core` pods — no manual target configuration
+- **Auto-discovery**: ServiceMonitor automatically configures Prometheus to scrape `secureyeoman-core` pods — no manual target configuration
 - **Lifecycle**: Rules and monitors are managed alongside the application via Helm
 - **Standard**: The Prometheus Operator is the de facto standard for Kubernetes monitoring
 
@@ -60,8 +60,8 @@ All observability resources are gated behind `.Values.monitoring.enabled` to avo
 
 ## References
 
-- ServiceMonitor: `deploy/helm/friday/templates/servicemonitor.yaml`
-- PrometheusRule: `deploy/helm/friday/templates/prometheusrule.yaml`
-- Grafana ConfigMap: `deploy/helm/friday/templates/grafana-dashboard-configmap.yaml`
+- ServiceMonitor: `deploy/helm/secureyeoman/templates/servicemonitor.yaml`
+- PrometheusRule: `deploy/helm/secureyeoman/templates/prometheusrule.yaml`
+- Grafana ConfigMap: `deploy/helm/secureyeoman/templates/grafana-dashboard-configmap.yaml`
 - Source alerts: `deploy/prometheus/alert-rules.yml`
-- Source dashboard: `deploy/grafana/friday-dashboard.json`
+- Source dashboard: `deploy/grafana/secureyeoman-dashboard.json`

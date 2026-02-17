@@ -47,6 +47,8 @@ export interface ConsolidationManagerDeps {
   aiProvider?: AIProvider;
 }
 
+const FLAGGED_IDS_META_KEY = 'consolidation:flaggedIds';
+
 export class ConsolidationManager {
   private readonly config: ConsolidationConfig;
   private readonly vectorManager: VectorMemoryManager;
@@ -115,6 +117,7 @@ export class ConsolidationManager {
       // Flag for scheduled run
       if (topScore >= this.config.quickCheck.flagThreshold) {
         this.flaggedIds.add(memory.id);
+        await this.persistFlaggedIds();
         return 'flagged';
       }
 
@@ -127,17 +130,32 @@ export class ConsolidationManager {
 
   /**
    * Run deep consolidation: analyze flagged and all memories for potential consolidation.
+   * Enforces the configured timeout.
    */
   async runDeepConsolidation(): Promise<ConsolidationReport> {
+    const timeoutMs = this.config.deepConsolidation.timeoutMs;
+
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error(`Deep consolidation timed out after ${timeoutMs}ms`)), timeoutMs)
+    );
+
+    return Promise.race([this.runDeepConsolidationInner(), timeoutPromise]);
+  }
+
+  private async runDeepConsolidationInner(): Promise<ConsolidationReport> {
     const startTime = Date.now();
     const dryRun = this.config.deepConsolidation.dryRun;
 
-    this.logger.info('Starting deep consolidation', { dryRun, flaggedCount: this.flaggedIds.size });
+    // Snapshot current flagged IDs for this run; new flags during run are preserved
+    await this.loadFlaggedIds();
+    const snapshotIds = new Set(this.flaggedIds);
+
+    this.logger.info('Starting deep consolidation', { dryRun, flaggedCount: snapshotIds.size });
 
     const candidates: ConsolidationCandidate[] = [];
 
     // Process flagged memories first, then sample others
-    const idsToProcess = [...this.flaggedIds];
+    const idsToProcess = [...snapshotIds];
 
     // Also sample some non-flagged memories for broader consolidation
     const allMemories = await this.storage.queryMemories({
@@ -263,8 +281,11 @@ export class ConsolidationManager {
       };
     }
 
-    // Clear flagged IDs after processing
-    this.flaggedIds.clear();
+    // Clear only the snapshot IDs — new flags arriving during the run are preserved
+    for (const id of snapshotIds) {
+      this.flaggedIds.delete(id);
+    }
+    await this.persistFlaggedIds();
 
     // Store report in history
     this.history.push(report);
@@ -281,18 +302,44 @@ export class ConsolidationManager {
     return report;
   }
 
+  // ── FlaggedIds Persistence ──────────────────────────────
+
+  private async persistFlaggedIds(): Promise<void> {
+    try {
+      await this.storage.setMeta(FLAGGED_IDS_META_KEY, JSON.stringify([...this.flaggedIds]));
+    } catch (err) {
+      this.logger.warn('Failed to persist flaggedIds', { error: String(err) });
+    }
+  }
+
+  private async loadFlaggedIds(): Promise<void> {
+    try {
+      const raw = await this.storage.getMeta(FLAGGED_IDS_META_KEY);
+      if (raw) {
+        const ids = JSON.parse(raw) as string[];
+        for (const id of ids) {
+          this.flaggedIds.add(id);
+        }
+      }
+    } catch (err) {
+      this.logger.warn('Failed to load flaggedIds', { error: String(err) });
+    }
+  }
+
   // ── Scheduling ──────────────────────────────────────────
 
   start(): void {
     if (this.schedulerTimer) return;
 
-    // Simple interval-based scheduling (every hour, check if cron matches)
-    // For production, use a proper cron library
+    // Load persisted flagged IDs on start
+    void this.loadFlaggedIds().catch(() => {});
+
+    // Check every 60 seconds for cron match
     this.schedulerTimer = setInterval(
       () => {
         this.checkSchedule();
       },
-      60 * 60 * 1000 // Check every hour
+      60 * 1000 // Check every minute
     );
 
     this.logger.info('Consolidation scheduler started', { schedule: this.schedule });
@@ -322,20 +369,33 @@ export class ConsolidationManager {
   // ── Private ──────────────────────────────────────────────
 
   private checkSchedule(): void {
-    // Simple cron check: parse "0 2 * * *" format
+    // Full 5-field cron matching: minute hour day-of-month month day-of-week
     const now = new Date();
     const parts = this.schedule.split(/\s+/);
     if (parts.length < 5) return;
 
-    const minute = parts[0]!;
-    const hour = parts[1]!;
-    const currentHour = now.getHours();
-    const currentMinute = now.getMinutes();
+    const [minute, hour, dayOfMonth, month, dayOfWeek] = parts;
 
-    const matchesHour = hour === '*' || parseInt(hour, 10) === currentHour;
-    const matchesMinute = minute === '*' || parseInt(minute, 10) === currentMinute;
+    const matches = (field: string | undefined, value: number): boolean => {
+      if (!field || field === '*') return true;
+      // Handle comma-separated values
+      return field.split(',').some((f) => parseInt(f.trim(), 10) === value);
+    };
 
-    if (matchesHour && matchesMinute) {
+    const matchesMinute = matches(minute, now.getMinutes());
+    const matchesHour = matches(hour, now.getHours());
+    const matchesDayOfMonth = matches(dayOfMonth, now.getDate());
+    const matchesMonth = matches(month, now.getMonth() + 1);
+    // JS: 0=Sunday, cron: 0=Sunday or 7=Sunday
+    const currentDow = now.getDay();
+    const matchesDayOfWeek =
+      dayOfWeek === '*' ||
+      dayOfWeek!.split(',').some((f) => {
+        const v = parseInt(f.trim(), 10);
+        return v === currentDow || (v === 7 && currentDow === 0);
+      });
+
+    if (matchesMinute && matchesHour && matchesDayOfMonth && matchesMonth && matchesDayOfWeek) {
       this.runDeepConsolidation().catch((err: unknown) => {
         this.logger.error('Scheduled consolidation failed', { error: String(err) });
       });

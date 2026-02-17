@@ -33,7 +33,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
   -H "Content-Type: application/json" \
   -d '{
     "platform": "cli",
-    "displayName": "FRIDAY CLI",
+    "displayName": "SecureYeoman CLI",
     "enabled": true,
     "config": {}
   }'
@@ -57,7 +57,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
   -H "Content-Type: application/json" \
   -d '{
     "platform": "telegram",
-    "displayName": "My FRIDAY Bot",
+    "displayName": "My SecureYeoman Bot",
     "enabled": true,
     "config": {
       "botToken": "123456:ABC-DEF..."
@@ -88,7 +88,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
   -H "Content-Type: application/json" \
   -d '{
     "platform": "discord",
-    "displayName": "FRIDAY Discord",
+    "displayName": "SecureYeoman Discord",
     "enabled": true,
     "config": {
       "botToken": "...",
@@ -99,7 +99,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 ```
 
 ### Slash Commands
-- `/ask <question>` — Ask FRIDAY a question
+- `/ask <question>` — Ask SecureYeoman a question
 - `/status` — Check agent status
 - `/help` — Show available commands
 
@@ -118,7 +118,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
   -H "Content-Type: application/json" \
   -d '{
     "platform": "slack",
-    "displayName": "FRIDAY Slack",
+    "displayName": "SecureYeoman Slack",
     "enabled": true,
     "config": {
       "botToken": "xoxb-...",
@@ -129,8 +129,8 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 
 ### Slash Commands
 Register these in your Slack app settings:
-- `/friday <message>` — Send a message to FRIDAY
-- `/friday-status` — Check agent status
+- `/secureyeoman <message>` — Send a message to SecureYeoman
+- `/secureyeoman-status` — Check agent status
 
 ## GitHub
 
@@ -148,7 +148,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
   -H "Content-Type: application/json" \
   -d '{
     "platform": "github",
-    "displayName": "FRIDAY GitHub",
+    "displayName": "SecureYeoman GitHub",
     "enabled": true,
     "config": {
       "personalAccessToken": "ghp_...",
@@ -391,7 +391,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
   -H "Content-Type: application/json" \
   -d '{
     "platform": "googlechat",
-    "displayName": "FRIDAY Google Chat",
+    "displayName": "SecureYeoman Google Chat",
     "enabled": true,
     "config": {
       "botToken": "ya29...",
@@ -459,7 +459,7 @@ When SecureYeoman sends a message via this integration, it POSTs to the configur
 ```json
 {
   "chatId": "channel-1",
-  "text": "Response from FRIDAY",
+  "text": "Response from SecureYeoman",
   "metadata": {},
   "timestamp": 1707840000000
 }
@@ -483,7 +483,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
   -H "Content-Type: application/json" \
   -d '{
     "platform": "imessage",
-    "displayName": "FRIDAY iMessage",
+    "displayName": "SecureYeoman iMessage",
     "enabled": true,
     "config": {
       "pollIntervalMs": 5000
@@ -610,7 +610,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 
 ### Webhook Setup
 1. Go to your GitLab project > Settings > Webhooks
-2. Set URL to `https://your-friday.example.com/api/v1/webhooks/gitlab/<integration-id>`
+2. Set URL to `https://your-secureyeoman.example.com/api/v1/webhooks/gitlab/<integration-id>`
 3. Set the Secret Token to match your `webhookSecret`
 4. Select events: Push, Merge Request, Issues, Note
 
@@ -656,10 +656,10 @@ POST /api/v1/webhooks/custom/:id
 
 ---
 
-## MCP Service (`@friday/mcp`)
+## MCP Service (`@secureyeoman/mcp`)
 
 ### Overview
-The MCP service package (`@friday/mcp`) is a standalone MCP (Model Context Protocol) server that exposes SecureYeoman's internal capabilities as MCP tools, resources, and prompts. It supports Claude Desktop via stdio, browser-based clients via SSE, and API access via Streamable HTTP.
+The MCP service package (`@secureyeoman/mcp`) is a standalone MCP (Model Context Protocol) server that exposes SecureYeoman's internal capabilities as MCP tools, resources, and prompts. It supports Claude Desktop via stdio, browser-based clients via SSE, and API access via Streamable HTTP.
 
 ### Prerequisites
 - A running SecureYeoman core instance
@@ -703,9 +703,9 @@ Add to your Claude Desktop MCP config (`~/.config/claude/claude_desktop_config.j
 ```json
 {
   "mcpServers": {
-    "friday": {
+    "secureyeoman": {
       "command": "node",
-      "args": ["/path/to/friday/packages/mcp/dist/cli.js", "--transport", "stdio"],
+      "args": ["/path/to/secureyeoman/packages/mcp/dist/cli.js", "--transport", "stdio"],
       "env": {
         "MCP_CORE_URL": "http://127.0.0.1:18789",
         "SECUREYEOMAN_TOKEN_SECRET": "<your-token-secret>"
@@ -760,22 +760,22 @@ The MCP service should appear in core's MCP server list and on the dashboard MCP
 
 | URI | Description |
 |-----|-------------|
-| `friday://knowledge/all` | All knowledge entries |
-| `friday://knowledge/{id}` | Single knowledge entry by ID |
-| `friday://personality/active` | Active personality profile |
-| `friday://personality/{id}` | Specific personality by ID |
-| `friday://config/current` | Current system configuration (secrets redacted) |
-| `friday://audit/recent` | Recent audit log entries |
-| `friday://audit/stats` | Audit statistics |
+| `secureyeoman://knowledge/all` | All knowledge entries |
+| `secureyeoman://knowledge/{id}` | Single knowledge entry by ID |
+| `secureyeoman://personality/active` | Active personality profile |
+| `secureyeoman://personality/{id}` | Specific personality by ID |
+| `secureyeoman://config/current` | Current system configuration (secrets redacted) |
+| `secureyeoman://audit/recent` | Recent audit log entries |
+| `secureyeoman://audit/stats` | Audit statistics |
 
 ### Available Prompts
 
 | Prompt | Description |
 |--------|-------------|
-| `friday:compose-prompt` | Compose a system prompt from personality and skills |
-| `friday:plan-task` | Plan a multi-step agent task |
-| `friday:analyze-code` | Analyze code for quality and issues |
-| `friday:review-security` | Review code or config for security concerns |
+| `secureyeoman:compose-prompt` | Compose a system prompt from personality and skills |
+| `secureyeoman:plan-task` | Plan a multi-step agent task |
+| `secureyeoman:analyze-code` | Analyze code for quality and issues |
+| `secureyeoman:review-security` | Review code or config for security concerns |
 
 ### Security
 

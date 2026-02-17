@@ -40,9 +40,9 @@ GitHub Container Registry (GHCR) because:
 ### Three Separate Deployments
 
 Instead of a single deployment with sidecars:
-- `friday-core`: The gateway + agent engine (port 18789)
-- `friday-mcp`: MCP server (port 3001), optional
-- `friday-dashboard`: Nginx serving the static SPA with API proxy
+- `secureyeoman-core`: The gateway + agent engine (port 18789)
+- `secureyeoman-mcp`: MCP server (port 3001), optional
+- `secureyeoman-dashboard`: Nginx serving the static SPA with API proxy
 
 This allows independent scaling (core is CPU-intensive, dashboard is lightweight) and independent deployment (dashboard can be updated without restarting core).
 
@@ -79,6 +79,6 @@ PostgreSQL runs outside Kubernetes (RDS, Cloud SQL, Azure Database) because:
 
 ## References
 
-- Helm chart: `deploy/helm/friday/`
+- Helm chart: `deploy/helm/secureyeoman/`
 - CI jobs: `.github/workflows/ci.yml` (docker-push, helm-lint)
 - Deployment guide: `docs/guides/kubernetes-deployment.md`

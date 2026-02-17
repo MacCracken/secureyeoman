@@ -55,7 +55,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Code Execution** | Sandboxed code execution (Python, Node.js, shell) within Landlock/seccomp sandbox, persistent sessions, streaming output via WebSocket, approval policies (manual/auto/session-trust), streaming secrets filter, full audit trail |
 | **A2A Protocol** | Agent-to-Agent cross-instance delegation via E2E encrypted messaging, peer discovery (mDNS/DNS-SD/static), capability negotiation, trust progression (untrusted/verified/trusted), remote delegation in unified delegation tree |
 | **Integrations** | Telegram, Discord, Slack, GitHub, Google Chat, Gmail, Email (IMAP/SMTP), CLI, Generic Webhook — plugin architecture with unified message routing |
-| **MCP Protocol** | Standalone `@friday/mcp` service (34+ tools including web scraping, search, browser automation placeholders; 7 resources, 4 prompts); SSRF-protected web tools; health monitoring for external servers; AES-256-GCM encrypted credential storage; streamable HTTP, SSE, and stdio transports; feature toggles with dashboard UI |
+| **MCP Protocol** | Standalone `@secureyeoman/mcp` service (34+ tools including web scraping, search, browser automation placeholders; 7 resources, 4 prompts); SSRF-protected web tools; health monitoring for external servers; AES-256-GCM encrypted credential storage; streamable HTTP, SSE, and stdio transports; feature toggles with dashboard UI |
 | **Marketplace** | Skill discovery, search, install/uninstall (syncs with Brain skills), publish with cryptographic signature verification |
 | **Team Collaboration** | Workspaces with isolation, member management, workspace-scoped RBAC |
 | **Reports & Analytics** | Audit report generator (JSON/HTML/CSV), cost optimization recommendations, A/B testing framework |
@@ -110,7 +110,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 
 ```bash
 git clone https://github.com/MacCracken/secureyeoman.git
-cd friday
+cd secureyeoman
 npm install
 
 # Configure
@@ -134,30 +134,30 @@ docker compose --profile mcp up -d
 docker compose down -v
 
 # Backup database
-docker compose exec postgres pg_dump -U friday friday > backup.sql
+docker compose exec postgres pg_dump -U secureyeoman secureyeoman > backup.sql
 
 # Restore database
-docker compose exec -T postgres psql -U friday friday < backup.sql
+docker compose exec -T postgres psql -U secureyeoman secureyeoman < backup.sql
 
 # Or manual build
-docker build -t friday .
-docker run --env-file .env -p 18789:18789 friday
+docker build -t secureyeoman .
+docker run --env-file .env -p 18789:18789 secureyeoman
 ```
 
 ### Kubernetes (Helm)
 
 ```bash
 # Lint and install
-helm lint deploy/helm/friday
-helm install friday deploy/helm/friday \
-  --namespace friday --create-namespace \
+helm lint deploy/helm/secureyeoman
+helm install secureyeoman deploy/helm/secureyeoman \
+  --namespace secureyeoman --create-namespace \
   --set secrets.postgresPassword=your-password \
   --set database.host=your-db-host.example.com
 
 # Production deployment
-helm install friday deploy/helm/friday \
-  -f deploy/helm/friday/values-production.yaml \
-  --namespace friday-production --create-namespace \
+helm install secureyeoman deploy/helm/secureyeoman \
+  -f deploy/helm/secureyeoman/values-production.yaml \
+  --namespace secureyeoman-production --create-namespace \
   --set secrets.postgresPassword=your-password \
   --set database.host=production-db.example.com
 ```
@@ -187,9 +187,9 @@ Optional:
 
 ```bash
 # Server
-FRIDAY_PORT=18789          # API port (default: 18789)
-FRIDAY_HOST="0.0.0.0"     # Bind address
-FRIDAY_LOG_LEVEL="info"   # trace|debug|info|warn|error
+SECUREYEOMAN_PORT=18789          # API port (default: 18789)
+SECUREYEOMAN_HOST="0.0.0.0"     # Bind address
+SECUREYEOMAN_LOG_LEVEL="info"   # trace|debug|info|warn|error
 
 # MCP Service
 MCP_ENABLED=true           # Enable standalone MCP service
@@ -252,7 +252,7 @@ Connect SecureYeoman to any MCP-compatible client (Claude Desktop, etc.):
 ```json
 {
   "mcpServers": {
-    "friday": {
+    "secureyeoman": {
       "command": "node",
       "args": ["packages/mcp/dist/index.js"],
       "env": {
@@ -272,7 +272,7 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 ## Project Structure
 
 ```
-friday/
+secureyeoman/
 ├── packages/
 │   ├── shared/          # Shared TypeScript types and Zod schemas
 │   ├── core/            # Agent engine, security, and integrations
@@ -318,9 +318,9 @@ friday/
 npm test
 
 # Individual packages
-npm test --workspace=@friday/core
-npm test --workspace=@friday/mcp
-npm test --workspace=@friday/dashboard
+npm test --workspace=@secureyeoman/core
+npm test --workspace=@secureyeoman/mcp
+npm test --workspace=@secureyeoman/dashboard
 
 # With coverage
 npm test -- --coverage
@@ -333,9 +333,9 @@ npx vitest run tests/security/ tests/chaos/
 
 | Package | Tests | Files |
 |---------|-------|-------|
-| `@friday/core` | 1850+ | 110 |
-| `@friday/mcp` | 272 | 29 |
-| `@friday/dashboard` | 286 | 24 |
+| `@secureyeoman/core` | 1850+ | 110 |
+| `@secureyeoman/mcp` | 272 | 29 |
+| `@secureyeoman/dashboard` | 286 | 24 |
 | **Total** | **2100+** | **134+** |
 
 ### Building
@@ -345,9 +345,9 @@ npx vitest run tests/security/ tests/chaos/
 npm run build
 
 # Individual
-npm run build --workspace=@friday/core
-npm run build --workspace=@friday/dashboard
-npm run build --workspace=@friday/mcp
+npm run build --workspace=@secureyeoman/core
+npm run build --workspace=@secureyeoman/dashboard
+npm run build --workspace=@secureyeoman/mcp
 ```
 
 ### Versioning

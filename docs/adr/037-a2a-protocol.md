@@ -32,7 +32,7 @@ Extend the existing comms layer with delegation-specific message types that mirr
 Three discovery mechanisms, configurable per deployment:
 
 1. **Static peers** — Existing comms peer registry (manual configuration)
-2. **mDNS** — Automatic LAN discovery using `_friday-a2a._tcp` service type
+2. **mDNS** — Automatic LAN discovery using `_secureyeoman-a2a._tcp` service type
 3. **DNS-SD** — WAN discovery via DNS SRV/TXT records for cross-network deployments
 
 ### Capability Negotiation
@@ -82,7 +82,7 @@ The A2A protocol extends `SubAgentManager` with a `RemoteDelegationTransport`:
 **Implemented**: 2026-02-16
 
 - A2A message types (delegation_offer, delegation_accept, delegation_reject, delegation_status, delegation_result, delegation_cancel, capability_query, capability_response) implemented in the comms layer
-- Three discovery mechanisms (static peers, mDNS via `_friday-a2a._tcp`, DNS-SD) are configurable per deployment
+- Three discovery mechanisms (static peers, mDNS via `_secureyeoman-a2a._tcp`, DNS-SD) are configurable per deployment
 - Capability negotiation protocol advertises available profiles, token budgets, current load, and protocol version
 - Trust model uses existing E2E encryption with signed capability assertions and configurable peer allowlists/denylists
 - Remote delegation transport extends SubAgentManager; remote delegations appear in the same delegation tree tagged with `remote: true`

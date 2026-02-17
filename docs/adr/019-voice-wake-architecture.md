@@ -51,7 +51,7 @@ We will implement a multi-layered voice wake system:
 #### 2. Voice Wake (Always-On)
 - **Activation**: Enable in settings (requires consent)
 - **Behavior**: Continuous background audio monitoring for wake words
-- **Wake words**: Configurable list (default: "Hey Friday")
+- **Wake words**: Configurable list (default: "Hey SecureYeoman")
 - **Privacy**: Visual indicator when listening; audio buffer cleared after processing
 - **Idle timeout**: Auto-disable after configurable inactivity (default: 5 min)
 
@@ -128,8 +128,8 @@ voice:
   wake:
     enabled: false  # Requires explicit consent
     words:
-      - "Hey Friday"
-      - "Friday"
+      - "Hey SecureYeoman"
+      - "SecureYeoman"
     idleTimeoutMs: 300000
     sensitivity: 0.5
     

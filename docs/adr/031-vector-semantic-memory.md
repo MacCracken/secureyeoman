@@ -84,7 +84,7 @@ brain:
       model: text-embedding-3-small
     qdrant:
       url: http://localhost:6333
-      collection: friday-brain
+      collection: secureyeoman-brain
     faiss:
       indexType: flat         # flat | ivf
       persistDir: ~/.secureyeoman/data/vectors

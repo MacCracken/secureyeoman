@@ -130,7 +130,7 @@ This ADR serves as the foundation. Specific architectural decisions are document
 - **ADR 017**: Sandboxed Capture Execution
 - **ADR 018**: Proactive Heartbeat Enhancements
 - **ADR 025**: CLI, Webhook, and Google Chat Integration Completion
-- **ADR 026**: MCP Service Package (`@friday/mcp`)
+- **ADR 026**: MCP Service Package (`@secureyeoman/mcp`)
 
 ## Consequences
 

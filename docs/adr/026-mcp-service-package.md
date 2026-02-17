@@ -1,4 +1,4 @@
-# ADR 026: MCP Service Package (`@friday/mcp`)
+# ADR 026: MCP Service Package (`@secureyeoman/mcp`)
 
 **Status**: Accepted
 **Date**: 2026-02-13
@@ -6,7 +6,7 @@
 
 ## Context
 
-The current MCP implementation (ADR 004) lives inside `@friday/core` as three classes (`McpClientManager`, `McpServer`, `McpStorage`) with a REST API layer. This approach has limitations:
+The current MCP implementation (ADR 004) lives inside `@secureyeoman/core` as three classes (`McpClientManager`, `McpServer`, `McpStorage`) with a REST API layer. This approach has limitations:
 
 1. **Tight coupling** — MCP logic is embedded in the core agent, making it hard to evolve independently or disable cleanly
 2. **Incomplete protocol** — The current `McpServer` is a thin wrapper that exposes skills as tools and knowledge as one resource, but does not implement the full MCP protocol (JSON-RPC 2.0, transports, prompts)
@@ -64,7 +64,7 @@ A lightweight dashboard served by the MCP service's Fastify instance. Access req
 
 ## Alternatives Considered
 
-### 1. Expand MCP inside `@friday/core`
+### 1. Expand MCP inside `@secureyeoman/core`
 **Rejected.** Increases core's complexity and coupling. MCP protocol handling (JSON-RPC, transports) is a distinct concern from agent orchestration.
 
 ### 2. Fully independent MCP service with its own auth
@@ -93,7 +93,7 @@ A lightweight dashboard served by the MCP service's Fastify instance. Access req
 - Existing `McpClientManager` in core continues to work for connecting to external MCP servers
 - Existing dashboard MCP Servers page continues to work; the internal server just appears as another entry
 - Dashboard Overview services status panel shows enabled/total MCP server count; system flow graph displays an MCP Servers node with live connection edges
-- The `@friday/shared` MCP types are extended but not broken
+- The `@secureyeoman/shared` MCP types are extended but not broken
 
 ## Test Plan
 
