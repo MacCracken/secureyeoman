@@ -332,11 +332,10 @@ url: "https://mcp.supabase.io"
 
 | Package | Tests | Files |
 |---------|-------|-------|
-| `@friday/core` | 1360+ | 76 |
-| `@friday/mcp` | 260+ | 29 |
-| `@friday/dashboard` | 124 | 13 |
-| Security + Chaos | ~76 | 8 |
-| **Total** | **1800+** | **118+** |
+| `@friday/core` | 1850+ | 110 |
+| `@friday/mcp` | 272 | 29 |
+| `@friday/dashboard` | 286 | 24 |
+| **Total** | **2100+** | **134+** |
 
 All core modules maintain >80% coverage thresholds.
 

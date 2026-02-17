@@ -6,7 +6,7 @@
 [![CI](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 1800+](https://img.shields.io/badge/Tests-1800%2B-brightgreen.svg)]()
+[![Tests: 2100+](https://img.shields.io/badge/Tests-2100%2B-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -35,7 +35,7 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 - **Prioritizes Security**: Enterprise-grade RBAC, encryption, sandboxing, and audit trails
 - **Respects Privacy**: Local-first architecture with data that never leaves your system
 - **Provides Observability**: Every action is logged with cryptographic integrity verification
-- **Offers Flexibility**: Multi-provider AI support (Anthropic, OpenAI, Gemini, Ollama, OpenCode Zen)
+- **Offers Flexibility**: Multi-provider AI support (Anthropic, OpenAI, Gemini, Ollama, DeepSeek, OpenCode Zen)
 - **Learns and Adapts**: Editable personality, learnable skills, and a marketplace for sharing them
 
 ---
@@ -59,7 +59,7 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 | **Team Collaboration** | Workspaces with isolation, member management, workspace-scoped RBAC |
 | **Reports & Analytics** | Audit report generator (JSON/HTML/CSV), cost optimization recommendations, A/B testing framework |
 | **Voice** | Push-to-talk (Ctrl+Shift+V), browser-native speech recognition & synthesis, voice overlay |
-| **Development** | TypeScript strict mode, 1700+ tests across 115+ files, Docker multi-stage builds, CI/CD pipeline (lint/typecheck/test/build/security audit) |
+| **Development** | TypeScript strict mode, 2100+ tests across 134+ files, Docker multi-stage builds, CI/CD pipeline (lint/typecheck/test/build/security audit) |
 
 ---
 
@@ -88,7 +88,7 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
     ┌────▼────┐   ┌─────▼─────┐  ┌────▼────┐
     │ SQLite  │   │ Platforms │  │  MCP    │
     │  (WAL)  │   │ TG/DC/SL/ │  │ Service │
-    │         │   │ GH/GC/WH  │  │(22+tools│
+    │         │   │ GH/GC/WH  │  │(34+tools│
     └─────────┘   └───────────┘  └─────────┘
 ```
 
@@ -272,10 +272,10 @@ friday/
 │   │       ├── spirit/          # Emotional core (passions, inspirations, pains)
 │   │       └── task/            # Task executor + SQLite storage
 │   ├── dashboard/       # React UI (Vite + Tailwind + TanStack Query)
-│   └── mcp/             # Standalone MCP service (22+ tools, 7 resources, 4 prompts)
+│   └── mcp/             # Standalone MCP service (34+ tools, 7 resources, 4 prompts)
 ├── tests/               # Security, load (k6), and chaos tests
 ├── deploy/              # Docker, Prometheus, Grafana, Loki configs
-├── docs/                # Documentation + ADRs (31 decision records)
+├── docs/                # Documentation + ADRs (42 decision records)
 │   ├── api/             # REST API + WebSocket API + OpenAPI 3.1 spec
 │   ├── adr/             # Architecture Decision Records
 │   ├── guides/          # Getting started, integrations
@@ -311,11 +311,10 @@ npx vitest run tests/security/ tests/chaos/
 
 | Package | Tests | Files |
 |---------|-------|-------|
-| `@friday/core` | 1360+ | 76 |
-| `@friday/mcp` | 219 | 27 |
-| `@friday/dashboard` | 124 | 12 |
-| Security + Chaos + Load | ~76 | 5+ |
-| **Total** | **1700+** | **115+** |
+| `@friday/core` | 1850+ | 110 |
+| `@friday/mcp` | 272 | 29 |
+| `@friday/dashboard` | 286 | 24 |
+| **Total** | **2100+** | **134+** |
 
 ### Building
 
@@ -356,7 +355,7 @@ This updates all `package.json` files in the monorepo. The core server reads its
 | **Deployment** | [Deployment Guide](docs/deployment.md) |
 | **Integrations** | [Integration Setup](docs/guides/integrations.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (31 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (42 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |
