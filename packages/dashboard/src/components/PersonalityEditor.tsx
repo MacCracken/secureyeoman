@@ -910,6 +910,18 @@ interface BodySectionProps {
     roleAssignments: boolean;
     experiments: boolean;
   }) => void;
+  proactiveConfig: {
+    enabled: boolean;
+    approvalMode: 'auto' | 'suggest' | 'manual';
+    builtins: { dailyStandup: boolean; weeklySummary: boolean; contextualFollowup: boolean; integrationHealthAlert: boolean; securityAlertDigest: boolean };
+    learning: { enabled: boolean; minConfidence: number };
+  };
+  onProactiveConfigChange: (config: {
+    enabled: boolean;
+    approvalMode: 'auto' | 'suggest' | 'manual';
+    builtins: { dailyStandup: boolean; weeklySummary: boolean; contextualFollowup: boolean; integrationHealthAlert: boolean; securityAlertDigest: boolean };
+    learning: { enabled: boolean; minConfidence: number };
+  }) => void;
 }
 
 function BodySection({
@@ -923,6 +935,8 @@ function BodySection({
   onMcpFeaturesChange,
   creationConfig,
   onCreationConfigChange,
+  proactiveConfig,
+  onProactiveConfigChange,
 }: BodySectionProps) {
   const capabilities = ['auditory', 'haptic', 'limb_movement', 'vision', 'vocalization'] as const;
   const { data: serversData, isLoading: serversLoading } = useQuery({
@@ -1006,7 +1020,7 @@ function BodySection({
       vocalization: {
         icon: '🗣️',
         description: 'Text-to-speech voice output',
-        available: false,
+        available: true,
       },
     };
 
@@ -1016,6 +1030,153 @@ function BodySection({
 
   return (
     <CollapsibleSection title="Body - Endowments" defaultOpen={false}>
+      <CollapsibleSection title="Proactive Assistance" defaultOpen={false}>
+        {/* Enable toggle — gated by security policy */}
+        {(() => {
+          const proactiveBlockedByPolicy = securityPolicy?.allowProactive === false;
+          return (
+            <div className="space-y-4">
+              <div className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                proactiveBlockedByPolicy
+                  ? 'bg-muted/30 border-border opacity-60'
+                  : proactiveConfig.enabled
+                    ? 'bg-success/5 border-success/30'
+                    : 'bg-muted/50 border-border'
+              }`}>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Enable Assistance</span>
+                  {proactiveBlockedByPolicy && (
+                    <span className="text-xs text-destructive">(blocked by security policy)</span>
+                  )}
+                </div>
+                <label className={`relative inline-flex items-center ${proactiveBlockedByPolicy ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                  <input
+                    type="checkbox"
+                    checked={proactiveBlockedByPolicy ? false : proactiveConfig.enabled}
+                    onChange={() => !proactiveBlockedByPolicy && onProactiveConfigChange({ ...proactiveConfig, enabled: !proactiveConfig.enabled })}
+                    disabled={proactiveBlockedByPolicy}
+                    className="sr-only peer"
+                  />
+                  <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                  <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
+                    {proactiveBlockedByPolicy ? 'Blocked' : proactiveConfig.enabled ? 'Enabled' : 'Disabled'}
+                  </span>
+                </label>
+              </div>
+
+              {proactiveConfig.enabled && !proactiveBlockedByPolicy && (
+                <>
+                  {/* Approval Mode */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Approval Mode</h4>
+                    <div className="flex gap-1">
+                      {(['auto', 'suggest', 'manual'] as const).map((mode) => (
+                        <button
+                          key={mode}
+                          type="button"
+                          onClick={() => onProactiveConfigChange({ ...proactiveConfig, approvalMode: mode })}
+                          className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
+                            proactiveConfig.approvalMode === mode
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted/50 border-border hover:bg-muted'
+                          }`}
+                        >
+                          {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {proactiveConfig.approvalMode === 'auto' && 'Actions execute automatically without user approval.'}
+                      {proactiveConfig.approvalMode === 'suggest' && 'Actions are suggested to the user for approval before execution.'}
+                      {proactiveConfig.approvalMode === 'manual' && 'All proactive actions require explicit manual approval.'}
+                    </p>
+                  </div>
+
+                  {/* Built-in Triggers */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Built-in Triggers</h4>
+                    <div className="space-y-2">
+                      {([
+                        { key: 'dailyStandup' as const, label: 'Daily Standup Reminder' },
+                        { key: 'weeklySummary' as const, label: 'Weekly Summary' },
+                        { key: 'contextualFollowup' as const, label: 'Contextual Follow-up' },
+                        { key: 'integrationHealthAlert' as const, label: 'Integration Health Alert' },
+                        { key: 'securityAlertDigest' as const, label: 'Security Alert Digest' },
+                      ]).map((item) => (
+                        <div key={item.key} className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                          proactiveConfig.builtins[item.key] ? 'bg-success/5 border-success/30' : 'bg-muted/50 border-border'
+                        }`}>
+                          <span className="font-medium">{item.label}</span>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={proactiveConfig.builtins[item.key]}
+                              onChange={() => onProactiveConfigChange({
+                                ...proactiveConfig,
+                                builtins: { ...proactiveConfig.builtins, [item.key]: !proactiveConfig.builtins[item.key] },
+                              })}
+                              className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Learning */}
+                  <div>
+                    <h4 className="text-sm font-medium mb-2">Learning</h4>
+                    <div className="space-y-3">
+                      <div className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                        proactiveConfig.learning.enabled ? 'bg-success/5 border-success/30' : 'bg-muted/50 border-border'
+                      }`}>
+                        <span className="font-medium">Enable Learning</span>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={proactiveConfig.learning.enabled}
+                            onChange={() => onProactiveConfigChange({
+                              ...proactiveConfig,
+                              learning: { ...proactiveConfig.learning, enabled: !proactiveConfig.learning.enabled },
+                            })}
+                            className="sr-only peer"
+                          />
+                          <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                        </label>
+                      </div>
+                      {proactiveConfig.learning.enabled && (
+                        <div>
+                          <label className="text-sm text-muted-foreground block mb-1">
+                            Min Confidence: {proactiveConfig.learning.minConfidence.toFixed(2)}
+                          </label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="1"
+                            step="0.05"
+                            value={proactiveConfig.learning.minConfidence}
+                            onChange={(e) => onProactiveConfigChange({
+                              ...proactiveConfig,
+                              learning: { ...proactiveConfig.learning, minConfidence: parseFloat(e.target.value) },
+                            })}
+                            className="w-full"
+                          />
+                          <div className="flex justify-between text-xs text-muted-foreground">
+                            <span>0.0</span>
+                            <span>1.0</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })()}
+      </CollapsibleSection>
+
       <div>
         <CollapsibleSection title="Capabilities" defaultOpen={false}>
           <div className="space-y-2">
@@ -1024,7 +1185,7 @@ function BodySection({
               const isEnabled = enabledCaps[cap] ?? false;
               const isConfigurable =
                 info.available &&
-                (cap === 'vision' || cap === 'auditory' || cap === 'limb_movement');
+                (cap === 'vision' || cap === 'auditory' || cap === 'limb_movement' || cap === 'vocalization');
 
               return (
                 <div
@@ -1476,6 +1637,7 @@ export function PersonalityEditor() {
     limb_movement: false,
     auditory: false,
     haptic: false,
+    vocalization: false,
   });
   const [mcpFeatures, setMcpFeatures] = useState<{ exposeGit: boolean; exposeFilesystem: boolean; exposeWeb: boolean; exposeWebScraping: boolean; exposeWebSearch: boolean; exposeBrowser: boolean }>(
     {
@@ -1487,6 +1649,17 @@ export function PersonalityEditor() {
       exposeBrowser: false,
     }
   );
+  const [proactiveConfig, setProactiveConfig] = useState<{
+    enabled: boolean;
+    approvalMode: 'auto' | 'suggest' | 'manual';
+    builtins: { dailyStandup: boolean; weeklySummary: boolean; contextualFollowup: boolean; integrationHealthAlert: boolean; securityAlertDigest: boolean };
+    learning: { enabled: boolean; minConfidence: number };
+  }>({
+    enabled: false,
+    approvalMode: 'suggest',
+    builtins: { dailyStandup: false, weeklySummary: false, contextualFollowup: false, integrationHealthAlert: false, securityAlertDigest: false },
+    learning: { enabled: true, minConfidence: 0.7 },
+  });
 
   const { data: personalitiesData, isLoading } = useQuery({
     queryKey: ['personalities'],
@@ -1609,6 +1782,7 @@ export function PersonalityEditor() {
       limb_movement: caps.includes('limb_movement'),
       auditory: caps.includes('auditory'),
       haptic: caps.includes('haptic'),
+      vocalization: caps.includes('vocalization'),
     });
     setMcpFeatures({
       exposeGit: body.mcpFeatures?.exposeGit ?? false,
@@ -1617,6 +1791,21 @@ export function PersonalityEditor() {
       exposeWebScraping: body.mcpFeatures?.exposeWebScraping ?? false,
       exposeWebSearch: body.mcpFeatures?.exposeWebSearch ?? false,
       exposeBrowser: body.mcpFeatures?.exposeBrowser ?? false,
+    });
+    setProactiveConfig({
+      enabled: body.proactiveConfig?.enabled ?? false,
+      approvalMode: body.proactiveConfig?.approvalMode ?? 'suggest',
+      builtins: {
+        dailyStandup: body.proactiveConfig?.builtins?.dailyStandup ?? false,
+        weeklySummary: body.proactiveConfig?.builtins?.weeklySummary ?? false,
+        contextualFollowup: body.proactiveConfig?.builtins?.contextualFollowup ?? false,
+        integrationHealthAlert: body.proactiveConfig?.builtins?.integrationHealthAlert ?? false,
+        securityAlertDigest: body.proactiveConfig?.builtins?.securityAlertDigest ?? false,
+      },
+      learning: {
+        enabled: body.proactiveConfig?.learning?.enabled ?? true,
+        minConfidence: body.proactiveConfig?.learning?.minConfidence ?? 0.7,
+      },
     });
     setSetActiveOnSave(false);
     setEditing(p.id);
@@ -1660,8 +1849,14 @@ export function PersonalityEditor() {
     });
     setAllowConnections(false);
     setSelectedServers([]);
-    setEnabledCaps({ vision: false, limb_movement: false, auditory: false, haptic: false });
+    setEnabledCaps({ vision: false, limb_movement: false, auditory: false, haptic: false, vocalization: false });
     setMcpFeatures({ exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false });
+    setProactiveConfig({
+      enabled: false,
+      approvalMode: 'suggest',
+      builtins: { dailyStandup: false, weeklySummary: false, contextualFollowup: false, integrationHealthAlert: false, securityAlertDigest: false },
+      learning: { enabled: true, minConfidence: 0.7 },
+    });
     setSetActiveOnSave(false);
     setEditing('new');
   };
@@ -1680,6 +1875,7 @@ export function PersonalityEditor() {
         creationConfig,
         selectedServers,
         mcpFeatures,
+        proactiveConfig,
       },
     };
     if (editing === 'new') {
@@ -1925,6 +2121,8 @@ export function PersonalityEditor() {
             onMcpFeaturesChange={setMcpFeatures}
             creationConfig={creationConfig}
             onCreationConfigChange={setCreationConfig}
+            proactiveConfig={proactiveConfig}
+            onProactiveConfigChange={setProactiveConfig}
           />
 
           {/* Heart Section */}

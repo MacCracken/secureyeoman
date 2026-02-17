@@ -1,7 +1,18 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
-import { FlaskConical, Play, Square, Trash2, Loader2, Plus, X } from 'lucide-react';
+import {
+  FlaskConical,
+  Plus,
+  Play,
+  Square,
+  Trash2,
+  Loader2,
+  X,
+  ShieldAlert,
+} from 'lucide-react';
+import { fetchSecurityPolicy } from '../api/client';
+
+// ── Experiment types & API ────────────────────────────────────────
 
 interface Variant {
   id: string;
@@ -32,7 +43,7 @@ async function fetchExperiments(): Promise<{ experiments: Experiment[]; total: n
   return res.json();
 }
 
-async function createExperiment(data: {
+async function createExperimentApi(data: {
   name: string;
   description: string;
   variants: Partial<Variant>[];
@@ -70,24 +81,74 @@ async function deleteExperiment(id: string): Promise<void> {
   if (!res.ok) throw new Error('Failed to delete experiment');
 }
 
-const STATUS_STYLES: Record<string, string> = {
-  draft: 'badge-info',
-  running: 'badge-success',
-  stopped: 'badge-warning',
-  completed: 'badge-success',
+const EXP_STATUS_STYLES: Record<string, string> = {
+  draft: 'bg-blue-500/10 text-blue-500 border-blue-500/20',
+  running: 'bg-green-500/10 text-green-500 border-green-500/20',
+  stopped: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+  completed: 'bg-green-500/10 text-green-500 border-green-500/20',
 };
 
+// ── Main Component ────────────────────────────────────────────────
+
 export function ExperimentsPage() {
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+    staleTime: 30000,
+  });
+
+  const experimentsEnabled = securityPolicy?.allowExperiments ?? false;
+
+  if (!experimentsEnabled) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <FlaskConical className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold">Experiments</h1>
+        </div>
+        <div className="card p-8 text-center">
+          <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+          <h2 className="text-lg font-semibold mb-2">Experiments are Disabled</h2>
+          <p className="text-muted-foreground mb-4">
+            Enable <code className="text-sm bg-muted px-1.5 py-0.5 rounded">allowExperiments</code> in
+            Settings &gt; Security to activate A/B experiments.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            This setting must be explicitly enabled after initialization and saved to the database.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3">
+        <FlaskConical className="w-6 h-6 text-primary" />
+        <h1 className="text-2xl font-bold">Experiments</h1>
+      </div>
+      <ExperimentsList />
+    </div>
+  );
+}
+
+// ── Experiments List ──────────────────────────────────────────────
+
+function ExperimentsList() {
   const queryClient = useQueryClient();
-  const [searchParams, setSearchParams] = useSearchParams();
   const [showCreate, setShowCreate] = useState(false);
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const { data, isLoading } = useQuery({ queryKey: ['experiments'], queryFn: fetchExperiments });
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['experiments'],
+    queryFn: fetchExperiments,
+  });
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['experiments'] });
+
   const createMut = useMutation({
-    mutationFn: createExperiment,
+    mutationFn: createExperimentApi,
     onSuccess: () => {
       invalidate();
       setShowCreate(false);
@@ -95,151 +156,129 @@ export function ExperimentsPage() {
       setDescription('');
     },
   });
+
   const startMut = useMutation({ mutationFn: startExperiment, onSuccess: invalidate });
   const stopMut = useMutation({ mutationFn: stopExperiment, onSuccess: invalidate });
   const deleteMut = useMutation({ mutationFn: deleteExperiment, onSuccess: invalidate });
 
-  useEffect(() => {
-    if (searchParams.get('create') === 'true') {
-      const pName = searchParams.get('name') || '';
-      const pDescription = searchParams.get('description') || '';
-      if (pName) {
-        setName(pName);
-        setDescription(pDescription);
-        setTimeout(
-          () =>
-            createMut.mutate({
-              name: pName,
-              description: pDescription,
-              variants: [
-                { name: 'Control', config: {}, trafficPercent: 50 },
-                { name: 'Variant A', config: {}, trafficPercent: 50 },
-              ],
-            }),
-          0
-        );
-      }
-      setSearchParams({}, { replace: true });
-    }
-  }, [searchParams, setSearchParams, createMut]);
+  const experiments = data?.experiments ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">A/B Experiments</h1>
-          <p className="text-muted-foreground text-sm mt-1">Create and manage experiments</p>
-        </div>
+        <p className="text-sm text-muted-foreground">{experiments.length} experiment(s)</p>
         <button
-          className="btn btn-primary flex items-center gap-2"
           onClick={() => setShowCreate(!showCreate)}
+          className="flex items-center gap-2 px-3 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
         >
-          <Plus className="w-4 h-4" /> New Experiment
+          <Plus className="w-4 h-4" />
+          New Experiment
         </button>
       </div>
 
       {showCreate && (
-        <div className="card p-4 space-y-3">
+        <div className="card p-4 space-y-3 border-primary/30">
           <div className="flex items-center justify-between">
-            <span className="font-medium text-sm">New Experiment</span>
-            <button
-              onClick={() => {
-                setShowCreate(false);
-                setName('');
-                setDescription('');
-              }}
-              className="btn-ghost p-1 rounded"
-            >
+            <h3 className="text-sm font-semibold">New Experiment</h3>
+            <button onClick={() => { setShowCreate(false); setName(''); setDescription(''); }} className="p-1 rounded hover:bg-muted/50">
               <X className="w-4 h-4" />
             </button>
           </div>
-          <input
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
-            placeholder="Experiment name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-          <input
-            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
-            placeholder="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-          <button
-            className="btn btn-primary"
-            disabled={!name || createMut.isPending}
-            onClick={() =>
-              createMut.mutate({
-                name,
-                description,
-                variants: [
-                  { name: 'Control', config: {}, trafficPercent: 50 },
-                  { name: 'Variant A', config: {}, trafficPercent: 50 },
-                ],
-              })
-            }
-          >
-            {createMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
-          </button>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Name</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+              placeholder="Experiment name"
+            />
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Description</label>
+            <input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
+              placeholder="What this experiment tests"
+            />
+          </div>
+          <div className="flex justify-end gap-2">
+            <button onClick={() => { setShowCreate(false); setName(''); setDescription(''); }} className="px-4 py-2 text-sm border rounded-md hover:bg-muted/50 transition-colors">
+              Cancel
+            </button>
+            <button
+              onClick={() =>
+                createMut.mutate({
+                  name,
+                  description,
+                  variants: [
+                    { name: 'Control', config: {}, trafficPercent: 50 },
+                    { name: 'Variant A', config: {}, trafficPercent: 50 },
+                  ],
+                })
+              }
+              disabled={!name || createMut.isPending}
+              className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
+            >
+              {createMut.isPending ? 'Creating...' : 'Create Experiment'}
+            </button>
+          </div>
         </div>
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-12">
-          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
         </div>
-      ) : !data?.experiments.length ? (
-        <div className="card p-12 text-center">
-          <FlaskConical className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground">No experiments yet</p>
+      ) : experiments.length === 0 ? (
+        <div className="card p-8 text-center text-muted-foreground">
+          <FlaskConical className="w-10 h-10 mx-auto mb-3 opacity-40" />
+          <p>No experiments yet. Create one to start A/B testing.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {data.experiments.map((exp) => (
-            <div key={exp.id} className="card p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <p className="font-medium">{exp.name}</p>
-                    <span className={`badge ${STATUS_STYLES[exp.status] ?? 'badge-info'}`}>
-                      {exp.status}
-                    </span>
-                  </div>
-                  {exp.description && (
-                    <p className="text-xs text-muted-foreground mt-1">{exp.description}</p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {exp.variants.length} variants · Created{' '}
-                    {new Date(exp.createdAt).toLocaleDateString()}
-                  </p>
+        <div className="space-y-2">
+          {experiments.map((exp) => (
+            <div key={exp.id} className="card p-4 flex items-center gap-4">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium">{exp.name}</p>
+                  <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${EXP_STATUS_STYLES[exp.status] ?? 'bg-muted text-muted-foreground border-border'}`}>
+                    {exp.status}
+                  </span>
                 </div>
-                <div className="flex items-center gap-1">
-                  {exp.status === 'draft' && (
-                    <button
-                      className="btn btn-ghost p-2"
-                      onClick={() => startMut.mutate(exp.id)}
-                      title="Start"
-                    >
-                      <Play className="w-4 h-4" />
-                    </button>
-                  )}
-                  {exp.status === 'running' && (
-                    <button
-                      className="btn btn-ghost p-2"
-                      onClick={() => stopMut.mutate(exp.id)}
-                      title="Stop"
-                    >
-                      <Square className="w-4 h-4" />
-                    </button>
-                  )}
+                {exp.description && (
+                  <p className="text-xs text-muted-foreground mt-1 truncate">{exp.description}</p>
+                )}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {exp.variants.length} variants &middot; Created {new Date(exp.createdAt).toLocaleDateString()}
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                {exp.status === 'draft' && (
                   <button
-                    className="btn btn-ghost p-2 text-destructive"
-                    onClick={() => deleteMut.mutate(exp.id)}
-                    title="Delete"
+                    onClick={() => startMut.mutate(exp.id)}
+                    className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+                    title="Start experiment"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Play className="w-4 h-4" />
                   </button>
-                </div>
+                )}
+                {exp.status === 'running' && (
+                  <button
+                    onClick={() => stopMut.mutate(exp.id)}
+                    className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+                    title="Stop experiment"
+                  >
+                    <Square className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  onClick={() => deleteMut.mutate(exp.id)}
+                  className="p-1.5 rounded hover:bg-muted/50 text-destructive"
+                  title="Delete experiment"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
             </div>
           ))}

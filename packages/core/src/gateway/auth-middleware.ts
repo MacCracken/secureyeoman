@@ -259,6 +259,25 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/marketplace/:id/uninstall': {
     POST: { resource: 'marketplace', action: 'write' },
   },
+  // Multimodal routes
+  '/api/v1/multimodal/vision/analyze': {
+    POST: { resource: 'multimodal', action: 'write' },
+  },
+  '/api/v1/multimodal/audio/transcribe': {
+    POST: { resource: 'multimodal', action: 'write' },
+  },
+  '/api/v1/multimodal/audio/speak': {
+    POST: { resource: 'multimodal', action: 'write' },
+  },
+  '/api/v1/multimodal/image/generate': {
+    POST: { resource: 'multimodal', action: 'write' },
+  },
+  '/api/v1/multimodal/jobs': {
+    GET: { resource: 'multimodal', action: 'read' },
+  },
+  '/api/v1/multimodal/config': {
+    GET: { resource: 'multimodal', action: 'read' },
+  },
 };
 
 const PUBLIC_ROUTES = new Set([

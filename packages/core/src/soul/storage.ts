@@ -83,6 +83,7 @@ function rowToPersonality(row: PersonalityRow): Personality {
       creationConfig: { skills: false, tasks: false, personalities: false, subAgents: false, customRoles: false, roleAssignments: false, experiments: false },
       selectedServers: [],
       mcpFeatures: { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false },
+      proactiveConfig: { enabled: false, approvalMode: 'suggest', builtins: { dailyStandup: false, weeklySummary: false, contextualFollowup: false, integrationHealthAlert: false, securityAlertDigest: false }, learning: { enabled: true, minConfidence: 0.7 } },
     },
     createdAt: row.created_at,
     updatedAt: row.updated_at,

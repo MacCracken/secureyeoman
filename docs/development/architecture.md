@@ -76,6 +76,7 @@ friday/
 │   │       ├── extensions/    # Lifecycle hook system and extension manager
 │   │       ├── execution/     # Sandboxed code execution (Python, Node.js, shell)
 │   │       ├── a2a/           # Agent-to-Agent protocol (discovery, delegation, messaging)
+│   │       ├── proactive/     # Proactive assistance (triggers, suggestions, pattern learning)
 │   │       └── utils/         # Crypto utilities
 │   └── dashboard/             # React dashboard
 │       └── src/
@@ -123,6 +124,7 @@ friday/
 - `extensions/` - Lifecycle extension hooks with 24 hook points (observe, transform, veto semantics), filesystem-based plugin discovery, EventEmitter integration, and outbound webhook dispatch
 - `execution/` - Sandboxed code execution tool supporting Python, Node.js, and shell runtimes with persistent sessions, streaming output, approval policies, and secrets filtering
 - `a2a/` - Agent-to-Agent protocol for cross-instance delegation using E2E encrypted messaging, mDNS/DNS-SD discovery, capability negotiation, and trust progression (untrusted/verified/trusted)
+- `proactive/` - ProactiveManager orchestrating 5 trigger types (schedule, event, pattern, webhook, llm), a suggestion queue with approve/dismiss/expire lifecycle, and pattern learning via BrainManager analysis. Reuses HeartbeatManager for scheduling, ExtensionManager for hook emission, IntegrationManager for multi-platform delivery, and BrainManager for behavioral pattern queries. All proactive behavior is gated by the `allowProactive` security policy flag (default: false) and audited in the cryptographic chain. Backed by PostgreSQL storage (PgBaseStorage) with 3 dedicated tables: `proactive_triggers`, `proactive_suggestions`, and `proactive_patterns`.
 - `mcp/` - MCP client manager (external server connections, tool discovery), MCP health monitor (periodic checks, auto-disable), MCP credential manager (AES-256-GCM encrypted credential storage, injection into server environment)
 - `task/` - Task queue, execution, and persistence
 - `logging/` - Structured logging with cryptographic audit chain
@@ -176,8 +178,11 @@ friday/
 - `DashboardLayout` - Responsive shell with adaptive header, nav, and footer
 - `OverviewPage` - Stat cards (tasks, heartbeat, audit, memory), services status panel (core, Postgres, audit chain, MCP, uptime, version), and system flow graph
 - `StatusBar` - Inline connection/WebSocket/reconnecting status indicators
-- `NavigationTabs` - 9-tab nav with horizontal overflow scroll and mobile hamburger
+- `Sidebar` - Collapsible nav with conditional items: Agents (when sub-agents or A2A enabled), Extensions (when enabled), Proactive (when enabled), Experiments (when `allowExperiments` policy enabled)
 - `MetricsGraph` - ReactFlow visualization with live connection edges reflecting health, database, MCP, and security status; accepts `metrics`, `health`, `mcpServers`, and `onNodeClick` props; clicking nodes navigates to existing detail views or the Security > System Details tab
+- `AgentsPage` - Consolidated view combining SubAgentsPage and A2APage with tabbed interface when both are enabled
+- `ExperimentsPage` - Standalone A/B experiments page, gated by `allowExperiments` security policy (must be explicitly enabled after initialization)
+- `EditorPage` - Monaco-based code editor with terminal, sessions, and history panels
 - `TaskHistory` - Historical task browser
 - `SecurityEvents` - Audit log viewer with heartbeat task section (auto-expandable via URL param)
 - `ConnectionManager` - Platform integration UI

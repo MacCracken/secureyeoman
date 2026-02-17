@@ -24,6 +24,9 @@ import {
   Puzzle,
   Terminal,
   Blocks,
+  Sparkles,
+  Image,
+  FlaskConical,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -332,6 +335,9 @@ export function SecuritySettings() {
   const a2aAllowed = securityPolicy?.allowA2A ?? false;
   const extensionsAllowed = securityPolicy?.allowExtensions ?? false;
   const executionAllowed = securityPolicy?.allowExecution ?? true;
+  const proactiveAllowed = securityPolicy?.allowProactive ?? false;
+  const multimodalAllowed = securityPolicy?.allowMultimodal ?? false;
+  const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const roleIds = roles.map((r) => r.id);
 
   const handleCreateRole = (form: RoleFormData) => {
@@ -373,6 +379,48 @@ export function SecuritySettings() {
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Security</h2>
+
+      {/* Proactive Assistance Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Sparkles className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Proactive Assistance</h3>
+        </div>
+        <div className="p-4">
+          <PolicyToggle
+            label="Proactive Assistance"
+            enabled={proactiveAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => policyMutation.mutate({ allowProactive: !proactiveAllowed })}
+            description={
+              proactiveAllowed
+                ? 'Proactive assistance is enabled. Personalities can autonomously suggest actions, reminders, and follow-ups based on their configuration.'
+                : 'Proactive assistance is disabled at the security level. No personality can initiate proactive actions regardless of its configuration.'
+            }
+          />
+        </div>
+      </div>
+
+      {/* Multimodal I/O Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Image className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Multimodal I/O</h3>
+        </div>
+        <div className="p-4">
+          <PolicyToggle
+            label="Multimodal I/O"
+            enabled={multimodalAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => policyMutation.mutate({ allowMultimodal: !multimodalAllowed })}
+            description={
+              multimodalAllowed
+                ? 'Multimodal I/O is enabled. Vision analysis, speech-to-text, text-to-speech, and image generation capabilities are available.'
+                : 'Multimodal I/O is disabled at the security level. No vision, audio, or image generation capabilities are active.'
+            }
+          />
+        </div>
+      </div>
 
       {/* Sub-Agent Delegation Policy */}
       <div className="card">
@@ -438,11 +486,11 @@ export function SecuritySettings() {
       <div className="card">
         <div className="p-4 border-b flex items-center gap-2">
           <Terminal className="w-5 h-5 text-primary" />
-          <h3 className="font-medium">Sandbox Execution</h3>
+          <h3 className="font-medium">Code Execution</h3>
         </div>
         <div className="p-4">
           <PolicyToggle
-            label="Sandbox Execution"
+            label="Code Execution"
             enabled={executionAllowed}
             isPending={policyMutation.isPending}
             onToggle={() => policyMutation.mutate({ allowExecution: !executionAllowed })}
@@ -450,6 +498,27 @@ export function SecuritySettings() {
               executionAllowed
                 ? 'Sandboxed code execution is enabled. Code runs in isolated environments with secrets filtering and approval policies.'
                 : 'Sandboxed code execution is disabled. No code can be executed through the execution engine.'
+            }
+          />
+        </div>
+      </div>
+
+      {/* Experiments Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <FlaskConical className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Experiments</h3>
+        </div>
+        <div className="p-4">
+          <PolicyToggle
+            label="Experiments"
+            enabled={experimentsAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => policyMutation.mutate({ allowExperiments: !experimentsAllowed })}
+            description={
+              experimentsAllowed
+                ? 'A/B experiments are enabled. You can create, run, and manage experiments to test different configurations and behaviors.'
+                : 'A/B experiments are disabled. Enable this setting to access the Experiments page and create A/B tests. This must be explicitly enabled after initialization.'
             }
           />
         </div>

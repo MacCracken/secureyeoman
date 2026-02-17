@@ -349,6 +349,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
             },
             selectedServers: [],
             mcpFeatures: { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false },
+            proactiveConfig: { enabled: false, approvalMode: 'suggest', builtins: { dailyStandup: false, weeklySummary: false, contextualFollowup: false, integrationHealthAlert: false, securityAlertDigest: false }, learning: { enabled: true, minConfidence: 0.7 } },
           },
         };
 

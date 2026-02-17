@@ -7,8 +7,8 @@
  * - Content scanning hook point (interface, not implemented)
  */
 
-import { writeFileSync, mkdirSync, unlinkSync, existsSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { writeFileSync, readFileSync, mkdirSync, unlinkSync, existsSync, statSync } from 'node:fs';
+import { join, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
 import type { MessageAttachment } from '@friday/shared';
@@ -173,6 +173,21 @@ export class MediaHandler {
     for (const filePath of this.trackedFiles) {
       this.cleanupFile(filePath);
     }
+  }
+
+  /**
+   * Read a tracked file and return its contents as a base64-encoded string.
+   */
+  toBase64(filePath: string): string {
+    const resolved = resolve(filePath);
+    const tempDir = resolve(this.tempDir);
+    if (!resolved.startsWith(tempDir + sep)) {
+      throw new MediaError('File path outside allowed directory', 'PATH_TRAVERSAL');
+    }
+    if (!existsSync(resolved)) {
+      throw new MediaError(`File not found: ${filePath}`, 'FILE_NOT_FOUND');
+    }
+    return readFileSync(resolved).toString('base64');
   }
 
   /**

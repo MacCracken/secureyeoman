@@ -165,6 +165,21 @@ export interface Personality {
       exposeWebSearch?: boolean;
       exposeBrowser?: boolean;
     };
+    proactiveConfig?: {
+      enabled?: boolean;
+      approvalMode?: 'auto' | 'suggest' | 'manual';
+      builtins?: {
+        dailyStandup?: boolean;
+        weeklySummary?: boolean;
+        contextualFollowup?: boolean;
+        integrationHealthAlert?: boolean;
+        securityAlertDigest?: boolean;
+      };
+      learning?: {
+        enabled?: boolean;
+        minConfidence?: number;
+      };
+    };
   };
   createdAt: number;
   updatedAt: number;
@@ -201,6 +216,21 @@ export interface PersonalityCreate {
       exposeWebScraping?: boolean;
       exposeWebSearch?: boolean;
       exposeBrowser?: boolean;
+    };
+    proactiveConfig?: {
+      enabled?: boolean;
+      approvalMode?: 'auto' | 'suggest' | 'manual';
+      builtins?: {
+        dailyStandup?: boolean;
+        weeklySummary?: boolean;
+        contextualFollowup?: boolean;
+        integrationHealthAlert?: boolean;
+        securityAlertDigest?: boolean;
+      };
+      learning?: {
+        enabled?: boolean;
+        minConfidence?: number;
+      };
     };
   };
 }

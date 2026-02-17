@@ -78,7 +78,7 @@ describe('SettingsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
   });
 

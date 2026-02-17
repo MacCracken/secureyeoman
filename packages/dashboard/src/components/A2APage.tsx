@@ -49,7 +49,7 @@ const STATUS_COLORS: Record<string, string> = {
   unknown: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
 };
 
-export function A2APage() {
+export function A2APage({ embedded }: { embedded?: boolean } = {}) {
   const [activeTab, setActiveTab] = useState<TabId>('peers');
   const [showDelegate, setShowDelegate] = useState(false);
   const [delegatePeerId, setDelegatePeerId] = useState('');
@@ -108,7 +108,7 @@ export function A2APage() {
   if (!enabled) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-bold">A2A Protocol</h1>
+        {!embedded && <h1 className="text-xl font-bold">A2A Protocol</h1>}
         <div className="card p-8 text-center">
           <Network className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">A2A Protocol Not Enabled</h2>
@@ -133,7 +133,7 @@ export function A2APage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">A2A Protocol</h1>
+        {!embedded && <h1 className="text-xl font-bold">A2A Protocol</h1>}
         <div className="flex items-center gap-2">
           <button
             onClick={() => discoverMut.mutate()}

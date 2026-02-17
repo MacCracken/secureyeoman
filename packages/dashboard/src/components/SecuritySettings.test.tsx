@@ -85,13 +85,13 @@ describe('SecuritySettings', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
   });
@@ -117,7 +117,7 @@ describe('SecuritySettings', () => {
       allowSubAgents: true,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -130,10 +130,10 @@ describe('SecuritySettings', () => {
     expect(screen.getByLabelText('Toggle Extensions')).toBeInTheDocument();
   });
 
-  it('renders Sandbox Execution section enabled by default', async () => {
+  it('renders Code Execution section enabled by default', async () => {
     renderComponent();
-    expect(await screen.findByText('Sandbox Execution')).toBeInTheDocument();
-    const toggle = screen.getByLabelText('Toggle Sandbox Execution');
+    expect(await screen.findByText('Code Execution')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Code Execution');
     expect(toggle).toBeInTheDocument();
     expect(toggle.getAttribute('aria-checked')).toBe('true');
   });
@@ -178,7 +178,7 @@ describe('SecuritySettings', () => {
       allowSubAgents: true,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -199,13 +199,67 @@ describe('SecuritySettings', () => {
     });
   });
 
-  it('calls updateSecurityPolicy when toggling Sandbox Execution off', async () => {
+  it('calls updateSecurityPolicy when toggling Code Execution off', async () => {
     renderComponent();
-    const toggle = await screen.findByLabelText('Toggle Sandbox Execution');
+    const toggle = await screen.findByLabelText('Toggle Code Execution');
     fireEvent.click(toggle);
     await waitFor(() => {
       expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
       expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowExecution: false });
+    });
+  });
+
+  it('renders Proactive Assistance toggle', async () => {
+    renderComponent();
+    expect(await screen.findByText('Proactive Assistance')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Proactive Assistance');
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy when toggling Proactive Assistance', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Proactive Assistance');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowProactive: true });
+    });
+  });
+
+  it('renders Multimodal I/O toggle', async () => {
+    renderComponent();
+    expect(await screen.findByText('Multimodal I/O')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Multimodal I/O');
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy when toggling Multimodal I/O', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Multimodal I/O');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowMultimodal: true });
+    });
+  });
+
+  it('renders Experiments toggle', async () => {
+    renderComponent();
+    expect(await screen.findByText('Experiments')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Experiments');
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy when toggling Experiments', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Experiments');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowExperiments: true });
     });
   });
 });

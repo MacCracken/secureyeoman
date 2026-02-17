@@ -58,6 +58,30 @@ export const McpFeaturesSchema = z
 
 export type McpFeatures = z.infer<typeof McpFeaturesSchema>;
 
+export const ProactivePersonalityConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    approvalMode: z.enum(['auto', 'suggest', 'manual']).default('suggest'),
+    builtins: z
+      .object({
+        dailyStandup: z.boolean().default(false),
+        weeklySummary: z.boolean().default(false),
+        contextualFollowup: z.boolean().default(false),
+        integrationHealthAlert: z.boolean().default(false),
+        securityAlertDigest: z.boolean().default(false),
+      })
+      .default({}),
+    learning: z
+      .object({
+        enabled: z.boolean().default(true),
+        minConfidence: z.number().min(0).max(1).default(0.7),
+      })
+      .default({}),
+  })
+  .default({});
+
+export type ProactivePersonalityConfig = z.infer<typeof ProactivePersonalityConfigSchema>;
+
 export const BodyConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
@@ -66,6 +90,7 @@ export const BodyConfigSchema = z
     creationConfig: CreationConfigSchema.default({}),
     selectedServers: z.array(z.string()).default([]),
     mcpFeatures: McpFeaturesSchema.default({}),
+    proactiveConfig: ProactivePersonalityConfigSchema.default({}),
   })
   .default({});
 

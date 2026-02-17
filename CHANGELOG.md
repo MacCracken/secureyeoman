@@ -4,6 +4,72 @@ All notable changes to F.R.I.D.A.Y. are documented in this file.
 
 ---
 
+## [2026.2.16c] — 2026-02-16
+
+### Dashboard: Navigation Consolidation & Experiments
+
+#### Agents Page (Consolidated)
+- Merged Sub-Agents and A2A Network into a single **Agents** page accessible from the sidebar
+- Tabbed interface when both features are enabled; shows single view when only one is active
+- Disabled state when neither sub-agents nor A2A is enabled
+- `/a2a` route redirects to `/agents` for backward compatibility
+
+#### Experiments Page (Standalone)
+- Extracted experiments from the Editor bottom panel into a standalone sidebar page
+- Gated by `allowExperiments` security policy flag (default: `false`)
+- Must be explicitly enabled after initialization via Settings > Security
+- Only visible in sidebar when the policy is enabled
+
+#### Security Settings
+- Added **Experiments** toggle to Security Settings page
+- Added `allowExperiments: boolean` to `SecurityConfigSchema` (default: `false`)
+
+#### Proactive Page
+- Removed quick-enable buttons from Built-In Triggers section
+- Triggers are now read-only reference; enabling is per-personality via the Personality Editor
+- Added informational note about per-personality configuration
+
+#### Sidebar
+- Conditional navigation items: Agents, Extensions, Proactive, and Experiments appear only when their respective security policies are enabled
+
+---
+
+## [2026.2.16b] — 2026-02-16
+
+### Phase 7.3: Multimodal I/O
+
+#### Vision Analysis
+- Image analysis via existing AIClient vision capability (Claude / GPT-4o)
+- Supports JPEG, PNG, GIF, WebP up to 20MB
+- REST endpoint: `POST /api/v1/multimodal/vision/analyze`
+
+#### Speech-to-Text (STT)
+- Audio transcription via OpenAI Whisper API
+- Supports OGG, MP3, WAV, WebM, M4A, FLAC formats
+- REST endpoint: `POST /api/v1/multimodal/audio/transcribe`
+
+#### Text-to-Speech (TTS)
+- Speech synthesis via OpenAI TTS API
+- Multiple voices (alloy, echo, fable, onyx, nova, shimmer)
+- REST endpoint: `POST /api/v1/multimodal/audio/speak`
+
+#### Image Generation
+- Image generation via OpenAI DALL-E 3
+- Configurable size, quality, and style
+- REST endpoint: `POST /api/v1/multimodal/image/generate`
+
+#### Infrastructure
+- `MultimodalManager` orchestrator with job tracking in PostgreSQL
+- `MultimodalStorage` extends PgBaseStorage (migration 010)
+- Security policy toggle: `allowMultimodal` in SecuritySettings dashboard
+- 4 extension hook points: `multimodal:image-analyzed`, `multimodal:audio-transcribed`, `multimodal:speech-generated`, `multimodal:image-generated`
+- `MediaHandler.toBase64()` helper for file conversion
+- Telegram adapter handles photo and voice messages via MultimodalManager
+- Dashboard API client functions for all multimodal endpoints
+- **Reference**: ADR 041
+
+---
+
 ## [2026.2.16] — 2026-02-16
 
 ### Dashboard: Inline Form Pattern

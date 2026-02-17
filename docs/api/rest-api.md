@@ -20,6 +20,7 @@ This documentation covers the complete API surface. For real-time events, see:
 | [Execution](#execution) | Sandboxed code execution and session management |
 | [A2A](#a2a-protocol) | Agent-to-Agent discovery, delegation, and messaging |
 | [MCP Servers](#mcp-servers) | MCP server management and tool discovery |
+| [Proactive](#proactive-assistance) | Triggers, suggestions, and pattern learning |
 
 ## Related Documentation
 
@@ -674,7 +675,10 @@ Get current security policy configuration.
   "allowSubAgents": true,
   "allowA2A": false,
   "allowExtensions": false,
-  "allowExecution": true
+  "allowExecution": true,
+  "allowProactive": false,
+  "allowMultimodal": false,
+  "allowExperiments": false
 }
 ```
 
@@ -690,7 +694,10 @@ Update security policy configuration.
   "allowSubAgents": true,
   "allowA2A": false,
   "allowExtensions": false,
-  "allowExecution": true
+  "allowExecution": true,
+  "allowProactive": false,
+  "allowMultimodal": false,
+  "allowExperiments": false
 }
 ```
 
@@ -700,6 +707,9 @@ Update security policy configuration.
 | `allowA2A` | boolean | `false` | Allow A2A networking (requires sub-agents enabled) |
 | `allowExtensions` | boolean | `false` | Allow lifecycle extension hooks |
 | `allowExecution` | boolean | `true` | Allow sandboxed code execution |
+| `allowProactive` | boolean | `false` | Allow proactive triggers, suggestions, and pattern learning |
+| `allowMultimodal` | boolean | `false` | Allow multimodal I/O (vision, speech, image generation) |
+| `allowExperiments` | boolean | `false` | Allow A/B experiments (must be explicitly enabled after initialization) |
 
 **Response**
 ```json
@@ -708,7 +718,10 @@ Update security policy configuration.
     "allowSubAgents": true,
     "allowA2A": false,
     "allowExtensions": false,
-    "allowExecution": true
+    "allowExecution": true,
+    "allowProactive": false,
+    "allowMultimodal": false,
+    "allowExperiments": false
   }
 }
 ```
@@ -2823,6 +2836,534 @@ Query A2A protocol messages.
 - `peerId` (optional): Filter by peer
 - `type` (optional): Filter by message type (delegation_offer, delegation_result, capability_query, etc.)
 - `limit` (optional): Number of results (default: 50)
+
+---
+
+### Proactive Assistance
+
+All proactive endpoints require the `allowProactive` security policy flag to be `true`. When disabled, all endpoints except `GET /api/v1/proactive/status` return `403 Forbidden`.
+
+#### GET /api/v1/proactive/triggers
+
+List all configured triggers.
+
+**Required Permissions**: Authenticated
+
+**Query Parameters**
+- `type` (optional): Filter by trigger type (`schedule`, `event`, `pattern`, `webhook`, `llm`)
+- `enabled` (optional): Filter by enabled state (`true` or `false`)
+- `builtin` (optional): Filter by built-in vs custom (`true` or `false`)
+- `limit` (optional): Number of results (default: 50)
+- `offset` (optional): Pagination offset
+
+**Response**
+```json
+{
+  "triggers": [
+    {
+      "id": "trig_abc123",
+      "name": "Daily Standup",
+      "description": "Summarize tasks and meetings for the upcoming day",
+      "type": "schedule",
+      "config": { "cron": "0 9 * * 1-5", "timezone": "UTC" },
+      "enabled": true,
+      "autoSend": false,
+      "isBuiltin": false,
+      "lastFiredAt": "2026-02-16T09:00:00.000Z",
+      "createdAt": "2026-02-16T00:00:00.000Z",
+      "updatedAt": "2026-02-16T00:00:00.000Z"
+    }
+  ],
+  "total": 12,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+#### POST /api/v1/proactive/triggers
+
+Create a new trigger.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "name": "Deployment Reminder",
+  "description": "Remind to check deployment status after CI runs",
+  "type": "event",
+  "config": {
+    "event": "task_completed",
+    "filter": { "taskType": "ci_pipeline" }
+  },
+  "enabled": true,
+  "autoSend": false,
+  "prompt": "Check if the recent CI pipeline result requires any follow-up deployment actions."
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Display name (1–100 chars) |
+| `description` | string | No | Short description (max 500 chars) |
+| `type` | enum | Yes | `schedule`, `event`, `pattern`, `webhook`, or `llm` |
+| `config` | object | Yes | Type-specific configuration (see below) |
+| `enabled` | boolean | No | Whether the trigger is active (default: `true`) |
+| `autoSend` | boolean | No | Deliver suggestions immediately without queuing (default: `false`) |
+| `prompt` | string | No | LLM prompt to use when generating the suggestion content |
+
+**Config by type**:
+
+| Type | Required fields | Description |
+|------|----------------|-------------|
+| `schedule` | `cron` or `intervalMs` | `cron`: cron expression; `intervalMs`: interval in ms; optional `timezone` |
+| `event` | `event` | Internal hook name (e.g. `task_completed`, `memory_save_after`); optional `filter` object |
+| `pattern` | `patternId` | ID of a detected pattern from `proactive_patterns` |
+| `webhook` | — | No config required; a unique webhook URL is returned after creation |
+| `llm` | `cron` or `intervalMs`, `evaluationPrompt` | `evaluationPrompt`: LLM prompt returning `{"fire": true/false}`; fires only when model returns `fire: true` |
+
+**Response** (201)
+```json
+{
+  "trigger": {
+    "id": "trig_xyz789",
+    "name": "Deployment Reminder",
+    "type": "event",
+    "enabled": true,
+    "createdAt": "2026-02-16T00:00:00.000Z"
+  }
+}
+```
+
+#### GET /api/v1/proactive/triggers/:id
+
+Get a specific trigger by ID.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "trigger": {
+    "id": "trig_abc123",
+    "name": "Daily Standup",
+    "type": "schedule",
+    "config": { "cron": "0 9 * * 1-5", "timezone": "UTC" },
+    "enabled": true,
+    "autoSend": false,
+    "isBuiltin": false,
+    "lastFiredAt": "2026-02-16T09:00:00.000Z",
+    "fireCount": 42,
+    "createdAt": "2026-02-01T00:00:00.000Z",
+    "updatedAt": "2026-02-16T09:00:00.000Z"
+  }
+}
+```
+
+#### PATCH /api/v1/proactive/triggers/:id
+
+Update a trigger. All fields are optional. Built-in triggers may only have `enabled` and `autoSend` modified.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "name": "Morning Standup",
+  "config": { "cron": "0 8 * * 1-5", "timezone": "America/New_York" },
+  "autoSend": true
+}
+```
+
+**Response**
+```json
+{
+  "trigger": { "id": "trig_abc123", "name": "Morning Standup", "..." : "..." }
+}
+```
+
+#### DELETE /api/v1/proactive/triggers/:id
+
+Delete a trigger. Built-in triggers cannot be deleted (returns 403); use the disable endpoint instead.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "message": "Trigger deleted"
+}
+```
+
+#### POST /api/v1/proactive/triggers/:id/enable
+
+Enable a trigger.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "trigger": { "id": "trig_abc123", "enabled": true }
+}
+```
+
+#### POST /api/v1/proactive/triggers/:id/disable
+
+Disable a trigger without deleting it.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "trigger": { "id": "trig_abc123", "enabled": false }
+}
+```
+
+#### POST /api/v1/proactive/triggers/:id/test
+
+Fire a trigger immediately regardless of schedule or condition. The generated suggestion is added to the suggestion queue.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "fired": true,
+  "suggestionId": "sugg_test123",
+  "content": "Here is your standup summary for today: ..."
+}
+```
+
+#### GET /api/v1/proactive/triggers/builtin
+
+List all built-in triggers with their current enabled state.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "triggers": [
+    {
+      "id": "builtin-daily-standup",
+      "name": "Daily Standup",
+      "description": "Summarize tasks and meetings at 09:00 on weekdays",
+      "type": "schedule",
+      "enabled": false,
+      "isBuiltin": true
+    },
+    {
+      "id": "builtin-weekly-review",
+      "name": "Weekly Review",
+      "description": "Summarize the week's activity every Friday at 17:00",
+      "type": "schedule",
+      "enabled": false,
+      "isBuiltin": true
+    },
+    {
+      "id": "builtin-idle-checkin",
+      "name": "Idle Check-in",
+      "description": "Suggest re-engagement after a configurable period of inactivity",
+      "type": "event",
+      "enabled": false,
+      "isBuiltin": true
+    },
+    {
+      "id": "builtin-memory-insight",
+      "name": "Memory Insight",
+      "description": "Surface patterns detected in recent Brain activity",
+      "type": "pattern",
+      "enabled": false,
+      "isBuiltin": true
+    },
+    {
+      "id": "builtin-webhook-alert",
+      "name": "Webhook Alert",
+      "description": "Template trigger for external system integration via webhook",
+      "type": "webhook",
+      "enabled": false,
+      "isBuiltin": true
+    }
+  ]
+}
+```
+
+#### POST /api/v1/proactive/triggers/builtin/:id/enable
+
+Enable a built-in trigger by its ID.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "trigger": { "id": "builtin-daily-standup", "enabled": true }
+}
+```
+
+---
+
+#### GET /api/v1/proactive/suggestions
+
+List suggestions in the queue.
+
+**Required Permissions**: Authenticated
+
+**Query Parameters**
+- `status` (optional): Filter by status (`pending`, `approved`, `dismissed`, `expired`, `delivered`)
+- `triggerId` (optional): Filter by the trigger that generated the suggestion
+- `limit` (optional): Number of results (default: 50)
+- `offset` (optional): Pagination offset
+
+**Response**
+```json
+{
+  "suggestions": [
+    {
+      "id": "sugg_abc123",
+      "triggerId": "trig_abc123",
+      "triggerName": "Daily Standup",
+      "content": "Good morning! Here is your standup summary for today: ...",
+      "status": "pending",
+      "expiresAt": "2026-02-17T09:00:00.000Z",
+      "createdAt": "2026-02-16T09:00:00.000Z"
+    }
+  ],
+  "total": 5,
+  "limit": 50,
+  "offset": 0
+}
+```
+
+#### POST /api/v1/proactive/suggestions/:id/approve
+
+Approve a pending suggestion. If the trigger has a delivery integration configured, delivers the suggestion via IntegrationManager immediately.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "suggestion": { "id": "sugg_abc123", "status": "approved", "deliveredAt": "2026-02-16T09:05:00.000Z" }
+}
+```
+
+#### POST /api/v1/proactive/suggestions/:id/dismiss
+
+Dismiss a pending suggestion without delivering it.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "suggestion": { "id": "sugg_abc123", "status": "dismissed" }
+}
+```
+
+#### DELETE /api/v1/proactive/suggestions/expired
+
+Clear all expired suggestions from the queue.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "deleted": 8
+}
+```
+
+---
+
+#### GET /api/v1/proactive/patterns
+
+List behavioral patterns detected by ProactiveManager's LLM analysis of Brain memories.
+
+**Required Permissions**: Authenticated
+
+**Query Parameters**
+- `minConfidence` (optional): Minimum confidence score 0–1 (default: 0)
+- `limit` (optional): Number of results (default: 50)
+- `offset` (optional): Pagination offset
+
+**Response**
+```json
+{
+  "patterns": [
+    {
+      "id": "pat_abc123",
+      "description": "User frequently asks for deployment help on Monday mornings",
+      "confidence": 0.87,
+      "occurrences": 6,
+      "lastObservedAt": "2026-02-16T09:15:00.000Z",
+      "convertedToTriggerId": null,
+      "createdAt": "2026-02-10T00:00:00.000Z"
+    }
+  ],
+  "total": 3
+}
+```
+
+#### POST /api/v1/proactive/patterns/:id/convert
+
+Convert a detected pattern into a proactive trigger. Creates a new trigger of type `pattern` pre-configured for this pattern.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "name": "Monday Deployment Helper",
+  "autoSend": false,
+  "prompt": "The user may need deployment assistance this morning. Proactively offer help."
+}
+```
+
+**Response** (201)
+```json
+{
+  "trigger": {
+    "id": "trig_newxyz",
+    "name": "Monday Deployment Helper",
+    "type": "pattern",
+    "config": { "patternId": "pat_abc123" },
+    "enabled": true,
+    "isBuiltin": false,
+    "createdAt": "2026-02-16T09:20:00.000Z"
+  }
+}
+```
+
+---
+
+#### GET /api/v1/proactive/status
+
+Get ProactiveManager status. This endpoint is accessible regardless of the `allowProactive` policy — it can be used to check whether proactive assistance is enabled without needing to call the security policy endpoint.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "enabled": false,
+  "allowProactive": false,
+  "activeTriggers": 0,
+  "pendingSuggestions": 0,
+  "detectedPatterns": 3,
+  "lastAnalysisAt": "2026-02-16T06:00:00.000Z",
+  "schedulerRunning": false
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `enabled` | boolean | Whether the proactive system is currently running |
+| `allowProactive` | boolean | Current value of the `allowProactive` security policy flag |
+| `activeTriggers` | number | Number of enabled triggers |
+| `pendingSuggestions` | number | Number of suggestions awaiting user action |
+| `detectedPatterns` | number | Total detected behavioral patterns |
+| `lastAnalysisAt` | string\|null | ISO timestamp of last pattern analysis run |
+| `schedulerRunning` | boolean | Whether the internal scheduler is active |
+
+---
+
+## Multimodal I/O (Phase 7.3)
+
+### POST /api/v1/multimodal/vision/analyze
+
+Analyze an image using the AI client's vision capability.
+
+**Body Limit**: 20MB
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `imageBase64` | string | Base64-encoded image data |
+| `mimeType` | string | `image/jpeg`, `image/png`, `image/gif`, or `image/webp` |
+| `prompt` | string? | Optional analysis prompt |
+
+**Response**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `description` | string | AI-generated image description |
+| `labels` | string[] | Extracted labels |
+| `durationMs` | number | Processing time |
+
+### POST /api/v1/multimodal/audio/transcribe
+
+Transcribe audio using OpenAI Whisper.
+
+**Body Limit**: 20MB
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `audioBase64` | string | Base64-encoded audio data |
+| `format` | string? | Audio format: `ogg`, `mp3`, `wav`, `webm`, `m4a`, `flac` (default: `ogg`) |
+| `language` | string? | Optional language hint |
+
+**Response**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `text` | string | Transcribed text |
+| `language` | string? | Detected language |
+| `durationMs` | number | Processing time |
+
+### POST /api/v1/multimodal/audio/speak
+
+Synthesize speech using OpenAI TTS.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `text` | string | Text to synthesize (max 4096 chars) |
+| `voice` | string? | Voice name (default: `alloy`) |
+| `model` | string? | TTS model (default: `tts-1`) |
+| `responseFormat` | string? | Output format: `mp3`, `opus`, `aac`, `flac` (default: `mp3`) |
+
+**Response**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `audioBase64` | string | Base64-encoded audio data |
+| `format` | string | Audio format |
+| `durationMs` | number | Processing time |
+
+### POST /api/v1/multimodal/image/generate
+
+Generate an image using OpenAI DALL-E.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `prompt` | string | Image description (max 4000 chars) |
+| `size` | string? | `1024x1024`, `1024x1792`, `1792x1024` (default: `1024x1024`) |
+| `quality` | string? | `standard` or `hd` (default: `standard`) |
+| `style` | string? | `vivid` or `natural` (default: `vivid`) |
+
+**Response**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `imageUrl` | string | URL of generated image |
+| `revisedPrompt` | string? | DALL-E's revised prompt |
+| `durationMs` | number | Processing time |
+
+### GET /api/v1/multimodal/jobs
+
+List multimodal processing jobs.
+
+| Query Param | Type | Description |
+|-------------|------|-------------|
+| `type` | string? | Filter by job type (`vision`, `stt`, `tts`, `image_gen`) |
+| `status` | string? | Filter by status (`pending`, `running`, `completed`, `failed`) |
+| `limit` | number? | Page size (default: 50) |
+| `offset` | number? | Pagination offset |
+
+### GET /api/v1/multimodal/config
+
+Get current multimodal configuration.
 
 ---
 

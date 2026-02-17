@@ -48,6 +48,8 @@ export const ConversationConfigSchema = zz
 export type ConversationConfig = zz.infer<typeof ConversationConfigSchema>;
 import { McpConfigSchema } from './mcp.js';
 import { DelegationConfigSchema } from './delegation.js';
+import { ProactiveConfigSchema } from './proactive.js';
+import { MultimodalConfigSchema } from './multimodal.js';
 
 // ─── Extension Hooks Config (Phase 6.4a) ──────────────────────────
 export const ExtensionConfigSchema = zz
@@ -179,6 +181,12 @@ export const SecurityConfigSchema = z.object({
   allowExtensions: z.boolean().default(false),
   /** Allow sandboxed code execution. Enabled by default since execution is sandboxed. */
   allowExecution: z.boolean().default(true),
+  /** Allow proactive assistance triggers and suggestions. */
+  allowProactive: z.boolean().default(false),
+  /** Allow A/B experiments. Must be explicitly enabled after initialization. */
+  allowExperiments: z.boolean().default(false),
+  /** Allow multimodal I/O (vision, STT, TTS, image generation). */
+  allowMultimodal: z.boolean().default(false),
   secretBackend: z.enum(['auto', 'keyring', 'env', 'file']).default('auto'),
   rotation: z.object({
     enabled: z.boolean().default(false),
@@ -350,6 +358,8 @@ export const ConfigSchema = z.object({
   extensions: ExtensionConfigSchema,
   execution: ExecutionConfigSchema,
   a2a: A2AConfigSchema,
+  proactive: ProactiveConfigSchema,
+  multimodal: MultimodalConfigSchema,
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

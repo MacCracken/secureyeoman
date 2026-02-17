@@ -87,7 +87,7 @@ describe('ExtensionsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: true,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     mockFetchExtensions.mockResolvedValue(MOCK_EXTENSIONS);
     mockFetchExtensionHooks.mockResolvedValue(MOCK_HOOKS);
@@ -107,7 +107,7 @@ describe('ExtensionsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Extensions Not Enabled')).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe('ExtensionsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: true,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();
@@ -132,7 +132,7 @@ describe('ExtensionsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();

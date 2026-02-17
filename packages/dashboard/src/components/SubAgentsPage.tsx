@@ -54,7 +54,7 @@ const STATUS_COLORS: Record<string, string> = {
   timeout: 'bg-orange-500/10 text-orange-500 border-orange-500/20',
 };
 
-export function SubAgentsPage() {
+export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
   const [activeTab, setActiveTab] = useState<TabId>('active');
   const [showNewProfile, setShowNewProfile] = useState(false);
   const [showDelegate, setShowDelegate] = useState(false);
@@ -101,7 +101,7 @@ export function SubAgentsPage() {
   if (!enabled) {
     return (
       <div className="space-y-4">
-        <h1 className="text-xl font-bold">Sub-Agents</h1>
+        {!embedded && <h1 className="text-xl font-bold">Sub-Agents</h1>}
         <div className="card p-8 text-center">
           <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">Delegation Not Enabled</h2>
@@ -126,7 +126,7 @@ export function SubAgentsPage() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold">Sub-Agents</h1>
+        {!embedded && <h1 className="text-xl font-bold">Sub-Agents</h1>}
         <div className="flex items-center gap-2">
           <button
             onClick={() => setShowDelegate(!showDelegate)}

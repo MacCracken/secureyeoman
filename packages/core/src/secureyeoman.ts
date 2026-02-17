@@ -101,7 +101,7 @@ import { CodeExecutionManager } from './execution/manager.js';
 import { A2AStorage } from './a2a/storage.js';
 import { A2AManager } from './a2a/manager.js';
 import { RemoteDelegationTransport } from './a2a/transport.js';
-import { initPoolFromConfig } from './storage/pg-pool.js';
+import { initPoolFromConfig, getPool } from './storage/pg-pool.js';
 import { runMigrations } from './storage/migrations/runner.js';
 import { closePool } from './storage/pg-pool.js';
 import type { Config, TaskCreate, Task, MetricsSnapshot, AuditEntry } from '@friday/shared';
@@ -180,6 +180,8 @@ export class SecureYeoman {
   private executionManager: CodeExecutionManager | null = null;
   private a2aStorage: A2AStorage | null = null;
   private a2aManager: A2AManager | null = null;
+  private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
+  private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private initialized = false;
   private startedAt: number | null = null;
   private shutdownPromise: Promise<void> | null = null;
@@ -223,6 +225,9 @@ export class SecureYeoman {
       initPoolFromConfig(this.config.core.database);
       await runMigrations();
       this.logger.debug('PostgreSQL pool initialized and migrations applied');
+
+      // Step 2.2: Load persisted security policy from DB (overrides YAML defaults)
+      await this.loadSecurityPolicyFromDb();
 
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
@@ -724,6 +729,62 @@ export class SecureYeoman {
           this.logger.debug('A2A manager initialized');
         } catch (error) {
           this.logger.warn('A2A manager initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      // Step 6b: Initialize Proactive Manager
+      if (this.config.security.allowProactive || this.config.proactive?.enabled) {
+        try {
+          const { ProactiveStorage } = await import('./proactive/storage.js');
+          const { ProactiveManager } = await import('./proactive/manager.js');
+          const { PatternLearner } = await import('./proactive/pattern-learner.js');
+          const proactiveStorage = new ProactiveStorage();
+          const patternLearner = new PatternLearner(
+            this.brainManager!,
+            this.logger.child({ component: 'PatternLearner' }),
+          );
+          this.proactiveManager = new ProactiveManager(
+            proactiveStorage,
+            {
+              logger: this.logger.child({ component: 'ProactiveManager' }),
+              brainManager: this.brainManager!,
+              integrationManager: this.integrationManager ?? undefined,
+            },
+            this.config.proactive ?? {},
+            patternLearner,
+          );
+          await this.proactiveManager.initialize();
+          this.logger.debug('Proactive manager initialized');
+        } catch (error) {
+          this.logger.warn('Proactive manager initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      // Step 6c: Initialize Multimodal Manager
+      if (this.config.security.allowMultimodal || this.config.multimodal?.enabled) {
+        try {
+          const { MultimodalStorage } = await import('./multimodal/storage.js');
+          const { MultimodalManager } = await import('./multimodal/manager.js');
+          const multimodalStorage = new MultimodalStorage();
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const mmDeps: any = {
+            logger: this.logger.child({ component: 'MultimodalManager' }),
+            aiClient: this.aiClient!,
+            extensionManager: this.extensionManager ?? undefined,
+          };
+          this.multimodalManager = new MultimodalManager(
+            multimodalStorage,
+            mmDeps,
+            this.config.multimodal ?? {},
+          );
+          await this.multimodalManager.initialize();
+          this.logger.debug('Multimodal manager initialized');
+        } catch (error) {
+          this.logger.warn('Multimodal manager initialization failed (non-fatal)', {
             error: error instanceof Error ? error.message : 'Unknown error',
           });
         }
@@ -1235,6 +1296,16 @@ export class SecureYeoman {
     return this.a2aManager;
   }
 
+  getProactiveManager(): import('./proactive/manager.js').ProactiveManager | null {
+    this.ensureInitialized();
+    return this.proactiveManager;
+  }
+
+  getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null {
+    this.ensureInitialized();
+    return this.multimodalManager;
+  }
+
   /**
    * Get the integration storage instance
    */
@@ -1318,7 +1389,7 @@ export class SecureYeoman {
    * Update security policy toggles at runtime.
    * Changes are in-memory only (not persisted to YAML).
    */
-  updateSecurityPolicy(updates: { allowSubAgents?: boolean; allowA2A?: boolean; allowExtensions?: boolean; allowExecution?: boolean }): void {
+  updateSecurityPolicy(updates: { allowSubAgents?: boolean; allowA2A?: boolean; allowExtensions?: boolean; allowExecution?: boolean; allowProactive?: boolean; allowExperiments?: boolean; allowMultimodal?: boolean }): void {
     this.ensureInitialized();
 
     if (updates.allowSubAgents !== undefined) {
@@ -1333,8 +1404,20 @@ export class SecureYeoman {
     if (updates.allowExecution !== undefined) {
       this.config!.security.allowExecution = updates.allowExecution;
     }
+    if (updates.allowProactive !== undefined) {
+      this.config!.security.allowProactive = updates.allowProactive;
+    }
+    if (updates.allowExperiments !== undefined) {
+      this.config!.security.allowExperiments = updates.allowExperiments;
+    }
+    if (updates.allowMultimodal !== undefined) {
+      this.config!.security.allowMultimodal = updates.allowMultimodal;
+    }
 
     this.logger?.info('Security policy updated', updates);
+
+    // Persist to database
+    void this.persistSecurityPolicyToDb(updates);
 
     void this.auditChain?.record({
       event: 'security_policy_changed',
@@ -1342,6 +1425,49 @@ export class SecureYeoman {
       message: `Security policy updated: ${JSON.stringify(updates)}`,
       metadata: updates,
     });
+  }
+
+  /** Persist security policy toggles to the database. */
+  private async persistSecurityPolicyToDb(updates: Record<string, boolean | undefined>): Promise<void> {
+    try {
+      const pool = getPool();
+      const now = Date.now();
+      for (const [key, value] of Object.entries(updates)) {
+        if (value === undefined) continue;
+        await pool.query(
+          `INSERT INTO security.policy (key, value, updated_at) VALUES ($1, $2, $3)
+           ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = $3`,
+          [key, JSON.stringify(value), now],
+        );
+      }
+    } catch (err) {
+      this.logger?.error('Failed to persist security policy to DB', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
+
+  /** Load persisted security policy from DB and merge into config. */
+  private async loadSecurityPolicyFromDb(): Promise<void> {
+    try {
+      const pool = getPool();
+      const result = await pool.query('SELECT key, value FROM security.policy');
+      const policyKeys = ['allowSubAgents', 'allowA2A', 'allowExtensions', 'allowExecution', 'allowProactive', 'allowExperiments', 'allowMultimodal'] as const;
+      for (const row of result.rows) {
+        if (policyKeys.includes(row.key as typeof policyKeys[number])) {
+          (this.config!.security as Record<string, unknown>)[row.key] = JSON.parse(row.value);
+        }
+      }
+      if (result.rows.length > 0) {
+        this.logger?.debug('Loaded persisted security policy from DB', {
+          keys: result.rows.map((r: { key: string }) => r.key),
+        });
+      }
+    } catch (err) {
+      this.logger?.warn('Failed to load security policy from DB (table may not exist yet)', {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
   }
 
   /**
@@ -1602,6 +1728,14 @@ export class SecureYeoman {
     if (this.a2aManager) {
       await this.a2aManager.cleanup();
       this.a2aManager = null;
+    }
+    if (this.proactiveManager) {
+      this.proactiveManager.close();
+      this.proactiveManager = null;
+    }
+    if (this.multimodalManager) {
+      this.multimodalManager.close();
+      this.multimodalManager = null;
     }
     if (this.a2aStorage) {
       this.a2aStorage.close();

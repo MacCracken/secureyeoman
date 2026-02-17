@@ -213,11 +213,15 @@ Expand integrations across multiple categories to reach parity with platforms li
 - [x] Behavioral pattern analyzer (conversation analysis)
 - [x] Adaptive response tuning (preference injection into system prompt)
 
-### Proactive Assistance
+### Proactive Assistance — [ADR 040](../adr/040-proactive-assistance.md)
 
-- [ ] Proactive trigger system with rule engine
-- [ ] Suggestion queue in dashboard
-- [ ] Built-in proactive scenarios
+- [x] Trigger system with 5 types: schedule, event, pattern, webhook, llm
+- [x] Suggestion queue with approve/dismiss/expire lifecycle
+- [x] 5 built-in triggers (daily standup, weekly review, idle check-in, memory insight, webhook alert)
+- [x] Pattern learning — LLM analysis of Brain memories to surface recurring behavioral patterns
+- [x] Dashboard UI — trigger manager, suggestion queue, pattern explorer, status panel
+- [x] Security gate (`allowProactive` policy flag, default: false)
+- [x] WebSocket push for real-time suggestion delivery to dashboard
 
 ### MCP Ecosystem Expansion
 
@@ -278,12 +282,21 @@ env: { E2B_API_KEY: "..." }
 url: "https://mcp.supabase.io"
 ```
 
-### Multimodal I/O
+### Multimodal I/O — [ADR 041](../adr/041-multimodal-io.md)
 
-- [ ] Vision processing pipeline for inline images
-- [ ] Voice message transcription and response
-- [ ] Voice output for integration responses
-- [ ] Image generation tool with DALL-E integration
+- [x] Multimodal type system (Vision, STT, TTS, ImageGen schemas + job tracking)
+- [x] MultimodalManager with OpenAI TTS/STT and DALL-E integration
+- [x] REST API routes (analyze, transcribe, speak, generate)
+- [x] PostgreSQL job storage with stats
+- [x] Extension hooks (image-analyzed, audio-transcribed, speech-generated, image-generated)
+- [x] Security gate (`allowMultimodal` policy flag)
+- [x] Vocalization capability toggle in Personality Editor
+- [ ] Vision processing pipeline for inline images (integration-level image routing)
+- [ ] Voice message transcription in integration adapters (auto-STT for voice messages)
+- [ ] Voice output for integration responses (TTS audio attachments in Telegram/Discord/etc.)
+- [ ] Image generation tool exposure via MCP
+- [ ] Dashboard multimodal job viewer (history, stats, playback)
+- [ ] Per-personality TTS voice/model selection (link voice field to TTS config)
 
 ---
 
@@ -342,8 +355,8 @@ All core modules maintain >80% coverage thresholds.
 | Phase 6.5: A2A Protocol | Complete |
 | Phase 7: Integration Expansion | Complete (DeepSeek, Google Calendar, Notion, GitLab) |
 | Phase 7.1: Adaptive Learning | Complete |
-| Phase 7.2: Proactive Assistance | Planned |
-| Phase 7.3: Multimodal I/O | Planned |
+| Phase 7.2: Proactive Assistance | Complete |
+| Phase 7.3: Multimodal I/O | In Progress |
 | Phase 8.1: Web Scraping Tools | Complete |
 | Phase 8.2: Web Search Tools | Complete |
 | Phase 8.3: Browser Automation | Complete (Playwright) |
@@ -676,9 +689,19 @@ Enable FRIDAY instances to discover and delegate tasks to other FRIDAY (or compa
   - Sub-Agent Delegation toggle (existing) with A2A Networks as nested sub-item
   - Lifecycle Extensions toggle (new card)
   - Sandbox Execution toggle (new card, enabled by default)
-- Policy toggles stored in SecurityConfigSchema with default values: `allowSubAgents: true`, `allowA2A: false`, `allowExtensions: false`, `allowExecution: true`
-- Security Policy API (`GET/PATCH /api/v1/security/policy`) returns/accepts all 4 fields with immediate effect (no restart required)
+  - Proactive Assistance toggle
+  - Multimodal I/O toggle
+  - Experiments toggle (must be explicitly enabled after initialization)
+- Policy toggles stored in SecurityConfigSchema with default values: `allowSubAgents: true`, `allowA2A: false`, `allowExtensions: false`, `allowExecution: true`, `allowProactive: false`, `allowMultimodal: false`, `allowExperiments: false`
+- Security Policy API (`GET/PATCH /api/v1/security/policy`) returns/accepts all fields with immediate effect (no restart required)
 - Changes are audited in the cryptographic audit chain
+
+#### Dashboard Navigation Consolidation
+
+- **Agents page**: Consolidated Sub-Agents and A2A Network into a single Agents view with tabbed interface when both features are enabled; shows single view when only one is active
+- **Experiments page**: Extracted from Editor bottom panel into standalone sidebar page, gated by `allowExperiments` security policy; only visible in sidebar when enabled
+- **Proactive page**: Built-In Triggers section now shows triggers as read-only reference; enabling is per-personality via the Personality Editor
+- **Sidebar**: Conditional nav items (Agents, Extensions, Proactive, Experiments) appear only when their respective security policies allow them
 
 ---
 
@@ -762,22 +785,28 @@ Enable FRIDAY to learn from interactions and improve its understanding of user p
 - [ ] Learning dashboard: show what FRIDAY has learned about the user
 - [ ] Privacy controls: user can view/export/clear learned preferences
 
-#### 7.2 — Proactive Assistance
+#### 7.2 — Proactive Assistance — [ADR 040](../adr/040-proactive-assistance.md)
 
-**Priority**: Medium | **Complexity**: Medium
+**Priority**: Medium | **Complexity**: Medium | **Status**: Complete
 
 Enable FRIDAY to anticipate user needs and take initiative based on learned patterns and context.
 
 **Decisions**:
-- **Trigger conditions**: Configurable — time-based, event-based, pattern-based
-- **Notification channels**: All connected integrations (Slack, Discord, etc.)
-- **Approval flow**: User-configurable — auto-send, suggest first, or manual only
+- **Trigger types**: 5 types — `schedule` (cron/interval), `event` (internal hooks), `pattern` (Brain-detected), `webhook` (external HTTP), `llm` (LLM-evaluated condition)
+- **Notification channels**: All connected integrations (Slack, Discord, etc.) via IntegrationManager + WebSocket push to dashboard
+- **Approval flow**: User-configurable per trigger — `autoSend: true` for immediate delivery, or suggestion queue for manual review
+- **Security gate**: `allowProactive` flag in security policy (default: `false`); audited in cryptographic chain
 
 **Deliverables**:
-- [ ] Proactive trigger system with rule engine
-- [ ] Suggestion queue in dashboard
-- [ ] Built-in proactive scenarios (daily standup reminders, weekly summaries, context-aware follow-ups)
-- [ ] MCP tools: `register_proactive_rule`, `list_proactive_rules`, `trigger_now`
+- [x] ProactiveManager with 5 trigger types and unified scheduling via HeartbeatManager
+- [x] Suggestion queue with pending/approved/dismissed/expired lifecycle
+- [x] 5 built-in triggers: daily standup, weekly review, idle check-in, memory insight, webhook alert
+- [x] Pattern learning — periodic LLM analysis of Brain memories to detect recurring patterns
+- [x] Dashboard UI — trigger manager, suggestion queue, pattern explorer, status panel
+- [x] Security gate (`allowProactive` in Security Policy API)
+- [x] PostgreSQL storage via PgBaseStorage (proactive_triggers, proactive_suggestions, proactive_patterns)
+- [x] REST API — 17 endpoints under `/api/v1/proactive/`
+- [x] WebSocket push for real-time suggestion delivery
 
 #### 7.3 — Multimodal Input/Output
 
@@ -792,10 +821,19 @@ Expand beyond text to support images, voice, and potentially video for both inpu
 - **Image generation**: Integration with DALL-E / Stable Diffusion for generating images in responses
 
 **Deliverables**:
-- [ ] Vision processing pipeline for inline images
-- [ ] Voice message transcription and response
-- [ ] Voice output for integration responses (TTS to audio attachments)
-- [ ] Image generation tool with DALL-E integration
+- [x] Multimodal type system (Vision, STT, TTS, ImageGen schemas + job tracking)
+- [x] MultimodalManager with OpenAI TTS/STT and DALL-E integration
+- [x] REST API routes (analyze, transcribe, speak, generate)
+- [x] PostgreSQL job storage with stats
+- [x] Extension hooks (image-analyzed, audio-transcribed, speech-generated, image-generated)
+- [x] Security gate (`allowMultimodal` policy flag)
+- [x] Vocalization capability toggle in Personality Editor
+- [ ] Vision processing pipeline for inline images (integration-level image routing)
+- [ ] Voice message transcription in integration adapters (auto-STT for voice messages)
+- [ ] Voice output for integration responses (TTS audio attachments in Telegram/Discord/etc.)
+- [ ] Image generation tool exposure via MCP
+- [ ] Dashboard multimodal job viewer (history, stats, playback)
+- [ ] Per-personality TTS voice/model selection (link voice field to TTS config)
 
 ---
 

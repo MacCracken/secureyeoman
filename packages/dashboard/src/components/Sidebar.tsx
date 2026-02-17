@@ -13,11 +13,10 @@ import {
   Users,
   Settings,
   Puzzle,
-  Terminal,
-  Network,
+  Sparkles,
+  FlaskConical,
   PanelLeftOpen,
   PanelLeftClose,
-  FlaskConical,
   RefreshCw,
   Activity,
   User,
@@ -33,7 +32,7 @@ import { useSidebar } from '../hooks/useSidebar';
 import { useTheme } from '../hooks/useTheme';
 import { getAccessToken } from '../api/client';
 import { NewEntityDialog } from './NewEntityDialog';
-import { fetchExtensionConfig, fetchExecutionConfig, fetchA2AConfig, fetchSecurityPolicy } from '../api/client';
+import { fetchExtensionConfig, fetchSecurityPolicy, fetchProactiveConfig, fetchHealth } from '../api/client';
 
 export interface SidebarProps {
   isConnected: boolean;
@@ -53,14 +52,13 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
   { to: '/', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" />, end: true },
   { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
   { to: '/chat', label: 'Chat', icon: <MessageSquare className="w-5 h-5" /> },
-  { to: '/code', label: 'Code', icon: <Code className="w-5 h-5" /> },
+  { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> },
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
   { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
+  { to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" />, enabled: true },
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
   { to: '/extensions', label: 'Extensions', icon: <Puzzle className="w-5 h-5" />, enabled: true },
-  { to: '/execution', label: 'Execution', icon: <Terminal className="w-5 h-5" />, enabled: true },
-  { to: '/a2a', label: 'A2A Network', icon: <Network className="w-5 h-5" />, enabled: true },
-  { to: '/experiments', label: 'Experiments', icon: <FlaskConical className="w-5 h-5" /> },
+  { to: '/experiments', label: 'Experiments', icon: <FlaskConical className="w-5 h-5" />, enabled: true },
   { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
 ];
 
@@ -104,21 +102,15 @@ export function Sidebar({
     staleTime: 30000,
   });
 
+  const { data: health } = useQuery({
+    queryKey: ['health'],
+    queryFn: fetchHealth,
+    staleTime: 30000,
+  });
+
   const { data: extensionConfig } = useQuery({
     queryKey: ['extensionConfig'],
     queryFn: fetchExtensionConfig,
-    staleTime: 30000,
-  });
-
-  const { data: executionConfig } = useQuery({
-    queryKey: ['executionConfig'],
-    queryFn: fetchExecutionConfig,
-    staleTime: 30000,
-  });
-
-  const { data: a2aConfig } = useQuery({
-    queryKey: ['a2aConfig'],
-    queryFn: fetchA2AConfig,
     staleTime: 30000,
   });
 
@@ -128,28 +120,35 @@ export function Sidebar({
     staleTime: 30000,
   });
 
+  const { data: proactiveConfig } = useQuery({
+    queryKey: ['proactiveConfig'],
+    queryFn: fetchProactiveConfig,
+    staleTime: 30000,
+  });
+
   const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
-  const hasSubAgents = subAgentsAllowed || (agentsData?.profiles?.length ?? 0) > 0;
+  const a2aAllowed = securityPolicy?.allowA2A ?? false;
+  const hasAgents = subAgentsAllowed || a2aAllowed || (agentsData?.profiles?.length ?? 0) > 0;
   const extensionsEnabled = (securityPolicy?.allowExtensions ?? false) || (extensionConfig?.config?.enabled === true);
-  const executionEnabled = (securityPolicy?.allowExecution ?? true) || (executionConfig?.config?.enabled === true);
-  const a2aEnabled = (securityPolicy?.allowA2A ?? false) || (a2aConfig?.config?.enabled === true);
+  const proactiveEnabled = (securityPolicy?.allowProactive ?? false) || ((proactiveConfig?.config as any)?.enabled === true);
+  const experimentsEnabled = securityPolicy?.allowExperiments ?? false;
 
   const NAV_ITEMS = useMemo(() => {
     const items = [...NAV_ITEMS_WITHOUT_AGENTS];
-    if (hasSubAgents) {
-      items.splice(6, 0, {
+    if (hasAgents) {
+      items.splice(7, 0, {
         to: '/agents',
-        label: 'Sub-Agents',
+        label: 'Agents',
         icon: <Users className="w-5 h-5" />,
       });
     }
     return items.filter((item) => {
       if (item.to === '/extensions') return extensionsEnabled;
-      if (item.to === '/execution') return executionEnabled;
-      if (item.to === '/a2a') return a2aEnabled;
+      if (item.to === '/experiments') return experimentsEnabled;
+      if (item.to === '/proactive') return proactiveEnabled;
       return true;
     });
-  }, [hasSubAgents, extensionsEnabled, executionEnabled, a2aEnabled]);
+  }, [hasAgents, extensionsEnabled, proactiveEnabled, experimentsEnabled]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -392,7 +391,7 @@ export function Sidebar({
             <div className="space-y-3">
               <div className="flex items-center justify-between py-2 border-b">
                 <span className="text-sm text-muted-foreground">Version</span>
-                <span className="text-sm font-medium">1.5.1</span>
+                <span className="text-sm font-medium">{health?.version ?? '...'}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b">
                 <span className="text-sm text-muted-foreground">Security</span>
