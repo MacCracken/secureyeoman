@@ -4,6 +4,59 @@ All notable changes to F.R.I.D.A.Y. are documented in this file.
 
 ---
 
+## [2026.2.17] — 2026-02-17
+
+### Phase 9: Kubernetes Production Deployment
+
+#### Helm Chart
+- Full Helm chart at `deploy/helm/friday/` with templates for core, MCP, and dashboard deployments
+- Values files for dev, staging, and production environments
+- Ingress with TLS support (nginx, ALB, GCE via annotations)
+- HorizontalPodAutoscaler for core (2-10 replicas) and MCP (1-5 replicas)
+- PodDisruptionBudgets for all services
+- NetworkPolicies with explicit ingress/egress rules per service
+- ServiceAccount with configurable annotations (for IRSA/Workload Identity)
+
+#### Dashboard Production Image
+- New `packages/dashboard/Dockerfile` — multi-stage build (node:20-alpine + nginx:1.27-alpine)
+- Custom `nginx.conf` serving static SPA with API/WebSocket reverse proxy to core
+- Security headers, gzip compression, static asset caching
+
+#### CI/CD
+- `docker-push` job: builds and pushes 3 images to GHCR on tag push (`v*`)
+- `helm-lint` job: lints chart and runs `helm template` dry-run on every push
+- OCI labels added to root Dockerfile for GHCR metadata
+
+#### Observability
+- Prometheus `ServiceMonitor` CRD for auto-discovery scraping
+- `PrometheusRule` CRD with all 9 alert rules migrated from Docker setup
+- Grafana dashboard ConfigMap with sidecar auto-discovery label
+- Pod annotations for legacy Prometheus scraping
+
+#### Security Hardening
+- Non-root containers (UID 1000 for core/MCP, UID 101 for nginx dashboard)
+- Read-only root filesystem with explicit writable mounts
+- All Linux capabilities dropped, privilege escalation blocked
+- Seccomp RuntimeDefault profile on all pods
+- ExternalSecret CRD template for AWS Secrets Manager, GCP Secret Manager, Azure Key Vault
+
+#### Testing
+- Helm test pod (curls core `/health` endpoint)
+- Kubernetes smoke test script (`tests/k8s/smoke-test.sh`) for kind/k3d
+
+#### Documentation
+- ADR 042: Kubernetes Deployment decision record
+- ADR 043: Kubernetes Observability decision record
+- Kubernetes deployment guide (`docs/guides/kubernetes-deployment.md`)
+- Updated architecture docs with K8s deployment section
+- Updated security model with K8s security section
+- Updated roadmap with Phase 9
+
+#### Repository
+- Updated all repo URL references from `MacCracken/FRIDAY` to `MacCracken/secureyeoman`
+
+---
+
 ## [2026.2.16c] — 2026-02-16
 
 ### Dashboard: Navigation Consolidation & Experiments

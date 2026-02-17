@@ -85,6 +85,32 @@ npx vitest run tests/chaos/
 | `crash-recovery.test.ts` | Committed transaction preservation, uncommitted rollback |
 | `resource-exhaustion.test.ts` | Large payloads, concurrent readers, rapid schema operations |
 
+## Kubernetes Smoke Test
+
+Located in `tests/k8s/`, a script to validate Helm chart deployment on a local cluster.
+
+### Prerequisites
+
+- [kind](https://kind.sigs.k8s.io/) or [k3d](https://k3d.io/)
+- kubectl
+- Helm 3
+
+### Running
+
+```bash
+bash tests/k8s/smoke-test.sh
+```
+
+The smoke test:
+1. Creates a local kind/k3d cluster
+2. Lints the Helm chart
+3. Deploys with minimal configuration (core only, no DB)
+4. Waits for rollout, port-forwards, and curls `/health`
+5. Runs `helm test` to verify connectivity
+6. Cleans up the cluster
+
+Environment variables: `CLUSTER_NAME`, `NAMESPACE`, `TIMEOUT`.
+
 ## CI Integration
 
 Security tests run as part of the CI pipeline. See `.github/workflows/ci.yml` for the security test job configuration.

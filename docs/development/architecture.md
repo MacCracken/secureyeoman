@@ -542,11 +542,55 @@ Dashboard Display (WebSocket)
 
 ---
 
+## Kubernetes Deployment
+
+F.R.I.D.A.Y. supports production deployment on Kubernetes via Helm charts located in `deploy/helm/friday/`.
+
+### Architecture
+
+```
+                    ┌─────────────┐
+                    │   Ingress   │  (nginx / ALB / GCE)
+                    │  TLS + WSS  │
+                    └──────┬──────┘
+            ┌──────────────┼──────────────┐
+            ▼              ▼              ▼
+     ┌────────────┐ ┌────────────┐ ┌────────────┐
+     │  Dashboard  │ │    Core    │ │    MCP     │
+     │   (nginx)   │ │  (Fastify) │ │  (Fastify) │
+     │  :80 static │ │   :18789   │ │   :3001    │
+     └──────┬─────┘ └──────┬─────┘ └────────────┘
+            │              │
+            └──► proxy ►───┘──────► Managed PostgreSQL
+                                     (RDS / Cloud SQL)
+```
+
+### Components
+
+| Deployment | Image | Port | Purpose |
+|-----------|-------|------|---------|
+| `friday-core` | `ghcr.io/maccracken/secureyeoman-core` | 18789 | Gateway, agent engine, API, WebSocket |
+| `friday-mcp` | `ghcr.io/maccracken/secureyeoman-mcp` | 3001 | MCP server (optional) |
+| `friday-dashboard` | `ghcr.io/maccracken/secureyeoman-dashboard` | 80 | Nginx serving SPA, proxying API/WS to core |
+
+### Key Features
+
+- **Scaling**: HPA scales core (2-10 replicas) and MCP (1-5 replicas) on CPU
+- **Security**: Non-root containers, read-only root FS, seccomp RuntimeDefault, NetworkPolicies
+- **Observability**: Prometheus ServiceMonitor, 9 PrometheusRule alerts, Grafana dashboard auto-discovery
+- **Secrets**: Native K8s Secrets or ExternalSecret CRD (AWS/GCP/Azure)
+- **Environments**: Separate values files for dev, staging, production
+
+See [Kubernetes Deployment Guide](../guides/kubernetes-deployment.md) for setup instructions.
+
+---
+
 ## Related Documentation
 
 - [API Reference](../api/)
 - [Security Model](../security/security-model.md)
 - [Development Roadmap](roadmap.md)
+- [Kubernetes Deployment Guide](../guides/kubernetes-deployment.md)
 
 ---
 

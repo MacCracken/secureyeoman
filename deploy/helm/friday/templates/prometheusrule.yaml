@@ -1,0 +1,93 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.alerts.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ include "friday.fullname" . }}-alerts
+  namespace: {{ include "friday.namespace" . }}
+  labels:
+    {{- include "friday.labels" . | nindent 4 }}
+spec:
+  groups:
+    - name: friday_alerts
+      rules:
+        - alert: FridayHighErrorRate
+          expr: rate(friday_api_errors_total[5m]) / rate(friday_api_calls_total[5m]) > 0.05
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "FRIDAY API error rate is above 5%"
+            description: "API error rate is {{ "{{ $value | humanizePercentage }}" }} over the last 5 minutes."
+
+        - alert: FridayHighLatency
+          expr: friday_api_latency_avg_ms > 500
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "FRIDAY API latency is high"
+            description: "Average API latency is {{ "{{ $value }}" }}ms."
+
+        - alert: FridayHighMemory
+          expr: friday_memory_used_mb > 512
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "FRIDAY memory usage is high"
+            description: "Memory usage is {{ "{{ $value }}" }}MB."
+
+        - alert: FridayTaskQueueBacklog
+          expr: friday_tasks_queue_depth > 100
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "FRIDAY task queue backlog is growing"
+            description: "Task queue depth is {{ "{{ $value }}" }}."
+
+        - alert: FridayAuditChainInvalid
+          expr: friday_audit_chain_valid == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "FRIDAY audit chain integrity failure"
+            description: "Audit chain verification has failed. Possible data tampering."
+
+        - alert: FridayRateLimitSpike
+          expr: rate(friday_rate_limit_hits_total[5m]) > 10
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "FRIDAY rate limiting is triggering frequently"
+            description: "Rate limit hits: {{ "{{ $value }}" }} per second."
+
+        - alert: FridayDown
+          expr: up{job="friday"} == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: "FRIDAY is down"
+            description: "FRIDAY has been unreachable for more than 1 minute."
+
+        - alert: FridayAuthFailureSpike
+          expr: rate(friday_auth_failures_total[5m]) > 5
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "High authentication failure rate"
+            description: "Auth failures: {{ "{{ $value }}" }} per second. Possible brute force attack."
+
+        - alert: FridayHighCost
+          expr: friday_cost_usd_today > 50
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: "FRIDAY daily cost exceeds $50"
+            description: "Current daily cost: ${{ "{{ $value }}" }}."
+{{- end }}

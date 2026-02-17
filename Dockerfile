@@ -1,6 +1,10 @@
 # Stage 1: Build
 FROM node:20-alpine AS builder
 
+LABEL org.opencontainers.image.source="https://github.com/MacCracken/secureyeoman"
+LABEL org.opencontainers.image.description="F.R.I.D.A.Y. — Fully Responsive Integrated Digitally Adaptable Yeoman"
+LABEL org.opencontainers.image.licenses="MIT"
+
 WORKDIR /app
 
 # Copy workspace package manifests first for layer caching

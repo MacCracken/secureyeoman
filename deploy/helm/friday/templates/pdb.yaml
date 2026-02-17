@@ -1,0 +1,44 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "friday.fullname" . }}-core
+  namespace: {{ include "friday.namespace" . }}
+  labels:
+    {{- include "friday.componentLabels" (dict "context" . "component" "core") | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.core.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "friday.selectorLabels" (dict "context" . "component" "core") | nindent 6 }}
+---
+{{- if .Values.mcp.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "friday.fullname" . }}-mcp
+  namespace: {{ include "friday.namespace" . }}
+  labels:
+    {{- include "friday.componentLabels" (dict "context" . "component" "mcp") | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.mcp.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "friday.selectorLabels" (dict "context" . "component" "mcp") | nindent 6 }}
+{{- end }}
+---
+{{- if .Values.dashboard.enabled }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "friday.fullname" . }}-dashboard
+  namespace: {{ include "friday.namespace" . }}
+  labels:
+    {{- include "friday.componentLabels" (dict "context" . "component" "dashboard") | nindent 4 }}
+spec:
+  minAvailable: {{ .Values.podDisruptionBudget.dashboard.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "friday.selectorLabels" (dict "context" . "component" "dashboard") | nindent 6 }}
+{{- end }}
+{{- end }}

@@ -1,0 +1,15 @@
+apiVersion: v2
+name: friday
+description: F.R.I.D.A.Y. — Fully Responsive Integrated Digitally Adaptable Yeoman
+type: application
+version: 0.1.0
+appVersion: "2026.2.16"
+home: https://github.com/MacCracken/secureyeoman
+sources:
+  - https://github.com/MacCracken/secureyeoman
+maintainers:
+  - name: MacCracken
+keywords:
+  - friday
+  - ai-assistant
+  - mcp

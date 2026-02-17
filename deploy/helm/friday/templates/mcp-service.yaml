@@ -1,0 +1,18 @@
+{{- if .Values.mcp.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "friday.fullname" . }}-mcp
+  namespace: {{ include "friday.namespace" . }}
+  labels:
+    {{- include "friday.componentLabels" (dict "context" . "component" "mcp") | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - port: {{ .Values.mcp.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "friday.selectorLabels" (dict "context" . "component" "mcp") | nindent 4 }}
+{{- end }}

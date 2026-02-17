@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "friday.fullname" . }}-config
+  namespace: {{ include "friday.namespace" . }}
+  labels:
+    {{- include "friday.labels" . | nindent 4 }}
+data:
+  NODE_ENV: {{ .Values.config.nodeEnv | quote }}
+  SECUREYEOMAN_HOST: {{ .Values.config.secureyeomanHost | quote }}
+  DATABASE_HOST: {{ .Values.database.host | quote }}
+  DATABASE_PORT: {{ .Values.database.port | quote }}
+  DATABASE_NAME: {{ .Values.database.name | quote }}
+  DATABASE_USER: {{ .Values.database.user | quote }}
+  MCP_ENABLED: {{ .Values.mcp.enabled | quote }}
+  MCP_PORT: {{ .Values.mcp.port | quote }}
+  MCP_HOST: "0.0.0.0"
+  MCP_CORE_URL: "http://{{ include "friday.fullname" . }}-core:{{ .Values.core.port }}"
+  {{- range $key, $val := .Values.mcp.env }}
+  {{ $key }}: {{ $val | quote }}
+  {{- end }}

@@ -16,7 +16,7 @@
 ### Option 1: From Source (Recommended)
 
 ```bash
-git clone https://github.com/MacCracken/FRIDAY.git
+git clone https://github.com/MacCracken/secureyeoman.git
 cd friday
 npm install
 
@@ -33,7 +33,7 @@ The dashboard will be available at http://localhost:3000 and the API at http://l
 ### Option 2: Docker
 
 ```bash
-git clone https://github.com/MacCracken/FRIDAY.git
+git clone https://github.com/MacCracken/secureyeoman.git
 cd friday
 cp .env.example .env
 # Edit .env with your configuration
