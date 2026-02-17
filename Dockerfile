@@ -33,9 +33,9 @@ RUN cp packages/core/src/storage/migrations/*.sql packages/core/dist/storage/mig
 # Stage 2: Runtime
 FROM node:20-alpine
 
-RUN addgroup -S friday && adduser -S friday -G friday \
- && mkdir -p /home/friday/.secureyeoman/data /home/friday/.secureyeoman/workspace \
- && chown -R friday:friday /home/friday
+RUN addgroup -S secureyeoman && adduser -S secureyeoman -G secureyeoman \
+ && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
+ && chown -R secureyeoman:secureyeoman /home/secureyeoman
 
 WORKDIR /app
 
@@ -62,6 +62,6 @@ EXPOSE 3001
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:18789/health || exit 1
 
-USER friday
+USER secureyeoman
 
 CMD ["node", "packages/core/dist/cli.js"]

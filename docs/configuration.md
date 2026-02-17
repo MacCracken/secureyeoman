@@ -45,7 +45,7 @@ Examples:
 ```bash
 secureyeoman                           # Start with defaults
 secureyeoman --port 3001               # Custom port
-secureyeoman --config friday.yaml      # Custom config file
+secureyeoman --config secureyeoman.yaml      # Custom config file
 secureyeoman --log-level debug         # Verbose logging
 ```
 
@@ -90,7 +90,7 @@ security:
     defaultWindowMs: 60000       # max 3600000 (1 hour)
     defaultMaxRequests: 100      # max 10000
     redisUrl: redis://localhost:6379  # optional — enables distributed rate limiting
-    redisPrefix: friday:rl       # optional — Redis key prefix (max 64 chars)
+    redisPrefix: secureyeoman:rl       # optional — Redis key prefix (max 64 chars)
 
   inputValidation:
     maxInputLength: 100000
@@ -200,6 +200,8 @@ heartbeat:
       enabled: true
 
 brain:
+  maxContentLength: 4096           # Max characters per memory/knowledge content
+  importanceFloor: 0.05            # Auto-prune memories below this importance
   vector:
     enabled: false                 # Enable vector semantic memory
     provider: local                # local | api | both
@@ -215,7 +217,7 @@ brain:
       persistDir: ~/.secureyeoman/data/faiss
     qdrant:
       url: http://localhost:6333
-      collection: friday-memories
+      collection: secureyeoman-memories
   consolidation:
     enabled: false                 # Enable LLM memory consolidation
     schedule: "0 2 * * *"          # Cron schedule for deep consolidation
@@ -304,7 +306,7 @@ externalBrain:
   syncMemories: true
   syncKnowledge: true
   includeFrontmatter: true
-  tagPrefix: "friday/"
+  tagPrefix: "secureyeoman/"
 ```
 
 ---
@@ -358,7 +360,7 @@ externalBrain:
 | `defaultWindowMs` | number | `60000` | Sliding window size in ms |
 | `defaultMaxRequests` | number | `100` | Max requests per window |
 | `redisUrl` | string | — | Redis URL for distributed rate limiting (optional) |
-| `redisPrefix` | string | `"friday:rl"` | Key prefix for Redis entries (max 64 chars) |
+| `redisPrefix` | string | `"secureyeoman:rl"` | Key prefix for Redis entries (max 64 chars) |
 
 ### gateway
 
@@ -440,7 +442,7 @@ mcp:
   exposeKnowledgeAsResources: true
 ```
 
-### MCP Service (`@friday/mcp`)
+### MCP Service (`@secureyeoman/mcp`)
 
 The standalone MCP service package provides full MCP protocol compliance with 39+ tools (including web scraping, search, browser automation, and multimodal tools), 7 resources, 4 prompts, and 3 transports. It runs as a separate process and communicates with core via REST API. External MCP servers benefit from health monitoring and encrypted credential management.
 
@@ -490,6 +492,23 @@ Configuration is via environment variables (not the YAML config file):
 **Authentication:** The MCP service self-mints a service JWT on startup using the shared `SECUREYEOMAN_TOKEN_SECRET`. No manual token configuration is needed — just ensure `SECUREYEOMAN_TOKEN_SECRET` is set in your `.env` file (it's the same secret used by core for JWT signing).
 
 See the [Getting Started Guide](guides/getting-started.md#mcp-service-optional) for step-by-step setup instructions.
+
+### brain
+
+Memory and knowledge storage configuration.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `maxContentLength` | number | `4096` | Maximum characters per memory or knowledge entry (100–65536). Enforced on `remember()` and `learn()`. |
+| `importanceFloor` | number | `0.05` | Memories with importance below this threshold are auto-pruned during maintenance (0.0–1.0). |
+| `vector.enabled` | boolean | `false` | Enable vector semantic memory (FAISS or Qdrant) |
+| `vector.backend` | enum | `"faiss"` | Vector backend: `faiss` (local) or `qdrant` (remote) |
+| `vector.similarityThreshold` | number | `0.7` | Minimum similarity score for search results (0.0–1.0) |
+| `consolidation.enabled` | boolean | `false` | Enable LLM-powered memory consolidation |
+| `consolidation.schedule` | string | `"0 2 * * *"` | Full 5-field cron schedule for deep consolidation (minute, hour, day-of-month, month, day-of-week) |
+| `consolidation.deepConsolidation.timeoutMs` | number | `30000` | Timeout per consolidation run (enforced via `Promise.race()`) |
+
+> **Note on pgvector:** If using the PostgreSQL `pgvector` extension, the embedding column is hardcoded at 384 dimensions (matching `all-MiniLM-L6-v2`). Change the migration if you use a different embedding model.
 
 ### heartbeat
 
@@ -789,7 +808,7 @@ Sync Brain memories and knowledge to an external program (e.g. Obsidian vault, g
 | `syncMemories` | boolean | `true` | Export memories as Markdown files |
 | `syncKnowledge` | boolean | `true` | Export knowledge as Markdown files |
 | `includeFrontmatter` | boolean | `true` | Include YAML frontmatter with metadata |
-| `tagPrefix` | string | `"friday/"` | Prefix for Obsidian tags |
+| `tagPrefix` | string | `"secureyeoman/"` | Prefix for Obsidian tags |
 
 Example:
 ```yaml
@@ -799,7 +818,7 @@ externalBrain:
   path: /home/user/Repos/second-brain
   subdir: "30 - Resources/FRIDAY"
   syncIntervalMs: 300000  # every 5 minutes
-  tagPrefix: "friday/"
+  tagPrefix: "secureyeoman/"
 ```
 
 ---
@@ -846,7 +865,7 @@ metrics:
       path: /metrics
 ```
 
-See `deploy/prometheus/alert-rules.yml` for pre-built alert rules and `deploy/grafana/friday-dashboard.json` for a Grafana dashboard.
+See `deploy/prometheus/alert-rules.yml` for pre-built alert rules and `deploy/grafana/secureyeoman-dashboard.json` for a Grafana dashboard.
 
 ---
 

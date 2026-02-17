@@ -357,7 +357,7 @@ System health and status events.
 ### JavaScript/TypeScript
 
 ```typescript
-class FridayWebSocket {
+class SecureYeomanWebSocket {
   private ws: WebSocket;
   private subscriptions: Set<string> = new Set();
   private messageHandlers: Map<string, (payload: any) => void> = new Map();
@@ -426,7 +426,7 @@ class FridayWebSocket {
 }
 
 // Usage
-const client = new FridayWebSocket('ws://localhost:18789/ws', token);
+const client = new SecureYeomanWebSocket('ws://localhost:18789/ws', token);
 
 client.subscribe(['metrics', 'tasks', 'security']);
 
@@ -453,7 +453,7 @@ import asyncio
 import websockets
 import json
 
-class FridayWebSocket:
+class SecureYeomanWebSocket:
     def __init__(self, url: str, token: str = None, api_key: str = None):
         self.url = url
         self.token = token
@@ -503,7 +503,7 @@ class FridayWebSocket:
 
 # Usage
 async def main():
-    client = FridayWebSocket("ws://localhost:18789/ws", token=token)
+    client = SecureYeomanWebSocket("ws://localhost:18789/ws", token=token)
     await client.connect()
     
     await client.subscribe(["metrics", "tasks", "security"])

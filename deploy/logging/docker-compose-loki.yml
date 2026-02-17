@@ -13,7 +13,7 @@ services:
     volumes:
       - ./promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/log:/var/log:ro
-      - friday-logs:/var/log/friday:ro
+      - secureyeoman-logs:/var/log/secureyeoman:ro
     command: -config.file=/etc/promtail/config.yml
     depends_on:
       - loki
@@ -49,4 +49,4 @@ volumes:
   loki-data:
   grafana-data:
   prometheus-data:
-  friday-logs:
+  secureyeoman-logs:

@@ -1,5 +1,7 @@
 /**
  * Brain Routes — API endpoints for memory, knowledge, and skill management.
+ *
+ * Phase 8.8: Added input validation, limit caps, and rate limiting.
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
@@ -16,8 +18,41 @@ export interface BrainRoutesOptions {
   soulManager?: SoulManager;
 }
 
+/** Hard cap on query limit parameter to prevent unbounded queries. */
+const MAX_QUERY_LIMIT = 200;
+
+/** Rate limit tracking for mutation endpoints. */
+const rateLimitWindows = new Map<string, { count: number; resetAt: number }>();
+
+function checkBrainRateLimit(key: string, maxPerMinute: number): boolean {
+  const now = Date.now();
+  const entry = rateLimitWindows.get(key);
+
+  if (!entry || now >= entry.resetAt) {
+    rateLimitWindows.set(key, { count: 1, resetAt: now + 60_000 });
+    return true;
+  }
+
+  if (entry.count >= maxPerMinute) return false;
+  entry.count++;
+  return true;
+}
+
+function capLimit(raw: string | undefined, fallback = 20): number {
+  const n = raw ? Number(raw) : fallback;
+  return Math.min(Math.max(1, isNaN(n) ? fallback : n), MAX_QUERY_LIMIT);
+}
+
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Unknown error';
+}
+
+function validateContent(content: unknown, reply: FastifyReply): string | null {
+  if (typeof content !== 'string' || content.trim().length === 0) {
+    void reply.code(400).send({ error: 'Content is required and must be a non-empty string' });
+    return null;
+  }
+  return content;
 }
 
 export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptions): void {
@@ -44,7 +79,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (q.source) query.source = q.source;
       if (q.search) query.search = q.search;
       if (q.minImportance) query.minImportance = Number(q.minImportance);
-      if (q.limit) query.limit = Number(q.limit);
+      query.limit = capLimit(q.limit);
 
       const memories = await brainManager.recall(query);
       return { memories };
@@ -65,9 +100,17 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       }>,
       reply: FastifyReply
     ) => {
+      const clientIp = request.ip ?? 'unknown';
+      if (!checkBrainRateLimit(`brain:memories:post:${clientIp}`, 60)) {
+        return reply.code(429).send({ error: 'Rate limit exceeded for memory creation' });
+      }
+
       try {
         const { type, content, source, context, importance } = request.body;
-        const memory = await brainManager.remember(type, content, source, context, importance);
+        const validContent = validateContent(content, reply);
+        if (validContent === null) return;
+
+        const memory = await brainManager.remember(type, validContent, source, context, importance);
         return await reply.code(201).send({ memory });
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -101,7 +144,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (q.topic) query.topic = q.topic;
       if (q.search) query.search = q.search;
       if (q.minConfidence) query.minConfidence = Number(q.minConfidence);
-      if (q.limit) query.limit = Number(q.limit);
+      query.limit = capLimit(q.limit);
 
       const knowledge = await brainManager.queryKnowledge(query);
       return { knowledge };
@@ -116,9 +159,17 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       }>,
       reply: FastifyReply
     ) => {
+      const clientIp = request.ip ?? 'unknown';
+      if (!checkBrainRateLimit(`brain:knowledge:post:${clientIp}`, 60)) {
+        return reply.code(429).send({ error: 'Rate limit exceeded for knowledge creation' });
+      }
+
       try {
         const { topic, content, source, confidence } = request.body;
-        const entry = await brainManager.learn(topic, content, source, confidence);
+        const validContent = validateContent(content, reply);
+        if (validContent === null) return;
+
+        const entry = await brainManager.learn(topic, validContent, source, confidence);
         return await reply.code(201).send({ knowledge: entry });
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -169,7 +220,11 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
 
   // ── Maintenance ──────────────────────────────────────────────
 
-  app.post('/api/v1/brain/maintenance', async () => {
+  app.post('/api/v1/brain/maintenance', async (_request: FastifyRequest, reply: FastifyReply) => {
+    const clientIp = _request.ip ?? 'unknown';
+    if (!checkBrainRateLimit(`brain:maintenance:${clientIp}`, 5)) {
+      return reply.code(429).send({ error: 'Rate limit exceeded for maintenance' });
+    }
     const result = await brainManager.runMaintenance();
     return { result };
   });
@@ -248,7 +303,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (!heartbeatManager) {
         return reply.code(503).send({ error: 'Heartbeat system not available' });
       }
-      const limit = request.query.limit ? Number(request.query.limit) : 10;
+      const limit = capLimit(request.query.limit, 10);
       const memories = await brainManager.recall({ source: 'heartbeat', limit });
       return { history: memories };
     }
@@ -277,7 +332,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const result = await brainManager.queryAuditLogs({
           level: q.level ? q.level.split(',') : undefined,
           event: q.event ? q.event.split(',') : undefined,
-          limit: q.limit ? Number(q.limit) : undefined,
+          limit: q.limit ? Math.min(Number(q.limit), MAX_QUERY_LIMIT) : undefined,
           offset: q.offset ? Number(q.offset) : undefined,
           from: q.from ? Number(q.from) : undefined,
           to: q.to ? Number(q.to) : undefined,
@@ -304,7 +359,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
           return await reply.code(400).send({ error: 'Query parameter "q" is required' });
         }
         const result = await brainManager.searchAuditLogs(q, {
-          limit: limit ? Number(limit) : undefined,
+          limit: limit ? Math.min(Number(limit), MAX_QUERY_LIMIT) : undefined,
           offset: offset ? Number(offset) : undefined,
         });
         return result;
@@ -335,7 +390,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
           return await reply.code(400).send({ error: 'Query parameter "query" is required' });
         }
         const results = await brainManager.semanticSearch(query, {
-          limit: limit ? Number(limit) : undefined,
+          limit: limit ? Math.min(Number(limit), MAX_QUERY_LIMIT) : undefined,
           threshold: threshold ? Number(threshold) : undefined,
           type: type as 'memories' | 'knowledge' | 'all' | undefined,
         });
@@ -347,6 +402,11 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
   );
 
   app.post('/api/v1/brain/reindex', async (_request: FastifyRequest, reply: FastifyReply) => {
+    const clientIp = _request.ip ?? 'unknown';
+    if (!checkBrainRateLimit(`brain:reindex:${clientIp}`, 5)) {
+      return reply.code(429).send({ error: 'Rate limit exceeded for reindex' });
+    }
+
     try {
       // Fetch all memories and knowledge, then reindex
       const memories = await brainManager.recall({ limit: 100000 });
@@ -370,6 +430,11 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
   app.post(
     '/api/v1/brain/consolidation/run',
     async (_request: FastifyRequest, reply: FastifyReply) => {
+      const clientIp = _request.ip ?? 'unknown';
+      if (!checkBrainRateLimit(`brain:consolidation:run:${clientIp}`, 5)) {
+        return reply.code(429).send({ error: 'Rate limit exceeded for consolidation' });
+      }
+
       try {
         const report = await brainManager.runConsolidation();
         return { report };
@@ -409,9 +474,10 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
 
   app.get(
     '/api/v1/brain/consolidation/history',
-    async (_request: FastifyRequest, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Querystring: { limit?: string } }>, reply: FastifyReply) => {
       try {
-        const memories = await brainManager.recall({ source: 'consolidation', limit: 50 });
+        const limit = capLimit((request.query as any).limit, 50);
+        const memories = await brainManager.recall({ source: 'consolidation', limit });
         return { history: memories };
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -432,6 +498,12 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     if (!externalSync) {
       return reply.code(503).send({ error: 'External brain sync not configured' });
     }
+
+    const clientIp = _request.ip ?? 'unknown';
+    if (!checkBrainRateLimit(`brain:sync:${clientIp}`, 5)) {
+      return reply.code(429).send({ error: 'Rate limit exceeded for sync' });
+    }
+
     try {
       const result = await externalSync.sync();
       return { result };
@@ -471,6 +543,12 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (!externalSync) {
         return reply.code(503).send({ error: 'External brain sync not initialized' });
       }
+
+      // Validate path if provided — reject path traversal
+      if (request.body.path && /\.\.[\\/]/.test(request.body.path)) {
+        return reply.code(400).send({ error: 'Invalid path: path traversal detected' });
+      }
+
       try {
         await externalSync.updateConfig(
           request.body as Partial<import('@friday/shared').ExternalBrainConfig>

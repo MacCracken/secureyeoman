@@ -136,11 +136,62 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
     GET: { resource: 'brain', action: 'read' },
     POST: { resource: 'brain', action: 'write' },
   },
+  '/api/v1/brain/knowledge/:id': {
+    PUT: { resource: 'brain', action: 'write' },
+    DELETE: { resource: 'brain', action: 'write' },
+  },
   '/api/v1/brain/stats': {
     GET: { resource: 'brain', action: 'read' },
   },
   '/api/v1/brain/maintenance': {
     POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/heartbeat/status': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/heartbeat/tasks': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/heartbeat/tasks/:name': {
+    PUT: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/heartbeat/history': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/heartbeat/beat': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/logs': {
+    GET: { resource: 'audit', action: 'read' },
+  },
+  '/api/v1/brain/logs/search': {
+    GET: { resource: 'audit', action: 'read' },
+  },
+  '/api/v1/brain/search/similar': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/reindex': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/consolidation/run': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/consolidation/schedule': {
+    GET: { resource: 'brain', action: 'read' },
+    PUT: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/consolidation/history': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/sync/status': {
+    GET: { resource: 'brain', action: 'read' },
+  },
+  '/api/v1/brain/sync': {
+    POST: { resource: 'brain', action: 'write' },
+  },
+  '/api/v1/brain/sync/config': {
+    GET: { resource: 'brain', action: 'read' },
+    PUT: { resource: 'brain', action: 'write' },
   },
   // Comms routes
   '/api/v1/comms/identity': {

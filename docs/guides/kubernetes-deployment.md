@@ -15,11 +15,11 @@ Deploy SecureYeoman to a Kubernetes cluster using Helm.
 
 ```bash
 # Lint the chart
-helm lint deploy/helm/friday
+helm lint deploy/helm/secureyeoman
 
 # Install with default values (dev mode)
-helm install friday deploy/helm/friday \
-  --namespace friday \
+helm install secureyeoman deploy/helm/secureyeoman \
+  --namespace secureyeoman \
   --create-namespace \
   --set secrets.postgresPassword=your-password \
   --set database.host=your-db-host.example.com
@@ -30,25 +30,25 @@ helm install friday deploy/helm/friday \
 ### Staging
 
 ```bash
-helm install friday deploy/helm/friday \
-  --namespace friday-staging \
+helm install secureyeoman deploy/helm/secureyeoman \
+  --namespace secureyeoman-staging \
   --create-namespace \
-  -f deploy/helm/friday/values-staging.yaml \
+  -f deploy/helm/secureyeoman/values-staging.yaml \
   --set secrets.postgresPassword=your-password \
   --set database.host=staging-db.example.com \
-  --set ingress.hosts[0].host=friday-staging.example.com
+  --set ingress.hosts[0].host=secureyeoman-staging.example.com
 ```
 
 ### Production
 
 ```bash
-helm install friday deploy/helm/friday \
-  --namespace friday-production \
+helm install secureyeoman deploy/helm/secureyeoman \
+  --namespace secureyeoman-production \
   --create-namespace \
-  -f deploy/helm/friday/values-production.yaml \
+  -f deploy/helm/secureyeoman/values-production.yaml \
   --set secrets.postgresPassword=your-password \
   --set database.host=production-db.example.com \
-  --set ingress.hosts[0].host=friday.example.com
+  --set ingress.hosts[0].host=secureyeoman.example.com
 ```
 
 ## Image Pull from GHCR
@@ -66,7 +66,7 @@ kubectl create secret docker-registry ghcr-secret \
   --docker-server=ghcr.io \
   --docker-username=YOUR_GITHUB_USER \
   --docker-password=YOUR_GITHUB_PAT \
-  --namespace friday
+  --namespace secureyeoman
 
 # Then set in values:
 # imagePullSecrets:
@@ -96,8 +96,8 @@ SecureYeoman expects a PostgreSQL database with pgvector extension:
 database:
   host: your-rds-endpoint.amazonaws.com
   port: 5432
-  name: friday
-  user: friday
+  name: secureyeoman
+  user: secureyeoman
 
 secrets:
   postgresPassword: your-secure-password
@@ -106,7 +106,7 @@ secrets:
 ### OAuth Secrets
 
 ```bash
-helm install friday deploy/helm/friday \
+helm install secureyeoman deploy/helm/secureyeoman \
   --set secrets.githubOauthClientId=xxx \
   --set secrets.githubOauthClientSecret=xxx \
   --set secrets.googleOauthClientId=xxx \
@@ -123,7 +123,7 @@ externalSecrets:
   provider: aws  # aws | gcp | azure
   aws:
     region: us-east-1
-    secretName: friday/production
+    secretName: secureyeoman/production
 ```
 
 ## Cloud-Specific Notes
@@ -145,8 +145,8 @@ ingress:
 ingress:
   className: gce
   annotations:
-    kubernetes.io/ingress.global-static-ip-name: friday-ip
-    networking.gke.io/managed-certificates: friday-cert
+    kubernetes.io/ingress.global-static-ip-name: secureyeoman-ip
+    networking.gke.io/managed-certificates: secureyeoman-cert
 ```
 
 ### Azure AKS
@@ -179,15 +179,15 @@ This creates:
 ## Upgrading
 
 ```bash
-helm upgrade friday deploy/helm/friday \
-  -f deploy/helm/friday/values-production.yaml \
+helm upgrade secureyeoman deploy/helm/secureyeoman \
+  -f deploy/helm/secureyeoman/values-production.yaml \
   --set image.core.tag=2026.2.17
 ```
 
 ## Helm Tests
 
 ```bash
-helm test friday --namespace friday
+helm test secureyeoman --namespace secureyeoman
 ```
 
 This runs a test pod that curls the core `/health` endpoint.
@@ -196,16 +196,16 @@ This runs a test pod that curls the core `/health` endpoint.
 
 ```bash
 # Check pod status
-kubectl get pods -n friday -l app.kubernetes.io/part-of=friday
+kubectl get pods -n secureyeoman -l app.kubernetes.io/part-of=secureyeoman
 
 # View core logs
-kubectl logs -n friday -l app.kubernetes.io/component=core
+kubectl logs -n secureyeoman -l app.kubernetes.io/component=core
 
 # Describe a failing pod
-kubectl describe pod -n friday <pod-name>
+kubectl describe pod -n secureyeoman <pod-name>
 
 # Port-forward to core for local debugging
-kubectl port-forward -n friday svc/friday-core 18789:18789
+kubectl port-forward -n secureyeoman svc/secureyeoman-core 18789:18789
 ```
 
 ## Related Documentation

@@ -9,13 +9,13 @@ clients:
   - url: http://loki:3100/loki/api/v1/push
 
 scrape_configs:
-  - job_name: friday-logs
+  - job_name: secureyeoman-logs
     static_configs:
       - targets:
           - localhost
         labels:
-          job: friday
-          __path__: /var/log/friday/*.log
+          job: secureyeoman
+          __path__: /var/log/secureyeoman/*.log
 
     pipeline_stages:
       - json:
@@ -31,13 +31,13 @@ scrape_configs:
           source: timestamp
           format: RFC3339Nano
 
-  - job_name: friday-audit
+  - job_name: secureyeoman-audit
     static_configs:
       - targets:
           - localhost
         labels:
-          job: friday-audit
-          __path__: /var/log/friday/audit/*.jsonl
+          job: secureyeoman-audit
+          __path__: /var/log/secureyeoman/audit/*.jsonl
 
     pipeline_stages:
       - json:

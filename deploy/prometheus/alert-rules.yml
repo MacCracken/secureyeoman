@@ -1,8 +1,8 @@
 groups:
-  - name: friday_alerts
+  - name: secureyeoman_alerts
     rules:
-      - alert: FridayHighErrorRate
-        expr: rate(friday_api_errors_total[5m]) / rate(friday_api_calls_total[5m]) > 0.05
+      - alert: SecureYeomanHighErrorRate
+        expr: rate(secureyeoman_api_errors_total[5m]) / rate(secureyeoman_api_calls_total[5m]) > 0.05
         for: 5m
         labels:
           severity: warning
@@ -10,8 +10,8 @@ groups:
           summary: "SecureYeoman API error rate is above 5%"
           description: "API error rate is {{ $value | humanizePercentage }} over the last 5 minutes."
 
-      - alert: FridayHighLatency
-        expr: friday_api_latency_avg_ms > 500
+      - alert: SecureYeomanHighLatency
+        expr: secureyeoman_api_latency_avg_ms > 500
         for: 10m
         labels:
           severity: warning
@@ -19,8 +19,8 @@ groups:
           summary: "SecureYeoman API latency is high"
           description: "Average API latency is {{ $value }}ms."
 
-      - alert: FridayHighMemory
-        expr: friday_memory_used_mb > 512
+      - alert: SecureYeomanHighMemory
+        expr: secureyeoman_memory_used_mb > 512
         for: 5m
         labels:
           severity: warning
@@ -28,8 +28,8 @@ groups:
           summary: "SecureYeoman memory usage is high"
           description: "Memory usage is {{ $value }}MB."
 
-      - alert: FridayTaskQueueBacklog
-        expr: friday_tasks_queue_depth > 100
+      - alert: SecureYeomanTaskQueueBacklog
+        expr: secureyeoman_tasks_queue_depth > 100
         for: 5m
         labels:
           severity: warning
@@ -37,8 +37,8 @@ groups:
           summary: "SecureYeoman task queue backlog is growing"
           description: "Task queue depth is {{ $value }}."
 
-      - alert: FridayAuditChainInvalid
-        expr: friday_audit_chain_valid == 0
+      - alert: SecureYeomanAuditChainInvalid
+        expr: secureyeoman_audit_chain_valid == 0
         for: 1m
         labels:
           severity: critical
@@ -46,8 +46,8 @@ groups:
           summary: "SecureYeoman audit chain integrity failure"
           description: "Audit chain verification has failed. Possible data tampering."
 
-      - alert: FridayRateLimitSpike
-        expr: rate(friday_rate_limit_hits_total[5m]) > 10
+      - alert: SecureYeomanRateLimitSpike
+        expr: rate(secureyeoman_rate_limit_hits_total[5m]) > 10
         for: 5m
         labels:
           severity: warning
@@ -55,8 +55,8 @@ groups:
           summary: "SecureYeoman rate limiting is triggering frequently"
           description: "Rate limit hits: {{ $value }} per second."
 
-      - alert: FridayDown
-        expr: up{job="friday"} == 0
+      - alert: SecureYeomanDown
+        expr: up{job="secureyeoman"} == 0
         for: 1m
         labels:
           severity: critical
@@ -64,8 +64,8 @@ groups:
           summary: "SecureYeoman is down"
           description: "SecureYeoman has been unreachable for more than 1 minute."
 
-      - alert: FridayAuthFailureSpike
-        expr: rate(friday_auth_failures_total[5m]) > 5
+      - alert: SecureYeomanAuthFailureSpike
+        expr: rate(secureyeoman_auth_failures_total[5m]) > 5
         for: 5m
         labels:
           severity: warning
@@ -73,8 +73,8 @@ groups:
           summary: "High authentication failure rate"
           description: "Auth failures: {{ $value }} per second. Possible brute force attack."
 
-      - alert: FridayHighCost
-        expr: friday_cost_usd_today > 50
+      - alert: SecureYeomanHighCost
+        expr: secureyeoman_cost_usd_today > 50
         for: 1m
         labels:
           severity: warning

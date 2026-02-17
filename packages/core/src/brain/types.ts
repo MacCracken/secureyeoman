@@ -50,6 +50,8 @@ export interface MemoryQuery {
   minImportance?: number;
   limit?: number;
   search?: string;
+  sortDirection?: 'asc' | 'desc';
+  offset?: number;
 }
 
 export interface KnowledgeEntry {

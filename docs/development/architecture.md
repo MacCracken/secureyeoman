@@ -50,7 +50,7 @@
 ### Monorepo Structure
 
 ```
-friday/
+secureyeoman/
 ├── README.md                   # Project overview
 ├── CONTRIBUTING.md             # Development guide
 ├── SECURITY.md                # Security policy
@@ -544,7 +544,7 @@ Dashboard Display (WebSocket)
 
 ## Kubernetes Deployment
 
-SecureYeoman supports production deployment on Kubernetes via Helm charts located in `deploy/helm/friday/`.
+SecureYeoman supports production deployment on Kubernetes via Helm charts located in `deploy/helm/secureyeoman/`.
 
 ### Architecture
 
@@ -569,9 +569,9 @@ SecureYeoman supports production deployment on Kubernetes via Helm charts locate
 
 | Deployment | Image | Port | Purpose |
 |-----------|-------|------|---------|
-| `friday-core` | `ghcr.io/maccracken/secureyeoman-core` | 18789 | Gateway, agent engine, API, WebSocket |
-| `friday-mcp` | `ghcr.io/maccracken/secureyeoman-mcp` | 3001 | MCP server (optional) |
-| `friday-dashboard` | `ghcr.io/maccracken/secureyeoman-dashboard` | 80 | Nginx serving SPA, proxying API/WS to core |
+| `secureyeoman-core` | `ghcr.io/maccracken/secureyeoman-core` | 18789 | Gateway, agent engine, API, WebSocket |
+| `secureyeoman-mcp` | `ghcr.io/maccracken/secureyeoman-mcp` | 3001 | MCP server (optional) |
+| `secureyeoman-dashboard` | `ghcr.io/maccracken/secureyeoman-dashboard` | 80 | Nginx serving SPA, proxying API/WS to core |
 
 ### Key Features
 

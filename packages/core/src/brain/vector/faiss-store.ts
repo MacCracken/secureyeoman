@@ -21,6 +21,7 @@ export class FaissVectorStore implements VectorStore {
   private readonly persistDir: string;
   private sidecar: SidecarData = { idToIndex: {}, indexToId: {}, nextIndex: 0 };
   private faissModule: any = null;
+  private deletedCount = 0;
 
   constructor(dimensions: number, persistDir: string) {
     this.dimensions = dimensions;
@@ -133,15 +134,64 @@ export class FaissVectorStore implements VectorStore {
 
   async delete(id: string): Promise<boolean> {
     // FAISS flat index doesn't support deletion; we mark as deleted
-    // and rebuild on next persist cycle. For now, just remove from sidecar.
+    // in the sidecar and rebuild on compact(). Deleted vectors remain
+    // in the index but are filtered out by search via sidecar lookup.
     if (this.sidecar.idToIndex[id] === undefined) return false;
 
     const idx = this.sidecar.idToIndex[id];
     delete this.sidecar.idToIndex[id];
     delete this.sidecar.indexToId[idx];
+    this.deletedCount++;
 
     this.persist();
     return true;
+  }
+
+  /** Wipe the entire index and sidecar, starting fresh. */
+  async clear(): Promise<void> {
+    await this.ensureInitialized();
+    this.index = new this.faissModule.IndexFlatL2(this.dimensions);
+    this.sidecar = { idToIndex: {}, indexToId: {}, nextIndex: 0 };
+    this.deletedCount = 0;
+    this.persist();
+  }
+
+  /** Rebuild index without deleted entries to reclaim space. */
+  async compact(): Promise<void> {
+    await this.ensureInitialized();
+
+    // Collect all live vectors
+    const liveEntries: { id: string; idx: number }[] = [];
+    for (const [id, idx] of Object.entries(this.sidecar.idToIndex)) {
+      liveEntries.push({ id, idx });
+    }
+
+    // Create a new index and re-add live vectors
+    const newIndex = new this.faissModule.IndexFlatL2(this.dimensions);
+    const newSidecar: SidecarData = { idToIndex: {}, indexToId: {}, nextIndex: 0 };
+
+    for (const entry of liveEntries) {
+      // Extract vector from old index using reconstruct
+      try {
+        const vector = this.index.reconstruct(entry.idx);
+        newIndex.add(vector);
+        const newIdx = newSidecar.nextIndex++;
+        newSidecar.idToIndex[entry.id] = newIdx;
+        newSidecar.indexToId[newIdx] = entry.id;
+      } catch {
+        // If reconstruct fails, skip this vector
+      }
+    }
+
+    this.index = newIndex;
+    this.sidecar = newSidecar;
+    this.deletedCount = 0;
+    this.persist();
+  }
+
+  /** Get the number of vectors deleted since last compact. */
+  getDeletedCount(): number {
+    return this.deletedCount;
   }
 
   async count(): Promise<number> {

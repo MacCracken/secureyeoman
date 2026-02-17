@@ -17,7 +17,7 @@
 
 ```bash
 git clone https://github.com/MacCracken/secureyeoman.git
-cd friday
+cd secureyeoman
 npm install
 
 # Create environment file
@@ -34,7 +34,7 @@ The dashboard will be available at http://localhost:3000 and the API at http://l
 
 ```bash
 git clone https://github.com/MacCracken/secureyeoman.git
-cd friday
+cd secureyeoman
 cp .env.example .env
 # Edit .env with your configuration
 
@@ -56,19 +56,19 @@ Docker Compose starts these services:
 | `dashboard` | 3000 | *(default)* | Vite dev server for the React dashboard |
 | `mcp` | 3001 | `mcp` / `full` | MCP protocol server (tools, resources, prompts) |
 
-The core service runs as a non-root `friday` user with a persistent volume (`friday-data`) for SQLite databases. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token setup needed.
+The core service runs as a non-root `secureyeoman` user with a persistent volume (`secureyeoman-data`) for SQLite databases. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token setup needed.
 
 #### Manual Docker build
 
 ```bash
-docker build -t friday .
+docker build -t secureyeoman .
 docker run -p 18789:18789 \
   -e SECUREYEOMAN_SIGNING_KEY="your-32-char-signing-key" \
   -e SECUREYEOMAN_TOKEN_SECRET="your-32-char-token-secret" \
   -e SECUREYEOMAN_ENCRYPTION_KEY="your-32-char-encryption-key" \
   -e SECUREYEOMAN_ADMIN_PASSWORD="your-32-char-admin-password" \
   -e ANTHROPIC_API_KEY="sk-ant-..." \
-  friday
+  secureyeoman
 ```
 
 ---
@@ -310,7 +310,7 @@ npx vitest run tests/security/ tests/chaos/
 
 ## MCP Service (Optional)
 
-The MCP service (`@friday/mcp`) exposes SecureYeoman's capabilities as MCP tools, resources, and prompts for use with Claude Desktop and other MCP clients.
+The MCP service (`@secureyeoman/mcp`) exposes SecureYeoman's capabilities as MCP tools, resources, and prompts for use with Claude Desktop and other MCP clients.
 
 ### 1. Configure Environment
 
@@ -356,7 +356,7 @@ For Claude Desktop integration, add to your Claude Desktop config:
 ```json
 {
   "mcpServers": {
-    "friday": {
+    "secureyeoman": {
       "command": "node",
       "args": ["packages/mcp/dist/cli.js", "--transport", "stdio"],
       "env": {
@@ -368,7 +368,7 @@ For Claude Desktop integration, add to your Claude Desktop config:
 }
 ```
 
-For full MCP configuration details, see the [Integration Setup Guide](integrations.md#mcp-service-fridaymcp).
+For full MCP configuration details, see the [Integration Setup Guide](integrations.md#mcp-service-secureyeomanmcp).
 
 ---
 

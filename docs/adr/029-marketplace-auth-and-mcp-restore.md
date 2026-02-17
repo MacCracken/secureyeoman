@@ -8,7 +8,7 @@ Accepted
 
 Two reliability issues were identified in v1.4.1:
 
-1. **Marketplace dashboard showed empty** — The `MarketplacePage` component used raw `fetch()` with `localStorage.getItem('friday_token')` for authentication, but the application stores auth tokens under `localStorage.getItem('accessToken')`. This caused every marketplace API call to send `Bearer null`, receive a 401, and silently render "Marketplace is empty."
+1. **Marketplace dashboard showed empty** — The `MarketplacePage` component used raw `fetch()` with `localStorage.getItem('secureyeoman_token')` for authentication, but the application stores auth tokens under `localStorage.getItem('accessToken')`. This caused every marketplace API call to send `Bearer null`, receive a 401, and silently render "Marketplace is empty."
 
 2. **MCP tool toggle unreliable** — When an MCP server was disabled and re-enabled, `discoverTools()` read the server record from SQLite and checked `server.enabled` before restoring tools. While the route updated the DB before calling `discoverTools()`, the coupling between the DB write and the enabled-guard check created a fragile dependency. Any future code path that called `discoverTools()` before the DB update would silently fail.
 

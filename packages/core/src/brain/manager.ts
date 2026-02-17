@@ -50,13 +50,26 @@ export class BrainManager {
       throw new Error('Brain is not enabled');
     }
 
+    const maxContentLength = (this.config as any).maxContentLength ?? 4096;
+    if (content.length > maxContentLength) {
+      throw new Error(`Memory content exceeds maximum length of ${maxContentLength}`);
+    }
+
     const count = await this.storage.getMemoryCount();
     if (count >= this.config.maxMemories) {
       // Prune lowest-importance memory before adding new one
-      const lowest = await this.storage.queryMemories({ limit: 1, minImportance: 0 });
-      const toPrune = lowest[lowest.length - 1];
-      if (toPrune) {
-        await this.storage.deleteMemory(toPrune.id);
+      const lowest = await this.storage.queryMemories({
+        limit: 1,
+        minImportance: 0,
+        sortDirection: 'asc',
+      });
+      if (lowest[0]) {
+        await this.storage.deleteMemory(lowest[0].id);
+        if (this.vectorEnabled) {
+          try {
+            await this.deps.vectorMemoryManager!.removeMemory(lowest[0].id);
+          } catch { /* best-effort vector cleanup */ }
+        }
       }
     }
 
@@ -168,6 +181,11 @@ export class BrainManager {
       throw new Error('Brain is not enabled');
     }
 
+    const maxContentLength = (this.config as any).maxContentLength ?? 4096;
+    if (content.length > maxContentLength) {
+      throw new Error(`Knowledge content exceeds maximum length of ${maxContentLength}`);
+    }
+
     const count = await this.storage.getKnowledgeCount();
     if (count >= this.config.maxKnowledge) {
       throw new Error(`Maximum knowledge limit reached (${this.config.maxKnowledge})`);
@@ -255,7 +273,7 @@ export class BrainManager {
           for (const vr of memResults) {
             const memory = await this.storage.getMemory(vr.id);
             if (memory) {
-              memLines.push(`- [${memory.type}] ${memory.content}`);
+              memLines.push(`- [${memory.type}] ${this.sanitizeForPrompt(memory.content)}`);
             }
           }
           if (memLines.length > 1) contentParts.push(memLines.join('\n'));
@@ -269,7 +287,7 @@ export class BrainManager {
           for (const vr of knowResults) {
             const entry = await this.storage.getKnowledge(vr.id);
             if (entry) {
-              knowLines.push(`- [${entry.topic}] ${entry.content}`);
+              knowLines.push(`- [${entry.topic}] ${this.sanitizeForPrompt(entry.content)}`);
             }
           }
           if (knowLines.length > 1) contentParts.push(knowLines.join('\n'));
@@ -297,7 +315,7 @@ export class BrainManager {
       await this.storage.touchMemories(memories.map((m) => m.id));
       const memLines = ['### Memories'];
       for (const memory of memories) {
-        memLines.push(`- [${memory.type}] ${memory.content}`);
+        memLines.push(`- [${memory.type}] ${this.sanitizeForPrompt(memory.content)}`);
       }
       contentParts.push(memLines.join('\n'));
     }
@@ -310,7 +328,7 @@ export class BrainManager {
     if (knowledge.length > 0) {
       const knowLines = ['### Knowledge'];
       for (const entry of knowledge) {
-        knowLines.push(`- [${entry.topic}] ${entry.content}`);
+        knowLines.push(`- [${entry.topic}] ${this.sanitizeForPrompt(entry.content)}`);
       }
       contentParts.push(knowLines.join('\n'));
     }
@@ -322,6 +340,25 @@ export class BrainManager {
     const header =
       '## Brain\nYour Brain is your mind — the accumulated memories and learned knowledge that inform your understanding. Draw on what is relevant; let the rest rest.\n';
     return header + '\n' + contentParts.join('\n\n');
+  }
+
+  // ── Prompt Sanitization ────────────────────────────────────
+
+  private sanitizeForPrompt(content: string): string {
+    // Strip known prompt injection markers
+    const patterns = [
+      /\[\[SYSTEM\]\]|\{\{system\}\}|<\|system\|>|<<SYS>>|<s>\[INST\]/gi,
+      /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?|rules?)/gi,
+      /forget\s+(all\s+)?(previous|prior|your)\s+(instructions?|training|context)/gi,
+      /pretend\s+(you\s+are|to\s+be|you're)\s+(a\s+)?(different|new|another)\s+(ai|assistant|bot)/gi,
+      /DAN\s*mode|developer\s*mode|jailbreak|do\s*anything\s*now/gi,
+      /you\s+are\s+now\s+(in\s+)?(unrestricted|unfiltered|uncensored)\s+mode/gi,
+    ];
+    let sanitized = content;
+    for (const pattern of patterns) {
+      sanitized = sanitized.replace(pattern, '[filtered]');
+    }
+    return sanitized;
   }
 
   // ── Semantic Search ──────────────────────────────────────────
@@ -528,13 +565,33 @@ export class BrainManager {
 
   // ── Maintenance ────────────────────────────────────────────
 
-  async runMaintenance(): Promise<{ decayed: number; pruned: number }> {
+  async runMaintenance(): Promise<{ decayed: number; pruned: number; vectorSynced: number }> {
     const decayed = await this.storage.decayMemories(this.config.importanceDecayRate);
-    const pruned = await this.storage.pruneExpiredMemories();
+    const prunedIds = await this.storage.pruneExpiredMemories();
 
-    this.deps.logger.debug('Brain maintenance completed', { decayed, pruned });
+    // Prune by importance floor
+    const importanceFloor = (this.config as any).importanceFloor ?? 0.05;
+    const floorPrunedIds = await this.storage.pruneByImportanceFloor(importanceFloor);
+    const allPrunedIds = [...prunedIds, ...floorPrunedIds];
 
-    return { decayed, pruned };
+    // Sync vector store: remove pruned memories
+    let vectorSynced = 0;
+    if (this.vectorEnabled && allPrunedIds.length > 0) {
+      for (const id of allPrunedIds) {
+        try {
+          await this.deps.vectorMemoryManager!.removeMemory(id);
+          vectorSynced++;
+        } catch { /* best-effort vector cleanup */ }
+      }
+    }
+
+    this.deps.logger.debug('Brain maintenance completed', {
+      decayed,
+      pruned: allPrunedIds.length,
+      vectorSynced,
+    });
+
+    return { decayed, pruned: allPrunedIds.length, vectorSynced };
   }
 
   // ── Stats ──────────────────────────────────────────────────

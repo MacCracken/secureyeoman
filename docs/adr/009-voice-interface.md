@@ -36,7 +36,7 @@ A dedicated `useVoice` hook (`packages/dashboard/src/hooks/useVoice.ts`) encapsu
 
 ### localStorage Persistence
 
-The `voiceEnabled` preference is stored in `localStorage` under the key `friday-voice-enabled`. This persists the user's preference across page refreshes without requiring backend changes.
+The `voiceEnabled` preference is stored in `localStorage` under the key `secureyeoman-voice-enabled`. This persists the user's preference across page refreshes without requiring backend changes.
 
 ### Graceful Degradation
 

@@ -12,7 +12,7 @@ If the capture code is compromised:
 - Without sandboxing: Full system access (screen, files, network)
 - With sandboxing: Limited to capture scope (screen only, no persistence, no network)
 
-OpenClaw runs capture on companion devices (iOS/macOS/Android) with Docker sandboxing for non-main sessions. Friday needs native sandboxing on the host system.
+OpenClaw runs capture on companion devices (iOS/macOS/Android) with Docker sandboxing for non-main sessions. SecureYeoman needs native sandboxing on the host system.
 
 ## Decision
 
@@ -21,7 +21,7 @@ Execute all capture operations in **platform-native sandboxes** with minimal pri
 ### Sandbox Architecture
 
 ```
-Friday Main Process
+SecureYeoman Main Process
 ├── Consent Manager
 ├── Audit Logger
 └── Encrypted IPC Channel

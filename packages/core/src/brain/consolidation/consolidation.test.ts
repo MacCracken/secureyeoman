@@ -63,6 +63,8 @@ function createMockDeps(): ConsolidationManagerDeps {
       ),
       deleteMemory: vi.fn(async () => {}),
       getMemoryCount: vi.fn(async () => 0),
+      getMeta: vi.fn(async () => null),
+      setMeta: vi.fn(async () => {}),
     } as any,
     auditChain: {
       append: vi.fn(async () => {}),
@@ -202,6 +204,65 @@ describe('ConsolidationManager', () => {
         'Consolidation scheduler started',
         expect.any(Object)
       );
+    });
+  });
+
+  describe('flaggedIds persistence', () => {
+    it('persists flaggedIds to brain.meta on flag', async () => {
+      (deps.vectorManager.searchMemories as any).mockResolvedValue([
+        { id: 'existing', score: 0.9 },
+      ]);
+
+      const memory = makeMemory('m1', 'somewhat similar');
+      await manager.onMemorySave(memory);
+
+      // Should have called setMeta with flaggedIds
+      expect(deps.storage.setMeta).toHaveBeenCalledWith(
+        'consolidation:flaggedIds',
+        expect.any(String)
+      );
+      const setMetaCall = (deps.storage.setMeta as any).mock.calls.find(
+        (c: any[]) => c[0] === 'consolidation:flaggedIds'
+      );
+      expect(setMetaCall).toBeDefined();
+      const saved = JSON.parse(setMetaCall[1]);
+      expect(saved).toContain('m1');
+    });
+
+    it('loads flaggedIds from meta on deep consolidation run', async () => {
+      (deps.storage.getMeta as any) = vi.fn(async (key: string) => {
+        if (key === 'consolidation:flaggedIds') return JSON.stringify(['flag1', 'flag2']);
+        return null;
+      });
+      (deps.storage.setMeta as any) = vi.fn(async () => {});
+      (deps.storage.queryMemories as any).mockResolvedValue([]);
+
+      // Re-create manager so it picks up the new mock
+      manager = new ConsolidationManager(defaultConfig, {
+        ...deps,
+        storage: deps.storage,
+      });
+
+      await manager.runDeepConsolidation();
+      // getMeta should have been called to load flaggedIds
+      expect(deps.storage.getMeta).toHaveBeenCalledWith('consolidation:flaggedIds');
+    });
+  });
+
+  describe('timeout enforcement', () => {
+    it('times out long-running deep consolidation', async () => {
+      const timeoutConfig = {
+        ...defaultConfig,
+        deepConsolidation: { ...defaultConfig.deepConsolidation, timeoutMs: 50 },
+      };
+      const slowDeps = createMockDeps();
+      // Make queryMemories hang for longer than the timeout
+      (slowDeps.storage.queryMemories as any).mockImplementation(
+        () => new Promise((resolve) => setTimeout(() => resolve([]), 200))
+      );
+
+      const timeoutManager = new ConsolidationManager(timeoutConfig, slowDeps);
+      await expect(timeoutManager.runDeepConsolidation()).rejects.toThrow(/timed out|timeout/i);
     });
   });
 });

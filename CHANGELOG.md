@@ -6,6 +6,36 @@ All notable changes to SecureYeoman are documented in this file.
 
 ## [2026.2.17] — 2026-02-17
 
+### Phase 8.8: Memory/Brain Hardening — [ADR 045](docs/adr/045-memory-audit-hardening.md)
+
+#### Security
+- Fixed SQL injection via context key interpolation in `BrainStorage.queryMemories()` — now uses parameterized JSONB path with regex key validation
+- Added prompt injection sanitization (`sanitizeForPrompt()`) in `BrainManager.getRelevantContext()` — strips known injection markers before composing prompt context
+- Added input validation on brain REST route POST/PUT handlers (content type checking, non-empty enforcement)
+- Added rate limiting on mutation endpoints (60/min for memories/knowledge, 5/min for maintenance/reindex/consolidation/sync)
+- Added `MAX_QUERY_LIMIT = 200` cap on all GET route `limit` parameters to prevent unbounded queries
+- Added path traversal validation on external sync config updates
+- Added 18 missing brain routes to RBAC `ROUTE_PERMISSIONS` map (heartbeat, logs, search, consolidation, sync endpoints)
+
+#### Bug Fixes
+- **Critical**: Fixed memory pruning to delete lowest-importance memory instead of highest — added `sortDirection` support to `queryMemories()` and used `sortDirection: 'asc'` in prune path
+- Fixed FAISS vector store phantom vectors — added `compact()` method to rebuild index without deleted entries, `clear()` to wipe, and `deletedCount` tracking
+- Fixed expired PG memories not removed from vector store — `runMaintenance()` now syncs pruned IDs to vector store
+- Fixed consolidation `flaggedIds` lost on restart — now persisted to `brain.meta` with snapshot-based clearing during deep runs
+- Fixed cron scheduler only matching minute/hour — now implements full 5-field cron matching (minute, hour, day-of-month, month, day-of-week)
+- Fixed `deepConsolidation.timeoutMs` config never enforced — wrapped with `Promise.race()` timeout
+- Fixed Qdrant client typed as `any` — added `QdrantClientLike` interface with proper typing and auto-reconnect on failure
+- Fixed external sync fetching all memories in single query — paginated with PAGE_SIZE=500
+
+#### Enhancements
+- Added `maxContentLength` config (default 4096) — enforced in `remember()` and `learn()`
+- Added `importanceFloor` config (default 0.05) — memories decayed below floor auto-pruned in maintenance
+- Added `sortDirection` and `offset` fields to `MemoryQuery` interface
+- Added `pruneByImportanceFloor()` to `BrainStorage`
+- `pruneExpiredMemories()` now returns pruned IDs (was count)
+- `runMaintenance()` returns enhanced stats with `vectorSynced` count
+- Added optional `compact()` method to `VectorStore` interface
+
 ### Phase 7.3: Multimodal I/O — Complete
 
 #### Integration Wiring

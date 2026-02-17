@@ -1,0 +1,13 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "secureyeoman.fullname" . }}-grafana-dashboard
+  namespace: {{ include "secureyeoman.namespace" . }}
+  labels:
+    {{- include "secureyeoman.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  secureyeoman-dashboard.json: |-
+{{ .Files.Get "dashboards/secureyeoman-dashboard.json" | indent 4 }}
+{{- end }}

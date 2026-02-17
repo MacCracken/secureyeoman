@@ -532,18 +532,18 @@
                 </div>
                 <div class="window-body">
                   <pre><code><span class="comment"># Deploy with Helm (EKS, GKE, AKS)</span>
-<span class="prompt">$</span> helm install friday deploy/helm/friday \
-    --namespace friday --create-namespace \
+<span class="prompt">$</span> helm install secureyeoman deploy/helm/secureyeoman \
+    --namespace secureyeoman --create-namespace \
     --set secrets.postgresPassword=your-password \
     --set database.host=your-db.example.com
 
 <span class="comment"># Production deployment</span>
-<span class="prompt">$</span> helm install friday deploy/helm/friday \
-    -f deploy/helm/friday/values-production.yaml \
-    --namespace friday-production --create-namespace
+<span class="prompt">$</span> helm install secureyeoman deploy/helm/secureyeoman \
+    -f deploy/helm/secureyeoman/values-production.yaml \
+    --namespace secureyeoman-production --create-namespace
 
 <span class="comment"># Verify</span>
-<span class="prompt">$</span> helm test friday --namespace friday</code></pre>
+<span class="prompt">$</span> helm test secureyeoman --namespace secureyeoman</code></pre>
                 </div>
               </div>
             </div>

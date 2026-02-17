@@ -43,32 +43,32 @@ export SECUREYEOMAN_LOG_LEVEL=info
 node packages/core/dist/cli.js
 
 # With systemd (see below)
-sudo systemctl start friday
+sudo systemctl start secureyeoman
 ```
 
 ### systemd Service
 
 ```ini
-# /etc/systemd/system/friday.service
+# /etc/systemd/system/secureyeoman.service
 [Unit]
 Description=SecureYeoman Agent
 After=network.target
 
 [Service]
 Type=simple
-User=friday
-Group=friday
-WorkingDirectory=/opt/friday
+User=secureyeoman
+Group=secureyeoman
+WorkingDirectory=/opt/secureyeoman
 ExecStart=/usr/bin/node packages/core/dist/cli.js
 Restart=on-failure
 RestartSec=5
-EnvironmentFile=/etc/friday/env
+EnvironmentFile=/etc/secureyeoman/env
 
 # Security hardening
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/opt/friday/data /var/log/friday
+ReadWritePaths=/opt/secureyeoman/data /var/log/secureyeoman
 PrivateTmp=yes
 
 [Install]
@@ -77,8 +77,8 @@ WantedBy=multi-user.target
 
 ```bash
 sudo systemctl daemon-reload
-sudo systemctl enable friday
-sudo systemctl start friday
+sudo systemctl enable secureyeoman
+sudo systemctl start secureyeoman
 ```
 
 ## Docker
@@ -86,21 +86,21 @@ sudo systemctl start friday
 ### Build
 
 ```bash
-docker build -t friday:latest .
+docker build -t secureyeoman:latest .
 ```
 
 ### Run
 
 ```bash
 docker run -d \
-  --name friday \
+  --name secureyeoman \
   -p 18789:18789 \
-  -v friday-data:/app/data \
+  -v secureyeoman-data:/app/data \
   -e SECUREYEOMAN_TOKEN_SECRET="$(openssl rand -base64 32)" \
   -e SECUREYEOMAN_ADMIN_PASSWORD="your-password" \
   -e SECUREYEOMAN_SIGNING_KEY="$(openssl rand -base64 32)" \
   -e SECUREYEOMAN_ENCRYPTION_KEY="$(openssl rand -base64 32)" \
-  friday:latest
+  secureyeoman:latest
 ```
 
 ### Docker Compose
@@ -129,12 +129,12 @@ The MCP service is opt-in via Docker Compose profiles. Set `MCP_ENABLED=true` in
 ```yaml
 # Minimal docker-compose.yml (for reference)
 services:
-  friday:
+  secureyeoman:
     build: .
     ports:
       - "18789:18789"
     volumes:
-      - friday-data:/app/data
+      - secureyeoman-data:/app/data
     env_file: .env
     restart: unless-stopped
 
@@ -145,15 +145,15 @@ services:
       - "3001:3001"
     env_file: .env
     environment:
-      MCP_CORE_URL: "http://friday:18789"
+      MCP_CORE_URL: "http://secureyeoman:18789"
     depends_on:
-      friday:
+      secureyeoman:
         condition: service_healthy
     profiles: [mcp]
     restart: unless-stopped
 
 volumes:
-  friday-data:
+  secureyeoman-data:
 ```
 
 ### systemd (MCP Service)
@@ -161,26 +161,26 @@ volumes:
 If running the MCP service as a standalone systemd unit alongside core:
 
 ```ini
-# /etc/systemd/system/friday-mcp.service
+# /etc/systemd/system/secureyeoman-mcp.service
 [Unit]
 Description=SecureYeoman MCP Service
-After=friday.service
-Requires=friday.service
+After=secureyeoman.service
+Requires=secureyeoman.service
 
 [Service]
 Type=simple
-User=friday
-Group=friday
-WorkingDirectory=/opt/friday
+User=secureyeoman
+Group=secureyeoman
+WorkingDirectory=/opt/secureyeoman
 ExecStart=/usr/bin/node packages/mcp/dist/cli.js
 Restart=on-failure
 RestartSec=5
-EnvironmentFile=/etc/friday/env
+EnvironmentFile=/etc/secureyeoman/env
 
 NoNewPrivileges=yes
 ProtectSystem=strict
 ProtectHome=yes
-ReadWritePaths=/opt/friday/data
+ReadWritePaths=/opt/secureyeoman/data
 PrivateTmp=yes
 
 [Install]
@@ -198,10 +198,10 @@ The gateway automatically sets standard HTTP security headers on every response 
 ```nginx
 server {
     listen 443 ssl http2;
-    server_name friday.example.com;
+    server_name secureyeoman.example.com;
 
-    ssl_certificate /etc/letsencrypt/live/friday.example.com/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/friday.example.com/privkey.pem;
+    ssl_certificate /etc/letsencrypt/live/secureyeoman.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/secureyeoman.example.com/privkey.pem;
 
     location / {
         proxy_pass http://127.0.0.1:18789;
@@ -255,7 +255,7 @@ server {
 ### Caddy
 
 ```
-friday.example.com {
+secureyeoman.example.com {
     reverse_proxy localhost:18789
 }
 ```
@@ -275,7 +275,7 @@ This starts:
 - **Grafana** (port 3001) — Dashboards
 - **Prometheus** (port 9090) — Metrics
 
-Import the Grafana dashboard from `deploy/grafana/friday-dashboard.json`.
+Import the Grafana dashboard from `deploy/grafana/secureyeoman-dashboard.json`.
 
 ## Kubernetes
 
@@ -290,8 +290,8 @@ The Helm chart supports:
 
 ```bash
 # Quick start
-helm install friday deploy/helm/friday \
-  --namespace friday --create-namespace \
+helm install secureyeoman deploy/helm/secureyeoman \
+  --namespace secureyeoman --create-namespace \
   --set secrets.postgresPassword=your-password \
   --set database.host=your-db.example.com
 ```
@@ -302,23 +302,23 @@ helm install friday deploy/helm/friday \
 
 ```bash
 # Stop the service
-sudo systemctl stop friday
+sudo systemctl stop secureyeoman
 
 # Copy database files
-cp /opt/friday/data/*.db /backup/friday/
+cp /opt/secureyeoman/data/*.db /backup/secureyeoman/
 
 # Restart
-sudo systemctl start friday
+sudo systemctl start secureyeoman
 ```
 
 ### Automated Backup Script
 
 ```bash
 #!/bin/bash
-BACKUP_DIR="/backup/friday/$(date +%Y%m%d)"
+BACKUP_DIR="/backup/secureyeoman/$(date +%Y%m%d)"
 mkdir -p "$BACKUP_DIR"
-sqlite3 /opt/friday/data/audit.db ".backup '$BACKUP_DIR/audit.db'"
-sqlite3 /opt/friday/data/tasks.db ".backup '$BACKUP_DIR/tasks.db'"
+sqlite3 /opt/secureyeoman/data/audit.db ".backup '$BACKUP_DIR/audit.db'"
+sqlite3 /opt/secureyeoman/data/tasks.db ".backup '$BACKUP_DIR/tasks.db'"
 # Retain 30 days
-find /backup/friday -type d -mtime +30 -exec rm -rf {} +
+find /backup/secureyeoman -type d -mtime +30 -exec rm -rf {} +
 ```
