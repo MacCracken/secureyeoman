@@ -7,12 +7,13 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Users, Network, ShieldAlert } from 'lucide-react';
+import { Users, Network, ShieldAlert, Wand2 } from 'lucide-react';
 import { fetchAgentConfig, fetchSecurityPolicy, fetchA2AConfig } from '../api/client';
 import { SubAgentsPage } from './SubAgentsPage';
 import { A2APage } from './A2APage';
+import { MultimodalPage } from './MultimodalPage';
 
-type SectionId = 'delegation' | 'a2a';
+type SectionId = 'multimodal' | 'delegation' | 'a2a';
 
 export function AgentsPage() {
   const [activeSection, setActiveSection] = useState<SectionId>('delegation');
@@ -40,7 +41,9 @@ export function AgentsPage() {
 
   const a2aEnabled = (a2aConfig?.config)?.enabled === true || securityPolicy?.allowA2A === true;
 
-  const neitherEnabled = !subAgentsEnabled && !a2aEnabled;
+  const multimodalEnabled = securityPolicy?.allowMultimodal === true;
+
+  const neitherEnabled = !subAgentsEnabled && !a2aEnabled && !multimodalEnabled;
 
   if (neitherEnabled) {
     return (
@@ -63,6 +66,12 @@ export function AgentsPage() {
 
   const sections: { id: SectionId; label: string; icon: React.ReactNode; enabled: boolean }[] = [
     {
+      id: 'multimodal',
+      label: 'Multimodal',
+      icon: <Wand2 className="w-4 h-4" />,
+      enabled: multimodalEnabled,
+    },
+    {
       id: 'delegation',
       label: 'Sub-Agents',
       icon: <Users className="w-4 h-4" />,
@@ -81,11 +90,9 @@ export function AgentsPage() {
           <Users className="w-6 h-6 text-primary" />
           <h1 className="text-2xl font-bold">Agents</h1>
         </div>
-        {availableSections[0].id === 'delegation' ? (
-          <SubAgentsPage embedded />
-        ) : (
-          <A2APage embedded />
-        )}
+        {availableSections[0].id === 'multimodal' && <MultimodalPage embedded />}
+        {availableSections[0].id === 'delegation' && <SubAgentsPage embedded />}
+        {availableSections[0].id === 'a2a' && <A2APage embedded />}
       </div>
     );
   }
@@ -122,6 +129,7 @@ export function AgentsPage() {
         ))}
       </div>
 
+      {effectiveSection === 'multimodal' && <MultimodalPage embedded />}
       {effectiveSection === 'delegation' && <SubAgentsPage embedded />}
       {effectiveSection === 'a2a' && <A2APage embedded />}
     </div>

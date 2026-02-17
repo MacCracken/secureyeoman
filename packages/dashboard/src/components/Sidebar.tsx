@@ -17,7 +17,6 @@ import {
   FlaskConical,
   PanelLeftOpen,
   PanelLeftClose,
-  Wand2,
   RefreshCw,
   Activity,
   User,
@@ -64,7 +63,6 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
   { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
   { to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" />, enabled: true },
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
-  { to: '/multimodal', label: 'Multimodal', icon: <Wand2 className="w-5 h-5" />, enabled: true },
   { to: '/extensions', label: 'Extensions', icon: <Puzzle className="w-5 h-5" />, enabled: true },
   {
     to: '/experiments',
@@ -141,13 +139,13 @@ export function Sidebar({
 
   const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
   const a2aAllowed = securityPolicy?.allowA2A ?? false;
-  const hasAgents = subAgentsAllowed || a2aAllowed || (agentsData?.profiles?.length ?? 0) > 0;
+  const multimodalAllowed = securityPolicy?.allowMultimodal ?? false;
+  const hasAgents = subAgentsAllowed || a2aAllowed || multimodalAllowed || (agentsData?.profiles?.length ?? 0) > 0;
   const extensionsEnabled =
     (securityPolicy?.allowExtensions ?? false) || extensionConfig?.config?.enabled === true;
   const proactiveEnabled =
     (securityPolicy?.allowProactive ?? false) || (proactiveConfig?.config as any)?.enabled === true;
   const experimentsEnabled = securityPolicy?.allowExperiments ?? false;
-  const multimodalEnabled = securityPolicy?.allowMultimodal ?? false;
 
   const NAV_ITEMS = useMemo(() => {
     const items = [...NAV_ITEMS_WITHOUT_AGENTS];
@@ -162,10 +160,9 @@ export function Sidebar({
       if (item.to === '/extensions') return extensionsEnabled;
       if (item.to === '/experiments') return experimentsEnabled;
       if (item.to === '/proactive') return proactiveEnabled;
-      if (item.to === '/multimodal') return multimodalEnabled;
       return true;
     });
-  }, [hasAgents, extensionsEnabled, proactiveEnabled, experimentsEnabled, multimodalEnabled]);
+  }, [hasAgents, extensionsEnabled, proactiveEnabled, experimentsEnabled]);
 
   useEffect(() => {
     setMobileOpen(false);

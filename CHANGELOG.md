@@ -31,9 +31,12 @@ All notable changes to SecureYeoman are documented in this file.
 - `multimodal_jobs` — List multimodal processing jobs
 
 #### Dashboard
-- Multimodal job viewer page with type/status filters, pagination, expandable rows
+- Multimodal job viewer with type/status filters, pagination, expandable rows
 - Stats cards (total, completed, failed, success rate)
-- Sidebar nav item (conditionally visible via `allowMultimodal` policy)
+- Multimodal view consolidated into Agents page as a sub-tab (before Sub-Agents)
+- Standalone `/multimodal` route redirects to `/agents`
+- Multimodal tab and Agents nav visibility gated by `allowMultimodal` security policy
+- Fixed enabled check: uses `securityPolicy.allowMultimodal` (not `multimodalConfig.enabled`)
 
 ### Phase 8.5: Anti-Bot & Proxy Integration
 

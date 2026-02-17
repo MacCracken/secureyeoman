@@ -228,7 +228,7 @@ url: "https://mcp.supabase.io"
 - [x] Voice message transcription in integration adapters (auto-STT for voice messages)
 - [x] Voice output for integration responses (TTS audio attachments in Telegram/Discord)
 - [x] Image generation tool exposure via MCP (5 multimodal MCP tools)
-- [x] Dashboard multimodal job viewer (history, stats, filters, expandable rows)
+- [x] Dashboard multimodal job viewer (consolidated into Agents page as sub-tab)
 - [x] Per-personality TTS voice/model selection (personality voice → OpenAI TTS voice)
 
 ---
@@ -367,7 +367,7 @@ Comprehensive dashboard improvements and new UI components for better user exper
 - [x] Voice message transcription in integration adapters (auto-STT for voice messages)
 - [x] Voice output for integration responses (TTS audio attachments in Telegram/Discord/etc.)
 - [x] Image generation tool exposure via MCP
-- [x] Dashboard multimodal job viewer (history, stats, playback)
+- [x] Dashboard multimodal job viewer (consolidated into Agents page as sub-tab)
 - [x] Per-personality TTS voice/model selection (link voice field to TTS config)
 
 ---
