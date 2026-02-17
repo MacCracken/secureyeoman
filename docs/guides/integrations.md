@@ -10,9 +10,12 @@ FRIDAY supports multiple platform integrations for receiving and responding to m
 | Discord  | Stable | Slash commands, embeds, guild messages |
 | Email (IMAP/SMTP) | Stable | Any IMAP/SMTP provider — ProtonMail Bridge, Outlook, Yahoo, Fastmail |
 | GitHub   | Stable | Webhooks, issue comments, PR events |
+| GitLab   | Stable | Webhooks, MR comments, issue events, self-hosted support |
 | Gmail    | Stable | OAuth2, polling, label filtering, send/receive |
+| Google Calendar | Stable | OAuth2, event polling, quick-add event creation |
 | Google Chat | Stable | Bot messages, card messages, space integration |
 | iMessage | Beta   | macOS only, AppleScript send, chat.db polling |
+| Notion   | Stable | API token, database polling, page creation |
 | Slack    | Stable | Socket mode, slash commands, mentions |
 | Telegram | Stable | Long-polling, commands, text messages |
 | Webhook  | Stable | Generic inbound/outbound HTTP webhooks |
@@ -62,7 +65,8 @@ curl -X POST http://localhost:18789/api/v1/integrations \
   }'
 ```
 
-4. Start the integration: `POST /api/v1/integrations/:id/start`
+4. Test the connection: `POST /api/v1/integrations/:id/test` — validates credentials without starting
+5. Start the integration: `POST /api/v1/integrations/:id/start`
 
 ### Commands
 - `/start` — Welcome message
@@ -500,6 +504,121 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 - macOS only — will not work on Linux or Windows
 - Requires Full Disk Access for the process
 - Rate limited to 5 messages/second to avoid overwhelming Messages.app
+
+## Google Calendar
+
+### Requirements
+- Google Cloud project with Calendar API enabled
+- OAuth2 credentials (Web Application type)
+- Access and refresh tokens from the OAuth consent flow
+
+### Setup
+
+```bash
+curl -X POST http://localhost:18789/api/v1/integrations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "googlecalendar",
+    "displayName": "My Calendar",
+    "enabled": true,
+    "config": {
+      "accessToken": "ya29.a0...",
+      "refreshToken": "1//0d...",
+      "calendarId": "primary"
+    }
+  }'
+```
+
+### Config Options
+- `accessToken` (required) — OAuth2 access token
+- `refreshToken` (required) — OAuth2 refresh token for automatic renewal
+- `calendarId` (optional, default: `primary`) — Calendar ID to poll
+- `pollIntervalMs` (optional, default: 60000) — Polling interval in milliseconds
+
+### Environment Variables
+- `GOOGLE_OAUTH_CLIENT_ID` — OAuth client ID for token refresh
+- `GOOGLE_OAUTH_CLIENT_SECRET` — OAuth client secret for token refresh
+
+### How It Works
+- **Inbound**: Polls for new/updated events at the configured interval
+- **Outbound**: `sendMessage()` creates events via the Quick Add API (natural language)
+- Rate limit: 10 requests/second
+
+## Notion
+
+### Requirements
+- Notion account with an internal integration
+- Integration token from notion.so/my-integrations
+- Database/pages shared with the integration
+
+### Setup
+
+```bash
+curl -X POST http://localhost:18789/api/v1/integrations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "notion",
+    "displayName": "My Notion",
+    "enabled": true,
+    "config": {
+      "apiKey": "ntn_...",
+      "databaseId": "your-database-id"
+    }
+  }'
+```
+
+### Config Options
+- `apiKey` (required) — Internal integration token
+- `databaseId` (optional) — Specific database to poll; omit to search workspace
+- `pollIntervalMs` (optional, default: 60000) — Polling interval in milliseconds
+
+### How It Works
+- **Inbound**: Polls for recently updated pages in the database or workspace
+- **Outbound**: `sendMessage()` creates a new page in the configured database
+- Rate limit: 3 requests/second (Notion has strict rate limits)
+
+## GitLab
+
+### Requirements
+- GitLab Personal Access Token with `api` scope
+- Webhook secret token for verifying incoming events
+
+### Setup
+
+```bash
+curl -X POST http://localhost:18789/api/v1/integrations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "gitlab",
+    "displayName": "My GitLab",
+    "enabled": true,
+    "config": {
+      "personalAccessToken": "glpat-...",
+      "webhookSecret": "your-secret",
+      "gitlabUrl": "https://gitlab.com"
+    }
+  }'
+```
+
+### Config Options
+- `personalAccessToken` (required) — PAT with `api` scope
+- `webhookSecret` (required) — Secret for webhook verification
+- `gitlabUrl` (optional, default: `https://gitlab.com`) — GitLab instance URL for self-hosted
+
+### Webhook Setup
+1. Go to your GitLab project > Settings > Webhooks
+2. Set URL to `https://your-friday.example.com/api/v1/webhooks/gitlab/<integration-id>`
+3. Set the Secret Token to match your `webhookSecret`
+4. Select events: Push, Merge Request, Issues, Note
+
+### How It Works
+- **Inbound**: Receives webhooks for push, merge_request, note, and issue events
+- **Outbound**: `sendMessage()` posts notes on issues or merge requests
+- **chatId format**: `namespace/project/issues/123` or `namespace/project/merge_requests/456`
+- Rate limit: 10 requests/second
 
 ## API Reference
 

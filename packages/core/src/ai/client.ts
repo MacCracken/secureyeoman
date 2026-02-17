@@ -24,6 +24,7 @@ import { OllamaProvider } from './providers/ollama.js';
 import { OpenCodeProvider } from './providers/opencode.js';
 import { LMStudioProvider } from './providers/lmstudio.js';
 import { LocalAIProvider } from './providers/localai.js';
+import { DeepSeekProvider } from './providers/deepseek.js';
 import { CostCalculator } from './cost-calculator.js';
 import { UsageTracker, type UsageStats } from './usage-tracker.js';
 import { TokenLimitError, RateLimitError, ProviderUnavailableError } from './errors.js';
@@ -406,6 +407,8 @@ export class AIClient {
         return new LMStudioProvider(providerConfig, this.logger ?? undefined);
       case 'localai':
         return new LocalAIProvider(providerConfig, this.logger ?? undefined);
+      case 'deepseek':
+        return new DeepSeekProvider(providerConfig, this.logger ?? undefined);
       default:
         throw new Error(`Unknown AI provider: ${config.model.provider}`);
     }

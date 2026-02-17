@@ -6,6 +6,88 @@ All notable changes to F.R.I.D.A.Y. are documented in this file.
 
 ## [2026.2.16] — 2026-02-16
 
+### Dashboard: Inline Form Pattern
+
+#### Replace Modal Dialogs with Inline Cards
+- Replaced popup modal dialogs (`fixed inset-0 bg-black/50`) with collapsible inline card forms across all feature pages
+- **SubAgentsPage**: Delegate Task and New Profile forms now render inline below the header/tab area
+- **ExtensionsPage**: Register Extension, Register Hook, and Register Webhook forms now render inline within their respective tabs
+- **A2APage**: Add Peer and Delegate Task forms now render inline
+- All inline forms use `useMutation` with `onSuccess` cleanup instead of manual `setSubmitting` state
+- Forms follow the ExperimentsPage card pattern: `card p-4 space-y-3` with X close button
+- Input styling standardized to `w-full bg-card border border-border rounded-lg px-3 py-2 text-sm`
+- CodeExecutionPage unchanged (already used inline forms)
+- **Reference**: ADR 039
+
+### Phase 7: Integration Expansion
+
+#### DeepSeek AI Provider
+- New `DeepSeekProvider` using OpenAI-compatible API at `https://api.deepseek.com`
+- Requires `DEEPSEEK_API_KEY` env var; optional `DEEPSEEK_BASE_URL` override
+- Known models: `deepseek-chat`, `deepseek-coder`, `deepseek-reasoner`
+- Full chat, streaming, and tool use support
+- Added to provider factory, cost calculator (pricing table + dynamic model fetch), and model switching
+- 9 unit tests
+
+#### Google Calendar Integration
+- `GoogleCalendarIntegration` adapter using Calendar API v3 with OAuth2 tokens
+- Polling-based event monitoring with configurable interval
+- Quick-add event creation via `sendMessage()`
+- Token refresh reusing Gmail's OAuth pattern
+- Dashboard: PLATFORM_META with OAuth token config fields and setup steps
+- 7 unit tests
+
+#### Notion Integration
+- `NotionIntegration` adapter using Notion API with internal integration token
+- Polling for database changes and page updates
+- Page creation via `sendMessage()` with auto-title
+- Rate limit set to 3 req/sec (Notion's strict limits)
+- Dashboard: PLATFORM_META with API key and database ID fields
+- 7 unit tests
+
+#### GitLab Integration
+- `GitLabIntegration` implementing `WebhookIntegration` for push, merge_request, note, and issue events
+- REST API v4 for posting comments on issues and merge requests
+- `X-Gitlab-Token` header verification for webhook security
+- Configurable `gitlabUrl` for self-hosted GitLab instances
+- Webhook route registered at `/api/v1/webhooks/gitlab/:id`
+- Dashboard: PLATFORM_META with PAT, webhook secret, and GitLab URL fields
+- 15 unit tests
+
+#### Adaptive Learning Engine (7.1)
+- `PreferenceLearner` class storing feedback as `preference` type memories via BrainManager
+- `POST /api/v1/chat/feedback` endpoint for thumbs-up/thumbs-down/correction feedback
+- Conversation pattern analysis: detects response length preferences and code-heavy usage
+- `injectPreferences()` appends learned preferences to system prompt when memory is enabled
+- Dashboard: thumbs-up/thumbs-down buttons on assistant messages in ChatPage
+- API client: `submitFeedback()` function
+- 11 unit tests
+
+### Browser Automation Label Fix
+- Removed "(preview)" badge and "coming soon" tooltip from Browser Automation toggle
+- Updated tooltip to "Browser automation via Playwright"
+
+### Test Connection Button for Integrations
+- New `testConnection()` optional method on `Integration` interface for validating credentials without starting
+- REST endpoint `POST /api/v1/integrations/:id/test` — calls adapter's `testConnection()` and returns `{ ok, message }`
+- Dashboard: "Test" button on each integration card (Messaging tab) next to Start/Stop
+  - Spinner while testing, green check/red X with message, auto-clears after 5s
+- API client: `testIntegration(id)` function
+
+### Browser Automation — Playwright Implementation (Phase 8.3)
+- Replaced 6 placeholder browser tools with real Playwright implementations:
+  - `browser_navigate` — Navigate to URL, return title + URL + content snippet
+  - `browser_screenshot` — Capture viewport or full page as base64 PNG
+  - `browser_click` — Click element by CSS selector with configurable wait
+  - `browser_fill` — Fill form field by CSS selector
+  - `browser_evaluate` — Execute JavaScript in browser context, return JSON
+  - `browser_pdf` — Generate PDF from webpage as base64
+- New `BrowserPool` manager (`browser-pool.ts`): lazy browser launch, page pool with `MCP_BROWSER_MAX_PAGES` limit, `MCP_BROWSER_TIMEOUT_MS` enforcement, graceful shutdown
+- `playwright` added as optional dependency in `@friday/mcp`
+- Browser pool shutdown wired into `McpServiceServer.stop()` lifecycle
+- Config gate preserved: all tools return NOT_AVAILABLE when `MCP_EXPOSE_BROWSER=false`
+- 18 unit tests (config gate, all 6 tools enabled/disabled, pool limit enforcement, shutdown)
+
 ### RBAC Management — Dashboard, API & CLI
 - 7 new REST endpoints for role CRUD (`GET/POST/PUT/DELETE /auth/roles`) and user-role assignments (`GET/POST /auth/assignments`, `DELETE /auth/assignments/:userId`)
 - Built-in roles protected from mutation/deletion; custom roles auto-prefixed with `role_`
@@ -37,10 +119,11 @@ All notable changes to F.R.I.D.A.Y. are documented in this file.
 - Configurable search backend: DuckDuckGo (default, no API key), SerpAPI, Tavily
 - Web-specific rate limiter (10 req/min default, configurable via `MCP_WEB_RATE_LIMIT`)
 
-#### Browser Automation (8.3 — Deferred)
-- 6 placeholder browser tools registered: `browser_navigate`, `browser_screenshot`, `browser_click`, `browser_fill`, `browser_evaluate`, `browser_pdf`
-- All return "not yet available" until Playwright/Puppeteer engine is integrated
-- Feature toggle `MCP_EXPOSE_BROWSER` controls visibility; config for engine, headless mode, max pages, timeout
+#### Browser Automation (8.3 — Complete)
+- 6 browser tools implemented with Playwright: `browser_navigate`, `browser_screenshot`, `browser_click`, `browser_fill`, `browser_evaluate`, `browser_pdf`
+- `BrowserPool` manager for lazy browser launch, page pool with configurable limit, timeout enforcement, graceful shutdown
+- `playwright` as optional dependency (users install separately with `npm install playwright && npx playwright install chromium`)
+- Feature toggle `MCP_EXPOSE_BROWSER` controls availability; config for engine, headless mode, max pages, timeout
 - Dashboard: Browser Automation toggle with "(preview)" label
 
 #### MCP Infrastructure (8.6)

@@ -662,6 +662,10 @@ export async function claimGmailOAuth(data: {
   }, true);
 }
 
+export async function testIntegration(id: string): Promise<{ ok: boolean; message: string }> {
+  return request(`/integrations/${id}/test`, { method: 'POST' });
+}
+
 export async function startIntegration(id: string): Promise<{ message: string }> {
   return request(`/integrations/${id}/start`, { method: 'POST' });
 }
@@ -808,6 +812,18 @@ export async function rememberChatMessage(
   return request('/chat/remember', {
     method: 'POST',
     body: JSON.stringify({ content, context }),
+  });
+}
+
+export async function submitFeedback(
+  conversationId: string,
+  messageId: string,
+  feedback: 'positive' | 'negative' | 'correction',
+  details?: string,
+): Promise<{ stored: boolean }> {
+  return request('/chat/feedback', {
+    method: 'POST',
+    body: JSON.stringify({ conversationId, messageId, feedback, details }),
   });
 }
 

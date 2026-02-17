@@ -248,6 +248,7 @@ export {
   McpToolManifestSchema,
   McpServiceConfigSchema,
   McpConfigSchema,
+  McpServerHealthSchema,
   type McpTransport,
   type McpServerConfig,
   type McpServerCreate,
@@ -256,6 +257,7 @@ export {
   type McpToolManifest,
   type McpServiceConfig,
   type McpConfig,
+  type McpServerHealth,
 } from './mcp.js';
 
 // Reporting types

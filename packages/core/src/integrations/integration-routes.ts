@@ -102,6 +102,37 @@ export function registerIntegrationRoutes(
     return { message: 'Integration deleted' };
   });
 
+  // ── Test Connection ─────────────────────────────────────
+
+  app.post('/api/v1/integrations/:id/test', async (
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply,
+  ) => {
+    try {
+      const adapter = integrationManager.getAdapter(request.params.id);
+      if (!adapter) {
+        // Integration not running — try to instantiate a fresh adapter to test
+        const config = await integrationManager.getIntegration(request.params.id);
+        if (!config) {
+          return reply.code(404).send({ error: 'Integration not found' });
+        }
+        return reply.code(400).send({
+          ok: false,
+          message: 'Integration is not running. Start it first or use the adapter-specific test.',
+        });
+      }
+
+      if (!adapter.testConnection) {
+        return reply.send({ ok: true, message: 'Adapter does not support test — but it is running and healthy: ' + adapter.isHealthy() });
+      }
+
+      const result = await adapter.testConnection();
+      return reply.send(result);
+    } catch (err) {
+      return reply.send({ ok: false, message: errorMessage(err) });
+    }
+  });
+
   // ── Start / Stop ─────────────────────────────────────────
 
   app.post('/api/v1/integrations/:id/start', async (
@@ -183,6 +214,41 @@ export function registerIntegrationRoutes(
       // For now, forward the raw body to the integration
       const body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
 
+      return { received: true, event };
+    } catch (err) {
+      return reply.code(400).send({ error: errorMessage(err) });
+    }
+  });
+
+  // ── GitLab Webhooks ──────────────────────────────────────
+
+  app.post('/api/v1/webhooks/gitlab/:id', {
+    config: { rawBody: true },
+  } as any, async (
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply,
+  ) => {
+    const config = await integrationManager.getIntegration(request.params.id);
+    if (!config || config.platform !== 'gitlab') {
+      return reply.code(404).send({ error: 'GitLab integration not found' });
+    }
+
+    const token = request.headers['x-gitlab-token'] as string;
+    const event = request.headers['x-gitlab-event'] as string;
+
+    if (!token || !event) {
+      return reply.code(400).send({ error: 'Missing GitLab webhook headers' });
+    }
+
+    try {
+      const { GitLabIntegration } = await import('./gitlab/adapter.js');
+      const adapter = integrationManager.getAdapter(request.params.id);
+      if (!adapter || !(adapter instanceof GitLabIntegration)) {
+        return reply.code(400).send({ error: 'GitLab integration is not running' });
+      }
+
+      const body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+      await adapter.handleWebhook(event, body, token);
       return { received: true, event };
     } catch (err) {
       return reply.code(400).send({ error: errorMessage(err) });

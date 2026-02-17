@@ -7,10 +7,25 @@ import { SettingsPage } from './SettingsPage';
 import { createSoulConfig } from '../test/mocks';
 
 // ── Mock API client ──────────────────────────────────────────────
+// Must include every export that SettingsPage and its child tabs
+// (SecuritySettings, RolesSettings, ApiKeysSettings, etc.) import.
 vi.mock('../api/client', () => ({
   fetchSoulConfig: vi.fn(),
   fetchMcpServers: vi.fn(),
   fetchAuditStats: vi.fn(),
+  fetchMetrics: vi.fn(),
+  fetchRoles: vi.fn(),
+  createRole: vi.fn(),
+  updateRole: vi.fn(),
+  deleteRole: vi.fn(),
+  fetchAssignments: vi.fn(),
+  assignRole: vi.fn(),
+  revokeAssignment: vi.fn(),
+  fetchSecurityPolicy: vi.fn(),
+  updateSecurityPolicy: vi.fn(),
+  fetchApiKeys: vi.fn(),
+  createApiKey: vi.fn(),
+  revokeApiKey: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -18,6 +33,10 @@ import * as api from '../api/client';
 const mockFetchSoulConfig = vi.mocked(api.fetchSoulConfig);
 const mockFetchMcpServers = vi.mocked(api.fetchMcpServers);
 const mockFetchAuditStats = vi.mocked(api.fetchAuditStats);
+const mockFetchMetrics = vi.mocked(api.fetchMetrics);
+const mockFetchRoles = vi.mocked(api.fetchRoles);
+const mockFetchAssignments = vi.mocked(api.fetchAssignments);
+const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -52,6 +71,15 @@ describe('SettingsPage', () => {
       chainValid: true,
       lastVerification: Date.now(),
     });
+    mockFetchMetrics.mockResolvedValue({} as never);
+    mockFetchRoles.mockResolvedValue({ roles: [] });
+    mockFetchAssignments.mockResolvedValue({ assignments: [] });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowExtensions: false,
+      allowExecution: true,
+    });
   });
 
   it('renders the Settings heading', async () => {
@@ -71,10 +99,11 @@ describe('SettingsPage', () => {
     expect(screen.getByText('4,096')).toBeInTheDocument();
   });
 
-  it('renders MCP servers section', async () => {
+  it('renders Rate Limiting and Audit Chain on General tab', async () => {
     renderComponent();
 
-    expect(await screen.findByText('MCP Servers')).toBeInTheDocument();
-    expect(screen.getAllByText('0 servers').length).toBe(2);
+    expect(await screen.findByText('Rate Limiting')).toBeInTheDocument();
+    expect(screen.getByText('Audit Chain')).toBeInTheDocument();
+    expect(await screen.findByText('Valid')).toBeInTheDocument();
   });
 });

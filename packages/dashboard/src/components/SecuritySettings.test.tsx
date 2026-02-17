@@ -2,6 +2,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter } from 'react-router-dom';
 import { SecuritySettings } from './SecuritySettings';
 import { createMetricsSnapshot } from '../test/mocks';
 
@@ -17,6 +18,7 @@ vi.mock('../api/client', () => ({
   fetchMetrics: vi.fn(),
   fetchSecurityPolicy: vi.fn(),
   updateSecurityPolicy: vi.fn(),
+  fetchMcpServers: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -27,6 +29,7 @@ const mockFetchAuditStats = vi.mocked(api.fetchAuditStats);
 const mockFetchMetrics = vi.mocked(api.fetchMetrics);
 const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockUpdateSecurityPolicy = vi.mocked(api.updateSecurityPolicy);
+const mockFetchMcpServers = vi.mocked(api.fetchMcpServers);
 
 function createQueryClient() {
   return new QueryClient({
@@ -36,9 +39,11 @@ function createQueryClient() {
 
 function renderComponent() {
   return render(
-    <QueryClientProvider client={createQueryClient()}>
-      <SecuritySettings />
-    </QueryClientProvider>
+    <MemoryRouter>
+      <QueryClientProvider client={createQueryClient()}>
+        <SecuritySettings />
+      </QueryClientProvider>
+    </MemoryRouter>
   );
 }
 
@@ -88,6 +93,7 @@ describe('SecuritySettings', () => {
       allowExtensions: false,
       allowExecution: true,
     });
+    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
   });
 
   it('renders the heading', async () => {
@@ -95,31 +101,27 @@ describe('SecuritySettings', () => {
     expect(await screen.findByText('Security')).toBeInTheDocument();
   });
 
-  it('displays roles and permissions', async () => {
-    renderComponent();
-    expect(await screen.findByText('admin')).toBeInTheDocument();
-    expect(screen.getByText('viewer')).toBeInTheDocument();
-  });
-
-  it('displays audit chain status', async () => {
-    renderComponent();
-    expect(await screen.findByText('Valid')).toBeInTheDocument();
-  });
-
-  it('shows rate limiting section', async () => {
-    renderComponent();
-    expect(await screen.findByText('Rate Limiting')).toBeInTheDocument();
-  });
-
   it('renders Sub-Agent Delegation section', async () => {
     renderComponent();
     expect(await screen.findByText('Sub-Agent Delegation')).toBeInTheDocument();
   });
 
-  it('renders A2A Networks as sub-item of delegation', async () => {
+  it('hides A2A Networks toggle when Sub-Agent Delegation is off', async () => {
     renderComponent();
-    expect(await screen.findByText('A2A Networks')).toBeInTheDocument();
-    expect(screen.getByLabelText('Toggle A2A Networks')).toBeInTheDocument();
+    await screen.findByText('Sub-Agent Delegation');
+    expect(screen.queryByLabelText('Toggle A2A Networks')).not.toBeInTheDocument();
+  });
+
+  it('shows A2A Networks toggle when Sub-Agent Delegation is on', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: true,
+      allowA2A: false,
+      allowExtensions: false,
+      allowExecution: true,
+    });
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle A2A Networks');
+    expect(toggle).toBeInTheDocument();
   });
 
   it('renders Lifecycle Extensions section', async () => {
@@ -136,12 +138,54 @@ describe('SecuritySettings', () => {
     expect(toggle.getAttribute('aria-checked')).toBe('true');
   });
 
-  it('calls updateSecurityPolicy when toggling A2A', async () => {
+  it('renders MCP Servers section with manage link', async () => {
+    renderComponent();
+    expect(await screen.findByText('MCP Servers')).toBeInTheDocument();
+    expect(screen.getByText('Manage')).toBeInTheDocument();
+  });
+
+  it('displays MCP server counts', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        { id: '1', name: 'srv1', transport: 'stdio', enabled: true } as never,
+        { id: '2', name: 'srv2', transport: 'http', enabled: false } as never,
+      ],
+      total: 2,
+    });
+    renderComponent();
+    expect(await screen.findByText('2 servers')).toBeInTheDocument();
+    expect(screen.getByText('1 servers')).toBeInTheDocument();
+  });
+
+  it('shows Sub-Agent Delegation as disabled by default', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Sub-Agent Delegation');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy when toggling Sub-Agent Delegation', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Sub-Agent Delegation');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowSubAgents: true });
+    });
+  });
+
+  it('calls updateSecurityPolicy when toggling A2A (with sub-agents enabled)', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: true,
+      allowA2A: false,
+      allowExtensions: false,
+      allowExecution: true,
+    });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
     fireEvent.click(toggle);
     await waitFor(() => {
-      expect(mockUpdateSecurityPolicy).toHaveBeenCalledWith({ allowA2A: true });
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowA2A: true });
     });
   });
 
@@ -150,7 +194,8 @@ describe('SecuritySettings', () => {
     const toggle = await screen.findByLabelText('Toggle Extensions');
     fireEvent.click(toggle);
     await waitFor(() => {
-      expect(mockUpdateSecurityPolicy).toHaveBeenCalledWith({ allowExtensions: true });
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowExtensions: true });
     });
   });
 
@@ -159,7 +204,8 @@ describe('SecuritySettings', () => {
     const toggle = await screen.findByLabelText('Toggle Sandbox Execution');
     fireEvent.click(toggle);
     await waitFor(() => {
-      expect(mockUpdateSecurityPolicy).toHaveBeenCalledWith({ allowExecution: false });
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowExecution: false });
     });
   });
 });

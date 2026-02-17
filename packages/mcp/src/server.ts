@@ -13,6 +13,7 @@ import { AutoRegistration } from './registration/auto-register.js';
 import { registerStreamableHttpTransport } from './transport/streamable-http.js';
 import { registerSseTransport } from './transport/sse.js';
 import { registerAllTools } from './tools/index.js';
+import { getBrowserPool } from './tools/browser-tools.js';
 import { registerAllResources } from './resources/index.js';
 import { registerAllPrompts } from './prompts/index.js';
 import { createRateLimiter } from './middleware/rate-limiter.js';
@@ -118,6 +119,11 @@ export class McpServiceServer {
   }
 
   async stop(): Promise<void> {
+    // Shutdown browser pool if active
+    const browserPool = getBrowserPool();
+    if (browserPool) {
+      await browserPool.shutdown();
+    }
     // Deregister from core
     await this.autoReg.deregister();
     // Close MCP server

@@ -16,6 +16,10 @@ import {
   Clock,
   GitBranch,
   FolderOpen,
+  Globe,
+  FileText,
+  Search,
+  Monitor,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -886,8 +890,8 @@ interface BodySectionProps {
   onSelectedServersChange: (servers: string[]) => void;
   enabledCaps: Record<string, boolean>;
   onEnabledCapsChange: (caps: Record<string, boolean>) => void;
-  mcpFeatures: { exposeGit: boolean; exposeFilesystem: boolean };
-  onMcpFeaturesChange: (features: { exposeGit: boolean; exposeFilesystem: boolean }) => void;
+  mcpFeatures: { exposeGit: boolean; exposeFilesystem: boolean; exposeWeb: boolean; exposeWebScraping: boolean; exposeWebSearch: boolean; exposeBrowser: boolean };
+  onMcpFeaturesChange: (features: { exposeGit: boolean; exposeFilesystem: boolean; exposeWeb: boolean; exposeWebScraping: boolean; exposeWebSearch: boolean; exposeBrowser: boolean }) => void;
   creationConfig: {
     skills: boolean;
     tasks: boolean;
@@ -1205,6 +1209,132 @@ function BodySection({
                                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                               />
                             </label>
+                            {/* Web Scraping & Search — master toggle */}
+                            <label
+                              className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                globalMcpConfig?.exposeWeb
+                                  ? 'cursor-pointer hover:bg-muted/50'
+                                  : 'opacity-50 cursor-not-allowed'
+                              }`}
+                            >
+                              <Globe className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-xs flex-1">
+                                Web Scraping & Search
+                                {!globalMcpConfig?.exposeWeb && (
+                                  <span className="text-[10px] text-muted-foreground ml-1">
+                                    (enable in Connections first)
+                                  </span>
+                                )}
+                              </span>
+                              <input
+                                type="checkbox"
+                                checked={mcpFeatures.exposeWeb}
+                                onChange={(e) =>
+                                  onMcpFeaturesChange({
+                                    ...mcpFeatures,
+                                    exposeWeb: e.target.checked,
+                                    // Disable sub-toggles when master is unchecked
+                                    ...(!e.target.checked ? { exposeWebScraping: false, exposeWebSearch: false } : {}),
+                                  })
+                                }
+                                disabled={!globalMcpConfig?.exposeWeb}
+                                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                              />
+                            </label>
+                            {/* Web sub-toggles — only visible when exposeWeb is checked */}
+                            {mcpFeatures.exposeWeb && (
+                              <>
+                                <label
+                                  className={`flex items-center gap-2 p-1.5 ml-4 rounded bg-muted/30 transition-colors ${
+                                    globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebScraping
+                                      ? 'cursor-pointer hover:bg-muted/50'
+                                      : 'opacity-50 cursor-not-allowed'
+                                  }`}
+                                >
+                                  <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                  <span className="text-xs flex-1">
+                                    Scraping Tools
+                                    {!(globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebScraping) && (
+                                      <span className="text-[10px] text-muted-foreground ml-1">
+                                        (enable in Connections first)
+                                      </span>
+                                    )}
+                                  </span>
+                                  <input
+                                    type="checkbox"
+                                    checked={mcpFeatures.exposeWebScraping}
+                                    onChange={(e) =>
+                                      onMcpFeaturesChange({
+                                        ...mcpFeatures,
+                                        exposeWebScraping: e.target.checked,
+                                      })
+                                    }
+                                    disabled={!(globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebScraping)}
+                                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  />
+                                </label>
+                                <label
+                                  className={`flex items-center gap-2 p-1.5 ml-4 rounded bg-muted/30 transition-colors ${
+                                    globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebSearch
+                                      ? 'cursor-pointer hover:bg-muted/50'
+                                      : 'opacity-50 cursor-not-allowed'
+                                  }`}
+                                >
+                                  <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                                  <span className="text-xs flex-1">
+                                    Search Tools
+                                    {!(globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebSearch) && (
+                                      <span className="text-[10px] text-muted-foreground ml-1">
+                                        (enable in Connections first)
+                                      </span>
+                                    )}
+                                  </span>
+                                  <input
+                                    type="checkbox"
+                                    checked={mcpFeatures.exposeWebSearch}
+                                    onChange={(e) =>
+                                      onMcpFeaturesChange({
+                                        ...mcpFeatures,
+                                        exposeWebSearch: e.target.checked,
+                                      })
+                                    }
+                                    disabled={!(globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebSearch)}
+                                    className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                  />
+                                </label>
+                              </>
+                            )}
+                            {/* Browser Automation — standalone toggle */}
+                            <label
+                              className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                globalMcpConfig?.exposeBrowser
+                                  ? 'cursor-pointer hover:bg-muted/50'
+                                  : 'opacity-50 cursor-not-allowed'
+                              }`}
+                            >
+                              <Monitor className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-xs flex-1">
+                                Browser Automation
+                                <span className="text-[10px] text-muted-foreground ml-1">(preview)</span>
+                                {!globalMcpConfig?.exposeBrowser && (
+                                  <span className="text-[10px] text-muted-foreground ml-1">
+                                    — enable in Connections first
+                                  </span>
+                                )}
+                              </span>
+                              <input
+                                type="checkbox"
+                                checked={mcpFeatures.exposeBrowser}
+                                onChange={(e) =>
+                                  onMcpFeaturesChange({
+                                    ...mcpFeatures,
+                                    exposeBrowser: e.target.checked,
+                                  })
+                                }
+                                disabled={!globalMcpConfig?.exposeBrowser}
+                                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                              />
+                            </label>
                           </div>
                         )}
                       </div>
@@ -1347,10 +1477,14 @@ export function PersonalityEditor() {
     auditory: false,
     haptic: false,
   });
-  const [mcpFeatures, setMcpFeatures] = useState<{ exposeGit: boolean; exposeFilesystem: boolean }>(
+  const [mcpFeatures, setMcpFeatures] = useState<{ exposeGit: boolean; exposeFilesystem: boolean; exposeWeb: boolean; exposeWebScraping: boolean; exposeWebSearch: boolean; exposeBrowser: boolean }>(
     {
       exposeGit: false,
       exposeFilesystem: false,
+      exposeWeb: false,
+      exposeWebScraping: false,
+      exposeWebSearch: false,
+      exposeBrowser: false,
     }
   );
 
@@ -1479,6 +1613,10 @@ export function PersonalityEditor() {
     setMcpFeatures({
       exposeGit: body.mcpFeatures?.exposeGit ?? false,
       exposeFilesystem: body.mcpFeatures?.exposeFilesystem ?? false,
+      exposeWeb: body.mcpFeatures?.exposeWeb ?? false,
+      exposeWebScraping: body.mcpFeatures?.exposeWebScraping ?? false,
+      exposeWebSearch: body.mcpFeatures?.exposeWebSearch ?? false,
+      exposeBrowser: body.mcpFeatures?.exposeBrowser ?? false,
     });
     setSetActiveOnSave(false);
     setEditing(p.id);
@@ -1523,7 +1661,7 @@ export function PersonalityEditor() {
     setAllowConnections(false);
     setSelectedServers([]);
     setEnabledCaps({ vision: false, limb_movement: false, auditory: false, haptic: false });
-    setMcpFeatures({ exposeGit: false, exposeFilesystem: false });
+    setMcpFeatures({ exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false });
     setSetActiveOnSave(false);
     setEditing('new');
   };

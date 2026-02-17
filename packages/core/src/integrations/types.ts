@@ -44,6 +44,9 @@ export interface Integration {
 
   /** Check if the adapter is healthy */
   isHealthy(): boolean;
+
+  /** Test connection credentials without fully starting the adapter */
+  testConnection?(): Promise<{ ok: boolean; message: string }>;
 }
 
 /**
@@ -91,6 +94,9 @@ export const DEFAULT_RATE_LIMITS: Record<string, PlatformRateLimit> = {
   email: { maxPerSecond: 2 },
   cli: { maxPerSecond: 100 },
   webhook: { maxPerSecond: 30 },
+  googlecalendar: { maxPerSecond: 10 },
+  notion: { maxPerSecond: 3 },
+  gitlab: { maxPerSecond: 10 },
 };
 
 // ─── Dependencies ────────────────────────────────────────────

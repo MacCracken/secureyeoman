@@ -9,6 +9,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import type { AIRequest, Tool } from '@friday/shared';
 import type { McpToolDef } from '@friday/shared';
+import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
 
 export interface ChatRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -26,6 +27,13 @@ interface ChatRequestBody {
 interface RememberRequestBody {
   content: string;
   context?: Record<string, string>;
+}
+
+interface FeedbackRequestBody {
+  conversationId: string;
+  messageId: string;
+  feedback: FeedbackType;
+  details?: string;
 }
 
 interface BrainContextMeta {
@@ -80,9 +88,20 @@ export function registerChatRoutes(
     }
 
     const soulManager = secureYeoman.getSoulManager();
-    const systemPrompt = memoryEnabled
+    let systemPrompt = memoryEnabled
       ? await soulManager.composeSoulPrompt(message, personalityId)
       : await soulManager.composeSoulPrompt(undefined, personalityId);
+
+    // Inject learned preferences into system prompt
+    if (memoryEnabled && systemPrompt) {
+      try {
+        const brainManager = secureYeoman.getBrainManager();
+        const learner = new PreferenceLearner(brainManager);
+        systemPrompt = await learner.injectPreferences(systemPrompt);
+      } catch {
+        // Preference injection is best-effort
+      }
+    }
 
     const messages: AIRequest['messages'] = [];
 
@@ -119,7 +138,7 @@ export function registerChatRoutes(
 
     if (personality?.body?.enabled && mcpClient && mcpStorage) {
       const selectedServers = personality.body.selectedServers ?? [];
-      const perPersonalityFeatures = personality.body.mcpFeatures ?? { exposeGit: false, exposeFilesystem: false };
+      const perPersonalityFeatures = personality.body.mcpFeatures ?? { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false };
       const globalConfig = await mcpStorage.getConfig();
 
       if (selectedServers.length > 0) {
@@ -227,6 +246,34 @@ export function registerChatRoutes(
       const brainManager = secureYeoman.getBrainManager();
       const memory = await brainManager.remember('episodic', content.trim(), 'dashboard_chat', context);
       return { memory };
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : 'Brain is not available';
+      return reply.code(503).send({ error: errMsg });
+    }
+  });
+
+  // ── Feedback endpoint — record user feedback for adaptive learning ──
+
+  app.post('/api/v1/chat/feedback', async (
+    request: FastifyRequest<{ Body: FeedbackRequestBody }>,
+    reply: FastifyReply,
+  ) => {
+    const { conversationId, messageId, feedback, details } = request.body;
+
+    if (!conversationId || !messageId || !feedback) {
+      return reply.code(400).send({ error: 'conversationId, messageId, and feedback are required' });
+    }
+
+    const validFeedback: FeedbackType[] = ['positive', 'negative', 'correction'];
+    if (!validFeedback.includes(feedback)) {
+      return reply.code(400).send({ error: `feedback must be one of: ${validFeedback.join(', ')}` });
+    }
+
+    try {
+      const brainManager = secureYeoman.getBrainManager();
+      const learner = new PreferenceLearner(brainManager);
+      await learner.recordFeedback(conversationId, messageId, feedback, details);
+      return { stored: true };
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : 'Brain is not available';
       return reply.code(503).send({ error: errMsg });

@@ -71,6 +71,9 @@ import { GenericWebhookIntegration } from './integrations/webhook/index.js';
 import { WhatsAppIntegration } from './integrations/whatsapp/index.js';
 import { SignalIntegration } from './integrations/signal/index.js';
 import { TeamsIntegration } from './integrations/teams/index.js';
+import { GoogleCalendarIntegration } from './integrations/googlecalendar/index.js';
+import { NotionIntegration } from './integrations/notion/index.js';
+import { GitLabIntegration } from './integrations/gitlab/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
 import { HeartManager } from './body/heart.js';
 import { ExternalBrainSync } from './brain/external-sync.js';
@@ -533,6 +536,9 @@ export class SecureYeoman {
       this.integrationManager.registerPlatform('whatsapp', () => new WhatsAppIntegration());
       this.integrationManager.registerPlatform('signal', () => new SignalIntegration());
       this.integrationManager.registerPlatform('teams', () => new TeamsIntegration());
+      this.integrationManager.registerPlatform('googlecalendar', () => new GoogleCalendarIntegration());
+      this.integrationManager.registerPlatform('notion', () => new NotionIntegration());
+      this.integrationManager.registerPlatform('gitlab', () => new GitLabIntegration());
       // Start auto-reconnect health checks
       this.integrationManager.startHealthChecks();
 
@@ -1255,6 +1261,7 @@ export class SecureYeoman {
       'opencode',
       'lmstudio',
       'localai',
+      'deepseek',
     ];
     if (!validProviders.includes(provider)) {
       throw new Error(

@@ -33,7 +33,7 @@ import { useSidebar } from '../hooks/useSidebar';
 import { useTheme } from '../hooks/useTheme';
 import { getAccessToken } from '../api/client';
 import { NewEntityDialog } from './NewEntityDialog';
-import { fetchExtensionConfig, fetchExecutionConfig, fetchA2AConfig } from '../api/client';
+import { fetchExtensionConfig, fetchExecutionConfig, fetchA2AConfig, fetchSecurityPolicy } from '../api/client';
 
 export interface SidebarProps {
   isConnected: boolean;
@@ -51,9 +51,9 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
   enabled?: boolean;
 }[] = [
   { to: '/', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" />, end: true },
+  { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
   { to: '/chat', label: 'Chat', icon: <MessageSquare className="w-5 h-5" /> },
   { to: '/code', label: 'Code', icon: <Code className="w-5 h-5" /> },
-  { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
   { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
@@ -122,10 +122,17 @@ export function Sidebar({
     staleTime: 30000,
   });
 
-  const hasSubAgents = (agentsData?.profiles?.length ?? 0) > 0;
-  const extensionsEnabled = extensionConfig?.config?.enabled === true;
-  const executionEnabled = executionConfig?.config?.enabled === true;
-  const a2aEnabled = a2aConfig?.config?.enabled === true;
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+    staleTime: 30000,
+  });
+
+  const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
+  const hasSubAgents = subAgentsAllowed || (agentsData?.profiles?.length ?? 0) > 0;
+  const extensionsEnabled = (securityPolicy?.allowExtensions ?? false) || (extensionConfig?.config?.enabled === true);
+  const executionEnabled = (securityPolicy?.allowExecution ?? true) || (executionConfig?.config?.enabled === true);
+  const a2aEnabled = (securityPolicy?.allowA2A ?? false) || (a2aConfig?.config?.enabled === true);
 
   const NAV_ITEMS = useMemo(() => {
     const items = [...NAV_ITEMS_WITHOUT_AGENTS];

@@ -14,6 +14,7 @@ import {
   ArrowRightLeft,
   ChevronDown,
   ChevronRight,
+  X,
 } from 'lucide-react';
 import {
   fetchA2APeers,
@@ -25,6 +26,7 @@ import {
   delegateA2ATask,
   fetchA2AMessages,
   fetchA2AConfig,
+  fetchSecurityPolicy,
 } from '../api/client';
 
 type TabId = 'peers' | 'capabilities' | 'messages';
@@ -50,6 +52,10 @@ const STATUS_COLORS: Record<string, string> = {
 export function A2APage() {
   const [activeTab, setActiveTab] = useState<TabId>('peers');
   const [showDelegate, setShowDelegate] = useState(false);
+  const [delegatePeerId, setDelegatePeerId] = useState('');
+  const [delegateTask, setDelegateTask] = useState('');
+  const [delegateError, setDelegateError] = useState('');
+  const [delegateResult, setDelegateResult] = useState<Record<string, unknown> | null>(null);
   const queryClient = useQueryClient();
 
   const { data: configData } = useQuery({
@@ -57,7 +63,22 @@ export function A2APage() {
     queryFn: fetchA2AConfig,
   });
 
-  const enabled = (configData?.config as Record<string, unknown>)?.enabled === true;
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+    staleTime: 30000,
+  });
+
+  const { data: peersData } = useQuery({
+    queryKey: ['a2aPeers'],
+    queryFn: fetchA2APeers,
+  });
+
+  const peers = peersData?.peers ?? [];
+
+  const enabled =
+    (configData?.config as Record<string, unknown>)?.enabled === true ||
+    securityPolicy?.allowA2A === true;
 
   const discoverMut = useMutation({
     mutationFn: discoverA2APeers,
@@ -65,6 +86,24 @@ export function A2APage() {
       void queryClient.invalidateQueries({ queryKey: ['a2aPeers'] });
     },
   });
+
+  const delegateMut = useMutation({
+    mutationFn: delegateA2ATask,
+    onSuccess: (response) => {
+      setDelegateResult(response.message);
+      void queryClient.invalidateQueries({ queryKey: ['a2aMessages'] });
+    },
+    onError: (err) => {
+      setDelegateError(err instanceof Error ? err.message : 'Delegation failed');
+    },
+  });
+
+  const clearDelegateForm = () => {
+    setDelegatePeerId('');
+    setDelegateTask('');
+    setDelegateError('');
+    setDelegateResult(null);
+  };
 
   if (!enabled) {
     return (
@@ -109,7 +148,7 @@ export function A2APage() {
             Discover
           </button>
           <button
-            onClick={() => setShowDelegate(true)}
+            onClick={() => setShowDelegate(!showDelegate)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Send className="w-3.5 h-3.5" />
@@ -117,6 +156,59 @@ export function A2APage() {
           </button>
         </div>
       </div>
+
+      {showDelegate && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm">Delegate Task to Peer</span>
+            <button onClick={() => { setShowDelegate(false); clearDelegateForm(); }} className="btn-ghost p-1 rounded">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Peer</label>
+            <select
+              value={delegatePeerId}
+              onChange={(e) => setDelegatePeerId(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Select a peer...</option>
+              {peers.map((peer) => (
+                <option key={peer.id} value={peer.id}>
+                  {peer.name} ({peer.trustLevel})
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Task</label>
+            <textarea
+              value={delegateTask}
+              onChange={(e) => setDelegateTask(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[100px] resize-y"
+              placeholder="Describe the task to delegate..."
+            />
+          </div>
+          {delegateError && <p className="text-xs text-destructive">{delegateError}</p>}
+          {delegateResult && (
+            <div>
+              <p className="text-xs font-medium text-green-500 mb-1">Task delegated successfully</p>
+              <pre className="text-xs bg-muted p-2 rounded whitespace-pre-wrap max-h-32 overflow-y-auto font-mono">
+                {JSON.stringify(delegateResult, null, 2)}
+              </pre>
+            </div>
+          )}
+          {!delegateResult && (
+            <button
+              className="btn btn-primary"
+              disabled={!delegatePeerId || !delegateTask.trim() || delegateMut.isPending}
+              onClick={() => { setDelegateError(''); setDelegateResult(null); delegateMut.mutate({ peerId: delegatePeerId, task: delegateTask }); }}
+            >
+              {delegateMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delegate'}
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
@@ -138,16 +230,6 @@ export function A2APage() {
       {activeTab === 'peers' && <PeersTab />}
       {activeTab === 'capabilities' && <CapabilitiesTab />}
       {activeTab === 'messages' && <MessagesTab />}
-
-      {showDelegate && (
-        <DelegateTaskDialog
-          onClose={() => setShowDelegate(false)}
-          onDelegated={() => {
-            setShowDelegate(false);
-            void queryClient.invalidateQueries({ queryKey: ['a2aMessages'] });
-          }}
-        />
-      )}
     </div>
   );
 }
@@ -158,6 +240,9 @@ function PeersTab() {
   const queryClient = useQueryClient();
   const [showAddPeer, setShowAddPeer] = useState(false);
   const [editingTrust, setEditingTrust] = useState<string | null>(null);
+  const [peerUrl, setPeerUrl] = useState('');
+  const [peerName, setPeerName] = useState('');
+  const [peerError, setPeerError] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['a2aPeers'],
@@ -180,7 +265,27 @@ function PeersTab() {
     },
   });
 
+  const addPeerMut = useMutation({
+    mutationFn: addA2APeer,
+    onSuccess: () => {
+      setPeerUrl('');
+      setPeerName('');
+      setPeerError('');
+      setShowAddPeer(false);
+      void queryClient.invalidateQueries({ queryKey: ['a2aPeers'] });
+    },
+    onError: (err) => {
+      setPeerError(err instanceof Error ? err.message : 'Failed to add peer');
+    },
+  });
+
   const peers = data?.peers ?? [];
+
+  const clearPeerForm = () => {
+    setPeerUrl('');
+    setPeerName('');
+    setPeerError('');
+  };
 
   if (isLoading) {
     return (
@@ -194,13 +299,50 @@ function PeersTab() {
     <div className="space-y-3">
       <div className="flex justify-end">
         <button
-          onClick={() => setShowAddPeer(true)}
+          onClick={() => setShowAddPeer(!showAddPeer)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           Add Peer
         </button>
       </div>
+
+      {showAddPeer && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm">Add Peer</span>
+            <button onClick={() => { setShowAddPeer(false); clearPeerForm(); }} className="btn-ghost p-1 rounded">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Peer URL</label>
+            <input
+              value={peerUrl}
+              onChange={(e) => setPeerUrl(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="https://peer-agent.example.com"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Name (optional)</label>
+            <input
+              value={peerName}
+              onChange={(e) => setPeerName(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="Friendly name for this peer"
+            />
+          </div>
+          {peerError && <p className="text-xs text-destructive">{peerError}</p>}
+          <button
+            className="btn btn-primary"
+            disabled={!peerUrl.trim() || addPeerMut.isPending}
+            onClick={() => { setPeerError(''); addPeerMut.mutate({ url: peerUrl, name: peerName || undefined }); }}
+          >
+            {addPeerMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add Peer'}
+          </button>
+        </div>
+      )}
 
       {peers.length === 0 && (
         <div className="card p-8 text-center">
@@ -251,7 +393,7 @@ function PeersTab() {
                     onChange={(e) => updateTrustMut.mutate({ id: peer.id, level: e.target.value })}
                     onBlur={() => setEditingTrust(null)}
                     autoFocus
-                    className="input text-xs py-1 px-1.5 w-24"
+                    className="bg-card border border-border rounded-lg text-xs py-1 px-1.5 w-24"
                   >
                     <option value="untrusted">untrusted</option>
                     <option value="verified">verified</option>
@@ -277,84 +419,6 @@ function PeersTab() {
             </div>
           </div>
         ))}
-      </div>
-
-      {showAddPeer && (
-        <AddPeerDialog
-          onClose={() => setShowAddPeer(false)}
-          onAdded={() => {
-            setShowAddPeer(false);
-            void queryClient.invalidateQueries({ queryKey: ['a2aPeers'] });
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function AddPeerDialog({
-  onClose,
-  onAdded,
-}: {
-  onClose: () => void;
-  onAdded: () => void;
-}) {
-  const [url, setUrl] = useState('');
-  const [name, setName] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async () => {
-    if (!url.trim()) return;
-    setSubmitting(true);
-    setError('');
-    try {
-      await addA2APeer({ url, name: name || undefined });
-      onAdded();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to add peer');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-background border rounded-lg p-6 w-full max-w-lg shadow-lg" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">Add Peer</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium block mb-1">Peer URL</label>
-            <input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="https://peer-agent.example.com"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Name (optional)</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="Friendly name for this peer"
-            />
-          </div>
-          {error && <p className="text-xs text-destructive">{error}</p>}
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted/50">
-            Cancel
-          </button>
-          <button
-            onClick={() => void handleSubmit()}
-            disabled={!url.trim() || submitting}
-            className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Add Peer'}
-          </button>
-        </div>
       </div>
     </div>
   );
@@ -431,7 +495,7 @@ function CapabilitiesTab() {
             <select
               value={queryPeerId}
               onChange={(e) => setQueryPeerId(e.target.value)}
-              className="input w-full text-sm py-2"
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
             >
               <option value="">Select a peer...</option>
               {peers.map((peer) => (
@@ -515,7 +579,7 @@ function MessagesTab() {
         <select
           value={peerFilter}
           onChange={(e) => setPeerFilter(e.target.value)}
-          className="input text-sm py-1.5 px-2 w-48"
+          className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-48"
         >
           <option value="">All peers</option>
           {peers.map((peer) => (
@@ -570,101 +634,6 @@ function MessagesTab() {
             </div>
           );
         })}
-      </div>
-    </div>
-  );
-}
-
-// ── Delegate Task Dialog ─────────────────────────────────────────
-
-function DelegateTaskDialog({
-  onClose,
-  onDelegated,
-}: {
-  onClose: () => void;
-  onDelegated: () => void;
-}) {
-  const [peerId, setPeerId] = useState('');
-  const [task, setTask] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-  const [result, setResult] = useState<Record<string, unknown> | null>(null);
-
-  const { data: peersData } = useQuery({
-    queryKey: ['a2aPeers'],
-    queryFn: fetchA2APeers,
-  });
-
-  const peers = peersData?.peers ?? [];
-
-  const handleSubmit = async () => {
-    if (!peerId || !task.trim()) return;
-    setSubmitting(true);
-    setError('');
-    setResult(null);
-    try {
-      const response = await delegateA2ATask({ peerId, task });
-      setResult(response.message);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Delegation failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-background border rounded-lg p-6 w-full max-w-lg shadow-lg" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">Delegate Task to Peer</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium block mb-1">Peer</label>
-            <select
-              value={peerId}
-              onChange={(e) => setPeerId(e.target.value)}
-              className="input w-full text-sm py-2"
-            >
-              <option value="">Select a peer...</option>
-              {peers.map((peer) => (
-                <option key={peer.id} value={peer.id}>
-                  {peer.name} ({peer.trustLevel})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Task</label>
-            <textarea
-              value={task}
-              onChange={(e) => setTask(e.target.value)}
-              className="input w-full text-sm py-2 min-h-[100px] resize-y"
-              placeholder="Describe the task to delegate..."
-            />
-          </div>
-          {error && <p className="text-xs text-destructive">{error}</p>}
-          {result && (
-            <div>
-              <p className="text-xs font-medium text-green-500 mb-1">Task delegated successfully</p>
-              <pre className="text-xs bg-muted p-2 rounded whitespace-pre-wrap max-h-32 overflow-y-auto font-mono">
-                {JSON.stringify(result, null, 2)}
-              </pre>
-            </div>
-          )}
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted/50">
-            {result ? 'Close' : 'Cancel'}
-          </button>
-          {!result && (
-            <button
-              onClick={() => void handleSubmit()}
-              disabled={!peerId || !task.trim() || submitting}
-              className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-            >
-              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delegate'}
-            </button>
-          )}
-        </div>
       </div>
     </div>
   );

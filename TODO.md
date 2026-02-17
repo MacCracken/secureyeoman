@@ -7,7 +7,7 @@
 ## Dashboard
 
 - [ ] Storybook for component development
-- [ ] Test connection button for integrations (requires backend endpoint)
+- [x] Test connection button for integrations (backend endpoint + dashboard UI)
 - [x] Node detail expansion in MetricsGraph
 - [x] HTML prompt injection protection (DOMPurify sanitization)
 
@@ -17,7 +17,9 @@
 - [ ] Discord thread support for multi-turn conversations
 - [ ] Slack interactive messages (blocks, modals)
 - [ ] WhatsApp integration
-- [ ] Calendar integration
+- [x] Calendar integration (Google Calendar — Phase 7)
+- [x] Notion integration (Phase 7)
+- [x] GitLab integration (Phase 7)
 - [ ] GitHub PR review automation via AI
 - [ ] GitHub code search and file browsing
 - [ ] Outbound webhooks for events
@@ -30,11 +32,25 @@
 - [x] Health monitoring for external MCP servers
 - [x] Encrypted credential management for MCP servers
 - [x] Dashboard: feature toggles, health indicators, credential UI
-- [ ] Browser automation (Playwright/Puppeteer integration — placeholders registered)
+- [x] Browser automation (Playwright integration — 6 tools implemented with BrowserPool)
 - [ ] Web scraper configuration panel in dashboard
-- [ ] Browser automation session manager
+- [ ] Browser automation session manager (dashboard UI for managing active pages)
 - [ ] Extraction history and results viewer
 - [ ] Pre-built one-click MCP server integrations
+
+## AI Providers
+
+- [x] DeepSeek provider (deepseek-chat, deepseek-coder, deepseek-reasoner)
+- [ ] Mistral provider
+
+## Adaptive Learning (Phase 7.1)
+
+- [x] Feedback collection system (thumbs-up/thumbs-down on chat messages)
+- [x] User preference profile (stored as 'preference' memories in Brain)
+- [x] Conversation pattern analysis (response length, code usage)
+- [x] Preference injection into system prompt
+- [ ] Explicit correction UI (inline text correction)
+- [ ] Preference visualization dashboard
 
 ## Future
 

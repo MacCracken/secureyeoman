@@ -49,6 +49,10 @@ export const McpFeaturesSchema = z
   .object({
     exposeGit: z.boolean().default(false),
     exposeFilesystem: z.boolean().default(false),
+    exposeWeb: z.boolean().default(false),
+    exposeWebScraping: z.boolean().default(false),
+    exposeWebSearch: z.boolean().default(false),
+    exposeBrowser: z.boolean().default(false),
   })
   .default({});
 

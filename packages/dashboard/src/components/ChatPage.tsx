@@ -17,12 +17,15 @@ import {
   ImagePlus,
   PanelLeftClose,
   PanelLeftOpen,
+  ThumbsUp,
+  ThumbsDown,
 } from 'lucide-react';
 import {
   fetchPersonalities,
   switchModel,
   fetchModelInfo,
   rememberChatMessage,
+  submitFeedback,
   fetchConversations,
   deleteConversation,
   renameConversation,
@@ -84,6 +87,7 @@ export function ChatPage() {
 
   const [expandedBrainIdx, setExpandedBrainIdx] = useState<number | null>(null);
   const [rememberedIndices, setRememberedIndices] = useState<Set<number>>(new Set());
+  const [feedbackGiven, setFeedbackGiven] = useState<Map<number, 'positive' | 'negative'>>(new Map());
 
   const { messages, input, setInput, handleSend, isPending, clearMessages, conversationId } =
     useChat({
@@ -130,6 +134,16 @@ export function ChatPage() {
       setRememberedIndices((prev) => new Set(prev).add(msgIndex));
     },
     [rememberMutation]
+  );
+
+  const handleFeedback = useCallback(
+    (msgIndex: number, feedback: 'positive' | 'negative') => {
+      if (feedbackGiven.has(msgIndex)) return;
+      const msgId = `msg_${msgIndex}`;
+      submitFeedback(conversationId ?? 'default', msgId, feedback).catch(() => {});
+      setFeedbackGiven((prev) => new Map(prev).set(msgIndex, feedback));
+    },
+    [conversationId, feedbackGiven]
   );
 
   const handleNewChat = useCallback(() => {
@@ -581,6 +595,38 @@ export function ChatPage() {
                         />
                         {rememberedIndices.has(i) ? 'Remembered' : 'Remember'}
                       </button>
+                    )}
+
+                    {/* Feedback buttons on assistant messages */}
+                    {msg.role === 'assistant' && (
+                      <>
+                        <button
+                          onClick={() => handleFeedback(i, 'positive')}
+                          disabled={feedbackGiven.has(i)}
+                          className={`inline-flex items-center p-0.5 rounded hover:bg-primary/10 transition-colors ${
+                            feedbackGiven.get(i) === 'positive'
+                              ? 'text-green-400 opacity-90'
+                              : 'opacity-30 hover:opacity-60'
+                          }`}
+                          data-testid={`feedback-up-${i}`}
+                          title="Good response"
+                        >
+                          <ThumbsUp className={`w-3 h-3 ${feedbackGiven.get(i) === 'positive' ? 'fill-current' : ''}`} />
+                        </button>
+                        <button
+                          onClick={() => handleFeedback(i, 'negative')}
+                          disabled={feedbackGiven.has(i)}
+                          className={`inline-flex items-center p-0.5 rounded hover:bg-primary/10 transition-colors ${
+                            feedbackGiven.get(i) === 'negative'
+                              ? 'text-red-400 opacity-90'
+                              : 'opacity-30 hover:opacity-60'
+                          }`}
+                          data-testid={`feedback-down-${i}`}
+                          title="Poor response"
+                        >
+                          <ThumbsDown className={`w-3 h-3 ${feedbackGiven.get(i) === 'negative' ? 'fill-current' : ''}`} />
+                        </button>
+                      </>
                     )}
                   </div>
                 </div>

@@ -14,6 +14,7 @@ import { OllamaProvider } from './providers/ollama.js';
 import { OpenCodeProvider } from './providers/opencode.js';
 import { LMStudioProvider } from './providers/lmstudio.js';
 import { LocalAIProvider } from './providers/localai.js';
+import { DeepSeekProvider } from './providers/deepseek.js';
 
 interface ModelPricing {
   inputPer1M: number;
@@ -46,6 +47,11 @@ const PRICING: Record<string, ModelPricing> = {
   'gemini-3-flash': { inputPer1M: 0.5, outputPer1M: 3 },
   'qwen3-coder': { inputPer1M: 0.45, outputPer1M: 1.5 },
   'big-pickle': { inputPer1M: 0, outputPer1M: 0 },
+
+  // DeepSeek
+  'deepseek-chat': { inputPer1M: 0.27, outputPer1M: 1.10 },
+  'deepseek-coder': { inputPer1M: 0.14, outputPer1M: 0.28 },
+  'deepseek-reasoner': { inputPer1M: 0.55, outputPer1M: 2.19 },
 };
 
 // Fallback pricing per provider when model is unknown
@@ -57,6 +63,7 @@ const FALLBACK_PRICING: Record<string, ModelPricing> = {
   opencode: { inputPer1M: 1, outputPer1M: 5 },
   lmstudio: { inputPer1M: 0, outputPer1M: 0 },
   localai: { inputPer1M: 0, outputPer1M: 0 },
+  deepseek: { inputPer1M: 0.27, outputPer1M: 1.10 },
 };
 
 export interface AvailableModel {
@@ -84,6 +91,9 @@ const MODEL_PROVIDER_MAP: Record<string, string> = {
   'gemini-3-flash': 'opencode',
   'qwen3-coder': 'opencode',
   'big-pickle': 'opencode',
+  'deepseek-chat': 'deepseek',
+  'deepseek-coder': 'deepseek',
+  'deepseek-reasoner': 'deepseek',
 };
 
 /**
@@ -98,6 +108,7 @@ export const PROVIDER_KEY_ENV: Record<string, string | null> = {
   ollama: 'OLLAMA_HOST', // presence indicates Ollama is configured
   lmstudio: 'LMSTUDIO_BASE_URL', // presence indicates LM Studio is configured
   localai: 'LOCALAI_BASE_URL', // presence indicates LocalAI is configured
+  deepseek: 'DEEPSEEK_API_KEY',
 };
 
 /**
@@ -278,6 +289,27 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
           outputPer1M: 0,
         })),
       ),
+    });
+  }
+
+  const deepseekKey = process.env['DEEPSEEK_API_KEY'];
+  if (deepseekKey) {
+    tasks.push({
+      provider: 'deepseek',
+      promise: DeepSeekProvider.fetchAvailableModels(deepseekKey).then((models) => {
+        const list = models.length > 0 ? models : DeepSeekProvider.getKnownModels();
+        return list.map((m) => {
+          const knownPricing = PRICING[m.id];
+          const fallback = FALLBACK_PRICING['deepseek']!;
+          return {
+            provider: 'deepseek',
+            model: m.id,
+            inputPer1M: knownPricing?.inputPer1M ?? fallback.inputPer1M,
+            outputPer1M: knownPricing?.outputPer1M ?? fallback.outputPer1M,
+            cachedInputPer1M: knownPricing?.cachedInputPer1M,
+          };
+        });
+      }),
     });
   }
 

@@ -15,6 +15,7 @@ import {
   ChevronRight,
   ChevronDown,
   Eye,
+  X,
 } from 'lucide-react';
 import {
   fetchAgentProfiles,
@@ -26,6 +27,7 @@ import {
   deleteAgentProfile,
   fetchDelegationMessages,
   fetchAgentConfig,
+  fetchSecurityPolicy,
   type AgentProfileInfo,
   type DelegationInfo,
   type ActiveDelegationInfo,
@@ -56,6 +58,9 @@ export function SubAgentsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('active');
   const [showNewProfile, setShowNewProfile] = useState(false);
   const [showDelegate, setShowDelegate] = useState(false);
+  const [delegateProfile, setDelegateProfile] = useState('researcher');
+  const [delegateTaskText, setDelegateTaskText] = useState('');
+  const [delegateContext, setDelegateContext] = useState('');
   const queryClient = useQueryClient();
 
   const { data: configData } = useQuery({
@@ -63,7 +68,35 @@ export function SubAgentsPage() {
     queryFn: fetchAgentConfig,
   });
 
-  const enabled = (configData?.config as Record<string, unknown>)?.enabled === true;
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+    staleTime: 30000,
+  });
+
+  const { data: profilesData } = useQuery({
+    queryKey: ['agentProfiles'],
+    queryFn: fetchAgentProfiles,
+  });
+
+  const profiles = profilesData?.profiles ?? [];
+
+  const delegateMut = useMutation({
+    mutationFn: delegateTask,
+    onSuccess: () => {
+      setDelegateProfile('researcher');
+      setDelegateTaskText('');
+      setDelegateContext('');
+      setShowDelegate(false);
+      void queryClient.invalidateQueries({ queryKey: ['activeDelegations'] });
+      void queryClient.invalidateQueries({ queryKey: ['delegations'] });
+    },
+  });
+
+  const enabled =
+    (configData?.config as Record<string, unknown>)?.enabled === true ||
+    configData?.allowedBySecurityPolicy === true ||
+    securityPolicy?.allowSubAgents === true;
 
   if (!enabled) {
     return (
@@ -96,7 +129,7 @@ export function SubAgentsPage() {
         <h1 className="text-xl font-bold">Sub-Agents</h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowDelegate(true)}
+            onClick={() => setShowDelegate(!showDelegate)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Play className="w-3.5 h-3.5" />
@@ -104,6 +137,54 @@ export function SubAgentsPage() {
           </button>
         </div>
       </div>
+
+      {showDelegate && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm">Delegate Task</span>
+            <button onClick={() => { setShowDelegate(false); setDelegateTaskText(''); setDelegateContext(''); }} className="btn-ghost p-1 rounded">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Profile</label>
+            <select
+              value={delegateProfile}
+              onChange={(e) => setDelegateProfile(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+            >
+              {profiles.map((p: AgentProfileInfo) => (
+                <option key={p.id} value={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Task</label>
+            <textarea
+              value={delegateTaskText}
+              onChange={(e) => setDelegateTaskText(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[80px] resize-y"
+              placeholder="Describe the task for the sub-agent..."
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Context (optional)</label>
+            <textarea
+              value={delegateContext}
+              onChange={(e) => setDelegateContext(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[60px] resize-y"
+              placeholder="Additional context..."
+            />
+          </div>
+          <button
+            className="btn btn-primary"
+            disabled={!delegateTaskText.trim() || delegateMut.isPending}
+            onClick={() => delegateMut.mutate({ profile: delegateProfile, task: delegateTaskText, context: delegateContext || undefined })}
+          >
+            {delegateMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delegate'}
+          </button>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1 border-b border-border">
@@ -125,28 +206,10 @@ export function SubAgentsPage() {
       {activeTab === 'active' && <ActiveDelegationsTab />}
       {activeTab === 'history' && <HistoryTab />}
       {activeTab === 'profiles' && (
-        <ProfilesTab onNewProfile={() => setShowNewProfile(true)} />
-      )}
-
-      {showDelegate && (
-        <DelegateDialog
-          onClose={() => setShowDelegate(false)}
-          onSubmit={async (data) => {
-            await delegateTask(data);
-            setShowDelegate(false);
-            void queryClient.invalidateQueries({ queryKey: ['activeDelegations'] });
-            void queryClient.invalidateQueries({ queryKey: ['delegations'] });
-          }}
-        />
-      )}
-
-      {showNewProfile && (
-        <NewProfileDialog
-          onClose={() => setShowNewProfile(false)}
-          onCreated={() => {
-            setShowNewProfile(false);
-            void queryClient.invalidateQueries({ queryKey: ['agentProfiles'] });
-          }}
+        <ProfilesTab
+          showNewProfile={showNewProfile}
+          onToggleNewProfile={() => setShowNewProfile(!showNewProfile)}
+          onCloseNewProfile={() => setShowNewProfile(false)}
         />
       )}
     </div>
@@ -245,7 +308,7 @@ function HistoryTab() {
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
-          className="input text-sm py-1.5 px-2 w-40"
+          className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-40"
         >
           <option value="">All statuses</option>
           <option value="completed">Completed</option>
@@ -362,8 +425,21 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
 
 // ── Profiles Tab ──────────────────────────────────────────────────
 
-function ProfilesTab({ onNewProfile }: { onNewProfile: () => void }) {
+function ProfilesTab({
+  showNewProfile,
+  onToggleNewProfile,
+  onCloseNewProfile,
+}: {
+  showNewProfile: boolean;
+  onToggleNewProfile: () => void;
+  onCloseNewProfile: () => void;
+}) {
   const queryClient = useQueryClient();
+  const [profileName, setProfileName] = useState('');
+  const [profileDesc, setProfileDesc] = useState('');
+  const [profilePrompt, setProfilePrompt] = useState('');
+  const [profileBudget, setProfileBudget] = useState(50000);
+
   const { data, isLoading } = useQuery({
     queryKey: ['agentProfiles'],
     queryFn: fetchAgentProfiles,
@@ -376,19 +452,87 @@ function ProfilesTab({ onNewProfile }: { onNewProfile: () => void }) {
     },
   });
 
+  const createMut = useMutation({
+    mutationFn: createAgentProfile,
+    onSuccess: () => {
+      setProfileName('');
+      setProfileDesc('');
+      setProfilePrompt('');
+      setProfileBudget(50000);
+      onCloseNewProfile();
+      void queryClient.invalidateQueries({ queryKey: ['agentProfiles'] });
+    },
+  });
+
   const profiles = data?.profiles ?? [];
 
   return (
     <div className="space-y-3">
       <div className="flex justify-end">
         <button
-          onClick={onNewProfile}
+          onClick={onToggleNewProfile}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           New Profile
         </button>
       </div>
+
+      {showNewProfile && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm">New Agent Profile</span>
+            <button onClick={() => { onCloseNewProfile(); setProfileName(''); setProfileDesc(''); setProfilePrompt(''); setProfileBudget(50000); }} className="btn-ghost p-1 rounded">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Name</label>
+            <input
+              value={profileName}
+              onChange={(e) => setProfileName(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="e.g. reviewer"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Description</label>
+            <input
+              value={profileDesc}
+              onChange={(e) => setProfileDesc(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="What this agent specializes in"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">System Prompt</label>
+            <textarea
+              value={profilePrompt}
+              onChange={(e) => setProfilePrompt(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[120px] resize-y"
+              placeholder="You are a..."
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Max Token Budget</label>
+            <input
+              type="number"
+              value={profileBudget}
+              onChange={(e) => setProfileBudget(Number(e.target.value))}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              min={1000}
+              max={500000}
+            />
+          </div>
+          <button
+            className="btn btn-primary"
+            disabled={!profileName.trim() || !profilePrompt.trim() || createMut.isPending}
+            onClick={() => createMut.mutate({ name: profileName, description: profileDesc, systemPrompt: profilePrompt, maxTokenBudget: profileBudget })}
+          >
+            {createMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+          </button>
+        </div>
+      )}
 
       {isLoading && (
         <div className="flex justify-center py-8">
@@ -426,175 +570,6 @@ function ProfilesTab({ onNewProfile }: { onNewProfile: () => void }) {
             </div>
           </div>
         ))}
-      </div>
-    </div>
-  );
-}
-
-// ── Dialogs ───────────────────────────────────────────────────────
-
-function DelegateDialog({
-  onClose,
-  onSubmit,
-}: {
-  onClose: () => void;
-  onSubmit: (data: { profile: string; task: string; context?: string }) => Promise<void>;
-}) {
-  const [profile, setProfile] = useState('researcher');
-  const [task, setTask] = useState('');
-  const [context, setContext] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-
-  const { data: profilesData } = useQuery({
-    queryKey: ['agentProfiles'],
-    queryFn: fetchAgentProfiles,
-  });
-
-  const profiles = profilesData?.profiles ?? [];
-
-  const handleSubmit = async () => {
-    if (!task.trim()) return;
-    setSubmitting(true);
-    try {
-      await onSubmit({ profile, task, context: context || undefined });
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-background border rounded-lg p-6 w-full max-w-lg shadow-lg" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">Delegate Task</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium block mb-1">Profile</label>
-            <select
-              value={profile}
-              onChange={(e) => setProfile(e.target.value)}
-              className="input w-full text-sm py-2"
-            >
-              {profiles.map((p: AgentProfileInfo) => (
-                <option key={p.id} value={p.name}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Task</label>
-            <textarea
-              value={task}
-              onChange={(e) => setTask(e.target.value)}
-              className="input w-full text-sm py-2 min-h-[80px] resize-y"
-              placeholder="Describe the task for the sub-agent..."
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Context (optional)</label>
-            <textarea
-              value={context}
-              onChange={(e) => setContext(e.target.value)}
-              className="input w-full text-sm py-2 min-h-[60px] resize-y"
-              placeholder="Additional context..."
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted/50">
-            Cancel
-          </button>
-          <button
-            onClick={() => void handleSubmit()}
-            disabled={!task.trim() || submitting}
-            className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delegate'}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function NewProfileDialog({
-  onClose,
-  onCreated,
-}: {
-  onClose: () => void;
-  onCreated: () => void;
-}) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [systemPrompt, setSystemPrompt] = useState('');
-  const [maxTokenBudget, setMaxTokenBudget] = useState(50000);
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async () => {
-    if (!name.trim() || !systemPrompt.trim()) return;
-    setSubmitting(true);
-    try {
-      await createAgentProfile({ name, description, systemPrompt, maxTokenBudget });
-      onCreated();
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-background border rounded-lg p-6 w-full max-w-lg shadow-lg" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">New Agent Profile</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium block mb-1">Name</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="e.g. reviewer"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Description</label>
-            <input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="What this agent specializes in"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">System Prompt</label>
-            <textarea
-              value={systemPrompt}
-              onChange={(e) => setSystemPrompt(e.target.value)}
-              className="input w-full text-sm py-2 min-h-[120px] resize-y"
-              placeholder="You are a..."
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Max Token Budget</label>
-            <input
-              type="number"
-              value={maxTokenBudget}
-              onChange={(e) => setMaxTokenBudget(Number(e.target.value))}
-              className="input w-full text-sm py-2"
-              min={1000}
-              max={500000}
-            />
-          </div>
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted/50">
-            Cancel
-          </button>
-          <button
-            onClick={() => void handleSubmit()}
-            disabled={!name.trim() || !systemPrompt.trim() || submitting}
-            className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
-          </button>
-        </div>
       </div>
     </div>
   );

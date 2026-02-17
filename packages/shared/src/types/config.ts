@@ -289,7 +289,7 @@ export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
 
 // Fallback model configuration (used when primary provider hits rate limits or is unavailable)
 export const FallbackModelConfigSchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai']),
+  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai', 'deepseek']),
   model: z.string(),
   apiKeyEnv: EnvVarRefSchema,
   baseUrl: z.string().url().optional(),
@@ -302,7 +302,7 @@ export type FallbackModelConfig = z.infer<typeof FallbackModelConfigSchema>;
 
 // Model/AI configuration
 export const ModelConfigSchema = z.object({
-  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai']).default('anthropic'),
+  provider: z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai', 'deepseek']).default('anthropic'),
   model: z.string().default('claude-sonnet-4-20250514'),
   apiKeyEnv: EnvVarRefSchema.default('ANTHROPIC_API_KEY'),
   baseUrl: z.string().url().optional(),
