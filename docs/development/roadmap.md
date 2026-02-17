@@ -20,10 +20,10 @@
 | | **Release 2026.2.16** | **2026-02-16** | **Released** |
 | 9 | WebMCP & Browser Tools | 2026.2.17 | Complete |
 | 10 | Kubernetes Deployment | 2026.2.17 | Complete |
-| | **Release 2026.2.17** | **2026-02-17** | **Released** |
-| 11 | Dashboard UX | — | Complete |
-| 12 | Expanded Integrations | — | Complete |
+| 11 | Dashboard UX | 2026.2.17 | Complete |
+| 12 | Expanded Integrations | 2026.2.17 | Complete |
 | 13 | Dashboard & Tooling | 2026.2.17 | Complete |
+| | **Release 2026.2.17** | **2026-02-17** | **Released** |
 | 14 | Integration Expansion | — | Planned |
 
 ---
@@ -38,12 +38,19 @@ Foundation    Security      Infra         Dashboard     Integrations  Production
 [Core Agent] [RBAC/Crypto] [Brain/Comms] [React UI]   [Platforms]   [Hardening]
                                     ── Release 2026.2.15 ──
 
-Phase 7       Phase 8       Phase 9       Phase 10      Phase 11      Phase 12
-Cognitive     Extensions    WebMCP        Kubernetes    Dashboard UX  Integrations+
-   |             |             |             |             |             |
-   v             v             v             v             v             v
-[Memory/AI]  [Hooks/A2A]   [Web Tools]   [K8s Deploy]  [UX Polish]   [Expand]
-     ── Release 2026.2.16 ──       ── Release 2026.2.17 ──
+Phase 7       Phase 8
+Cognitive     Extensions
+   |             |
+   v             v
+[Memory/AI]  [Hooks/A2A]
+     ── Release 2026.2.16 ──
+
+Phase 9       Phase 10      Phase 11      Phase 12      Phase 13
+WebMCP        Kubernetes    Dashboard UX  Integrations+ Dash & Tools
+   |             |             |             |             |
+   v             v             v             v             v
+[Web Tools]   [K8s Deploy]  [UX Polish]   [Expand]      [Browser/Vec]
+                        ── Release 2026.2.17 ──
 ```
 
 ---
