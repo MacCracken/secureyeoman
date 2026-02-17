@@ -107,7 +107,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 ### From Source
 
 ```bash
-git clone https://github.com/MacCracken/FRIDAY.git
+git clone https://github.com/MacCracken/secureyeoman.git
 cd friday
 npm install
 
