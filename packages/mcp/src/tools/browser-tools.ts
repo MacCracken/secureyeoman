@@ -11,6 +11,7 @@ import type { McpServiceConfig } from '@friday/shared';
 import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler } from './tool-utils.js';
 import { BrowserPool } from './browser-pool.js';
+import { ProxyManager } from './proxy-manager.js';
 
 const NOT_AVAILABLE_MSG =
   'Browser automation is not available. Set MCP_EXPOSE_BROWSER=true and install Playwright ' +
@@ -20,7 +21,15 @@ let _pool: BrowserPool | null = null;
 
 function getPool(config: McpServiceConfig): BrowserPool {
   if (!_pool) {
-    _pool = BrowserPool.fromConfig(config);
+    let proxyConfig: { server: string; username?: string; password?: string } | undefined;
+    if (config.proxyEnabled) {
+      const pm = new ProxyManager(config);
+      const pwProxy = pm.getPlaywrightProxyConfig();
+      if (pwProxy) {
+        proxyConfig = pwProxy;
+      }
+    }
+    _pool = BrowserPool.fromConfig(config, proxyConfig);
   }
   return _pool;
 }

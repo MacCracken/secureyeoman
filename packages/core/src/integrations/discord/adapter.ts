@@ -68,7 +68,8 @@ export class DiscordIntegration implements Integration {
     // Handle regular messages
     this.client.on('messageCreate', (message: Message) => {
       if (message.author.bot) return;
-      if (!message.content.trim()) return;
+      // Allow messages with attachments through even if text is empty
+      if (!message.content.trim() && message.attachments.size === 0) return;
 
       const unified: UnifiedMessage = {
         id: `dc_${message.id}`,
@@ -95,7 +96,28 @@ export class DiscordIntegration implements Integration {
         timestamp: message.createdTimestamp,
       };
 
-      void this.deps!.onMessage(unified);
+      // Vision processing for image attachments
+      const mmManager = this.deps?.multimodalManager;
+      if (mmManager) {
+        void (async () => {
+          for (const att of unified.attachments ?? []) {
+            if (att.mimeType?.startsWith('image/') && att.url) {
+              try {
+                const resp = await fetch(att.url);
+                const buf = Buffer.from(await resp.arrayBuffer());
+                const result = await mmManager.analyzeImage({
+                  imageBase64: buf.toString('base64'),
+                  mimeType: att.mimeType!,
+                });
+                unified.text = `[Image: ${result.description}]\n${unified.text}`;
+              } catch { /* non-fatal */ }
+            }
+          }
+          await this.deps!.onMessage(unified);
+        })();
+      } else {
+        void this.deps!.onMessage(unified);
+      }
     });
 
     // Handle slash commands
@@ -203,7 +225,16 @@ export class DiscordIntegration implements Integration {
 
     const embed = new MessageEmbed().setDescription(text).setColor(0x5865f2).setTimestamp();
 
-    const sent = await (channel as TextChannel).send({ embeds: [embed] });
+    const sendOpts: Record<string, unknown> = { embeds: [embed] };
+
+    // Attach TTS audio as a file if provided in metadata
+    if (metadata?.audioBase64 && typeof metadata.audioBase64 === 'string') {
+      const buf = Buffer.from(metadata.audioBase64, 'base64');
+      const format = (metadata.audioFormat as string) || 'ogg';
+      sendOpts.files = [{ attachment: buf, name: `response.${format}` }];
+    }
+
+    const sent = await (channel as TextChannel).send(sendOpts);
     return sent.id;
   }
 

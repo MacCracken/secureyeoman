@@ -540,7 +540,7 @@ For more troubleshooting help, see the [Troubleshooting Guide](../troubleshootin
 
 ## Production Deployment
 
-For production deployment considerations (systemd, Docker, reverse proxy, monitoring), see the [Deployment Guide](../deployment.md).
+For production deployment considerations (systemd, Docker, reverse proxy, monitoring), see the [Deployment Guide](../deployment.md). For Kubernetes deployments, see the [Kubernetes Deployment Guide](kubernetes-deployment.md).
 
 ---
 
@@ -550,4 +550,5 @@ For production deployment considerations (systemd, Docker, reverse proxy, monito
 - [API Reference](../api/)
 - [Security Model](../security/security-model.md)
 - [Deployment Guide](../deployment.md)
+- [Kubernetes Deployment Guide](kubernetes-deployment.md)
 - [Troubleshooting Guide](../troubleshooting.md)

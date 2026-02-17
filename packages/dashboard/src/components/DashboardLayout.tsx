@@ -69,6 +69,9 @@ const ProactivePage = lazy(() =>
 const ExperimentsPage = lazy(() =>
   import('./ExperimentsPage').then((m) => ({ default: m.ExperimentsPage }))
 );
+const MultimodalPage = lazy(() =>
+  import('./MultimodalPage').then((m) => ({ default: m.MultimodalPage }))
+);
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -229,6 +232,7 @@ export function DashboardLayout() {
                   <Route path="/a2a" element={<Navigate to="/agents" replace />} />
                   <Route path="/proactive" element={<ProactivePage />} />
                   <Route path="/experiments" element={<ExperimentsPage />} />
+                  <Route path="/multimodal" element={<MultimodalPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/security-settings" element={<SettingsPage />} />
                   <Route path="/api-keys" element={<SettingsPage />} />

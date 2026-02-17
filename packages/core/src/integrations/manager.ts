@@ -25,6 +25,7 @@ import type { z } from 'zod';
 export interface IntegrationManagerDeps {
   logger: SecureLogger;
   onMessage: IntegrationDeps['onMessage'];
+  multimodalManager?: IntegrationDeps['multimodalManager'];
 }
 
 export interface AutoReconnectConfig {
@@ -74,6 +75,11 @@ export class IntegrationManager {
       maxRetries: reconnectConfig?.maxRetries ?? 5,
       baseDelayMs: reconnectConfig?.baseDelayMs ?? 1000,
     };
+  }
+
+  /** Inject multimodalManager after construction (avoids init-order issues). */
+  setMultimodalManager(mm: IntegrationDeps['multimodalManager']): void {
+    (this.deps as IntegrationManagerDeps).multimodalManager = mm;
   }
 
   // ── Factory Registration ─────────────────────────────────
@@ -163,6 +169,7 @@ export class IntegrationManager {
       await integration.init(config, {
         logger: this.deps.logger.child({ integration: id, platform: config.platform }),
         onMessage: this.deps.onMessage,
+        multimodalManager: this.deps.multimodalManager,
       });
 
       await integration.start();

@@ -622,3 +622,75 @@ describe('MessageRouter', () => {
     });
   });
 });
+
+// ── MultimodalManager Wiring Tests ────────────────────────────────
+
+describe('IntegrationManager multimodal wiring', () => {
+  let storage: IntegrationStorage;
+  let manager: IntegrationManager;
+  const onMessage = vi.fn().mockResolvedValue(undefined);
+
+  beforeEach(async () => {
+    await truncateAllTables();
+    storage = new IntegrationStorage();
+    manager = new IntegrationManager(storage, {
+      logger: noopLogger(),
+      onMessage,
+    });
+  });
+
+  it('should accept multimodalManager via setMultimodalManager()', () => {
+    const mockMM = {
+      analyzeImage: vi.fn(),
+      transcribeAudio: vi.fn(),
+      synthesizeSpeech: vi.fn(),
+    };
+    // Should not throw
+    manager.setMultimodalManager(mockMM);
+  });
+
+  it('should pass multimodalManager to adapter init()', async () => {
+    const mockMM = {
+      analyzeImage: vi.fn(),
+      transcribeAudio: vi.fn(),
+      synthesizeSpeech: vi.fn(),
+    };
+    manager.setMultimodalManager(mockMM);
+
+    const mockIntegration = createMockIntegration();
+    manager.registerPlatform('telegram', () => mockIntegration);
+
+    const config = await manager.createIntegration({
+      platform: 'telegram',
+      displayName: 'Bot',
+      enabled: true,
+      config: {},
+    });
+
+    await manager.startIntegration(config.id);
+
+    expect(mockIntegration.init).toHaveBeenCalledWith(
+      expect.objectContaining({ id: config.id }),
+      expect.objectContaining({ multimodalManager: mockMM })
+    );
+  });
+
+  it('should pass null multimodalManager when not set', async () => {
+    const mockIntegration = createMockIntegration();
+    manager.registerPlatform('telegram', () => mockIntegration);
+
+    const config = await manager.createIntegration({
+      platform: 'telegram',
+      displayName: 'Bot',
+      enabled: true,
+      config: {},
+    });
+
+    await manager.startIntegration(config.id);
+
+    expect(mockIntegration.init).toHaveBeenCalledWith(
+      expect.objectContaining({ id: config.id }),
+      expect.objectContaining({ multimodalManager: undefined })
+    );
+  });
+});
