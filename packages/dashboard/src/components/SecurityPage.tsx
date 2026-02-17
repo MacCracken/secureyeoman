@@ -276,7 +276,7 @@ export function SecurityPage() {
           }`}
         >
           <Server className="w-4 h-4" />
-          System Details
+          System
         </button>
       </div>
 
@@ -1507,7 +1507,13 @@ function NodePanel({
             <DetailRow
               label="DB Size"
               value={
-                auditStats?.dbSizeEstimateMb ? `${auditStats.dbSizeEstimateMb.toFixed(1)} MB` : '-'
+                auditStats?.dbSizeEstimateMb != null
+                  ? auditStats.dbSizeEstimateMb >= 1024
+                    ? `${(auditStats.dbSizeEstimateMb / 1024).toFixed(2)} GB`
+                    : auditStats.dbSizeEstimateMb >= 1
+                      ? `${auditStats.dbSizeEstimateMb.toFixed(1)} MB`
+                      : `${(auditStats.dbSizeEstimateMb * 1024).toFixed(0)} KB`
+                  : '-'
               }
             />
           </>
@@ -1534,7 +1540,13 @@ function NodePanel({
             <DetailRow
               label="DB Size"
               value={
-                auditStats?.dbSizeEstimateMb ? `${auditStats.dbSizeEstimateMb.toFixed(1)} MB` : '-'
+                auditStats?.dbSizeEstimateMb != null
+                  ? auditStats.dbSizeEstimateMb >= 1024
+                    ? `${(auditStats.dbSizeEstimateMb / 1024).toFixed(2)} GB`
+                    : auditStats.dbSizeEstimateMb >= 1
+                      ? `${auditStats.dbSizeEstimateMb.toFixed(1)} MB`
+                      : `${(auditStats.dbSizeEstimateMb * 1024).toFixed(0)} KB`
+                  : '-'
               }
             />
           </>
@@ -1690,9 +1702,9 @@ function NodeDetailsTab() {
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="font-semibold">System Details</h3>
+        <h3 className="font-semibold">System</h3>
         <p className="text-xs text-muted-foreground mt-1">
-          Detailed status for each system component
+          Status for each system component
         </p>
       </div>
       <div className="space-y-3">
