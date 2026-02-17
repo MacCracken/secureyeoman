@@ -7,6 +7,8 @@
  */
 
 import type { UnifiedMessage } from '@friday/shared';
+import type { HistoryCompressor } from '../chat/compression/compressor.js';
+import type { CompressedContext } from '../chat/compression/types.js';
 
 export interface ConversationManagerOptions {
   /** Maximum messages to retain per conversation (default 10) */
@@ -15,6 +17,8 @@ export interface ConversationManagerOptions {
   windowDurationMs?: number;
   /** How often to run the stale-cleanup sweep in ms (default 60s) */
   cleanupIntervalMs?: number;
+  /** Optional history compressor for progressive compression */
+  historyCompressor?: HistoryCompressor;
 }
 
 export interface ConversationContext {
@@ -27,10 +31,12 @@ export class ConversationManager {
   private readonly windowDurationMs: number;
   private readonly conversations = new Map<string, UnifiedMessage[]>();
   private cleanupTimer: ReturnType<typeof setInterval> | null = null;
+  private readonly historyCompressor?: HistoryCompressor;
 
   constructor(options: ConversationManagerOptions = {}) {
     this.windowSize = options.windowSize ?? 10;
     this.windowDurationMs = options.windowDurationMs ?? 30 * 60 * 1000;
+    this.historyCompressor = options.historyCompressor;
 
     const cleanupMs = options.cleanupIntervalMs ?? 60_000;
     this.cleanupTimer = setInterval(() => this.clearStale(), cleanupMs);
@@ -69,6 +75,19 @@ export class ConversationManager {
     if (window.length > this.windowSize) {
       window.splice(0, window.length - this.windowSize);
     }
+
+    // Feed compressor when available
+    if (this.historyCompressor) {
+      const conversationId = this.key(message.platform, message.chatId,
+        (message.metadata as Record<string, unknown>)?.threadId as string | undefined);
+      this.historyCompressor.addMessage(conversationId, {
+        role: message.direction === 'inbound' ? 'user' : 'assistant',
+        content: message.text,
+        timestamp: message.timestamp,
+      }).catch(() => {
+        // Non-critical — don't block message handling
+      });
+    }
   }
 
   /**
@@ -103,6 +122,15 @@ export class ConversationManager {
         this.conversations.set(key, active);
       }
     }
+  }
+
+  /**
+   * Get compressed context for a conversation using the history compressor.
+   */
+  async getCompressedContext(platform: string, chatId: string, maxTokens: number): Promise<CompressedContext | null> {
+    if (!this.historyCompressor) return null;
+    const conversationId = this.key(platform, chatId);
+    return this.historyCompressor.getContext(conversationId, maxTokens);
   }
 
   /**

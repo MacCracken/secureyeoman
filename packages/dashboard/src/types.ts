@@ -151,12 +151,16 @@ export interface Personality {
       skills?: boolean;
       tasks?: boolean;
       personalities?: boolean;
+      subAgents?: boolean;
+      customRoles?: boolean;
+      roleAssignments?: boolean;
       experiments?: boolean;
     };
     selectedServers?: string[];
     mcpFeatures?: {
       exposeGit?: boolean;
       exposeFilesystem?: boolean;
+      exposeWeb?: boolean;
     };
   };
   createdAt: number;
@@ -181,12 +185,16 @@ export interface PersonalityCreate {
       skills?: boolean;
       tasks?: boolean;
       personalities?: boolean;
+      subAgents?: boolean;
+      customRoles?: boolean;
+      roleAssignments?: boolean;
       experiments?: boolean;
     };
     selectedServers?: string[];
     mcpFeatures?: {
       exposeGit?: boolean;
       exposeFilesystem?: boolean;
+      exposeWeb?: boolean;
     };
   };
 }
@@ -464,6 +472,26 @@ export interface McpToolDef {
 export interface McpFeatureConfig {
   exposeGit: boolean;
   exposeFilesystem: boolean;
+  exposeWeb: boolean;
+  exposeWebScraping: boolean;
+  exposeWebSearch: boolean;
+  exposeBrowser: boolean;
+}
+
+export interface McpServerHealth {
+  serverId: string;
+  status: 'healthy' | 'degraded' | 'unhealthy' | 'unknown';
+  latencyMs: number | null;
+  consecutiveFailures: number;
+  lastCheckedAt: number | null;
+  lastSuccessAt: number | null;
+  lastError: string | null;
+}
+
+export interface McpCredentialKey {
+  key: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface McpResourceDef {

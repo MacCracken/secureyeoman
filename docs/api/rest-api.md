@@ -15,6 +15,10 @@ This documentation covers the complete API surface. For real-time events, see:
 | [Brain](#brain-system) | Memory, knowledge, heartbeat, and sync |
 | [Soul](#soul-system) | Personality and skills |
 | [Integrations](#integrations) | Platform integrations |
+| [Agents](#agents) | Sub-agent profiles and delegation |
+| [Extensions](#extensions) | Lifecycle hooks, webhooks, and extension management |
+| [Execution](#execution) | Sandboxed code execution and session management |
+| [A2A](#a2a-protocol) | Agent-to-Agent discovery, delegation, and messaging |
 | [MCP Servers](#mcp-servers) | MCP server management and tool discovery |
 
 ## Related Documentation
@@ -218,6 +222,116 @@ Revoke API key.
 {
   "message": "API key revoked successfully"
 }
+```
+
+---
+
+### Roles & Permissions (RBAC)
+
+#### GET /api/v1/auth/roles
+
+List all RBAC roles (built-in and custom).
+
+**Response**
+```json
+{
+  "roles": [
+    {
+      "id": "role_admin",
+      "name": "Administrator",
+      "description": "Full system access",
+      "permissions": [{ "resource": "*", "action": "*" }],
+      "inheritFrom": [],
+      "isBuiltin": true
+    }
+  ]
+}
+```
+
+#### POST /api/v1/auth/roles
+
+Create a custom role. The role ID is auto-generated from the name with a `role_` prefix.
+
+**Request Body**
+```json
+{
+  "name": "Custom Ops",
+  "description": "Read-only access to tasks and metrics",
+  "permissions": [
+    { "resource": "tasks", "action": "read" },
+    { "resource": "metrics", "action": "read" }
+  ],
+  "inheritFrom": ["role_viewer"]
+}
+```
+
+**Response** (201)
+```json
+{
+  "role": {
+    "id": "role_custom_ops",
+    "name": "Custom Ops",
+    "description": "Read-only access to tasks and metrics",
+    "permissions": [
+      { "resource": "tasks", "action": "read" },
+      { "resource": "metrics", "action": "read" }
+    ],
+    "inheritFrom": ["role_viewer"],
+    "isBuiltin": false
+  }
+}
+```
+
+#### PUT /api/v1/auth/roles/:id
+
+Update a custom role. Built-in roles (`role_admin`, `role_operator`, `role_auditor`, `role_viewer`, `role_capture_operator`, `role_security_auditor`, `role_voice_operator`) cannot be modified (returns 403).
+
+**Request Body**: Same fields as POST (all optional).
+
+#### DELETE /api/v1/auth/roles/:id
+
+Delete a custom role. Built-in roles cannot be deleted (returns 403).
+
+**Response**
+```json
+{ "message": "Role deleted" }
+```
+
+#### GET /api/v1/auth/assignments
+
+List all active user-role assignments.
+
+**Response**
+```json
+{
+  "assignments": [
+    { "userId": "admin", "roleId": "role_admin" },
+    { "userId": "ops-user", "roleId": "role_custom_ops" }
+  ]
+}
+```
+
+#### POST /api/v1/auth/assignments
+
+Assign a role to a user.
+
+**Request Body**
+```json
+{ "userId": "ops-user", "roleId": "role_custom_ops" }
+```
+
+**Response** (201)
+```json
+{ "assignment": { "userId": "ops-user", "roleId": "role_custom_ops" } }
+```
+
+#### DELETE /api/v1/auth/assignments/:userId
+
+Revoke a user's active role assignment.
+
+**Response**
+```json
+{ "message": "Assignment revoked" }
 ```
 
 ---
@@ -541,6 +655,61 @@ Get security events.
   "total": 100,
   "limit": 50,
   "offset": 0
+}
+```
+
+---
+
+### Security Policy
+
+#### GET /api/v1/security/policy
+
+Get current security policy configuration.
+
+**Required Permissions**: `security.read`
+
+**Response**
+```json
+{
+  "allowSubAgents": true,
+  "allowA2A": false,
+  "allowExtensions": false,
+  "allowExecution": true
+}
+```
+
+#### PATCH /api/v1/security/policy
+
+Update security policy configuration.
+
+**Required Permissions**: `security.write`
+
+**Request Body**
+```json
+{
+  "allowSubAgents": true,
+  "allowA2A": false,
+  "allowExtensions": false,
+  "allowExecution": true
+}
+```
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `allowSubAgents` | boolean | `true` | Allow sub-agent delegation |
+| `allowA2A` | boolean | `false` | Allow A2A networking (requires sub-agents enabled) |
+| `allowExtensions` | boolean | `false` | Allow lifecycle extension hooks |
+| `allowExecution` | boolean | `true` | Allow sandboxed code execution |
+
+**Response**
+```json
+{
+  "policy": {
+    "allowSubAgents": true,
+    "allowA2A": false,
+    "allowExtensions": false,
+    "allowExecution": true
+  }
 }
 ```
 
@@ -1219,6 +1388,165 @@ Trigger a manual sync of memories and knowledge to the external provider.
 }
 ```
 
+#### GET /api/v1/brain/search/similar
+
+Semantic similarity search across memories and knowledge using vector embeddings.
+
+**Required Permissions**: `brain.read`
+
+**Query Parameters**
+- `query` (required): Search query text
+- `limit` (optional): Max results (default: 10)
+- `threshold` (optional): Minimum similarity score 0-1 (default: from config)
+- `type` (optional): `memories`, `knowledge`, or `all` (default: `all`)
+
+**Response**
+```json
+{
+  "results": [
+    {
+      "id": "mem_123",
+      "score": 0.92,
+      "metadata": { "type": "memory", "memoryType": "semantic" }
+    }
+  ]
+}
+```
+
+#### POST /api/v1/brain/reindex
+
+Trigger a full reindex of all memories and knowledge in the vector store.
+
+**Required Permissions**: `brain.write`
+
+**Response**
+```json
+{
+  "indexed": 155
+}
+```
+
+#### POST /api/v1/brain/consolidation/run
+
+Run deep memory consolidation manually.
+
+**Required Permissions**: `brain.write`
+
+**Response**
+```json
+{
+  "report": {
+    "timestamp": 1700100000000,
+    "totalCandidates": 25,
+    "summary": { "merged": 3, "replaced": 2, "updated": 1, "keptSeparate": 15, "skipped": 4 },
+    "dryRun": false,
+    "durationMs": 5200
+  }
+}
+```
+
+#### GET /api/v1/brain/consolidation/schedule
+
+Get the current consolidation schedule.
+
+**Required Permissions**: `brain.read`
+
+**Response**
+```json
+{
+  "schedule": "0 2 * * *"
+}
+```
+
+#### PUT /api/v1/brain/consolidation/schedule
+
+Update the consolidation schedule.
+
+**Required Permissions**: `brain.write`
+
+**Request Body**
+```json
+{
+  "schedule": "0 3 * * *"
+}
+```
+
+#### GET /api/v1/brain/consolidation/history
+
+Get consolidation run history.
+
+**Required Permissions**: `brain.read`
+
+**Response**
+```json
+{
+  "history": [
+    {
+      "timestamp": 1700100000000,
+      "totalCandidates": 25,
+      "summary": { "merged": 3, "replaced": 2, "updated": 1, "keptSeparate": 15, "skipped": 4 },
+      "dryRun": false,
+      "durationMs": 5200
+    }
+  ]
+}
+```
+
+#### GET /api/v1/conversations/:id/history
+
+Get tiered conversation history with compression statistics.
+
+**Required Permissions**: `brain.read`
+
+**Query Parameters**
+- `tier` (optional): Filter by tier (`message`, `topic`, `bulk`)
+
+**Response**
+```json
+{
+  "entries": [
+    {
+      "id": "entry_1",
+      "conversationId": "conv_123",
+      "tier": "message",
+      "content": "user: Hello",
+      "tokenCount": 5,
+      "sequence": 1,
+      "createdAt": 1700000000000,
+      "sealedAt": null
+    }
+  ]
+}
+```
+
+#### POST /api/v1/conversations/:id/seal-topic
+
+Manually seal the current topic for a conversation, triggering topic-level summarization.
+
+**Required Permissions**: `brain.write`
+
+#### GET /api/v1/conversations/:id/compressed-context
+
+Get assembled compressed context for a conversation within a token budget.
+
+**Required Permissions**: `brain.read`
+
+**Query Parameters**
+- `maxTokens` (optional): Token budget (default: 4000)
+
+**Response**
+```json
+{
+  "context": {
+    "messages": [],
+    "topics": [],
+    "bulk": [],
+    "totalTokens": 850,
+    "tokenBudget": { "messages": 2000, "topics": 1200, "bulk": 800 }
+  }
+}
+```
+
 ---
 
 ### Agent Communication (Comms)
@@ -1694,7 +2022,7 @@ List all discovered tools from connected MCP servers.
       "serverName": "FRIDAY Internal MCP"
     }
   ],
-  "total": 22
+  "total": 34
 }
 ```
 
@@ -1732,6 +2060,723 @@ List exposed resources from MCP servers.
   "resources": []
 }
 ```
+
+#### GET /api/v1/mcp/config
+
+Get MCP feature toggles (persisted in database).
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "exposeGit": false,
+  "exposeFilesystem": false,
+  "exposeWeb": false,
+  "exposeWebScraping": true,
+  "exposeWebSearch": true,
+  "exposeBrowser": false
+}
+```
+
+#### PATCH /api/v1/mcp/config
+
+Update MCP feature toggles.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "exposeWeb": true,
+  "exposeWebScraping": true,
+  "exposeWebSearch": true
+}
+```
+
+All fields are optional. Only provided fields are updated.
+
+### MCP Health Monitoring
+
+#### GET /api/v1/mcp/health
+
+Get health status of all external MCP servers.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "health": [
+    {
+      "serverId": "abc123",
+      "status": "healthy",
+      "latencyMs": 42,
+      "consecutiveFailures": 0,
+      "lastCheckedAt": 1700000000000,
+      "lastSuccessAt": 1700000000000,
+      "lastError": null
+    }
+  ]
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `status` | string | `healthy`, `degraded`, `unhealthy`, or `unknown` |
+| `latencyMs` | number\|null | Last successful check latency in milliseconds |
+| `consecutiveFailures` | number | Number of consecutive failed health checks |
+| `lastCheckedAt` | number\|null | Unix timestamp of last health check |
+| `lastSuccessAt` | number\|null | Unix timestamp of last successful check |
+| `lastError` | string\|null | Error message from last failed check |
+
+#### GET /api/v1/mcp/servers/{id}/health
+
+Get health status of a specific server.
+
+**Required Permissions**: Authenticated
+
+**Response**: Same shape as a single health entry above.
+
+#### POST /api/v1/mcp/servers/{id}/health/check
+
+Trigger an immediate health check for a specific server.
+
+**Required Permissions**: Authenticated
+
+**Response**: Returns the updated health entry.
+
+### MCP Credential Management
+
+Credentials are encrypted at rest using AES-256-GCM. Values are never returned via the API — only keys are listed.
+
+#### GET /api/v1/mcp/servers/{id}/credentials
+
+List credential keys stored for a server (never returns values).
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "keys": ["API_TOKEN", "SECRET_KEY"]
+}
+```
+
+#### PUT /api/v1/mcp/servers/{id}/credentials/{key}
+
+Store or update an encrypted credential for a server.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "value": "sk-abc123..."
+}
+```
+
+**Response**
+```json
+{
+  "message": "Credential stored"
+}
+```
+
+#### DELETE /api/v1/mcp/servers/{id}/credentials/{key}
+
+Delete a credential.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "message": "Credential deleted"
+}
+```
+
+---
+
+### Agents
+
+#### GET /api/v1/agents/profiles
+
+List all agent profiles (built-in and custom).
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "profiles": [
+    {
+      "id": "builtin-researcher",
+      "name": "researcher",
+      "description": "Information gathering and analysis specialist",
+      "maxTokenBudget": 50000,
+      "allowedTools": [],
+      "defaultModel": null,
+      "isBuiltin": true
+    }
+  ]
+}
+```
+
+#### GET /api/v1/agents/profiles/{id}
+
+Get a specific agent profile.
+
+**Required Permissions**: Authenticated
+
+#### POST /api/v1/agents/profiles
+
+Create a custom agent profile.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "name": "custom-specialist",
+  "description": "Custom specialist profile",
+  "systemPrompt": "You are a specialist in...",
+  "maxTokenBudget": 40000,
+  "allowedTools": [],
+  "defaultModel": null
+}
+```
+
+#### PUT /api/v1/agents/profiles/{id}
+
+Update a custom agent profile. Refuses built-in profiles.
+
+**Required Permissions**: Authenticated
+
+#### DELETE /api/v1/agents/profiles/{id}
+
+Delete a custom agent profile. Refuses built-in profiles.
+
+**Required Permissions**: Authenticated
+
+#### POST /api/v1/agents/delegate
+
+Start a sub-agent delegation.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "profile": "builtin-researcher",
+  "task": "Research the latest TypeScript 5.x features",
+  "context": "Focus on decorator metadata and type-safe configuration",
+  "maxTokenBudget": 30000,
+  "timeout": 120000
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `profile` | string | Yes | Profile ID or name |
+| `task` | string | Yes | Natural language task description |
+| `context` | string | No | Additional context from parent |
+| `maxTokenBudget` | number | No | Override default token budget |
+| `timeout` | number | No | Timeout in ms (default: 300000) |
+
+**Response**
+```json
+{
+  "delegationId": "01234abc...",
+  "profile": "researcher",
+  "status": "completed",
+  "result": "TypeScript 5.x introduces...",
+  "tokenUsage": { "prompt": 1200, "completion": 800 },
+  "durationMs": 5400,
+  "subDelegations": []
+}
+```
+
+#### GET /api/v1/agents/delegations
+
+List delegations with filtering and pagination.
+
+**Required Permissions**: Authenticated
+
+**Query Parameters**
+- `status` (optional): Filter by status (`pending`, `running`, `completed`, `failed`, `cancelled`, `timeout`)
+- `profile` (optional): Filter by profile ID
+- `limit` (optional): Number of results (default: 50)
+- `offset` (optional): Pagination offset
+
+**Response**
+```json
+{
+  "delegations": [...],
+  "total": 25
+}
+```
+
+#### GET /api/v1/agents/delegations/active
+
+List currently active (running) delegations.
+
+**Required Permissions**: Authenticated
+
+#### GET /api/v1/agents/delegations/{id}
+
+Get delegation detail including full delegation tree.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "delegation": { "..." : "..." },
+  "tree": [
+    { "id": "...", "parentDelegationId": null, "depth": 0, "status": "completed" },
+    { "id": "...", "parentDelegationId": "...", "depth": 1, "status": "completed" }
+  ]
+}
+```
+
+#### POST /api/v1/agents/delegations/{id}/cancel
+
+Cancel an active delegation.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "message": "Delegation cancelled"
+}
+```
+
+#### GET /api/v1/agents/delegations/{id}/messages
+
+Get the sealed conversation messages for a completed delegation.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "messages": [
+    { "role": "system", "content": "You are a researcher...", "tokenCount": 50 },
+    { "role": "user", "content": "Research TypeScript generics", "tokenCount": 10 },
+    { "role": "assistant", "content": "TypeScript generics allow...", "tokenCount": 200 }
+  ]
+}
+```
+
+#### GET /api/v1/agents/config
+
+Get current delegation configuration.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "config": {
+    "enabled": true,
+    "maxDepth": 3,
+    "defaultTimeout": 300000,
+    "maxConcurrent": 5,
+    "tokenBudget": { "default": 50000, "max": 200000 },
+    "context": { "sealOnComplete": true, "brainWriteScope": "delegated" }
+  }
+}
+```
+
+---
+
+### Extensions
+
+#### GET /api/v1/extensions
+
+List all loaded extensions.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "extensions": [
+    {
+      "name": "custom-logger",
+      "version": "1.0.0",
+      "source": "user",
+      "hooks": ["before_llm_call", "after_llm_call"],
+      "loadedAt": "2026-02-16T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### POST /api/v1/extensions/reload
+
+Reload all extensions from filesystem directories.
+
+**Required Permissions**: `admin`
+
+**Response**
+```json
+{
+  "loaded": 5,
+  "errors": []
+}
+```
+
+#### DELETE /api/v1/extensions/{name}
+
+Unload a specific extension by name.
+
+**Required Permissions**: `admin`
+
+**Response**
+```json
+{
+  "message": "Extension unloaded"
+}
+```
+
+#### GET /api/v1/extensions/hooks
+
+List all available hook points and their registered handlers.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "hooks": [
+    {
+      "name": "before_llm_call",
+      "type": "transform",
+      "handlers": ["custom-logger", "cost-tracker"]
+    }
+  ]
+}
+```
+
+#### GET /api/v1/extensions/webhooks
+
+List all registered webhooks.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "webhooks": [
+    {
+      "hook": "auth_failure",
+      "url": "https://siem.internal/api/events",
+      "createdAt": "2026-02-16T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### POST /api/v1/extensions/webhooks
+
+Register a new webhook for a hook point.
+
+**Required Permissions**: `admin`
+
+**Request Body**
+```json
+{
+  "hook": "auth_failure",
+  "url": "https://siem.internal/api/events",
+  "secret": "optional-hmac-secret",
+  "timeout": 5000
+}
+```
+
+#### DELETE /api/v1/extensions/webhooks
+
+Remove a webhook registration.
+
+**Required Permissions**: `admin`
+
+**Request Body**
+```json
+{
+  "hook": "auth_failure",
+  "url": "https://siem.internal/api/events"
+}
+```
+
+#### POST /api/v1/extensions/discover
+
+Discover extensions from the filesystem without loading them.
+
+**Required Permissions**: `admin`
+
+**Response**
+```json
+{
+  "discovered": [
+    {
+      "name": "new-extension",
+      "path": "~/.secureyeoman/extensions/_50_new_extension.ts",
+      "source": "user"
+    }
+  ]
+}
+```
+
+---
+
+### Execution
+
+#### POST /api/v1/execution/run
+
+Execute code in a sandboxed runtime.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "runtime": "python",
+  "code": "print('Hello, world!')",
+  "sessionId": "optional-session-id"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `runtime` | enum | Yes | `python`, `nodejs`, `shell` |
+| `code` | string | Yes | Code to execute |
+| `sessionId` | string | No | Reuse an existing session |
+
+**Response**
+```json
+{
+  "sessionId": "session_abc123",
+  "stdout": "Hello, world!\n",
+  "stderr": "",
+  "exitCode": 0,
+  "timedOut": false,
+  "truncated": false,
+  "duration": 120
+}
+```
+
+#### GET /api/v1/execution/sessions
+
+List active execution sessions.
+
+**Required Permissions**: Authenticated
+
+**Query Parameters**
+- `conversationId` (optional): Filter by conversation
+
+**Response**
+```json
+{
+  "sessions": [
+    {
+      "id": "session_abc123",
+      "conversationId": "conv_123",
+      "runtime": "python",
+      "state": "idle",
+      "createdAt": "2026-02-16T00:00:00.000Z",
+      "lastUsedAt": "2026-02-16T00:01:00.000Z",
+      "executionCount": 5,
+      "trusted": false
+    }
+  ]
+}
+```
+
+#### DELETE /api/v1/execution/sessions/{sessionId}
+
+Kill an active execution session.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "message": "Session terminated"
+}
+```
+
+#### GET /api/v1/execution/history
+
+Get code execution history from the audit trail.
+
+**Required Permissions**: `audit.read`
+
+**Query Parameters**
+- `sessionId` (optional): Filter by session
+- `runtime` (optional): Filter by runtime
+- `limit` (optional): Number of results (default: 50)
+- `offset` (optional): Pagination offset
+
+**Response**
+```json
+{
+  "executions": [
+    {
+      "sessionId": "session_abc123",
+      "runtime": "python",
+      "inputCode": "print('hello')",
+      "outputSummary": "hello",
+      "exitCode": 0,
+      "duration": 120,
+      "approved": true,
+      "approvedBy": "admin",
+      "timestamp": "2026-02-16T00:00:00.000Z"
+    }
+  ],
+  "total": 100
+}
+```
+
+#### POST /api/v1/execution/approve/{requestId}
+
+Approve or deny a pending code execution request (when autoApprove is disabled).
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "action": "approve",
+  "trustSession": false
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `action` | enum | Yes | `approve` or `deny` |
+| `trustSession` | boolean | No | Auto-approve subsequent executions in this session |
+
+---
+
+### A2A Protocol
+
+#### GET /api/v1/a2a/peers
+
+List known A2A peers.
+
+**Required Permissions**: `comms.read`
+
+**Response**
+```json
+{
+  "peers": [
+    {
+      "id": "agent_xyz",
+      "name": "JARVIS",
+      "endpoint": "http://other-host:18789",
+      "trustLevel": "verified",
+      "profiles": ["researcher", "coder"],
+      "capacity": { "activeDelegations": 2, "maxConcurrent": 5 },
+      "lastSeen": "2026-02-16T00:00:00.000Z"
+    }
+  ]
+}
+```
+
+#### POST /api/v1/a2a/peers
+
+Register a new A2A peer.
+
+**Required Permissions**: `comms.write`
+
+**Request Body**
+```json
+{
+  "id": "agent_xyz",
+  "name": "JARVIS",
+  "endpoint": "http://other-host:18789",
+  "publicKey": "base64...",
+  "signingKey": "base64..."
+}
+```
+
+#### DELETE /api/v1/a2a/peers/{peerId}
+
+Remove an A2A peer.
+
+**Required Permissions**: `comms.write`
+
+#### POST /api/v1/a2a/discover
+
+Trigger A2A peer discovery (mDNS or DNS-SD depending on configuration).
+
+**Required Permissions**: `comms.write`
+
+**Response**
+```json
+{
+  "discovered": [
+    {
+      "id": "agent_new",
+      "name": "ULTRON",
+      "endpoint": "http://192.168.1.50:18789",
+      "method": "mdns"
+    }
+  ]
+}
+```
+
+#### POST /api/v1/a2a/delegate
+
+Delegate a task to a remote A2A peer.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "peerId": "agent_xyz",
+  "profile": "researcher",
+  "task": "Research the latest A2A protocol specifications",
+  "context": "Focus on Google's A2A and comparison with MCP",
+  "maxTokenBudget": 30000,
+  "timeout": 120000
+}
+```
+
+**Response**
+```json
+{
+  "delegationId": "del_remote_123",
+  "peerId": "agent_xyz",
+  "status": "pending",
+  "remote": true
+}
+```
+
+#### GET /api/v1/a2a/delegations
+
+List remote A2A delegations.
+
+**Required Permissions**: Authenticated
+
+**Query Parameters**
+- `status` (optional): Filter by status
+- `peerId` (optional): Filter by peer
+- `limit` (optional): Number of results (default: 50)
+
+#### GET /api/v1/a2a/messages
+
+Query A2A protocol messages.
+
+**Required Permissions**: `comms.read`
+
+**Query Parameters**
+- `peerId` (optional): Filter by peer
+- `type` (optional): Filter by message type (delegation_offer, delegation_result, capability_query, etc.)
+- `limit` (optional): Number of results (default: 50)
 
 ---
 

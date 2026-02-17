@@ -20,6 +20,7 @@ import type {
 } from './types.js';
 import type { AuditQueryOptions, AuditQueryResult } from '../logging/sqlite-storage.js';
 import type { Skill, SkillCreate, SkillUpdate, Tool, BrainConfig } from '@friday/shared';
+import type { VectorResult } from './vector/types.js';
 
 export class BrainManager {
   private readonly storage: BrainStorage;
@@ -30,6 +31,10 @@ export class BrainManager {
     this.storage = storage;
     this.config = config;
     this.deps = deps;
+  }
+
+  private get vectorEnabled(): boolean {
+    return !!this.deps.vectorMemoryManager && !!this.config.vector?.enabled;
   }
 
   // ── Memory Operations ──────────────────────────────────────
@@ -62,12 +67,56 @@ export class BrainManager {
       data.expiresAt = Date.now() + this.config.memoryRetentionDays * 86_400_000;
     }
 
-    return this.storage.createMemory(data);
+    const memory = await this.storage.createMemory(data);
+
+    // Index via vector memory when enabled
+    if (this.vectorEnabled) {
+      try {
+        await this.deps.vectorMemoryManager!.indexMemory(memory);
+      } catch (err) {
+        this.deps.logger.warn('Failed to index memory in vector store', { error: String(err) });
+      }
+    }
+
+    // Consolidation quick check when enabled
+    if (this.deps.consolidationManager) {
+      try {
+        await this.deps.consolidationManager.onMemorySave(memory);
+      } catch (err) {
+        this.deps.logger.warn('Consolidation quick check failed', { error: String(err) });
+      }
+    }
+
+    return memory;
   }
 
   async recall(query: MemoryQuery): Promise<Memory[]> {
     if (!this.config.enabled) {
       return [];
+    }
+
+    // Use semantic search when vector is enabled and a search query is provided
+    if (this.vectorEnabled && query.search) {
+      try {
+        const limit = query.limit ?? 10;
+        const threshold = this.config.vector.similarityThreshold;
+        const vectorResults = await this.deps.vectorMemoryManager!.searchMemories(query.search, limit, threshold);
+
+        if (vectorResults.length > 0) {
+          const memories: Memory[] = [];
+          for (const vr of vectorResults) {
+            const memory = await this.storage.getMemory(vr.id);
+            if (memory) memories.push(memory);
+          }
+
+          if (memories.length > 0) {
+            await this.storage.touchMemories(memories.map(m => m.id));
+            return memories;
+          }
+        }
+      } catch (err) {
+        this.deps.logger.warn('Vector memory search failed, falling back to text search', { error: String(err) });
+      }
     }
 
     const memories = await this.storage.queryMemories(query);
@@ -82,6 +131,13 @@ export class BrainManager {
 
   async forget(id: string): Promise<void> {
     await this.storage.deleteMemory(id);
+    if (this.vectorEnabled) {
+      try {
+        await this.deps.vectorMemoryManager!.removeMemory(id);
+      } catch (err) {
+        this.deps.logger.warn('Failed to remove memory from vector store', { error: String(err) });
+      }
+    }
   }
 
   async getMemory(id: string): Promise<Memory | null> {
@@ -100,12 +156,22 @@ export class BrainManager {
       throw new Error(`Maximum knowledge limit reached (${this.config.maxKnowledge})`);
     }
 
-    return this.storage.createKnowledge({
+    const entry = await this.storage.createKnowledge({
       topic,
       content,
       source,
       confidence,
     });
+
+    if (this.vectorEnabled) {
+      try {
+        await this.deps.vectorMemoryManager!.indexKnowledge(entry);
+      } catch (err) {
+        this.deps.logger.warn('Failed to index knowledge in vector store', { error: String(err) });
+      }
+    }
+
+    return entry;
   }
 
   async lookup(topic: string): Promise<KnowledgeEntry[]> {
@@ -128,6 +194,13 @@ export class BrainManager {
 
   async deleteKnowledge(id: string): Promise<void> {
     await this.storage.deleteKnowledge(id);
+    if (this.vectorEnabled) {
+      try {
+        await this.deps.vectorMemoryManager!.removeKnowledge(id);
+      } catch (err) {
+        this.deps.logger.warn('Failed to remove knowledge from vector store', { error: String(err) });
+      }
+    }
   }
 
   // ── Prompt Integration ─────────────────────────────────────
@@ -140,14 +213,54 @@ export class BrainManager {
     const maxItems = limit ?? this.config.contextWindowMemories;
     const contentParts: string[] = [];
 
-    // Search memories relevant to the input
+    // Use semantic search when vector memory is enabled
+    if (this.vectorEnabled) {
+      try {
+        const threshold = this.config.vector.similarityThreshold;
+        const memResults = await this.deps.vectorMemoryManager!.searchMemories(input, Math.ceil(maxItems / 2), threshold);
+        const knowResults = await this.deps.vectorMemoryManager!.searchKnowledge(input, Math.floor(maxItems / 2) || 1, threshold);
+
+        if (memResults.length > 0) {
+          const memLines = ['### Memories (semantic)'];
+          for (const vr of memResults) {
+            const memory = await this.storage.getMemory(vr.id);
+            if (memory) {
+              memLines.push(`- [${memory.type}] ${memory.content}`);
+            }
+          }
+          if (memLines.length > 1) contentParts.push(memLines.join('\n'));
+
+          const ids = memResults.map((r) => r.id);
+          await this.storage.touchMemories(ids);
+        }
+
+        if (knowResults.length > 0) {
+          const knowLines = ['### Knowledge (semantic)'];
+          for (const vr of knowResults) {
+            const entry = await this.storage.getKnowledge(vr.id);
+            if (entry) {
+              knowLines.push(`- [${entry.topic}] ${entry.content}`);
+            }
+          }
+          if (knowLines.length > 1) contentParts.push(knowLines.join('\n'));
+        }
+
+        if (contentParts.length > 0) {
+          const header = '## Brain\nYour Brain is your mind — the accumulated memories and learned knowledge that inform your understanding. Draw on what is relevant; let the rest rest.\n';
+          return header + '\n' + contentParts.join('\n\n');
+        }
+      } catch (err) {
+        this.deps.logger.warn('Semantic context search failed, falling back to text search', { error: String(err) });
+      }
+    }
+
+    // Fallback: text-based search
     const memories = await this.storage.queryMemories({
       search: input,
       limit: Math.ceil(maxItems / 2),
     });
 
     if (memories.length > 0) {
-      // Batch-touch all memories in a single query instead of N individual updates
       await this.storage.touchMemories(memories.map(m => m.id));
       const memLines = ['### Memories'];
       for (const memory of memories) {
@@ -156,7 +269,6 @@ export class BrainManager {
       contentParts.push(memLines.join('\n'));
     }
 
-    // Search knowledge relevant to the input
     const knowledge = await this.storage.queryKnowledge({
       search: input,
       limit: Math.floor(maxItems / 2) || 1,
@@ -176,6 +288,55 @@ export class BrainManager {
 
     const header = '## Brain\nYour Brain is your mind — the accumulated memories and learned knowledge that inform your understanding. Draw on what is relevant; let the rest rest.\n';
     return header + '\n' + contentParts.join('\n\n');
+  }
+
+  // ── Semantic Search ──────────────────────────────────────────
+
+  async semanticSearch(query: string, opts?: { limit?: number; threshold?: number; type?: 'memories' | 'knowledge' | 'all' }): Promise<VectorResult[]> {
+    if (!this.vectorEnabled) {
+      throw new Error('Vector memory is not enabled');
+    }
+
+    const limit = opts?.limit ?? this.config.vector.maxResults;
+    const threshold = opts?.threshold ?? this.config.vector.similarityThreshold;
+    const type = opts?.type ?? 'all';
+
+    if (type === 'memories') {
+      return this.deps.vectorMemoryManager!.searchMemories(query, limit, threshold);
+    }
+    if (type === 'knowledge') {
+      return this.deps.vectorMemoryManager!.searchKnowledge(query, limit, threshold);
+    }
+
+    // Search both
+    const [memResults, knowResults] = await Promise.all([
+      this.deps.vectorMemoryManager!.searchMemories(query, limit, threshold),
+      this.deps.vectorMemoryManager!.searchKnowledge(query, limit, threshold),
+    ]);
+
+    return [...memResults, ...knowResults]
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+  }
+
+  // ── Consolidation ──────────────────────────────────────────
+
+  async runConsolidation(): Promise<unknown> {
+    if (!this.deps.consolidationManager) {
+      throw new Error('Consolidation manager is not available');
+    }
+    return this.deps.consolidationManager.runDeepConsolidation();
+  }
+
+  getConsolidationSchedule(): string | null {
+    return this.deps.consolidationManager?.getSchedule() ?? null;
+  }
+
+  setConsolidationSchedule(cron: string): void {
+    if (!this.deps.consolidationManager) {
+      throw new Error('Consolidation manager is not available');
+    }
+    this.deps.consolidationManager.setSchedule(cron);
   }
 
   // ── Skill Operations (moved from SoulManager) ──────────────

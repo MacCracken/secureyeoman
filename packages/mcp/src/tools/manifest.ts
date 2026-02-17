@@ -68,5 +68,23 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'fs_write', description: 'Write a file (path-restricted, admin-only)' },
     { name: 'fs_list', description: 'List directory contents (path-restricted, admin-only)' },
     { name: 'fs_search', description: 'Search files by pattern (path-restricted, admin-only)' },
+
+    // Web tools (scraping)
+    { name: 'web_scrape_markdown', description: 'Scrape a webpage and convert to clean LLM-ready markdown' },
+    { name: 'web_scrape_html', description: 'Scrape raw HTML from a webpage with optional CSS selector' },
+    { name: 'web_scrape_batch', description: 'Scrape multiple URLs in parallel and return markdown (max 10)' },
+    { name: 'web_extract_structured', description: 'Extract structured data from a webpage as JSON' },
+
+    // Web tools (search)
+    { name: 'web_search', description: 'Search the web using configurable search backend' },
+    { name: 'web_search_batch', description: 'Run multiple search queries in parallel (max 5)' },
+
+    // Browser automation tools (placeholder — requires Playwright/Puppeteer)
+    { name: 'browser_navigate', description: 'Navigate to a URL and return page content' },
+    { name: 'browser_screenshot', description: 'Take a screenshot of a webpage' },
+    { name: 'browser_click', description: 'Click an element on a page' },
+    { name: 'browser_fill', description: 'Fill in a form field on a page' },
+    { name: 'browser_evaluate', description: 'Execute JavaScript in the browser context' },
+    { name: 'browser_pdf', description: 'Generate a PDF from a webpage' },
   ];
 }

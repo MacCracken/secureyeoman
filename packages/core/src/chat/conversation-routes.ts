@@ -4,16 +4,71 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ConversationStorage } from './conversation-storage.js';
+import type { HistoryCompressor } from './compression/compressor.js';
 
 export interface ConversationRoutesOptions {
   conversationStorage: ConversationStorage;
+  historyCompressor?: HistoryCompressor;
 }
 
 export function registerConversationRoutes(
   app: FastifyInstance,
   opts: ConversationRoutesOptions,
 ): void {
-  const { conversationStorage } = opts;
+  const { conversationStorage, historyCompressor } = opts;
+
+  // ── Compression Routes ──────────────────────────────────────
+
+  app.get(
+    '/api/v1/conversations/:id/history',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Querystring: { tier?: string };
+      }>,
+      reply: FastifyReply,
+    ) => {
+      if (!historyCompressor) {
+        return reply.code(503).send({ error: 'History compression not available' });
+      }
+      const entries = await historyCompressor.getHistory(request.params.id);
+      const tier = request.query.tier;
+      const filtered = tier ? entries.filter((e) => e.tier === tier) : entries;
+      return { entries: filtered, total: filtered.length };
+    },
+  );
+
+  app.post(
+    '/api/v1/conversations/:id/seal-topic',
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply,
+    ) => {
+      if (!historyCompressor) {
+        return reply.code(503).send({ error: 'History compression not available' });
+      }
+      await historyCompressor.sealCurrentTopic(request.params.id);
+      return { message: 'Topic sealed' };
+    },
+  );
+
+  app.get(
+    '/api/v1/conversations/:id/compressed-context',
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Querystring: { maxTokens?: string };
+      }>,
+      reply: FastifyReply,
+    ) => {
+      if (!historyCompressor) {
+        return reply.code(503).send({ error: 'History compression not available' });
+      }
+      const maxTokens = request.query.maxTokens ? Number(request.query.maxTokens) : 4000;
+      const context = await historyCompressor.getContext(request.params.id, maxTokens);
+      return context;
+    },
+  );
 
   // List conversations (paginated, sorted by updated_at DESC)
   app.get(

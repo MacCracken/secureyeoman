@@ -2,6 +2,8 @@
  * CLI Utilities — Flag parsing, formatting, and HTTP helpers.
  */
 
+import { randomBytes } from 'node:crypto';
+
 /** Extract a --flag value pair from argv, returning value and remaining args. */
 export function extractFlag(
   argv: string[],
@@ -76,6 +78,41 @@ export function formatTable(
   );
 
   return [header, separator, ...body].join('\n');
+}
+
+/** Generate a random hex secret key. */
+export function generateSecretKey(bytes = 32): string {
+  return randomBytes(bytes).toString('hex');
+}
+
+/** Prompt the user for input via readline, returning default if empty. */
+export function prompt(
+  rl: import('node:readline').Interface,
+  question: string,
+  defaultValue?: string,
+): Promise<string> {
+  const suffix = defaultValue ? ` (${defaultValue})` : '';
+  return new Promise((resolve) => {
+    rl.question(`${question}${suffix}: `, (answer) => {
+      resolve(answer.trim() || defaultValue || '');
+    });
+  });
+}
+
+/** Prompt the user to pick from a numbered list of choices. */
+export function promptChoice(
+  rl: import('node:readline').Interface,
+  question: string,
+  choices: string[],
+  defaultIndex = 0,
+): Promise<string> {
+  return new Promise((resolve) => {
+    const lines = choices.map((c, i) => `  ${String(i + 1)}) ${c}${i === defaultIndex ? ' (default)' : ''}`);
+    rl.question(`${question}\n${lines.join('\n')}\n  Choice: `, (answer) => {
+      const idx = answer.trim() ? Number(answer.trim()) - 1 : defaultIndex;
+      resolve(choices[idx >= 0 && idx < choices.length ? idx : defaultIndex] ?? choices[defaultIndex]!);
+    });
+  });
 }
 
 /** Wrapper around fetch for CLI HTTP calls. */

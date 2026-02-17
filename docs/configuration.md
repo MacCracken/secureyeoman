@@ -199,6 +199,102 @@ heartbeat:
       type: log_anomalies
       enabled: true
 
+brain:
+  vector:
+    enabled: false                 # Enable vector semantic memory
+    provider: local                # local | api | both
+    backend: faiss                 # faiss | qdrant
+    similarityThreshold: 0.7      # 0.0 - 1.0
+    maxResults: 10                 # max results per query
+    local:
+      model: all-MiniLM-L6-v2     # sentence-transformers model
+    api:
+      provider: openai             # openai | gemini
+      model: text-embedding-3-small
+    faiss:
+      persistDir: ~/.secureyeoman/data/faiss
+    qdrant:
+      url: http://localhost:6333
+      collection: friday-memories
+  consolidation:
+    enabled: false                 # Enable LLM memory consolidation
+    schedule: "0 2 * * *"          # Cron schedule for deep consolidation
+    quickCheck:
+      autoDedupThreshold: 0.95     # Auto-dedup above this similarity
+      flagThreshold: 0.85          # Flag for review above this
+    deepConsolidation:
+      replaceThreshold: 0.9        # Replace above this similarity
+      batchSize: 50                # Memories per consolidation run
+      timeoutMs: 30000             # Timeout per run
+      dryRun: false                # Preview-only mode
+    model: null                    # LLM model for consolidation (null = default)
+
+delegation:
+  enabled: true
+  maxDepth: 3                        # Max recursive delegation depth
+  defaultTimeout: 300000             # 5 minutes per delegation
+  maxConcurrent: 5                   # Max simultaneous sub-agents
+  tokenBudget:
+    default: 50000                   # Default per sub-agent
+    max: 200000                      # Hard cap per sub-agent
+  context:
+    sealOnComplete: true             # Seal sub-agent conversation on completion
+    brainWriteScope: delegated       # 'delegated' (tagged) or 'shared' (full access)
+
+conversation:
+  history:
+    compression:
+      enabled: false               # Enable progressive history compression
+      tiers:
+        messagePct: 50             # % of token budget for recent messages
+        topicPct: 30               # % for topic summaries
+        bulkPct: 20                # % for bulk summaries
+      maxMessageChars: 8000        # Max chars before compression triggers
+      topicSummaryTokens: 200      # Target tokens per topic summary
+      bulkSummaryTokens: 300       # Target tokens per bulk summary
+      bulkMergeSize: 3             # Topics to merge into one bulk
+      topicBoundary:
+        keywords:                  # Keywords that trigger topic boundary
+          - new topic
+          - "let's move on"
+          - moving on
+          - switching to
+        silenceMinutes: 15         # Minutes of silence = new topic
+        tokenThreshold: 2000       # Tokens before forced topic boundary
+      model: null                  # LLM model for summaries (null = default)
+
+extensions:
+  enabled: false                   # Enable lifecycle extension hooks
+  directory: ~/.secureyeoman/extensions  # User extension directory
+  allowWebhooks: true              # Allow outbound webhook dispatch
+  webhookTimeout: 5000             # Webhook request timeout in ms
+  maxHooksPerPoint: 20             # Max registered handlers per hook point
+  hotReload: true                  # Watch directories for changes
+  failOpen: true                   # On extension error, continue pipeline
+  maxExecutionTime: 5000           # Max ms per extension per hook
+
+execution:
+  enabled: false                   # Enable sandboxed code execution
+  allowedRuntimes:
+    - python
+    - nodejs
+    - shell
+  sessionTimeout: 300000           # Session idle timeout in ms (5 minutes)
+  maxConcurrent: 5                 # Max concurrent execution sessions
+  approvalPolicy: manual           # manual | auto | session-trust
+  maxExecutionTime: 180000         # Max execution time per run in ms
+  maxOutputSize: 1048576           # Max output size in bytes (1 MB)
+  secretPatterns: []               # Additional secret patterns for output filtering
+
+a2a:
+  enabled: false                   # Enable Agent-to-Agent protocol
+  discoveryMethod: static          # static | mdns | dns-sd
+  trustedPeers: []                 # Pre-trusted peer agent IDs
+  port: 18790                      # A2A protocol listener port
+  maxPeers: 20                     # Maximum number of connected peers
+  rateLimitPerPeer: 10             # Max delegation requests per minute per peer
+  delegationTimeout: 300000        # Default timeout for remote delegations
+
 externalBrain:
   enabled: false
   provider: obsidian             # obsidian | git_repo | filesystem
@@ -231,6 +327,15 @@ externalBrain:
 |-------|------|---------|-------------|
 | `enabled` | boolean | `true` | Enable role-based access control |
 | `defaultRole` | enum | `"viewer"` | Default role for new users: `admin`, `operator`, `auditor`, `viewer` |
+
+### security (policy toggles)
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `allowSubAgents` | boolean | `true` | Allow sub-agent delegation |
+| `allowA2A` | boolean | `false` | Allow A2A networking (requires sub-agents enabled) |
+| `allowExtensions` | boolean | `false` | Allow lifecycle extension hooks |
+| `allowExecution` | boolean | `true` | Allow sandboxed code execution |
 
 ### security.sandbox
 
@@ -337,7 +442,7 @@ mcp:
 
 ### MCP Service (`@friday/mcp`)
 
-The standalone MCP service package provides full MCP protocol compliance with 22+ tools, 7 resources, 4 prompts, and 3 transports. It runs as a separate process and communicates with core via REST API.
+The standalone MCP service package provides full MCP protocol compliance with 34+ tools (including web scraping, search, and browser automation placeholders), 7 resources, 4 prompts, and 3 transports. It runs as a separate process and communicates with core via REST API. External MCP servers benefit from health monitoring and encrypted credential management.
 
 Configuration is via environment variables (not the YAML config file):
 
@@ -351,6 +456,18 @@ Configuration is via environment variables (not the YAML config file):
 | `MCP_CORE_URL` | `http://127.0.0.1:18789` | Core gateway URL |
 | `MCP_EXPOSE_FILESYSTEM` | `false` | Enable filesystem tools (`fs_read`, `fs_write`, `fs_list`, `fs_search`) — admin-only |
 | `MCP_ALLOWED_PATHS` | *(empty)* | Comma-separated paths allowed for filesystem tools |
+| `MCP_EXPOSE_WEB` | `false` | Enable web tools (`web_scrape_*`, `web_search*`, `web_extract_*`) |
+| `MCP_ALLOWED_URLS` | *(empty)* | Comma-separated domain allowlist for web tools (empty = all public URLs) |
+| `MCP_WEB_RATE_LIMIT` | `10` | Max web requests per minute (1–100) |
+| `MCP_EXPOSE_WEB_SCRAPING` | `true` | Sub-toggle for scraping tools (only effective when `MCP_EXPOSE_WEB=true`) |
+| `MCP_EXPOSE_WEB_SEARCH` | `true` | Sub-toggle for search tools (only effective when `MCP_EXPOSE_WEB=true`) |
+| `MCP_WEB_SEARCH_PROVIDER` | `duckduckgo` | Search backend: `duckduckgo`, `serpapi`, `tavily` |
+| `MCP_WEB_SEARCH_API_KEY` | *(empty)* | API key for SerpAPI or Tavily (not needed for DuckDuckGo) |
+| `MCP_EXPOSE_BROWSER` | `false` | Enable browser automation tools (requires Playwright/Puppeteer — deferred) |
+| `MCP_BROWSER_ENGINE` | `playwright` | Browser engine: `playwright`, `puppeteer` |
+| `MCP_BROWSER_HEADLESS` | `true` | Run browser in headless mode |
+| `MCP_BROWSER_MAX_PAGES` | `3` | Max concurrent browser pages (1–10) |
+| `MCP_BROWSER_TIMEOUT_MS` | `30000` | Browser navigation timeout in ms (5000–120000) |
 | `MCP_RATE_LIMIT_PER_TOOL` | `30` | Max tool calls per second per tool (1–1000) |
 | `MCP_LOG_LEVEL` | `info` | Log level: `trace`, `debug`, `info`, `warn`, `error`, `fatal` |
 
@@ -538,6 +655,110 @@ heartbeat:
             category: self_improvement
 ```
 
+### delegation
+
+Sub-agent delegation system configuration. Enables the primary agent to spawn specialized sub-agents for focused subtask execution.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | boolean | `true` | Enable sub-agent delegation |
+| `maxDepth` | number | `3` | Maximum recursive delegation depth (1–10) |
+| `defaultTimeout` | number | `300000` | Default timeout per delegation in ms (max 600000) |
+| `maxConcurrent` | number | `5` | Maximum simultaneous sub-agents (1–20) |
+| `tokenBudget.default` | number | `50000` | Default token budget per sub-agent |
+| `tokenBudget.max` | number | `200000` | Hard cap token budget per sub-agent |
+| `context.sealOnComplete` | boolean | `true` | Seal (persist and clear) sub-agent conversation on completion |
+| `context.brainWriteScope` | enum | `"delegated"` | `delegated` (tagged with delegationId) or `shared` (full Brain access) |
+
+Example:
+```yaml
+delegation:
+  enabled: true
+  maxDepth: 3
+  defaultTimeout: 300000
+  maxConcurrent: 5
+  tokenBudget:
+    default: 50000
+    max: 200000
+  context:
+    sealOnComplete: true
+    brainWriteScope: delegated
+```
+
+### extensions
+
+Lifecycle extension hooks for injecting custom logic at key stages without modifying core code.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable the extension system |
+| `directory` | string | `~/.secureyeoman/extensions` | User extension directory path |
+| `allowWebhooks` | boolean | `true` | Allow outbound webhook dispatch on hook events |
+| `webhookTimeout` | number | `5000` | Webhook request timeout in ms (1000-30000) |
+| `maxHooksPerPoint` | number | `20` | Max registered handlers per hook point (1-100) |
+| `hotReload` | boolean | `true` | Watch extension directories for file changes |
+| `failOpen` | boolean | `true` | On extension error, continue pipeline (false = fail-closed) |
+| `maxExecutionTime` | number | `5000` | Max ms per extension per hook invocation |
+
+Example:
+```yaml
+extensions:
+  enabled: true
+  directory: ~/.secureyeoman/extensions
+  allowWebhooks: true
+  webhookTimeout: 5000
+  maxHooksPerPoint: 20
+```
+
+### execution
+
+Sandboxed code execution tool allowing the agent to write and execute Python, Node.js, and shell code within the existing sandbox infrastructure.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable code execution tool |
+| `allowedRuntimes` | string[] | `["python", "nodejs", "shell"]` | Permitted runtimes |
+| `sessionTimeout` | number | `300000` | Session idle timeout in ms (60000-3600000) |
+| `maxConcurrent` | number | `5` | Max concurrent execution sessions (1-20) |
+| `approvalPolicy` | enum | `"manual"` | `manual` (per-execution approval), `auto` (no approval), `session-trust` (approve once per session) |
+| `maxExecutionTime` | number | `180000` | Max execution time per run in ms (1000-600000) |
+| `maxOutputSize` | number | `1048576` | Max output size in bytes (max 10485760) |
+| `secretPatterns` | string[] | `[]` | Additional regex patterns for output secret filtering |
+
+Example:
+```yaml
+execution:
+  enabled: true
+  allowedRuntimes: [python, nodejs]
+  approvalPolicy: manual
+  sessionTimeout: 300000
+  maxConcurrent: 3
+```
+
+### a2a
+
+Agent-to-Agent protocol for cross-instance discovery and delegation.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | boolean | `false` | Enable A2A protocol |
+| `discoveryMethod` | enum | `"static"` | `static` (manual peer list), `mdns` (LAN auto-discovery), `dns-sd` (WAN via DNS SRV/TXT) |
+| `trustedPeers` | string[] | `[]` | Pre-trusted peer agent IDs (skip trust progression) |
+| `port` | number | `18790` | A2A protocol listener port (1024-65535) |
+| `maxPeers` | number | `20` | Maximum number of connected peers (1-100) |
+| `rateLimitPerPeer` | number | `10` | Max delegation requests per minute per peer |
+| `delegationTimeout` | number | `300000` | Default timeout for remote delegations in ms |
+
+Example:
+```yaml
+a2a:
+  enabled: true
+  discoveryMethod: mdns
+  port: 18790
+  maxPeers: 10
+  trustedPeers: ["agent_jarvis"]
+```
+
 ### externalBrain
 
 Sync Brain memories and knowledge to an external program (e.g. Obsidian vault, git repo).
@@ -662,5 +883,17 @@ All security-sensitive values are referenced by environment variable name in the
 | `MCP_CORE_URL` | No | Core gateway URL (default: `http://127.0.0.1:18789`) |
 | `MCP_EXPOSE_FILESYSTEM` | No | Enable MCP filesystem tools (default: `false`) |
 | `MCP_ALLOWED_PATHS` | No | Comma-separated allowed filesystem paths |
+| `MCP_EXPOSE_WEB` | No | Enable web scraping/search tools (default: `false`) |
+| `MCP_ALLOWED_URLS` | No | Comma-separated domain allowlist for web tools |
+| `MCP_WEB_RATE_LIMIT` | No | Max web requests per minute (default: `10`) |
+| `MCP_EXPOSE_WEB_SCRAPING` | No | Sub-toggle for scraping tools (default: `true`) |
+| `MCP_EXPOSE_WEB_SEARCH` | No | Sub-toggle for search tools (default: `true`) |
+| `MCP_WEB_SEARCH_PROVIDER` | No | Search backend: `duckduckgo`, `serpapi`, `tavily` |
+| `MCP_WEB_SEARCH_API_KEY` | No | API key for SerpAPI or Tavily |
+| `MCP_EXPOSE_BROWSER` | No | Enable browser automation tools (default: `false`) |
+| `MCP_BROWSER_ENGINE` | No | Browser engine: `playwright`, `puppeteer` |
+| `MCP_BROWSER_HEADLESS` | No | Headless mode (default: `true`) |
+| `MCP_BROWSER_MAX_PAGES` | No | Max concurrent browser pages (default: `3`) |
+| `MCP_BROWSER_TIMEOUT_MS` | No | Browser timeout in ms (default: `30000`) |
 | `MCP_RATE_LIMIT_PER_TOOL` | No | MCP tool rate limit per second (default: `30`) |
 | `MCP_LOG_LEVEL` | No | MCP service log level (default: `info`) |

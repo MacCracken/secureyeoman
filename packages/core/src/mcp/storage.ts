@@ -3,17 +3,25 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
-import type { McpServerConfig, McpServerCreate, McpToolDef } from '@friday/shared';
+import type { McpServerConfig, McpServerCreate, McpToolDef, McpServerHealth } from '@friday/shared';
 import { uuidv7 } from '../utils/crypto.js';
 
 export interface McpFeatureConfig {
   exposeGit: boolean;
   exposeFilesystem: boolean;
+  exposeWeb: boolean;
+  exposeWebScraping: boolean;
+  exposeWebSearch: boolean;
+  exposeBrowser: boolean;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   exposeGit: false,
   exposeFilesystem: false,
+  exposeWeb: false,
+  exposeWebScraping: true,
+  exposeWebSearch: true,
+  exposeBrowser: false,
 };
 
 export class McpStorage extends PgBaseStorage {
@@ -204,5 +212,96 @@ export class McpStorage extends PgBaseStorage {
       }
     });
     return this.getConfig();
+  }
+
+  // ─── Health Monitoring ──────────────────────────────────────
+
+  async saveHealth(health: McpServerHealth): Promise<void> {
+    await this.execute(
+      `INSERT INTO mcp.server_health
+         (server_id, status, latency_ms, consecutive_failures, last_checked_at, last_success_at, last_error)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       ON CONFLICT (server_id) DO UPDATE SET
+         status = EXCLUDED.status,
+         latency_ms = EXCLUDED.latency_ms,
+         consecutive_failures = EXCLUDED.consecutive_failures,
+         last_checked_at = EXCLUDED.last_checked_at,
+         last_success_at = EXCLUDED.last_success_at,
+         last_error = EXCLUDED.last_error`,
+      [
+        health.serverId,
+        health.status,
+        health.latencyMs,
+        health.consecutiveFailures,
+        health.lastCheckedAt,
+        health.lastSuccessAt,
+        health.lastError,
+      ],
+    );
+  }
+
+  async getHealth(serverId: string): Promise<McpServerHealth | null> {
+    const row = await this.queryOne<Record<string, unknown>>(
+      'SELECT * FROM mcp.server_health WHERE server_id = $1',
+      [serverId],
+    );
+    return row ? this.rowToHealth(row) : null;
+  }
+
+  async getAllHealth(): Promise<McpServerHealth[]> {
+    const rows = await this.queryMany<Record<string, unknown>>(
+      'SELECT * FROM mcp.server_health',
+    );
+    return rows.map((r) => this.rowToHealth(r));
+  }
+
+  private rowToHealth(row: Record<string, unknown>): McpServerHealth {
+    return {
+      serverId: row.server_id as string,
+      status: (row.status as McpServerHealth['status']) ?? 'unknown',
+      latencyMs: row.latency_ms as number | null,
+      consecutiveFailures: (row.consecutive_failures as number) ?? 0,
+      lastCheckedAt: row.last_checked_at as number | null,
+      lastSuccessAt: row.last_success_at as number | null,
+      lastError: row.last_error as string | null,
+    };
+  }
+
+  // ─── Credential Storage ─────────────────────────────────────
+
+  async saveCredential(serverId: string, key: string, encryptedValue: string): Promise<void> {
+    const now = Date.now();
+    await this.execute(
+      `INSERT INTO mcp.server_credentials (server_id, key, encrypted_value, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (server_id, key) DO UPDATE SET
+         encrypted_value = EXCLUDED.encrypted_value,
+         updated_at = EXCLUDED.updated_at`,
+      [serverId, key, encryptedValue, now, now],
+    );
+  }
+
+  async getCredential(serverId: string, key: string): Promise<string | null> {
+    const row = await this.queryOne<{ encrypted_value: string }>(
+      'SELECT encrypted_value FROM mcp.server_credentials WHERE server_id = $1 AND key = $2',
+      [serverId, key],
+    );
+    return row?.encrypted_value ?? null;
+  }
+
+  async listCredentialKeys(serverId: string): Promise<string[]> {
+    const rows = await this.queryMany<{ key: string }>(
+      'SELECT key FROM mcp.server_credentials WHERE server_id = $1 ORDER BY key',
+      [serverId],
+    );
+    return rows.map((r) => r.key);
+  }
+
+  async deleteCredential(serverId: string, key: string): Promise<boolean> {
+    const rowCount = await this.execute(
+      'DELETE FROM mcp.server_credentials WHERE server_id = $1 AND key = $2',
+      [serverId, key],
+    );
+    return rowCount > 0;
   }
 }

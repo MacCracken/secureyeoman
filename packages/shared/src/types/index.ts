@@ -143,6 +143,8 @@ export {
   type ConditionTrigger,
   type MatchMode,
   MemoryTypeSchema,
+  VectorConfigSchema,
+  ConsolidationConfigSchema,
   BrainConfigSchema,
   SpiritConfigSchema,
   PassionSchema,
@@ -196,6 +198,8 @@ export {
   type ExternalBrainProvider,
   type ExternalBrainConfig,
   type MemoryType,
+  type VectorConfig,
+  type ConsolidationConfig,
   type BrainConfig,
   type SpiritConfig,
   type Passion,
@@ -320,6 +324,26 @@ export {
   type MarketplaceSearch,
 } from './marketplace.js';
 
+// Delegation types
+export {
+  AgentProfileSchema,
+  AgentProfileCreateSchema,
+  AgentProfileUpdateSchema,
+  DelegationStatusSchema,
+  DelegationParamsSchema,
+  DelegationResultSchema,
+  SubAgentInfoSchema,
+  DelegationConfigSchema,
+  type AgentProfile,
+  type AgentProfileCreate,
+  type AgentProfileUpdate,
+  type DelegationStatus,
+  type DelegationParams,
+  type DelegationResult,
+  type SubAgentInfo,
+  type DelegationConfig,
+} from './delegation.js';
+
 // Config types
 export {
   CoreConfigSchema,
@@ -331,6 +355,8 @@ export {
   ModelConfigSchema,
   ConfigSchema,
   PartialConfigSchema,
+  HistoryCompressionConfigSchema,
+  ConversationConfigSchema,
   type CoreConfig,
   type SecurityConfig,
   type LoggingConfig,
@@ -340,6 +366,14 @@ export {
   type ModelConfig,
   type Config,
   type PartialConfig,
+  type HistoryCompressionConfig,
+  type ConversationConfig,
   DatabaseConfigSchema,
+  ExtensionConfigSchema,
+  ExecutionConfigSchema,
+  A2AConfigSchema,
   type DatabaseConfig,
+  type ExtensionConfig,
+  type ExecutionConfig,
+  type A2AConfig,
 } from './config.js';

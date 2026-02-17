@@ -26,6 +26,7 @@ import {
 import { fetchTasks, createTask, deleteTask, updateTask, fetchHeartbeatTasks } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { Task, HeartbeatTask } from '../types';
+import { sanitizeText } from '../utils/sanitize';
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   completed: <CheckCircle className="w-4 h-4 text-success" />,
@@ -701,10 +702,10 @@ function TaskRow({
     <tr className="hover:bg-muted/30 transition-colors">
       <td className="px-2 py-3 font-mono text-xs hidden sm:table-cell">{task.id.slice(0, 8)}...</td>
       <td className="px-2 py-3">
-        <div className="font-medium text-sm">{task.name}</div>
+        <div className="font-medium text-sm">{sanitizeText(task.name)}</div>
         {task.description && (
           <div className="text-xs text-muted-foreground truncate max-w-[120px] sm:max-w-xs">
-            {task.description}
+            {sanitizeText(task.description)}
           </div>
         )}
       </td>

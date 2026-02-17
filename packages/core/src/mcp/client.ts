@@ -5,20 +5,24 @@
 import type { McpServerConfig, McpToolDef, McpResourceDef, McpToolManifest } from '@friday/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import { McpStorage } from './storage.js';
+import type { McpCredentialManager } from './credential-manager.js';
 
 export interface McpClientManagerDeps {
   logger: SecureLogger;
+  credentialManager?: McpCredentialManager;
 }
 
 export class McpClientManager {
   private storage: McpStorage;
   private logger: SecureLogger;
+  private credentialManager?: McpCredentialManager;
   private discoveredTools = new Map<string, McpToolDef[]>();
   private discoveredResources = new Map<string, McpResourceDef[]>();
 
   constructor(storage: McpStorage, deps: McpClientManagerDeps) {
     this.storage = storage;
     this.logger = deps.logger;
+    this.credentialManager = deps.credentialManager;
   }
 
   /**
@@ -90,6 +94,12 @@ export class McpClientManager {
     const server = await this.storage.getServer(serverId);
     if (!server || !server.enabled) {
       throw new Error(`MCP server ${serverId} not found or disabled`);
+    }
+
+    // Inject credentials into server env if credential manager is available
+    let env = server.env;
+    if (this.credentialManager) {
+      env = await this.credentialManager.injectCredentials(serverId, env);
     }
 
     this.logger.info('Calling MCP tool', { serverId, toolName });

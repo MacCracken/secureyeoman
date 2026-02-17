@@ -68,6 +68,9 @@ import { GmailIntegration } from './integrations/gmail/index.js';
 import { EmailIntegration } from './integrations/email/index.js';
 import { CliIntegration } from './integrations/cli/index.js';
 import { GenericWebhookIntegration } from './integrations/webhook/index.js';
+import { WhatsAppIntegration } from './integrations/whatsapp/index.js';
+import { SignalIntegration } from './integrations/signal/index.js';
+import { TeamsIntegration } from './integrations/teams/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
 import { HeartManager } from './body/heart.js';
 import { ExternalBrainSync } from './brain/external-sync.js';
@@ -86,6 +89,15 @@ import { ExperimentManager } from './experiment/manager.js';
 import { MarketplaceStorage } from './marketplace/storage.js';
 import { MarketplaceManager } from './marketplace/manager.js';
 import { ConversationStorage } from './chat/conversation-storage.js';
+import { SubAgentStorage } from './agents/storage.js';
+import { SubAgentManager } from './agents/manager.js';
+import { ExtensionStorage } from './extensions/storage.js';
+import { ExtensionManager } from './extensions/manager.js';
+import { ExecutionStorage } from './execution/storage.js';
+import { CodeExecutionManager } from './execution/manager.js';
+import { A2AStorage } from './a2a/storage.js';
+import { A2AManager } from './a2a/manager.js';
+import { RemoteDelegationTransport } from './a2a/transport.js';
 import { initPoolFromConfig } from './storage/pg-pool.js';
 import { runMigrations } from './storage/migrations/runner.js';
 import { closePool } from './storage/pg-pool.js';
@@ -157,6 +169,14 @@ export class SecureYeoman {
   private marketplaceStorage: MarketplaceStorage | null = null;
   private marketplaceManager: MarketplaceManager | null = null;
   private chatConversationStorage: ConversationStorage | null = null;
+  private subAgentStorage: SubAgentStorage | null = null;
+  private subAgentManager: SubAgentManager | null = null;
+  private extensionStorage: ExtensionStorage | null = null;
+  private extensionManager: ExtensionManager | null = null;
+  private executionStorage: ExecutionStorage | null = null;
+  private executionManager: CodeExecutionManager | null = null;
+  private a2aStorage: A2AStorage | null = null;
+  private a2aManager: A2AManager | null = null;
   private initialized = false;
   private startedAt: number | null = null;
   private shutdownPromise: Promise<void> | null = null;
@@ -224,9 +244,7 @@ export class SecureYeoman {
 
       // Step 5: Initialize audit chain
       const signingKey = requireSecret(this.config.logging.audit.signingKeyEnv);
-      const storage =
-        this.options.auditStorage ??
-        new SQLiteAuditStorage();
+      const storage = this.options.auditStorage ?? new SQLiteAuditStorage();
       this.auditStorage = storage;
 
       this.auditChain = new AuditChain({
@@ -373,7 +391,9 @@ export class SecureYeoman {
         auditChain: this.auditChain,
         logger: this.logger.child({ component: 'BrainManager' }),
         auditStorage:
-          this.auditStorage && 'queryEntries' in this.auditStorage && 'searchFullText' in this.auditStorage
+          this.auditStorage &&
+          'queryEntries' in this.auditStorage &&
+          'searchFullText' in this.auditStorage
             ? (this.auditStorage as unknown as import('./brain/types.js').AuditStorage)
             : undefined,
       });
@@ -400,11 +420,11 @@ export class SecureYeoman {
         this.spiritManager
       );
       if (await this.soulManager.needsOnboarding()) {
-        if (!await this.soulManager.getAgentName()) {
+        if (!(await this.soulManager.getAgentName())) {
           await this.soulManager.setAgentName('FRIDAY');
         }
         await this.soulManager.createDefaultPersonality();
-        if (await this.soulManager.getAgentName() === 'FRIDAY') {
+        if ((await this.soulManager.getAgentName()) === 'FRIDAY') {
           await this.brainManager.seedBaseKnowledge();
           await this.spiritManager.seedDefaultSpirit();
         }
@@ -510,6 +530,9 @@ export class SecureYeoman {
       this.integrationManager.registerPlatform('email', () => new EmailIntegration());
       this.integrationManager.registerPlatform('cli', () => new CliIntegration());
       this.integrationManager.registerPlatform('webhook', () => new GenericWebhookIntegration());
+      this.integrationManager.registerPlatform('whatsapp', () => new WhatsAppIntegration());
+      this.integrationManager.registerPlatform('signal', () => new SignalIntegration());
+      this.integrationManager.registerPlatform('teams', () => new TeamsIntegration());
       // Start auto-reconnect health checks
       this.integrationManager.startHealthChecks();
 
@@ -565,9 +588,7 @@ export class SecureYeoman {
         logger: this.logger.child({ component: 'AuditReportGenerator' }),
         auditChain: this.auditChain,
         queryAuditLog: (opts) => this.queryAuditLog(opts),
-        queryTasks: this.taskStorage
-          ? (filter) => this.taskStorage!.listTasks(filter)
-          : undefined,
+        queryTasks: this.taskStorage ? (filter) => this.taskStorage!.listTasks(filter) : undefined,
         queryHeartbeatTasks: this.heartbeatManager
           ? () => this.heartbeatManager!.getStatus().tasks
           : undefined,
@@ -611,6 +632,96 @@ export class SecureYeoman {
       // Step 6.10: Initialize conversation storage
       this.chatConversationStorage = new ConversationStorage();
       this.logger.debug('Conversation storage initialized');
+
+      // Step 6.11: Initialize sub-agent delegation (if enabled)
+      if (this.config.delegation?.enabled) {
+        try {
+          this.subAgentStorage = new SubAgentStorage();
+          this.subAgentManager = new SubAgentManager(this.config.delegation, {
+            storage: this.subAgentStorage,
+            aiClientConfig: {
+              model: this.config.model,
+              retryConfig: {
+                maxRetries: this.config.model.maxRetries,
+                baseDelayMs: this.config.model.retryDelayMs,
+              },
+            },
+            aiClientDeps: {
+              auditChain: this.auditChain ?? undefined,
+              logger: this.logger.child({ component: 'SubAgentAI' }),
+            },
+            mcpClient: this.mcpClientManager ?? undefined,
+            auditChain: this.auditChain!,
+            logger: this.logger.child({ component: 'SubAgentManager' }),
+            brainManager: this.brainManager ?? undefined,
+            securityConfig: this.config.security,
+          });
+          await this.subAgentManager.initialize();
+          this.logger.debug('Sub-agent delegation system initialized');
+        } catch (error) {
+          this.logger.warn('Sub-agent delegation initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      // Step 6.12: Initialize extension hooks (if enabled)
+      if (this.config.extensions?.enabled) {
+        try {
+          this.extensionStorage = new ExtensionStorage();
+          this.extensionManager = new ExtensionManager(this.config.extensions, {
+            storage: this.extensionStorage,
+            logger: this.logger.child({ component: 'ExtensionManager' }),
+            auditChain: this.auditChain!,
+          });
+          await this.extensionManager.initialize();
+          this.logger.debug('Extension manager initialized');
+        } catch (error) {
+          this.logger.warn('Extension manager initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      // Step 6.13: Initialize code execution (if enabled)
+      if (this.config.execution?.enabled) {
+        try {
+          this.executionStorage = new ExecutionStorage();
+          this.executionManager = new CodeExecutionManager(this.config.execution, {
+            storage: this.executionStorage,
+            logger: this.logger.child({ component: 'CodeExecutionManager' }),
+            auditChain: this.auditChain!,
+          });
+          await this.executionManager.initialize();
+          this.logger.debug('Code execution manager initialized');
+        } catch (error) {
+          this.logger.warn('Code execution manager initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
+      // Step 6.14: Initialize A2A protocol (if enabled)
+      if (this.config.a2a?.enabled) {
+        try {
+          this.a2aStorage = new A2AStorage();
+          const transport = new RemoteDelegationTransport({
+            logger: this.logger.child({ component: 'A2ATransport' }),
+          });
+          this.a2aManager = new A2AManager(this.config.a2a, {
+            storage: this.a2aStorage,
+            transport,
+            logger: this.logger.child({ component: 'A2AManager' }),
+            auditChain: this.auditChain!,
+          });
+          await this.a2aManager.initialize();
+          this.logger.debug('A2A manager initialized');
+        } catch (error) {
+          this.logger.warn('A2A manager initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
 
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
@@ -1087,6 +1198,38 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the sub-agent manager instance (may be null if delegation is disabled)
+   */
+  getSubAgentManager(): SubAgentManager | null {
+    this.ensureInitialized();
+    return this.subAgentManager;
+  }
+
+  /**
+   * Get the extension manager instance (may be null if extensions are disabled)
+   */
+  getExtensionManager(): ExtensionManager | null {
+    this.ensureInitialized();
+    return this.extensionManager;
+  }
+
+  /**
+   * Get the code execution manager instance (may be null if execution is disabled)
+   */
+  getExecutionManager(): CodeExecutionManager | null {
+    this.ensureInitialized();
+    return this.executionManager;
+  }
+
+  /**
+   * Get the A2A manager instance (may be null if A2A is disabled)
+   */
+  getA2AManager(): A2AManager | null {
+    this.ensureInitialized();
+    return this.a2aManager;
+  }
+
+  /**
    * Get the integration storage instance
    */
   getIntegrationStorage(): IntegrationStorage {
@@ -1104,7 +1247,15 @@ export class SecureYeoman {
   switchModel(provider: string, model: string): void {
     this.ensureInitialized();
 
-    const validProviders = ['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai'];
+    const validProviders = [
+      'anthropic',
+      'openai',
+      'gemini',
+      'ollama',
+      'opencode',
+      'lmstudio',
+      'localai',
+    ];
     if (!validProviders.includes(provider)) {
       throw new Error(
         `Invalid provider: ${provider}. Must be one of: ${validProviders.join(', ')}`
@@ -1154,6 +1305,36 @@ export class SecureYeoman {
       });
       throw error;
     }
+  }
+
+  /**
+   * Update security policy toggles at runtime.
+   * Changes are in-memory only (not persisted to YAML).
+   */
+  updateSecurityPolicy(updates: { allowSubAgents?: boolean; allowA2A?: boolean; allowExtensions?: boolean; allowExecution?: boolean }): void {
+    this.ensureInitialized();
+
+    if (updates.allowSubAgents !== undefined) {
+      this.config!.security.allowSubAgents = updates.allowSubAgents;
+    }
+    if (updates.allowA2A !== undefined) {
+      this.config!.security.allowA2A = updates.allowA2A;
+    }
+    if (updates.allowExtensions !== undefined) {
+      this.config!.security.allowExtensions = updates.allowExtensions;
+    }
+    if (updates.allowExecution !== undefined) {
+      this.config!.security.allowExecution = updates.allowExecution;
+    }
+
+    this.logger?.info('Security policy updated', updates);
+
+    void this.auditChain?.record({
+      event: 'security_policy_changed',
+      level: 'info',
+      message: `Security policy updated: ${JSON.stringify(updates)}`,
+      metadata: updates,
+    });
   }
 
   /**
@@ -1392,6 +1573,32 @@ export class SecureYeoman {
     if (this.chatConversationStorage) {
       this.chatConversationStorage.close();
       this.chatConversationStorage = null;
+    }
+    if (this.subAgentStorage) {
+      this.subAgentStorage.close();
+      this.subAgentStorage = null;
+      this.subAgentManager = null;
+    }
+    if (this.extensionStorage) {
+      this.extensionStorage.close();
+      this.extensionStorage = null;
+      this.extensionManager = null;
+    }
+    if (this.executionManager) {
+      await this.executionManager.cleanup();
+      this.executionManager = null;
+    }
+    if (this.executionStorage) {
+      this.executionStorage.close();
+      this.executionStorage = null;
+    }
+    if (this.a2aManager) {
+      await this.a2aManager.cleanup();
+      this.a2aManager = null;
+    }
+    if (this.a2aStorage) {
+      this.a2aStorage.close();
+      this.a2aStorage = null;
     }
     this.reportGenerator = null;
     this.costOptimizer = null;

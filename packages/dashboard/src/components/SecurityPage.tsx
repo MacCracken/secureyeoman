@@ -55,7 +55,15 @@ import {
 } from '../api/client';
 import type { ReportSummary } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
-import type { MetricsSnapshot, HealthStatus, SecurityEvent, AuditEntry, Task, HeartbeatTask, McpServerConfig } from '../types';
+import type {
+  MetricsSnapshot,
+  HealthStatus,
+  SecurityEvent,
+  AuditEntry,
+  Task,
+  HeartbeatTask,
+  McpServerConfig,
+} from '../types';
 
 type TabType = 'overview' | 'audit' | 'tasks' | 'reports' | 'nodes';
 
@@ -357,7 +365,11 @@ function SecurityOverviewTab({
                   ) : (
                     <RefreshCw className="w-3 h-3" />
                   )}
-                  {verificationResult ? (verificationResult.valid ? 'Verified' : 'Failed') : 'Verify'}
+                  {verificationResult
+                    ? verificationResult.valid
+                      ? 'Verified'
+                      : 'Failed'
+                    : 'Verify'}
                 </button>
                 <button
                   onClick={onViewAuditLog}
@@ -568,9 +580,7 @@ function TasksTab() {
                           </div>
                         </div>
                       </div>
-                      <span
-                        className={`badge ${task.enabled ? 'badge-success' : 'badge'}`}
-                      >
+                      <span className={`badge ${task.enabled ? 'badge-success' : 'badge'}`}>
                         {task.enabled ? 'enabled' : 'disabled'}
                       </span>
                     </div>
@@ -672,7 +682,10 @@ function TasksTab() {
             </span>
             <button
               onClick={() =>
-                setSearchParams({ ...searchParams, offset: String(Number(searchParams.offset) + 10) })
+                setSearchParams({
+                  ...searchParams,
+                  offset: String(Number(searchParams.offset) + 10),
+                })
               }
               disabled={Number(searchParams.offset) + 10 >= tasksData.total}
               className="btn btn-ghost"
@@ -703,8 +716,14 @@ function saveReviewedAudit(ids: Set<string>): void {
 
 const LEVEL_ICONS = {
   info: { unreviewed: <Info className="w-4 h-4 text-info" />, border: 'border-l-info' },
-  warn: { unreviewed: <AlertTriangle className="w-4 h-4 text-warning" />, border: 'border-l-warning' },
-  error: { unreviewed: <XCircle className="w-4 h-4 text-destructive" />, border: 'border-l-destructive' },
+  warn: {
+    unreviewed: <AlertTriangle className="w-4 h-4 text-warning" />,
+    border: 'border-l-warning',
+  },
+  error: {
+    unreviewed: <XCircle className="w-4 h-4 text-destructive" />,
+    border: 'border-l-destructive',
+  },
   security: {
     unreviewed: <ShieldAlert className="w-4 h-4 text-destructive" />,
     border: 'border-l-destructive bg-destructive/5',
@@ -839,39 +858,85 @@ function AuditLogTab({
             const level = LEVEL_ICONS[entry.level as keyof typeof LEVEL_ICONS] ?? LEVEL_ICONS.info;
             const isExpanded = expandedId === entry.id;
             const isReviewed = reviewed.has(entry.id);
-            const icon = isReviewed
-              ? <CheckCircle className="w-4 h-4 text-muted-foreground/50" />
-              : level.unreviewed;
+            const icon = isReviewed ? (
+              <CheckCircle className="w-4 h-4 text-muted-foreground/50" />
+            ) : (
+              level.unreviewed
+            );
 
             return (
               <div
                 key={entry.id}
-                className={`card border-l-4 ${level.border} cursor-pointer transition-colors hover:bg-muted/30${!isReviewed ? ' bg-muted/10' : ''}`}
+                className={`card border-l-4 ${level.border} cursor-pointer transition-all hover:bg-muted/30 ${!isReviewed ? ' bg-muted/10' : ''} ${isExpanded ? 'shadow-md' : ''}`}
                 onClick={() => handleToggleExpand(entry.id)}
               >
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-4">
-                    <div className="flex items-start gap-3 min-w-0">
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
                       {icon}
-                      <div className="min-w-0">
-                        <p className={`text-sm truncate ${isReviewed ? 'text-muted-foreground' : 'font-medium'}`}>{entry.message || entry.event}</p>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <span className="badge text-xs">{entry.event}</span>
-                          <span className="badge text-xs">{entry.level}</span>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span
+                            className={`text-sm truncate ${isReviewed ? 'text-muted-foreground' : 'font-medium'}`}
+                          >
+                            {entry.message || entry.event}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span
+                            className={`badge text-xs font-medium ${entry.level === 'error' ? 'bg-red-500/20 text-red-400' : entry.level === 'warn' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-blue-500/20 text-blue-400'}`}
+                          >
+                            {entry.event}
+                          </span>
+                          <span
+                            className={`badge text-xs ${entry.level === 'error' ? 'bg-red-500/20 text-red-400' : entry.level === 'warn' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-muted text-muted-foreground'}`}
+                          >
+                            {entry.level}
+                          </span>
                           {entry.userId && (
-                            <span className="text-xs text-muted-foreground">
-                              user: {entry.userId}
+                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                              👤 {entry.userId.slice(0, 12)}...
                             </span>
                           )}
                           {entry.taskId && (
-                            <span className="text-xs text-muted-foreground">
-                              task: {entry.taskId.slice(0, 8)}
+                            <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                              📋 {entry.taskId.slice(0, 8)}
                             </span>
                           )}
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          #{entry.sequence} &middot; {new Date(entry.timestamp).toLocaleString()}
-                        </p>
+                        <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
+                          <span
+                            className="font-mono text-primary/60 bg-primary/5 px-1.5 py-0.5 rounded"
+                            title="Chain sequence number"
+                          >
+                            #{entry.sequence}
+                          </span>
+                          <span className="text-muted-foreground/50">|</span>
+                          <span className="tabular-nums">
+                            {new Date(entry.timestamp).toLocaleString()}
+                          </span>
+                          {entry.signature && (
+                            <span
+                              className="ml-auto flex items-center gap-1 text-green-500/70"
+                              title="Cryptographically signed"
+                            >
+                              <svg
+                                className="w-3 h-3"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                                />
+                              </svg>
+                              verified
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 text-muted-foreground shrink-0">
@@ -935,9 +1000,7 @@ function AuditLogTab({
       {total > limit && (
         <div className="flex items-center justify-center gap-2">
           <button
-            onClick={() =>
-              setFilters({ ...filters, offset: Math.max(0, filters.offset - limit) })
-            }
+            onClick={() => setFilters({ ...filters, offset: Math.max(0, filters.offset - limit) })}
             disabled={filters.offset <= 0}
             className="btn btn-ghost"
           >
@@ -1103,7 +1166,7 @@ function getNodeStatus(
   nodeId: string,
   health?: HealthStatus,
   metrics?: MetricsSnapshot,
-  mcpServers?: McpServerConfig[],
+  mcpServers?: McpServerConfig[]
 ): 'ok' | 'warning' | 'error' {
   switch (nodeId) {
     case 'agent':
@@ -1170,7 +1233,13 @@ function NodePanel({
   def: NodeDef;
   health?: HealthStatus;
   metrics?: MetricsSnapshot;
-  auditStats?: { totalEntries: number; oldestEntry?: number; lastVerification?: number; chainValid: boolean; dbSizeEstimateMb?: number };
+  auditStats?: {
+    totalEntries: number;
+    oldestEntry?: number;
+    lastVerification?: number;
+    chainValid: boolean;
+    dbSizeEstimateMb?: number;
+  };
   mcpServers?: McpServerConfig[];
   expanded: boolean;
   onToggle: () => void;
@@ -1185,10 +1254,16 @@ function NodePanel({
           <>
             <DetailRow label="Status" value={health?.status ?? 'unknown'} />
             <DetailRow label="Version" value={health?.version ?? '-'} />
-            <DetailRow label="Uptime" value={health?.uptime ? formatNodeUptime(health.uptime) : '-'} />
+            <DetailRow
+              label="Uptime"
+              value={health?.uptime ? formatNodeUptime(health.uptime) : '-'}
+            />
             <DetailRow label="Active Tasks" value={metrics?.tasks?.inProgress ?? 0} />
             <DetailRow label="Queue Depth" value={metrics?.tasks?.queueDepth ?? 0} />
-            <DetailRow label="Success Rate" value={`${((metrics?.tasks?.successRate ?? 0) * 100).toFixed(1)}%`} />
+            <DetailRow
+              label="Success Rate"
+              value={`${((metrics?.tasks?.successRate ?? 0) * 100).toFixed(1)}%`}
+            />
           </>
         );
       case 'tasks':
@@ -1197,11 +1272,26 @@ function NodePanel({
             <DetailRow label="Queue Depth" value={metrics?.tasks?.queueDepth ?? 0} />
             <DetailRow label="In Progress" value={metrics?.tasks?.inProgress ?? 0} />
             <DetailRow label="Total Tasks" value={metrics?.tasks?.total ?? 0} />
-            <DetailRow label="Success Rate" value={`${((metrics?.tasks?.successRate ?? 0) * 100).toFixed(1)}%`} />
-            <DetailRow label="Failure Rate" value={`${((metrics?.tasks?.failureRate ?? 0) * 100).toFixed(1)}%`} />
-            <DetailRow label="Avg Duration" value={formatDuration(metrics?.tasks?.avgDurationMs ?? 0)} />
-            <DetailRow label="P95 Duration" value={formatDuration(metrics?.tasks?.p95DurationMs ?? 0)} />
-            <DetailRow label="P99 Duration" value={formatDuration(metrics?.tasks?.p99DurationMs ?? 0)} />
+            <DetailRow
+              label="Success Rate"
+              value={`${((metrics?.tasks?.successRate ?? 0) * 100).toFixed(1)}%`}
+            />
+            <DetailRow
+              label="Failure Rate"
+              value={`${((metrics?.tasks?.failureRate ?? 0) * 100).toFixed(1)}%`}
+            />
+            <DetailRow
+              label="Avg Duration"
+              value={formatDuration(metrics?.tasks?.avgDurationMs ?? 0)}
+            />
+            <DetailRow
+              label="P95 Duration"
+              value={formatDuration(metrics?.tasks?.p95DurationMs ?? 0)}
+            />
+            <DetailRow
+              label="P99 Duration"
+              value={formatDuration(metrics?.tasks?.p99DurationMs ?? 0)}
+            />
           </>
         );
       case 'database':
@@ -1210,8 +1300,20 @@ function NodePanel({
             <DetailRow label="Connection" value={health?.checks?.database ? 'Connected' : 'Down'} />
             <DetailRow label="Audit Entries" value={auditStats?.totalEntries ?? 0} />
             <DetailRow label="Chain Valid" value={auditStats?.chainValid ? 'Yes' : 'No'} />
-            <DetailRow label="Last Verification" value={auditStats?.lastVerification ? new Date(auditStats.lastVerification).toLocaleString() : 'Never'} />
-            <DetailRow label="DB Size" value={auditStats?.dbSizeEstimateMb ? `${auditStats.dbSizeEstimateMb.toFixed(1)} MB` : '-'} />
+            <DetailRow
+              label="Last Verification"
+              value={
+                auditStats?.lastVerification
+                  ? new Date(auditStats.lastVerification).toLocaleString()
+                  : 'Never'
+              }
+            />
+            <DetailRow
+              label="DB Size"
+              value={
+                auditStats?.dbSizeEstimateMb ? `${auditStats.dbSizeEstimateMb.toFixed(1)} MB` : '-'
+              }
+            />
           </>
         );
       case 'audit':
@@ -1219,9 +1321,26 @@ function NodePanel({
           <>
             <DetailRow label="Chain Status" value={auditStats?.chainValid ? 'Valid' : 'Invalid'} />
             <DetailRow label="Total Entries" value={auditStats?.totalEntries ?? 0} />
-            <DetailRow label="Oldest Entry" value={auditStats?.oldestEntry ? new Date(auditStats.oldestEntry).toLocaleString() : '-'} />
-            <DetailRow label="Last Verification" value={auditStats?.lastVerification ? new Date(auditStats.lastVerification).toLocaleString() : 'Never'} />
-            <DetailRow label="DB Size" value={auditStats?.dbSizeEstimateMb ? `${auditStats.dbSizeEstimateMb.toFixed(1)} MB` : '-'} />
+            <DetailRow
+              label="Oldest Entry"
+              value={
+                auditStats?.oldestEntry ? new Date(auditStats.oldestEntry).toLocaleString() : '-'
+              }
+            />
+            <DetailRow
+              label="Last Verification"
+              value={
+                auditStats?.lastVerification
+                  ? new Date(auditStats.lastVerification).toLocaleString()
+                  : 'Never'
+              }
+            />
+            <DetailRow
+              label="DB Size"
+              value={
+                auditStats?.dbSizeEstimateMb ? `${auditStats.dbSizeEstimateMb.toFixed(1)} MB` : '-'
+              }
+            />
           </>
         );
       case 'resources': {
@@ -1257,7 +1376,9 @@ function NodePanel({
             {s?.eventsBySeverity && Object.keys(s.eventsBySeverity).length > 0 && (
               <DetailRow
                 label="Events by Severity"
-                value={Object.entries(s.eventsBySeverity).map(([k, v]) => `${k}: ${v}`).join(', ')}
+                value={Object.entries(s.eventsBySeverity)
+                  .map(([k, v]) => `${k}: ${v}`)
+                  .join(', ')}
               />
             )}
           </>
@@ -1275,8 +1396,11 @@ function NodePanel({
                 label={s.name}
                 value={
                   <span className="flex items-center gap-2">
-                    <span className={`inline-block w-2 h-2 rounded-full ${s.enabled ? 'bg-green-500' : 'bg-muted-foreground'}`} />
-                    {s.transport}{s.description ? ` — ${s.description}` : ''}
+                    <span
+                      className={`inline-block w-2 h-2 rounded-full ${s.enabled ? 'bg-green-500' : 'bg-muted-foreground'}`}
+                    />
+                    {s.transport}
+                    {s.description ? ` — ${s.description}` : ''}
                   </span>
                 }
               />
@@ -1296,19 +1420,27 @@ function NodePanel({
         className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className={status === 'ok' ? 'text-green-500' : status === 'warning' ? 'text-warning' : 'text-destructive'}>
+          <span
+            className={
+              status === 'ok'
+                ? 'text-green-500'
+                : status === 'warning'
+                  ? 'text-warning'
+                  : 'text-destructive'
+            }
+          >
             {def.icon}
           </span>
           <span className="font-semibold text-sm">{def.label}</span>
           <span className={`badge ${badge.className} text-xs`}>{badge.label}</span>
         </div>
-        <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${expanded ? '' : '-rotate-90'}`} />
+        <ChevronDown
+          className={`w-4 h-4 text-muted-foreground transition-transform ${expanded ? '' : '-rotate-90'}`}
+        />
       </button>
       {expanded && (
         <div className="border-t border-border p-4">
-          <div className="grid grid-cols-[auto,1fr] gap-x-6 gap-y-2">
-            {renderDetails()}
-          </div>
+          <div className="grid grid-cols-[auto,1fr] gap-x-6 gap-y-2">{renderDetails()}</div>
         </div>
       )}
     </div>

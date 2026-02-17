@@ -7,17 +7,31 @@ import type { AuthService } from '../security/auth.js';
 import { AuthError } from '../security/auth.js';
 import type { RateLimiterLike } from '../security/rate-limiter.js';
 import type { Role } from '@friday/shared';
+import { RoleDefinitionSchema } from '@friday/shared';
+import type { RBAC } from '../security/rbac.js';
+
+/** Built-in role IDs that cannot be mutated or deleted via the API. */
+const BUILTIN_ROLE_IDS = new Set([
+  'role_admin',
+  'role_operator',
+  'role_auditor',
+  'role_viewer',
+  'role_capture_operator',
+  'role_security_auditor',
+  'role_voice_operator',
+]);
 
 export interface AuthRoutesOptions {
   authService: AuthService;
   rateLimiter: RateLimiterLike;
+  rbac: RBAC;
 }
 
 export function registerAuthRoutes(
   app: FastifyInstance,
   opts: AuthRoutesOptions,
 ): void {
-  const { authService, rateLimiter } = opts;
+  const { authService, rateLimiter, rbac } = opts;
 
   // ── POST /api/v1/auth/login ───────────────────────────────────────
   app.post('/api/v1/auth/login', async (
@@ -167,5 +181,146 @@ export function registerAuthRoutes(
       return reply.code(404).send({ error: 'API key not found or already revoked' });
     }
     return { message: 'API key revoked' };
+  });
+
+  // ── GET /api/v1/auth/roles ─────────────────────────────────────────
+  app.get('/api/v1/auth/roles', async () => {
+    const roles = rbac.getAllRoles().map((r) => ({
+      ...r,
+      isBuiltin: BUILTIN_ROLE_IDS.has(r.id),
+    }));
+    return { roles };
+  });
+
+  // ── POST /api/v1/auth/roles ────────────────────────────────────────
+  app.post('/api/v1/auth/roles', async (
+    request: FastifyRequest<{
+      Body: { name: string; description?: string; permissions: Array<{ resource: string; action: string }>; inheritFrom?: string[] };
+    }>,
+    reply: FastifyReply,
+  ) => {
+    const { name, description, permissions, inheritFrom } = request.body ?? {};
+    if (!name || typeof name !== 'string') {
+      return reply.code(400).send({ error: 'Name is required' });
+    }
+    if (!permissions || !Array.isArray(permissions)) {
+      return reply.code(400).send({ error: 'Permissions array is required' });
+    }
+
+    const id = `role_${name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
+    const role = { id, name, description, permissions, inheritFrom };
+
+    const parsed = RoleDefinitionSchema.safeParse(role);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid role definition', details: parsed.error.format() });
+    }
+
+    try {
+      await rbac.defineRole(parsed.data);
+      return reply.code(201).send({ role: { ...parsed.data, isBuiltin: false } });
+    } catch (err) {
+      return reply.code(500).send({ error: err instanceof Error ? err.message : 'Failed to create role' });
+    }
+  });
+
+  // ── PUT /api/v1/auth/roles/:id ─────────────────────────────────────
+  app.put('/api/v1/auth/roles/:id', async (
+    request: FastifyRequest<{
+      Params: { id: string };
+      Body: { name?: string; description?: string; permissions?: Array<{ resource: string; action: string }>; inheritFrom?: string[] };
+    }>,
+    reply: FastifyReply,
+  ) => {
+    const { id } = request.params;
+    if (BUILTIN_ROLE_IDS.has(id)) {
+      return reply.code(403).send({ error: 'Cannot modify built-in roles' });
+    }
+
+    const existing = rbac.getRole(id);
+    if (!existing) {
+      return reply.code(404).send({ error: 'Role not found' });
+    }
+
+    const updated = {
+      ...existing,
+      ...request.body,
+      id, // Preserve original ID
+    };
+
+    const parsed = RoleDefinitionSchema.safeParse(updated);
+    if (!parsed.success) {
+      return reply.code(400).send({ error: 'Invalid role definition', details: parsed.error.format() });
+    }
+
+    try {
+      await rbac.defineRole(parsed.data);
+      return { role: { ...parsed.data, isBuiltin: false } };
+    } catch (err) {
+      return reply.code(500).send({ error: err instanceof Error ? err.message : 'Failed to update role' });
+    }
+  });
+
+  // ── DELETE /api/v1/auth/roles/:id ──────────────────────────────────
+  app.delete('/api/v1/auth/roles/:id', async (
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply,
+  ) => {
+    const { id } = request.params;
+    if (BUILTIN_ROLE_IDS.has(id)) {
+      return reply.code(403).send({ error: 'Cannot delete built-in roles' });
+    }
+
+    const removed = await rbac.removeRole(id);
+    if (!removed) {
+      return reply.code(404).send({ error: 'Role not found' });
+    }
+    return { message: 'Role deleted' };
+  });
+
+  // ── GET /api/v1/auth/assignments ───────────────────────────────────
+  app.get('/api/v1/auth/assignments', async () => {
+    const assignments = rbac.listUserAssignments();
+    return { assignments };
+  });
+
+  // ── POST /api/v1/auth/assignments ──────────────────────────────────
+  app.post('/api/v1/auth/assignments', async (
+    request: FastifyRequest<{
+      Body: { userId: string; roleId: string };
+    }>,
+    reply: FastifyReply,
+  ) => {
+    const { userId, roleId } = request.body ?? {};
+    if (!userId || typeof userId !== 'string') {
+      return reply.code(400).send({ error: 'userId is required' });
+    }
+    if (!roleId || typeof roleId !== 'string') {
+      return reply.code(400).send({ error: 'roleId is required' });
+    }
+
+    const role = rbac.getRole(roleId);
+    if (!role) {
+      return reply.code(404).send({ error: `Role '${roleId}' not found` });
+    }
+
+    try {
+      const assignedBy = request.authUser?.userId ?? 'system';
+      await rbac.assignUserRole(userId, roleId, assignedBy);
+      return reply.code(201).send({ assignment: { userId, roleId } });
+    } catch (err) {
+      return reply.code(500).send({ error: err instanceof Error ? err.message : 'Failed to assign role' });
+    }
+  });
+
+  // ── DELETE /api/v1/auth/assignments/:userId ────────────────────────
+  app.delete('/api/v1/auth/assignments/:userId', async (
+    request: FastifyRequest<{ Params: { userId: string } }>,
+    reply: FastifyReply,
+  ) => {
+    const revoked = await rbac.revokeUserRole(request.params.userId);
+    if (!revoked) {
+      return reply.code(404).send({ error: 'No active assignment for this user' });
+    }
+    return { message: 'Assignment revoked' };
   });
 }

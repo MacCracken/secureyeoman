@@ -88,6 +88,28 @@ F.R.I.D.A.Y. follows these security principles:
 - Configuration modification
 - Supply chain attacks
 
+#### 6. Web Tools (Scraping & Search)
+- **SSRF (Server-Side Request Forgery)**: Blocked IP ranges (10.x, 172.16-31.x, 192.168.x, 127.x, 169.254.x), blocked hostnames (localhost, metadata.google.internal), `file://` protocol blocked, only `http:`/`https:` allowed
+- **URL Allowlist**: When `MCP_ALLOWED_URLS` is set, only requests to listed domains (and subdomains) are permitted
+- **Redirect Attacks**: Max 3 redirect hops, each hop re-validated against SSRF rules
+- **Output Safety**: 500KB output cap per tool call with truncation marker to prevent memory exhaustion
+- **Rate Limiting**: Web-specific rate limiter (default 10 req/min) independent of per-tool rate limiter
+- **Cloud Metadata**: `169.254.169.254` and related cloud metadata endpoints explicitly blocked
+
+#### 7. Browser Automation (Deferred)
+- Browser tools are registered as placeholders; they return "not yet available" until Playwright/Puppeteer is integrated
+- When implemented: max concurrent pages, navigation timeout, headless enforcement, JavaScript execution isolation
+
+#### 8. MCP Credential Management
+- **Encryption at Rest**: AES-256-GCM with key derived from `SECUREYEOMAN_TOKEN_SECRET` via SHA-256 + salt
+- **No Value Exposure**: API only returns credential keys, never decrypted values
+- **Injection Isolation**: Decrypted credentials injected only into server spawn environment, not logged
+- **Tamper Detection**: GCM authentication tag validates ciphertext integrity on decrypt
+
+#### 9. MCP Health Monitoring
+- **Auto-Disable**: Servers auto-disabled after configurable consecutive failures (default 5) to prevent repeated connection attempts to compromised endpoints
+- **Timeout Enforcement**: Health check HTTP requests timeout after 10 seconds
+
 ---
 
 ## Security Architecture
@@ -262,6 +284,17 @@ WebSocket connections are authenticated via JWT token in the query string. The t
 
 Unauthorized channels are silently skipped during subscription. A 30-second ping/pong heartbeat terminates unresponsive connections after 60 seconds.
 
+### Layer 1.5: XSS Protection (DOMPurify)
+
+The dashboard sanitizes all AI-generated and user-generated content before rendering using [DOMPurify](https://github.com/cure53/DOMPurify). Two sanitization modes are available:
+
+- **`sanitizeHtml(dirty)`**: Allows safe formatting tags (`b`, `i`, `em`, `strong`, `a`, `p`, `br`, `ul`, `ol`, `li`, `code`, `pre`, `blockquote`, `h1`–`h4`) while stripping all script tags, event handlers, and dangerous attributes. Used for rendering rich content safely.
+- **`sanitizeText(dirty)`**: Strips ALL HTML tags. Used as defense-in-depth for text content that should never contain HTML (chat messages, notification text, task descriptions, error messages).
+
+Applied to all dashboard components that display dynamic content: ChatPage, SecurityEvents, PersonalityEditor, SkillsPage, CodePage, NotificationBell, TaskHistory, ConnectionsPage.
+
+A `<SafeHtml>` React component wraps `sanitizeHtml` for use with `dangerouslySetInnerHTML`.
+
 ### Layer 2: Application Security
 
 #### Input Validation Pipeline
@@ -288,7 +321,16 @@ const rbacSystem = {
     capture_operator: { permissions: ["capture.screen", "capture.camera"] },
     security_auditor: { permissions: ["capture.review", "audit.*"] }
   },
-  middleware: "enforce_permissions_on_all_routes"
+  middleware: "enforce_permissions_on_all_routes",
+  management: {
+    // Full CRUD via REST API: GET/POST/PUT/DELETE /api/v1/auth/roles
+    // User assignment: GET/POST /api/v1/auth/assignments, DELETE /api/v1/auth/assignments/:userId
+    // Built-in roles (role_admin, role_operator, etc.) are immutable
+    // Custom roles can be created, updated, and deleted via Dashboard or CLI
+    customRoles: true,
+    roleAssignments: true,
+    cli: "secureyeoman role [list|create|delete|assign|revoke|assignments]"
+  }
 };
 ```
 
@@ -575,6 +617,91 @@ const postIncident = {
   report: "Document for compliance and improvement"
 };
 ```
+
+---
+
+## Code Execution Sandboxing
+
+### Runtime Isolation
+
+When code execution is enabled (`security.codeExecution.enabled: true`), all user/AI-generated code runs within the existing sandbox infrastructure:
+
+- **Linux**: Landlock filesystem restrictions + seccomp-bpf syscall filtering
+- **macOS**: `sandbox-exec` with deny-default policy
+- **Resource limits**: Memory, CPU, file size, and execution time limits from `security.sandbox` config apply to all code execution
+
+Each runtime (Python, Node.js, shell) runs in an isolated child process with no access to the parent process memory space.
+
+### Secrets Filtering
+
+All code execution output passes through a streaming-aware secrets filter before reaching the dashboard, WebSocket, or logs:
+
+- Buffers output in 256-byte windows to detect partial secret matches
+- Masks matches with `***` using the same patterns as log redaction
+- Detects API keys, tokens, passwords, and connection strings from `security.inputValidation` patterns plus any secrets in the SecretManager
+- Filter runs synchronously in the output pipeline -- no unfiltered output ever reaches external consumers
+
+### Approval Policies
+
+Code execution uses a two-level opt-in model:
+
+| Configuration | Behavior |
+|---------------|----------|
+| `enabled: false` (default) | Code execution tool is not registered. Agent cannot generate or run code. |
+| `enabled: true, autoApprove: false` | Agent can propose code but every execution requires user approval via dashboard prompt. |
+| `enabled: true, autoApprove: true` | Executions proceed without prompting. For trusted/automated environments only. |
+
+"Approve & Trust Session" allows auto-approval within a single session (same conversation, same runtime) after initial manual approval.
+
+Every code execution is recorded in the cryptographic audit chain with input code, output summary, exit code, duration, and approval metadata.
+
+---
+
+## Security Policy Dashboard
+
+The security dashboard (Settings > Security) provides toggles to enable or disable high-risk system capabilities:
+
+| Toggle | Config Field | Default | Description |
+|--------|--------------|---------|-------------|
+| **Sub-Agent Delegation** | `allowSubAgents` | `true` | Enable/disable the entire sub-agent delegation system |
+| **A2A Networks** | `allowA2A` | `false` | Allow agent-to-agent networking (nested under Sub-Agent Delegation) |
+| **Lifecycle Extensions** | `allowExtensions` | `false` | Allow lifecycle extension hooks for custom logic injection |
+| **Sandbox Execution** | `allowExecution` | `true` | Allow sandboxed code execution (Python, Node.js, shell) |
+
+All toggles are managed via the Security Policy API (`GET/PATCH /api/v1/security/policy`) and stored in the security configuration (`packages/shared/src/types/config.ts`). Changes take effect immediately without restart.
+
+**Note**: A2A networking requires sub-agent delegation to be enabled (nested dependency).
+
+---
+
+## A2A Trust Model
+
+### Trust Progression
+
+A2A peers progress through trust levels based on verification and interaction history:
+
+| Level | Description | Capabilities |
+|-------|-------------|-------------|
+| **Untrusted** | Newly discovered peer, no verification | Cannot delegate tasks. Can only exchange capability queries. |
+| **Verified** | Public key verified, signed capability exchange completed | Can delegate tasks with per-execution token budget limits. Subject to rate limiting. |
+| **Trusted** | Manually promoted by admin or after sustained successful interaction | Full delegation capabilities. Higher token budget limits. Reduced rate limiting. |
+
+### E2E Encryption
+
+All A2A messages use the existing comms crypto layer:
+
+- **Key exchange**: X25519 ephemeral key agreement per message
+- **Signing**: Ed25519 signatures on all messages for authentication and non-repudiation
+- **Encryption**: AES-256-GCM with per-message nonces
+- **Capability assertions**: Peers include signed capability responses to prevent mDNS/DNS-SD spoofing
+
+### Authorization Controls
+
+- Providers can configure allowlists/denylists for which peers may delegate
+- Token budgets are enforced independently by both requester and provider
+- Per-peer rate limits prevent resource exhaustion from external delegation requests
+- Results include a cryptographic proof (signed hash of sealed conversation)
+- All A2A delegation activity is recorded in the audit chain
 
 ---
 

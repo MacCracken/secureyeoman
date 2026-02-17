@@ -7,17 +7,17 @@
 ## Development Phases
 
 ```
-Phase 1          Phase 2          Phase 2.5        Phase 3          Phase 4          Phase 5          Phase 6
-Foundation       Security         Infrastructure   Dashboard        Integrations     Production       Cognitive
-   |                |                |                |                |                |                |
-   v                v                v                v                v                v                v
-[Core Agent] -> [RBAC/Crypto] -> [Brain/Comms] -> [React UI] -> [Platforms] -> [Hardening] -> [Intelligence]
-   |                |                |                |                |                |                |
-   +- Task Loop     +- Encryption    +- CLI           +- Metrics       +- Telegram      +- Load Testing  +- Vector Memory
-   +- Logging       +- Sandbox       +- Brain/Soul    +- History       +- Discord       +- Security Test +- Consolidation
-   +- Config        +- Validation    +- E2E Comms     +- Connections   +- Slack         +- Prometheus    +- History Compress
-   +- Storage       +- Rate Limit    +- Fallbacks     +- Security      +- GitHub        +- Docs          +- Sub-Agents
-   +- AI Providers  +- mTLS          +- Task Storage  +- Soul UI       +- Webhooks      +- Deployment    +- Hooks/Code Exec
+Phase 1          Phase 2          Phase 2.5        Phase 3          Phase 4          Phase 5          Phase 6          Phase 8
+Foundation       Security         Infrastructure   Dashboard        Integrations     Production       Cognitive        WebMCP
+   |                |                |                |                |                |                |                |
+   v                v                v                v                v                v                v                v
+[Core Agent] -> [RBAC/Crypto] -> [Brain/Comms] -> [React UI] -> [Platforms] -> [Hardening] -> [Intelligence] -> [Web Tools]
+   |                |                |                |                |                |                |                |
+   +- Task Loop     +- Encryption    +- CLI           +- Metrics       +- Telegram      +- Load Testing  +- Vector Memory +- Web Scraping
+   +- Logging       +- Sandbox       +- Brain/Soul    +- History       +- Discord       +- Security Test +- Consolidation +- Web Search
+   +- Config        +- Validation    +- E2E Comms     +- Connections   +- Slack         +- Prometheus    +- History Comp. +- Browser (WIP)
+   +- Storage       +- Rate Limit    +- Fallbacks     +- Security      +- GitHub        +- Docs          +- Sub-Agents    +- Health Monitor
+   +- AI Providers  +- mTLS          +- Task Storage  +- Soul UI       +- Webhooks      +- Deployment    +- Hooks/CodeExec+- Credentials
 ```
 
 ---
@@ -42,6 +42,7 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 
 ### Authentication & Authorization
 - RBAC with role definitions (Admin, Operator, Auditor, Viewer), inheritance, persistent storage
+- Full RBAC management via REST API (role CRUD, user-role assignments), Dashboard UI, and CLI (`secureyeoman role`)
 - JWT authentication with refresh token rotation, blacklisting
 - API key authentication with rate limiting and revocation
 - Gateway middleware for per-route RBAC enforcement
@@ -117,6 +118,174 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 
 ---
 
+## Phase 4.5: Integration Expansion
+
+**Status**: Complete
+
+Expand integrations across multiple categories to reach parity with platforms like OpenClawd AI.
+
+### Integration Categories
+
+#### Messaging (Complete: 8)
+
+| Platform | Status | Priority |
+|----------|--------|----------|
+| Telegram | ✅ Stable | — |
+| Discord | ✅ Stable | — |
+| Slack | ✅ Stable | — |
+| Google Chat | ✅ Stable | — |
+| iMessage | 🟡 Beta | — |
+| WhatsApp | ✅ Stable | — |
+| Signal | ✅ Stable | — |
+| Microsoft Teams | ✅ Stable | — |
+
+#### Productivity (Phase 7)
+
+| Platform | Status | Priority |
+|----------|--------|----------|
+| Gmail | ✅ Stable | — |
+| Google Calendar | 🔲 Planned | High |
+| Notion | 🔲 Planned | High |
+| Airtable | 🔲 Planned | Medium |
+| Linear/Jira | 🔲 Planned | Medium |
+| Todoist | 🔲 Planned | Low |
+
+#### Developer Tools (Phase 7)
+
+| Platform | Status | Priority |
+|----------|--------|----------|
+| GitHub | ✅ Stable | — |
+| GitLab | 🔲 Planned | High |
+| Jira | 🔲 Planned | Medium |
+| AWS | 🔲 Planned | Medium |
+| Azure DevOps | 🔲 Planned | Low |
+
+#### Services & Cloud (Phase 7)
+
+| Platform | Status | Priority |
+|----------|--------|----------|
+| Spotify | 🔲 Planned | Medium |
+| YouTube | 🔲 Planned | Low |
+| Figma | 🔲 Planned | Low |
+| Stripe | 🔲 Planned | Low |
+| Zapier | 🔲 Planned | Medium |
+
+#### AI Providers (Phase 7)
+
+| Platform | Status | Priority |
+|----------|--------|----------|
+| Anthropic (Claude) | ✅ Stable | — |
+| OpenAI (GPT) | ✅ Stable | — |
+| Gemini | ✅ Stable | — |
+| Ollama | ✅ Stable | — |
+| LM Studio | ✅ Stable | — |
+| LocalAI | ✅ Stable | — |
+| OpenCode Zen | ✅ Stable | — |
+| DeepSeek | 🔲 Planned | High |
+| Mistral | 🔲 Planned | Medium |
+
+### Integration Architecture Improvements
+
+- [ ] Skill/Plugin marketplace with community submissions
+- [ ] Dynamic integration loading (no restart required)
+- [ ] OAuth2 first-class support for all Google services
+- [ ] Webhook transformation rules (custom payloads)
+- [ ] Integration health monitoring with alerting
+
+### Dashboard Improvements
+
+- [ ] **Integration Management UI** — Visual integration grid by category (Messaging, Productivity, Dev Tools, Services) with status indicators, connect/disconnect flows, and health metrics
+- [ ] **Vector Memory Explorer** — Dashboard view for semantic search across memories with similarity scores, embedding visualization, and manual memory entry
+- [ ] **Memory Consolidation Panel** — View consolidation runs, merged memories, trends chart (memory count over time), and manual trigger option
+- [ ] **History Compression Viewer** — Per-conversation compression indicators, tier breakdown (current/topic/bulk), and token usage by tier
+- [ ] **Sub-Agent Execution Tree** — Visual tree of spawned sub-agents with status, depth, and results; budget consumption per agent
+- [ ] **Lifecycle Hook Debugger** — Hook registration view, execution log, and test trigger for each hook point
+- [ ] **Code Execution Console** — In-browser code editor with output streaming, session management, and approval queue
+- [ ] **Cost Analytics Dashboard** — Token usage by provider, daily/weekly/monthly trends, cost projections
+- [ ] **Audit Log Explorer** — Advanced filtering, export to CSV/JSON, integrity verification status
+- [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
+
+### Adaptive Learning
+
+- [ ] Feedback collection system (inline ratings, explicit corrections)
+- [ ] User preference profile (stored in Brain)
+- [ ] Behavioral pattern analyzer
+- [ ] Adaptive response tuning
+
+### Proactive Assistance
+
+- [ ] Proactive trigger system with rule engine
+- [ ] Suggestion queue in dashboard
+- [ ] Built-in proactive scenarios
+
+### MCP Ecosystem Expansion
+
+**Status**: Planned | **Reference**: [MCP Servers Directory](https://mcpservers.org/)
+
+Connect FRIDAY to external MCP servers from the ecosystem for extended capabilities.
+
+#### Currently Supported
+| Transport | Status |
+|----------|--------|
+| stdio (local) | ✅ |
+| streamable-http | ✅ |
+| SSE | ✅ |
+
+#### External MCP Categories to Support
+
+| Category | Example Servers | Priority |
+|----------|---------------|----------|
+| **Web Scraping** | Bright Data, Firecrawl, Browserbase | High |
+| **Search** | Exa, Tavily, DuckDuckGo | High |
+| **Development** | Playwright, Chrome DevTools, E2B | High |
+| **Database** | Supabase, PostgreSQL, SQLite | Medium |
+| **Cloud** | Cloudflare Workers, AWS, Azure | Medium |
+| **Communication** | Slack, Discord, Notion | Medium |
+| **Productivity** | Linear, Jira, Todoist | Medium |
+| **Finance** | Alpha Vantage, Yahoo Finance | Low |
+| **Code Analysis** | Context7, DeepWiki, CIE | Low |
+
+#### Deliverables
+
+- [x] **MCP Server Discovery** — Auto-discover tools from registered servers
+- [x] **Tool Routing** — Route tool calls to appropriate external MCP server
+- [x] **Remote Server Support** — First-class support for HTTP-based remote MCP servers
+- [x] **Server Health Monitoring** — Periodic health checks, latency tracking, auto-disable on failure threshold
+- [x] **Credential Management** — AES-256-GCM encrypted credential storage per server, secure injection into server environment
+- [x] **Dashboard UI** — Server registration, tool browser, status indicators, feature toggles, credential management
+- [ ] **Pre-built Integrations** — One-click connect for popular MCP servers
+
+#### Example Integrations
+
+```
+# Bright Data (Web Scraping)
+command: "npx"
+args: ["@brightdata/mcp"]
+env: { API_TOKEN: "..." }
+
+# Exa (AI Search)
+command: "npx"
+args: ["exa-mcp-server"]
+env: { EXA_API_KEY: "..." }
+
+# E2B (Code Execution)
+command: "npx"
+args: ["@e2b/mcp-server"]
+env: { E2B_API_KEY: "..." }
+
+# Supabase (Database)
+url: "https://mcp.supabase.io"
+```
+
+### Multimodal I/O
+
+- [ ] Vision processing pipeline for inline images
+- [ ] Voice message transcription and response
+- [ ] Voice output for integration responses
+- [ ] Image generation tool with DALL-E integration
+
+---
+
 ## Phase 5: Production Hardening
 
 **Status**: Complete
@@ -128,7 +297,7 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 - Chaos testing (database corruption, crash recovery, resource exhaustion)
 - Prometheus metrics endpoint with Grafana dashboard and alert rules
 - Log aggregation (append-only JSONL file writer, log rotation with gzip, Loki + Promtail)
-- MCP service (`@friday/mcp`) — 22+ tools, 7 resources, 4 prompts
+- MCP service (`@friday/mcp`) — 34+ tools (including 6 web, 6 browser placeholders), 7 resources, 4 prompts; health monitoring, credential management
 - Skill marketplace with cryptographic signature verification
 - Team workspaces with workspace-scoped RBAC
 - A/B testing framework, audit report generator, cost optimization
@@ -140,10 +309,10 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 | Package | Tests | Files |
 |---------|-------|-------|
 | `@friday/core` | 1360+ | 76 |
-| `@friday/mcp` | 219 | 27 |
+| `@friday/mcp` | 260+ | 29 |
 | `@friday/dashboard` | 124 | 13 |
 | Security + Chaos | ~76 | 8 |
-| **Total** | **1700+** | **115+** |
+| **Total** | **1800+** | **118+** |
 
 All core modules maintain >80% coverage thresholds.
 
@@ -158,20 +327,148 @@ All core modules maintain >80% coverage thresholds.
 | Phase 2.5: Infrastructure | Complete |
 | Phase 3: Dashboard | Complete |
 | Phase 4: Integrations | Complete |
+| Phase 4.5: Integration Expansion | Complete |
 | Phase 5: Production | Complete |
 | **2026.2.15 Release** | **Released 2026-02-15** |
-| Phase 6.1a: Vector Memory | Planned |
-| Phase 6.1b: Memory Consolidation | Planned |
-| Phase 6.2: History Compression | Planned |
-| Phase 6.3: Sub-Agent Delegation | Planned |
-| Phase 6.4a: Lifecycle Hooks | Planned |
-| Phase 6.4b: Code Execution | Planned |
+| Phase 6.1a: Vector Memory | Complete |
+| Phase 6.1b: Memory Consolidation | Complete |
+| Phase 6.2: History Compression | Complete |
+| Phase 6.3: Sub-Agent Delegation | Complete |
+| RBAC Management (API + Dashboard + CLI) | Complete |
+| **2026.2.16 Release** | **Released 2026-02-16** |
+| Phase 6.4a: Lifecycle Hooks | Complete |
+| Phase 6.4b: Code Execution | Complete |
+| Phase 6.5: A2A Protocol | Complete |
+| Phase 7: Integration Expansion | In Progress |
+| Phase 7.1: Adaptive Learning | Planned |
+| Phase 7.2: Proactive Assistance | Planned |
+| Phase 7.3: Multimodal I/O | Planned |
+| Phase 8.1: Web Scraping Tools | Complete |
+| Phase 8.2: Web Search Tools | Complete |
+| Phase 8.3: Browser Automation | Deferred (placeholders registered) |
+| Phase 8.6: MCP Infrastructure (Health/Credentials) | Complete |
+| Phase 8.7: Dashboard UI (Toggles/Health/Credentials) | Complete |
+
+---
+
+## Phase 8: WebMCP — Web Intelligence & Browser Automation
+
+**Status**: In Progress (8.1, 8.2, 8.6, 8.7 Complete; 8.3–8.5 Planned) | **Reference**: [Bright Data MCP](https://github.com/brightdata/brightdata-mcp)
+
+Enable FRIDAY with real-time web browsing, scraping, and browser automation capabilities.
+
+### Inspiration
+
+The [Bright Data MCP](https://github.com/brightdata/brightdata-mcp) provides:
+- Web search with AI-optimized results
+- Clean markdown extraction from any webpage
+- Anti-bot protection and geo-restriction bypass
+- Full browser automation (Pro)
+- 60+ specialized tools for e-commerce, social, finance, maps
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                         WebMCP Layer                            │
+├─────────────────┬─────────────────┬───────────────────────────┤
+│  Web Scraper    │  Browser        │  Web Search              │
+│  (HTML/Markdown)│  Automation     │  (AI-optimized)          │
+├─────────────────┼─────────────────┼───────────────────────────┤
+│  Playwright/    │  Puppeteer/     │  SerpAPI/               │
+│  Cheerio        │  CDP            │  Tavily                 │
+├─────────────────┴─────────────────┴───────────────────────────┤
+│                    Anti-Bot/Proxy Layer                        │
+│                 (Bright Data / ScraperAPI)                    │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+### Deliverables
+
+#### 8.1 — Web Scraping Tools
+
+- [x] `web_scrape_markdown` — Convert any webpage to clean LLM-ready markdown
+- [x] `web_scrape_html` — Raw HTML extraction with optional CSS selector
+- [x] `web_scrape_batch` — Process multiple URLs in parallel (max 10)
+- [x] `web_extract_structured` — Extract structured JSON from pages based on field descriptions
+
+#### 8.2 — Web Search Tools
+
+- [x] `web_search` — Web search with configurable backend (DuckDuckGo, SerpAPI, Tavily)
+- [x] `web_search_batch` — Batch search for research tasks (max 5 queries)
+
+#### 8.3 — Browser Automation (Deferred — requires Playwright/Puppeteer)
+
+- [ ] `browser_navigate` — Navigate to URL and return page content (placeholder registered)
+- [ ] `browser_screenshot` — Visual capture of pages (placeholder registered)
+- [ ] `browser_click` — Interactive element clicking (placeholder registered)
+- [ ] `browser_fill` — Form filling automation (placeholder registered)
+- [ ] `browser_evaluate` — Execute JavaScript in browser context (placeholder registered)
+- [ ] `browser_pdf` — Generate PDF from webpage (placeholder registered)
+
+#### 8.4 — Specialized Extractors
+
+- [ ] E-commerce: Amazon, Walmart, eBay product data
+- [ ] Social: Twitter/X, LinkedIn, YouTube data
+- [ ] Finance: Stock prices, news, market data
+- [ ] Maps: Google Maps, business listings
+
+#### 8.5 — Anti-Bot & Proxy Integration
+
+- [ ] Proxy rotation support (Bright Data, ScrapingBee, ScraperAPI)
+- [ ] CAPTCHA handling
+- [ ] Rate limiting and retry logic
+- [ ] Geo-targeting for location-specific data
+
+#### 8.6 — MCP Infrastructure
+
+- [x] **Health Monitoring** — Periodic health checks for external MCP servers (60s interval), latency tracking, auto-disable after consecutive failures
+- [x] **Credential Management** — AES-256-GCM encrypted credential storage per server, secure injection into server environment on spawn
+- [x] **SSRF Protection** — Blocks private IPs (10.x, 172.16-31.x, 192.168.x), localhost, cloud metadata (169.254.169.254), file:// protocol; URL allowlist enforcement; max 3 redirect hops with re-validation
+- [x] **Rate Limiting** — Web-specific rate limiter (10 req/min default, configurable via `MCP_WEB_RATE_LIMIT`)
+- [x] **Output Safety** — 500KB output cap per tool call with truncation marker
+- [x] **Feature Toggles** — `exposeWeb`, `exposeWebScraping`, `exposeWebSearch`, `exposeBrowser` with dashboard UI toggles and sub-toggles
+
+#### 8.7 — Dashboard UI
+
+- [x] Web Tools toggle (Globe icon) with collapsible scraping/search sub-toggles
+- [x] Browser Automation toggle (preview label)
+- [x] Health dot indicators (green/yellow/red) per external server card with latency tooltip
+- [x] Credentials section per server (key listing with masked values, add/delete forms)
+- [ ] Web scraper configuration panel
+- [ ] Browser automation session manager
+- [ ] Extraction history and results viewer
+
+### Integration Points
+
+| Component | Integration |
+|-----------|-------------|
+| MCP Tools | New `web-tools.ts` module |
+| Dashboard | New "Web Intelligence" tab |
+| Brain | Store scraped knowledge |
+| Code Execution | Browser sessions in sandbox |
+
+### Pricing Tiers
+
+| Tier | Features | Cost |
+|------|----------|------|
+| Free | 100 searches, basic scraping | Included |
+| Pro | Full browser automation, unlimited | API-based |
+| Enterprise | Custom proxies, deduped data | Custom |
+
+### Success Metrics
+
+| Metric | Target |
+|--------|--------|
+| Scraping success rate | >95% |
+| Page load time (avg) | <3s |
+| Browser automation reliability | >90% |
 
 ---
 
 ## Phase 6: Cognitive Architecture
 
-**Status**: Planned | **ADRs**: 031–036
+**Status**: Complete (6.1a, 6.1b, 6.2, 6.3, 6.4a, 6.4b, 6.5 Complete) | **ADRs**: 031–037
 **Inspired by**: Comparative analysis with [agent-zero](https://github.com/agent0ai/agent-zero) cognitive patterns
 
 ```
@@ -206,13 +503,13 @@ Upgrade the Brain from keyword/category-based lookups to vector-based semantic s
 - **Retrieval**: Cosine similarity with configurable thresholds, metadata filtering via existing Brain query patterns
 
 **Deliverables**:
-- [ ] Embedding provider abstraction (local + API)
-- [ ] FAISS vector store adapter
-- [ ] Qdrant vector store adapter
-- [ ] BrainStorage extension for vector-indexed memories and knowledge
-- [ ] Migration path for existing Brain data
-- [ ] Configuration in `secureyeoman.yaml` under `brain.vector`
-- [ ] Dashboard UI for similarity search exploration
+- [x] Embedding provider abstraction (local + API)
+- [x] FAISS vector store adapter
+- [x] Qdrant vector store adapter
+- [x] BrainStorage extension for vector-indexed memories and knowledge
+- [x] Migration path for existing Brain data
+- [x] Configuration in `secureyeoman.yaml` under `brain.vector`
+- [x] Dashboard UI for similarity search exploration
 
 #### 6.1b — LLM-Powered Memory Consolidation — [ADR 032](../adr/032-memory-consolidation.md)
 
@@ -227,12 +524,12 @@ Prevent memory bloat through intelligent deduplication — an LLM analyzes simil
 - **Actions**: MERGE, REPLACE, KEEP_SEPARATE, UPDATE, SKIP — decided by utility LLM call
 
 **Deliverables**:
-- [ ] ConsolidationManager with on-save quick check
-- [ ] Scheduled deep consolidation job (configurable interval)
-- [ ] LLM consolidation prompt templates
-- [ ] Settings UI for schedule configuration
-- [ ] Audit trail entries for all consolidation actions
-- [ ] Metrics: consolidation runs, merges performed, memory count trends
+- [x] ConsolidationManager with on-save quick check
+- [x] Scheduled deep consolidation job (configurable interval)
+- [x] LLM consolidation prompt templates
+- [x] Settings UI for schedule configuration
+- [x] Audit trail entries for all consolidation actions
+- [x] Metrics: consolidation runs, merges performed, memory count trends
 
 ---
 
@@ -251,13 +548,13 @@ Replace hard truncation with intelligent multi-tier history compression so the a
 - **Scope**: Per-conversation, per-platform — integrates with existing ConversationManager
 
 **Deliverables**:
-- [ ] HistoryCompressor with 3-tier compression pipeline
-- [ ] Token counting integration (reuse existing AI cost calculator)
-- [ ] LLM summarization prompts for topic/bulk compression
-- [ ] SQLite schema for persistent compressed history
-- [ ] ConversationManager integration
-- [ ] Configuration: tier allocation percentages, max tokens per tier
-- [ ] Dashboard: conversation history viewer with compression indicators
+- [x] HistoryCompressor with 3-tier compression pipeline
+- [x] Token counting integration (reuse existing AI cost calculator)
+- [x] LLM summarization prompts for topic/bulk compression
+- [x] SQLite schema for persistent compressed history
+- [x] ConversationManager integration
+- [x] Configuration: tier allocation percentages, max tokens per tier
+- [x] Dashboard: conversation history viewer with compression indicators
 
 ---
 
@@ -276,14 +573,14 @@ Enable the primary agent to spawn subordinate agents with specialized personas f
 - **Resource control**: Sub-agents inherit parent's RBAC scope (cannot escalate), with per-agent token budgets
 
 **Deliverables**:
-- [ ] SubAgentManager: spawn, monitor, collect results
-- [ ] Agent profile definitions (Markdown prompt files per profile)
-- [ ] Default profiles: researcher, coder, analyst, summarizer
-- [ ] Context isolation and sealing mechanism
-- [ ] Token budget tracking per sub-agent
-- [ ] RBAC inheritance and delegation rules
-- [ ] Dashboard: sub-agent execution tree visualization
-- [ ] MCP tools: `delegate_task`, `list_sub_agents`, `get_delegation_result`
+- [x] SubAgentManager: spawn, monitor, collect results
+- [x] Agent profile definitions (database-stored profiles with system prompts)
+- [x] Default profiles: researcher, coder, analyst, summarizer
+- [x] Context isolation and sealing mechanism
+- [x] Token budget tracking per sub-agent
+- [x] RBAC inheritance and delegation rules
+- [x] Dashboard: sub-agent execution tree visualization
+- [x] MCP tools: `delegate_task`, `list_sub_agents`, `get_delegation_result`
 
 ---
 
@@ -314,13 +611,13 @@ Expose 20+ lifecycle hooks that let users inject custom logic at key stages with
 | Security | `auth_success`, `auth_failure`, `rate_limit_hit` |
 
 **Deliverables**:
-- [ ] ExtensionManager with filesystem discovery and loading
-- [ ] Hook registry with typed signatures per hook point
-- [ ] EventEmitter integration for lightweight subscribers
-- [ ] Webhook dispatch for external hook consumers
-- [ ] User extension directory support with override semantics
-- [ ] Documentation: hook catalog, extension authoring guide
-- [ ] Example extensions: logging enhancer, custom memory filter, Slack notifier
+- [x] ExtensionManager with filesystem discovery and loading
+- [x] Hook registry with typed signatures per hook point
+- [x] EventEmitter integration for lightweight subscribers
+- [x] Webhook dispatch for external hook consumers
+- [x] User extension directory support with override semantics
+- [x] Documentation: hook catalog, extension authoring guide
+- [x] Example extensions: logging enhancer, custom memory filter, Slack notifier
 
 #### 6.4b — Sandboxed Code Execution Tool — [ADR 036](../adr/036-sandboxed-code-execution.md)
 
@@ -339,14 +636,46 @@ Let the agent write and execute code (Python, Node.js, shell) within the existin
 - **Limits**: Configurable max execution time (default 180s), max output size (default 1MB), memory limits via existing sandbox config
 
 **Deliverables**:
-- [ ] CodeExecutionTool with multi-runtime support
-- [ ] Approval flow: dashboard prompt for per-execution approval when autoApprove is off
-- [ ] Persistent session manager (session pool per conversation)
-- [ ] Output streaming to dashboard via WebSocket
-- [ ] Streaming secrets filter for code output (prevent API key leakage in stdout)
-- [ ] MCP tools: `execute_code`, `list_sessions`, `kill_session`
-- [ ] Configuration schema under `security.codeExecution`
-- [ ] Audit trail entries for all code executions (input code + output captured)
+- [x] CodeExecutionTool with multi-runtime support
+- [x] Approval flow: dashboard prompt for per-execution approval when autoApprove is off
+- [x] Persistent session manager (session pool per conversation)
+- [x] Output streaming to dashboard via WebSocket
+- [x] Streaming secrets filter for code output (prevent API key leakage in stdout)
+- [x] MCP tools: `execute_code`, `list_sessions`, `kill_session`
+- [x] Configuration schema under `security.codeExecution`
+- [x] Audit trail entries for all code executions (input code + output captured)
+
+---
+
+### Phase 6.5: A2A Protocol Interoperability — [ADR 037](../adr/037-a2a-protocol.md)
+
+**Priority**: Low | **Complexity**: High | **Depends on**: 6.3
+
+Enable FRIDAY instances to discover and delegate tasks to other FRIDAY (or compatible) agents over the network using a standardized Agent-to-Agent protocol.
+
+**Decisions**:
+- **Protocol**: Extend existing E2E encrypted comms layer with delegation-specific message types (task offer, accept, result, status)
+- **Discovery**: Static peer list (existing comms), mDNS for LAN, DNS-SD for WAN
+- **Capability negotiation**: Agents advertise available profiles and token budgets
+- **Security**: All A2A messages use existing X25519 + Ed25519 + AES-256-GCM encryption
+
+**Deliverables**:
+- [x] A2A message types (delegation request/response/status/result)
+- [x] Capability advertisement and negotiation protocol
+- [x] mDNS/DNS-SD agent discovery
+- [x] Remote delegation transport (extends SubAgentManager)
+- [x] Trust and authorization model for cross-instance delegation
+- [x] Dashboard: remote agent discovery and delegation UI
+
+#### Security Policy Dashboard
+
+- Security Settings page now includes policy toggles for high-risk capabilities:
+  - Sub-Agent Delegation toggle (existing) with A2A Networks as nested sub-item
+  - Lifecycle Extensions toggle (new card)
+  - Sandbox Execution toggle (new card, enabled by default)
+- Policy toggles stored in SecurityConfigSchema with default values: `allowSubAgents: true`, `allowA2A: false`, `allowExtensions: false`, `allowExecution: true`
+- Security Policy API (`GET/PATCH /api/v1/security/policy`) returns/accepts all 4 fields with immediate effect (no restart required)
+- Changes are audited in the cryptographic audit chain
 
 ---
 
@@ -358,13 +687,28 @@ Phase 6.1                  Phase 6.2              Phase 6.3              Phase 6
 │6.1a Vector│──────┬──────│6.2 History│           │6.4a Hooks│           │          │
 │  Memory   │      │      │ Compress  │           │          │           │          │
 └──────────┘      │      └──────────┘           └──────────┘           │          │
-                   │                                                     │          │
+                    │                                                     │          │
 ┌──────────┐      │      ┌──────────┐                                  │6.4b Code │
 │6.1b Memory│◄─────┘      │6.3 Sub-  │                                  │  Exec    │
 │  Consol.  │             │  Agents  │                                  │          │
 └──────────┘             └──────────┘                                  └──────────┘
 
   6.1b depends on 6.1a — all others are independent but ordered by value
+```
+
+---
+
+### Phase 7: Adaptive Intelligence
+
+```
+Phase 7.1           Phase 7.2           Phase 7.3
+Adaptive        Proactive         Multimodal
+Learning        Assistance        Input/Output
+    |                |                  |
+    v                v                  v
+[Feedback     ] -> [Triggers    ] -> [Vision     ]
+[Preferences  ]    [Suggestions ]    [Voice      ]
+[Patterns     ]    [Rules Engine]    [Image Gen  ]
 ```
 
 ---
@@ -387,8 +731,68 @@ Phase 6.1                  Phase 6.2              Phase 6.3              Phase 6
 - ML-based anomaly detection
 - Mobile app
 - Browser automation agent (Playwright/Puppeteer with vision model)
-- A2A protocol interoperability (after sub-agent delegation proves out)
 - ChromaDB as additional vector backend option
+
+---
+
+## Phase 7: Adaptive Intelligence
+
+**Status**: Planned
+
+#### 7.1 — Adaptive Learning Engine
+
+**Priority**: High | **Complexity**: High
+
+Enable FRIDAY to learn from interactions and improve its understanding of user preferences, working patterns, and communication styles over time.
+
+**Decisions**:
+- **Learning approach**: Implicit (behavioral patterns) + Explicit (user feedback/ratings)
+- **Feedback mechanisms**: Thumbs up/down on responses, preference prompts, correction commands
+- **Pattern storage**: Extend Brain with new memory types for user preferences,习惯, interaction styles
+- **Adaptation scope**: Response formatting, tool selection, timing, verbosity, persona adjustments
+
+**Deliverables**:
+- [ ] Feedback collection system (inline ratings, explicit corrections)
+- [ ] User preference profile (stored in Brain, not in personality config)
+- [ ] Behavioral pattern analyzer (conversation style, response length, tool usage patterns)
+- [ ] Adaptive response tuning (modify response format/verbosity based on learned preferences)
+- [ ] Learning dashboard: show what FRIDAY has learned about the user
+- [ ] Privacy controls: user can view/export/clear learned preferences
+
+#### 7.2 — Proactive Assistance
+
+**Priority**: Medium | **Complexity**: Medium
+
+Enable FRIDAY to anticipate user needs and take initiative based on learned patterns and context.
+
+**Decisions**:
+- **Trigger conditions**: Configurable — time-based, event-based, pattern-based
+- **Notification channels**: All connected integrations (Slack, Discord, etc.)
+- **Approval flow**: User-configurable — auto-send, suggest first, or manual only
+
+**Deliverables**:
+- [ ] Proactive trigger system with rule engine
+- [ ] Suggestion queue in dashboard
+- [ ] Built-in proactive scenarios (daily standup reminders, weekly summaries, context-aware follow-ups)
+- [ ] MCP tools: `register_proactive_rule`, `list_proactive_rules`, `trigger_now`
+
+#### 7.3 — Multimodal Input/Output
+
+**Priority**: Medium | **Complexity**: High
+
+Expand beyond text to support images, voice, and potentially video for both input and output.
+
+**Decisions**:
+- **Vision input**: Image analysis via Claude Vision / GPT-4V / Gemini Vision
+- **Voice input**: Already implemented in dashboard (SpeechRecognition), integrate into core message loop
+- **Voice output**: Already implemented in dashboard (speechSynthesis), integrate into integrations
+- **Image generation**: Integration with DALL-E / Stable Diffusion for generating images in responses
+
+**Deliverables**:
+- [ ] Vision processing pipeline for inline images
+- [ ] Voice message transcription and response
+- [ ] Voice output for integration responses (TTS to audio attachments)
+- [ ] Image generation tool with DALL-E integration
 
 ---
 

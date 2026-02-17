@@ -22,7 +22,13 @@ export type DefaultModel = z.infer<typeof DefaultModelSchema>;
 
 // ─── Body Config (owns Heart) ───────────────────────────────
 
-export const BodyCapabilitySchema = z.enum(['vision', 'limb_movement', 'auditory', 'haptic']);
+export const BodyCapabilitySchema = z.enum([
+  'auditory',
+  'haptic',
+  'limb_movement',
+  'vision',
+  'vocalization',
+]);
 export type BodyCapability = z.infer<typeof BodyCapabilitySchema>;
 
 export const CreationConfigSchema = z
@@ -30,6 +36,9 @@ export const CreationConfigSchema = z
     skills: z.boolean().default(false),
     tasks: z.boolean().default(false),
     personalities: z.boolean().default(false),
+    subAgents: z.boolean().default(false),
+    customRoles: z.boolean().default(false),
+    roleAssignments: z.boolean().default(false),
     experiments: z.boolean().default(false),
   })
   .default({});
@@ -288,6 +297,64 @@ export type SoulConfig = z.infer<typeof SoulConfigSchema>;
 export const MemoryTypeSchema = z.enum(['episodic', 'semantic', 'procedural', 'preference']);
 export type MemoryType = z.infer<typeof MemoryTypeSchema>;
 
+export const VectorConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    provider: z.enum(['local', 'api', 'both']).default('local'),
+    backend: z.enum(['faiss', 'qdrant']).default('faiss'),
+    similarityThreshold: z.number().min(0).max(1).default(0.7),
+    maxResults: z.number().int().positive().max(100).default(10),
+    local: z
+      .object({
+        model: z.string().default('all-MiniLM-L6-v2'),
+      })
+      .default({}),
+    api: z
+      .object({
+        provider: z.enum(['openai', 'gemini']).default('openai'),
+        model: z.string().default('text-embedding-3-small'),
+      })
+      .default({}),
+    faiss: z
+      .object({
+        persistDir: z.string().default('~/.friday/vector/faiss'),
+      })
+      .default({}),
+    qdrant: z
+      .object({
+        url: z.string().default('http://localhost:6333'),
+        collection: z.string().default('friday_memories'),
+      })
+      .default({}),
+  })
+  .default({});
+
+export type VectorConfig = z.infer<typeof VectorConfigSchema>;
+
+export const ConsolidationConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    schedule: z.string().default('0 2 * * *'),
+    quickCheck: z
+      .object({
+        autoDedupThreshold: z.number().min(0).max(1).default(0.95),
+        flagThreshold: z.number().min(0).max(1).default(0.85),
+      })
+      .default({}),
+    deepConsolidation: z
+      .object({
+        replaceThreshold: z.number().min(0).max(1).default(0.9),
+        batchSize: z.number().int().positive().default(50),
+        timeoutMs: z.number().int().positive().default(300000),
+        dryRun: z.boolean().default(false),
+      })
+      .default({}),
+    model: z.string().nullable().default(null),
+  })
+  .default({});
+
+export type ConsolidationConfig = z.infer<typeof ConsolidationConfigSchema>;
+
 export const BrainConfigSchema = z
   .object({
     enabled: z.boolean().default(true),
@@ -296,6 +363,8 @@ export const BrainConfigSchema = z
     memoryRetentionDays: z.number().min(1).max(365).default(90),
     importanceDecayRate: z.number().min(0).max(1).default(0.01),
     contextWindowMemories: z.number().min(0).max(50).default(10),
+    vector: VectorConfigSchema,
+    consolidation: ConsolidationConfigSchema,
   })
   .default({});
 

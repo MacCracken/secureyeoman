@@ -136,6 +136,7 @@ export async function createTestGateway(stack: TestStack): Promise<FastifyInstan
   registerAuthRoutes(app, {
     authService: stack.authService,
     rateLimiter: stack.rateLimiter,
+    rbac: stack.rbac,
   });
 
   // Health

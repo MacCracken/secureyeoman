@@ -33,6 +33,7 @@ import {
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { Skill, SkillCreate, Personality } from '../types';
+import { sanitizeText } from '../utils/sanitize';
 
 type TabType = 'my-skills' | 'marketplace';
 
@@ -395,7 +396,7 @@ function MySkillsTab() {
                       </span>
                     )}
                   </div>
-                  <p className="text-sm text-muted-foreground mt-1">{skill.description}</p>
+                  <p className="text-sm text-muted-foreground mt-1">{sanitizeText(skill.description)}</p>
                   {(skill.triggerPatterns || []).length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-2">
                       {(skill.triggerPatterns || []).map((p, i) => (
@@ -596,7 +597,7 @@ function MarketplaceTab() {
 
               {/* Description */}
               <p className="text-xs text-muted-foreground mb-4 line-clamp-3 flex-1">
-                {skill.description}
+                {sanitizeText(skill.description)}
               </p>
 
               {/* Footer */}

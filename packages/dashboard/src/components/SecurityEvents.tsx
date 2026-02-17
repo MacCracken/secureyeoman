@@ -25,6 +25,7 @@ import {
 import { fetchSecurityEvents, verifyAuditChain } from '../api/client';
 import { Link } from 'react-router-dom';
 import type { MetricsSnapshot, SecurityEvent } from '../types';
+import { sanitizeText } from '../utils/sanitize';
 
 interface SecurityEventsProps {
   metrics?: MetricsSnapshot;
@@ -300,7 +301,7 @@ function EventRow({ event, isAcknowledged, onAcknowledge, onInvestigate }: Event
           {SEVERITY_ICONS[event.severity]}
           <div className="min-w-0">
             <p className="font-medium">{event.type.replace(/_/g, ' ')}</p>
-            <p className="text-sm text-muted-foreground">{event.message}</p>
+            <p className="text-sm text-muted-foreground">{sanitizeText(event.message)}</p>
             {event.userId && (
               <p className="text-xs text-muted-foreground mt-1">User: {event.userId}</p>
             )}
@@ -388,7 +389,7 @@ function InvestigationPanel({ event, onClose }: { event: SecurityEvent; onClose:
         {/* Full Message */}
         <div>
           <p className="text-xs text-muted-foreground mb-1">Message</p>
-          <div className="bg-muted/30 rounded p-3 text-sm">{event.message}</div>
+          <div className="bg-muted/30 rounded p-3 text-sm">{sanitizeText(event.message)}</div>
         </div>
 
         {/* Timeline hint */}

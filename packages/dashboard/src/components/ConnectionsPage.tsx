@@ -28,6 +28,10 @@ import {
   HelpCircle,
   ArrowRightLeft,
   Loader2,
+  Send,
+  Hash,
+  Smartphone,
+  Users,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -47,6 +51,7 @@ import {
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo } from '../types';
+import { sanitizeText } from '../utils/sanitize';
 
 const LOCAL_MCP_NAME = 'YEOMAN MCP';
 
@@ -104,7 +109,7 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
   telegram: {
     name: 'Telegram',
     description: 'Connect to Telegram Bot API for messaging',
-    icon: <MessageCircle className="w-6 h-6" />,
+    icon: <Send className="w-6 h-6" />,
     fields: [...BASE_FIELDS, { ...TOKEN_FIELD, helpText: 'Get from @BotFather on Telegram' }],
     setupSteps: [
       'Open Telegram and search for @BotFather',
@@ -131,7 +136,7 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
   slack: {
     name: 'Slack',
     description: 'Connect to Slack workspaces via Bot API',
-    icon: <Mail className="w-6 h-6" />,
+    icon: <Hash className="w-6 h-6" />,
     fields: [
       ...BASE_FIELDS,
       { ...TOKEN_FIELD, helpText: 'Bot token (xoxb-...) from Slack App' },
@@ -224,16 +229,46 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
   },
   email: {
     name: 'Email (IMAP/SMTP)',
-    description: 'Connect any email provider via IMAP/SMTP (ProtonMail Bridge, Outlook, Yahoo, Fastmail, etc.)',
+    description:
+      'Connect any email provider via IMAP/SMTP (ProtonMail Bridge, Outlook, Yahoo, Fastmail, etc.)',
     icon: <Mail className="w-6 h-6" />,
     fields: [
       ...BASE_FIELDS,
-      { key: 'imapHost', label: 'IMAP Host', type: 'text', placeholder: '127.0.0.1', helpText: 'IMAP server hostname' },
-      { key: 'imapPort', label: 'IMAP Port', type: 'text', placeholder: '993', helpText: 'IMAP port (993 for TLS, 143 for plain)' },
-      { key: 'smtpHost', label: 'SMTP Host', type: 'text', placeholder: '127.0.0.1', helpText: 'SMTP server hostname' },
-      { key: 'smtpPort', label: 'SMTP Port', type: 'text', placeholder: '465', helpText: 'SMTP port (465 for TLS, 587 for STARTTLS)' },
+      {
+        key: 'imapHost',
+        label: 'IMAP Host',
+        type: 'text',
+        placeholder: '127.0.0.1',
+        helpText: 'IMAP server hostname',
+      },
+      {
+        key: 'imapPort',
+        label: 'IMAP Port',
+        type: 'text',
+        placeholder: '993',
+        helpText: 'IMAP port (993 for TLS, 143 for plain)',
+      },
+      {
+        key: 'smtpHost',
+        label: 'SMTP Host',
+        type: 'text',
+        placeholder: '127.0.0.1',
+        helpText: 'SMTP server hostname',
+      },
+      {
+        key: 'smtpPort',
+        label: 'SMTP Port',
+        type: 'text',
+        placeholder: '465',
+        helpText: 'SMTP port (465 for TLS, 587 for STARTTLS)',
+      },
       { key: 'username', label: 'Username', type: 'text', placeholder: 'user@example.com' },
-      { key: 'password', label: 'Password', type: 'password', placeholder: 'Password or app-specific password' },
+      {
+        key: 'password',
+        label: 'Password',
+        type: 'password',
+        placeholder: 'Password or app-specific password',
+      },
     ],
     setupSteps: [
       'Enter your mail server IMAP and SMTP connection details',
@@ -263,6 +298,119 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'Create a Service Account and download JSON key',
       'Configure Chat API: add bot, set permissions',
       'Copy the Space ID from the Chat space URL',
+    ],
+  },
+  whatsapp: {
+    name: 'WhatsApp',
+    description: 'Connect to WhatsApp via WhatsApp Web Protocol',
+    icon: <Smartphone className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'sessionDir',
+        label: 'Session Directory',
+        type: 'text',
+        placeholder: 'Optional custom session path',
+        helpText: 'Directory to store session data (default: .sessions/whatsapp)',
+      },
+    ],
+    setupSteps: [
+      'Start the integration',
+      'Scan the QR code with your phone (WhatsApp > Settings > Linked Devices)',
+      'Keep your phone connected for initial setup',
+      'Session will be saved for future connections',
+    ],
+  },
+  signal: {
+    name: 'Signal',
+    description: 'Connect to Signal via signal-cli or bot gateway',
+    icon: <Radio className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'signalCliUrl',
+        label: 'Signal CLI URL',
+        type: 'text',
+        placeholder: 'http://localhost:8080',
+        helpText: 'URL of signal-cli REST API server',
+      },
+      {
+        key: 'signalCliToken',
+        label: 'Signal CLI Token',
+        type: 'password',
+        placeholder: 'Optional API token',
+        helpText: 'Token for signal-cli REST API authentication',
+      },
+      {
+        key: 'webhookSecret',
+        label: 'Webhook Secret',
+        type: 'password',
+        placeholder: 'Optional webhook verification',
+        helpText: 'Secret to verify incoming webhook messages',
+      },
+    ],
+    setupSteps: [
+      'Run signal-cli in daemon mode: signal-cli -u +1234567890 daemon',
+      'Or use a signal bot gateway service',
+      'Configure the REST API URL above',
+      'For inbound: configure webhook endpoint /api/v1/webhooks/signal',
+    ],
+  },
+  teams: {
+    name: 'Microsoft Teams',
+    description: 'Connect to Microsoft Teams via Bot Framework',
+    icon: <Users className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'botId',
+        label: 'Bot ID (Application ID)',
+        type: 'text',
+        placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+        helpText: 'Azure AD Application ID',
+      },
+      {
+        key: 'botPassword',
+        label: 'Bot Password',
+        type: 'password',
+        placeholder: 'Client Secret',
+        helpText: 'Application client secret from Azure Portal',
+      },
+      {
+        key: 'tenantId',
+        label: 'Tenant ID',
+        type: 'text',
+        placeholder: 'Optional for multi-tenant',
+        helpText: 'Azure tenant ID (optional for single-tenant)',
+      },
+    ],
+    setupSteps: [
+      'Go to Azure Portal > App registrations',
+      'Create a new application',
+      'Add Messaging endpoint (ngrok recommended for dev)',
+      'Create Client Secret in Certificates & secrets',
+      'Register bot in Bot Framework Portal',
+      'Add Teams channel',
+    ],
+  },
+  imessage: {
+    name: 'iMessage',
+    description: 'Connect to macOS Messages.app (macOS only)',
+    icon: <Smartphone className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'pollIntervalMs',
+        label: 'Poll Interval (ms)',
+        type: 'text',
+        placeholder: '5000',
+        helpText: 'How often to check for new messages (default: 5000)',
+      },
+    ],
+    setupSteps: [
+      'Grant Full Disk Access to FRIDAY in System Settings > Privacy & Security',
+      'Enable Messages.app in Accessibility (if needed)',
+      'Start the integration on macOS',
     ],
   },
 };
@@ -633,7 +781,9 @@ export function ConnectionsPage() {
 
       {activeTab === 'email' && (
         <EmailTab
-          integrations={integrations.filter((i) => i.platform === 'gmail' || i.platform === 'email')}
+          integrations={integrations.filter(
+            (i) => i.platform === 'gmail' || i.platform === 'email'
+          )}
           onStart={startIntegrationMut.mutate}
           onStop={stopIntegrationMut.mutate}
           onDelete={(id) => {
@@ -944,8 +1094,11 @@ function IntegrationCard({
             )}
           </div>
           {integration.errorMessage && (
-            <p className="text-xs text-red-400 mt-1 truncate" title={integration.errorMessage}>
-              {integration.errorMessage}
+            <p
+              className="text-xs text-red-400 mt-1 truncate"
+              title={sanitizeText(integration.errorMessage ?? '')}
+            >
+              {sanitizeText(integration.errorMessage ?? '')}
             </p>
           )}
           {integration.status === 'error' && (
@@ -1462,6 +1615,40 @@ function LocalServerCard({
                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
               />
             </label>
+            <label className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors">
+              <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-medium">Web Tools</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={featureConfig.exposeWeb}
+                onChange={(e) => {
+                  onFeatureToggle({ exposeWeb: e.target.checked });
+                }}
+                disabled={isFeatureToggling}
+                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+              />
+            </label>
+            <label
+              className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+              title="Browser automation (requires Playwright or Puppeteer — coming soon)"
+            >
+              <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-medium">Browser Automation</span>
+                <span className="text-[10px] text-muted-foreground ml-1">(preview)</span>
+              </div>
+              <input
+                type="checkbox"
+                checked={featureConfig.exposeBrowser}
+                onChange={(e) => {
+                  onFeatureToggle({ exposeBrowser: e.target.checked });
+                }}
+                disabled={isFeatureToggling}
+                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+              />
+            </label>
           </div>
         </div>
       )}
@@ -1470,7 +1657,8 @@ function LocalServerCard({
         {featureConfig && server.enabled && (
           <p className="text-[10px] text-muted-foreground flex items-center gap-1">
             <Info className="w-2.5 h-2.5" />
-            Feature toggles control which tool categories are available. To grant a personality access, edit the personality and enable MCP connections.
+            Feature toggles control which tool categories are available. To grant a personality
+            access, edit the personality and enable MCP connections.
           </p>
         )}
         <button
@@ -1746,8 +1934,8 @@ function EmailTab({
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted">
-        Connect email accounts for direct email integration. Friday can read incoming emails
-        and optionally send replies on your behalf. Supports Gmail (OAuth) and any IMAP/SMTP provider.
+        Connect email accounts for direct email integration. Friday can read incoming emails and
+        optionally send replies on your behalf. Supports Gmail (OAuth) and any IMAP/SMTP provider.
       </p>
 
       {oauthError && (
@@ -1863,18 +2051,14 @@ function EmailTab({
                   value={gmailForm.labelName}
                   onChange={(e) => setGmailForm((f) => ({ ...f, labelName: e.target.value }))}
                   placeholder={
-                    gmailForm.labelFilter === 'custom'
-                      ? `friday.${oauthEmail}`
-                      : 'e.g. Friday'
+                    gmailForm.labelFilter === 'custom' ? `friday.${oauthEmail}` : 'e.g. Friday'
                   }
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />
               </div>
             )}
 
-            {claimError && (
-              <p className="text-xs text-red-400">{claimError}</p>
-            )}
+            {claimError && <p className="text-xs text-red-400">{claimError}</p>}
 
             <div className="flex gap-2">
               <button
@@ -2089,7 +2273,9 @@ function EmailTab({
                       <input
                         type="checkbox"
                         checked={!imapForm.rejectUnauthorized}
-                        onChange={(e) => setImapForm((f) => ({ ...f, rejectUnauthorized: !e.target.checked }))}
+                        onChange={(e) =>
+                          setImapForm((f) => ({ ...f, rejectUnauthorized: !e.target.checked }))
+                        }
                         className="w-4 h-4 rounded accent-primary"
                       />
                     </label>
@@ -2104,7 +2290,9 @@ function EmailTab({
                       <input
                         type="checkbox"
                         checked={imapForm.enableRead}
-                        onChange={(e) => setImapForm((f) => ({ ...f, enableRead: e.target.checked }))}
+                        onChange={(e) =>
+                          setImapForm((f) => ({ ...f, enableRead: e.target.checked }))
+                        }
                         className="w-4 h-4 rounded accent-primary"
                       />
                     </label>
@@ -2116,20 +2304,26 @@ function EmailTab({
                       <input
                         type="checkbox"
                         checked={imapForm.enableSend}
-                        onChange={(e) => setImapForm((f) => ({ ...f, enableSend: e.target.checked }))}
+                        onChange={(e) =>
+                          setImapForm((f) => ({ ...f, enableSend: e.target.checked }))
+                        }
                         className="w-4 h-4 rounded accent-primary"
                       />
                     </label>
                   </div>
 
-                  {imapError && (
-                    <p className="text-xs text-red-400">{imapError}</p>
-                  )}
+                  {imapError && <p className="text-xs text-red-400">{imapError}</p>}
 
                   <div className="flex gap-2">
                     <button
                       type="submit"
-                      disabled={!imapForm.displayName || !imapForm.imapHost || !imapForm.username || !imapForm.password || imapCreateMut.isPending}
+                      disabled={
+                        !imapForm.displayName ||
+                        !imapForm.imapHost ||
+                        !imapForm.username ||
+                        !imapForm.password ||
+                        imapCreateMut.isPending
+                      }
                       className="btn btn-primary text-xs px-3 py-1.5"
                     >
                       {imapCreateMut.isPending ? (
@@ -2160,7 +2354,9 @@ function EmailTab({
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
                       <h3 className="font-medium text-sm">Email (IMAP/SMTP)</h3>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${availablePlatforms.has('email') ? 'bg-green-500/10 text-green-400' : 'bg-surface text-muted'}`}>
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full ${availablePlatforms.has('email') ? 'bg-green-500/10 text-green-400' : 'bg-surface text-muted'}`}
+                      >
                         {availablePlatforms.has('email') ? 'Available' : 'Coming Soon'}
                       </span>
                     </div>
