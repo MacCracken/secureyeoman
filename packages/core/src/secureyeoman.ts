@@ -1087,14 +1087,37 @@ export class SecureYeoman {
     totalEntries: number;
     chainValid: boolean;
     lastVerification?: number;
+    oldestEntry?: number;
     dbSizeEstimateMb?: number;
   }> {
     this.ensureInitialized();
     const stats = await this.auditChain!.getStats();
+
+    let dbSizeEstimateMb: number | undefined;
+    let oldestEntry: number | undefined;
+    try {
+      const pool = getPool();
+      const [sizeResult, oldestResult] = await Promise.all([
+        pool.query<{ size: string }>(
+          'SELECT pg_database_size(current_database()) AS size'
+        ),
+        pool.query<{ timestamp: number }>(
+          'SELECT timestamp FROM audit.entries ORDER BY timestamp ASC LIMIT 1'
+        ),
+      ]);
+      const bytes = parseInt(sizeResult.rows[0]?.size ?? '0', 10);
+      dbSizeEstimateMb = bytes / (1024 * 1024);
+      oldestEntry = oldestResult.rows[0]?.timestamp;
+    } catch {
+      // Pool may not be available (e.g. SQLite-only mode)
+    }
+
     return {
       totalEntries: stats.entriesCount,
       chainValid: stats.chainValid,
       lastVerification: stats.lastVerification,
+      oldestEntry,
+      dbSizeEstimateMb,
     };
   }
 
