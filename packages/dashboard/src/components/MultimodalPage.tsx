@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   Eye,
@@ -14,7 +14,7 @@ import {
   ChevronRight,
   Filter,
 } from 'lucide-react';
-import { fetchMultimodalJobs, fetchMultimodalConfig } from '../api/client';
+import { fetchMultimodalJobs, fetchSecurityPolicy } from '../api/client';
 
 type JobType = 'vision' | 'stt' | 'tts' | 'image_gen';
 type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
@@ -54,15 +54,15 @@ const STATUS_STYLES: Record<JobStatus, { color: string; icon: React.ReactNode }>
 
 const PAGE_SIZE = 20;
 
-export function MultimodalPage() {
+export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
   const [typeFilter, setTypeFilter] = useState<JobType | ''>('');
   const [statusFilter, setStatusFilter] = useState<JobStatus | ''>('');
   const [page, setPage] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const { data: config } = useQuery({
-    queryKey: ['multimodalConfig'],
-    queryFn: fetchMultimodalConfig,
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
     staleTime: 30000,
   });
 
@@ -82,26 +82,39 @@ export function MultimodalPage() {
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / PAGE_SIZE);
 
-  const enabled = config?.enabled ?? false;
+  const enabled = securityPolicy?.allowMultimodal ?? false;
 
   // Stats
   const completedCount = jobs.filter((j) => j.status === 'completed').length;
   const failedCount = jobs.filter((j) => j.status === 'failed').length;
 
+  if (!enabled) {
+    return (
+      <div className="space-y-4 sm:space-y-6">
+        {!embedded && (
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold">Multimodal</h1>
+            <p className="text-sm text-muted-foreground mt-1">
+              Vision, speech, and image generation job viewer
+            </p>
+          </div>
+        )}
+        <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-3 text-sm text-yellow-600 dark:text-yellow-400">
+          Multimodal processing is currently disabled. Enable it in Settings &gt; Security Policy.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-xl sm:text-2xl font-bold">Multimodal</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Vision, speech, and image generation job viewer
-        </p>
-      </div>
-
-      {/* Status Banner */}
-      {!enabled && (
-        <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-3 text-sm text-yellow-600 dark:text-yellow-400">
-          Multimodal processing is currently disabled. Enable it in Settings &gt; Security Policy.
+      {!embedded && (
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold">Multimodal</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            Vision, speech, and image generation job viewer
+          </p>
         </div>
       )}
 
@@ -134,7 +147,7 @@ export function MultimodalPage() {
                 setTypeFilter(e.target.value as JobType | '');
                 setPage(0);
               }}
-              className="input text-sm py-1.5 w-auto"
+              className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-40"
             >
               <option value="">All Types</option>
               <option value="vision">Vision</option>
@@ -149,7 +162,7 @@ export function MultimodalPage() {
                 setStatusFilter(e.target.value as JobStatus | '');
                 setPage(0);
               }}
-              className="input text-sm py-1.5 w-auto"
+              className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-40"
             >
               <option value="">All Statuses</option>
               <option value="pending">Pending</option>
@@ -187,9 +200,8 @@ export function MultimodalPage() {
                     const expanded = expandedId === job.id;
                     const status = STATUS_STYLES[job.status] ?? STATUS_STYLES.pending;
                     return (
-                      <>
+                      <React.Fragment key={job.id}>
                         <tr
-                          key={job.id}
                           className="border-b hover:bg-muted/30 cursor-pointer transition-colors"
                           onClick={() => setExpandedId(expanded ? null : job.id)}
                         >
@@ -251,7 +263,7 @@ export function MultimodalPage() {
                             </td>
                           </tr>
                         )}
-                      </>
+                      </React.Fragment>
                     );
                   })}
                 </tbody>
