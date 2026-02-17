@@ -42,7 +42,7 @@ fi
 # Check server is reachable
 if ! curl -sf "$BASE_URL/health" >/dev/null 2>&1; then
   echo "WARNING: Server at $BASE_URL is not reachable."
-  echo "Start SecureYeoman first: npm run dev --workspace=@friday/core"
+  echo "Start SecureYeoman first: npm run dev --workspace=@secureyeoman/core"
   exit 1
 fi
 

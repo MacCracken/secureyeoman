@@ -18,7 +18,7 @@ import { type RateLimiterLike, createRateLimiter } from '../security/rate-limite
 import { createAuthHook, createRbacHook } from '../gateway/auth-middleware.js';
 import { registerAuthRoutes } from '../gateway/auth-routes.js';
 import type { SecureLogger } from '../logging/logger.js';
-import type { SecurityConfig } from '@friday/shared';
+import type { SecurityConfig } from '@secureyeoman/shared';
 import { sha256 } from '../utils/crypto.js';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 

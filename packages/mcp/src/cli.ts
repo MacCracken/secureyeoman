@@ -22,14 +22,14 @@ async function main(): Promise<void> {
   const config = loadConfig();
 
   if (!config.enabled) {
-    console.log('[friday-mcp] MCP service is disabled (MCP_ENABLED=false)');
+    console.log('[secureyeoman-mcp] MCP service is disabled (MCP_ENABLED=false)');
     process.exit(0);
   }
 
   // stdio transport mode — no HTTP server needed
   if (config.transport === 'stdio') {
     if (!config.tokenSecret) {
-      console.error('[friday-mcp] SECUREYEOMAN_TOKEN_SECRET is required');
+      console.error('[secureyeoman-mcp] SECUREYEOMAN_TOKEN_SECRET is required');
       process.exit(1);
     }
 
@@ -40,7 +40,7 @@ async function main(): Promise<void> {
     });
 
     const mcpServer = new McpServer({
-      name: 'friday-mcp',
+      name: 'secureyeoman-mcp',
       version: '1.5.1',
     });
 
@@ -60,13 +60,13 @@ async function main(): Promise<void> {
 
     const transport = new StdioServerTransport();
     await mcpServer.server.connect(transport);
-    console.error('[friday-mcp] stdio transport started');
+    console.error('[secureyeoman-mcp] stdio transport started');
     return;
   }
 
   // HTTP-based transport modes (streamable-http, sse)
   if (!config.tokenSecret) {
-    console.error('[friday-mcp] SECUREYEOMAN_TOKEN_SECRET is required');
+    console.error('[secureyeoman-mcp] SECUREYEOMAN_TOKEN_SECRET is required');
     process.exit(1);
   }
 
@@ -79,7 +79,7 @@ async function main(): Promise<void> {
 
   // Graceful shutdown
   const shutdown = async (signal: string) => {
-    console.log(`[friday-mcp] ${signal} received, shutting down...`);
+    console.log(`[secureyeoman-mcp] ${signal} received, shutting down...`);
     await server.stop();
     process.exit(0);
   };
@@ -90,15 +90,15 @@ async function main(): Promise<void> {
   try {
     await server.start();
     console.log(
-      `[friday-mcp] MCP service started on ${config.host}:${config.port} (${config.transport})`
+      `[secureyeoman-mcp] MCP service started on ${config.host}:${config.port} (${config.transport})`
     );
   } catch (err) {
-    console.error('[friday-mcp] Failed to start:', err instanceof Error ? err.message : err);
+    console.error('[secureyeoman-mcp] Failed to start:', err instanceof Error ? err.message : err);
     process.exit(1);
   }
 }
 
 main().catch((err: unknown) => {
-  console.error('[friday-mcp] Fatal:', err);
+  console.error('[secureyeoman-mcp] Fatal:', err);
   process.exit(1);
 });

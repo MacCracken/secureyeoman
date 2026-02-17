@@ -2,7 +2,7 @@
  * MCP Health Monitor — periodic health checks for external MCP servers.
  */
 
-import type { McpServerHealth } from '@friday/shared';
+import type { McpServerHealth } from '@secureyeoman/shared';
 import type { McpStorage } from './storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 

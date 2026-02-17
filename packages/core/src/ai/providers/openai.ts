@@ -15,7 +15,7 @@ import type {
   TokenUsage,
   Tool,
   AIProviderName,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import { BaseProvider, type ProviderConfig } from './base.js';
 import {
   RateLimitError,

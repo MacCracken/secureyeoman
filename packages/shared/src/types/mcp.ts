@@ -73,7 +73,7 @@ export const McpServerCreateSchema = McpServerConfigSchema.omit({
 });
 export type McpServerCreate = z.infer<typeof McpServerCreateSchema>;
 
-// ─── MCP Service Config (for @friday/mcp package) ──────────
+// ─── MCP Service Config (for @secureyeoman/mcp package) ──────────
 
 export const McpServiceConfigSchema = z.object({
   enabled: z.boolean().default(true),

@@ -8,7 +8,7 @@ export { QdrantVectorStore, type QdrantStoreConfig } from './qdrant-store.js';
 export { VectorMemoryManager } from './manager.js';
 
 import type { VectorStore } from './types.js';
-import type { VectorConfig } from '@friday/shared';
+import type { VectorConfig } from '@secureyeoman/shared';
 import { FaissVectorStore } from './faiss-store.js';
 import { QdrantVectorStore } from './qdrant-store.js';
 

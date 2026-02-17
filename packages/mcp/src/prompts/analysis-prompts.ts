@@ -1,5 +1,5 @@
 /**
- * Analysis Prompts — friday:analyze-code, friday:review-security
+ * Analysis Prompts — secureyeoman:analyze-code, secureyeoman:review-security
  */
 
 import { z } from 'zod';
@@ -7,7 +7,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 export function registerAnalysisPrompts(server: McpServer): void {
   server.prompt(
-    'friday:analyze-code',
+    'secureyeoman:analyze-code',
     'Code analysis with security focus',
     {
       code: z.string().describe('Code to analyze'),
@@ -44,7 +44,7 @@ Please analyze the code for:
   );
 
   server.prompt(
-    'friday:review-security',
+    'secureyeoman:review-security',
     'Security review checklist',
     {
       target: z.string().describe('What to review (e.g., API endpoint, module, config)'),

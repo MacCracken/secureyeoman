@@ -346,13 +346,13 @@ export const VectorConfigSchema = z
       .default({}),
     faiss: z
       .object({
-        persistDir: z.string().default('~/.friday/vector/faiss'),
+        persistDir: z.string().default('~/.secureyeoman/vector/faiss'),
       })
       .default({}),
     qdrant: z
       .object({
         url: z.string().default('http://localhost:6333'),
-        collection: z.string().default('friday_memories'),
+        collection: z.string().default('secureyeoman_memories'),
       })
       .default({}),
   })
@@ -698,8 +698,8 @@ export const ExternalBrainConfigSchema = z
     syncKnowledge: z.boolean().default(true),
     /** Include frontmatter/metadata in exported markdown */
     includeFrontmatter: z.boolean().default(true),
-    /** Tag prefix for Obsidian tags (e.g. "friday/" → #friday/memory) */
-    tagPrefix: z.string().max(50).default('friday/'),
+    /** Tag prefix for Obsidian tags (e.g. "secureyeoman/" → #secureyeoman/memory) */
+    tagPrefix: z.string().max(50).default('secureyeoman/'),
   })
   .default({});
 

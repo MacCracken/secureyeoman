@@ -11,7 +11,7 @@
 
 import { readdirSync, existsSync, statSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import type { Platform } from '@friday/shared';
+import type { Platform } from '@secureyeoman/shared';
 import type { Integration } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { z } from 'zod';

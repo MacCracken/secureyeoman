@@ -16,7 +16,7 @@ import type {
   SkillFilter,
   BrainStats,
 } from './types.js';
-import type { Skill, SkillCreate, SkillUpdate } from '@friday/shared';
+import type { Skill, SkillCreate, SkillUpdate } from '@secureyeoman/shared';
 import { uuidv7 } from '../utils/crypto.js';
 
 // ── Row Types ────────────────────────────────────────────────

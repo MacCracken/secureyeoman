@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { MistralProvider } from './mistral.js';
-import type { AIRequest, ModelConfig } from '@friday/shared';
+import type { AIRequest, ModelConfig } from '@secureyeoman/shared';
 import { RateLimitError } from '../errors.js';
 
 const mockCreate = vi.fn();

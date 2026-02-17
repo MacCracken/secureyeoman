@@ -2,7 +2,7 @@
  * Workspace Storage — PostgreSQL persistence for team workspaces
  */
 
-import type { Workspace, WorkspaceCreate, WorkspaceMember } from '@friday/shared';
+import type { Workspace, WorkspaceCreate, WorkspaceMember } from '@secureyeoman/shared';
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 

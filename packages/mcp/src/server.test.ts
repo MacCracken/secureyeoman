@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { McpServiceServer } from './server.js';
 import { CoreApiClient } from './core-client.js';
-import type { McpServiceConfig } from '@friday/shared';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 
 function makeConfig(overrides?: Partial<McpServiceConfig>): McpServiceConfig {
   return {
@@ -51,7 +51,7 @@ describe('McpServiceServer', () => {
     // Health endpoint should work
     const res = await server.getApp().inject({ method: 'GET', url: '/health' });
     expect(res.statusCode).toBe(200);
-    expect(res.json().service).toBe('friday-mcp');
+    expect(res.json().service).toBe('secureyeoman-mcp');
 
     await server.stop();
   });

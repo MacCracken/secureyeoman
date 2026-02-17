@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { NotionIntegration } from './adapter.js';
-import type { IntegrationConfig } from '@friday/shared';
+import type { IntegrationConfig } from '@secureyeoman/shared';
 
 const mockFetch = vi.fn();
 

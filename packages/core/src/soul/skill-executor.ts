@@ -5,7 +5,7 @@
  * See ADR 021: Skill Actions Architecture
  */
 
-import type { Skill, SkillAction } from '@friday/shared';
+import type { Skill, SkillAction } from '@secureyeoman/shared';
 
 export interface ActionContext {
   sessionId: string;

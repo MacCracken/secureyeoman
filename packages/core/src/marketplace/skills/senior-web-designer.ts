@@ -4,7 +4,7 @@
  * and conversion rate optimization (CRO).
  */
 
-import type { MarketplaceSkill } from '@friday/shared';
+import type { MarketplaceSkill } from '@secureyeoman/shared';
 
 export const seniorWebDesignerSkill: Partial<MarketplaceSkill> = {
   name: 'Senior Web Designer',

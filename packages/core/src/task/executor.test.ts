@@ -9,7 +9,7 @@ import { InputValidator } from '../security/input-validator.js';
 import { RateLimiter } from '../security/rate-limiter.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { initializeRBAC } from '../security/rbac.js';
-import { TaskType } from '@friday/shared';
+import { TaskType } from '@secureyeoman/shared';
 
 const SIGNING_KEY = 'a'.repeat(64);
 

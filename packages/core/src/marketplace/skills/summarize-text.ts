@@ -3,7 +3,7 @@
  * Condenses long text into clear, concise summaries
  */
 
-import type { MarketplaceSkill } from '@friday/shared';
+import type { MarketplaceSkill } from '@secureyeoman/shared';
 
 export const summarizeTextSkill: Partial<MarketplaceSkill> = {
   name: 'Summarize Text',

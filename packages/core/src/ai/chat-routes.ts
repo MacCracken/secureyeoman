@@ -7,8 +7,8 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
-import type { AIRequest, Tool } from '@friday/shared';
-import type { McpToolDef } from '@friday/shared';
+import type { AIRequest, Tool } from '@secureyeoman/shared';
+import type { McpToolDef } from '@secureyeoman/shared';
 import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
 
 export interface ChatRoutesOptions {

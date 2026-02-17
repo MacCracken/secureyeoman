@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GoogleCalendarIntegration } from './adapter.js';
-import type { IntegrationConfig, UnifiedMessage } from '@friday/shared';
+import type { IntegrationConfig, UnifiedMessage } from '@secureyeoman/shared';
 
 const mockFetch = vi.fn();
 

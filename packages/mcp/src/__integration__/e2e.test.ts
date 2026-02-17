@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { McpServiceServer } from '../server.js';
 import { CoreApiClient } from '../core-client.js';
-import type { McpServiceConfig } from '@friday/shared';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 
 // Mock core server that simulates SecureYeoman's API
 let mockCore: FastifyInstance;
@@ -94,7 +94,7 @@ describe('e2e integration', () => {
 
     const res = await mcpServer.getApp().inject({ method: 'GET', url: '/health' });
     expect(res.statusCode).toBe(200);
-    expect(res.json().service).toBe('friday-mcp');
+    expect(res.json().service).toBe('secureyeoman-mcp');
   });
 
   it('should reject unauthenticated MCP requests', async () => {
@@ -131,7 +131,7 @@ describe('e2e integration', () => {
       headers: { authorization: 'Bearer valid-user-token' },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json().service).toBe('friday-mcp');
+    expect(res.json().service).toBe('secureyeoman-mcp');
   });
 
   it('should serve dashboard tools with valid auth', async () => {

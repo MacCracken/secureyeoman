@@ -2,7 +2,7 @@
  * Audit Report Generator — query audit, task, and heartbeat data; format as JSON/HTML/CSV
  */
 
-import type { AuditReportOptions, AuditReport, ReportFormat, Task } from '@friday/shared';
+import type { AuditReportOptions, AuditReport, ReportFormat, Task } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { AuditQueryOptions, AuditQueryResult } from '../logging/sqlite-storage.js';

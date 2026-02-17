@@ -5,7 +5,7 @@
 import { describe, it, expect } from 'vitest';
 import { validateUrl, WebRateLimiter, truncateOutput, stripHtmlTags, safeFetch } from './web-tools.js';
 import { ProxyManager } from './proxy-manager.js';
-import type { McpServiceConfig } from '@friday/shared';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 
 function makeConfig(overrides: Partial<McpServiceConfig> = {}): McpServiceConfig {
   return {

@@ -6,7 +6,7 @@
 
 import Fastify, { type FastifyInstance } from 'fastify';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import type { McpServiceConfig } from '@friday/shared';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 import { CoreApiClient } from './core-client.js';
 import { ProxyAuth } from './auth/proxy-auth.js';
 import { AutoRegistration } from './registration/auto-register.js';
@@ -47,7 +47,7 @@ export class McpServiceServer {
     });
 
     this.mcpServer = new McpServer({
-      name: 'friday-mcp',
+      name: 'secureyeoman-mcp',
       version: '1.5.1',
     });
   }
@@ -98,7 +98,7 @@ export class McpServiceServer {
     // 6. Health endpoint
     this.app.get('/health', async () => ({
       status: 'ok',
-      service: 'friday-mcp',
+      service: 'secureyeoman-mcp',
       version: '1.5.1',
       transport: this.config.transport,
     }));
@@ -110,7 +110,7 @@ export class McpServiceServer {
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         // Log but don't crash
-        console.warn(`[friday-mcp] Auto-registration warning: ${msg}`);
+        console.warn(`[secureyeoman-mcp] Auto-registration warning: ${msg}`);
       }
     }
 

@@ -1,5 +1,5 @@
 /**
- * Soul Prompts — friday:compose-prompt
+ * Soul Prompts — secureyeoman:compose-prompt
  */
 
 import { z } from 'zod';
@@ -8,7 +8,7 @@ import type { CoreApiClient } from '../core-client.js';
 
 export function registerSoulPrompts(server: McpServer, client: CoreApiClient): void {
   server.prompt(
-    'friday:compose-prompt',
+    'secureyeoman:compose-prompt',
     'Compose a full Soul + Spirit + Brain system prompt',
     { personalityId: z.string().optional().describe('Personality ID (uses active if omitted)') },
     async (args) => {

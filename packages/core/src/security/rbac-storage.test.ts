@@ -12,7 +12,7 @@
 
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { RBACStorage } from './rbac-storage.js';
-import type { RoleDefinition } from '@friday/shared';
+import type { RoleDefinition } from '@secureyeoman/shared';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 describe('RBACStorage', () => {

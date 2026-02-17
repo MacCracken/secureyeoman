@@ -3,12 +3,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerAnalysisPrompts } from './analysis-prompts.js';
 
 describe('analysis-prompts', () => {
-  it('should register friday:analyze-code prompt', () => {
+  it('should register secureyeoman:analyze-code prompt', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() => registerAnalysisPrompts(server)).not.toThrow();
   });
 
-  it('should register friday:review-security prompt', () => {
+  it('should register secureyeoman:review-security prompt', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     registerAnalysisPrompts(server);
     expect(true).toBe(true);

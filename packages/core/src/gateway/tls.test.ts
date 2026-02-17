@@ -37,7 +37,7 @@ describe('cert-gen', () => {
     let tmpDir: string;
 
     beforeEach(() => {
-      tmpDir = mkdtempSync(path.join(os.tmpdir(), 'friday-cert-test-'));
+      tmpDir = mkdtempSync(path.join(os.tmpdir(), 'secureyeoman-cert-test-'));
     });
 
     it('generateDevCerts creates PEM files', () => {

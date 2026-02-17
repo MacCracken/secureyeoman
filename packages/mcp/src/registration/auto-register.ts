@@ -3,7 +3,7 @@
  */
 
 import type { CoreApiClient } from '../core-client.js';
-import type { McpServiceConfig } from '@friday/shared';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 import { getToolManifest } from '../tools/manifest.js';
 
 export interface RegisteredServer {

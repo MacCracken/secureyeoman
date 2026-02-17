@@ -105,12 +105,12 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
 
   if (!enabled) {
     return (
-      <div className="space-y-4">
-        {!embedded && <h1 className="text-xl font-bold">A2A Protocol</h1>}
-        <div className="card p-8 text-center">
-          <Network className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-          <h2 className="text-lg font-semibold mb-2">A2A Protocol Not Enabled</h2>
-          <p className="text-muted-foreground text-sm">
+      <div className="space-y-4 min-w-0 overflow-hidden">
+        {!embedded && <h1 className="text-lg sm:text-xl font-bold">A2A Protocol</h1>}
+        <div className="card p-4 sm:p-8 text-center">
+          <Network className="w-10 h-10 sm:w-12 sm:h-12 mx-auto text-muted-foreground mb-3 sm:mb-4" />
+          <h2 className="text-base sm:text-lg font-semibold mb-2">A2A Protocol Not Enabled</h2>
+          <p className="text-muted-foreground text-xs sm:text-sm">
             Enable the Agent-to-Agent protocol in your configuration to manage peers and delegate
             tasks.
           </p>
@@ -130,16 +130,16 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
   ];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        {!embedded && <h1 className="text-xl font-bold">A2A Protocol</h1>}
-        <div className="flex items-center gap-2">
+    <div className="space-y-3 sm:space-y-6 min-w-0 overflow-hidden">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+        {!embedded && <h1 className="text-lg sm:text-xl font-bold">A2A Protocol</h1>}
+        <div className="flex flex-wrap items-center gap-2">
           <button
             onClick={() => {
               discoverMut.mutate();
             }}
             disabled={discoverMut.isPending}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors disabled:opacity-50"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors disabled:opacity-50"
           >
             {discoverMut.isPending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -152,7 +152,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
             onClick={() => {
               setShowDelegate(!showDelegate);
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs sm:text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Send className="w-3.5 h-3.5" />
             Delegate Task
@@ -161,7 +161,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
       </div>
 
       {showDelegate && (
-        <div className="card p-4 space-y-3">
+        <div className="card p-3 sm:p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-medium text-sm">Delegate Task to Peer</span>
             <button
@@ -206,7 +206,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
           {delegateResult && (
             <div>
               <p className="text-xs font-medium text-green-500 mb-1">Task delegated successfully</p>
-              <pre className="text-xs bg-muted p-2 rounded whitespace-pre-wrap max-h-32 overflow-y-auto font-mono">
+              <pre className="text-xs bg-muted p-2 rounded whitespace-pre-wrap break-words max-h-32 overflow-y-auto font-mono">
                 {JSON.stringify(delegateResult, null, 2)}
               </pre>
             </div>
@@ -228,14 +228,14 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex overflow-x-auto scrollbar-hide gap-0.5 sm:gap-1 border-b border-border -mx-1 px-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => {
               setActiveTab(tab.id);
             }}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-2.5 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -329,7 +329,7 @@ function PeersTab() {
       </div>
 
       {showAddPeer && (
-        <div className="card p-4 space-y-3">
+        <div className="card p-3 sm:p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-medium text-sm">Add Peer</span>
             <button
@@ -390,7 +390,7 @@ function PeersTab() {
 
       <div className="space-y-2">
         {peers.map((peer) => (
-          <div key={peer.id} className="card p-4">
+          <div key={peer.id} className="card p-3 sm:p-4">
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 mb-1">
@@ -640,7 +640,7 @@ function MessagesTab() {
           onChange={(e) => {
             setPeerFilter(e.target.value);
           }}
-          className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-48"
+          className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-full sm:w-48"
         >
           <option value="">All peers</option>
           {peers.map((peer) => (
@@ -668,20 +668,20 @@ function MessagesTab() {
           const fromPeer = peers.find((p) => p.id === msg.fromPeerId);
           const toPeer = peers.find((p) => p.id === msg.toPeerId);
           return (
-            <div key={msg.id} className="card p-4">
-              <div className="flex items-center justify-between gap-3 mb-1">
-                <div className="flex items-center gap-2 min-w-0 flex-1">
+            <div key={msg.id} className="card p-3 sm:p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-3 mb-1">
+                <div className="flex items-center gap-2 min-w-0 flex-1 flex-wrap">
                   <ArrowRightLeft className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                   <span
-                    className={`text-xs px-1.5 py-0.5 rounded border ${TYPE_COLORS[msg.type] ?? 'bg-muted text-muted-foreground border-border'}`}
+                    className={`text-xs px-1.5 py-0.5 rounded border shrink-0 ${TYPE_COLORS[msg.type] ?? 'bg-muted text-muted-foreground border-border'}`}
                   >
                     {msg.type}
                   </span>
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-xs text-muted-foreground truncate">
                     {fromPeer?.name ?? msg.fromPeerId.slice(0, 8)}
                   </span>
-                  <ArrowRightLeft className="w-3 h-3 text-muted-foreground" />
-                  <span className="text-xs text-muted-foreground">
+                  <ArrowRightLeft className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <span className="text-xs text-muted-foreground truncate">
                     {toPeer?.name ?? msg.toPeerId.slice(0, 8)}
                   </span>
                 </div>
@@ -690,7 +690,7 @@ function MessagesTab() {
                 </span>
               </div>
               {msg.payload != null && (
-                <pre className="text-xs bg-muted p-2 rounded mt-2 whitespace-pre-wrap max-h-32 overflow-y-auto font-mono">
+                <pre className="text-xs bg-muted p-2 rounded mt-2 whitespace-pre-wrap break-words max-h-32 overflow-y-auto font-mono">
                   {typeof msg.payload === 'string'
                     ? msg.payload
                     : JSON.stringify(msg.payload, null, 2)}

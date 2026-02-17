@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { formatPrometheusMetrics } from './prometheus.js';
-import type { MetricsSnapshot } from '@friday/shared';
+import type { MetricsSnapshot } from '@secureyeoman/shared';
 
 describe('Prometheus Metrics', () => {
   it('should format task metrics', () => {

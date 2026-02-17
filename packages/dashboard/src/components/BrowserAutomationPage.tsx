@@ -115,16 +115,16 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
 
   if (!enabled) {
     return (
-      <div className="space-y-4 sm:space-y-6">
+      <div className="space-y-4 sm:space-y-6 min-w-0 overflow-hidden">
         {!embedded && (
           <div>
             <h1 className="text-xl sm:text-2xl font-bold">Browser Automation</h1>
-            <p className="text-sm text-muted-foreground mt-1">
+            <p className="text-xs sm:text-sm text-muted-foreground mt-1">
               Browser session viewer and lifecycle controls
             </p>
           </div>
         )}
-        <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-3 text-sm text-yellow-600 dark:text-yellow-400">
+        <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-3 text-xs sm:text-sm text-yellow-600 dark:text-yellow-400">
           Browser automation is currently disabled. Set MCP_EXPOSE_BROWSER=true to enable browser
           tools.
         </div>
@@ -133,12 +133,12 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
   }
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 min-w-0 overflow-hidden">
       {/* Header */}
       {!embedded && (
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Browser Automation</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Browser session viewer and lifecycle controls
           </p>
         </div>
@@ -153,20 +153,20 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
       </div>
 
       {/* Filters & Table */}
-      <div className="card">
-        <div className="card-header flex flex-row items-center gap-2">
+      <div className="card overflow-hidden">
+        <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
           <Filter className="w-4 h-4 text-muted-foreground" />
-          <h2 className="card-title text-base">Sessions</h2>
+          <h2 className="card-title text-sm sm:text-base">Sessions</h2>
         </div>
-        <div className="card-content space-y-3">
-          <div className="flex flex-wrap gap-2">
+        <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
+          <div className="flex flex-col sm:flex-row gap-2">
             <select
               value={statusFilter}
               onChange={(e) => {
                 setStatusFilter(e.target.value as SessionStatus | '');
                 setPage(0);
               }}
-              className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-40"
+              className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-full sm:w-40"
             >
               <option value="">All Statuses</option>
               <option value="active">Active</option>
@@ -180,7 +180,7 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
                 setToolFilter(e.target.value as ToolName | '');
                 setPage(0);
               }}
-              className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-48"
+              className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-full sm:w-48"
             >
               <option value="">All Tools</option>
               <option value="browser_navigate">Navigate</option>
@@ -203,16 +203,16 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full text-xs sm:text-sm">
                 <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="py-2 pr-3 w-8"></th>
-                    <th className="py-2 pr-3">ID</th>
-                    <th className="py-2 pr-3">Tool</th>
-                    <th className="py-2 pr-3">URL</th>
-                    <th className="py-2 pr-3">Status</th>
-                    <th className="py-2 pr-3">Duration</th>
-                    <th className="py-2">Created</th>
+                  <tr className="border-b text-left text-muted-foreground text-xs sm:text-sm">
+                    <th className="py-1.5 sm:py-2 pr-2 sm:pr-3 w-8"></th>
+                    <th className="py-1.5 sm:py-2 pr-2 sm:pr-3">ID</th>
+                    <th className="py-1.5 sm:py-2 pr-2 sm:pr-3">Tool</th>
+                    <th className="py-1.5 sm:py-2 pr-2 sm:pr-3">URL</th>
+                    <th className="py-1.5 sm:py-2 pr-2 sm:pr-3">Status</th>
+                    <th className="py-1.5 sm:py-2 pr-2 sm:pr-3">Duration</th>
+                    <th className="py-1.5 sm:py-2">Created</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -225,35 +225,35 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
                           className="border-b hover:bg-muted/30 cursor-pointer transition-colors"
                           onClick={() => setExpandedId(expanded ? null : session.id)}
                         >
-                          <td className="py-2 pr-3">
+                          <td className="py-1.5 sm:py-2 pr-2 sm:pr-3">
                             {expanded ? (
                               <ChevronDown className="w-4 h-4 text-muted-foreground" />
                             ) : (
                               <ChevronRight className="w-4 h-4 text-muted-foreground" />
                             )}
                           </td>
-                          <td className="py-2 pr-3 font-mono text-xs">
+                          <td className="py-1.5 sm:py-2 pr-2 sm:pr-3 font-mono text-xs">
                             {session.id.length > 8 ? `${session.id.slice(0, 8)}...` : session.id}
                           </td>
-                          <td className="py-2 pr-3">
+                          <td className="py-1.5 sm:py-2 pr-2 sm:pr-3 text-xs sm:text-sm">
                             <span className="flex items-center gap-1.5">
                               {TOOL_ICONS[session.toolName] ?? <Globe className="w-4 h-4" />}
                               {TOOL_LABELS[session.toolName] ?? session.toolName}
                             </span>
                           </td>
-                          <td className="py-2 pr-3 max-w-[200px] truncate">
+                          <td className="py-1.5 sm:py-2 pr-2 sm:pr-3 max-w-[200px] truncate text-xs sm:text-sm">
                             {session.url ?? '-'}
                           </td>
-                          <td className="py-2 pr-3">
+                          <td className="py-1.5 sm:py-2 pr-2 sm:pr-3 text-xs sm:text-sm">
                             <span className={`flex items-center gap-1 ${status.color}`}>
                               {status.icon}
                               {session.status}
                             </span>
                           </td>
-                          <td className="py-2 pr-3">
+                          <td className="py-1.5 sm:py-2 pr-2 sm:pr-3 text-xs sm:text-sm">
                             {session.durationMs != null ? `${session.durationMs}ms` : '-'}
                           </td>
-                          <td className="py-2">
+                          <td className="py-1.5 sm:py-2 text-xs sm:text-sm">
                             {new Date(session.createdAt).toLocaleString()}
                           </td>
                         </tr>

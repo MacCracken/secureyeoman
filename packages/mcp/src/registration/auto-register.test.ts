@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { AutoRegistration } from './auto-register.js';
 import type { CoreApiClient } from '../core-client.js';
-import type { McpServiceConfig } from '@friday/shared';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 
 function mockClient(overrides?: Partial<CoreApiClient>): CoreApiClient {
   return {

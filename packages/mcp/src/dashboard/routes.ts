@@ -34,7 +34,7 @@ export function registerDashboardRoutes(
 
   app.get('/dashboard', async () => {
     return {
-      service: 'friday-mcp',
+      service: 'secureyeoman-mcp',
       version: '1.5.1',
       status: 'running',
       tools: listMcpCapabilities(mcpServer, 'tools'),

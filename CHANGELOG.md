@@ -376,7 +376,7 @@ All notable changes to SecureYeoman are documented in this file.
   - `browser_evaluate` — Execute JavaScript in browser context, return JSON
   - `browser_pdf` — Generate PDF from webpage as base64
 - New `BrowserPool` manager (`browser-pool.ts`): lazy browser launch, page pool with `MCP_BROWSER_MAX_PAGES` limit, `MCP_BROWSER_TIMEOUT_MS` enforcement, graceful shutdown
-- `playwright` added as optional dependency in `@friday/mcp`
+- `playwright` added as optional dependency in `@secureyeoman/mcp`
 - Browser pool shutdown wired into `McpServiceServer.stop()` lifecycle
 - Config gate preserved: all tools return NOT_AVAILABLE when `MCP_EXPOSE_BROWSER=false`
 - 18 unit tests (config gate, all 6 tools enabled/disabled, pool limit enforcement, shutdown)
@@ -575,7 +575,7 @@ SecureYeoman — a secure, local-first AI assistant with enterprise-grade protec
 - Per-platform rate limiting, auto-reconnect, conversation management
 
 #### MCP Protocol
-- Standalone `@friday/mcp` service (22+ tools, 7 resources, 4 prompts)
+- Standalone `@secureyeoman/mcp` service (22+ tools, 7 resources, 4 prompts)
 - Streamable HTTP, SSE, and stdio transports
 - Auto-registration with core; JWT auth delegation
 - Connect external MCP servers with persistent tool discovery

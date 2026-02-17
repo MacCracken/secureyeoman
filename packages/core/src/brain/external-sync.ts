@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import type { BrainManager } from './manager.js';
 import type { Memory, KnowledgeEntry } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
-import type { ExternalBrainConfig } from '@friday/shared';
+import type { ExternalBrainConfig } from '@secureyeoman/shared';
 
 export interface SyncResult {
   memoriesWritten: number;

@@ -5,7 +5,7 @@
  * with OAuth2 tokens. Reuses Gmail's token refresh pattern.
  */
 
-import type { IntegrationConfig, UnifiedMessage, Platform } from '@friday/shared';
+import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 

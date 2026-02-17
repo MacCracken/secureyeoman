@@ -4,13 +4,13 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { MultimodalManager } from './manager.js';
-import type { MultimodalJobType, MultimodalJobStatus } from '@friday/shared';
+import type { MultimodalJobType, MultimodalJobStatus } from '@secureyeoman/shared';
 import {
   VisionRequestSchema,
   STTRequestSchema,
   TTSRequestSchema,
   ImageGenRequestSchema,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 
 function sanitizeError(error: unknown): string {
   const msg = error instanceof Error ? error.message : String(error);

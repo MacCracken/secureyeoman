@@ -3,7 +3,7 @@
  * Senior DevOps and Site Reliability Engineer with focus on Infrastructure as Code and 'You Build It, You Run It' philosophy.
  */
 
-import type { MarketplaceSkill } from '@friday/shared';
+import type { MarketplaceSkill } from '@secureyeoman/shared';
 
 export const devopsSreSkill: Partial<MarketplaceSkill> = {
   name: 'Senior DevOps/SRE',

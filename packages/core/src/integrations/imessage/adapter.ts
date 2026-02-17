@@ -15,7 +15,7 @@ import { access, constants } from 'node:fs/promises';
 import { homedir } from 'node:os';
 import { promisify } from 'node:util';
 import Database from 'better-sqlite3';
-import type { IntegrationConfig, UnifiedMessage, Platform } from '@friday/shared';
+import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 

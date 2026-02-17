@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 
-const STORAGE_KEY = 'friday-voice-enabled';
+const STORAGE_KEY = 'secureyeoman-voice-enabled';
 
 interface SpeechRecognitionEvent {
   results: SpeechRecognitionResultList;

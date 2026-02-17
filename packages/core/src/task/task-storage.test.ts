@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { TaskStorage } from './task-storage.js';
-import { TaskStatus, TaskType } from '@friday/shared';
-import type { Task } from '@friday/shared';
+import { TaskStatus, TaskType } from '@secureyeoman/shared';
+import type { Task } from '@secureyeoman/shared';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 function makeTask(overrides: Partial<Task> = {}): Task {

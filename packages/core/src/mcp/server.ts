@@ -5,7 +5,7 @@
 import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { SoulManager } from '../soul/manager.js';
-import type { McpToolDef, McpResourceDef } from '@friday/shared';
+import type { McpToolDef, McpResourceDef } from '@secureyeoman/shared';
 
 export interface McpServerDeps {
   logger: SecureLogger;
@@ -34,7 +34,7 @@ export class McpServer {
           name: `friday_skill_${skill.id}`,
           description: skill.description || skill.name,
           inputSchema: { type: 'object', properties: {} },
-          serverId: 'friday-local',
+          serverId: 'secureyeoman-local',
           serverName: 'SecureYeoman',
         });
       }
@@ -48,11 +48,11 @@ export class McpServer {
 
     if (this.brainManager) {
       resources.push({
-        uri: 'friday://knowledge/all',
+        uri: 'secureyeoman://knowledge/all',
         name: 'SecureYeoman Knowledge Base',
         description: 'All knowledge entries from SecureYeoman brain',
         mimeType: 'application/json',
-        serverId: 'friday-local',
+        serverId: 'secureyeoman-local',
         serverName: 'SecureYeoman',
       });
     }

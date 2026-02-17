@@ -10,7 +10,7 @@
  */
 
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
-import type { SecurityConfig } from '@friday/shared';
+import type { SecurityConfig } from '@secureyeoman/shared';
 
 export interface ValidationResult {
   valid: boolean;

@@ -2,7 +2,7 @@
  * Experiment Storage — PostgreSQL persistence for A/B tests
  */
 
-import type { Experiment, ExperimentCreate } from '@friday/shared';
+import type { Experiment, ExperimentCreate } from '@secureyeoman/shared';
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 

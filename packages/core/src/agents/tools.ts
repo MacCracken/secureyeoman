@@ -5,7 +5,7 @@
  * recursive delegation, listing active sub-agents, and retrieving results.
  */
 
-import type { Tool } from '@friday/shared';
+import type { Tool } from '@secureyeoman/shared';
 
 const DELEGATE_TASK_TOOL: Tool = {
   name: 'delegate_task',

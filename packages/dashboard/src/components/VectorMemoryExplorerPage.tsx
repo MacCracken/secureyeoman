@@ -129,11 +129,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
   ];
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-4 sm:space-y-6 min-w-0 overflow-hidden">
       {!embedded && (
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold">Vector Memory Explorer</h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <h1 className="text-xl sm:text-2xl font-bold truncate">Vector Memory Explorer</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground mt-1">
             Semantic search, similarity scores, and manual memory management
           </p>
         </div>
@@ -160,12 +160,12 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex overflow-x-auto scrollbar-hide gap-0.5 sm:gap-1 border-b border-border -mx-1 px-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -180,30 +180,30 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       {/* Semantic Search */}
       {activeTab === 'search' && (
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
             <Sparkles className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-base">Semantic Search</h2>
+            <h2 className="card-title text-sm sm:text-base">Semantic Search</h2>
           </div>
-          <div className="card-content space-y-3">
-            <div className="flex flex-wrap gap-2">
+          <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
+            <div className="flex flex-col sm:flex-row gap-2">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for similar memories..."
-                className="flex-1 min-w-[200px] bg-card border border-border rounded-lg text-sm py-1.5 px-3"
+                className="w-full sm:flex-1 bg-card border border-border rounded-lg text-sm py-1.5 px-3"
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
               <select
                 value={searchType}
                 onChange={(e) => setSearchType(e.target.value as 'all' | 'memories' | 'knowledge')}
-                className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-32"
+                className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-full sm:w-32"
               >
                 <option value="all">All</option>
                 <option value="memories">Memories</option>
                 <option value="knowledge">Knowledge</option>
               </select>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-1 w-full sm:w-auto">
                 <label className="text-xs text-muted-foreground">Min:</label>
                 <input
                   type="number"
@@ -216,7 +216,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 />
               </div>
               <button
-                className="btn-ghost text-xs px-3 py-1.5 flex items-center gap-1 bg-primary/10 text-primary"
+                className="btn-ghost text-xs px-3 py-1.5 flex items-center justify-center gap-1 bg-primary/10 text-primary w-full sm:w-auto"
                 onClick={handleSearch}
                 disabled={isSearching || !searchQuery.trim()}
               >
@@ -272,11 +272,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       {/* Memories List */}
       {activeTab === 'memories' && (
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
             <Database className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-base">Memories</h2>
+            <h2 className="card-title text-sm sm:text-base">Memories</h2>
           </div>
-          <div className="card-content">
+          <div className="card-content p-3 sm:p-4 pt-0 sm:pt-0">
             {memoriesLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -307,7 +307,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                           <div><span className="font-medium">Importance:</span> {mem.importance}</div>
                           <div><span className="font-medium">Created:</span> {new Date(mem.createdAt).toLocaleString()}</div>
                           <div><span className="font-medium">Content:</span></div>
-                          <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40 whitespace-pre-wrap">{mem.content}</pre>
+                          <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40 whitespace-pre-wrap break-words">{mem.content}</pre>
                           <button
                             className="btn-ghost text-xs px-2 py-1 mt-1 flex items-center gap-1 text-destructive hover:bg-destructive/10"
                             onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(mem.id); }}
@@ -334,11 +334,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       {/* Knowledge List */}
       {activeTab === 'knowledge' && (
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
             <BookOpen className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-base">Knowledge</h2>
+            <h2 className="card-title text-sm sm:text-base">Knowledge</h2>
           </div>
-          <div className="card-content">
+          <div className="card-content p-3 sm:p-4 pt-0 sm:pt-0">
             {knowledgeLoading ? (
               <div className="flex items-center justify-center py-12">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
@@ -369,7 +369,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                           <div><span className="font-medium">Confidence:</span> {entry.confidence}</div>
                           <div><span className="font-medium">Created:</span> {new Date(entry.createdAt).toLocaleString()}</div>
                           <div><span className="font-medium">Content:</span></div>
-                          <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40 whitespace-pre-wrap">{entry.content}</pre>
+                          <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40 whitespace-pre-wrap break-words">{entry.content}</pre>
                           <button
                             className="btn-ghost text-xs px-2 py-1 mt-1 flex items-center gap-1 text-destructive hover:bg-destructive/10"
                             onClick={(e) => { e.stopPropagation(); deleteKnowledgeMutation.mutate(entry.id); }}
@@ -396,11 +396,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       {/* Add Memory */}
       {activeTab === 'add' && (
         <div className="card">
-          <div className="card-header flex flex-row items-center gap-2">
+          <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
             <Plus className="w-4 h-4 text-muted-foreground" />
-            <h2 className="card-title text-base">Add Memory Entry</h2>
+            <h2 className="card-title text-sm sm:text-base">Add Memory Entry</h2>
           </div>
-          <div className="card-content space-y-3">
+          <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
                 <label className="text-xs text-muted-foreground block mb-1">Type</label>

@@ -13,7 +13,7 @@ import { registerAuthRoutes } from '../gateway/auth-routes.js';
 import { registerSoulRoutes } from '../soul/soul-routes.js';
 import { SoulStorage } from '../soul/storage.js';
 import { SoulManager } from '../soul/manager.js';
-import type { SoulConfig } from '@friday/shared';
+import type { SoulConfig } from '@secureyeoman/shared';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 function defaultSoulConfig(overrides?: Partial<SoulConfig>): SoulConfig {

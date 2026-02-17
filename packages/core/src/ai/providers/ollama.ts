@@ -15,7 +15,7 @@ import type {
   TokenUsage,
   Tool,
   AIProviderName,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import { BaseProvider, type ProviderConfig } from './base.js';
 import { ProviderUnavailableError, InvalidResponseError } from '../errors.js';
 import type { SecureLogger } from '../../logging/logger.js';

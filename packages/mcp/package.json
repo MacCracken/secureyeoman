@@ -1,12 +1,12 @@
 {
-  "name": "@friday/mcp",
+  "name": "@secureyeoman/mcp",
   "version": "2026.2.17",
   "description": "SecureYeoman MCP (Model Context Protocol) Service",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "bin": {
-    "friday-mcp": "./dist/cli.js"
+    "secureyeoman-mcp": "./dist/cli.js"
   },
   "exports": {
     ".": {
@@ -23,7 +23,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@friday/shared": "*",
+    "@secureyeoman/shared": "*",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@fastify/compress": "^8.0.1",
     "fastify": "^5.7.4",

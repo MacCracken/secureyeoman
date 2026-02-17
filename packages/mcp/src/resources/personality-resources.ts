@@ -1,5 +1,5 @@
 /**
- * Personality Resources — friday://personality/active, friday://personality/{id}
+ * Personality Resources — secureyeoman://personality/active, secureyeoman://personality/{id}
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -8,14 +8,14 @@ import type { CoreApiClient } from '../core-client.js';
 export function registerPersonalityResources(server: McpServer, client: CoreApiClient): void {
   server.resource(
     'personality-active',
-    'friday://personality/active',
+    'secureyeoman://personality/active',
     { description: 'Current personality configuration', mimeType: 'application/json' },
     async () => {
       const result = await client.get('/api/v1/soul/personality');
       return {
         contents: [
           {
-            uri: 'friday://personality/active',
+            uri: 'secureyeoman://personality/active',
             mimeType: 'application/json',
             text: JSON.stringify(result, null, 2),
           },
@@ -26,7 +26,7 @@ export function registerPersonalityResources(server: McpServer, client: CoreApiC
 
   server.resource(
     'personality-entry',
-    'friday://personality/{id}',
+    'secureyeoman://personality/{id}',
     { description: 'A specific personality', mimeType: 'application/json' },
     async (uri: URL) => {
       const id = uri.pathname.split('/').pop() ?? '';

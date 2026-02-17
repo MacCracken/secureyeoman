@@ -5,7 +5,7 @@
  * and webhook delivery with HMAC signing.
  */
 
-import type { ExtensionConfig } from '@friday/shared';
+import type { ExtensionConfig } from '@secureyeoman/shared';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { ExtensionStorage } from './storage.js';
@@ -338,12 +338,12 @@ export class ExtensionManager {
   private async deliverWebhook(webhook: WebhookConfig, payload: string): Promise<void> {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      'X-Friday-Event': 'extension-hook',
+      'X-SecureYeoman-Event': 'extension-hook',
     };
 
     if (webhook.secret) {
       const signature = createHmac('sha256', webhook.secret).update(payload).digest('hex');
-      headers['X-Friday-Signature'] = `sha256=${signature}`;
+      headers['X-SecureYeoman-Signature'] = `sha256=${signature}`;
     }
 
     const controller = new AbortController();

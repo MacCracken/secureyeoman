@@ -6,7 +6,7 @@
  * cleaned up automatically via a periodic timer.
  */
 
-import type { UnifiedMessage } from '@friday/shared';
+import type { UnifiedMessage } from '@secureyeoman/shared';
 import type { HistoryCompressor } from '../chat/compression/compressor.js';
 import type { CompressedContext } from '../chat/compression/types.js';
 

@@ -107,7 +107,7 @@ import { RemoteDelegationTransport } from './a2a/transport.js';
 import { initPoolFromConfig, getPool } from './storage/pg-pool.js';
 import { runMigrations } from './storage/migrations/runner.js';
 import { closePool } from './storage/pg-pool.js';
-import type { Config, TaskCreate, Task, MetricsSnapshot, AuditEntry } from '@friday/shared';
+import type { Config, TaskCreate, Task, MetricsSnapshot, AuditEntry } from '@secureyeoman/shared';
 
 export interface SecureYeomanOptions {
   /** Configuration options */

@@ -61,7 +61,7 @@ describe('dashboard routes', () => {
       headers: { authorization: 'Bearer valid-token' },
     });
     expect(res.statusCode).toBe(200);
-    expect(res.json().service).toBe('friday-mcp');
+    expect(res.json().service).toBe('secureyeoman-mcp');
     expect(res.json().version).toBe('1.5.1');
     expect(res.json().status).toBe('running');
   });

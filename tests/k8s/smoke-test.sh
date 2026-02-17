@@ -9,10 +9,10 @@
 #
 set -euo pipefail
 
-CLUSTER_NAME="${CLUSTER_NAME:-friday-test}"
-NAMESPACE="${NAMESPACE:-friday-test}"
-CHART_DIR="deploy/helm/friday"
-RELEASE_NAME="friday-smoke"
+CLUSTER_NAME="${CLUSTER_NAME:-secureyeoman-test}"
+NAMESPACE="${NAMESPACE:-secureyeoman-test}"
+CHART_DIR="deploy/helm/secureyeoman"
+RELEASE_NAME="secureyeoman-smoke"
 TIMEOUT="120s"
 
 cleanup() {
@@ -72,11 +72,11 @@ helm install "$RELEASE_NAME" "$CHART_DIR" \
 
 # Wait for core to be ready
 echo "Waiting for core deployment..."
-kubectl rollout status deployment/"${RELEASE_NAME}-friday-core" -n "$NAMESPACE" --timeout="$TIMEOUT"
+kubectl rollout status deployment/"${RELEASE_NAME}-secureyeoman-core" -n "$NAMESPACE" --timeout="$TIMEOUT"
 
 # Port-forward and test health endpoint
 echo "Testing health endpoint..."
-kubectl port-forward -n "$NAMESPACE" svc/"${RELEASE_NAME}-friday-core" 18789:18789 &
+kubectl port-forward -n "$NAMESPACE" svc/"${RELEASE_NAME}-secureyeoman-core" 18789:18789 &
 PF_PID=$!
 sleep 3
 

@@ -8,7 +8,7 @@ import type {
   RemindAction,
   ExecuteAction,
   LearnAction,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import type { ActionResult, ProactiveManagerDeps } from './types.js';
 
 export async function executeMessageAction(
@@ -81,7 +81,7 @@ export async function executeWebhookAction(
           'Content-Type': 'application/json',
           ...action.headers,
         },
-        body: action.body ?? JSON.stringify({ source: 'friday-proactive', timestamp: Date.now() }),
+        body: action.body ?? JSON.stringify({ source: 'secureyeoman-proactive', timestamp: Date.now() }),
         signal: controller.signal,
       });
 

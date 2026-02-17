@@ -1,5 +1,5 @@
 /**
- * @friday/mcp — SecureYeoman MCP Service Package
+ * @secureyeoman/mcp — SecureYeoman MCP Service Package
  *
  * Exposes SecureYeoman capabilities as MCP tools, resources, and prompts.
  */

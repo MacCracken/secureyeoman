@@ -1,5 +1,5 @@
 -- 001_initial_schema.sql
--- Full PostgreSQL schema for Friday, replacing 16 separate SQLite databases.
+-- Full PostgreSQL schema for SecureYeoman, replacing 16 separate SQLite databases.
 
 -- ─── Brain ────────────────────────────────────────────────────────
 CREATE SCHEMA IF NOT EXISTS brain;

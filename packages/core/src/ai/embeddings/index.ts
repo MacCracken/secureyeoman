@@ -8,7 +8,7 @@ export { LocalEmbeddingProvider, type LocalEmbeddingConfig } from './local.js';
 export { ApiEmbeddingProvider, type ApiEmbeddingConfig } from './api.js';
 
 import type { EmbeddingProvider } from './types.js';
-import type { VectorConfig } from '@friday/shared';
+import type { VectorConfig } from '@secureyeoman/shared';
 import type { SecureLogger } from '../../logging/logger.js';
 import { LocalEmbeddingProvider } from './local.js';
 import { ApiEmbeddingProvider } from './api.js';

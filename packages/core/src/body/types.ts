@@ -15,7 +15,7 @@
  * - Body awareness (system resources, capabilities)
  */
 
-export type { BodyConfig } from '@friday/shared';
+export type { BodyConfig } from '@secureyeoman/shared';
 
 /**
  * Capture resources for RBAC permissions

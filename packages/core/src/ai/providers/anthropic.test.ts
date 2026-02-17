@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { AnthropicProvider } from './anthropic.js';
-import type { AIRequest, ModelConfig } from '@friday/shared';
+import type { AIRequest, ModelConfig } from '@secureyeoman/shared';
 import { RateLimitError, AuthenticationError, ProviderUnavailableError } from '../errors.js';
 
 // Mock the Anthropic SDK

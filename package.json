@@ -1,5 +1,5 @@
 {
-  "name": "friday",
+  "name": "secureyeoman",
   "version": "2026.2.17",
   "description": "SecureYeoman — Secure, local-first AI assistant",
   "private": true,
@@ -8,10 +8,10 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces",
-    "dev": "npm run dev --workspace=@friday/core",
-    "dev:dashboard": "npm run dev --workspace=@friday/dashboard",
-    "dev:mcp": "npm run dev --workspace=@friday/mcp",
+    "build": "npm run build -w @secureyeoman/shared && npm run build -w @secureyeoman/core -w @secureyeoman/mcp -w @secureyeoman/dashboard",
+    "dev": "npm run dev --workspace=@secureyeoman/core",
+    "dev:dashboard": "npm run dev --workspace=@secureyeoman/dashboard",
+    "dev:mcp": "npm run dev --workspace=@secureyeoman/mcp",
     "test": "npm run test --workspaces --if-present",
     "lint": "eslint packages/",
     "lint:fix": "eslint packages/ --fix",

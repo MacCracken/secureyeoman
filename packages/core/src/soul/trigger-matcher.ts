@@ -12,7 +12,7 @@ import {
   type ToolUseTrigger,
   type EventTrigger,
   type ConditionTrigger,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 
 export interface TriggerContext {
   message?: {

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GeminiProvider } from './gemini.js';
-import type { AIRequest, ModelConfig } from '@friday/shared';
+import type { AIRequest, ModelConfig } from '@secureyeoman/shared';
 
 const mockFetch = vi.fn();
 

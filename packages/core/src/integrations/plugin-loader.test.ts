@@ -27,7 +27,7 @@ describe('PluginLoader', () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'friday-plugins-'));
+    tmpDir = mkdtempSync(join(tmpdir(), 'secureyeoman-plugins-'));
   });
 
   afterEach(() => {

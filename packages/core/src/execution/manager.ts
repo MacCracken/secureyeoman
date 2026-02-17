@@ -3,7 +3,7 @@
  * runtime dispatch, secrets filtering, and approval workflow.
  */
 
-import type { ExecutionConfig } from '@friday/shared';
+import type { ExecutionConfig } from '@secureyeoman/shared';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { ExecutionStorage } from './storage.js';

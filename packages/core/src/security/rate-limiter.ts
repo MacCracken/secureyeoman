@@ -9,7 +9,7 @@
  */
 
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
-import type { SecurityConfig } from '@friday/shared';
+import type { SecurityConfig } from '@secureyeoman/shared';
 import { RedisRateLimiter } from './rate-limiter-redis.js';
 
 export interface RateLimitResult {
@@ -366,7 +366,7 @@ export function createRateLimiter(config: SecurityConfig): RateLimiterLike {
   const rl = config.rateLimiting;
 
   if (rl.redisUrl) {
-    const limiter = new RedisRateLimiter(rl, rl.redisUrl, rl.redisPrefix ?? 'friday:rl');
+    const limiter = new RedisRateLimiter(rl, rl.redisUrl, rl.redisPrefix ?? 'secureyeoman:rl');
     for (const rule of COMMON_RULES) limiter.addRule(rule);
     return limiter;
   }

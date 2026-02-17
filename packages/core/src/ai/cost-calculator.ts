@@ -6,7 +6,7 @@
  * Ollama models are always $0 (local inference).
  */
 
-import type { TokenUsage, AIProviderName } from '@friday/shared';
+import type { TokenUsage, AIProviderName } from '@secureyeoman/shared';
 import { GeminiProvider } from './providers/gemini.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { OpenAIProvider } from './providers/openai.js';

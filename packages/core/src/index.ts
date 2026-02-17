@@ -1,5 +1,5 @@
 /**
- * @friday/core
+ * @secureyeoman/core
  *
  * SecureYeoman Core Agent Engine
  *
@@ -340,4 +340,4 @@ export {
 } from './marketplace/index.js';
 
 // Re-export shared types
-export * from '@friday/shared';
+export * from '@secureyeoman/shared';

@@ -47,12 +47,12 @@
     // Path aliases
     "baseUrl": ".",
     "paths": {
-      "@friday/core": ["packages/core/src"],
-      "@friday/core/*": ["packages/core/src/*"],
-      "@friday/shared": ["packages/shared/src"],
-      "@friday/shared/*": ["packages/shared/src/*"],
-      "@friday/mcp": ["packages/mcp/src"],
-      "@friday/mcp/*": ["packages/mcp/src/*"]
+      "@secureyeoman/core": ["packages/core/src"],
+      "@secureyeoman/core/*": ["packages/core/src/*"],
+      "@secureyeoman/shared": ["packages/shared/src"],
+      "@secureyeoman/shared/*": ["packages/shared/src/*"],
+      "@secureyeoman/mcp": ["packages/mcp/src"],
+      "@secureyeoman/mcp/*": ["packages/mcp/src/*"]
     }
   },
   "include": [

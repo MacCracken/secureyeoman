@@ -5,7 +5,7 @@
  * Enforces configurable daily token limits.
  */
 
-import type { TokenUsage, AIProviderName } from '@friday/shared';
+import type { TokenUsage, AIProviderName } from '@secureyeoman/shared';
 
 export interface UsageRecord {
   provider: AIProviderName;

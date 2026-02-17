@@ -63,7 +63,7 @@ export function generateDevCerts(outputDir: string): CertPaths {
       '-days',
       '365',
       '-subj',
-      '/CN=Friday Dev CA/O=Friday/C=US',
+      '/CN=SecureYeoman Dev CA/O=SecureYeoman/C=US',
     ],
     { stdio: 'pipe' }
   );
@@ -74,7 +74,7 @@ export function generateDevCerts(outputDir: string): CertPaths {
   // Generate server CSR
   execFileSync(
     'openssl',
-    ['req', '-new', '-key', serverKey, '-out', serverCsr, '-subj', '/CN=localhost/O=Friday/C=US'],
+    ['req', '-new', '-key', serverKey, '-out', serverCsr, '-subj', '/CN=localhost/O=SecureYeoman/C=US'],
     { stdio: 'pipe' }
   );
 
@@ -134,7 +134,7 @@ export function generateClientCert(
 
   execFileSync(
     'openssl',
-    ['req', '-new', '-key', clientKey, '-out', clientCsr, '-subj', `/CN=${cn}/O=Friday/C=US`],
+    ['req', '-new', '-key', clientKey, '-out', clientCsr, '-subj', `/CN=${cn}/O=SecureYeoman/C=US`],
     { stdio: 'pipe' }
   );
 

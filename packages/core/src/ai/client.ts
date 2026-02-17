@@ -22,7 +22,7 @@ import type {
   AIProviderName,
   ModelConfig,
   FallbackModelConfig,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import type { AIProvider } from './providers/base.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { OpenAIProvider } from './providers/openai.js';

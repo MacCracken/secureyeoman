@@ -11,7 +11,7 @@ import { writeFileSync, readFileSync, mkdirSync, unlinkSync, existsSync, statSyn
 import { join, resolve, sep } from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomBytes } from 'node:crypto';
-import type { MessageAttachment } from '@friday/shared';
+import type { MessageAttachment } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 
 export interface MediaHandlerOptions {
@@ -48,7 +48,7 @@ export class MediaHandler {
 
   constructor(opts: MediaHandlerOptions) {
     this.maxSizeBytes = opts.maxSizeBytes ?? 10 * 1024 * 1024; // 10MB
-    this.tempDir = opts.tempDir ?? join(tmpdir(), 'friday-media');
+    this.tempDir = opts.tempDir ?? join(tmpdir(), 'secureyeoman-media');
     this.logger = opts.logger;
     this.contentScanner = opts.contentScanner;
 

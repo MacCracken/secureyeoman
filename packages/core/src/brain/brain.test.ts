@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { BrainStorage } from './storage.js';
 import { BrainManager } from './manager.js';
-import type { BrainConfig } from '@friday/shared';
+import type { BrainConfig } from '@secureyeoman/shared';
 import type { BrainManagerDeps } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';

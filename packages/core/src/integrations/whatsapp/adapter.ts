@@ -7,7 +7,7 @@
  */
 
 import makeWASocket, { useMultiFileAuthState, DisconnectReason, type WASocket } from 'baileys';
-import type { IntegrationConfig, UnifiedMessage, Platform } from '@friday/shared';
+import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 import { Boom } from '@hapi/boom';

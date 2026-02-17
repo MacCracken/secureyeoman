@@ -1,5 +1,5 @@
 /**
- * Task Prompts — friday:plan-task
+ * Task Prompts — secureyeoman:plan-task
  */
 
 import { z } from 'zod';
@@ -7,7 +7,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 
 export function registerTaskPrompts(server: McpServer): void {
   server.prompt(
-    'friday:plan-task',
+    'secureyeoman:plan-task',
     'Structured task planning template',
     {
       taskDescription: z.string().describe('Description of the task to plan'),
