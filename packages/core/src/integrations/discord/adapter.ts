@@ -62,10 +62,7 @@ export class DiscordIntegration implements Integration {
     }
 
     this.client = new Client({
-      intents: [
-        Intents.FLAGS.GUILDS,
-        Intents.FLAGS.GUILD_MESSAGES,
-      ],
+      intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
     });
 
     // Handle regular messages
@@ -105,7 +102,7 @@ export class DiscordIntegration implements Integration {
     this.client.on('interactionCreate', (interaction: Interaction) => {
       if (!interaction.isCommand()) return;
 
-      const cmd = interaction as CommandInteraction;
+      const cmd = interaction;
       const { commandName } = cmd;
 
       if (commandName === 'help') {
@@ -115,10 +112,10 @@ export class DiscordIntegration implements Integration {
               .setTitle('FRIDAY Help')
               .setDescription(
                 '**Commands:**\n' +
-                '`/ask <question>` — Ask FRIDAY a question\n' +
-                '`/status` — Check agent status\n' +
-                '`/help` — Show this help\n\n' +
-                'Or just send a message in a channel where FRIDAY is listening.',
+                  '`/ask <question>` — Ask FRIDAY a question\n' +
+                  '`/status` — Check agent status\n' +
+                  '`/help` — Show this help\n\n' +
+                  'Or just send a message in a channel where FRIDAY is listening.'
               )
               .setColor(0x5865f2),
           ],
@@ -192,7 +189,11 @@ export class DiscordIntegration implements Integration {
     this.logger?.info('Discord bot disconnected');
   }
 
-  async sendMessage(chatId: string, text: string, metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
     if (!this.client) throw new Error('Integration not initialized');
 
     const channel = await this.client.channels.fetch(chatId);
@@ -200,10 +201,7 @@ export class DiscordIntegration implements Integration {
       throw new Error(`Channel ${chatId} not found or not a text channel`);
     }
 
-    const embed = new MessageEmbed()
-      .setDescription(text)
-      .setColor(0x5865f2)
-      .setTimestamp();
+    const embed = new MessageEmbed().setDescription(text).setColor(0x5865f2).setTimestamp();
 
     const sent = await (channel as TextChannel).send({ embeds: [embed] });
     return sent.id;

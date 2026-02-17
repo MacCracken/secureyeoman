@@ -43,7 +43,7 @@ function renderComponent() {
       <QueryClientProvider client={createQueryClient()}>
         <ExtensionsPage />
       </QueryClientProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -87,7 +87,10 @@ describe('ExtensionsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: true,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     mockFetchExtensions.mockResolvedValue(MOCK_EXTENSIONS);
     mockFetchExtensionHooks.mockResolvedValue(MOCK_HOOKS);
@@ -107,7 +110,10 @@ describe('ExtensionsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Extensions Not Enabled')).toBeInTheDocument();
@@ -119,7 +125,10 @@ describe('ExtensionsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: true,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();
@@ -132,7 +141,10 @@ describe('ExtensionsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();

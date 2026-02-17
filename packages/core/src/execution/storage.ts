@@ -7,12 +7,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
-import type {
-  ExecutionSession,
-  ExecutionResult,
-  ApprovalRecord,
-  RuntimeType,
-} from './types.js';
+import type { ExecutionSession, ExecutionResult, ApprovalRecord, RuntimeType } from './types.js';
 
 // ─── Row types ──────────────────────────────────────────────────────
 
@@ -82,30 +77,27 @@ function approvalFromRow(row: ApprovalRow): ApprovalRecord {
 export class ExecutionStorage extends PgBaseStorage {
   // ── Session operations ─────────────────────────────────────────
 
-  async createSession(data: {
-    runtime: RuntimeType;
-  }): Promise<ExecutionSession> {
+  async createSession(data: { runtime: RuntimeType }): Promise<ExecutionSession> {
     const id = uuidv7();
     const row = await this.queryOne<SessionRow>(
       `INSERT INTO execution.sessions (id, runtime, status, created_at, last_activity)
        VALUES ($1, $2, 'active', now(), now())
        RETURNING *`,
-      [id, data.runtime],
+      [id, data.runtime]
     );
     return sessionFromRow(row!);
   }
 
   async getSession(id: string): Promise<ExecutionSession | null> {
-    const row = await this.queryOne<SessionRow>(
-      `SELECT * FROM execution.sessions WHERE id = $1`,
-      [id],
-    );
+    const row = await this.queryOne<SessionRow>(`SELECT * FROM execution.sessions WHERE id = $1`, [
+      id,
+    ]);
     return row ? sessionFromRow(row) : null;
   }
 
   async listSessions(): Promise<ExecutionSession[]> {
     const rows = await this.queryMany<SessionRow>(
-      `SELECT * FROM execution.sessions ORDER BY created_at DESC`,
+      `SELECT * FROM execution.sessions ORDER BY created_at DESC`
     );
     return rows.map(sessionFromRow);
   }
@@ -115,7 +107,7 @@ export class ExecutionStorage extends PgBaseStorage {
     data: Partial<{
       status: 'active' | 'expired' | 'terminated';
       lastActivity: number;
-    }>,
+    }>
   ): Promise<ExecutionSession | null> {
     const updates: string[] = [];
     const values: unknown[] = [];
@@ -135,16 +127,13 @@ export class ExecutionStorage extends PgBaseStorage {
     values.push(id);
     const row = await this.queryOne<SessionRow>(
       `UPDATE execution.sessions SET ${updates.join(', ')} WHERE id = $${paramIdx} RETURNING *`,
-      values,
+      values
     );
     return row ? sessionFromRow(row) : null;
   }
 
   async deleteSession(id: string): Promise<boolean> {
-    const count = await this.execute(
-      `DELETE FROM execution.sessions WHERE id = $1`,
-      [id],
-    );
+    const count = await this.execute(`DELETE FROM execution.sessions WHERE id = $1`, [id]);
     return count > 0;
   }
 
@@ -163,24 +152,15 @@ export class ExecutionStorage extends PgBaseStorage {
       `INSERT INTO execution.history (id, session_id, exit_code, stdout, stderr, duration, truncated, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7, now())
        RETURNING *`,
-      [
-        id,
-        data.sessionId,
-        data.exitCode,
-        data.stdout,
-        data.stderr,
-        data.duration,
-        data.truncated,
-      ],
+      [id, data.sessionId, data.exitCode, data.stdout, data.stderr, data.duration, data.truncated]
     );
     return executionFromRow(row!);
   }
 
   async getExecution(id: string): Promise<ExecutionResult | null> {
-    const row = await this.queryOne<ExecutionRow>(
-      `SELECT * FROM execution.history WHERE id = $1`,
-      [id],
-    );
+    const row = await this.queryOne<ExecutionRow>(`SELECT * FROM execution.history WHERE id = $1`, [
+      id,
+    ]);
     return row ? executionFromRow(row) : null;
   }
 
@@ -204,12 +184,12 @@ export class ExecutionStorage extends PgBaseStorage {
 
     const countResult = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM execution.history ${where}`,
-      values,
+      values
     );
 
     const rows = await this.queryMany<ExecutionRow>(
       `SELECT * FROM execution.history ${where} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
-      [...values, limit, offset],
+      [...values, limit, offset]
     );
 
     return {
@@ -220,15 +200,13 @@ export class ExecutionStorage extends PgBaseStorage {
 
   // ── Approval operations ────────────────────────────────────────
 
-  async createApproval(data: {
-    requestId: string;
-  }): Promise<ApprovalRecord> {
+  async createApproval(data: { requestId: string }): Promise<ApprovalRecord> {
     const id = uuidv7();
     const row = await this.queryOne<ApprovalRow>(
       `INSERT INTO execution.approvals (id, request_id, status, requested_at)
        VALUES ($1, $2, 'pending', now())
        RETURNING *`,
-      [id, data.requestId],
+      [id, data.requestId]
     );
     return approvalFromRow(row!);
   }
@@ -236,25 +214,25 @@ export class ExecutionStorage extends PgBaseStorage {
   async getApproval(id: string): Promise<ApprovalRecord | null> {
     const row = await this.queryOne<ApprovalRow>(
       `SELECT * FROM execution.approvals WHERE id = $1`,
-      [id],
+      [id]
     );
     return row ? approvalFromRow(row) : null;
   }
 
   async updateApproval(
     id: string,
-    status: 'approved' | 'rejected',
+    status: 'approved' | 'rejected'
   ): Promise<ApprovalRecord | null> {
     const row = await this.queryOne<ApprovalRow>(
       `UPDATE execution.approvals SET status = $1, resolved_at = now() WHERE id = $2 AND status = 'pending' RETURNING *`,
-      [status, id],
+      [status, id]
     );
     return row ? approvalFromRow(row) : null;
   }
 
   async listPendingApprovals(): Promise<ApprovalRecord[]> {
     const rows = await this.queryMany<ApprovalRow>(
-      `SELECT * FROM execution.approvals WHERE status = 'pending' ORDER BY requested_at ASC`,
+      `SELECT * FROM execution.approvals WHERE status = 'pending' ORDER BY requested_at ASC`
     );
     return rows.map(approvalFromRow);
   }

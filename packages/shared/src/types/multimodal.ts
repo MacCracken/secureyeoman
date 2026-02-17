@@ -68,19 +68,9 @@ export const ImageGenResultSchema = z.object({
 
 // ─── Job Tracking Schema ────────────────────────────────────────────
 
-export const MultimodalJobTypeSchema = z.enum([
-  'vision',
-  'stt',
-  'tts',
-  'image_gen',
-]);
+export const MultimodalJobTypeSchema = z.enum(['vision', 'stt', 'tts', 'image_gen']);
 
-export const MultimodalJobStatusSchema = z.enum([
-  'pending',
-  'running',
-  'completed',
-  'failed',
-]);
+export const MultimodalJobStatusSchema = z.enum(['pending', 'running', 'completed', 'failed']);
 
 export const MultimodalJobSchema = z.object({
   id: z.string(),

@@ -13,7 +13,7 @@ export interface RuntimeAdapter {
   execute(
     code: string,
     session: ExecutionSession,
-    opts: { timeout: number },
+    opts: { timeout: number }
   ): AsyncIterable<OutputChunk>;
   validateCode(code: string): { valid: boolean; errors: string[] };
   cleanup(session: ExecutionSession): Promise<void>;
@@ -25,7 +25,7 @@ async function* spawnAndStream(
   command: string,
   args: string[],
   code: string,
-  timeout: number,
+  timeout: number
 ): AsyncIterable<OutputChunk & { _exitCode?: number }> {
   const child = spawn(command, [...args, code], {
     stdio: ['pipe', 'pipe', 'pipe'],
@@ -37,7 +37,7 @@ async function* spawnAndStream(
   child.stdin.end();
 
   // Collect chunks in a buffer that the consumer will drain via the async iterator.
-  const chunks: Array<OutputChunk & { _exitCode?: number }> = [];
+  const chunks: (OutputChunk & { _exitCode?: number })[] = [];
   let done = false;
   let resolveWait: (() => void) | null = null;
 
@@ -116,7 +116,7 @@ const SHELL_DANGEROUS = [
   /\brm\s+-rf\s+\//,
   /\bmkfs\b/,
   /\bdd\s+if=/,
-  /:\(\)\s*\{\s*:\|:\s*&\s*\}\s*;/,   // fork bomb
+  /:\(\)\s*\{\s*:\|:\s*&\s*\}\s*;/, // fork bomb
   /\b>\s*\/dev\/sd/,
 ];
 
@@ -128,7 +128,7 @@ export class NodeRuntime implements RuntimeAdapter {
   async *execute(
     code: string,
     _session: ExecutionSession,
-    opts: { timeout: number },
+    opts: { timeout: number }
   ): AsyncIterable<OutputChunk> {
     for await (const chunk of spawnAndStream('node', ['-e'], code, opts.timeout)) {
       yield { stream: chunk.stream, data: chunk.data, timestamp: chunk.timestamp };
@@ -158,7 +158,7 @@ export class PythonRuntime implements RuntimeAdapter {
   async *execute(
     code: string,
     _session: ExecutionSession,
-    opts: { timeout: number },
+    opts: { timeout: number }
   ): AsyncIterable<OutputChunk> {
     for await (const chunk of spawnAndStream('python3', ['-c'], code, opts.timeout)) {
       yield { stream: chunk.stream, data: chunk.data, timestamp: chunk.timestamp };
@@ -188,7 +188,7 @@ export class ShellRuntime implements RuntimeAdapter {
   async *execute(
     code: string,
     _session: ExecutionSession,
-    opts: { timeout: number },
+    opts: { timeout: number }
   ): AsyncIterable<OutputChunk> {
     for await (const chunk of spawnAndStream('sh', ['-c'], code, opts.timeout)) {
       yield { stream: chunk.stream, data: chunk.data, timestamp: chunk.timestamp };

@@ -1,6 +1,6 @@
 /**
  * Audit Chain for SecureYeoman
- * 
+ *
  * Security considerations:
  * - Append-only log structure prevents tampering
  * - Each entry is signed with HMAC-SHA256
@@ -59,7 +59,7 @@ function computeEntryHash(entry: AuditEntry): string {
     metadata: entry.metadata,
     timestamp: entry.timestamp,
   };
-  
+
   // Deterministic JSON serialization
   const serialized = JSON.stringify(hashData, Object.keys(hashData).sort());
   return sha256(serialized);
@@ -79,7 +79,7 @@ export class AuditChain {
   private lastHash: string = GENESIS_HASH;
   private initialized = false;
   private logger: SecureLogger | null = null;
-  private signingKeyHistory: Array<{ fromEntryId: string; key: string }> = [];
+  private signingKeyHistory: { fromEntryId: string; key: string }[] = [];
 
   constructor(config: AuditChainConfig) {
     this.storage = config.storage;
@@ -115,7 +115,7 @@ export class AuditChain {
 
     this.signingKey = newKey;
   }
-  
+
   /**
    * Initialize the chain by loading the last entry
    */
@@ -123,15 +123,15 @@ export class AuditChain {
     if (this.initialized) {
       return;
     }
-    
+
     try {
       this.logger = getLogger().child({ component: 'AuditChain' });
     } catch {
       // Logger not yet initialized, that's ok
     }
-    
+
     const lastEntry = await this.storage.getLast();
-    
+
     if (lastEntry) {
       // Verify the last entry before continuing
       const entryHash = computeEntryHash(lastEntry);
@@ -140,23 +140,23 @@ export class AuditChain {
         lastEntry.integrity.previousEntryHash,
         this.signingKey
       );
-      
+
       if (!secureCompare(lastEntry.integrity.signature, expectedSig)) {
         throw new Error('Audit chain integrity compromised: last entry signature invalid');
       }
-      
+
       this.lastHash = entryHash;
-      this.logger?.info('Audit chain initialized', { 
+      this.logger?.info('Audit chain initialized', {
         entriesCount: await this.storage.count(),
         lastEntryId: lastEntry.id,
       });
     } else {
       this.logger?.info('Audit chain initialized (empty chain)');
     }
-    
+
     this.initialized = true;
   }
-  
+
   /**
    * Record a new audit entry
    */
@@ -172,7 +172,7 @@ export class AuditChain {
     if (!this.initialized) {
       await this.initialize();
     }
-    
+
     const entry: AuditEntry = {
       id: uuidv7(),
       correlationId: params.correlationId,
@@ -189,26 +189,26 @@ export class AuditChain {
         previousEntryHash: this.lastHash,
       },
     };
-    
+
     // Compute hash and signature
     const entryHash = computeEntryHash(entry);
     entry.integrity.signature = computeSignature(entryHash, this.lastHash, this.signingKey);
-    
+
     // Validate against schema
     const validation = AuditEntrySchema.safeParse(entry);
     if (!validation.success) {
       throw new Error(`Invalid audit entry: ${validation.error.message}`);
     }
-    
+
     // Persist
     await this.storage.append(entry);
-    
+
     // Update chain state
     this.lastHash = entryHash;
-    
+
     return entry;
   }
-  
+
   /**
    * Verify the entire audit chain integrity.
    * Uses key history to switch signing keys at rotation points.
@@ -236,7 +236,7 @@ export class AuditChain {
         // Advance key schedule when we pass a rotation boundary
         if (scheduleIndex < keySchedule.length - 1) {
           const historyEntry = this.signingKeyHistory[scheduleIndex];
-          if (historyEntry && entry.id === historyEntry.fromEntryId) {
+          if (entry.id === historyEntry?.fromEntryId) {
             // This entry (the rotation event) was signed with the OLD key
             // After this entry, advance to next key
           }
@@ -276,7 +276,7 @@ export class AuditChain {
         // Advance key after verifying the rotation entry with old key
         if (scheduleIndex < keySchedule.length - 1) {
           const historyEntry = this.signingKeyHistory[scheduleIndex];
-          if (historyEntry && entry.id === historyEntry.fromEntryId) {
+          if (entry.id === historyEntry?.fromEntryId) {
             scheduleIndex++;
             activeKey = keySchedule[scheduleIndex] ?? this.signingKey;
           }
@@ -307,7 +307,7 @@ export class AuditChain {
     keys.push(this.signingKey);
     return keys;
   }
-  
+
   /**
    * Get chain statistics
    */
@@ -318,14 +318,14 @@ export class AuditChain {
   }> {
     const count = await this.storage.count();
     const verification = await this.verify();
-    
+
     return {
       entriesCount: count,
       chainValid: verification.valid,
       lastVerification: Date.now(),
     };
   }
-  
+
   /**
    * Create a forensic snapshot of the chain state
    * Used before recovery operations
@@ -337,7 +337,7 @@ export class AuditChain {
     lastEntryId: string | null;
   }> {
     const lastEntry = await this.storage.getLast();
-    
+
     return {
       timestamp: Date.now(),
       entriesCount: await this.storage.count(),
@@ -376,29 +376,29 @@ export class InMemoryAuditStorage implements AuditChainStorage {
   }
 
   async getById(id: string): Promise<AuditEntry | null> {
-    return this.entries.find(e => e.id === id) ?? null;
+    return this.entries.find((e) => e.id === id) ?? null;
   }
 
   async query(opts: AuditQueryOptions = {}): Promise<AuditQueryResult> {
     let filtered = this.entries.slice();
 
     if (opts.from !== undefined) {
-      filtered = filtered.filter(e => e.timestamp >= opts.from!);
+      filtered = filtered.filter((e) => e.timestamp >= opts.from!);
     }
     if (opts.to !== undefined) {
-      filtered = filtered.filter(e => e.timestamp <= opts.to!);
+      filtered = filtered.filter((e) => e.timestamp <= opts.to!);
     }
     if (opts.level?.length) {
-      filtered = filtered.filter(e => opts.level!.includes(e.level));
+      filtered = filtered.filter((e) => opts.level!.includes(e.level));
     }
     if (opts.event?.length) {
-      filtered = filtered.filter(e => opts.event!.includes(e.event));
+      filtered = filtered.filter((e) => opts.event!.includes(e.event));
     }
     if (opts.userId !== undefined) {
-      filtered = filtered.filter(e => e.userId === opts.userId);
+      filtered = filtered.filter((e) => e.userId === opts.userId);
     }
     if (opts.taskId !== undefined) {
-      filtered = filtered.filter(e => e.taskId === opts.taskId);
+      filtered = filtered.filter((e) => e.taskId === opts.taskId);
     }
 
     const total = filtered.length;

@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { HeartManager } from './heart.js';
 import type { HeartbeatManager } from './heartbeat.js';
 
-function mockHeartbeatManager(overrides?: Partial<ReturnType<HeartbeatManager['getStatus']>>): HeartbeatManager {
+function mockHeartbeatManager(
+  overrides?: Partial<ReturnType<HeartbeatManager['getStatus']>>
+): HeartbeatManager {
   const defaults = {
     running: true,
     enabled: true,
@@ -34,17 +36,29 @@ describe('HeartManager', () => {
   });
 
   it('should compose heart prompt with vital signs', () => {
-    const heart = new HeartManager(mockHeartbeatManager({
-      beatCount: 3,
-      lastBeat: {
-        timestamp: 1700000000000,
-        durationMs: 12,
-        checks: [
-          { name: 'system_health', type: 'system_health', status: 'ok', message: 'All systems nominal' },
-          { name: 'memory_status', type: 'memory_status', status: 'warning', message: 'High pruning count' },
-        ],
-      },
-    }));
+    const heart = new HeartManager(
+      mockHeartbeatManager({
+        beatCount: 3,
+        lastBeat: {
+          timestamp: 1700000000000,
+          durationMs: 12,
+          checks: [
+            {
+              name: 'system_health',
+              type: 'system_health',
+              status: 'ok',
+              message: 'All systems nominal',
+            },
+            {
+              name: 'memory_status',
+              type: 'memory_status',
+              status: 'warning',
+              message: 'High pruning count',
+            },
+          ],
+        },
+      })
+    );
 
     const prompt = heart.composeHeartPrompt();
     expect(prompt).toContain('### Heart');
@@ -55,16 +69,23 @@ describe('HeartManager', () => {
   });
 
   it('should render error status with ERR tag', () => {
-    const heart = new HeartManager(mockHeartbeatManager({
-      beatCount: 1,
-      lastBeat: {
-        timestamp: 1700000000000,
-        durationMs: 5,
-        checks: [
-          { name: 'log_anomalies', type: 'log_anomalies', status: 'error', message: 'High error rate' },
-        ],
-      },
-    }));
+    const heart = new HeartManager(
+      mockHeartbeatManager({
+        beatCount: 1,
+        lastBeat: {
+          timestamp: 1700000000000,
+          durationMs: 5,
+          checks: [
+            {
+              name: 'log_anomalies',
+              type: 'log_anomalies',
+              status: 'error',
+              message: 'High error rate',
+            },
+          ],
+        },
+      })
+    );
 
     const prompt = heart.composeHeartPrompt();
     expect(prompt).toContain('log_anomalies: [ERR] High error rate');
@@ -72,21 +93,42 @@ describe('HeartManager', () => {
 
   it('should include task schedule with frequency and last run info', () => {
     const now = Date.now();
-    const heart = new HeartManager(mockHeartbeatManager({
-      beatCount: 5,
-      lastBeat: {
-        timestamp: now,
-        durationMs: 8,
-        checks: [
-          { name: 'system_health', type: 'system_health', status: 'ok', message: 'OK' },
+    const heart = new HeartManager(
+      mockHeartbeatManager({
+        beatCount: 5,
+        lastBeat: {
+          timestamp: now,
+          durationMs: 8,
+          checks: [{ name: 'system_health', type: 'system_health', status: 'ok', message: 'OK' }],
+        },
+        tasks: [
+          {
+            name: 'system_health',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 300_000,
+            lastRunAt: now - 60_000,
+            config: {},
+          },
+          {
+            name: 'memory_status',
+            type: 'memory_status',
+            enabled: true,
+            intervalMs: 600_000,
+            lastRunAt: null,
+            config: {},
+          },
+          {
+            name: 'self_reflection',
+            type: 'reflective_task',
+            enabled: false,
+            intervalMs: 1_800_000,
+            lastRunAt: null,
+            config: { prompt: 'reflect' },
+          },
         ],
-      },
-      tasks: [
-        { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 300_000, lastRunAt: now - 60_000, config: {} },
-        { name: 'memory_status', type: 'memory_status', enabled: true, intervalMs: 600_000, lastRunAt: null, config: {} },
-        { name: 'self_reflection', type: 'reflective_task', enabled: false, intervalMs: 1_800_000, lastRunAt: null, config: { prompt: 'reflect' } },
-      ],
-    }));
+      })
+    );
 
     const prompt = heart.composeHeartPrompt();
     expect(prompt).toContain('Task schedule:');
@@ -100,8 +142,12 @@ describe('HeartManager', () => {
     let stopped = false;
     const hb = {
       ...mockHeartbeatManager(),
-      start: () => { started = true; },
-      stop: () => { stopped = true; },
+      start: () => {
+        started = true;
+      },
+      stop: () => {
+        stopped = true;
+      },
     } as unknown as HeartbeatManager;
 
     const heart = new HeartManager(hb);

@@ -52,44 +52,36 @@ export class CommsStorage extends PgBaseStorage {
         JSON.stringify(identity.capabilities),
         identity.lastSeenAt,
         now,
-      ],
+      ]
     );
   }
 
   async getPeer(id: string): Promise<AgentIdentity | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM comms.peers WHERE id = $1',
-      [id],
+      [id]
     );
     return row ? rowToPeer(row) : null;
   }
 
   async listPeers(): Promise<AgentIdentity[]> {
     const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM comms.peers ORDER BY last_seen_at DESC',
+      'SELECT * FROM comms.peers ORDER BY last_seen_at DESC'
     );
     return rows.map(rowToPeer);
   }
 
   async removePeer(id: string): Promise<boolean> {
-    const changes = await this.execute(
-      'DELETE FROM comms.peers WHERE id = $1',
-      [id],
-    );
+    const changes = await this.execute('DELETE FROM comms.peers WHERE id = $1', [id]);
     return changes > 0;
   }
 
   async updatePeerLastSeen(id: string): Promise<void> {
-    await this.execute(
-      'UPDATE comms.peers SET last_seen_at = $1 WHERE id = $2',
-      [Date.now(), id],
-    );
+    await this.execute('UPDATE comms.peers SET last_seen_at = $1 WHERE id = $2', [Date.now(), id]);
   }
 
   async getPeerCount(): Promise<number> {
-    const row = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM comms.peers',
-    );
+    const row = await this.queryOne<{ count: string }>('SELECT COUNT(*) as count FROM comms.peers');
     return parseInt(row?.count ?? '0', 10);
   }
 
@@ -99,14 +91,14 @@ export class CommsStorage extends PgBaseStorage {
     direction: 'sent' | 'received',
     peerAgentId: string,
     messageType: MessageType,
-    encryptedPayload: string,
+    encryptedPayload: string
   ): Promise<string> {
     const id = uuidv7();
     await this.execute(
       `INSERT INTO comms.message_log
         (id, direction, peer_agent_id, message_type, encrypted_payload, timestamp)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [id, direction, peerAgentId, messageType, encryptedPayload, Date.now()],
+      [id, direction, peerAgentId, messageType, encryptedPayload, Date.now()]
     );
     return id;
   }
@@ -140,15 +132,12 @@ export class CommsStorage extends PgBaseStorage {
 
   async pruneOldMessages(retentionDays: number): Promise<number> {
     const cutoff = Date.now() - retentionDays * 86_400_000;
-    return this.execute(
-      'DELETE FROM comms.message_log WHERE timestamp < $1',
-      [cutoff],
-    );
+    return this.execute('DELETE FROM comms.message_log WHERE timestamp < $1', [cutoff]);
   }
 
   async getMessageCount(): Promise<number> {
     const row = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM comms.message_log',
+      'SELECT COUNT(*) as count FROM comms.message_log'
     );
     return parseInt(row?.count ?? '0', 10);
   }

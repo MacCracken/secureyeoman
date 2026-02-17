@@ -77,9 +77,7 @@ describe('ConnectionManager', () => {
   it('displays info banner when no platform adapters are registered', async () => {
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });
     renderComponent();
-    expect(
-      await screen.findByText('No platform adapters registered')
-    ).toBeInTheDocument();
+    expect(await screen.findByText('No platform adapters registered')).toBeInTheDocument();
   });
 
   it('does not display info banner when platforms are registered', async () => {

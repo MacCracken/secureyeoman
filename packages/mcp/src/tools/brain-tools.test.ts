@@ -75,7 +75,12 @@ describe('brain-tools', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     const client = mockClient();
     const mw = noopMiddleware();
-    mw.inputValidator.validate = () => ({ valid: false, blocked: true, blockReason: 'SQL injection', warnings: [] });
+    mw.inputValidator.validate = () => ({
+      valid: false,
+      blocked: true,
+      blockReason: 'SQL injection',
+      warnings: [],
+    });
     registerBrainTools(server, client, mw);
     expect(true).toBe(true);
   });

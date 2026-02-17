@@ -5,7 +5,9 @@ import type { CoreApiClient } from '../core-client.js';
 
 function mockClient(): CoreApiClient {
   return {
-    get: vi.fn().mockResolvedValue({ personality: { name: 'FRIDAY', systemPrompt: 'I am FRIDAY' } }),
+    get: vi
+      .fn()
+      .mockResolvedValue({ personality: { name: 'FRIDAY', systemPrompt: 'I am FRIDAY' } }),
     post: vi.fn().mockResolvedValue({}),
     delete: vi.fn().mockResolvedValue({}),
     put: vi.fn().mockResolvedValue({}),

@@ -21,7 +21,7 @@ export class AIProviderError extends Error {
       retryAfter?: number;
       statusCode?: number;
       cause?: Error;
-    },
+    }
   ) {
     super(message, { cause: options.cause });
     this.name = 'AIProviderError';

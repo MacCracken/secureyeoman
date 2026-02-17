@@ -119,7 +119,9 @@ function CollapsibleSection({
   return (
     <div className="border rounded p-3">
       <button
-        onClick={() => setOpen(!open)}
+        onClick={() => {
+          setOpen(!open);
+        }}
         className="flex items-center gap-2 w-full text-left font-medium text-sm"
       >
         {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
@@ -208,7 +210,9 @@ function SpiritSection() {
                 {p.description && `— ${p.description}`}
               </span>
               <button
-                onClick={() => deletePassionMut.mutate(p.id)}
+                onClick={() => {
+                  deletePassionMut.mutate(p.id);
+                }}
                 className="text-destructive hover:text-destructive/80 p-1"
               >
                 <Trash2 className="w-3 h-3" />
@@ -222,7 +226,9 @@ function SpiritSection() {
               type="text"
               placeholder="Name"
               value={newPassion.name}
-              onChange={(e) => setNewPassion((p) => ({ ...p, name: e.target.value }))}
+              onChange={(e) => {
+                setNewPassion((p) => ({ ...p, name: e.target.value }));
+              }}
               className="flex-1 px-2 py-1.5 text-sm rounded border bg-background"
             />
             <input
@@ -231,9 +237,9 @@ function SpiritSection() {
               max="1"
               step="0.1"
               value={newPassion.intensity}
-              onChange={(e) =>
-                setNewPassion((p) => ({ ...p, intensity: parseFloat(e.target.value) }))
-              }
+              onChange={(e) => {
+                setNewPassion((p) => ({ ...p, intensity: parseFloat(e.target.value) }));
+              }}
               className="w-20"
               title={`Intensity: ${newPassion.intensity}`}
             />
@@ -243,11 +249,15 @@ function SpiritSection() {
               type="text"
               placeholder="Description (optional)"
               value={newPassion.description}
-              onChange={(e) => setNewPassion((p) => ({ ...p, description: e.target.value }))}
+              onChange={(e) => {
+                setNewPassion((p) => ({ ...p, description: e.target.value }));
+              }}
               className="flex-1 max-w-[calc(100%-80px)] px-2 py-1.5 text-sm rounded border bg-background"
             />
             <button
-              onClick={() => createPassionMut.mutate()}
+              onClick={() => {
+                createPassionMut.mutate();
+              }}
               disabled={!newPassion.name.trim()}
               className="btn btn-primary px-3 py-1.5 text-sm"
             >
@@ -271,7 +281,9 @@ function SpiritSection() {
                 {i.description && `— ${i.description}`}
               </span>
               <button
-                onClick={() => deleteInspirationMut.mutate(i.id)}
+                onClick={() => {
+                  deleteInspirationMut.mutate(i.id);
+                }}
                 className="text-destructive hover:text-destructive/80 p-1"
               >
                 <Trash2 className="w-3 h-3" />
@@ -285,7 +297,9 @@ function SpiritSection() {
               type="text"
               placeholder="Source"
               value={newInspiration.source}
-              onChange={(e) => setNewInspiration((i) => ({ ...i, source: e.target.value }))}
+              onChange={(e) => {
+                setNewInspiration((i) => ({ ...i, source: e.target.value }));
+              }}
               className="flex-1 px-2 py-1.5 text-sm rounded border bg-background"
             />
             <input
@@ -294,9 +308,9 @@ function SpiritSection() {
               max="1"
               step="0.1"
               value={newInspiration.impact}
-              onChange={(e) =>
-                setNewInspiration((i) => ({ ...i, impact: parseFloat(e.target.value) }))
-              }
+              onChange={(e) => {
+                setNewInspiration((i) => ({ ...i, impact: parseFloat(e.target.value) }));
+              }}
               className="w-20"
               title={`Impact: ${newInspiration.impact}`}
             />
@@ -306,11 +320,15 @@ function SpiritSection() {
               type="text"
               placeholder="Description (optional)"
               value={newInspiration.description}
-              onChange={(e) => setNewInspiration((i) => ({ ...i, description: e.target.value }))}
+              onChange={(e) => {
+                setNewInspiration((i) => ({ ...i, description: e.target.value }));
+              }}
               className="flex-1 max-w-[calc(100%-80px)] px-2 py-1.5 text-sm rounded border bg-background"
             />
             <button
-              onClick={() => createInspirationMut.mutate()}
+              onClick={() => {
+                createInspirationMut.mutate();
+              }}
               disabled={!newInspiration.source.trim()}
               className="btn btn-primary px-3 py-1.5 text-sm"
             >
@@ -334,7 +352,9 @@ function SpiritSection() {
                 {p.description && `— ${p.description}`}
               </span>
               <button
-                onClick={() => deletePainMut.mutate(p.id)}
+                onClick={() => {
+                  deletePainMut.mutate(p.id);
+                }}
                 className="text-destructive hover:text-destructive/80 p-1"
               >
                 <Trash2 className="w-3 h-3" />
@@ -348,7 +368,9 @@ function SpiritSection() {
               type="text"
               placeholder="Trigger"
               value={newPain.trigger}
-              onChange={(e) => setNewPain((p) => ({ ...p, trigger: e.target.value }))}
+              onChange={(e) => {
+                setNewPain((p) => ({ ...p, trigger: e.target.value }));
+              }}
               className="flex-1 px-2 py-1.5 text-sm rounded border bg-background"
             />
             <input
@@ -357,7 +379,9 @@ function SpiritSection() {
               max="1"
               step="0.1"
               value={newPain.severity}
-              onChange={(e) => setNewPain((p) => ({ ...p, severity: parseFloat(e.target.value) }))}
+              onChange={(e) => {
+                setNewPain((p) => ({ ...p, severity: parseFloat(e.target.value) }));
+              }}
               className="w-20"
               title={`Severity: ${newPain.severity}`}
             />
@@ -367,11 +391,15 @@ function SpiritSection() {
               type="text"
               placeholder="Description (optional)"
               value={newPain.description}
-              onChange={(e) => setNewPain((p) => ({ ...p, description: e.target.value }))}
+              onChange={(e) => {
+                setNewPain((p) => ({ ...p, description: e.target.value }));
+              }}
               className="flex-1 max-w-[calc(100%-80px)] px-2 py-1.5 text-sm rounded border bg-background"
             />
             <button
-              onClick={() => createPainMut.mutate()}
+              onClick={() => {
+                createPainMut.mutate();
+              }}
               disabled={!newPain.trigger.trim()}
               className="btn btn-primary px-3 py-1.5 text-sm"
             >
@@ -491,7 +519,9 @@ function BrainSection() {
         confirmLabel="Delete"
         destructive
         onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
       />
 
       <div className="space-y-2 mb-3">
@@ -512,7 +542,9 @@ function BrainSection() {
                 </div>
                 <textarea
                   value={editContent}
-                  onChange={(e) => setEditContent(e.target.value)}
+                  onChange={(e) => {
+                    setEditContent(e.target.value);
+                  }}
                   className="w-full px-2 py-1 text-sm rounded border bg-background resize-y"
                   rows={3}
                 />
@@ -524,13 +556,17 @@ function BrainSection() {
                     max="1"
                     step="0.05"
                     value={editConfidence}
-                    onChange={(e) => setEditConfidence(parseFloat(e.target.value))}
+                    onChange={(e) => {
+                      setEditConfidence(parseFloat(e.target.value));
+                    }}
                     className="w-24"
                   />
                   <span className="text-xs">{editConfidence.toFixed(2)}</span>
                   <div className="flex-1" />
                   <button
-                    onClick={() => setEditingId(null)}
+                    onClick={() => {
+                      setEditingId(null);
+                    }}
                     className="btn btn-ghost text-xs px-2 py-1"
                   >
                     Cancel
@@ -563,14 +599,18 @@ function BrainSection() {
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button
-                    onClick={() => startEdit(k)}
+                    onClick={() => {
+                      startEdit(k);
+                    }}
                     className="btn-ghost p-1 text-muted-foreground hover:text-foreground"
                     title="Edit"
                   >
                     <Edit2 className="w-3 h-3" />
                   </button>
                   <button
-                    onClick={() => setDeleteTarget(k)}
+                    onClick={() => {
+                      setDeleteTarget(k);
+                    }}
                     className="btn-ghost p-1 text-muted-foreground hover:text-destructive"
                     title="Delete"
                   >
@@ -591,18 +631,24 @@ function BrainSection() {
             type="text"
             placeholder="Topic"
             value={teachTopic}
-            onChange={(e) => setTeachTopic(e.target.value)}
+            onChange={(e) => {
+              setTeachTopic(e.target.value);
+            }}
             className="w-32 px-2 py-1 text-sm rounded border bg-background"
           />
           <input
             type="text"
             placeholder="Content"
             value={teachContent}
-            onChange={(e) => setTeachContent(e.target.value)}
+            onChange={(e) => {
+              setTeachContent(e.target.value);
+            }}
             className="flex-1 min-w-0 px-2 py-1 text-sm rounded border bg-background"
           />
           <button
-            onClick={() => learnMut.mutate()}
+            onClick={() => {
+              learnMut.mutate();
+            }}
             disabled={!teachTopic.trim() || !teachContent.trim() || learnMut.isPending}
             className="btn btn-primary text-xs px-2 py-1"
           >
@@ -645,7 +691,9 @@ function BrainSection() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => syncMut.mutate()}
+                onClick={() => {
+                  syncMut.mutate();
+                }}
                 disabled={syncMut.isPending}
                 className="btn btn-primary text-xs px-2 py-1 flex items-center gap-1"
               >
@@ -653,7 +701,9 @@ function BrainSection() {
                 {syncMut.isPending ? 'Syncing...' : 'Sync Now'}
               </button>
               <button
-                onClick={() => setShowConfigForm(!showConfigForm)}
+                onClick={() => {
+                  setShowConfigForm(!showConfigForm);
+                }}
                 className="btn btn-ghost text-xs px-2 py-1"
               >
                 Configure
@@ -670,7 +720,9 @@ function BrainSection() {
                 Provider
                 <select
                   value={configForm.provider}
-                  onChange={(e) => setConfigForm({ ...configForm, provider: e.target.value })}
+                  onChange={(e) => {
+                    setConfigForm({ ...configForm, provider: e.target.value });
+                  }}
                   className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
                 >
                   <option value="filesystem">Filesystem</option>
@@ -683,7 +735,9 @@ function BrainSection() {
                 <input
                   type="text"
                   value={configForm.path}
-                  onChange={(e) => setConfigForm({ ...configForm, path: e.target.value })}
+                  onChange={(e) => {
+                    setConfigForm({ ...configForm, path: e.target.value });
+                  }}
                   placeholder="/path/to/vault or /path/to/notes"
                   className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
                 />
@@ -693,7 +747,9 @@ function BrainSection() {
                 <input
                   type="text"
                   value={configForm.subdir}
-                  onChange={(e) => setConfigForm({ ...configForm, subdir: e.target.value })}
+                  onChange={(e) => {
+                    setConfigForm({ ...configForm, subdir: e.target.value });
+                  }}
                   placeholder="e.g., 30 - Resources/FRIDAY"
                   className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
                 />
@@ -703,12 +759,12 @@ function BrainSection() {
                 <input
                   type="number"
                   value={configForm.syncIntervalMs / 60000}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setConfigForm({
                       ...configForm,
                       syncIntervalMs: parseInt(e.target.value || '0', 10) * 60000,
-                    })
-                  }
+                    });
+                  }}
                   min={0}
                   max={1440}
                   className="w-full mt-1 px-2 py-1 text-sm rounded border bg-background"
@@ -717,14 +773,18 @@ function BrainSection() {
             </div>
             <div className="flex gap-2">
               <button
-                onClick={() => configMut.mutate(configForm)}
+                onClick={() => {
+                  configMut.mutate(configForm);
+                }}
                 disabled={!configForm.path || configMut.isPending}
                 className="btn btn-primary text-xs px-3 py-1"
               >
                 {configMut.isPending ? 'Saving...' : 'Save Configuration'}
               </button>
               <button
-                onClick={() => setShowConfigForm(false)}
+                onClick={() => {
+                  setShowConfigForm(false);
+                }}
                 className="btn btn-ghost text-xs px-3 py-1"
               >
                 Cancel
@@ -737,7 +797,9 @@ function BrainSection() {
               External brain sync is not configured. Configure it to export memories and knowledge.
             </p>
             <button
-              onClick={() => setShowConfigForm(true)}
+              onClick={() => {
+                setShowConfigForm(true);
+              }}
               className="btn btn-primary text-xs px-3 py-1"
             >
               Configure External Sync
@@ -803,23 +865,27 @@ function HeartbeatTasksSection() {
                   min={1}
                   max={1440}
                   value={editFreqMinutes}
-                  onChange={(e) => setEditFreqMinutes(parseInt(e.target.value) || 1)}
+                  onChange={(e) => {
+                    setEditFreqMinutes(parseInt(e.target.value) || 1);
+                  }}
                   className="w-20 px-2 py-1 text-sm rounded border bg-background"
                 />
                 <div className="flex-1" />
                 <button
-                  onClick={() => setEditingTask(null)}
+                  onClick={() => {
+                    setEditingTask(null);
+                  }}
                   className="btn btn-ghost text-xs px-2 py-1"
                 >
                   Cancel
                 </button>
                 <button
-                  onClick={() =>
+                  onClick={() => {
                     updateMut.mutate({
                       name: task.name,
                       data: { intervalMs: editFreqMinutes * 60_000 },
-                    })
-                  }
+                    });
+                  }}
                   disabled={updateMut.isPending}
                   className="btn btn-primary text-xs px-2 py-1 flex items-center gap-1"
                 >
@@ -860,15 +926,17 @@ function HeartbeatTasksSection() {
                   <input
                     type="checkbox"
                     checked={task.enabled}
-                    onChange={() =>
-                      updateMut.mutate({ name: task.name, data: { enabled: !task.enabled } })
-                    }
+                    onChange={() => {
+                      updateMut.mutate({ name: task.name, data: { enabled: !task.enabled } });
+                    }}
                     className="sr-only peer"
                   />
                   <div className="w-8 h-4 bg-muted-foreground/30 peer-checked:bg-primary rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
                 </label>
                 <button
-                  onClick={() => startEdit(task)}
+                  onClick={() => {
+                    startEdit(task);
+                  }}
                   className="btn-ghost p-1 text-muted-foreground hover:text-foreground"
                   title="Edit frequency"
                 >
@@ -890,8 +958,22 @@ interface BodySectionProps {
   onSelectedServersChange: (servers: string[]) => void;
   enabledCaps: Record<string, boolean>;
   onEnabledCapsChange: (caps: Record<string, boolean>) => void;
-  mcpFeatures: { exposeGit: boolean; exposeFilesystem: boolean; exposeWeb: boolean; exposeWebScraping: boolean; exposeWebSearch: boolean; exposeBrowser: boolean };
-  onMcpFeaturesChange: (features: { exposeGit: boolean; exposeFilesystem: boolean; exposeWeb: boolean; exposeWebScraping: boolean; exposeWebSearch: boolean; exposeBrowser: boolean }) => void;
+  mcpFeatures: {
+    exposeGit: boolean;
+    exposeFilesystem: boolean;
+    exposeWeb: boolean;
+    exposeWebScraping: boolean;
+    exposeWebSearch: boolean;
+    exposeBrowser: boolean;
+  };
+  onMcpFeaturesChange: (features: {
+    exposeGit: boolean;
+    exposeFilesystem: boolean;
+    exposeWeb: boolean;
+    exposeWebScraping: boolean;
+    exposeWebSearch: boolean;
+    exposeBrowser: boolean;
+  }) => void;
   creationConfig: {
     skills: boolean;
     tasks: boolean;
@@ -913,13 +995,25 @@ interface BodySectionProps {
   proactiveConfig: {
     enabled: boolean;
     approvalMode: 'auto' | 'suggest' | 'manual';
-    builtins: { dailyStandup: boolean; weeklySummary: boolean; contextualFollowup: boolean; integrationHealthAlert: boolean; securityAlertDigest: boolean };
+    builtins: {
+      dailyStandup: boolean;
+      weeklySummary: boolean;
+      contextualFollowup: boolean;
+      integrationHealthAlert: boolean;
+      securityAlertDigest: boolean;
+    };
     learning: { enabled: boolean; minConfidence: number };
   };
   onProactiveConfigChange: (config: {
     enabled: boolean;
     approvalMode: 'auto' | 'suggest' | 'manual';
-    builtins: { dailyStandup: boolean; weeklySummary: boolean; contextualFollowup: boolean; integrationHealthAlert: boolean; securityAlertDigest: boolean };
+    builtins: {
+      dailyStandup: boolean;
+      weeklySummary: boolean;
+      contextualFollowup: boolean;
+      integrationHealthAlert: boolean;
+      securityAlertDigest: boolean;
+    };
     learning: { enabled: boolean; minConfidence: number };
   }) => void;
 }
@@ -963,7 +1057,12 @@ function BodySection({
     { key: 'skills' as const, label: 'New Skills', icon: '🧠' },
     { key: 'experiments' as const, label: 'New Experiments', icon: '🧪' },
     { key: 'personalities' as const, label: 'New Personalities', icon: '👤' },
-    { key: 'subAgents' as const, label: 'New Sub-Agents', icon: '🤖', blockedByPolicy: subAgentsBlockedByPolicy },
+    {
+      key: 'subAgents' as const,
+      label: 'New Sub-Agents',
+      icon: '🤖',
+      blockedByPolicy: subAgentsBlockedByPolicy,
+    },
     { key: 'customRoles' as const, label: 'New Custom Roles', icon: '🛡️' },
     { key: 'roleAssignments' as const, label: 'Assign Roles', icon: '🔑' },
   ];
@@ -973,7 +1072,14 @@ function BodySection({
     .every((item) => creationConfig[item.key]);
 
   const toggleCreationItem = (
-    key: 'skills' | 'tasks' | 'personalities' | 'subAgents' | 'customRoles' | 'roleAssignments' | 'experiments'
+    key:
+      | 'skills'
+      | 'tasks'
+      | 'personalities'
+      | 'subAgents'
+      | 'customRoles'
+      | 'roleAssignments'
+      | 'experiments'
   ) => {
     onCreationConfigChange({
       ...creationConfig,
@@ -1036,30 +1142,45 @@ function BodySection({
           const proactiveBlockedByPolicy = securityPolicy?.allowProactive === false;
           return (
             <div className="space-y-4">
-              <div className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
-                proactiveBlockedByPolicy
-                  ? 'bg-muted/30 border-border opacity-60'
-                  : proactiveConfig.enabled
-                    ? 'bg-success/5 border-success/30'
-                    : 'bg-muted/50 border-border'
-              }`}>
+              <div
+                className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                  proactiveBlockedByPolicy
+                    ? 'bg-muted/30 border-border opacity-60'
+                    : proactiveConfig.enabled
+                      ? 'bg-success/5 border-success/30'
+                      : 'bg-muted/50 border-border'
+                }`}
+              >
                 <div className="flex items-center gap-2">
                   <span className="font-medium">Enable Assistance</span>
                   {proactiveBlockedByPolicy && (
                     <span className="text-xs text-destructive">(blocked by security policy)</span>
                   )}
                 </div>
-                <label className={`relative inline-flex items-center ${proactiveBlockedByPolicy ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                <label
+                  className={`relative inline-flex items-center ${proactiveBlockedByPolicy ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                >
                   <input
                     type="checkbox"
                     checked={proactiveBlockedByPolicy ? false : proactiveConfig.enabled}
-                    onChange={() => !proactiveBlockedByPolicy && onProactiveConfigChange({ ...proactiveConfig, enabled: !proactiveConfig.enabled })}
+                    onChange={() => {
+                      if (!proactiveBlockedByPolicy) {
+                        onProactiveConfigChange({
+                          ...proactiveConfig,
+                          enabled: !proactiveConfig.enabled,
+                        });
+                      }
+                    }}
                     disabled={proactiveBlockedByPolicy}
                     className="sr-only peer"
                   />
                   <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
                   <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
-                    {proactiveBlockedByPolicy ? 'Blocked' : proactiveConfig.enabled ? 'Enabled' : 'Disabled'}
+                    {proactiveBlockedByPolicy
+                      ? 'Blocked'
+                      : proactiveConfig.enabled
+                        ? 'Enabled'
+                        : 'Disabled'}
                   </span>
                 </label>
               </div>
@@ -1074,7 +1195,9 @@ function BodySection({
                         <button
                           key={mode}
                           type="button"
-                          onClick={() => onProactiveConfigChange({ ...proactiveConfig, approvalMode: mode })}
+                          onClick={() => {
+                            onProactiveConfigChange({ ...proactiveConfig, approvalMode: mode });
+                          }}
                           className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
                             proactiveConfig.approvalMode === mode
                               ? 'bg-primary text-primary-foreground border-primary'
@@ -1086,9 +1209,12 @@ function BodySection({
                       ))}
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {proactiveConfig.approvalMode === 'auto' && 'Actions execute automatically without user approval.'}
-                      {proactiveConfig.approvalMode === 'suggest' && 'Actions are suggested to the user for approval before execution.'}
-                      {proactiveConfig.approvalMode === 'manual' && 'All proactive actions require explicit manual approval.'}
+                      {proactiveConfig.approvalMode === 'auto' &&
+                        'Actions execute automatically without user approval.'}
+                      {proactiveConfig.approvalMode === 'suggest' &&
+                        'Actions are suggested to the user for approval before execution.'}
+                      {proactiveConfig.approvalMode === 'manual' &&
+                        'All proactive actions require explicit manual approval.'}
                     </p>
                   </div>
 
@@ -1096,25 +1222,38 @@ function BodySection({
                   <div>
                     <h4 className="text-sm font-medium mb-2">Built-in Triggers</h4>
                     <div className="space-y-2">
-                      {([
+                      {[
                         { key: 'dailyStandup' as const, label: 'Daily Standup Reminder' },
                         { key: 'weeklySummary' as const, label: 'Weekly Summary' },
                         { key: 'contextualFollowup' as const, label: 'Contextual Follow-up' },
-                        { key: 'integrationHealthAlert' as const, label: 'Integration Health Alert' },
+                        {
+                          key: 'integrationHealthAlert' as const,
+                          label: 'Integration Health Alert',
+                        },
                         { key: 'securityAlertDigest' as const, label: 'Security Alert Digest' },
-                      ]).map((item) => (
-                        <div key={item.key} className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
-                          proactiveConfig.builtins[item.key] ? 'bg-success/5 border-success/30' : 'bg-muted/50 border-border'
-                        }`}>
+                      ].map((item) => (
+                        <div
+                          key={item.key}
+                          className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                            proactiveConfig.builtins[item.key]
+                              ? 'bg-success/5 border-success/30'
+                              : 'bg-muted/50 border-border'
+                          }`}
+                        >
                           <span className="font-medium">{item.label}</span>
                           <label className="relative inline-flex items-center cursor-pointer">
                             <input
                               type="checkbox"
                               checked={proactiveConfig.builtins[item.key]}
-                              onChange={() => onProactiveConfigChange({
-                                ...proactiveConfig,
-                                builtins: { ...proactiveConfig.builtins, [item.key]: !proactiveConfig.builtins[item.key] },
-                              })}
+                              onChange={() => {
+                                onProactiveConfigChange({
+                                  ...proactiveConfig,
+                                  builtins: {
+                                    ...proactiveConfig.builtins,
+                                    [item.key]: !proactiveConfig.builtins[item.key],
+                                  },
+                                });
+                              }}
                               className="sr-only peer"
                             />
                             <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
@@ -1128,18 +1267,27 @@ function BodySection({
                   <div>
                     <h4 className="text-sm font-medium mb-2">Learning</h4>
                     <div className="space-y-3">
-                      <div className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
-                        proactiveConfig.learning.enabled ? 'bg-success/5 border-success/30' : 'bg-muted/50 border-border'
-                      }`}>
+                      <div
+                        className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                          proactiveConfig.learning.enabled
+                            ? 'bg-success/5 border-success/30'
+                            : 'bg-muted/50 border-border'
+                        }`}
+                      >
                         <span className="font-medium">Enable Learning</span>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
                             type="checkbox"
                             checked={proactiveConfig.learning.enabled}
-                            onChange={() => onProactiveConfigChange({
-                              ...proactiveConfig,
-                              learning: { ...proactiveConfig.learning, enabled: !proactiveConfig.learning.enabled },
-                            })}
+                            onChange={() => {
+                              onProactiveConfigChange({
+                                ...proactiveConfig,
+                                learning: {
+                                  ...proactiveConfig.learning,
+                                  enabled: !proactiveConfig.learning.enabled,
+                                },
+                              });
+                            }}
                             className="sr-only peer"
                           />
                           <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
@@ -1156,10 +1304,15 @@ function BodySection({
                             max="1"
                             step="0.05"
                             value={proactiveConfig.learning.minConfidence}
-                            onChange={(e) => onProactiveConfigChange({
-                              ...proactiveConfig,
-                              learning: { ...proactiveConfig.learning, minConfidence: parseFloat(e.target.value) },
-                            })}
+                            onChange={(e) => {
+                              onProactiveConfigChange({
+                                ...proactiveConfig,
+                                learning: {
+                                  ...proactiveConfig.learning,
+                                  minConfidence: parseFloat(e.target.value),
+                                },
+                              });
+                            }}
                             className="w-full"
                           />
                           <div className="flex justify-between text-xs text-muted-foreground">
@@ -1185,7 +1338,10 @@ function BodySection({
               const isEnabled = enabledCaps[cap] ?? false;
               const isConfigurable =
                 info.available &&
-                (cap === 'vision' || cap === 'auditory' || cap === 'limb_movement' || cap === 'vocalization');
+                (cap === 'vision' ||
+                  cap === 'auditory' ||
+                  cap === 'limb_movement' ||
+                  cap === 'vocalization');
 
               return (
                 <div
@@ -1218,7 +1374,9 @@ function BodySection({
                         <input
                           type="checkbox"
                           checked={isEnabled}
-                          onChange={() => toggleCapability(cap)}
+                          onChange={() => {
+                            toggleCapability(cap);
+                          }}
                           className="sr-only peer"
                         />
                         <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
@@ -1248,7 +1406,9 @@ function BodySection({
               <input
                 type="checkbox"
                 checked={allowConnections}
-                onChange={(e) => onAllowConnectionsChange(e.target.checked)}
+                onChange={(e) => {
+                  onAllowConnectionsChange(e.target.checked);
+                }}
                 className="sr-only peer"
               />
               <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
@@ -1331,12 +1491,12 @@ function BodySection({
                               <input
                                 type="checkbox"
                                 checked={mcpFeatures.exposeGit}
-                                onChange={(e) =>
+                                onChange={(e) => {
                                   onMcpFeaturesChange({
                                     ...mcpFeatures,
                                     exposeGit: e.target.checked,
-                                  })
-                                }
+                                  });
+                                }}
                                 disabled={!globalMcpConfig?.exposeGit}
                                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                               />
@@ -1360,12 +1520,12 @@ function BodySection({
                               <input
                                 type="checkbox"
                                 checked={mcpFeatures.exposeFilesystem}
-                                onChange={(e) =>
+                                onChange={(e) => {
                                   onMcpFeaturesChange({
                                     ...mcpFeatures,
                                     exposeFilesystem: e.target.checked,
-                                  })
-                                }
+                                  });
+                                }}
                                 disabled={!globalMcpConfig?.exposeFilesystem}
                                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                               />
@@ -1390,14 +1550,16 @@ function BodySection({
                               <input
                                 type="checkbox"
                                 checked={mcpFeatures.exposeWeb}
-                                onChange={(e) =>
+                                onChange={(e) => {
                                   onMcpFeaturesChange({
                                     ...mcpFeatures,
                                     exposeWeb: e.target.checked,
                                     // Disable sub-toggles when master is unchecked
-                                    ...(!e.target.checked ? { exposeWebScraping: false, exposeWebSearch: false } : {}),
-                                  })
-                                }
+                                    ...(!e.target.checked
+                                      ? { exposeWebScraping: false, exposeWebSearch: false }
+                                      : {}),
+                                  });
+                                }}
                                 disabled={!globalMcpConfig?.exposeWeb}
                                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                               />
@@ -1415,7 +1577,10 @@ function BodySection({
                                   <FileText className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                   <span className="text-xs flex-1">
                                     Scraping Tools
-                                    {!(globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebScraping) && (
+                                    {!(
+                                      globalMcpConfig?.exposeWeb &&
+                                      globalMcpConfig?.exposeWebScraping
+                                    ) && (
                                       <span className="text-[10px] text-muted-foreground ml-1">
                                         (enable in Connections first)
                                       </span>
@@ -1424,13 +1589,18 @@ function BodySection({
                                   <input
                                     type="checkbox"
                                     checked={mcpFeatures.exposeWebScraping}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
                                       onMcpFeaturesChange({
                                         ...mcpFeatures,
                                         exposeWebScraping: e.target.checked,
-                                      })
+                                      });
+                                    }}
+                                    disabled={
+                                      !(
+                                        globalMcpConfig?.exposeWeb &&
+                                        globalMcpConfig?.exposeWebScraping
+                                      )
                                     }
-                                    disabled={!(globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebScraping)}
                                     className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                   />
                                 </label>
@@ -1444,7 +1614,9 @@ function BodySection({
                                   <Search className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                                   <span className="text-xs flex-1">
                                     Search Tools
-                                    {!(globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebSearch) && (
+                                    {!(
+                                      globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebSearch
+                                    ) && (
                                       <span className="text-[10px] text-muted-foreground ml-1">
                                         (enable in Connections first)
                                       </span>
@@ -1453,13 +1625,18 @@ function BodySection({
                                   <input
                                     type="checkbox"
                                     checked={mcpFeatures.exposeWebSearch}
-                                    onChange={(e) =>
+                                    onChange={(e) => {
                                       onMcpFeaturesChange({
                                         ...mcpFeatures,
                                         exposeWebSearch: e.target.checked,
-                                      })
+                                      });
+                                    }}
+                                    disabled={
+                                      !(
+                                        globalMcpConfig?.exposeWeb &&
+                                        globalMcpConfig?.exposeWebSearch
+                                      )
                                     }
-                                    disabled={!(globalMcpConfig?.exposeWeb && globalMcpConfig?.exposeWebSearch)}
                                     className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                   />
                                 </label>
@@ -1476,7 +1653,9 @@ function BodySection({
                               <Monitor className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                               <span className="text-xs flex-1">
                                 Browser Automation
-                                <span className="text-[10px] text-muted-foreground ml-1">(preview)</span>
+                                <span className="text-[10px] text-muted-foreground ml-1">
+                                  (preview)
+                                </span>
                                 {!globalMcpConfig?.exposeBrowser && (
                                   <span className="text-[10px] text-muted-foreground ml-1">
                                     — enable in Connections first
@@ -1486,12 +1665,12 @@ function BodySection({
                               <input
                                 type="checkbox"
                                 checked={mcpFeatures.exposeBrowser}
-                                onChange={(e) =>
+                                onChange={(e) => {
                                   onMcpFeaturesChange({
                                     ...mcpFeatures,
                                     exposeBrowser: e.target.checked,
-                                  })
-                                }
+                                  });
+                                }}
                                 disabled={!globalMcpConfig?.exposeBrowser}
                                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                               />
@@ -1550,11 +1729,15 @@ function BodySection({
                     <span className="text-xs text-destructive">(disabled by security policy)</span>
                   )}
                 </div>
-                <label className={`relative inline-flex items-center ${blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
+                <label
+                  className={`relative inline-flex items-center ${blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                >
                   <input
                     type="checkbox"
                     checked={isEnabled}
-                    onChange={() => !blocked && toggleCreationItem(item.key)}
+                    onChange={() => {
+                      if (!blocked) toggleCreationItem(item.key);
+                    }}
                     disabled={blocked}
                     className="sr-only peer"
                   />
@@ -1639,25 +1822,42 @@ export function PersonalityEditor() {
     haptic: false,
     vocalization: false,
   });
-  const [mcpFeatures, setMcpFeatures] = useState<{ exposeGit: boolean; exposeFilesystem: boolean; exposeWeb: boolean; exposeWebScraping: boolean; exposeWebSearch: boolean; exposeBrowser: boolean }>(
-    {
-      exposeGit: false,
-      exposeFilesystem: false,
-      exposeWeb: false,
-      exposeWebScraping: false,
-      exposeWebSearch: false,
-      exposeBrowser: false,
-    }
-  );
+  const [mcpFeatures, setMcpFeatures] = useState<{
+    exposeGit: boolean;
+    exposeFilesystem: boolean;
+    exposeWeb: boolean;
+    exposeWebScraping: boolean;
+    exposeWebSearch: boolean;
+    exposeBrowser: boolean;
+  }>({
+    exposeGit: false,
+    exposeFilesystem: false,
+    exposeWeb: false,
+    exposeWebScraping: false,
+    exposeWebSearch: false,
+    exposeBrowser: false,
+  });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
     approvalMode: 'auto' | 'suggest' | 'manual';
-    builtins: { dailyStandup: boolean; weeklySummary: boolean; contextualFollowup: boolean; integrationHealthAlert: boolean; securityAlertDigest: boolean };
+    builtins: {
+      dailyStandup: boolean;
+      weeklySummary: boolean;
+      contextualFollowup: boolean;
+      integrationHealthAlert: boolean;
+      securityAlertDigest: boolean;
+    };
     learning: { enabled: boolean; minConfidence: number };
   }>({
     enabled: false,
     approvalMode: 'suggest',
-    builtins: { dailyStandup: false, weeklySummary: false, contextualFollowup: false, integrationHealthAlert: false, securityAlertDigest: false },
+    builtins: {
+      dailyStandup: false,
+      weeklySummary: false,
+      contextualFollowup: false,
+      integrationHealthAlert: false,
+      securityAlertDigest: false,
+    },
     learning: { enabled: true, minConfidence: 0.7 },
   });
 
@@ -1849,12 +2049,31 @@ export function PersonalityEditor() {
     });
     setAllowConnections(false);
     setSelectedServers([]);
-    setEnabledCaps({ vision: false, limb_movement: false, auditory: false, haptic: false, vocalization: false });
-    setMcpFeatures({ exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false });
+    setEnabledCaps({
+      vision: false,
+      limb_movement: false,
+      auditory: false,
+      haptic: false,
+      vocalization: false,
+    });
+    setMcpFeatures({
+      exposeGit: false,
+      exposeFilesystem: false,
+      exposeWeb: false,
+      exposeWebScraping: false,
+      exposeWebSearch: false,
+      exposeBrowser: false,
+    });
     setProactiveConfig({
       enabled: false,
       approvalMode: 'suggest',
-      builtins: { dailyStandup: false, weeklySummary: false, contextualFollowup: false, integrationHealthAlert: false, securityAlertDigest: false },
+      builtins: {
+        dailyStandup: false,
+        weeklySummary: false,
+        contextualFollowup: false,
+        integrationHealthAlert: false,
+        securityAlertDigest: false,
+      },
       learning: { enabled: true, minConfidence: 0.7 },
     });
     setSetActiveOnSave(false);
@@ -1907,7 +2126,9 @@ export function PersonalityEditor() {
         confirmLabel="Delete"
         destructive
         onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
       />
 
       {/* Header */}
@@ -1925,7 +2146,12 @@ export function PersonalityEditor() {
       {activateError && (
         <div className="card p-3 border-destructive bg-destructive/10 text-destructive text-sm flex items-center justify-between">
           <span>{activateError}</span>
-          <button onClick={() => setActivateError(null)} className="btn-ghost p-1">
+          <button
+            onClick={() => {
+              setActivateError(null);
+            }}
+            className="btn-ghost p-1"
+          >
             <X className="w-3 h-3" />
           </button>
         </div>
@@ -1948,7 +2174,9 @@ export function PersonalityEditor() {
                 <input
                   type="text"
                   value={form.name}
-                  onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, name: e.target.value }));
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   maxLength={100}
                 />
@@ -1957,9 +2185,9 @@ export function PersonalityEditor() {
                 <label className="block text-sm font-medium mb-1">Sex</label>
                 <select
                   value={form.sex}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, sex: e.target.value as PersonalityCreate['sex'] }))
-                  }
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, sex: e.target.value as PersonalityCreate['sex'] }));
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   {SEX_OPTIONS.map((o) => (
@@ -1976,7 +2204,9 @@ export function PersonalityEditor() {
               <input
                 type="text"
                 value={form.description}
-                onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, description: e.target.value }));
+                }}
                 className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                 maxLength={1000}
               />
@@ -1986,7 +2216,9 @@ export function PersonalityEditor() {
               <label className="block text-sm font-medium mb-1">System Prompt</label>
               <textarea
                 value={form.systemPrompt}
-                onChange={(e) => setForm((f) => ({ ...f, systemPrompt: e.target.value }))}
+                onChange={(e) => {
+                  setForm((f) => ({ ...f, systemPrompt: e.target.value }));
+                }}
                 className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
                 rows={4}
                 maxLength={8000}
@@ -2011,9 +2243,9 @@ export function PersonalityEditor() {
                       {options.map((opt) => (
                         <button
                           key={opt}
-                          onClick={() =>
-                            setForm((f) => ({ ...f, traits: { ...f.traits, [trait]: opt } }))
-                          }
+                          onClick={() => {
+                            setForm((f) => ({ ...f, traits: { ...f.traits, [trait]: opt } }));
+                          }}
                           className={`px-2 py-0.5 text-xs rounded border transition-colors ${
                             form.traits?.[trait] === opt
                               ? 'bg-primary text-primary-foreground border-primary'
@@ -2035,7 +2267,9 @@ export function PersonalityEditor() {
                 <input
                   type="text"
                   value={form.voice}
-                  onChange={(e) => setForm((f) => ({ ...f, voice: e.target.value }))}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, voice: e.target.value }));
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="e.g., warm, professional"
                   maxLength={200}
@@ -2046,7 +2280,9 @@ export function PersonalityEditor() {
                 <input
                   type="text"
                   value={form.preferredLanguage}
-                  onChange={(e) => setForm((f) => ({ ...f, preferredLanguage: e.target.value }))}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, preferredLanguage: e.target.value }));
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="e.g., English"
                   maxLength={100}
@@ -2092,7 +2328,9 @@ export function PersonalityEditor() {
                 <input
                   type="checkbox"
                   checked={form.includeArchetypes ?? false}
-                  onChange={(e) => setForm((f) => ({ ...f, includeArchetypes: e.target.checked }))}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, includeArchetypes: e.target.checked }));
+                  }}
                   className="rounded border-muted-foreground"
                 />
                 <span className="text-sm">Include Sacred Archetypes</span>
@@ -2133,7 +2371,9 @@ export function PersonalityEditor() {
               <input
                 type="checkbox"
                 checked={setActiveOnSave}
-                onChange={(e) => setSetActiveOnSave(e.target.checked)}
+                onChange={(e) => {
+                  setSetActiveOnSave(e.target.checked);
+                }}
                 className="rounded border-muted-foreground"
               />
               <span className="text-sm">Set as active personality on save</span>
@@ -2141,7 +2381,12 @@ export function PersonalityEditor() {
           )}
 
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setEditing(null)} className="btn btn-ghost">
+            <button
+              onClick={() => {
+                setEditing(null);
+              }}
+              className="btn btn-ghost"
+            >
               Cancel
             </button>
             <button
@@ -2196,7 +2441,9 @@ export function PersonalityEditor() {
                       </span>
                     ) : (
                       <button
-                        onClick={() => activateMut.mutate(p.id)}
+                        onClick={() => {
+                          activateMut.mutate(p.id);
+                        }}
                         disabled={activatingId === p.id}
                         className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-success rounded-lg"
                         title={`Activate ${p.name}`}
@@ -2206,7 +2453,9 @@ export function PersonalityEditor() {
                       </button>
                     )}
                     <button
-                      onClick={() => startEdit(p)}
+                      onClick={() => {
+                        startEdit(p);
+                      }}
                       className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-foreground rounded-lg"
                       title={`Edit ${p.name}`}
                       aria-label={`Edit personality ${p.name}`}
@@ -2214,7 +2463,9 @@ export function PersonalityEditor() {
                       <Edit2 className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                     <button
-                      onClick={() => setDeleteTarget(p)}
+                      onClick={() => {
+                        setDeleteTarget(p);
+                      }}
                       disabled={p.isActive || deleteMut.isPending}
                       className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
                       title={
@@ -2276,7 +2527,9 @@ export function PersonalityEditor() {
 
                 {/* Preview button */}
                 <button
-                  onClick={() => setPreviewId(previewId === p.id ? null : p.id)}
+                  onClick={() => {
+                    setPreviewId(previewId === p.id ? null : p.id);
+                  }}
                   className={`text-xs flex items-center justify-center gap-1 py-1.5 px-2 rounded border transition-colors ${
                     previewId === p.id
                       ? 'border-primary bg-primary/5 text-primary'

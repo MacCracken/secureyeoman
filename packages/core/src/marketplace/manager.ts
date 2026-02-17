@@ -41,14 +41,16 @@ export class MarketplaceManager {
       this.logger.info('Marketplace skill installed', { id });
       if (this.brainManager) {
         try {
-          await this.brainManager.createSkill(SkillCreateSchema.parse({
-            name: skill.name,
-            description: skill.description,
-            instructions: skill.instructions,
-            tools: skill.tools,
-            source: 'marketplace',
-            enabled: true,
-          }));
+          await this.brainManager.createSkill(
+            SkillCreateSchema.parse({
+              name: skill.name,
+              description: skill.description,
+              instructions: skill.instructions,
+              tools: skill.tools,
+              source: 'marketplace',
+              enabled: true,
+            })
+          );
           this.logger.info('Brain skill created from marketplace', { id, name: skill.name });
         } catch (err) {
           this.logger.error('Failed to create brain skill from marketplace', {
@@ -69,10 +71,13 @@ export class MarketplaceManager {
       if (this.brainManager && skill) {
         try {
           const brainSkills = await this.brainManager.listSkills({ source: 'marketplace' });
-          const match = brainSkills.find(s => s.name === skill.name);
+          const match = brainSkills.find((s) => s.name === skill.name);
           if (match) {
             await this.brainManager.deleteSkill(match.id);
-            this.logger.info('Brain skill removed (marketplace uninstall)', { id, brainSkillId: match.id });
+            this.logger.info('Brain skill removed (marketplace uninstall)', {
+              id,
+              brainSkillId: match.id,
+            });
           }
         } catch (err) {
           this.logger.error('Failed to remove brain skill on marketplace uninstall', {

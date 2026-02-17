@@ -120,7 +120,9 @@ export class SkillExecutor {
 
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, timeoutMs);
 
       const response = await fetch(httpConfig.url, {
         method: httpConfig.method,

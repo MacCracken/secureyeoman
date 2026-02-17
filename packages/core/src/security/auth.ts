@@ -100,7 +100,7 @@ export class AuthService {
   // 2FA state
   private twoFactorSecret: string | null = null;
   private twoFactorEnabled = false;
-  private recoveryCodes: Set<string> = new Set();
+  private recoveryCodes = new Set<string>();
   private pendingTwoFactorSecret: string | null = null;
 
   constructor(config: AuthServiceConfig, deps: AuthServiceDeps) {
@@ -194,13 +194,13 @@ export class AuthService {
       throw new AuthError('Invalid token type', 401);
     }
 
-    const jti = payload.jti as string;
+    const jti = payload.jti!;
     if (await this.deps.storage.isTokenRevoked(jti)) {
       throw new AuthError('Refresh token has been revoked', 401);
     }
 
     // Consume old refresh token (single-use rotation)
-    await this.deps.storage.revokeToken(jti, payload.sub as string, payload.exp as number);
+    await this.deps.storage.revokeToken(jti, payload.sub!, payload.exp!);
 
     const role = payload.role as Role;
     const permissions = buildPermissionStrings(role, this.deps.rbac);
@@ -209,7 +209,7 @@ export class AuthService {
 
     const accessToken = await this.signToken(
       {
-        sub: payload.sub as string,
+        sub: payload.sub!,
         role,
         permissions,
         jti: newAccessJti,
@@ -220,7 +220,7 @@ export class AuthService {
 
     const newRefreshToken = await this.signToken(
       {
-        sub: payload.sub as string,
+        sub: payload.sub!,
         role,
         permissions,
         jti: newRefreshJti,
@@ -253,7 +253,7 @@ export class AuthService {
       throw new AuthError('Invalid token type', 401);
     }
 
-    const jti = payload.jti as string;
+    const jti = payload.jti!;
     if (await this.deps.storage.isTokenRevoked(jti)) {
       throw new AuthError('Token has been revoked', 401);
     }

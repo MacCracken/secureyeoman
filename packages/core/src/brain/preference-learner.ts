@@ -44,7 +44,7 @@ export class PreferenceLearner {
     conversationId: string,
     messageId: string,
     feedback: FeedbackType,
-    details?: string,
+    details?: string
   ): Promise<Memory> {
     const content = this.formatFeedbackContent(feedback, details);
     const context: Record<string, string> = {
@@ -63,7 +63,7 @@ export class PreferenceLearner {
       content,
       'user_feedback',
       context,
-      importance,
+      importance
     );
 
     this.logger?.info('Recorded user feedback', { conversationId, messageId, feedback });
@@ -73,9 +73,7 @@ export class PreferenceLearner {
   /**
    * Analyze conversation patterns and extract preferences.
    */
-  async learnFromConversation(
-    messages: Array<{ role: string; content: string }>,
-  ): Promise<string[]> {
+  async learnFromConversation(messages: { role: string; content: string }[]): Promise<string[]> {
     const patterns: string[] = [];
 
     // Analyze response length preferences
@@ -93,7 +91,8 @@ export class PreferenceLearner {
 
     // Detect code-heavy conversations
     const codeBlockCount = messages.filter(
-      (m) => m.content.includes('```') || m.content.includes('function') || m.content.includes('const '),
+      (m) =>
+        m.content.includes('```') || m.content.includes('function') || m.content.includes('const ')
     ).length;
     if (codeBlockCount > messages.length * 0.4) {
       patterns.push('User frequently works with code');
@@ -102,13 +101,7 @@ export class PreferenceLearner {
     // Store extracted patterns as preference memories
     for (const pattern of patterns) {
       try {
-        await this.brainManager.remember(
-          'preference',
-          pattern,
-          'conversation_analysis',
-          {},
-          0.6,
-        );
+        await this.brainManager.remember('preference', pattern, 'conversation_analysis', {}, 0.6);
       } catch {
         // Best effort — don't fail if storage is unavailable
       }
@@ -176,7 +169,7 @@ export class PreferenceLearner {
 
       if (summary.totalFeedback > 0) {
         lines.push(
-          `\nFeedback summary: ${summary.positiveCount} positive, ${summary.negativeCount} negative, ${summary.correctionCount} corrections.`,
+          `\nFeedback summary: ${summary.positiveCount} positive, ${summary.negativeCount} negative, ${summary.correctionCount} corrections.`
         );
       }
 
@@ -198,9 +191,7 @@ export class PreferenceLearner {
           ? `User disliked this response: ${details}`
           : 'User gave negative feedback on response';
       case 'correction':
-        return details
-          ? `User corrected response: ${details}`
-          : 'User provided a correction';
+        return details ? `User corrected response: ${details}` : 'User provided a correction';
     }
   }
 }

@@ -13,7 +13,7 @@ import type { ActionResult, ProactiveManagerDeps } from './types.js';
 
 export async function executeMessageAction(
   action: MessageAction,
-  deps: ProactiveManagerDeps,
+  deps: ProactiveManagerDeps
 ): Promise<ActionResult> {
   const { logger, integrationManager } = deps;
 
@@ -62,7 +62,7 @@ export async function executeMessageAction(
 
 export async function executeWebhookAction(
   action: WebhookAction,
-  deps: ProactiveManagerDeps,
+  deps: ProactiveManagerDeps
 ): Promise<ActionResult> {
   const { logger } = deps;
   const maxRetries = 2;
@@ -71,7 +71,9 @@ export async function executeWebhookAction(
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), action.timeoutMs ?? 5000);
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, action.timeoutMs ?? 5000);
 
       const response = await fetch(action.url, {
         method: action.method ?? 'POST',
@@ -108,7 +110,7 @@ export async function executeWebhookAction(
 
 export async function executeRemindAction(
   action: RemindAction,
-  deps: ProactiveManagerDeps,
+  deps: ProactiveManagerDeps
 ): Promise<ActionResult> {
   const { brainManager, logger } = deps;
 
@@ -118,7 +120,7 @@ export async function executeRemindAction(
       action.content,
       action.category ?? 'proactive_reminder',
       { source: 'proactive_remind' },
-      0.7,
+      0.7
     );
 
     logger.info('Proactive reminder stored', { category: action.category });
@@ -134,7 +136,7 @@ export async function executeRemindAction(
 
 export async function executeExecuteAction(
   action: ExecuteAction,
-  deps: ProactiveManagerDeps,
+  deps: ProactiveManagerDeps
 ): Promise<ActionResult> {
   const { logger } = deps;
 
@@ -154,7 +156,7 @@ export async function executeExecuteAction(
 
 export async function executeLearnAction(
   action: LearnAction,
-  deps: ProactiveManagerDeps,
+  deps: ProactiveManagerDeps
 ): Promise<ActionResult> {
   const { brainManager, logger } = deps;
 
@@ -164,10 +166,13 @@ export async function executeLearnAction(
       action.content,
       action.category ?? 'proactive_learning',
       { source: 'proactive_learn' },
-      action.importance ?? 0.6,
+      action.importance ?? 0.6
     );
 
-    logger.info('Proactive learn action stored', { category: action.category, memoryType: action.memoryType });
+    logger.info('Proactive learn action stored', {
+      category: action.category,
+      memoryType: action.memoryType,
+    });
     return { success: true, message: 'Knowledge stored in memory' };
   } catch (err) {
     return {

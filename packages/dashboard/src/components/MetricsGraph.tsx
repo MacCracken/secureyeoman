@@ -27,7 +27,16 @@ interface MetricsGraphProps {
 }
 
 // Custom node component with explicit handles for all four sides
-function SystemNode({ data }: { data: { label: string; value: string | number; icon: React.ReactNode; status: 'ok' | 'warning' | 'error' } }) {
+function SystemNode({
+  data,
+}: {
+  data: {
+    label: string;
+    value: string | number;
+    icon: React.ReactNode;
+    status: 'ok' | 'warning' | 'error';
+  };
+}) {
   const statusColor = {
     ok: 'bg-success/20 border-success',
     warning: 'bg-warning/20 border-warning',
@@ -35,14 +44,23 @@ function SystemNode({ data }: { data: { label: string; value: string | number; i
   }[data.status];
 
   return (
-    <div className={`px-3 py-2 sm:px-4 sm:py-3 rounded-lg border-2 ${statusColor} min-w-[120px] sm:min-w-[140px] cursor-pointer`}>
+    <div
+      className={`px-3 py-2 sm:px-4 sm:py-3 rounded-lg border-2 ${statusColor} min-w-[120px] sm:min-w-[140px] cursor-pointer`}
+    >
       <Handle type="target" position={Position.Left} style={{ visibility: 'hidden' }} />
       <Handle type="source" position={Position.Right} style={{ visibility: 'hidden' }} />
       <Handle type="target" position={Position.Top} id="top" style={{ visibility: 'hidden' }} />
-      <Handle type="source" position={Position.Bottom} id="bottom" style={{ visibility: 'hidden' }} />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="bottom"
+        style={{ visibility: 'hidden' }}
+      />
       <div className="flex items-center gap-2 mb-1">
         <div className="text-muted-foreground">{data.icon}</div>
-        <span className="text-[10px] sm:text-xs font-medium text-muted-foreground">{data.label}</span>
+        <span className="text-[10px] sm:text-xs font-medium text-muted-foreground">
+          {data.label}
+        </span>
       </div>
       <div className="text-base sm:text-lg font-bold">{data.value}</div>
     </div>
@@ -129,7 +147,9 @@ export function MetricsGraph({ metrics, health, mcpServers, onNodeClick }: Metri
         position: { x: 510, y: 250 },
         data: {
           label: 'Security',
-          value: (metrics?.security?.blockedRequestsTotal ?? 0) + (metrics?.security?.injectionAttemptsTotal ?? 0),
+          value:
+            (metrics?.security?.blockedRequestsTotal ?? 0) +
+            (metrics?.security?.injectionAttemptsTotal ?? 0),
           icon: <Network className="w-4 h-4" />,
           status: (metrics?.security?.injectionAttemptsTotal ?? 0) > 0 ? 'warning' : 'ok',
         },
@@ -202,7 +222,9 @@ export function MetricsGraph({ metrics, health, mcpServers, onNodeClick }: Metri
         sourceHandle: undefined,
         targetHandle: undefined,
         animated: (metrics?.security?.injectionAttemptsTotal ?? 0) > 0,
-        style: { stroke: (metrics?.security?.injectionAttemptsTotal ?? 0) > 0 ? '#ef4444' : '#f59e0b' },
+        style: {
+          stroke: (metrics?.security?.injectionAttemptsTotal ?? 0) > 0 ? '#ef4444' : '#f59e0b',
+        },
       },
     ];
 

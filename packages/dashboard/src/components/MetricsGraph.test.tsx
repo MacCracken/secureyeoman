@@ -19,7 +19,7 @@ vi.mock('reactflow', () => {
       onNodeClick,
       nodeTypes,
     }: {
-      nodes: Array<{ id: string; data: { label: string; icon: React.ReactNode; status: string } }>;
+      nodes: { id: string; data: { label: string; icon: React.ReactNode; status: string } }[];
       onNodeClick?: (event: unknown, node: { id: string }) => void;
       nodeTypes: Record<string, React.ComponentType<{ data: unknown }>>;
       [key: string]: unknown;
@@ -89,7 +89,7 @@ describe('MetricsGraph', () => {
         metrics={createMetricsSnapshot()}
         health={createHealth()}
         mcpServers={createMcpServers()}
-      />,
+      />
     );
 
     expect(screen.getByText('Agent Core')).toBeInTheDocument();
@@ -109,7 +109,7 @@ describe('MetricsGraph', () => {
         health={createHealth()}
         mcpServers={createMcpServers()}
         onNodeClick={handler}
-      />,
+      />
     );
 
     expect(capturedOnNodeClick).toBeDefined();
@@ -131,11 +131,13 @@ describe('MetricsGraph', () => {
         metrics={createMetricsSnapshot()}
         health={createHealth()}
         mcpServers={createMcpServers()}
-      />,
+      />
     );
 
     expect(capturedOnNodeClick).toBeDefined();
-    expect(() => capturedOnNodeClick!({}, { id: 'agent' })).not.toThrow();
+    expect(() => {
+      capturedOnNodeClick!({}, { id: 'agent' });
+    }).not.toThrow();
   });
 
   it('applies cursor-pointer class to system nodes', () => {
@@ -144,7 +146,7 @@ describe('MetricsGraph', () => {
         metrics={createMetricsSnapshot()}
         health={createHealth()}
         mcpServers={createMcpServers()}
-      />,
+      />
     );
 
     const nodeElements = container.querySelectorAll('.cursor-pointer');
@@ -157,7 +159,7 @@ describe('MetricsGraph', () => {
         metrics={createMetricsSnapshot()}
         health={createHealth()}
         mcpServers={createMcpServers()}
-      />,
+      />
     );
     expect(screen.getByText('Connected')).toBeInTheDocument();
   });
@@ -168,7 +170,7 @@ describe('MetricsGraph', () => {
         metrics={createMetricsSnapshot()}
         health={createHealth({ checks: { database: false, auditChain: true } })}
         mcpServers={createMcpServers()}
-      />,
+      />
     );
     expect(screen.getByText('Down')).toBeInTheDocument();
   });
@@ -179,7 +181,7 @@ describe('MetricsGraph', () => {
         metrics={createMetricsSnapshot()}
         health={createHealth({ status: 'degraded' })}
         mcpServers={createMcpServers()}
-      />,
+      />
     );
     expect(screen.getByText('Degraded')).toBeInTheDocument();
   });
@@ -190,7 +192,7 @@ describe('MetricsGraph', () => {
         metrics={createMetricsSnapshot()}
         health={createHealth()}
         mcpServers={createMcpServers()}
-      />,
+      />
     );
     expect(screen.getByText('1/1')).toBeInTheDocument();
   });

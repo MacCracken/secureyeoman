@@ -17,7 +17,7 @@ export interface ChatRoutesOptions {
 
 interface ChatRequestBody {
   message: string;
-  history?: Array<{ role: string; content: string }>;
+  history?: { role: string; content: string }[];
   personalityId?: string;
   saveAsMemory?: boolean;
   memoryEnabled?: boolean;
@@ -42,241 +42,274 @@ interface BrainContextMeta {
   contextSnippets: string[];
 }
 
-export function registerChatRoutes(
-  app: FastifyInstance,
-  opts: ChatRoutesOptions,
-): void {
+export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions): void {
   const { secureYeoman } = opts;
 
-  app.post('/api/v1/chat', async (
-    request: FastifyRequest<{ Body: ChatRequestBody }>,
-    reply: FastifyReply,
-  ) => {
-    const { message, history, personalityId, saveAsMemory, memoryEnabled = true, conversationId } = request.body;
+  app.post(
+    '/api/v1/chat',
+    async (request: FastifyRequest<{ Body: ChatRequestBody }>, reply: FastifyReply) => {
+      const {
+        message,
+        history,
+        personalityId,
+        saveAsMemory,
+        memoryEnabled = true,
+        conversationId,
+      } = request.body;
 
-    if (!message || typeof message !== 'string' || message.trim().length === 0) {
-      return reply.code(400).send({ error: 'Message is required' });
-    }
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        return reply.code(400).send({ error: 'Message is required' });
+      }
 
-    let aiClient;
-    try {
-      aiClient = secureYeoman.getAIClient();
-    } catch {
-      return reply.code(503).send({
-        error: 'AI client is not available. Check provider configuration and API keys.',
-      });
-    }
-
-    // Gather Brain context metadata (best-effort — Brain may not be available)
-    let brainContext: BrainContextMeta = { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
-    if (memoryEnabled) {
+      let aiClient;
       try {
-        const brainManager = secureYeoman.getBrainManager();
-        const memories = await brainManager.recall({ search: message, limit: 5 });
-        const knowledge = await brainManager.queryKnowledge({ search: message, limit: 5 });
-        const snippets: string[] = [];
-        for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
-        for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
-        brainContext = {
-          memoriesUsed: memories.length,
-          knowledgeUsed: knowledge.length,
-          contextSnippets: snippets,
-        };
+        aiClient = secureYeoman.getAIClient();
       } catch {
-        // Brain not available — brainContext stays empty
-      }
-    }
-
-    const soulManager = secureYeoman.getSoulManager();
-    let systemPrompt = memoryEnabled
-      ? await soulManager.composeSoulPrompt(message, personalityId)
-      : await soulManager.composeSoulPrompt(undefined, personalityId);
-
-    // Inject learned preferences into system prompt
-    if (memoryEnabled && systemPrompt) {
-      try {
-        const brainManager = secureYeoman.getBrainManager();
-        const learner = new PreferenceLearner(brainManager);
-        systemPrompt = await learner.injectPreferences(systemPrompt);
-      } catch {
-        // Preference injection is best-effort
-      }
-    }
-
-    const messages: AIRequest['messages'] = [];
-
-    if (systemPrompt) {
-      messages.push({ role: 'system', content: systemPrompt });
-    }
-
-    // Append conversation history
-    if (history && Array.isArray(history)) {
-      for (const msg of history) {
-        const role = msg.role === 'assistant' ? 'assistant' : 'user';
-        if (msg.content && typeof msg.content === 'string') {
-          messages.push({ role, content: msg.content });
-        }
-      }
-    }
-
-    // Append the new user message
-    messages.push({ role: 'user', content: message.trim() });
-
-    // Collect tools from personality MCP config + skill tools
-    const tools: Tool[] = [];
-
-    // Skill-based tools
-    tools.push(...await soulManager.getActiveTools());
-
-    // MCP tools filtered by personality config
-    const personality = personalityId
-      ? ((await soulManager.getPersonality(personalityId)) ?? (await soulManager.getActivePersonality()))
-      : await soulManager.getActivePersonality();
-
-    const mcpClient = secureYeoman.getMcpClientManager();
-    const mcpStorage = secureYeoman.getMcpStorage();
-
-    if (personality?.body?.enabled && mcpClient && mcpStorage) {
-      const selectedServers = personality.body.selectedServers ?? [];
-      const perPersonalityFeatures = personality.body.mcpFeatures ?? { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false };
-      const globalConfig = await mcpStorage.getConfig();
-
-      if (selectedServers.length > 0) {
-        const allMcpTools: McpToolDef[] = mcpClient.getAllTools();
-
-        for (const tool of allMcpTools) {
-          // Only include tools from servers the personality has selected
-          if (!selectedServers.includes(tool.serverName)) continue;
-
-          // For YEOMAN MCP tools, apply per-personality AND global feature gates
-          if (tool.serverName === 'YEOMAN MCP') {
-            const isGitTool = tool.name.startsWith('git_') || tool.name.includes('git');
-            const isFsTool = tool.name.startsWith('fs_') || tool.name.includes('filesystem') || tool.name.includes('file_');
-
-            if (isGitTool && !(globalConfig.exposeGit && perPersonalityFeatures.exposeGit)) continue;
-            if (isFsTool && !(globalConfig.exposeFilesystem && perPersonalityFeatures.exposeFilesystem)) continue;
-          }
-
-          tools.push({
-            name: tool.name,
-            description: tool.description || undefined,
-            parameters: tool.inputSchema as Tool['parameters'],
-          });
-        }
-      }
-    }
-
-    const aiRequest: AIRequest = {
-      messages,
-      stream: false,
-      ...(tools.length > 0 ? { tools } : {}),
-    };
-
-    try {
-      const response = await aiClient.chat(aiRequest, { source: 'dashboard_chat' });
-
-      // Persist messages to conversation storage when conversationId is provided
-      if (conversationId) {
-        try {
-          const convStorage = secureYeoman.getConversationStorage();
-          if (convStorage) {
-            await convStorage.addMessage({
-              conversationId,
-              role: 'user',
-              content: message.trim(),
-            });
-            await convStorage.addMessage({
-              conversationId,
-              role: 'assistant',
-              content: response.content,
-              model: response.model,
-              provider: response.provider,
-              tokensUsed: response.usage.totalTokens,
-              brainContext,
-            });
-          }
-        } catch {
-          // Conversation storage not available — skip persistence
-        }
+        return reply.code(503).send({
+          error: 'AI client is not available. Check provider configuration and API keys.',
+        });
       }
 
-      // Optionally store the exchange as an episodic memory
-      if (memoryEnabled && saveAsMemory) {
+      // Gather Brain context metadata (best-effort — Brain may not be available)
+      let brainContext: BrainContextMeta = {
+        memoriesUsed: 0,
+        knowledgeUsed: 0,
+        contextSnippets: [],
+      };
+      if (memoryEnabled) {
         try {
           const brainManager = secureYeoman.getBrainManager();
-          await brainManager.remember(
-            'episodic',
-            `User: ${message.trim()}\nAssistant: ${response.content}`,
-            'dashboard_chat',
-            { personalityId: personalityId ?? 'default' },
-          );
+          const memories = await brainManager.recall({ search: message, limit: 5 });
+          const knowledge = await brainManager.queryKnowledge({ search: message, limit: 5 });
+          const snippets: string[] = [];
+          for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
+          for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
+          brainContext = {
+            memoriesUsed: memories.length,
+            knowledgeUsed: knowledge.length,
+            contextSnippets: snippets,
+          };
         } catch {
-          // Brain not available — skip memory storage
+          // Brain not available — brainContext stays empty
         }
       }
 
-      return {
-        role: 'assistant' as const,
-        content: response.content,
-        model: response.model,
-        provider: response.provider,
-        tokensUsed: response.usage.totalTokens,
-        brainContext,
-        conversationId: conversationId ?? undefined,
+      const soulManager = secureYeoman.getSoulManager();
+      let systemPrompt = memoryEnabled
+        ? await soulManager.composeSoulPrompt(message, personalityId)
+        : await soulManager.composeSoulPrompt(undefined, personalityId);
+
+      // Inject learned preferences into system prompt
+      if (memoryEnabled && systemPrompt) {
+        try {
+          const brainManager = secureYeoman.getBrainManager();
+          const learner = new PreferenceLearner(brainManager);
+          systemPrompt = await learner.injectPreferences(systemPrompt);
+        } catch {
+          // Preference injection is best-effort
+        }
+      }
+
+      const messages: AIRequest['messages'] = [];
+
+      if (systemPrompt) {
+        messages.push({ role: 'system', content: systemPrompt });
+      }
+
+      // Append conversation history
+      if (history && Array.isArray(history)) {
+        for (const msg of history) {
+          const role = msg.role === 'assistant' ? 'assistant' : 'user';
+          if (msg.content && typeof msg.content === 'string') {
+            messages.push({ role, content: msg.content });
+          }
+        }
+      }
+
+      // Append the new user message
+      messages.push({ role: 'user', content: message.trim() });
+
+      // Collect tools from personality MCP config + skill tools
+      const tools: Tool[] = [];
+
+      // Skill-based tools
+      tools.push(...(await soulManager.getActiveTools()));
+
+      // MCP tools filtered by personality config
+      const personality = personalityId
+        ? ((await soulManager.getPersonality(personalityId)) ??
+          (await soulManager.getActivePersonality()))
+        : await soulManager.getActivePersonality();
+
+      const mcpClient = secureYeoman.getMcpClientManager();
+      const mcpStorage = secureYeoman.getMcpStorage();
+
+      if (personality?.body?.enabled && mcpClient && mcpStorage) {
+        const selectedServers = personality.body.selectedServers ?? [];
+        const perPersonalityFeatures = personality.body.mcpFeatures ?? {
+          exposeGit: false,
+          exposeFilesystem: false,
+          exposeWeb: false,
+          exposeWebScraping: false,
+          exposeWebSearch: false,
+          exposeBrowser: false,
+        };
+        const globalConfig = await mcpStorage.getConfig();
+
+        if (selectedServers.length > 0) {
+          const allMcpTools: McpToolDef[] = mcpClient.getAllTools();
+
+          for (const tool of allMcpTools) {
+            // Only include tools from servers the personality has selected
+            if (!selectedServers.includes(tool.serverName)) continue;
+
+            // For YEOMAN MCP tools, apply per-personality AND global feature gates
+            if (tool.serverName === 'YEOMAN MCP') {
+              const isGitTool = tool.name.startsWith('git_') || tool.name.includes('git');
+              const isFsTool =
+                tool.name.startsWith('fs_') ||
+                tool.name.includes('filesystem') ||
+                tool.name.includes('file_');
+
+              if (isGitTool && !(globalConfig.exposeGit && perPersonalityFeatures.exposeGit))
+                continue;
+              if (
+                isFsTool &&
+                !(globalConfig.exposeFilesystem && perPersonalityFeatures.exposeFilesystem)
+              )
+                continue;
+            }
+
+            tools.push({
+              name: tool.name,
+              description: tool.description || undefined,
+              parameters: tool.inputSchema as Tool['parameters'],
+            });
+          }
+        }
+      }
+
+      const aiRequest: AIRequest = {
+        messages,
+        stream: false,
+        ...(tools.length > 0 ? { tools } : {}),
       };
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Unknown error';
-      return reply.code(502).send({ error: `AI request failed: ${errMsg}` });
+
+      try {
+        const response = await aiClient.chat(aiRequest, { source: 'dashboard_chat' });
+
+        // Persist messages to conversation storage when conversationId is provided
+        if (conversationId) {
+          try {
+            const convStorage = secureYeoman.getConversationStorage();
+            if (convStorage) {
+              await convStorage.addMessage({
+                conversationId,
+                role: 'user',
+                content: message.trim(),
+              });
+              await convStorage.addMessage({
+                conversationId,
+                role: 'assistant',
+                content: response.content,
+                model: response.model,
+                provider: response.provider,
+                tokensUsed: response.usage.totalTokens,
+                brainContext,
+              });
+            }
+          } catch {
+            // Conversation storage not available — skip persistence
+          }
+        }
+
+        // Optionally store the exchange as an episodic memory
+        if (memoryEnabled && saveAsMemory) {
+          try {
+            const brainManager = secureYeoman.getBrainManager();
+            await brainManager.remember(
+              'episodic',
+              `User: ${message.trim()}\nAssistant: ${response.content}`,
+              'dashboard_chat',
+              { personalityId: personalityId ?? 'default' }
+            );
+          } catch {
+            // Brain not available — skip memory storage
+          }
+        }
+
+        return {
+          role: 'assistant' as const,
+          content: response.content,
+          model: response.model,
+          provider: response.provider,
+          tokensUsed: response.usage.totalTokens,
+          brainContext,
+          conversationId: conversationId ?? undefined,
+        };
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : 'Unknown error';
+        return reply.code(502).send({ error: `AI request failed: ${errMsg}` });
+      }
     }
-  });
+  );
 
   // ── Remember endpoint — store a message as an episodic memory ──
 
-  app.post('/api/v1/chat/remember', async (
-    request: FastifyRequest<{ Body: RememberRequestBody }>,
-    reply: FastifyReply,
-  ) => {
-    const { content, context } = request.body;
+  app.post(
+    '/api/v1/chat/remember',
+    async (request: FastifyRequest<{ Body: RememberRequestBody }>, reply: FastifyReply) => {
+      const { content, context } = request.body;
 
-    if (!content || typeof content !== 'string' || content.trim().length === 0) {
-      return reply.code(400).send({ error: 'Content is required' });
-    }
+      if (!content || typeof content !== 'string' || content.trim().length === 0) {
+        return reply.code(400).send({ error: 'Content is required' });
+      }
 
-    try {
-      const brainManager = secureYeoman.getBrainManager();
-      const memory = await brainManager.remember('episodic', content.trim(), 'dashboard_chat', context);
-      return { memory };
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Brain is not available';
-      return reply.code(503).send({ error: errMsg });
+      try {
+        const brainManager = secureYeoman.getBrainManager();
+        const memory = await brainManager.remember(
+          'episodic',
+          content.trim(),
+          'dashboard_chat',
+          context
+        );
+        return { memory };
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : 'Brain is not available';
+        return reply.code(503).send({ error: errMsg });
+      }
     }
-  });
+  );
 
   // ── Feedback endpoint — record user feedback for adaptive learning ──
 
-  app.post('/api/v1/chat/feedback', async (
-    request: FastifyRequest<{ Body: FeedbackRequestBody }>,
-    reply: FastifyReply,
-  ) => {
-    const { conversationId, messageId, feedback, details } = request.body;
+  app.post(
+    '/api/v1/chat/feedback',
+    async (request: FastifyRequest<{ Body: FeedbackRequestBody }>, reply: FastifyReply) => {
+      const { conversationId, messageId, feedback, details } = request.body;
 
-    if (!conversationId || !messageId || !feedback) {
-      return reply.code(400).send({ error: 'conversationId, messageId, and feedback are required' });
-    }
+      if (!conversationId || !messageId || !feedback) {
+        return reply
+          .code(400)
+          .send({ error: 'conversationId, messageId, and feedback are required' });
+      }
 
-    const validFeedback: FeedbackType[] = ['positive', 'negative', 'correction'];
-    if (!validFeedback.includes(feedback)) {
-      return reply.code(400).send({ error: `feedback must be one of: ${validFeedback.join(', ')}` });
-    }
+      const validFeedback: FeedbackType[] = ['positive', 'negative', 'correction'];
+      if (!validFeedback.includes(feedback)) {
+        return reply
+          .code(400)
+          .send({ error: `feedback must be one of: ${validFeedback.join(', ')}` });
+      }
 
-    try {
-      const brainManager = secureYeoman.getBrainManager();
-      const learner = new PreferenceLearner(brainManager);
-      await learner.recordFeedback(conversationId, messageId, feedback, details);
-      return { stored: true };
-    } catch (err) {
-      const errMsg = err instanceof Error ? err.message : 'Brain is not available';
-      return reply.code(503).send({ error: errMsg });
+      try {
+        const brainManager = secureYeoman.getBrainManager();
+        const learner = new PreferenceLearner(brainManager);
+        await learner.recordFeedback(conversationId, messageId, feedback, details);
+        return { stored: true };
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : 'Brain is not available';
+        return reply.code(503).send({ error: errMsg });
+      }
     }
-  });
+  );
 }

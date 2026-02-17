@@ -106,7 +106,11 @@ export interface IntegrationDeps {
   onMessage: (message: UnifiedMessage) => Promise<void>;
   /** Multimodal manager for vision/STT processing (optional) */
   multimodalManager?: {
-    analyzeImage: (req: { imageBase64: string; mimeType: string; prompt?: string }) => Promise<{ description: string }>;
+    analyzeImage: (req: {
+      imageBase64: string;
+      mimeType: string;
+      prompt?: string;
+    }) => Promise<{ description: string }>;
     transcribeAudio: (req: { audioBase64: string; format: string }) => Promise<{ text: string }>;
   } | null;
 }

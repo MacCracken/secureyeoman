@@ -1,6 +1,6 @@
 /**
  * Secure Logger for SecureYeoman
- * 
+ *
  * Security considerations:
  * - Automatic secret redaction in log output
  * - Structured JSON format for machine parsing
@@ -39,7 +39,7 @@ export interface SecureLogger {
 function createPinoOptions(config: LoggingConfig): LoggerOptions {
   const options: LoggerOptions = {
     level: config.level,
-    
+
     // Custom serializers for security
     serializers: {
       // Sanitize all object fields
@@ -47,10 +47,10 @@ function createPinoOptions(config: LoggingConfig): LoggerOptions {
       res: (res) => sanitizeForLogging(res),
       err: pino.stdSerializers.err,
     },
-    
+
     // Add timestamp in ISO format
     timestamp: pino.stdTimeFunctions.isoTime,
-    
+
     // Format error objects properly
     formatters: {
       level: (label) => ({ level: label }),
@@ -60,7 +60,7 @@ function createPinoOptions(config: LoggingConfig): LoggerOptions {
         name: 'secureyeoman',
       }),
     },
-    
+
     // Redact sensitive fields
     redact: {
       paths: [
@@ -84,16 +84,18 @@ function createPinoOptions(config: LoggingConfig): LoggerOptions {
       censor: '[REDACTED]',
     },
   };
-  
+
   return options;
 }
 
 /**
  * Create transport configuration based on output settings
  */
-function createTransport(config: LoggingConfig): pino.TransportMultiOptions | pino.TransportSingleOptions | undefined {
+function createTransport(
+  config: LoggingConfig
+): pino.TransportMultiOptions | pino.TransportSingleOptions | undefined {
   const targets: pino.TransportTargetOptions[] = [];
-  
+
   for (const output of config.output) {
     if (output.type === 'stdout') {
       if (output.format === 'pretty') {
@@ -116,7 +118,7 @@ function createTransport(config: LoggingConfig): pino.TransportMultiOptions | pi
     } else if (output.type === 'file') {
       targets.push({
         target: 'pino/file',
-        options: { 
+        options: {
           destination: output.path,
           mkdir: true,
         },
@@ -124,15 +126,15 @@ function createTransport(config: LoggingConfig): pino.TransportMultiOptions | pi
       });
     }
   }
-  
+
   if (targets.length === 0) {
     return undefined;
   }
-  
+
   if (targets.length === 1) {
     return targets[0];
   }
-  
+
   return { targets };
 }
 
@@ -142,45 +144,45 @@ function createTransport(config: LoggingConfig): pino.TransportMultiOptions | pi
 class SecureLoggerImpl implements SecureLogger {
   private readonly pino: PinoLogger;
   private readonly defaultContext: LogContext;
-  
+
   constructor(pino: PinoLogger, defaultContext: LogContext = {}) {
     this.pino = pino;
     this.defaultContext = defaultContext;
   }
-  
+
   get level(): LogLevel {
     return this.pino.level as LogLevel;
   }
-  
+
   private sanitizeContext(context?: LogContext): Record<string, unknown> {
     const merged = { ...this.defaultContext, ...context };
     return sanitizeForLogging(merged) as Record<string, unknown>;
   }
-  
+
   trace(msg: string, context?: LogContext): void {
     this.pino.trace(this.sanitizeContext(context), msg);
   }
-  
+
   debug(msg: string, context?: LogContext): void {
     this.pino.debug(this.sanitizeContext(context), msg);
   }
-  
+
   info(msg: string, context?: LogContext): void {
     this.pino.info(this.sanitizeContext(context), msg);
   }
-  
+
   warn(msg: string, context?: LogContext): void {
     this.pino.warn(this.sanitizeContext(context), msg);
   }
-  
+
   error(msg: string, context?: LogContext): void {
     this.pino.error(this.sanitizeContext(context), msg);
   }
-  
+
   fatal(msg: string, context?: LogContext): void {
     this.pino.fatal(this.sanitizeContext(context), msg);
   }
-  
+
   child(context: LogContext): SecureLogger {
     const mergedContext = { ...this.defaultContext, ...context };
     return new SecureLoggerImpl(this.pino.child({}), mergedContext);
@@ -193,15 +195,15 @@ class SecureLoggerImpl implements SecureLogger {
 export function createLogger(config: LoggingConfig): SecureLogger {
   const options = createPinoOptions(config);
   const transport = createTransport(config);
-  
+
   let pinoLogger: PinoLogger;
-  
+
   if (transport) {
     pinoLogger = pino(options, pino.transport(transport));
   } else {
     pinoLogger = pino(options);
   }
-  
+
   return new SecureLoggerImpl(pinoLogger);
 }
 

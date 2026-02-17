@@ -144,7 +144,7 @@ export const startCommand: Command = {
       printBanner(ctx.stdout, actualHost, actualPort, tls);
     } catch (error) {
       ctx.stderr.write(
-        `Failed to start SecureYeoman: ${error instanceof Error ? error.message : String(error)}\n`,
+        `Failed to start SecureYeoman: ${error instanceof Error ? error.message : String(error)}\n`
       );
       return 1;
     }

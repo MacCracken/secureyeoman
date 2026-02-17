@@ -68,7 +68,9 @@ export function NotificationBell() {
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+    };
   }, []);
 
   const markAsRead = useCallback((id: string) => {
@@ -94,10 +96,14 @@ export function NotificationBell() {
 
   const iconForType = (type: string) => {
     switch (type) {
-      case 'security': return <Shield className="w-4 h-4 text-warning flex-shrink-0" />;
-      case 'task_completed': return <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />;
-      case 'task_failed': return <XCircle className="w-4 h-4 text-destructive flex-shrink-0" />;
-      default: return <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0" />;
+      case 'security':
+        return <Shield className="w-4 h-4 text-warning flex-shrink-0" />;
+      case 'task_completed':
+        return <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />;
+      case 'task_failed':
+        return <XCircle className="w-4 h-4 text-destructive flex-shrink-0" />;
+      default:
+        return <AlertTriangle className="w-4 h-4 text-muted-foreground flex-shrink-0" />;
     }
   };
 
@@ -112,7 +118,9 @@ export function NotificationBell() {
   return (
     <div ref={dropdownRef} className="relative">
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          setOpen((v) => !v);
+        }}
         className="btn-ghost p-2 relative rounded-md border border-transparent hover:border-border"
         aria-label="Notifications"
         aria-expanded={open}
@@ -164,7 +172,9 @@ export function NotificationBell() {
               notifications.map((n) => (
                 <button
                   key={n.id}
-                  onClick={() => markAsRead(n.id)}
+                  onClick={() => {
+                    markAsRead(n.id);
+                  }}
                   className={`w-full text-left px-3 py-2 border-b last:border-0 hover:bg-muted/30 transition-colors flex gap-2 ${
                     n.read ? 'opacity-60' : ''
                   }`}
@@ -172,15 +182,21 @@ export function NotificationBell() {
                   {iconForType(n.type)}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
-                      <p className={`text-xs font-medium truncate ${n.read ? '' : 'text-foreground'}`}>
+                      <p
+                        className={`text-xs font-medium truncate ${n.read ? '' : 'text-foreground'}`}
+                      >
                         {sanitizeText(n.title)}
                       </p>
                       {!n.read && (
                         <span className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0 ml-1" />
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{sanitizeText(n.message)}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">{formatTime(n.timestamp)}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {sanitizeText(n.message)}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">
+                      {formatTime(n.timestamp)}
+                    </p>
                   </div>
                 </button>
               ))

@@ -32,7 +32,12 @@ import { useSidebar } from '../hooks/useSidebar';
 import { useTheme } from '../hooks/useTheme';
 import { getAccessToken } from '../api/client';
 import { NewEntityDialog } from './NewEntityDialog';
-import { fetchExtensionConfig, fetchSecurityPolicy, fetchProactiveConfig, fetchHealth } from '../api/client';
+import {
+  fetchExtensionConfig,
+  fetchSecurityPolicy,
+  fetchProactiveConfig,
+  fetchHealth,
+} from '../api/client';
 
 export interface SidebarProps {
   isConnected: boolean;
@@ -58,7 +63,12 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
   { to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" />, enabled: true },
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
   { to: '/extensions', label: 'Extensions', icon: <Puzzle className="w-5 h-5" />, enabled: true },
-  { to: '/experiments', label: 'Experiments', icon: <FlaskConical className="w-5 h-5" />, enabled: true },
+  {
+    to: '/experiments',
+    label: 'Experiments',
+    icon: <FlaskConical className="w-5 h-5" />,
+    enabled: true,
+  },
   { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
 ];
 
@@ -129,8 +139,10 @@ export function Sidebar({
   const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
   const a2aAllowed = securityPolicy?.allowA2A ?? false;
   const hasAgents = subAgentsAllowed || a2aAllowed || (agentsData?.profiles?.length ?? 0) > 0;
-  const extensionsEnabled = (securityPolicy?.allowExtensions ?? false) || (extensionConfig?.config?.enabled === true);
-  const proactiveEnabled = (securityPolicy?.allowProactive ?? false) || ((proactiveConfig?.config as any)?.enabled === true);
+  const extensionsEnabled =
+    (securityPolicy?.allowExtensions ?? false) || extensionConfig?.config?.enabled === true;
+  const proactiveEnabled =
+    (securityPolicy?.allowProactive ?? false) || (proactiveConfig?.config as any)?.enabled === true;
   const experimentsEnabled = securityPolicy?.allowExperiments ?? false;
 
   const NAV_ITEMS = useMemo(() => {
@@ -161,7 +173,9 @@ export function Sidebar({
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+    };
   }, []);
 
   const sidebarContent = (
@@ -212,7 +226,9 @@ export function Sidebar({
 
       <div className={`${collapsed ? 'px-2 py-2' : 'px-3 py-2'} border-t border-border`}>
         <button
-          onClick={() => setNewDialogOpen(true)}
+          onClick={() => {
+            setNewDialogOpen(true);
+          }}
           className={`flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-all duration-200`}
         >
           <Plus className="w-4 h-4" />
@@ -271,7 +287,9 @@ export function Sidebar({
         className={`relative border-t border-border ${collapsed ? 'px-3 py-2' : 'px-5 py-2'}`}
       >
         <button
-          onClick={() => setProfileOpen((v) => !v)}
+          onClick={() => {
+            setProfileOpen((v) => !v);
+          }}
           className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200 ${
             collapsed ? 'justify-center' : ''
           }`}
@@ -360,7 +378,9 @@ export function Sidebar({
         <>
           <div
             className="md:hidden fixed inset-0 bg-black/50 z-40"
-            onClick={() => setMobileOpen(false)}
+            onClick={() => {
+              setMobileOpen(false);
+            }}
           />
           <aside
             className="md:hidden fixed left-0 top-0 h-screen bg-card border-r border-border z-50 transition-transform duration-200"
@@ -371,20 +391,34 @@ export function Sidebar({
         </>
       )}
 
-      <NewEntityDialog open={newDialogOpen} onClose={() => setNewDialogOpen(false)} />
+      <NewEntityDialog
+        open={newDialogOpen}
+        onClose={() => {
+          setNewDialogOpen(false);
+        }}
+      />
 
       {aboutOpen && (
         <div
           className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
-          onClick={() => setAboutOpen(false)}
+          onClick={() => {
+            setAboutOpen(false);
+          }}
         >
           <div
             className="bg-background border rounded-lg p-6 w-full max-w-sm shadow-lg"
-            onClick={(e) => e.stopPropagation()}
+            onClick={(e) => {
+              e.stopPropagation();
+            }}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">About SecureYeoman</h3>
-              <button onClick={() => setAboutOpen(false)} className="btn-ghost p-1 rounded">
+              <button
+                onClick={() => {
+                  setAboutOpen(false);
+                }}
+                className="btn-ghost p-1 rounded"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>

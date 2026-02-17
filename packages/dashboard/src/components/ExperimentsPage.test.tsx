@@ -26,7 +26,7 @@ function renderComponent() {
       <QueryClientProvider client={createQueryClient()}>
         <ExperimentsPage />
       </QueryClientProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -35,7 +35,10 @@ describe('ExperimentsPage', () => {
     vi.resetAllMocks();
     // Mock global fetch for experiment API calls (fetchExperiments uses fetch directly)
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
-      new Response(JSON.stringify({ experiments: [] }), { status: 200, headers: { 'Content-Type': 'application/json' } }),
+      new Response(JSON.stringify({ experiments: [] }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      })
     );
   });
 
@@ -103,7 +106,9 @@ describe('ExperimentsPage', () => {
     renderComponent();
 
     await waitFor(() => {
-      expect(screen.getByText(/must be explicitly enabled after initialization/)).toBeInTheDocument();
+      expect(
+        screen.getByText(/must be explicitly enabled after initialization/)
+      ).toBeInTheDocument();
     });
   });
 });

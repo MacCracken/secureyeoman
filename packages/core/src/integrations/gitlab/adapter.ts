@@ -26,7 +26,7 @@ interface GitLabPushPayload {
   user_name: string;
   user_username: string;
   project: { path_with_namespace: string; web_url: string };
-  commits: Array<{ id: string; message: string; author: { name: string } }>;
+  commits: { id: string; message: string; author: { name: string } }[];
   total_commits_count: number;
 }
 
@@ -130,10 +130,16 @@ export class GitLabIntegration implements WebhookIntegration {
    * Send a message to GitLab by posting a comment (note).
    * chatId format: `project-id/issues/123` or `project-id/merge_requests/123`
    */
-  async sendMessage(chatId: string, text: string, _metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    _metadata?: Record<string, unknown>
+  ): Promise<string> {
     const parts = chatId.split('/');
     if (parts.length < 3) {
-      throw new Error(`Invalid chatId format: expected "projectId/issues|merge_requests/iid", got "${chatId}"`);
+      throw new Error(
+        `Invalid chatId format: expected "projectId/issues|merge_requests/iid", got "${chatId}"`
+      );
     }
 
     // Support both "projectId/issues/123" and "namespace/project/issues/123"
@@ -146,9 +152,10 @@ export class GitLabIntegration implements WebhookIntegration {
     }
 
     const encodedProject = encodeURIComponent(projectPath);
-    const notePath = type === 'merge_requests'
-      ? `/api/v4/projects/${encodedProject}/merge_requests/${iid}/notes`
-      : `/api/v4/projects/${encodedProject}/issues/${iid}/notes`;
+    const notePath =
+      type === 'merge_requests'
+        ? `/api/v4/projects/${encodedProject}/merge_requests/${iid}/notes`
+        : `/api/v4/projects/${encodedProject}/issues/${iid}/notes`;
 
     const resp = await fetch(`${this.gitlabUrl}${notePath}`, {
       method: 'POST',
@@ -216,16 +223,16 @@ export class GitLabIntegration implements WebhookIntegration {
 
     switch (objectKind) {
       case 'push':
-        unified = this.handlePush(payload as GitLabPushPayload);
+        unified = this.handlePush(payload);
         break;
       case 'merge_request':
-        unified = this.handleMergeRequest(payload as GitLabMergeRequestPayload);
+        unified = this.handleMergeRequest(payload);
         break;
       case 'note':
-        unified = this.handleNote(payload as GitLabNotePayload);
+        unified = this.handleNote(payload);
         break;
       case 'issue':
-        unified = this.handleIssue(payload as GitLabIssuePayload);
+        unified = this.handleIssue(payload);
         break;
       default:
         this.logger?.debug(`Ignoring GitLab event: ${eventName}`);

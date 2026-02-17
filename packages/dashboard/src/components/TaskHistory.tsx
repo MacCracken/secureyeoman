@@ -189,16 +189,14 @@ export function TaskHistory() {
         } catch {
           parsedInput = undefined;
         }
-        setTimeout(
-          () =>
-            createTaskMutation.mutate({
-              name: pName,
-              type: pType,
-              description: pDescription || undefined,
-              input: parsedInput,
-            }),
-          0
-        );
+        setTimeout(() => {
+          createTaskMutation.mutate({
+            name: pName,
+            type: pType,
+            description: pDescription || undefined,
+            input: parsedInput,
+          });
+        }, 0);
       }
       setSearchParams({}, { replace: true });
     }
@@ -286,7 +284,12 @@ export function TaskHistory() {
           <div className="bg-background border rounded-lg p-6 w-full max-w-md shadow-lg">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Create New Task</h3>
-              <button onClick={() => setShowCreateDialog(false)} className="btn-ghost p-1 rounded">
+              <button
+                onClick={() => {
+                  setShowCreateDialog(false);
+                }}
+                className="btn-ghost p-1 rounded"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -296,7 +299,9 @@ export function TaskHistory() {
                 <input
                   type="text"
                   value={newTask.name}
-                  onChange={(e) => setNewTask({ ...newTask, name: e.target.value })}
+                  onChange={(e) => {
+                    setNewTask({ ...newTask, name: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background"
                   placeholder="e.g., Run backup"
                 />
@@ -305,7 +310,9 @@ export function TaskHistory() {
                 <label className="block text-sm font-medium mb-1">Type</label>
                 <select
                   value={newTask.type}
-                  onChange={(e) => setNewTask({ ...newTask, type: e.target.value })}
+                  onChange={(e) => {
+                    setNewTask({ ...newTask, type: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background"
                 >
                   {TYPE_OPTIONS.map((t) => (
@@ -320,7 +327,9 @@ export function TaskHistory() {
                 <input
                   type="text"
                   value={newTask.description}
-                  onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                  onChange={(e) => {
+                    setNewTask({ ...newTask, description: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background"
                   placeholder="Optional description"
                 />
@@ -329,14 +338,21 @@ export function TaskHistory() {
                 <label className="block text-sm font-medium mb-1">Input (JSON)</label>
                 <textarea
                   value={newTask.input}
-                  onChange={(e) => setNewTask({ ...newTask, input: e.target.value })}
+                  onChange={(e) => {
+                    setNewTask({ ...newTask, input: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background font-mono text-sm"
                   rows={3}
                   placeholder='{"key": "value"}'
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setShowCreateDialog(false)} className="btn btn-ghost">
+                <button
+                  onClick={() => {
+                    setShowCreateDialog(false);
+                  }}
+                  className="btn btn-ghost"
+                >
                   Cancel
                 </button>
                 <button
@@ -376,7 +392,9 @@ export function TaskHistory() {
           if (deleteTarget) deleteTaskMutation.mutate(deleteTarget.id);
           setDeleteTarget(null);
         }}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
       />
 
       {/* Edit Task Dialog */}
@@ -385,7 +403,12 @@ export function TaskHistory() {
           <div className="bg-background border rounded-lg p-6 w-full max-w-md shadow-lg">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Edit Task</h3>
-              <button onClick={() => setEditTask(null)} className="btn-ghost p-1 rounded">
+              <button
+                onClick={() => {
+                  setEditTask(null);
+                }}
+                className="btn-ghost p-1 rounded"
+              >
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -395,7 +418,9 @@ export function TaskHistory() {
                 <input
                   type="text"
                   value={editTask.name}
-                  onChange={(e) => setEditTask({ ...editTask, name: e.target.value })}
+                  onChange={(e) => {
+                    setEditTask({ ...editTask, name: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background"
                 />
               </div>
@@ -403,7 +428,9 @@ export function TaskHistory() {
                 <label className="block text-sm font-medium mb-1">Type</label>
                 <select
                   value={editTask.type}
-                  onChange={(e) => setEditTask({ ...editTask, type: e.target.value })}
+                  onChange={(e) => {
+                    setEditTask({ ...editTask, type: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background"
                 >
                   {TYPE_OPTIONS.map((t) => (
@@ -418,16 +445,23 @@ export function TaskHistory() {
                 <input
                   type="text"
                   value={editTask.description || ''}
-                  onChange={(e) => setEditTask({ ...editTask, description: e.target.value })}
+                  onChange={(e) => {
+                    setEditTask({ ...editTask, description: e.target.value });
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background"
                 />
               </div>
               <div className="flex justify-end gap-2 pt-2">
-                <button onClick={() => setEditTask(null)} className="btn btn-ghost">
+                <button
+                  onClick={() => {
+                    setEditTask(null);
+                  }}
+                  className="btn btn-ghost"
+                >
                   Cancel
                 </button>
                 <button
-                  onClick={() =>
+                  onClick={() => {
                     updateTaskMutation.mutate({
                       id: editTask.id,
                       data: {
@@ -435,8 +469,8 @@ export function TaskHistory() {
                         type: editTask.type,
                         description: editTask.description || undefined,
                       },
-                    })
-                  }
+                    });
+                  }}
                   disabled={!editTask.name.trim() || updateTaskMutation.isPending}
                   className="btn btn-primary"
                 >
@@ -453,7 +487,9 @@ export function TaskHistory() {
         <div className="flex items-center gap-2">
           <h2 className="text-lg font-semibold">Task History</h2>
           <button
-            onClick={() => setShowCreateDialog(true)}
+            onClick={() => {
+              setShowCreateDialog(true);
+            }}
             className="btn btn-primary text-sm px-3 py-1.5 flex items-center gap-1"
           >
             <Plus className="w-4 h-4" />
@@ -519,7 +555,9 @@ export function TaskHistory() {
           {DATE_PRESETS.map((preset) => (
             <button
               key={preset.label}
-              onClick={() => handleDatePreset(preset)}
+              onClick={() => {
+                handleDatePreset(preset);
+              }}
               className={`px-2 py-1 text-xs rounded-md border transition-colors ${
                 datePreset === preset.label
                   ? 'bg-primary text-primary-foreground border-primary'
@@ -534,7 +572,9 @@ export function TaskHistory() {
           <input
             type="date"
             value={dateFrom ? dateFrom.slice(0, 10) : ''}
-            onChange={(e) => handleCustomDate('from', e.target.value)}
+            onChange={(e) => {
+              handleCustomDate('from', e.target.value);
+            }}
             className="px-2 py-1 text-xs border rounded-md bg-background"
             aria-label="From date"
           />
@@ -542,7 +582,9 @@ export function TaskHistory() {
           <input
             type="date"
             value={dateTo ? dateTo.slice(0, 10) : ''}
-            onChange={(e) => handleCustomDate('to', e.target.value)}
+            onChange={(e) => {
+              handleCustomDate('to', e.target.value);
+            }}
             className="px-2 py-1 text-xs border rounded-md bg-background"
             aria-label="To date"
           />
@@ -608,7 +650,9 @@ export function TaskHistory() {
                       key={task.id}
                       task={task}
                       onEdit={setEditTask}
-                      onDelete={(t) => setDeleteTarget(t)}
+                      onDelete={(t) => {
+                        setDeleteTarget(t);
+                      }}
                     />
                   ))}
                   {heartbeatData?.tasks && heartbeatData.tasks.length > 0 && (
@@ -645,7 +689,9 @@ export function TaskHistory() {
             </p>
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setPage((p) => Math.max(0, p - 1))}
+                onClick={() => {
+                  setPage((p) => Math.max(0, p - 1));
+                }}
                 disabled={page === 0}
                 className="btn-ghost p-2 disabled:opacity-50"
                 aria-label="Previous page"
@@ -656,7 +702,9 @@ export function TaskHistory() {
                 Page {page + 1} of {totalPages}
               </span>
               <button
-                onClick={() => setPage((p) => Math.min(totalPages - 1, p + 1))}
+                onClick={() => {
+                  setPage((p) => Math.min(totalPages - 1, p + 1));
+                }}
                 disabled={page >= totalPages - 1}
                 className="btn-ghost p-2 disabled:opacity-50"
                 aria-label="Next page"
@@ -733,7 +781,9 @@ function TaskRow({
         <div className="flex items-center gap-1">
           {onEdit && (
             <button
-              onClick={() => onEdit(task)}
+              onClick={() => {
+                onEdit(task);
+              }}
               className="btn-ghost p-1.5 rounded"
               title="Edit task"
             >
@@ -742,7 +792,9 @@ function TaskRow({
           )}
           {onDelete && (
             <button
-              onClick={() => onDelete(task)}
+              onClick={() => {
+                onDelete(task);
+              }}
               className="btn-ghost p-1.5 rounded text-destructive hover:text-destructive"
               title="Delete task"
             >

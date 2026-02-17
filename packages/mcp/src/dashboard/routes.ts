@@ -9,7 +9,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 export function registerDashboardRoutes(
   app: FastifyInstance,
   auth: ProxyAuth,
-  mcpServer: McpServer,
+  mcpServer: McpServer
 ): void {
   // Auth middleware for dashboard routes
   async function requireAuth(request: FastifyRequest, reply: FastifyReply): Promise<void> {
@@ -63,7 +63,7 @@ export function registerDashboardRoutes(
 
 function listMcpCapabilities(
   _mcpServer: McpServer,
-  _type: 'tools' | 'resources' | 'prompts',
+  _type: 'tools' | 'resources' | 'prompts'
 ): { count: number } {
   // The MCP SDK doesn't expose registered tools/resources/prompts directly
   // We track them in our registration functions instead

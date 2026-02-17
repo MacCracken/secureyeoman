@@ -28,7 +28,10 @@ Respond with a JSON array of actions. Each action should have:
 export function buildConsolidationPrompt(candidates: ConsolidationCandidate[]): string {
   const groups = candidates.map((c, i) => {
     const similar = c.similarMemories
-      .map((s) => `    - ID: ${s.id} | Score: ${s.score.toFixed(3)} | Importance: ${s.importance}\n      Content: "${s.content}"`)
+      .map(
+        (s) =>
+          `    - ID: ${s.id} | Score: ${s.score.toFixed(3)} | Importance: ${s.importance}\n      Content: "${s.content}"`
+      )
       .join('\n');
 
     return `Group ${i + 1}:
@@ -46,18 +49,23 @@ ${groups.join('\n\n')}
 Respond with a JSON array of consolidation actions.`;
 }
 
-export function parseConsolidationResponse(
-  response: string,
-): Array<{ type: ConsolidationActionType; sourceIds: string[]; mergedContent?: string; replaceTargetId?: string; updateData?: { content?: string; importance?: number }; reason: string }> {
+export function parseConsolidationResponse(response: string): {
+  type: ConsolidationActionType;
+  sourceIds: string[];
+  mergedContent?: string;
+  replaceTargetId?: string;
+  updateData?: { content?: string; importance?: number };
+  reason: string;
+}[] {
   // Extract JSON from response (handle markdown code blocks)
   let jsonStr = response;
-  const jsonMatch = response.match(/```(?:json)?\s*([\s\S]*?)```/);
+  const jsonMatch = /```(?:json)?\s*([\s\S]*?)```/.exec(response);
   if (jsonMatch?.[1]) {
     jsonStr = jsonMatch[1].trim();
   }
 
   // Try to find JSON array
-  const arrayMatch = jsonStr.match(/\[[\s\S]*\]/);
+  const arrayMatch = /\[[\s\S]*\]/.exec(jsonStr);
   if (!arrayMatch) {
     return [];
   }
@@ -71,7 +79,7 @@ export function parseConsolidationResponse(
         action &&
         typeof action.type === 'string' &&
         Array.isArray(action.sourceIds) &&
-        typeof action.reason === 'string',
+        typeof action.reason === 'string'
     );
   } catch {
     return [];

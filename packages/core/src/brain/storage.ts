@@ -101,7 +101,7 @@ function rowToSkill(row: SkillRow): Skill {
     description: row.description,
     instructions: row.instructions,
     tools: (row.tools ?? []) as Skill['tools'],
-    triggerPatterns: (row.trigger_patterns ?? []) as string[],
+    triggerPatterns: row.trigger_patterns ?? [],
     // ADR 021: Skill Actions
     actions: [],
     // ADR 022: Skill Triggers
@@ -145,7 +145,7 @@ export class BrainStorage extends PgBaseStorage {
         data.expiresAt ?? null,
         now,
         now,
-      ],
+      ]
     );
 
     const result = await this.getMemory(id);
@@ -154,18 +154,12 @@ export class BrainStorage extends PgBaseStorage {
   }
 
   async getMemory(id: string): Promise<Memory | null> {
-    const row = await this.queryOne<MemoryRow>(
-      'SELECT * FROM brain.memories WHERE id = $1',
-      [id],
-    );
+    const row = await this.queryOne<MemoryRow>('SELECT * FROM brain.memories WHERE id = $1', [id]);
     return row ? rowToMemory(row) : null;
   }
 
   async deleteMemory(id: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM brain.memories WHERE id = $1',
-      [id],
-    );
+    const count = await this.execute('DELETE FROM brain.memories WHERE id = $1', [id]);
     return count > 0;
   }
 
@@ -194,10 +188,10 @@ export class BrainStorage extends PgBaseStorage {
       // Split into keywords (3+ chars) for better matching than full-string LIKE
       const keywords = query.search
         .split(/\s+/)
-        .map(w => w.replace(/[^a-zA-Z0-9]/g, ''))
-        .filter(w => w.length >= 3);
+        .map((w) => w.replace(/[^a-zA-Z0-9]/g, ''))
+        .filter((w) => w.length >= 3);
       if (keywords.length > 0) {
-        const clauses = keywords.map(kw => {
+        const clauses = keywords.map((kw) => {
           params.push(`%${kw}%`);
           return `content ILIKE $${idx++}`;
         });
@@ -228,7 +222,7 @@ export class BrainStorage extends PgBaseStorage {
   async touchMemory(id: string): Promise<void> {
     await this.execute(
       'UPDATE brain.memories SET access_count = access_count + 1, last_accessed_at = $1 WHERE id = $2',
-      [Date.now(), id],
+      [Date.now(), id]
     );
   }
 
@@ -237,7 +231,7 @@ export class BrainStorage extends PgBaseStorage {
     const now = Date.now();
     await this.execute(
       `UPDATE brain.memories SET access_count = access_count + 1, last_accessed_at = $1 WHERE id = ANY($2::text[])`,
-      [now, ids],
+      [now, ids]
     );
   }
 
@@ -250,7 +244,7 @@ export class BrainStorage extends PgBaseStorage {
       `UPDATE brain.memories SET importance = GREATEST(0, importance - $1), updated_at = $2
        WHERE (last_accessed_at IS NULL OR last_accessed_at < $3)
          AND importance > 0`,
-      [decayRate, now, now - oneDayMs],
+      [decayRate, now, now - oneDayMs]
     );
 
     return count;
@@ -260,20 +254,20 @@ export class BrainStorage extends PgBaseStorage {
     const now = Date.now();
     return this.execute(
       'DELETE FROM brain.memories WHERE expires_at IS NOT NULL AND expires_at < $1',
-      [now],
+      [now]
     );
   }
 
   async getMemoryCount(): Promise<number> {
     const row = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM brain.memories',
+      'SELECT COUNT(*) as count FROM brain.memories'
     );
     return Number(row?.count ?? 0);
   }
 
   async getMemoryCountByType(): Promise<Record<string, number>> {
     const rows = await this.queryMany<{ type: string; count: string }>(
-      'SELECT type, COUNT(*) as count FROM brain.memories GROUP BY type',
+      'SELECT type, COUNT(*) as count FROM brain.memories GROUP BY type'
     );
     const result: Record<string, number> = {};
     for (const row of rows) {
@@ -291,15 +285,7 @@ export class BrainStorage extends PgBaseStorage {
     await this.query(
       `INSERT INTO brain.knowledge (id, topic, content, source, confidence, supersedes, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, NULL, $6, $7)`,
-      [
-        id,
-        data.topic,
-        data.content,
-        data.source,
-        data.confidence ?? 0.8,
-        now,
-        now,
-      ],
+      [id, data.topic, data.content, data.source, data.confidence ?? 0.8, now, now]
     );
 
     const result = await this.getKnowledge(id);
@@ -308,10 +294,9 @@ export class BrainStorage extends PgBaseStorage {
   }
 
   async getKnowledge(id: string): Promise<KnowledgeEntry | null> {
-    const row = await this.queryOne<KnowledgeRow>(
-      'SELECT * FROM brain.knowledge WHERE id = $1',
-      [id],
-    );
+    const row = await this.queryOne<KnowledgeRow>('SELECT * FROM brain.knowledge WHERE id = $1', [
+      id,
+    ]);
     return row ? rowToKnowledge(row) : null;
   }
 
@@ -327,10 +312,10 @@ export class BrainStorage extends PgBaseStorage {
     if (query.search) {
       const keywords = query.search
         .split(/\s+/)
-        .map(w => w.replace(/[^a-zA-Z0-9]/g, ''))
-        .filter(w => w.length >= 3);
+        .map((w) => w.replace(/[^a-zA-Z0-9]/g, ''))
+        .filter((w) => w.length >= 3);
       if (keywords.length > 0) {
-        const clauses = keywords.map(kw => {
+        const clauses = keywords.map((kw) => {
           params.push(`%${kw}%`);
           return `(content ILIKE $${idx} OR topic ILIKE $${idx++})`;
         });
@@ -358,7 +343,7 @@ export class BrainStorage extends PgBaseStorage {
 
   async updateKnowledge(
     id: string,
-    data: { content?: string; confidence?: number; supersedes?: string },
+    data: { content?: string; confidence?: number; supersedes?: string }
   ): Promise<KnowledgeEntry> {
     const existing = await this.getKnowledge(id);
     if (!existing) throw new Error(`Knowledge not found: ${id}`);
@@ -372,7 +357,7 @@ export class BrainStorage extends PgBaseStorage {
         data.supersedes ?? existing.supersedes,
         now,
         id,
-      ],
+      ]
     );
 
     const result = await this.getKnowledge(id);
@@ -381,16 +366,13 @@ export class BrainStorage extends PgBaseStorage {
   }
 
   async deleteKnowledge(id: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM brain.knowledge WHERE id = $1',
-      [id],
-    );
+    const count = await this.execute('DELETE FROM brain.knowledge WHERE id = $1', [id]);
     return count > 0;
   }
 
   async getKnowledgeCount(): Promise<number> {
     const row = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM brain.knowledge',
+      'SELECT COUNT(*) as count FROM brain.knowledge'
     );
     return Number(row?.count ?? 0);
   }
@@ -411,12 +393,12 @@ export class BrainStorage extends PgBaseStorage {
         data.instructions ?? '',
         JSON.stringify(data.tools ?? []),
         JSON.stringify(data.triggerPatterns ?? []),
-        data.enabled !== false,
+        data.enabled,
         data.source ?? 'user',
         data.status ?? 'active',
         now,
         now,
-      ],
+      ]
     );
 
     const result = await this.getSkill(id);
@@ -425,10 +407,7 @@ export class BrainStorage extends PgBaseStorage {
   }
 
   async getSkill(id: string): Promise<Skill | null> {
-    const row = await this.queryOne<SkillRow>(
-      'SELECT * FROM brain.skills WHERE id = $1',
-      [id],
-    );
+    const row = await this.queryOne<SkillRow>('SELECT * FROM brain.skills WHERE id = $1', [id]);
     return row ? rowToSkill(row) : null;
   }
 
@@ -460,7 +439,7 @@ export class BrainStorage extends PgBaseStorage {
         data.status ?? existing.status,
         now,
         id,
-      ],
+      ]
     );
 
     const result = await this.getSkill(id);
@@ -469,10 +448,7 @@ export class BrainStorage extends PgBaseStorage {
   }
 
   async deleteSkill(id: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM brain.skills WHERE id = $1',
-      [id],
-    );
+    const count = await this.execute('DELETE FROM brain.skills WHERE id = $1', [id]);
     return count > 0;
   }
 
@@ -502,14 +478,14 @@ export class BrainStorage extends PgBaseStorage {
 
   async getEnabledSkills(): Promise<Skill[]> {
     const rows = await this.queryMany<SkillRow>(
-      "SELECT * FROM brain.skills WHERE enabled = true AND status = 'active' ORDER BY usage_count DESC, created_at DESC",
+      "SELECT * FROM brain.skills WHERE enabled = true AND status = 'active' ORDER BY usage_count DESC, created_at DESC"
     );
     return rows.map(rowToSkill);
   }
 
   async getPendingSkills(): Promise<Skill[]> {
     const rows = await this.queryMany<SkillRow>(
-      "SELECT * FROM brain.skills WHERE status = 'pending_approval' ORDER BY created_at DESC",
+      "SELECT * FROM brain.skills WHERE status = 'pending_approval' ORDER BY created_at DESC"
     );
     return rows.map(rowToSkill);
   }
@@ -517,13 +493,13 @@ export class BrainStorage extends PgBaseStorage {
   async incrementUsage(skillId: string): Promise<void> {
     await this.execute(
       'UPDATE brain.skills SET usage_count = usage_count + 1, last_used_at = $1 WHERE id = $2',
-      [Date.now(), skillId],
+      [Date.now(), skillId]
     );
   }
 
   async getSkillCount(): Promise<number> {
     const row = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM brain.skills',
+      'SELECT COUNT(*) as count FROM brain.skills'
     );
     return Number(row?.count ?? 0);
   }
@@ -533,8 +509,8 @@ export class BrainStorage extends PgBaseStorage {
   async queryMemoriesBySimilarity(
     embedding: number[],
     limit: number,
-    threshold: number,
-  ): Promise<Array<Memory & { similarity: number }>> {
+    threshold: number
+  ): Promise<(Memory & { similarity: number })[]> {
     const vectorStr = `[${embedding.join(',')}]`;
     const rows = await this.queryMany<MemoryRow & { similarity: number }>(
       `SELECT *, 1 - (embedding <=> $1::vector) AS similarity
@@ -543,7 +519,7 @@ export class BrainStorage extends PgBaseStorage {
          AND 1 - (embedding <=> $1::vector) >= $2
        ORDER BY similarity DESC
        LIMIT $3`,
-      [vectorStr, threshold, limit],
+      [vectorStr, threshold, limit]
     );
     return rows.map((row) => ({
       ...rowToMemory(row),
@@ -554,8 +530,8 @@ export class BrainStorage extends PgBaseStorage {
   async queryKnowledgeBySimilarity(
     embedding: number[],
     limit: number,
-    threshold: number,
-  ): Promise<Array<KnowledgeEntry & { similarity: number }>> {
+    threshold: number
+  ): Promise<(KnowledgeEntry & { similarity: number })[]> {
     const vectorStr = `[${embedding.join(',')}]`;
     const rows = await this.queryMany<KnowledgeRow & { similarity: number }>(
       `SELECT *, 1 - (embedding <=> $1::vector) AS similarity
@@ -564,7 +540,7 @@ export class BrainStorage extends PgBaseStorage {
          AND 1 - (embedding <=> $1::vector) >= $2
        ORDER BY similarity DESC
        LIMIT $3`,
-      [vectorStr, threshold, limit],
+      [vectorStr, threshold, limit]
     );
     return rows.map((row) => ({
       ...rowToKnowledge(row),
@@ -574,18 +550,18 @@ export class BrainStorage extends PgBaseStorage {
 
   async updateMemoryEmbedding(id: string, embedding: number[]): Promise<void> {
     const vectorStr = `[${embedding.join(',')}]`;
-    await this.execute(
-      'UPDATE brain.memories SET embedding = $1::vector WHERE id = $2',
-      [vectorStr, id],
-    );
+    await this.execute('UPDATE brain.memories SET embedding = $1::vector WHERE id = $2', [
+      vectorStr,
+      id,
+    ]);
   }
 
   async updateKnowledgeEmbedding(id: string, embedding: number[]): Promise<void> {
     const vectorStr = `[${embedding.join(',')}]`;
-    await this.execute(
-      'UPDATE brain.knowledge SET embedding = $1::vector WHERE id = $2',
-      [vectorStr, id],
-    );
+    await this.execute('UPDATE brain.knowledge SET embedding = $1::vector WHERE id = $2', [
+      vectorStr,
+      id,
+    ]);
   }
 
   // ── Brain Meta ───────────────────────────────────────────────
@@ -593,7 +569,7 @@ export class BrainStorage extends PgBaseStorage {
   async getMeta(key: string): Promise<string | null> {
     const row = await this.queryOne<{ value: string }>(
       'SELECT value FROM brain.meta WHERE key = $1',
-      [key],
+      [key]
     );
     return row?.value ?? null;
   }
@@ -602,7 +578,7 @@ export class BrainStorage extends PgBaseStorage {
     await this.execute(
       `INSERT INTO brain.meta (key, value, updated_at) VALUES ($1, $2, $3)
        ON CONFLICT(key) DO UPDATE SET value = $2, updated_at = $3`,
-      [key, value, Date.now()],
+      [key, value, Date.now()]
     );
   }
 

@@ -1,27 +1,39 @@
 /**
  * @friday/core
- * 
+ *
  * SecureYeoman Core Agent Engine
- * 
+ *
  * A security-first autonomous agent system with comprehensive logging,
  * audit trail, and performance metrics.
  */
 
 // Main entry point
-export { SecureYeoman, createSecureYeoman, type SecureYeomanOptions, type SecureYeomanState } from './secureyeoman.js';
+export {
+  SecureYeoman,
+  createSecureYeoman,
+  type SecureYeomanOptions,
+  type SecureYeomanState,
+} from './secureyeoman.js';
 
 // Configuration
-export { loadConfig, getSecret, requireSecret, validateSecrets, initializeKeyring, type LoadConfigOptions } from './config/loader.js';
+export {
+  loadConfig,
+  getSecret,
+  requireSecret,
+  validateSecrets,
+  initializeKeyring,
+  type LoadConfigOptions,
+} from './config/loader.js';
 
 // Logging
-export { 
-  createLogger, 
-  initializeLogger, 
-  getLogger, 
+export {
+  createLogger,
+  initializeLogger,
+  getLogger,
   isLoggerInitialized,
-  type SecureLogger, 
-  type LogContext, 
-  type LogLevel 
+  type SecureLogger,
+  type LogContext,
+  type LogLevel,
 } from './logging/logger.js';
 
 export {
@@ -34,24 +46,22 @@ export {
   type AuditQueryResult,
 } from './logging/audit-chain.js';
 
-export {
-  SQLiteAuditStorage,
-} from './logging/sqlite-storage.js';
+export { SQLiteAuditStorage } from './logging/sqlite-storage.js';
 
 // Security
-export { 
-  InputValidator, 
-  createValidator, 
-  type ValidationResult, 
-  type ValidationWarning, 
-  type ValidationContext 
+export {
+  InputValidator,
+  createValidator,
+  type ValidationResult,
+  type ValidationWarning,
+  type ValidationContext,
 } from './security/input-validator.js';
 
-export { 
-  RateLimiter, 
-  createRateLimiter, 
-  type RateLimitResult, 
-  type RateLimitRule 
+export {
+  RateLimiter,
+  createRateLimiter,
+  type RateLimitResult,
+  type RateLimitRule,
 } from './security/rate-limiter.js';
 
 export {
@@ -60,7 +70,7 @@ export {
   initializeRBAC,
   PermissionDeniedError,
   type PermissionCheck,
-  type PermissionResult
+  type PermissionResult,
 } from './security/rbac.js';
 
 export {
@@ -121,24 +131,20 @@ export {
   createTaskExecutor,
   type TaskExecutorConfig,
   type ExecutionContext,
-  type TaskHandler
+  type TaskHandler,
 } from './task/executor.js';
 
-export {
-  TaskStorage,
-  type TaskFilter,
-  type TaskStats,
-} from './task/task-storage.js';
+export { TaskStorage, type TaskFilter, type TaskStats } from './task/task-storage.js';
 
 // Utilities
-export { 
-  sha256, 
-  hmacSha256, 
-  secureCompare, 
-  randomHex, 
-  uuidv7, 
+export {
+  sha256,
+  hmacSha256,
+  secureCompare,
+  randomHex,
+  uuidv7,
   generateSecureToken,
-  sanitizeForLogging 
+  sanitizeForLogging,
 } from './utils/crypto.js';
 
 // AI
@@ -187,10 +193,7 @@ export {
   type AuditStorage,
 } from './brain/index.js';
 
-export {
-  registerBrainRoutes,
-  type BrainRoutesOptions,
-} from './brain/brain-routes.js';
+export { registerBrainRoutes, type BrainRoutesOptions } from './brain/brain-routes.js';
 
 // Comms
 export {
@@ -206,10 +209,7 @@ export {
   type AgentCommsDeps,
 } from './comms/index.js';
 
-export {
-  registerCommsRoutes,
-  type CommsRoutesOptions,
-} from './comms/comms-routes.js';
+export { registerCommsRoutes, type CommsRoutesOptions } from './comms/comms-routes.js';
 
 // Soul
 export {
@@ -222,10 +222,7 @@ export {
   type SkillFilter,
 } from './soul/index.js';
 
-export {
-  registerSoulRoutes,
-  type SoulRoutesOptions,
-} from './soul/soul-routes.js';
+export { registerSoulRoutes, type SoulRoutesOptions } from './soul/soul-routes.js';
 
 // Spirit
 export {
@@ -235,10 +232,7 @@ export {
   type SpiritManagerDeps,
 } from './spirit/index.js';
 
-export {
-  registerSpiritRoutes,
-  type SpiritRoutesOptions,
-} from './spirit/spirit-routes.js';
+export { registerSpiritRoutes, type SpiritRoutesOptions } from './spirit/spirit-routes.js';
 
 // Body
 export {
@@ -249,10 +243,7 @@ export {
 } from './body/index.js';
 
 // Auth
-export {
-  AuthStorage,
-  type ApiKeyRow,
-} from './security/auth-storage.js';
+export { AuthStorage, type ApiKeyRow } from './security/auth-storage.js';
 
 export {
   AuthService,
@@ -271,10 +262,7 @@ export {
   type RbacHookOptions,
 } from './gateway/auth-middleware.js';
 
-export {
-  registerAuthRoutes,
-  type AuthRoutesOptions,
-} from './gateway/auth-routes.js';
+export { registerAuthRoutes, type AuthRoutesOptions } from './gateway/auth-routes.js';
 
 // Integrations
 export {
@@ -292,11 +280,7 @@ export {
 } from './integrations/index.js';
 
 // Gateway
-export {
-  GatewayServer,
-  createGatewayServer,
-  type GatewayServerOptions,
-} from './gateway/server.js';
+export { GatewayServer, createGatewayServer, type GatewayServerOptions } from './gateway/server.js';
 
 // MCP
 export {

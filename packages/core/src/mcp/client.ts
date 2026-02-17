@@ -29,7 +29,11 @@ export class McpClientManager {
    * Register tools provided by an MCP server during auto-registration.
    * Persists tools to SQLite so they survive toggle cycles.
    */
-  async registerTools(serverId: string, serverName: string, tools: McpToolManifest[]): Promise<void> {
+  async registerTools(
+    serverId: string,
+    serverName: string,
+    tools: McpToolManifest[]
+  ): Promise<void> {
     const mcpTools: McpToolDef[] = tools.map((t) => ({
       name: t.name,
       description: t.description ?? '',
@@ -39,12 +43,16 @@ export class McpClientManager {
     }));
     this.discoveredTools.set(serverId, mcpTools);
     await this.storage.saveTools(serverId, serverName, tools);
-    this.logger.info('Registered tools from MCP server', { serverId, serverName, count: mcpTools.length });
+    this.logger.info('Registered tools from MCP server', {
+      serverId,
+      serverName,
+      count: mcpTools.length,
+    });
   }
 
   async discoverTools(serverId: string): Promise<McpToolDef[]> {
     const server = await this.storage.getServer(serverId);
-    if (!server || !server.enabled) return [];
+    if (!server?.enabled) return [];
 
     // If tools are already in memory, return those
     const existing = this.discoveredTools.get(serverId);
@@ -56,7 +64,10 @@ export class McpClientManager {
     const persisted = await this.storage.loadTools(serverId);
     if (persisted.length > 0) {
       this.discoveredTools.set(serverId, persisted);
-      this.logger.info('Restored tools from storage for MCP server', { serverId, count: persisted.length });
+      this.logger.info('Restored tools from storage for MCP server', {
+        serverId,
+        count: persisted.length,
+      });
       return persisted;
     }
 
@@ -66,11 +77,14 @@ export class McpClientManager {
 
   async discoverResources(serverId: string): Promise<McpResourceDef[]> {
     const server = await this.storage.getServer(serverId);
-    if (!server || !server.enabled) return [];
+    if (!server?.enabled) return [];
 
     const resources: McpResourceDef[] = [];
     this.discoveredResources.set(serverId, resources);
-    this.logger.debug('Discovered resources from MCP server', { serverId, count: resources.length });
+    this.logger.debug('Discovered resources from MCP server', {
+      serverId,
+      count: resources.length,
+    });
     return resources;
   }
 
@@ -90,9 +104,13 @@ export class McpClientManager {
     return allResources;
   }
 
-  async callTool(serverId: string, toolName: string, args: Record<string, unknown>): Promise<unknown> {
+  async callTool(
+    serverId: string,
+    toolName: string,
+    args: Record<string, unknown>
+  ): Promise<unknown> {
     const server = await this.storage.getServer(serverId);
-    if (!server || !server.enabled) {
+    if (!server?.enabled) {
       throw new Error(`MCP server ${serverId} not found or disabled`);
     }
 
@@ -127,7 +145,10 @@ export class McpClientManager {
     const persisted = await this.storage.loadTools(serverId);
     if (persisted.length > 0) {
       this.discoveredTools.set(serverId, persisted);
-      this.logger.info('Restored tools from storage for MCP server', { serverId, count: persisted.length });
+      this.logger.info('Restored tools from storage for MCP server', {
+        serverId,
+        count: persisted.length,
+      });
     }
     return persisted;
   }

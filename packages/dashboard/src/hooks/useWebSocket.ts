@@ -100,9 +100,11 @@ export function useWebSocket(path: string): UseWebSocketReturn {
           setReconnecting(true);
           const delay = Math.min(
             baseReconnectDelay * Math.pow(2, reconnectAttempts.current),
-            maxReconnectDelay,
+            maxReconnectDelay
           );
-          console.debug(`WebSocket closed (${event.code}), retrying in ${(delay / 1000).toFixed(0)}s (${reconnectAttempts.current + 1}/${maxReconnectAttempts})`);
+          console.debug(
+            `WebSocket closed (${event.code}), retrying in ${(delay / 1000).toFixed(0)}s (${reconnectAttempts.current + 1}/${maxReconnectAttempts})`
+          );
 
           reconnectTimeoutRef.current = setTimeout(() => {
             reconnectAttempts.current++;

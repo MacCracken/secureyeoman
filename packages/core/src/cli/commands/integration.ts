@@ -88,7 +88,7 @@ async function listIntegrations(
   ctx: CommandContext,
   baseUrl: string,
   token: string | undefined,
-  json: boolean,
+  json: boolean
 ): Promise<number> {
   const result = await apiCall(baseUrl, '/api/v1/integrations', { token });
   if (!result.ok) {
@@ -96,7 +96,11 @@ async function listIntegrations(
     return 1;
   }
 
-  const data = result.data as { integrations: Record<string, unknown>[]; total: number; running: number };
+  const data = result.data as {
+    integrations: Record<string, unknown>[];
+    total: number;
+    running: number;
+  };
 
   if (json) {
     ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
@@ -130,7 +134,7 @@ async function showIntegration(
   baseUrl: string,
   token: string | undefined,
   json: boolean,
-  args: string[],
+  args: string[]
 ): Promise<number> {
   const id = args[0];
   if (!id) {
@@ -138,9 +142,13 @@ async function showIntegration(
     return 1;
   }
 
-  const result = await apiCall(baseUrl, `/api/v1/integrations/${encodeURIComponent(id)}`, { token });
+  const result = await apiCall(baseUrl, `/api/v1/integrations/${encodeURIComponent(id)}`, {
+    token,
+  });
   if (!result.ok) {
-    ctx.stderr.write(result.status === 404 ? 'Integration not found.\n' : `HTTP ${String(result.status)}\n`);
+    ctx.stderr.write(
+      result.status === 404 ? 'Integration not found.\n' : `HTTP ${String(result.status)}\n`
+    );
     return 1;
   }
 
@@ -153,13 +161,16 @@ async function showIntegration(
 
   const integration = (data.integration ?? data) as Record<string, unknown>;
   for (const [key, value] of Object.entries(integration)) {
-    // eslint-disable-next-line @typescript-eslint/no-base-to-string
-    ctx.stdout.write(`  ${key.padEnd(16)} ${typeof value === 'object' ? JSON.stringify(value) : String(value)}\n`);
+    ctx.stdout.write(
+      `  ${key.padEnd(16)} ${typeof value === 'object' ? JSON.stringify(value) : String(value)}\n`
+    );
   }
-  // eslint-disable-next-line @typescript-eslint/no-base-to-string
-  if (data.running !== undefined) ctx.stdout.write(`  ${'running'.padEnd(16)} ${String(data.running)}\n`);
-  // eslint-disable-next-line @typescript-eslint/no-base-to-string
-  if (data.healthy !== undefined) ctx.stdout.write(`  ${'healthy'.padEnd(16)} ${String(data.healthy)}\n`);
+
+  if (data.running !== undefined)
+    ctx.stdout.write(`  ${'running'.padEnd(16)} ${String(data.running)}\n`);
+
+  if (data.healthy !== undefined)
+    ctx.stdout.write(`  ${'healthy'.padEnd(16)} ${String(data.healthy)}\n`);
   ctx.stdout.write('\n');
   return 0;
 }
@@ -169,14 +180,16 @@ async function createIntegration(
   baseUrl: string,
   token: string | undefined,
   json: boolean,
-  args: string[],
+  args: string[]
 ): Promise<number> {
   const platformResult = extractFlag(args, 'platform');
   const nameResult = extractFlag(platformResult.rest, 'name');
   const configResult = extractFlag(nameResult.rest, 'config');
 
   if (!platformResult.value || !nameResult.value) {
-    ctx.stderr.write('Usage: secureyeoman integration create --platform <p> --name <n> [--config <json>]\n');
+    ctx.stderr.write(
+      'Usage: secureyeoman integration create --platform <p> --name <n> [--config <json>]\n'
+    );
     return 1;
   }
 
@@ -219,7 +232,7 @@ async function deleteIntegration(
   ctx: CommandContext,
   baseUrl: string,
   token: string | undefined,
-  args: string[],
+  args: string[]
 ): Promise<number> {
   const id = args[0];
   if (!id) {
@@ -233,7 +246,9 @@ async function deleteIntegration(
   });
 
   if (!result.ok) {
-    ctx.stderr.write(result.status === 404 ? 'Integration not found.\n' : `HTTP ${String(result.status)}\n`);
+    ctx.stderr.write(
+      result.status === 404 ? 'Integration not found.\n' : `HTTP ${String(result.status)}\n`
+    );
     return 1;
   }
 
@@ -245,7 +260,7 @@ async function startIntegration(
   ctx: CommandContext,
   baseUrl: string,
   token: string | undefined,
-  args: string[],
+  args: string[]
 ): Promise<number> {
   const id = args[0];
   if (!id) {
@@ -273,7 +288,7 @@ async function stopIntegration(
   ctx: CommandContext,
   baseUrl: string,
   token: string | undefined,
-  args: string[],
+  args: string[]
 ): Promise<number> {
   const id = args[0];
   if (!id) {

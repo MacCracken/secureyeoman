@@ -192,7 +192,9 @@ export function SkillsManager() {
         confirmLabel="Delete"
         destructive
         onConfirm={handleConfirmDelete}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
       />
 
       {/* Header + Filters */}
@@ -213,7 +215,9 @@ export function SkillsManager() {
         <Filter className="w-4 h-4 text-muted-foreground" />
         <select
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
+          onChange={(e) => {
+            setFilterStatus(e.target.value);
+          }}
           className="px-2 py-1 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           aria-label="Filter by status"
         >
@@ -224,7 +228,9 @@ export function SkillsManager() {
         </select>
         <select
           value={filterSource}
-          onChange={(e) => setFilterSource(e.target.value)}
+          onChange={(e) => {
+            setFilterSource(e.target.value);
+          }}
           className="px-2 py-1 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
           aria-label="Filter by source"
         >
@@ -248,7 +254,9 @@ export function SkillsManager() {
             <input
               type="text"
               value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, name: e.target.value }));
+              }}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               maxLength={100}
               placeholder="e.g., Code Review"
@@ -260,7 +268,9 @@ export function SkillsManager() {
             <input
               type="text"
               value={form.description}
-              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, description: e.target.value }));
+              }}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               maxLength={1000}
               placeholder="What this skill does"
@@ -271,7 +281,9 @@ export function SkillsManager() {
             <label className="block text-sm font-medium mb-1">Instructions</label>
             <textarea
               value={form.instructions}
-              onChange={(e) => setForm((f) => ({ ...f, instructions: e.target.value }))}
+              onChange={(e) => {
+                setForm((f) => ({ ...f, instructions: e.target.value }));
+              }}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
               rows={4}
               maxLength={8000}
@@ -287,7 +299,9 @@ export function SkillsManager() {
             <input
               type="text"
               value={triggerInput}
-              onChange={(e) => setTriggerInput(e.target.value)}
+              onChange={(e) => {
+                setTriggerInput(e.target.value);
+              }}
               className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               placeholder="Comma-separated patterns, e.g., review code, check PR, analyze diff"
             />
@@ -297,7 +311,12 @@ export function SkillsManager() {
           </div>
 
           <div className="flex gap-2 justify-end">
-            <button onClick={() => setEditing(null)} className="btn btn-ghost">
+            <button
+              onClick={() => {
+                setEditing(null);
+              }}
+              className="btn btn-ghost"
+            >
               Cancel
             </button>
             <button
@@ -320,7 +339,9 @@ export function SkillsManager() {
                 <div className="flex items-center gap-2 flex-wrap">
                   <Wrench className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                   <h3 className="font-medium">{s.name}</h3>
-                  <span className={`badge ${s.enabled ? (STATUS_BADGES[s.status] ?? 'badge-info') : 'badge-error'}`}>
+                  <span
+                    className={`badge ${s.enabled ? (STATUS_BADGES[s.status] ?? 'badge-info') : 'badge-error'}`}
+                  >
                     {s.enabled ? s.status.replace('_', ' ') : 'disabled'}
                   </span>
                 </div>
@@ -351,14 +372,18 @@ export function SkillsManager() {
                 {s.status === 'pending_approval' && (
                   <>
                     <button
-                      onClick={() => approveMut.mutate(s.id)}
+                      onClick={() => {
+                        approveMut.mutate(s.id);
+                      }}
                       className="btn-ghost p-2 text-success hover:bg-success/10"
                       aria-label={`Approve skill ${s.name}`}
                     >
                       <ThumbsUp className="w-4 h-4" />
                     </button>
                     <button
-                      onClick={() => rejectMut.mutate(s.id)}
+                      onClick={() => {
+                        rejectMut.mutate(s.id);
+                      }}
                       className="btn-ghost p-2 text-destructive hover:bg-destructive/10"
                       aria-label={`Reject skill ${s.name}`}
                     >
@@ -370,7 +395,13 @@ export function SkillsManager() {
                 {/* Enable/Disable toggle */}
                 {s.status !== 'pending_approval' && (
                   <button
-                    onClick={() => (s.enabled ? disableMut.mutate(s.id) : enableMut.mutate(s.id))}
+                    onClick={() => {
+                      if (s.enabled) {
+                        disableMut.mutate(s.id);
+                      } else {
+                        enableMut.mutate(s.id);
+                      }
+                    }}
                     className={`btn-ghost p-2 ${s.enabled ? 'text-success' : 'text-muted-foreground'}`}
                     aria-label={s.enabled ? `Disable skill ${s.name}` : `Enable skill ${s.name}`}
                   >
@@ -383,14 +414,18 @@ export function SkillsManager() {
                 )}
 
                 <button
-                  onClick={() => startEdit(s)}
+                  onClick={() => {
+                    startEdit(s);
+                  }}
                   className="btn-ghost p-2 text-muted-foreground hover:text-foreground"
                   aria-label={`Edit skill ${s.name}`}
                 >
                   <Edit2 className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setDeleteTarget(s)}
+                  onClick={() => {
+                    setDeleteTarget(s);
+                  }}
                   className="btn-ghost p-2 text-muted-foreground hover:text-destructive"
                   aria-label={`Delete skill ${s.name}`}
                 >

@@ -1,6 +1,6 @@
 /**
  * Cryptographic Utilities for SecureYeoman
- * 
+ *
  * Security considerations:
  * - Uses Node.js built-in crypto module (FIPS-compliant)
  * - Constant-time comparison for signatures to prevent timing attacks
@@ -33,12 +33,12 @@ export function hmacSha256(data: string | Buffer, key: string | Buffer): string 
 export function secureCompare(a: string | Buffer, b: string | Buffer): boolean {
   const bufA = typeof a === 'string' ? Buffer.from(a) : a;
   const bufB = typeof b === 'string' ? Buffer.from(b) : b;
-  
+
   // Length check (still leaks length, but that's acceptable for our use case)
   if (bufA.length !== bufB.length) {
     return false;
   }
-  
+
   return timingSafeEqual(bufA, bufB);
 }
 
@@ -56,28 +56,28 @@ export function randomHex(bytes: number): string {
 export function uuidv7(): string {
   const timestamp = Date.now();
   const random = randomBytes(10);
-  
+
   // Timestamp in 48 bits (6 bytes)
   const timestampBytes = Buffer.alloc(6);
   timestampBytes.writeUIntBE(timestamp, 0, 6);
-  
+
   // Build UUID
   const uuid = Buffer.alloc(16);
-  
+
   // time_high (32 bits of timestamp)
   uuid[0] = timestampBytes[0]!;
   uuid[1] = timestampBytes[1]!;
   uuid[2] = timestampBytes[2]!;
   uuid[3] = timestampBytes[3]!;
-  
+
   // time_mid (16 bits of timestamp)
   uuid[4] = timestampBytes[4]!;
   uuid[5] = timestampBytes[5]!;
-  
+
   // version (4 bits) + rand_a (12 bits)
   uuid[6] = 0x70 | (random[0]! & 0x0f); // Version 7
   uuid[7] = random[1]!;
-  
+
   // variant (2 bits) + rand_b (62 bits)
   uuid[8] = 0x80 | (random[2]! & 0x3f); // Variant 10
   uuid[9] = random[3]!;
@@ -87,7 +87,7 @@ export function uuidv7(): string {
   uuid[13] = random[7]!;
   uuid[14] = random[8]!;
   uuid[15] = random[9]!;
-  
+
   // Format as string
   const hex = uuid.toString('hex');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
@@ -108,40 +108,55 @@ export function sanitizeForLogging(input: unknown): unknown {
   if (input === null || input === undefined) {
     return input;
   }
-  
+
   if (typeof input === 'string') {
     // Redact common secret patterns
     const patterns = [
       // API keys
       { regex: /sk-[a-zA-Z0-9-_]{20,}/g, replacement: '[REDACTED_API_KEY]' },
-      { regex: /api[_-]?key["\s:=]+["']?[a-zA-Z0-9-_]{16,}["']?/gi, replacement: '[REDACTED_API_KEY]' },
+      {
+        regex: /api[_-]?key["\s:=]+["']?[a-zA-Z0-9-_]{16,}["']?/gi,
+        replacement: '[REDACTED_API_KEY]',
+      },
       // Tokens
       { regex: /bearer\s+[a-zA-Z0-9-_.]+/gi, replacement: 'Bearer [REDACTED_TOKEN]' },
       { regex: /token["\s:=]+["']?[a-zA-Z0-9-_.]{20,}["']?/gi, replacement: '[REDACTED_TOKEN]' },
       // Passwords
       { regex: /password["\s:=]+["']?[^"'\s]{1,}["']?/gi, replacement: '[REDACTED_PASSWORD]' },
       // Private keys
-      { regex: /-----BEGIN[^-]+PRIVATE KEY-----[\s\S]*?-----END[^-]+PRIVATE KEY-----/g, replacement: '[REDACTED_PRIVATE_KEY]' },
+      {
+        regex: /-----BEGIN[^-]+PRIVATE KEY-----[\s\S]*?-----END[^-]+PRIVATE KEY-----/g,
+        replacement: '[REDACTED_PRIVATE_KEY]',
+      },
     ];
-    
+
     let sanitized = input;
     for (const { regex, replacement } of patterns) {
       sanitized = sanitized.replace(regex, replacement);
     }
     return sanitized;
   }
-  
+
   if (Array.isArray(input)) {
     return input.map(sanitizeForLogging);
   }
-  
+
   if (typeof input === 'object') {
     const sanitized: Record<string, unknown> = {};
-    const sensitiveKeys = ['password', 'secret', 'token', 'key', 'apiKey', 'api_key', 'authorization', 'auth'];
-    
+    const sensitiveKeys = [
+      'password',
+      'secret',
+      'token',
+      'key',
+      'apiKey',
+      'api_key',
+      'authorization',
+      'auth',
+    ];
+
     for (const [key, value] of Object.entries(input)) {
       const lowerKey = key.toLowerCase();
-      if (sensitiveKeys.some(s => lowerKey.includes(s))) {
+      if (sensitiveKeys.some((s) => lowerKey.includes(s))) {
         sanitized[key] = '[REDACTED]';
       } else {
         sanitized[key] = sanitizeForLogging(value);
@@ -149,6 +164,6 @@ export function sanitizeForLogging(input: unknown): unknown {
     }
     return sanitized;
   }
-  
+
   return input;
 }

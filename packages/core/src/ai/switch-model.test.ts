@@ -35,19 +35,39 @@ describe('AIClient creation for model switch', () => {
   }));
 
   vi.mock('./providers/anthropic.js', () => ({
-    AnthropicProvider: class { name = 'anthropic'; chat = vi.fn(); chatStream = vi.fn(); },
+    AnthropicProvider: class {
+      name = 'anthropic';
+      chat = vi.fn();
+      chatStream = vi.fn();
+    },
   }));
   vi.mock('./providers/openai.js', () => ({
-    OpenAIProvider: class { name = 'openai'; chat = vi.fn(); chatStream = vi.fn(); },
+    OpenAIProvider: class {
+      name = 'openai';
+      chat = vi.fn();
+      chatStream = vi.fn();
+    },
   }));
   vi.mock('./providers/gemini.js', () => ({
-    GeminiProvider: class { name = 'gemini'; chat = vi.fn(); chatStream = vi.fn(); },
+    GeminiProvider: class {
+      name = 'gemini';
+      chat = vi.fn();
+      chatStream = vi.fn();
+    },
   }));
   vi.mock('./providers/ollama.js', () => ({
-    OllamaProvider: class { name = 'ollama'; chat = vi.fn(); chatStream = vi.fn(); },
+    OllamaProvider: class {
+      name = 'ollama';
+      chat = vi.fn();
+      chatStream = vi.fn();
+    },
   }));
   vi.mock('./providers/opencode.js', () => ({
-    OpenCodeProvider: class { name = 'opencode'; chat = vi.fn(); chatStream = vi.fn(); },
+    OpenCodeProvider: class {
+      name = 'opencode';
+      chat = vi.fn();
+      chatStream = vi.fn();
+    },
   }));
 
   it('can create AIClient with anthropic provider', async () => {
@@ -128,19 +148,22 @@ describe('AIClient creation for model switch', () => {
 
   it('throws for unknown provider', async () => {
     const { AIClient } = await import('./client.js');
-    expect(() => new AIClient({
-      model: {
-        provider: 'unknown' as any,
-        model: 'test',
-        apiKeyEnv: 'KEY',
-        maxTokens: 16384,
-        temperature: 0.7,
-        maxRequestsPerMinute: 60,
-        requestTimeoutMs: 30000,
-        maxRetries: 2,
-        retryDelayMs: 100,
-        fallbacks: [],
-      },
-    })).toThrow('Unknown AI provider');
+    expect(
+      () =>
+        new AIClient({
+          model: {
+            provider: 'unknown' as any,
+            model: 'test',
+            apiKeyEnv: 'KEY',
+            maxTokens: 16384,
+            temperature: 0.7,
+            maxRequestsPerMinute: 60,
+            requestTimeoutMs: 30000,
+            maxRetries: 2,
+            retryDelayMs: 100,
+            fallbacks: [],
+          },
+        })
+    ).toThrow('Unknown AI provider');
   });
 });

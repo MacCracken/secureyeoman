@@ -13,7 +13,7 @@ export interface ConversationRoutesOptions {
 
 export function registerConversationRoutes(
   app: FastifyInstance,
-  opts: ConversationRoutesOptions,
+  opts: ConversationRoutesOptions
 ): void {
   const { conversationStorage, historyCompressor } = opts;
 
@@ -26,7 +26,7 @@ export function registerConversationRoutes(
         Params: { id: string };
         Querystring: { tier?: string };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       if (!historyCompressor) {
         return reply.code(503).send({ error: 'History compression not available' });
@@ -35,21 +35,18 @@ export function registerConversationRoutes(
       const tier = request.query.tier;
       const filtered = tier ? entries.filter((e) => e.tier === tier) : entries;
       return { entries: filtered, total: filtered.length };
-    },
+    }
   );
 
   app.post(
     '/api/v1/conversations/:id/seal-topic',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!historyCompressor) {
         return reply.code(503).send({ error: 'History compression not available' });
       }
       await historyCompressor.sealCurrentTopic(request.params.id);
       return { message: 'Topic sealed' };
-    },
+    }
   );
 
   app.get(
@@ -59,7 +56,7 @@ export function registerConversationRoutes(
         Params: { id: string };
         Querystring: { maxTokens?: string };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       if (!historyCompressor) {
         return reply.code(503).send({ error: 'History compression not available' });
@@ -67,7 +64,7 @@ export function registerConversationRoutes(
       const maxTokens = request.query.maxTokens ? Number(request.query.maxTokens) : 4000;
       const context = await historyCompressor.getContext(request.params.id, maxTokens);
       return context;
-    },
+    }
   );
 
   // List conversations (paginated, sorted by updated_at DESC)
@@ -76,12 +73,12 @@ export function registerConversationRoutes(
     async (
       request: FastifyRequest<{
         Querystring: { limit?: string; offset?: string };
-      }>,
+      }>
     ) => {
       const limit = request.query.limit ? Number(request.query.limit) : 50;
       const offset = request.query.offset ? Number(request.query.offset) : 0;
       return await conversationStorage.listConversations({ limit, offset });
-    },
+    }
   );
 
   // Create conversation
@@ -91,7 +88,7 @@ export function registerConversationRoutes(
       request: FastifyRequest<{
         Body: { title: string; personalityId?: string };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const { title, personalityId } = request.body;
       if (!title || typeof title !== 'string' || title.trim().length === 0) {
@@ -102,7 +99,7 @@ export function registerConversationRoutes(
         personalityId,
       });
       return reply.code(201).send(conversation);
-    },
+    }
   );
 
   // Get conversation with messages
@@ -113,7 +110,7 @@ export function registerConversationRoutes(
         Params: { id: string };
         Querystring: { limit?: string; offset?: string };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const conversation = await conversationStorage.getConversation(request.params.id);
       if (!conversation) {
@@ -123,7 +120,7 @@ export function registerConversationRoutes(
       const offset = request.query.offset ? Number(request.query.offset) : 0;
       const messages = await conversationStorage.getMessages(request.params.id, { limit, offset });
       return { ...conversation, messages };
-    },
+    }
   );
 
   // Rename conversation
@@ -134,7 +131,7 @@ export function registerConversationRoutes(
         Params: { id: string };
         Body: { title: string };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const { title } = request.body;
       if (!title || typeof title !== 'string' || title.trim().length === 0) {
@@ -148,7 +145,7 @@ export function registerConversationRoutes(
       } catch {
         return reply.code(404).send({ error: 'Conversation not found' });
       }
-    },
+    }
   );
 
   // Delete conversation (CASCADE deletes messages)
@@ -158,13 +155,13 @@ export function registerConversationRoutes(
       request: FastifyRequest<{
         Params: { id: string };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const deleted = await conversationStorage.deleteConversation(request.params.id);
       if (!deleted) {
         return reply.code(404).send({ error: 'Conversation not found' });
       }
       return { success: true };
-    },
+    }
   );
 }

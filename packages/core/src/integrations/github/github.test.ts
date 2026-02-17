@@ -36,7 +36,12 @@ import { GitHubIntegration } from './adapter.js';
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -80,19 +85,13 @@ describe('GitHubIntegration', () => {
 
   it('should throw without personalAccessToken', async () => {
     await expect(
-      integration.init(
-        makeConfig({ config: { webhookSecret: 'secret' } }),
-        makeDeps(),
-      ),
+      integration.init(makeConfig({ config: { webhookSecret: 'secret' } }), makeDeps())
     ).rejects.toThrow('personalAccessToken');
   });
 
   it('should throw without webhookSecret', async () => {
     await expect(
-      integration.init(
-        makeConfig({ config: { personalAccessToken: 'token' } }),
-        makeDeps(),
-      ),
+      integration.init(makeConfig({ config: { personalAccessToken: 'token' } }), makeDeps())
     ).rejects.toThrow('webhookSecret');
   });
 
@@ -130,10 +129,7 @@ describe('GitHubIntegration', () => {
 
   it('should send message as issue comment', async () => {
     await integration.init(makeConfig(), makeDeps());
-    const commentId = await integration.sendMessage(
-      'owner/repo/issues/42',
-      'This is a comment',
-    );
+    const commentId = await integration.sendMessage('owner/repo/issues/42', 'This is a comment');
     expect(commentId).toBe('42');
     expect(mockCreateComment).toHaveBeenCalledWith({
       owner: 'owner',
@@ -165,7 +161,9 @@ describe('GitHubIntegration', () => {
 
   it('should return false for invalid webhook signature', async () => {
     await integration.init(makeConfig(), makeDeps());
-    mockVerify.mockImplementation(() => { throw new Error('bad sig'); });
+    mockVerify.mockImplementation(() => {
+      throw new Error('bad sig');
+    });
     expect(integration.verifyWebhook('payload', 'bad')).toBe(false);
   });
 

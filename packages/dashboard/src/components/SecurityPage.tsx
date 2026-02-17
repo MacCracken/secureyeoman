@@ -214,7 +214,9 @@ export function SecurityPage() {
 
       <div className="flex gap-1 border-b border-border">
         <button
-          onClick={() => setActiveTab('overview')}
+          onClick={() => {
+            setActiveTab('overview');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'overview'
               ? 'border-primary text-primary'
@@ -225,7 +227,9 @@ export function SecurityPage() {
           Overview
         </button>
         <button
-          onClick={() => setActiveTab('audit')}
+          onClick={() => {
+            setActiveTab('audit');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'audit'
               ? 'border-primary text-primary'
@@ -236,7 +240,9 @@ export function SecurityPage() {
           Audit Log
         </button>
         <button
-          onClick={() => setActiveTab('tasks')}
+          onClick={() => {
+            setActiveTab('tasks');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'tasks'
               ? 'border-primary text-primary'
@@ -247,7 +253,9 @@ export function SecurityPage() {
           Tasks
         </button>
         <button
-          onClick={() => setActiveTab('reports')}
+          onClick={() => {
+            setActiveTab('reports');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'reports'
               ? 'border-primary text-primary'
@@ -258,7 +266,9 @@ export function SecurityPage() {
           Reports
         </button>
         <button
-          onClick={() => setActiveTab('nodes')}
+          onClick={() => {
+            setActiveTab('nodes');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'nodes'
               ? 'border-primary text-primary'
@@ -280,7 +290,9 @@ export function SecurityPage() {
           onVerify={handleVerifyChain}
           onAcknowledge={acknowledgeEvent}
           onAcknowledgeAll={acknowledgeAll}
-          onViewAuditLog={() => setActiveTab('audit')}
+          onViewAuditLog={() => {
+            setActiveTab('audit');
+          }}
         />
       )}
 
@@ -461,7 +473,9 @@ function SecurityOverviewTab({
                   </div>
                 </div>
                 <button
-                  onClick={() => onAcknowledge(event.id)}
+                  onClick={() => {
+                    onAcknowledge(event.id);
+                  }}
                   className="text-muted-foreground hover:text-foreground"
                   title="Acknowledge"
                 >
@@ -514,7 +528,9 @@ function TasksTab() {
       {/* Heartbeat Tasks Section — collapsible */}
       <div className="card">
         <button
-          onClick={() => setHeartbeatOpen((prev) => !prev)}
+          onClick={() => {
+            setHeartbeatOpen((prev) => !prev);
+          }}
           className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors"
         >
           <div className="flex items-center gap-2">
@@ -602,9 +618,9 @@ function TasksTab() {
           <div className="flex items-center gap-2">
             <select
               value={searchParams.status}
-              onChange={(e) =>
-                setSearchParams({ ...searchParams, status: e.target.value, offset: '0' })
-              }
+              onChange={(e) => {
+                setSearchParams({ ...searchParams, status: e.target.value, offset: '0' });
+              }}
               className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
             >
               <option value="">All Status</option>
@@ -615,9 +631,9 @@ function TasksTab() {
             </select>
             <select
               value={searchParams.type}
-              onChange={(e) =>
-                setSearchParams({ ...searchParams, type: e.target.value, offset: '0' })
-              }
+              onChange={(e) => {
+                setSearchParams({ ...searchParams, type: e.target.value, offset: '0' });
+              }}
               className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
             >
               <option value="">All Types</option>
@@ -665,12 +681,12 @@ function TasksTab() {
         {tasksData && tasksData.total > 10 && (
           <div className="flex items-center justify-center gap-2">
             <button
-              onClick={() =>
+              onClick={() => {
                 setSearchParams({
                   ...searchParams,
                   offset: String(Math.max(0, Number(searchParams.offset) - 10)),
-                })
-              }
+                });
+              }}
               disabled={Number(searchParams.offset) <= 0}
               className="btn btn-ghost"
             >
@@ -681,12 +697,12 @@ function TasksTab() {
               {Math.min(Number(searchParams.offset) + 10, tasksData.total)} of {tasksData.total}
             </span>
             <button
-              onClick={() =>
+              onClick={() => {
                 setSearchParams({
                   ...searchParams,
                   offset: String(Number(searchParams.offset) + 10),
-                })
-              }
+                });
+              }}
               disabled={Number(searchParams.offset) + 10 >= tasksData.total}
               className="btn btn-ghost"
             >
@@ -803,7 +819,9 @@ function AuditLogTab({
           </button>
           <select
             value={filters.level}
-            onChange={(e) => setFilters({ ...filters, level: e.target.value, offset: 0 })}
+            onChange={(e) => {
+              setFilters({ ...filters, level: e.target.value, offset: 0 });
+            }}
             className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
           >
             <option value="">All Levels</option>
@@ -814,7 +832,9 @@ function AuditLogTab({
           </select>
           <select
             value={filters.event}
-            onChange={(e) => setFilters({ ...filters, event: e.target.value, offset: 0 })}
+            onChange={(e) => {
+              setFilters({ ...filters, event: e.target.value, offset: 0 });
+            }}
             className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
           >
             <option value="">All Events</option>
@@ -845,7 +865,9 @@ function AuditLogTab({
           <p className="text-muted-foreground">No audit entries found</p>
           {(filters.level || filters.event) && (
             <button
-              onClick={() => setFilters({ level: '', event: '', offset: 0 })}
+              onClick={() => {
+                setFilters({ level: '', event: '', offset: 0 });
+              }}
               className="text-sm text-primary hover:underline mt-2"
             >
               Clear filters
@@ -868,7 +890,9 @@ function AuditLogTab({
               <div
                 key={entry.id}
                 className={`card border-l-4 ${level.border} cursor-pointer transition-all hover:bg-muted/30 ${!isReviewed ? ' bg-muted/10' : ''} ${isExpanded ? 'shadow-md' : ''}`}
-                onClick={() => handleToggleExpand(entry.id)}
+                onClick={() => {
+                  handleToggleExpand(entry.id);
+                }}
               >
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-4">
@@ -1000,7 +1024,9 @@ function AuditLogTab({
       {total > limit && (
         <div className="flex items-center justify-center gap-2">
           <button
-            onClick={() => setFilters({ ...filters, offset: Math.max(0, filters.offset - limit) })}
+            onClick={() => {
+              setFilters({ ...filters, offset: Math.max(0, filters.offset - limit) });
+            }}
             disabled={filters.offset <= 0}
             className="btn btn-ghost"
           >
@@ -1010,7 +1036,9 @@ function AuditLogTab({
             {filters.offset + 1}-{Math.min(filters.offset + limit, total)} of {total}
           </span>
           <button
-            onClick={() => setFilters({ ...filters, offset: filters.offset + limit })}
+            onClick={() => {
+              setFilters({ ...filters, offset: filters.offset + limit });
+            }}
             disabled={filters.offset + limit >= total}
             className="btn btn-ghost"
           >
@@ -1509,7 +1537,9 @@ function NodeDetailsTab() {
             auditStats={auditStats}
             mcpServers={mcpServers}
             expanded={expandedNodes.has(def.id)}
-            onToggle={() => toggleNode(def.id)}
+            onToggle={() => {
+              toggleNode(def.id);
+            }}
           />
         ))}
       </div>

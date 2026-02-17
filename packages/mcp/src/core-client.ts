@@ -79,7 +79,7 @@ export class CoreApiClient {
 
   private headers(): Record<string, string> {
     return {
-      'Authorization': `Bearer ${this.token}`,
+      Authorization: `Bearer ${this.token}`,
       'Content-Type': 'application/json',
     };
   }
@@ -96,7 +96,7 @@ export class CoreApiClient {
 export class CoreApiError extends Error {
   constructor(
     public readonly statusCode: number,
-    public readonly body: string,
+    public readonly body: string
   ) {
     super(`Core API error ${statusCode}: ${body}`);
     this.name = 'CoreApiError';

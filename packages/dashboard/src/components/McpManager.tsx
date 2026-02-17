@@ -31,7 +31,7 @@ interface AddServerForm {
   command: string;
   args: string;
   url: string;
-  env: Array<{ key: string; value: string }>;
+  env: { key: string; value: string }[];
 }
 
 const EMPTY_FORM: AddServerForm = {
@@ -77,9 +77,7 @@ export function McpManager() {
         description: form.description || undefined,
         transport: form.transport,
         command: form.transport === 'stdio' ? form.command || undefined : undefined,
-        args: form.transport === 'stdio' && form.args.trim()
-          ? form.args.split(/\s+/)
-          : undefined,
+        args: form.transport === 'stdio' && form.args.trim() ? form.args.split(/\s+/) : undefined,
         url: form.transport !== 'stdio' ? form.url || undefined : undefined,
         env: Object.keys(envRecord).length > 0 ? envRecord : undefined,
         enabled: true,
@@ -151,7 +149,9 @@ export function McpManager() {
             setDeleteTarget(null);
           }
         }}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => {
+          setDeleteTarget(null);
+        }}
       />
 
       {/* Header */}
@@ -195,7 +195,9 @@ export function McpManager() {
                 <input
                   type="text"
                   value={form.name}
-                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, name: e.target.value });
+                  }}
                   placeholder="e.g. filesystem-server"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   required
@@ -205,7 +207,9 @@ export function McpManager() {
                 <label className="text-xs text-muted-foreground block mb-1">Transport</label>
                 <select
                   value={form.transport}
-                  onChange={(e) => setForm({ ...form, transport: e.target.value as TransportType })}
+                  onChange={(e) => {
+                    setForm({ ...form, transport: e.target.value as TransportType });
+                  }}
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   <option value="stdio">stdio</option>
@@ -220,7 +224,9 @@ export function McpManager() {
               <input
                 type="text"
                 value={form.description}
-                onChange={(e) => setForm({ ...form, description: e.target.value })}
+                onChange={(e) => {
+                  setForm({ ...form, description: e.target.value });
+                }}
                 placeholder="Optional description"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
               />
@@ -233,17 +239,23 @@ export function McpManager() {
                   <input
                     type="text"
                     value={form.command}
-                    onChange={(e) => setForm({ ...form, command: e.target.value })}
+                    onChange={(e) => {
+                      setForm({ ...form, command: e.target.value });
+                    }}
                     placeholder="e.g. npx or python"
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                 </div>
                 <div>
-                  <label className="text-xs text-muted-foreground block mb-1">Args (space-separated)</label>
+                  <label className="text-xs text-muted-foreground block mb-1">
+                    Args (space-separated)
+                  </label>
                   <input
                     type="text"
                     value={form.args}
-                    onChange={(e) => setForm({ ...form, args: e.target.value })}
+                    onChange={(e) => {
+                      setForm({ ...form, args: e.target.value });
+                    }}
                     placeholder="e.g. -y @modelcontextprotocol/server-filesystem /tmp"
                     className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
@@ -255,7 +267,9 @@ export function McpManager() {
                 <input
                   type="url"
                   value={form.url}
-                  onChange={(e) => setForm({ ...form, url: e.target.value })}
+                  onChange={(e) => {
+                    setForm({ ...form, url: e.target.value });
+                  }}
                   placeholder="https://example.com/mcp"
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                 />
@@ -279,7 +293,9 @@ export function McpManager() {
                   <input
                     type="text"
                     value={entry.key}
-                    onChange={(e) => handleEnvChange(i, 'key', e.target.value)}
+                    onChange={(e) => {
+                      handleEnvChange(i, 'key', e.target.value);
+                    }}
                     placeholder="KEY"
                     className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
@@ -287,13 +303,17 @@ export function McpManager() {
                   <input
                     type="text"
                     value={entry.value}
-                    onChange={(e) => handleEnvChange(i, 'value', e.target.value)}
+                    onChange={(e) => {
+                      handleEnvChange(i, 'value', e.target.value);
+                    }}
                     placeholder="value"
                     className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                   />
                   <button
                     type="button"
-                    onClick={() => handleRemoveEnvVar(i)}
+                    onClick={() => {
+                      handleRemoveEnvVar(i);
+                    }}
                     className="text-muted-foreground hover:text-destructive"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -318,7 +338,9 @@ export function McpManager() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowAddForm(false)}
+                onClick={() => {
+                  setShowAddForm(false);
+                }}
                 className="btn btn-ghost text-sm px-3 py-1.5"
               >
                 Cancel
@@ -340,8 +362,12 @@ export function McpManager() {
                   key={server.id}
                   server={server}
                   toolCount={serverTools.length}
-                  onDelete={() => setDeleteTarget(server)}
-                  onToggle={(enabled) => toggleMut.mutate({ id: server.id, enabled })}
+                  onDelete={() => {
+                    setDeleteTarget(server);
+                  }}
+                  onToggle={(enabled) => {
+                    toggleMut.mutate({ id: server.id, enabled });
+                  }}
                   isDeleting={deleteMut.isPending}
                   isToggling={toggleMut.isPending}
                 />
@@ -359,7 +385,9 @@ export function McpManager() {
       {tools.length > 0 && (
         <div className="card p-4">
           <button
-            onClick={() => setToolsExpanded(!toolsExpanded)}
+            onClick={() => {
+              setToolsExpanded(!toolsExpanded);
+            }}
             className="flex items-center gap-2 w-full text-left"
           >
             {toolsExpanded ? (
@@ -421,11 +449,7 @@ function ServerCard({
   isToggling: boolean;
 }) {
   const transportIcon =
-    server.transport === 'stdio' ? (
-      <Terminal className="w-5 h-5" />
-    ) : (
-      <Globe className="w-5 h-5" />
-    );
+    server.transport === 'stdio' ? <Terminal className="w-5 h-5" /> : <Globe className="w-5 h-5" />;
 
   return (
     <div className={`card p-3 sm:p-4 ${!server.enabled ? 'opacity-60' : ''}`}>
@@ -437,7 +461,9 @@ function ServerCard({
           <div className="flex items-center justify-between gap-2">
             <h3 className="font-medium text-sm truncate">{server.name}</h3>
             <button
-              onClick={() => onToggle(!server.enabled)}
+              onClick={() => {
+                onToggle(!server.enabled);
+              }}
               disabled={isToggling}
               className={`text-xs flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full transition-colors ${
                 server.enabled
@@ -447,9 +473,13 @@ function ServerCard({
               title={server.enabled ? 'Click to disable' : 'Click to enable'}
             >
               {server.enabled ? (
-                <><Power className="w-3 h-3" /> Enabled</>
+                <>
+                  <Power className="w-3 h-3" /> Enabled
+                </>
               ) : (
-                <><PowerOff className="w-3 h-3" /> Disabled</>
+                <>
+                  <PowerOff className="w-3 h-3" /> Disabled
+                </>
               )}
             </button>
           </div>
@@ -459,10 +489,14 @@ function ServerCard({
           <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2 text-xs text-muted-foreground">
             <span className="px-1.5 py-0.5 rounded bg-muted/50">{server.transport}</span>
             {server.transport === 'stdio' && server.command && (
-              <span className="truncate font-mono max-w-[120px] sm:max-w-[200px]">{server.command}</span>
+              <span className="truncate font-mono max-w-[120px] sm:max-w-[200px]">
+                {server.command}
+              </span>
             )}
             {server.transport !== 'stdio' && server.url && (
-              <span className="truncate font-mono max-w-[120px] sm:max-w-[200px]">{server.url}</span>
+              <span className="truncate font-mono max-w-[120px] sm:max-w-[200px]">
+                {server.url}
+              </span>
             )}
             <span className="shrink-0">{toolCount} tools</span>
           </div>

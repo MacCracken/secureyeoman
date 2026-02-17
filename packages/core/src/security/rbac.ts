@@ -625,7 +625,7 @@ export class RBAC {
    * have an active role assignment.  Useful for admin dashboards and bulk
    * operations.
    */
-  listUserAssignments(): Array<{ userId: string; roleId: string }> {
+  listUserAssignments(): { userId: string; roleId: string }[] {
     return Array.from(this.userRoles.entries()).map(([userId, roleId]) => ({
       userId,
       roleId,
@@ -638,12 +638,14 @@ export class RBAC {
    * Includes both active and revoked assignments, ordered newest first.
    * Returns an empty array when no persistent storage is configured.
    */
-  async getUserRoleHistory(userId: string): Promise<Array<{
-    roleId: string;
-    assignedBy: string;
-    assignedAt: number;
-    revokedAt: number | null;
-  }>> {
+  async getUserRoleHistory(userId: string): Promise<
+    {
+      roleId: string;
+      assignedBy: string;
+      assignedAt: number;
+      revokedAt: number | null;
+    }[]
+  > {
     if (!this.storage) {
       return [];
     }
@@ -702,7 +704,10 @@ export function getRBAC(): RBAC {
  *                      When omitted, the RBAC system operates in-memory only
  *                      (backwards compatible with the previous behaviour).
  */
-export async function initializeRBAC(customRoles?: RoleDefinition[], storage?: RBACStorage): Promise<RBAC> {
+export async function initializeRBAC(
+  customRoles?: RoleDefinition[],
+  storage?: RBACStorage
+): Promise<RBAC> {
   rbacInstance = new RBAC(storage);
 
   // Load persisted roles and assignments from storage (async).

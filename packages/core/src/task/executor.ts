@@ -1,6 +1,6 @@
 /**
  * Task Executor for SecureYeoman
- * 
+ *
  * Security considerations:
  * - All tasks run with timeout enforcement
  * - Resource usage is tracked and limited
@@ -9,7 +9,12 @@
  */
 
 import { uuidv7, sha256 } from '../utils/crypto.js';
-import { getLogger, createNoopLogger, type SecureLogger, type LogContext } from '../logging/logger.js';
+import {
+  getLogger,
+  createNoopLogger,
+  type SecureLogger,
+  type LogContext,
+} from '../logging/logger.js';
 import { type AuditChain } from '../logging/audit-chain.js';
 import { type InputValidator } from '../security/input-validator.js';
 import { type RateLimiterLike } from '../security/rate-limiter.js';
@@ -62,7 +67,12 @@ export class TaskExecutor {
   private readonly config: TaskExecutorConfig;
   private readonly handlers = new Map<TaskType, TaskHandler>();
   private readonly activeTasks = new Map<string, TaskEntry>();
-  private readonly taskQueue: { task: Task; context: ExecutionContext; resolve: (task: Task) => void; reject: (error: Error) => void }[] = [];
+  private readonly taskQueue: {
+    task: Task;
+    context: ExecutionContext;
+    resolve: (task: Task) => void;
+    reject: (error: Error) => void;
+  }[] = [];
   private readonly validator: InputValidator;
   private readonly rateLimiter: RateLimiterLike;
   private readonly auditChain: AuditChain;
@@ -79,7 +89,7 @@ export class TaskExecutor {
     auditChain: AuditChain,
     sandbox?: Sandbox,
     sandboxOptions?: SandboxOptions,
-    taskStorage?: TaskStorage,
+    taskStorage?: TaskStorage
   ) {
     this.config = config;
     this.validator = validator;
@@ -89,7 +99,7 @@ export class TaskExecutor {
     this.sandboxOptions = sandboxOptions;
     this.taskStorage = taskStorage ?? null;
   }
-  
+
   private getLogger(): SecureLogger {
     if (!this.logger) {
       try {
@@ -100,7 +110,7 @@ export class TaskExecutor {
     }
     return this.logger;
   }
-  
+
   /**
    * Register a task handler
    */
@@ -108,7 +118,7 @@ export class TaskExecutor {
     this.handlers.set(handler.type, handler);
     this.getLogger().info('Task handler registered', { type: handler.type });
   }
-  
+
   /**
    * Create and submit a task for execution
    */
@@ -117,14 +127,14 @@ export class TaskExecutor {
       userId: context.userId,
       correlationId: context.correlationId,
     };
-    
+
     // Validate input
     const inputStr = JSON.stringify(create.input);
     const validation = this.validator.validate(inputStr, {
       userId: context.userId,
       correlationId: context.correlationId,
     });
-    
+
     if (!validation.valid) {
       await this.auditChain.record({
         event: 'task_rejected',
@@ -138,16 +148,16 @@ export class TaskExecutor {
           reason: validation.blockReason,
         },
       });
-      
+
       throw new Error(`Input validation failed: ${validation.blockReason ?? 'unknown reason'}`);
     }
-    
+
     // Check rate limit
     const rateLimitResult = await this.rateLimiter.check('task_creation', context.userId, {
       userId: context.userId,
       ipAddress: context.ipAddress,
     });
-    
+
     if (!rateLimitResult.allowed) {
       await this.auditChain.record({
         event: 'task_rate_limited',
@@ -159,21 +169,23 @@ export class TaskExecutor {
           retryAfter: rateLimitResult.retryAfter,
         },
       });
-      
-      throw new Error(`Rate limited. Retry after ${String(rateLimitResult.retryAfter ?? 60)} seconds`);
+
+      throw new Error(
+        `Rate limited. Retry after ${String(rateLimitResult.retryAfter ?? 60)} seconds`
+      );
     }
-    
+
     // Check permissions
     const handler = this.handlers.get(create.type);
     if (!handler) {
       throw new Error(`No handler registered for task type: ${create.type}`);
     }
-    
+
     const rbac = getRBAC();
     for (const permission of handler.requiredPermissions) {
       rbac.requirePermission(context.role, permission, context.userId);
     }
-    
+
     // Create task
     const now = Date.now();
     const task: Task = {
@@ -193,12 +205,12 @@ export class TaskExecutor {
       securityContext: {
         userId: context.userId,
         role: context.role,
-        permissionsUsed: handler.requiredPermissions.map(p => `${p.resource}:${p.action}`),
+        permissionsUsed: handler.requiredPermissions.map((p) => `${p.resource}:${p.action}`),
         ipAddress: context.ipAddress,
         userAgent: context.userAgent,
       },
     };
-    
+
     // Log task creation
     this.getLogger().info('Task created', {
       ...logContext,
@@ -206,7 +218,7 @@ export class TaskExecutor {
       taskType: task.type,
       taskName: task.name,
     });
-    
+
     await this.auditChain.record({
       event: 'task_created',
       level: 'info',
@@ -219,7 +231,7 @@ export class TaskExecutor {
         timeoutMs: task.timeoutMs,
       },
     });
-    
+
     // Persist task
     this.taskStorage?.storeTask(task);
 
@@ -229,7 +241,7 @@ export class TaskExecutor {
       void this.processQueue();
     });
   }
-  
+
   /**
    * Process the task queue
    */
@@ -250,9 +262,7 @@ export class TaskExecutor {
         const { task, context, resolve, reject } = item;
 
         // Execute task
-        this.executeTask(task, context)
-          .then(resolve)
-          .catch(reject);
+        this.executeTask(task, context).then(resolve).catch(reject);
       }
     } finally {
       this.processing = false;
@@ -263,14 +273,14 @@ export class TaskExecutor {
       }
     }
   }
-  
+
   /**
    * Execute a single task
    */
   private async executeTask(task: Task, context: ExecutionContext): Promise<Task> {
     const abortController = new AbortController();
     const startTime = Date.now();
-    
+
     // Track active task
     this.activeTasks.set(task.id, {
       task,
@@ -278,7 +288,7 @@ export class TaskExecutor {
       startTime,
       abortController,
     });
-    
+
     // Update status to running
     task.status = TaskStatus.RUNNING;
     task.startedAt = startTime;
@@ -289,21 +299,21 @@ export class TaskExecutor {
       taskId: task.id,
       correlationId: task.correlationId,
     };
-    
+
     this.getLogger().info('Task started', logContext);
-    
+
     // Set up timeout
     const timeoutId = setTimeout(() => {
       abortController.abort();
     }, task.timeoutMs);
-    
+
     try {
       // Get handler
       const handler = this.handlers.get(task.type);
       if (!handler) {
         throw new Error(`No handler for task type: ${task.type}`);
       }
-      
+
       // Execute with abort signal, optionally sandboxed
       const executeFn = () => handler.execute(task, context);
       const executionPromise = this.sandbox
@@ -312,7 +322,7 @@ export class TaskExecutor {
             if (sandboxResult.violations.length > 0) {
               this.getLogger().warn('Sandbox violations during task execution', {
                 ...logContext,
-                violations: sandboxResult.violations.map(v => v.description),
+                violations: sandboxResult.violations.map((v) => v.description),
               });
               await this.auditChain.record({
                 event: 'sandbox_violation',
@@ -342,7 +352,7 @@ export class TaskExecutor {
           });
         }),
       ]);
-      
+
       // Success
       const endTime = Date.now();
       task.status = TaskStatus.COMPLETED;
@@ -352,7 +362,7 @@ export class TaskExecutor {
         success: true,
         outputHash: sha256(JSON.stringify(result)),
       };
-      
+
       // Estimate resource usage (simplified)
       task.resources = this.estimateResources(startTime, endTime);
 
@@ -369,7 +379,7 @@ export class TaskExecutor {
         ...logContext,
         durationMs: task.durationMs,
       });
-      
+
       await this.auditChain.record({
         event: 'task_completed',
         level: 'info',
@@ -382,13 +392,12 @@ export class TaskExecutor {
           resources: task.resources,
         },
       });
-      
+
       return task;
-      
     } catch (error) {
       const endTime = Date.now();
       const isTimeout = error instanceof Error && error.message === 'Task timeout';
-      
+
       task.status = isTimeout ? TaskStatus.TIMEOUT : TaskStatus.FAILED;
       task.completedAt = endTime;
       task.durationMs = endTime - startTime;
@@ -400,7 +409,7 @@ export class TaskExecutor {
           recoverable: false,
         },
       };
-      
+
       task.resources = this.estimateResources(startTime, endTime);
 
       // Persist failure
@@ -418,7 +427,7 @@ export class TaskExecutor {
         status: task.status,
         durationMs: task.durationMs,
       });
-      
+
       await this.auditChain.record({
         event: 'task_failed',
         level: 'error',
@@ -431,39 +440,42 @@ export class TaskExecutor {
           durationMs: task.durationMs,
         },
       });
-      
+
       return task;
-      
     } finally {
       clearTimeout(timeoutId);
       this.activeTasks.delete(task.id);
-      
+
       // Process next task in queue
       void this.processQueue();
     }
   }
-  
+
   /**
    * Cancel a running task
    */
   async cancel(taskId: string, context: ExecutionContext): Promise<boolean> {
     const entry = this.activeTasks.get(taskId);
-    
+
     if (!entry) {
       return false;
     }
-    
+
     // Check permission to cancel
     const rbac = getRBAC();
-    rbac.requirePermission(context.role, {
-      resource: 'tasks',
-      action: 'cancel',
-    }, context.userId);
-    
+    rbac.requirePermission(
+      context.role,
+      {
+        resource: 'tasks',
+        action: 'cancel',
+      },
+      context.userId
+    );
+
     // Abort the task
     entry.abortController.abort();
     entry.task.status = TaskStatus.CANCELLED;
-    
+
     await this.auditChain.record({
       event: 'task_cancelled',
       level: 'info',
@@ -472,30 +484,30 @@ export class TaskExecutor {
       taskId: taskId,
       correlationId: entry.task.correlationId,
     });
-    
+
     return true;
   }
-  
+
   /**
    * Get active task count
    */
   getActiveCount(): number {
     return this.activeTasks.size;
   }
-  
+
   /**
    * Get queue depth
    */
   getQueueDepth(): number {
     return this.taskQueue.length;
   }
-  
+
   /**
    * Estimate resource usage (simplified)
    */
   private estimateResources(startTime: number, endTime: number): ResourceUsage {
     const durationMs = endTime - startTime;
-    
+
     return {
       tokens: {
         input: 0,
@@ -524,7 +536,7 @@ export function createTaskExecutor(
   config?: Partial<TaskExecutorConfig>,
   sandbox?: Sandbox,
   sandboxOptions?: SandboxOptions,
-  taskStorage?: TaskStorage,
+  taskStorage?: TaskStorage
 ): TaskExecutor {
   const defaultConfig: TaskExecutorConfig = {
     maxConcurrent: 10,
@@ -533,5 +545,13 @@ export function createTaskExecutor(
     ...config,
   };
 
-  return new TaskExecutor(defaultConfig, validator, rateLimiter, auditChain, sandbox, sandboxOptions, taskStorage);
+  return new TaskExecutor(
+    defaultConfig,
+    validator,
+    rateLimiter,
+    auditChain,
+    sandbox,
+    sandboxOptions,
+    taskStorage
+  );
 }

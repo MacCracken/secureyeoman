@@ -113,13 +113,13 @@ export interface DataProvenance {
   contentHash: string;
 
   /** Chain of custody - every access recorded */
-  custodyChain: Array<{
+  custodyChain: {
     timestamp: number;
     action: 'created' | 'viewed' | 'copied' | 'exported' | 'deleted' | 'modified';
     actor: string;
     location?: string;
     reason?: string;
-  }>;
+  }[];
 }
 
 /**
@@ -170,20 +170,20 @@ export interface ComplianceReport {
   };
 
   /** Aggregated by user */
-  byUser: Array<{
+  byUser: {
     userId: string;
     requests: number;
     approved: number;
     denied: number;
     completed: number;
-  }>;
+  }[];
 
   /** Aggregated by resource type */
-  byResource: Array<{
+  byResource: {
     resource: CaptureResource;
     requests: number;
     completed: number;
-  }>;
+  }[];
 
   /** Chain integrity verification */
   chainIntegrity: {

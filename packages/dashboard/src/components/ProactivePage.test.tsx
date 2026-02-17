@@ -48,7 +48,9 @@ describe('ProactivePage', () => {
       allowA2A: false,
       allowExtensions: false,
       allowExecution: true,
-      allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
 
     render(<ProactivePage />, { wrapper: createWrapper() });
@@ -86,20 +88,31 @@ describe('ProactivePage', () => {
 
   it('renders trigger list on triggers tab', async () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
-      allowSubAgents: false, allowA2A: false, allowExtensions: false,
-      allowExecution: true, allowProactive: true,
+      allowSubAgents: false,
+      allowA2A: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: true,
     });
     (mockApi.fetchProactiveStatus as any).mockResolvedValue({
-      triggers: { total: 1, enabled: 1 }, suggestions: { pending: 0 }, patterns: { detected: 0 },
+      triggers: { total: 1, enabled: 1 },
+      suggestions: { pending: 0 },
+      patterns: { detected: 0 },
     });
     (mockApi.fetchBuiltinTriggers as any).mockResolvedValue({ triggers: [] });
     (mockApi.fetchProactiveTriggers as any).mockResolvedValue({
       triggers: [
         {
-          id: 't1', name: 'Test Trigger', type: 'schedule', enabled: true,
+          id: 't1',
+          name: 'Test Trigger',
+          type: 'schedule',
+          enabled: true,
           condition: { type: 'schedule', cron: '0 9 * * *' },
           action: { type: 'message', content: 'Hello' },
-          approvalMode: 'suggest', cooldownMs: 0, limitPerDay: 0, builtin: false,
+          approvalMode: 'suggest',
+          cooldownMs: 0,
+          limitPerDay: 0,
+          builtin: false,
         },
       ],
     });
@@ -120,21 +133,31 @@ describe('ProactivePage', () => {
 
   it('renders suggestion list with approve/dismiss', async () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
-      allowSubAgents: false, allowA2A: false, allowExtensions: false,
-      allowExecution: true, allowProactive: true,
+      allowSubAgents: false,
+      allowA2A: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: true,
     });
     (mockApi.fetchProactiveStatus as any).mockResolvedValue({
-      triggers: { total: 0, enabled: 0 }, suggestions: { pending: 1 }, patterns: { detected: 0 },
+      triggers: { total: 0, enabled: 0 },
+      suggestions: { pending: 1 },
+      patterns: { detected: 0 },
     });
     (mockApi.fetchBuiltinTriggers as any).mockResolvedValue({ triggers: [] });
     (mockApi.fetchProactiveTriggers as any).mockResolvedValue({ triggers: [] });
     (mockApi.fetchProactiveSuggestions as any).mockResolvedValue({
       suggestions: [
         {
-          id: 's1', triggerId: 't1', triggerName: 'Daily Standup',
+          id: 's1',
+          triggerId: 't1',
+          triggerName: 'Daily Standup',
           action: { type: 'message', content: 'Good morning!' },
-          context: {}, confidence: 1, suggestedAt: new Date().toISOString(),
-          status: 'pending', expiresAt: new Date(Date.now() + 86400000).toISOString(),
+          context: {},
+          confidence: 1,
+          suggestedAt: new Date().toISOString(),
+          status: 'pending',
+          expiresAt: new Date(Date.now() + 86400000).toISOString(),
         },
       ],
       total: 1,
@@ -156,11 +179,16 @@ describe('ProactivePage', () => {
 
   it('navigates between tabs', async () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
-      allowSubAgents: false, allowA2A: false, allowExtensions: false,
-      allowExecution: true, allowProactive: true,
+      allowSubAgents: false,
+      allowA2A: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: true,
     });
     (mockApi.fetchProactiveStatus as any).mockResolvedValue({
-      triggers: { total: 0, enabled: 0 }, suggestions: { pending: 0 }, patterns: { detected: 0 },
+      triggers: { total: 0, enabled: 0 },
+      suggestions: { pending: 0 },
+      patterns: { detected: 0 },
     });
     (mockApi.fetchBuiltinTriggers as any).mockResolvedValue({ triggers: [] });
     (mockApi.fetchProactiveTriggers as any).mockResolvedValue({ triggers: [] });

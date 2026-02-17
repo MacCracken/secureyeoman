@@ -32,14 +32,16 @@ export function extractMemories(content: string): ExtractedMemory[] {
  * Strip [MEMORY: ...] tags from content before returning to user.
  */
 export function stripMemoryTags(content: string): string {
-  return content.replace(MEMORY_TAG_RE, '').replace(/\n{3,}/g, '\n\n').trim();
+  return content
+    .replace(MEMORY_TAG_RE, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /**
  * System prompt addition that instructs the AI to use memory tags.
  */
-export const MEMORY_SYSTEM_HINT =
-  `IMPORTANT — Long-term memory: You have persistent memory across conversations. When the user shares a personal fact, preference, name, favorite, or any detail worth remembering, you MUST include a [MEMORY: fact] tag in your response. Examples:
+export const MEMORY_SYSTEM_HINT = `IMPORTANT — Long-term memory: You have persistent memory across conversations. When the user shares a personal fact, preference, name, favorite, or any detail worth remembering, you MUST include a [MEMORY: fact] tag in your response. Examples:
 - User says "I love mangoes" → include [MEMORY: User's favorite fruit is mango]
 - User says "Call me Alex" → include [MEMORY: User's name/nickname is Alex]
 - User mentions their job → include [MEMORY: User works as a ...]

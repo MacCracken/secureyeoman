@@ -75,17 +75,23 @@ describe('validateUrl', () => {
   });
 
   it('blocks cloud metadata endpoint (169.254.169.254)', () => {
-    expect(() => validateUrl('http://169.254.169.254/latest/meta-data/', config)).toThrow('IP address blocked');
+    expect(() => validateUrl('http://169.254.169.254/latest/meta-data/', config)).toThrow(
+      'IP address blocked'
+    );
   });
 
   it('blocks metadata.google.internal', () => {
-    expect(() => validateUrl('http://metadata.google.internal', config)).toThrow('Hostname blocked');
+    expect(() => validateUrl('http://metadata.google.internal', config)).toThrow(
+      'Hostname blocked'
+    );
   });
 
   // Allowlist
   it('enforces domain allowlist when configured', () => {
     const restricted = makeConfig({ allowedUrls: ['example.com'] });
-    expect(() => validateUrl('https://evil.com/data', restricted)).toThrow('Domain not in allowlist');
+    expect(() => validateUrl('https://evil.com/data', restricted)).toThrow(
+      'Domain not in allowlist'
+    );
     // Allowed domain works
     const url = validateUrl('https://example.com/page', restricted);
     expect(url.hostname).toBe('example.com');

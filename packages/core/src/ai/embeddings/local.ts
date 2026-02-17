@@ -42,10 +42,10 @@ export class LocalEmbeddingProvider extends BaseEmbeddingProvider {
   private readonly model: string;
   private readonly pythonPath: string;
   private process: ChildProcess | null = null;
-  private responseQueue: Array<{
+  private responseQueue: {
     resolve: (value: number[][]) => void;
     reject: (err: Error) => void;
-  }> = [];
+  }[] = [];
   private buffer = '';
 
   constructor(config: LocalEmbeddingConfig = {}, logger?: SecureLogger) {
@@ -122,7 +122,9 @@ export class LocalEmbeddingProvider extends BaseEmbeddingProvider {
       };
       this.process!.stderr!.on('data', onData);
       // Timeout after 60s
-      setTimeout(() => resolve(), 60000);
+      setTimeout(() => {
+        resolve();
+      }, 60000);
     });
   }
 

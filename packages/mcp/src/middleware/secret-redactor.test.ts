@@ -60,7 +60,9 @@ describe('secret-redactor', () => {
     });
 
     it('should redact private keys', () => {
-      const result = redactor.redact('-----BEGIN PRIVATE KEY-----\nMIIEvgIBAD...\n-----END PRIVATE KEY-----');
+      const result = redactor.redact(
+        '-----BEGIN PRIVATE KEY-----\nMIIEvgIBAD...\n-----END PRIVATE KEY-----'
+      );
       expect(result).toContain('[REDACTED]');
     });
 

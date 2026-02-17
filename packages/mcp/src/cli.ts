@@ -89,14 +89,16 @@ async function main(): Promise<void> {
 
   try {
     await server.start();
-    console.log(`[friday-mcp] MCP service started on ${config.host}:${config.port} (${config.transport})`);
+    console.log(
+      `[friday-mcp] MCP service started on ${config.host}:${config.port} (${config.transport})`
+    );
   } catch (err) {
     console.error('[friday-mcp] Failed to start:', err instanceof Error ? err.message : err);
     process.exit(1);
   }
 }
 
-main().catch((err) => {
+main().catch((err: unknown) => {
   console.error('[friday-mcp] Fatal:', err);
   process.exit(1);
 });

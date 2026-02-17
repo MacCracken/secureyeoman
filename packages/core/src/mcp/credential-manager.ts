@@ -4,12 +4,7 @@
  * Uses a derived key from the SECUREYEOMAN_TOKEN_SECRET for encryption.
  */
 
-import {
-  createCipheriv,
-  createDecipheriv,
-  randomBytes,
-  createHash,
-} from 'node:crypto';
+import { createCipheriv, createDecipheriv, randomBytes, createHash } from 'node:crypto';
 import type { McpStorage } from './storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 
@@ -88,7 +83,7 @@ export class McpCredentialManager {
    */
   async injectCredentials(
     serverId: string,
-    env: Record<string, string>,
+    env: Record<string, string>
   ): Promise<Record<string, string>> {
     const keys = await this.storage.listCredentialKeys(serverId);
     const merged = { ...env };

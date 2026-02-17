@@ -6,7 +6,13 @@
  * functionCall parts to unified ToolCall.
  */
 
-import { GoogleGenerativeAI, type GenerativeModel, type Content, type Part, type FunctionDeclaration } from '@google/generative-ai';
+import {
+  GoogleGenerativeAI,
+  type GenerativeModel,
+  type Content,
+  type Part,
+  type FunctionDeclaration,
+} from '@google/generative-ai';
 import type {
   AIRequest,
   AIResponse,
@@ -53,7 +59,7 @@ export class GeminiProvider extends BaseProvider {
     const data = (await res.json()) as { models?: Record<string, unknown>[] };
     return (data.models ?? [])
       .filter((m: Record<string, unknown>) =>
-        (m.supportedGenerationMethods as string[] | undefined)?.includes('generateContent'),
+        (m.supportedGenerationMethods as string[] | undefined)?.includes('generateContent')
       )
       .map((m: Record<string, unknown>) => ({
         id: (m.name as string).replace('models/', ''),
@@ -176,7 +182,7 @@ export class GeminiProvider extends BaseProvider {
             parts.push({
               functionCall: {
                 name: tc.name,
-                args: tc.arguments as Record<string, unknown>,
+                args: tc.arguments,
               },
             });
           }
@@ -213,7 +219,7 @@ export class GeminiProvider extends BaseProvider {
     if (candidate?.content?.parts) {
       for (const part of candidate.content.parts) {
         if ('text' in part) {
-          content += part.text;
+          content += String(part.text);
         }
         if ('functionCall' in part && part.functionCall) {
           toolCalls.push({

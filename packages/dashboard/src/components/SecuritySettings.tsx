@@ -80,7 +80,9 @@ function RoleForm({
           className="input w-full"
           placeholder="e.g. Custom Ops"
           value={form.name}
-          onChange={(e) => setForm({ ...form, name: e.target.value })}
+          onChange={(e) => {
+            setForm({ ...form, name: e.target.value });
+          }}
         />
       </div>
       <div>
@@ -90,7 +92,9 @@ function RoleForm({
           className="input w-full"
           placeholder="Optional description"
           value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
+          onChange={(e) => {
+            setForm({ ...form, description: e.target.value });
+          }}
         />
       </div>
       <div>
@@ -105,7 +109,9 @@ function RoleForm({
           className="input w-full"
           placeholder="tasks:read, metrics:read, audit:read"
           value={form.permissions}
-          onChange={(e) => setForm({ ...form, permissions: e.target.value })}
+          onChange={(e) => {
+            setForm({ ...form, permissions: e.target.value });
+          }}
         />
       </div>
       <div>
@@ -120,14 +126,18 @@ function RoleForm({
           className="input w-full"
           placeholder={existingRoleIds.slice(0, 3).join(', ')}
           value={form.inheritFrom}
-          onChange={(e) => setForm({ ...form, inheritFrom: e.target.value })}
+          onChange={(e) => {
+            setForm({ ...form, inheritFrom: e.target.value });
+          }}
         />
       </div>
       <div className="flex gap-2 pt-1">
         <button
           className="btn btn-primary text-sm"
           disabled={isPending || !form.name.trim() || !form.permissions.trim()}
-          onClick={() => onSubmit(form)}
+          onClick={() => {
+            onSubmit(form);
+          }}
         >
           {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
         </button>
@@ -140,7 +150,7 @@ function RoleForm({
 }
 
 /** Parse "resource:action, resource:action" into Permission[]. */
-function parsePermissions(raw: string): Array<{ resource: string; action: string }> {
+function parsePermissions(raw: string): { resource: string; action: string }[] {
   return raw
     .split(',')
     .map((s) => s.trim())
@@ -270,7 +280,7 @@ export function SecuritySettings() {
     mutationFn: (data: {
       name: string;
       description?: string;
-      permissions: Array<{ resource: string; action: string }>;
+      permissions: { resource: string; action: string }[];
       inheritFrom?: string[];
     }) => createRole(data),
     onSuccess: () => {
@@ -288,7 +298,7 @@ export function SecuritySettings() {
       data: {
         name?: string;
         description?: string;
-        permissions?: Array<{ resource: string; action: string }>;
+        permissions?: { resource: string; action: string }[];
         inheritFrom?: string[];
       };
     }) => updateRole(id, data),
@@ -391,7 +401,9 @@ export function SecuritySettings() {
             label="Proactive Assistance"
             enabled={proactiveAllowed}
             isPending={policyMutation.isPending}
-            onToggle={() => policyMutation.mutate({ allowProactive: !proactiveAllowed })}
+            onToggle={() => {
+              policyMutation.mutate({ allowProactive: !proactiveAllowed });
+            }}
             description={
               proactiveAllowed
                 ? 'Proactive assistance is enabled. Personalities can autonomously suggest actions, reminders, and follow-ups based on their configuration.'
@@ -412,7 +424,9 @@ export function SecuritySettings() {
             label="Multimodal I/O"
             enabled={multimodalAllowed}
             isPending={policyMutation.isPending}
-            onToggle={() => policyMutation.mutate({ allowMultimodal: !multimodalAllowed })}
+            onToggle={() => {
+              policyMutation.mutate({ allowMultimodal: !multimodalAllowed });
+            }}
             description={
               multimodalAllowed
                 ? 'Multimodal I/O is enabled. Vision analysis, speech-to-text, text-to-speech, and image generation capabilities are available.'
@@ -433,7 +447,9 @@ export function SecuritySettings() {
             label="Sub-Agent Delegation"
             enabled={subAgentsAllowed}
             isPending={policyMutation.isPending}
-            onToggle={() => policyMutation.mutate({ allowSubAgents: !subAgentsAllowed })}
+            onToggle={() => {
+              policyMutation.mutate({ allowSubAgents: !subAgentsAllowed });
+            }}
             description={
               subAgentsAllowed
                 ? 'Sub-agent delegation is allowed. Individual personalities can enable or disable it via their creation config.'
@@ -449,7 +465,9 @@ export function SecuritySettings() {
                 icon={<Network className="w-4 h-4 text-muted-foreground" />}
                 enabled={a2aAllowed}
                 isPending={policyMutation.isPending}
-                onToggle={() => policyMutation.mutate({ allowA2A: !a2aAllowed })}
+                onToggle={() => {
+                  policyMutation.mutate({ allowA2A: !a2aAllowed });
+                }}
                 description={
                   a2aAllowed
                     ? 'Agent-to-Agent networking is enabled. Internal A2A communication is active; external peers require Sub-Agent Delegation to be allowed.'
@@ -472,7 +490,9 @@ export function SecuritySettings() {
             label="Extensions"
             enabled={extensionsAllowed}
             isPending={policyMutation.isPending}
-            onToggle={() => policyMutation.mutate({ allowExtensions: !extensionsAllowed })}
+            onToggle={() => {
+              policyMutation.mutate({ allowExtensions: !extensionsAllowed });
+            }}
             description={
               extensionsAllowed
                 ? 'Lifecycle extension hooks are enabled. Plugins can observe, transform, or veto events across the system.'
@@ -493,7 +513,9 @@ export function SecuritySettings() {
             label="Code Execution"
             enabled={executionAllowed}
             isPending={policyMutation.isPending}
-            onToggle={() => policyMutation.mutate({ allowExecution: !executionAllowed })}
+            onToggle={() => {
+              policyMutation.mutate({ allowExecution: !executionAllowed });
+            }}
             description={
               executionAllowed
                 ? 'Sandboxed code execution is enabled. Code runs in isolated environments with secrets filtering and approval policies.'
@@ -514,7 +536,9 @@ export function SecuritySettings() {
             label="Experiments"
             enabled={experimentsAllowed}
             isPending={policyMutation.isPending}
-            onToggle={() => policyMutation.mutate({ allowExperiments: !experimentsAllowed })}
+            onToggle={() => {
+              policyMutation.mutate({ allowExperiments: !experimentsAllowed });
+            }}
             description={
               experimentsAllowed
                 ? 'A/B experiments are enabled. You can create, run, and manage experiments to test different configurations and behaviors.'
@@ -546,7 +570,7 @@ export function SecuritySettings() {
           <div>
             <span className="text-xs text-muted-foreground block">Enabled</span>
             <span>
-              {(mcpData as unknown as { servers?: Array<{ enabled: boolean }> })?.servers?.filter(
+              {(mcpData as unknown as { servers?: { enabled: boolean }[] })?.servers?.filter(
                 (s) => s.enabled
               ).length ?? 0}{' '}
               servers
@@ -579,7 +603,7 @@ export function RolesSettings() {
     mutationFn: (data: {
       name: string;
       description?: string;
-      permissions: Array<{ resource: string; action: string }>;
+      permissions: { resource: string; action: string }[];
       inheritFrom?: string[];
     }) => createRole(data),
     onSuccess: () => {
@@ -597,7 +621,7 @@ export function RolesSettings() {
       data: {
         name?: string;
         description?: string;
-        permissions?: Array<{ resource: string; action: string }>;
+        permissions?: { resource: string; action: string }[];
         inheritFrom?: string[];
       };
     }) => updateRole(id, data),
@@ -688,7 +712,9 @@ export function RolesSettings() {
           {!showRoleForm && !editingRole && (
             <button
               className="btn btn-ghost text-sm flex items-center gap-1"
-              onClick={() => setShowRoleForm(true)}
+              onClick={() => {
+                setShowRoleForm(true);
+              }}
             >
               <Plus className="w-4 h-4" /> Add Custom Role
             </button>
@@ -699,7 +725,9 @@ export function RolesSettings() {
             <RoleForm
               existingRoleIds={roleIds}
               onSubmit={handleCreateRole}
-              onCancel={() => setShowRoleForm(false)}
+              onCancel={() => {
+                setShowRoleForm(false);
+              }}
               isPending={createRoleMutation.isPending}
             />
           )}
@@ -723,7 +751,9 @@ export function RolesSettings() {
                   }}
                   existingRoleIds={roleIds}
                   onSubmit={handleUpdateRole}
-                  onCancel={() => setEditingRole(null)}
+                  onCancel={() => {
+                    setEditingRole(null);
+                  }}
                   isPending={updateRoleMutation.isPending}
                 />
               ) : (
@@ -743,14 +773,18 @@ export function RolesSettings() {
                         <button
                           className="btn btn-ghost p-1"
                           title="Edit role"
-                          onClick={() => setEditingRole(role)}
+                          onClick={() => {
+                            setEditingRole(role);
+                          }}
                         >
                           <Pen className="w-4 h-4" />
                         </button>
                         <button
                           className="btn btn-ghost p-1 text-destructive"
                           title="Delete role"
-                          onClick={() => setConfirmDelete(role)}
+                          onClick={() => {
+                            setConfirmDelete(role);
+                          }}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -786,7 +820,9 @@ export function RolesSettings() {
           {!showAssignForm && (
             <button
               className="btn btn-ghost text-sm flex items-center gap-1"
-              onClick={() => setShowAssignForm(true)}
+              onClick={() => {
+                setShowAssignForm(true);
+              }}
             >
               <Plus className="w-4 h-4" /> Assign Role
             </button>
@@ -802,7 +838,9 @@ export function RolesSettings() {
                   className="input w-full"
                   placeholder="e.g. admin"
                   value={assignUserId}
-                  onChange={(e) => setAssignUserId(e.target.value)}
+                  onChange={(e) => {
+                    setAssignUserId(e.target.value);
+                  }}
                 />
               </div>
               <div>
@@ -810,7 +848,9 @@ export function RolesSettings() {
                 <select
                   className="input w-full"
                   value={assignRoleId}
-                  onChange={(e) => setAssignRoleId(e.target.value)}
+                  onChange={(e) => {
+                    setAssignRoleId(e.target.value);
+                  }}
                 >
                   <option value="">Select a role...</option>
                   {roles.map((r) => (
@@ -878,7 +918,9 @@ export function RolesSettings() {
                         <button
                           className="btn btn-ghost p-1 text-destructive text-xs"
                           title="Revoke assignment"
-                          onClick={() => setConfirmRevoke(a)}
+                          onClick={() => {
+                            setConfirmRevoke(a);
+                          }}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -904,7 +946,9 @@ export function RolesSettings() {
           }
           setConfirmDelete(null);
         }}
-        onCancel={() => setConfirmDelete(null)}
+        onCancel={() => {
+          setConfirmDelete(null);
+        }}
       />
 
       <ConfirmDialog
@@ -919,7 +963,9 @@ export function RolesSettings() {
           }
           setConfirmRevoke(null);
         }}
-        onCancel={() => setConfirmRevoke(null)}
+        onCancel={() => {
+          setConfirmRevoke(null);
+        }}
       />
     </div>
   );

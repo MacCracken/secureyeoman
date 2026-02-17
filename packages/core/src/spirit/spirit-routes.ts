@@ -4,7 +4,14 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SpiritManager } from './manager.js';
-import type { PassionCreate, PassionUpdate, InspirationCreate, InspirationUpdate, PainCreate, PainUpdate } from './types.js';
+import type {
+  PassionCreate,
+  PassionUpdate,
+  InspirationCreate,
+  InspirationUpdate,
+  PainCreate,
+  PainUpdate,
+} from './types.js';
 
 export interface SpiritRoutesOptions {
   spiritManager: SpiritManager;
@@ -14,10 +21,7 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Unknown error';
 }
 
-export function registerSpiritRoutes(
-  app: FastifyInstance,
-  opts: SpiritRoutesOptions,
-): void {
+export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOptions): void {
   const { spiritManager } = opts;
 
   // ── Passions ──────────────────────────────────────────────────
@@ -27,51 +31,54 @@ export function registerSpiritRoutes(
     return { passions };
   });
 
-  app.post('/api/v1/spirit/passions', async (
-    request: FastifyRequest<{ Body: PassionCreate }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      const passion = await spiritManager.createPassion(request.body);
-      return reply.code(201).send({ passion });
-    } catch (err) {
-      return reply.code(400).send({ error: errorMessage(err) });
+  app.post(
+    '/api/v1/spirit/passions',
+    async (request: FastifyRequest<{ Body: PassionCreate }>, reply: FastifyReply) => {
+      try {
+        const passion = await spiritManager.createPassion(request.body);
+        return reply.code(201).send({ passion });
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
     }
-  });
+  );
 
-  app.get('/api/v1/spirit/passions/:id', async (
-    request: FastifyRequest<{ Params: { id: string } }>,
-    reply: FastifyReply,
-  ) => {
-    const passion = await spiritManager.getPassion(request.params.id);
-    if (!passion) {
-      return reply.code(404).send({ error: 'Passion not found' });
-    }
-    return { passion };
-  });
-
-  app.put('/api/v1/spirit/passions/:id', async (
-    request: FastifyRequest<{ Params: { id: string }; Body: PassionUpdate }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      const passion = await spiritManager.updatePassion(request.params.id, request.body);
+  app.get(
+    '/api/v1/spirit/passions/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const passion = await spiritManager.getPassion(request.params.id);
+      if (!passion) {
+        return reply.code(404).send({ error: 'Passion not found' });
+      }
       return { passion };
-    } catch (err) {
-      return reply.code(404).send({ error: errorMessage(err) });
     }
-  });
+  );
 
-  app.delete('/api/v1/spirit/passions/:id', async (
-    request: FastifyRequest<{ Params: { id: string } }>,
-    reply: FastifyReply,
-  ) => {
-    const deleted = await spiritManager.deletePassion(request.params.id);
-    if (!deleted) {
-      return reply.code(404).send({ error: 'Passion not found' });
+  app.put(
+    '/api/v1/spirit/passions/:id',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: PassionUpdate }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const passion = await spiritManager.updatePassion(request.params.id, request.body);
+        return { passion };
+      } catch (err) {
+        return reply.code(404).send({ error: errorMessage(err) });
+      }
     }
-    return { message: 'Passion deleted' };
-  });
+  );
+
+  app.delete(
+    '/api/v1/spirit/passions/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const deleted = await spiritManager.deletePassion(request.params.id);
+      if (!deleted) {
+        return reply.code(404).send({ error: 'Passion not found' });
+      }
+      return { message: 'Passion deleted' };
+    }
+  );
 
   // ── Inspirations ──────────────────────────────────────────────
 
@@ -80,51 +87,54 @@ export function registerSpiritRoutes(
     return { inspirations };
   });
 
-  app.post('/api/v1/spirit/inspirations', async (
-    request: FastifyRequest<{ Body: InspirationCreate }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      const inspiration = await spiritManager.createInspiration(request.body);
-      return reply.code(201).send({ inspiration });
-    } catch (err) {
-      return reply.code(400).send({ error: errorMessage(err) });
+  app.post(
+    '/api/v1/spirit/inspirations',
+    async (request: FastifyRequest<{ Body: InspirationCreate }>, reply: FastifyReply) => {
+      try {
+        const inspiration = await spiritManager.createInspiration(request.body);
+        return reply.code(201).send({ inspiration });
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
     }
-  });
+  );
 
-  app.get('/api/v1/spirit/inspirations/:id', async (
-    request: FastifyRequest<{ Params: { id: string } }>,
-    reply: FastifyReply,
-  ) => {
-    const inspiration = await spiritManager.getInspiration(request.params.id);
-    if (!inspiration) {
-      return reply.code(404).send({ error: 'Inspiration not found' });
-    }
-    return { inspiration };
-  });
-
-  app.put('/api/v1/spirit/inspirations/:id', async (
-    request: FastifyRequest<{ Params: { id: string }; Body: InspirationUpdate }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      const inspiration = await spiritManager.updateInspiration(request.params.id, request.body);
+  app.get(
+    '/api/v1/spirit/inspirations/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const inspiration = await spiritManager.getInspiration(request.params.id);
+      if (!inspiration) {
+        return reply.code(404).send({ error: 'Inspiration not found' });
+      }
       return { inspiration };
-    } catch (err) {
-      return reply.code(404).send({ error: errorMessage(err) });
     }
-  });
+  );
 
-  app.delete('/api/v1/spirit/inspirations/:id', async (
-    request: FastifyRequest<{ Params: { id: string } }>,
-    reply: FastifyReply,
-  ) => {
-    const deleted = await spiritManager.deleteInspiration(request.params.id);
-    if (!deleted) {
-      return reply.code(404).send({ error: 'Inspiration not found' });
+  app.put(
+    '/api/v1/spirit/inspirations/:id',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: InspirationUpdate }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const inspiration = await spiritManager.updateInspiration(request.params.id, request.body);
+        return { inspiration };
+      } catch (err) {
+        return reply.code(404).send({ error: errorMessage(err) });
+      }
     }
-    return { message: 'Inspiration deleted' };
-  });
+  );
+
+  app.delete(
+    '/api/v1/spirit/inspirations/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const deleted = await spiritManager.deleteInspiration(request.params.id);
+      if (!deleted) {
+        return reply.code(404).send({ error: 'Inspiration not found' });
+      }
+      return { message: 'Inspiration deleted' };
+    }
+  );
 
   // ── Pains ─────────────────────────────────────────────────────
 
@@ -133,51 +143,54 @@ export function registerSpiritRoutes(
     return { pains };
   });
 
-  app.post('/api/v1/spirit/pains', async (
-    request: FastifyRequest<{ Body: PainCreate }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      const pain = await spiritManager.createPain(request.body);
-      return reply.code(201).send({ pain });
-    } catch (err) {
-      return reply.code(400).send({ error: errorMessage(err) });
+  app.post(
+    '/api/v1/spirit/pains',
+    async (request: FastifyRequest<{ Body: PainCreate }>, reply: FastifyReply) => {
+      try {
+        const pain = await spiritManager.createPain(request.body);
+        return reply.code(201).send({ pain });
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
     }
-  });
+  );
 
-  app.get('/api/v1/spirit/pains/:id', async (
-    request: FastifyRequest<{ Params: { id: string } }>,
-    reply: FastifyReply,
-  ) => {
-    const pain = await spiritManager.getPain(request.params.id);
-    if (!pain) {
-      return reply.code(404).send({ error: 'Pain not found' });
-    }
-    return { pain };
-  });
-
-  app.put('/api/v1/spirit/pains/:id', async (
-    request: FastifyRequest<{ Params: { id: string }; Body: PainUpdate }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      const pain = await spiritManager.updatePain(request.params.id, request.body);
+  app.get(
+    '/api/v1/spirit/pains/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const pain = await spiritManager.getPain(request.params.id);
+      if (!pain) {
+        return reply.code(404).send({ error: 'Pain not found' });
+      }
       return { pain };
-    } catch (err) {
-      return reply.code(404).send({ error: errorMessage(err) });
     }
-  });
+  );
 
-  app.delete('/api/v1/spirit/pains/:id', async (
-    request: FastifyRequest<{ Params: { id: string } }>,
-    reply: FastifyReply,
-  ) => {
-    const deleted = await spiritManager.deletePain(request.params.id);
-    if (!deleted) {
-      return reply.code(404).send({ error: 'Pain not found' });
+  app.put(
+    '/api/v1/spirit/pains/:id',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: PainUpdate }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const pain = await spiritManager.updatePain(request.params.id, request.body);
+        return { pain };
+      } catch (err) {
+        return reply.code(404).send({ error: errorMessage(err) });
+      }
     }
-    return { message: 'Pain deleted' };
-  });
+  );
+
+  app.delete(
+    '/api/v1/spirit/pains/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const deleted = await spiritManager.deletePain(request.params.id);
+      if (!deleted) {
+        return reply.code(404).send({ error: 'Pain not found' });
+      }
+      return { message: 'Pain deleted' };
+    }
+  );
 
   // ── Config ────────────────────────────────────────────────────
 

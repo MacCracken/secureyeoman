@@ -7,7 +7,7 @@ import type { SubAgentManager } from './manager.js';
 
 export function registerAgentRoutes(
   app: FastifyInstance,
-  deps: { subAgentManager: SubAgentManager },
+  deps: { subAgentManager: SubAgentManager }
 ): void {
   const { subAgentManager } = deps;
 
@@ -20,16 +20,13 @@ export function registerAgentRoutes(
 
   app.get(
     '/api/v1/agents/profiles/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const profile = await subAgentManager.getProfile(request.params.id);
       if (!profile) {
         return reply.code(404).send({ error: 'Profile not found' });
       }
       return profile;
-    },
+    }
   );
 
   app.post(
@@ -45,7 +42,7 @@ export function registerAgentRoutes(
           defaultModel?: string | null;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       try {
         const data = {
@@ -63,7 +60,7 @@ export function registerAgentRoutes(
           error: err instanceof Error ? err.message : 'Failed to create profile',
         });
       }
-    },
+    }
   );
 
   app.put(
@@ -80,22 +77,19 @@ export function registerAgentRoutes(
           defaultModel?: string | null;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const profile = await subAgentManager.updateProfile(request.params.id, request.body);
       if (!profile) {
         return reply.code(404).send({ error: 'Profile not found' });
       }
       return { profile };
-    },
+    }
   );
 
   app.delete(
     '/api/v1/agents/profiles/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       // Check if it's a built-in profile
       const existing = await subAgentManager.getProfile(request.params.id);
       if (!existing) {
@@ -109,7 +103,7 @@ export function registerAgentRoutes(
         return reply.code(500).send({ error: 'Failed to delete profile' });
       }
       return { success: true };
-    },
+    }
   );
 
   // ── Delegation routes ───────────────────────────────────────
@@ -127,7 +121,7 @@ export function registerAgentRoutes(
           timeout?: number;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       try {
         const result = await subAgentManager.delegate(request.body);
@@ -137,7 +131,7 @@ export function registerAgentRoutes(
           error: err instanceof Error ? err.message : 'Delegation failed',
         });
       }
-    },
+    }
   );
 
   app.get(
@@ -150,7 +144,7 @@ export function registerAgentRoutes(
           limit?: string;
           offset?: string;
         };
-      }>,
+      }>
     ) => {
       const q = request.query;
       return subAgentManager.listDelegations({
@@ -159,7 +153,7 @@ export function registerAgentRoutes(
         limit: q.limit ? Number(q.limit) : undefined,
         offset: q.offset ? Number(q.offset) : undefined,
       });
-    },
+    }
   );
 
   app.get('/api/v1/agents/delegations/active', async () => {
@@ -169,10 +163,7 @@ export function registerAgentRoutes(
 
   app.get(
     '/api/v1/agents/delegations/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const delegation = await subAgentManager.getDelegation(request.params.id);
       if (!delegation) {
         return reply.code(404).send({ error: 'Delegation not found' });
@@ -180,15 +171,12 @@ export function registerAgentRoutes(
       // Include tree for detail view
       const tree = await subAgentManager.getDelegationTree(request.params.id);
       return { delegation, tree };
-    },
+    }
   );
 
   app.post(
     '/api/v1/agents/delegations/:id/cancel',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         await subAgentManager.cancel(request.params.id);
         return { success: true };
@@ -197,17 +185,15 @@ export function registerAgentRoutes(
           error: err instanceof Error ? err.message : 'Cancel failed',
         });
       }
-    },
+    }
   );
 
   app.get(
     '/api/v1/agents/delegations/:id/messages',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>) => {
       const messages = await subAgentManager.getDelegationMessages(request.params.id);
       return { messages };
-    },
+    }
   );
 
   // ── Config route ────────────────────────────────────────────

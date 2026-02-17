@@ -34,12 +34,10 @@ export default defineConfig({
           proxy.on('error', (err, _req, res) => {
             console.error('[vite proxy /api] error:', err.message);
             if ('writeHead' in res && !res.headersSent) {
-              (res as import('http').ServerResponse).writeHead(502, {
+              res.writeHead(502, {
                 'Content-Type': 'application/json',
               });
-              (res as import('http').ServerResponse).end(
-                JSON.stringify({ error: `Proxy error: ${err.message}` })
-              );
+              res.end(JSON.stringify({ error: `Proxy error: ${err.message}` }));
             }
           });
         },

@@ -102,7 +102,9 @@ describe('NotionIntegration', () => {
       });
 
       await adapter.init(makeConfig(), makeDeps());
-      await expect(adapter.sendMessage('db-123', 'bad')).rejects.toThrow('Failed to create Notion page');
+      await expect(adapter.sendMessage('db-123', 'bad')).rejects.toThrow(
+        'Failed to create Notion page'
+      );
     });
   });
 

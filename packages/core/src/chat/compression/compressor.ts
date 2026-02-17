@@ -8,7 +8,12 @@
  */
 
 import type { CompressionStorage } from './storage.js';
-import type { HistoryEntry, CompressedContext, HistoryCompressorConfig, CompressionTier } from './types.js';
+import type {
+  HistoryEntry,
+  CompressedContext,
+  HistoryCompressorConfig,
+  CompressionTier,
+} from './types.js';
 import { isTopicBoundary, type TopicBoundaryConfig } from './topic-detector.js';
 import { countTokens } from './token-counter.js';
 import { summarizeTopic, summarizeBulk, type SummarizerDeps } from './summarizer.js';
@@ -25,8 +30,8 @@ export class HistoryCompressor {
   private readonly config: HistoryCompressorConfig;
   private readonly summarizer?: SummarizerDeps;
   private readonly logger: SecureLogger;
-  private lastTimestamps: Map<string, number> = new Map();
-  private currentTopicTokens: Map<string, number> = new Map();
+  private lastTimestamps = new Map<string, number>();
+  private currentTopicTokens = new Map<string, number>();
 
   constructor(config: HistoryCompressorConfig, deps: HistoryCompressorDeps) {
     this.config = config;
@@ -39,7 +44,10 @@ export class HistoryCompressor {
    * Add a message to the compression system.
    * Detects topic boundaries and triggers compression when needed.
    */
-  async addMessage(conversationId: string, message: { role: string; content: string; timestamp?: number }): Promise<void> {
+  async addMessage(
+    conversationId: string,
+    message: { role: string; content: string; timestamp?: number }
+  ): Promise<void> {
     const timestamp = message.timestamp ?? Date.now();
     const tokenCount = countTokens(message.content);
     const content = `${message.role}: ${message.content}`;
@@ -55,7 +63,7 @@ export class HistoryCompressor {
         previousTimestamp: prevTimestamp,
         currentTopicTokens: topicTokens,
       },
-      this.config.topicBoundary as TopicBoundaryConfig,
+      this.config.topicBoundary as TopicBoundaryConfig
     );
 
     if (boundaryResult.isBoundary) {
@@ -74,7 +82,10 @@ export class HistoryCompressor {
 
     // Update tracking
     this.lastTimestamps.set(conversationId, timestamp);
-    this.currentTopicTokens.set(conversationId, (boundaryResult.isBoundary ? 0 : topicTokens) + tokenCount);
+    this.currentTopicTokens.set(
+      conversationId,
+      (boundaryResult.isBoundary ? 0 : topicTokens) + tokenCount
+    );
 
     // Check if we need to escalate
     await this.compressIfNeeded(conversationId);
@@ -84,25 +95,25 @@ export class HistoryCompressor {
    * Get compressed context for a conversation within a token budget.
    */
   async getContext(conversationId: string, maxTokens: number): Promise<CompressedContext> {
-    const messageBudget = Math.floor(maxTokens * this.config.tiers.messagePct / 100);
-    const topicBudget = Math.floor(maxTokens * this.config.tiers.topicPct / 100);
-    const bulkBudget = Math.floor(maxTokens * this.config.tiers.bulkPct / 100);
+    const messageBudget = Math.floor((maxTokens * this.config.tiers.messagePct) / 100);
+    const topicBudget = Math.floor((maxTokens * this.config.tiers.topicPct) / 100);
+    const bulkBudget = Math.floor((maxTokens * this.config.tiers.bulkPct) / 100);
 
     const allEntries = await this.storage.getEntriesByConversation(conversationId);
 
     const messages = this.fitToBudget(
       allEntries.filter((e) => e.tier === 'message'),
-      messageBudget,
+      messageBudget
     );
 
     const topics = this.fitToBudget(
       allEntries.filter((e) => e.tier === 'topic'),
-      topicBudget,
+      topicBudget
     );
 
     const bulk = this.fitToBudget(
       allEntries.filter((e) => e.tier === 'bulk'),
-      bulkBudget,
+      bulkBudget
     );
 
     return {

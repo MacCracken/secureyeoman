@@ -59,7 +59,7 @@ describe('NoopSandbox', () => {
 
   it('should return results from async functions', async () => {
     const result = await sandbox.run(async () => {
-      await new Promise(r => setTimeout(r, 10));
+      await new Promise((r) => setTimeout(r, 10));
       return { data: [1, 2, 3] };
     });
     expect(result.success).toBe(true);
@@ -145,10 +145,10 @@ describe('LinuxSandbox', () => {
       };
       const result = await sandbox.run(async () => {
         // Wait enough for the memory check interval
-        await new Promise(r => setTimeout(r, 200));
+        await new Promise((r) => setTimeout(r, 200));
         return 'done';
       }, opts);
-      expect(result.violations.some(v => v.type === 'resource')).toBe(true);
+      expect(result.violations.some((v) => v.type === 'resource')).toBe(true);
     });
 
     it('should run without options', async () => {

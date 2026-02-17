@@ -4,7 +4,13 @@
  * Manages triggers, evaluates conditions, queues suggestions, and executes actions.
  */
 
-import type { ProactiveTrigger, ProactiveTriggerCreate, Suggestion, ProactiveAction, ProactiveConfig } from '@friday/shared';
+import type {
+  ProactiveTrigger,
+  ProactiveTriggerCreate,
+  Suggestion,
+  ProactiveAction,
+  ProactiveConfig,
+} from '@friday/shared';
 import type { ProactiveManagerDeps, ActionResult } from './types.js';
 import type { ProactiveStorage } from './storage.js';
 import type { PatternLearner } from './pattern-learner.js';
@@ -22,7 +28,7 @@ export class ProactiveManager {
   private readonly deps: ProactiveManagerDeps;
   private readonly config: ProactiveConfig;
   private readonly patternLearner: PatternLearner;
-  private scheduleTimers: Map<string, NodeJS.Timeout> = new Map();
+  private scheduleTimers = new Map<string, NodeJS.Timeout>();
   private expiryTimer: NodeJS.Timeout | null = null;
   private initialized = false;
 
@@ -30,7 +36,7 @@ export class ProactiveManager {
     storage: ProactiveStorage,
     deps: ProactiveManagerDeps,
     config: ProactiveConfig,
-    patternLearner: PatternLearner,
+    patternLearner: PatternLearner
   ) {
     this.storage = storage;
     this.deps = deps;
@@ -56,7 +62,7 @@ export class ProactiveManager {
 
     // Start expired suggestion cleanup
     this.expiryTimer = setInterval(() => {
-      void this.storage.deleteExpiredSuggestions().catch((err) => {
+      void this.storage.deleteExpiredSuggestions().catch((err: unknown) => {
         this.deps.logger.warn('Failed to clean expired suggestions', {
           error: err instanceof Error ? err.message : String(err),
         });
@@ -94,7 +100,10 @@ export class ProactiveManager {
     return trigger;
   }
 
-  async updateTrigger(id: string, data: Partial<ProactiveTriggerCreate>): Promise<ProactiveTrigger | null> {
+  async updateTrigger(
+    id: string,
+    data: Partial<ProactiveTriggerCreate>
+  ): Promise<ProactiveTrigger | null> {
     const trigger = await this.storage.updateTrigger(id, data);
     if (trigger) {
       this.unwireScheduleTrigger(id);
@@ -135,7 +144,7 @@ export class ProactiveManager {
 
   async fireTrigger(
     triggerId: string,
-    context?: Record<string, unknown>,
+    context?: Record<string, unknown>
   ): Promise<{ suggestion?: Suggestion; result?: ActionResult }> {
     const trigger = await this.storage.getTrigger(triggerId);
     if (!trigger || !trigger.enabled) {
@@ -146,7 +155,11 @@ export class ProactiveManager {
     if (trigger.cooldownMs > 0 && (trigger as any).lastFiredAt) {
       const elapsed = Date.now() - (trigger as any).lastFiredAt;
       if (elapsed < trigger.cooldownMs) {
-        this.deps.logger.debug('Trigger skipped (cooldown)', { triggerId, elapsed, cooldownMs: trigger.cooldownMs });
+        this.deps.logger.debug('Trigger skipped (cooldown)', {
+          triggerId,
+          elapsed,
+          cooldownMs: trigger.cooldownMs,
+        });
         return {};
       }
     }
@@ -155,7 +168,11 @@ export class ProactiveManager {
     if (trigger.limitPerDay > 0) {
       const dailyCount = await this.storage.getDailyFiringCount(triggerId);
       if (dailyCount >= trigger.limitPerDay) {
-        this.deps.logger.debug('Trigger skipped (daily limit)', { triggerId, dailyCount, limitPerDay: trigger.limitPerDay });
+        this.deps.logger.debug('Trigger skipped (daily limit)', {
+          triggerId,
+          dailyCount,
+          limitPerDay: trigger.limitPerDay,
+        });
         return {};
       }
     }
@@ -196,7 +213,7 @@ export class ProactiveManager {
 
   async approveSuggestion(id: string): Promise<ActionResult> {
     const suggestion = await this.storage.getSuggestion(id);
-    if (!suggestion || suggestion.status !== 'pending') {
+    if (suggestion?.status !== 'pending') {
       return { success: false, message: 'Suggestion not found or not pending' };
     }
 
@@ -208,7 +225,7 @@ export class ProactiveManager {
 
   async dismissSuggestion(id: string): Promise<boolean> {
     const suggestion = await this.storage.getSuggestion(id);
-    if (!suggestion || suggestion.status !== 'pending') return false;
+    if (suggestion?.status !== 'pending') return false;
     await this.storage.updateSuggestionStatus(id, 'dismissed');
     return true;
   }
@@ -236,7 +253,10 @@ export class ProactiveManager {
 
   async getStatus() {
     const triggers = await this.storage.listTriggers();
-    const { total: pendingSuggestions } = await this.storage.listSuggestions({ status: 'pending', limit: 0 });
+    const { total: pendingSuggestions } = await this.storage.listSuggestions({
+      status: 'pending',
+      limit: 0,
+    });
     const patterns = await this.patternLearner.detectPatterns(this.config.learning.lookbackDays);
 
     return {
@@ -301,7 +321,7 @@ export class ProactiveManager {
 
   private async queueSuggestion(
     trigger: ProactiveTrigger,
-    context?: Record<string, unknown>,
+    context?: Record<string, unknown>
   ): Promise<Suggestion> {
     const expiresAt = new Date(Date.now() + this.config.autoDismissAfterMs);
 
@@ -329,7 +349,7 @@ export class ProactiveManager {
     // Parse cron to determine interval (simplified — real cron parsing would use a library)
     // For now, use a 60-second check interval and evaluate at each tick
     const timer = setInterval(() => {
-      void this.evaluateScheduleTrigger(trigger).catch((err) => {
+      void this.evaluateScheduleTrigger(trigger).catch((err: unknown) => {
         this.deps.logger.warn('Schedule trigger evaluation failed', {
           triggerId: trigger.id,
           error: err instanceof Error ? err.message : String(err),

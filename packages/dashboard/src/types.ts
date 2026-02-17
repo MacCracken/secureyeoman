@@ -284,7 +284,7 @@ export interface Skill {
   name: string;
   description: string;
   instructions: string;
-  tools: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }>;
+  tools: { name: string; description: string; inputSchema: Record<string, unknown> }[];
   triggerPatterns: string[];
   enabled: boolean;
   source: 'user' | 'ai_proposed' | 'ai_learned';
@@ -337,7 +337,7 @@ export interface OnboardingStatus {
 
 export interface PromptPreview {
   prompt: string;
-  tools: Array<{ name: string; description: string; inputSchema: Record<string, unknown> }>;
+  tools: { name: string; description: string; inputSchema: Record<string, unknown> }[];
   charCount: number;
   estimatedTokens: number;
 }

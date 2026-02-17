@@ -58,7 +58,9 @@ describe('GoogleCalendarIntegration', () => {
       const config = makeConfig();
       (config.config as any).accessToken = '';
       (config.config as any).refreshToken = '';
-      await expect(adapter.init(config, makeDeps())).rejects.toThrow('requires accessToken and refreshToken');
+      await expect(adapter.init(config, makeDeps())).rejects.toThrow(
+        'requires accessToken and refreshToken'
+      );
     });
   });
 
@@ -106,7 +108,9 @@ describe('GoogleCalendarIntegration', () => {
       });
 
       await adapter.init(makeConfig(), makeDeps());
-      await expect(adapter.sendMessage('primary', 'bad')).rejects.toThrow('Failed to create calendar event');
+      await expect(adapter.sendMessage('primary', 'bad')).rejects.toThrow(
+        'Failed to create calendar event'
+      );
     });
   });
 

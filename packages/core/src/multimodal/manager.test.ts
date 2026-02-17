@@ -84,17 +84,15 @@ describe('MultimodalManager', () => {
       expect(storage.completeJob).toHaveBeenCalled();
       expect(deps.extensionManager!.emit).toHaveBeenCalledWith(
         'multimodal:image-analyzed',
-        expect.any(Object),
+        expect.any(Object)
       );
     });
 
     it('logs job failure on error', async () => {
-      (deps.aiClient.chat as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('API error'),
-      );
+      (deps.aiClient.chat as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('API error'));
 
       await expect(
-        manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' }),
+        manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
       ).rejects.toThrow('API error');
 
       expect(storage.failJob).toHaveBeenCalledWith('job_123', 'API error');
@@ -108,7 +106,7 @@ describe('MultimodalManager', () => {
       await disabledManager.initialize();
 
       await expect(
-        disabledManager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' }),
+        disabledManager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
       ).rejects.toThrow('Vision capability is disabled');
     });
   });
@@ -122,7 +120,7 @@ describe('MultimodalManager', () => {
       await disabledManager.initialize();
 
       await expect(
-        disabledManager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'ogg' }),
+        disabledManager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'ogg' })
       ).rejects.toThrow('Speech-to-text capability is disabled');
     });
 
@@ -131,7 +129,7 @@ describe('MultimodalManager', () => {
       delete process.env.OPENAI_API_KEY;
 
       await expect(
-        manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'ogg' }),
+        manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'ogg' })
       ).rejects.toThrow('OPENAI_API_KEY');
 
       if (origKey) process.env.OPENAI_API_KEY = origKey;
@@ -147,7 +145,12 @@ describe('MultimodalManager', () => {
       await disabledManager.initialize();
 
       await expect(
-        disabledManager.synthesizeSpeech({ text: 'Hello', voice: 'alloy', model: 'tts-1', responseFormat: 'mp3' }),
+        disabledManager.synthesizeSpeech({
+          text: 'Hello',
+          voice: 'alloy',
+          model: 'tts-1',
+          responseFormat: 'mp3',
+        })
       ).rejects.toThrow('Text-to-speech capability is disabled');
     });
   });
@@ -161,7 +164,12 @@ describe('MultimodalManager', () => {
       await disabledManager.initialize();
 
       await expect(
-        disabledManager.generateImage({ prompt: 'A cat', size: '1024x1024', quality: 'standard', style: 'vivid' }),
+        disabledManager.generateImage({
+          prompt: 'A cat',
+          size: '1024x1024',
+          quality: 'standard',
+          style: 'vivid',
+        })
       ).rejects.toThrow('Image generation capability is disabled');
     });
   });
@@ -170,14 +178,14 @@ describe('MultimodalManager', () => {
     it('rejects image base64 exceeding 20MB', async () => {
       const oversizedBase64 = 'A'.repeat(20_971_521);
       await expect(
-        manager.analyzeImage({ imageBase64: oversizedBase64, mimeType: 'image/jpeg' }),
+        manager.analyzeImage({ imageBase64: oversizedBase64, mimeType: 'image/jpeg' })
       ).rejects.toThrow('Image data exceeds maximum allowed size');
     });
 
     it('rejects audio base64 exceeding 20MB', async () => {
       const oversizedBase64 = 'A'.repeat(20_971_521);
       await expect(
-        manager.transcribeAudio({ audioBase64: oversizedBase64, format: 'ogg' }),
+        manager.transcribeAudio({ audioBase64: oversizedBase64, format: 'ogg' })
       ).rejects.toThrow('Audio data exceeds maximum allowed size');
     });
 
@@ -193,21 +201,21 @@ describe('MultimodalManager', () => {
   describe('error sanitization', () => {
     it('strips API keys from error messages', async () => {
       (deps.aiClient.chat as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('Failed with key sk-abc123def456ghi789jkl012mno345pqr678'),
+        new Error('Failed with key sk-abc123def456ghi789jkl012mno345pqr678')
       );
 
       await expect(
-        manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' }),
+        manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
       ).rejects.toThrow('[REDACTED]');
     });
 
     it('strips Bearer tokens from error messages', async () => {
       (deps.aiClient.chat as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('Auth failed with Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature'),
+        new Error('Auth failed with Bearer eyJhbGciOiJIUzI1NiJ9.payload.signature')
       );
 
       await expect(
-        manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' }),
+        manager.analyzeImage({ imageBase64: 'dGVzdA==', mimeType: 'image/jpeg' })
       ).rejects.toThrow('Bearer [REDACTED]');
     });
   });
@@ -226,7 +234,12 @@ describe('MultimodalManager', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await expect(
-        manager.generateImage({ prompt: 'A cat', size: '1024x1024', quality: 'standard', style: 'vivid' }),
+        manager.generateImage({
+          prompt: 'A cat',
+          size: '1024x1024',
+          quality: 'standard',
+          style: 'vivid',
+        })
       ).rejects.toThrow('unexpected origin');
 
       vi.unstubAllGlobals();

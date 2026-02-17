@@ -16,17 +16,31 @@ function createMockSecureYeoman(overrides?: Record<string, unknown>) {
     }),
     getAuditChain: () => ({}),
     getRateLimiter: () => ({}),
-    getSoulManager: () => { throw new Error('not available'); },
-    getSpiritManager: () => { throw new Error('not available'); },
-    getBrainManager: () => { throw new Error('not available'); },
+    getSoulManager: () => {
+      throw new Error('not available');
+    },
+    getSpiritManager: () => {
+      throw new Error('not available');
+    },
+    getBrainManager: () => {
+      throw new Error('not available');
+    },
     getHeartbeatManager: () => null,
     getExternalBrainSync: () => null,
     getAgentComms: () => null,
-    getIntegrationManager: () => { throw new Error('not available'); },
-    getIntegrationStorage: () => { throw new Error('not available'); },
-    getTaskStorage: () => { throw new Error('not available'); },
+    getIntegrationManager: () => {
+      throw new Error('not available');
+    },
+    getIntegrationStorage: () => {
+      throw new Error('not available');
+    },
+    getTaskStorage: () => {
+      throw new Error('not available');
+    },
     getTaskExecutor: () => null,
-    getSandboxManager: () => { throw new Error('not available'); },
+    getSandboxManager: () => {
+      throw new Error('not available');
+    },
     getMcpStorage: () => null,
     getMcpClientManager: () => null,
     getMcpServer: () => null,
@@ -115,7 +129,9 @@ describe('GatewayServer', () => {
       expect(res.headers.get('x-frame-options')).toBe('DENY');
       expect(res.headers.get('x-xss-protection')).toBe('0');
       expect(res.headers.get('referrer-policy')).toBe('strict-origin-when-cross-origin');
-      expect(res.headers.get('permissions-policy')).toBe('camera=(), microphone=(), geolocation=()');
+      expect(res.headers.get('permissions-policy')).toBe(
+        'camera=(), microphone=(), geolocation=()'
+      );
       // HSTS should NOT be set when TLS is disabled
       expect(res.headers.get('strict-transport-security')).toBeNull();
     });
@@ -209,10 +225,12 @@ describe('GatewayServer', () => {
 
       const ack = await new Promise<{ payload: { subscribed: string[] } }>((resolve, reject) => {
         ws.on('open', () => {
-          ws.send(JSON.stringify({
-            type: 'subscribe',
-            payload: { channels: ['metrics', 'audit'] },
-          }));
+          ws.send(
+            JSON.stringify({
+              type: 'subscribe',
+              payload: { channels: ['metrics', 'audit'] },
+            })
+          );
         });
         ws.on('message', (data: Buffer) => {
           resolve(JSON.parse(data.toString()));
@@ -250,10 +268,12 @@ describe('GatewayServer', () => {
 
       const ack = await new Promise<{ payload: { subscribed: string[] } }>((resolve, reject) => {
         ws.on('open', () => {
-          ws.send(JSON.stringify({
-            type: 'subscribe',
-            payload: { channels: ['metrics', 'audit', 'tasks', 'security'] },
-          }));
+          ws.send(
+            JSON.stringify({
+              type: 'subscribe',
+              payload: { channels: ['metrics', 'audit', 'tasks', 'security'] },
+            })
+          );
         });
         ws.on('message', (data: Buffer) => {
           resolve(JSON.parse(data.toString()));
@@ -273,7 +293,9 @@ describe('GatewayServer', () => {
         config: cfg,
         secureYeoman: createMockSecureYeoman() as any,
         authService: {
-          validateToken: async () => { throw new Error('invalid'); },
+          validateToken: async () => {
+            throw new Error('invalid');
+          },
         } as any,
       });
       await server.start();

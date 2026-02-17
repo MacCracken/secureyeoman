@@ -98,7 +98,7 @@ export class A2AManager {
         url: peer.url,
       });
 
-      return await this.deps.storage.getPeer(peer.id) ?? peer;
+      return (await this.deps.storage.getPeer(peer.id)) ?? peer;
     }
 
     // If discovery fails, create a stub peer entry

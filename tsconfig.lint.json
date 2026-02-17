@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "include": [
+    "packages/core/src/**/*.ts",
+    "packages/shared/src/**/*.ts",
+    "packages/mcp/src/**/*.ts",
+    "packages/core/vitest.config.ts",
+    "packages/mcp/vitest.config.ts",
+    "vitest.config.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

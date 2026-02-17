@@ -40,13 +40,21 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
       void queryClient.invalidateQueries({ queryKey: ['agentName'] });
       onComplete();
     },
-    onError: (err: Error) => setError(err.message),
+    onError: (err: Error) => {
+      setError(err.message);
+    },
   });
 
   // Keep personality name synced with agent name
   const handleNameChange = (name: string) => {
     setAgentName(name);
-    setPersonality(p => ({ ...p, name, systemPrompt: p.systemPrompt || `You are ${name}, a helpful and security-conscious AI assistant. You are direct, technically precise, and proactive about identifying risks.` }));
+    setPersonality((p) => ({
+      ...p,
+      name,
+      systemPrompt:
+        p.systemPrompt ||
+        `You are ${name}, a helpful and security-conscious AI assistant. You are direct, technically precise, and proactive about identifying risks.`,
+    }));
   };
 
   const steps: Step[] = ['name', 'personality', 'confirm'];
@@ -66,7 +74,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
           <div className="flex items-center gap-2">
             {steps.map((s, i) => (
               <div key={s} className="flex-1 flex items-center gap-2">
-                <div className={`h-1 flex-1 rounded ${i <= stepIndex ? 'bg-primary' : 'bg-muted'}`} />
+                <div
+                  className={`h-1 flex-1 rounded ${i <= stepIndex ? 'bg-primary' : 'bg-muted'}`}
+                />
               </div>
             ))}
           </div>
@@ -90,7 +100,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 <input
                   type="text"
                   value={agentName}
-                  onChange={e => handleNameChange(e.target.value)}
+                  onChange={(e) => {
+                    handleNameChange(e.target.value);
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="FRIDAY"
                   maxLength={50}
@@ -110,7 +122,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 <input
                   type="text"
                   value={personality.description}
-                  onChange={e => setPersonality(p => ({ ...p, description: e.target.value }))}
+                  onChange={(e) => {
+                    setPersonality((p) => ({ ...p, description: e.target.value }));
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                   placeholder="A helpful AI assistant"
                   maxLength={200}
@@ -121,7 +135,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 <label className="block text-sm font-medium mb-1">System Prompt</label>
                 <textarea
                   value={personality.systemPrompt}
-                  onChange={e => setPersonality(p => ({ ...p, systemPrompt: e.target.value }))}
+                  onChange={(e) => {
+                    setPersonality((p) => ({ ...p, systemPrompt: e.target.value }));
+                  }}
                   className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
                   rows={3}
                   placeholder={`You are ${agentName}, a helpful AI assistant...`}
@@ -136,13 +152,15 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <div key={trait}>
                       <span className="text-xs text-muted-foreground capitalize">{trait}</span>
                       <div className="flex gap-2 mt-1">
-                        {options.map(opt => (
+                        {options.map((opt) => (
                           <button
                             key={opt}
-                            onClick={() => setPersonality(p => ({
-                              ...p,
-                              traits: { ...p.traits, [trait]: opt },
-                            }))}
+                            onClick={() => {
+                              setPersonality((p) => ({
+                                ...p,
+                                traits: { ...p.traits, [trait]: opt },
+                              }));
+                            }}
                             className={`px-3 py-1 text-xs rounded border transition-colors ${
                               personality.traits?.[trait] === opt
                                 ? 'bg-primary text-primary-foreground border-primary'
@@ -164,7 +182,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <input
                     type="text"
                     value={personality.voice}
-                    onChange={e => setPersonality(p => ({ ...p, voice: e.target.value }))}
+                    onChange={(e) => {
+                      setPersonality((p) => ({ ...p, voice: e.target.value }));
+                    }}
                     className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="e.g., warm, professional"
                     maxLength={100}
@@ -175,7 +195,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   <input
                     type="text"
                     value={personality.preferredLanguage}
-                    onChange={e => setPersonality(p => ({ ...p, preferredLanguage: e.target.value }))}
+                    onChange={(e) => {
+                      setPersonality((p) => ({ ...p, preferredLanguage: e.target.value }));
+                    }}
                     className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                     placeholder="e.g., English"
                     maxLength={50}
@@ -199,7 +221,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                     <dt className="text-muted-foreground">Traits</dt>
                     <dd className="flex gap-2 flex-wrap">
                       {Object.entries(personality.traits ?? {}).map(([k, v]) => (
-                        <span key={k} className="badge badge-info">{k}: {v}</span>
+                        <span key={k} className="badge badge-info">
+                          {k}: {v}
+                        </span>
                       ))}
                     </dd>
                   </div>
@@ -224,7 +248,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
         {/* Navigation */}
         <div className="px-6 pb-6 flex justify-between">
           <button
-            onClick={() => setStep(steps[stepIndex - 1])}
+            onClick={() => {
+              setStep(steps[stepIndex - 1]);
+            }}
             disabled={stepIndex === 0}
             className="btn btn-ghost flex items-center gap-1 disabled:opacity-30"
           >
@@ -233,7 +259,9 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
 
           {step !== 'confirm' ? (
             <button
-              onClick={() => setStep(steps[stepIndex + 1])}
+              onClick={() => {
+                setStep(steps[stepIndex + 1]);
+              }}
               disabled={!agentName.trim()}
               className="btn btn-primary flex items-center gap-1"
             >
@@ -241,12 +269,18 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             </button>
           ) : (
             <button
-              onClick={() => mutation.mutate()}
+              onClick={() => {
+                mutation.mutate();
+              }}
               disabled={mutation.isPending}
               className="btn btn-primary flex items-center gap-1"
             >
-              {mutation.isPending ? 'Creating...' : (
-                <>Complete <Check className="w-4 h-4" /></>
+              {mutation.isPending ? (
+                'Creating...'
+              ) : (
+                <>
+                  Complete <Check className="w-4 h-4" />
+                </>
               )}
             </button>
           )}

@@ -15,10 +15,7 @@ interface SwitchModelBody {
   model: string;
 }
 
-export function registerModelRoutes(
-  app: FastifyInstance,
-  opts: ModelRoutesOptions,
-): void {
+export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptions): void {
   const { secureYeoman } = opts;
 
   app.get('/api/v1/model/info', async (_request, reply: FastifyReply) => {
@@ -41,38 +38,49 @@ export function registerModelRoutes(
     }
   });
 
-  app.post('/api/v1/model/switch', async (
-    request: FastifyRequest<{ Body: SwitchModelBody }>,
-    reply: FastifyReply,
-  ) => {
-    const { provider, model } = request.body;
+  app.post(
+    '/api/v1/model/switch',
+    async (request: FastifyRequest<{ Body: SwitchModelBody }>, reply: FastifyReply) => {
+      const { provider, model } = request.body;
 
-    if (!provider || !model) {
-      return reply.code(400).send({ error: 'provider and model are required' });
-    }
+      if (!provider || !model) {
+        return reply.code(400).send({ error: 'provider and model are required' });
+      }
 
-    const validProviders = ['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai', 'deepseek'];
-    if (!validProviders.includes(provider)) {
-      return reply.code(400).send({
-        error: `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
-      });
-    }
+      const validProviders = [
+        'anthropic',
+        'openai',
+        'gemini',
+        'ollama',
+        'opencode',
+        'lmstudio',
+        'localai',
+        'deepseek',
+      ];
+      if (!validProviders.includes(provider)) {
+        return reply.code(400).send({
+          error: `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
+        });
+      }
 
-    try {
-      secureYeoman.switchModel(provider, model);
-      return { success: true, model: `${provider}/${model}` };
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      return reply.code(500).send({ error: `Failed to switch model: ${message}` });
+      try {
+        secureYeoman.switchModel(provider, model);
+        return { success: true, model: `${provider}/${model}` };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return reply.code(500).send({ error: `Failed to switch model: ${message}` });
+      }
     }
-  });
+  );
 
   // Cost optimization recommendations
   app.get('/api/v1/model/cost-recommendations', async (_request, reply: FastifyReply) => {
     try {
       const costOptimizer = secureYeoman.getCostOptimizer();
       if (!costOptimizer) {
-        return reply.code(503).send({ error: 'Cost optimizer not available (AI client not initialized)' });
+        return reply
+          .code(503)
+          .send({ error: 'Cost optimizer not available (AI client not initialized)' });
       }
       return costOptimizer.analyze();
     } catch (err) {

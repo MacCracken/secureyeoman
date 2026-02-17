@@ -81,7 +81,9 @@ export class FaissVectorStore implements VectorStore {
     this.persist();
   }
 
-  async insertBatch(items: Array<{ id: string; vector: number[]; metadata?: Record<string, unknown> }>): Promise<void> {
+  async insertBatch(
+    items: { id: string; vector: number[]; metadata?: Record<string, unknown> }[]
+  ): Promise<void> {
     await this.ensureInitialized();
 
     for (const item of items) {

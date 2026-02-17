@@ -33,7 +33,9 @@ export class QdrantVectorStore implements VectorStore {
       const qdrantModule = await import('@qdrant/js-client-rest');
       this.client = new qdrantModule.QdrantClient({ url: this.url });
     } catch {
-      throw new Error('@qdrant/js-client-rest not installed. Install with: npm install @qdrant/js-client-rest');
+      throw new Error(
+        '@qdrant/js-client-rest not installed. Install with: npm install @qdrant/js-client-rest'
+      );
     }
 
     // Auto-create collection if it doesn't exist
@@ -65,7 +67,9 @@ export class QdrantVectorStore implements VectorStore {
     });
   }
 
-  async insertBatch(items: Array<{ id: string; vector: number[]; metadata?: Record<string, unknown> }>): Promise<void> {
+  async insertBatch(
+    items: { id: string; vector: number[]; metadata?: Record<string, unknown> }[]
+  ): Promise<void> {
     await this.ensureInitialized();
 
     await this.client.upsert(this.collection, {

@@ -233,7 +233,7 @@ describe('AnthropicProvider', () => {
         'https://api.anthropic.com/v1/models',
         expect.objectContaining({
           headers: expect.objectContaining({ 'x-api-key': 'test-key' }),
-        }),
+        })
       );
     });
 

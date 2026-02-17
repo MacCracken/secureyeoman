@@ -80,10 +80,36 @@ function rowToPersonality(row: PersonalityRow): Personality {
       enabled: false,
       capabilities: [],
       heartEnabled: true,
-      creationConfig: { skills: false, tasks: false, personalities: false, subAgents: false, customRoles: false, roleAssignments: false, experiments: false },
+      creationConfig: {
+        skills: false,
+        tasks: false,
+        personalities: false,
+        subAgents: false,
+        customRoles: false,
+        roleAssignments: false,
+        experiments: false,
+      },
       selectedServers: [],
-      mcpFeatures: { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false },
-      proactiveConfig: { enabled: false, approvalMode: 'suggest', builtins: { dailyStandup: false, weeklySummary: false, contextualFollowup: false, integrationHealthAlert: false, securityAlertDigest: false }, learning: { enabled: true, minConfidence: 0.7 } },
+      mcpFeatures: {
+        exposeGit: false,
+        exposeFilesystem: false,
+        exposeWeb: false,
+        exposeWebScraping: false,
+        exposeWebSearch: false,
+        exposeBrowser: false,
+      },
+      proactiveConfig: {
+        enabled: false,
+        approvalMode: 'suggest',
+        builtins: {
+          dailyStandup: false,
+          weeklySummary: false,
+          contextualFollowup: false,
+          integrationHealthAlert: false,
+          securityAlertDigest: false,
+        },
+        learning: { enabled: true, minConfidence: 0.7 },
+      },
     },
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -110,7 +136,7 @@ function rowToSkill(row: SkillRow): Skill {
     description: row.description,
     instructions: row.instructions,
     tools: (row.tools ?? []) as Skill['tools'],
-    triggerPatterns: (row.trigger_patterns ?? []) as string[],
+    triggerPatterns: row.trigger_patterns ?? [],
     // ADR 021: Skill Actions
     actions: [],
     // ADR 022: Skill Triggers
@@ -164,11 +190,11 @@ export class SoulStorage extends PgBaseStorage {
               personalities: false,
               experiments: false,
             },
-          },
+          }
         ),
         now,
         now,
-      ],
+      ]
     );
 
     const result = await this.getPersonality(id);
@@ -179,26 +205,24 @@ export class SoulStorage extends PgBaseStorage {
   async getPersonality(id: string): Promise<Personality | null> {
     const row = await this.queryOne<PersonalityRow>(
       'SELECT * FROM soul.personalities WHERE id = $1',
-      [id],
+      [id]
     );
     return row ? rowToPersonality(row) : null;
   }
 
   async getActivePersonality(): Promise<Personality | null> {
     const row = await this.queryOne<PersonalityRow>(
-      'SELECT * FROM soul.personalities WHERE is_active = true LIMIT 1',
+      'SELECT * FROM soul.personalities WHERE is_active = true LIMIT 1'
     );
     return row ? rowToPersonality(row) : null;
   }
 
   async setActivePersonality(id: string): Promise<void> {
     await this.withTransaction(async (client) => {
-      await client.query(
-        'UPDATE soul.personalities SET is_active = false WHERE is_active = true',
-      );
+      await client.query('UPDATE soul.personalities SET is_active = false WHERE is_active = true');
       const result = await client.query(
         'UPDATE soul.personalities SET is_active = true, updated_at = $1 WHERE id = $2',
-        [Date.now(), id],
+        [Date.now(), id]
       );
       if ((result.rowCount ?? 0) === 0) {
         throw new Error(`Personality not found: ${id}`);
@@ -242,25 +266,24 @@ export class SoulStorage extends PgBaseStorage {
           : existing.defaultModel
             ? JSON.stringify(existing.defaultModel)
             : null,
-        data.includeArchetypes !== undefined
-          ? data.includeArchetypes
-          : existing.includeArchetypes,
+        data.includeArchetypes !== undefined ? data.includeArchetypes : existing.includeArchetypes,
         JSON.stringify(
-          data.body ?? existing.body ?? {
-            enabled: false,
-            capabilities: [],
-            heartEnabled: true,
-            creationConfig: {
-              skills: false,
-              tasks: false,
-              personalities: false,
-              experiments: false,
-            },
-          },
+          data.body ??
+            existing.body ?? {
+              enabled: false,
+              capabilities: [],
+              heartEnabled: true,
+              creationConfig: {
+                skills: false,
+                tasks: false,
+                personalities: false,
+                experiments: false,
+              },
+            }
         ),
         now,
         id,
-      ],
+      ]
     );
 
     const result = await this.getPersonality(id);
@@ -269,23 +292,20 @@ export class SoulStorage extends PgBaseStorage {
   }
 
   async deletePersonality(id: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM soul.personalities WHERE id = $1',
-      [id],
-    );
+    const count = await this.execute('DELETE FROM soul.personalities WHERE id = $1', [id]);
     return count > 0;
   }
 
   async listPersonalities(): Promise<Personality[]> {
     const rows = await this.queryMany<PersonalityRow>(
-      'SELECT * FROM soul.personalities ORDER BY created_at DESC',
+      'SELECT * FROM soul.personalities ORDER BY created_at DESC'
     );
     return rows.map(rowToPersonality);
   }
 
   async getPersonalityCount(): Promise<number> {
     const row = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM soul.personalities',
+      'SELECT COUNT(*) as count FROM soul.personalities'
     );
     return Number(row?.count ?? 0);
   }
@@ -311,7 +331,7 @@ export class SoulStorage extends PgBaseStorage {
         data.status ?? 'active',
         now,
         now,
-      ],
+      ]
     );
 
     const result = await this.getSkill(id);
@@ -320,10 +340,7 @@ export class SoulStorage extends PgBaseStorage {
   }
 
   async getSkill(id: string): Promise<Skill | null> {
-    const row = await this.queryOne<SkillRow>(
-      'SELECT * FROM soul.skills WHERE id = $1',
-      [id],
-    );
+    const row = await this.queryOne<SkillRow>('SELECT * FROM soul.skills WHERE id = $1', [id]);
     return row ? rowToSkill(row) : null;
   }
 
@@ -357,7 +374,7 @@ export class SoulStorage extends PgBaseStorage {
         data.status ?? existing.status,
         now,
         id,
-      ],
+      ]
     );
 
     const result = await this.getSkill(id);
@@ -366,10 +383,7 @@ export class SoulStorage extends PgBaseStorage {
   }
 
   async deleteSkill(id: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM soul.skills WHERE id = $1',
-      [id],
-    );
+    const count = await this.execute('DELETE FROM soul.skills WHERE id = $1', [id]);
     return count > 0;
   }
 
@@ -399,14 +413,14 @@ export class SoulStorage extends PgBaseStorage {
 
   async getEnabledSkills(): Promise<Skill[]> {
     const rows = await this.queryMany<SkillRow>(
-      "SELECT * FROM soul.skills WHERE enabled = true AND status = 'active' ORDER BY usage_count DESC, created_at DESC",
+      "SELECT * FROM soul.skills WHERE enabled = true AND status = 'active' ORDER BY usage_count DESC, created_at DESC"
     );
     return rows.map(rowToSkill);
   }
 
   async getPendingSkills(): Promise<Skill[]> {
     const rows = await this.queryMany<SkillRow>(
-      "SELECT * FROM soul.skills WHERE status = 'pending_approval' ORDER BY created_at DESC",
+      "SELECT * FROM soul.skills WHERE status = 'pending_approval' ORDER BY created_at DESC"
     );
     return rows.map(rowToSkill);
   }
@@ -414,14 +428,12 @@ export class SoulStorage extends PgBaseStorage {
   async incrementUsage(skillId: string): Promise<void> {
     await this.execute(
       'UPDATE soul.skills SET usage_count = usage_count + 1, last_used_at = $1 WHERE id = $2',
-      [Date.now(), skillId],
+      [Date.now(), skillId]
     );
   }
 
   async getSkillCount(): Promise<number> {
-    const row = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM soul.skills',
-    );
+    const row = await this.queryOne<{ count: string }>('SELECT COUNT(*) as count FROM soul.skills');
     return Number(row?.count ?? 0);
   }
 
@@ -429,7 +441,7 @@ export class SoulStorage extends PgBaseStorage {
 
   async getAgentName(): Promise<string | null> {
     const row = await this.queryOne<{ value: string }>(
-      "SELECT value FROM soul.meta WHERE key = 'agent_name'",
+      "SELECT value FROM soul.meta WHERE key = 'agent_name'"
     );
     return row?.value ?? null;
   }
@@ -438,7 +450,7 @@ export class SoulStorage extends PgBaseStorage {
     await this.execute(
       `INSERT INTO soul.meta (key, value, updated_at) VALUES ('agent_name', $1, $2)
        ON CONFLICT(key) DO UPDATE SET value = $1, updated_at = $2`,
-      [name, Date.now()],
+      [name, Date.now()]
     );
   }
 
@@ -460,7 +472,7 @@ export class SoulStorage extends PgBaseStorage {
         data.notes ?? '',
         now,
         now,
-      ],
+      ]
     );
 
     const result = await this.getUser(id);
@@ -469,24 +481,21 @@ export class SoulStorage extends PgBaseStorage {
   }
 
   async getUser(id: string): Promise<UserProfile | null> {
-    const row = await this.queryOne<UserRow>(
-      'SELECT * FROM soul.users WHERE id = $1',
-      [id],
-    );
+    const row = await this.queryOne<UserRow>('SELECT * FROM soul.users WHERE id = $1', [id]);
     return row ? rowToUser(row) : null;
   }
 
   async getUserByName(name: string): Promise<UserProfile | null> {
     const row = await this.queryOne<UserRow>(
       'SELECT * FROM soul.users WHERE name ILIKE $1 LIMIT 1',
-      [name],
+      [name]
     );
     return row ? rowToUser(row) : null;
   }
 
   async getOwner(): Promise<UserProfile | null> {
     const row = await this.queryOne<UserRow>(
-      "SELECT * FROM soul.users WHERE relationship = 'owner' LIMIT 1",
+      "SELECT * FROM soul.users WHERE relationship = 'owner' LIMIT 1"
     );
     return row ? rowToUser(row) : null;
   }
@@ -515,7 +524,7 @@ export class SoulStorage extends PgBaseStorage {
         data.notes ?? existing.notes,
         now,
         id,
-      ],
+      ]
     );
 
     const result = await this.getUser(id);
@@ -524,17 +533,12 @@ export class SoulStorage extends PgBaseStorage {
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM soul.users WHERE id = $1',
-      [id],
-    );
+    const count = await this.execute('DELETE FROM soul.users WHERE id = $1', [id]);
     return count > 0;
   }
 
   async listUsers(): Promise<UserProfile[]> {
-    const rows = await this.queryMany<UserRow>(
-      'SELECT * FROM soul.users ORDER BY created_at DESC',
-    );
+    const rows = await this.queryMany<UserRow>('SELECT * FROM soul.users ORDER BY created_at DESC');
     return rows.map(rowToUser);
   }
 }

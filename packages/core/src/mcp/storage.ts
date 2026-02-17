@@ -62,7 +62,7 @@ export class McpStorage extends PgBaseStorage {
         server.enabled,
         server.createdAt,
         server.updatedAt,
-      ],
+      ]
     );
 
     return server;
@@ -71,7 +71,7 @@ export class McpStorage extends PgBaseStorage {
   async getServer(id: string): Promise<McpServerConfig | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM mcp.servers WHERE id = $1',
-      [id],
+      [id]
     );
     return row ? this.rowToConfig(row) : null;
   }
@@ -79,14 +79,14 @@ export class McpStorage extends PgBaseStorage {
   async findServerByName(name: string): Promise<McpServerConfig | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM mcp.servers WHERE name = $1',
-      [name],
+      [name]
     );
     return row ? this.rowToConfig(row) : null;
   }
 
   async listServers(): Promise<McpServerConfig[]> {
     const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM mcp.servers ORDER BY created_at DESC',
+      'SELECT * FROM mcp.servers ORDER BY created_at DESC'
     );
     return rows.map((r) => this.rowToConfig(r));
   }
@@ -109,16 +109,13 @@ export class McpStorage extends PgBaseStorage {
     values.push(id);
     const rowCount = await this.execute(
       `UPDATE mcp.servers SET ${fields.join(', ')} WHERE id = $${counter}`,
-      values,
+      values
     );
     return rowCount > 0;
   }
 
   async deleteServer(id: string): Promise<boolean> {
-    const rowCount = await this.execute(
-      'DELETE FROM mcp.servers WHERE id = $1',
-      [id],
-    );
+    const rowCount = await this.execute('DELETE FROM mcp.servers WHERE id = $1', [id]);
     return rowCount > 0;
   }
 
@@ -144,14 +141,14 @@ export class McpStorage extends PgBaseStorage {
   async saveTools(
     serverId: string,
     serverName: string,
-    tools: Array<{ name: string; description?: string; inputSchema?: Record<string, unknown> }>,
+    tools: { name: string; description?: string; inputSchema?: Record<string, unknown> }[]
   ): Promise<void> {
     await this.withTransaction(async (client) => {
       await client.query('DELETE FROM mcp.server_tools WHERE server_id = $1', [serverId]);
       for (const t of tools) {
         await client.query(
           'INSERT INTO mcp.server_tools (server_id, name, description, input_schema) VALUES ($1, $2, $3, $4)',
-          [serverId, t.name, t.description ?? '', JSON.stringify(t.inputSchema ?? {})],
+          [serverId, t.name, t.description ?? '', JSON.stringify(t.inputSchema ?? {})]
         );
       }
     });
@@ -165,7 +162,7 @@ export class McpStorage extends PgBaseStorage {
     if (!server) return [];
     const rows = await this.queryMany<Record<string, unknown>>(
       'SELECT * FROM mcp.server_tools WHERE server_id = $1',
-      [serverId],
+      [serverId]
     );
     return rows.map((row) => ({
       name: row.name as string,
@@ -180,15 +177,12 @@ export class McpStorage extends PgBaseStorage {
    * Delete persisted tools for a server.
    */
   async deleteTools(serverId: string): Promise<void> {
-    await this.execute(
-      'DELETE FROM mcp.server_tools WHERE server_id = $1',
-      [serverId],
-    );
+    await this.execute('DELETE FROM mcp.server_tools WHERE server_id = $1', [serverId]);
   }
 
   async getConfig(): Promise<McpFeatureConfig> {
     const rows = await this.queryMany<{ key: string; value: string }>(
-      'SELECT key, value FROM mcp.config',
+      'SELECT key, value FROM mcp.config'
     );
     const config = { ...MCP_CONFIG_DEFAULTS };
     for (const row of rows) {
@@ -206,7 +200,7 @@ export class McpStorage extends PgBaseStorage {
           await client.query(
             `INSERT INTO mcp.config (key, value) VALUES ($1, $2)
              ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
-            [key, JSON.stringify(value)],
+            [key, JSON.stringify(value)]
           );
         }
       }
@@ -236,22 +230,20 @@ export class McpStorage extends PgBaseStorage {
         health.lastCheckedAt,
         health.lastSuccessAt,
         health.lastError,
-      ],
+      ]
     );
   }
 
   async getHealth(serverId: string): Promise<McpServerHealth | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM mcp.server_health WHERE server_id = $1',
-      [serverId],
+      [serverId]
     );
     return row ? this.rowToHealth(row) : null;
   }
 
   async getAllHealth(): Promise<McpServerHealth[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM mcp.server_health',
-    );
+    const rows = await this.queryMany<Record<string, unknown>>('SELECT * FROM mcp.server_health');
     return rows.map((r) => this.rowToHealth(r));
   }
 
@@ -277,14 +269,14 @@ export class McpStorage extends PgBaseStorage {
        ON CONFLICT (server_id, key) DO UPDATE SET
          encrypted_value = EXCLUDED.encrypted_value,
          updated_at = EXCLUDED.updated_at`,
-      [serverId, key, encryptedValue, now, now],
+      [serverId, key, encryptedValue, now, now]
     );
   }
 
   async getCredential(serverId: string, key: string): Promise<string | null> {
     const row = await this.queryOne<{ encrypted_value: string }>(
       'SELECT encrypted_value FROM mcp.server_credentials WHERE server_id = $1 AND key = $2',
-      [serverId, key],
+      [serverId, key]
     );
     return row?.encrypted_value ?? null;
   }
@@ -292,7 +284,7 @@ export class McpStorage extends PgBaseStorage {
   async listCredentialKeys(serverId: string): Promise<string[]> {
     const rows = await this.queryMany<{ key: string }>(
       'SELECT key FROM mcp.server_credentials WHERE server_id = $1 ORDER BY key',
-      [serverId],
+      [serverId]
     );
     return rows.map((r) => r.key);
   }
@@ -300,7 +292,7 @@ export class McpStorage extends PgBaseStorage {
   async deleteCredential(serverId: string, key: string): Promise<boolean> {
     const rowCount = await this.execute(
       'DELETE FROM mcp.server_credentials WHERE server_id = $1 AND key = $2',
-      [serverId, key],
+      [serverId, key]
     );
     return rowCount > 0;
   }

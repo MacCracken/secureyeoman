@@ -37,7 +37,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     onClose();
   };
 
-  const goBack = () => setStep('select');
+  const goBack = () => {
+    setStep('select');
+  };
 
   const navigateTo = (path: string) => {
     handleClose();
@@ -59,7 +61,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       ].map(({ key, icon: Icon, label, desc }) => (
         <button
           key={key}
-          onClick={() => setStep(key as DialogStep)}
+          onClick={() => {
+            setStep(key as DialogStep);
+          }}
           className="p-4 border rounded-lg hover:bg-muted/50 transition-colors text-left"
         >
           <Icon className="w-6 h-6 mb-2 text-primary" />
@@ -83,7 +87,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={personality.name}
-          onChange={(e) => setPersonality({ ...personality, name: e.target.value })}
+          onChange={(e) => {
+            setPersonality({ ...personality, name: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., Coding Assistant"
         />
@@ -93,7 +99,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={personality.description}
-          onChange={(e) => setPersonality({ ...personality, description: e.target.value })}
+          onChange={(e) => {
+            setPersonality({ ...personality, description: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="Optional description"
         />
@@ -103,7 +111,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         {Object.keys(modelsByProvider).length > 0 ? (
           <select
             value={personality.model}
-            onChange={(e) => setPersonality({ ...personality, model: e.target.value })}
+            onChange={(e) => {
+              setPersonality({ ...personality, model: e.target.value });
+            }}
             className="w-full px-3 py-2 rounded border bg-background"
           >
             <option value="">Default (system)</option>
@@ -121,7 +131,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <input
             type="text"
             value={personality.model}
-            onChange={(e) => setPersonality({ ...personality, model: e.target.value })}
+            onChange={(e) => {
+              setPersonality({ ...personality, model: e.target.value });
+            }}
             className="w-full px-3 py-2 rounded border bg-background"
             placeholder="e.g., claude-3-5-sonnet-20241022"
           />
@@ -134,11 +146,11 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <button
           disabled={!personality.name.trim()}
           className="btn btn-primary"
-          onClick={() =>
+          onClick={() => {
             navigateTo(
               `/personality?create=true&name=${encodeURIComponent(personality.name)}&description=${encodeURIComponent(personality.description)}&model=${encodeURIComponent(personality.model)}`
-            )
-          }
+            );
+          }}
         >
           Create
         </button>
@@ -159,7 +171,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={task.name}
-          onChange={(e) => setTask({ ...task, name: e.target.value })}
+          onChange={(e) => {
+            setTask({ ...task, name: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., Run backup"
         />
@@ -168,7 +182,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <label className="block text-sm font-medium mb-1">Type</label>
         <select
           value={task.type}
-          onChange={(e) => setTask({ ...task, type: e.target.value })}
+          onChange={(e) => {
+            setTask({ ...task, type: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
         >
           <option value="execute">Execute</option>
@@ -183,7 +199,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={task.description}
-          onChange={(e) => setTask({ ...task, description: e.target.value })}
+          onChange={(e) => {
+            setTask({ ...task, description: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="Optional description"
         />
@@ -192,7 +210,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <label className="block text-sm font-medium mb-1">Input (JSON)</label>
         <textarea
           value={task.input}
-          onChange={(e) => setTask({ ...task, input: e.target.value })}
+          onChange={(e) => {
+            setTask({ ...task, input: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background font-mono text-sm"
           rows={3}
           placeholder='{"key": "value"}'
@@ -205,11 +225,11 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <button
           disabled={!task.name.trim()}
           className="btn btn-primary"
-          onClick={() =>
+          onClick={() => {
             navigateTo(
               `/tasks?create=true&name=${encodeURIComponent(task.name)}&type=${encodeURIComponent(task.type)}&description=${encodeURIComponent(task.description)}&input=${encodeURIComponent(task.input)}`
-            )
-          }
+            );
+          }}
         >
           Create
         </button>
@@ -230,7 +250,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={skill.name}
-          onChange={(e) => setSkill({ ...skill, name: e.target.value })}
+          onChange={(e) => {
+            setSkill({ ...skill, name: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., Git Helper"
         />
@@ -240,7 +262,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={skill.description}
-          onChange={(e) => setSkill({ ...skill, description: e.target.value })}
+          onChange={(e) => {
+            setSkill({ ...skill, description: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="What this skill does"
         />
@@ -250,7 +274,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={skill.trigger}
-          onChange={(e) => setSkill({ ...skill, trigger: e.target.value })}
+          onChange={(e) => {
+            setSkill({ ...skill, trigger: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., /git or on_push"
         />
@@ -259,7 +285,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <label className="block text-sm font-medium mb-1">Action</label>
         <textarea
           value={skill.action}
-          onChange={(e) => setSkill({ ...skill, action: e.target.value })}
+          onChange={(e) => {
+            setSkill({ ...skill, action: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background font-mono text-sm"
           rows={3}
           placeholder="What the skill does..."
@@ -272,11 +300,11 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <button
           disabled={!skill.name.trim()}
           className="btn btn-primary"
-          onClick={() =>
+          onClick={() => {
             navigateTo(
               `/skills?create=true&name=${encodeURIComponent(skill.name)}&description=${encodeURIComponent(skill.description)}&trigger=${encodeURIComponent(skill.trigger)}&action=${encodeURIComponent(skill.action)}`
-            )
-          }
+            );
+          }}
         >
           Create
         </button>
@@ -297,7 +325,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={experiment.name}
-          onChange={(e) => setExperiment({ ...experiment, name: e.target.value })}
+          onChange={(e) => {
+            setExperiment({ ...experiment, name: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="e.g., New Voice UI"
         />
@@ -307,7 +337,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <input
           type="text"
           value={experiment.description}
-          onChange={(e) => setExperiment({ ...experiment, description: e.target.value })}
+          onChange={(e) => {
+            setExperiment({ ...experiment, description: e.target.value });
+          }}
           className="w-full px-3 py-2 rounded border bg-background"
           placeholder="What you're testing"
         />
@@ -322,11 +354,11 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <button
           disabled={!experiment.name.trim()}
           className="btn btn-primary"
-          onClick={() =>
+          onClick={() => {
             navigateTo(
               `/experiments?create=true&name=${encodeURIComponent(experiment.name)}&description=${encodeURIComponent(experiment.description)}`
-            )
-          }
+            );
+          }}
         >
           Create
         </button>
@@ -358,7 +390,9 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     >
       <div
         className="bg-background border rounded-lg p-6 w-full max-w-md shadow-lg"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-semibold">Create New</h3>

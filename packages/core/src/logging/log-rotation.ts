@@ -83,11 +83,7 @@ export class LogRotator {
 
     if (this.config.compressRotated) {
       const gzPath = `${rotatedPath}.gz`;
-      await pipeline(
-        createReadStream(rotatedPath),
-        createGzip(),
-        createWriteStream(gzPath),
-      );
+      await pipeline(createReadStream(rotatedPath), createGzip(), createWriteStream(gzPath));
       unlinkSync(rotatedPath);
       return gzPath;
     }

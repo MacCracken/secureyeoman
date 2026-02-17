@@ -7,16 +7,8 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Users,
-  Network,
-  ShieldAlert,
-} from 'lucide-react';
-import {
-  fetchAgentConfig,
-  fetchSecurityPolicy,
-  fetchA2AConfig,
-} from '../api/client';
+import { Users, Network, ShieldAlert } from 'lucide-react';
+import { fetchAgentConfig, fetchSecurityPolicy, fetchA2AConfig } from '../api/client';
 import { SubAgentsPage } from './SubAgentsPage';
 import { A2APage } from './A2APage';
 
@@ -42,13 +34,11 @@ export function AgentsPage() {
   });
 
   const subAgentsEnabled =
-    (agentConfig?.config as Record<string, unknown>)?.enabled === true ||
+    (agentConfig?.config)!?.enabled === true ||
     agentConfig?.allowedBySecurityPolicy === true ||
     securityPolicy?.allowSubAgents === true;
 
-  const a2aEnabled =
-    (a2aConfig?.config as Record<string, unknown>)?.enabled === true ||
-    securityPolicy?.allowA2A === true;
+  const a2aEnabled = (a2aConfig?.config)!?.enabled === true || securityPolicy?.allowA2A === true;
 
   const neitherEnabled = !subAgentsEnabled && !a2aEnabled;
 
@@ -63,7 +53,8 @@ export function AgentsPage() {
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">Agent Features Not Enabled</h2>
           <p className="text-muted-foreground text-sm mb-4">
-            Enable Sub-Agent Delegation or A2A Networking in Settings &gt; Security to use agent features.
+            Enable Sub-Agent Delegation or A2A Networking in Settings &gt; Security to use agent
+            features.
           </p>
         </div>
       </div>
@@ -71,7 +62,12 @@ export function AgentsPage() {
   }
 
   const sections: { id: SectionId; label: string; icon: React.ReactNode; enabled: boolean }[] = [
-    { id: 'delegation', label: 'Sub-Agents', icon: <Users className="w-4 h-4" />, enabled: subAgentsEnabled },
+    {
+      id: 'delegation',
+      label: 'Sub-Agents',
+      icon: <Users className="w-4 h-4" />,
+      enabled: subAgentsEnabled,
+    },
     { id: 'a2a', label: 'A2A Network', icon: <Network className="w-4 h-4" />, enabled: a2aEnabled },
   ];
 
@@ -85,7 +81,11 @@ export function AgentsPage() {
           <Users className="w-6 h-6 text-primary" />
           <h1 className="text-2xl font-bold">Agents</h1>
         </div>
-        {availableSections[0].id === 'delegation' ? <SubAgentsPage embedded /> : <A2APage embedded />}
+        {availableSections[0].id === 'delegation' ? (
+          <SubAgentsPage embedded />
+        ) : (
+          <A2APage embedded />
+        )}
       </div>
     );
   }
@@ -93,7 +93,7 @@ export function AgentsPage() {
   // Ensure active section is valid
   const effectiveSection = availableSections.find((s) => s.id === activeSection)
     ? activeSection
-    : availableSections[0]?.id ?? 'delegation';
+    : (availableSections[0]?.id ?? 'delegation');
 
   return (
     <div className="space-y-4">
@@ -107,7 +107,9 @@ export function AgentsPage() {
         {availableSections.map((section) => (
           <button
             key={section.id}
-            onClick={() => setActiveSection(section.id)}
+            onClick={() => {
+              setActiveSection(section.id);
+            }}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               effectiveSection === section.id
                 ? 'border-primary text-primary'

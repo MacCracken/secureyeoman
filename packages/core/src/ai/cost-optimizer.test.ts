@@ -35,7 +35,7 @@ describe('CostOptimizer', () => {
       usageTracker: createMockTracker({ costUsdToday: 2, costUsdMonth: 20 }),
     });
     const analysis = optimizer.analyze();
-    const caching = analysis.recommendations.find(r => r.category === 'caching');
+    const caching = analysis.recommendations.find((r) => r.category === 'caching');
     expect(caching).toBeTruthy();
     expect(caching!.priority).toBe('medium');
   });
@@ -46,7 +46,7 @@ describe('CostOptimizer', () => {
       usageTracker: createMockTracker({ costUsdToday: 10, costUsdMonth: 100, apiCallsTotal: 50 }),
     });
     const analysis = optimizer.analyze();
-    const modelRec = analysis.recommendations.find(r => r.category === 'model_selection');
+    const modelRec = analysis.recommendations.find((r) => r.category === 'model_selection');
     expect(modelRec).toBeTruthy();
     expect(modelRec!.priority).toBe('high');
   });
@@ -54,10 +54,15 @@ describe('CostOptimizer', () => {
   it('should recommend token reduction for high usage', () => {
     const optimizer = new CostOptimizer({
       logger: createNoopLogger(),
-      usageTracker: createMockTracker({ tokensUsedToday: 200000, costUsdToday: 3, costUsdMonth: 30, apiCallsTotal: 100 }),
+      usageTracker: createMockTracker({
+        tokensUsedToday: 200000,
+        costUsdToday: 3,
+        costUsdMonth: 30,
+        apiCallsTotal: 100,
+      }),
     });
     const analysis = optimizer.analyze();
-    const tokenRec = analysis.recommendations.find(r => r.category === 'token_reduction');
+    const tokenRec = analysis.recommendations.find((r) => r.category === 'token_reduction');
     expect(tokenRec).toBeTruthy();
   });
 
@@ -67,7 +72,7 @@ describe('CostOptimizer', () => {
       usageTracker: createMockTracker({ apiCallsTotal: 50, costUsdToday: 0.5, costUsdMonth: 5 }),
     });
     const analysis = optimizer.analyze();
-    const batch = analysis.recommendations.find(r => r.category === 'batching');
+    const batch = analysis.recommendations.find((r) => r.category === 'batching');
     expect(batch).toBeTruthy();
   });
 });

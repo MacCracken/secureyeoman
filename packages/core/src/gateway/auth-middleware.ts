@@ -295,7 +295,7 @@ const TOKEN_ONLY_ROUTES = new Set(['/api/v1/auth/refresh', '/api/v1/auth/logout'
 
 function routeKey(request: FastifyRequest): string {
   // Fastify stores the route schema path (with :param placeholders) in routeOptions
-  return (request.routeOptions?.url ?? request.url.split('?')[0]) as string;
+  return (request.routeOptions?.url ?? request.url.split('?')[0])!;
 }
 
 // ── Auth extraction hook ─────────────────────────────────────────────
@@ -316,7 +316,7 @@ export function createAuthHook(opts: AuthHookOptions) {
     if (typeof socket.authorized === 'boolean' && socket.authorized) {
       try {
         const cert = socket.getPeerCertificate();
-        if (cert && cert.subject && cert.subject.CN) {
+        if (cert?.subject?.CN) {
           request.authUser = {
             userId: cert.subject.CN,
             role: 'operator',
@@ -396,10 +396,14 @@ export function createRbacHook(opts: RbacHookOptions) {
       return;
     }
 
-    const result = opts.rbac.checkPermission(user.role, {
-      resource: perm.resource,
-      action: perm.action,
-    }, user.userId);
+    const result = opts.rbac.checkPermission(
+      user.role,
+      {
+        resource: perm.resource,
+        action: perm.action,
+      },
+      user.userId
+    );
 
     if (!result.granted) {
       await auditDenial(opts, user, path, request.method);
@@ -412,7 +416,7 @@ async function auditDenial(
   opts: RbacHookOptions,
   user: AuthUser,
   path: string,
-  method: string,
+  method: string
 ): Promise<void> {
   try {
     await opts.auditChain.record({

@@ -3,232 +3,808 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>F.R.I.D.A.Y. - Fully Responsive Integrated Digitally Adaptable Yeoman</title>
+    <title>F.R.I.D.A.Y. — Your Personal AI Yeoman</title>
+    <meta
+      name="description"
+      content="F.R.I.D.A.Y. is a secure, local-first AI assistant with enterprise-grade protection and comprehensive observability."
+    />
     <link rel="stylesheet" href="css/style.css" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap"
       rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
     />
   </head>
   <body>
-    <div class="container">
-      <div class="background-animation">
-        <div class="floating-circuit"></div>
-        <div class="floating-circuit"></div>
-        <div class="floating-circuit"></div>
+    <!-- Navigation -->
+    <nav class="navbar" id="navbar">
+      <div class="nav-container">
+        <a href="#" class="nav-logo">
+          <div class="logo-mark">
+            <span class="logo-icon">F</span>
+          </div>
+          <span class="logo-text">F.R.I.D.A.Y.</span>
+        </a>
+        <div class="nav-menu" id="navMenu">
+          <a href="#features" class="nav-link">Features</a>
+          <a href="#use-cases" class="nav-link">Use Cases</a>
+          <a href="#architecture" class="nav-link">Architecture</a>
+          <a href="#getting-started" class="nav-link">Docs</a>
+          <a href="https://github.com/MacCracken/FRIDAY" class="nav-link" target="_blank">
+            <i class="fab fa-github"></i>
+          </a>
+        </div>
+        <div class="nav-cta">
+          <a href="#getting-started" class="btn btn-primary">Get Started</a>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </div>
+    </nav>
 
-      <header class="hero">
-        <div class="logo-section">
-          <div class="friday-logo">
-            <div class="logo-inner">
-              <span class="logo-letter">F</span>
-              <span class="logo-letter">R</span>
-              <span class="logo-letter">I</span>
-              <span class="logo-letter">D</span>
-              <span class="logo-letter">A</span>
-              <span class="logo-letter">Y</span>
-            </div>
-          </div>
-          <h1 class="main-title">F.R.I.D.A.Y.</h1>
-          <p class="subtitle">Fully Responsive Integrated Digitally Adaptable Yeoman</p>
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="hero-bg">
+        <div class="gradient-orb orb-1"></div>
+        <div class="gradient-orb orb-2"></div>
+        <div class="gradient-orb orb-3"></div>
+        <div class="grid-pattern"></div>
+      </div>
+      <div class="hero-content">
+        <div class="hero-badge">
+          <span class="badge-dot"></span>
+          <span>v2026.2.16 Now Available</span>
+          <a
+            href="https://github.com/MacCracken/FRIDAY/releases"
+            target="_blank"
+            class="badge-link"
+          >
+            <i class="fas fa-arrow-right"></i>
+          </a>
         </div>
-
-        <div class="hero-description">
-          <p class="tagline">
-            Your personal digital assistant built for security, privacy, and dependability.
-          </p>
-          <div class="badges">
-            <span class="badge security">Enterprise-Grade Security</span>
-            <span class="badge local">Local-First</span>
-            <span class="badge privacy">Privacy-Focused</span>
-          </div>
+        <h1 class="hero-title">
+          Your Personal AI
+          <span class="gradient-text">Yeoman</span>
+        </h1>
+        <p class="hero-subtitle">
+          F.R.I.D.A.Y. is a secure, local-first AI assistant with enterprise-grade protection. It
+          remembers everything, does anything, and works exclusively for you.
+        </p>
+        <div class="hero-badges">
+          <span class="tag tag-security">
+            <i class="fas fa-shield-alt"></i>
+            Enterprise Security
+          </span>
+          <span class="tag tag-local">
+            <i class="fas fa-lock"></i>
+            Local-First
+          </span>
+          <span class="tag tag-privacy">
+            <i class="fas fa-user-secret"></i>
+            Privacy-First
+          </span>
         </div>
-
-        <div class="cta-section">
-          <button class="btn-primary" onclick="scrollToSection('features')">
-            Explore Features
-          </button>
-          <button class="btn-secondary" onclick="scrollToSection('getting-started')">
+        <div class="hero-cta">
+          <a href="#getting-started" class="btn btn-primary btn-lg">
+            <i class="fas fa-rocket"></i>
             Get Started
-          </button>
+          </a>
+          <a
+            href="https://github.com/MacCracken/FRIDAY"
+            target="_blank"
+            class="btn btn-secondary btn-lg"
+          >
+            <i class="fab fa-github"></i>
+            View on GitHub
+          </a>
         </div>
-      </header>
+        <div class="hero-stats">
+          <div class="stat">
+            <span class="stat-value">2,100+</span>
+            <span class="stat-label">Tests</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <span class="stat-value">MIT</span>
+            <span class="stat-label">License</span>
+          </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <span class="stat-value">34+</span>
+            <span class="stat-label">MCP Tools</span>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      <main class="content">
-        <section class="features" id="features">
-          <h2 class="section-title">Core Features</h2>
-          <div class="features-grid">
-            <div class="feature-card">
-              <div class="feature-icon security-icon">🔒</div>
-              <h3>Enterprise Security</h3>
-              <p>RBAC, encryption at rest, sandboxed execution, and comprehensive rate limiting</p>
-              <ul class="feature-list">
-                <li>Role-Based Access Control</li>
-                <li>End-to-end encryption</li>
-                <li>Sandboxed agent execution</li>
-                <li>Advanced threat protection</li>
-              </ul>
+    <!-- AI Providers Section -->
+    <section class="providers">
+      <div class="container">
+        <p class="providers-label">Connect any AI provider. Expose zero secrets.</p>
+        <div class="providers-grid">
+          <div class="provider-logo" title="Anthropic Claude">
+            <i class="fas fa-brain"></i>
+            <span>Anthropic</span>
+          </div>
+          <div class="provider-logo" title="OpenAI GPT">
+            <i class="fas fa-robot"></i>
+            <span>OpenAI</span>
+          </div>
+          <div class="provider-logo" title="Google Gemini">
+            <i class="fas fa-gem"></i>
+            <span>Gemini</span>
+          </div>
+          <div class="provider-logo" title="Ollama">
+            <i class="fas fa-server"></i>
+            <span>Ollama</span>
+          </div>
+          <div class="provider-logo" title="DeepSeek">
+            <i class="fas fa-water"></i>
+            <span>DeepSeek</span>
+          </div>
+          <div class="provider-logo" title="OpenCode Zen">
+            <i class="fas fa-code"></i>
+            <span>OpenCode</span>
+          </div>
+          <div class="provider-logo" title="LM Studio">
+            <i class="fas fa-laptop-code"></i>
+            <span>LM Studio</span>
+          </div>
+          <div class="provider-logo" title="LocalAI">
+            <i class="fas fa-home"></i>
+            <span>LocalAI</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Core Capabilities</span>
+          <h2 class="section-title">Built for Security.<br />Designed for You.</h2>
+          <p class="section-subtitle">
+            Enterprise-grade features wrapped in an intuitive interface. Everything you need,
+            nothing you don't.
+          </p>
+        </div>
+        <div class="features-grid">
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-shield-alt"></i>
             </div>
+            <h3 class="feature-title">Enterprise Security</h3>
+            <p class="feature-desc">
+              RBAC with multiple roles, JWT + API key authentication, mTLS, AES-256-GCM encryption
+              at rest, and sandboxed execution.
+            </p>
+            <ul class="feature-list">
+              <li>Role-Based Access Control</li>
+              <li>End-to-end encryption</li>
+              <li>Sandboxed execution</li>
+              <li>Advanced threat protection</li>
+            </ul>
+          </div>
 
-            <div class="feature-card">
-              <div class="feature-icon logging-icon">📊</div>
-              <h3>Self-Logging System</h3>
-              <p>
-                Every task logged with cryptographic integrity verification for complete
-                auditability
-              </p>
-              <ul class="feature-list">
-                <li>Cryptographic integrity checks</li>
-                <li>Immutable audit trails</li>
-                <li>Real-time logging</li>
-                <li>Compliance-ready reports</li>
-              </ul>
+          <div class="feature-card featured">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-eye"></i>
             </div>
+            <h3 class="feature-title">Complete Observability</h3>
+            <p class="feature-desc">
+              Cryptographic audit trails with HMAC-SHA256 chain verification. Every action is
+              logged, monitored, and auditable.
+            </p>
+            <ul class="feature-list">
+              <li>Cryptographic integrity</li>
+              <li>Prometheus metrics</li>
+              <li>Grafana dashboards</li>
+              <li>Immutable audit trails</li>
+            </ul>
+          </div>
 
-            <div class="feature-card">
-              <div class="feature-icon metrics-icon">⚡</div>
-              <h3>Performance Metrics</h3>
-              <p>Real-time token usage, task duration, and resource consumption monitoring</p>
-              <ul class="feature-list">
-                <li>Real-time performance dashboard</li>
-                <li>Token usage optimization</li>
-                <li>Resource consumption tracking</li>
-                <li>Performance analytics</li>
-              </ul>
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-brain"></i>
             </div>
+            <h3 class="feature-title">Cognitive Architecture</h3>
+            <p class="feature-desc">
+              Vector semantic memory with FAISS/Qdrant backends. LLM-powered memory consolidation
+              with 3-tier history compression.
+            </p>
+            <ul class="feature-list">
+              <li>Semantic search</li>
+              <li>Memory consolidation</li>
+              <li>Progressive compression</li>
+              <li>Knowledge management</li>
+            </ul>
+          </div>
 
-            <div class="feature-card">
-              <div class="feature-icon dashboard-icon">🖥️</div>
-              <h3>GUI Dashboard</h3>
-              <p>Integrated React dashboard for metrics visualization and connection management</p>
-              <ul class="feature-list">
-                <li>React + TanStack + ReactFlow</li>
-                <li>Real-time WebSocket connections</li>
-                <li>Visual workflow management</li>
-                <li>Interactive monitoring</li>
-              </ul>
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-plug"></i>
+            </div>
+            <h3 class="feature-title">Universal Integrations</h3>
+            <p class="feature-desc">
+              Connect with Telegram, Discord, Slack, GitHub, Gmail, and more. MCP protocol support
+              with 34+ built-in tools.
+            </p>
+            <ul class="feature-list">
+              <li>Multi-platform support</li>
+              <li>34+ MCP tools</li>
+              <li>Webhook automation</li>
+              <li>Custom integrations</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-code"></i>
+            </div>
+            <h3 class="feature-title">Code Execution</h3>
+            <p class="feature-desc">
+              Sandboxed code execution in Python, Node.js, and shell with Landlock/seccomp
+              sandboxing and streaming output.
+            </p>
+            <ul class="feature-list">
+              <li>Sandboxed execution</li>
+              <li>Multi-language support</li>
+              <li>Streaming output</li>
+              <li>Approval workflows</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-users"></i>
+            </div>
+            <h3 class="feature-title">Agent-to-Agent</h3>
+            <p class="feature-desc">
+              Cross-instance delegation via E2E encrypted messaging. Peer discovery with capability
+              negotiation.
+            </p>
+            <ul class="feature-list">
+              <li>E2E encryption</li>
+              <li>Peer discovery</li>
+              <li>Capability negotiation</li>
+              <li>Trust progression</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Use Cases Section -->
+    <section class="use-cases" id="use-cases">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Use Cases</span>
+          <h2 class="section-title">What Will You Build?</h2>
+          <p class="section-subtitle">
+            From personal automation to enterprise workflows, F.R.I.D.A.Y. adapts to your needs.
+          </p>
+        </div>
+        <div class="use-cases-grid">
+          <div class="use-case-card">
+            <div class="use-case-image">
+              <i class="fas fa-envelope-open-text"></i>
+            </div>
+            <h3>Email Management</h3>
+            <p>
+              Automate inbox organization, draft responses, and manage communications across
+              platforms.
+            </p>
+          </div>
+          <div class="use-case-card">
+            <div class="use-case-image">
+              <i class="fas fa-calendar-check"></i>
+            </div>
+            <h3>Calendar & Scheduling</h3>
+            <p>Schedule meetings, send reminders, and coordinate with your team automatically.</p>
+          </div>
+          <div class="use-case-card">
+            <div class="use-case-image">
+              <i class="fas fa-code-branch"></i>
+            </div>
+            <h3>Development</h3>
+            <p>Run tests, review code, manage PRs, and automate your development workflow.</p>
+          </div>
+          <div class="use-case-card">
+            <div class="use-case-image">
+              <i class="fas fa-chart-line"></i>
+            </div>
+            <h3>Data Analysis</h3>
+            <p>Process data, generate reports, and extract insights from your information.</p>
+          </div>
+          <div class="use-case-card">
+            <div class="use-case-image">
+              <i class="fas fa-search"></i>
+            </div>
+            <h3>Research</h3>
+            <p>Gather information, summarize documents, and build your personal knowledge base.</p>
+          </div>
+          <div class="use-case-card">
+            <div class="use-case-image">
+              <i class="fas fa-shield-virus"></i>
+            </div>
+            <h3>Security Monitoring</h3>
+            <p>Monitor systems, detect anomalies, and respond to security events automatically.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section class="architecture" id="architecture">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Architecture</span>
+          <h2 class="section-title">Secure by Design</h2>
+          <p class="section-subtitle">
+            Multi-layered security with comprehensive observability at every level.
+          </p>
+        </div>
+        <div class="architecture-visual">
+          <div class="arch-layer layer-dashboard">
+            <div class="layer-icon"><i class="fas fa-desktop"></i></div>
+            <div class="layer-content">
+              <h4>React Dashboard</h4>
+              <span class="layer-tech">Vite + Tailwind + WebSocket</span>
             </div>
           </div>
-        </section>
-
-        <section class="architecture">
-          <h2 class="section-title">Architecture Overview</h2>
-          <div class="architecture-diagram">
-            <div class="arch-layer dashboard-layer">
-              <span class="layer-title">SecureYeoman Dashboard</span>
-              <span class="layer-tech">React + TanStack + ReactFlow</span>
+          <div class="arch-connector">
+            <div class="connector-line"></div>
+            <div class="connector-dot"></div>
+          </div>
+          <div class="arch-layer layer-gateway">
+            <div class="layer-icon"><i class="fas fa-server"></i></div>
+            <div class="layer-content">
+              <h4>SecureYeoman Gateway</h4>
+              <span class="layer-tech">Fastify + RBAC + Rate Limiting</span>
             </div>
-            <div class="connection"></div>
-            <div class="arch-layer gateway-layer">
-              <span class="layer-title">SecureYeoman Gateway</span>
-              <div class="gateway-components">
-                <div class="component security-comp">Security Layer</div>
-                <div class="component metrics-comp">Metrics Collector</div>
-                <div class="component audit-comp">Audit Chain</div>
+            <div class="layer-components">
+              <span class="component">Auth</span>
+              <span class="component">Metrics</span>
+              <span class="component">Audit</span>
+              <span class="component">Encryption</span>
+            </div>
+          </div>
+          <div class="arch-connector">
+            <div class="connector-line"></div>
+            <div class="connector-dot"></div>
+          </div>
+          <div class="arch-core">
+            <div class="core-title">SecureYeoman Core</div>
+            <div class="core-modules">
+              <div class="module">
+                <i class="fas fa-user"></i>
+                <span>Soul</span>
+              </div>
+              <div class="module">
+                <i class="fas fa-heart"></i>
+                <span>Spirit</span>
+              </div>
+              <div class="module">
+                <i class="fas fa-brain"></i>
+                <span>Brain</span>
+              </div>
+              <div class="module">
+                <i class="fas fa-running"></i>
+                <span>Body</span>
+              </div>
+              <div class="module">
+                <i class="fas fa-tasks"></i>
+                <span>Task</span>
+              </div>
+              <div class="module">
+                <i class="fas fa-lock"></i>
+                <span>Security</span>
               </div>
             </div>
-            <div class="connection"></div>
-            <div class="arch-layer agent-layer">
-              <span class="layer-title">Sandboxed Agent Engine</span>
-              <span class="layer-tech">Claude API Integration</span>
+          </div>
+          <div class="arch-connector">
+            <div class="connector-line"></div>
+            <div class="connector-dot"></div>
+          </div>
+          <div class="arch-bottom">
+            <div class="bottom-item">
+              <i class="fas fa-database"></i>
+              <span>SQLite</span>
+            </div>
+            <div class="bottom-item">
+              <i class="fab fa-telegram"></i>
+              <span>Telegram</span>
+            </div>
+            <div class="bottom-item">
+              <i class="fab fa-discord"></i>
+              <span>Discord</span>
+            </div>
+            <div class="bottom-item">
+              <i class="fab fa-slack"></i>
+              <span>Slack</span>
+            </div>
+            <div class="bottom-item">
+              <i class="fab fa-github"></i>
+              <span>GitHub</span>
+            </div>
+            <div class="bottom-item">
+              <i class="fas fa-envelope"></i>
+              <span>Email</span>
             </div>
           </div>
-        </section>
+        </div>
+      </div>
+    </section>
 
-        <section class="why-yeoman">
-          <h2 class="section-title">Why the "Yeoman" Designation?</h2>
-          <div class="yeoman-cards">
-            <div class="yeoman-card">
-              <div class="yeoman-icon">🛡️</div>
-              <h3>Dependability</h3>
-              <p>Performing essential work with precision and reliability</p>
-            </div>
-            <div class="yeoman-card">
-              <div class="yeoman-icon">🔐</div>
-              <h3>Security</h3>
-              <p>Acting as a trusted protector of your digital domain</p>
-            </div>
-            <div class="yeoman-card">
-              <div class="yeoman-icon">🤝</div>
-              <h3>Loyalty</h3>
-              <p>A system that works exclusively for your best interest</p>
-            </div>
+    <!-- Getting Started Section -->
+    <section class="getting-started" id="getting-started">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Documentation</span>
+          <h2 class="section-title">Get Started in Minutes</h2>
+          <p class="section-subtitle">Deploy your personal AI Yeoman with just a few commands.</p>
+        </div>
+        <div class="getting-started-content">
+          <div class="setup-tabs">
+            <button class="tab-btn active" data-tab="npm">npm</button>
+            <button class="tab-btn" data-tab="docker">Docker</button>
+            <button class="tab-btn" data-tab="source">Source</button>
           </div>
-        </section>
+          <div class="setup-content">
+            <div class="tab-panel active" id="npm">
+              <div class="code-window">
+                <div class="window-header">
+                  <div class="window-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span class="window-title">terminal</span>
+                  <button class="copy-btn" data-clipboard="npm install">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <div class="window-body">
+                  <pre><code><span class="comment"># Clone the repository</span>
+<span class="prompt">$</span> git clone https://github.com/MacCracken/FRIDAY.git
+<span class="prompt">$</span> cd FRIDAY
 
-        <section class="getting-started" id="getting-started">
-          <h2 class="section-title">Getting Started</h2>
-          <div class="install-steps">
-            <div class="step">
-              <div class="step-number">1</div>
-              <div class="step-content">
-                <h3>Prerequisites</h3>
-                <div class="code-block">
-                  <code>Node.js 20 LTS or later</code>
-                  <code>pnpm (recommended) or npm</code>
-                  <code>Anthropic API key</code>
+<span class="comment"># Install dependencies</span>
+<span class="prompt">$</span> npm install
+
+<span class="comment"># Configure environment</span>
+<span class="prompt">$</span> cp .env.example .env
+<span class="comment"># Edit .env with your API keys</span>
+
+<span class="comment"># Start F.R.I.D.A.Y.</span>
+<span class="prompt">$</span> npm run dev</code></pre>
                 </div>
               </div>
             </div>
-            <div class="step">
-              <div class="step-number">2</div>
-              <div class="step-content">
-                <h3>Installation</h3>
-                <div class="code-block">
-                  <code>git clone https://github.com/your-org/friday.git</code>
-                  <code>cd friday</code>
-                  <code>pnpm install</code>
+            <div class="tab-panel" id="docker">
+              <div class="code-window">
+                <div class="window-header">
+                  <div class="window-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span class="window-title">terminal</span>
+                  <button class="copy-btn">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <div class="window-body">
+                  <pre><code><span class="comment"># Start with Docker Compose</span>
+<span class="prompt">$</span> docker compose up -d
+
+<span class="comment"># With MCP service</span>
+<span class="prompt">$</span> docker compose --profile mcp up -d
+
+<span class="comment"># Fresh start</span>
+<span class="prompt">$</span> docker compose down -v
+<span class="prompt">$</span> docker compose up -d</code></pre>
                 </div>
               </div>
             </div>
-            <div class="step">
-              <div class="step-number">3</div>
-              <div class="step-content">
-                <h3>Configuration</h3>
-                <div class="code-block">
-                  <code>cp .env.example .env</code>
-                  <code># Edit .env with your API keys</code>
-                  <code>pnpm dev</code>
+            <div class="tab-panel" id="source">
+              <div class="code-window">
+                <div class="window-header">
+                  <div class="window-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span class="window-title">terminal</span>
+                  <button class="copy-btn">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <div class="window-body">
+                  <pre><code><span class="comment"># Prerequisites</span>
+- Node.js 20 LTS+
+- npm or pnpm
+- AI Provider API Key
+
+<span class="comment"># Security Keys (32+ chars each)</span>
+SECUREYEOMAN_SIGNING_KEY="..."
+SECUREYEOMAN_TOKEN_SECRET="..."
+SECUREYEOMAN_ENCRYPTION_KEY="..."
+SECUREYEOMAN_ADMIN_PASSWORD="..."</code></pre>
                 </div>
               </div>
             </div>
           </div>
-        </section>
-
-        <section class="project-status">
-          <h2 class="section-title">Project Status</h2>
-          <div class="status-badges">
-            <div class="status-card">
-              <span class="status-badge in-dev">In Development</span>
-              <p>Active development with regular updates</p>
-            </div>
-            <div class="status-card">
-              <span class="status-badge mit">MIT License</span>
-              <p>Open source for community contribution</p>
-            </div>
-            <div class="status-card">
-              <span class="status-badge secure">Enterprise-Grade</span>
-              <p>Built with security as the top priority</p>
-            </div>
+          <div class="setup-docs">
+            <a
+              href="https://github.com/MacCracken/FRIDAY/blob/main/docs/guides/getting-started.md"
+              target="_blank"
+              class="doc-link"
+            >
+              <i class="fas fa-book"></i>
+              <span>Full Documentation</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+            <a
+              href="https://github.com/MacCracken/FRIDAY/blob/main/docs/api/rest-api.md"
+              target="_blank"
+              class="doc-link"
+            >
+              <i class="fas fa-code"></i>
+              <span>API Reference</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
+            <a
+              href="https://github.com/MacCracken/FRIDAY/blob/main/CHANGELOG.md"
+              target="_blank"
+              class="doc-link"
+            >
+              <i class="fas fa-history"></i>
+              <span>Changelog</span>
+              <i class="fas fa-arrow-right"></i>
+            </a>
           </div>
-        </section>
-      </main>
+        </div>
+      </div>
+    </section>
 
-      <footer class="footer">
-        <div class="footer-content">
-          <div class="footer-info">
-            <p>&copy; 2024 F.R.I.D.A.Y. - Your trusted digital Yeoman</p>
-            <p>Made with ❤️ for privacy and security</p>
+    <!-- Community Section -->
+    <section class="community">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Community</span>
+          <h2 class="section-title">Built for the Community</h2>
+          <p class="section-subtitle">
+            Join thousands of developers building the future of personal AI.
+          </p>
+        </div>
+        <div class="community-grid">
+          <div class="community-card github-card">
+            <div class="card-header">
+              <i class="fab fa-github"></i>
+              <span>Open Source</span>
+            </div>
+            <div class="card-content">
+              <div class="stat-row">
+                <span class="stat-name">License</span>
+                <span class="stat-value">MIT</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-name">Tests</span>
+                <span class="stat-value">2,100+</span>
+              </div>
+              <div class="stat-row">
+                <span class="stat-name">Files</span>
+                <span class="stat-value">134+</span>
+              </div>
+            </div>
+            <a href="https://github.com/MacCracken/FRIDAY" target="_blank" class="card-action">
+              View on GitHub <i class="fas fa-external-link-alt"></i>
+            </a>
+          </div>
+
+          <div class="community-card docs-card">
+            <div class="card-header">
+              <i class="fas fa-book"></i>
+              <span>Documentation</span>
+            </div>
+            <div class="card-content">
+              <div class="doc-list">
+                <a href="#" class="doc-item">
+                  <i class="fas fa-rocket"></i>
+                  <span>Getting Started</span>
+                </a>
+                <a href="#" class="doc-item">
+                  <i class="fas fa-cog"></i>
+                  <span>Configuration</span>
+                </a>
+                <a href="#" class="doc-item">
+                  <i class="fas fa-plug"></i>
+                  <span>Integrations</span>
+                </a>
+                <a href="#" class="doc-item">
+                  <i class="fas fa-shield-alt"></i>
+                  <span>Security</span>
+                </a>
+              </div>
+            </div>
+            <a
+              href="https://github.com/MacCracken/FRIDAY/tree/main/docs"
+              target="_blank"
+              class="card-action"
+            >
+              Browse Docs <i class="fas fa-external-link-alt"></i>
+            </a>
+          </div>
+
+          <div class="community-card contribute-card">
+            <div class="card-header">
+              <i class="fas fa-hands-helping"></i>
+              <span>Contribute</span>
+            </div>
+            <div class="card-content">
+              <p>We welcome contributions! Help us build the future of secure AI assistants.</p>
+              <div class="contribute-list">
+                <span class="contribute-tag">Bug Reports</span>
+                <span class="contribute-tag">Features</span>
+                <span class="contribute-tag">Docs</span>
+                <span class="contribute-tag">Tests</span>
+              </div>
+            </div>
+            <a
+              href="https://github.com/MacCracken/FRIDAY/blob/main/CONTRIBUTING.md"
+              target="_blank"
+              class="card-action"
+            >
+              Contributing Guide <i class="fas fa-external-link-alt"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+      <div class="container">
+        <div class="cta-content">
+          <h2>Ready to Meet Your Yeoman?</h2>
+          <p>Deploy F.R.I.D.A.Y. today and experience the future of personal AI assistants.</p>
+          <div class="cta-buttons">
+            <a href="#getting-started" class="btn btn-primary btn-lg">
+              <i class="fas fa-rocket"></i>
+              Get Started
+            </a>
+            <a
+              href="https://github.com/MacCracken/FRIDAY"
+              target="_blank"
+              class="btn btn-secondary btn-lg"
+            >
+              <i class="fab fa-github"></i>
+              Star on GitHub
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <div class="container">
+        <div class="footer-grid">
+          <div class="footer-brand">
+            <div class="footer-logo">
+              <span class="logo-icon">F</span>
+              <span class="logo-text">F.R.I.D.A.Y.</span>
+            </div>
+            <p class="footer-desc">
+              Your trusted digital SecureYeoman. Built with ❤️ for privacy and security.
+            </p>
+            <div class="footer-social">
+              <a href="https://github.com/MacCracken/FRIDAY" target="_blank" aria-label="GitHub">
+                <i class="fab fa-github"></i>
+              </a>
+              <a href="#" aria-label="Discord">
+                <i class="fab fa-discord"></i>
+              </a>
+              <a href="#" aria-label="Twitter">
+                <i class="fab fa-twitter"></i>
+              </a>
+            </div>
           </div>
           <div class="footer-links">
-            <a href="#features">Features</a>
-            <a href="#getting-started">Documentation</a>
-            <a href="https://github.com/your-org/friday">GitHub</a>
+            <div class="footer-column">
+              <h4>Product</h4>
+              <ul>
+                <li><a href="#features">Features</a></li>
+                <li><a href="#use-cases">Use Cases</a></li>
+                <li><a href="#architecture">Architecture</a></li>
+                <li>
+                  <a href="https://github.com/MacCracken/FRIDAY/releases" target="_blank"
+                    >Releases</a
+                  >
+                </li>
+              </ul>
+            </div>
+            <div class="footer-column">
+              <h4>Documentation</h4>
+              <ul>
+                <li>
+                  <a
+                    href="https://github.com/MacCracken/FRIDAY/blob/main/docs/guides/getting-started.md"
+                    target="_blank"
+                    >Getting Started</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/MacCracken/FRIDAY/blob/main/docs/api/rest-api.md"
+                    target="_blank"
+                    >API Reference</a
+                  >
+                </li>
+                <li>
+                  <a href="https://github.com/MacCracken/FRIDAY/tree/main/docs/adr" target="_blank"
+                    >ADRs</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/MacCracken/FRIDAY/blob/main/docs/troubleshooting.md"
+                    target="_blank"
+                    >Troubleshooting</a
+                  >
+                </li>
+              </ul>
+            </div>
+            <div class="footer-column">
+              <h4>Community</h4>
+              <ul>
+                <li>
+                  <a
+                    href="https://github.com/MacCracken/FRIDAY/blob/main/CONTRIBUTING.md"
+                    target="_blank"
+                    >Contributing</a
+                  >
+                </li>
+                <li>
+                  <a
+                    href="https://github.com/MacCracken/FRIDAY/blob/main/SECURITY.md"
+                    target="_blank"
+                    >Security</a
+                  >
+                </li>
+                <li>
+                  <a href="https://github.com/MacCracken/FRIDAY/issues" target="_blank">Issues</a>
+                </li>
+                <li>
+                  <a href="https://github.com/MacCracken/FRIDAY/discussions" target="_blank"
+                    >Discussions</a
+                  >
+                </li>
+              </ul>
+            </div>
           </div>
         </div>
-      </footer>
-    </div>
+        <div class="footer-bottom">
+          <p>&copy; 2026 F.R.I.D.A.Y. — MIT License</p>
+          <div class="footer-legal">
+            <a href="https://github.com/MacCracken/FRIDAY/blob/main/LICENSE" target="_blank"
+              >License</a
+            >
+            <a href="https://github.com/MacCracken/FRIDAY/blob/main/SECURITY.md" target="_blank"
+              >Security</a
+            >
+          </div>
+        </div>
+      </div>
+    </footer>
 
     <script src="js/script.js"></script>
   </body>

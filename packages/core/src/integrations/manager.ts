@@ -12,7 +12,12 @@ import type {
   Platform,
 } from '@friday/shared';
 import type { IntegrationStorage } from './storage.js';
-import type { Integration, IntegrationDeps, IntegrationRegistryEntry, PlatformRateLimit } from './types.js';
+import type {
+  Integration,
+  IntegrationDeps,
+  IntegrationRegistryEntry,
+  PlatformRateLimit,
+} from './types.js';
 import { DEFAULT_RATE_LIMITS } from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { z } from 'zod';
@@ -60,7 +65,7 @@ export class IntegrationManager {
   constructor(
     storage: IntegrationStorage,
     deps: IntegrationManagerDeps,
-    reconnectConfig?: AutoReconnectConfig,
+    reconnectConfig?: AutoReconnectConfig
   ) {
     this.storage = storage;
     this.deps = deps;
@@ -97,7 +102,9 @@ export class IntegrationManager {
     if (schema && data.config) {
       const result = schema.safeParse(data.config);
       if (!result.success) {
-        const errors = result.error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join('; ');
+        const errors = result.error.errors
+          .map((e) => `${e.path.join('.')}: ${e.message}`)
+          .join('; ');
         throw new Error(`Invalid config for platform "${data.platform}": ${errors}`);
       }
     }
@@ -109,7 +116,10 @@ export class IntegrationManager {
     return await this.storage.getIntegration(id);
   }
 
-  async listIntegrations(filter?: { platform?: Platform; enabled?: boolean }): Promise<IntegrationConfig[]> {
+  async listIntegrations(filter?: {
+    platform?: Platform;
+    enabled?: boolean;
+  }): Promise<IntegrationConfig[]> {
     return await this.storage.listIntegrations(filter);
   }
 
@@ -179,7 +189,9 @@ export class IntegrationManager {
     try {
       await entry.integration.stop();
     } catch (err) {
-      this.deps.logger.error(`Error stopping integration ${id}: ${err instanceof Error ? err.message : String(err)}`);
+      this.deps.logger.error(
+        `Error stopping integration ${id}: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
 
     this.registry.delete(id);
@@ -195,7 +207,9 @@ export class IntegrationManager {
       try {
         await this.startIntegration(config.id);
       } catch (err) {
-        this.deps.logger.error(`Failed to auto-start integration ${config.id}: ${err instanceof Error ? err.message : String(err)}`);
+        this.deps.logger.error(
+          `Failed to auto-start integration ${config.id}: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
   }
@@ -231,7 +245,7 @@ export class IntegrationManager {
     if (this.healthCheckTimer) return;
     this.healthCheckTimer = setInterval(
       () => void this.runHealthChecks(),
-      this.autoReconnect.healthCheckIntervalMs,
+      this.autoReconnect.healthCheckIntervalMs
     );
     if (this.healthCheckTimer.unref) {
       this.healthCheckTimer.unref();
@@ -266,7 +280,9 @@ export class IntegrationManager {
     }
 
     if (state.retryCount >= this.autoReconnect.maxRetries) {
-      this.deps.logger.error(`Integration ${id} exceeded max reconnect retries (${this.autoReconnect.maxRetries}), setting error status`);
+      this.deps.logger.error(
+        `Integration ${id} exceeded max reconnect retries (${this.autoReconnect.maxRetries}), setting error status`
+      );
       this.registry.delete(id);
       await this.storage.updateStatus(id, 'error', 'Max reconnect retries exceeded');
       this.reconnectState.delete(id);
@@ -295,7 +311,9 @@ export class IntegrationManager {
       this.deps.logger.info(`Integration ${id} reconnected after ${state.retryCount} attempt(s)`);
       this.reconnectState.delete(id);
     } catch (err) {
-      this.deps.logger.warn(`Integration ${id} reconnect attempt ${state.retryCount} failed: ${err instanceof Error ? err.message : String(err)}`);
+      this.deps.logger.warn(
+        `Integration ${id} reconnect attempt ${state.retryCount} failed: ${err instanceof Error ? err.message : String(err)}`
+      );
     }
   }
 
@@ -304,8 +322,7 @@ export class IntegrationManager {
   private getRateLimit(entry: IntegrationRegistryEntry): PlatformRateLimit {
     return (
       entry.integration.platformRateLimit ??
-      DEFAULT_RATE_LIMITS[entry.config.platform] ??
-      { maxPerSecond: 30 }
+      DEFAULT_RATE_LIMITS[entry.config.platform] ?? { maxPerSecond: 30 }
     );
   }
 
@@ -333,12 +350,19 @@ export class IntegrationManager {
 
   // ── Send Message ─────────────────────────────────────────
 
-  async sendMessage(integrationId: string, chatId: string, text: string, metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    integrationId: string,
+    chatId: string,
+    text: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
     const entry = this.registry.get(integrationId);
     if (!entry) throw new Error(`Integration ${integrationId} is not running`);
 
     if (!this.checkRateLimit(integrationId, entry)) {
-      throw new Error(`Rate limit exceeded for integration ${integrationId} (${entry.config.platform})`);
+      throw new Error(
+        `Rate limit exceeded for integration ${integrationId} (${entry.config.platform})`
+      );
     }
 
     const platformMessageId = await entry.integration.sendMessage(chatId, text, metadata);
@@ -365,6 +389,6 @@ export class IntegrationManager {
   async close(): Promise<void> {
     this.stopHealthChecks();
     await this.stopAll();
-    await this.storage.close();
+    this.storage.close();
   }
 }

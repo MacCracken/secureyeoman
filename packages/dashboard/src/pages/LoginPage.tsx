@@ -5,8 +5,8 @@ import { useAuth } from '../hooks/useAuth';
 
 export function LoginPage() {
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(() =>
-    localStorage.getItem('friday_remember_me') === 'true'
+  const [rememberMe, setRememberMe] = useState(
+    () => localStorage.getItem('friday_remember_me') === 'true'
   );
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -55,10 +55,7 @@ export function LoginPage() {
           )}
 
           <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-foreground mb-1.5"
-            >
+            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1.5">
               Password
             </label>
             <input
@@ -66,7 +63,9 @@ export function LoginPage() {
               type="password"
               autoComplete="current-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+              }}
               placeholder="Admin password"
               autoFocus
               disabled={isSubmitting}
@@ -81,7 +80,9 @@ export function LoginPage() {
             <input
               type="checkbox"
               checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
+              onChange={(e) => {
+                setRememberMe(e.target.checked);
+              }}
               disabled={isSubmitting}
               className="rounded border-input"
             />
@@ -104,9 +105,7 @@ export function LoginPage() {
           </button>
         </form>
 
-        <p className="text-xs text-muted-foreground text-center mt-6">
-          Local Network Only
-        </p>
+        <p className="text-xs text-muted-foreground text-center mt-6">Local Network Only</p>
       </div>
     </div>
   );

@@ -133,7 +133,12 @@ describe('Audit Trail Integration', () => {
 
     await chain.record({ event: 'action', level: 'info', message: 'User A', userId: 'user_a' });
     await chain.record({ event: 'action', level: 'info', message: 'User B', userId: 'user_b' });
-    await chain.record({ event: 'action', level: 'info', message: 'User A again', userId: 'user_a' });
+    await chain.record({
+      event: 'action',
+      level: 'info',
+      message: 'User A again',
+      userId: 'user_a',
+    });
 
     const userA = await stack.auditStorage.query({ userId: 'user_a' });
     expect(userA.entries.length).toBe(2);

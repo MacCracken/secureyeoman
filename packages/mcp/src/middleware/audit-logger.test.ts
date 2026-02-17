@@ -35,7 +35,9 @@ describe('audit-logger', () => {
     (client.post as ReturnType<typeof vi.fn>).mockRejectedValue(new Error('Network error'));
     const logger = createAuditLogger(client);
 
-    await expect(logger.log({ event: 'test', level: 'info', message: 'fail' })).resolves.not.toThrow();
+    await expect(
+      logger.log({ event: 'test', level: 'info', message: 'fail' })
+    ).resolves.not.toThrow();
   });
 
   it('wrap should execute function and log success', async () => {
@@ -50,7 +52,7 @@ describe('audit-logger', () => {
         event: 'mcp_tool_call',
         level: 'info',
         metadata: expect.objectContaining({ toolName: 'test_tool', success: true }),
-      }),
+      })
     );
   });
 
@@ -61,7 +63,7 @@ describe('audit-logger', () => {
     await expect(
       logger.wrap('failing_tool', {}, async () => {
         throw new Error('Boom');
-      }),
+      })
     ).rejects.toThrow('Boom');
 
     expect(client.post).toHaveBeenCalledWith(
@@ -70,7 +72,7 @@ describe('audit-logger', () => {
         event: 'mcp_tool_call',
         level: 'error',
         metadata: expect.objectContaining({ toolName: 'failing_tool', success: false }),
-      }),
+      })
     );
   });
 
@@ -87,7 +89,7 @@ describe('audit-logger', () => {
       '/api/v1/audit',
       expect.objectContaining({
         metadata: expect.objectContaining({ duration: expect.any(Number) }),
-      }),
+      })
     );
   });
 });

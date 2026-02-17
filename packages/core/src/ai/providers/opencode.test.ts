@@ -62,10 +62,12 @@ describe('OpenCodeProvider', () => {
     it('should map request and response', async () => {
       mockClient.chat.completions.create.mockResolvedValue({
         id: 'chatcmpl-123',
-        choices: [{
-          message: { role: 'assistant', content: 'Hi there!' },
-          finish_reason: 'stop',
-        }],
+        choices: [
+          {
+            message: { role: 'assistant', content: 'Hi there!' },
+            finish_reason: 'stop',
+          },
+        ],
         usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 },
       });
 
@@ -81,18 +83,22 @@ describe('OpenCodeProvider', () => {
     it('should map tool_calls to unified ToolCall format', async () => {
       mockClient.chat.completions.create.mockResolvedValue({
         id: 'chatcmpl-124',
-        choices: [{
-          message: {
-            role: 'assistant',
-            content: null,
-            tool_calls: [{
-              id: 'call_1',
-              type: 'function',
-              function: { name: 'search', arguments: '{"query":"weather"}' },
-            }],
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: null,
+              tool_calls: [
+                {
+                  id: 'call_1',
+                  type: 'function',
+                  function: { name: 'search', arguments: '{"query":"weather"}' },
+                },
+              ],
+            },
+            finish_reason: 'tool_calls',
           },
-          finish_reason: 'tool_calls',
-        }],
+        ],
         usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
       });
 
@@ -130,13 +136,17 @@ describe('OpenCodeProvider', () => {
   describe('error handling', () => {
     it('should map 429 to RateLimitError', async () => {
       const { APIError } = await import('openai');
-      mockClient.chat.completions.create.mockRejectedValue(new (APIError as any)(429, 'rate limited'));
+      mockClient.chat.completions.create.mockRejectedValue(
+        new (APIError as any)(429, 'rate limited')
+      );
       await expect(provider.chat(simpleRequest)).rejects.toThrow(RateLimitError);
     });
 
     it('should map 401 to AuthenticationError', async () => {
       const { APIError } = await import('openai');
-      mockClient.chat.completions.create.mockRejectedValue(new (APIError as any)(401, 'invalid key'));
+      mockClient.chat.completions.create.mockRejectedValue(
+        new (APIError as any)(401, 'invalid key')
+      );
       await expect(provider.chat(simpleRequest)).rejects.toThrow(AuthenticationError);
     });
   });
@@ -170,7 +180,7 @@ describe('OpenCodeProvider', () => {
         'https://opencode.ai/zen/v1/models',
         expect.objectContaining({
           headers: expect.objectContaining({ Authorization: 'Bearer test-key' }),
-        }),
+        })
       );
     });
 
@@ -182,10 +192,7 @@ describe('OpenCodeProvider', () => {
 
       await OpenCodeProvider.fetchAvailableModels('test-key', 'https://custom.api.com/v1');
 
-      expect(mockFetch).toHaveBeenCalledWith(
-        'https://custom.api.com/v1/models',
-        expect.anything(),
-      );
+      expect(mockFetch).toHaveBeenCalledWith('https://custom.api.com/v1/models', expect.anything());
     });
 
     it('should return empty array on fetch failure', async () => {

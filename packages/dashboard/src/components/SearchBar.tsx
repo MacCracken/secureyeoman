@@ -44,7 +44,9 @@ export function SearchBar() {
       }
     };
     document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
+    return () => {
+      document.removeEventListener('keydown', handler);
+    };
   }, []);
 
   // Click outside to close
@@ -55,7 +57,9 @@ export function SearchBar() {
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+    };
   }, []);
 
   // Debounced search
@@ -80,7 +84,7 @@ export function SearchBar() {
       for (const task of tasksData.tasks) {
         if (
           task.name.toLowerCase().includes(lowerTerm) ||
-          (task.description?.toLowerCase().includes(lowerTerm))
+          task.description?.toLowerCase().includes(lowerTerm)
         ) {
           matched.push({
             id: task.id,
@@ -152,9 +156,12 @@ export function SearchBar() {
 
   const categoryIcon = (cat: string) => {
     switch (cat) {
-      case 'task': return <Clock className="w-4 h-4 text-muted-foreground" />;
-      case 'security': return <Shield className="w-4 h-4 text-muted-foreground" />;
-      default: return <FileText className="w-4 h-4 text-muted-foreground" />;
+      case 'task':
+        return <Clock className="w-4 h-4 text-muted-foreground" />;
+      case 'security':
+        return <Shield className="w-4 h-4 text-muted-foreground" />;
+      default:
+        return <FileText className="w-4 h-4 text-muted-foreground" />;
     }
   };
 
@@ -181,7 +188,9 @@ export function SearchBar() {
             setOpen(true);
             setSelectedIndex(-1);
           }}
-          onFocus={() => setOpen(true)}
+          onFocus={() => {
+            setOpen(true);
+          }}
           onKeyDown={handleKeyDown}
           placeholder="Search... (Ctrl+K)"
           className="bg-transparent outline-none w-32 sm:w-48 placeholder:text-muted-foreground"
@@ -192,7 +201,10 @@ export function SearchBar() {
         />
         {query && (
           <button
-            onClick={() => { setQuery(''); setResults([]); }}
+            onClick={() => {
+              setQuery('');
+              setResults([]);
+            }}
             className="text-muted-foreground hover:text-foreground"
             aria-label="Clear search"
           >
@@ -202,7 +214,7 @@ export function SearchBar() {
       </div>
 
       {/* Results dropdown */}
-      {open && (query.trim()) && (
+      {open && query.trim() && (
         <div
           className="absolute top-full left-0 right-0 mt-1 bg-card border rounded-md shadow-lg z-50 max-h-80 overflow-y-auto"
           role="listbox"
@@ -215,9 +227,7 @@ export function SearchBar() {
           )}
 
           {!loading && results.length === 0 && query.trim() && (
-            <div className="px-4 py-3 text-sm text-muted-foreground">
-              No results found
-            </div>
+            <div className="px-4 py-3 text-sm text-muted-foreground">No results found</div>
           )}
 
           {Object.entries(groupedResults).map(([category, items]) => (
@@ -230,7 +240,9 @@ export function SearchBar() {
                 return (
                   <button
                     key={result.id}
-                    onClick={() => handleSelect(result)}
+                    onClick={() => {
+                      handleSelect(result);
+                    }}
                     className={`w-full text-left px-3 py-2 flex items-center gap-3 hover:bg-muted/50 transition-colors ${
                       flatIndex === selectedIndex ? 'bg-muted/50' : ''
                     }`}

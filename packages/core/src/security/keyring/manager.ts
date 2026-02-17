@@ -77,7 +77,7 @@ export class KeyringManager {
       if (!found) {
         throw new Error(
           'Keyring backend requested but no system keyring is available. ' +
-          'Install secret-tool (Linux) or ensure security CLI (macOS) is accessible.',
+            'Install secret-tool (Linux) or ensure security CLI (macOS) is accessible.'
         );
       }
       return found;

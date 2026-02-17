@@ -48,7 +48,7 @@ export class SlackIntegration implements Integration {
       if (msg.subtype) return; // skip edited, deleted, etc.
       if (!msg.text) return;
 
-      const files = (msg.files ?? []) as Array<Record<string, any>>;
+      const files = (msg.files ?? []) as Record<string, any>[];
       const unified: UnifiedMessage = {
         id: `sl_${msg.ts}`,
         integrationId: config.id,
@@ -153,7 +153,11 @@ export class SlackIntegration implements Integration {
     this.logger?.info('Slack bot disconnected');
   }
 
-  async sendMessage(chatId: string, text: string, metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
     if (!this.app) throw new Error('Integration not initialized');
 
     const threadTs = metadata?.threadTs as string | undefined;

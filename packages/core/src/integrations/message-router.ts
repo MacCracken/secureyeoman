@@ -33,7 +33,9 @@ export class MessageRouter {
   async handleInbound(message: UnifiedMessage): Promise<void> {
     const { logger, taskExecutor, integrationManager, integrationStorage } = this.deps;
 
-    logger.info(`Inbound message from ${message.platform}:${message.chatId} by ${message.senderName}`);
+    logger.info(
+      `Inbound message from ${message.platform}:${message.chatId} by ${message.senderName}`
+    );
 
     // Store the inbound message
     await integrationStorage.storeMessage({
@@ -80,7 +82,7 @@ export class MessageRouter {
             attachments: message.attachments,
           },
         },
-        context,
+        context
       );
 
       // Wait for the task to complete (the executor handles this)
@@ -94,7 +96,7 @@ export class MessageRouter {
           message.integrationId,
           message.chatId,
           `Task ${task.id} completed successfully.`,
-          { taskId: task.id, replyToMessageId: message.platformMessageId },
+          { taskId: task.id, replyToMessageId: message.platformMessageId }
         );
       }
     } catch (err) {
@@ -107,10 +109,12 @@ export class MessageRouter {
           message.integrationId,
           message.chatId,
           `Sorry, I encountered an error processing your message. Please try again.`,
-          { error: errorMsg },
+          { error: errorMsg }
         );
       } catch (sendErr) {
-        logger.error(`Failed to send error response: ${sendErr instanceof Error ? sendErr.message : String(sendErr)}`);
+        logger.error(
+          `Failed to send error response: ${sendErr instanceof Error ? sendErr.message : String(sendErr)}`
+        );
       }
     }
   }

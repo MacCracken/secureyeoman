@@ -1,5 +1,10 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { TaskExecutor, createTaskExecutor, type TaskHandler, type ExecutionContext } from './executor.js';
+import {
+  TaskExecutor,
+  createTaskExecutor,
+  type TaskHandler,
+  type ExecutionContext,
+} from './executor.js';
 import { InputValidator } from '../security/input-validator.js';
 import { RateLimiter } from '../security/rate-limiter.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
@@ -163,7 +168,7 @@ describe('TaskExecutor', () => {
     it('should timeout long-running tasks', async () => {
       const slowHandler = createHandler({
         execute: async () => {
-          await new Promise(resolve => setTimeout(resolve, 5000));
+          await new Promise((resolve) => setTimeout(resolve, 5000));
           return { result: 'too late' };
         },
       });

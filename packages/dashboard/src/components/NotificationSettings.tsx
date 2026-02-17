@@ -65,7 +65,9 @@ export function NotificationSettings() {
       <div className="flex items-center justify-between">
         <span className="text-sm">Enable notifications</span>
         <button
-          onClick={() => setPrefs((p) => ({ ...p, enabled: !p.enabled }))}
+          onClick={() => {
+            setPrefs((p) => ({ ...p, enabled: !p.enabled }));
+          }}
           className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${
             prefs.enabled ? 'bg-primary' : 'bg-muted'
           }`}
@@ -88,7 +90,9 @@ export function NotificationSettings() {
           Notification sound
         </span>
         <button
-          onClick={() => setPrefs((p) => ({ ...p, sound: !p.sound }))}
+          onClick={() => {
+            setPrefs((p) => ({ ...p, sound: !p.sound }));
+          }}
           className={`w-9 h-5 rounded-full transition-colors relative shrink-0 ${
             prefs.sound ? 'bg-primary' : 'bg-muted'
           }`}
@@ -113,7 +117,9 @@ export function NotificationSettings() {
               <input
                 type="checkbox"
                 checked={prefs.eventTypes.includes(opt.value)}
-                onChange={() => toggleEventType(opt.value)}
+                onChange={() => {
+                  toggleEventType(opt.value);
+                }}
                 className="rounded border-border"
               />
               <span className="text-sm">{opt.label}</span>

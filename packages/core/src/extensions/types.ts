@@ -3,15 +3,38 @@
  */
 
 export type HookPoint =
-  | 'system:startup' | 'system:shutdown' | 'system:error'
-  | 'task:before-create' | 'task:after-create' | 'task:before-execute' | 'task:after-execute' | 'task:on-error'
-  | 'memory:before-store' | 'memory:after-store' | 'memory:before-recall' | 'memory:after-recall'
-  | 'message:before-send' | 'message:after-send' | 'message:before-receive' | 'message:after-receive'
-  | 'ai:before-request' | 'ai:after-response' | 'ai:on-error'
-  | 'security:auth-success' | 'security:auth-failure' | 'security:rate-limited'
-  | 'agent:before-delegate' | 'agent:after-delegate'
-  | 'proactive:trigger-fired' | 'proactive:action-executed' | 'proactive:suggestion-approved' | 'proactive:suggestion-dismissed'
-  | 'multimodal:image-analyzed' | 'multimodal:audio-transcribed' | 'multimodal:speech-generated' | 'multimodal:image-generated';
+  | 'system:startup'
+  | 'system:shutdown'
+  | 'system:error'
+  | 'task:before-create'
+  | 'task:after-create'
+  | 'task:before-execute'
+  | 'task:after-execute'
+  | 'task:on-error'
+  | 'memory:before-store'
+  | 'memory:after-store'
+  | 'memory:before-recall'
+  | 'memory:after-recall'
+  | 'message:before-send'
+  | 'message:after-send'
+  | 'message:before-receive'
+  | 'message:after-receive'
+  | 'ai:before-request'
+  | 'ai:after-response'
+  | 'ai:on-error'
+  | 'security:auth-success'
+  | 'security:auth-failure'
+  | 'security:rate-limited'
+  | 'agent:before-delegate'
+  | 'agent:after-delegate'
+  | 'proactive:trigger-fired'
+  | 'proactive:action-executed'
+  | 'proactive:suggestion-approved'
+  | 'proactive:suggestion-dismissed'
+  | 'multimodal:image-analyzed'
+  | 'multimodal:audio-transcribed'
+  | 'multimodal:speech-generated'
+  | 'multimodal:image-generated';
 
 export type HookSemantics = 'observe' | 'transform' | 'veto';
 

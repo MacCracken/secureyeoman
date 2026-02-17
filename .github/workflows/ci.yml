@@ -15,9 +15,6 @@ jobs:
   lint-and-format:
     name: Lint & Format
     runs-on: ubuntu-latest
-    # Pre-existing lint errors across the codebase prevent clean lint.
-    # Remove continue-on-error once those are resolved.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 

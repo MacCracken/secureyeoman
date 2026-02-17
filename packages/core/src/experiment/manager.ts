@@ -49,7 +49,7 @@ export class ExperimentManager {
 
   async stop(id: string): Promise<Experiment | null> {
     const exp = await this.storage.get(id);
-    if (!exp || exp.status !== 'running') return exp;
+    if (exp?.status !== 'running') return exp;
     const updated = await this.storage.update(id, { status: 'completed', completedAt: Date.now() });
     this.logger.info('Experiment stopped', { id });
     return updated;
@@ -57,7 +57,7 @@ export class ExperimentManager {
 
   async selectVariant(experimentId: string): Promise<string | null> {
     const exp = await this.storage.get(experimentId);
-    if (!exp || exp.status !== 'running' || exp.variants.length === 0) return null;
+    if (exp?.status !== 'running' || exp.variants.length === 0) return null;
     const rand = Math.random() * 100;
     let cumulative = 0;
     for (const variant of exp.variants) {

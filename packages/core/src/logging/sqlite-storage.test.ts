@@ -167,11 +167,27 @@ describe('SQLiteAuditStorage', () => {
   describe('queryEntries', () => {
     beforeEach(async () => {
       const now = 1000000;
-      await storage.append(makeEntry({ event: 'login', level: 'info', timestamp: now, userId: 'alice', taskId: crypto.randomUUID() }));
-      await storage.append(makeEntry({ event: 'error', level: 'error', timestamp: now + 100, userId: 'bob' }));
-      await storage.append(makeEntry({ event: 'login', level: 'info', timestamp: now + 200, userId: 'alice' }));
-      await storage.append(makeEntry({ event: 'logout', level: 'info', timestamp: now + 300, userId: 'bob' }));
-      await storage.append(makeEntry({ event: 'error', level: 'security', timestamp: now + 400, userId: 'alice' }));
+      await storage.append(
+        makeEntry({
+          event: 'login',
+          level: 'info',
+          timestamp: now,
+          userId: 'alice',
+          taskId: crypto.randomUUID(),
+        })
+      );
+      await storage.append(
+        makeEntry({ event: 'error', level: 'error', timestamp: now + 100, userId: 'bob' })
+      );
+      await storage.append(
+        makeEntry({ event: 'login', level: 'info', timestamp: now + 200, userId: 'alice' })
+      );
+      await storage.append(
+        makeEntry({ event: 'logout', level: 'info', timestamp: now + 300, userId: 'bob' })
+      );
+      await storage.append(
+        makeEntry({ event: 'error', level: 'security', timestamp: now + 400, userId: 'alice' })
+      );
     });
 
     it('should return all entries with default options', async () => {

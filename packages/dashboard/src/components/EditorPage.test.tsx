@@ -90,7 +90,7 @@ function renderComponent() {
       <QueryClientProvider client={createQueryClient()}>
         <EditorPage />
       </QueryClientProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -146,10 +146,15 @@ describe('EditorPage', () => {
       allowA2A: false,
       allowExtensions: false,
       allowExecution: true,
-      allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
-    mockFetchExecutionHistory.mockResolvedValue({ ...MOCK_HISTORY, total: MOCK_HISTORY.executions.length });
+    mockFetchExecutionHistory.mockResolvedValue({
+      ...MOCK_HISTORY,
+      total: MOCK_HISTORY.executions.length,
+    });
   });
 
   // ── Rendering ──────────────────────────────────────────────
@@ -195,7 +200,9 @@ describe('EditorPage', () => {
       allowA2A: false,
       allowExtensions: false,
       allowExecution: false,
-      allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     await screen.findByText('Terminal');

@@ -33,12 +33,14 @@ Please analyze the code for:
 5. **Recommendations** — specific improvements with code examples`;
 
       return {
-        messages: [{
-          role: 'user' as const,
-          content: { type: 'text' as const, text: template },
-        }],
+        messages: [
+          {
+            role: 'user' as const,
+            content: { type: 'text' as const, text: template },
+          },
+        ],
       };
-    },
+    }
   );
 
   server.prompt(
@@ -74,11 +76,13 @@ For each finding:
 - **Recommendation**: How to fix it`;
 
       return {
-        messages: [{
-          role: 'user' as const,
-          content: { type: 'text' as const, text: template },
-        }],
+        messages: [
+          {
+            role: 'user' as const,
+            content: { type: 'text' as const, text: template },
+          },
+        ],
       };
-    },
+    }
   );
 }

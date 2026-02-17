@@ -65,11 +65,7 @@ export class SecretRotationManager {
       }
 
       // Check if rotation is due for auto-rotate secrets
-      if (
-        m.autoRotate &&
-        m.rotationIntervalDays !== null &&
-        status !== 'expired'
-      ) {
+      if (m.autoRotate && m.rotationIntervalDays !== null && status !== 'expired') {
         const lastRotation = m.rotatedAt ?? m.createdAt;
         const daysSinceRotation = (now - lastRotation) / MS_PER_DAY;
         if (daysSinceRotation >= m.rotationIntervalDays) {
@@ -96,10 +92,7 @@ export class SecretRotationManager {
     for (const s of statuses) {
       if (s.status === 'rotation_due' && s.autoRotate) {
         await this.rotateSecret(s.name);
-      } else if (
-        s.status === 'expiring_soon' &&
-        s.daysUntilExpiry !== null
-      ) {
+      } else if (s.status === 'expiring_soon' && s.daysUntilExpiry !== null) {
         await this.callbacks.onWarning?.(s.name, s.daysUntilExpiry);
       }
     }
@@ -123,9 +116,10 @@ export class SecretRotationManager {
 
     // Store old value for grace period
     if (currentValue) {
-      const gracePeriodMs = meta.category === 'jwt'
-        ? 3600_000 // 1 hour grace for JWT (token expiry)
-        : 300_000; // 5 minutes for other secrets
+      const gracePeriodMs =
+        meta.category === 'jwt'
+          ? 3600_000 // 1 hour grace for JWT (token expiry)
+          : 300_000; // 5 minutes for other secrets
       await this.storage.storePreviousValue(name, currentValue, gracePeriodMs);
     }
 

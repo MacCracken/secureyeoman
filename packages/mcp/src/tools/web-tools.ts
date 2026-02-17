@@ -21,22 +21,18 @@ const FETCH_TIMEOUT_MS = 30_000;
 // ─── SSRF Protection ────────────────────────────────────────
 
 const BLOCKED_IP_RANGES = [
-  /^127\./,                             // loopback
-  /^10\./,                              // 10.0.0.0/8
-  /^172\.(1[6-9]|2\d|3[01])\./,        // 172.16.0.0/12
-  /^192\.168\./,                        // 192.168.0.0/16
-  /^169\.254\./,                        // link-local / cloud metadata
-  /^0\./,                               // 0.0.0.0/8
-  /^::1$/,                              // IPv6 loopback
-  /^fc00:/i,                            // IPv6 ULA
-  /^fe80:/i,                            // IPv6 link-local
+  /^127\./, // loopback
+  /^10\./, // 10.0.0.0/8
+  /^172\.(1[6-9]|2\d|3[01])\./, // 172.16.0.0/12
+  /^192\.168\./, // 192.168.0.0/16
+  /^169\.254\./, // link-local / cloud metadata
+  /^0\./, // 0.0.0.0/8
+  /^::1$/, // IPv6 loopback
+  /^fc00:/i, // IPv6 ULA
+  /^fe80:/i, // IPv6 link-local
 ];
 
-const BLOCKED_HOSTNAMES = [
-  'localhost',
-  'metadata.google.internal',
-  'metadata.internal',
-];
+const BLOCKED_HOSTNAMES = ['localhost', 'metadata.google.internal', 'metadata.internal'];
 
 class UrlValidationError extends Error {
   constructor(url: string, reason: string) {
@@ -55,7 +51,10 @@ function validateUrl(urlStr: string, config: McpServiceConfig): URL {
 
   // Protocol check
   if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
-    throw new UrlValidationError(urlStr, `Protocol "${parsed.protocol}" not allowed, only http/https`);
+    throw new UrlValidationError(
+      urlStr,
+      `Protocol "${parsed.protocol}" not allowed, only http/https`
+    );
   }
 
   // Hostname checks
@@ -78,7 +77,10 @@ function validateUrl(urlStr: string, config: McpServiceConfig): URL {
       return hostname === allowedLower || hostname.endsWith('.' + allowedLower);
     });
     if (!domainAllowed) {
-      throw new UrlValidationError(urlStr, `Domain not in allowlist: ${config.allowedUrls.join(', ')}`);
+      throw new UrlValidationError(
+        urlStr,
+        `Domain not in allowlist: ${config.allowedUrls.join(', ')}`
+      );
     }
   }
 
@@ -115,11 +117,13 @@ class WebRateLimiter {
 async function safeFetch(
   urlStr: string,
   config: McpServiceConfig,
-  webLimiter: WebRateLimiter,
+  webLimiter: WebRateLimiter
 ): Promise<{ body: string; finalUrl: string; contentType: string }> {
   const rate = webLimiter.check();
   if (!rate.allowed) {
-    throw new Error(`Web rate limit exceeded (${config.webRateLimitPerMinute}/min). Retry after ${rate.retryAfterMs}ms.`);
+    throw new Error(
+      `Web rate limit exceeded (${config.webRateLimitPerMinute}/min). Retry after ${rate.retryAfterMs}ms.`
+    );
   }
 
   let currentUrl = urlStr;
@@ -133,7 +137,7 @@ async function safeFetch(
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: {
         'User-Agent': 'FRIDAY-WebMCP/1.0 (bot)',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
     });
 
@@ -200,12 +204,24 @@ function extractWithSelector(html: string, selector: string): string {
 
   if (selector.startsWith('#')) {
     const id = selector.slice(1);
-    patterns.push(new RegExp(`<[^>]+id=["']${escapeRegExp(id)}["'][^>]*>[\\s\\S]*?(?=<\\/[a-z]+>\\s*<[a-z])`, 'i'));
+    patterns.push(
+      new RegExp(
+        `<[^>]+id=["']${escapeRegExp(id)}["'][^>]*>[\\s\\S]*?(?=<\\/[a-z]+>\\s*<[a-z])`,
+        'i'
+      )
+    );
   } else if (selector.startsWith('.')) {
     const cls = selector.slice(1);
-    patterns.push(new RegExp(`<[^>]+class=["'][^"']*\\b${escapeRegExp(cls)}\\b[^"']*["'][^>]*>[\\s\\S]*?(?=<\\/[a-z]+>\\s*<[a-z])`, 'i'));
+    patterns.push(
+      new RegExp(
+        `<[^>]+class=["'][^"']*\\b${escapeRegExp(cls)}\\b[^"']*["'][^>]*>[\\s\\S]*?(?=<\\/[a-z]+>\\s*<[a-z])`,
+        'i'
+      )
+    );
   } else {
-    patterns.push(new RegExp(`<${escapeRegExp(selector)}[^>]*>[\\s\\S]*?<\\/${escapeRegExp(selector)}>`, 'gi'));
+    patterns.push(
+      new RegExp(`<${escapeRegExp(selector)}[^>]*>[\\s\\S]*?<\\/${escapeRegExp(selector)}>`, 'gi')
+    );
   }
 
   for (const pattern of patterns) {
@@ -231,7 +247,7 @@ interface SearchResult {
 async function performSearch(
   query: string,
   config: McpServiceConfig,
-  maxResults: number,
+  maxResults: number
 ): Promise<SearchResult[]> {
   switch (config.webSearchProvider) {
     case 'serpapi':
@@ -263,7 +279,8 @@ async function searchDuckDuckGo(query: string, maxResults: number): Promise<Sear
   const results: SearchResult[] = [];
 
   // Parse DuckDuckGo HTML results
-  const resultPattern = /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
+  const resultPattern =
+    /<a[^>]+class="result__a"[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>[\s\S]*?<a[^>]+class="result__snippet"[^>]*>([\s\S]*?)<\/a>/gi;
   let match: RegExpExecArray | null;
   while ((match = resultPattern.exec(html)) !== null && results.length < maxResults) {
     results.push({
@@ -279,7 +296,7 @@ async function searchDuckDuckGo(query: string, maxResults: number): Promise<Sear
 async function searchSerpApi(
   query: string,
   apiKey: string,
-  maxResults: number,
+  maxResults: number
 ): Promise<SearchResult[]> {
   if (!apiKey) throw new Error('SerpAPI requires MCP_WEB_SEARCH_API_KEY');
 
@@ -299,7 +316,7 @@ async function searchSerpApi(
   }
 
   const data = (await response.json()) as {
-    organic_results?: Array<{ title: string; link: string; snippet: string }>;
+    organic_results?: { title: string; link: string; snippet: string }[];
   };
 
   return (data.organic_results ?? []).slice(0, maxResults).map((r) => ({
@@ -312,7 +329,7 @@ async function searchSerpApi(
 async function searchTavily(
   query: string,
   apiKey: string,
-  maxResults: number,
+  maxResults: number
 ): Promise<SearchResult[]> {
   if (!apiKey) throw new Error('Tavily requires MCP_WEB_SEARCH_API_KEY');
 
@@ -332,7 +349,7 @@ async function searchTavily(
   }
 
   const data = (await response.json()) as {
-    results?: Array<{ title: string; url: string; content: string }>;
+    results?: { title: string; url: string; content: string }[];
   };
 
   return (data.results ?? []).slice(0, maxResults).map((r) => ({
@@ -347,7 +364,7 @@ async function searchTavily(
 export function registerWebTools(
   server: McpServer,
   config: McpServiceConfig,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   const webLimiter = new WebRateLimiter(config.webRateLimitPerMinute);
 
@@ -363,7 +380,7 @@ export function registerWebTools(
       const markdown = htmlToMarkdown(body);
       const output = truncateOutput(`# Scraped: ${finalUrl}\n\n${markdown}`);
       return { content: [{ type: 'text' as const, text: output }] };
-    }),
+    })
   );
 
   // 2. web_scrape_html — raw HTML extraction with optional CSS selector
@@ -378,8 +395,10 @@ export function registerWebTools(
       const { body, finalUrl } = await safeFetch(args.url, config, webLimiter);
       const html = args.selector ? extractWithSelector(body, args.selector) : body;
       const output = truncateOutput(html);
-      return { content: [{ type: 'text' as const, text: `<!-- Source: ${finalUrl} -->\n${output}` }] };
-    }),
+      return {
+        content: [{ type: 'text' as const, text: `<!-- Source: ${finalUrl} -->\n${output}` }],
+      };
+    })
   );
 
   // 3. web_scrape_batch — parallel multi-URL scraping
@@ -395,18 +414,20 @@ export function registerWebTools(
           const { body, finalUrl } = await safeFetch(url, config, webLimiter);
           const markdown = htmlToMarkdown(body);
           return { url: finalUrl, markdown };
-        }),
+        })
       );
 
-      const output = results.map((r, i) => {
-        if (r.status === 'fulfilled') {
-          return `## ${r.value.url}\n\n${r.value.markdown}`;
-        }
-        return `## ${args.urls[i]}\n\n**Error:** ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`;
-      }).join('\n\n---\n\n');
+      const output = results
+        .map((r, i) => {
+          if (r.status === 'fulfilled') {
+            return `## ${r.value.url}\n\n${r.value.markdown}`;
+          }
+          return `## ${args.urls[i]}\n\n**Error:** ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`;
+        })
+        .join('\n\n---\n\n');
 
       return { content: [{ type: 'text' as const, text: truncateOutput(output) }] };
-    }),
+    })
   );
 
   // 4. web_extract_structured — structured JSON extraction from pages
@@ -415,11 +436,15 @@ export function registerWebTools(
     'Extract structured data from a webpage as JSON based on a schema description (requires MCP_EXPOSE_WEB=true)',
     {
       url: z.string().describe('URL to extract data from'),
-      fields: z.array(z.object({
-        name: z.string().describe('Field name'),
-        selector: z.string().optional().describe('CSS selector hint'),
-        description: z.string().describe('What this field should contain'),
-      })).describe('Fields to extract'),
+      fields: z
+        .array(
+          z.object({
+            name: z.string().describe('Field name'),
+            selector: z.string().optional().describe('CSS selector hint'),
+            description: z.string().describe('What this field should contain'),
+          })
+        )
+        .describe('Fields to extract'),
     },
     wrapToolHandler('web_extract_structured', middleware, async (args) => {
       const { body, finalUrl } = await safeFetch(args.url, config, webLimiter);
@@ -440,8 +465,12 @@ export function registerWebTools(
       // Include a text summary for AI processing
       extracted._pageText = text.slice(0, 10000);
 
-      return { content: [{ type: 'text' as const, text: truncateOutput(JSON.stringify(extracted, null, 2)) }] };
-    }),
+      return {
+        content: [
+          { type: 'text' as const, text: truncateOutput(JSON.stringify(extracted, null, 2)) },
+        ],
+      };
+    })
   );
 
   // 5. web_search — web search with configurable backend
@@ -460,12 +489,22 @@ export function registerWebTools(
 
       const results = await performSearch(args.query, config, args.maxResults);
 
-      const output = results.length === 0
-        ? 'No results found.'
-        : results.map((r, i) => `${i + 1}. **${r.title}**\n   ${r.url}\n   ${r.snippet}`).join('\n\n');
+      const output =
+        results.length === 0
+          ? 'No results found.'
+          : results
+              .map((r, i) => `${i + 1}. **${r.title}**\n   ${r.url}\n   ${r.snippet}`)
+              .join('\n\n');
 
-      return { content: [{ type: 'text' as const, text: `## Search: "${args.query}"\n\nProvider: ${config.webSearchProvider}\n\n${output}` }] };
-    }),
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `## Search: "${args.query}"\n\nProvider: ${config.webSearchProvider}\n\n${output}`,
+          },
+        ],
+      };
+    })
   );
 
   // 6. web_search_batch — batch search for research tasks
@@ -473,8 +512,18 @@ export function registerWebTools(
     'web_search_batch',
     'Run multiple search queries in parallel for research (max 5 queries, requires MCP_EXPOSE_WEB=true)',
     {
-      queries: z.array(z.string().min(1).max(500)).min(1).max(MAX_BATCH_QUERIES).describe('Search queries (max 5)'),
-      maxResultsPerQuery: z.number().int().min(1).max(10).default(5).describe('Max results per query'),
+      queries: z
+        .array(z.string().min(1).max(500))
+        .min(1)
+        .max(MAX_BATCH_QUERIES)
+        .describe('Search queries (max 5)'),
+      maxResultsPerQuery: z
+        .number()
+        .int()
+        .min(1)
+        .max(10)
+        .default(5)
+        .describe('Max results per query'),
     },
     wrapToolHandler('web_search_batch', middleware, async (args) => {
       const results = await Promise.allSettled(
@@ -485,22 +534,27 @@ export function registerWebTools(
           }
           const searchResults = await performSearch(query, config, args.maxResultsPerQuery);
           return { query, results: searchResults };
-        }),
+        })
       );
 
-      const output = results.map((r, i) => {
-        if (r.status === 'fulfilled') {
-          const { query, results: searchResults } = r.value;
-          const items = searchResults.length === 0
-            ? '  No results found.'
-            : searchResults.map((sr, j) => `  ${j + 1}. **${sr.title}** — ${sr.url}\n     ${sr.snippet}`).join('\n');
-          return `## "${query}"\n\n${items}`;
-        }
-        return `## "${args.queries[i]}"\n\n  **Error:** ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`;
-      }).join('\n\n---\n\n');
+      const output = results
+        .map((r, i) => {
+          if (r.status === 'fulfilled') {
+            const { query, results: searchResults } = r.value;
+            const items =
+              searchResults.length === 0
+                ? '  No results found.'
+                : searchResults
+                    .map((sr, j) => `  ${j + 1}. **${sr.title}** — ${sr.url}\n     ${sr.snippet}`)
+                    .join('\n');
+            return `## "${query}"\n\n${items}`;
+          }
+          return `## "${args.queries[i]}"\n\n  **Error:** ${r.reason instanceof Error ? r.reason.message : String(r.reason)}`;
+        })
+        .join('\n\n---\n\n');
 
       return { content: [{ type: 'text' as const, text: truncateOutput(output) }] };
-    }),
+    })
   );
 }
 

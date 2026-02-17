@@ -113,7 +113,9 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
         {Object.entries(data.available).map(([provider, models]) => (
           <div key={provider}>
             <button
-              onClick={() => toggleProvider(provider)}
+              onClick={() => {
+                toggleProvider(provider);
+              }}
               className="w-full flex items-center gap-2 px-3 py-2 text-sm font-medium hover:bg-muted/50 border-b"
             >
               {expandedProviders.has(provider) ? (
@@ -122,16 +124,13 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
                 <ChevronRight className="w-3 h-3" />
               )}
               {PROVIDER_LABELS[provider] ?? provider}
-              <span className="text-xs text-muted-foreground ml-auto">
-                {(models as ModelInfo[]).length} models
-              </span>
+              <span className="text-xs text-muted-foreground ml-auto">{models.length} models</span>
             </button>
 
             {expandedProviders.has(provider) && (
               <div className="divide-y">
-                {(models as ModelInfo[]).map((m) => {
-                  const isActive =
-                    m.provider === currentProvider && m.model === currentModel;
+                {models.map((m) => {
+                  const isActive = m.provider === currentProvider && m.model === currentModel;
                   const isSwitching =
                     switchMutation.isPending &&
                     switchMutation.variables?.provider === m.provider &&
@@ -140,7 +139,9 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
                   return (
                     <button
                       key={m.model}
-                      onClick={() => handleSwitch(m.provider, m.model)}
+                      onClick={() => {
+                        handleSwitch(m.provider, m.model);
+                      }}
                       disabled={isActive || switchMutation.isPending}
                       className={`w-full text-left px-4 py-2 text-sm hover:bg-muted/50 disabled:opacity-60 ${
                         isActive ? 'bg-primary/15 border-l-2 border-primary' : ''
@@ -166,7 +167,7 @@ export function ModelWidget({ onClose, onModelSwitch }: ModelWidgetProps) {
       {/* Error feedback */}
       {switchMutation.isError && (
         <div className="px-3 py-2 bg-destructive/10 border-t text-xs text-destructive">
-          Failed to switch model: {(switchMutation.error as Error).message}
+          Failed to switch model: {switchMutation.error.message}
         </div>
       )}
     </div>

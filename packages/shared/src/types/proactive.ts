@@ -154,12 +154,7 @@ export const ProactiveConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
     maxQueueSize: z.number().int().positive().max(500).default(50),
-    autoDismissAfterMs: z
-      .number()
-      .int()
-      .positive()
-      .max(604800000)
-      .default(86400000),
+    autoDismissAfterMs: z.number().int().positive().max(604800000).default(86400000),
     defaultApprovalMode: z.enum(['auto', 'suggest', 'manual']).default('suggest'),
     limits: z
       .object({

@@ -1,6 +1,6 @@
 /**
  * Security Types for SecureYeoman
- * 
+ *
  * Security considerations:
  * - All security events are immutable once created
  * - Severity levels are strictly typed
@@ -54,20 +54,20 @@ export const SecurityEventSchema = z.object({
   type: SecurityEventTypeSchema,
   severity: SeveritySchema,
   message: z.string().max(1024),
-  
+
   // Context (all optional, sanitized)
   userId: z.string().optional(),
   ipAddress: z.string().ip().optional(),
   userAgent: z.string().max(512).optional(),
   resource: z.string().max(256).optional(),
   action: z.string().max(128).optional(),
-  
+
   // Additional details (must be serializable, no functions)
   details: z.record(z.string(), z.unknown()).optional(),
-  
+
   // Timestamps
   timestamp: z.number().int().positive(),
-  
+
   // Acknowledgment
   acknowledged: z.boolean().default(false),
   acknowledgedBy: z.string().optional(),
@@ -92,11 +92,15 @@ export const RoleSchema = z.enum(['admin', 'operator', 'auditor', 'viewer']);
 export const PermissionSchema = z.object({
   resource: z.string(),
   actions: z.array(z.string()),
-  conditions: z.array(z.object({
-    field: z.string(),
-    operator: z.enum(['eq', 'neq', 'in', 'nin', 'gt', 'gte', 'lt', 'lte']),
-    value: z.unknown(),
-  })).optional(),
+  conditions: z
+    .array(
+      z.object({
+        field: z.string(),
+        operator: z.enum(['eq', 'neq', 'in', 'nin', 'gt', 'gte', 'lt', 'lte']),
+        value: z.unknown(),
+      })
+    )
+    .optional(),
 });
 
 export type Permission = z.infer<typeof PermissionSchema>;
@@ -117,22 +121,22 @@ export const AuditEntrySchema = z.object({
   // Identification
   id: z.string().uuid(),
   correlationId: z.string().uuid().optional(),
-  
+
   // Event data
   event: z.string(),
   level: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'security']),
   message: z.string(),
-  
+
   // Context
   userId: z.string().optional(),
   taskId: z.string().uuid().optional(),
-  
+
   // Sanitized metadata (no secrets)
   metadata: z.record(z.string(), z.unknown()).optional(),
-  
+
   // Timestamps
   timestamp: z.number().int().positive(),
-  
+
   // Chain integrity (critical for audit trail)
   integrity: z.object({
     version: z.string(),

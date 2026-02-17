@@ -24,11 +24,7 @@ export class RedisRateLimiter {
   private totalHits = 0;
   private totalChecks = 0;
 
-  constructor(
-    config: SecurityConfig['rateLimiting'],
-    redisUrl: string,
-    redisPrefix = 'friday:rl',
-  ) {
+  constructor(config: SecurityConfig['rateLimiting'], redisUrl: string, redisPrefix = 'friday:rl') {
     this.redis = new RedisClient(redisUrl, {
       maxRetriesPerRequest: 3,
       lazyConnect: true,
@@ -76,7 +72,7 @@ export class RedisRateLimiter {
   async check(
     ruleName: string,
     key: string,
-    context?: { userId?: string; ipAddress?: string },
+    context?: { userId?: string; ipAddress?: string }
   ): Promise<RateLimitResult> {
     const rule = this.rules.get(ruleName) ?? this.defaultRule;
     const redisKey = `${this.prefix}:${rule.name}:${rule.keyType}:${key}`;
@@ -147,7 +143,7 @@ export class RedisRateLimiter {
    */
   async checkMultiple(
     rules: { name: string; key: string }[],
-    context?: { userId?: string; ipAddress?: string },
+    context?: { userId?: string; ipAddress?: string }
   ): Promise<RateLimitResult> {
     let mostRestrictive: RateLimitResult = {
       allowed: true,
@@ -180,7 +176,7 @@ export class RedisRateLimiter {
    */
   async getUsage(
     ruleName: string,
-    key: string,
+    key: string
   ): Promise<{ count: number; limit: number; windowMs: number } | null> {
     const rule = this.rules.get(ruleName) ?? this.defaultRule;
     const redisKey = `${this.prefix}:${rule.name}:${rule.keyType}:${key}`;

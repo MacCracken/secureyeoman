@@ -46,7 +46,14 @@ describe('createRouter', () => {
     router.register(makeCommand('start'));
     router.register(makeCommand('health'));
 
-    const result = router.resolve(['node', 'cli', 'health', '--json', '--url', 'http://localhost:3001']);
+    const result = router.resolve([
+      'node',
+      'cli',
+      'health',
+      '--json',
+      '--url',
+      'http://localhost:3001',
+    ]);
     expect(result.command.name).toBe('health');
     expect(result.rest).toEqual(['--json', '--url', 'http://localhost:3001']);
   });
@@ -90,7 +97,12 @@ describe('createRouter', () => {
     router.register(makeCommand('config', ['cfg']));
 
     let output = '';
-    const stream = { write: (s: string) => { output += s; return true; } } as NodeJS.WritableStream;
+    const stream = {
+      write: (s: string) => {
+        output += s;
+        return true;
+      },
+    } as NodeJS.WritableStream;
     router.printHelp(stream);
 
     expect(output).toContain('secureyeoman');

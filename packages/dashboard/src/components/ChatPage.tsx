@@ -87,7 +87,9 @@ export function ChatPage() {
 
   const [expandedBrainIdx, setExpandedBrainIdx] = useState<number | null>(null);
   const [rememberedIndices, setRememberedIndices] = useState<Set<number>>(new Set());
-  const [feedbackGiven, setFeedbackGiven] = useState<Map<number, 'positive' | 'negative'>>(new Map());
+  const [feedbackGiven, setFeedbackGiven] = useState<Map<number, 'positive' | 'negative'>>(
+    new Map()
+  );
 
   const { messages, input, setInput, handleSend, isPending, clearMessages, conversationId } =
     useChat({
@@ -266,7 +268,9 @@ export function ChatPage() {
           {/* Backdrop on mobile */}
           <div
             className="fixed inset-0 bg-black/30 z-20 sm:hidden"
-            onClick={() => setSidebarOpen(false)}
+            onClick={() => {
+              setSidebarOpen(false);
+            }}
           />
           <div
             className="fixed left-0 top-0 bottom-0 w-72 bg-background z-30 border-r p-3 flex flex-col sm:static sm:w-64 sm:z-auto sm:p-0 sm:pr-3"
@@ -276,7 +280,9 @@ export function ChatPage() {
             <div className="flex items-center justify-between mb-2 sm:hidden">
               <span className="text-sm font-semibold">Conversations</span>
               <button
-                onClick={() => setSidebarOpen(false)}
+                onClick={() => {
+                  setSidebarOpen(false);
+                }}
                 className="p-1 rounded hover:bg-muted/50 text-muted-foreground"
               >
                 <X className="w-4 h-4" />
@@ -302,7 +308,9 @@ export function ChatPage() {
               {conversations.map((conv) => (
                 <div
                   key={conv.id}
-                  onClick={() => handleSelectConversation(conv)}
+                  onClick={() => {
+                    handleSelectConversation(conv);
+                  }}
                   className={`group flex items-center gap-2 px-3 py-2 rounded-lg cursor-pointer text-sm transition-colors ${
                     selectedConversationId === conv.id
                       ? 'bg-primary/15 border-l-2 border-primary'
@@ -313,10 +321,17 @@ export function ChatPage() {
                   <MessageSquare className="w-4 h-4 flex-shrink-0 text-muted-foreground" />
                   <div className="flex-1 min-w-0">
                     {editingConversationId === conv.id ? (
-                      <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex items-center gap-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                        }}
+                      >
                         <input
                           value={editTitle}
-                          onChange={(e) => setEditTitle(e.target.value)}
+                          onChange={(e) => {
+                            setEditTitle(e.target.value);
+                          }}
                           className="flex-1 min-w-0 text-sm bg-background border rounded px-1 py-0.5"
                           autoFocus
                           data-testid="rename-input"
@@ -341,14 +356,18 @@ export function ChatPage() {
                   {editingConversationId !== conv.id && (
                     <div className="hidden group-hover:flex items-center gap-1">
                       <button
-                        onClick={(e) => handleStartRename(e, conv)}
+                        onClick={(e) => {
+                          handleStartRename(e, conv);
+                        }}
                         className="text-muted-foreground hover:text-foreground"
                         data-testid={`rename-btn-${conv.id}`}
                       >
                         <Pencil className="w-3 h-3" />
                       </button>
                       <button
-                        onClick={(e) => handleDeleteConversation(e, conv.id)}
+                        onClick={(e) => {
+                          handleDeleteConversation(e, conv.id);
+                        }}
                         className="text-muted-foreground hover:text-destructive"
                         data-testid={`delete-btn-${conv.id}`}
                       >
@@ -371,7 +390,9 @@ export function ChatPage() {
 
       {/* Sidebar toggle button - positioned to the left of the sidebar */}
       <button
-        onClick={() => setSidebarOpen((v) => !v)}
+        onClick={() => {
+          setSidebarOpen((v) => !v);
+        }}
         className={`absolute top-0 z-20 p-1.5 rounded-md hover:bg-muted/50 text-muted-foreground hover:text-foreground transition-colors ${
           sidebarOpen ? 'left-64 sm:left-64' : 'left-0'
         }`}
@@ -391,7 +412,9 @@ export function ChatPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b mb-4">
           <div className="relative">
             <button
-              onClick={() => setShowPersonalityPicker((v) => !v)}
+              onClick={() => {
+                setShowPersonalityPicker((v) => !v);
+              }}
               className="flex items-center gap-3 hover:bg-muted/50 rounded-lg px-2 py-1.5 transition-colors"
               data-testid="personality-selector"
             >
@@ -455,7 +478,9 @@ export function ChatPage() {
 
           <div className="relative flex items-center gap-2">
             <button
-              onClick={() => setMemoryEnabled((v) => !v)}
+              onClick={() => {
+                setMemoryEnabled((v) => !v);
+              }}
               className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-full border transition-colors ${
                 memoryEnabled
                   ? 'bg-primary/15 border-primary text-primary'
@@ -471,7 +496,9 @@ export function ChatPage() {
               {memoryEnabled ? 'Memory On' : 'Memory Off'}
             </button>
             <button
-              onClick={() => setShowModelWidget((v) => !v)}
+              onClick={() => {
+                setShowModelWidget((v) => !v);
+              }}
               className="btn-ghost text-xs px-3 py-1.5 rounded-full border"
             >
               Model
@@ -479,7 +506,9 @@ export function ChatPage() {
             {showModelWidget && (
               <div className="absolute right-0 top-full mt-2 z-50">
                 <ModelWidget
-                  onClose={() => setShowModelWidget(false)}
+                  onClose={() => {
+                    setShowModelWidget(false);
+                  }}
                   onModelSwitch={handleModelSwitch}
                 />
               </div>
@@ -534,7 +563,9 @@ export function ChatPage() {
                     {/* Brain context indicator */}
                     {hasBrainContext && (
                       <button
-                        onClick={() => setExpandedBrainIdx(expandedBrainIdx === i ? null : i)}
+                        onClick={() => {
+                          setExpandedBrainIdx(expandedBrainIdx === i ? null : i);
+                        }}
                         className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded-full hover:bg-primary/20 transition-colors"
                         data-testid={`brain-indicator-${i}`}
                         title="Brain context was used"
@@ -580,7 +611,9 @@ export function ChatPage() {
                     {/* Remember button on assistant messages */}
                     {msg.role === 'assistant' && (
                       <button
-                        onClick={() => handleRemember(i, msg.content)}
+                        onClick={() => {
+                          handleRemember(i, msg.content);
+                        }}
                         disabled={rememberedIndices.has(i)}
                         className={`inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded hover:bg-primary/10 transition-colors ${
                           rememberedIndices.has(i)
@@ -601,7 +634,9 @@ export function ChatPage() {
                     {msg.role === 'assistant' && (
                       <>
                         <button
-                          onClick={() => handleFeedback(i, 'positive')}
+                          onClick={() => {
+                            handleFeedback(i, 'positive');
+                          }}
                           disabled={feedbackGiven.has(i)}
                           className={`inline-flex items-center p-0.5 rounded hover:bg-primary/10 transition-colors ${
                             feedbackGiven.get(i) === 'positive'
@@ -611,10 +646,14 @@ export function ChatPage() {
                           data-testid={`feedback-up-${i}`}
                           title="Good response"
                         >
-                          <ThumbsUp className={`w-3 h-3 ${feedbackGiven.get(i) === 'positive' ? 'fill-current' : ''}`} />
+                          <ThumbsUp
+                            className={`w-3 h-3 ${feedbackGiven.get(i) === 'positive' ? 'fill-current' : ''}`}
+                          />
                         </button>
                         <button
-                          onClick={() => handleFeedback(i, 'negative')}
+                          onClick={() => {
+                            handleFeedback(i, 'negative');
+                          }}
                           disabled={feedbackGiven.has(i)}
                           className={`inline-flex items-center p-0.5 rounded hover:bg-primary/10 transition-colors ${
                             feedbackGiven.get(i) === 'negative'
@@ -624,7 +663,9 @@ export function ChatPage() {
                           data-testid={`feedback-down-${i}`}
                           title="Poor response"
                         >
-                          <ThumbsDown className={`w-3 h-3 ${feedbackGiven.get(i) === 'negative' ? 'fill-current' : ''}`} />
+                          <ThumbsDown
+                            className={`w-3 h-3 ${feedbackGiven.get(i) === 'negative' ? 'fill-current' : ''}`}
+                          />
                         </button>
                       </>
                     )}
@@ -677,7 +718,9 @@ export function ChatPage() {
             <textarea
               ref={textareaRef}
               value={input}
-              onChange={(e) => setInput(e.target.value)}
+              onChange={(e) => {
+                setInput(e.target.value);
+              }}
               onKeyDown={handleKeyDown}
               placeholder={`Message ${personality?.name ?? 'the assistant'}...`}
               disabled={isPending}

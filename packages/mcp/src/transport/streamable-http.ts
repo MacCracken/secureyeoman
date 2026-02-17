@@ -42,7 +42,9 @@ export function registerStreamableHttpTransport(opts: StreamableHttpOptions): vo
 
       await mcpServer.server.connect(httpTransport);
 
-      const newSessionId = (httpTransport as StreamableHTTPServerTransport & { sessionId?: string }).sessionId ?? crypto.randomUUID();
+      const newSessionId =
+        (httpTransport as StreamableHTTPServerTransport & { sessionId?: string }).sessionId ??
+        crypto.randomUUID();
       transports.set(newSessionId, httpTransport);
       transport = httpTransport;
 

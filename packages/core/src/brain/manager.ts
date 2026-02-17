@@ -34,12 +34,18 @@ export class BrainManager {
   }
 
   private get vectorEnabled(): boolean {
-    return !!this.deps.vectorMemoryManager && !!this.config.vector?.enabled;
+    return this.deps.vectorMemoryManager != null && (this.config.vector?.enabled ?? false);
   }
 
   // ── Memory Operations ──────────────────────────────────────
 
-  async remember(type: MemoryType, content: string, source: string, context?: Record<string, string>, importance?: number): Promise<Memory> {
+  async remember(
+    type: MemoryType,
+    content: string,
+    source: string,
+    context?: Record<string, string>,
+    importance?: number
+  ): Promise<Memory> {
     if (!this.config.enabled) {
       throw new Error('Brain is not enabled');
     }
@@ -100,7 +106,11 @@ export class BrainManager {
       try {
         const limit = query.limit ?? 10;
         const threshold = this.config.vector.similarityThreshold;
-        const vectorResults = await this.deps.vectorMemoryManager!.searchMemories(query.search, limit, threshold);
+        const vectorResults = await this.deps.vectorMemoryManager!.searchMemories(
+          query.search,
+          limit,
+          threshold
+        );
 
         if (vectorResults.length > 0) {
           const memories: Memory[] = [];
@@ -110,12 +120,14 @@ export class BrainManager {
           }
 
           if (memories.length > 0) {
-            await this.storage.touchMemories(memories.map(m => m.id));
+            await this.storage.touchMemories(memories.map((m) => m.id));
             return memories;
           }
         }
       } catch (err) {
-        this.deps.logger.warn('Vector memory search failed, falling back to text search', { error: String(err) });
+        this.deps.logger.warn('Vector memory search failed, falling back to text search', {
+          error: String(err),
+        });
       }
     }
 
@@ -123,7 +135,7 @@ export class BrainManager {
 
     // Batch-touch accessed memories to keep them alive (single query instead of N)
     if (memories.length > 0) {
-      await this.storage.touchMemories(memories.map(m => m.id));
+      await this.storage.touchMemories(memories.map((m) => m.id));
     }
 
     return memories;
@@ -146,7 +158,12 @@ export class BrainManager {
 
   // ── Knowledge Operations ───────────────────────────────────
 
-  async learn(topic: string, content: string, source: string, confidence?: number): Promise<KnowledgeEntry> {
+  async learn(
+    topic: string,
+    content: string,
+    source: string,
+    confidence?: number
+  ): Promise<KnowledgeEntry> {
     if (!this.config.enabled) {
       throw new Error('Brain is not enabled');
     }
@@ -188,7 +205,10 @@ export class BrainManager {
     return this.storage.queryKnowledge(query);
   }
 
-  async updateKnowledge(id: string, data: { content?: string; confidence?: number; supersedes?: string }): Promise<KnowledgeEntry> {
+  async updateKnowledge(
+    id: string,
+    data: { content?: string; confidence?: number; supersedes?: string }
+  ): Promise<KnowledgeEntry> {
     return this.storage.updateKnowledge(id, data);
   }
 
@@ -198,7 +218,9 @@ export class BrainManager {
       try {
         await this.deps.vectorMemoryManager!.removeKnowledge(id);
       } catch (err) {
-        this.deps.logger.warn('Failed to remove knowledge from vector store', { error: String(err) });
+        this.deps.logger.warn('Failed to remove knowledge from vector store', {
+          error: String(err),
+        });
       }
     }
   }
@@ -217,8 +239,16 @@ export class BrainManager {
     if (this.vectorEnabled) {
       try {
         const threshold = this.config.vector.similarityThreshold;
-        const memResults = await this.deps.vectorMemoryManager!.searchMemories(input, Math.ceil(maxItems / 2), threshold);
-        const knowResults = await this.deps.vectorMemoryManager!.searchKnowledge(input, Math.floor(maxItems / 2) || 1, threshold);
+        const memResults = await this.deps.vectorMemoryManager!.searchMemories(
+          input,
+          Math.ceil(maxItems / 2),
+          threshold
+        );
+        const knowResults = await this.deps.vectorMemoryManager!.searchKnowledge(
+          input,
+          Math.floor(maxItems / 2) || 1,
+          threshold
+        );
 
         if (memResults.length > 0) {
           const memLines = ['### Memories (semantic)'];
@@ -246,11 +276,14 @@ export class BrainManager {
         }
 
         if (contentParts.length > 0) {
-          const header = '## Brain\nYour Brain is your mind — the accumulated memories and learned knowledge that inform your understanding. Draw on what is relevant; let the rest rest.\n';
+          const header =
+            '## Brain\nYour Brain is your mind — the accumulated memories and learned knowledge that inform your understanding. Draw on what is relevant; let the rest rest.\n';
           return header + '\n' + contentParts.join('\n\n');
         }
       } catch (err) {
-        this.deps.logger.warn('Semantic context search failed, falling back to text search', { error: String(err) });
+        this.deps.logger.warn('Semantic context search failed, falling back to text search', {
+          error: String(err),
+        });
       }
     }
 
@@ -261,7 +294,7 @@ export class BrainManager {
     });
 
     if (memories.length > 0) {
-      await this.storage.touchMemories(memories.map(m => m.id));
+      await this.storage.touchMemories(memories.map((m) => m.id));
       const memLines = ['### Memories'];
       for (const memory of memories) {
         memLines.push(`- [${memory.type}] ${memory.content}`);
@@ -286,13 +319,17 @@ export class BrainManager {
       return '';
     }
 
-    const header = '## Brain\nYour Brain is your mind — the accumulated memories and learned knowledge that inform your understanding. Draw on what is relevant; let the rest rest.\n';
+    const header =
+      '## Brain\nYour Brain is your mind — the accumulated memories and learned knowledge that inform your understanding. Draw on what is relevant; let the rest rest.\n';
     return header + '\n' + contentParts.join('\n\n');
   }
 
   // ── Semantic Search ──────────────────────────────────────────
 
-  async semanticSearch(query: string, opts?: { limit?: number; threshold?: number; type?: 'memories' | 'knowledge' | 'all' }): Promise<VectorResult[]> {
+  async semanticSearch(
+    query: string,
+    opts?: { limit?: number; threshold?: number; type?: 'memories' | 'knowledge' | 'all' }
+  ): Promise<VectorResult[]> {
     if (!this.vectorEnabled) {
       throw new Error('Vector memory is not enabled');
     }
@@ -314,9 +351,7 @@ export class BrainManager {
       this.deps.vectorMemoryManager!.searchKnowledge(query, limit, threshold),
     ]);
 
-    return [...memResults, ...knowResults]
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
+    return [...memResults, ...knowResults].sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
   // ── Consolidation ──────────────────────────────────────────
@@ -434,7 +469,10 @@ export class BrainManager {
     return this.deps.auditStorage.queryEntries(opts);
   }
 
-  async searchAuditLogs(query: string, opts?: { limit?: number; offset?: number }): Promise<AuditQueryResult> {
+  async searchAuditLogs(
+    query: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<AuditQueryResult> {
     if (!this.deps.auditStorage) {
       throw new Error('Audit storage is not available in BrainManager');
     }
@@ -454,7 +492,7 @@ export class BrainManager {
   async seedBaseKnowledge(): Promise<void> {
     if (!this.config.enabled) return;
 
-    const entries: Array<{ topic: string; content: string }> = [
+    const entries: { topic: string; content: string }[] = [
       {
         topic: 'self-identity',
         content: 'I am F.R.I.D.A.Y. — Fully Responsive Integrated Digitally Adaptable Yeoman',

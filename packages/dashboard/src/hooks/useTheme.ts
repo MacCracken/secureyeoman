@@ -4,10 +4,12 @@ type Theme = 'light' | 'dark';
 
 let globalTheme: Theme =
   ((typeof window !== 'undefined' ? localStorage.getItem('theme') : null) as Theme) || 'dark';
-let listeners: Array<(theme: Theme) => void> = [];
+let listeners: ((theme: Theme) => void)[] = [];
 
 function notifyListeners() {
-  listeners.forEach((fn) => fn(globalTheme));
+  listeners.forEach((fn) => {
+    fn(globalTheme);
+  });
 }
 
 export function useTheme() {

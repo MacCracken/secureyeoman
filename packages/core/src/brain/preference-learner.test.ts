@@ -22,9 +22,11 @@ function makeMockMemory(overrides?: Partial<Memory>): Memory {
 
 function makeMockBrainManager() {
   return {
-    remember: vi.fn().mockImplementation(async (_type, content, _source, context, importance) =>
-      makeMockMemory({ content, context: context ?? {}, importance: importance ?? 0.5 }),
-    ),
+    remember: vi
+      .fn()
+      .mockImplementation(async (_type, content, _source, context, importance) =>
+        makeMockMemory({ content, context: context ?? {}, importance: importance ?? 0.5 })
+      ),
     recall: vi.fn().mockResolvedValue([]),
     queryKnowledge: vi.fn().mockResolvedValue([]),
   } as unknown as BrainManager;
@@ -51,7 +53,7 @@ describe('PreferenceLearner', () => {
           messageId: 'msg-1',
           feedbackType: 'positive',
         }),
-        0.5,
+        0.5
       );
       expect(memory).toBeDefined();
       expect(memory.type).toBe('preference');
@@ -67,7 +69,7 @@ describe('PreferenceLearner', () => {
           feedbackType: 'negative',
           details: 'too verbose',
         }),
-        0.7,
+        0.7
       );
     });
 
@@ -78,7 +80,7 @@ describe('PreferenceLearner', () => {
         expect.stringContaining('use TypeScript not JS'),
         'user_feedback',
         expect.objectContaining({ feedbackType: 'correction' }),
-        0.9,
+        0.9
       );
     });
   });

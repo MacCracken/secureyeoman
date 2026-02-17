@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // ── Mock ioredis ─────────────────────────────────────────────────────
 
 const { mockRedisInstance, execResults, state, RedisMock } = vi.hoisted(() => {
-  const execResults: ([Error | null, unknown][])[] = [];
+  const execResults: [Error | null, unknown][][] = [];
   const state = {
     zremCalls: [] as string[][],
     delCalls: [] as string[],
@@ -30,15 +30,25 @@ const { mockRedisInstance, execResults, state, RedisMock } = vi.hoisted(() => {
   const mockRedisInstance = {
     connect: vi.fn().mockResolvedValue(undefined),
     multi: vi.fn(() => pipelineMethods),
-    zrem: vi.fn(async (...args: string[]) => { state.zremCalls.push(args); return 1; }),
+    zrem: vi.fn(async (...args: string[]) => {
+      state.zremCalls.push(args);
+      return 1;
+    }),
     zremrangebyscore: vi.fn().mockResolvedValue(0),
     zcard: vi.fn(async () => state.zcardResult),
-    del: vi.fn(async (key: string) => { state.delCalls.push(key); return 1; }),
-    quit: vi.fn(async () => { state.quitCalled = true; }),
+    del: vi.fn(async (key: string) => {
+      state.delCalls.push(key);
+      return 1;
+    }),
+    quit: vi.fn(async () => {
+      state.quitCalled = true;
+    }),
     pipelineMethods,
   };
 
-  const RedisMock = vi.fn(function () { return mockRedisInstance; });
+  const RedisMock = vi.fn(function () {
+    return mockRedisInstance;
+  });
 
   return { mockRedisInstance, execResults, state, RedisMock };
 });
@@ -135,8 +145,18 @@ describe('RedisRateLimiter', () => {
       onExceed: 'reject',
     });
 
-    execResults.push([[null, 0], [null, 1], [null, 2], [null, 1]]);
-    execResults.push([[null, 0], [null, 1], [null, 4], [null, 1]]);
+    execResults.push([
+      [null, 0],
+      [null, 1],
+      [null, 2],
+      [null, 1],
+    ]);
+    execResults.push([
+      [null, 0],
+      [null, 1],
+      [null, 4],
+      [null, 1],
+    ]);
 
     const result = await limiter.checkMultiple([
       { name: 'rule_a', key: 'user1' },
@@ -154,7 +174,12 @@ describe('RedisRateLimiter', () => {
       keyType: 'user',
       onExceed: 'reject',
     });
-    execResults.push([[null, 0], [null, 1], [null, 101], [null, 1]]);
+    execResults.push([
+      [null, 0],
+      [null, 1],
+      [null, 101],
+      [null, 1],
+    ]);
 
     const result = await limiter.checkMultiple([
       { name: 'rule_a', key: 'user1' },
@@ -171,7 +196,12 @@ describe('RedisRateLimiter', () => {
       keyType: 'user',
       onExceed: 'log_only',
     });
-    execResults.push([[null, 0], [null, 1], [null, 6], [null, 1]]);
+    execResults.push([
+      [null, 0],
+      [null, 1],
+      [null, 6],
+      [null, 1],
+    ]);
     const result = await limiter.check('soft', 'user1');
     expect(result.allowed).toBe(true);
     expect(result.remaining).toBe(0);
@@ -188,7 +218,12 @@ describe('RedisRateLimiter', () => {
     await limiter.check('default', 'a');
     await limiter.check('default', 'b');
 
-    execResults.push([[null, 0], [null, 1], [null, 11], [null, 1]]);
+    execResults.push([
+      [null, 0],
+      [null, 1],
+      [null, 11],
+      [null, 1],
+    ]);
     await limiter.check('default', 'c');
 
     const stats = limiter.getStats();

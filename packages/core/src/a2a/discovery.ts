@@ -9,11 +9,16 @@ export async function manualDiscover(urls: string[]): Promise<PeerAgent[]> {
     try {
       const response = await fetch(`${url}/.well-known/a2a-agent`, {
         method: 'GET',
-        headers: { 'Accept': 'application/json' },
+        headers: { Accept: 'application/json' },
         signal: AbortSignal.timeout(5000),
       });
       if (response.ok) {
-        const data = await response.json() as { id: string; name: string; publicKey: string; capabilities: Array<{ name: string; description: string; version: string }> };
+        const data = (await response.json()) as {
+          id: string;
+          name: string;
+          publicKey: string;
+          capabilities: { name: string; description: string; version: string }[];
+        };
         peers.push({
           id: data.id,
           name: data.name,

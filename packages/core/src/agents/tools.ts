@@ -9,13 +9,15 @@ import type { Tool } from '@friday/shared';
 
 const DELEGATE_TASK_TOOL: Tool = {
   name: 'delegate_task',
-  description: 'Delegate a subtask to a specialized sub-agent. Use this when a task would benefit from a focused specialist (researcher, coder, analyst, summarizer) or when you need to parallelize work.',
+  description:
+    'Delegate a subtask to a specialized sub-agent. Use this when a task would benefit from a focused specialist (researcher, coder, analyst, summarizer) or when you need to parallelize work.',
   parameters: {
     type: 'object',
     properties: {
       profile: {
         type: 'string',
-        description: 'Name or ID of the agent profile to use (e.g. "researcher", "coder", "analyst", "summarizer")',
+        description:
+          'Name or ID of the agent profile to use (e.g. "researcher", "coder", "analyst", "summarizer")',
       },
       task: {
         type: 'string',

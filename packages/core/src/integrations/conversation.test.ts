@@ -150,15 +150,19 @@ describe('ConversationManager', () => {
   });
 
   it('should expire stale threads', () => {
-    manager.addMessage(makeMessage({
-      text: 'old thread',
-      metadata: { threadId: 'stale' },
-      timestamp: Date.now() - 120_000,
-    }));
-    manager.addMessage(makeMessage({
-      text: 'fresh thread',
-      metadata: { threadId: 'fresh' },
-    }));
+    manager.addMessage(
+      makeMessage({
+        text: 'old thread',
+        metadata: { threadId: 'stale' },
+        timestamp: Date.now() - 120_000,
+      })
+    );
+    manager.addMessage(
+      makeMessage({
+        text: 'fresh thread',
+        metadata: { threadId: 'fresh' },
+      })
+    );
 
     manager.clearStale();
     expect(manager.getConversationCount()).toBe(1);

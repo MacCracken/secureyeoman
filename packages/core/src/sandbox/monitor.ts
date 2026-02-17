@@ -201,7 +201,7 @@ export class SandboxMonitor {
     }
   }
 
-  startMonitoring(intervalMs: number = 60000): void {
+  startMonitoring(intervalMs = 60000): void {
     if (this.checkInterval) {
       return;
     }

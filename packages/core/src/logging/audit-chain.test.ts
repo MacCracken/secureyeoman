@@ -15,13 +15,13 @@ describe('AuditChain', () => {
 
   describe('constructor', () => {
     it('should reject signing keys shorter than 32 characters', () => {
-      expect(() => new AuditChain({ storage, signingKey: 'short' }))
-        .toThrow('Signing key must be at least 32 characters');
+      expect(() => new AuditChain({ storage, signingKey: 'short' })).toThrow(
+        'Signing key must be at least 32 characters'
+      );
     });
 
     it('should accept signing keys of exactly 32 characters', () => {
-      expect(() => new AuditChain({ storage, signingKey: 'x'.repeat(32) }))
-        .not.toThrow();
+      expect(() => new AuditChain({ storage, signingKey: 'x'.repeat(32) })).not.toThrow();
     });
   });
 

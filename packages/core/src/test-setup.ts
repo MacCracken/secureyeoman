@@ -18,11 +18,11 @@ let initialized = false;
 export async function setupTestDb(): Promise<void> {
   if (initialized) return;
 
-  const host = process.env['TEST_DB_HOST'] ?? process.env['DATABASE_HOST'] ?? 'localhost';
-  const port = Number(process.env['TEST_DB_PORT'] ?? '5432');
-  const database = process.env['TEST_DB_NAME'] ?? 'friday_test';
-  const user = process.env['TEST_DB_USER'] ?? 'friday';
-  const password = process.env['TEST_DB_PASSWORD'] ?? process.env['POSTGRES_PASSWORD'] ?? 'friday_dev';
+  const host = process.env.TEST_DB_HOST ?? process.env.DATABASE_HOST ?? 'localhost';
+  const port = Number(process.env.TEST_DB_PORT ?? '5432');
+  const database = process.env.TEST_DB_NAME ?? 'friday_test';
+  const user = process.env.TEST_DB_USER ?? 'friday';
+  const password = process.env.TEST_DB_PASSWORD ?? process.env.POSTGRES_PASSWORD ?? 'friday_dev';
 
   initPool({
     host,
@@ -45,17 +45,27 @@ export async function setupTestDb(): Promise<void> {
 export async function truncateAllTables(): Promise<void> {
   const pool = getPool();
   const schemas = [
-    'brain', 'soul', 'spirit', 'auth', 'audit', 'chat',
-    'task', 'integration', 'mcp', 'marketplace', 'dashboard',
-    'workspace', 'experiment', 'comms', 'rotation', 'rbac',
+    'brain',
+    'soul',
+    'spirit',
+    'auth',
+    'audit',
+    'chat',
+    'task',
+    'integration',
+    'mcp',
+    'marketplace',
+    'dashboard',
+    'workspace',
+    'experiment',
+    'comms',
+    'rotation',
+    'rbac',
   ];
 
   for (const schema of schemas) {
     // Get all tables in the schema
-    const res = await pool.query(
-      `SELECT tablename FROM pg_tables WHERE schemaname = $1`,
-      [schema],
-    );
+    const res = await pool.query(`SELECT tablename FROM pg_tables WHERE schemaname = $1`, [schema]);
     for (const row of res.rows) {
       await pool.query(`TRUNCATE ${schema}."${row.tablename}" CASCADE`);
     }

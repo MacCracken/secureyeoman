@@ -4,8 +4,18 @@ import { healthCommand } from './health.js';
 function createStreams() {
   let stdoutBuf = '';
   let stderrBuf = '';
-  const stdout = { write: (s: string) => { stdoutBuf += s; return true; } } as NodeJS.WritableStream;
-  const stderr = { write: (s: string) => { stderrBuf += s; return true; } } as NodeJS.WritableStream;
+  const stdout = {
+    write: (s: string) => {
+      stdoutBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
+  const stderr = {
+    write: (s: string) => {
+      stderrBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
   return { stdout, stderr, getStdout: () => stdoutBuf, getStderr: () => stderrBuf };
 }
 
@@ -23,17 +33,20 @@ describe('health command', () => {
   });
 
   it('should display health status on success', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      json: async () => ({
-        status: 'ok',
-        version: '1.5.1',
-        uptime: 135000,
-        checks: { database: true, auditChain: true },
-      }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({
+          status: 'ok',
+          version: '1.5.1',
+          uptime: 135000,
+          checks: { database: true, auditChain: true },
+        }),
+      })
+    );
 
     const { stdout, stderr, getStdout } = createStreams();
     const code = await healthCommand.run({ argv: [], stdout, stderr });
@@ -45,12 +58,15 @@ describe('health command', () => {
   });
 
   it('should output JSON with --json flag', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      json: async () => ({ status: 'ok', version: '1.5.1', uptime: 1000 }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ status: 'ok', version: '1.5.1', uptime: 1000 }),
+      })
+    );
 
     const { stdout, stderr, getStdout } = createStreams();
     const code = await healthCommand.run({ argv: ['--json'], stdout, stderr });
@@ -69,12 +85,15 @@ describe('health command', () => {
   });
 
   it('should return 1 when status is not ok', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: { get: () => 'application/json' },
-      json: async () => ({ status: 'error', version: '1.5.1', uptime: 0 }),
-    }));
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ status: 'error', version: '1.5.1', uptime: 0 }),
+      })
+    );
 
     const { stdout, stderr } = createStreams();
     const code = await healthCommand.run({ argv: [], stdout, stderr });

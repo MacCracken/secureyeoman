@@ -31,10 +31,7 @@ export async function runMigrations(): Promise<void> {
     const id = file.replace('.sql', '');
 
     // Check if already applied
-    const existing = await pool.query(
-      'SELECT id FROM schema_migrations WHERE id = $1',
-      [id],
-    );
+    const existing = await pool.query('SELECT id FROM schema_migrations WHERE id = $1', [id]);
     if (existing.rows.length > 0) {
       continue;
     }
@@ -44,9 +41,9 @@ export async function runMigrations(): Promise<void> {
     await pool.query(sql);
 
     // Record as applied
-    await pool.query(
-      'INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)',
-      [id, Date.now()],
-    );
+    await pool.query('INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)', [
+      id,
+      Date.now(),
+    ]);
   }
 }

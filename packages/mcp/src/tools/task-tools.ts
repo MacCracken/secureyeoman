@@ -11,7 +11,7 @@ import { wrapToolHandler } from './tool-utils.js';
 export function registerTaskTools(
   server: McpServer,
   client: CoreApiClient,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   server.tool(
     'task_create',
@@ -24,7 +24,7 @@ export function registerTaskTools(
     wrapToolHandler('task_create', middleware, async (args) => {
       const result = await client.post('/api/v1/tasks', args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -37,12 +37,12 @@ export function registerTaskTools(
     },
     wrapToolHandler('task_list', middleware, async (args) => {
       const query: Record<string, string> = {};
-      if (args.status) query['status'] = args.status;
-      if (args.type) query['type'] = args.type;
-      query['limit'] = String(args.limit);
+      if (args.status) query.status = args.status;
+      if (args.type) query.type = args.type;
+      query.limit = String(args.limit);
       const result = await client.get('/api/v1/tasks', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -52,7 +52,7 @@ export function registerTaskTools(
     wrapToolHandler('task_get', middleware, async (args) => {
       const result = await client.get(`/api/v1/tasks/${args.id}`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -62,6 +62,6 @@ export function registerTaskTools(
     wrapToolHandler('task_cancel', middleware, async (args) => {
       const result = await client.delete(`/api/v1/tasks/${args.id}`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 }

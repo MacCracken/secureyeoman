@@ -104,7 +104,11 @@ export class GoogleCalendarIntegration implements Integration {
    * Create a calendar event from message text.
    * Uses the quick-add endpoint for natural language event creation.
    */
-  async sendMessage(chatId: string, text: string, _metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    _metadata?: Record<string, unknown>
+  ): Promise<string> {
     await this.ensureValidToken();
 
     const calId = chatId || this.calendarId;
@@ -117,7 +121,7 @@ export class GoogleCalendarIntegration implements Integration {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: new URLSearchParams({ text }),
-      },
+      }
     );
 
     if (!resp.ok) {
@@ -172,7 +176,7 @@ export class GoogleCalendarIntegration implements Integration {
 
       const resp = await fetch(
         `${CALENDAR_API}/calendars/${encodeURIComponent(this.calendarId)}/events?${params}`,
-        { headers: { Authorization: `Bearer ${this.accessToken}` } },
+        { headers: { Authorization: `Bearer ${this.accessToken}` } }
       );
 
       if (!resp.ok) {
@@ -228,7 +232,8 @@ export class GoogleCalendarIntegration implements Integration {
       return;
     }
 
-    const clientId = process.env.GOOGLE_CALENDAR_OAUTH_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID;
+    const clientId =
+      process.env.GOOGLE_CALENDAR_OAUTH_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID;
     const clientSecret =
       process.env.GOOGLE_CALENDAR_OAUTH_CLIENT_SECRET || process.env.GOOGLE_OAUTH_CLIENT_SECRET;
 

@@ -42,7 +42,9 @@ vi.mock('playwright', () => ({
 // ── Mock MCP Server ──────────────────────────────────────────────
 
 interface ToolHandler {
-  (args: Record<string, unknown>): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
+  (
+    args: Record<string, unknown>
+  ): Promise<{ content: Array<{ type: string; text: string }>; isError?: boolean }>;
 }
 
 function createMockServer() {
@@ -111,7 +113,12 @@ describe('browser tools with exposeBrowser=false', () => {
 
   it('browser_screenshot returns NOT_AVAILABLE when disabled', async () => {
     const handler = server.getHandler('browser_screenshot')!;
-    const result = await handler({ url: 'https://example.com', fullPage: false, width: 1280, height: 720 });
+    const result = await handler({
+      url: 'https://example.com',
+      fullPage: false,
+      width: 1280,
+      height: 720,
+    });
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('not available');
   });
@@ -165,7 +172,12 @@ describe('browser tools with exposeBrowser=true', () => {
 
   it('browser_screenshot returns base64 PNG', async () => {
     const handler = server.getHandler('browser_screenshot')!;
-    const result = await handler({ url: 'https://example.com', fullPage: false, width: 1280, height: 720 });
+    const result = await handler({
+      url: 'https://example.com',
+      fullPage: false,
+      width: 1280,
+      height: 720,
+    });
     expect(result.isError).toBeUndefined();
     expect(result.content[1].text).toContain('data:image/png;base64,');
   });

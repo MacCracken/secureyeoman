@@ -1,6 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import { RetryManager } from './retry-manager.js';
-import { AIProviderError, RateLimitError, AuthenticationError, ProviderUnavailableError } from './errors.js';
+import {
+  AIProviderError,
+  RateLimitError,
+  AuthenticationError,
+  ProviderUnavailableError,
+} from './errors.js';
 
 describe('RetryManager', () => {
   describe('shouldRetry', () => {
@@ -83,7 +88,8 @@ describe('RetryManager', () => {
 
     it('should retry on transient errors', async () => {
       const manager = new RetryManager({ maxRetries: 3, baseDelayMs: 10, maxDelayMs: 50 });
-      const fn = vi.fn()
+      const fn = vi
+        .fn()
         .mockRejectedValueOnce(new ProviderUnavailableError('test', 503))
         .mockResolvedValue('ok');
 

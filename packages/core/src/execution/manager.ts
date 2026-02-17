@@ -14,12 +14,7 @@ import type {
   ApprovalRecord,
   RuntimeType,
 } from './types.js';
-import {
-  NodeRuntime,
-  PythonRuntime,
-  ShellRuntime,
-  type RuntimeAdapter,
-} from './runtimes.js';
+import { NodeRuntime, PythonRuntime, ShellRuntime, type RuntimeAdapter } from './runtimes.js';
 import { createSecretsFilter } from './secrets-filter.js';
 import { uuidv7 } from '../utils/crypto.js';
 
@@ -57,10 +52,7 @@ export class CodeExecutionManager {
     const sessions = await this.deps.storage.listSessions();
     const now = Date.now();
     for (const session of sessions) {
-      if (
-        session.status === 'active' &&
-        now - session.lastActivity > this.config.sessionTimeout
-      ) {
+      if (session.status === 'active' && now - session.lastActivity > this.config.sessionTimeout) {
         await this.deps.storage.updateSession(session.id, { status: 'expired' });
         this.deps.logger.debug('Expired stale session on startup', {
           component: 'execution',
@@ -89,7 +81,7 @@ export class CodeExecutionManager {
     // Validate runtime is allowed
     if (!this.config.allowedRuntimes.includes(request.runtime)) {
       throw new Error(
-        `Runtime '${request.runtime}' is not allowed. Allowed: ${this.config.allowedRuntimes.join(', ')}`,
+        `Runtime '${request.runtime}' is not allowed. Allowed: ${this.config.allowedRuntimes.join(', ')}`
       );
     }
 
@@ -101,9 +93,7 @@ export class CodeExecutionManager {
     // Validate code safety
     const validation = adapter.validateCode(request.code);
     if (!validation.valid) {
-      throw new Error(
-        `Code validation failed: ${validation.errors.join('; ')}`,
-      );
+      throw new Error(`Code validation failed: ${validation.errors.join('; ')}`);
     }
 
     // Check approval policy
@@ -111,17 +101,14 @@ export class CodeExecutionManager {
       const approval = await this.deps.storage.createApproval({
         requestId: uuidv7(),
       });
-      throw new ApprovalRequiredError(
-        'Execution requires approval',
-        approval.id,
-      );
+      throw new ApprovalRequiredError('Execution requires approval', approval.id);
     }
 
     if (this.config.approvalPolicy === 'first-time') {
       // Check if this runtime has been used in any session before
       const sessions = await this.deps.storage.listSessions();
       const hasUsedRuntime = sessions.some(
-        (s) => s.runtime === request.runtime && s.status !== 'terminated',
+        (s) => s.runtime === request.runtime && s.status !== 'terminated'
       );
       if (!hasUsedRuntime) {
         const approval = await this.deps.storage.createApproval({
@@ -129,7 +116,7 @@ export class CodeExecutionManager {
         });
         throw new ApprovalRequiredError(
           `First-time execution of '${request.runtime}' runtime requires approval`,
-          approval.id,
+          approval.id
         );
       }
     }
@@ -142,25 +129,21 @@ export class CodeExecutionManager {
         throw new Error(`Session '${request.sessionId}' not found`);
       }
       if (existing.status !== 'active') {
-        throw new Error(
-          `Session '${request.sessionId}' is ${existing.status}`,
-        );
+        throw new Error(`Session '${request.sessionId}' is ${existing.status}`);
       }
       if (existing.runtime !== request.runtime) {
         throw new Error(
-          `Session runtime mismatch: expected '${existing.runtime}', got '${request.runtime}'`,
+          `Session runtime mismatch: expected '${existing.runtime}', got '${request.runtime}'`
         );
       }
       session = existing;
     } else {
       // Check concurrent session limit
       const activeSessions = (await this.deps.storage.listSessions()).filter(
-        (s) => s.status === 'active',
+        (s) => s.status === 'active'
       );
       if (activeSessions.length >= this.config.maxConcurrent) {
-        throw new Error(
-          `Maximum concurrent sessions (${this.config.maxConcurrent}) reached`,
-        );
+        throw new Error(`Maximum concurrent sessions (${this.config.maxConcurrent}) reached`);
       }
       session = await this.deps.storage.createSession({
         runtime: request.runtime,
@@ -235,17 +218,15 @@ export class CodeExecutionManager {
   async createSession(runtime: RuntimeType): Promise<ExecutionSession> {
     if (!this.config.allowedRuntimes.includes(runtime)) {
       throw new Error(
-        `Runtime '${runtime}' is not allowed. Allowed: ${this.config.allowedRuntimes.join(', ')}`,
+        `Runtime '${runtime}' is not allowed. Allowed: ${this.config.allowedRuntimes.join(', ')}`
       );
     }
 
     const activeSessions = (await this.deps.storage.listSessions()).filter(
-      (s) => s.status === 'active',
+      (s) => s.status === 'active'
     );
     if (activeSessions.length >= this.config.maxConcurrent) {
-      throw new Error(
-        `Maximum concurrent sessions (${this.config.maxConcurrent}) reached`,
-      );
+      throw new Error(`Maximum concurrent sessions (${this.config.maxConcurrent}) reached`);
     }
 
     const session = await this.deps.storage.createSession({ runtime });
@@ -290,10 +271,7 @@ export class CodeExecutionManager {
   // ── Approval workflow ───────────────────────────────────────────
 
   async approve(requestId: string): Promise<ApprovalRecord | null> {
-    const approval = await this.deps.storage.updateApproval(
-      requestId,
-      'approved',
-    );
+    const approval = await this.deps.storage.updateApproval(requestId, 'approved');
 
     if (approval) {
       await this.auditRecord('execution_approved', {
@@ -306,10 +284,7 @@ export class CodeExecutionManager {
   }
 
   async reject(requestId: string): Promise<ApprovalRecord | null> {
-    const approval = await this.deps.storage.updateApproval(
-      requestId,
-      'rejected',
-    );
+    const approval = await this.deps.storage.updateApproval(requestId, 'rejected');
 
     if (approval) {
       await this.auditRecord('execution_rejected', {
@@ -380,10 +355,7 @@ export class CodeExecutionManager {
     }
   }
 
-  private async auditRecord(
-    event: string,
-    metadata: Record<string, unknown>,
-  ): Promise<void> {
+  private async auditRecord(event: string, metadata: Record<string, unknown>): Promise<void> {
     try {
       await this.deps.auditChain.record({
         event,

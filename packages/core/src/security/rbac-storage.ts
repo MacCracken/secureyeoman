@@ -99,7 +99,7 @@ export class RBACStorage extends PgBaseStorage {
     // Check if the role already exists to decide created_at vs updated_at.
     const existing = await this.queryOne<{ created_at: number }>(
       'SELECT created_at FROM rbac.role_definitions WHERE id = $1',
-      [role.id],
+      [role.id]
     );
 
     await this.execute(
@@ -120,7 +120,7 @@ export class RBACStorage extends PgBaseStorage {
         role.inheritFrom ? JSON.stringify(role.inheritFrom) : null,
         existing?.created_at ?? now,
         existing ? now : null,
-      ],
+      ]
     );
   }
 
@@ -130,10 +130,7 @@ export class RBACStorage extends PgBaseStorage {
    * @returns true if a row was actually deleted, false if the ID didn't exist.
    */
   async deleteRoleDefinition(roleId: string): Promise<boolean> {
-    const changes = await this.execute(
-      'DELETE FROM rbac.role_definitions WHERE id = $1',
-      [roleId],
-    );
+    const changes = await this.execute('DELETE FROM rbac.role_definitions WHERE id = $1', [roleId]);
     return changes > 0;
   }
 
@@ -145,7 +142,7 @@ export class RBACStorage extends PgBaseStorage {
   async getRoleDefinition(roleId: string): Promise<RoleDefinition | null> {
     const row = await this.queryOne<RoleDefinitionRow>(
       'SELECT * FROM rbac.role_definitions WHERE id = $1',
-      [roleId],
+      [roleId]
     );
 
     return row ? this.rowToRoleDefinition(row) : null;
@@ -161,7 +158,7 @@ export class RBACStorage extends PgBaseStorage {
    */
   async getAllRoleDefinitions(): Promise<RoleDefinition[]> {
     const rows = await this.queryMany<RoleDefinitionRow>(
-      'SELECT * FROM rbac.role_definitions ORDER BY created_at ASC',
+      'SELECT * FROM rbac.role_definitions ORDER BY created_at ASC'
     );
 
     return rows.map((row) => this.rowToRoleDefinition(row));
@@ -191,7 +188,7 @@ export class RBACStorage extends PgBaseStorage {
         `UPDATE rbac.user_role_assignments
            SET revoked_at = $1
          WHERE user_id = $2 AND revoked_at IS NULL`,
-        [now, userId],
+        [now, userId]
       );
 
       // Insert the new assignment (id is SERIAL, auto-generated).
@@ -199,7 +196,7 @@ export class RBACStorage extends PgBaseStorage {
         `INSERT INTO rbac.user_role_assignments
            (user_id, role_id, assigned_by, assigned_at, revoked_at)
          VALUES ($1, $2, $3, $4, NULL)`,
-        [userId, roleId, assignedBy, now],
+        [userId, roleId, assignedBy, now]
       );
     });
   }
@@ -217,7 +214,7 @@ export class RBACStorage extends PgBaseStorage {
       `UPDATE rbac.user_role_assignments
          SET revoked_at = $1
        WHERE user_id = $2 AND revoked_at IS NULL`,
-      [Date.now(), userId],
+      [Date.now(), userId]
     );
 
     return changes > 0;
@@ -232,7 +229,7 @@ export class RBACStorage extends PgBaseStorage {
     const row = await this.queryOne<{ role_id: string }>(
       `SELECT role_id FROM rbac.user_role_assignments
        WHERE user_id = $1 AND revoked_at IS NULL`,
-      [userId],
+      [userId]
     );
 
     return row?.role_id ?? null;
@@ -246,12 +243,12 @@ export class RBACStorage extends PgBaseStorage {
    *
    * @returns An array of {userId, roleId} pairs for all active assignments.
    */
-  async listActiveAssignments(): Promise<Array<{ userId: string; roleId: string; assignedAt: number }>> {
+  async listActiveAssignments(): Promise<{ userId: string; roleId: string; assignedAt: number }[]> {
     const rows = await this.queryMany<{ user_id: string; role_id: string; assigned_at: number }>(
       `SELECT user_id, role_id, assigned_at
        FROM rbac.user_role_assignments
        WHERE revoked_at IS NULL
-       ORDER BY assigned_at ASC`,
+       ORDER BY assigned_at ASC`
     );
 
     return rows.map((r) => ({
@@ -271,7 +268,7 @@ export class RBACStorage extends PgBaseStorage {
       `SELECT * FROM rbac.user_role_assignments
        WHERE user_id = $1
        ORDER BY assigned_at DESC`,
-      [userId],
+      [userId]
     );
   }
 
@@ -285,7 +282,7 @@ export class RBACStorage extends PgBaseStorage {
       `SELECT user_id FROM rbac.user_role_assignments
        WHERE role_id = $1 AND revoked_at IS NULL
        ORDER BY assigned_at ASC`,
-      [roleId],
+      [roleId]
     );
 
     return rows.map((r) => r.user_id);
@@ -304,14 +301,15 @@ export class RBACStorage extends PgBaseStorage {
    * RoleDefinition type by deserialising the JSONB columns.
    */
   private rowToRoleDefinition(row: RoleDefinitionRow): RoleDefinition {
-    const permissions = typeof row.permissions_json === 'string'
-      ? JSON.parse(row.permissions_json) as Permission[]
-      : row.permissions_json as Permission[];
+    const permissions =
+      typeof row.permissions_json === 'string'
+        ? (JSON.parse(row.permissions_json) as Permission[])
+        : (row.permissions_json as Permission[]);
 
     const inheritFrom = row.inherit_from_json
-      ? (typeof row.inherit_from_json === 'string'
-        ? JSON.parse(row.inherit_from_json) as string[]
-        : row.inherit_from_json as string[])
+      ? typeof row.inherit_from_json === 'string'
+        ? (JSON.parse(row.inherit_from_json) as string[])
+        : (row.inherit_from_json as string[])
       : undefined;
 
     return {

@@ -14,10 +14,7 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Unknown error';
 }
 
-export function registerCommsRoutes(
-  app: FastifyInstance,
-  opts: CommsRoutesOptions,
-): void {
+export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptions): void {
   const { agentComms } = opts;
 
   // ── Identity ─────────────────────────────────────────────────
@@ -33,71 +30,77 @@ export function registerCommsRoutes(
     return { peers };
   });
 
-  app.post('/api/v1/comms/peers', async (
-    request: FastifyRequest<{ Body: AgentIdentity }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      await agentComms.addPeer(request.body);
-      return reply.code(201).send({ message: 'Peer added' });
-    } catch (err) {
-      return reply.code(400).send({ error: errorMessage(err) });
+  app.post(
+    '/api/v1/comms/peers',
+    async (request: FastifyRequest<{ Body: AgentIdentity }>, reply: FastifyReply) => {
+      try {
+        await agentComms.addPeer(request.body);
+        return reply.code(201).send({ message: 'Peer added' });
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
     }
-  });
+  );
 
-  app.delete('/api/v1/comms/peers/:id', async (
-    request: FastifyRequest<{ Params: { id: string } }>,
-    reply: FastifyReply,
-  ) => {
-    const removed = await agentComms.removePeer(request.params.id);
-    if (!removed) {
-      return reply.code(404).send({ error: 'Peer not found' });
+  app.delete(
+    '/api/v1/comms/peers/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const removed = await agentComms.removePeer(request.params.id);
+      if (!removed) {
+        return reply.code(404).send({ error: 'Peer not found' });
+      }
+      return { message: 'Peer removed' };
     }
-    return { message: 'Peer removed' };
-  });
+  );
 
   // ── Messages ─────────────────────────────────────────────────
 
-  app.post('/api/v1/comms/message', async (
-    request: FastifyRequest<{ Body: EncryptedMessage }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      const payload = await agentComms.decryptMessage(request.body);
-      return { acknowledged: true, type: payload.type };
-    } catch (err) {
-      return reply.code(400).send({ error: errorMessage(err) });
+  app.post(
+    '/api/v1/comms/message',
+    async (request: FastifyRequest<{ Body: EncryptedMessage }>, reply: FastifyReply) => {
+      try {
+        const payload = await agentComms.decryptMessage(request.body);
+        return { acknowledged: true, type: payload.type };
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
     }
-  });
+  );
 
-  app.post('/api/v1/comms/send', async (
-    request: FastifyRequest<{
-      Body: { toAgentId: string; payload: MessagePayload }
-    }>,
-    reply: FastifyReply,
-  ) => {
-    try {
-      const { toAgentId, payload } = request.body;
-      const encrypted = await agentComms.encryptMessage(toAgentId, payload);
-      return reply.code(201).send({ message: encrypted });
-    } catch (err) {
-      return reply.code(400).send({ error: errorMessage(err) });
+  app.post(
+    '/api/v1/comms/send',
+    async (
+      request: FastifyRequest<{
+        Body: { toAgentId: string; payload: MessagePayload };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { toAgentId, payload } = request.body;
+        const encrypted = await agentComms.encryptMessage(toAgentId, payload);
+        return reply.code(201).send({ message: encrypted });
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
     }
-  });
+  );
 
   // ── Message Log ──────────────────────────────────────────────
 
-  app.get('/api/v1/comms/log', async (
-    request: FastifyRequest<{
-      Querystring: { peerId?: string; type?: string; limit?: string }
-    }>,
-  ) => {
-    const q = request.query;
-    const log = await agentComms.getMessageLog({
-      peerId: q.peerId,
-      type: q.type as import('./types.js').MessageType | undefined,
-      limit: q.limit ? Number(q.limit) : undefined,
-    });
-    return { log };
-  });
+  app.get(
+    '/api/v1/comms/log',
+    async (
+      request: FastifyRequest<{
+        Querystring: { peerId?: string; type?: string; limit?: string };
+      }>
+    ) => {
+      const q = request.query;
+      const log = await agentComms.getMessageLog({
+        peerId: q.peerId,
+        type: q.type as import('./types.js').MessageType | undefined,
+        limit: q.limit ? Number(q.limit) : undefined,
+      });
+      return { log };
+    }
+  );
 }

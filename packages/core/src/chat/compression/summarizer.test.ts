@@ -34,7 +34,7 @@ describe('summarizeTopic', () => {
         model: 'test-model',
         maxTokens: 300,
         temperature: 0.3,
-      }),
+      })
     );
   });
 
@@ -57,10 +57,7 @@ describe('summarizeTopic', () => {
 
   it('formats messages as role: content lines', async () => {
     const deps = createMockDeps();
-    await summarizeTopic(
-      [{ role: 'user', content: 'hello' }],
-      deps,
-    );
+    await summarizeTopic([{ role: 'user', content: 'hello' }], deps);
 
     const chatCall = (deps.aiProvider.chat as ReturnType<typeof vi.fn>).mock.calls[0][0];
     expect(chatCall.messages[1].content).toContain('user: hello');
@@ -81,7 +78,7 @@ describe('summarizeBulk', () => {
     expect(deps.aiProvider.chat).toHaveBeenCalledWith(
       expect.objectContaining({
         maxTokens: 400,
-      }),
+      })
     );
   });
 

@@ -62,7 +62,7 @@ export class DeepSeekProvider extends BaseProvider {
         headers: { Authorization: `Bearer ${key}` },
       });
       if (!res.ok) return [];
-      const data = (await res.json()) as { data?: Array<{ id: string; owned_by: string }> };
+      const data = (await res.json()) as { data?: { id: string; owned_by: string }[] };
       return (data.data ?? []).map((m) => ({
         id: m.id,
         ownedBy: m.owned_by,

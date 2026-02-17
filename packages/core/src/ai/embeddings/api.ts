@@ -31,7 +31,9 @@ export class ApiEmbeddingProvider extends BaseEmbeddingProvider {
   constructor(config: ApiEmbeddingConfig, logger?: SecureLogger) {
     super(config, logger);
     this.provider = config.provider ?? 'openai';
-    this.model = config.model ?? (this.provider === 'openai' ? 'text-embedding-3-small' : 'models/text-embedding-004');
+    this.model =
+      config.model ??
+      (this.provider === 'openai' ? 'text-embedding-3-small' : 'models/text-embedding-004');
     this.apiKey = config.apiKey;
     this.name = `api-${this.provider}`;
 
@@ -58,7 +60,7 @@ export class ApiEmbeddingProvider extends BaseEmbeddingProvider {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.apiKey}`,
+        Authorization: `Bearer ${this.apiKey}`,
       },
       body: JSON.stringify({
         input: texts,
@@ -71,14 +73,12 @@ export class ApiEmbeddingProvider extends BaseEmbeddingProvider {
       throw new Error(`OpenAI embedding API error ${response.status}: ${err}`);
     }
 
-    const data = await response.json() as {
-      data: Array<{ embedding: number[]; index: number }>;
+    const data = (await response.json()) as {
+      data: { embedding: number[]; index: number }[];
     };
 
     // Sort by index to preserve order
-    return data.data
-      .sort((a, b) => a.index - b.index)
-      .map((d) => d.embedding);
+    return data.data.sort((a, b) => a.index - b.index).map((d) => d.embedding);
   }
 
   private async embedGemini(texts: string[]): Promise<number[][]> {
@@ -96,7 +96,7 @@ export class ApiEmbeddingProvider extends BaseEmbeddingProvider {
             content: { parts: [{ text }] },
           })),
         }),
-      },
+      }
     );
 
     if (!response.ok) {
@@ -104,8 +104,8 @@ export class ApiEmbeddingProvider extends BaseEmbeddingProvider {
       throw new Error(`Gemini embedding API error ${response.status}: ${err}`);
     }
 
-    const data = await response.json() as {
-      embeddings: Array<{ values: number[] }>;
+    const data = (await response.json()) as {
+      embeddings: { values: number[] }[];
     };
 
     for (const embedding of data.embeddings) {

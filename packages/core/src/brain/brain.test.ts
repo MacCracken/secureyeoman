@@ -12,7 +12,12 @@ import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -32,7 +37,10 @@ function defaultConfig(overrides?: Partial<BrainConfig>): BrainConfig {
 
 function createDeps(): BrainManagerDeps {
   const auditStorage = new InMemoryAuditStorage();
-  const auditChain = new AuditChain({ storage: auditStorage, signingKey: 'test-signing-key-must-be-at-least-32-chars!!' });
+  const auditChain = new AuditChain({
+    storage: auditStorage,
+    signingKey: 'test-signing-key-must-be-at-least-32-chars!!',
+  });
   return {
     auditChain,
     logger: noopLogger(),
@@ -134,7 +142,11 @@ describe('BrainStorage', () => {
     });
 
     it('should query memories by search', async () => {
-      await storage.createMemory({ type: 'semantic', content: 'React 18 framework', source: 'test' });
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'React 18 framework',
+        source: 'test',
+      });
       await storage.createMemory({ type: 'semantic', content: 'Vue 3 framework', source: 'test' });
 
       const results = await storage.queryMemories({ search: 'React' });
@@ -143,8 +155,18 @@ describe('BrainStorage', () => {
     });
 
     it('should query memories with minImportance', async () => {
-      await storage.createMemory({ type: 'semantic', content: 'Low', source: 'test', importance: 0.2 });
-      await storage.createMemory({ type: 'semantic', content: 'High', source: 'test', importance: 0.8 });
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'Low',
+        source: 'test',
+        importance: 0.2,
+      });
+      await storage.createMemory({
+        type: 'semantic',
+        content: 'High',
+        source: 'test',
+        importance: 0.8,
+      });
 
       const results = await storage.queryMemories({ minImportance: 0.5 });
       expect(results).toHaveLength(1);
@@ -170,9 +192,21 @@ describe('BrainStorage', () => {
     });
 
     it('should batch-touch multiple memories in a single call', async () => {
-      const m1 = await storage.createMemory({ type: 'semantic', content: 'Memory 1', source: 'test' });
-      const m2 = await storage.createMemory({ type: 'semantic', content: 'Memory 2', source: 'test' });
-      const m3 = await storage.createMemory({ type: 'episodic', content: 'Memory 3', source: 'test' });
+      const m1 = await storage.createMemory({
+        type: 'semantic',
+        content: 'Memory 1',
+        source: 'test',
+      });
+      const m2 = await storage.createMemory({
+        type: 'semantic',
+        content: 'Memory 2',
+        source: 'test',
+      });
+      const m3 = await storage.createMemory({
+        type: 'episodic',
+        content: 'Memory 3',
+        source: 'test',
+      });
 
       await storage.touchMemories([m1.id, m2.id, m3.id]);
 
@@ -289,7 +323,10 @@ describe('BrainStorage', () => {
         content: 'Port 3000',
         source: 'test',
       });
-      const updated = await storage.updateKnowledge(k.id, { content: 'Port 18789', confidence: 0.95 });
+      const updated = await storage.updateKnowledge(k.id, {
+        content: 'Port 18789',
+        confidence: 0.95,
+      });
       expect(updated.content).toBe('Port 18789');
       expect(updated.confidence).toBe(0.95);
     });
@@ -302,7 +339,9 @@ describe('BrainStorage', () => {
     });
 
     it('should throw when updating non-existent knowledge', async () => {
-      await expect(storage.updateKnowledge('nonexistent', { content: 'X' })).rejects.toThrow('Knowledge not found');
+      await expect(storage.updateKnowledge('nonexistent', { content: 'X' })).rejects.toThrow(
+        'Knowledge not found'
+      );
     });
 
     it('should delete knowledge', async () => {
@@ -451,7 +490,9 @@ describe('BrainManager', () => {
 
     it('should throw when brain is disabled', async () => {
       const mgr = new BrainManager(storage, defaultConfig({ enabled: false }), createDeps());
-      await expect(mgr.remember('semantic', 'Test', 'test')).rejects.toThrow('Brain is not enabled');
+      await expect(mgr.remember('semantic', 'Test', 'test')).rejects.toThrow(
+        'Brain is not enabled'
+      );
     });
 
     it('should return empty on recall when disabled', async () => {
@@ -553,13 +594,23 @@ describe('BrainManager', () => {
     });
 
     it('should approve pending skills', async () => {
-      const s = await manager.createSkill({ name: 's1', source: 'ai_proposed', status: 'pending_approval', enabled: false });
+      const s = await manager.createSkill({
+        name: 's1',
+        source: 'ai_proposed',
+        status: 'pending_approval',
+        enabled: false,
+      });
       const approved = await manager.approveSkill(s.id);
       expect(approved.status).toBe('active');
     });
 
     it('should reject pending skills', async () => {
-      const s = await manager.createSkill({ name: 's1', source: 'ai_proposed', status: 'pending_approval', enabled: false });
+      const s = await manager.createSkill({
+        name: 's1',
+        source: 'ai_proposed',
+        status: 'pending_approval',
+        enabled: false,
+      });
       await manager.rejectSkill(s.id);
       expect(await manager.getSkill(s.id)).toBeNull();
     });
@@ -574,7 +625,9 @@ describe('BrainManager', () => {
         name: 's1',
         source: 'user',
         status: 'active',
-        tools: [{ name: 'search', description: 'Search', parameters: { type: 'object', properties: {} } }],
+        tools: [
+          { name: 'search', description: 'Search', parameters: { type: 'object', properties: {} } },
+        ],
       });
       const tools = await manager.getActiveTools();
       expect(tools).toHaveLength(1);
@@ -603,7 +656,7 @@ describe('BrainManager', () => {
       const all = await manager.queryKnowledge({});
       expect(all.length).toBeGreaterThanOrEqual(4);
 
-      const topics = all.map(k => k.topic);
+      const topics = all.map((k) => k.topic);
       expect(topics).toContain('self-identity');
       expect(topics).toContain('hierarchy');
       expect(topics).toContain('purpose');

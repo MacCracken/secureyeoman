@@ -4,12 +4,7 @@
  * Re-exports shared types and defines internal interfaces.
  */
 
-export type {
-  Skill,
-  SkillCreate,
-  SkillUpdate,
-  Tool,
-} from '@friday/shared';
+export type { Skill, SkillCreate, SkillUpdate, Tool } from '@friday/shared';
 
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
@@ -17,7 +12,10 @@ import type { AuditQueryOptions, AuditQueryResult } from '../logging/sqlite-stor
 
 export interface AuditStorage {
   queryEntries(opts: AuditQueryOptions): Promise<AuditQueryResult>;
-  searchFullText(query: string, opts?: { limit?: number; offset?: number }): Promise<AuditQueryResult>;
+  searchFullText(
+    query: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<AuditQueryResult>;
 }
 
 export interface Memory {

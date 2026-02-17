@@ -50,13 +50,16 @@ export class OpenCodeProvider extends BaseProvider {
   /**
    * Fetch available models from OpenCode's OpenAI-compatible models endpoint.
    */
-  static async fetchAvailableModels(apiKey: string, baseUrl = OPENCODE_BASE_URL): Promise<OpenCodeModelInfo[]> {
+  static async fetchAvailableModels(
+    apiKey: string,
+    baseUrl = OPENCODE_BASE_URL
+  ): Promise<OpenCodeModelInfo[]> {
     try {
       const res = await fetch(`${baseUrl}/models`, {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
       if (!res.ok) return [];
-      const data = (await res.json()) as { data?: Array<{ id: string; owned_by: string }> };
+      const data = (await res.json()) as { data?: { id: string; owned_by: string }[] };
       return (data.data ?? []).map((m) => ({
         id: m.id,
         ownedBy: m.owned_by,

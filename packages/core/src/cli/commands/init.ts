@@ -80,11 +80,7 @@ Options:
 
         if (!envOnly.value) {
           // 2. Description
-          description = await prompt(
-            rl,
-            '  Description',
-            description,
-          );
+          description = await prompt(rl, '  Description', description);
 
           // 3. Traits
           const formalityChoices = ['casual', 'balanced', 'formal'];
@@ -92,23 +88,18 @@ Options:
             rl,
             '  Formality level?',
             formalityChoices,
-            1,
+            1
           )) as typeof formality;
 
           const humorChoices = ['none', 'subtle', 'witty'];
-          humor = (await promptChoice(
-            rl,
-            '  Humor style?',
-            humorChoices,
-            1,
-          )) as typeof humor;
+          humor = (await promptChoice(rl, '  Humor style?', humorChoices, 1)) as typeof humor;
 
           const verbosityChoices = ['concise', 'balanced', 'detailed'];
           verbosity = (await promptChoice(
             rl,
             '  Verbosity?',
             verbosityChoices,
-            1,
+            1
           )) as typeof verbosity;
         }
 
@@ -159,9 +150,10 @@ Options:
       }
 
       const merged = { ...existingEnv, ...keys };
-      const envContent = Object.entries(merged)
-        .map(([k, v]) => `${k}=${v}`)
-        .join('\n') + '\n';
+      const envContent =
+        Object.entries(merged)
+          .map(([k, v]) => `${k}=${v}`)
+          .join('\n') + '\n';
 
       writeFileSync(envPath, envContent, 'utf-8');
       ctx.stdout.write(`\n  .env file written to ${envPath}\n`);

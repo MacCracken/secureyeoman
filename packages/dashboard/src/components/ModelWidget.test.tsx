@@ -143,8 +143,8 @@ describe('ModelWidget', () => {
 
     // Click Anthropic header to collapse
     const anthropicButtons = screen.getAllByText(/Anthropic/);
-    const providerButton = anthropicButtons.find(
-      (el) => el.closest('button')?.classList.contains('w-full'),
+    const providerButton = anthropicButtons.find((el) =>
+      el.closest('button')?.classList.contains('w-full')
     )!;
     await user.click(providerButton);
 
@@ -205,8 +205,8 @@ describe('ModelWidget', () => {
 
     // Collapse
     const anthropicButtons = screen.getAllByText(/Anthropic/);
-    const providerButton = anthropicButtons.find(
-      (el) => el.closest('button')?.classList.contains('w-full'),
+    const providerButton = anthropicButtons.find((el) =>
+      el.closest('button')?.classList.contains('w-full')
     )!;
     await user.click(providerButton);
     await waitFor(() => {

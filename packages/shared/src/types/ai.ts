@@ -122,7 +122,10 @@ export const AIStreamChunkSchema = z.discriminatedUnion('type', [
   }),
   z.object({
     type: z.literal('tool_call_delta'),
-    toolCall: ToolCallSchema.partial().extend({ id: z.string().optional(), name: z.string().optional() }),
+    toolCall: ToolCallSchema.partial().extend({
+      id: z.string().optional(),
+      name: z.string().optional(),
+    }),
   }),
   z.object({
     type: z.literal('usage'),
@@ -139,5 +142,14 @@ export type AIStreamChunk = z.infer<typeof AIStreamChunkSchema>;
 
 // ─── Provider Enum ────────────────────────────────────────────
 
-export const AIProviderNameSchema = z.enum(['anthropic', 'openai', 'gemini', 'ollama', 'opencode', 'lmstudio', 'localai', 'deepseek']);
+export const AIProviderNameSchema = z.enum([
+  'anthropic',
+  'openai',
+  'gemini',
+  'ollama',
+  'opencode',
+  'lmstudio',
+  'localai',
+  'deepseek',
+]);
 export type AIProviderName = z.infer<typeof AIProviderNameSchema>;

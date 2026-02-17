@@ -61,7 +61,9 @@ export function ApiKeysSettings() {
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(true);
-    setTimeout(() => setCopiedKey(false), 2000);
+    setTimeout(() => {
+      setCopiedKey(false);
+    }, 2000);
   };
 
   const handleConfirmRevoke = useCallback(() => {
@@ -80,7 +82,9 @@ export function ApiKeysSettings() {
         confirmLabel="Revoke"
         destructive
         onConfirm={handleConfirmRevoke}
-        onCancel={() => setRevokeTarget(null)}
+        onCancel={() => {
+          setRevokeTarget(null);
+        }}
       />
 
       <div>
@@ -124,7 +128,9 @@ export function ApiKeysSettings() {
               </code>
               <button
                 className="btn btn-ghost text-sm px-2 py-1 flex items-center gap-1"
-                onClick={() => copyToClipboard(createdKey.rawKey)}
+                onClick={() => {
+                  copyToClipboard(createdKey.rawKey);
+                }}
                 aria-label="Copy API key"
               >
                 {copiedKey ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
@@ -143,7 +149,9 @@ export function ApiKeysSettings() {
                 <input
                   type="text"
                   value={newKeyForm.name}
-                  onChange={(e) => setNewKeyForm({ ...newKeyForm, name: e.target.value })}
+                  onChange={(e) => {
+                    setNewKeyForm({ ...newKeyForm, name: e.target.value });
+                  }}
                   placeholder="e.g. CI Pipeline"
                   className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                 />
@@ -152,7 +160,9 @@ export function ApiKeysSettings() {
                 <label className="text-xs text-muted-foreground block mb-1">Role</label>
                 <select
                   value={newKeyForm.role}
-                  onChange={(e) => setNewKeyForm({ ...newKeyForm, role: e.target.value })}
+                  onChange={(e) => {
+                    setNewKeyForm({ ...newKeyForm, role: e.target.value });
+                  }}
                   className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                 >
                   {ROLE_OPTIONS.map((r) => (
@@ -167,12 +177,12 @@ export function ApiKeysSettings() {
                 <input
                   type="number"
                   value={newKeyForm.expiresInDays ?? ''}
-                  onChange={(e) =>
+                  onChange={(e) => {
                     setNewKeyForm({
                       ...newKeyForm,
                       expiresInDays: e.target.value ? Number(e.target.value) : undefined,
-                    })
-                  }
+                    });
+                  }}
                   placeholder="90"
                   className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
                 />
@@ -181,14 +191,18 @@ export function ApiKeysSettings() {
             <div className="flex gap-2">
               <button
                 className="btn btn-primary text-sm px-3 py-1"
-                onClick={() => createKeyMutation.mutate(newKeyForm)}
+                onClick={() => {
+                  createKeyMutation.mutate(newKeyForm);
+                }}
                 disabled={!newKeyForm.name.trim() || createKeyMutation.isPending}
               >
                 {createKeyMutation.isPending ? 'Creating...' : 'Create'}
               </button>
               <button
                 className="btn btn-ghost text-sm px-3 py-1"
-                onClick={() => setShowCreateKey(false)}
+                onClick={() => {
+                  setShowCreateKey(false);
+                }}
               >
                 Cancel
               </button>
@@ -222,7 +236,9 @@ export function ApiKeysSettings() {
                   </span>
                   <button
                     className="text-destructive hover:text-destructive/80"
-                    onClick={() => setRevokeTarget(key)}
+                    onClick={() => {
+                      setRevokeTarget(key);
+                    }}
                     aria-label={`Revoke API key ${key.name}`}
                   >
                     <Trash2 className="w-3.5 h-3.5" />

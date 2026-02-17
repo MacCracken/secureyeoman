@@ -44,7 +44,7 @@ export class CompressionStorage extends PgBaseStorage {
     await this.query(
       `INSERT INTO chat.conversation_history (id, conversation_id, tier, content, token_count, sequence, created_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [id, data.conversationId, data.tier, data.content, data.tokenCount, data.sequence, now],
+      [id, data.conversationId, data.tier, data.content, data.tokenCount, data.sequence, now]
     );
 
     return {
@@ -61,7 +61,7 @@ export class CompressionStorage extends PgBaseStorage {
 
   async getEntriesByConversation(
     conversationId: string,
-    tier?: CompressionTier,
+    tier?: CompressionTier
   ): Promise<HistoryEntry[]> {
     let sql = 'SELECT * FROM chat.conversation_history WHERE conversation_id = $1';
     const params: unknown[] = [conversationId];
@@ -78,10 +78,10 @@ export class CompressionStorage extends PgBaseStorage {
   }
 
   async sealEntry(id: string): Promise<void> {
-    await this.execute(
-      'UPDATE chat.conversation_history SET sealed_at = $1 WHERE id = $2',
-      [Date.now(), id],
-    );
+    await this.execute('UPDATE chat.conversation_history SET sealed_at = $1 WHERE id = $2', [
+      Date.now(),
+      id,
+    ]);
   }
 
   async deleteOldestBulk(conversationId: string): Promise<void> {
@@ -93,7 +93,7 @@ export class CompressionStorage extends PgBaseStorage {
          ORDER BY sequence ASC
          LIMIT 1
        )`,
-      [conversationId],
+      [conversationId]
     );
   }
 
@@ -103,7 +103,7 @@ export class CompressionStorage extends PgBaseStorage {
        FROM chat.conversation_history
        WHERE conversation_id = $1
        GROUP BY tier`,
-      [conversationId],
+      [conversationId]
     );
 
     const result: Record<CompressionTier, number> = {
@@ -122,15 +122,14 @@ export class CompressionStorage extends PgBaseStorage {
   async getNextSequence(conversationId: string, tier: CompressionTier): Promise<number> {
     const row = await this.queryOne<{ max_seq: number | null }>(
       'SELECT MAX(sequence) as max_seq FROM chat.conversation_history WHERE conversation_id = $1 AND tier = $2',
-      [conversationId, tier],
+      [conversationId, tier]
     );
     return (row?.max_seq ?? -1) + 1;
   }
 
   async deleteEntriesByConversation(conversationId: string): Promise<void> {
-    await this.execute(
-      'DELETE FROM chat.conversation_history WHERE conversation_id = $1',
-      [conversationId],
-    );
+    await this.execute('DELETE FROM chat.conversation_history WHERE conversation_id = $1', [
+      conversationId,
+    ]);
   }
 }

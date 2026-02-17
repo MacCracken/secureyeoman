@@ -57,7 +57,9 @@ function getPackageVersion(): string {
     if (existsSync(p)) {
       try {
         return JSON.parse(readFileSync(p, 'utf-8')).version ?? '0.0.0';
-      } catch { /* fall through */ }
+      } catch {
+        /* fall through */
+      }
     }
   }
   return '0.0.0';
@@ -304,7 +306,11 @@ export class GatewayServer {
       const heartbeatManager = this.secureYeoman.getHeartbeatManager() ?? undefined;
       const externalSync = this.secureYeoman.getExternalBrainSync() ?? undefined;
       let soulManager;
-      try { soulManager = this.secureYeoman.getSoulManager(); } catch { /* may not be available */ }
+      try {
+        soulManager = this.secureYeoman.getSoulManager();
+      } catch {
+        /* may not be available */
+      }
       registerBrainRoutes(this.app, { brainManager, heartbeatManager, externalSync, soulManager });
     } catch {
       // Brain manager may not be available — skip routes
@@ -489,7 +495,9 @@ export class GatewayServer {
           if (request.url.startsWith('/api/v1/multimodal/')) {
             const config = this.secureYeoman.getConfig();
             if (!config.security.allowMultimodal) {
-              return reply.code(403).send({ error: 'Forbidden: Multimodal I/O is disabled by security policy' });
+              return reply
+                .code(403)
+                .send({ error: 'Forbidden: Multimodal I/O is disabled by security policy' });
             }
           }
         });
@@ -858,16 +866,48 @@ export class GatewayServer {
       '/api/v1/security/policy',
       async (
         request: FastifyRequest<{
-          Body: { allowSubAgents?: boolean; allowA2A?: boolean; allowExtensions?: boolean; allowExecution?: boolean; allowProactive?: boolean; allowExperiments?: boolean; allowMultimodal?: boolean };
+          Body: {
+            allowSubAgents?: boolean;
+            allowA2A?: boolean;
+            allowExtensions?: boolean;
+            allowExecution?: boolean;
+            allowProactive?: boolean;
+            allowExperiments?: boolean;
+            allowMultimodal?: boolean;
+          };
         }>,
         reply: FastifyReply
       ) => {
         try {
-          const { allowSubAgents, allowA2A, allowExtensions, allowExecution, allowProactive, allowExperiments, allowMultimodal } = request.body;
-          if (allowSubAgents === undefined && allowA2A === undefined && allowExtensions === undefined && allowExecution === undefined && allowProactive === undefined && allowExperiments === undefined && allowMultimodal === undefined) {
+          const {
+            allowSubAgents,
+            allowA2A,
+            allowExtensions,
+            allowExecution,
+            allowProactive,
+            allowExperiments,
+            allowMultimodal,
+          } = request.body;
+          if (
+            allowSubAgents === undefined &&
+            allowA2A === undefined &&
+            allowExtensions === undefined &&
+            allowExecution === undefined &&
+            allowProactive === undefined &&
+            allowExperiments === undefined &&
+            allowMultimodal === undefined
+          ) {
             return reply.code(400).send({ error: 'No valid fields provided' });
           }
-          this.secureYeoman.updateSecurityPolicy({ allowSubAgents, allowA2A, allowExtensions, allowExecution, allowProactive, allowExperiments, allowMultimodal });
+          this.secureYeoman.updateSecurityPolicy({
+            allowSubAgents,
+            allowA2A,
+            allowExtensions,
+            allowExecution,
+            allowProactive,
+            allowExperiments,
+            allowMultimodal,
+          });
           const config = this.secureYeoman.getConfig();
           return {
             allowSubAgents: config.security.allowSubAgents,
@@ -975,7 +1015,13 @@ export class GatewayServer {
           return reply
             .header('Content-Type', 'application/json')
             .header('Content-Disposition', `attachment; filename="${filename}"`)
-            .send(JSON.stringify({ exportedAt: new Date().toISOString(), count: entries.length, entries }, null, 2));
+            .send(
+              JSON.stringify(
+                { exportedAt: new Date().toISOString(), count: entries.length, entries },
+                null,
+                2
+              )
+            );
         } catch {
           return reply.code(500).send({ error: 'Failed to export audit log' });
         }

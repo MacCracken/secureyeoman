@@ -70,7 +70,7 @@ export class SubAgentManager {
 
   async delegate(
     params: DelegationParams,
-    parentContext?: { delegationId?: string; depth?: number; remainingBudget?: number },
+    parentContext?: { delegationId?: string; depth?: number; remainingBudget?: number }
   ): Promise<DelegationResult> {
     // Top-level security kill-switch — overrides delegation config and per-personality settings
     if (this.deps.securityConfig && !this.deps.securityConfig.allowSubAgents) {
@@ -106,7 +106,7 @@ export class SubAgentManager {
       params.maxTokenBudget ?? this.config.tokenBudget.default,
       profile.maxTokenBudget,
       this.config.tokenBudget.max,
-      parentContext?.remainingBudget ?? this.config.tokenBudget.max,
+      parentContext?.remainingBudget ?? this.config.tokenBudget.max
     );
 
     const timeoutMs = params.timeout ?? this.config.defaultTimeout;
@@ -139,7 +139,7 @@ export class SubAgentManager {
       tokenBudget,
       timeoutMs,
       abortController.signal,
-      parentContext?.delegationId,
+      parentContext?.delegationId
     );
 
     this.activeDelegations.set(delegationId, {
@@ -231,7 +231,9 @@ export class SubAgentManager {
     limit?: number;
     offset?: number;
   }) {
-    return this.storage.listDelegations(filter as Parameters<SubAgentStorage['listDelegations']>[0]);
+    return this.storage.listDelegations(
+      filter as Parameters<SubAgentStorage['listDelegations']>[0]
+    );
   }
 
   async getActiveDelegations() {
@@ -266,7 +268,7 @@ export class SubAgentManager {
     tokenBudget: number,
     timeoutMs: number,
     signal: AbortSignal,
-    parentDelegationId?: string,
+    parentDelegationId?: string
   ): Promise<DelegationResult> {
     const startTime = Date.now();
     let tokensUsedPrompt = 0;
@@ -418,7 +420,7 @@ export class SubAgentManager {
                     delegationId,
                     depth: depth + 1,
                     remainingBudget: tokenBudget - (tokensUsedPrompt + tokensUsedCompletion),
-                  },
+                  }
                 );
                 subDelegations.push(subResult);
                 toolContent = JSON.stringify({
@@ -489,7 +491,7 @@ export class SubAgentManager {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error';
 
       await this.storage.updateDelegation(delegationId, {
-        status: status as 'timeout' | 'cancelled' | 'failed',
+        status: status,
         error: errorMsg,
         tokensUsedPrompt,
         tokensUsedCompletion,
@@ -507,7 +509,7 @@ export class SubAgentManager {
       return {
         delegationId,
         profile: profile.name,
-        status: status as 'timeout' | 'cancelled' | 'failed',
+        status: status,
         result: null,
         error: errorMsg,
         tokenUsage: {
@@ -544,9 +546,8 @@ export class SubAgentManager {
         completion: record.tokensUsedCompletion,
         total: record.tokensUsedPrompt + record.tokensUsedCompletion,
       },
-      durationMs: record.completedAt && record.startedAt
-        ? record.completedAt - record.startedAt
-        : 0,
+      durationMs:
+        record.completedAt && record.startedAt ? record.completedAt - record.startedAt : 0,
       subDelegations: childResults,
     };
   }

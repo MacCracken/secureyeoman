@@ -178,18 +178,27 @@ export function useVoice(): UseVoiceReturn {
     };
   }, [voiceEnabled, hasSpeechRecognition, startListening, stopListening]);
 
-  const speak = useCallback((text: string) => {
-    if (!hasSpeechSynthesis) return;
+  const speak = useCallback(
+    (text: string) => {
+      if (!hasSpeechSynthesis) return;
 
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
 
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
+      utterance.onstart = () => {
+        setIsSpeaking(true);
+      };
+      utterance.onend = () => {
+        setIsSpeaking(false);
+      };
+      utterance.onerror = () => {
+        setIsSpeaking(false);
+      };
 
-    window.speechSynthesis.speak(utterance);
-  }, [hasSpeechSynthesis]);
+      window.speechSynthesis.speak(utterance);
+    },
+    [hasSpeechSynthesis]
+  );
 
   const clearTranscript = useCallback(() => {
     setTranscript('');

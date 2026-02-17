@@ -78,7 +78,10 @@ describe('SettingsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
   });
 

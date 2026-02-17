@@ -308,7 +308,7 @@ export class GmailIntegration implements Integration {
     const bodyText = this.extractTextBody(msg.payload);
 
     // Parse sender name and email from "Name <email@example.com>" format
-    const fromMatch = from.match(/^(.+?)\s*<(.+?)>$/);
+    const fromMatch = /^(.+?)\s*<(.+?)>$/.exec(from);
     const senderName = fromMatch?.[1]?.replace(/^"|"$/g, '') ?? from;
     const senderEmail = fromMatch?.[2] ?? from;
 
@@ -421,9 +421,7 @@ export class GmailIntegration implements Integration {
     if (!resp.ok) return null;
 
     const data = (await resp.json()) as { labels: GmailLabel[] };
-    const label = data.labels.find(
-      (l) => l.name.toLowerCase() === labelName.toLowerCase()
-    );
+    const label = data.labels.find((l) => l.name.toLowerCase() === labelName.toLowerCase());
     return label?.id ?? null;
   }
 

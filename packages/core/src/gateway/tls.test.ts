@@ -24,7 +24,16 @@ describe('cert-gen', () => {
     });
   });
 
-  describe.skipIf(!(() => { try { require('child_process').execFileSync('openssl', ['version'], { stdio: 'pipe' }); return true; } catch { return false; } })())('with openssl', () => {
+  describe.skipIf(
+    !(() => {
+      try {
+        require('child_process').execFileSync('openssl', ['version'], { stdio: 'pipe' });
+        return true;
+      } catch {
+        return false;
+      }
+    })()
+  )('with openssl', () => {
     let tmpDir: string;
 
     beforeEach(() => {
@@ -50,15 +59,21 @@ describe('cert-gen', () => {
     });
 
     it('generateClientCert throws when CA files missing', () => {
-      expect(() => certGen.generateClientCert(tmpDir, 'test', {
-        caKey: '/nonexistent/ca-key.pem',
-        caCert: '/nonexistent/ca-cert.pem',
-      })).toThrow('CA key/cert not found');
+      expect(() =>
+        certGen.generateClientCert(tmpDir, 'test', {
+          caKey: '/nonexistent/ca-key.pem',
+          caCert: '/nonexistent/ca-cert.pem',
+        })
+      ).toThrow('CA key/cert not found');
     });
 
     // Cleanup
     afterEach(() => {
-      try { rmSync(tmpDir, { recursive: true }); } catch { /* ignore */ }
+      try {
+        rmSync(tmpDir, { recursive: true });
+      } catch {
+        /* ignore */
+      }
     });
   });
 });
@@ -85,10 +100,13 @@ describe('GatewayServer TLS config', () => {
     // Constructor will throw because the cert files don't exist —
     // that confirms TLS logic was reached
     const { GatewayServer } = await import('./server.js');
-    expect(() => new GatewayServer({
-      config,
-      secureYeoman: {} as any,
-    })).toThrow(); // Will throw ENOENT for cert file
+    expect(
+      () =>
+        new GatewayServer({
+          config,
+          secureYeoman: {} as any,
+        })
+    ).toThrow(); // Will throw ENOENT for cert file
   });
 
   it('does not build https options when tls.enabled is false', async () => {

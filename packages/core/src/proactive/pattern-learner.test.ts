@@ -64,10 +64,14 @@ function makeScatteredMemories(count: number, context: string) {
       context: {
         interactionType: 'message',
         context,
-        timestamp: String(new Date(`2026-02-${(i % 16) + 1}T${(i % 24).toString().padStart(2, '0')}:00:00.000Z`).getTime()),
+        timestamp: String(
+          new Date(
+            `2026-02-${(i % 16) + 1}T${(i % 24).toString().padStart(2, '0')}:00:00.000Z`
+          ).getTime()
+        ),
       },
       createdAt: Date.now(),
-    }),
+    })
   );
 }
 
@@ -160,7 +164,7 @@ describe('PatternLearner', () => {
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'Failed to record interaction for pattern learning',
-        expect.objectContaining({ error: 'Brain offline' }),
+        expect.objectContaining({ error: 'Brain offline' })
       );
     });
 
@@ -172,7 +176,7 @@ describe('PatternLearner', () => {
 
       expect(mockLogger.warn).toHaveBeenCalledWith(
         'Failed to record interaction for pattern learning',
-        expect.objectContaining({ error: 'raw error string' }),
+        expect.objectContaining({ error: 'raw error string' })
       );
     });
   });
@@ -302,16 +306,25 @@ describe('PatternLearner', () => {
       expect(patterns).toEqual([]);
       expect(mockLogger.error).toHaveBeenCalledWith(
         'Pattern detection failed',
-        expect.objectContaining({ error: 'DB connection failed' }),
+        expect.objectContaining({ error: 'DB connection failed' })
       );
     });
 
     it('skips context groups with fewer than 3 interactions', async () => {
       const memories = [
-        makeMemoryRecord({ context: { interactionType: 'm', context: 'sparse', timestamp: String(Date.now()) }, createdAt: Date.now() }),
-        makeMemoryRecord({ context: { interactionType: 'm', context: 'sparse', timestamp: String(Date.now()) }, createdAt: Date.now() }),
+        makeMemoryRecord({
+          context: { interactionType: 'm', context: 'sparse', timestamp: String(Date.now()) },
+          createdAt: Date.now(),
+        }),
+        makeMemoryRecord({
+          context: { interactionType: 'm', context: 'sparse', timestamp: String(Date.now()) },
+          createdAt: Date.now(),
+        }),
         // only 2 in 'sparse' context — not enough; but 3 overall memories pass the first gate
-        makeMemoryRecord({ context: { interactionType: 'm', context: 'other', timestamp: String(Date.now()) }, createdAt: Date.now() }),
+        makeMemoryRecord({
+          context: { interactionType: 'm', context: 'other', timestamp: String(Date.now()) },
+          createdAt: Date.now(),
+        }),
       ];
       mockBrainManager.recall.mockResolvedValue(memories);
 
@@ -326,7 +339,7 @@ describe('PatternLearner', () => {
         makeMemoryRecord({
           context: { interactionType: 'test', timestamp: String(Date.now()) }, // no context field
           createdAt: Date.now(),
-        }),
+        })
       );
       mockBrainManager.recall.mockResolvedValue(memories);
 

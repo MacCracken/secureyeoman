@@ -13,13 +13,15 @@ export function registerAuditResources(server: McpServer, client: CoreApiClient)
     async () => {
       const result = await client.get('/api/v1/audit', { limit: '100' });
       return {
-        contents: [{
-          uri: 'friday://audit/recent',
-          mimeType: 'application/json',
-          text: JSON.stringify(result, null, 2),
-        }],
+        contents: [
+          {
+            uri: 'friday://audit/recent',
+            mimeType: 'application/json',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
       };
-    },
+    }
   );
 
   server.resource(
@@ -30,21 +32,25 @@ export function registerAuditResources(server: McpServer, client: CoreApiClient)
       try {
         const result = await client.get('/api/v1/audit/stats');
         return {
-          contents: [{
-            uri: 'friday://audit/stats',
-            mimeType: 'application/json',
-            text: JSON.stringify(result, null, 2),
-          }],
+          contents: [
+            {
+              uri: 'friday://audit/stats',
+              mimeType: 'application/json',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
         };
       } catch {
         return {
-          contents: [{
-            uri: 'friday://audit/stats',
-            mimeType: 'application/json',
-            text: JSON.stringify({ error: 'Audit stats unavailable' }),
-          }],
+          contents: [
+            {
+              uri: 'friday://audit/stats',
+              mimeType: 'application/json',
+              text: JSON.stringify({ error: 'Audit stats unavailable' }),
+            },
+          ],
         };
       }
-    },
+    }
   );
 }

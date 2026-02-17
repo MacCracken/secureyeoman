@@ -5,8 +5,14 @@
 import { z } from 'zod';
 
 export const WidgetTypeSchema = z.enum([
-  'metrics_graph', 'task_summary', 'security_events', 'resource_monitor',
-  'cost_tracker', 'audit_log', 'custom_text', 'connection_status',
+  'metrics_graph',
+  'task_summary',
+  'security_events',
+  'resource_monitor',
+  'cost_tracker',
+  'audit_log',
+  'custom_text',
+  'connection_status',
 ]);
 export type WidgetType = z.infer<typeof WidgetTypeSchema>;
 

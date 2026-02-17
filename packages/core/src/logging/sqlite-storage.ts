@@ -53,7 +53,11 @@ function rowToEntry(row: AuditRow): AuditEntry {
     message: row.message,
     userId: row.user_id ?? undefined,
     taskId: row.task_id ?? undefined,
-    metadata: row.metadata ? (typeof row.metadata === 'string' ? JSON.parse(row.metadata) : row.metadata) : undefined,
+    metadata: row.metadata
+      ? typeof row.metadata === 'string'
+        ? JSON.parse(row.metadata)
+        : row.metadata
+      : undefined,
     timestamp: row.timestamp,
     integrity: {
       version: row.integrity_version,
@@ -92,13 +96,13 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
         entry.integrity.version,
         entry.integrity.signature,
         entry.integrity.previousEntryHash,
-      ],
+      ]
     );
   }
 
   async getLast(): Promise<AuditEntry | null> {
     const row = await this.queryOne<AuditRow>(
-      'SELECT * FROM audit.entries ORDER BY timestamp DESC LIMIT 1',
+      'SELECT * FROM audit.entries ORDER BY timestamp DESC LIMIT 1'
     );
 
     return row ? rowToEntry(row) : null;
@@ -106,7 +110,7 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
 
   async *iterate(): AsyncIterableIterator<AuditEntry> {
     const rows = await this.queryMany<AuditRow>(
-      'SELECT * FROM audit.entries ORDER BY timestamp ASC',
+      'SELECT * FROM audit.entries ORDER BY timestamp ASC'
     );
 
     for (const row of rows) {
@@ -115,17 +119,12 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
   }
 
   async count(): Promise<number> {
-    const row = await this.queryOne<{ cnt: string }>(
-      'SELECT COUNT(*) as cnt FROM audit.entries',
-    );
+    const row = await this.queryOne<{ cnt: string }>('SELECT COUNT(*) as cnt FROM audit.entries');
     return Number(row?.cnt ?? 0);
   }
 
   async getById(id: string): Promise<AuditEntry | null> {
-    const row = await this.queryOne<AuditRow>(
-      'SELECT * FROM audit.entries WHERE id = $1',
-      [id],
-    );
+    const row = await this.queryOne<AuditRow>('SELECT * FROM audit.entries WHERE id = $1', [id]);
 
     return row ? rowToEntry(row) : null;
   }
@@ -170,13 +169,13 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
 
     const countRow = await this.queryOne<{ cnt: string }>(
       `SELECT COUNT(*) as cnt FROM audit.entries ${where}`,
-      params,
+      params
     );
 
     const dataParams = [...params, limit, offset];
     const rows = await this.queryMany<AuditRow>(
       `SELECT * FROM audit.entries ${where} ORDER BY timestamp ${order} LIMIT $${paramIndex++} OFFSET $${paramIndex++}`,
-      dataParams,
+      dataParams
     );
 
     return {
@@ -190,7 +189,7 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
   async getByTaskId(taskId: string): Promise<AuditEntry[]> {
     const rows = await this.queryMany<AuditRow>(
       'SELECT * FROM audit.entries WHERE task_id = $1 ORDER BY timestamp ASC',
-      [taskId],
+      [taskId]
     );
 
     return rows.map(rowToEntry);
@@ -199,7 +198,7 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
   async getByCorrelationId(correlationId: string): Promise<AuditEntry[]> {
     const rows = await this.queryMany<AuditRow>(
       'SELECT * FROM audit.entries WHERE correlation_id = $1 ORDER BY timestamp ASC',
-      [correlationId],
+      [correlationId]
     );
 
     return rows.map(rowToEntry);
@@ -213,14 +212,14 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
    */
   async searchFullText(
     query: string,
-    opts: { limit?: number; offset?: number } = {},
+    opts: { limit?: number; offset?: number } = {}
   ): Promise<AuditQueryResult> {
     const limit = Math.min(opts.limit ?? 50, 1000);
     const offset = opts.offset ?? 0;
 
     const countRow = await this.queryOne<{ cnt: string }>(
       `SELECT COUNT(*) as cnt FROM audit.entries WHERE search_vector @@ plainto_tsquery('english', $1)`,
-      [query],
+      [query]
     );
 
     const rows = await this.queryMany<AuditRow>(
@@ -228,7 +227,7 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
        WHERE search_vector @@ plainto_tsquery('english', $1)
        ORDER BY ts_rank(search_vector, plainto_tsquery('english', $1)) DESC
        LIMIT $2 OFFSET $3`,
-      [query, limit, offset],
+      [query, limit, offset]
     );
 
     return {
@@ -250,15 +249,14 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
 
     // 1. Delete entries older than maxAgeDays
     const cutoff = Date.now() - maxAgeDays * 86_400_000;
-    const ageDeleted = await this.execute(
-      'DELETE FROM audit.entries WHERE timestamp < $1',
-      [cutoff],
-    );
+    const ageDeleted = await this.execute('DELETE FROM audit.entries WHERE timestamp < $1', [
+      cutoff,
+    ]);
     totalDeleted += ageDeleted;
 
     // 2. If entry count exceeds maxEntries, delete oldest beyond limit
     const countRow = await this.queryOne<{ cnt: string }>(
-      'SELECT COUNT(*) as cnt FROM audit.entries',
+      'SELECT COUNT(*) as cnt FROM audit.entries'
     );
     const currentCount = Number(countRow?.cnt ?? 0);
 
@@ -268,7 +266,7 @@ export class SQLiteAuditStorage extends PgBaseStorage implements AuditChainStora
         `DELETE FROM audit.entries WHERE id IN (
           SELECT id FROM audit.entries ORDER BY timestamp ASC LIMIT $1
         )`,
-        [excess],
+        [excess]
       );
       totalDeleted += overflowDeleted;
     }

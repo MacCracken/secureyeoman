@@ -48,11 +48,7 @@ describe('McpCredentialManager', () => {
     it('stores and retrieves a credential with the original plaintext', async () => {
       await manager.storeCredential('srv-1', 'API_KEY', 'super-secret-value');
 
-      expect(storage.saveCredential).toHaveBeenCalledWith(
-        'srv-1',
-        'API_KEY',
-        expect.any(String),
-      );
+      expect(storage.saveCredential).toHaveBeenCalledWith('srv-1', 'API_KEY', expect.any(String));
 
       // The stored value should NOT be the plaintext
       const storedEncrypted = (storage.saveCredential as ReturnType<typeof vi.fn>).mock.calls[0][2];
@@ -98,19 +94,24 @@ describe('McpCredentialManager', () => {
     });
 
     it('returns null and logs error when decryption fails', async () => {
-      (storage.getCredential as ReturnType<typeof vi.fn>).mockResolvedValue('invalid-base64-garbage!!');
+      (storage.getCredential as ReturnType<typeof vi.fn>).mockResolvedValue(
+        'invalid-base64-garbage!!'
+      );
       const result = await manager.getCredential('srv-1', 'CORRUPT');
       expect(result).toBeNull();
       expect(logger.error).toHaveBeenCalledWith(
         'Failed to decrypt credential',
-        expect.objectContaining({ serverId: 'srv-1', key: 'CORRUPT' }),
+        expect.objectContaining({ serverId: 'srv-1', key: 'CORRUPT' })
       );
     });
   });
 
   describe('listCredentialKeys', () => {
     it('delegates to storage.listCredentialKeys', async () => {
-      (storage.listCredentialKeys as ReturnType<typeof vi.fn>).mockResolvedValue(['API_KEY', 'DB_PASS']);
+      (storage.listCredentialKeys as ReturnType<typeof vi.fn>).mockResolvedValue([
+        'API_KEY',
+        'DB_PASS',
+      ]);
       const keys = await manager.listCredentialKeys('srv-1');
       expect(keys).toEqual(['API_KEY', 'DB_PASS']);
       expect(storage.listCredentialKeys).toHaveBeenCalledWith('srv-1');
@@ -125,7 +126,7 @@ describe('McpCredentialManager', () => {
       expect(storage.deleteCredential).toHaveBeenCalledWith('srv-1', 'API_KEY');
       expect(logger.info).toHaveBeenCalledWith(
         'Deleted credential',
-        expect.objectContaining({ serverId: 'srv-1', key: 'API_KEY' }),
+        expect.objectContaining({ serverId: 'srv-1', key: 'API_KEY' })
       );
     });
 
@@ -133,10 +134,7 @@ describe('McpCredentialManager', () => {
       (storage.deleteCredential as ReturnType<typeof vi.fn>).mockResolvedValue(false);
       const result = await manager.deleteCredential('srv-1', 'NOPE');
       expect(result).toBe(false);
-      expect(logger.info).not.toHaveBeenCalledWith(
-        'Deleted credential',
-        expect.anything(),
-      );
+      expect(logger.info).not.toHaveBeenCalledWith('Deleted credential', expect.anything());
     });
   });
 
@@ -146,7 +144,10 @@ describe('McpCredentialManager', () => {
       await manager.storeCredential('srv-1', 'API_KEY', 'key-123');
       await manager.storeCredential('srv-1', 'DB_PASS', 'dbpass-456');
 
-      (storage.listCredentialKeys as ReturnType<typeof vi.fn>).mockResolvedValue(['API_KEY', 'DB_PASS']);
+      (storage.listCredentialKeys as ReturnType<typeof vi.fn>).mockResolvedValue([
+        'API_KEY',
+        'DB_PASS',
+      ]);
 
       const baseEnv = { PATH: '/usr/bin', HOME: '/root' };
       const merged = await manager.injectCredentials('srv-1', baseEnv);

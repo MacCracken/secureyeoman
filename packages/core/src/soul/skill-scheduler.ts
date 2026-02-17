@@ -99,9 +99,9 @@ export interface ScheduleEvent {
 type ScheduleEventHandler = (event: ScheduleEvent) => void | Promise<void>;
 
 export class SkillScheduler {
-  private scheduledSkills: Map<string, ScheduledSkill> = new Map();
-  private timers: Map<string, NodeJS.Timeout> = new Map();
-  private eventHandlers: Set<ScheduleEventHandler> = new Set();
+  private scheduledSkills = new Map<string, ScheduledSkill>();
+  private timers = new Map<string, NodeJS.Timeout>();
+  private eventHandlers = new Set<ScheduleEventHandler>();
   private isRunning = false;
   private checkIntervalMs = 60000;
   private checkTimer?: NodeJS.Timeout;

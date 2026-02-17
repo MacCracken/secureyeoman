@@ -71,7 +71,7 @@ describe('executeMessageAction', () => {
     expect(result.success).toBe(false);
     expect(result.message).toBe('Integration manager not available');
     expect(mockLogger.warn).toHaveBeenCalledWith(
-      'Integration manager not available for message action',
+      'Integration manager not available for message action'
     );
   });
 
@@ -110,7 +110,11 @@ describe('executeMessageAction', () => {
       return null;
     });
 
-    const action: MessageAction = { type: 'message', content: 'Telegram only!', channel: 'telegram' };
+    const action: MessageAction = {
+      type: 'message',
+      content: 'Telegram only!',
+      channel: 'telegram',
+    };
     const result = await executeMessageAction(action, makeDeps());
 
     expect(result.success).toBe(true);
@@ -127,7 +131,7 @@ describe('executeMessageAction', () => {
     expect(result.success).toBe(true);
     expect(result.data?.sentCount).toBe(0);
     expect(mockLogger.info).toHaveBeenCalledWith(
-      'No integrations available for proactive message, logging to memory',
+      'No integrations available for proactive message, logging to memory'
     );
   });
 
@@ -151,7 +155,7 @@ describe('executeMessageAction', () => {
     expect(result.data?.sentCount).toBe(1);
     expect(mockLogger.warn).toHaveBeenCalledWith(
       'Failed to send proactive message via integration',
-      expect.objectContaining({ platform: 'telegram' }),
+      expect.objectContaining({ platform: 'telegram' })
     );
   });
 
@@ -208,7 +212,7 @@ describe('executeWebhookAction', () => {
     expect(result.message).toBe('Webhook OK (200)');
     expect(mockFetch).toHaveBeenCalledWith(
       'https://example.com/hook',
-      expect.objectContaining({ method: 'POST' }),
+      expect.objectContaining({ method: 'POST' })
     );
   });
 
@@ -339,7 +343,7 @@ describe('executeWebhookAction', () => {
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       'Proactive webhook executed',
-      expect.objectContaining({ url: 'https://example.com/hook', attempt: 1 }),
+      expect.objectContaining({ url: 'https://example.com/hook', attempt: 1 })
     );
   });
 });
@@ -367,7 +371,7 @@ describe('executeRemindAction', () => {
       'Check on the deployment',
       'deployment',
       { source: 'proactive_remind' },
-      0.7,
+      0.7
     );
   });
 
@@ -384,7 +388,7 @@ describe('executeRemindAction', () => {
       'Do something',
       'proactive_reminder',
       { source: 'proactive_remind' },
-      0.7,
+      0.7
     );
   });
 
@@ -398,7 +402,7 @@ describe('executeRemindAction', () => {
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       'Proactive reminder stored',
-      expect.objectContaining({ category: 'standup' }),
+      expect.objectContaining({ category: 'standup' })
     );
   });
 
@@ -457,10 +461,10 @@ describe('executeExecuteAction', () => {
     };
     await executeExecuteAction(action, makeDeps());
 
-    expect(mockLogger.info).toHaveBeenCalledWith(
-      'Proactive execute action requested',
-      { taskName: 'analyze-logs', agentProfile: 'ops' },
-    );
+    expect(mockLogger.info).toHaveBeenCalledWith('Proactive execute action requested', {
+      taskName: 'analyze-logs',
+      agentProfile: 'ops',
+    });
   });
 
   it('works without agentProfile', async () => {
@@ -511,7 +515,7 @@ describe('executeLearnAction', () => {
       'The deployment pipeline runs every Friday at 5pm',
       'deployment',
       { source: 'proactive_learn' },
-      0.8,
+      0.8
     );
   });
 
@@ -530,7 +534,7 @@ describe('executeLearnAction', () => {
       expect.any(String),
       expect.any(String),
       expect.any(Object),
-      expect.any(Number),
+      expect.any(Number)
     );
   });
 
@@ -549,7 +553,7 @@ describe('executeLearnAction', () => {
       expect.any(String),
       expect.any(String),
       expect.any(Object),
-      0.6,
+      0.6
     );
   });
 
@@ -568,7 +572,7 @@ describe('executeLearnAction', () => {
       'Semantic fact',
       'facts',
       { source: 'proactive_learn' },
-      0.7,
+      0.7
     );
   });
 
@@ -584,7 +588,7 @@ describe('executeLearnAction', () => {
 
     expect(mockLogger.info).toHaveBeenCalledWith(
       'Proactive learn action stored',
-      expect.objectContaining({ category: 'test-cat', memoryType: 'episodic' }),
+      expect.objectContaining({ category: 'test-cat', memoryType: 'episodic' })
     );
   });
 

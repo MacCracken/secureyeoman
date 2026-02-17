@@ -39,7 +39,7 @@ export class CliIntegration implements Integration {
   async sendMessage(
     _chatId: string,
     _text: string,
-    _metadata?: Record<string, unknown>,
+    _metadata?: Record<string, unknown>
   ): Promise<string> {
     // CLI consumers read responses via the REST API / task executor directly,
     // so sendMessage is a no-op. Return an empty platform message id.

@@ -51,11 +51,13 @@ function createMockStorage(): BrainStorage {
     createKnowledge: vi.fn(async (data) => makeKnowledge('new-know', data.topic, data.content)),
     getKnowledge: vi.fn(async (id) => makeKnowledge(id, 'topic', `content for ${id}`)),
     queryKnowledge: vi.fn(async () => []),
-    updateKnowledge: vi.fn(async (id, data) => makeKnowledge(id, 'topic', data.content ?? 'updated')),
+    updateKnowledge: vi.fn(async (id, data) =>
+      makeKnowledge(id, 'topic', data.content ?? 'updated')
+    ),
     deleteKnowledge: vi.fn(async () => {}),
     getKnowledgeCount: vi.fn(async () => 0),
-    createSkill: vi.fn(async () => ({} as any)),
-    updateSkill: vi.fn(async () => ({} as any)),
+    createSkill: vi.fn(async () => ({}) as any),
+    updateSkill: vi.fn(async () => ({}) as any),
     deleteSkill: vi.fn(async () => {}),
     getSkill: vi.fn(async () => null),
     listSkills: vi.fn(async () => []),
@@ -63,7 +65,11 @@ function createMockStorage(): BrainStorage {
     getPendingSkills: vi.fn(async () => []),
     getSkillCount: vi.fn(async () => 0),
     incrementUsage: vi.fn(async () => {}),
-    getStats: vi.fn(async () => ({ memories: { total: 0, byType: {} }, knowledge: { total: 0 }, skills: { total: 0 } })),
+    getStats: vi.fn(async () => ({
+      memories: { total: 0, byType: {} },
+      knowledge: { total: 0 },
+      skills: { total: 0 },
+    })),
     queryMemoriesBySimilarity: vi.fn(async () => []),
     queryKnowledgeBySimilarity: vi.fn(async () => []),
     updateMemoryEmbedding: vi.fn(async () => {}),
@@ -138,14 +144,12 @@ describe('BrainManager + Vector Memory', () => {
 
   describe('recall with vector search', () => {
     it('uses semantic search when query.search is provided', async () => {
-      vectorManager.searchMemories.mockResolvedValue([
-        { id: 'mem-1', score: 0.95 },
-      ]);
+      vectorManager.searchMemories.mockResolvedValue([{ id: 'mem-1', score: 0.95 }]);
 
       const results = await brain.recall({ search: 'test query' });
 
       expect(vectorManager.searchMemories).toHaveBeenCalledWith('test query', 10, 0.7);
-      expect((storage.getMemory as any)).toHaveBeenCalledWith('mem-1');
+      expect(storage.getMemory as any).toHaveBeenCalledWith('mem-1');
     });
 
     it('falls back to text search on vector failure', async () => {
@@ -212,16 +216,21 @@ describe('BrainManager + Vector Memory', () => {
     });
 
     it('throws when vector is not enabled', async () => {
-      const disabledConfig = { ...baseConfig, vector: { ...baseConfig.vector, enabled: false } } as BrainConfig;
+      const disabledConfig = {
+        ...baseConfig,
+        vector: { ...baseConfig.vector, enabled: false },
+      } as BrainConfig;
       const disabledBrain = new BrainManager(storage, disabledConfig, deps);
-      await expect(disabledBrain.semanticSearch('query')).rejects.toThrow('Vector memory is not enabled');
+      await expect(disabledBrain.semanticSearch('query')).rejects.toThrow(
+        'Vector memory is not enabled'
+      );
     });
   });
 
   describe('getRelevantContext with vector', () => {
     it('returns semantic context when vector results found', async () => {
       vectorManager.searchMemories.mockResolvedValue([{ id: 'mem-1', score: 0.95 }]);
-      vectorManager.searchKnowledge.mockResolvedValue([{ id: 'know-1', score: 0.90 }]);
+      vectorManager.searchKnowledge.mockResolvedValue([{ id: 'know-1', score: 0.9 }]);
 
       const context = await brain.getRelevantContext('test input');
       expect(context).toContain('Brain');

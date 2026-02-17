@@ -8,9 +8,25 @@ import DOMPurify from 'dompurify';
 
 /** Tags allowed in rich HTML content (formatting only, no scripts). */
 const ALLOWED_TAGS = [
-  'b', 'i', 'em', 'strong', 'a', 'p', 'br',
-  'ul', 'ol', 'li', 'code', 'pre', 'blockquote',
-  'h1', 'h2', 'h3', 'h4', 'span', 'div',
+  'b',
+  'i',
+  'em',
+  'strong',
+  'a',
+  'p',
+  'br',
+  'ul',
+  'ol',
+  'li',
+  'code',
+  'pre',
+  'blockquote',
+  'h1',
+  'h2',
+  'h3',
+  'h4',
+  'span',
+  'div',
 ];
 
 /** Attributes allowed on permitted tags. */
@@ -26,7 +42,7 @@ export function sanitizeHtml(dirty: string, config?: Record<string, unknown>): s
     ALLOWED_ATTR,
     ALLOW_DATA_ATTR: false,
     ...config,
-  }) as string;
+  });
 }
 
 /**
@@ -37,5 +53,5 @@ export function sanitizeText(dirty: string): string {
   return DOMPurify.sanitize(dirty, {
     ALLOWED_TAGS: [],
     ALLOWED_ATTR: [],
-  }) as string;
+  });
 }

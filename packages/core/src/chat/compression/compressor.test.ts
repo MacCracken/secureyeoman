@@ -39,9 +39,7 @@ function createMockStorage(): CompressionStorage {
       return entry;
     }),
     getEntriesByConversation: vi.fn(async (id, tier?) => {
-      return entries.filter(
-        (e) => e.conversationId === id && (!tier || e.tier === tier),
-      );
+      return entries.filter((e) => e.conversationId === id && (!tier || e.tier === tier));
     }),
     getNextSequence: vi.fn(async () => entries.length + 1),
     sealEntry: vi.fn(async (id) => {
@@ -94,7 +92,7 @@ describe('HistoryCompressor', () => {
           conversationId: 'conv-1',
           tier: 'message',
           content: 'user: Hello!',
-        }),
+        })
       );
     });
 
@@ -116,8 +114,8 @@ describe('HistoryCompressor', () => {
 
       expect(context.tokenBudget).toEqual({
         messages: 500, // 50% of 1000
-        topics: 300,   // 30% of 1000
-        bulk: 200,     // 20% of 1000
+        topics: 300, // 30% of 1000
+        bulk: 200, // 20% of 1000
       });
     });
 
@@ -169,7 +167,10 @@ describe('HistoryCompressor', () => {
 
       // Add initial messages
       await compressorWithSummarizer.addMessage('conv-1', { role: 'user', content: 'First msg' });
-      await compressorWithSummarizer.addMessage('conv-1', { role: 'assistant', content: 'Response' });
+      await compressorWithSummarizer.addMessage('conv-1', {
+        role: 'assistant',
+        content: 'Response',
+      });
 
       // Trigger keyword boundary
       await compressorWithSummarizer.addMessage('conv-1', {
@@ -193,8 +194,8 @@ describe('HistoryCompressor', () => {
     it('handles small budgets with rounding', async () => {
       const context = await compressor.getContext('conv-1', 7);
       expect(context.tokenBudget.messages).toBe(3); // floor(7 * 50/100)
-      expect(context.tokenBudget.topics).toBe(2);   // floor(7 * 30/100)
-      expect(context.tokenBudget.bulk).toBe(1);      // floor(7 * 20/100)
+      expect(context.tokenBudget.topics).toBe(2); // floor(7 * 30/100)
+      expect(context.tokenBudget.bulk).toBe(1); // floor(7 * 20/100)
     });
   });
 });

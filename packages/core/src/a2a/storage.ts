@@ -6,13 +6,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
-import type {
-  PeerAgent,
-  Capability,
-  A2AMessage,
-  A2AMessageType,
-  TrustLevel,
-} from './types.js';
+import type { PeerAgent, Capability, A2AMessage, A2AMessageType, TrustLevel } from './types.js';
 
 // ─── Row types ──────────────────────────────────────────────────────
 
@@ -112,26 +106,20 @@ export class A2AStorage extends PgBaseStorage {
         data.publicKey,
         data.trustLevel ?? 'untrusted',
         data.status ?? 'online',
-      ],
+      ]
     );
     const caps = await this.getCapabilities(row!.id);
     return peerFromRow(row!, caps);
   }
 
   async getPeer(id: string): Promise<PeerAgent | null> {
-    const row = await this.queryOne<PeerRow>(
-      `SELECT * FROM a2a.peers WHERE id = $1`,
-      [id],
-    );
+    const row = await this.queryOne<PeerRow>(`SELECT * FROM a2a.peers WHERE id = $1`, [id]);
     if (!row) return null;
     const caps = await this.getCapabilities(id);
     return peerFromRow(row, caps);
   }
 
-  async listPeers(filter?: {
-    status?: string;
-    trustLevel?: string;
-  }): Promise<PeerAgent[]> {
+  async listPeers(filter?: { status?: string; trustLevel?: string }): Promise<PeerAgent[]> {
     const conditions: string[] = [];
     const values: unknown[] = [];
     let paramIdx = 1;
@@ -148,7 +136,7 @@ export class A2AStorage extends PgBaseStorage {
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const rows = await this.queryMany<PeerRow>(
       `SELECT * FROM a2a.peers ${where} ORDER BY last_seen DESC`,
-      values,
+      values
     );
 
     const peers: PeerAgent[] = [];
@@ -168,7 +156,7 @@ export class A2AStorage extends PgBaseStorage {
       trustLevel: TrustLevel;
       status: 'online' | 'offline' | 'unknown';
       lastSeen: number;
-    }>,
+    }>
   ): Promise<PeerAgent | null> {
     const existing = await this.getPeer(id);
     if (!existing) return null;
@@ -209,7 +197,7 @@ export class A2AStorage extends PgBaseStorage {
 
     const row = await this.queryOne<PeerRow>(
       `UPDATE a2a.peers SET ${updates.join(', ')} WHERE id = $${paramIdx} RETURNING *`,
-      values,
+      values
     );
     if (!row) return null;
     const caps = await this.getCapabilities(id);
@@ -219,10 +207,7 @@ export class A2AStorage extends PgBaseStorage {
   async removePeer(id: string): Promise<boolean> {
     // Capabilities are removed via ON DELETE CASCADE (or manually)
     await this.execute(`DELETE FROM a2a.capabilities WHERE peer_id = $1`, [id]);
-    const count = await this.execute(
-      `DELETE FROM a2a.peers WHERE id = $1`,
-      [id],
-    );
+    const count = await this.execute(`DELETE FROM a2a.peers WHERE id = $1`, [id]);
     return count > 0;
   }
 
@@ -236,7 +221,7 @@ export class A2AStorage extends PgBaseStorage {
         await client.query(
           `INSERT INTO a2a.capabilities (id, peer_id, name, description, version)
            VALUES ($1, $2, $3, $4, $5)`,
-          [id, peerId, cap.name, cap.description, cap.version],
+          [id, peerId, cap.name, cap.description, cap.version]
         );
       }
     });
@@ -245,18 +230,18 @@ export class A2AStorage extends PgBaseStorage {
   async getCapabilities(peerId: string): Promise<Capability[]> {
     const rows = await this.queryMany<CapabilityRow>(
       `SELECT * FROM a2a.capabilities WHERE peer_id = $1 ORDER BY name ASC`,
-      [peerId],
+      [peerId]
     );
     return rows.map(capabilityFromRow);
   }
 
-  async searchCapabilities(query: string): Promise<Array<{ peerId: string; capability: Capability }>> {
+  async searchCapabilities(query: string): Promise<{ peerId: string; capability: Capability }[]> {
     const pattern = `%${query}%`;
     const rows = await this.queryMany<CapabilityRow>(
       `SELECT * FROM a2a.capabilities
        WHERE name ILIKE $1 OR description ILIKE $1
        ORDER BY name ASC`,
-      [pattern],
+      [pattern]
     );
     return rows.map((row) => ({
       peerId: row.peer_id,
@@ -270,14 +255,7 @@ export class A2AStorage extends PgBaseStorage {
     await this.query(
       `INSERT INTO a2a.messages (id, type, from_peer_id, to_peer_id, payload, timestamp)
        VALUES ($1, $2, $3, $4, $5::jsonb, to_timestamp($6 / 1000.0))`,
-      [
-        msg.id,
-        msg.type,
-        msg.fromPeerId,
-        msg.toPeerId,
-        JSON.stringify(msg.payload),
-        msg.timestamp,
-      ],
+      [msg.id, msg.type, msg.fromPeerId, msg.toPeerId, JSON.stringify(msg.payload), msg.timestamp]
     );
   }
 
@@ -307,12 +285,12 @@ export class A2AStorage extends PgBaseStorage {
 
     const countResult = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM a2a.messages ${where}`,
-      values,
+      values
     );
 
     const rows = await this.queryMany<MessageRow>(
       `SELECT * FROM a2a.messages ${where} ORDER BY timestamp DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
-      [...values, limit, offset],
+      [...values, limit, offset]
     );
 
     return {

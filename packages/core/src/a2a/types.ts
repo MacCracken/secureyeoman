@@ -3,8 +3,14 @@
  */
 
 export type A2AMessageType =
-  | 'a2a:discover' | 'a2a:announce' | 'a2a:delegate' | 'a2a:delegate-response'
-  | 'a2a:capability-query' | 'a2a:capability-response' | 'a2a:heartbeat' | 'a2a:disconnect';
+  | 'a2a:discover'
+  | 'a2a:announce'
+  | 'a2a:delegate'
+  | 'a2a:delegate-response'
+  | 'a2a:capability-query'
+  | 'a2a:capability-response'
+  | 'a2a:heartbeat'
+  | 'a2a:disconnect';
 
 export type TrustLevel = 'untrusted' | 'verified' | 'trusted';
 export type DiscoveryMethod = 'mdns' | 'manual' | 'hybrid';

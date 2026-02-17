@@ -30,11 +30,10 @@ export class LinuxSecretServiceProvider implements KeyringProvider {
 
   get(service: string, key: string): string | undefined {
     try {
-      const result = execFileSync(
-        'secret-tool',
-        ['lookup', 'service', service, 'name', key],
-        { stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 },
-      );
+      const result = execFileSync('secret-tool', ['lookup', 'service', service, 'name', key], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 5000,
+      });
       const value = result.toString('utf-8').trimEnd();
       return value || undefined;
     } catch {
@@ -46,23 +45,22 @@ export class LinuxSecretServiceProvider implements KeyringProvider {
     const result = spawnSync(
       'secret-tool',
       ['store', `--label=${service}:${key}`, 'service', service, 'name', key],
-      { input: value, stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 },
+      { input: value, stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 }
     );
 
     if (result.status !== 0) {
       throw new Error(
-        `secret-tool store failed: ${result.stderr?.toString('utf-8').trim() ?? 'unknown error'}`,
+        `secret-tool store failed: ${result.stderr?.toString('utf-8').trim() ?? 'unknown error'}`
       );
     }
   }
 
   delete(service: string, key: string): void {
     try {
-      execFileSync(
-        'secret-tool',
-        ['clear', 'service', service, 'name', key],
-        { stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 },
-      );
+      execFileSync('secret-tool', ['clear', 'service', service, 'name', key], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 5000,
+      });
     } catch {
       // Ignore errors on delete (key may not exist)
     }

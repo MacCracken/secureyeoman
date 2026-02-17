@@ -32,7 +32,11 @@ function jobFromRow(row: JobRow): MultimodalJob {
     type: row.type as MultimodalJobType,
     status: row.status as MultimodalJobStatus,
     input: typeof row.input === 'string' ? JSON.parse(row.input) : row.input,
-    output: row.output ? (typeof row.output === 'string' ? JSON.parse(row.output) : row.output) : null,
+    output: row.output
+      ? typeof row.output === 'string'
+        ? JSON.parse(row.output)
+        : row.output
+      : null,
     error: row.error,
     durationMs: row.duration_ms,
     sourcePlatform: row.source_platform,
@@ -62,31 +66,41 @@ export class MultimodalStorage extends PgBaseStorage {
         completed_at TIMESTAMPTZ
       )
     `);
-    await this.execute(`CREATE INDEX IF NOT EXISTS idx_multimodal_jobs_type ON multimodal.jobs(type)`);
-    await this.execute(`CREATE INDEX IF NOT EXISTS idx_multimodal_jobs_status ON multimodal.jobs(status)`);
-    await this.execute(`CREATE INDEX IF NOT EXISTS idx_multimodal_jobs_created ON multimodal.jobs(created_at DESC)`);
+    await this.execute(
+      `CREATE INDEX IF NOT EXISTS idx_multimodal_jobs_type ON multimodal.jobs(type)`
+    );
+    await this.execute(
+      `CREATE INDEX IF NOT EXISTS idx_multimodal_jobs_status ON multimodal.jobs(status)`
+    );
+    await this.execute(
+      `CREATE INDEX IF NOT EXISTS idx_multimodal_jobs_created ON multimodal.jobs(created_at DESC)`
+    );
   }
 
   async createJob(
     type: MultimodalJobType,
     input: Record<string, unknown>,
-    opts?: { sourcePlatform?: string; sourceMessageId?: string },
+    opts?: { sourcePlatform?: string; sourceMessageId?: string }
   ): Promise<string> {
     const id = uuidv7();
     await this.execute(
       `INSERT INTO multimodal.jobs (id, type, status, input, source_platform, source_message_id)
        VALUES ($1, $2, 'running', $3, $4, $5)`,
-      [id, type, JSON.stringify(input), opts?.sourcePlatform ?? null, opts?.sourceMessageId ?? null],
+      [id, type, JSON.stringify(input), opts?.sourcePlatform ?? null, opts?.sourceMessageId ?? null]
     );
     return id;
   }
 
-  async completeJob(id: string, output: Record<string, unknown>, durationMs: number): Promise<void> {
+  async completeJob(
+    id: string,
+    output: Record<string, unknown>,
+    durationMs: number
+  ): Promise<void> {
     await this.execute(
       `UPDATE multimodal.jobs
        SET status = 'completed', output = $2, duration_ms = $3, completed_at = NOW()
        WHERE id = $1`,
-      [id, JSON.stringify(output), durationMs],
+      [id, JSON.stringify(output), durationMs]
     );
   }
 
@@ -95,15 +109,12 @@ export class MultimodalStorage extends PgBaseStorage {
       `UPDATE multimodal.jobs
        SET status = 'failed', error = $2, completed_at = NOW()
        WHERE id = $1`,
-      [id, error],
+      [id, error]
     );
   }
 
   async getJob(id: string): Promise<MultimodalJob | null> {
-    const row = await this.queryOne<JobRow>(
-      `SELECT * FROM multimodal.jobs WHERE id = $1`,
-      [id],
-    );
+    const row = await this.queryOne<JobRow>(`SELECT * FROM multimodal.jobs WHERE id = $1`, [id]);
     return row ? jobFromRow(row) : null;
   }
 
@@ -132,13 +143,13 @@ export class MultimodalStorage extends PgBaseStorage {
 
     const countResult = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM multimodal.jobs ${where}`,
-      values,
+      values
     );
     const total = parseInt(countResult?.count ?? '0', 10);
 
     const rows = await this.queryMany<JobRow>(
       `SELECT * FROM multimodal.jobs ${where} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx}`,
-      [...values, limit, offset],
+      [...values, limit, offset]
     );
 
     return { jobs: rows.map(jobFromRow), total };
@@ -146,7 +157,7 @@ export class MultimodalStorage extends PgBaseStorage {
 
   async getJobStats(): Promise<Record<string, Record<string, number>>> {
     const rows = await this.queryMany<{ type: string; status: string; count: string }>(
-      `SELECT type, status, COUNT(*) as count FROM multimodal.jobs GROUP BY type, status`,
+      `SELECT type, status, COUNT(*) as count FROM multimodal.jobs GROUP BY type, status`
     );
 
     const stats: Record<string, Record<string, number>> = {};

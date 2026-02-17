@@ -44,7 +44,7 @@ Options:
         apiCall(baseUrl, '/api/v1/agents/config').catch(() => null),
       ]);
 
-      if (!healthRes || !healthRes.ok) {
+      if (!healthRes?.ok) {
         ctx.stderr.write(`Cannot reach server at ${baseUrl}\n`);
         return 1;
       }
@@ -53,16 +53,14 @@ Options:
       const personality = personalityRes?.ok
         ? (personalityRes.data as Record<string, unknown>)
         : null;
-      const policy = policyRes?.ok
-        ? (policyRes.data as Record<string, unknown>)
-        : null;
+      const policy = policyRes?.ok ? (policyRes.data as Record<string, unknown>) : null;
       const agentConfig = agentConfigRes?.ok
         ? (agentConfigRes.data as Record<string, unknown>)
         : null;
 
       if (jsonResult.value) {
         ctx.stdout.write(
-          JSON.stringify({ health, personality, policy, agentConfig }, null, 2) + '\n',
+          JSON.stringify({ health, personality, policy, agentConfig }, null, 2) + '\n'
         );
         return health.status === 'ok' ? 0 : 1;
       }

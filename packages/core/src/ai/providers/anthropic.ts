@@ -57,7 +57,7 @@ export class AnthropicProvider extends BaseProvider {
         },
       });
       if (!res.ok) return [];
-      const data = (await res.json()) as { data?: Array<{ id: string; display_name?: string }> };
+      const data = (await res.json()) as { data?: { id: string; display_name?: string }[] };
       return (data.data ?? [])
         .filter((m) => m.id.startsWith('claude-'))
         .map((m) => ({
@@ -188,7 +188,7 @@ export class AnthropicProvider extends BaseProvider {
             type: 'tool_use',
             id: tc.id,
             name: tc.name,
-            input: tc.arguments as Record<string, unknown>,
+            input: tc.arguments,
           });
         }
         mapped.push({ role: 'assistant', content });

@@ -6,9 +6,21 @@
  */
 
 export const SACRED_ARCHETYPES = [
-  { name: 'No-Thing-Ness', symbol: 'The Void', essence: 'Pure potentiality — the source before existence' },
-  { name: 'The One',       symbol: 'The Monad', essence: 'From nothing came one — unity, the first principle' },
-  { name: 'The Plurality',  symbol: 'The Many', essence: 'From the one came many — all life, light, and vibrations' },
+  {
+    name: 'No-Thing-Ness',
+    symbol: 'The Void',
+    essence: 'Pure potentiality — the source before existence',
+  },
+  {
+    name: 'The One',
+    symbol: 'The Monad',
+    essence: 'From nothing came one — unity, the first principle',
+  },
+  {
+    name: 'The Plurality',
+    symbol: 'The Many',
+    essence: 'From the one came many — all life, light, and vibrations',
+  },
 ] as const;
 
 export type Archetype = (typeof SACRED_ARCHETYPES)[number];

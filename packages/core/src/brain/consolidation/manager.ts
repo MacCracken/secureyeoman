@@ -17,7 +17,11 @@ import type { SecureLogger } from '../../logging/logger.js';
 import type { AIProvider } from '../../ai/providers/base.js';
 import type { ConsolidationReport, ConsolidationCandidate } from './types.js';
 import { ConsolidationExecutor, type ExecutorDeps } from './executor.js';
-import { CONSOLIDATION_SYSTEM_PROMPT, buildConsolidationPrompt, parseConsolidationResponse } from './prompts.js';
+import {
+  CONSOLIDATION_SYSTEM_PROMPT,
+  buildConsolidationPrompt,
+  parseConsolidationResponse,
+} from './prompts.js';
 
 export interface ConsolidationConfig {
   enabled: boolean;
@@ -52,7 +56,7 @@ export class ConsolidationManager {
   private readonly aiProvider?: AIProvider;
   private schedule: string;
   private schedulerTimer: ReturnType<typeof setInterval> | null = null;
-  private flaggedIds: Set<string> = new Set();
+  private flaggedIds = new Set<string>();
   private history: ConsolidationReport[] = [];
 
   constructor(config: ConsolidationConfig, deps: ConsolidationManagerDeps) {
@@ -84,7 +88,7 @@ export class ConsolidationManager {
       const results = await this.vectorManager.searchMemories(
         memory.content,
         5,
-        this.config.quickCheck.flagThreshold,
+        this.config.quickCheck.flagThreshold
       );
 
       // Filter out the memory itself
@@ -136,7 +140,9 @@ export class ConsolidationManager {
     const idsToProcess = [...this.flaggedIds];
 
     // Also sample some non-flagged memories for broader consolidation
-    const allMemories = await this.storage.queryMemories({ limit: this.config.deepConsolidation.batchSize });
+    const allMemories = await this.storage.queryMemories({
+      limit: this.config.deepConsolidation.batchSize,
+    });
     for (const mem of allMemories) {
       if (!idsToProcess.includes(mem.id)) {
         idsToProcess.push(mem.id);
@@ -152,7 +158,7 @@ export class ConsolidationManager {
       const similar = await this.vectorManager.searchMemories(
         memory.content,
         5,
-        this.config.quickCheck.flagThreshold,
+        this.config.quickCheck.flagThreshold
       );
 
       const filteredSimilar = similar.filter((r) => r.id !== memId);
@@ -167,7 +173,7 @@ export class ConsolidationManager {
               score: r.score,
               importance: mem?.importance ?? 0,
             };
-          }),
+          })
         );
 
         candidates.push({
@@ -230,17 +236,19 @@ export class ConsolidationManager {
     } else {
       // No AI provider — only do simple threshold-based dedup
       const actions = candidates
-        .filter((c) => c.similarMemories.some((s) => s.score >= this.config.deepConsolidation.replaceThreshold))
+        .filter((c) =>
+          c.similarMemories.some((s) => s.score >= this.config.deepConsolidation.replaceThreshold)
+        )
         .map((c) => {
           const bestMatch = c.similarMemories.sort((a, b) => b.score - a.score)[0]!;
           // Keep the one with higher importance
-          const keepId = c.importance >= bestMatch!.importance ? c.memoryId : bestMatch!.id;
-          const removeId = keepId === c.memoryId ? bestMatch!.id : c.memoryId;
+          const keepId = c.importance >= bestMatch.importance ? c.memoryId : bestMatch.id;
+          const removeId = keepId === c.memoryId ? bestMatch.id : c.memoryId;
           return {
             type: 'REPLACE' as const,
             sourceIds: [keepId, removeId],
             replaceTargetId: keepId,
-            reason: `Auto-dedup: similarity ${bestMatch!.score.toFixed(3)} >= ${this.config.deepConsolidation.replaceThreshold}`,
+            reason: `Auto-dedup: similarity ${bestMatch.score.toFixed(3)} >= ${this.config.deepConsolidation.replaceThreshold}`,
           };
         });
 
@@ -281,8 +289,10 @@ export class ConsolidationManager {
     // Simple interval-based scheduling (every hour, check if cron matches)
     // For production, use a proper cron library
     this.schedulerTimer = setInterval(
-      () => this.checkSchedule(),
-      60 * 60 * 1000, // Check every hour
+      () => {
+        this.checkSchedule();
+      },
+      60 * 60 * 1000 // Check every hour
     );
 
     this.logger.info('Consolidation scheduler started', { schedule: this.schedule });
@@ -326,7 +336,7 @@ export class ConsolidationManager {
     const matchesMinute = minute === '*' || parseInt(minute, 10) === currentMinute;
 
     if (matchesHour && matchesMinute) {
-      this.runDeepConsolidation().catch((err) => {
+      this.runDeepConsolidation().catch((err: unknown) => {
         this.logger.error('Scheduled consolidation failed', { error: String(err) });
       });
     }

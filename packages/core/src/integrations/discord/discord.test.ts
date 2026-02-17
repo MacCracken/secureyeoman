@@ -27,17 +27,29 @@ vi.mock('discord.js', () => {
   }
 
   class MockREST {
-    setToken() { return this; }
+    setToken() {
+      return this;
+    }
     put = mockRestPut;
     constructor(_opts?: any) {}
   }
 
   class MockEmbedBuilder {
-    setTitle() { return this; }
-    setDescription() { return this; }
-    setColor() { return this; }
-    setTimestamp() { return this; }
-    addFields() { return this; }
+    setTitle() {
+      return this;
+    }
+    setDescription() {
+      return this;
+    }
+    setColor() {
+      return this;
+    }
+    setTimestamp() {
+      return this;
+    }
+    addFields() {
+      return this;
+    }
   }
 
   return {
@@ -68,7 +80,12 @@ import { DiscordIntegration } from './adapter.js';
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -110,9 +127,9 @@ describe('DiscordIntegration', () => {
   });
 
   it('should throw without botToken', async () => {
-    await expect(
-      integration.init(makeConfig({ config: {} }), makeDeps()),
-    ).rejects.toThrow('botToken');
+    await expect(integration.init(makeConfig({ config: {} }), makeDeps())).rejects.toThrow(
+      'botToken'
+    );
   });
 
   it('should initialize successfully with valid config', async () => {
@@ -166,7 +183,7 @@ describe('DiscordIntegration', () => {
   it('should initialize with guild ID config', async () => {
     await integration.init(
       makeConfig({ config: { botToken: 'token', clientId: 'cid', guildId: 'gid' } }),
-      makeDeps(),
+      makeDeps()
     );
     expect(mockClientOn).toHaveBeenCalled();
   });
@@ -174,7 +191,7 @@ describe('DiscordIntegration', () => {
   it('should initialize with clientId but no guild ID', async () => {
     await integration.init(
       makeConfig({ config: { botToken: 'token', clientId: 'cid' } }),
-      makeDeps(),
+      makeDeps()
     );
     expect(mockClientOn).toHaveBeenCalled();
   });
@@ -184,10 +201,7 @@ describe('DiscordIntegration', () => {
 
     // Should not throw
     const int = new DiscordIntegration();
-    await int.init(
-      makeConfig({ config: { botToken: 'token', clientId: 'cid' } }),
-      makeDeps(),
-    );
+    await int.init(makeConfig({ config: { botToken: 'token', clientId: 'cid' } }), makeDeps());
   });
 
   it('should handle messageCreate events', async () => {
@@ -195,7 +209,7 @@ describe('DiscordIntegration', () => {
     await integration.init(makeConfig(), { logger: noopLogger(), onMessage });
 
     const messageCreateCall = mockClientOn.mock.calls.find(
-      (call: any[]) => call[0] === 'messageCreate',
+      (call: any[]) => call[0] === 'messageCreate'
     );
     expect(messageCreateCall).toBeDefined();
   });
@@ -204,7 +218,7 @@ describe('DiscordIntegration', () => {
     await integration.init(makeConfig(), makeDeps());
 
     const interactionCall = mockClientOn.mock.calls.find(
-      (call: any[]) => call[0] === 'interactionCreate',
+      (call: any[]) => call[0] === 'interactionCreate'
     );
     expect(interactionCall).toBeDefined();
   });
@@ -212,17 +226,12 @@ describe('DiscordIntegration', () => {
   it('should register error handler', async () => {
     await integration.init(makeConfig(), makeDeps());
 
-    const errorCall = mockClientOn.mock.calls.find(
-      (call: any[]) => call[0] === 'error',
-    );
+    const errorCall = mockClientOn.mock.calls.find((call: any[]) => call[0] === 'error');
     expect(errorCall).toBeDefined();
   });
 
   it('should skip clientId registration if no clientId', async () => {
-    await integration.init(
-      makeConfig({ config: { botToken: 'token' } }),
-      makeDeps(),
-    );
+    await integration.init(makeConfig({ config: { botToken: 'token' } }), makeDeps());
     // Should not throw, just skip registration
   });
 });

@@ -33,7 +33,7 @@ export class MacOSKeychainProvider implements KeyringProvider {
       const result = execFileSync(
         'security',
         ['find-generic-password', '-s', service, '-a', key, '-w'],
-        { stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 },
+        { stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 }
       );
       const value = result.toString('utf-8').trimEnd();
       return value || undefined;
@@ -48,22 +48,21 @@ export class MacOSKeychainProvider implements KeyringProvider {
       execFileSync(
         'security',
         ['add-generic-password', '-U', '-s', service, '-a', key, '-w', value],
-        { stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 },
+        { stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 }
       );
     } catch (err) {
       throw new Error(
-        `security add-generic-password failed: ${err instanceof Error ? err.message : 'unknown error'}`,
+        `security add-generic-password failed: ${err instanceof Error ? err.message : 'unknown error'}`
       );
     }
   }
 
   delete(service: string, key: string): void {
     try {
-      execFileSync(
-        'security',
-        ['delete-generic-password', '-s', service, '-a', key],
-        { stdio: ['pipe', 'pipe', 'pipe'], timeout: 5000 },
-      );
+      execFileSync('security', ['delete-generic-password', '-s', service, '-a', key], {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        timeout: 5000,
+      });
     } catch {
       // Ignore errors on delete (key may not exist)
     }

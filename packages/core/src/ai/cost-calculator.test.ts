@@ -1,5 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { CostCalculator, getAvailableModels, getAvailableModelsAsync, _clearDynamicCache } from './cost-calculator.js';
+import {
+  CostCalculator,
+  getAvailableModels,
+  getAvailableModelsAsync,
+  _clearDynamicCache,
+} from './cost-calculator.js';
 import type { TokenUsage } from '@friday/shared';
 
 describe('CostCalculator', () => {
@@ -156,15 +161,15 @@ describe('getAvailableModelsAsync', () => {
 
     expect(geminiModels).toBeDefined();
     expect(geminiModels.length).toBe(2);
-    expect(geminiModels.map(m => m.model)).toContain('gemini-2.0-flash');
-    expect(geminiModels.map(m => m.model)).toContain('gemini-2.5-pro-preview');
+    expect(geminiModels.map((m) => m.model)).toContain('gemini-2.0-flash');
+    expect(geminiModels.map((m) => m.model)).toContain('gemini-2.5-pro-preview');
 
     // Known model should have exact pricing
-    const flash = geminiModels.find(m => m.model === 'gemini-2.0-flash')!;
+    const flash = geminiModels.find((m) => m.model === 'gemini-2.0-flash')!;
     expect(flash.inputPer1M).toBe(0.1);
 
     // Unknown model should use fallback pricing
-    const pro = geminiModels.find(m => m.model === 'gemini-2.5-pro-preview')!;
+    const pro = geminiModels.find((m) => m.model === 'gemini-2.5-pro-preview')!;
     expect(pro.inputPer1M).toBe(1.25); // gemini fallback
   });
 
@@ -184,15 +189,15 @@ describe('getAvailableModelsAsync', () => {
     const anthropicModels = models['anthropic'];
 
     expect(anthropicModels).toBeDefined();
-    expect(anthropicModels.map(m => m.model)).toContain('claude-sonnet-4-20250514');
-    expect(anthropicModels.map(m => m.model)).toContain('claude-future-model');
+    expect(anthropicModels.map((m) => m.model)).toContain('claude-sonnet-4-20250514');
+    expect(anthropicModels.map((m) => m.model)).toContain('claude-future-model');
 
     // Known model should have exact pricing
-    const sonnet = anthropicModels.find(m => m.model === 'claude-sonnet-4-20250514')!;
+    const sonnet = anthropicModels.find((m) => m.model === 'claude-sonnet-4-20250514')!;
     expect(sonnet.inputPer1M).toBe(3);
 
     // Unknown model should use fallback pricing
-    const future = anthropicModels.find(m => m.model === 'claude-future-model')!;
+    const future = anthropicModels.find((m) => m.model === 'claude-future-model')!;
     expect(future.inputPer1M).toBe(3); // anthropic fallback
   });
 
@@ -201,9 +206,7 @@ describe('getAvailableModelsAsync', () => {
     mockFetch.mockResolvedValue({
       ok: true,
       json: async () => ({
-        models: [
-          { name: 'llama3:latest', size: 4700000000 },
-        ],
+        models: [{ name: 'llama3:latest', size: 4700000000 }],
       }),
     });
 
@@ -211,7 +214,7 @@ describe('getAvailableModelsAsync', () => {
     const ollamaModels = models['ollama'];
 
     expect(ollamaModels).toBeDefined();
-    expect(ollamaModels.map(m => m.model)).toContain('llama3:latest');
+    expect(ollamaModels.map((m) => m.model)).toContain('llama3:latest');
     expect(ollamaModels[0].inputPer1M).toBe(0);
     expect(ollamaModels[0].outputPer1M).toBe(0);
   });
@@ -242,8 +245,8 @@ describe('getAvailableModelsAsync', () => {
 
     const models = await getAvailableModelsAsync();
 
-    expect(models['anthropic'].map(m => m.model)).toContain('claude-sonnet-4-20250514');
-    expect(models['openai'].map(m => m.model)).toContain('gpt-4o');
+    expect(models['anthropic'].map((m) => m.model)).toContain('claude-sonnet-4-20250514');
+    expect(models['openai'].map((m) => m.model)).toContain('gpt-4o');
     expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 
@@ -267,7 +270,7 @@ describe('getAvailableModelsAsync', () => {
     const models = await getAvailableModelsAsync();
 
     expect(models['gemini']).toBeDefined();
-    expect(models['gemini'].map(m => m.model)).toContain('gemini-2.0-flash');
+    expect(models['gemini'].map((m) => m.model)).toContain('gemini-2.0-flash');
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -279,6 +282,6 @@ describe('getAvailableModelsAsync', () => {
 
     // Should still have static anthropic models
     expect(models['anthropic']).toBeDefined();
-    expect(models['anthropic'].map(m => m.model)).toContain('claude-sonnet-4-20250514');
+    expect(models['anthropic'].map((m) => m.model)).toContain('claude-sonnet-4-20250514');
   });
 });

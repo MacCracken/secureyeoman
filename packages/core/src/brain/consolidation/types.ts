@@ -4,12 +4,7 @@
  * Types for the memory deduplication and consolidation system.
  */
 
-export type ConsolidationActionType =
-  | 'MERGE'
-  | 'REPLACE'
-  | 'KEEP_SEPARATE'
-  | 'UPDATE'
-  | 'SKIP';
+export type ConsolidationActionType = 'MERGE' | 'REPLACE' | 'KEEP_SEPARATE' | 'UPDATE' | 'SKIP';
 
 export interface ConsolidationAction {
   type: ConsolidationActionType;
@@ -40,10 +35,10 @@ export interface ConsolidationCandidate {
   content: string;
   type: string;
   importance: number;
-  similarMemories: Array<{
+  similarMemories: {
     id: string;
     content: string;
     score: number;
     importance: number;
-  }>;
+  }[];
 }

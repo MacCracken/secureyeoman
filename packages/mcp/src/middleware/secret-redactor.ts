@@ -22,11 +22,25 @@ const SECRET_PATTERNS: RegExp[] = [
 ];
 
 const SENSITIVE_KEYS = new Set([
-  'password', 'secret', 'token', 'apiKey', 'api_key', 'apikey',
-  'accessToken', 'access_token', 'refreshToken', 'refresh_token',
-  'privateKey', 'private_key', 'secretKey', 'secret_key',
-  'authorization', 'credential', 'credentials',
-  'tokenSecret', 'token_secret',
+  'password',
+  'secret',
+  'token',
+  'apiKey',
+  'api_key',
+  'apikey',
+  'accessToken',
+  'access_token',
+  'refreshToken',
+  'refresh_token',
+  'privateKey',
+  'private_key',
+  'secretKey',
+  'secret_key',
+  'authorization',
+  'credential',
+  'credentials',
+  'tokenSecret',
+  'token_secret',
 ]);
 
 export function createSecretRedactor(): SecretRedactorMiddleware {

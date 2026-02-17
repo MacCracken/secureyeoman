@@ -1,6 +1,6 @@
 /**
  * Task Types for SecureYeoman
- * 
+ *
  * Security considerations:
  * - All task types are strictly typed to prevent type confusion attacks
  * - Input/output are typed as unknown and must be validated before use
@@ -35,20 +35,14 @@ export type TaskType = (typeof TaskType)[keyof typeof TaskType];
 // Zod schemas for runtime validation
 export const TaskStatusSchema = z.enum([
   'pending',
-  'running', 
+  'running',
   'completed',
   'failed',
   'cancelled',
   'timeout',
 ]);
 
-export const TaskTypeSchema = z.enum([
-  'execute',
-  'query',
-  'file',
-  'network',
-  'system',
-]);
+export const TaskTypeSchema = z.enum(['execute', 'query', 'file', 'network', 'system']);
 
 // Resource usage tracking
 export const ResourceUsageSchema = z.object({
@@ -64,12 +58,14 @@ export const ResourceUsageSchema = z.object({
     sent: z.number().int().nonnegative(),
     received: z.number().int().nonnegative(),
   }),
-  apiCalls: z.array(z.object({
-    provider: z.string(),
-    endpoint: z.string(),
-    count: z.number().int().positive(),
-    costUsd: z.number().nonnegative().optional(),
-  })),
+  apiCalls: z.array(
+    z.object({
+      provider: z.string(),
+      endpoint: z.string(),
+      count: z.number().int().positive(),
+      costUsd: z.number().nonnegative().optional(),
+    })
+  ),
 });
 
 export type ResourceUsage = z.infer<typeof ResourceUsageSchema>;
@@ -102,37 +98,39 @@ export const TaskSchema = z.object({
   id: z.string().uuid(),
   correlationId: z.string().uuid().optional(),
   parentTaskId: z.string().uuid().optional(),
-  
+
   // Task definition
   type: TaskTypeSchema,
   name: z.string().min(1).max(256),
   description: z.string().max(4096).optional(),
-  
+
   // Input is validated separately - stored as hash for security
   inputHash: z.string().length(64), // SHA-256 hex
-  
+
   // Status
   status: TaskStatusSchema,
-  
+
   // Timing (Unix ms timestamps)
   createdAt: z.number().int().positive(),
   startedAt: z.number().int().positive().optional(),
   completedAt: z.number().int().positive().optional(),
   durationMs: z.number().int().nonnegative().optional(),
-  
+
   // Timeout configuration
   timeoutMs: z.number().int().positive().default(300000), // 5 min default
-  
+
   // Results
-  result: z.object({
-    success: z.boolean(),
-    outputHash: z.string().length(64).optional(),
-    error: TaskErrorSchema.optional(),
-  }).optional(),
-  
+  result: z
+    .object({
+      success: z.boolean(),
+      outputHash: z.string().length(64).optional(),
+      error: TaskErrorSchema.optional(),
+    })
+    .optional(),
+
   // Resource tracking
   resources: ResourceUsageSchema.optional(),
-  
+
   // Security context
   securityContext: SecurityContextSchema,
 });
@@ -155,11 +153,13 @@ export type TaskCreate = z.infer<typeof TaskCreateSchema>;
 // Task update (for status transitions)
 export const TaskUpdateSchema = z.object({
   status: TaskStatusSchema.optional(),
-  result: z.object({
-    success: z.boolean(),
-    outputHash: z.string().length(64).optional(),
-    error: TaskErrorSchema.optional(),
-  }).optional(),
+  result: z
+    .object({
+      success: z.boolean(),
+      outputHash: z.string().length(64).optional(),
+      error: TaskErrorSchema.optional(),
+    })
+    .optional(),
   resources: ResourceUsageSchema.optional(),
 });
 

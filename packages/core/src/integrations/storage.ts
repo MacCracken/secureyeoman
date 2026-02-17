@@ -110,7 +110,7 @@ export class IntegrationStorage extends PgBaseStorage {
         JSON.stringify(data.config ?? {}),
         now,
         now,
-      ],
+      ]
     );
 
     return (await this.getIntegration(id))!;
@@ -119,12 +119,15 @@ export class IntegrationStorage extends PgBaseStorage {
   async getIntegration(id: string): Promise<IntegrationConfig | null> {
     const row = await this.queryOne<IntegrationRow>(
       'SELECT * FROM integration.integrations WHERE id = $1',
-      [id],
+      [id]
     );
     return row ? rowToConfig(row) : null;
   }
 
-  async listIntegrations(filter?: { platform?: Platform; enabled?: boolean }): Promise<IntegrationConfig[]> {
+  async listIntegrations(filter?: {
+    platform?: Platform;
+    enabled?: boolean;
+  }): Promise<IntegrationConfig[]> {
     let sql = 'SELECT * FROM integration.integrations WHERE 1=1';
     const params: unknown[] = [];
     let counter = 1;
@@ -175,16 +178,13 @@ export class IntegrationStorage extends PgBaseStorage {
     params.push(id);
     await this.query(
       `UPDATE integration.integrations SET ${fields.join(', ')} WHERE id = $${counter}`,
-      params,
+      params
     );
     return this.getIntegration(id);
   }
 
   async deleteIntegration(id: string): Promise<boolean> {
-    const rowCount = await this.execute(
-      'DELETE FROM integration.integrations WHERE id = $1',
-      [id],
-    );
+    const rowCount = await this.execute('DELETE FROM integration.integrations WHERE id = $1', [id]);
     return rowCount > 0;
   }
 
@@ -215,7 +215,7 @@ export class IntegrationStorage extends PgBaseStorage {
     params.push(id);
     await this.query(
       `UPDATE integration.integrations SET ${fields.join(', ')} WHERE id = $${counter}`,
-      params,
+      params
     );
   }
 
@@ -225,7 +225,7 @@ export class IntegrationStorage extends PgBaseStorage {
       `UPDATE integration.integrations
        SET message_count = message_count + 1, last_message_at = $1, updated_at = $2
        WHERE id = $3`,
-      [now, now, id],
+      [now, now, id]
     );
   }
 
@@ -253,19 +253,22 @@ export class IntegrationStorage extends PgBaseStorage {
         message.platformMessageId ?? null,
         JSON.stringify(message.metadata),
         message.timestamp,
-      ],
+      ]
     );
 
     await this.incrementMessageCount(message.integrationId);
     return { ...message, id };
   }
 
-  async listMessages(integrationId: string, opts?: { limit?: number; offset?: number }): Promise<UnifiedMessage[]> {
+  async listMessages(
+    integrationId: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<UnifiedMessage[]> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
     const rows = await this.queryMany<MessageRow>(
       'SELECT * FROM integration.messages WHERE integration_id = $1 ORDER BY timestamp DESC LIMIT $2 OFFSET $3',
-      [integrationId, limit, offset],
+      [integrationId, limit, offset]
     );
     return rows.map(rowToMessage);
   }

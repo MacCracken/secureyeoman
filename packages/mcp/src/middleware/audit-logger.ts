@@ -26,7 +26,11 @@ export function createAuditLogger(client: CoreApiClient): AuditLoggerMiddleware 
       }
     },
 
-    async wrap<T>(toolName: string, args: Record<string, unknown>, fn: () => Promise<T>): Promise<T> {
+    async wrap<T>(
+      toolName: string,
+      args: Record<string, unknown>,
+      fn: () => Promise<T>
+    ): Promise<T> {
       const start = Date.now();
       try {
         const result = await fn();
@@ -44,7 +48,13 @@ export function createAuditLogger(client: CoreApiClient): AuditLoggerMiddleware 
           event: 'mcp_tool_call',
           level: 'error',
           message: `MCP tool call failed: ${toolName}`,
-          metadata: { toolName, args, duration, success: false, error: err instanceof Error ? err.message : String(err) },
+          metadata: {
+            toolName,
+            args,
+            duration,
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+          },
         });
         throw err;
       }

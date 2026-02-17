@@ -36,7 +36,7 @@ export class DashboardStorage extends PgBaseStorage {
         dashboard.isDefault,
         now,
         now,
-      ],
+      ]
     );
 
     return dashboard;
@@ -45,14 +45,14 @@ export class DashboardStorage extends PgBaseStorage {
   async get(id: string): Promise<CustomDashboard | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM dashboard.custom_dashboards WHERE id = $1',
-      [id],
+      [id]
     );
     return row ? this.rowToDashboard(row) : null;
   }
 
   async list(): Promise<CustomDashboard[]> {
     const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM dashboard.custom_dashboards ORDER BY created_at DESC',
+      'SELECT * FROM dashboard.custom_dashboards ORDER BY created_at DESC'
     );
     return rows.map((r) => this.rowToDashboard(r));
   }
@@ -73,17 +73,16 @@ export class DashboardStorage extends PgBaseStorage {
         updated.isDefault,
         updated.updatedAt,
         id,
-      ],
+      ]
     );
 
     return updated;
   }
 
   async delete(id: string): Promise<boolean> {
-    const changes = await this.execute(
-      'DELETE FROM dashboard.custom_dashboards WHERE id = $1',
-      [id],
-    );
+    const changes = await this.execute('DELETE FROM dashboard.custom_dashboards WHERE id = $1', [
+      id,
+    ]);
     return changes > 0;
   }
 

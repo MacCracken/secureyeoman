@@ -16,14 +16,14 @@ const MAX_WRITE_SIZE = 1 * 1024 * 1024; // 1MB
 export function registerFilesystemTools(
   server: McpServer,
   config: McpServiceConfig,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   function validatePath(inputPath: string): string {
     const resolved = path.resolve(inputPath);
     const real = resolved; // We'll check realpath in the handler
 
-    const allowed = config.allowedPaths.some(
-      (allowedPath: string) => resolved.startsWith(path.resolve(allowedPath)),
+    const allowed = config.allowedPaths.some((allowedPath: string) =>
+      resolved.startsWith(path.resolve(allowedPath))
     );
 
     if (!allowed) {
@@ -39,8 +39,8 @@ export function registerFilesystemTools(
     // Resolve symlinks to prevent traversal
     try {
       const realResolved = await fs.realpath(resolved);
-      const allowed = config.allowedPaths.some(
-        (allowedPath) => realResolved.startsWith(path.resolve(allowedPath)),
+      const allowed = config.allowedPaths.some((allowedPath) =>
+        realResolved.startsWith(path.resolve(allowedPath))
       );
       if (!allowed) {
         throw new PathValidationError(realResolved, config.allowedPaths);
@@ -65,7 +65,7 @@ export function registerFilesystemTools(
       }
       const content = await fs.readFile(filePath, 'utf-8');
       return { content: [{ type: 'text' as const, text: content }] };
-    }),
+    })
   );
 
   server.tool(
@@ -81,8 +81,15 @@ export function registerFilesystemTools(
       }
       const filePath = await validateRealPath(args.path);
       await fs.writeFile(filePath, args.content, 'utf-8');
-      return { content: [{ type: 'text' as const, text: `Written ${Buffer.byteLength(args.content)} bytes to ${filePath}` }] };
-    }),
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: `Written ${Buffer.byteLength(args.content)} bytes to ${filePath}`,
+          },
+        ],
+      };
+    })
   );
 
   server.tool(
@@ -97,7 +104,7 @@ export function registerFilesystemTools(
         type: e.isDirectory() ? 'directory' : e.isFile() ? 'file' : 'other',
       }));
       return { content: [{ type: 'text' as const, text: JSON.stringify(listing, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -132,7 +139,7 @@ export function registerFilesystemTools(
 
       await walk(basePath);
       return { content: [{ type: 'text' as const, text: JSON.stringify(results, null, 2) }] };
-    }),
+    })
   );
 }
 

@@ -32,21 +32,21 @@ export class RotationStorage extends PgBaseStorage {
         meta.autoRotate,
         meta.source,
         meta.category,
-      ],
+      ]
     );
   }
 
   async get(name: string): Promise<SecretMetadata | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM rotation.secret_metadata WHERE name = $1',
-      [name],
+      [name]
     );
     return row ? this.rowToMeta(row) : null;
   }
 
   async getAll(): Promise<SecretMetadata[]> {
     const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM rotation.secret_metadata ORDER BY name',
+      'SELECT * FROM rotation.secret_metadata ORDER BY name'
     );
     return rows.map((r) => this.rowToMeta(r));
   }
@@ -54,7 +54,7 @@ export class RotationStorage extends PgBaseStorage {
   async updateRotation(name: string, rotatedAt: number, expiresAt: number | null): Promise<void> {
     await this.query(
       'UPDATE rotation.secret_metadata SET rotated_at = $1, expires_at = $2 WHERE name = $3',
-      [rotatedAt, expiresAt, name],
+      [rotatedAt, expiresAt, name]
     );
   }
 
@@ -67,14 +67,14 @@ export class RotationStorage extends PgBaseStorage {
          value = $2,
          stored_at = $3,
          expires_at = $4`,
-      [name, value, now, now + gracePeriodMs],
+      [name, value, now, now + gracePeriodMs]
     );
   }
 
   async getPreviousValue(name: string): Promise<string | null> {
     const row = await this.queryOne<{ value: string; expires_at: number }>(
       'SELECT value, expires_at FROM rotation.previous_values WHERE name = $1',
-      [name],
+      [name]
     );
 
     if (!row) return null;
@@ -89,10 +89,7 @@ export class RotationStorage extends PgBaseStorage {
   }
 
   async clearPreviousValue(name: string): Promise<void> {
-    await this.query(
-      'DELETE FROM rotation.previous_values WHERE name = $1',
-      [name],
-    );
+    await this.query('DELETE FROM rotation.previous_values WHERE name = $1', [name]);
   }
 
   private rowToMeta(row: Record<string, unknown>): SecretMetadata {

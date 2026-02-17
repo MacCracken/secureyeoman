@@ -33,7 +33,7 @@ const PRICING: Record<string, ModelPricing> = {
   'gpt-4o': { inputPer1M: 2.5, outputPer1M: 10 },
   'gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.6 },
   'gpt-4-turbo': { inputPer1M: 10, outputPer1M: 30 },
-  'o1': { inputPer1M: 15, outputPer1M: 60 },
+  o1: { inputPer1M: 15, outputPer1M: 60 },
   'o1-mini': { inputPer1M: 3, outputPer1M: 12 },
   'o3-mini': { inputPer1M: 1.1, outputPer1M: 4.4 },
 
@@ -49,7 +49,7 @@ const PRICING: Record<string, ModelPricing> = {
   'big-pickle': { inputPer1M: 0, outputPer1M: 0 },
 
   // DeepSeek
-  'deepseek-chat': { inputPer1M: 0.27, outputPer1M: 1.10 },
+  'deepseek-chat': { inputPer1M: 0.27, outputPer1M: 1.1 },
   'deepseek-coder': { inputPer1M: 0.14, outputPer1M: 0.28 },
   'deepseek-reasoner': { inputPer1M: 0.55, outputPer1M: 2.19 },
 };
@@ -63,7 +63,7 @@ const FALLBACK_PRICING: Record<string, ModelPricing> = {
   opencode: { inputPer1M: 1, outputPer1M: 5 },
   lmstudio: { inputPer1M: 0, outputPer1M: 0 },
   localai: { inputPer1M: 0, outputPer1M: 0 },
-  deepseek: { inputPer1M: 0.27, outputPer1M: 1.10 },
+  deepseek: { inputPer1M: 0.27, outputPer1M: 1.1 },
 };
 
 export interface AvailableModel {
@@ -81,7 +81,7 @@ const MODEL_PROVIDER_MAP: Record<string, string> = {
   'gpt-4o': 'openai',
   'gpt-4o-mini': 'openai',
   'gpt-4-turbo': 'openai',
-  'o1': 'openai',
+  o1: 'openai',
   'o1-mini': 'openai',
   'o3-mini': 'openai',
   'gemini-2.0-flash': 'gemini',
@@ -136,12 +136,14 @@ export function getAvailableModels(onlyAvailable = false): Record<string, Availa
   // Add local provider placeholders if not already populated from pricing table
   for (const localProvider of ['ollama', 'lmstudio', 'localai']) {
     if (!grouped[localProvider]) {
-      grouped[localProvider] = [{
-        provider: localProvider,
-        model: 'local',
-        inputPer1M: 0,
-        outputPer1M: 0,
-      }];
+      grouped[localProvider] = [
+        {
+          provider: localProvider,
+          model: 'local',
+          inputPer1M: 0,
+          outputPer1M: 0,
+        },
+      ];
     }
   }
 
@@ -168,7 +170,9 @@ const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
  * from all provider APIs when their respective API keys are set.
  * Results are cached for 10 minutes to avoid repeated API calls.
  */
-export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Record<string, AvailableModel[]>> {
+export async function getAvailableModelsAsync(
+  onlyAvailable = false
+): Promise<Record<string, AvailableModel[]>> {
   const now = Date.now();
 
   if (_dynamicCache && now - _dynamicCache.ts < CACHE_TTL_MS) {
@@ -179,13 +183,13 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
   const grouped = getAvailableModels(false);
 
   // Build dynamic fetch tasks for each provider with credentials set
-  const anthropicKey = process.env['ANTHROPIC_API_KEY'];
-  const openaiKey = process.env['OPENAI_API_KEY'];
-  const geminiKey = process.env['GOOGLE_GENERATIVE_AI_API_KEY'];
-  const opencodeKey = process.env['OPENCODE_API_KEY'];
-  const ollamaHost = process.env['OLLAMA_HOST'];
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  const geminiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  const opencodeKey = process.env.OPENCODE_API_KEY;
+  const ollamaHost = process.env.OLLAMA_HOST;
 
-  const tasks: Array<{ provider: string; promise: Promise<AvailableModel[]> }> = [];
+  const tasks: { provider: string; promise: Promise<AvailableModel[]> }[] = [];
 
   if (anthropicKey) {
     tasks.push({
@@ -193,7 +197,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
       promise: AnthropicProvider.fetchAvailableModels(anthropicKey).then((models) =>
         models.map((m) => {
           const knownPricing = PRICING[m.id];
-          const fallback = FALLBACK_PRICING['anthropic']!;
+          const fallback = FALLBACK_PRICING.anthropic!;
           return {
             provider: 'anthropic',
             model: m.id,
@@ -201,7 +205,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
             outputPer1M: knownPricing?.outputPer1M ?? fallback.outputPer1M,
             cachedInputPer1M: knownPricing?.cachedInputPer1M,
           };
-        }),
+        })
       ),
     });
   }
@@ -212,7 +216,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
       promise: OpenAIProvider.fetchAvailableModels(openaiKey).then((models) =>
         models.map((m) => {
           const knownPricing = PRICING[m.id];
-          const fallback = FALLBACK_PRICING['openai']!;
+          const fallback = FALLBACK_PRICING.openai!;
           return {
             provider: 'openai',
             model: m.id,
@@ -220,7 +224,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
             outputPer1M: knownPricing?.outputPer1M ?? fallback.outputPer1M,
             cachedInputPer1M: knownPricing?.cachedInputPer1M,
           };
-        }),
+        })
       ),
     });
   }
@@ -231,7 +235,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
       promise: GeminiProvider.fetchAvailableModels(geminiKey).then((models) =>
         models.map((m) => {
           const knownPricing = PRICING[m.id];
-          const fallback = FALLBACK_PRICING['gemini']!;
+          const fallback = FALLBACK_PRICING.gemini!;
           return {
             provider: 'gemini',
             model: m.id,
@@ -239,7 +243,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
             outputPer1M: knownPricing?.outputPer1M ?? fallback.outputPer1M,
             cachedInputPer1M: knownPricing?.cachedInputPer1M,
           };
-        }),
+        })
       ),
     });
   }
@@ -250,7 +254,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
       promise: OpenCodeProvider.fetchAvailableModels(opencodeKey).then((models) =>
         models.map((m) => {
           const knownPricing = PRICING[m.id];
-          const fallback = FALLBACK_PRICING['opencode']!;
+          const fallback = FALLBACK_PRICING.opencode!;
           return {
             provider: 'opencode',
             model: m.id,
@@ -258,7 +262,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
             outputPer1M: knownPricing?.outputPer1M ?? fallback.outputPer1M,
             cachedInputPer1M: knownPricing?.cachedInputPer1M,
           };
-        }),
+        })
       ),
     });
   }
@@ -272,12 +276,12 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
           model: m.id,
           inputPer1M: 0,
           outputPer1M: 0,
-        })),
+        }))
       ),
     });
   }
 
-  const lmstudioBase = process.env['LMSTUDIO_BASE_URL'];
+  const lmstudioBase = process.env.LMSTUDIO_BASE_URL;
   if (lmstudioBase) {
     tasks.push({
       provider: 'lmstudio',
@@ -287,12 +291,12 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
           model: m.id,
           inputPer1M: 0,
           outputPer1M: 0,
-        })),
+        }))
       ),
     });
   }
 
-  const deepseekKey = process.env['DEEPSEEK_API_KEY'];
+  const deepseekKey = process.env.DEEPSEEK_API_KEY;
   if (deepseekKey) {
     tasks.push({
       provider: 'deepseek',
@@ -300,7 +304,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
         const list = models.length > 0 ? models : DeepSeekProvider.getKnownModels();
         return list.map((m) => {
           const knownPricing = PRICING[m.id];
-          const fallback = FALLBACK_PRICING['deepseek']!;
+          const fallback = FALLBACK_PRICING.deepseek!;
           return {
             provider: 'deepseek',
             model: m.id,
@@ -313,7 +317,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
     });
   }
 
-  const localaiBase = process.env['LOCALAI_BASE_URL'];
+  const localaiBase = process.env.LOCALAI_BASE_URL;
   if (localaiBase) {
     tasks.push({
       provider: 'localai',
@@ -323,7 +327,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
           model: m.id,
           inputPer1M: 0,
           outputPer1M: 0,
-        })),
+        }))
       ),
     });
   }
@@ -346,7 +350,7 @@ export async function getAvailableModelsAsync(onlyAvailable = false): Promise<Re
 
 function filterByAvailability(
   grouped: Record<string, AvailableModel[]>,
-  onlyAvailable: boolean,
+  onlyAvailable: boolean
 ): Record<string, AvailableModel[]> {
   if (!onlyAvailable) return grouped;
 

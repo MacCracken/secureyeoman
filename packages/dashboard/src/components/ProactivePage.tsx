@@ -90,7 +90,9 @@ export function ProactivePage() {
         {tabs.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => {
+              setActiveTab(tab.key);
+            }}
             className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.key
                 ? 'border-primary text-primary'
@@ -132,20 +134,41 @@ function OverviewTab() {
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Active Triggers" value={triggers.enabled ?? 0} icon={<Zap className="w-5 h-5" />} subtitle={`${triggers.total ?? 0} total`} />
-        <StatCard title="Pending Suggestions" value={suggestions.pending ?? 0} icon={<Inbox className="w-5 h-5" />} />
-        <StatCard title="Patterns Detected" value={patterns.detected ?? 0} icon={<TrendingUp className="w-5 h-5" />} />
-        <StatCard title="Triggers by Type" value={triggers.total ?? 0} icon={<Clock className="w-5 h-5" />} subtitle={`${triggers.byType?.schedule ?? 0} sched, ${triggers.byType?.event ?? 0} event`} />
+        <StatCard
+          title="Active Triggers"
+          value={triggers.enabled ?? 0}
+          icon={<Zap className="w-5 h-5" />}
+          subtitle={`${triggers.total ?? 0} total`}
+        />
+        <StatCard
+          title="Pending Suggestions"
+          value={suggestions.pending ?? 0}
+          icon={<Inbox className="w-5 h-5" />}
+        />
+        <StatCard
+          title="Patterns Detected"
+          value={patterns.detected ?? 0}
+          icon={<TrendingUp className="w-5 h-5" />}
+        />
+        <StatCard
+          title="Triggers by Type"
+          value={triggers.total ?? 0}
+          icon={<Clock className="w-5 h-5" />}
+          subtitle={`${triggers.byType?.schedule ?? 0} sched, ${triggers.byType?.event ?? 0} event`}
+        />
       </div>
 
       <div className="card">
         <div className="card-header">
           <h2 className="card-title text-base">Built-in Triggers</h2>
-          <p className="card-description text-sm">Common proactive scenarios available to personalities</p>
+          <p className="card-description text-sm">
+            Common proactive scenarios available to personalities
+          </p>
         </div>
         <div className="card-content">
           <p className="text-xs text-muted-foreground mb-3">
-            Triggers are enabled per personality via the Personality Editor. Configure which triggers each personality can use in its proactive settings.
+            Triggers are enabled per personality via the Personality Editor. Configure which
+            triggers each personality can use in its proactive settings.
           </p>
           <div className="space-y-3">
             {(builtins?.triggers ?? []).map((trigger) => (
@@ -199,7 +222,9 @@ function TriggersTab() {
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{triggers.length} trigger(s)</p>
         <button
-          onClick={() => setShowCreate(!showCreate)}
+          onClick={() => {
+            setShowCreate(!showCreate);
+          }}
           className="flex items-center gap-2 px-3 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -207,7 +232,13 @@ function TriggersTab() {
         </button>
       </div>
 
-      {showCreate && <CreateTriggerForm onClose={() => setShowCreate(false)} />}
+      {showCreate && (
+        <CreateTriggerForm
+          onClose={() => {
+            setShowCreate(false);
+          }}
+        />
+      )}
 
       {isLoading ? (
         <div className="flex justify-center py-8">
@@ -223,10 +254,18 @@ function TriggersTab() {
             <TriggerRow
               key={trigger.id}
               trigger={trigger}
-              onEnable={() => enableMut.mutate(trigger.id)}
-              onDisable={() => disableMut.mutate(trigger.id)}
-              onDelete={() => deleteMut.mutate(trigger.id)}
-              onTest={() => testMut.mutate(trigger.id)}
+              onEnable={() => {
+                enableMut.mutate(trigger.id);
+              }}
+              onDisable={() => {
+                disableMut.mutate(trigger.id);
+              }}
+              onDelete={() => {
+                deleteMut.mutate(trigger.id);
+              }}
+              onTest={() => {
+                testMut.mutate(trigger.id);
+              }}
             />
           ))}
         </div>
@@ -260,12 +299,16 @@ function TriggerRow({
     <div className="card p-4 flex items-center gap-4">
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
-          <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${typeColors[trigger.type] ?? 'bg-muted text-muted-foreground'}`}>
+          <span
+            className={`px-2 py-0.5 rounded text-[10px] font-medium ${typeColors[trigger.type] ?? 'bg-muted text-muted-foreground'}`}
+          >
             {trigger.type}
           </span>
           <p className="text-sm font-medium truncate">{trigger.name}</p>
           {trigger.builtin && (
-            <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground">built-in</span>
+            <span className="px-1.5 py-0.5 rounded text-[10px] bg-muted text-muted-foreground">
+              built-in
+            </span>
           )}
         </div>
         {trigger.description && (
@@ -288,7 +331,11 @@ function TriggerRow({
           {trigger.enabled ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
         </button>
         {!trigger.builtin && (
-          <button onClick={onDelete} className="p-1.5 rounded hover:bg-muted/50 text-destructive" title="Delete">
+          <button
+            onClick={onDelete}
+            className="p-1.5 rounded hover:bg-muted/50 text-destructive"
+            title="Delete"
+          >
             <Trash2 className="w-4 h-4" />
           </button>
         )}
@@ -300,7 +347,9 @@ function TriggerRow({
 function CreateTriggerForm({ onClose }: { onClose: () => void }) {
   const queryClient = useQueryClient();
   const [name, setName] = useState('');
-  const [type, setType] = useState<'schedule' | 'event' | 'pattern' | 'webhook' | 'llm'>('schedule');
+  const [type, setType] = useState<'schedule' | 'event' | 'pattern' | 'webhook' | 'llm'>(
+    'schedule'
+  );
   const [cron, setCron] = useState('0 9 * * 1-5');
   const [eventType, setEventType] = useState('');
   const [actionType, setActionType] = useState<'message' | 'remind'>('message');
@@ -317,11 +366,15 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
 
   const handleSubmit = () => {
     const condition =
-      type === 'schedule' ? { type: 'schedule' as const, cron, timezone: 'UTC' } :
-      type === 'event' ? { type: 'event' as const, eventType } :
-      type === 'pattern' ? { type: 'pattern' as const, patternId: '', minConfidence: 0.7 } :
-      type === 'webhook' ? { type: 'webhook' as const, path: '/proactive/hook', method: 'POST' as const } :
-      { type: 'llm' as const, prompt: actionContent, evaluationIntervalMs: 3600000 };
+      type === 'schedule'
+        ? { type: 'schedule' as const, cron, timezone: 'UTC' }
+        : type === 'event'
+          ? { type: 'event' as const, eventType }
+          : type === 'pattern'
+            ? { type: 'pattern' as const, patternId: '', minConfidence: 0.7 }
+            : type === 'webhook'
+              ? { type: 'webhook' as const, path: '/proactive/hook', method: 'POST' as const }
+              : { type: 'llm' as const, prompt: actionContent, evaluationIntervalMs: 3600000 };
 
     const action =
       actionType === 'message'
@@ -354,7 +407,9 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
           <label className="text-xs font-medium text-muted-foreground">Name</label>
           <input
             value={name}
-            onChange={(e) => setName(e.target.value)}
+            onChange={(e) => {
+              setName(e.target.value);
+            }}
             className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
             placeholder="My trigger"
           />
@@ -363,7 +418,9 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
           <label className="text-xs font-medium text-muted-foreground">Type</label>
           <select
             value={type}
-            onChange={(e) => setType(e.target.value as any)}
+            onChange={(e) => {
+              setType(e.target.value as any);
+            }}
             className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
           >
             <option value="schedule">Schedule (Cron)</option>
@@ -380,7 +437,9 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
           <label className="text-xs font-medium text-muted-foreground">Cron Expression</label>
           <input
             value={cron}
-            onChange={(e) => setCron(e.target.value)}
+            onChange={(e) => {
+              setCron(e.target.value);
+            }}
             className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background font-mono"
             placeholder="0 9 * * 1-5"
           />
@@ -392,7 +451,9 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
           <label className="text-xs font-medium text-muted-foreground">Event Type</label>
           <input
             value={eventType}
-            onChange={(e) => setEventType(e.target.value)}
+            onChange={(e) => {
+              setEventType(e.target.value);
+            }}
             className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
             placeholder="integration_disconnected"
           />
@@ -404,7 +465,9 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
           <label className="text-xs font-medium text-muted-foreground">Action Type</label>
           <select
             value={actionType}
-            onChange={(e) => setActionType(e.target.value as any)}
+            onChange={(e) => {
+              setActionType(e.target.value as any);
+            }}
             className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
           >
             <option value="message">Message</option>
@@ -415,7 +478,9 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
           <label className="text-xs font-medium text-muted-foreground">Approval Mode</label>
           <select
             value={approvalMode}
-            onChange={(e) => setApprovalMode(e.target.value as any)}
+            onChange={(e) => {
+              setApprovalMode(e.target.value as any);
+            }}
             className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
           >
             <option value="auto">Auto-execute</option>
@@ -429,7 +494,9 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
         <label className="text-xs font-medium text-muted-foreground">Content</label>
         <textarea
           value={actionContent}
-          onChange={(e) => setActionContent(e.target.value)}
+          onChange={(e) => {
+            setActionContent(e.target.value);
+          }}
           className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background resize-none"
           rows={3}
           placeholder="Enter the message or reminder content..."
@@ -437,7 +504,10 @@ function CreateTriggerForm({ onClose }: { onClose: () => void }) {
       </div>
 
       <div className="flex justify-end gap-2">
-        <button onClick={onClose} className="px-4 py-2 text-sm border rounded-md hover:bg-muted/50 transition-colors">
+        <button
+          onClick={onClose}
+          className="px-4 py-2 text-sm border rounded-md hover:bg-muted/50 transition-colors"
+        >
           Cancel
         </button>
         <button
@@ -486,20 +556,26 @@ function SuggestionsTab() {
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
           <button
-            onClick={() => setFilter('pending')}
+            onClick={() => {
+              setFilter('pending');
+            }}
             className={`px-3 py-1.5 text-xs rounded-md font-medium ${filter === 'pending' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
           >
             Pending
           </button>
           <button
-            onClick={() => setFilter('all')}
+            onClick={() => {
+              setFilter('all');
+            }}
             className={`px-3 py-1.5 text-xs rounded-md font-medium ${filter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
           >
             All
           </button>
         </div>
         <button
-          onClick={() => clearMut.mutate()}
+          onClick={() => {
+            clearMut.mutate();
+          }}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           Clear Expired
@@ -520,8 +596,12 @@ function SuggestionsTab() {
             <SuggestionRow
               key={suggestion.id}
               suggestion={suggestion}
-              onApprove={() => approveMut.mutate(suggestion.id)}
-              onDismiss={() => dismissMut.mutate(suggestion.id)}
+              onApprove={() => {
+                approveMut.mutate(suggestion.id);
+              }}
+              onDismiss={() => {
+                dismissMut.mutate(suggestion.id);
+              }}
             />
           ))}
         </div>
@@ -553,7 +633,9 @@ function SuggestionRow({
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <p className="text-sm font-medium">{suggestion.triggerName}</p>
-          <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${statusColors[suggestion.status] ?? ''}`}>
+          <span
+            className={`px-2 py-0.5 rounded text-[10px] font-medium ${statusColors[suggestion.status] ?? ''}`}
+          >
             {suggestion.status}
           </span>
         </div>
@@ -566,10 +648,18 @@ function SuggestionRow({
       </div>
       {suggestion.status === 'pending' && (
         <div className="flex items-center gap-1.5 flex-shrink-0">
-          <button onClick={onApprove} className="p-1.5 rounded hover:bg-green-500/10 text-green-500" title="Approve">
+          <button
+            onClick={onApprove}
+            className="p-1.5 rounded hover:bg-green-500/10 text-green-500"
+            title="Approve"
+          >
             <Check className="w-4 h-4" />
           </button>
-          <button onClick={onDismiss} className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground" title="Dismiss">
+          <button
+            onClick={onDismiss}
+            className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
+            title="Dismiss"
+          >
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -601,7 +691,8 @@ function PatternsTab() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Patterns are automatically detected from your interaction history. Convert them to triggers to automate recurring actions.
+        Patterns are automatically detected from your interaction history. Convert them to triggers
+        to automate recurring actions.
       </p>
 
       {isLoading ? (
@@ -618,7 +709,9 @@ function PatternsTab() {
             <PatternCard
               key={pattern.id}
               pattern={pattern}
-              onConvert={() => convertMut.mutate(pattern.id)}
+              onConvert={() => {
+                convertMut.mutate(pattern.id);
+              }}
               converting={convertMut.isPending}
             />
           ))}
