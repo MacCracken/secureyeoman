@@ -18,8 +18,8 @@
 ## Quick Start
 
 ```bash
-git clone https://github.com/MacCracken/FRIDAY.git
-cd friday
+git clone https://github.com/MacCracken/secureyeoman.git
+cd secureyeoman
 cp .env.example .env   # edit with your API key + security keys
 npm install && npm run dev
 ```
