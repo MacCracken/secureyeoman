@@ -191,9 +191,19 @@ Expand integrations across multiple categories to reach parity with platforms li
 - [ ] OAuth2 first-class support for all Google services
 - [ ] Webhook transformation rules (custom payloads)
 - [ ] Integration health monitoring with alerting
+- [ ] Outbound webhooks for events
+
+### Platform-Specific Enhancements
+
+- [ ] Telegram inline keyboards, photo/document/voice attachments
+- [ ] Discord thread support for multi-turn conversations
+- [ ] Slack interactive messages (blocks, modals)
+- [ ] GitHub PR review automation via AI
+- [ ] GitHub code search and file browsing
 
 ### Dashboard Improvements
 
+- [ ] **Storybook** — Component development environment for dashboard UI components
 - [ ] **Integration Management UI** — Visual integration grid by category (Messaging, Productivity, Dev Tools, Services) with status indicators, connect/disconnect flows, and health metrics
 - [ ] **Vector Memory Explorer** — Dashboard view for semantic search across memories with similarity scores, embedding visualization, and manual memory entry
 - [ ] **Memory Consolidation Panel** — View consolidation runs, merged memories, trends chart (memory count over time), and manual trigger option
@@ -755,9 +765,16 @@ Learning        Assistance        Input/Output
 
 - Distributed deployment (Kubernetes)
 - ML-based anomaly detection
-- Mobile app
+- Mobile app (native iOS/Android)
 - Browser automation agent (Playwright/Puppeteer with vision model)
 - ChromaDB as additional vector backend option
+
+### Research Areas
+
+- Sandbox: seccomp vs eBPF, gVisor, WASM isolation
+- Encryption: libsodium vs WebCrypto, HSM integration
+- Visualization: WebGL for large graphs, layout algorithms (Dagre, ELK)
+- Real-time: Redis pub/sub, CRDT for collaborative editing
 
 ---
 
@@ -778,11 +795,12 @@ Enable FRIDAY to learn from interactions and improve its understanding of user p
 - **Adaptation scope**: Response formatting, tool selection, timing, verbosity, persona adjustments
 
 **Deliverables**:
-- [ ] Feedback collection system (inline ratings, explicit corrections)
-- [ ] User preference profile (stored in Brain, not in personality config)
-- [ ] Behavioral pattern analyzer (conversation style, response length, tool usage patterns)
-- [ ] Adaptive response tuning (modify response format/verbosity based on learned preferences)
-- [ ] Learning dashboard: show what FRIDAY has learned about the user
+- [x] Feedback collection system (inline ratings, explicit corrections)
+- [x] User preference profile (stored in Brain as 'preference' memories)
+- [x] Behavioral pattern analyzer (conversation analysis)
+- [x] Adaptive response tuning (preference injection into system prompt)
+- [ ] Explicit correction UI (inline text correction)
+- [ ] Preference visualization dashboard
 - [ ] Privacy controls: user can view/export/clear learned preferences
 
 #### 7.2 — Proactive Assistance — [ADR 040](../adr/040-proactive-assistance.md)
