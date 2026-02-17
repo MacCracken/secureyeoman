@@ -5,7 +5,11 @@
 import type { ReportData } from './audit-report.js';
 
 function escapeHtml(str: string): string {
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 function str(val: unknown): string {
@@ -37,17 +41,26 @@ function field(entry: unknown, key: string): unknown {
 export function formatHtmlReport(title: string, data: ReportData): string {
   const { auditEntries, tasks, heartbeatTasks, chainValid } = data;
 
-  const auditRows = auditEntries.map((e) =>
-    `<tr><td>${escapeHtml(str(field(e, 'id')))}</td><td>${escapeHtml(str(field(e, 'event')))}</td><td>${escapeHtml(str(field(e, 'level')))}</td><td>${escapeHtml(str(field(e, 'message')))}</td><td>${formatTs(field(e, 'timestamp'))}</td></tr>`
-  ).join('\n');
+  const auditRows = auditEntries
+    .map(
+      (e) =>
+        `<tr><td>${escapeHtml(str(field(e, 'id')))}</td><td>${escapeHtml(str(field(e, 'event')))}</td><td>${escapeHtml(str(field(e, 'level')))}</td><td>${escapeHtml(str(field(e, 'message')))}</td><td>${formatTs(field(e, 'timestamp'))}</td></tr>`
+    )
+    .join('\n');
 
-  const taskRows = tasks.map((t) =>
-    `<tr><td>${escapeHtml(str(field(t, 'id')))}</td><td>${escapeHtml(str(field(t, 'name')))}</td><td>${escapeHtml(str(field(t, 'type')))}</td><td>${escapeHtml(str(field(t, 'status')))}</td><td>${formatTs(field(t, 'createdAt'))}</td></tr>`
-  ).join('\n');
+  const taskRows = tasks
+    .map(
+      (t) =>
+        `<tr><td>${escapeHtml(str(field(t, 'id')))}</td><td>${escapeHtml(str(field(t, 'name')))}</td><td>${escapeHtml(str(field(t, 'type')))}</td><td>${escapeHtml(str(field(t, 'status')))}</td><td>${formatTs(field(t, 'createdAt'))}</td></tr>`
+    )
+    .join('\n');
 
-  const heartbeatRows = heartbeatTasks.map((h) =>
-    `<tr><td>${escapeHtml(str(field(h, 'name')))}</td><td>${escapeHtml(str(field(h, 'type')))}</td><td>${bool(field(h, 'enabled')) ? 'Yes' : 'No'}</td><td>${String(num(field(h, 'intervalMs')) ?? '')}</td><td>${formatTs(field(h, 'lastRunAt')) || 'Never'}</td></tr>`
-  ).join('\n');
+  const heartbeatRows = heartbeatTasks
+    .map(
+      (h) =>
+        `<tr><td>${escapeHtml(str(field(h, 'name')))}</td><td>${escapeHtml(str(field(h, 'type')))}</td><td>${bool(field(h, 'enabled')) ? 'Yes' : 'No'}</td><td>${String(num(field(h, 'intervalMs')) ?? '')}</td><td>${formatTs(field(h, 'lastRunAt')) || 'Never'}</td></tr>`
+    )
+    .join('\n');
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -76,22 +89,34 @@ export function formatHtmlReport(title: string, data: ReportData): string {
 </div>
 
 <h2>Audit Log</h2>
-${auditEntries.length === 0 ? '<p>No audit entries.</p>' : `<table>
+${
+  auditEntries.length === 0
+    ? '<p>No audit entries.</p>'
+    : `<table>
 <thead><tr><th>ID</th><th>Event</th><th>Level</th><th>Message</th><th>Timestamp</th></tr></thead>
 <tbody>${auditRows}</tbody>
-</table>`}
+</table>`
+}
 
 <h2>Task History</h2>
-${tasks.length === 0 ? '<p>No tasks recorded.</p>' : `<table>
+${
+  tasks.length === 0
+    ? '<p>No tasks recorded.</p>'
+    : `<table>
 <thead><tr><th>ID</th><th>Name</th><th>Type</th><th>Status</th><th>Created</th></tr></thead>
 <tbody>${taskRows}</tbody>
-</table>`}
+</table>`
+}
 
 <h2>Heartbeat Tasks</h2>
-${heartbeatTasks.length === 0 ? '<p>No heartbeat tasks configured.</p>' : `<table>
+${
+  heartbeatTasks.length === 0
+    ? '<p>No heartbeat tasks configured.</p>'
+    : `<table>
 <thead><tr><th>Name</th><th>Type</th><th>Enabled</th><th>Interval (ms)</th><th>Last Run</th></tr></thead>
 <tbody>${heartbeatRows}</tbody>
-</table>`}
+</table>`
+}
 
 </body></html>`;
 }
@@ -105,7 +130,9 @@ export function formatCsvReport(data: ReportData): string {
   lines.push('id,event,level,message,timestamp');
   for (const e of auditEntries) {
     const msg = str(field(e, 'message')).replace(/"/g, '""');
-    lines.push(`"${str(field(e, 'id'))}","${str(field(e, 'event'))}","${str(field(e, 'level'))}","${msg}","${formatTs(field(e, 'timestamp'))}"`);
+    lines.push(
+      `"${str(field(e, 'id'))}","${str(field(e, 'event'))}","${str(field(e, 'level'))}","${msg}","${formatTs(field(e, 'timestamp'))}"`
+    );
   }
 
   // Tasks section
@@ -114,7 +141,9 @@ export function formatCsvReport(data: ReportData): string {
   lines.push('id,name,type,status,createdAt');
   for (const t of tasks) {
     const name = str(field(t, 'name')).replace(/"/g, '""');
-    lines.push(`"${str(field(t, 'id'))}","${name}","${str(field(t, 'type'))}","${str(field(t, 'status'))}","${formatTs(field(t, 'createdAt'))}"`);
+    lines.push(
+      `"${str(field(t, 'id'))}","${name}","${str(field(t, 'type'))}","${str(field(t, 'status'))}","${formatTs(field(t, 'createdAt'))}"`
+    );
   }
 
   // Heartbeat tasks section
@@ -123,7 +152,9 @@ export function formatCsvReport(data: ReportData): string {
   lines.push('name,type,enabled,intervalMs,lastRunAt');
   for (const h of heartbeatTasks) {
     const name = str(field(h, 'name')).replace(/"/g, '""');
-    lines.push(`"${name}","${str(field(h, 'type'))}","${String(bool(field(h, 'enabled')))}","${String(num(field(h, 'intervalMs')) ?? '')}","${formatTs(field(h, 'lastRunAt'))}"`);
+    lines.push(
+      `"${name}","${str(field(h, 'type'))}","${String(bool(field(h, 'enabled')))}","${String(num(field(h, 'intervalMs')) ?? '')}","${formatTs(field(h, 'lastRunAt'))}"`
+    );
   }
 
   return lines.join('\n');

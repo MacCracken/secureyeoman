@@ -465,7 +465,7 @@ export class ConsentManager {
    */
   private async handleTimeout(consentId: string): Promise<void> {
     const consent = await this.storage.get(consentId);
-    if (!consent || consent.status !== 'pending') {
+    if (consent?.status !== 'pending') {
       return;
     }
 

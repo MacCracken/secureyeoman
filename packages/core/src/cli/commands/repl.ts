@@ -124,11 +124,7 @@ Options:
   },
 };
 
-async function handleLine(
-  line: string,
-  ctx: CommandContext,
-  baseUrl: string,
-): Promise<void> {
+async function handleLine(line: string, ctx: CommandContext, baseUrl: string): Promise<void> {
   const parts = line.split(/\s+/);
   const cmd = parts[0];
 
@@ -165,13 +161,19 @@ async function replHealth(ctx: CommandContext, baseUrl: string): Promise<void> {
       return;
     }
     const data = result.data as Record<string, unknown>;
-    ctx.stdout.write(`  Status: ${String(data.status)}  Version: ${String(data.version)}  Uptime: ${formatUptime(data.uptime as number)}\n`);
+    ctx.stdout.write(
+      `  Status: ${String(data.status)}  Version: ${String(data.version)}  Uptime: ${formatUptime(data.uptime as number)}\n`
+    );
   } catch (err) {
     ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
   }
 }
 
-async function replIntegration(ctx: CommandContext, baseUrl: string, args: string[]): Promise<void> {
+async function replIntegration(
+  ctx: CommandContext,
+  baseUrl: string,
+  args: string[]
+): Promise<void> {
   const action = args[0];
   if (!action) {
     ctx.stderr.write('Usage: integration <list|show|start|stop|delete> [id]\n');
@@ -207,10 +209,15 @@ async function replIntegration(ctx: CommandContext, baseUrl: string, args: strin
 
       case 'show': {
         const id = args[1];
-        if (!id) { ctx.stderr.write('Usage: integration show <id>\n'); return; }
+        if (!id) {
+          ctx.stderr.write('Usage: integration show <id>\n');
+          return;
+        }
         const result = await apiCall(baseUrl, `/api/v1/integrations/${encodeURIComponent(id)}`);
         if (!result.ok) {
-          ctx.stderr.write(result.status === 404 ? 'Not found.\n' : `HTTP ${String(result.status)}\n`);
+          ctx.stderr.write(
+            result.status === 404 ? 'Not found.\n' : `HTTP ${String(result.status)}\n`
+          );
           return;
         }
         ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
@@ -220,8 +227,15 @@ async function replIntegration(ctx: CommandContext, baseUrl: string, args: strin
       case 'start':
       case 'stop': {
         const id = args[1];
-        if (!id) { ctx.stderr.write(`Usage: integration ${action} <id>\n`); return; }
-        const result = await apiCall(baseUrl, `/api/v1/integrations/${encodeURIComponent(id)}/${action}`, { method: 'POST' });
+        if (!id) {
+          ctx.stderr.write(`Usage: integration ${action} <id>\n`);
+          return;
+        }
+        const result = await apiCall(
+          baseUrl,
+          `/api/v1/integrations/${encodeURIComponent(id)}/${action}`,
+          { method: 'POST' }
+        );
         if (!result.ok) {
           const errData = result.data as Record<string, unknown>;
           // eslint-disable-next-line @typescript-eslint/no-base-to-string
@@ -234,10 +248,17 @@ async function replIntegration(ctx: CommandContext, baseUrl: string, args: strin
 
       case 'delete': {
         const id = args[1];
-        if (!id) { ctx.stderr.write('Usage: integration delete <id>\n'); return; }
-        const result = await apiCall(baseUrl, `/api/v1/integrations/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        if (!id) {
+          ctx.stderr.write('Usage: integration delete <id>\n');
+          return;
+        }
+        const result = await apiCall(baseUrl, `/api/v1/integrations/${encodeURIComponent(id)}`, {
+          method: 'DELETE',
+        });
         if (!result.ok) {
-          ctx.stderr.write(result.status === 404 ? 'Not found.\n' : `HTTP ${String(result.status)}\n`);
+          ctx.stderr.write(
+            result.status === 404 ? 'Not found.\n' : `HTTP ${String(result.status)}\n`
+          );
           return;
         }
         ctx.stdout.write('Integration deleted.\n');

@@ -36,7 +36,12 @@ vi.mock('grammy', () => {
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -151,7 +156,9 @@ describe('TelegramIntegration', () => {
     it('should send a message and return the platform message ID', async () => {
       await adapter.init(createConfig(), createDeps());
       const id = await adapter.sendMessage('12345', 'Hello world');
-      expect(mockSendMessage).toHaveBeenCalledWith(12345, 'Hello world', { parse_mode: 'Markdown' });
+      expect(mockSendMessage).toHaveBeenCalledWith(12345, 'Hello world', {
+        parse_mode: 'Markdown',
+      });
       expect(id).toBe('42');
     });
 

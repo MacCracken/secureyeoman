@@ -8,7 +8,7 @@ import type { HookPoint, HookSemantics } from './types.js';
 
 export function registerExtensionRoutes(
   app: FastifyInstance,
-  deps: { extensionManager: ExtensionManager },
+  deps: { extensionManager: ExtensionManager }
 ): void {
   const { extensionManager } = deps;
 
@@ -34,7 +34,7 @@ export function registerExtensionRoutes(
           }[];
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       try {
         const manifest = {
@@ -50,21 +50,18 @@ export function registerExtensionRoutes(
           error: err instanceof Error ? err.message : 'Failed to register extension',
         });
       }
-    },
+    }
   );
 
   app.delete(
     '/api/v1/extensions/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const removed = await extensionManager.removeExtension(request.params.id);
       if (!removed) {
         return reply.code(404).send({ error: 'Extension not found' });
       }
       return { success: true };
-    },
+    }
   );
 
   // ── Hook routes ──────────────────────────────────────────────
@@ -77,7 +74,7 @@ export function registerExtensionRoutes(
           extensionId?: string;
           hookPoint?: string;
         };
-      }>,
+      }>
     ) => {
       const hooks = extensionManager.getRegisteredHooks();
       const q = request.query;
@@ -97,7 +94,7 @@ export function registerExtensionRoutes(
           semantics: h.semantics,
         })),
       };
-    },
+    }
   );
 
   app.post(
@@ -111,7 +108,7 @@ export function registerExtensionRoutes(
           semantics?: HookSemantics;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       try {
         const hookId = extensionManager.registerHook(
@@ -121,7 +118,7 @@ export function registerExtensionRoutes(
             extensionId: request.body.extensionId,
             priority: request.body.priority,
             semantics: request.body.semantics,
-          },
+          }
         );
         return reply.code(201).send({ hookId });
       } catch (err) {
@@ -129,17 +126,15 @@ export function registerExtensionRoutes(
           error: err instanceof Error ? err.message : 'Failed to register hook',
         });
       }
-    },
+    }
   );
 
   app.delete(
     '/api/v1/extensions/hooks/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>) => {
       extensionManager.unregisterHook(request.params.id);
       return { success: true };
-    },
+    }
   );
 
   // ── Webhook routes ───────────────────────────────────────────
@@ -160,7 +155,7 @@ export function registerExtensionRoutes(
           enabled?: boolean;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       try {
         const webhook = await extensionManager.registerWebhook({
@@ -175,7 +170,7 @@ export function registerExtensionRoutes(
           error: err instanceof Error ? err.message : 'Failed to register webhook',
         });
       }
-    },
+    }
   );
 
   app.put(
@@ -190,31 +185,28 @@ export function registerExtensionRoutes(
           enabled?: boolean;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
-      const updated = await extensionManager['deps'].storage.updateWebhook(
+      const updated = await extensionManager.storage.updateWebhook(
         request.params.id,
-        request.body,
+        request.body
       );
       if (!updated) {
         return reply.code(404).send({ error: 'Webhook not found' });
       }
       return { webhook: updated };
-    },
+    }
   );
 
   app.delete(
     '/api/v1/extensions/webhooks/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const removed = await extensionManager.removeWebhook(request.params.id);
       if (!removed) {
         return reply.code(404).send({ error: 'Webhook not found' });
       }
       return { success: true };
-    },
+    }
   );
 
   // ── Discovery route ──────────────────────────────────────────
@@ -227,19 +219,17 @@ export function registerExtensionRoutes(
           directory?: string;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       try {
-        const manifests = await extensionManager.discoverExtensions(
-          request.body?.directory,
-        );
+        const manifests = await extensionManager.discoverExtensions(request.body?.directory);
         return { manifests, count: manifests.length };
       } catch (err) {
         return reply.code(400).send({
           error: err instanceof Error ? err.message : 'Discovery failed',
         });
       }
-    },
+    }
   );
 
   // ── Config route ─────────────────────────────────────────────

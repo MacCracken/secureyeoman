@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ProactiveManager } from './manager.js';
 import { BUILTIN_TRIGGERS } from './builtin-triggers.js';
-import type { ProactiveConfig, ProactiveTrigger, ProactiveTriggerCreate, Suggestion } from '@friday/shared';
+import type {
+  ProactiveConfig,
+  ProactiveTrigger,
+  ProactiveTriggerCreate,
+  Suggestion,
+} from '@friday/shared';
 
 // ── Mock Storage ─────────────────────────────────────────────────
 
@@ -118,7 +123,7 @@ describe('ProactiveManager', () => {
       mockStorage as any,
       { logger: mockLogger as any, brainManager: mockBrainManager as any },
       defaultConfig(),
-      mockPatternLearner as any,
+      mockPatternLearner as any
     );
   });
 
@@ -152,7 +157,7 @@ describe('ProactiveManager', () => {
       await manager.initialize();
       expect(mockLogger.info).toHaveBeenCalledWith(
         'ProactiveManager initialized',
-        expect.objectContaining({ triggers: 0, builtins: BUILTIN_TRIGGERS.length }),
+        expect.objectContaining({ triggers: 0, builtins: BUILTIN_TRIGGERS.length })
       );
     });
   });
@@ -228,7 +233,9 @@ describe('ProactiveManager', () => {
         limitPerDay: 0,
       };
 
-      await expect(manager.createTrigger(triggerData)).rejects.toThrow('Maximum trigger limit (100) reached');
+      await expect(manager.createTrigger(triggerData)).rejects.toThrow(
+        'Maximum trigger limit (100) reached'
+      );
     });
 
     it('wires schedule timer when trigger is enabled and type is schedule', async () => {
@@ -389,14 +396,14 @@ describe('ProactiveManager', () => {
     it('skips firing when within cooldown period', async () => {
       const recentFire = Date.now() - 1000; // 1 second ago
       mockStorage.getTrigger.mockResolvedValue(
-        makeTrigger({ cooldownMs: 60000, lastFiredAt: recentFire } as any),
+        makeTrigger({ cooldownMs: 60000, lastFiredAt: recentFire } as any)
       );
 
       const result = await manager.fireTrigger('trigger-1');
       expect(result).toEqual({});
       expect(mockLogger.debug).toHaveBeenCalledWith(
         'Trigger skipped (cooldown)',
-        expect.objectContaining({ triggerId: 'trigger-1' }),
+        expect.objectContaining({ triggerId: 'trigger-1' })
       );
     });
 
@@ -421,7 +428,7 @@ describe('ProactiveManager', () => {
       expect(result).toEqual({});
       expect(mockLogger.debug).toHaveBeenCalledWith(
         'Trigger skipped (daily limit)',
-        expect.objectContaining({ triggerId: 'trigger-1', dailyCount: 3 }),
+        expect.objectContaining({ triggerId: 'trigger-1', dailyCount: 3 })
       );
     });
 
@@ -458,7 +465,10 @@ describe('ProactiveManager', () => {
 
   describe('auto-approve mode', () => {
     it('executes action directly when approvalMode is auto', async () => {
-      const trigger = makeTrigger({ approvalMode: 'auto', action: { type: 'remind', content: 'Remind me', category: 'test' } });
+      const trigger = makeTrigger({
+        approvalMode: 'auto',
+        action: { type: 'remind', content: 'Remind me', category: 'test' },
+      });
       mockStorage.getTrigger.mockResolvedValue(trigger);
       mockStorage.getDailyFiringCount.mockResolvedValue(0);
 
@@ -500,9 +510,12 @@ describe('ProactiveManager', () => {
         mockStorage as any,
         { logger: mockLogger as any, brainManager: mockBrainManager as any },
         defaultConfig({ defaultApprovalMode: 'auto' }),
-        mockPatternLearner as any,
+        mockPatternLearner as any
       );
-      const trigger = makeTrigger({ approvalMode: undefined, action: { type: 'remind', content: 'Auto remind', category: 'test' } });
+      const trigger = makeTrigger({
+        approvalMode: undefined,
+        action: { type: 'remind', content: 'Auto remind', category: 'test' },
+      });
       mockStorage.getTrigger.mockResolvedValue(trigger);
       mockStorage.getDailyFiringCount.mockResolvedValue(0);
 
@@ -523,7 +536,9 @@ describe('ProactiveManager', () => {
     });
 
     it('executes action and returns result', async () => {
-      const trigger = makeTrigger({ action: { type: 'remind', content: 'Test reminder', category: 'test' } });
+      const trigger = makeTrigger({
+        action: { type: 'remind', content: 'Test reminder', category: 'test' },
+      });
       mockStorage.getTrigger.mockResolvedValue(trigger);
 
       const result = await manager.testTrigger('trigger-1');
@@ -580,7 +595,11 @@ describe('ProactiveManager', () => {
       const result = await manager.approveSuggestion('sug-1');
       expect(result.success).toBe(true);
       expect(mockStorage.updateSuggestionStatus).toHaveBeenCalledWith('sug-1', 'approved');
-      expect(mockStorage.updateSuggestionStatus).toHaveBeenCalledWith('sug-1', 'executed', expect.any(Object));
+      expect(mockStorage.updateSuggestionStatus).toHaveBeenCalledWith(
+        'sug-1',
+        'executed',
+        expect.any(Object)
+      );
     });
   });
 
@@ -621,7 +640,15 @@ describe('ProactiveManager', () => {
   describe('detectPatterns', () => {
     it('delegates to patternLearner.detectPatterns with config lookbackDays', async () => {
       const patterns = [
-        { id: 'p1', type: 'temporal', description: 'Morning routine', confidence: 0.9, occurrences: 10, lastSeen: Date.now(), context: {} },
+        {
+          id: 'p1',
+          type: 'temporal',
+          description: 'Morning routine',
+          confidence: 0.9,
+          occurrences: 10,
+          lastSeen: Date.now(),
+          context: {},
+        },
       ];
       mockPatternLearner.detectPatterns.mockResolvedValue(patterns);
 
@@ -723,9 +750,13 @@ describe('ProactiveManager', () => {
       const broadcastFn = vi.fn();
       manager = new ProactiveManager(
         mockStorage as any,
-        { logger: mockLogger as any, brainManager: mockBrainManager as any, broadcast: broadcastFn },
+        {
+          logger: mockLogger as any,
+          brainManager: mockBrainManager as any,
+          broadcast: broadcastFn,
+        },
         defaultConfig(),
-        mockPatternLearner as any,
+        mockPatternLearner as any
       );
 
       const trigger = makeTrigger({ approvalMode: 'suggest' });

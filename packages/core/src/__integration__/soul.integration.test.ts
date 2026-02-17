@@ -7,11 +7,7 @@
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
-import {
-  createTestStack,
-  loginAndGetToken,
-  type TestStack,
-} from './helpers.js';
+import { createTestStack, loginAndGetToken, type TestStack } from './helpers.js';
 import { createAuthHook, createRbacHook } from '../gateway/auth-middleware.js';
 import { registerAuthRoutes } from '../gateway/auth-routes.js';
 import { registerSoulRoutes } from '../soul/soul-routes.js';
@@ -32,17 +28,20 @@ function defaultSoulConfig(overrides?: Partial<SoulConfig>): SoulConfig {
 
 async function createSoulTestGateway(
   stack: TestStack,
-  soulManager: SoulManager,
+  soulManager: SoulManager
 ): Promise<FastifyInstance> {
   const app = Fastify({ logger: false });
   const logger = stack.logger;
 
   app.addHook('onRequest', createAuthHook({ authService: stack.authService, logger }));
-  app.addHook('onRequest', createRbacHook({
-    rbac: stack.rbac,
-    auditChain: stack.auditChain,
-    logger,
-  }));
+  app.addHook(
+    'onRequest',
+    createRbacHook({
+      rbac: stack.rbac,
+      auditChain: stack.auditChain,
+      logger,
+    })
+  );
 
   registerAuthRoutes(app, {
     authService: stack.authService,

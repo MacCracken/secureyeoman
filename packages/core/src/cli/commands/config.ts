@@ -46,8 +46,12 @@ Options:
       ctx.stdout.write(`  Data dir:     ${config.core.dataDir}\n`);
       ctx.stdout.write(`  Workspace:    ${config.core.workspace}\n`);
       ctx.stdout.write(`  Log level:    ${config.logging.level}\n`);
-      ctx.stdout.write(`  Sandbox:      ${config.security.sandbox.enabled ? 'enabled' : 'disabled'}\n`);
-      ctx.stdout.write(`  Encryption:   ${config.security.encryption.enabled ? 'enabled' : 'disabled'}\n`);
+      ctx.stdout.write(
+        `  Sandbox:      ${config.security.sandbox.enabled ? 'enabled' : 'disabled'}\n`
+      );
+      ctx.stdout.write(
+        `  Encryption:   ${config.security.encryption.enabled ? 'enabled' : 'disabled'}\n`
+      );
       ctx.stdout.write('\n');
 
       if (checkSecretsResult.value) {
@@ -62,7 +66,9 @@ Options:
 
       return 0;
     } catch (err) {
-      ctx.stderr.write(`Configuration error:\n${err instanceof Error ? err.message : String(err)}\n`);
+      ctx.stderr.write(
+        `Configuration error:\n${err instanceof Error ? err.message : String(err)}\n`
+      );
       return 1;
     }
   },

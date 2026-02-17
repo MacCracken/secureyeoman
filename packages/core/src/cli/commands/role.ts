@@ -35,7 +35,7 @@ export const roleCommand: Command = {
           stderr.write(`Error: ${JSON.stringify(data)}\n`);
           return 1;
         }
-        const roles = (data as { roles: Array<Record<string, unknown>> }).roles;
+        const roles = (data as { roles: Record<string, unknown>[] }).roles;
         if (jsonFlag) {
           stdout.write(JSON.stringify(roles, null, 2) + '\n');
         } else {
@@ -44,7 +44,7 @@ export const roleCommand: Command = {
             name: String(r.name ?? ''),
             builtin: r.isBuiltin ? 'yes' : 'no',
             permissions: Array.isArray(r.permissions)
-              ? (r.permissions as Array<{ resource: string; action: string }>)
+              ? (r.permissions as { resource: string; action: string }[])
                   .map((p) => `${p.resource}:${p.action}`)
                   .join(', ')
               : '',
@@ -74,7 +74,10 @@ export const roleCommand: Command = {
           return { resource: resource ?? s.trim(), action: action ?? '*' };
         });
         const inheritFrom = inheritRaw
-          ? inheritRaw.split(',').map((s) => s.trim()).filter(Boolean)
+          ? inheritRaw
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
           : undefined;
 
         const { ok, data } = await apiCall(url, '/auth/roles', {
@@ -158,7 +161,8 @@ export const roleCommand: Command = {
           stderr.write(`Error: ${JSON.stringify(data)}\n`);
           return 1;
         }
-        const assignments = (data as { assignments: Array<{ userId: string; roleId: string }> }).assignments;
+        const assignments = (data as { assignments: { userId: string; roleId: string }[] })
+          .assignments;
         if (jsonFlag) {
           stdout.write(JSON.stringify(assignments, null, 2) + '\n');
         } else {
@@ -172,7 +176,9 @@ export const roleCommand: Command = {
       }
 
       default:
-        stderr.write(`Unknown action: ${action}\nUsage: secureyeoman role [list|create|delete|assign|revoke|assignments]\n`);
+        stderr.write(
+          `Unknown action: ${action}\nUsage: secureyeoman role [list|create|delete|assign|revoke|assignments]\n`
+        );
         return 1;
     }
   },

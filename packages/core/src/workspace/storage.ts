@@ -18,7 +18,7 @@ export class WorkspaceStorage extends PgBaseStorage {
       `INSERT INTO workspace.workspaces
         (id, name, description, settings, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6)`,
-      [id, data.name, data.description ?? '', JSON.stringify(data.settings ?? {}), now, now],
+      [id, data.name, data.description ?? '', JSON.stringify(data.settings ?? {}), now, now]
     );
     return {
       id,
@@ -34,7 +34,7 @@ export class WorkspaceStorage extends PgBaseStorage {
   async get(id: string): Promise<Workspace | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM workspace.workspaces WHERE id = $1',
-      [id],
+      [id]
     );
     if (!row) return null;
     const members = await this.getMembers(id);
@@ -51,7 +51,7 @@ export class WorkspaceStorage extends PgBaseStorage {
 
   async list(): Promise<Workspace[]> {
     const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM workspace.workspaces ORDER BY created_at DESC',
+      'SELECT * FROM workspace.workspaces ORDER BY created_at DESC'
     );
     const workspaces: Workspace[] = [];
     for (const r of rows) {
@@ -70,10 +70,7 @@ export class WorkspaceStorage extends PgBaseStorage {
   }
 
   async delete(id: string): Promise<boolean> {
-    const changes = await this.execute(
-      'DELETE FROM workspace.workspaces WHERE id = $1',
-      [id],
-    );
+    const changes = await this.execute('DELETE FROM workspace.workspaces WHERE id = $1', [id]);
     return changes > 0;
   }
 
@@ -83,7 +80,7 @@ export class WorkspaceStorage extends PgBaseStorage {
       `INSERT INTO workspace.members (workspace_id, user_id, role, joined_at)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT(workspace_id, user_id) DO UPDATE SET role = $3, joined_at = $4`,
-      [workspaceId, userId, role, now],
+      [workspaceId, userId, role, now]
     );
     return { userId, role: role as WorkspaceMember['role'], joinedAt: now };
   }
@@ -91,7 +88,7 @@ export class WorkspaceStorage extends PgBaseStorage {
   async removeMember(workspaceId: string, userId: string): Promise<boolean> {
     const changes = await this.execute(
       'DELETE FROM workspace.members WHERE workspace_id = $1 AND user_id = $2',
-      [workspaceId, userId],
+      [workspaceId, userId]
     );
     return changes > 0;
   }
@@ -99,7 +96,7 @@ export class WorkspaceStorage extends PgBaseStorage {
   private async getMembers(workspaceId: string): Promise<WorkspaceMember[]> {
     const rows = await this.queryMany<Record<string, unknown>>(
       'SELECT * FROM workspace.members WHERE workspace_id = $1',
-      [workspaceId],
+      [workspaceId]
     );
     return rows.map((r) => ({
       userId: r.user_id as string,

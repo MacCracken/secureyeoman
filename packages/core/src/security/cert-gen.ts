@@ -47,36 +47,57 @@ export function generateDevCerts(outputDir: string): CertPaths {
   const serverCert = path.join(outputDir, 'server-cert.pem');
 
   // Generate CA private key
-  execFileSync('openssl', [
-    'genrsa', '-out', caKey, '2048',
-  ], { stdio: 'pipe' });
+  execFileSync('openssl', ['genrsa', '-out', caKey, '2048'], { stdio: 'pipe' });
 
   // Generate CA self-signed certificate
-  execFileSync('openssl', [
-    'req', '-new', '-x509', '-key', caKey,
-    '-out', caCert, '-days', '365',
-    '-subj', '/CN=Friday Dev CA/O=Friday/C=US',
-  ], { stdio: 'pipe' });
+  execFileSync(
+    'openssl',
+    [
+      'req',
+      '-new',
+      '-x509',
+      '-key',
+      caKey,
+      '-out',
+      caCert,
+      '-days',
+      '365',
+      '-subj',
+      '/CN=Friday Dev CA/O=Friday/C=US',
+    ],
+    { stdio: 'pipe' }
+  );
 
   // Generate server private key
-  execFileSync('openssl', [
-    'genrsa', '-out', serverKey, '2048',
-  ], { stdio: 'pipe' });
+  execFileSync('openssl', ['genrsa', '-out', serverKey, '2048'], { stdio: 'pipe' });
 
   // Generate server CSR
-  execFileSync('openssl', [
-    'req', '-new', '-key', serverKey,
-    '-out', serverCsr,
-    '-subj', '/CN=localhost/O=Friday/C=US',
-  ], { stdio: 'pipe' });
+  execFileSync(
+    'openssl',
+    ['req', '-new', '-key', serverKey, '-out', serverCsr, '-subj', '/CN=localhost/O=Friday/C=US'],
+    { stdio: 'pipe' }
+  );
 
   // Sign server cert with CA
-  execFileSync('openssl', [
-    'x509', '-req', '-in', serverCsr,
-    '-CA', caCert, '-CAkey', caKey,
-    '-CAcreateserial', '-out', serverCert,
-    '-days', '365',
-  ], { stdio: 'pipe' });
+  execFileSync(
+    'openssl',
+    [
+      'x509',
+      '-req',
+      '-in',
+      serverCsr,
+      '-CA',
+      caCert,
+      '-CAkey',
+      caKey,
+      '-CAcreateserial',
+      '-out',
+      serverCert,
+      '-days',
+      '365',
+    ],
+    { stdio: 'pipe' }
+  );
 
   return { caKey, caCert, serverKey, serverCert };
 }
@@ -96,7 +117,7 @@ export interface ClientCertPaths {
 export function generateClientCert(
   outputDir: string,
   cn: string,
-  caPaths: { caKey: string; caCert: string },
+  caPaths: { caKey: string; caCert: string }
 ): ClientCertPaths {
   mkdirSync(outputDir, { recursive: true });
 
@@ -109,22 +130,33 @@ export function generateClientCert(
     throw new Error('CA key/cert not found — run generateDevCerts() first');
   }
 
-  execFileSync('openssl', [
-    'genrsa', '-out', clientKey, '2048',
-  ], { stdio: 'pipe' });
+  execFileSync('openssl', ['genrsa', '-out', clientKey, '2048'], { stdio: 'pipe' });
 
-  execFileSync('openssl', [
-    'req', '-new', '-key', clientKey,
-    '-out', clientCsr,
-    '-subj', `/CN=${cn}/O=Friday/C=US`,
-  ], { stdio: 'pipe' });
+  execFileSync(
+    'openssl',
+    ['req', '-new', '-key', clientKey, '-out', clientCsr, '-subj', `/CN=${cn}/O=Friday/C=US`],
+    { stdio: 'pipe' }
+  );
 
-  execFileSync('openssl', [
-    'x509', '-req', '-in', clientCsr,
-    '-CA', caPaths.caCert, '-CAkey', caPaths.caKey,
-    '-CAcreateserial', '-out', clientCert,
-    '-days', '365',
-  ], { stdio: 'pipe' });
+  execFileSync(
+    'openssl',
+    [
+      'x509',
+      '-req',
+      '-in',
+      clientCsr,
+      '-CA',
+      caPaths.caCert,
+      '-CAkey',
+      caPaths.caKey,
+      '-CAcreateserial',
+      '-out',
+      clientCert,
+      '-days',
+      '365',
+    ],
+    { stdio: 'pipe' }
+  );
 
   return { clientKey, clientCert };
 }

@@ -11,9 +11,7 @@ import type {
 
 // ── Metrics Snapshot ──────────────────────────────────────────────
 
-export function createMetricsSnapshot(
-  overrides?: Partial<MetricsSnapshot>
-): MetricsSnapshot {
+export function createMetricsSnapshot(overrides?: Partial<MetricsSnapshot>): MetricsSnapshot {
   return {
     timestamp: Date.now(),
     tasks: {
@@ -94,23 +92,27 @@ export function createTaskList(count = 5): Task[] {
     'System health check',
   ];
 
-  return Array.from({ length: count }, (_, i) => createTask({
-    id: `task-${String(i + 1).padStart(8, '0')}`,
-    status: statuses[i % statuses.length],
-    type: types[i % types.length],
-    name: names[i % names.length],
-    durationMs: (i + 1) * 1000,
-    result: statuses[i % statuses.length] === 'failed'
-      ? { success: false, error: { code: 'EXEC_FAILED', message: 'Process exited with code 1' } }
-      : { success: true },
-  }));
+  return Array.from({ length: count }, (_, i) =>
+    createTask({
+      id: `task-${String(i + 1).padStart(8, '0')}`,
+      status: statuses[i % statuses.length],
+      type: types[i % types.length],
+      name: names[i % names.length],
+      durationMs: (i + 1) * 1000,
+      result:
+        statuses[i % statuses.length] === 'failed'
+          ? {
+              success: false,
+              error: { code: 'EXEC_FAILED', message: 'Process exited with code 1' },
+            }
+          : { success: true },
+    })
+  );
 }
 
 // ── Security Events ───────────────────────────────────────────────
 
-export function createSecurityEvent(
-  overrides?: Partial<SecurityEvent>
-): SecurityEvent {
+export function createSecurityEvent(overrides?: Partial<SecurityEvent>): SecurityEvent {
   return {
     id: 'evt-' + Math.random().toString(36).slice(2, 10),
     type: 'auth_failure',
@@ -161,9 +163,7 @@ export function createSecurityEventList(): SecurityEvent[] {
 
 // ── Integration Configs ───────────────────────────────────────────
 
-export function createIntegration(
-  overrides?: Partial<IntegrationInfo>
-): IntegrationInfo {
+export function createIntegration(overrides?: Partial<IntegrationInfo>): IntegrationInfo {
   return {
     id: 'int-' + Math.random().toString(36).slice(2, 10),
     platform: 'telegram',
@@ -256,15 +256,23 @@ export function createModelInfoResponse(overrides?: Partial<ModelInfoResponse>):
     },
     available: {
       anthropic: [
-        { provider: 'anthropic', model: 'claude-sonnet-4-20250514', inputPer1M: 3, outputPer1M: 15, cachedInputPer1M: 0.3 },
-        { provider: 'anthropic', model: 'claude-opus-4-20250514', inputPer1M: 15, outputPer1M: 75, cachedInputPer1M: 1.5 },
+        {
+          provider: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+          inputPer1M: 3,
+          outputPer1M: 15,
+          cachedInputPer1M: 0.3,
+        },
+        {
+          provider: 'anthropic',
+          model: 'claude-opus-4-20250514',
+          inputPer1M: 15,
+          outputPer1M: 75,
+          cachedInputPer1M: 1.5,
+        },
       ],
-      openai: [
-        { provider: 'openai', model: 'gpt-4o', inputPer1M: 2.5, outputPer1M: 10 },
-      ],
-      ollama: [
-        { provider: 'ollama', model: 'local', inputPer1M: 0, outputPer1M: 0 },
-      ],
+      openai: [{ provider: 'openai', model: 'gpt-4o', inputPer1M: 2.5, outputPer1M: 10 }],
+      ollama: [{ provider: 'ollama', model: 'local', inputPer1M: 0, outputPer1M: 0 }],
     },
     ...overrides,
   };

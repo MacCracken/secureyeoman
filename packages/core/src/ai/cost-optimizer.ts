@@ -76,7 +76,8 @@ export class CostOptimizer {
       recommendations.push({
         id: uuidv7(),
         title: 'Batch non-urgent requests',
-        description: 'Batching API calls during off-peak hours can reduce costs with some providers.',
+        description:
+          'Batching API calls during off-peak hours can reduce costs with some providers.',
         priority: 'low',
         estimatedSavingsUsd: stats.costUsdToday * 0.05,
         currentCostUsd: stats.costUsdToday,

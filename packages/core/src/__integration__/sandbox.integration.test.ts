@@ -69,16 +69,18 @@ describe('Sandbox Integration', () => {
         infra.rateLimiter,
         infra.auditChain,
         undefined,
-        sandbox,
+        sandbox
       );
 
-      executor.registerHandler(createHandler({
-        execute: async () => ({ answer: 42 }),
-      }));
+      executor.registerHandler(
+        createHandler({
+          execute: async () => ({ answer: 42 }),
+        })
+      );
 
       const task = await executor.submit(
         { type: TaskType.CODE_REVIEW, name: 'Sandboxed task', input: { code: 'x' } },
-        defaultContext,
+        defaultContext
       );
 
       expect(task.status).toBe('completed');
@@ -110,16 +112,18 @@ describe('Sandbox Integration', () => {
         infra.auditChain,
         undefined,
         sandbox,
-        sandboxOpts,
+        sandboxOpts
       );
 
-      executor.registerHandler(createHandler({
-        execute: async () => ({ value: 'sandboxed' }),
-      }));
+      executor.registerHandler(
+        createHandler({
+          execute: async () => ({ value: 'sandboxed' }),
+        })
+      );
 
       const task = await executor.submit(
         { type: TaskType.CODE_REVIEW, name: 'Linux sandboxed', input: { code: 'y' } },
-        defaultContext,
+        defaultContext
       );
 
       expect(task.status).toBe('completed');
@@ -160,7 +164,7 @@ describe('Sandbox Integration', () => {
       const sandbox = new LinuxSandbox();
       const sandboxOpts: SandboxOptions = {
         filesystem: {
-          readPaths: ['/tmp/../etc'],  // Path traversal — triggers violation
+          readPaths: ['/tmp/../etc'], // Path traversal — triggers violation
           writePaths: [],
           execPaths: [],
         },
@@ -172,16 +176,18 @@ describe('Sandbox Integration', () => {
         infra.auditChain,
         undefined,
         sandbox,
-        sandboxOpts,
+        sandboxOpts
       );
 
-      executor.registerHandler(createHandler({
-        execute: async () => ({ done: true }),
-      }));
+      executor.registerHandler(
+        createHandler({
+          execute: async () => ({ done: true }),
+        })
+      );
 
       const task = await executor.submit(
         { type: TaskType.CODE_REVIEW, name: 'Violation task', input: { code: 'z' } },
-        defaultContext,
+        defaultContext
       );
 
       // Task should still complete (soft enforcement)

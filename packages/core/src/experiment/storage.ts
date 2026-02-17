@@ -41,7 +41,7 @@ export class ExperimentStorage extends PgBaseStorage {
         null,
         now,
         now,
-      ],
+      ]
     );
     return exp;
   }
@@ -49,14 +49,14 @@ export class ExperimentStorage extends PgBaseStorage {
   async get(id: string): Promise<Experiment | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM experiment.experiments WHERE id = $1',
-      [id],
+      [id]
     );
     return row ? this.rowToExperiment(row) : null;
   }
 
   async list(): Promise<Experiment[]> {
     const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM experiment.experiments ORDER BY created_at DESC',
+      'SELECT * FROM experiment.experiments ORDER BY created_at DESC'
     );
     return rows.map((r) => this.rowToExperiment(r));
   }
@@ -80,16 +80,13 @@ export class ExperimentStorage extends PgBaseStorage {
         updated.completedAt,
         updated.updatedAt,
         id,
-      ],
+      ]
     );
     return updated;
   }
 
   async delete(id: string): Promise<boolean> {
-    const changes = await this.execute(
-      'DELETE FROM experiment.experiments WHERE id = $1',
-      [id],
-    );
+    const changes = await this.execute('DELETE FROM experiment.experiments WHERE id = $1', [id]);
     return changes > 0;
   }
 

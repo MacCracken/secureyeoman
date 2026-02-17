@@ -44,10 +44,10 @@ export class PatternLearner {
           context: event.context,
           timestamp: String(event.timestamp),
           ...Object.fromEntries(
-            Object.entries(event.metadata ?? {}).map(([k, v]) => [k, String(v)]),
+            Object.entries(event.metadata ?? {}).map(([k, v]) => [k, String(v)])
           ),
         },
-        0.3,
+        0.3
       );
     } catch (err) {
       this.logger.warn('Failed to record interaction for pattern learning', {
@@ -56,7 +56,7 @@ export class PatternLearner {
     }
   }
 
-  async detectPatterns(lookbackDays: number = 30): Promise<DetectedPattern[]> {
+  async detectPatterns(lookbackDays = 30): Promise<DetectedPattern[]> {
     try {
       const memories = await this.brain.recall({
         type: 'procedural',
@@ -69,7 +69,7 @@ export class PatternLearner {
       }
 
       // Group memories by context to identify patterns
-      const contextGroups = new Map<string, Array<{ timestamp: number; type: string }>>();
+      const contextGroups = new Map<string, { timestamp: number; type: string }[]>();
 
       for (const memory of memories) {
         const ctx = memory.context?.context ?? 'unknown';

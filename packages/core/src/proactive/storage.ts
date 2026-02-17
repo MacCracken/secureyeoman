@@ -6,7 +6,12 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
-import type { ProactiveTrigger, ProactiveTriggerCreate, Suggestion, SuggestionStatus } from '@friday/shared';
+import type {
+  ProactiveTrigger,
+  ProactiveTriggerCreate,
+  Suggestion,
+  SuggestionStatus,
+} from '@friday/shared';
 
 // ─── Row types ──────────────────────────────────────────────────────
 
@@ -46,7 +51,9 @@ interface SuggestionRow {
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
-function triggerFromRow(row: TriggerRow): ProactiveTrigger & { lastFiredAt?: number; fireCount: number } {
+function triggerFromRow(
+  row: TriggerRow
+): ProactiveTrigger & { lastFiredAt?: number; fireCount: number } {
   return {
     id: row.id,
     name: row.name,
@@ -151,16 +158,15 @@ export class ProactiveStorage extends PgBaseStorage {
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const rows = await this.queryMany<TriggerRow>(
       `SELECT * FROM proactive.triggers ${where} ORDER BY created_at ASC`,
-      values,
+      values
     );
     return rows.map(triggerFromRow);
   }
 
   async getTrigger(id: string): Promise<(ProactiveTrigger & { fireCount: number }) | null> {
-    const row = await this.queryOne<TriggerRow>(
-      `SELECT * FROM proactive.triggers WHERE id = $1`,
-      [id],
-    );
+    const row = await this.queryOne<TriggerRow>(`SELECT * FROM proactive.triggers WHERE id = $1`, [
+      id,
+    ]);
     return row ? triggerFromRow(row) : null;
   }
 
@@ -181,27 +187,51 @@ export class ProactiveStorage extends PgBaseStorage {
         data.approvalMode ?? 'suggest',
         data.cooldownMs ?? 0,
         data.limitPerDay ?? 0,
-      ],
+      ]
     );
     return triggerFromRow(row!);
   }
 
   async updateTrigger(
     id: string,
-    data: Partial<ProactiveTriggerCreate>,
+    data: Partial<ProactiveTriggerCreate>
   ): Promise<ProactiveTrigger | null> {
     const updates: string[] = [];
     const values: unknown[] = [];
     let idx = 1;
 
-    if (data.name !== undefined) { updates.push(`name = $${idx++}`); values.push(data.name); }
-    if (data.description !== undefined) { updates.push(`description = $${idx++}`); values.push(data.description); }
-    if (data.enabled !== undefined) { updates.push(`enabled = $${idx++}`); values.push(data.enabled); }
-    if (data.condition !== undefined) { updates.push(`condition = $${idx++}::jsonb`); values.push(JSON.stringify(data.condition)); }
-    if (data.action !== undefined) { updates.push(`action = $${idx++}::jsonb`); values.push(JSON.stringify(data.action)); }
-    if (data.approvalMode !== undefined) { updates.push(`approval_mode = $${idx++}`); values.push(data.approvalMode); }
-    if (data.cooldownMs !== undefined) { updates.push(`cooldown_ms = $${idx++}`); values.push(data.cooldownMs); }
-    if (data.limitPerDay !== undefined) { updates.push(`limit_per_day = $${idx++}`); values.push(data.limitPerDay); }
+    if (data.name !== undefined) {
+      updates.push(`name = $${idx++}`);
+      values.push(data.name);
+    }
+    if (data.description !== undefined) {
+      updates.push(`description = $${idx++}`);
+      values.push(data.description);
+    }
+    if (data.enabled !== undefined) {
+      updates.push(`enabled = $${idx++}`);
+      values.push(data.enabled);
+    }
+    if (data.condition !== undefined) {
+      updates.push(`condition = $${idx++}::jsonb`);
+      values.push(JSON.stringify(data.condition));
+    }
+    if (data.action !== undefined) {
+      updates.push(`action = $${idx++}::jsonb`);
+      values.push(JSON.stringify(data.action));
+    }
+    if (data.approvalMode !== undefined) {
+      updates.push(`approval_mode = $${idx++}`);
+      values.push(data.approvalMode);
+    }
+    if (data.cooldownMs !== undefined) {
+      updates.push(`cooldown_ms = $${idx++}`);
+      values.push(data.cooldownMs);
+    }
+    if (data.limitPerDay !== undefined) {
+      updates.push(`limit_per_day = $${idx++}`);
+      values.push(data.limitPerDay);
+    }
 
     if (updates.length === 0) return this.getTrigger(id);
 
@@ -210,23 +240,20 @@ export class ProactiveStorage extends PgBaseStorage {
 
     const row = await this.queryOne<TriggerRow>(
       `UPDATE proactive.triggers SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`,
-      values,
+      values
     );
     return row ? triggerFromRow(row) : null;
   }
 
   async deleteTrigger(id: string): Promise<boolean> {
-    const count = await this.execute(
-      `DELETE FROM proactive.triggers WHERE id = $1`,
-      [id],
-    );
+    const count = await this.execute(`DELETE FROM proactive.triggers WHERE id = $1`, [id]);
     return count > 0;
   }
 
   async setTriggerEnabled(id: string, enabled: boolean): Promise<ProactiveTrigger | null> {
     const row = await this.queryOne<TriggerRow>(
       `UPDATE proactive.triggers SET enabled = $1, updated_at = now() WHERE id = $2 RETURNING *`,
-      [enabled, id],
+      [enabled, id]
     );
     return row ? triggerFromRow(row) : null;
   }
@@ -234,7 +261,7 @@ export class ProactiveStorage extends PgBaseStorage {
   async recordFiring(id: string): Promise<void> {
     await this.execute(
       `UPDATE proactive.triggers SET last_fired_at = now(), fire_count = fire_count + 1, updated_at = now() WHERE id = $1`,
-      [id],
+      [id]
     );
   }
 
@@ -242,7 +269,7 @@ export class ProactiveStorage extends PgBaseStorage {
     const row = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*)::text as count FROM proactive.suggestions
        WHERE trigger_id = $1 AND suggested_at >= CURRENT_DATE`,
-      [triggerId],
+      [triggerId]
     );
     return parseInt(row?.count ?? '0', 10);
   }
@@ -274,13 +301,13 @@ export class ProactiveStorage extends PgBaseStorage {
 
     const countRow = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*)::text as count FROM proactive.suggestions ${where}`,
-      values,
+      values
     );
     const total = parseInt(countRow?.count ?? '0', 10);
 
     const rows = await this.queryMany<SuggestionRow>(
       `SELECT * FROM proactive.suggestions ${where} ORDER BY suggested_at DESC LIMIT $${idx++} OFFSET $${idx++}`,
-      [...values, limit, offset],
+      [...values, limit, offset]
     );
 
     return { suggestions: rows.map(suggestionFromRow), total };
@@ -289,7 +316,7 @@ export class ProactiveStorage extends PgBaseStorage {
   async getSuggestion(id: string): Promise<Suggestion | null> {
     const row = await this.queryOne<SuggestionRow>(
       `SELECT * FROM proactive.suggestions WHERE id = $1`,
-      [id],
+      [id]
     );
     return row ? suggestionFromRow(row) : null;
   }
@@ -315,7 +342,7 @@ export class ProactiveStorage extends PgBaseStorage {
         JSON.stringify(data.context ?? {}),
         data.confidence ?? 1,
         data.expiresAt.toISOString(),
-      ],
+      ]
     );
     return suggestionFromRow(row!);
   }
@@ -323,12 +350,16 @@ export class ProactiveStorage extends PgBaseStorage {
   async updateSuggestionStatus(
     id: string,
     status: SuggestionStatus,
-    result?: Record<string, unknown>,
+    result?: Record<string, unknown>
   ): Promise<Suggestion | null> {
     const timestampField =
-      status === 'approved' ? 'approved_at' :
-      status === 'executed' ? 'executed_at' :
-      status === 'dismissed' ? 'dismissed_at' : null;
+      status === 'approved'
+        ? 'approved_at'
+        : status === 'executed'
+          ? 'executed_at'
+          : status === 'dismissed'
+            ? 'dismissed_at'
+            : null;
 
     const updates = [`status = $1`];
     const values: unknown[] = [status];
@@ -345,14 +376,14 @@ export class ProactiveStorage extends PgBaseStorage {
 
     const row = await this.queryOne<SuggestionRow>(
       `UPDATE proactive.suggestions SET ${updates.join(', ')} WHERE id = $${idx} RETURNING *`,
-      values,
+      values
     );
     return row ? suggestionFromRow(row) : null;
   }
 
   async deleteExpiredSuggestions(): Promise<number> {
     return this.execute(
-      `DELETE FROM proactive.suggestions WHERE status = 'pending' AND expires_at < now()`,
+      `DELETE FROM proactive.suggestions WHERE status = 'pending' AND expires_at < now()`
     );
   }
 
@@ -378,7 +409,7 @@ export class ProactiveStorage extends PgBaseStorage {
         trigger.approvalMode ?? 'suggest',
         trigger.cooldownMs ?? 0,
         trigger.limitPerDay ?? 0,
-      ],
+      ]
     );
     return triggerFromRow(row!);
   }

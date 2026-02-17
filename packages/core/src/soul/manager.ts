@@ -97,10 +97,36 @@ export class SoulManager {
         enabled: false,
         capabilities: [],
         heartEnabled: true,
-        creationConfig: { skills: false, tasks: false, personalities: false, subAgents: false, customRoles: false, roleAssignments: false, experiments: false },
+        creationConfig: {
+          skills: false,
+          tasks: false,
+          personalities: false,
+          subAgents: false,
+          customRoles: false,
+          roleAssignments: false,
+          experiments: false,
+        },
         selectedServers: [],
-        mcpFeatures: { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false },
-        proactiveConfig: { enabled: false, approvalMode: 'suggest', builtins: { dailyStandup: false, weeklySummary: false, contextualFollowup: false, integrationHealthAlert: false, securityAlertDigest: false }, learning: { enabled: true, minConfidence: 0.7 } },
+        mcpFeatures: {
+          exposeGit: false,
+          exposeFilesystem: false,
+          exposeWeb: false,
+          exposeWebScraping: false,
+          exposeWebSearch: false,
+          exposeBrowser: false,
+        },
+        proactiveConfig: {
+          enabled: false,
+          approvalMode: 'suggest',
+          builtins: {
+            dailyStandup: false,
+            weeklySummary: false,
+            contextualFollowup: false,
+            integrationHealthAlert: false,
+            securityAlertDigest: false,
+          },
+          learning: { enabled: true, minConfidence: 0.7 },
+        },
       },
     });
 
@@ -403,7 +429,8 @@ export class SoulManager {
     const parts: string[] = [];
 
     const personality = personalityId
-      ? ((await this.storage.getPersonality(personalityId)) ?? (await this.storage.getActivePersonality()))
+      ? ((await this.storage.getPersonality(personalityId)) ??
+        (await this.storage.getActivePersonality()))
       : await this.storage.getActivePersonality();
 
     // Sacred archetypes — cosmological foundation (toggleable per personality)
@@ -478,7 +505,9 @@ export class SoulManager {
     }
 
     // Skills from Brain or Soul storage
-    const skills = this.brain ? await this.brain.getActiveSkills() : await this.storage.getEnabledSkills();
+    const skills = this.brain
+      ? await this.brain.getActiveSkills()
+      : await this.storage.getEnabledSkills();
 
     for (const skill of skills) {
       if (skill.instructions) {

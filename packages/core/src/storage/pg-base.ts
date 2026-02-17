@@ -14,14 +14,14 @@ export class PgBaseStorage {
 
   protected async query<T extends pg.QueryResultRow = pg.QueryResultRow>(
     text: string,
-    values?: unknown[],
+    values?: unknown[]
   ): Promise<pg.QueryResult<T>> {
     return this.getPool().query<T>(text, values);
   }
 
   protected async queryOne<T extends pg.QueryResultRow = pg.QueryResultRow>(
     text: string,
-    values?: unknown[],
+    values?: unknown[]
   ): Promise<T | null> {
     const result = await this.getPool().query<T>(text, values);
     return result.rows[0] ?? null;
@@ -29,23 +29,18 @@ export class PgBaseStorage {
 
   protected async queryMany<T extends pg.QueryResultRow = pg.QueryResultRow>(
     text: string,
-    values?: unknown[],
+    values?: unknown[]
   ): Promise<T[]> {
     const result = await this.getPool().query<T>(text, values);
     return result.rows;
   }
 
-  protected async execute(
-    text: string,
-    values?: unknown[],
-  ): Promise<number> {
+  protected async execute(text: string, values?: unknown[]): Promise<number> {
     const result = await this.getPool().query(text, values);
     return result.rowCount ?? 0;
   }
 
-  protected async withTransaction<T>(
-    fn: (client: pg.PoolClient) => Promise<T>,
-  ): Promise<T> {
+  protected async withTransaction<T>(fn: (client: pg.PoolClient) => Promise<T>): Promise<T> {
     const client = await this.getPool().connect();
     try {
       await client.query('BEGIN');

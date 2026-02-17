@@ -574,7 +574,15 @@ export function ConnectionsPage() {
     // Also check query params (e.g., /connections?tab=mcp)
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
-    if (tabParam === 'mcp' || tabParam === 'email' || tabParam === 'oauth' || tabParam === 'messaging' || tabParam === 'devops' || tabParam === 'calendar') return tabParam;
+    if (
+      tabParam === 'mcp' ||
+      tabParam === 'email' ||
+      tabParam === 'oauth' ||
+      tabParam === 'messaging' ||
+      tabParam === 'devops' ||
+      tabParam === 'calendar'
+    )
+      return tabParam;
     return 'messaging';
   };
 
@@ -658,11 +666,20 @@ export function ConnectionsPage() {
   const externalServers = servers.filter((s) => s.name !== LOCAL_MCP_NAME);
   const activePlatformIds = new Set(integrations.map((i) => i.platform));
   const unregisteredPlatforms = Object.keys(PLATFORM_META)
-    .filter((p) => !activePlatformIds.has(p) && !EMAIL_PLATFORMS.has(p) && !DEVOPS_PLATFORMS.has(p) && !CALENDAR_PLATFORMS.has(p) && !PRODUCTIVITY_PLATFORMS.has(p))
+    .filter(
+      (p) =>
+        !activePlatformIds.has(p) &&
+        !EMAIL_PLATFORMS.has(p) &&
+        !DEVOPS_PLATFORMS.has(p) &&
+        !CALENDAR_PLATFORMS.has(p) &&
+        !PRODUCTIVITY_PLATFORMS.has(p)
+    )
     .sort((a, b) => PLATFORM_META[a].name.localeCompare(PLATFORM_META[b].name));
 
   const unregisteredDevopsPlatforms = Object.keys(PLATFORM_META)
-    .filter((p) => !activePlatformIds.has(p) && (DEVOPS_PLATFORMS.has(p) || PRODUCTIVITY_PLATFORMS.has(p)))
+    .filter(
+      (p) => !activePlatformIds.has(p) && (DEVOPS_PLATFORMS.has(p) || PRODUCTIVITY_PLATFORMS.has(p))
+    )
     .sort((a, b) => PLATFORM_META[a].name.localeCompare(PLATFORM_META[b].name));
 
   const unregisteredCalendarPlatforms = Object.keys(PLATFORM_META)
@@ -785,17 +802,23 @@ export function ConnectionsPage() {
     },
   });
 
-  const [testResult, setTestResult] = useState<{ id: string; ok: boolean; message: string } | null>(null);
+  const [testResult, setTestResult] = useState<{ id: string; ok: boolean; message: string } | null>(
+    null
+  );
 
   const testIntegrationMut = useMutation({
     mutationFn: (id: string) => testIntegration(id),
     onSuccess: (data, id) => {
       setTestResult({ id, ...data });
-      setTimeout(() => setTestResult(null), 5000);
+      setTimeout(() => {
+        setTestResult(null);
+      }, 5000);
     },
     onError: (err: Error, id) => {
       setTestResult({ id, ok: false, message: err.message || 'Test failed' });
-      setTimeout(() => setTestResult(null), 5000);
+      setTimeout(() => {
+        setTestResult(null);
+      }, 5000);
     },
   });
 
@@ -895,7 +918,11 @@ export function ConnectionsPage() {
       {activeTab === 'messaging' && (
         <MessagingTab
           integrations={integrations.filter(
-            (i) => !DEVOPS_PLATFORMS.has(i.platform) && !CALENDAR_PLATFORMS.has(i.platform) && !EMAIL_PLATFORMS.has(i.platform) && !PRODUCTIVITY_PLATFORMS.has(i.platform)
+            (i) =>
+              !DEVOPS_PLATFORMS.has(i.platform) &&
+              !CALENDAR_PLATFORMS.has(i.platform) &&
+              !EMAIL_PLATFORMS.has(i.platform) &&
+              !PRODUCTIVITY_PLATFORMS.has(i.platform)
           )}
           platformsData={availablePlatforms}
           hasRegisteredPlatforms={hasRegisteredPlatforms}
@@ -969,9 +996,7 @@ export function ConnectionsPage() {
 
       {activeTab === 'calendar' && (
         <MessagingTab
-          integrations={integrations.filter(
-            (i) => CALENDAR_PLATFORMS.has(i.platform)
-          )}
+          integrations={integrations.filter((i) => CALENDAR_PLATFORMS.has(i.platform))}
           platformsData={availablePlatforms}
           hasRegisteredPlatforms={hasRegisteredPlatforms}
           unregisteredPlatforms={unregisteredCalendarPlatforms}
@@ -1330,9 +1355,11 @@ function IntegrationCard({
         </div>
       </div>
       {testResult && (
-        <div className={`flex items-center gap-1.5 mt-2 px-2 py-1 rounded text-xs ${
-          testResult.ok ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-        }`}>
+        <div
+          className={`flex items-center gap-1.5 mt-2 px-2 py-1 rounded text-xs ${
+            testResult.ok ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+          }`}
+        >
           {testResult.ok ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
           {testResult.message}
         </div>
@@ -1361,7 +1388,9 @@ function IntegrationCard({
         )}
         {onTest && (
           <button
-            onClick={() => onTest(integration.id)}
+            onClick={() => {
+              onTest(integration.id);
+            }}
             disabled={isLoading || isTesting}
             className="text-xs text-muted hover:text-primary transition-colors flex items-center gap-1"
           >
@@ -2216,7 +2245,9 @@ function EmailTab({
               <input
                 type="text"
                 value={gmailForm.displayName}
-                onChange={(e) => setGmailForm((f) => ({ ...f, displayName: e.target.value }))}
+                onChange={(e) => {
+                  setGmailForm((f) => ({ ...f, displayName: e.target.value }));
+                }}
                 placeholder="e.g. My Gmail"
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               />
@@ -2231,7 +2262,9 @@ function EmailTab({
                 <input
                   type="checkbox"
                   checked={gmailForm.enableRead}
-                  onChange={(e) => setGmailForm((f) => ({ ...f, enableRead: e.target.checked }))}
+                  onChange={(e) => {
+                    setGmailForm((f) => ({ ...f, enableRead: e.target.checked }));
+                  }}
                   className="w-4 h-4 rounded accent-primary"
                 />
               </label>
@@ -2243,7 +2276,9 @@ function EmailTab({
                 <input
                   type="checkbox"
                   checked={gmailForm.enableSend}
-                  onChange={(e) => setGmailForm((f) => ({ ...f, enableSend: e.target.checked }))}
+                  onChange={(e) => {
+                    setGmailForm((f) => ({ ...f, enableSend: e.target.checked }));
+                  }}
                   className="w-4 h-4 rounded accent-primary"
                 />
               </label>
@@ -2253,12 +2288,12 @@ function EmailTab({
               <label className="text-xs text-muted block mb-1">Inbox Filter</label>
               <select
                 value={gmailForm.labelFilter}
-                onChange={(e) =>
+                onChange={(e) => {
                   setGmailForm((f) => ({
                     ...f,
                     labelFilter: e.target.value as 'all' | 'label' | 'custom',
-                  }))
-                }
+                  }));
+                }}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
                 <option value="all">All Inbox</option>
@@ -2281,7 +2316,9 @@ function EmailTab({
                 <input
                   type="text"
                   value={gmailForm.labelName}
-                  onChange={(e) => setGmailForm((f) => ({ ...f, labelName: e.target.value }))}
+                  onChange={(e) => {
+                    setGmailForm((f) => ({ ...f, labelName: e.target.value }));
+                  }}
                   placeholder={
                     gmailForm.labelFilter === 'custom' ? `friday.${oauthEmail}` : 'e.g. Friday'
                   }
@@ -2394,7 +2431,9 @@ function EmailTab({
                     <label className="text-xs text-muted block mb-1">Provider Preset</label>
                     <select
                       value={imapForm.preset}
-                      onChange={(e) => applyPreset(e.target.value)}
+                      onChange={(e) => {
+                        applyPreset(e.target.value);
+                      }}
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     >
                       <option value="custom">Custom</option>
@@ -2409,7 +2448,9 @@ function EmailTab({
                     <input
                       type="text"
                       value={imapForm.displayName}
-                      onChange={(e) => setImapForm((f) => ({ ...f, displayName: e.target.value }))}
+                      onChange={(e) => {
+                        setImapForm((f) => ({ ...f, displayName: e.target.value }));
+                      }}
                       placeholder="e.g. My ProtonMail"
                       className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     />
@@ -2421,7 +2462,9 @@ function EmailTab({
                       <input
                         type="text"
                         value={imapForm.imapHost}
-                        onChange={(e) => setImapForm((f) => ({ ...f, imapHost: e.target.value }))}
+                        onChange={(e) => {
+                          setImapForm((f) => ({ ...f, imapHost: e.target.value }));
+                        }}
                         placeholder="127.0.0.1"
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       />
@@ -2431,7 +2474,9 @@ function EmailTab({
                       <input
                         type="text"
                         value={imapForm.imapPort}
-                        onChange={(e) => setImapForm((f) => ({ ...f, imapPort: e.target.value }))}
+                        onChange={(e) => {
+                          setImapForm((f) => ({ ...f, imapPort: e.target.value }));
+                        }}
                         placeholder="993"
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       />
@@ -2444,7 +2489,9 @@ function EmailTab({
                       <input
                         type="text"
                         value={imapForm.smtpHost}
-                        onChange={(e) => setImapForm((f) => ({ ...f, smtpHost: e.target.value }))}
+                        onChange={(e) => {
+                          setImapForm((f) => ({ ...f, smtpHost: e.target.value }));
+                        }}
                         placeholder="127.0.0.1"
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       />
@@ -2454,7 +2501,9 @@ function EmailTab({
                       <input
                         type="text"
                         value={imapForm.smtpPort}
-                        onChange={(e) => setImapForm((f) => ({ ...f, smtpPort: e.target.value }))}
+                        onChange={(e) => {
+                          setImapForm((f) => ({ ...f, smtpPort: e.target.value }));
+                        }}
                         placeholder="465"
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       />
@@ -2467,7 +2516,9 @@ function EmailTab({
                       <input
                         type="text"
                         value={imapForm.username}
-                        onChange={(e) => setImapForm((f) => ({ ...f, username: e.target.value }))}
+                        onChange={(e) => {
+                          setImapForm((f) => ({ ...f, username: e.target.value }));
+                        }}
                         placeholder="user@example.com"
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       />
@@ -2477,7 +2528,9 @@ function EmailTab({
                       <input
                         type="password"
                         value={imapForm.password}
-                        onChange={(e) => setImapForm((f) => ({ ...f, password: e.target.value }))}
+                        onChange={(e) => {
+                          setImapForm((f) => ({ ...f, password: e.target.value }));
+                        }}
                         placeholder="Password or app password"
                         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       />
@@ -2493,7 +2546,9 @@ function EmailTab({
                       <input
                         type="checkbox"
                         checked={imapForm.tls}
-                        onChange={(e) => setImapForm((f) => ({ ...f, tls: e.target.checked }))}
+                        onChange={(e) => {
+                          setImapForm((f) => ({ ...f, tls: e.target.checked }));
+                        }}
                         className="w-4 h-4 rounded accent-primary"
                       />
                     </label>
@@ -2505,9 +2560,9 @@ function EmailTab({
                       <input
                         type="checkbox"
                         checked={!imapForm.rejectUnauthorized}
-                        onChange={(e) =>
-                          setImapForm((f) => ({ ...f, rejectUnauthorized: !e.target.checked }))
-                        }
+                        onChange={(e) => {
+                          setImapForm((f) => ({ ...f, rejectUnauthorized: !e.target.checked }));
+                        }}
                         className="w-4 h-4 rounded accent-primary"
                       />
                     </label>
@@ -2522,9 +2577,9 @@ function EmailTab({
                       <input
                         type="checkbox"
                         checked={imapForm.enableRead}
-                        onChange={(e) =>
-                          setImapForm((f) => ({ ...f, enableRead: e.target.checked }))
-                        }
+                        onChange={(e) => {
+                          setImapForm((f) => ({ ...f, enableRead: e.target.checked }));
+                        }}
                         className="w-4 h-4 rounded accent-primary"
                       />
                     </label>
@@ -2536,9 +2591,9 @@ function EmailTab({
                       <input
                         type="checkbox"
                         checked={imapForm.enableSend}
-                        onChange={(e) =>
-                          setImapForm((f) => ({ ...f, enableSend: e.target.checked }))
-                        }
+                        onChange={(e) => {
+                          setImapForm((f) => ({ ...f, enableSend: e.target.checked }));
+                        }}
                         className="w-4 h-4 rounded accent-primary"
                       />
                     </label>
@@ -2569,7 +2624,9 @@ function EmailTab({
                     </button>
                     <button
                       type="button"
-                      onClick={() => setShowImapForm(false)}
+                      onClick={() => {
+                        setShowImapForm(false);
+                      }}
                       className="btn btn-ghost text-xs px-3 py-1.5"
                     >
                       Cancel
@@ -2597,7 +2654,9 @@ function EmailTab({
                     </p>
                     {availablePlatforms.has('email') && (
                       <button
-                        onClick={() => setShowImapForm(true)}
+                        onClick={() => {
+                          setShowImapForm(true);
+                        }}
                         className="btn btn-primary text-xs px-3 py-1.5 mt-3"
                       >
                         Connect
@@ -2710,7 +2769,9 @@ function OAuthTab({
                     <p className="text-xs text-muted mt-1">{provider.description}</p>
                     {!isConnected && (
                       <button
-                        onClick={() => handleOAuthConnect(provider.oauthUrl)}
+                        onClick={() => {
+                          handleOAuthConnect(provider.oauthUrl);
+                        }}
                         className="btn btn-primary text-xs px-3 py-1.5 mt-2"
                       >
                         Connect

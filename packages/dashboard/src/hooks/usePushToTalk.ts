@@ -108,7 +108,9 @@ export function usePushToTalk(
     }
 
     if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach((track) => track.stop());
+      mediaStreamRef.current.getTracks().forEach((track) => {
+        track.stop();
+      });
       mediaStreamRef.current = null;
     }
 

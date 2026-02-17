@@ -72,7 +72,7 @@ export default function ConsolidationSettings() {
       setCustomCron(value);
       scheduleMutation.mutate(value);
     },
-    [scheduleMutation],
+    [scheduleMutation]
   );
 
   const handleCustomSave = useCallback(() => {
@@ -93,7 +93,9 @@ export default function ConsolidationSettings() {
           {SCHEDULE_PRESETS.map((preset) => (
             <button
               key={preset.value}
-              onClick={() => handlePresetSelect(preset.value)}
+              onClick={() => {
+                handlePresetSelect(preset.value);
+              }}
               className={`px-3 py-2 rounded text-sm border transition-colors ${
                 customCron === preset.value
                   ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
@@ -109,7 +111,9 @@ export default function ConsolidationSettings() {
           <input
             type="text"
             value={customCron}
-            onChange={(e) => setCustomCron(e.target.value)}
+            onChange={(e) => {
+              setCustomCron(e.target.value);
+            }}
             placeholder="Custom cron expression"
             className="flex-1 px-3 py-2 border rounded text-sm dark:bg-gray-700 dark:border-gray-600"
           />
@@ -124,7 +128,10 @@ export default function ConsolidationSettings() {
 
         {scheduleData?.schedule && (
           <p className="mt-2 text-sm text-gray-500">
-            Current: <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">{scheduleData.schedule}</code>
+            Current:{' '}
+            <code className="bg-gray-100 dark:bg-gray-700 px-1 rounded">
+              {scheduleData.schedule}
+            </code>
           </p>
         )}
       </div>
@@ -138,7 +145,9 @@ export default function ConsolidationSettings() {
             <input
               type="checkbox"
               checked={dryRun}
-              onChange={(e) => setDryRun(e.target.checked)}
+              onChange={(e) => {
+                setDryRun(e.target.checked);
+              }}
               className="rounded"
             />
             Dry run (preview only)
@@ -146,7 +155,9 @@ export default function ConsolidationSettings() {
         </div>
 
         <button
-          onClick={() => runMutation.mutate()}
+          onClick={() => {
+            runMutation.mutate();
+          }}
           disabled={runMutation.isPending}
           className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 disabled:opacity-50"
         >

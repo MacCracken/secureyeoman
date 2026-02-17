@@ -53,7 +53,7 @@ export function registerSseTransport(opts: SseTransportOptions): void {
     }
 
     // Find the transport matching this session
-    const sessionId = (request.query as Record<string, string>)['sessionId'];
+    const sessionId = (request.query as Record<string, string>).sessionId;
     if (!sessionId) {
       return reply.code(400).send({ error: 'Missing sessionId query parameter' });
     }

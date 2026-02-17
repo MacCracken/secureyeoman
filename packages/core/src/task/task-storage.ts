@@ -112,7 +112,7 @@ export class TaskStorage extends PgBaseStorage {
         task.startedAt ?? null,
         task.completedAt ?? null,
         task.durationMs ?? null,
-      ],
+      ]
     );
   }
 
@@ -125,7 +125,7 @@ export class TaskStorage extends PgBaseStorage {
       durationMs?: number;
       result?: Task['result'];
       resources?: ResourceUsage;
-    },
+    }
   ): Promise<boolean> {
     const setClauses: string[] = [];
     const params: unknown[] = [];
@@ -161,14 +161,14 @@ export class TaskStorage extends PgBaseStorage {
     params.push(id);
     const rowCount = await this.execute(
       `UPDATE task.tasks SET ${setClauses.join(', ')} WHERE id = $${counter}`,
-      params,
+      params
     );
     return rowCount > 0;
   }
 
   async updateTaskMetadata(
     id: string,
-    updates: { name?: string; type?: string; description?: string },
+    updates: { name?: string; type?: string; description?: string }
   ): Promise<boolean> {
     const setClauses: string[] = [];
     const params: unknown[] = [];
@@ -192,26 +192,20 @@ export class TaskStorage extends PgBaseStorage {
     params.push(id);
     const rowCount = await this.execute(
       `UPDATE task.tasks SET ${setClauses.join(', ')} WHERE id = $${counter}`,
-      params,
+      params
     );
     return rowCount > 0;
   }
 
   async deleteTask(id: string): Promise<boolean> {
-    const rowCount = await this.execute(
-      'DELETE FROM task.tasks WHERE id = $1',
-      [id],
-    );
+    const rowCount = await this.execute('DELETE FROM task.tasks WHERE id = $1', [id]);
     return rowCount > 0;
   }
 
   // ─── Read Operations ───────────────────────────────────────
 
   async getTask(id: string): Promise<Task | null> {
-    const row = await this.queryOne<TaskRow>(
-      'SELECT * FROM task.tasks WHERE id = $1',
-      [id],
-    );
+    const row = await this.queryOne<TaskRow>('SELECT * FROM task.tasks WHERE id = $1', [id]);
     return row ? rowToTask(row) : null;
   }
 
@@ -298,7 +292,7 @@ export class TaskStorage extends PgBaseStorage {
         SUM(CASE WHEN status = 'timeout' THEN 1 ELSE 0 END) as timeout_count,
         SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
         AVG(CASE WHEN duration_ms IS NOT NULL THEN duration_ms END) as avg_duration
-      FROM task.tasks`,
+      FROM task.tasks`
     );
 
     if (!statsRow) {
@@ -315,7 +309,7 @@ export class TaskStorage extends PgBaseStorage {
 
     // byType still needs its own GROUP BY query
     const typeRows = await this.queryMany<{ type: string; count: string }>(
-      'SELECT type, COUNT(*) as count FROM task.tasks GROUP BY type',
+      'SELECT type, COUNT(*) as count FROM task.tasks GROUP BY type'
     );
 
     const byStatus: Record<string, number> = {};

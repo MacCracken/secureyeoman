@@ -13,7 +13,7 @@ export interface ValidationResult {
   warnings: string[];
 }
 
-const INJECTION_PATTERNS: Array<{ name: string; pattern: RegExp; block: boolean }> = [
+const INJECTION_PATTERNS: { name: string; pattern: RegExp; block: boolean }[] = [
   // SQL injection
   { name: 'sql_union', pattern: /\bUNION\s+(?:ALL\s+)?SELECT\b/i, block: true },
   { name: 'sql_drop', pattern: /\bDROP\s+(?:TABLE|DATABASE)\b/i, block: true },
@@ -22,7 +22,11 @@ const INJECTION_PATTERNS: Array<{ name: string; pattern: RegExp; block: boolean 
   { name: 'cmd_backtick', pattern: /`[^`]*`/, block: true },
   { name: 'cmd_subshell', pattern: /\$\([^)]*\)/, block: true },
   { name: 'cmd_pipe', pattern: /\|\s*(?:cat|sh|bash|curl|wget|nc)\b/, block: true },
-  { name: 'cmd_semicolon', pattern: /;\s*(?:rm|cat|sh|bash|curl|wget|nc|chmod|chown)\b/, block: true },
+  {
+    name: 'cmd_semicolon',
+    pattern: /;\s*(?:rm|cat|sh|bash|curl|wget|nc|chmod|chown)\b/,
+    block: true,
+  },
   // XSS
   { name: 'xss_script', pattern: /<script\b/i, block: true },
   { name: 'xss_event', pattern: /\bon\w+\s*=/i, block: false },

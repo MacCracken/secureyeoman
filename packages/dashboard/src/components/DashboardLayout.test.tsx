@@ -148,7 +148,7 @@ function renderOverviewPage() {
       <QueryClientProvider client={qc}>
         <DashboardLayout />
       </QueryClientProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 

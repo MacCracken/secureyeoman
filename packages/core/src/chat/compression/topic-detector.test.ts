@@ -3,7 +3,11 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { isTopicBoundary, type TopicBoundaryConfig, type BoundaryCheckInput } from './topic-detector.js';
+import {
+  isTopicBoundary,
+  type TopicBoundaryConfig,
+  type BoundaryCheckInput,
+} from './topic-detector.js';
 
 const config: TopicBoundaryConfig = {
   keywords: ['new topic', "let's move on", 'moving on', 'anyway', 'switching to'],
@@ -15,8 +19,12 @@ describe('isTopicBoundary', () => {
   describe('keyword detection', () => {
     it('detects "new topic" keyword', () => {
       const result = isTopicBoundary(
-        { content: 'Okay, new topic — what about deployment?', timestamp: 1000, currentTopicTokens: 0 },
-        config,
+        {
+          content: 'Okay, new topic — what about deployment?',
+          timestamp: 1000,
+          currentTopicTokens: 0,
+        },
+        config
       );
       expect(result.isBoundary).toBe(true);
       expect(result.reason).toBe('keyword');
@@ -26,7 +34,7 @@ describe('isTopicBoundary', () => {
     it('detects "let\'s move on" keyword', () => {
       const result = isTopicBoundary(
         { content: "Let's move on to the next item", timestamp: 1000, currentTopicTokens: 0 },
-        config,
+        config
       );
       expect(result.isBoundary).toBe(true);
       expect(result.reason).toBe('keyword');
@@ -35,7 +43,7 @@ describe('isTopicBoundary', () => {
     it('detects keywords case-insensitively', () => {
       const result = isTopicBoundary(
         { content: 'SWITCHING TO a different topic', timestamp: 1000, currentTopicTokens: 0 },
-        config,
+        config
       );
       expect(result.isBoundary).toBe(true);
       expect(result.matchedKeyword).toBe('switching to');
@@ -43,8 +51,12 @@ describe('isTopicBoundary', () => {
 
     it('does not detect absent keywords', () => {
       const result = isTopicBoundary(
-        { content: 'This is just a normal message about code', timestamp: 1000, currentTopicTokens: 0 },
-        config,
+        {
+          content: 'This is just a normal message about code',
+          timestamp: 1000,
+          currentTopicTokens: 0,
+        },
+        config
       );
       expect(result.isBoundary).toBe(false);
     });
@@ -56,8 +68,13 @@ describe('isTopicBoundary', () => {
       const timestamp = prevTimestamp + 16 * 60 * 1000; // 16 minutes later
 
       const result = isTopicBoundary(
-        { content: 'Hello again', timestamp, previousTimestamp: prevTimestamp, currentTopicTokens: 0 },
-        config,
+        {
+          content: 'Hello again',
+          timestamp,
+          previousTimestamp: prevTimestamp,
+          currentTopicTokens: 0,
+        },
+        config
       );
       expect(result.isBoundary).toBe(true);
       expect(result.reason).toBe('gap');
@@ -68,8 +85,13 @@ describe('isTopicBoundary', () => {
       const timestamp = prevTimestamp + 5 * 60 * 1000; // 5 minutes
 
       const result = isTopicBoundary(
-        { content: 'Quick follow-up', timestamp, previousTimestamp: prevTimestamp, currentTopicTokens: 0 },
-        config,
+        {
+          content: 'Quick follow-up',
+          timestamp,
+          previousTimestamp: prevTimestamp,
+          currentTopicTokens: 0,
+        },
+        config
       );
       expect(result.isBoundary).toBe(false);
     });
@@ -77,7 +99,7 @@ describe('isTopicBoundary', () => {
     it('ignores gap when no previous timestamp', () => {
       const result = isTopicBoundary(
         { content: 'First message', timestamp: Date.now(), currentTopicTokens: 0 },
-        config,
+        config
       );
       expect(result.isBoundary).toBe(false);
     });
@@ -88,7 +110,7 @@ describe('isTopicBoundary', () => {
 
       const result = isTopicBoundary(
         { content: 'Hi', timestamp, previousTimestamp: prevTimestamp, currentTopicTokens: 0 },
-        config,
+        config
       );
       expect(result.isBoundary).toBe(true);
       expect(result.reason).toBe('gap');
@@ -99,7 +121,7 @@ describe('isTopicBoundary', () => {
     it('detects when token threshold exceeded', () => {
       const result = isTopicBoundary(
         { content: 'Another message', timestamp: 1000, currentTopicTokens: 2500 },
-        config,
+        config
       );
       expect(result.isBoundary).toBe(true);
       expect(result.reason).toBe('threshold');
@@ -108,7 +130,7 @@ describe('isTopicBoundary', () => {
     it('detects at exact threshold', () => {
       const result = isTopicBoundary(
         { content: 'Message', timestamp: 1000, currentTopicTokens: 2000 },
-        config,
+        config
       );
       expect(result.isBoundary).toBe(true);
       expect(result.reason).toBe('threshold');
@@ -117,7 +139,7 @@ describe('isTopicBoundary', () => {
     it('does not trigger below threshold', () => {
       const result = isTopicBoundary(
         { content: 'Short', timestamp: 1000, currentTopicTokens: 500 },
-        config,
+        config
       );
       expect(result.isBoundary).toBe(false);
     });
@@ -132,7 +154,7 @@ describe('isTopicBoundary', () => {
           previousTimestamp: 1000,
           currentTopicTokens: 5000,
         },
-        config,
+        config
       );
       expect(result.reason).toBe('keyword');
     });
@@ -145,7 +167,7 @@ describe('isTopicBoundary', () => {
           previousTimestamp: 1000,
           currentTopicTokens: 5000,
         },
-        config,
+        config
       );
       expect(result.reason).toBe('gap');
     });

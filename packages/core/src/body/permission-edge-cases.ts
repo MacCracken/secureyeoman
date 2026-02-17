@@ -23,8 +23,8 @@ export type PermissionEventHandler = (event: PermissionEvent) => void;
 
 export class PermissionEdgeCaseHandler {
   private logger: SecureLogger;
-  private eventHandlers: Set<PermissionEventHandler> = new Set();
-  private lastKnownStatus: Map<CapturePermissionType, PermissionStatus> = new Map();
+  private eventHandlers = new Set<PermissionEventHandler>();
+  private lastKnownStatus = new Map<CapturePermissionType, PermissionStatus>();
   private pollInterval: NodeJS.Timeout | null = null;
 
   constructor() {

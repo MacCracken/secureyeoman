@@ -67,17 +67,12 @@ export function ResourceMonitor({ metrics }: ResourceMonitorProps) {
               <AreaChart data={memoryHistory}>
                 <defs>
                   <linearGradient id="memoryGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3}/>
-                    <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
-                <XAxis
-                  dataKey="time"
-                  tick={{ fontSize: 10 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
+                <XAxis dataKey="time" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
                 <YAxis
                   tick={{ fontSize: 10 }}
                   tickLine={false}
@@ -174,11 +169,15 @@ export function ResourceMonitor({ metrics }: ResourceMonitorProps) {
           </div>
           <div className="flex items-baseline gap-4">
             <div>
-              <p className="text-lg font-bold">${(metrics?.resources?.costUsdToday ?? 0).toFixed(2)}</p>
+              <p className="text-lg font-bold">
+                ${(metrics?.resources?.costUsdToday ?? 0).toFixed(2)}
+              </p>
               <p className="text-xs text-muted-foreground">Today</p>
             </div>
             <div>
-              <p className="text-lg font-bold">${(metrics?.resources?.costUsdMonth ?? 0).toFixed(2)}</p>
+              <p className="text-lg font-bold">
+                ${(metrics?.resources?.costUsdMonth ?? 0).toFixed(2)}
+              </p>
               <p className="text-xs text-muted-foreground">This Month</p>
             </div>
           </div>
@@ -209,8 +208,12 @@ function ResourceBar({ icon, label, value, max, unit, color }: ResourceBarProps)
           {icon}
           <span className="font-medium">{label}</span>
         </div>
-        <span className={`text-sm font-mono ${isCritical ? 'text-destructive' : isWarning ? 'text-warning' : ''}`}>
-          {value.toFixed(1)}{unit} / {max}{unit}
+        <span
+          className={`text-sm font-mono ${isCritical ? 'text-destructive' : isWarning ? 'text-warning' : ''}`}
+        >
+          {value.toFixed(1)}
+          {unit} / {max}
+          {unit}
         </span>
       </div>
       <div className="h-2 bg-muted rounded-full overflow-hidden">

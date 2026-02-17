@@ -14,21 +14,25 @@ export function registerConfigResources(server: McpServer, client: CoreApiClient
       try {
         const result = await client.get('/api/v1/soul/config');
         return {
-          contents: [{
-            uri: 'friday://config/current',
-            mimeType: 'application/json',
-            text: JSON.stringify(result, null, 2),
-          }],
+          contents: [
+            {
+              uri: 'friday://config/current',
+              mimeType: 'application/json',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
         };
       } catch {
         return {
-          contents: [{
-            uri: 'friday://config/current',
-            mimeType: 'application/json',
-            text: JSON.stringify({ error: 'Config unavailable' }),
-          }],
+          contents: [
+            {
+              uri: 'friday://config/current',
+              mimeType: 'application/json',
+              text: JSON.stringify({ error: 'Config unavailable' }),
+            },
+          ],
         };
       }
-    },
+    }
   );
 }

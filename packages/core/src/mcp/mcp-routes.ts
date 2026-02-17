@@ -22,7 +22,12 @@ const LOCAL_MCP_NAME = 'YEOMAN MCP';
 const GIT_TOOL_PREFIXES = ['git_', 'github_'];
 const FS_TOOL_PREFIXES = ['fs_'];
 const WEB_TOOL_PREFIXES = ['web_'];
-const WEB_SCRAPING_TOOLS = ['web_scrape_markdown', 'web_scrape_html', 'web_scrape_batch', 'web_extract_structured'];
+const WEB_SCRAPING_TOOLS = [
+  'web_scrape_markdown',
+  'web_scrape_html',
+  'web_scrape_batch',
+  'web_extract_structured',
+];
 const WEB_SEARCH_TOOLS = ['web_search', 'web_search_batch'];
 const BROWSER_TOOL_PREFIXES = ['browser_'];
 
@@ -105,7 +110,9 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         return reply.code(404).send({ error: 'MCP server not found' });
       }
 
-      const updated = await mcpStorage.updateServer(request.params.id, { enabled: request.body.enabled });
+      const updated = await mcpStorage.updateServer(request.params.id, {
+        enabled: request.body.enabled,
+      });
       if (!updated) {
         return reply.code(500).send({ error: 'Failed to update server' });
       }
@@ -156,7 +163,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     const config = await mcpStorage.getConfig();
 
     const tools = allTools.filter((tool) => {
-      if (localServer && tool.serverId === localServer.id) {
+      if (tool.serverId === localServer?.id) {
         if (!config.exposeGit && GIT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) {
           return false;
         }
@@ -249,10 +256,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
   // Get single server health
   app.get(
     '/api/v1/mcp/servers/:id/health',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const health = await mcpStorage.getHealth(request.params.id);
       if (!health) {
         return reply.code(404).send({ error: 'No health data for this server' });
@@ -264,10 +268,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
   // Trigger immediate health check
   app.post(
     '/api/v1/mcp/servers/:id/health/check',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!healthMonitor) {
         return reply.code(503).send({ error: 'Health monitor not available' });
       }
@@ -285,10 +286,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
   // List credential keys for a server (never returns values)
   app.get(
     '/api/v1/mcp/servers/:id/credentials',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const server = await mcpStorage.getServer(request.params.id);
       if (!server) {
         return reply.code(404).send({ error: 'MCP server not found' });
@@ -316,7 +314,11 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         return reply.code(404).send({ error: 'MCP server not found' });
       }
       try {
-        await credentialManager.storeCredential(request.params.id, request.params.key, request.body.value);
+        await credentialManager.storeCredential(
+          request.params.id,
+          request.params.key,
+          request.body.value
+        );
         return { message: 'Credential stored' };
       } catch (err) {
         return reply.code(500).send({ error: errorMessage(err) });

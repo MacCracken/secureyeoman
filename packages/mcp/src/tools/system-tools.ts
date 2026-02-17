@@ -13,7 +13,7 @@ export function registerSystemTools(
   server: McpServer,
   client: CoreApiClient,
   config: McpServiceConfig,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   server.tool(
     'system_health',
@@ -22,7 +22,7 @@ export function registerSystemTools(
     wrapToolHandler('system_health', middleware, async () => {
       const result = await client.get('/health');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -32,7 +32,7 @@ export function registerSystemTools(
     wrapToolHandler('system_metrics', middleware, async () => {
       const result = await client.get('/api/v1/metrics');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -55,6 +55,6 @@ export function registerSystemTools(
         logLevel: config.logLevel,
       };
       return { content: [{ type: 'text' as const, text: JSON.stringify(safeConfig, null, 2) }] };
-    }),
+    })
   );
 }

@@ -88,8 +88,8 @@ export class HeartbeatManager {
   private lastBeat: HeartbeatResult | null = null;
   private beatCount = 0;
   private running = false;
-  private taskLastRun: Map<string, number> = new Map();
-  private actionHistory: Map<string, number> = new Map(); // Track last action execution per check
+  private taskLastRun = new Map<string, number>();
+  private actionHistory = new Map<string, number>(); // Track last action execution per check
 
   constructor(
     brain: BrainManager,
@@ -216,7 +216,7 @@ export class HeartbeatManager {
     check: HeartbeatCheck,
     result: HeartbeatCheckResult
   ): Promise<void> {
-    const config = trigger.config as Record<string, unknown>;
+    const config = trigger.config;
 
     switch (trigger.action) {
       case 'webhook':
@@ -273,7 +273,9 @@ export class HeartbeatManager {
     for (let attempt = 0; attempt <= retryCount; attempt++) {
       try {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        const timeoutId = setTimeout(() => {
+          controller.abort();
+        }, timeoutMs);
 
         const response = await fetch(url, {
           method,
@@ -582,14 +584,14 @@ export class HeartbeatManager {
     intervalMs: number;
     beatCount: number;
     lastBeat: HeartbeatResult | null;
-    tasks: Array<{
+    tasks: {
       name: string;
       type: string;
       enabled: boolean;
       intervalMs: number;
       lastRunAt: number | null;
       config: Record<string, unknown>;
-    }>;
+    }[];
   } {
     return {
       running: this.running,

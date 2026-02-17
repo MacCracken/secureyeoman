@@ -258,8 +258,12 @@ export function SecurityEvents({ metrics }: SecurityEventsProps) {
                 key={event.id}
                 event={event}
                 isAcknowledged={acknowledged.has(event.id)}
-                onAcknowledge={() => acknowledgeEvent(event.id)}
-                onInvestigate={() => setInvestigatingEvent(event)}
+                onAcknowledge={() => {
+                  acknowledgeEvent(event.id);
+                }}
+                onInvestigate={() => {
+                  setInvestigatingEvent(event);
+                }}
               />
             ))
           )}
@@ -270,7 +274,9 @@ export function SecurityEvents({ metrics }: SecurityEventsProps) {
       {investigatingEvent && (
         <InvestigationPanel
           event={investigatingEvent}
-          onClose={() => setInvestigatingEvent(null)}
+          onClose={() => {
+            setInvestigatingEvent(null);
+          }}
         />
       )}
     </div>

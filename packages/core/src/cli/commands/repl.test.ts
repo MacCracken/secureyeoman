@@ -4,8 +4,18 @@ import { replCommand } from './repl.js';
 function createStreams() {
   let stdoutBuf = '';
   let stderrBuf = '';
-  const stdout = { write: (s: string) => { stdoutBuf += s; return true; } } as NodeJS.WritableStream;
-  const stderr = { write: (s: string) => { stderrBuf += s; return true; } } as NodeJS.WritableStream;
+  const stdout = {
+    write: (s: string) => {
+      stdoutBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
+  const stderr = {
+    write: (s: string) => {
+      stderrBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
   return { stdout, stderr, getStdout: () => stdoutBuf, getStderr: () => stderrBuf };
 }
 

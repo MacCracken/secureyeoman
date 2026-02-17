@@ -12,7 +12,12 @@ import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -20,7 +25,10 @@ function noopLogger(): SecureLogger {
 
 function createDeps(): AgentCommsDeps {
   const auditStorage = new InMemoryAuditStorage();
-  const auditChain = new AuditChain({ storage: auditStorage, signingKey: 'test-signing-key-must-be-at-least-32-chars!!' });
+  const auditChain = new AuditChain({
+    storage: auditStorage,
+    signingKey: 'test-signing-key-must-be-at-least-32-chars!!',
+  });
   return {
     auditChain,
     logger: noopLogger(),
@@ -238,12 +246,22 @@ describe('CommsStorage', () => {
 
     it('should list peers', async () => {
       await storage.addPeer({
-        id: 'a1', name: 'Agent1', publicKey: 'k1', signingKey: 'sk1',
-        endpoint: 'http://a1', capabilities: [], lastSeenAt: Date.now(),
+        id: 'a1',
+        name: 'Agent1',
+        publicKey: 'k1',
+        signingKey: 'sk1',
+        endpoint: 'http://a1',
+        capabilities: [],
+        lastSeenAt: Date.now(),
       });
       await storage.addPeer({
-        id: 'a2', name: 'Agent2', publicKey: 'k2', signingKey: 'sk2',
-        endpoint: 'http://a2', capabilities: [], lastSeenAt: Date.now(),
+        id: 'a2',
+        name: 'Agent2',
+        publicKey: 'k2',
+        signingKey: 'sk2',
+        endpoint: 'http://a2',
+        capabilities: [],
+        lastSeenAt: Date.now(),
       });
 
       expect(await storage.listPeers()).toHaveLength(2);
@@ -251,8 +269,13 @@ describe('CommsStorage', () => {
 
     it('should remove a peer', async () => {
       await storage.addPeer({
-        id: 'a1', name: 'Agent1', publicKey: 'k1', signingKey: 'sk1',
-        endpoint: 'http://a1', capabilities: [], lastSeenAt: Date.now(),
+        id: 'a1',
+        name: 'Agent1',
+        publicKey: 'k1',
+        signingKey: 'sk1',
+        endpoint: 'http://a1',
+        capabilities: [],
+        lastSeenAt: Date.now(),
       });
       expect(await storage.removePeer('a1')).toBe(true);
       expect(await storage.getPeer('a1')).toBeNull();
@@ -264,8 +287,13 @@ describe('CommsStorage', () => {
 
     it('should update peer on re-add (upsert)', async () => {
       const peer = {
-        id: 'a1', name: 'Agent1', publicKey: 'k1', signingKey: 'sk1',
-        endpoint: 'http://a1', capabilities: [], lastSeenAt: Date.now(),
+        id: 'a1',
+        name: 'Agent1',
+        publicKey: 'k1',
+        signingKey: 'sk1',
+        endpoint: 'http://a1',
+        capabilities: [],
+        lastSeenAt: Date.now(),
       };
       await storage.addPeer(peer);
       await storage.addPeer({ ...peer, name: 'Agent1-Updated' });
@@ -277,8 +305,13 @@ describe('CommsStorage', () => {
 
     it('should update peer last seen', async () => {
       await storage.addPeer({
-        id: 'a1', name: 'Agent1', publicKey: 'k1', signingKey: 'sk1',
-        endpoint: 'http://a1', capabilities: [], lastSeenAt: 1000,
+        id: 'a1',
+        name: 'Agent1',
+        publicKey: 'k1',
+        signingKey: 'sk1',
+        endpoint: 'http://a1',
+        capabilities: [],
+        lastSeenAt: 1000,
       });
       await storage.updatePeerLastSeen('a1');
 
@@ -289,8 +322,13 @@ describe('CommsStorage', () => {
     it('should count peers', async () => {
       expect(await storage.getPeerCount()).toBe(0);
       await storage.addPeer({
-        id: 'a1', name: 'Agent1', publicKey: 'k1', signingKey: 'sk1',
-        endpoint: 'http://a1', capabilities: [], lastSeenAt: Date.now(),
+        id: 'a1',
+        name: 'Agent1',
+        publicKey: 'k1',
+        signingKey: 'sk1',
+        endpoint: 'http://a1',
+        capabilities: [],
+        lastSeenAt: Date.now(),
       });
       expect(await storage.getPeerCount()).toBe(1);
     });
@@ -298,7 +336,12 @@ describe('CommsStorage', () => {
 
   describe('message log', () => {
     it('should log a message', async () => {
-      const id = await storage.logMessage('sent', 'agent-2', 'task_request', '{"encrypted":"data"}');
+      const id = await storage.logMessage(
+        'sent',
+        'agent-2',
+        'task_request',
+        '{"encrypted":"data"}'
+      );
       expect(id).toBeDefined();
     });
 
@@ -344,12 +387,24 @@ describe('AgentComms', () => {
   beforeEach(async () => {
     await truncateAllTables();
     alice = new AgentComms(
-      { enabled: true, agentName: 'Alice', listenForPeers: true, maxPeers: 10, messageRetentionDays: 30 },
-      createDeps(),
+      {
+        enabled: true,
+        agentName: 'Alice',
+        listenForPeers: true,
+        maxPeers: 10,
+        messageRetentionDays: 30,
+      },
+      createDeps()
     );
     bob = new AgentComms(
-      { enabled: true, agentName: 'Bob', listenForPeers: true, maxPeers: 10, messageRetentionDays: 30 },
-      createDeps(),
+      {
+        enabled: true,
+        agentName: 'Bob',
+        listenForPeers: true,
+        maxPeers: 10,
+        messageRetentionDays: 30,
+      },
+      createDeps()
     );
 
     await alice.init();
@@ -464,8 +519,14 @@ describe('AgentComms', () => {
 
   it('should enforce max peers limit', async () => {
     const comms = new AgentComms(
-      { enabled: true, agentName: 'Test', listenForPeers: true, maxPeers: 1, messageRetentionDays: 30 },
-      createDeps(),
+      {
+        enabled: true,
+        agentName: 'Test',
+        listenForPeers: true,
+        maxPeers: 1,
+        messageRetentionDays: 30,
+      },
+      createDeps()
     );
     await comms.init();
     await comms.addPeer(bob.getIdentity());
@@ -474,8 +535,14 @@ describe('AgentComms', () => {
 
   it('should throw when not initialized', async () => {
     const comms = new AgentComms(
-      { enabled: true, agentName: 'Test', listenForPeers: true, maxPeers: 10, messageRetentionDays: 30 },
-      createDeps(),
+      {
+        enabled: true,
+        agentName: 'Test',
+        listenForPeers: true,
+        maxPeers: 10,
+        messageRetentionDays: 30,
+      },
+      createDeps()
     );
     expect(() => comms.getIdentity()).toThrow('not initialized');
     await expect(comms.addPeer(bob.getIdentity())).rejects.toThrow('not initialized');

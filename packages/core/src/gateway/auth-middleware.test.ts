@@ -18,7 +18,12 @@ const SIGNING_KEY = 'a]&3Gk9$mQ#vL7@pR!wZ5*xN2^bT8+dF';
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   };
@@ -69,7 +74,7 @@ describe('Auth Middleware', () => {
         rbac,
         rateLimiter,
         logger: noopLogger(),
-      },
+      }
     );
 
     app = Fastify({ logger: false });
@@ -202,7 +207,12 @@ describe('Auth Middleware', () => {
       const auditRes = await app.inject({ method: 'GET', url: '/api/v1/audit', headers });
       expect(auditRes.statusCode).toBe(200);
 
-      const keysRes = await app.inject({ method: 'POST', url: '/api/v1/auth/api-keys', headers, payload: {} });
+      const keysRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/api-keys',
+        headers,
+        payload: {},
+      });
       expect(keysRes.statusCode).toBe(200);
     });
 
@@ -219,7 +229,11 @@ describe('Auth Middleware', () => {
       const auditRes = await app.inject({ method: 'GET', url: '/api/v1/audit', headers });
       expect(auditRes.statusCode).toBe(403);
 
-      const secEventsRes = await app.inject({ method: 'GET', url: '/api/v1/security/events', headers });
+      const secEventsRes = await app.inject({
+        method: 'GET',
+        url: '/api/v1/security/events',
+        headers,
+      });
       expect(secEventsRes.statusCode).toBe(403);
     });
 
@@ -227,7 +241,12 @@ describe('Auth Middleware', () => {
       const key = await createViewerApiKey();
       const headers = { 'x-api-key': key };
 
-      const res = await app.inject({ method: 'POST', url: '/api/v1/auth/api-keys', headers, payload: {} });
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/api-keys',
+        headers,
+        payload: {},
+      });
       expect(res.statusCode).toBe(403);
     });
 

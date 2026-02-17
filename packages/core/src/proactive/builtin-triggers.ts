@@ -8,7 +8,8 @@ export const BUILTIN_TRIGGERS: ProactiveTrigger[] = [
   {
     id: 'builtin-daily-standup',
     name: 'Daily Standup Reminder',
-    description: 'Reminds you to check in each weekday morning with a summary of pending tasks and recent activity.',
+    description:
+      'Reminds you to check in each weekday morning with a summary of pending tasks and recent activity.',
     enabled: false,
     type: 'schedule',
     condition: {
@@ -18,7 +19,8 @@ export const BUILTIN_TRIGGERS: ProactiveTrigger[] = [
     },
     action: {
       type: 'message',
-      content: 'Good morning! Here is your daily standup summary. Check your pending tasks and recent activity.',
+      content:
+        'Good morning! Here is your daily standup summary. Check your pending tasks and recent activity.',
     },
     approvalMode: 'auto',
     cooldownMs: 43200000,
@@ -28,7 +30,8 @@ export const BUILTIN_TRIGGERS: ProactiveTrigger[] = [
   {
     id: 'builtin-weekly-summary',
     name: 'Weekly Summary',
-    description: 'Generates a weekly summary every Friday afternoon covering key metrics, completed tasks, and upcoming items.',
+    description:
+      'Generates a weekly summary every Friday afternoon covering key metrics, completed tasks, and upcoming items.',
     enabled: false,
     type: 'schedule',
     condition: {
@@ -38,7 +41,8 @@ export const BUILTIN_TRIGGERS: ProactiveTrigger[] = [
     },
     action: {
       type: 'message',
-      content: 'Here is your weekly summary. Review this week\'s accomplishments and plan for next week.',
+      content:
+        "Here is your weekly summary. Review this week's accomplishments and plan for next week.",
     },
     approvalMode: 'suggest',
     cooldownMs: 604800000,
@@ -48,7 +52,8 @@ export const BUILTIN_TRIGGERS: ProactiveTrigger[] = [
   {
     id: 'builtin-contextual-followup',
     name: 'Contextual Follow-up',
-    description: 'Detects unfinished conversations or pending intents and suggests follow-up actions.',
+    description:
+      'Detects unfinished conversations or pending intents and suggests follow-up actions.',
     enabled: false,
     type: 'pattern',
     condition: {
@@ -78,7 +83,8 @@ export const BUILTIN_TRIGGERS: ProactiveTrigger[] = [
     },
     action: {
       type: 'message',
-      content: 'An integration has disconnected. Check your connections to ensure all services are running.',
+      content:
+        'An integration has disconnected. Check your connections to ensure all services are running.',
     },
     approvalMode: 'auto',
     cooldownMs: 300000,
@@ -88,7 +94,8 @@ export const BUILTIN_TRIGGERS: ProactiveTrigger[] = [
   {
     id: 'builtin-security-digest',
     name: 'Security Alert Digest',
-    description: 'Sends a daily morning digest of overnight security events (auth failures, rate limits, anomalies).',
+    description:
+      'Sends a daily morning digest of overnight security events (auth failures, rate limits, anomalies).',
     enabled: false,
     type: 'schedule',
     condition: {
@@ -98,7 +105,8 @@ export const BUILTIN_TRIGGERS: ProactiveTrigger[] = [
     },
     action: {
       type: 'message',
-      content: 'Security digest: Review overnight security events including authentication failures, rate limits, and anomalies.',
+      content:
+        'Security digest: Review overnight security events including authentication failures, rate limits, and anomalies.',
     },
     approvalMode: 'suggest',
     cooldownMs: 43200000,

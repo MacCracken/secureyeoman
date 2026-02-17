@@ -94,7 +94,9 @@ function rowToMessage(row: MessageRow): ConversationMessage {
     provider: row.provider,
     tokensUsed: row.tokens_used,
     attachments: safeJsonParse(row.attachments_json, []),
-    brainContext: row.brain_context_json ? safeJsonParse<BrainContextMeta | null>(row.brain_context_json, null) : null,
+    brainContext: row.brain_context_json
+      ? safeJsonParse<BrainContextMeta | null>(row.brain_context_json, null)
+      : null,
     createdAt: row.created_at,
   };
 }
@@ -108,14 +110,17 @@ export class ConversationStorage extends PgBaseStorage {
 
   // ── Conversations ──────────────────────────────────────────
 
-  async createConversation(data: { title: string; personalityId?: string | null }): Promise<Conversation> {
+  async createConversation(data: {
+    title: string;
+    personalityId?: string | null;
+  }): Promise<Conversation> {
     const now = Date.now();
     const id = uuidv7();
 
     await this.execute(
       `INSERT INTO chat.conversations (id, title, personality_id, message_count, created_at, updated_at)
        VALUES ($1, $2, $3, 0, $4, $5)`,
-      [id, data.title, data.personalityId ?? null, now, now],
+      [id, data.title, data.personalityId ?? null, now, now]
     );
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -125,7 +130,7 @@ export class ConversationStorage extends PgBaseStorage {
   async getConversation(id: string): Promise<Conversation | null> {
     const row = await this.queryOne<ConversationRow>(
       'SELECT * FROM chat.conversations WHERE id = $1',
-      [id],
+      [id]
     );
     return row ? rowToConversation(row) : null;
   }
@@ -138,12 +143,12 @@ export class ConversationStorage extends PgBaseStorage {
     const offset = opts.offset ?? 0;
 
     const totalRow = await this.queryOne<{ count: string }>(
-      'SELECT COUNT(*) as count FROM chat.conversations',
+      'SELECT COUNT(*) as count FROM chat.conversations'
     );
 
     const rows = await this.queryMany<ConversationRow>(
       'SELECT * FROM chat.conversations ORDER BY updated_at DESC LIMIT $1 OFFSET $2',
-      [limit, offset],
+      [limit, offset]
     );
 
     return {
@@ -157,20 +162,18 @@ export class ConversationStorage extends PgBaseStorage {
     if (!existing) throw new Error(`Conversation not found: ${id}`);
 
     const now = Date.now();
-    await this.execute(
-      'UPDATE chat.conversations SET title = $1, updated_at = $2 WHERE id = $3',
-      [data.title ?? existing.title, now, id],
-    );
+    await this.execute('UPDATE chat.conversations SET title = $1, updated_at = $2 WHERE id = $3', [
+      data.title ?? existing.title,
+      now,
+      id,
+    ]);
 
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     return (await this.getConversation(id))!;
   }
 
   async deleteConversation(id: string): Promise<boolean> {
-    const changes = await this.execute(
-      'DELETE FROM chat.conversations WHERE id = $1',
-      [id],
-    );
+    const changes = await this.execute('DELETE FROM chat.conversations WHERE id = $1', [id]);
     return changes > 0;
   }
 
@@ -204,12 +207,12 @@ export class ConversationStorage extends PgBaseStorage {
           JSON.stringify(data.attachments ?? []),
           data.brainContext ? JSON.stringify(data.brainContext) : null,
           now,
-        ],
+        ]
       );
 
       await client.query(
         'UPDATE chat.conversations SET message_count = message_count + 1, updated_at = $1 WHERE id = $2',
-        [now, data.conversationId],
+        [now, data.conversationId]
       );
     });
 
@@ -218,20 +221,20 @@ export class ConversationStorage extends PgBaseStorage {
   }
 
   async getMessage(id: string): Promise<ConversationMessage | null> {
-    const row = await this.queryOne<MessageRow>(
-      'SELECT * FROM chat.messages WHERE id = $1',
-      [id],
-    );
+    const row = await this.queryOne<MessageRow>('SELECT * FROM chat.messages WHERE id = $1', [id]);
     return row ? rowToMessage(row) : null;
   }
 
-  async getMessages(conversationId: string, opts: { limit?: number; offset?: number } = {}): Promise<ConversationMessage[]> {
+  async getMessages(
+    conversationId: string,
+    opts: { limit?: number; offset?: number } = {}
+  ): Promise<ConversationMessage[]> {
     const limit = opts.limit ?? 1000;
     const offset = opts.offset ?? 0;
 
     const rows = await this.queryMany<MessageRow>(
       'SELECT * FROM chat.messages WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT $2 OFFSET $3',
-      [conversationId, limit, offset],
+      [conversationId, limit, offset]
     );
 
     return rows.map(rowToMessage);

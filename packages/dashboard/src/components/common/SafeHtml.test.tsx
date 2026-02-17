@@ -14,9 +14,7 @@ describe('SafeHtml', () => {
   });
 
   it('strips script tags from content', () => {
-    const { container } = render(
-      <SafeHtml html='<script>alert("xss")</script><p>safe</p>' />
-    );
+    const { container } = render(<SafeHtml html='<script>alert("xss")</script><p>safe</p>' />);
     expect(container.querySelector('script')).toBeNull();
     expect(container.querySelector('p')?.textContent).toBe('safe');
   });

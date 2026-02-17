@@ -15,7 +15,9 @@ export interface VectorStore {
   insert(id: string, vector: number[], metadata?: Record<string, unknown>): Promise<void>;
 
   /** Insert multiple vectors in batch. */
-  insertBatch(items: Array<{ id: string; vector: number[]; metadata?: Record<string, unknown> }>): Promise<void>;
+  insertBatch(
+    items: { id: string; vector: number[]; metadata?: Record<string, unknown> }[]
+  ): Promise<void>;
 
   /** Search for nearest neighbors. Returns results sorted by descending similarity. */
   search(vector: number[], limit: number, threshold?: number): Promise<VectorResult[]>;

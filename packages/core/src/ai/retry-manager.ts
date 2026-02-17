@@ -49,7 +49,7 @@ export class RetryManager {
     }
 
     // Unreachable, but TypeScript needs it
-    throw lastError;
+    throw lastError!;
   }
 
   /**

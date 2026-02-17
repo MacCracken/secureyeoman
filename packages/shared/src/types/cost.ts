@@ -23,11 +23,13 @@ export type CostRecommendation = z.infer<typeof CostRecommendationSchema>;
 export const CostAnalysisSchema = z.object({
   totalCostUsd: z.number().nonnegative(),
   dailyAverageCostUsd: z.number().nonnegative(),
-  topModels: z.array(z.object({
-    model: z.string(),
-    costUsd: z.number(),
-    callCount: z.number(),
-  })),
+  topModels: z.array(
+    z.object({
+      model: z.string(),
+      costUsd: z.number(),
+      callCount: z.number(),
+    })
+  ),
   recommendations: z.array(CostRecommendationSchema),
   analyzedAt: z.number().int().nonnegative(),
 });

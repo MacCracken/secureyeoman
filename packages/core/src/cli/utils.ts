@@ -8,7 +8,7 @@ import { randomBytes } from 'node:crypto';
 export function extractFlag(
   argv: string[],
   flag: string,
-  alias?: string,
+  alias?: string
 ): { value: string | undefined; rest: string[] } {
   const rest: string[] = [];
   let value: string | undefined;
@@ -27,7 +27,7 @@ export function extractFlag(
 export function extractBoolFlag(
   argv: string[],
   flag: string,
-  alias?: string,
+  alias?: string
 ): { value: boolean; rest: string[] } {
   const rest: string[] = [];
   let value = false;
@@ -56,17 +56,12 @@ export function formatUptime(ms: number): string {
 }
 
 /** Format rows as aligned columns. */
-export function formatTable(
-  rows: Record<string, string>[],
-  columns?: string[],
-): string {
+export function formatTable(rows: Record<string, string>[], columns?: string[]): string {
   if (rows.length === 0) return '(no results)';
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const cols = columns ?? Object.keys(rows[0]!);
-  const widths = cols.map((col) =>
-    Math.max(col.length, ...rows.map((r) => (r[col] ?? '').length)),
-  );
+  const widths = cols.map((col) => Math.max(col.length, ...rows.map((r) => (r[col] ?? '').length)));
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
   const header = cols.map((col, i) => col.toUpperCase().padEnd(widths[i]!)).join('  ');
@@ -74,7 +69,7 @@ export function formatTable(
   const separator = cols.map((_, i) => '─'.repeat(widths[i]!)).join('  ');
   const body = rows.map((row) =>
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-    cols.map((col, i) => (row[col] ?? '').padEnd(widths[i]!)).join('  '),
+    cols.map((col, i) => (row[col] ?? '').padEnd(widths[i]!)).join('  ')
   );
 
   return [header, separator, ...body].join('\n');
@@ -89,7 +84,7 @@ export function generateSecretKey(bytes = 32): string {
 export function prompt(
   rl: import('node:readline').Interface,
   question: string,
-  defaultValue?: string,
+  defaultValue?: string
 ): Promise<string> {
   const suffix = defaultValue ? ` (${defaultValue})` : '';
   return new Promise((resolve) => {
@@ -104,13 +99,17 @@ export function promptChoice(
   rl: import('node:readline').Interface,
   question: string,
   choices: string[],
-  defaultIndex = 0,
+  defaultIndex = 0
 ): Promise<string> {
   return new Promise((resolve) => {
-    const lines = choices.map((c, i) => `  ${String(i + 1)}) ${c}${i === defaultIndex ? ' (default)' : ''}`);
+    const lines = choices.map(
+      (c, i) => `  ${String(i + 1)}) ${c}${i === defaultIndex ? ' (default)' : ''}`
+    );
     rl.question(`${question}\n${lines.join('\n')}\n  Choice: `, (answer) => {
       const idx = answer.trim() ? Number(answer.trim()) - 1 : defaultIndex;
-      resolve(choices[idx >= 0 && idx < choices.length ? idx : defaultIndex] ?? choices[defaultIndex]!);
+      resolve(
+        choices[idx >= 0 && idx < choices.length ? idx : defaultIndex] ?? choices[defaultIndex]!
+      );
     });
   });
 }
@@ -123,11 +122,11 @@ export async function apiCall(
     method?: string;
     body?: unknown;
     token?: string;
-  } = {},
+  } = {}
 ): Promise<{ ok: boolean; status: number; data: unknown }> {
   const url = `${baseUrl}${path}`;
   const headers: Record<string, string> = {
-    'Accept': 'application/json',
+    Accept: 'application/json',
   };
 
   if (options.token) {

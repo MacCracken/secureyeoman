@@ -31,7 +31,7 @@ export function registerAllTools(
   server: McpServer,
   client: CoreApiClient,
   config: McpServiceConfig,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   registerBrainTools(server, client, middleware);
   registerTaskTools(server, client, middleware);

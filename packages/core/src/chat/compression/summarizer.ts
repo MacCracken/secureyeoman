@@ -13,12 +13,10 @@ export interface SummarizerDeps {
  * Summarize a group of messages into a topic-level summary (~200 tokens).
  */
 export async function summarizeTopic(
-  messages: Array<{ role: string; content: string }>,
-  deps: SummarizerDeps,
+  messages: { role: string; content: string }[],
+  deps: SummarizerDeps
 ): Promise<string> {
-  const messageText = messages
-    .map((m) => `${m.role}: ${m.content}`)
-    .join('\n');
+  const messageText = messages.map((m) => `${m.role}: ${m.content}`).join('\n');
 
   const response = await deps.aiProvider.chat({
     messages: [
@@ -43,13 +41,8 @@ export async function summarizeTopic(
 /**
  * Merge multiple topic summaries into a bulk summary (~300 tokens).
  */
-export async function summarizeBulk(
-  topics: string[],
-  deps: SummarizerDeps,
-): Promise<string> {
-  const topicText = topics
-    .map((t, i) => `Topic ${i + 1}:\n${t}`)
-    .join('\n\n');
+export async function summarizeBulk(topics: string[], deps: SummarizerDeps): Promise<string> {
+  const topicText = topics.map((t, i) => `Topic ${i + 1}:\n${t}`).join('\n\n');
 
   const response = await deps.aiProvider.chat({
     messages: [

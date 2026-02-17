@@ -41,7 +41,7 @@ function renderComponent() {
       <QueryClientProvider client={createQueryClient()}>
         <SubAgentsPage />
       </QueryClientProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -124,11 +124,17 @@ describe('SubAgentsPage', () => {
       allowSubAgents: true,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     mockFetchAgentProfiles.mockResolvedValue(MOCK_PROFILES);
     mockFetchActiveDelegations.mockResolvedValue(MOCK_ACTIVE_DELEGATIONS);
-    mockFetchDelegations.mockResolvedValue({ ...MOCK_DELEGATIONS, total: MOCK_DELEGATIONS.delegations.length });
+    mockFetchDelegations.mockResolvedValue({
+      ...MOCK_DELEGATIONS,
+      total: MOCK_DELEGATIONS.delegations.length,
+    });
   });
 
   // ── Rendering ──────────────────────────────────────────────
@@ -147,7 +153,10 @@ describe('SubAgentsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Delegation Not Enabled')).toBeInTheDocument();
@@ -162,7 +171,10 @@ describe('SubAgentsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -177,7 +189,10 @@ describe('SubAgentsPage', () => {
       allowSubAgents: true,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -300,7 +315,9 @@ describe('SubAgentsPage', () => {
     renderComponent();
     await screen.findByText('Active');
     await user.click(screen.getByText('Delegate Task'));
-    expect(await screen.findByPlaceholderText('Describe the task for the sub-agent...')).toBeInTheDocument();
+    expect(
+      await screen.findByPlaceholderText('Describe the task for the sub-agent...')
+    ).toBeInTheDocument();
     expect(screen.getByText('Profile')).toBeInTheDocument();
   });
 });

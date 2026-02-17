@@ -439,7 +439,9 @@ describe('ProactiveStorage', () => {
 
     it('parses result JSON when present', async () => {
       queryReturns([{ count: '1' }]);
-      queryReturns([makeSuggestionRow({ result: JSON.stringify({ success: true, message: 'ok' }) })]);
+      queryReturns([
+        makeSuggestionRow({ result: JSON.stringify({ success: true, message: 'ok' }) }),
+      ]);
 
       const { suggestions } = await storage.listSuggestions();
       expect(suggestions[0].result).toEqual({ success: true, message: 'ok' });
@@ -557,7 +559,9 @@ describe('ProactiveStorage', () => {
 
   describe('updateSuggestionStatus', () => {
     it('sets status to approved and sets approved_at timestamp', async () => {
-      queryReturns([makeSuggestionRow({ status: 'approved', approved_at: '2026-02-16T09:05:00.000Z' })]);
+      queryReturns([
+        makeSuggestionRow({ status: 'approved', approved_at: '2026-02-16T09:05:00.000Z' }),
+      ]);
 
       const result = await storage.updateSuggestionStatus('sug-1', 'approved');
       expect(result).not.toBeNull();
@@ -567,7 +571,9 @@ describe('ProactiveStorage', () => {
     });
 
     it('sets status to executed and sets executed_at timestamp', async () => {
-      queryReturns([makeSuggestionRow({ status: 'executed', executed_at: '2026-02-16T09:10:00.000Z' })]);
+      queryReturns([
+        makeSuggestionRow({ status: 'executed', executed_at: '2026-02-16T09:10:00.000Z' }),
+      ]);
 
       await storage.updateSuggestionStatus('sug-1', 'executed');
       const sql: string = mockQuery.mock.calls[0][0];
@@ -575,7 +581,9 @@ describe('ProactiveStorage', () => {
     });
 
     it('sets status to dismissed and sets dismissed_at timestamp', async () => {
-      queryReturns([makeSuggestionRow({ status: 'dismissed', dismissed_at: '2026-02-16T09:15:00.000Z' })]);
+      queryReturns([
+        makeSuggestionRow({ status: 'dismissed', dismissed_at: '2026-02-16T09:15:00.000Z' }),
+      ]);
 
       await storage.updateSuggestionStatus('sug-1', 'dismissed');
       const sql: string = mockQuery.mock.calls[0][0];
@@ -583,7 +591,9 @@ describe('ProactiveStorage', () => {
     });
 
     it('stores result JSON when provided', async () => {
-      queryReturns([makeSuggestionRow({ status: 'executed', result: JSON.stringify({ success: true }) })]);
+      queryReturns([
+        makeSuggestionRow({ status: 'executed', result: JSON.stringify({ success: true }) }),
+      ]);
 
       await storage.updateSuggestionStatus('sug-1', 'executed', { success: true, message: 'done' });
       const sql: string = mockQuery.mock.calls[0][0];
@@ -613,7 +623,9 @@ describe('ProactiveStorage', () => {
       const result = await storage.deleteExpiredSuggestions();
       expect(result).toBe(3);
       const sql: string = mockQuery.mock.calls[0][0];
-      expect(sql).toContain("DELETE FROM proactive.suggestions WHERE status = 'pending' AND expires_at < now()");
+      expect(sql).toContain(
+        "DELETE FROM proactive.suggestions WHERE status = 'pending' AND expires_at < now()"
+      );
     });
 
     it('returns 0 when nothing to delete', async () => {

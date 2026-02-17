@@ -94,7 +94,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
   });
 
   const enabled =
-    (configData?.config as Record<string, unknown>)?.enabled === true ||
+    (configData?.config)!?.enabled === true ||
     configData?.allowedBySecurityPolicy === true ||
     securityPolicy?.allowSubAgents === true;
 
@@ -109,7 +109,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
             Enable sub-agent delegation in your configuration to use this feature.
           </p>
           <pre className="mt-4 text-xs bg-muted p-3 rounded text-left inline-block">
-{`delegation:
+            {`delegation:
   enabled: true`}
           </pre>
         </div>
@@ -129,7 +129,9 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
         {!embedded && <h1 className="text-xl font-bold">Sub-Agents</h1>}
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setShowDelegate(!showDelegate)}
+            onClick={() => {
+              setShowDelegate(!showDelegate);
+            }}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
           >
             <Play className="w-3.5 h-3.5" />
@@ -142,7 +144,14 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
         <div className="card p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-medium text-sm">Delegate Task</span>
-            <button onClick={() => { setShowDelegate(false); setDelegateTaskText(''); setDelegateContext(''); }} className="btn-ghost p-1 rounded">
+            <button
+              onClick={() => {
+                setShowDelegate(false);
+                setDelegateTaskText('');
+                setDelegateContext('');
+              }}
+              className="btn-ghost p-1 rounded"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -150,11 +159,15 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
             <label className="text-sm font-medium block mb-1">Profile</label>
             <select
               value={delegateProfile}
-              onChange={(e) => setDelegateProfile(e.target.value)}
+              onChange={(e) => {
+                setDelegateProfile(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
             >
               {profiles.map((p: AgentProfileInfo) => (
-                <option key={p.id} value={p.name}>{p.name}</option>
+                <option key={p.id} value={p.name}>
+                  {p.name}
+                </option>
               ))}
             </select>
           </div>
@@ -162,7 +175,9 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
             <label className="text-sm font-medium block mb-1">Task</label>
             <textarea
               value={delegateTaskText}
-              onChange={(e) => setDelegateTaskText(e.target.value)}
+              onChange={(e) => {
+                setDelegateTaskText(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[80px] resize-y"
               placeholder="Describe the task for the sub-agent..."
             />
@@ -171,7 +186,9 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
             <label className="text-sm font-medium block mb-1">Context (optional)</label>
             <textarea
               value={delegateContext}
-              onChange={(e) => setDelegateContext(e.target.value)}
+              onChange={(e) => {
+                setDelegateContext(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[60px] resize-y"
               placeholder="Additional context..."
             />
@@ -179,7 +196,13 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
           <button
             className="btn btn-primary"
             disabled={!delegateTaskText.trim() || delegateMut.isPending}
-            onClick={() => delegateMut.mutate({ profile: delegateProfile, task: delegateTaskText, context: delegateContext || undefined })}
+            onClick={() => {
+              delegateMut.mutate({
+                profile: delegateProfile,
+                task: delegateTaskText,
+                context: delegateContext || undefined,
+              });
+            }}
           >
             {delegateMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Delegate'}
           </button>
@@ -191,7 +214,9 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+            }}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
@@ -208,8 +233,12 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
       {activeTab === 'profiles' && (
         <ProfilesTab
           showNewProfile={showNewProfile}
-          onToggleNewProfile={() => setShowNewProfile(!showNewProfile)}
-          onCloseNewProfile={() => setShowNewProfile(false)}
+          onToggleNewProfile={() => {
+            setShowNewProfile(!showNewProfile);
+          }}
+          onCloseNewProfile={() => {
+            setShowNewProfile(false);
+          }}
         />
       )}
     </div>
@@ -260,7 +289,9 @@ function ActiveDelegationsTab() {
               <div className="flex items-center gap-2 mb-1">
                 {STATUS_ICONS[d.status]}
                 <span className="text-sm font-medium">{d.profileName}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[d.status] ?? ''}`}>
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[d.status] ?? ''}`}
+                >
                   {d.status}
                 </span>
                 {d.depth > 0 && (
@@ -270,12 +301,16 @@ function ActiveDelegationsTab() {
               <p className="text-sm text-muted-foreground truncate">{d.task}</p>
               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                 <span>{formatDuration(d.elapsedMs)}</span>
-                <span>{d.tokensUsed.toLocaleString()} / {d.tokenBudget.toLocaleString()} tokens</span>
+                <span>
+                  {d.tokensUsed.toLocaleString()} / {d.tokenBudget.toLocaleString()} tokens
+                </span>
                 <TokenBar used={d.tokensUsed} budget={d.tokenBudget} />
               </div>
             </div>
             <button
-              onClick={() => cancelMut.mutate(d.delegationId)}
+              onClick={() => {
+                cancelMut.mutate(d.delegationId);
+              }}
               className="btn-ghost p-1.5 rounded text-destructive hover:bg-destructive/10"
               title="Cancel delegation"
             >
@@ -307,7 +342,9 @@ function HistoryTab() {
       <div className="flex items-center gap-2">
         <select
           value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+          }}
           className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-40"
         >
           <option value="">All statuses</option>
@@ -333,14 +370,18 @@ function HistoryTab() {
       {delegations.map((d: DelegationInfo) => (
         <div key={d.id} className="card">
           <button
-            onClick={() => setExpandedId(expandedId === d.id ? null : d.id)}
+            onClick={() => {
+              setExpandedId(expandedId === d.id ? null : d.id);
+            }}
             className="w-full text-left p-4"
           >
             <div className="flex items-center justify-between gap-3">
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 {STATUS_ICONS[d.status]}
                 <span className="text-sm font-medium truncate">{d.task}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[d.status] ?? ''}`}>
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[d.status] ?? ''}`}
+                >
                   {d.status}
                 </span>
               </div>
@@ -482,7 +523,16 @@ function ProfilesTab({
         <div className="card p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-medium text-sm">New Agent Profile</span>
-            <button onClick={() => { onCloseNewProfile(); setProfileName(''); setProfileDesc(''); setProfilePrompt(''); setProfileBudget(50000); }} className="btn-ghost p-1 rounded">
+            <button
+              onClick={() => {
+                onCloseNewProfile();
+                setProfileName('');
+                setProfileDesc('');
+                setProfilePrompt('');
+                setProfileBudget(50000);
+              }}
+              className="btn-ghost p-1 rounded"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -490,7 +540,9 @@ function ProfilesTab({
             <label className="text-sm font-medium block mb-1">Name</label>
             <input
               value={profileName}
-              onChange={(e) => setProfileName(e.target.value)}
+              onChange={(e) => {
+                setProfileName(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               placeholder="e.g. reviewer"
             />
@@ -499,7 +551,9 @@ function ProfilesTab({
             <label className="text-sm font-medium block mb-1">Description</label>
             <input
               value={profileDesc}
-              onChange={(e) => setProfileDesc(e.target.value)}
+              onChange={(e) => {
+                setProfileDesc(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               placeholder="What this agent specializes in"
             />
@@ -508,7 +562,9 @@ function ProfilesTab({
             <label className="text-sm font-medium block mb-1">System Prompt</label>
             <textarea
               value={profilePrompt}
-              onChange={(e) => setProfilePrompt(e.target.value)}
+              onChange={(e) => {
+                setProfilePrompt(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[120px] resize-y"
               placeholder="You are a..."
             />
@@ -518,7 +574,9 @@ function ProfilesTab({
             <input
               type="number"
               value={profileBudget}
-              onChange={(e) => setProfileBudget(Number(e.target.value))}
+              onChange={(e) => {
+                setProfileBudget(Number(e.target.value));
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               min={1000}
               max={500000}
@@ -527,7 +585,14 @@ function ProfilesTab({
           <button
             className="btn btn-primary"
             disabled={!profileName.trim() || !profilePrompt.trim() || createMut.isPending}
-            onClick={() => createMut.mutate({ name: profileName, description: profileDesc, systemPrompt: profilePrompt, maxTokenBudget: profileBudget })}
+            onClick={() => {
+              createMut.mutate({
+                name: profileName,
+                description: profileDesc,
+                systemPrompt: profilePrompt,
+                maxTokenBudget: profileBudget,
+              });
+            }}
           >
             {createMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
           </button>
@@ -547,12 +612,17 @@ function ProfilesTab({
               <div className="flex items-center gap-2">
                 <span className="text-sm font-semibold">{p.name}</span>
                 {p.isBuiltin && (
-                  <Lock className="w-3.5 h-3.5 text-muted-foreground" aria-label="Built-in profile" />
+                  <Lock
+                    className="w-3.5 h-3.5 text-muted-foreground"
+                    aria-label="Built-in profile"
+                  />
                 )}
               </div>
               {!p.isBuiltin && (
                 <button
-                  onClick={() => deleteMut.mutate(p.id)}
+                  onClick={() => {
+                    deleteMut.mutate(p.id);
+                  }}
                   className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
                   title="Delete profile"
                 >
@@ -564,9 +634,7 @@ function ProfilesTab({
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span>{p.maxTokenBudget.toLocaleString()} tokens</span>
               {p.defaultModel && <span>Model: {p.defaultModel}</span>}
-              {p.allowedTools.length > 0 && (
-                <span>{p.allowedTools.length} tools</span>
-              )}
+              {p.allowedTools.length > 0 && <span>{p.allowedTools.length} tools</span>}
             </div>
           </div>
         ))}

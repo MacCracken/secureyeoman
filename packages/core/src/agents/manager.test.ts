@@ -74,11 +74,11 @@ describe('SubAgentManager', () => {
           aiClientDeps: {},
           auditChain: mockAuditChain as any,
           logger: mockLogger as any,
-        },
+        }
       );
 
       await expect(
-        disabledManager.delegate({ profile: 'researcher', task: 'test' }),
+        disabledManager.delegate({ profile: 'researcher', task: 'test' })
       ).rejects.toThrow('Sub-agent delegation is not enabled');
     });
 
@@ -91,10 +91,7 @@ describe('SubAgentManager', () => {
       });
 
       await expect(
-        manager.delegate(
-          { profile: 'researcher', task: 'test' },
-          { depth: 3 },
-        ),
+        manager.delegate({ profile: 'researcher', task: 'test' }, { depth: 3 })
       ).rejects.toThrow('Maximum delegation depth (3) reached');
     });
 
@@ -102,9 +99,9 @@ describe('SubAgentManager', () => {
       mockStorage.getProfile.mockResolvedValue(null);
       mockStorage.getProfileByName.mockResolvedValue(null);
 
-      await expect(
-        manager.delegate({ profile: 'nonexistent', task: 'test' }),
-      ).rejects.toThrow('Agent profile not found: nonexistent');
+      await expect(manager.delegate({ profile: 'nonexistent', task: 'test' })).rejects.toThrow(
+        'Agent profile not found: nonexistent'
+      );
     });
   });
 

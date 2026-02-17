@@ -21,14 +21,26 @@ describe('ExperimentStorage', () => {
   });
 
   it('should create and retrieve experiment', async () => {
-    const exp = await storage.create({ name: 'Test', variants: [{ id: 'a', name: 'A', trafficPercent: 50 }, { id: 'b', name: 'B', trafficPercent: 50 }] });
+    const exp = await storage.create({
+      name: 'Test',
+      variants: [
+        { id: 'a', name: 'A', trafficPercent: 50 },
+        { id: 'b', name: 'B', trafficPercent: 50 },
+      ],
+    });
     expect(exp.id).toBeTruthy();
     expect((await storage.get(exp.id))!.name).toBe('Test');
     expect((await storage.get(exp.id))!.variants).toHaveLength(2);
   });
 
   it('should list and delete experiments', async () => {
-    await storage.create({ name: 'E1', variants: [{ id: 'a', name: 'A', trafficPercent: 50 }, { id: 'b', name: 'B', trafficPercent: 50 }] });
+    await storage.create({
+      name: 'E1',
+      variants: [
+        { id: 'a', name: 'A', trafficPercent: 50 },
+        { id: 'b', name: 'B', trafficPercent: 50 },
+      ],
+    });
     expect(await storage.list()).toHaveLength(1);
     const list = await storage.list();
     expect(await storage.delete(list[0].id)).toBe(true);
@@ -47,7 +59,13 @@ describe('ExperimentManager', () => {
   });
 
   it('should start and stop experiments', async () => {
-    const exp = await manager.create({ name: 'Test', variants: [{ id: 'a', name: 'A', trafficPercent: 50 }, { id: 'b', name: 'B', trafficPercent: 50 }] });
+    const exp = await manager.create({
+      name: 'Test',
+      variants: [
+        { id: 'a', name: 'A', trafficPercent: 50 },
+        { id: 'b', name: 'B', trafficPercent: 50 },
+      ],
+    });
     const started = await manager.start(exp.id);
     expect(started!.status).toBe('running');
     const stopped = await manager.stop(exp.id);
@@ -55,14 +73,26 @@ describe('ExperimentManager', () => {
   });
 
   it('should select a variant for running experiment', async () => {
-    const exp = await manager.create({ name: 'Test', variants: [{ id: 'a', name: 'A', trafficPercent: 50 }, { id: 'b', name: 'B', trafficPercent: 50 }] });
+    const exp = await manager.create({
+      name: 'Test',
+      variants: [
+        { id: 'a', name: 'A', trafficPercent: 50 },
+        { id: 'b', name: 'B', trafficPercent: 50 },
+      ],
+    });
     await manager.start(exp.id);
     const variant = await manager.selectVariant(exp.id);
     expect(['a', 'b']).toContain(variant);
   });
 
   it('should return null variant for non-running experiment', async () => {
-    const exp = await manager.create({ name: 'Test', variants: [{ id: 'a', name: 'A', trafficPercent: 50 }, { id: 'b', name: 'B', trafficPercent: 50 }] });
+    const exp = await manager.create({
+      name: 'Test',
+      variants: [
+        { id: 'a', name: 'A', trafficPercent: 50 },
+        { id: 'b', name: 'B', trafficPercent: 50 },
+      ],
+    });
     expect(await manager.selectVariant(exp.id)).toBeNull();
   });
 });

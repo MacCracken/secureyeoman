@@ -9,7 +9,12 @@ import type { SecureLogger } from '../../logging/logger.js';
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -147,7 +152,9 @@ describe('GoogleChatIntegration', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       await adapter.init(makeConfig(), makeDeps());
-      await expect(adapter.sendMessage('ABC123', 'test')).rejects.toThrow('Failed to send Google Chat message');
+      await expect(adapter.sendMessage('ABC123', 'test')).rejects.toThrow(
+        'Failed to send Google Chat message'
+      );
     });
 
     it('should return empty string when response has no name', async () => {

@@ -95,7 +95,9 @@ export function LogRetentionSettings() {
               min={1}
               max={3650}
               value={maxAgeDays}
-              onChange={(e) => setMaxAgeDays(Number(e.target.value))}
+              onChange={(e) => {
+                setMaxAgeDays(Number(e.target.value));
+              }}
               className="px-2 py-1 text-sm border rounded-md bg-background w-full"
             />
           </div>
@@ -106,7 +108,9 @@ export function LogRetentionSettings() {
               min={100}
               max={10000000}
               value={maxEntries}
-              onChange={(e) => setMaxEntries(Number(e.target.value))}
+              onChange={(e) => {
+                setMaxEntries(Number(e.target.value));
+              }}
               className="px-2 py-1 text-sm border rounded-md bg-background w-full"
             />
           </div>
@@ -114,7 +118,9 @@ export function LogRetentionSettings() {
 
         <div className="flex items-center gap-2 mt-3">
           <button
-            onClick={() => retentionMutation.mutate()}
+            onClick={() => {
+              retentionMutation.mutate();
+            }}
             disabled={retentionMutation.isPending}
             className="flex items-center gap-1.5 px-3 py-1.5 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-50"
           >
@@ -135,7 +141,9 @@ export function LogRetentionSettings() {
           {retentionMutation.isError && (
             <span className="text-xs text-destructive flex items-center gap-1">
               <AlertCircle className="w-3.5 h-3.5" />
-              {retentionMutation.error instanceof Error ? retentionMutation.error.message : 'Failed'}
+              {retentionMutation.error instanceof Error
+                ? retentionMutation.error.message
+                : 'Failed'}
             </span>
           )}
         </div>

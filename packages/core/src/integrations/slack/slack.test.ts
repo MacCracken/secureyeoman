@@ -12,9 +12,15 @@ const commandHandlers: Record<string, Function> = {};
 
 vi.mock('@slack/bolt', () => {
   class MockApp {
-    message = vi.fn((handler: Function) => { eventHandlers['message'] = handler; });
-    event = vi.fn((name: string, handler: Function) => { eventHandlers[name] = handler; });
-    command = vi.fn((name: string, handler: Function) => { commandHandlers[name] = handler; });
+    message = vi.fn((handler: Function) => {
+      eventHandlers['message'] = handler;
+    });
+    event = vi.fn((name: string, handler: Function) => {
+      eventHandlers[name] = handler;
+    });
+    command = vi.fn((name: string, handler: Function) => {
+      commandHandlers[name] = handler;
+    });
     start = mockStart;
     stop = mockStop;
     client = {
@@ -32,7 +38,12 @@ import { SlackIntegration } from './adapter.js';
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -77,13 +88,13 @@ describe('SlackIntegration', () => {
 
   it('should throw without botToken', async () => {
     await expect(
-      integration.init(makeConfig({ config: { appToken: 'xapp-test' } }), makeDeps()),
+      integration.init(makeConfig({ config: { appToken: 'xapp-test' } }), makeDeps())
     ).rejects.toThrow('botToken');
   });
 
   it('should throw without appToken', async () => {
     await expect(
-      integration.init(makeConfig({ config: { botToken: 'xoxb-test' } }), makeDeps()),
+      integration.init(makeConfig({ config: { botToken: 'xoxb-test' } }), makeDeps())
     ).rejects.toThrow('appToken');
   });
 

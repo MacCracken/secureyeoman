@@ -55,7 +55,9 @@ describe('GitLabIntegration', () => {
     it('should throw when personalAccessToken is missing', async () => {
       const config = makeConfig();
       (config.config as any).personalAccessToken = '';
-      await expect(adapter.init(config, makeDeps())).rejects.toThrow('requires a personalAccessToken');
+      await expect(adapter.init(config, makeDeps())).rejects.toThrow(
+        'requires a personalAccessToken'
+      );
     });
 
     it('should throw when webhookSecret is missing', async () => {
@@ -103,7 +105,7 @@ describe('GitLabIntegration', () => {
       expect(id).toBe('42');
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/issues/5/notes'),
-        expect.objectContaining({ method: 'POST' }),
+        expect.objectContaining({ method: 'POST' })
       );
     });
 
@@ -118,7 +120,7 @@ describe('GitLabIntegration', () => {
       expect(id).toBe('99');
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('/merge_requests/10/notes'),
-        expect.objectContaining({ method: 'POST' }),
+        expect.objectContaining({ method: 'POST' })
       );
     });
 
@@ -151,7 +153,10 @@ describe('GitLabIntegration', () => {
         ref: 'refs/heads/main',
         user_name: 'Test User',
         user_username: 'testuser',
-        project: { path_with_namespace: 'group/project', web_url: 'https://gitlab.com/group/project' },
+        project: {
+          path_with_namespace: 'group/project',
+          web_url: 'https://gitlab.com/group/project',
+        },
         commits: [{ id: 'abc123', message: 'fix bug', author: { name: 'Test' } }],
         total_commits_count: 1,
       });
@@ -191,9 +196,9 @@ describe('GitLabIntegration', () => {
 
     it('should reject invalid token', async () => {
       await adapter.init(makeConfig(), makeDeps());
-      await expect(
-        adapter.handleWebhook('Push Hook', '{}', 'wrong-secret'),
-      ).rejects.toThrow('Invalid webhook token');
+      await expect(adapter.handleWebhook('Push Hook', '{}', 'wrong-secret')).rejects.toThrow(
+        'Invalid webhook token'
+      );
     });
   });
 

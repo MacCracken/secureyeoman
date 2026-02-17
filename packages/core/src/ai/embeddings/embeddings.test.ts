@@ -10,9 +10,15 @@ import { createEmbeddingProvider } from './index.js';
 vi.mock('./local.js', () => ({
   LocalEmbeddingProvider: class MockLocalProvider {
     readonly name = 'local';
-    dimensions() { return 384; }
+    dimensions() {
+      return 384;
+    }
     async embed(texts: string[]) {
-      return texts.map(() => Array(384).fill(0).map(() => Math.random()));
+      return texts.map(() =>
+        Array(384)
+          .fill(0)
+          .map(() => Math.random())
+      );
     }
   },
 }));
@@ -24,9 +30,15 @@ vi.mock('./api.js', () => ({
     constructor(config: any) {
       this.name = `api-${config.provider ?? 'openai'}`;
     }
-    dimensions() { return 1536; }
+    dimensions() {
+      return 1536;
+    }
     async embed(texts: string[]) {
-      return texts.map(() => Array(1536).fill(0).map(() => Math.random()));
+      return texts.map(() =>
+        Array(1536)
+          .fill(0)
+          .map(() => Math.random())
+      );
     }
   },
 }));

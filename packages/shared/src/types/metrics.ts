@@ -1,6 +1,6 @@
 /**
  * Metrics Types for SecureYeoman
- * 
+ *
  * Security considerations:
  * - Metrics should never contain sensitive data
  * - All numeric values are validated for reasonable ranges
@@ -17,11 +17,11 @@ export const TaskMetricsSchema = z.object({
   total: z.number().int().nonnegative(),
   byStatus: z.record(TaskStatusSchema, z.number().int().nonnegative()),
   byType: z.record(TaskTypeSchema, z.number().int().nonnegative()),
-  
+
   // Rates
   successRate: z.number().min(0).max(1),
   failureRate: z.number().min(0).max(1),
-  
+
   // Duration statistics (ms)
   avgDurationMs: z.number().nonnegative(),
   minDurationMs: z.number().nonnegative(),
@@ -29,7 +29,7 @@ export const TaskMetricsSchema = z.object({
   p50DurationMs: z.number().nonnegative(),
   p95DurationMs: z.number().nonnegative(),
   p99DurationMs: z.number().nonnegative(),
-  
+
   // Queue metrics
   queueDepth: z.number().int().nonnegative(),
   inProgress: z.number().int().nonnegative(),
@@ -44,20 +44,20 @@ export const ResourceMetricsSchema = z.object({
   memoryUsedMb: z.number().nonnegative(),
   memoryLimitMb: z.number().nonnegative(),
   memoryPercent: z.number().min(0).max(100),
-  
+
   // Disk usage
   diskUsedMb: z.number().nonnegative(),
   diskLimitMb: z.number().nonnegative().optional(),
-  
+
   // Token usage
   tokensUsedToday: z.number().int().nonnegative(),
   tokensLimitDaily: z.number().int().nonnegative().optional(),
   tokensCachedToday: z.number().int().nonnegative(),
-  
+
   // Cost tracking
   costUsdToday: z.number().nonnegative(),
   costUsdMonth: z.number().nonnegative(),
-  
+
   // API metrics
   apiCallsTotal: z.number().int().nonnegative(),
   apiErrorsTotal: z.number().int().nonnegative(),
@@ -73,20 +73,20 @@ export const SecurityMetricsSchema = z.object({
   authSuccessTotal: z.number().int().nonnegative(),
   authFailuresTotal: z.number().int().nonnegative(),
   activeSessions: z.number().int().nonnegative(),
-  
+
   // Authorization
   permissionChecksTotal: z.number().int().nonnegative(),
   permissionDenialsTotal: z.number().int().nonnegative(),
-  
+
   // Threats
   blockedRequestsTotal: z.number().int().nonnegative(),
   rateLimitHitsTotal: z.number().int().nonnegative(),
   injectionAttemptsTotal: z.number().int().nonnegative(),
-  
+
   // Events by severity
   eventsBySeverity: z.record(SeveritySchema, z.number().int().nonnegative()),
   eventsByType: z.record(SecurityEventTypeSchema, z.number().int().nonnegative()),
-  
+
   // Audit
   auditEntriesTotal: z.number().int().nonnegative(),
   auditChainValid: z.boolean(),

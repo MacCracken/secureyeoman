@@ -13,7 +13,7 @@ function mockEmbedding(): EmbeddingProvider {
     name: 'mock',
     dimensions: () => 3,
     embed: vi.fn(async (texts: string[]) =>
-      texts.map(() => [Math.random(), Math.random(), Math.random()]),
+      texts.map(() => [Math.random(), Math.random(), Math.random()])
     ),
   };
 }
@@ -87,11 +87,11 @@ describe('VectorMemoryManager', () => {
       await manager.indexMemory(memory);
 
       expect(embedding.embed).toHaveBeenCalledWith([memory.content]);
-      expect(store.insert).toHaveBeenCalledWith(
-        `memory:${memory.id}`,
-        expect.any(Array),
-        { type: 'memory', memoryType: 'semantic', source: 'test' },
-      );
+      expect(store.insert).toHaveBeenCalledWith(`memory:${memory.id}`, expect.any(Array), {
+        type: 'memory',
+        memoryType: 'semantic',
+        source: 'test',
+      });
     });
   });
 
@@ -101,11 +101,11 @@ describe('VectorMemoryManager', () => {
       await manager.indexKnowledge(entry);
 
       expect(embedding.embed).toHaveBeenCalledWith([`${entry.topic}: ${entry.content}`]);
-      expect(store.insert).toHaveBeenCalledWith(
-        `knowledge:${entry.id}`,
-        expect.any(Array),
-        { type: 'knowledge', topic: 'test-topic', source: 'test' },
-      );
+      expect(store.insert).toHaveBeenCalledWith(`knowledge:${entry.id}`, expect.any(Array), {
+        type: 'knowledge',
+        topic: 'test-topic',
+        source: 'test',
+      });
     });
   });
 
@@ -113,8 +113,8 @@ describe('VectorMemoryManager', () => {
     it('returns only memory results with stripped prefixes', async () => {
       store.search.mockResolvedValue([
         { id: 'memory:m1', score: 0.95, metadata: { type: 'memory' } },
-        { id: 'knowledge:k1', score: 0.90, metadata: { type: 'knowledge' } },
-        { id: 'memory:m2', score: 0.80, metadata: { type: 'memory' } },
+        { id: 'knowledge:k1', score: 0.9, metadata: { type: 'knowledge' } },
+        { id: 'memory:m2', score: 0.8, metadata: { type: 'memory' } },
       ] satisfies VectorResult[]);
 
       const results = await manager.searchMemories('query', 5);
@@ -127,7 +127,7 @@ describe('VectorMemoryManager', () => {
     it('respects limit', async () => {
       store.search.mockResolvedValue([
         { id: 'memory:m1', score: 0.95 },
-        { id: 'memory:m2', score: 0.90 },
+        { id: 'memory:m2', score: 0.9 },
         { id: 'memory:m3', score: 0.85 },
       ] satisfies VectorResult[]);
 
@@ -147,7 +147,7 @@ describe('VectorMemoryManager', () => {
     it('returns only knowledge results with stripped prefixes', async () => {
       store.search.mockResolvedValue([
         { id: 'knowledge:k1', score: 0.95 },
-        { id: 'memory:m1', score: 0.90 },
+        { id: 'memory:m1', score: 0.9 },
       ] satisfies VectorResult[]);
 
       const results = await manager.searchKnowledge('query', 5);
@@ -177,9 +177,7 @@ describe('VectorMemoryManager', () => {
         makeMemory({ id: 'm1', content: 'A' }),
         makeMemory({ id: 'm2', content: 'B' }),
       ];
-      const knowledge = [
-        makeKnowledge({ id: 'k1', topic: 'T1', content: 'C' }),
-      ];
+      const knowledge = [makeKnowledge({ id: 'k1', topic: 'T1', content: 'C' })];
 
       const result = await manager.reindexAll(memories, knowledge);
 

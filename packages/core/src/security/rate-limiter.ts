@@ -1,6 +1,6 @@
 /**
  * Rate Limiter for SecureYeoman
- * 
+ *
  * Security considerations:
  * - Sliding window algorithm for accurate rate limiting
  * - Per-user, per-IP, and global limits
@@ -37,7 +37,7 @@ export interface RateLimiterLike {
   check(
     ruleName: string,
     key: string,
-    context?: { userId?: string; ipAddress?: string },
+    context?: { userId?: string; ipAddress?: string }
   ): RateLimitResult | Promise<RateLimitResult>;
   stop(): void | Promise<void>;
   getStats(): { totalHits: number; totalChecks: number };
@@ -72,7 +72,7 @@ export class RateLimiter {
    * compute a "blocked request ratio" for monitoring and alerting.
    */
   private totalChecks = 0;
-  
+
   constructor(config: SecurityConfig['rateLimiting']) {
     this.defaultRule = {
       name: 'default',
@@ -81,11 +81,11 @@ export class RateLimiter {
       keyType: 'global',
       onExceed: 'reject',
     };
-    
+
     // Start cleanup interval (every minute)
     this.startCleanup();
   }
-  
+
   private getLogger(): SecureLogger {
     if (!this.logger) {
       try {
@@ -96,7 +96,7 @@ export class RateLimiter {
     }
     return this.logger;
   }
-  
+
   /**
    * Add a custom rate limit rule
    */
@@ -104,14 +104,14 @@ export class RateLimiter {
     this.rules.set(rule.name, rule);
     this.getLogger().debug('Rate limit rule added', { ruleName: rule.name });
   }
-  
+
   /**
    * Remove a rate limit rule
    */
   removeRule(name: string): boolean {
     return this.rules.delete(name);
   }
-  
+
   /**
    * Check if a request is allowed under rate limits
    */
@@ -160,7 +160,7 @@ export class RateLimiter {
     // snapshot accurately reflects how many requests have been blocked.
     this.totalHits++;
     const retryAfter = Math.ceil((resetAt - now) / 1000);
-    
+
     // Log violation
     this.getLogger().warn('Rate limit exceeded', {
       rule: rule.name,
@@ -172,7 +172,7 @@ export class RateLimiter {
       userId: context?.userId,
       ipAddress: context?.ipAddress,
     });
-    
+
     // Handle based on rule action
     if (rule.onExceed === 'log_only') {
       window.count++;
@@ -182,7 +182,7 @@ export class RateLimiter {
         resetAt,
       };
     }
-    
+
     return {
       allowed: false,
       remaining: 0,
@@ -190,7 +190,7 @@ export class RateLimiter {
       retryAfter,
     };
   }
-  
+
   /**
    * Check multiple rules at once
    * Returns the most restrictive result
@@ -204,22 +204,22 @@ export class RateLimiter {
       remaining: Infinity,
       resetAt: 0,
     };
-    
+
     for (const { name, key } of rules) {
       const result = this.check(name, key, context);
-      
+
       if (!result.allowed) {
         return result; // Immediately return if any rule blocks
       }
-      
+
       if (result.remaining < mostRestrictive.remaining) {
         mostRestrictive = result;
       }
     }
-    
+
     return mostRestrictive;
   }
-  
+
   /**
    * Reset rate limit for a specific key
    */
@@ -228,33 +228,36 @@ export class RateLimiter {
     const windowKey = this.buildWindowKey(rule.name, rule.keyType, key);
     this.windows.delete(windowKey);
   }
-  
+
   /**
    * Get current usage for a key
    */
-  getUsage(ruleName: string, key: string): { count: number; limit: number; windowMs: number } | null {
+  getUsage(
+    ruleName: string,
+    key: string
+  ): { count: number; limit: number; windowMs: number } | null {
     const rule = this.rules.get(ruleName) ?? this.defaultRule;
     const windowKey = this.buildWindowKey(rule.name, rule.keyType, key);
     const window = this.windows.get(windowKey);
-    
+
     if (!window) {
       return null;
     }
-    
+
     return {
       count: window.count,
       limit: rule.maxRequests,
       windowMs: rule.windowMs,
     };
   }
-  
+
   /**
    * Build a unique key for the window map
    */
   private buildWindowKey(ruleName: string, keyType: string, key: string): string {
     return `${ruleName}:${keyType}:${key}`;
   }
-  
+
   /**
    * Start periodic cleanup of expired windows
    */
@@ -262,39 +265,39 @@ export class RateLimiter {
     if (this.cleanupInterval) {
       return;
     }
-    
+
     this.cleanupInterval = setInterval(() => {
       this.cleanup();
     }, 60000); // Every minute
-    
+
     // Don't prevent process exit
     this.cleanupInterval.unref();
   }
-  
+
   /**
    * Clean up expired windows
    */
   private cleanup(): void {
     const now = Date.now();
     let cleaned = 0;
-    
+
     for (const [key, window] of this.windows.entries()) {
       // Find the rule for this window
       const ruleName = key.split(':')[0];
-      const rule = ruleName ? this.rules.get(ruleName) ?? this.defaultRule : this.defaultRule;
-      
+      const rule = ruleName ? (this.rules.get(ruleName) ?? this.defaultRule) : this.defaultRule;
+
       // Check if window is expired
       if (now - window.windowStart >= rule.windowMs) {
         this.windows.delete(key);
         cleaned++;
       }
     }
-    
+
     if (cleaned > 0) {
       this.getLogger().debug('Rate limiter cleanup', { cleanedWindows: cleaned });
     }
   }
-  
+
   /**
    * Stop the cleanup interval
    */
@@ -304,7 +307,7 @@ export class RateLimiter {
       this.cleanupInterval = null;
     }
   }
-  
+
   /**
    * Get comprehensive statistics about the current rate limiting state.
    *
@@ -341,10 +344,16 @@ export class RateLimiter {
 
 /** Common rate limit rules added to any limiter instance. */
 const COMMON_RULES: RateLimitRule[] = [
-  { name: 'api_requests',        windowMs: 60000,   maxRequests: 100, keyType: 'user', onExceed: 'reject' },
-  { name: 'auth_attempts',       windowMs: 900000,  maxRequests: 5,   keyType: 'ip',   onExceed: 'reject' },
-  { name: 'task_creation',       windowMs: 60000,   maxRequests: 20,  keyType: 'user', onExceed: 'reject' },
-  { name: 'expensive_operations', windowMs: 3600000, maxRequests: 10,  keyType: 'user', onExceed: 'reject' },
+  { name: 'api_requests', windowMs: 60000, maxRequests: 100, keyType: 'user', onExceed: 'reject' },
+  { name: 'auth_attempts', windowMs: 900000, maxRequests: 5, keyType: 'ip', onExceed: 'reject' },
+  { name: 'task_creation', windowMs: 60000, maxRequests: 20, keyType: 'user', onExceed: 'reject' },
+  {
+    name: 'expensive_operations',
+    windowMs: 3600000,
+    maxRequests: 10,
+    keyType: 'user',
+    onExceed: 'reject',
+  },
 ];
 
 /**

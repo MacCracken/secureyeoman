@@ -64,11 +64,11 @@ export class LinuxSandbox implements Sandbox {
    */
   private async runWithLandlock<T>(
     fn: () => Promise<T>,
-    opts?: SandboxOptions,
+    opts?: SandboxOptions
   ): Promise<SandboxResult<T>> {
     const workerPath = path.join(
       path.dirname(fileURLToPath(import.meta.url)),
-      'landlock-worker.js',
+      'landlock-worker.js'
     );
 
     // Check if compiled worker exists, fall back to V1 if not
@@ -90,7 +90,9 @@ export class LinuxSandbox implements Sandbox {
             success: false,
             error: new Error(`Sandboxed execution timed out after ${timeoutMs}ms`),
             resourceUsage: { memoryPeakMb: 0, cpuTimeMs: timeoutMs },
-            violations: [{ type: 'resource', description: 'Execution timeout', timestamp: Date.now() }],
+            violations: [
+              { type: 'resource', description: 'Execution timeout', timestamp: Date.now() },
+            ],
           });
         }, timeoutMs);
 
@@ -316,7 +318,7 @@ export class LinuxSandbox implements Sandbox {
       } else {
         // Fallback: check kernel version (Landlock available since 5.13)
         const version = readFileSync('/proc/version', 'utf-8');
-        const match = version.match(/Linux version (\d+)\.(\d+)/);
+        const match = /Linux version (\d+)\.(\d+)/.exec(version);
         if (match) {
           const majorStr = match[1];
           const minorStr = match[2];

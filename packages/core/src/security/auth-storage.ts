@@ -31,23 +31,20 @@ export class AuthStorage extends PgBaseStorage {
       `INSERT INTO auth.revoked_tokens (jti, user_id, revoked_at, expires_at)
        VALUES ($1, $2, $3, $4)
        ON CONFLICT(jti) DO NOTHING`,
-      [jti, userId, Date.now(), expiresAt],
+      [jti, userId, Date.now(), expiresAt]
     );
   }
 
   async isTokenRevoked(jti: string): Promise<boolean> {
     const row = await this.queryOne<{ jti: string }>(
       'SELECT jti FROM auth.revoked_tokens WHERE jti = $1',
-      [jti],
+      [jti]
     );
     return row !== null;
   }
 
   async cleanupExpiredTokens(): Promise<number> {
-    return this.execute(
-      'DELETE FROM auth.revoked_tokens WHERE expires_at < $1',
-      [Date.now()],
-    );
+    return this.execute('DELETE FROM auth.revoked_tokens WHERE expires_at < $1', [Date.now()]);
   }
 
   // ── API keys ───────────────────────────────────────────────────────
@@ -67,14 +64,14 @@ export class AuthStorage extends PgBaseStorage {
         row.expires_at,
         row.revoked_at,
         row.last_used_at,
-      ],
+      ]
     );
   }
 
   async findApiKeyByHash(hash: string): Promise<ApiKeyRow | null> {
     const row = await this.queryOne<ApiKeyRow>(
       'SELECT * FROM auth.api_keys WHERE key_hash = $1 AND revoked_at IS NULL',
-      [hash],
+      [hash]
     );
 
     if (!row) return null;
@@ -91,28 +88,25 @@ export class AuthStorage extends PgBaseStorage {
     if (userId) {
       return this.queryMany<Omit<ApiKeyRow, 'key_hash'>>(
         'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys WHERE user_id = $1 ORDER BY created_at DESC',
-        [userId],
+        [userId]
       );
     }
 
     return this.queryMany<Omit<ApiKeyRow, 'key_hash'>>(
-      'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys ORDER BY created_at DESC',
+      'SELECT id, name, key_prefix, role, user_id, created_at, expires_at, revoked_at, last_used_at FROM auth.api_keys ORDER BY created_at DESC'
     );
   }
 
   async revokeApiKey(id: string): Promise<boolean> {
     const changes = await this.execute(
       'UPDATE auth.api_keys SET revoked_at = $1 WHERE id = $2 AND revoked_at IS NULL',
-      [Date.now(), id],
+      [Date.now(), id]
     );
     return changes > 0;
   }
 
   async updateLastUsed(id: string, ts: number): Promise<void> {
-    await this.execute(
-      'UPDATE auth.api_keys SET last_used_at = $1 WHERE id = $2',
-      [ts, id],
-    );
+    await this.execute('UPDATE auth.api_keys SET last_used_at = $1 WHERE id = $2', [ts, id]);
   }
 
   override close(): void {

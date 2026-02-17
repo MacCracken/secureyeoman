@@ -31,7 +31,10 @@ export class ConsolidationExecutor {
     this.vectorManager = deps.vectorManager;
   }
 
-  async execute(actions: ConsolidationAction[], dryRun: boolean): Promise<ConsolidationReport['summary']> {
+  async execute(
+    actions: ConsolidationAction[],
+    dryRun: boolean
+  ): Promise<ConsolidationReport['summary']> {
     const summary = { merged: 0, replaced: 0, updated: 0, keptSeparate: 0, skipped: 0 };
 
     for (const action of actions) {
@@ -123,7 +126,9 @@ export class ConsolidationExecutor {
       if (this.vectorManager) {
         try {
           await this.vectorManager.removeMemory(id);
-        } catch { /* best effort */ }
+        } catch {
+          /* best effort */
+        }
       }
     }
   }
@@ -151,7 +156,9 @@ export class ConsolidationExecutor {
         if (this.vectorManager) {
           try {
             await this.vectorManager.removeMemory(id);
-          } catch { /* best effort */ }
+          } catch {
+            /* best effort */
+          }
         }
       }
     }
@@ -183,7 +190,9 @@ export class ConsolidationExecutor {
         try {
           await this.vectorManager.indexMemory(updated);
           await this.vectorManager.removeMemory(targetId);
-        } catch { /* best effort */ }
+        } catch {
+          /* best effort */
+        }
       }
 
       await this.storage.deleteMemory(targetId);

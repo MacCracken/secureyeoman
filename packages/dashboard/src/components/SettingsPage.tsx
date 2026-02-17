@@ -33,7 +33,9 @@ export function SettingsPage() {
 
       <div className="flex gap-1 border-b border-border overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
         <button
-          onClick={() => setActiveTab('general')}
+          onClick={() => {
+            setActiveTab('general');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'general'
               ? 'border-primary text-primary'
@@ -44,7 +46,9 @@ export function SettingsPage() {
           General
         </button>
         <button
-          onClick={() => setActiveTab('security')}
+          onClick={() => {
+            setActiveTab('security');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'security'
               ? 'border-primary text-primary'
@@ -55,7 +59,9 @@ export function SettingsPage() {
           Security
         </button>
         <button
-          onClick={() => setActiveTab('keys')}
+          onClick={() => {
+            setActiveTab('keys');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'keys'
               ? 'border-primary text-primary'
@@ -66,7 +72,9 @@ export function SettingsPage() {
           Keys
         </button>
         <button
-          onClick={() => setActiveTab('roles')}
+          onClick={() => {
+            setActiveTab('roles');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'roles'
               ? 'border-primary text-primary'
@@ -77,7 +85,9 @@ export function SettingsPage() {
           Roles
         </button>
         <button
-          onClick={() => setActiveTab('logs')}
+          onClick={() => {
+            setActiveTab('logs');
+          }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'logs'
               ? 'border-primary text-primary'

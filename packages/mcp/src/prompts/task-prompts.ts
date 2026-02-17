@@ -14,9 +14,7 @@ export function registerTaskPrompts(server: McpServer): void {
       constraints: z.string().optional().describe('Any constraints or requirements'),
     },
     async (args) => {
-      const constraintSection = args.constraints
-        ? `\n\n## Constraints\n${args.constraints}`
-        : '';
+      const constraintSection = args.constraints ? `\n\n## Constraints\n${args.constraints}` : '';
 
       const template = `# Task Planning Template
 
@@ -38,11 +36,13 @@ Please provide:
 - Any blockers or questions that need answers before proceeding`;
 
       return {
-        messages: [{
-          role: 'user' as const,
-          content: { type: 'text' as const, text: template },
-        }],
+        messages: [
+          {
+            role: 'user' as const,
+            content: { type: 'text' as const, text: template },
+          },
+        ],
       };
-    },
+    }
   );
 }

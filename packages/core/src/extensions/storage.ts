@@ -6,12 +6,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
-import type {
-  ExtensionManifest,
-  HookPoint,
-  HookSemantics,
-  WebhookConfig,
-} from './types.js';
+import type { ExtensionManifest, HookPoint, HookSemantics, WebhookConfig } from './types.js';
 
 // ─── Row types ──────────────────────────────────────────────────────
 
@@ -83,9 +78,8 @@ function hookFromRow(row: HookRow): HookRecord {
 function webhookFromRow(row: WebhookRow): WebhookConfig {
   let hookPoints: HookPoint[] = [];
   try {
-    hookPoints = typeof row.hook_points === 'string'
-      ? JSON.parse(row.hook_points)
-      : row.hook_points;
+    hookPoints =
+      typeof row.hook_points === 'string' ? JSON.parse(row.hook_points) : row.hook_points;
   } catch {
     hookPoints = [];
   }
@@ -105,7 +99,7 @@ export class ExtensionStorage extends PgBaseStorage {
 
   async listExtensions(): Promise<ExtensionManifest[]> {
     const rows = await this.queryMany<ExtensionRow>(
-      `SELECT * FROM extensions.manifests ORDER BY name ASC`,
+      `SELECT * FROM extensions.manifests ORDER BY name ASC`
     );
     return rows.map(extensionFromRow);
   }
@@ -113,7 +107,7 @@ export class ExtensionStorage extends PgBaseStorage {
   async getExtension(id: string): Promise<ExtensionManifest | null> {
     const row = await this.queryOne<ExtensionRow>(
       `SELECT * FROM extensions.manifests WHERE id = $1`,
-      [id],
+      [id]
     );
     return row ? extensionFromRow(row) : null;
   }
@@ -129,21 +123,13 @@ export class ExtensionStorage extends PgBaseStorage {
          hooks = EXCLUDED.hooks,
          updated_at = now()
        RETURNING *`,
-      [
-        id,
-        manifest.name,
-        manifest.version,
-        JSON.stringify(manifest.hooks),
-      ],
+      [id, manifest.name, manifest.version, JSON.stringify(manifest.hooks)]
     );
     return extensionFromRow(row!);
   }
 
   async removeExtension(id: string): Promise<boolean> {
-    const count = await this.execute(
-      `DELETE FROM extensions.manifests WHERE id = $1`,
-      [id],
-    );
+    const count = await this.execute(`DELETE FROM extensions.manifests WHERE id = $1`, [id]);
     return count > 0;
   }
 
@@ -166,7 +152,7 @@ export class ExtensionStorage extends PgBaseStorage {
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const rows = await this.queryMany<HookRow>(
       `SELECT * FROM extensions.hooks ${where} ORDER BY priority ASC, created_at ASC`,
-      values,
+      values
     );
     return rows.map(hookFromRow);
   }
@@ -182,22 +168,13 @@ export class ExtensionStorage extends PgBaseStorage {
       `INSERT INTO extensions.hooks (id, extension_id, hook_point, semantics, priority)
        VALUES ($1, $2, $3, $4, $5)
        RETURNING *`,
-      [
-        id,
-        data.extensionId,
-        data.hookPoint,
-        data.semantics,
-        data.priority,
-      ],
+      [id, data.extensionId, data.hookPoint, data.semantics, data.priority]
     );
     return hookFromRow(row!);
   }
 
   async removeHook(id: string): Promise<boolean> {
-    const count = await this.execute(
-      `DELETE FROM extensions.hooks WHERE id = $1`,
-      [id],
-    );
+    const count = await this.execute(`DELETE FROM extensions.hooks WHERE id = $1`, [id]);
     return count > 0;
   }
 
@@ -205,7 +182,7 @@ export class ExtensionStorage extends PgBaseStorage {
 
   async listWebhooks(): Promise<WebhookConfig[]> {
     const rows = await this.queryMany<WebhookRow>(
-      `SELECT * FROM extensions.webhooks ORDER BY created_at ASC`,
+      `SELECT * FROM extensions.webhooks ORDER BY created_at ASC`
     );
     return rows.map(webhookFromRow);
   }
@@ -216,29 +193,20 @@ export class ExtensionStorage extends PgBaseStorage {
       `INSERT INTO extensions.webhooks (id, url, hook_points, secret, enabled)
        VALUES ($1, $2, $3::jsonb, $4, $5)
        RETURNING *`,
-      [
-        id,
-        config.url,
-        JSON.stringify(config.hookPoints),
-        config.secret ?? null,
-        config.enabled,
-      ],
+      [id, config.url, JSON.stringify(config.hookPoints), config.secret ?? null, config.enabled]
     );
     return webhookFromRow(row!);
   }
 
   async removeWebhook(id: string): Promise<boolean> {
-    const count = await this.execute(
-      `DELETE FROM extensions.webhooks WHERE id = $1`,
-      [id],
-    );
+    const count = await this.execute(`DELETE FROM extensions.webhooks WHERE id = $1`, [id]);
     return count > 0;
   }
 
   async updateWebhook(id: string, data: Partial<WebhookConfig>): Promise<WebhookConfig | null> {
     const existing = await this.queryOne<WebhookRow>(
       `SELECT * FROM extensions.webhooks WHERE id = $1`,
-      [id],
+      [id]
     );
     if (!existing) return null;
 
@@ -270,7 +238,7 @@ export class ExtensionStorage extends PgBaseStorage {
 
     const row = await this.queryOne<WebhookRow>(
       `UPDATE extensions.webhooks SET ${updates.join(', ')} WHERE id = $${paramIdx} RETURNING *`,
-      values,
+      values
     );
     return row ? webhookFromRow(row) : null;
   }

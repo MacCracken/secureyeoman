@@ -285,7 +285,9 @@ export class EmailIntegration implements Integration {
         inReplyTo,
       },
       timestamp: envelope.date
-        ? (envelope.date instanceof Date ? envelope.date.getTime() : new Date(envelope.date).getTime())
+        ? envelope.date instanceof Date
+          ? envelope.date.getTime()
+          : new Date(envelope.date).getTime()
         : Date.now(),
     };
 
@@ -312,7 +314,7 @@ export class EmailIntegration implements Integration {
     }
 
     // Multipart: find text/plain part
-    const boundaryMatch = headers.match(/boundary="?([^";\r\n]+)"?/);
+    const boundaryMatch = /boundary="?([^";\r\n]+)"?/.exec(headers);
     if (!boundaryMatch) return body;
 
     const boundary = boundaryMatch[1];
@@ -324,7 +326,10 @@ export class EmailIntegration implements Integration {
 
       const partHeaders = part.substring(0, partHeaderEnd).toLowerCase();
       if (partHeaders.includes('content-type: text/plain')) {
-        const partBody = part.substring(partHeaderEnd + 4).replace(/--\s*$/, '').trim();
+        const partBody = part
+          .substring(partHeaderEnd + 4)
+          .replace(/--\s*$/, '')
+          .trim();
         return this.decodeBody(partBody, partHeaders);
       }
     }
@@ -340,9 +345,7 @@ export class EmailIntegration implements Integration {
     if (headers.includes('content-transfer-encoding: quoted-printable')) {
       return body
         .replace(/=\r?\n/g, '')
-        .replace(/=([0-9A-Fa-f]{2})/g, (_, hex: string) =>
-          String.fromCharCode(parseInt(hex, 16))
-        );
+        .replace(/=([0-9A-Fa-f]{2})/g, (_, hex: string) => String.fromCharCode(parseInt(hex, 16)));
     }
     return body;
   }

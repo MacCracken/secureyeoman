@@ -5,7 +5,13 @@
  * shared across all provider implementations.
  */
 
-import type { AIRequest, AIResponse, AIStreamChunk, AIProviderName, ModelConfig } from '@friday/shared';
+import type {
+  AIRequest,
+  AIResponse,
+  AIStreamChunk,
+  AIProviderName,
+  ModelConfig,
+} from '@friday/shared';
 import { RetryManager, type RetryConfig } from '../retry-manager.js';
 import type { SecureLogger } from '../../logging/logger.js';
 

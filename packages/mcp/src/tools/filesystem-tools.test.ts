@@ -48,9 +48,7 @@ function makeConfig(overrides?: Partial<McpServiceConfig>): McpServiceConfig {
 describe('filesystem-tools', () => {
   it('should register all 4 filesystem tools', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
-    expect(() =>
-      registerFilesystemTools(server, makeConfig(), noopMiddleware()),
-    ).not.toThrow();
+    expect(() => registerFilesystemTools(server, makeConfig(), noopMiddleware())).not.toThrow();
   });
 
   it('should not register when exposeFilesystem is false', () => {
@@ -61,7 +59,11 @@ describe('filesystem-tools', () => {
   describe('path validation', () => {
     it('should reject paths outside allowed directories', () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerFilesystemTools(server, makeConfig({ allowedPaths: ['/nonexistent'] }), noopMiddleware());
+      registerFilesystemTools(
+        server,
+        makeConfig({ allowedPaths: ['/nonexistent'] }),
+        noopMiddleware()
+      );
       // The tool would throw PathValidationError at call time
       expect(true).toBe(true);
     });

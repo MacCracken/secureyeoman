@@ -32,7 +32,9 @@ export function ConfirmDialog({
       if (e.key === 'Escape') onCancel();
     };
     document.addEventListener('keydown', handleKey);
-    return () => document.removeEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('keydown', handleKey);
+    };
   }, [open, onCancel]);
 
   if (!open) return null;
@@ -47,21 +49,23 @@ export function ConfirmDialog({
     >
       <div
         className="card p-6 max-w-sm w-full mx-4 shadow-lg"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+        }}
       >
         <div className="flex items-start gap-3 mb-4">
-          <AlertTriangle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${destructive ? 'text-destructive' : 'text-warning'}`} />
+          <AlertTriangle
+            className={`w-5 h-5 mt-0.5 flex-shrink-0 ${destructive ? 'text-destructive' : 'text-warning'}`}
+          />
           <div>
-            <h3 id="confirm-title" className="font-medium">{title}</h3>
+            <h3 id="confirm-title" className="font-medium">
+              {title}
+            </h3>
             <p className="text-sm text-muted-foreground mt-1">{message}</p>
           </div>
         </div>
         <div className="flex gap-2 justify-end">
-          <button
-            ref={cancelRef}
-            onClick={onCancel}
-            className="btn btn-ghost"
-          >
+          <button ref={cancelRef} onClick={onCancel} className="btn btn-ghost">
             Cancel
           </button>
           <button

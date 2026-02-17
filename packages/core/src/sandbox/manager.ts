@@ -61,10 +61,13 @@ export class SandboxManager {
 
     const platform = process.platform;
     const platformKey: SandboxCapabilities['platform'] =
-      platform === 'linux' ? 'linux' :
-      platform === 'darwin' ? 'darwin' :
-      platform === 'win32' ? 'win32' :
-      'other';
+      platform === 'linux'
+        ? 'linux'
+        : platform === 'darwin'
+          ? 'darwin'
+          : platform === 'win32'
+            ? 'win32'
+            : 'other';
 
     if (platformKey === 'linux') {
       const linux = new LinuxSandbox();
@@ -109,7 +112,7 @@ export class SandboxManager {
         this.getLogger().info(
           enforceLandlock
             ? 'Using Linux sandbox (Landlock V2 enforcement)'
-            : 'Using Linux sandbox (soft enforcement)',
+            : 'Using Linux sandbox (soft enforcement)'
         );
         this.sandbox = new LinuxSandbox({ enforceLandlock });
         return this.sandbox;
@@ -138,9 +141,12 @@ export class SandboxManager {
     }
 
     // seccomp or other — not yet implemented, fall back
-    this.getLogger().warn('Requested sandbox technology not implemented, falling back to NoopSandbox', {
-      technology: this.config.technology,
-    });
+    this.getLogger().warn(
+      'Requested sandbox technology not implemented, falling back to NoopSandbox',
+      {
+        technology: this.config.technology,
+      }
+    );
     this.sandbox = new NoopSandbox();
     return this.sandbox;
   }

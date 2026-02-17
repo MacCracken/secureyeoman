@@ -14,7 +14,9 @@ vi.mock('imapflow', () => {
     logout = vi.fn().mockResolvedValue(undefined);
     getMailboxLock = vi.fn().mockResolvedValue({ release: vi.fn() });
     fetch = vi.fn().mockReturnValue({
-      [Symbol.asyncIterator]: () => ({ next: () => Promise.resolve({ done: true, value: undefined }) }),
+      [Symbol.asyncIterator]: () => ({
+        next: () => Promise.resolve({ done: true, value: undefined }),
+      }),
     });
     on = vi.fn();
     constructor(_opts: unknown) {}
@@ -36,14 +38,19 @@ vi.mock('nodemailer', () => {
 });
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const { __mockSendMail: mockSendMail } = await import('nodemailer') as any;
+const { __mockSendMail: mockSendMail } = (await import('nodemailer')) as any;
 
 // ── Helpers ───────────────────────────────────────────────────
 
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -190,9 +197,9 @@ describe('EmailIntegration', () => {
       await adapter.init(makeConfig({ enableSend: false }), makeDeps());
       await adapter.start();
 
-      await expect(
-        adapter.sendMessage('to@example.com', 'Hello')
-      ).rejects.toThrow('Email send is not enabled');
+      await expect(adapter.sendMessage('to@example.com', 'Hello')).rejects.toThrow(
+        'Email send is not enabled'
+      );
     });
   });
 

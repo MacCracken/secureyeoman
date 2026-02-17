@@ -7,13 +7,16 @@ import type { VectorStore, VectorResult } from './types.js';
 
 // In-memory vector store for testing (avoids faiss-node/qdrant dependency)
 class InMemoryVectorStore implements VectorStore {
-  private vectors: Map<string, { vector: number[]; metadata?: Record<string, unknown> }> = new Map();
+  private vectors: Map<string, { vector: number[]; metadata?: Record<string, unknown> }> =
+    new Map();
 
   async insert(id: string, vector: number[], metadata?: Record<string, unknown>) {
     this.vectors.set(id, { vector, metadata });
   }
 
-  async insertBatch(items: Array<{ id: string; vector: number[]; metadata?: Record<string, unknown> }>) {
+  async insertBatch(
+    items: Array<{ id: string; vector: number[]; metadata?: Record<string, unknown> }>
+  ) {
     for (const item of items) {
       this.vectors.set(item.id, { vector: item.vector, metadata: item.metadata });
     }
@@ -28,9 +31,7 @@ class InMemoryVectorStore implements VectorStore {
       results.push({ id, score, metadata: entry.metadata });
     }
 
-    return results
-      .sort((a, b) => b.score - a.score)
-      .slice(0, limit);
+    return results.sort((a, b) => b.score - a.score).slice(0, limit);
   }
 
   async delete(id: string): Promise<boolean> {
@@ -47,7 +48,9 @@ class InMemoryVectorStore implements VectorStore {
 }
 
 function cosineSimilarity(a: number[], b: number[]): number {
-  let dot = 0, magA = 0, magB = 0;
+  let dot = 0,
+    magA = 0,
+    magB = 0;
   for (let i = 0; i < a.length; i++) {
     dot += a[i] * b[i];
     magA += a[i] * a[i];

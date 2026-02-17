@@ -69,7 +69,9 @@ describe('SecureLogger', () => {
     });
 
     it('should accept context objects', () => {
-      expect(() => logger.info('with context', { userId: 'user-1', component: 'test' })).not.toThrow();
+      expect(() =>
+        logger.info('with context', { userId: 'user-1', component: 'test' })
+      ).not.toThrow();
     });
   });
 
@@ -122,11 +124,13 @@ describe('SecureLogger', () => {
       const logger = createLogger(minimalConfig);
       // The logger should be configured with redaction - we verify it
       // doesn't throw when logging sensitive-named fields
-      expect(() => logger.info('test', {
-        password: 'secret123',
-        token: 'tok_abc',
-        apiKey: 'key_xyz',
-      } as any)).not.toThrow();
+      expect(() =>
+        logger.info('test', {
+          password: 'secret123',
+          token: 'tok_abc',
+          apiKey: 'key_xyz',
+        } as any)
+      ).not.toThrow();
     });
   });
 

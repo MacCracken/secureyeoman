@@ -57,7 +57,7 @@ export class AgentComms {
 
   async addPeer(identity: AgentIdentity): Promise<void> {
     if (!this.storage) throw new Error('Agent comms not initialized');
-    if (await this.storage.getPeerCount() >= this.config.maxPeers) {
+    if ((await this.storage.getPeerCount()) >= this.config.maxPeers) {
       throw new Error(`Maximum peer limit reached (${this.config.maxPeers})`);
     }
     await this.storage.addPeer(identity);
@@ -127,7 +127,9 @@ export class AgentComms {
     if (!sender) throw new Error(`Unknown sender: ${encrypted.fromAgentId}`);
 
     // 2. Verify signature
-    const dataToVerify = Buffer.from(encrypted.ciphertext + encrypted.nonce + encrypted.fromAgentId);
+    const dataToVerify = Buffer.from(
+      encrypted.ciphertext + encrypted.nonce + encrypted.fromAgentId
+    );
     const valid = this.crypto.verifySignature(dataToVerify, encrypted.signature, sender.signingKey);
     if (!valid) {
       throw new Error('Invalid message signature');
@@ -141,11 +143,16 @@ export class AgentComms {
     });
 
     // 4. Log locally
-    await this.storage.logMessage('received', encrypted.fromAgentId, payload.type, JSON.stringify({
-      ephemeralPublicKey: encrypted.ephemeralPublicKey,
-      nonce: encrypted.nonce,
-      ciphertext: encrypted.ciphertext,
-    }));
+    await this.storage.logMessage(
+      'received',
+      encrypted.fromAgentId,
+      payload.type,
+      JSON.stringify({
+        ephemeralPublicKey: encrypted.ephemeralPublicKey,
+        nonce: encrypted.nonce,
+        ciphertext: encrypted.ciphertext,
+      })
+    );
 
     // 5. Update peer last seen
     await this.storage.updatePeerLastSeen(encrypted.fromAgentId);
@@ -160,13 +167,15 @@ export class AgentComms {
 
   // ── Message Log ────────────────────────────────────────────
 
-  async getMessageLog(query?: MessageLogQuery): Promise<Array<{
-    id: string;
-    direction: string;
-    peerAgentId: string;
-    messageType: string;
-    timestamp: number;
-  }>> {
+  async getMessageLog(query?: MessageLogQuery): Promise<
+    {
+      id: string;
+      direction: string;
+      peerAgentId: string;
+      messageType: string;
+      timestamp: number;
+    }[]
+  > {
     if (!this.storage) throw new Error('Agent comms not initialized');
     const rows = await this.storage.queryMessageLog(query);
     return rows.map((r) => ({

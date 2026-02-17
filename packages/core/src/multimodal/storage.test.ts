@@ -22,7 +22,7 @@ import { MultimodalStorage } from './storage.js';
 
 // Access the mock pool
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const { __mockPool: mockPool } = await import('../storage/pg-pool.js') as any;
+const { __mockPool: mockPool } = (await import('../storage/pg-pool.js')) as any;
 
 describe('MultimodalStorage', () => {
   let storage: MultimodalStorage;
@@ -37,8 +37,12 @@ describe('MultimodalStorage', () => {
       await storage.ensureTables();
       expect(mockPool.query).toHaveBeenCalled();
       const calls = mockPool.query.mock.calls.map((c: unknown[]) => c[0] as string);
-      expect(calls.some((sql: string) => sql.includes('CREATE SCHEMA IF NOT EXISTS multimodal'))).toBe(true);
-      expect(calls.some((sql: string) => sql.includes('CREATE TABLE IF NOT EXISTS multimodal.jobs'))).toBe(true);
+      expect(
+        calls.some((sql: string) => sql.includes('CREATE SCHEMA IF NOT EXISTS multimodal'))
+      ).toBe(true);
+      expect(
+        calls.some((sql: string) => sql.includes('CREATE TABLE IF NOT EXISTS multimodal.jobs'))
+      ).toBe(true);
     });
   });
 
@@ -48,17 +52,21 @@ describe('MultimodalStorage', () => {
       expect(id).toBe('test-uuid-123');
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO multimodal.jobs'),
-        expect.arrayContaining(['test-uuid-123', 'vision']),
+        expect.arrayContaining(['test-uuid-123', 'vision'])
       );
     });
 
     it('passes source platform and message id', async () => {
-      await storage.createJob('stt', { test: true }, {
-        sourcePlatform: 'telegram',
-        sourceMessageId: 'msg_1',
-      });
-      const insertCall = mockPool.query.mock.calls.find(
-        (c: unknown[]) => (c[0] as string).includes('INSERT'),
+      await storage.createJob(
+        'stt',
+        { test: true },
+        {
+          sourcePlatform: 'telegram',
+          sourceMessageId: 'msg_1',
+        }
+      );
+      const insertCall = mockPool.query.mock.calls.find((c: unknown[]) =>
+        (c[0] as string).includes('INSERT')
       );
       expect(insertCall[1]).toContain('telegram');
       expect(insertCall[1]).toContain('msg_1');
@@ -70,7 +78,7 @@ describe('MultimodalStorage', () => {
       await storage.completeJob('job_1', { result: 'done' }, 150);
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining("status = 'completed'"),
-        expect.arrayContaining(['job_1']),
+        expect.arrayContaining(['job_1'])
       );
     });
   });
@@ -80,7 +88,7 @@ describe('MultimodalStorage', () => {
       await storage.failJob('job_1', 'Something went wrong');
       expect(mockPool.query).toHaveBeenCalledWith(
         expect.stringContaining("status = 'failed'"),
-        expect.arrayContaining(['job_1', 'Something went wrong']),
+        expect.arrayContaining(['job_1', 'Something went wrong'])
       );
     });
   });
@@ -94,19 +102,21 @@ describe('MultimodalStorage', () => {
 
     it('returns job when found', async () => {
       mockPool.query.mockResolvedValueOnce({
-        rows: [{
-          id: 'job_1',
-          type: 'vision',
-          status: 'completed',
-          input: '{"test":true}',
-          output: '{"description":"A cat"}',
-          error: null,
-          duration_ms: 100,
-          source_platform: null,
-          source_message_id: null,
-          created_at: '2024-01-01T00:00:00Z',
-          completed_at: '2024-01-01T00:00:01Z',
-        }],
+        rows: [
+          {
+            id: 'job_1',
+            type: 'vision',
+            status: 'completed',
+            input: '{"test":true}',
+            output: '{"description":"A cat"}',
+            error: null,
+            duration_ms: 100,
+            source_platform: null,
+            source_message_id: null,
+            created_at: '2024-01-01T00:00:00Z',
+            completed_at: '2024-01-01T00:00:01Z',
+          },
+        ],
         rowCount: 1,
       });
       const job = await storage.getJob('job_1');

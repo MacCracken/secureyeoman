@@ -3,15 +3,17 @@ import Fastify from 'fastify';
 import { registerChatRoutes } from './chat-routes.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
-function createMockSecureYeoman(overrides: Partial<{
-  aiClient: unknown;
-  soulManager: unknown;
-  brainManager: unknown;
-  conversationStorage: unknown;
-  hasAiClient: boolean;
-  hasBrain: boolean;
-  hasConversationStorage: boolean;
-}> = {}) {
+function createMockSecureYeoman(
+  overrides: Partial<{
+    aiClient: unknown;
+    soulManager: unknown;
+    brainManager: unknown;
+    conversationStorage: unknown;
+    hasAiClient: boolean;
+    hasBrain: boolean;
+    hasConversationStorage: boolean;
+  }> = {}
+) {
   const mockAiClient = {
     chat: vi.fn().mockResolvedValue({
       id: 'resp-1',
@@ -34,26 +36,51 @@ function createMockSecureYeoman(overrides: Partial<{
   const mockBrainManager = {
     recall: vi.fn().mockReturnValue([]),
     queryKnowledge: vi.fn().mockReturnValue([]),
-    remember: vi.fn().mockReturnValue({ id: 'mem-1', type: 'episodic', content: 'test', source: 'dashboard_chat', importance: 0.5, createdAt: Date.now() }),
+    remember: vi.fn().mockReturnValue({
+      id: 'mem-1',
+      type: 'episodic',
+      content: 'test',
+      source: 'dashboard_chat',
+      importance: 0.5,
+      createdAt: Date.now(),
+    }),
   };
 
   const mockConversationStorage = overrides.conversationStorage ?? {
-    addMessage: vi.fn().mockReturnValue({ id: 'msg-1', conversationId: 'conv-1', role: 'user', content: 'test', model: null, provider: null, tokensUsed: null, attachments: [], brainContext: null, createdAt: Date.now() }),
+    addMessage: vi.fn().mockReturnValue({
+      id: 'msg-1',
+      conversationId: 'conv-1',
+      role: 'user',
+      content: 'test',
+      model: null,
+      provider: null,
+      tokensUsed: null,
+      attachments: [],
+      brainContext: null,
+      createdAt: Date.now(),
+    }),
   };
 
   const mock = {
-    getAIClient: overrides.hasAiClient === false
-      ? vi.fn().mockImplementation(() => { throw new Error('AI client not available'); })
-      : vi.fn().mockReturnValue(overrides.aiClient ?? mockAiClient),
+    getAIClient:
+      overrides.hasAiClient === false
+        ? vi.fn().mockImplementation(() => {
+            throw new Error('AI client not available');
+          })
+        : vi.fn().mockReturnValue(overrides.aiClient ?? mockAiClient),
     getSoulManager: vi.fn().mockReturnValue(overrides.soulManager ?? mockSoulManager),
-    getBrainManager: overrides.hasBrain === false
-      ? vi.fn().mockImplementation(() => { throw new Error('Brain manager is not available'); })
-      : vi.fn().mockReturnValue(overrides.brainManager ?? mockBrainManager),
+    getBrainManager:
+      overrides.hasBrain === false
+        ? vi.fn().mockImplementation(() => {
+            throw new Error('Brain manager is not available');
+          })
+        : vi.fn().mockReturnValue(overrides.brainManager ?? mockBrainManager),
     getMcpClientManager: vi.fn().mockReturnValue(null),
     getMcpStorage: vi.fn().mockReturnValue(null),
-    getConversationStorage: overrides.hasConversationStorage === false
-      ? vi.fn().mockReturnValue(null)
-      : vi.fn().mockReturnValue(mockConversationStorage),
+    getConversationStorage:
+      overrides.hasConversationStorage === false
+        ? vi.fn().mockReturnValue(null)
+        : vi.fn().mockReturnValue(mockConversationStorage),
   } as unknown as SecureYeoman;
 
   return { mock, mockAiClient, mockSoulManager, mockBrainManager, mockConversationStorage };
@@ -212,12 +239,14 @@ describe('Chat Routes', () => {
 
   it('POST /api/v1/chat includes brainContext when Brain has relevant context', async () => {
     const mockBrainManager = {
-      recall: vi.fn().mockReturnValue([
-        { id: 'm1', type: 'episodic', content: 'User likes TypeScript' },
-      ]),
-      queryKnowledge: vi.fn().mockReturnValue([
-        { id: 'k1', topic: 'coding', content: 'TypeScript is a typed superset of JS' },
-      ]),
+      recall: vi
+        .fn()
+        .mockReturnValue([{ id: 'm1', type: 'episodic', content: 'User likes TypeScript' }]),
+      queryKnowledge: vi
+        .fn()
+        .mockReturnValue([
+          { id: 'k1', topic: 'coding', content: 'TypeScript is a typed superset of JS' },
+        ]),
       remember: vi.fn(),
     };
     const { mock } = createMockSecureYeoman({ brainManager: mockBrainManager });
@@ -290,7 +319,7 @@ describe('Chat Routes', () => {
       'episodic',
       expect.stringContaining('Remember this!'),
       'dashboard_chat',
-      { personalityId: 'default' },
+      { personalityId: 'default' }
     );
   });
 
@@ -313,7 +342,7 @@ describe('Chat Routes', () => {
       'episodic',
       'Important fact to remember',
       'dashboard_chat',
-      undefined,
+      undefined
     );
   });
 
@@ -364,21 +393,25 @@ describe('Chat Routes', () => {
     expect(addMessage).toHaveBeenCalledTimes(2);
 
     // First call: user message
-    expect(addMessage.mock.calls[0][0]).toEqual(expect.objectContaining({
-      conversationId: 'conv-123',
-      role: 'user',
-      content: 'Hello!',
-    }));
+    expect(addMessage.mock.calls[0][0]).toEqual(
+      expect.objectContaining({
+        conversationId: 'conv-123',
+        role: 'user',
+        content: 'Hello!',
+      })
+    );
 
     // Second call: assistant message
-    expect(addMessage.mock.calls[1][0]).toEqual(expect.objectContaining({
-      conversationId: 'conv-123',
-      role: 'assistant',
-      content: 'Hello! I am FRIDAY.',
-      model: 'claude-sonnet-4-20250514',
-      provider: 'anthropic',
-      tokensUsed: 150,
-    }));
+    expect(addMessage.mock.calls[1][0]).toEqual(
+      expect.objectContaining({
+        conversationId: 'conv-123',
+        role: 'assistant',
+        content: 'Hello! I am FRIDAY.',
+        model: 'claude-sonnet-4-20250514',
+        provider: 'anthropic',
+        tokensUsed: 150,
+      })
+    );
   });
 
   it('POST /api/v1/chat does not persist messages when conversationId is omitted', async () => {
@@ -398,13 +431,15 @@ describe('Chat Routes', () => {
 
   it('POST /api/v1/chat persists brainContext on assistant messages', async () => {
     const mockBrainManager = {
-      recall: vi.fn().mockReturnValue([
-        { id: 'm1', type: 'episodic', content: 'User likes TypeScript' },
-      ]),
+      recall: vi
+        .fn()
+        .mockReturnValue([{ id: 'm1', type: 'episodic', content: 'User likes TypeScript' }]),
       queryKnowledge: vi.fn().mockReturnValue([]),
       remember: vi.fn(),
     };
-    const { mock, mockConversationStorage } = createMockSecureYeoman({ brainManager: mockBrainManager });
+    const { mock, mockConversationStorage } = createMockSecureYeoman({
+      brainManager: mockBrainManager,
+    });
     registerChatRoutes(app, { secureYeoman: mock });
 
     await app.inject({
@@ -415,9 +450,11 @@ describe('Chat Routes', () => {
 
     const addMessage = (mockConversationStorage as any).addMessage;
     // The assistant message (second call) should include brainContext
-    expect(addMessage.mock.calls[1][0].brainContext).toEqual(expect.objectContaining({
-      memoriesUsed: 1,
-      knowledgeUsed: 0,
-    }));
+    expect(addMessage.mock.calls[1][0].brainContext).toEqual(
+      expect.objectContaining({
+        memoriesUsed: 1,
+        knowledgeUsed: 0,
+      })
+    );
   });
 });

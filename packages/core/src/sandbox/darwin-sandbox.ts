@@ -123,7 +123,7 @@ export class DarwinSandbox implements Sandbox {
     // If sandbox-exec is not available, fall back to in-process execution
     if (!this.isAvailable()) {
       this.getLogger().warn(
-        'sandbox-exec not available, running without macOS sandbox restrictions',
+        'sandbox-exec not available, running without macOS sandbox restrictions'
       );
       return this.runFallback(fn, opts);
     }
@@ -166,7 +166,7 @@ export class DarwinSandbox implements Sandbox {
    */
   private async runFallback<T>(
     fn: () => Promise<T>,
-    _opts?: SandboxOptions,
+    _opts?: SandboxOptions
   ): Promise<SandboxResult<T>> {
     const startTime = Date.now();
     const memBefore = process.memoryUsage().heapUsed;

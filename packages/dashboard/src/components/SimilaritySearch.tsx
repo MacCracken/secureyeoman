@@ -41,7 +41,9 @@ export function SimilaritySearch() {
           Semantic Search
         </h3>
         <button
-          onClick={() => setShowSettings(!showSettings)}
+          onClick={() => {
+            setShowSettings(!showSettings);
+          }}
           className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           <SlidersHorizontal className="w-4 h-4" />
@@ -60,7 +62,9 @@ export function SimilaritySearch() {
               max="1"
               step="0.05"
               value={threshold}
-              onChange={(e) => setThreshold(Number(e.target.value))}
+              onChange={(e) => {
+                setThreshold(Number(e.target.value));
+              }}
               className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
             />
           </div>
@@ -68,7 +72,9 @@ export function SimilaritySearch() {
             <label className="text-xs text-muted-foreground block mb-1">Type</label>
             <select
               value={typeFilter}
-              onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}
+              onChange={(e) => {
+                setTypeFilter(e.target.value as typeof typeFilter);
+              }}
               className="w-full text-xs bg-background border rounded px-2 py-1"
             >
               <option value="all">All</option>
@@ -83,7 +89,9 @@ export function SimilaritySearch() {
         <input
           type="text"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+          }}
           placeholder="Search memories and knowledge semantically..."
           className="flex-1 text-sm bg-background border rounded-lg px-3 py-2 placeholder:text-muted-foreground"
         />
@@ -92,7 +100,11 @@ export function SimilaritySearch() {
           disabled={!query.trim() || searchMutation.isPending}
           className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm disabled:opacity-50"
         >
-          {searchMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Search className="w-4 h-4" />}
+          {searchMutation.isPending ? (
+            <Loader2 className="w-4 h-4 animate-spin" />
+          ) : (
+            <Search className="w-4 h-4" />
+          )}
         </button>
       </form>
 
@@ -145,11 +157,8 @@ export function SimilaritySearch() {
 
 function ScoreIndicator({ score }: { score: number }) {
   const pct = Math.round(score * 100);
-  const color = score >= 0.9 ? 'text-green-400' : score >= 0.7 ? 'text-yellow-400' : 'text-muted-foreground';
+  const color =
+    score >= 0.9 ? 'text-green-400' : score >= 0.7 ? 'text-yellow-400' : 'text-muted-foreground';
 
-  return (
-    <div className={`text-xs font-mono ${color}`}>
-      {pct}%
-    </div>
-  );
+  return <div className={`text-xs font-mono ${color}`}>{pct}%</div>;
 }

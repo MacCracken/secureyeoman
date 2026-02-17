@@ -99,7 +99,7 @@ export interface CaptureQuality {
  * Content filtering options
  */
 export interface CaptureFilters {
-  blurRegions?: Array<{ x: number; y: number; w: number; h: number }>;
+  blurRegions?: { x: number; y: number; w: number; h: number }[];
   redactPatterns?: string[]; // Regex patterns to redact
   excludeWindows?: string[]; // Window titles to exclude
 }

@@ -28,8 +28,8 @@ interface NotionPage {
 
 interface NotionProperty {
   type: string;
-  title?: Array<{ plain_text: string }>;
-  rich_text?: Array<{ plain_text: string }>;
+  title?: { plain_text: string }[];
+  rich_text?: { plain_text: string }[];
   [key: string]: unknown;
 }
 
@@ -105,7 +105,11 @@ export class NotionIntegration implements Integration {
   /**
    * Create a page in the specified database or append blocks to a page.
    */
-  async sendMessage(chatId: string, text: string, _metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    _metadata?: Record<string, unknown>
+  ): Promise<string> {
     const targetDb = chatId || this.databaseId;
 
     if (targetDb) {
@@ -257,7 +261,7 @@ export class NotionIntegration implements Integration {
         Authorization: `Bearer ${this.apiKey}`,
         'Notion-Version': NOTION_VERSION,
         'Content-Type': 'application/json',
-        ...(init?.headers ?? {}),
+        ...((init?.headers ?? {}) as Record<string, string>),
       },
     });
   }

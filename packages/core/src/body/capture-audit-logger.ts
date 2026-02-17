@@ -160,7 +160,7 @@ export class CaptureAuditLogger {
   private config: CaptureAuditConfig;
   private logger: SecureLogger;
   private riskRules: RiskDetectionRules;
-  private userEventHistory: Map<string, number[]> = new Map();
+  private userEventHistory = new Map<string, number[]>();
 
   constructor(config: CaptureAuditConfig) {
     this.storage = config.storage || new InMemoryCaptureAuditStorage();

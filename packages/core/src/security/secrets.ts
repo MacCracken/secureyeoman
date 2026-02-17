@@ -1,6 +1,6 @@
 /**
  * Secret Management for SecureYeoman
- * 
+ *
  * Security considerations:
  * - AES-256-GCM encryption for secrets at rest
  * - Unique IV (nonce) for each encryption operation
@@ -71,25 +71,21 @@ export function encrypt(plaintext: string | Buffer, masterKey: string): Encrypte
   const salt = randomBytes(SALT_LENGTH);
   const key = deriveKey(masterKey, salt);
   const iv = randomBytes(IV_LENGTH);
-  
+
   const cipher = createCipheriv(ALGORITHM, key, iv, {
     authTagLength: AUTH_TAG_LENGTH,
   });
-  
-  const plaintextBuffer = typeof plaintext === 'string' 
-    ? Buffer.from(plaintext, 'utf-8') 
-    : plaintext;
-  
-  const ciphertext = Buffer.concat([
-    cipher.update(plaintextBuffer),
-    cipher.final(),
-  ]);
-  
+
+  const plaintextBuffer =
+    typeof plaintext === 'string' ? Buffer.from(plaintext, 'utf-8') : plaintext;
+
+  const ciphertext = Buffer.concat([cipher.update(plaintextBuffer), cipher.final()]);
+
   const authTag = cipher.getAuthTag();
-  
+
   // Clear the key from memory
   key.fill(0);
-  
+
   return {
     version: 1,
     salt,
@@ -104,19 +100,16 @@ export function encrypt(plaintext: string | Buffer, masterKey: string): Encrypte
  */
 export function decrypt(encrypted: EncryptedData, masterKey: string): Buffer {
   const key = deriveKey(masterKey, encrypted.salt);
-  
+
   const decipher = createDecipheriv(ALGORITHM, key, encrypted.iv, {
     authTagLength: AUTH_TAG_LENGTH,
   });
-  
+
   decipher.setAuthTag(encrypted.authTag);
-  
+
   try {
-    const plaintext = Buffer.concat([
-      decipher.update(encrypted.ciphertext),
-      decipher.final(),
-    ]);
-    
+    const plaintext = Buffer.concat([decipher.update(encrypted.ciphertext), decipher.final()]);
+
     return plaintext;
   } finally {
     // Clear the key from memory
@@ -130,45 +123,48 @@ export function decrypt(encrypted: EncryptedData, masterKey: string): Buffer {
 export function serializeEncrypted(data: EncryptedData): Buffer {
   // Format: MAGIC(4) + VERSION(1) + SALT_LEN(1) + SALT + IV_LEN(1) + IV + TAG_LEN(1) + TAG + CIPHERTEXT
   const buffer = Buffer.alloc(
-    MAGIC_BYTES.length + 
-    1 + // version
-    1 + data.salt.length +
-    1 + data.iv.length +
-    1 + data.authTag.length +
-    data.ciphertext.length
+    MAGIC_BYTES.length +
+      1 + // version
+      1 +
+      data.salt.length +
+      1 +
+      data.iv.length +
+      1 +
+      data.authTag.length +
+      data.ciphertext.length
   );
-  
+
   let offset = 0;
-  
+
   // Magic bytes
   MAGIC_BYTES.copy(buffer, offset);
   offset += MAGIC_BYTES.length;
-  
+
   // Version
   buffer.writeUInt8(data.version, offset);
   offset += 1;
-  
+
   // Salt
   buffer.writeUInt8(data.salt.length, offset);
   offset += 1;
   data.salt.copy(buffer, offset);
   offset += data.salt.length;
-  
+
   // IV
   buffer.writeUInt8(data.iv.length, offset);
   offset += 1;
   data.iv.copy(buffer, offset);
   offset += data.iv.length;
-  
+
   // Auth tag
   buffer.writeUInt8(data.authTag.length, offset);
   offset += 1;
   data.authTag.copy(buffer, offset);
   offset += data.authTag.length;
-  
+
   // Ciphertext (remaining bytes)
   data.ciphertext.copy(buffer, offset);
-  
+
   return buffer;
 }
 
@@ -177,43 +173,43 @@ export function serializeEncrypted(data: EncryptedData): Buffer {
  */
 export function deserializeEncrypted(buffer: Buffer): EncryptedData {
   let offset = 0;
-  
+
   // Check magic bytes
   const magic = buffer.subarray(offset, offset + MAGIC_BYTES.length);
   if (!timingSafeEqual(magic, MAGIC_BYTES)) {
     throw new Error('Invalid encrypted file format');
   }
   offset += MAGIC_BYTES.length;
-  
+
   // Version
   const version = buffer.readUInt8(offset);
   offset += 1;
-  
+
   if (version !== 1) {
     throw new Error(`Unsupported encryption version: ${version}`);
   }
-  
+
   // Salt
   const saltLen = buffer.readUInt8(offset);
   offset += 1;
   const salt = buffer.subarray(offset, offset + saltLen);
   offset += saltLen;
-  
+
   // IV
   const ivLen = buffer.readUInt8(offset);
   offset += 1;
   const iv = buffer.subarray(offset, offset + ivLen);
   offset += ivLen;
-  
+
   // Auth tag
   const tagLen = buffer.readUInt8(offset);
   offset += 1;
   const authTag = buffer.subarray(offset, offset + tagLen);
   offset += tagLen;
-  
+
   // Ciphertext
   const ciphertext = buffer.subarray(offset);
-  
+
   return {
     version,
     salt: Buffer.from(salt),
@@ -232,17 +228,17 @@ export class SecretStore {
   private secrets = new Map<string, string>();
   private loaded = false;
   private logger: SecureLogger | null = null;
-  
+
   constructor(config: SecretStoreConfig) {
     this.storePath = config.storePath;
     this.masterKey = config.masterKey;
-    
+
     // Validate master key strength
     if (config.masterKey.length < 16) {
       throw new Error('Master key must be at least 16 characters');
     }
   }
-  
+
   private getLogger(): SecureLogger {
     if (!this.logger) {
       try {
@@ -253,7 +249,7 @@ export class SecretStore {
     }
     return this.logger;
   }
-  
+
   /**
    * Load secrets from encrypted file
    */
@@ -263,23 +259,23 @@ export class SecretStore {
       this.loaded = true;
       return;
     }
-    
+
     try {
       const fileData = readFileSync(this.storePath);
       const encrypted = deserializeEncrypted(fileData);
       const decrypted = decrypt(encrypted, this.masterKey);
-      
+
       // Parse JSON
       const data = JSON.parse(decrypted.toString('utf-8')) as Record<string, string>;
-      
+
       // Clear decrypted buffer
       decrypted.fill(0);
-      
+
       // Load into map
       this.secrets = new Map(Object.entries(data));
       this.loaded = true;
-      
-      this.getLogger().info('Secret store loaded', { 
+
+      this.getLogger().info('Secret store loaded', {
         secretCount: this.secrets.size,
       });
     } catch (error) {
@@ -289,7 +285,7 @@ export class SecretStore {
       throw new Error('Failed to decrypt secret store. Check master key.');
     }
   }
-  
+
   /**
    * Save secrets to encrypted file
    */
@@ -299,23 +295,23 @@ export class SecretStore {
     if (!existsSync(dir)) {
       mkdirSync(dir, { recursive: true, mode: 0o700 });
     }
-    
+
     // Serialize secrets to JSON
     const data = Object.fromEntries(this.secrets);
     const json = JSON.stringify(data);
-    
+
     // Encrypt
     const encrypted = encrypt(json, this.masterKey);
     const serialized = serializeEncrypted(encrypted);
-    
+
     // Write with restricted permissions
     writeFileSync(this.storePath, serialized, { mode: 0o600 });
-    
+
     this.getLogger().info('Secret store saved', {
       secretCount: this.secrets.size,
     });
   }
-  
+
   /**
    * Get a secret by key
    */
@@ -323,11 +319,11 @@ export class SecretStore {
     if (!this.loaded) {
       throw new Error('Secret store not loaded. Call load() first.');
     }
-    
+
     this.getLogger().debug('Secret accessed', { key });
     return this.secrets.get(key);
   }
-  
+
   /**
    * Set a secret
    */
@@ -335,13 +331,13 @@ export class SecretStore {
     if (!this.loaded) {
       throw new Error('Secret store not loaded. Call load() first.');
     }
-    
+
     this.secrets.set(key, value);
     await this.save();
-    
+
     this.getLogger().info('Secret stored', { key });
   }
-  
+
   /**
    * Delete a secret
    */
@@ -349,7 +345,7 @@ export class SecretStore {
     if (!this.loaded) {
       throw new Error('Secret store not loaded. Call load() first.');
     }
-    
+
     const deleted = this.secrets.delete(key);
     if (deleted) {
       await this.save();
@@ -357,7 +353,7 @@ export class SecretStore {
     }
     return deleted;
   }
-  
+
   /**
    * Check if a secret exists
    */
@@ -367,7 +363,7 @@ export class SecretStore {
     }
     return this.secrets.has(key);
   }
-  
+
   /**
    * List all secret keys (not values!)
    */
@@ -377,7 +373,7 @@ export class SecretStore {
     }
     return Array.from(this.secrets.keys());
   }
-  
+
   /**
    * Clear all secrets from memory
    */

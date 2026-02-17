@@ -61,7 +61,7 @@ export class GenericWebhookIntegration implements WebhookIntegration {
   async sendMessage(
     chatId: string,
     text: string,
-    metadata?: Record<string, unknown>,
+    metadata?: Record<string, unknown>
   ): Promise<string> {
     if (!this.webhookUrl) {
       throw new Error('No webhook URL configured');
@@ -126,7 +126,7 @@ export class GenericWebhookIntegration implements WebhookIntegration {
       text: String(body.text ?? ''),
       attachments: [],
       platformMessageId: String(body.id ?? ''),
-      metadata: body.metadata as Record<string, unknown> ?? {},
+      metadata: (body.metadata as Record<string, unknown>) ?? {},
       timestamp: typeof body.timestamp === 'number' ? body.timestamp : Date.now(),
     };
 

@@ -129,7 +129,7 @@ async function request<T>(
   }
 
   if (token && !skipAuth) {
-    headers['Authorization'] = `Bearer ${token}`;
+    headers.Authorization = `Bearer ${token}`;
   }
 
   const response = await fetch(url, {
@@ -151,7 +151,7 @@ async function request<T>(
     if (refreshed) {
       // Retry the original request with new token
       const newToken = getAccessToken();
-      headers['Authorization'] = `Bearer ${newToken}`;
+      headers.Authorization = `Bearer ${newToken}`;
       const retryResponse = await fetch(url, { ...options, headers });
 
       if (!retryResponse.ok) {
@@ -370,7 +370,7 @@ export async function fetchSecurityEvents(params?: {
 
   const queryString = query.toString();
   try {
-    const raw = await request<{ events: Array<Record<string, unknown>>; total: number }>(
+    const raw = await request<{ events: Record<string, unknown>[]; total: number }>(
       `/security/events${queryString ? `?${queryString}` : ''}`
     );
     // Map audit-chain entries to the dashboard SecurityEvent shape
@@ -417,7 +417,12 @@ export async function fetchAuditEntries(params?: {
   taskId?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ entries: import('../types').AuditEntry[]; total: number; limit: number; offset: number }> {
+}): Promise<{
+  entries: import('../types').AuditEntry[];
+  total: number;
+  limit: number;
+  offset: number;
+}> {
   const query = new URLSearchParams();
   if (params?.from) query.set('from', params.from.toString());
   if (params?.to) query.set('to', params.to.toString());
@@ -656,10 +661,14 @@ export async function claimGmailOAuth(data: {
     config: Record<string, unknown>;
   };
 }> {
-  return request('/auth/oauth/claim', {
-    method: 'POST',
-    body: JSON.stringify(data),
-  }, true);
+  return request(
+    '/auth/oauth/claim',
+    {
+      method: 'POST',
+      body: JSON.stringify(data),
+    },
+    true
+  );
 }
 
 export async function testIntegration(id: string): Promise<{ ok: boolean; message: string }> {
@@ -680,7 +689,7 @@ export interface RoleInfo {
   id: string;
   name: string;
   description?: string;
-  permissions: Array<{ resource: string; action: string }>;
+  permissions: { resource: string; action: string }[];
   inheritFrom?: string[];
   isBuiltin: boolean;
 }
@@ -696,7 +705,7 @@ export async function fetchRoles(): Promise<{ roles: RoleInfo[] }> {
 export async function createRole(data: {
   name: string;
   description?: string;
-  permissions: Array<{ resource: string; action: string }>;
+  permissions: { resource: string; action: string }[];
   inheritFrom?: string[];
 }): Promise<{ role: RoleInfo }> {
   return request('/auth/roles', {
@@ -710,9 +719,9 @@ export async function updateRole(
   data: {
     name?: string;
     description?: string;
-    permissions?: Array<{ resource: string; action: string }>;
+    permissions?: { resource: string; action: string }[];
     inheritFrom?: string[];
-  },
+  }
 ): Promise<{ role: RoleInfo }> {
   return request(`/auth/roles/${id}`, {
     method: 'PUT',
@@ -737,7 +746,10 @@ export async function fetchAssignments(): Promise<{ assignments: AssignmentInfo[
   }
 }
 
-export async function assignRole(data: { userId: string; roleId: string }): Promise<{ assignment: AssignmentInfo }> {
+export async function assignRole(data: {
+  userId: string;
+  roleId: string;
+}): Promise<{ assignment: AssignmentInfo }> {
   return request('/auth/assignments', {
     method: 'POST',
     body: JSON.stringify(data),
@@ -782,7 +794,7 @@ export async function exportAuditBackup(): Promise<Blob> {
     `${window.location.protocol}//${window.location.hostname}:18789/api/v1`;
   const headers: Record<string, string> = {};
   const token = getAccessToken();
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${base}/audit/export`, { headers });
   if (!res.ok) throw new Error(`Export failed: ${res.status}`);
   return res.blob();
@@ -792,7 +804,7 @@ export async function exportAuditBackup(): Promise<Blob> {
 
 export async function sendChatMessage(data: {
   message: string;
-  history?: Array<{ role: string; content: string }>;
+  history?: { role: string; content: string }[];
   personalityId?: string;
   editorContent?: string;
   saveAsMemory?: boolean;
@@ -807,7 +819,7 @@ export async function sendChatMessage(data: {
 
 export async function rememberChatMessage(
   content: string,
-  context?: Record<string, string>,
+  context?: Record<string, string>
 ): Promise<{ memory: Memory }> {
   return request('/chat/remember', {
     method: 'POST',
@@ -819,7 +831,7 @@ export async function submitFeedback(
   conversationId: string,
   messageId: string,
   feedback: 'positive' | 'negative' | 'correction',
-  details?: string,
+  details?: string
 ): Promise<{ stored: boolean }> {
   return request('/chat/feedback', {
     method: 'POST',
@@ -827,9 +839,7 @@ export async function submitFeedback(
   });
 }
 
-export async function fetchMemories(
-  query?: string,
-): Promise<{ memories: Memory[] }> {
+export async function fetchMemories(query?: string): Promise<{ memories: Memory[] }> {
   const params = query ? `?search=${encodeURIComponent(query)}` : '';
   try {
     return await request(`/brain/memories${params}`);
@@ -1145,7 +1155,14 @@ export async function fetchMcpConfig(): Promise<{
   try {
     return await request('/mcp/config');
   } catch {
-    return { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: true, exposeWebSearch: true, exposeBrowser: false };
+    return {
+      exposeGit: false,
+      exposeFilesystem: false,
+      exposeWeb: false,
+      exposeWebScraping: true,
+      exposeWebSearch: true,
+      exposeBrowser: false,
+    };
   }
 }
 
@@ -1172,7 +1189,9 @@ export async function updateMcpConfig(data: {
 
 // ─── MCP Health ─────────────────────────────────────────────
 
-export async function fetchMcpHealth(): Promise<{ health: Array<import('../types').McpServerHealth> }> {
+export async function fetchMcpHealth(): Promise<{
+  health: import('../types').McpServerHealth[];
+}> {
   try {
     return await request('/mcp/health');
   } catch {
@@ -1180,7 +1199,9 @@ export async function fetchMcpHealth(): Promise<{ health: Array<import('../types
   }
 }
 
-export async function fetchMcpServerHealth(serverId: string): Promise<import('../types').McpServerHealth | null> {
+export async function fetchMcpServerHealth(
+  serverId: string
+): Promise<import('../types').McpServerHealth | null> {
   try {
     return await request(`/mcp/servers/${serverId}/health`);
   } catch {
@@ -1188,7 +1209,9 @@ export async function fetchMcpServerHealth(serverId: string): Promise<import('..
   }
 }
 
-export async function triggerMcpHealthCheck(serverId: string): Promise<import('../types').McpServerHealth> {
+export async function triggerMcpHealthCheck(
+  serverId: string
+): Promise<import('../types').McpServerHealth> {
   return request(`/mcp/servers/${serverId}/health/check`, { method: 'POST' });
 }
 
@@ -1202,7 +1225,11 @@ export async function fetchMcpCredentialKeys(serverId: string): Promise<{ keys: 
   }
 }
 
-export async function storeMcpCredential(serverId: string, key: string, value: string): Promise<void> {
+export async function storeMcpCredential(
+  serverId: string,
+  key: string,
+  value: string
+): Promise<void> {
   await request(`/mcp/servers/${serverId}/credentials/${encodeURIComponent(key)}`, {
     method: 'PUT',
     body: JSON.stringify({ value }),
@@ -1272,7 +1299,7 @@ export async function generateReport(opts: {
 export async function downloadReport(reportId: string): Promise<Blob> {
   const headers: Record<string, string> = {};
   const token = getAccessToken();
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
   const res = await fetch(`${API_BASE}/reports/${reportId}/download`, { headers });
   if (!res.ok) throw new Error(`Download failed: ${res.status}`);
   return res.blob();
@@ -1319,7 +1346,7 @@ export async function fetchConversation(id: string): Promise<ConversationDetail>
 
 export async function createConversation(
   title: string,
-  personalityId?: string,
+  personalityId?: string
 ): Promise<Conversation> {
   return request('/conversations', {
     method: 'POST',
@@ -1345,7 +1372,7 @@ export async function searchSimilar(params: {
   threshold?: number;
   type?: string;
   limit?: number;
-}): Promise<{ results: Array<{ id: string; score: number; metadata?: Record<string, unknown> }> }> {
+}): Promise<{ results: { id: string; score: number; metadata?: Record<string, unknown> }[] }> {
   const queryParams = new URLSearchParams();
   queryParams.set('query', params.query);
   if (params.threshold !== undefined) queryParams.set('threshold', String(params.threshold));
@@ -1354,7 +1381,11 @@ export async function searchSimilar(params: {
   return request(`/brain/search/similar?${queryParams.toString()}`);
 }
 
-export async function reindexBrain(): Promise<{ message: string; memoriesCount: number; knowledgeCount: number }> {
+export async function reindexBrain(): Promise<{
+  message: string;
+  memoriesCount: number;
+  knowledgeCount: number;
+}> {
   return request('/brain/reindex', { method: 'POST' });
 }
 
@@ -1375,7 +1406,15 @@ export async function updateConsolidationSchedule(schedule: string): Promise<{ s
   });
 }
 
-export async function fetchConsolidationHistory(): Promise<{ history: Array<{ timestamp: number; totalCandidates: number; summary: Record<string, number>; dryRun: boolean; durationMs: number }> }> {
+export async function fetchConsolidationHistory(): Promise<{
+  history: {
+    timestamp: number;
+    totalCandidates: number;
+    summary: Record<string, number>;
+    dryRun: boolean;
+    durationMs: number;
+  }[];
+}> {
   try {
     return await request('/brain/consolidation/history');
   } catch {
@@ -1406,7 +1445,7 @@ export interface CompressedContext {
 
 export async function fetchConversationHistory(
   conversationId: string,
-  tier?: string,
+  tier?: string
 ): Promise<{ entries: HistoryEntry[]; total: number }> {
   const params = tier ? `?tier=${tier}` : '';
   try {
@@ -1422,7 +1461,7 @@ export async function sealConversationTopic(conversationId: string): Promise<{ m
 
 export async function fetchCompressedContext(
   conversationId: string,
-  maxTokens?: number,
+  maxTokens?: number
 ): Promise<CompressedContext> {
   const params = maxTokens ? `?maxTokens=${maxTokens}` : '';
   return request(`/conversations/${conversationId}/compressed-context${params}`);
@@ -1520,7 +1559,7 @@ export async function updateAgentProfile(
     maxTokenBudget: number;
     allowedTools: string[];
     defaultModel: string | null;
-  }>,
+  }>
 ): Promise<{ profile: AgentProfileInfo }> {
   return request(`/agents/profiles/${id}`, {
     method: 'PUT',
@@ -1574,7 +1613,7 @@ export async function fetchActiveDelegations(): Promise<{ delegations: ActiveDel
 }
 
 export async function fetchDelegation(
-  id: string,
+  id: string
 ): Promise<{ delegation: DelegationInfo; tree: DelegationInfo[] } | null> {
   try {
     return await request(`/agents/delegations/${id}`);
@@ -1588,8 +1627,8 @@ export async function cancelDelegation(id: string): Promise<{ success: boolean }
 }
 
 export async function fetchDelegationMessages(
-  delegationId: string,
-): Promise<{ messages: Array<Record<string, unknown>> }> {
+  delegationId: string
+): Promise<{ messages: Record<string, unknown>[] }> {
   try {
     return await request(`/agents/delegations/${delegationId}/messages`);
   } catch {
@@ -1597,7 +1636,10 @@ export async function fetchDelegationMessages(
   }
 }
 
-export async function fetchAgentConfig(): Promise<{ config: Record<string, unknown>; allowedBySecurityPolicy: boolean }> {
+export async function fetchAgentConfig(): Promise<{
+  config: Record<string, unknown>;
+  allowedBySecurityPolicy: boolean;
+}> {
   try {
     return await request('/agents/config');
   } catch {
@@ -1619,7 +1661,15 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
   try {
     return await request('/security/policy');
   } catch {
-    return { allowSubAgents: false, allowA2A: false, allowExtensions: false, allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false };
+    return {
+      allowSubAgents: false,
+      allowA2A: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
+    };
   }
 }
 
@@ -1632,7 +1682,15 @@ export async function updateSecurityPolicy(data: Partial<SecurityPolicy>): Promi
 
 // ─── Extensions API (Phase 6.4a) ──────────────────────────────────
 
-export async function fetchExtensions(): Promise<{ extensions: Array<{ id: string; name: string; version: string; enabled: boolean; createdAt: number }> }> {
+export async function fetchExtensions(): Promise<{
+  extensions: {
+    id: string;
+    name: string;
+    version: string;
+    enabled: boolean;
+    createdAt: number;
+  }[];
+}> {
   try {
     return await request('/extensions');
   } catch {
@@ -1644,7 +1702,7 @@ export async function registerExtension(data: {
   id: string;
   name: string;
   version: string;
-  hooks: Array<{ point: string; semantics: string; priority?: number }>;
+  hooks: { point: string; semantics: string; priority?: number }[];
 }): Promise<{ extension: Record<string, unknown> }> {
   return request('/extensions', {
     method: 'POST',
@@ -1656,7 +1714,16 @@ export async function removeExtension(id: string): Promise<{ success: boolean }>
   return request(`/extensions/${id}`, { method: 'DELETE' });
 }
 
-export async function fetchExtensionHooks(): Promise<{ hooks: Array<{ id: string; extensionId: string; hookPoint: string; semantics: string; priority: number; enabled: boolean }> }> {
+export async function fetchExtensionHooks(): Promise<{
+  hooks: {
+    id: string;
+    extensionId: string;
+    hookPoint: string;
+    semantics: string;
+    priority: number;
+    enabled: boolean;
+  }[];
+}> {
   try {
     return await request('/extensions/hooks');
   } catch {
@@ -1680,7 +1747,9 @@ export async function removeExtensionHook(id: string): Promise<{ success: boolea
   return request(`/extensions/hooks/${id}`, { method: 'DELETE' });
 }
 
-export async function fetchExtensionWebhooks(): Promise<{ webhooks: Array<{ id: string; url: string; hookPoints: string[]; enabled: boolean }> }> {
+export async function fetchExtensionWebhooks(): Promise<{
+  webhooks: { id: string; url: string; hookPoints: string[]; enabled: boolean }[];
+}> {
   try {
     return await request('/extensions/webhooks');
   } catch {
@@ -1714,7 +1783,9 @@ export async function removeExtensionWebhook(id: string): Promise<{ success: boo
   return request(`/extensions/webhooks/${id}`, { method: 'DELETE' });
 }
 
-export async function discoverExtensions(): Promise<{ extensions: Array<Record<string, unknown>> }> {
+export async function discoverExtensions(): Promise<{
+  extensions: Record<string, unknown>[];
+}> {
   return request('/extensions/discover', { method: 'POST' });
 }
 
@@ -1748,7 +1819,15 @@ export async function executeCode(data: {
   });
 }
 
-export async function fetchExecutionSessions(): Promise<{ sessions: Array<{ id: string; runtime: string; status: string; createdAt: number; lastActivity: number }> }> {
+export async function fetchExecutionSessions(): Promise<{
+  sessions: {
+    id: string;
+    runtime: string;
+    status: string;
+    createdAt: number;
+    lastActivity: number;
+  }[];
+}> {
   try {
     return await request('/execution/sessions');
   } catch {
@@ -1756,7 +1835,13 @@ export async function fetchExecutionSessions(): Promise<{ sessions: Array<{ id: 
   }
 }
 
-export async function fetchExecutionSession(id: string): Promise<{ id: string; runtime: string; status: string; createdAt: number; lastActivity: number } | null> {
+export async function fetchExecutionSession(id: string): Promise<{
+  id: string;
+  runtime: string;
+  status: string;
+  createdAt: number;
+  lastActivity: number;
+} | null> {
   try {
     return await request(`/execution/sessions/${id}`);
   } catch {
@@ -1772,7 +1857,18 @@ export async function fetchExecutionHistory(params?: {
   sessionId?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ executions: Array<{ id: string; sessionId: string; exitCode: number; stdout: string; stderr: string; duration: number; createdAt: number }>; total: number }> {
+}): Promise<{
+  executions: {
+    id: string;
+    sessionId: string;
+    exitCode: number;
+    stdout: string;
+    stderr: string;
+    duration: number;
+    createdAt: number;
+  }[];
+  total: number;
+}> {
   const query = new URLSearchParams();
   if (params?.sessionId) query.set('sessionId', params.sessionId);
   if (params?.limit) query.set('limit', params.limit.toString());
@@ -1803,7 +1899,17 @@ export async function fetchExecutionConfig(): Promise<{ config: Record<string, u
 
 // ─── A2A Protocol API (Phase 6.5) ─────────────────────────────────
 
-export async function fetchA2APeers(): Promise<{ peers: Array<{ id: string; name: string; url: string; trustLevel: string; status: string; lastSeen: number; capabilities: Array<{ name: string; description: string; version: string }> }> }> {
+export async function fetchA2APeers(): Promise<{
+  peers: {
+    id: string;
+    name: string;
+    url: string;
+    trustLevel: string;
+    status: string;
+    lastSeen: number;
+    capabilities: { name: string; description: string; version: string }[];
+  }[];
+}> {
   try {
     return await request('/a2a/peers');
   } catch {
@@ -1835,11 +1941,13 @@ export async function updateA2ATrust(
   });
 }
 
-export async function discoverA2APeers(): Promise<{ peers: Array<Record<string, unknown>> }> {
+export async function discoverA2APeers(): Promise<{ peers: Record<string, unknown>[] }> {
   return request('/a2a/discover', { method: 'POST' });
 }
 
-export async function fetchA2ACapabilities(): Promise<{ capabilities: Array<{ name: string; description: string; version: string }> }> {
+export async function fetchA2ACapabilities(): Promise<{
+  capabilities: { name: string; description: string; version: string }[];
+}> {
   try {
     return await request('/a2a/capabilities');
   } catch {
@@ -1861,7 +1969,17 @@ export async function fetchA2AMessages(params?: {
   peerId?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ messages: Array<{ id: string; type: string; fromPeerId: string; toPeerId: string; payload: unknown; timestamp: number }>; total: number }> {
+}): Promise<{
+  messages: {
+    id: string;
+    type: string;
+    fromPeerId: string;
+    toPeerId: string;
+    payload: unknown;
+    timestamp: number;
+  }[];
+  total: number;
+}> {
   const query = new URLSearchParams();
   if (params?.peerId) query.set('peerId', params.peerId);
   if (params?.limit) query.set('limit', params.limit.toString());
@@ -1926,7 +2044,10 @@ export interface ProactivePatternData {
   context: Record<string, unknown>;
 }
 
-export async function fetchProactiveTriggers(filter?: { type?: string; enabled?: boolean }): Promise<{ triggers: ProactiveTriggerData[] }> {
+export async function fetchProactiveTriggers(filter?: {
+  type?: string;
+  enabled?: boolean;
+}): Promise<{ triggers: ProactiveTriggerData[] }> {
   const query = new URLSearchParams();
   if (filter?.type) query.set('type', filter.type);
   if (filter?.enabled !== undefined) query.set('enabled', String(filter.enabled));
@@ -1946,14 +2067,19 @@ export async function fetchBuiltinTriggers(): Promise<{ triggers: ProactiveTrigg
   }
 }
 
-export async function createProactiveTrigger(data: Omit<ProactiveTriggerData, 'id' | 'createdAt' | 'updatedAt' | 'builtin'>): Promise<ProactiveTriggerData> {
+export async function createProactiveTrigger(
+  data: Omit<ProactiveTriggerData, 'id' | 'createdAt' | 'updatedAt' | 'builtin'>
+): Promise<ProactiveTriggerData> {
   return request('/proactive/triggers', {
     method: 'POST',
     body: JSON.stringify(data),
   });
 }
 
-export async function updateProactiveTrigger(id: string, data: Partial<ProactiveTriggerData>): Promise<ProactiveTriggerData> {
+export async function updateProactiveTrigger(
+  id: string,
+  data: Partial<ProactiveTriggerData>
+): Promise<ProactiveTriggerData> {
   return request(`/proactive/triggers/${id}`, {
     method: 'PATCH',
     body: JSON.stringify(data),
@@ -1972,7 +2098,9 @@ export async function disableProactiveTrigger(id: string): Promise<ProactiveTrig
   return request(`/proactive/triggers/${id}/disable`, { method: 'POST' });
 }
 
-export async function testProactiveTrigger(id: string): Promise<{ success: boolean; message: string }> {
+export async function testProactiveTrigger(
+  id: string
+): Promise<{ success: boolean; message: string }> {
   return request(`/proactive/triggers/${id}/test`, { method: 'POST' });
 }
 
@@ -1980,7 +2108,11 @@ export async function enableBuiltinTrigger(id: string): Promise<ProactiveTrigger
   return request(`/proactive/triggers/builtin/${id}/enable`, { method: 'POST' });
 }
 
-export async function fetchProactiveSuggestions(filter?: { status?: string; limit?: number; offset?: number }): Promise<{ suggestions: ProactiveSuggestionData[]; total: number }> {
+export async function fetchProactiveSuggestions(filter?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ suggestions: ProactiveSuggestionData[]; total: number }> {
   const query = new URLSearchParams();
   if (filter?.status) query.set('status', filter.status);
   if (filter?.limit) query.set('limit', String(filter.limit));
@@ -1993,7 +2125,9 @@ export async function fetchProactiveSuggestions(filter?: { status?: string; limi
   }
 }
 
-export async function approveProactiveSuggestion(id: string): Promise<{ success: boolean; message: string }> {
+export async function approveProactiveSuggestion(
+  id: string
+): Promise<{ success: boolean; message: string }> {
   return request(`/proactive/suggestions/${id}/approve`, { method: 'POST' });
 }
 
@@ -2048,7 +2182,7 @@ export async function fetchMultimodalJobs(params?: {
   status?: string;
   limit?: number;
   offset?: number;
-}): Promise<{ jobs: Array<Record<string, unknown>>; total: number }> {
+}): Promise<{ jobs: Record<string, unknown>[]; total: number }> {
   try {
     const query = new URLSearchParams();
     if (params?.type) query.set('type', params.type);

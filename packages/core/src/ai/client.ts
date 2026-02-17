@@ -15,7 +15,14 @@
  * content from provider A followed by complete content from provider B.
  */
 
-import type { AIRequest, AIResponse, AIStreamChunk, AIProviderName, ModelConfig, FallbackModelConfig } from '@friday/shared';
+import type {
+  AIRequest,
+  AIResponse,
+  AIStreamChunk,
+  AIProviderName,
+  ModelConfig,
+  FallbackModelConfig,
+} from '@friday/shared';
 import type { AIProvider } from './providers/base.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { OpenAIProvider } from './providers/openai.js';
@@ -52,7 +59,7 @@ export class AIClient {
   private readonly providerName: AIProviderName;
   private readonly primaryModelConfig: ModelConfig;
   private readonly fallbackConfigs: FallbackModelConfig[];
-  private readonly fallbackProviders: Map<number, AIProvider> = new Map();
+  private readonly fallbackProviders = new Map<number, AIProvider>();
   private readonly retryConfig?: Partial<RetryConfig>;
 
   constructor(config: AIClientConfig, deps: AIClientDeps = {}) {
@@ -60,7 +67,7 @@ export class AIClient {
     this.usageTracker = new UsageTracker(config.model.maxTokensPerDay);
     this.auditChain = deps.auditChain ?? null;
     this.logger = deps.logger ?? null;
-    this.providerName = config.model.provider as AIProviderName;
+    this.providerName = config.model.provider;
     this.primaryModelConfig = config.model;
     this.fallbackConfigs = config.model.fallbacks ?? [];
     this.retryConfig = config.retryConfig;
@@ -91,13 +98,13 @@ export class AIClient {
     // Primary failed with a fallback-eligible error — try fallbacks
     await this.auditRecord('ai_fallback_triggered', {
       primaryProvider: this.providerName,
-      error: primaryError!.message,
+      error: primaryError.message,
       fallbackCount: this.fallbackConfigs.length,
     });
 
     for (let i = 0; i < this.fallbackConfigs.length; i++) {
       const fbConfig = this.fallbackConfigs[i]!;
-      const fbProviderName = fbConfig.provider as AIProviderName;
+      const fbProviderName = fbConfig.provider;
 
       await this.auditRecord('ai_fallback_attempt', {
         index: i,
@@ -107,7 +114,12 @@ export class AIClient {
 
       try {
         const fbProvider = this.getFallbackProvider(i);
-        const response = await this.doChatWithProvider(fbProvider, fbProviderName, request, context);
+        const response = await this.doChatWithProvider(
+          fbProvider,
+          fbProviderName,
+          request,
+          context
+        );
 
         await this.auditRecord('ai_fallback_success', {
           index: i,
@@ -132,7 +144,7 @@ export class AIClient {
       fallbackCount: this.fallbackConfigs.length,
     });
 
-    throw primaryError!;
+    throw primaryError;
   }
 
   /**
@@ -140,7 +152,7 @@ export class AIClient {
    */
   async *chatStream(
     request: AIRequest,
-    context?: Record<string, unknown>,
+    context?: Record<string, unknown>
   ): AsyncGenerator<AIStreamChunk, void, unknown> {
     const limit = this.usageTracker.checkLimit();
     if (!limit.allowed) {
@@ -162,14 +174,14 @@ export class AIClient {
     // Primary failed — try fallbacks
     await this.auditRecord('ai_fallback_triggered', {
       primaryProvider: this.providerName,
-      error: primaryError!.message,
+      error: primaryError.message,
       fallbackCount: this.fallbackConfigs.length,
       stream: true,
     });
 
     for (let i = 0; i < this.fallbackConfigs.length; i++) {
       const fbConfig = this.fallbackConfigs[i]!;
-      const fbProviderName = fbConfig.provider as AIProviderName;
+      const fbProviderName = fbConfig.provider;
 
       await this.auditRecord('ai_fallback_attempt', {
         index: i,
@@ -205,7 +217,7 @@ export class AIClient {
       stream: true,
     });
 
-    throw primaryError!;
+    throw primaryError;
   }
 
   /**
@@ -276,7 +288,7 @@ export class AIClient {
     provider: AIProvider,
     providerName: AIProviderName,
     request: AIRequest,
-    context?: Record<string, unknown>,
+    context?: Record<string, unknown>
   ): Promise<AIResponse> {
     const startTime = Date.now();
 
@@ -327,7 +339,7 @@ export class AIClient {
     provider: AIProvider,
     providerName: AIProviderName,
     request: AIRequest,
-    context?: Record<string, unknown>,
+    context?: Record<string, unknown>
   ): AsyncGenerator<AIStreamChunk, void, unknown> {
     const startTime = Date.now();
 
@@ -347,7 +359,11 @@ export class AIClient {
         // Track usage from the final 'done' or 'usage' chunks
         if (chunk.type === 'done' && chunk.usage) {
           const elapsed = Date.now() - startTime;
-          const costUsd = this.costCalculator.calculate(providerName, request.model ?? provider.name, chunk.usage);
+          const costUsd = this.costCalculator.calculate(
+            providerName,
+            request.model ?? provider.name,
+            chunk.usage
+          );
 
           this.usageTracker.record({
             provider: providerName,
@@ -415,7 +431,11 @@ export class AIClient {
   }
 
   private trackUsage(response: AIResponse, elapsed: number): void {
-    const costUsd = this.costCalculator.calculate(this.providerName, response.model, response.usage);
+    const costUsd = this.costCalculator.calculate(
+      this.providerName,
+      response.model,
+      response.usage
+    );
 
     this.usageTracker.record({
       provider: this.providerName,

@@ -41,7 +41,7 @@ function renderComponent() {
       <QueryClientProvider client={createQueryClient()}>
         <A2APage />
       </QueryClientProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -107,11 +107,17 @@ describe('A2APage', () => {
       allowSubAgents: true,
       allowA2A: true,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     mockFetchA2APeers.mockResolvedValue(MOCK_PEERS);
     mockFetchA2ACapabilities.mockResolvedValue(MOCK_CAPABILITIES);
-    mockFetchA2AMessages.mockResolvedValue({ ...MOCK_MESSAGES, total: MOCK_MESSAGES.messages.length });
+    mockFetchA2AMessages.mockResolvedValue({
+      ...MOCK_MESSAGES,
+      total: MOCK_MESSAGES.messages.length,
+    });
   });
 
   // ── Rendering ──────────────────────────────────────────────
@@ -127,7 +133,10 @@ describe('A2APage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('A2A Protocol Not Enabled')).toBeInTheDocument();
@@ -145,7 +154,10 @@ describe('A2APage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Peers')).toBeInTheDocument();

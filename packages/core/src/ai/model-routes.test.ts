@@ -28,9 +28,7 @@ const mockFetch = vi.fn().mockImplementation((url: string) => {
     return Promise.resolve({
       ok: true,
       json: async () => ({
-        data: [
-          { id: 'claude-sonnet-4-20250514', display_name: 'Claude Sonnet 4' },
-        ],
+        data: [{ id: 'claude-sonnet-4-20250514', display_name: 'Claude Sonnet 4' }],
       }),
     });
   }
@@ -39,9 +37,7 @@ const mockFetch = vi.fn().mockImplementation((url: string) => {
     return Promise.resolve({
       ok: true,
       json: async () => ({
-        data: [
-          { id: 'gpt-4o', owned_by: 'openai' },
-        ],
+        data: [{ id: 'gpt-4o', owned_by: 'openai' }],
       }),
     });
   }
@@ -50,9 +46,7 @@ const mockFetch = vi.fn().mockImplementation((url: string) => {
     return Promise.resolve({
       ok: true,
       json: async () => ({
-        data: [
-          { id: 'gpt-5.2', owned_by: 'opencode' },
-        ],
+        data: [{ id: 'gpt-5.2', owned_by: 'opencode' }],
       }),
     });
   }
@@ -61,9 +55,7 @@ const mockFetch = vi.fn().mockImplementation((url: string) => {
     return Promise.resolve({
       ok: true,
       json: async () => ({
-        models: [
-          { name: 'llama3:latest', size: 4700000000 },
-        ],
+        models: [{ name: 'llama3:latest', size: 4700000000 }],
       }),
     });
   }
@@ -72,7 +64,13 @@ const mockFetch = vi.fn().mockImplementation((url: string) => {
 vi.stubGlobal('fetch', mockFetch);
 
 // Set provider env vars so getAvailableModelsAsync(true) includes all providers
-const ENV_KEYS = ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GOOGLE_GENERATIVE_AI_API_KEY', 'OPENCODE_API_KEY', 'OLLAMA_HOST'];
+const ENV_KEYS = [
+  'ANTHROPIC_API_KEY',
+  'OPENAI_API_KEY',
+  'GOOGLE_GENERATIVE_AI_API_KEY',
+  'OPENCODE_API_KEY',
+  'OLLAMA_HOST',
+];
 const savedEnv: Record<string, string | undefined> = {};
 for (const key of ENV_KEYS) {
   savedEnv[key] = process.env[key];
@@ -86,9 +84,11 @@ afterAll(() => {
   vi.unstubAllGlobals();
 });
 
-function createMockSecureYeoman(overrides: Partial<{
-  switchModelError: string | null;
-}> = {}) {
+function createMockSecureYeoman(
+  overrides: Partial<{
+    switchModelError: string | null;
+  }> = {}
+) {
   const mock = {
     getConfig: vi.fn().mockReturnValue({
       model: {
@@ -99,7 +99,9 @@ function createMockSecureYeoman(overrides: Partial<{
       },
     }),
     switchModel: overrides.switchModelError
-      ? vi.fn().mockImplementation(() => { throw new Error(overrides.switchModelError!); })
+      ? vi.fn().mockImplementation(() => {
+          throw new Error(overrides.switchModelError!);
+        })
       : vi.fn(),
   } as unknown as SecureYeoman;
 

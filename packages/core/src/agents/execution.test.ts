@@ -139,17 +139,17 @@ describe('SubAgentManager execution', () => {
         status: 'pending',
         depth: 0,
         maxDepth: 3,
-      }),
+      })
     );
 
     // Should be updated to running then completed
     expect(mockStorage.updateDelegation).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ status: 'running' }),
+      expect.objectContaining({ status: 'running' })
     );
     expect(mockStorage.updateDelegation).toHaveBeenCalledWith(
       expect.any(String),
-      expect.objectContaining({ status: 'completed' }),
+      expect.objectContaining({ status: 'completed' })
     );
   });
 
@@ -177,7 +177,7 @@ describe('SubAgentManager execution', () => {
     expect(mockAuditChain.record).toHaveBeenCalledWith(
       expect.objectContaining({
         event: 'delegation_completed',
-      }),
+      })
     );
   });
 
@@ -191,20 +191,20 @@ describe('SubAgentManager execution', () => {
     expect(mockStorage.createDelegation).toHaveBeenCalledWith(
       expect.objectContaining({
         tokenBudget: 10000,
-      }),
+      })
     );
   });
 
   it('respects parent remaining budget', async () => {
     await manager.delegate(
       { profile: 'builtin-researcher', task: 'Test task' },
-      { remainingBudget: 5000 },
+      { remainingBudget: 5000 }
     );
 
     expect(mockStorage.createDelegation).toHaveBeenCalledWith(
       expect.objectContaining({
         tokenBudget: 5000,
-      }),
+      })
     );
   });
 

@@ -45,8 +45,7 @@ export function ExtensionsPage() {
   });
 
   const enabled =
-    (configData?.config as Record<string, unknown>)?.enabled === true ||
-    securityPolicy?.allowExtensions === true;
+    (configData?.config)!?.enabled === true || securityPolicy?.allowExtensions === true;
 
   const discoverMut = useMutation({
     mutationFn: discoverExtensions,
@@ -66,7 +65,7 @@ export function ExtensionsPage() {
             Enable the extensions system in your configuration to use lifecycle hooks.
           </p>
           <pre className="mt-4 text-xs bg-muted p-3 rounded text-left inline-block">
-{`extensions:
+            {`extensions:
   enabled: true`}
           </pre>
         </div>
@@ -85,7 +84,9 @@ export function ExtensionsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold">Extensions</h1>
         <button
-          onClick={() => discoverMut.mutate()}
+          onClick={() => {
+            discoverMut.mutate();
+          }}
           disabled={discoverMut.isPending}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
         >
@@ -103,7 +104,9 @@ export function ExtensionsPage() {
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => {
+              setActiveTab(tab.id);
+            }}
             className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
@@ -199,7 +202,9 @@ function ExtensionsTab() {
     <div className="space-y-3">
       <div className="flex justify-end">
         <button
-          onClick={() => setShowRegister(!showRegister)}
+          onClick={() => {
+            setShowRegister(!showRegister);
+          }}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -211,7 +216,13 @@ function ExtensionsTab() {
         <div className="card p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-medium text-sm">Register Extension</span>
-            <button onClick={() => { setShowRegister(false); clearExtForm(); }} className="btn-ghost p-1 rounded">
+            <button
+              onClick={() => {
+                setShowRegister(false);
+                clearExtForm();
+              }}
+              className="btn-ghost p-1 rounded"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -219,7 +230,9 @@ function ExtensionsTab() {
             <label className="text-sm font-medium block mb-1">Extension ID</label>
             <input
               value={extId}
-              onChange={(e) => setExtId(e.target.value)}
+              onChange={(e) => {
+                setExtId(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               placeholder="e.g. my-extension"
             />
@@ -228,7 +241,9 @@ function ExtensionsTab() {
             <label className="text-sm font-medium block mb-1">Name</label>
             <input
               value={extName}
-              onChange={(e) => setExtName(e.target.value)}
+              onChange={(e) => {
+                setExtName(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               placeholder="My Extension"
             />
@@ -237,18 +252,24 @@ function ExtensionsTab() {
             <label className="text-sm font-medium block mb-1">Version</label>
             <input
               value={extVersion}
-              onChange={(e) => setExtVersion(e.target.value)}
+              onChange={(e) => {
+                setExtVersion(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               placeholder="1.0.0"
             />
           </div>
           <div>
-            <label className="text-sm font-medium block mb-1">Hooks (one per line: point, semantics, priority)</label>
+            <label className="text-sm font-medium block mb-1">
+              Hooks (one per line: point, semantics, priority)
+            </label>
             <textarea
               value={extHooksText}
-              onChange={(e) => setExtHooksText(e.target.value)}
+              onChange={(e) => {
+                setExtHooksText(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[80px] resize-y font-mono"
-              placeholder={"pre-chat, observe, 10\npost-task, transform, 20"}
+              placeholder={'pre-chat, observe, 10\npost-task, transform, 20'}
             />
           </div>
           {extError && <p className="text-xs text-destructive">{extError}</p>}
@@ -284,7 +305,9 @@ function ExtensionsTab() {
                   <ToggleLeft className="w-4 h-4 text-muted-foreground" />
                 )}
                 <button
-                  onClick={() => removeMut.mutate(ext.id)}
+                  onClick={() => {
+                    removeMut.mutate(ext.id);
+                  }}
                   className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
                   title="Remove extension"
                 >
@@ -378,7 +401,9 @@ function HooksTab() {
     <div className="space-y-3">
       <div className="flex justify-end">
         <button
-          onClick={() => setShowRegister(!showRegister)}
+          onClick={() => {
+            setShowRegister(!showRegister);
+          }}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -390,7 +415,13 @@ function HooksTab() {
         <div className="card p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-medium text-sm">Register Hook</span>
-            <button onClick={() => { setShowRegister(false); clearHookForm(); }} className="btn-ghost p-1 rounded">
+            <button
+              onClick={() => {
+                setShowRegister(false);
+                clearHookForm();
+              }}
+              className="btn-ghost p-1 rounded"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -398,12 +429,16 @@ function HooksTab() {
             <label className="text-sm font-medium block mb-1">Extension</label>
             <select
               value={hookExtId}
-              onChange={(e) => setHookExtId(e.target.value)}
+              onChange={(e) => {
+                setHookExtId(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
             >
               <option value="">Select extension...</option>
               {extensions.map((ext) => (
-                <option key={ext.id} value={ext.id}>{ext.name} ({ext.id})</option>
+                <option key={ext.id} value={ext.id}>
+                  {ext.name} ({ext.id})
+                </option>
               ))}
             </select>
           </div>
@@ -411,7 +446,9 @@ function HooksTab() {
             <label className="text-sm font-medium block mb-1">Hook Point</label>
             <input
               value={hookPoint}
-              onChange={(e) => setHookPoint(e.target.value)}
+              onChange={(e) => {
+                setHookPoint(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               placeholder="e.g. pre-chat, post-task, on-error"
             />
@@ -420,7 +457,9 @@ function HooksTab() {
             <label className="text-sm font-medium block mb-1">Semantics</label>
             <select
               value={hookSemantics}
-              onChange={(e) => setHookSemantics(e.target.value)}
+              onChange={(e) => {
+                setHookSemantics(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
             >
               <option value="observe">observe</option>
@@ -434,7 +473,9 @@ function HooksTab() {
             <input
               type="number"
               value={hookPriority}
-              onChange={(e) => setHookPriority(Number(e.target.value))}
+              onChange={(e) => {
+                setHookPriority(Number(e.target.value));
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               min={0}
               max={1000}
@@ -444,7 +485,15 @@ function HooksTab() {
           <button
             className="btn btn-primary"
             disabled={!hookExtId.trim() || !hookPoint.trim() || registerMut.isPending}
-            onClick={() => { setHookError(''); registerMut.mutate({ extensionId: hookExtId, hookPoint, semantics: hookSemantics, priority: hookPriority }); }}
+            onClick={() => {
+              setHookError('');
+              registerMut.mutate({
+                extensionId: hookExtId,
+                hookPoint,
+                semantics: hookSemantics,
+                priority: hookPriority,
+              });
+            }}
           >
             {registerMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register'}
           </button>
@@ -464,7 +513,9 @@ function HooksTab() {
               <div className="flex items-center gap-2 min-w-0 flex-1">
                 <Anchor className="w-4 h-4 text-primary flex-shrink-0" />
                 <span className="text-sm font-medium">{hook.hookPoint}</span>
-                <span className={`text-xs px-1.5 py-0.5 rounded border ${SEMANTICS_COLORS[hook.semantics] ?? 'bg-muted text-muted-foreground border-border'}`}>
+                <span
+                  className={`text-xs px-1.5 py-0.5 rounded border ${SEMANTICS_COLORS[hook.semantics] ?? 'bg-muted text-muted-foreground border-border'}`}
+                >
                   {hook.semantics}
                 </span>
                 <span className="text-xs text-muted-foreground">priority: {hook.priority}</span>
@@ -477,7 +528,9 @@ function HooksTab() {
               <div className="flex items-center gap-2">
                 <span className="text-xs text-muted-foreground">ext: {hook.extensionId}</span>
                 <button
-                  onClick={() => removeMut.mutate(hook.id)}
+                  onClick={() => {
+                    removeMut.mutate(hook.id);
+                  }}
                   className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
                   title="Remove hook"
                 >
@@ -550,7 +603,9 @@ function WebhooksTab() {
     <div className="space-y-3">
       <div className="flex justify-end">
         <button
-          onClick={() => setShowRegister(!showRegister)}
+          onClick={() => {
+            setShowRegister(!showRegister);
+          }}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -562,7 +617,13 @@ function WebhooksTab() {
         <div className="card p-4 space-y-3">
           <div className="flex items-center justify-between">
             <span className="font-medium text-sm">Register Webhook</span>
-            <button onClick={() => { setShowRegister(false); clearWhForm(); }} className="btn-ghost p-1 rounded">
+            <button
+              onClick={() => {
+                setShowRegister(false);
+                clearWhForm();
+              }}
+              className="btn-ghost p-1 rounded"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -570,7 +631,9 @@ function WebhooksTab() {
             <label className="text-sm font-medium block mb-1">URL</label>
             <input
               value={whUrl}
-              onChange={(e) => setWhUrl(e.target.value)}
+              onChange={(e) => {
+                setWhUrl(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               placeholder="https://example.com/webhook"
             />
@@ -579,7 +642,9 @@ function WebhooksTab() {
             <label className="text-sm font-medium block mb-1">Hook Points (comma-separated)</label>
             <input
               value={whHookPointsText}
-              onChange={(e) => setWhHookPointsText(e.target.value)}
+              onChange={(e) => {
+                setWhHookPointsText(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               placeholder="pre-chat, post-task, on-error"
             />
@@ -589,7 +654,9 @@ function WebhooksTab() {
             <input
               type="password"
               value={whSecret}
-              onChange={(e) => setWhSecret(e.target.value)}
+              onChange={(e) => {
+                setWhSecret(e.target.value);
+              }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
               placeholder="Webhook signing secret"
             />
@@ -599,9 +666,17 @@ function WebhooksTab() {
             className="btn btn-primary"
             disabled={!whUrl.trim() || !whHookPointsText.trim() || registerMut.isPending}
             onClick={() => {
-              const hookPoints = whHookPointsText.split(',').map((p) => p.trim()).filter(Boolean);
+              const hookPoints = whHookPointsText
+                .split(',')
+                .map((p) => p.trim())
+                .filter(Boolean);
               setWhError('');
-              registerMut.mutate({ url: whUrl, hookPoints, secret: whSecret || undefined, enabled: true });
+              registerMut.mutate({
+                url: whUrl,
+                hookPoints,
+                secret: whSecret || undefined,
+                enabled: true,
+              });
             }}
           >
             {registerMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register'}
@@ -641,7 +716,9 @@ function WebhooksTab() {
                 </div>
               </div>
               <button
-                onClick={() => removeMut.mutate(wh.id)}
+                onClick={() => {
+                  removeMut.mutate(wh.id);
+                }}
                 className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
                 title="Remove webhook"
               >

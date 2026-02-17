@@ -43,7 +43,7 @@ export class BrowserPool {
       playwright = await import('playwright');
     } catch {
       throw new Error(
-        'Playwright is not installed. Install it with: npm install playwright && npx playwright install chromium',
+        'Playwright is not installed. Install it with: npm install playwright && npx playwright install chromium'
       );
     }
 
@@ -57,7 +57,7 @@ export class BrowserPool {
   async getPage(): Promise<Page> {
     if (this.pages.length >= this.options.maxPages) {
       throw new Error(
-        `Browser page limit reached (${this.options.maxPages}). Release a page before opening a new one.`,
+        `Browser page limit reached (${this.options.maxPages}). Release a page before opening a new one.`
       );
     }
 

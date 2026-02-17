@@ -19,20 +19,26 @@ import { ApiEmbeddingProvider } from './api.js';
 export function createEmbeddingProvider(
   config: VectorConfig,
   apiKey?: string,
-  logger?: SecureLogger,
+  logger?: SecureLogger
 ): EmbeddingProvider {
   if (config.provider === 'api' || config.provider === 'both') {
     if (!apiKey) {
       throw new Error('API key required for API embedding provider');
     }
-    return new ApiEmbeddingProvider({
-      provider: config.api.provider,
-      model: config.api.model,
-      apiKey,
-    }, logger);
+    return new ApiEmbeddingProvider(
+      {
+        provider: config.api.provider,
+        model: config.api.model,
+        apiKey,
+      },
+      logger
+    );
   }
 
-  return new LocalEmbeddingProvider({
-    model: config.local.model,
-  }, logger);
+  return new LocalEmbeddingProvider(
+    {
+      model: config.local.model,
+    },
+    logger
+  );
 }

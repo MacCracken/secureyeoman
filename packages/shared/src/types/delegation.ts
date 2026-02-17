@@ -81,21 +81,22 @@ export interface DelegationResult {
   subDelegations: DelegationResult[];
 }
 
-export const DelegationResultSchema: z.ZodType<DelegationResult, z.ZodTypeDef, unknown> = z.lazy(() =>
-  z.object({
-    delegationId: z.string(),
-    profile: z.string(),
-    status: DelegationStatusSchema,
-    result: z.string().nullable(),
-    error: z.string().nullable(),
-    tokenUsage: z.object({
-      prompt: z.number(),
-      completion: z.number(),
-      total: z.number(),
-    }),
-    durationMs: z.number(),
-    subDelegations: z.array(DelegationResultSchema).default([]),
-  }),
+export const DelegationResultSchema: z.ZodType<DelegationResult, z.ZodTypeDef, unknown> = z.lazy(
+  () =>
+    z.object({
+      delegationId: z.string(),
+      profile: z.string(),
+      status: DelegationStatusSchema,
+      result: z.string().nullable(),
+      error: z.string().nullable(),
+      tokenUsage: z.object({
+        prompt: z.number(),
+        completion: z.number(),
+        total: z.number(),
+      }),
+      durationMs: z.number(),
+      subDelegations: z.array(DelegationResultSchema).default([]),
+    })
 ) as z.ZodType<DelegationResult, z.ZodTypeDef, unknown>;
 
 // ─── Sub-Agent Info (active listing) ───────────────────────────────

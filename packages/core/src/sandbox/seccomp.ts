@@ -21,37 +21,86 @@ export interface SeccompStatus {
 
 // Safe syscalls that should always be allowed
 const ALLOWED_SYSCALLS = [
-  'read', 'write', 'open', 'close', 'stat', 'fstat', 'lstat',
-  'poll', 'lseek', 'mmap', 'mprotect', 'munmap', 'brk',
-  'ioctl', 'access', 'pipe', 'select', 'sched_yield',
-  'dup', 'dup2', 'nanosleep', 'getpid', 'socket',
-  'connect', 'accept', 'sendto', 'recvfrom',
-  'bind', 'listen', 'getsockname', 'getpeername',
-  'clone', 'fork', 'vfork', 'exit', 'wait4',
-  'uname', 'fcntl', 'flock', 'fsync', 'fdatasync',
-  'getcwd', 'chdir', 'rename', 'mkdir', 'rmdir',
-  'openat', 'readlinkat', 'newfstatat', 'unlinkat',
-  'futex', 'epoll_wait', 'epoll_ctl', 'epoll_create1',
-  'getrandom', 'memfd_create', 'clock_gettime',
-  'exit_group', 'set_robust_list', 'get_robust_list',
-  'rt_sigaction', 'rt_sigprocmask', 'rt_sigreturn',
+  'read',
+  'write',
+  'open',
+  'close',
+  'stat',
+  'fstat',
+  'lstat',
+  'poll',
+  'lseek',
+  'mmap',
+  'mprotect',
+  'munmap',
+  'brk',
+  'ioctl',
+  'access',
+  'pipe',
+  'select',
+  'sched_yield',
+  'dup',
+  'dup2',
+  'nanosleep',
+  'getpid',
+  'socket',
+  'connect',
+  'accept',
+  'sendto',
+  'recvfrom',
+  'bind',
+  'listen',
+  'getsockname',
+  'getpeername',
+  'clone',
+  'fork',
+  'vfork',
+  'exit',
+  'wait4',
+  'uname',
+  'fcntl',
+  'flock',
+  'fsync',
+  'fdatasync',
+  'getcwd',
+  'chdir',
+  'rename',
+  'mkdir',
+  'rmdir',
+  'openat',
+  'readlinkat',
+  'newfstatat',
+  'unlinkat',
+  'futex',
+  'epoll_wait',
+  'epoll_ctl',
+  'epoll_create1',
+  'getrandom',
+  'memfd_create',
+  'clock_gettime',
+  'exit_group',
+  'set_robust_list',
+  'get_robust_list',
+  'rt_sigaction',
+  'rt_sigprocmask',
+  'rt_sigreturn',
 ];
 
 // Dangerous syscalls that should be blocked
 const BLOCKED_SYSCALLS = [
-  'ptrace',     // Process tracing
-  'mount',      // Filesystem mounting
-  'umount2',    // Filesystem unmounting
-  'reboot',     // System reboot
+  'ptrace', // Process tracing
+  'mount', // Filesystem mounting
+  'umount2', // Filesystem unmounting
+  'reboot', // System reboot
   'kexec_load', // Load new kernel
   'init_module', // Load kernel module
   'delete_module', // Unload kernel module
   'pivot_root', // Change root filesystem
-  'swapon',     // Enable swap
-  'swapoff',    // Disable swap
-  'acct',       // Process accounting
+  'swapon', // Enable swap
+  'swapoff', // Disable swap
+  'acct', // Process accounting
   'settimeofday', // Set system time
-  'sethostname',  // Set hostname
+  'sethostname', // Set hostname
   'setdomainname', // Set domain name
 ];
 

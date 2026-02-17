@@ -134,6 +134,7 @@ if (process.send) {
         : { enforced: false, violations: [] as SandboxViolation[] };
 
       // Execute the function
+      // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval -- Intentional: sandboxed code execution requires dynamic function creation
       const fn = new Function(`return (${config.fnBody})`)() as () => Promise<unknown>;
       const result = await fn();
 
@@ -162,7 +163,10 @@ if (process.send) {
         type: 'result',
         result: {
           success: false,
-          error: error instanceof Error ? { message: error.message, name: error.name } as any : new Error(String(error)),
+          error:
+            error instanceof Error
+              ? ({ message: error.message, name: error.name } as any)
+              : new Error(String(error)),
           resourceUsage: {
             memoryPeakMb: peakMemoryBytes / 1024 / 1024,
             cpuTimeMs: endTime - startTime,

@@ -74,10 +74,7 @@ describe('formatTable', () => {
   });
 
   it('should respect column order', () => {
-    const result = formatTable(
-      [{ a: '1', b: '2' }],
-      ['b', 'a'],
-    );
+    const result = formatTable([{ a: '1', b: '2' }], ['b', 'a']);
     const headerLine = result.split('\n')[0];
     expect(headerLine.indexOf('B')).toBeLessThan(headerLine.indexOf('A'));
   });

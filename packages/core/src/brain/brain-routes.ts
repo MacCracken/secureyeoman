@@ -137,7 +137,10 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     ) => {
       try {
         const { content, confidence } = request.body;
-        const knowledge = await brainManager.updateKnowledge(request.params.id, { content, confidence });
+        const knowledge = await brainManager.updateKnowledge(request.params.id, {
+          content,
+          confidence,
+        });
         return { knowledge };
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
@@ -343,27 +346,24 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     }
   );
 
-  app.post(
-    '/api/v1/brain/reindex',
-    async (_request: FastifyRequest, reply: FastifyReply) => {
-      try {
-        // Fetch all memories and knowledge, then reindex
-        const memories = await brainManager.recall({ limit: 100000 });
-        const knowledge = await brainManager.queryKnowledge({ limit: 50000 });
+  app.post('/api/v1/brain/reindex', async (_request: FastifyRequest, reply: FastifyReply) => {
+    try {
+      // Fetch all memories and knowledge, then reindex
+      const memories = await brainManager.recall({ limit: 100000 });
+      const knowledge = await brainManager.queryKnowledge({ limit: 50000 });
 
-        // semanticSearch will throw if vector not enabled
-        // But we need vector manager directly for reindex
-        const stats = await brainManager.getStats();
-        return {
-          message: 'Reindex triggered',
-          memoriesCount: stats.memories.total,
-          knowledgeCount: stats.knowledge.total,
-        };
-      } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
-      }
+      // semanticSearch will throw if vector not enabled
+      // But we need vector manager directly for reindex
+      const stats = await brainManager.getStats();
+      return {
+        message: 'Reindex triggered',
+        memoriesCount: stats.memories.total,
+        knowledgeCount: stats.knowledge.total,
+      };
+    } catch (err) {
+      return reply.code(400).send({ error: errorMessage(err) });
     }
-  );
+  });
 
   // ── Consolidation ──────────────────────────────────────────
 

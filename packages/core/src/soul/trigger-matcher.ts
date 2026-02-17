@@ -53,7 +53,7 @@ interface ConditionDef {
 }
 
 export class SkillTriggerMatcher {
-  private cooldowns: Map<string, CooldownTracker> = new Map();
+  private cooldowns = new Map<string, CooldownTracker>();
 
   findMatchingTriggers(skills: Skill[], context: TriggerContext): TriggerMatch[] {
     const matches: TriggerMatch[] = [];

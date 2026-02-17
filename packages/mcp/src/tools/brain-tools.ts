@@ -11,17 +11,20 @@ import { wrapToolHandler } from './tool-utils.js';
 export function registerBrainTools(
   server: McpServer,
   client: CoreApiClient,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   server.tool(
     'knowledge_search',
     'Search brain knowledge by query',
-    { query: z.string().describe('Search query'), limit: z.number().int().min(1).max(100).default(10).describe('Max results') },
+    {
+      query: z.string().describe('Search query'),
+      limit: z.number().int().min(1).max(100).default(10).describe('Max results'),
+    },
     wrapToolHandler('knowledge_search', middleware, async (args) => {
       const query: Record<string, string> = { q: args.query, limit: String(args.limit) };
       const result = await client.get('/api/v1/brain/knowledge', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -31,7 +34,7 @@ export function registerBrainTools(
     wrapToolHandler('knowledge_get', middleware, async (args) => {
       const result = await client.get(`/api/v1/brain/knowledge/${args.id}`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -45,7 +48,7 @@ export function registerBrainTools(
     wrapToolHandler('knowledge_store', middleware, async (args) => {
       const result = await client.post('/api/v1/brain/knowledge', args);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -57,9 +60,9 @@ export function registerBrainTools(
     },
     wrapToolHandler('memory_recall', middleware, async (args) => {
       const query: Record<string, string> = { q: args.query };
-      if (args.types) query['types'] = args.types.join(',');
+      if (args.types) query.types = args.types.join(',');
       const result = await client.get('/api/v1/brain/memories', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 }

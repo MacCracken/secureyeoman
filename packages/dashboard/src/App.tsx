@@ -19,12 +19,14 @@ function App() {
   return (
     <SidebarProvider>
       <Routes>
-        <Route path="/login" element={
-          isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />
-        } />
-        <Route path="/*" element={
-          isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />
-        } />
+        <Route
+          path="/login"
+          element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />}
+        />
+        <Route
+          path="/*"
+          element={isAuthenticated ? <DashboardLayout /> : <Navigate to="/login" replace />}
+        />
       </Routes>
     </SidebarProvider>
   );

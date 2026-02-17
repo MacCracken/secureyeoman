@@ -32,7 +32,7 @@ export function getBrowserPool(): BrowserPool | null {
 export function registerBrowserTools(
   server: McpServer,
   config: McpServiceConfig,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   server.tool(
     'browser_navigate',
@@ -59,7 +59,7 @@ export function registerBrowserTools(
         const title = await page.title();
         const url = page.url();
         const snippet = await page.evaluate(
-          'document.body ? document.body.innerText.slice(0, 2000) : ""',
+          'document.body ? document.body.innerText.slice(0, 2000) : ""'
         );
 
         return {
@@ -70,7 +70,7 @@ export function registerBrowserTools(
       } finally {
         await pool.releasePage(page);
       }
-    }),
+    })
   );
 
   server.tool(
@@ -98,14 +98,17 @@ export function registerBrowserTools(
 
         return {
           content: [
-            { type: 'text' as const, text: `Screenshot captured (${args.width}x${args.height}, fullPage=${args.fullPage})` },
+            {
+              type: 'text' as const,
+              text: `Screenshot captured (${args.width}x${args.height}, fullPage=${args.fullPage})`,
+            },
             { type: 'text' as const, text: `data:image/png;base64,${base64}` },
           ],
         };
       } finally {
         await pool.releasePage(page);
       }
-    }),
+    })
   );
 
   server.tool(
@@ -113,7 +116,13 @@ export function registerBrowserTools(
     'Click an element on the current page by CSS selector',
     {
       selector: z.string().describe('CSS selector of element to click'),
-      waitAfter: z.number().int().min(0).max(10000).default(1000).describe('Wait time after click in ms'),
+      waitAfter: z
+        .number()
+        .int()
+        .min(0)
+        .max(10000)
+        .default(1000)
+        .describe('Wait time after click in ms'),
     },
     wrapToolHandler('browser_click', middleware, async (args) => {
       if (!config.exposeBrowser) {
@@ -129,14 +138,12 @@ export function registerBrowserTools(
         }
 
         return {
-          content: [
-            { type: 'text' as const, text: `Clicked element matching "${args.selector}"` },
-          ],
+          content: [{ type: 'text' as const, text: `Clicked element matching "${args.selector}"` }],
         };
       } finally {
         await pool.releasePage(page);
       }
-    }),
+    })
   );
 
   server.tool(
@@ -158,13 +165,16 @@ export function registerBrowserTools(
 
         return {
           content: [
-            { type: 'text' as const, text: `Filled "${args.selector}" with value (${args.value.length} chars)` },
+            {
+              type: 'text' as const,
+              text: `Filled "${args.selector}" with value (${args.value.length} chars)`,
+            },
           ],
         };
       } finally {
         await pool.releasePage(page);
       }
-    }),
+    })
   );
 
   server.tool(
@@ -184,14 +194,12 @@ export function registerBrowserTools(
         const result = await page.evaluate(args.script);
 
         return {
-          content: [
-            { type: 'text' as const, text: JSON.stringify(result, null, 2) },
-          ],
+          content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
         };
       } finally {
         await pool.releasePage(page);
       }
-    }),
+    })
   );
 
   server.tool(
@@ -223,6 +231,6 @@ export function registerBrowserTools(
       } finally {
         await pool.releasePage(page);
       }
-    }),
+    })
   );
 }

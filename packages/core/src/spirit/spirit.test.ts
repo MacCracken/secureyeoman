@@ -1,7 +1,13 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { SpiritStorage } from './storage.js';
 import { SpiritManager } from './manager.js';
-import type { SpiritConfig, SpiritManagerDeps, PassionCreate, InspirationCreate, PainCreate } from './types.js';
+import type {
+  SpiritConfig,
+  SpiritManagerDeps,
+  PassionCreate,
+  InspirationCreate,
+  PainCreate,
+} from './types.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
@@ -11,7 +17,12 @@ import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -29,7 +40,10 @@ function defaultConfig(overrides?: Partial<SpiritConfig>): SpiritConfig {
 
 function createDeps(): SpiritManagerDeps & { auditStorage: InMemoryAuditStorage } {
   const auditStorage = new InMemoryAuditStorage();
-  const auditChain = new AuditChain({ storage: auditStorage, signingKey: 'test-signing-key-must-be-at-least-32-chars!!' });
+  const auditChain = new AuditChain({
+    storage: auditStorage,
+    signingKey: 'test-signing-key-must-be-at-least-32-chars!!',
+  });
   return {
     auditChain,
     auditStorage,
@@ -102,7 +116,9 @@ describe('SpiritStorage', () => {
     });
 
     it('should throw when updating non-existent passion', async () => {
-      await expect(storage.updatePassion('nonexistent', { name: 'X' })).rejects.toThrow('Passion not found');
+      await expect(storage.updatePassion('nonexistent', { name: 'X' })).rejects.toThrow(
+        'Passion not found'
+      );
     });
 
     it('should delete a passion', async () => {
@@ -157,14 +173,19 @@ describe('SpiritStorage', () => {
 
     it('should update an inspiration', async () => {
       const i = await storage.createInspiration(TEST_INSPIRATION);
-      const updated = await storage.updateInspiration(i.id, { source: 'Ada Lovelace', impact: 0.99 });
+      const updated = await storage.updateInspiration(i.id, {
+        source: 'Ada Lovelace',
+        impact: 0.99,
+      });
       expect(updated.source).toBe('Ada Lovelace');
       expect(updated.impact).toBe(0.99);
       expect(updated.description).toBe(i.description);
     });
 
     it('should throw when updating non-existent inspiration', async () => {
-      await expect(storage.updateInspiration('nonexistent', { source: 'X' })).rejects.toThrow('Inspiration not found');
+      await expect(storage.updateInspiration('nonexistent', { source: 'X' })).rejects.toThrow(
+        'Inspiration not found'
+      );
     });
 
     it('should delete an inspiration', async () => {
@@ -226,7 +247,9 @@ describe('SpiritStorage', () => {
     });
 
     it('should throw when updating non-existent pain', async () => {
-      await expect(storage.updatePain('nonexistent', { trigger: 'X' })).rejects.toThrow('Pain not found');
+      await expect(storage.updatePain('nonexistent', { trigger: 'X' })).rejects.toThrow(
+        'Pain not found'
+      );
     });
 
     it('should delete a pain', async () => {
@@ -312,7 +335,9 @@ describe('SpiritManager', () => {
       const mgr = new SpiritManager(storage, defaultConfig({ maxPassions: 2 }), deps);
       await mgr.createPassion(TEST_PASSION);
       await mgr.createPassion({ ...TEST_PASSION, name: 'Second' });
-      await expect(mgr.createPassion({ ...TEST_PASSION, name: 'Third' })).rejects.toThrow('Maximum passion limit');
+      await expect(mgr.createPassion({ ...TEST_PASSION, name: 'Third' })).rejects.toThrow(
+        'Maximum passion limit'
+      );
     });
 
     it('should get active passions', async () => {
@@ -340,7 +365,9 @@ describe('SpiritManager', () => {
       const mgr = new SpiritManager(storage, defaultConfig({ maxInspirations: 2 }), deps);
       await mgr.createInspiration(TEST_INSPIRATION);
       await mgr.createInspiration({ ...TEST_INSPIRATION, source: 'Second' });
-      await expect(mgr.createInspiration({ ...TEST_INSPIRATION, source: 'Third' })).rejects.toThrow('Maximum inspiration limit');
+      await expect(mgr.createInspiration({ ...TEST_INSPIRATION, source: 'Third' })).rejects.toThrow(
+        'Maximum inspiration limit'
+      );
     });
 
     it('should get active inspirations', async () => {
@@ -368,7 +395,9 @@ describe('SpiritManager', () => {
       const mgr = new SpiritManager(storage, defaultConfig({ maxPains: 2 }), deps);
       await mgr.createPain(TEST_PAIN);
       await mgr.createPain({ ...TEST_PAIN, trigger: 'Second' });
-      await expect(mgr.createPain({ ...TEST_PAIN, trigger: 'Third' })).rejects.toThrow('Maximum pain limit');
+      await expect(mgr.createPain({ ...TEST_PAIN, trigger: 'Third' })).rejects.toThrow(
+        'Maximum pain limit'
+      );
     });
 
     it('should get active pains', async () => {

@@ -10,7 +10,9 @@ export function ReportsPage() {
   const { data, isLoading } = useQuery({ queryKey: ['reports'], queryFn: fetchReports });
   const mutation = useMutation({
     mutationFn: generateReport,
-    onSuccess: () => { void queryClient.invalidateQueries({ queryKey: ['reports'] }); },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['reports'] });
+    },
   });
 
   const handleDownload = async (report: ReportSummary) => {
@@ -39,7 +41,9 @@ export function ReportsPage() {
         <div className="flex items-center gap-2">
           <select
             value={format}
-            onChange={(e) => setFormat(e.target.value)}
+            onChange={(e) => {
+              setFormat(e.target.value);
+            }}
             className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
           >
             <option value="json">JSON</option>
@@ -48,10 +52,19 @@ export function ReportsPage() {
           </select>
           <button
             className="btn btn-primary flex items-center gap-2"
-            onClick={() => mutation.mutate({ title: `Security Report - ${new Date().toLocaleDateString()}`, format })}
+            onClick={() => {
+              mutation.mutate({
+                title: `Security Report - ${new Date().toLocaleDateString()}`,
+                format,
+              });
+            }}
             disabled={mutation.isPending}
           >
-            {mutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+            {mutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Plus className="w-4 h-4" />
+            )}
             {mutation.isPending ? 'Generating...' : 'Generate'}
           </button>
         </div>
@@ -79,7 +92,9 @@ export function ReportsPage() {
       )}
 
       {isLoading ? (
-        <div className="flex justify-center py-12"><Loader2 className="w-8 h-8 animate-spin text-muted-foreground" /></div>
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
       ) : !data?.reports.length && !mutation.isPending ? (
         <div className="card p-12 text-center">
           <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
@@ -94,7 +109,8 @@ export function ReportsPage() {
                 <div>
                   <p className="font-medium">{report.title}</p>
                   <p className="text-xs text-muted-foreground">
-                    {new Date(report.generatedAt).toLocaleString()} · {report.entryCount} entries · {(report.sizeBytes / 1024).toFixed(1)} KB · {report.format.toUpperCase()}
+                    {new Date(report.generatedAt).toLocaleString()} · {report.entryCount} entries ·{' '}
+                    {(report.sizeBytes / 1024).toFixed(1)} KB · {report.format.toUpperCase()}
                   </p>
                 </div>
               </div>

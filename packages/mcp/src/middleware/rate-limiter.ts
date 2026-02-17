@@ -40,7 +40,7 @@ export function createRateLimiter(maxPerSecond: number): RateLimiterMiddleware {
         bucket.tokens -= 1;
         return { allowed: true };
       }
-      const retryAfterMs = Math.ceil((1 - bucket.tokens) / maxPerSecond * 1000);
+      const retryAfterMs = Math.ceil(((1 - bucket.tokens) / maxPerSecond) * 1000);
       return { allowed: false, retryAfterMs };
     },
 
@@ -61,7 +61,7 @@ export function createRateLimiter(maxPerSecond: number): RateLimiterMiddleware {
 export class RateLimitError extends Error {
   constructor(
     public readonly toolName: string,
-    public readonly retryAfterMs: number,
+    public readonly retryAfterMs: number
   ) {
     super(`Rate limit exceeded for tool "${toolName}". Retry after ${retryAfterMs}ms.`);
     this.name = 'RateLimitError';

@@ -1,6 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIClient } from './client.js';
-import type { AIRequest, AIResponse, AIStreamChunk, ModelConfig, FallbackModelConfig } from '@friday/shared';
+import type {
+  AIRequest,
+  AIResponse,
+  AIStreamChunk,
+  ModelConfig,
+  FallbackModelConfig,
+} from '@friday/shared';
 import { RateLimitError, ProviderUnavailableError, AuthenticationError } from './errors.js';
 
 // Mock getSecret to return a fake key
@@ -133,7 +139,7 @@ describe('AIClient', () => {
       const mockAuditChain = { record: vi.fn().mockResolvedValue(undefined) };
       const auditClient = new AIClient(
         { model: makeModelConfig('anthropic') },
-        { auditChain: mockAuditChain as any },
+        { auditChain: mockAuditChain as any }
       );
       const provider = (auditClient as any).provider;
       provider.chat = vi.fn().mockResolvedValue(mockResponse);
@@ -142,10 +148,10 @@ describe('AIClient', () => {
       // Should record request + response
       expect(mockAuditChain.record).toHaveBeenCalledTimes(2);
       expect(mockAuditChain.record).toHaveBeenCalledWith(
-        expect.objectContaining({ event: 'ai_request' }),
+        expect.objectContaining({ event: 'ai_request' })
       );
       expect(mockAuditChain.record).toHaveBeenCalledWith(
-        expect.objectContaining({ event: 'ai_response' }),
+        expect.objectContaining({ event: 'ai_response' })
       );
     });
   });
@@ -156,7 +162,11 @@ describe('AIClient', () => {
       const chunks: AIStreamChunk[] = [
         { type: 'content_delta', content: 'Hello' },
         { type: 'content_delta', content: ' world' },
-        { type: 'done', stopReason: 'end_turn', usage: { inputTokens: 5, outputTokens: 10, cachedTokens: 0, totalTokens: 15 } },
+        {
+          type: 'done',
+          stopReason: 'end_turn',
+          usage: { inputTokens: 5, outputTokens: 10, cachedTokens: 0, totalTokens: 15 },
+        },
       ];
 
       const provider = (client as any).provider;
@@ -224,7 +234,11 @@ describe('AIClient', () => {
       (client2 as any).provider.chat = vi.fn().mockRejectedValue(new RateLimitError('anthropic'));
 
       // Pre-set a mock fallback provider
-      const mockFbProvider = { name: 'openai', chat: vi.fn().mockResolvedValue(fallbackResponse), chatStream: vi.fn() };
+      const mockFbProvider = {
+        name: 'openai',
+        chat: vi.fn().mockResolvedValue(fallbackResponse),
+        chatStream: vi.fn(),
+      };
       (client2 as any).fallbackProviders.set(0, mockFbProvider);
 
       const result = await client2.chat(mockRequest);
@@ -234,9 +248,15 @@ describe('AIClient', () => {
 
     it('should fall back on ProviderUnavailableError', async () => {
       const client = new AIClient({ model: makeModelConfig('anthropic', fallbacks) });
-      (client as any).provider.chat = vi.fn().mockRejectedValue(new ProviderUnavailableError('anthropic', 503));
+      (client as any).provider.chat = vi
+        .fn()
+        .mockRejectedValue(new ProviderUnavailableError('anthropic', 503));
 
-      const mockFbProvider = { name: 'openai', chat: vi.fn().mockResolvedValue(fallbackResponse), chatStream: vi.fn() };
+      const mockFbProvider = {
+        name: 'openai',
+        chat: vi.fn().mockResolvedValue(fallbackResponse),
+        chatStream: vi.fn(),
+      };
       (client as any).fallbackProviders.set(0, mockFbProvider);
 
       const result = await client.chat(mockRequest);
@@ -245,7 +265,9 @@ describe('AIClient', () => {
 
     it('should NOT fall back on AuthenticationError', async () => {
       const client = new AIClient({ model: makeModelConfig('anthropic', fallbacks) });
-      (client as any).provider.chat = vi.fn().mockRejectedValue(new AuthenticationError('anthropic'));
+      (client as any).provider.chat = vi
+        .fn()
+        .mockRejectedValue(new AuthenticationError('anthropic'));
 
       await expect(client.chat(mockRequest)).rejects.toThrow('Authentication failed');
     });
@@ -255,9 +277,22 @@ describe('AIClient', () => {
       (client as any).provider.chat = vi.fn().mockRejectedValue(new RateLimitError('anthropic'));
 
       // First fallback also rate-limited
-      const mockFb0 = { name: 'openai', chat: vi.fn().mockRejectedValue(new RateLimitError('openai')), chatStream: vi.fn() };
-      const geminiResponse = { ...fallbackResponse, provider: 'gemini', model: 'gemini-2.0-flash', content: 'Gemini response' };
-      const mockFb1 = { name: 'gemini', chat: vi.fn().mockResolvedValue(geminiResponse), chatStream: vi.fn() };
+      const mockFb0 = {
+        name: 'openai',
+        chat: vi.fn().mockRejectedValue(new RateLimitError('openai')),
+        chatStream: vi.fn(),
+      };
+      const geminiResponse = {
+        ...fallbackResponse,
+        provider: 'gemini',
+        model: 'gemini-2.0-flash',
+        content: 'Gemini response',
+      };
+      const mockFb1 = {
+        name: 'gemini',
+        chat: vi.fn().mockResolvedValue(geminiResponse),
+        chatStream: vi.fn(),
+      };
       (client as any).fallbackProviders.set(0, mockFb0);
       (client as any).fallbackProviders.set(1, mockFb1);
 
@@ -272,8 +307,16 @@ describe('AIClient', () => {
       const originalError = new RateLimitError('anthropic', 30);
       (client as any).provider.chat = vi.fn().mockRejectedValue(originalError);
 
-      const mockFb0 = { name: 'openai', chat: vi.fn().mockRejectedValue(new RateLimitError('openai')), chatStream: vi.fn() };
-      const mockFb1 = { name: 'gemini', chat: vi.fn().mockRejectedValue(new ProviderUnavailableError('gemini')), chatStream: vi.fn() };
+      const mockFb0 = {
+        name: 'openai',
+        chat: vi.fn().mockRejectedValue(new RateLimitError('openai')),
+        chatStream: vi.fn(),
+      };
+      const mockFb1 = {
+        name: 'gemini',
+        chat: vi.fn().mockRejectedValue(new ProviderUnavailableError('gemini')),
+        chatStream: vi.fn(),
+      };
       (client as any).fallbackProviders.set(0, mockFb0);
       (client as any).fallbackProviders.set(1, mockFb1);
 
@@ -296,11 +339,15 @@ describe('AIClient', () => {
       const mockAuditChain = { record: vi.fn().mockResolvedValue(undefined) };
       const client = new AIClient(
         { model: makeModelConfig('anthropic', fallbacks) },
-        { auditChain: mockAuditChain as any },
+        { auditChain: mockAuditChain as any }
       );
       (client as any).provider.chat = vi.fn().mockRejectedValue(new RateLimitError('anthropic'));
 
-      const mockFbProvider = { name: 'openai', chat: vi.fn().mockResolvedValue(fallbackResponse), chatStream: vi.fn() };
+      const mockFbProvider = {
+        name: 'openai',
+        chat: vi.fn().mockResolvedValue(fallbackResponse),
+        chatStream: vi.fn(),
+      };
       (client as any).fallbackProviders.set(0, mockFbProvider);
 
       await client.chat(mockRequest);
@@ -315,12 +362,20 @@ describe('AIClient', () => {
       const mockAuditChain = { record: vi.fn().mockResolvedValue(undefined) };
       const client = new AIClient(
         { model: makeModelConfig('anthropic', fallbacks) },
-        { auditChain: mockAuditChain as any },
+        { auditChain: mockAuditChain as any }
       );
       (client as any).provider.chat = vi.fn().mockRejectedValue(new RateLimitError('anthropic'));
 
-      const mockFb0 = { name: 'openai', chat: vi.fn().mockRejectedValue(new RateLimitError('openai')), chatStream: vi.fn() };
-      const mockFb1 = { name: 'gemini', chat: vi.fn().mockRejectedValue(new RateLimitError('gemini')), chatStream: vi.fn() };
+      const mockFb0 = {
+        name: 'openai',
+        chat: vi.fn().mockRejectedValue(new RateLimitError('openai')),
+        chatStream: vi.fn(),
+      };
+      const mockFb1 = {
+        name: 'gemini',
+        chat: vi.fn().mockRejectedValue(new RateLimitError('gemini')),
+        chatStream: vi.fn(),
+      };
       (client as any).fallbackProviders.set(0, mockFb0);
       (client as any).fallbackProviders.set(1, mockFb1);
 
@@ -346,7 +401,11 @@ describe('AIClient', () => {
 
       const fbChunks: AIStreamChunk[] = [
         { type: 'content_delta', content: 'Fallback' },
-        { type: 'done', stopReason: 'end_turn', usage: { inputTokens: 3, outputTokens: 5, cachedTokens: 0, totalTokens: 8 } },
+        {
+          type: 'done',
+          stopReason: 'end_turn',
+          usage: { inputTokens: 3, outputTokens: 5, cachedTokens: 0, totalTokens: 8 },
+        },
       ];
       const mockFbProvider = {
         name: 'openai',
@@ -377,7 +436,11 @@ describe('AIClient', () => {
 
       const fbChunks: AIStreamChunk[] = [
         { type: 'content_delta', content: 'Complete fallback' },
-        { type: 'done', stopReason: 'end_turn', usage: { inputTokens: 3, outputTokens: 5, cachedTokens: 0, totalTokens: 8 } },
+        {
+          type: 'done',
+          stopReason: 'end_turn',
+          usage: { inputTokens: 3, outputTokens: 5, cachedTokens: 0, totalTokens: 8 },
+        },
       ];
       const mockFbProvider = {
         name: 'openai',

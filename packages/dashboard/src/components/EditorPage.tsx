@@ -156,11 +156,18 @@ function SessionsPanel() {
   return (
     <div className="space-y-1.5 p-2 overflow-y-auto">
       {sessions.map((session) => (
-        <div key={session.id} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded bg-muted/30 text-xs">
+        <div
+          key={session.id}
+          className="flex items-center justify-between gap-2 px-2 py-1.5 rounded bg-muted/30 text-xs"
+        >
           <div className="flex items-center gap-2 min-w-0 flex-1">
-            {SESSION_STATUS_ICONS[session.status] ?? <Clock className="w-3.5 h-3.5 text-muted-foreground" />}
+            {SESSION_STATUS_ICONS[session.status] ?? (
+              <Clock className="w-3.5 h-3.5 text-muted-foreground" />
+            )}
             <span className="font-mono">{session.id.slice(0, 12)}</span>
-            <span className={`px-1.5 py-0.5 rounded border ${SESSION_STATUS_COLORS[session.status] ?? 'bg-muted text-muted-foreground border-border'}`}>
+            <span
+              className={`px-1.5 py-0.5 rounded border ${SESSION_STATUS_COLORS[session.status] ?? 'bg-muted text-muted-foreground border-border'}`}
+            >
               {session.status}
             </span>
             <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary">
@@ -172,7 +179,9 @@ function SessionsPanel() {
               {new Date(session.lastActivity).toLocaleTimeString()}
             </span>
             <button
-              onClick={() => terminateMut.mutate(session.id)}
+              onClick={() => {
+                terminateMut.mutate(session.id);
+              }}
               className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
               title="Terminate session"
             >
@@ -223,7 +232,9 @@ function HistoryPanel() {
       <div className="flex items-center gap-2 px-2 py-1.5 border-b">
         <input
           value={sessionFilter}
-          onChange={(e) => setSessionFilter(e.target.value)}
+          onChange={(e) => {
+            setSessionFilter(e.target.value);
+          }}
           className="bg-card border border-border rounded text-xs py-1 px-2 w-48"
           placeholder="Filter by session ID..."
         />
@@ -259,7 +270,9 @@ function HistoryPanel() {
                 <tr
                   key={exec.id}
                   className="border-b border-border/50 hover:bg-muted/30 cursor-pointer"
-                  onClick={() => setExpandedId(expandedId === exec.id ? null : exec.id)}
+                  onClick={() => {
+                    setExpandedId(expandedId === exec.id ? null : exec.id);
+                  }}
                 >
                   <td className="px-2 py-1.5">
                     {exec.exitCode === 0 ? (
@@ -270,29 +283,42 @@ function HistoryPanel() {
                   </td>
                   <td className="px-2 py-1.5 font-mono">{exec.sessionId.slice(0, 8)}</td>
                   <td className="px-2 py-1.5">
-                    <span className={`px-1 py-0.5 rounded border ${
-                      exec.exitCode === 0
-                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
-                        : 'bg-red-500/10 text-red-500 border-red-500/20'
-                    }`}>
+                    <span
+                      className={`px-1 py-0.5 rounded border ${
+                        exec.exitCode === 0
+                          ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                          : 'bg-red-500/10 text-red-500 border-red-500/20'
+                      }`}
+                    >
                       {exec.exitCode}
                     </span>
                   </td>
-                  <td className="px-2 py-1.5 text-muted-foreground">{formatDuration(exec.duration)}</td>
+                  <td className="px-2 py-1.5 text-muted-foreground">
+                    {formatDuration(exec.duration)}
+                  </td>
                   <td className="px-2 py-1.5 text-muted-foreground">
                     {new Date(exec.createdAt).toLocaleTimeString()}
                   </td>
                   <td className="px-2 py-1.5">
-                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                    <div
+                      className="flex items-center gap-1"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                      }}
+                    >
                       <button
-                        onClick={() => approveMut.mutate(exec.id)}
+                        onClick={() => {
+                          approveMut.mutate(exec.id);
+                        }}
                         className="btn-ghost p-0.5 rounded text-green-500 hover:bg-green-500/10"
                         title="Approve"
                       >
                         <CheckCircle className="w-3 h-3" />
                       </button>
                       <button
-                        onClick={() => rejectMut.mutate(exec.id)}
+                        onClick={() => {
+                          rejectMut.mutate(exec.id);
+                        }}
                         className="btn-ghost p-0.5 rounded text-red-500 hover:bg-red-500/10"
                         title="Reject"
                       >
@@ -306,28 +332,29 @@ function HistoryPanel() {
           </table>
         )}
 
-        {expandedId && (() => {
-          const exec = executions.find((e) => e.id === expandedId);
-          if (!exec) return null;
-          return (
-            <div className="mx-2 my-1 p-2 rounded bg-muted/30 space-y-1">
-              <h4 className="text-xs font-medium">Detail: {exec.id.slice(0, 12)}</h4>
-              {exec.stdout && (
-                <pre className="text-[10px] bg-muted p-1.5 rounded whitespace-pre-wrap max-h-24 overflow-y-auto font-mono">
-                  {exec.stdout}
-                </pre>
-              )}
-              {exec.stderr && (
-                <pre className="text-[10px] bg-destructive/10 p-1.5 rounded whitespace-pre-wrap max-h-24 overflow-y-auto font-mono">
-                  {exec.stderr}
-                </pre>
-              )}
-              {!exec.stdout && !exec.stderr && (
-                <p className="text-[10px] text-muted-foreground italic">No output recorded</p>
-              )}
-            </div>
-          );
-        })()}
+        {expandedId &&
+          (() => {
+            const exec = executions.find((e) => e.id === expandedId);
+            if (!exec) return null;
+            return (
+              <div className="mx-2 my-1 p-2 rounded bg-muted/30 space-y-1">
+                <h4 className="text-xs font-medium">Detail: {exec.id.slice(0, 12)}</h4>
+                {exec.stdout && (
+                  <pre className="text-[10px] bg-muted p-1.5 rounded whitespace-pre-wrap max-h-24 overflow-y-auto font-mono">
+                    {exec.stdout}
+                  </pre>
+                )}
+                {exec.stderr && (
+                  <pre className="text-[10px] bg-destructive/10 p-1.5 rounded whitespace-pre-wrap max-h-24 overflow-y-auto font-mono">
+                    {exec.stderr}
+                  </pre>
+                )}
+                {!exec.stdout && !exec.stderr && (
+                  <p className="text-[10px] text-muted-foreground italic">No output recorded</p>
+                )}
+              </div>
+            );
+          })()}
       </div>
     </div>
   );
@@ -348,8 +375,7 @@ function ExecutionGated({ children }: { children: React.ReactNode }) {
   });
 
   const enabled =
-    (configData?.config as Record<string, unknown>)?.enabled === true ||
-    securityPolicy?.allowExecution === true;
+    (configData?.config)!?.enabled === true || securityPolicy?.allowExecution === true;
 
   if (!enabled) {
     return (
@@ -598,7 +624,7 @@ export function EditorPage() {
     const editor = editorRef.current;
     if (!editor) return;
 
-    const codeBlockMatch = msg.content.match(/```[\w]*\n([\s\S]*?)```/);
+    const codeBlockMatch = /```[\w]*\n([\s\S]*?)```/.exec(msg.content);
     const textToInsert = codeBlockMatch ? codeBlockMatch[1] : msg.content;
 
     const position = editor.getPosition();
@@ -670,7 +696,9 @@ export function EditorPage() {
             {/* Editor toolbar */}
             <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30 flex-wrap">
               <button
-                onClick={() => setFilesPanelOpen(!filesPanelOpen)}
+                onClick={() => {
+                  setFilesPanelOpen(!filesPanelOpen);
+                }}
                 className="btn-ghost p-1 rounded"
                 title="Toggle files panel"
               >
@@ -681,7 +709,9 @@ export function EditorPage() {
               <input
                 type="text"
                 value={filename}
-                onChange={(e) => setFilename(e.target.value)}
+                onChange={(e) => {
+                  setFilename(e.target.value);
+                }}
                 className="bg-transparent border border-border rounded px-2 py-1 text-sm font-mono w-32 sm:w-48 focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="filename.ext"
               />
@@ -718,7 +748,9 @@ export function EditorPage() {
                   <input
                     type="text"
                     value={cwd}
-                    onChange={(e) => setCwd(e.target.value)}
+                    onChange={(e) => {
+                      setCwd(e.target.value);
+                    }}
                     className="flex-1 bg-transparent border border-border rounded px-2 py-1 text-xs font-mono focus:outline-none focus:ring-1 focus:ring-primary"
                     placeholder="/path/to/folder"
                   />
@@ -727,7 +759,9 @@ export function EditorPage() {
                   {files.map((file) => (
                     <button
                       key={file.path}
-                      onClick={() => setFilename(file.name)}
+                      onClick={() => {
+                        setFilename(file.name);
+                      }}
                       className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs font-mono text-left hover:bg-muted/50 ${
                         filename === file.name ? 'bg-primary/10 text-primary' : ''
                       }`}
@@ -747,7 +781,9 @@ export function EditorPage() {
                 language={language}
                 theme={theme === 'dark' ? 'vs-dark' : 'vs'}
                 value={editorContent}
-                onChange={(value) => setEditorContent(value ?? '')}
+                onChange={(value) => {
+                  setEditorContent(value ?? '');
+                }}
                 onMount={handleEditorMount}
                 options={{
                   minimap: { enabled: false },
@@ -772,7 +808,9 @@ export function EditorPage() {
               <div className="relative flex-1 min-w-0">
                 <select
                   value={effectivePersonalityId ?? ''}
-                  onChange={(e) => setSelectedPersonalityId(e.target.value || null)}
+                  onChange={(e) => {
+                    setSelectedPersonalityId(e.target.value || null);
+                  }}
                   className="w-full bg-transparent border border-border rounded px-2 py-1 text-xs appearance-none pr-6 focus:outline-none focus:ring-1 focus:ring-primary truncate"
                 >
                   <option value="">Default Assistant</option>
@@ -823,7 +861,9 @@ export function EditorPage() {
                     <p className="text-xs whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
                     {msg.role === 'assistant' && (
                       <button
-                        onClick={() => handleInsertAtCursor(msg)}
+                        onClick={() => {
+                          handleInsertAtCursor(msg);
+                        }}
                         className="flex items-center gap-1 text-[10px] text-primary mt-1.5 hover:underline"
                         title="Insert code at cursor position in editor"
                       >
@@ -871,7 +911,9 @@ export function EditorPage() {
               <div className="flex gap-2 items-end">
                 <textarea
                   value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  onChange={(e) => {
+                    setInput(e.target.value);
+                  }}
                   onKeyDown={handleKeyDown}
                   placeholder={`Message ${currentPersonality?.name ?? 'assistant'}...`}
                   disabled={isPending}
@@ -926,7 +968,9 @@ export function EditorPage() {
               {BOTTOM_TABS.map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveBottomTab(tab.id)}
+                  onClick={() => {
+                    setActiveBottomTab(tab.id);
+                  }}
                   className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
                     activeBottomTab === tab.id
                       ? 'border-primary text-primary'
@@ -943,7 +987,9 @@ export function EditorPage() {
                 <input
                   type="text"
                   value={cwd}
-                  onChange={(e) => setCwd(e.target.value)}
+                  onChange={(e) => {
+                    setCwd(e.target.value);
+                  }}
                   className="bg-transparent border-none px-1 py-0.5 text-xs font-mono min-w-0 focus:outline-none focus:ring-1 focus:ring-primary rounded"
                   placeholder="Working directory"
                 />
@@ -973,7 +1019,9 @@ export function EditorPage() {
               {terminalHistory.map((entry) => (
                 <div key={entry.id} className="space-y-1">
                   <div className="flex items-start gap-1">
-                    <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>➜</span>
+                    <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>
+                      ➜
+                    </span>
                     <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>
                       {cwd}
                     </span>
@@ -1020,7 +1068,9 @@ export function EditorPage() {
                   ref={terminalInputRef}
                   type="text"
                   value={terminalInput}
-                  onChange={(e) => setTerminalInput(e.target.value)}
+                  onChange={(e) => {
+                    setTerminalInput(e.target.value);
+                  }}
                   onKeyDown={handleTerminalKeyDown}
                   placeholder="Type command..."
                   disabled={terminalMutation.isPending}
@@ -1042,7 +1092,6 @@ export function EditorPage() {
               <HistoryPanel />
             </ExecutionGated>
           )}
-
         </div>
       </div>
     </div>

@@ -16,7 +16,12 @@ const SIGNING_KEY = 'a]&3Gk9$mQ#vL7@pR!wZ5*xN2^bT8+dF';
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   };
@@ -62,7 +67,7 @@ describe('AuthService', () => {
         rbac,
         rateLimiter,
         logger: noopLogger(),
-      },
+      }
     );
   });
 
@@ -87,12 +92,18 @@ describe('AuthService', () => {
 
     it('should reject invalid password', async () => {
       await expect(service.login('wrong-password', '127.0.0.1')).rejects.toThrow(AuthError);
-      await expect(service.login('wrong-password', '127.0.0.1')).rejects.toThrow('Invalid credentials');
+      await expect(service.login('wrong-password', '127.0.0.1')).rejects.toThrow(
+        'Invalid credentials'
+      );
     });
 
     it('should rate-limit after repeated failures', async () => {
       for (let i = 0; i < 5; i++) {
-        try { await service.login('wrong', '10.0.0.1'); } catch { /* expected */ }
+        try {
+          await service.login('wrong', '10.0.0.1');
+        } catch {
+          /* expected */
+        }
       }
       await expect(service.login('wrong', '10.0.0.1')).rejects.toThrow('Too many login attempts');
     });
@@ -243,7 +254,9 @@ describe('AuthService', () => {
       await service.resetPassword(ADMIN_PASSWORD_RAW, newPass);
 
       // Old password no longer works
-      await expect(service.login(ADMIN_PASSWORD_RAW, '127.0.0.1')).rejects.toThrow('Invalid credentials');
+      await expect(service.login(ADMIN_PASSWORD_RAW, '127.0.0.1')).rejects.toThrow(
+        'Invalid credentials'
+      );
 
       // New password works
       const result = await service.login(newPass, '127.0.0.1');
@@ -257,9 +270,9 @@ describe('AuthService', () => {
     });
 
     it('should reject weak new password (< 32 chars)', async () => {
-      await expect(
-        service.resetPassword(ADMIN_PASSWORD_RAW, 'short')
-      ).rejects.toThrow('New password must be at least 32 characters');
+      await expect(service.resetPassword(ADMIN_PASSWORD_RAW, 'short')).rejects.toThrow(
+        'New password must be at least 32 characters'
+      );
     });
 
     it('should invalidate existing tokens after reset', async () => {

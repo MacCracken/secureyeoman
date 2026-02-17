@@ -105,12 +105,14 @@ export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;
 
 // ─── MCP Config Section ─────────────────────────────────────
 
-export const McpConfigSchema = z.object({
-  enabled: z.boolean().default(true),
-  serverPort: z.number().int().min(1024).max(65535).default(3001),
-  exposeSkillsAsTools: z.boolean().default(true),
-  exposeKnowledgeAsResources: z.boolean().default(true),
-}).default({});
+export const McpConfigSchema = z
+  .object({
+    enabled: z.boolean().default(true),
+    serverPort: z.number().int().min(1024).max(65535).default(3001),
+    exposeSkillsAsTools: z.boolean().default(true),
+    exposeKnowledgeAsResources: z.boolean().default(true),
+  })
+  .default({});
 
 export type McpConfig = z.infer<typeof McpConfigSchema>;
 

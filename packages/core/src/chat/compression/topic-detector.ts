@@ -37,7 +37,7 @@ export interface BoundaryCheckResult {
  */
 export function isTopicBoundary(
   input: BoundaryCheckInput,
-  config: TopicBoundaryConfig = DEFAULT_CONFIG,
+  config: TopicBoundaryConfig = DEFAULT_CONFIG
 ): BoundaryCheckResult {
   const contentLower = input.content.toLowerCase();
 

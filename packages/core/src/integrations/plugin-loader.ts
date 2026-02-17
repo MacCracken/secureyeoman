@@ -104,7 +104,9 @@ export class PluginLoader {
         this.plugins.set(plugin.platform, plugin);
         this.logger.info(`Loaded plugin: ${plugin.platform} from ${entry}`);
       } catch (err) {
-        this.logger.error(`Failed to load plugin from ${entry}: ${err instanceof Error ? err.message : String(err)}`);
+        this.logger.error(
+          `Failed to load plugin from ${entry}: ${err instanceof Error ? err.message : String(err)}`
+        );
       }
     }
 

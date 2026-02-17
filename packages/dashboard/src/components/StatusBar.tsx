@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import {
-  Activity, RefreshCw, LogOut, Sun, Moon, User, ChevronDown, Loader2,
-} from 'lucide-react';
+import { Activity, RefreshCw, LogOut, Sun, Moon, User, ChevronDown, Loader2 } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 import { useSessionTimeout } from '../hooks/useSessionTimeout';
 import { getAccessToken } from '../api/client';
@@ -25,7 +23,13 @@ function parseJwtRole(): string {
   }
 }
 
-export function StatusBar({ isConnected, wsConnected, reconnecting, onRefresh, onLogout }: StatusBarProps) {
+export function StatusBar({
+  isConnected,
+  wsConnected,
+  reconnecting,
+  onRefresh,
+  onLogout,
+}: StatusBarProps) {
   const { theme, toggle } = useTheme();
   const { showWarning, dismiss } = useSessionTimeout(3600);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -40,15 +44,23 @@ export function StatusBar({ isConnected, wsConnected, reconnecting, onRefresh, o
       }
     };
     document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    return () => {
+      document.removeEventListener('mousedown', handler);
+    };
   }, []);
 
   return (
     <>
       <div className="flex items-center gap-2 sm:gap-4">
         {/* Connection Status */}
-        <div className="flex items-center gap-2" role="status" aria-label="Server connection status">
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success' : 'bg-destructive'}`} />
+        <div
+          className="flex items-center gap-2"
+          role="status"
+          aria-label="Server connection status"
+        >
+          <div
+            className={`w-2 h-2 rounded-full ${isConnected ? 'bg-success' : 'bg-destructive'}`}
+          />
           <span className="text-sm text-muted-foreground hidden sm:inline">
             {isConnected ? 'Connected' : 'Disconnected'}
           </span>
@@ -59,7 +71,9 @@ export function StatusBar({ isConnected, wsConnected, reconnecting, onRefresh, o
           {reconnecting ? (
             <Loader2 className="w-4 h-4 animate-spin text-warning" />
           ) : (
-            <Activity className={`w-4 h-4 ${wsConnected ? 'text-success' : 'text-muted-foreground'}`} />
+            <Activity
+              className={`w-4 h-4 ${wsConnected ? 'text-success' : 'text-muted-foreground'}`}
+            />
           )}
           <span className="text-sm text-muted-foreground hidden sm:inline">
             {reconnecting ? 'Reconnecting...' : wsConnected ? 'Live' : 'Polling'}
@@ -67,25 +81,25 @@ export function StatusBar({ isConnected, wsConnected, reconnecting, onRefresh, o
         </div>
 
         {/* Refresh */}
-        <button
-          onClick={onRefresh}
-          className="btn-ghost p-2"
-          aria-label="Refresh metrics"
-        >
+        <button onClick={onRefresh} className="btn-ghost p-2" aria-label="Refresh metrics">
           <RefreshCw className="w-4 h-4" />
         </button>
 
         {/* User Profile Dropdown */}
         <div ref={dropdownRef} className="relative">
           <button
-            onClick={() => setProfileOpen((v) => !v)}
+            onClick={() => {
+              setProfileOpen((v) => !v);
+            }}
             className="btn-ghost p-2 flex items-center gap-1"
             aria-label="User menu"
             aria-expanded={profileOpen}
             aria-haspopup="menu"
           >
             <User className="w-4 h-4" />
-            <ChevronDown className={`w-3 h-3 transition-transform ${profileOpen ? 'rotate-180' : ''}`} />
+            <ChevronDown
+              className={`w-3 h-3 transition-transform ${profileOpen ? 'rotate-180' : ''}`}
+            />
           </button>
 
           {profileOpen && (
@@ -101,7 +115,10 @@ export function StatusBar({ isConnected, wsConnected, reconnecting, onRefresh, o
 
               {/* Theme toggle */}
               <button
-                onClick={() => { toggle(); setProfileOpen(false); }}
+                onClick={() => {
+                  toggle();
+                  setProfileOpen(false);
+                }}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-colors"
                 role="menuitem"
               >
@@ -111,7 +128,10 @@ export function StatusBar({ isConnected, wsConnected, reconnecting, onRefresh, o
 
               {/* Logout */}
               <button
-                onClick={() => { setProfileOpen(false); onLogout(); }}
+                onClick={() => {
+                  setProfileOpen(false);
+                  onLogout();
+                }}
                 className="w-full text-left px-3 py-2 text-sm hover:bg-muted/50 flex items-center gap-2 transition-colors text-destructive"
                 role="menuitem"
               >

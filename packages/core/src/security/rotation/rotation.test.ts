@@ -19,7 +19,12 @@ const ADMIN_PASSWORD = sha256(ADMIN_PASSWORD_RAW);
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   };
@@ -143,32 +148,38 @@ describe('SecretRotationManager', () => {
   });
 
   it('getStatus returns "expired" for past-expiry secret', async () => {
-    await manager.trackSecret(makeMeta({
-      name: 'EXPIRED',
-      expiresAt: Date.now() - 86400000,
-    }));
+    await manager.trackSecret(
+      makeMeta({
+        name: 'EXPIRED',
+        expiresAt: Date.now() - 86400000,
+      })
+    );
     const statuses = await manager.getStatus();
     expect(statuses[0].status).toBe('expired');
   });
 
   it('getStatus returns "expiring_soon" when within warning window', async () => {
-    await manager.trackSecret(makeMeta({
-      name: 'EXPIRING',
-      expiresAt: Date.now() + 3 * 86400000, // 3 days, warning is 7
-    }));
+    await manager.trackSecret(
+      makeMeta({
+        name: 'EXPIRING',
+        expiresAt: Date.now() + 3 * 86400000, // 3 days, warning is 7
+      })
+    );
     const statuses = await manager.getStatus();
     expect(statuses[0].status).toBe('expiring_soon');
     expect(statuses[0].daysUntilExpiry).toBeLessThanOrEqual(4);
   });
 
   it('getStatus returns "rotation_due" for overdue auto-rotate secret', async () => {
-    await manager.trackSecret(makeMeta({
-      name: 'DUE',
-      autoRotate: true,
-      rotationIntervalDays: 1,
-      createdAt: Date.now() - 2 * 86400000, // created 2 days ago
-      expiresAt: Date.now() + 86400000,
-    }));
+    await manager.trackSecret(
+      makeMeta({
+        name: 'DUE',
+        autoRotate: true,
+        rotationIntervalDays: 1,
+        createdAt: Date.now() - 2 * 86400000, // created 2 days ago
+        expiresAt: Date.now() + 86400000,
+      })
+    );
     const statuses = await manager.getStatus();
     expect(statuses[0].status).toBe('rotation_due');
   });
@@ -177,12 +188,14 @@ describe('SecretRotationManager', () => {
     const envKey = '__ROTATE_TEST__';
     process.env[envKey] = 'old-secret';
 
-    await manager.trackSecret(makeMeta({
-      name: envKey,
-      autoRotate: true,
-      rotationIntervalDays: 1,
-      category: 'encryption',
-    }));
+    await manager.trackSecret(
+      makeMeta({
+        name: envKey,
+        autoRotate: true,
+        rotationIntervalDays: 1,
+        category: 'encryption',
+      })
+    );
 
     const newValue = await manager.rotateSecret(envKey);
     expect(newValue).toBeDefined();
@@ -207,13 +220,15 @@ describe('SecretRotationManager', () => {
     const onRotate = vi.fn();
     manager.setCallbacks({ onRotate });
 
-    await manager.trackSecret(makeMeta({
-      name: envKey,
-      autoRotate: true,
-      rotationIntervalDays: 1,
-      createdAt: Date.now() - 2 * 86400000,
-      expiresAt: Date.now() + 86400000,
-    }));
+    await manager.trackSecret(
+      makeMeta({
+        name: envKey,
+        autoRotate: true,
+        rotationIntervalDays: 1,
+        createdAt: Date.now() - 2 * 86400000,
+        expiresAt: Date.now() + 86400000,
+      })
+    );
 
     await manager.checkAndRotate();
     expect(onRotate).toHaveBeenCalledOnce();
@@ -226,10 +241,12 @@ describe('SecretRotationManager', () => {
     const onWarning = vi.fn();
     manager.setCallbacks({ onWarning });
 
-    await manager.trackSecret(makeMeta({
-      name: 'WARN_SECRET',
-      expiresAt: Date.now() + 3 * 86400000,
-    }));
+    await manager.trackSecret(
+      makeMeta({
+        name: 'WARN_SECRET',
+        expiresAt: Date.now() + 3 * 86400000,
+      })
+    );
 
     await manager.checkAndRotate();
     expect(onWarning).toHaveBeenCalledOnce();
@@ -269,7 +286,7 @@ describe('JWT dual-key verification (grace period)', () => {
         rbac: new RBAC(),
         rateLimiter: new RateLimiter({ defaultWindowMs: 60000, defaultMaxRequests: 100 }),
         logger: noopLogger(),
-      },
+      }
     );
   });
 

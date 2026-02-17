@@ -84,19 +84,21 @@ export class IMessageIntegration implements Integration {
     } catch {
       throw new Error(
         `Cannot read iMessage database at ${this.chatDbPath}. ` +
-        'Ensure Full Disk Access is granted to this process.',
+          'Ensure Full Disk Access is granted to this process.'
       );
     }
 
     // Get current max rowid so we only process new messages
     try {
       const db = new Database(this.chatDbPath, { readonly: true });
-      const row = db.prepare('SELECT MAX(ROWID) as maxId FROM message').get() as { maxId: number | null } | undefined;
+      const row = db.prepare('SELECT MAX(ROWID) as maxId FROM message').get() as
+        | { maxId: number | null }
+        | undefined;
       this.lastRowId = row?.maxId ?? 0;
       db.close();
     } catch (err) {
       throw new Error(
-        `Failed to read iMessage database: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        `Failed to read iMessage database: ${err instanceof Error ? err.message : 'Unknown error'}`
       );
     }
 
@@ -128,7 +130,11 @@ export class IMessageIntegration implements Integration {
     this.logger?.info('iMessage polling stopped');
   }
 
-  async sendMessage(chatId: string, text: string, _metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    _metadata?: Record<string, unknown>
+  ): Promise<string> {
     // Escape single quotes for AppleScript
     const escapedText = text.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
     const escapedChatId = chatId.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
@@ -146,7 +152,7 @@ export class IMessageIntegration implements Integration {
       return messageId;
     } catch (err) {
       throw new Error(
-        `Failed to send iMessage: ${err instanceof Error ? err.message : 'Unknown error'}`,
+        `Failed to send iMessage: ${err instanceof Error ? err.message : 'Unknown error'}`
       );
     }
   }
@@ -160,7 +166,9 @@ export class IMessageIntegration implements Integration {
     try {
       db = new Database(this.chatDbPath, { readonly: true });
 
-      const rows = db.prepare(`
+      const rows = db
+        .prepare(
+          `
         SELECT m.ROWID as rowid, m.guid, m.text, m.handle_id, m.date, m.is_from_me, c.room_name as cache_roomnames
         FROM message m
         LEFT JOIN chat_message_join cmj ON m.ROWID = cmj.message_id
@@ -168,15 +176,19 @@ export class IMessageIntegration implements Integration {
         WHERE m.ROWID > ? AND m.is_from_me = 0 AND m.text IS NOT NULL
         ORDER BY m.ROWID ASC
         LIMIT 50
-      `).all(this.lastRowId) as ChatDbRow[];
+      `
+        )
+        .all(this.lastRowId) as ChatDbRow[];
 
       if (rows.length === 0) return;
 
       // Build handle map for sender info
-      const handleIds = [...new Set(rows.map(r => r.handle_id))];
+      const handleIds = [...new Set(rows.map((r) => r.handle_id))];
       const handles = new Map<number, string>();
       for (const hid of handleIds) {
-        const h = db.prepare('SELECT rowid, id FROM handle WHERE rowid = ?').get(hid) as HandleRow | undefined;
+        const h = db.prepare('SELECT rowid, id FROM handle WHERE rowid = ?').get(hid) as
+          | HandleRow
+          | undefined;
         if (h) handles.set(h.rowid, h.id);
       }
 

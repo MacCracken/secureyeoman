@@ -52,7 +52,9 @@ Options:
             ctx.stderr.write(`Failed to fetch extensions: ${res.status}\n`);
             return 1;
           }
-          const data = res.data as { extensions: Array<{ id: string; name: string; version: string; enabled: boolean }> };
+          const data = res.data as {
+            extensions: { id: string; name: string; version: string; enabled: boolean }[];
+          };
           if (jsonResult.value) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
@@ -73,7 +75,15 @@ Options:
             ctx.stderr.write(`Failed to fetch hooks: ${res.status}\n`);
             return 1;
           }
-          const data = res.data as { hooks: Array<{ id: string; hookPoint: string; semantics: string; priority: number; enabled: boolean }> };
+          const data = res.data as {
+            hooks: {
+              id: string;
+              hookPoint: string;
+              semantics: string;
+              priority: number;
+              enabled: boolean;
+            }[];
+          };
           if (jsonResult.value) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
@@ -95,7 +105,9 @@ Options:
             ctx.stderr.write(`Failed to fetch webhooks: ${res.status}\n`);
             return 1;
           }
-          const data = res.data as { webhooks: Array<{ id: string; url: string; hookPoints: string[]; enabled: boolean }> };
+          const data = res.data as {
+            webhooks: { id: string; url: string; hookPoints: string[]; enabled: boolean }[];
+          };
           if (jsonResult.value) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
@@ -116,7 +128,7 @@ Options:
             ctx.stderr.write(`Discovery failed: ${res.status}\n`);
             return 1;
           }
-          const data = res.data as { extensions: Array<{ id: string; name: string }> };
+          const data = res.data as { extensions: { id: string; name: string }[] };
           const count = (data.extensions ?? []).length;
           ctx.stdout.write(`Discovered ${count} extension(s)\n`);
           return 0;

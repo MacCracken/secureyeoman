@@ -33,8 +33,12 @@ export function VoiceOverlay({
     if (isActive) {
       setIsVisible(true);
     } else {
-      const timer = setTimeout(() => setIsVisible(false), 500);
-      return () => clearTimeout(timer);
+      const timer = setTimeout(() => {
+        setIsVisible(false);
+      }, 500);
+      return () => {
+        clearTimeout(timer);
+      };
     }
   }, [isActive]);
 

@@ -54,7 +54,7 @@ function renderWithRoute(route = '/security?tab=nodes') {
       <QueryClientProvider client={qc}>
         <SecurityPage />
       </QueryClientProvider>
-    </MemoryRouter>,
+    </MemoryRouter>
   );
 }
 
@@ -297,6 +297,8 @@ describe('SecurityPage — System Details tab', () => {
 
     fireEvent.click(screen.getByText('System Details'));
 
-    expect(await screen.findByText('Detailed status for each system component')).toBeInTheDocument();
+    expect(
+      await screen.findByText('Detailed status for each system component')
+    ).toBeInTheDocument();
   });
 });

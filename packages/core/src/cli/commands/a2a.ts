@@ -54,7 +54,15 @@ Options:
             ctx.stderr.write(`Failed to fetch peers: ${res.status}\n`);
             return 1;
           }
-          const data = res.data as { peers: Array<{ id: string; name: string; url: string; trustLevel: string; status: string }> };
+          const data = res.data as {
+            peers: {
+              id: string;
+              name: string;
+              url: string;
+              trustLevel: string;
+              status: string;
+            }[];
+          };
           if (jsonResult.value) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
@@ -117,7 +125,9 @@ Options:
           const levelResult = extractFlag(argv, 'level');
 
           if (!id || !levelResult.value) {
-            ctx.stderr.write('Usage: secureyeoman a2a trust <id> --level <untrusted|verified|trusted>\n');
+            ctx.stderr.write(
+              'Usage: secureyeoman a2a trust <id> --level <untrusted|verified|trusted>\n'
+            );
             return 1;
           }
 
@@ -139,7 +149,7 @@ Options:
             ctx.stderr.write(`Discovery failed: ${res.status}\n`);
             return 1;
           }
-          const data = res.data as { peers: Array<{ id: string; name: string }> };
+          const data = res.data as { peers: { id: string; name: string }[] };
           const count = (data.peers ?? []).length;
           ctx.stdout.write(`Discovered ${count} peer(s)\n`);
           return 0;
@@ -176,7 +186,16 @@ Options:
             ctx.stderr.write(`Failed to fetch messages: ${res.status}\n`);
             return 1;
           }
-          const data = res.data as { messages: Array<{ id: string; type: string; fromPeerId: string; toPeerId: string; timestamp: number }>; total: number };
+          const data = res.data as {
+            messages: {
+              id: string;
+              type: string;
+              fromPeerId: string;
+              toPeerId: string;
+              timestamp: number;
+            }[];
+            total: number;
+          };
           if (jsonResult.value) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {

@@ -8,8 +8,12 @@ function createMockManager(): MultimodalManager {
   return {
     analyzeImage: vi.fn().mockResolvedValue({ description: 'test', labels: [], durationMs: 10 }),
     transcribeAudio: vi.fn().mockResolvedValue({ text: 'hello', durationMs: 10 }),
-    synthesizeSpeech: vi.fn().mockResolvedValue({ audioBase64: 'dGVzdA==', format: 'mp3', durationMs: 10 }),
-    generateImage: vi.fn().mockResolvedValue({ imageUrl: 'https://example.openai.com/img.png', durationMs: 10 }),
+    synthesizeSpeech: vi
+      .fn()
+      .mockResolvedValue({ audioBase64: 'dGVzdA==', format: 'mp3', durationMs: 10 }),
+    generateImage: vi
+      .fn()
+      .mockResolvedValue({ imageUrl: 'https://example.openai.com/img.png', durationMs: 10 }),
     getStorage: vi.fn().mockReturnValue({
       listJobs: vi.fn().mockResolvedValue({ jobs: [], total: 0 }),
     }),
@@ -161,7 +165,7 @@ describe('Multimodal Routes — validation', () => {
   describe('error sanitization', () => {
     it('strips API keys from error messages', async () => {
       (manager.analyzeImage as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('Failed with key sk-abc123def456ghi789jkl012mno345'),
+        new Error('Failed with key sk-abc123def456ghi789jkl012mno345')
       );
 
       const res = await app.inject({
@@ -177,7 +181,7 @@ describe('Multimodal Routes — validation', () => {
 
     it('strips Bearer tokens from error messages', async () => {
       (manager.generateImage as ReturnType<typeof vi.fn>).mockRejectedValue(
-        new Error('Auth failed with Bearer eyJhbGciOiJIUzI1NiJ9.test'),
+        new Error('Auth failed with Bearer eyJhbGciOiJIUzI1NiJ9.test')
       );
 
       const res = await app.inject({

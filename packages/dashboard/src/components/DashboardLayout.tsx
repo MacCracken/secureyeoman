@@ -62,8 +62,12 @@ const AgentsPage = lazy(() => import('./AgentsPage').then((m) => ({ default: m.A
 const ExtensionsPage = lazy(() =>
   import('./ExtensionsPage').then((m) => ({ default: m.ExtensionsPage }))
 );
-const ProactivePage = lazy(() => import('./ProactivePage').then((m) => ({ default: m.ProactivePage })));
-const ExperimentsPage = lazy(() => import('./ExperimentsPage').then((m) => ({ default: m.ExperimentsPage })));
+const ProactivePage = lazy(() =>
+  import('./ProactivePage').then((m) => ({ default: m.ProactivePage }))
+);
+const ExperimentsPage = lazy(() =>
+  import('./ExperimentsPage').then((m) => ({ default: m.ExperimentsPage }))
+);
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -174,7 +178,9 @@ export function DashboardLayout() {
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0 md:hidden">
                   <button
                     className="btn-ghost p-2"
-                    onClick={() => setMobileOpen(true)}
+                    onClick={() => {
+                      setMobileOpen(true);
+                    }}
                     aria-label="Open navigation menu"
                   >
                     <Menu className="w-5 h-5" />

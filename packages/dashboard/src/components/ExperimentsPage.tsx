@@ -1,15 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  FlaskConical,
-  Plus,
-  Play,
-  Square,
-  Trash2,
-  Loader2,
-  X,
-  ShieldAlert,
-} from 'lucide-react';
+import { FlaskConical, Plus, Play, Square, Trash2, Loader2, X, ShieldAlert } from 'lucide-react';
 import { fetchSecurityPolicy } from '../api/client';
 
 // ── Experiment types & API ────────────────────────────────────────
@@ -110,8 +101,8 @@ export function ExperimentsPage() {
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">Experiments are Disabled</h2>
           <p className="text-muted-foreground mb-4">
-            Enable <code className="text-sm bg-muted px-1.5 py-0.5 rounded">allowExperiments</code> in
-            Settings &gt; Security to activate A/B experiments.
+            Enable <code className="text-sm bg-muted px-1.5 py-0.5 rounded">allowExperiments</code>{' '}
+            in Settings &gt; Security to activate A/B experiments.
           </p>
           <p className="text-xs text-muted-foreground">
             This setting must be explicitly enabled after initialization and saved to the database.
@@ -168,7 +159,9 @@ function ExperimentsList() {
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">{experiments.length} experiment(s)</p>
         <button
-          onClick={() => setShowCreate(!showCreate)}
+          onClick={() => {
+            setShowCreate(!showCreate);
+          }}
           className="flex items-center gap-2 px-3 py-2 text-sm bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -180,7 +173,14 @@ function ExperimentsList() {
         <div className="card p-4 space-y-3 border-primary/30">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-semibold">New Experiment</h3>
-            <button onClick={() => { setShowCreate(false); setName(''); setDescription(''); }} className="p-1 rounded hover:bg-muted/50">
+            <button
+              onClick={() => {
+                setShowCreate(false);
+                setName('');
+                setDescription('');
+              }}
+              className="p-1 rounded hover:bg-muted/50"
+            >
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -188,7 +188,9 @@ function ExperimentsList() {
             <label className="text-xs font-medium text-muted-foreground">Name</label>
             <input
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+              }}
               className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
               placeholder="Experiment name"
             />
@@ -197,17 +199,26 @@ function ExperimentsList() {
             <label className="text-xs font-medium text-muted-foreground">Description</label>
             <input
               value={description}
-              onChange={(e) => setDescription(e.target.value)}
+              onChange={(e) => {
+                setDescription(e.target.value);
+              }}
               className="w-full mt-1 px-3 py-2 text-sm border rounded-md bg-background"
               placeholder="What this experiment tests"
             />
           </div>
           <div className="flex justify-end gap-2">
-            <button onClick={() => { setShowCreate(false); setName(''); setDescription(''); }} className="px-4 py-2 text-sm border rounded-md hover:bg-muted/50 transition-colors">
+            <button
+              onClick={() => {
+                setShowCreate(false);
+                setName('');
+                setDescription('');
+              }}
+              className="px-4 py-2 text-sm border rounded-md hover:bg-muted/50 transition-colors"
+            >
               Cancel
             </button>
             <button
-              onClick={() =>
+              onClick={() => {
                 createMut.mutate({
                   name,
                   description,
@@ -215,8 +226,8 @@ function ExperimentsList() {
                     { name: 'Control', config: {}, trafficPercent: 50 },
                     { name: 'Variant A', config: {}, trafficPercent: 50 },
                   ],
-                })
-              }
+                });
+              }}
               disabled={!name || createMut.isPending}
               className="px-4 py-2 text-sm bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-50"
             >
@@ -242,7 +253,9 @@ function ExperimentsList() {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-medium">{exp.name}</p>
-                  <span className={`px-2 py-0.5 rounded text-[10px] font-medium border ${EXP_STATUS_STYLES[exp.status] ?? 'bg-muted text-muted-foreground border-border'}`}>
+                  <span
+                    className={`px-2 py-0.5 rounded text-[10px] font-medium border ${EXP_STATUS_STYLES[exp.status] ?? 'bg-muted text-muted-foreground border-border'}`}
+                  >
                     {exp.status}
                   </span>
                 </div>
@@ -250,13 +263,16 @@ function ExperimentsList() {
                   <p className="text-xs text-muted-foreground mt-1 truncate">{exp.description}</p>
                 )}
                 <p className="text-xs text-muted-foreground mt-1">
-                  {exp.variants.length} variants &middot; Created {new Date(exp.createdAt).toLocaleDateString()}
+                  {exp.variants.length} variants &middot; Created{' '}
+                  {new Date(exp.createdAt).toLocaleDateString()}
                 </p>
               </div>
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 {exp.status === 'draft' && (
                   <button
-                    onClick={() => startMut.mutate(exp.id)}
+                    onClick={() => {
+                      startMut.mutate(exp.id);
+                    }}
                     className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
                     title="Start experiment"
                   >
@@ -265,7 +281,9 @@ function ExperimentsList() {
                 )}
                 {exp.status === 'running' && (
                   <button
-                    onClick={() => stopMut.mutate(exp.id)}
+                    onClick={() => {
+                      stopMut.mutate(exp.id);
+                    }}
                     className="p-1.5 rounded hover:bg-muted/50 text-muted-foreground"
                     title="Stop experiment"
                   >
@@ -273,7 +291,9 @@ function ExperimentsList() {
                   </button>
                 )}
                 <button
-                  onClick={() => deleteMut.mutate(exp.id)}
+                  onClick={() => {
+                    deleteMut.mutate(exp.id);
+                  }}
                   className="p-1.5 rounded hover:bg-muted/50 text-destructive"
                   title="Delete experiment"
                 >

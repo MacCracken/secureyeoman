@@ -137,8 +137,22 @@ describe('ChatPage', () => {
   it('renders conversation list from API', async () => {
     mockFetchConversations.mockResolvedValue({
       conversations: [
-        { id: 'conv-1', title: 'First chat', personalityId: null, messageCount: 5, createdAt: Date.now(), updatedAt: Date.now() },
-        { id: 'conv-2', title: 'Second chat', personalityId: null, messageCount: 3, createdAt: Date.now(), updatedAt: Date.now() },
+        {
+          id: 'conv-1',
+          title: 'First chat',
+          personalityId: null,
+          messageCount: 5,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+        {
+          id: 'conv-2',
+          title: 'Second chat',
+          personalityId: null,
+          messageCount: 3,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
       ],
       total: 2,
     });
@@ -208,7 +222,10 @@ describe('ChatPage', () => {
   it('disables input while loading', async () => {
     let resolveChat: (value: any) => void;
     mockSendChatMessage.mockImplementation(
-      () => new Promise((resolve) => { resolveChat = resolve; })
+      () =>
+        new Promise((resolve) => {
+          resolveChat = resolve;
+        })
     );
 
     const user = userEvent.setup();
@@ -262,10 +279,19 @@ describe('ChatPage', () => {
       personalities: [
         defaultPersonality,
         {
-          id: 'p-2', name: 'JARVIS', description: 'Snarky butler',
-          systemPrompt: '', traits: {}, sex: 'male' as const,
-          voice: '', preferredLanguage: '', defaultModel: null,
-          includeArchetypes: true, isActive: false, createdAt: Date.now(), updatedAt: Date.now(),
+          id: 'p-2',
+          name: 'JARVIS',
+          description: 'Snarky butler',
+          systemPrompt: '',
+          traits: {},
+          sex: 'male' as const,
+          voice: '',
+          preferredLanguage: '',
+          defaultModel: null,
+          includeArchetypes: true,
+          isActive: false,
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
         },
       ],
     });
@@ -350,7 +376,14 @@ describe('ChatPage', () => {
 
   it('Remember button calls the remember API', async () => {
     mockRememberChatMessage.mockResolvedValue({
-      memory: { id: 'mem-1', type: 'episodic', content: 'test', source: 'dashboard_chat', importance: 0.5, createdAt: Date.now() },
+      memory: {
+        id: 'mem-1',
+        type: 'episodic',
+        content: 'test',
+        source: 'dashboard_chat',
+        importance: 0.5,
+        createdAt: Date.now(),
+      },
     });
 
     const user = userEvent.setup();
@@ -370,7 +403,7 @@ describe('ChatPage', () => {
     await waitFor(() => {
       expect(mockRememberChatMessage).toHaveBeenCalledWith(
         'Hello! I am FRIDAY, your AI assistant.',
-        undefined,
+        undefined
       );
     });
 

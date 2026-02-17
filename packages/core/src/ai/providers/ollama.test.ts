@@ -37,13 +37,16 @@ describe('OllamaProvider', () => {
   describe('chat', () => {
     it('should map request and response', async () => {
       vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response(JSON.stringify({
-          model: 'llama3',
-          message: { role: 'assistant', content: 'Hello from Ollama!' },
-          done: true,
-          prompt_eval_count: 10,
-          eval_count: 20,
-        }), { status: 200, headers: { 'content-type': 'application/json' } }),
+        new Response(
+          JSON.stringify({
+            model: 'llama3',
+            message: { role: 'assistant', content: 'Hello from Ollama!' },
+            done: true,
+            prompt_eval_count: 10,
+            eval_count: 20,
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
       );
 
       const response = await provider.chat(simpleRequest);
@@ -56,17 +59,20 @@ describe('OllamaProvider', () => {
 
     it('should handle tool calls', async () => {
       vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response(JSON.stringify({
-          model: 'llama3',
-          message: {
-            role: 'assistant',
-            content: '',
-            tool_calls: [{ function: { name: 'search', arguments: { query: 'test' } } }],
-          },
-          done: true,
-          prompt_eval_count: 15,
-          eval_count: 10,
-        }), { status: 200, headers: { 'content-type': 'application/json' } }),
+        new Response(
+          JSON.stringify({
+            model: 'llama3',
+            message: {
+              role: 'assistant',
+              content: '',
+              tool_calls: [{ function: { name: 'search', arguments: { query: 'test' } } }],
+            },
+            done: true,
+            prompt_eval_count: 15,
+            eval_count: 10,
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
       );
 
       const response = await provider.chat(simpleRequest);
@@ -77,11 +83,14 @@ describe('OllamaProvider', () => {
 
     it('should send correct request body', async () => {
       const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response(JSON.stringify({
-          model: 'llama3',
-          message: { role: 'assistant', content: 'ok' },
-          done: true,
-        }), { status: 200 }),
+        new Response(
+          JSON.stringify({
+            model: 'llama3',
+            message: { role: 'assistant', content: 'ok' },
+            done: true,
+          }),
+          { status: 200 }
+        )
       );
 
       await provider.chat(simpleRequest);
@@ -91,7 +100,7 @@ describe('OllamaProvider', () => {
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-        }),
+        })
       );
 
       const body = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
@@ -109,17 +118,13 @@ describe('OllamaProvider', () => {
     });
 
     it('should throw InvalidResponseError on 404 (model not found)', async () => {
-      vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response('not found', { status: 404 }),
-      );
+      vi.spyOn(global, 'fetch').mockResolvedValue(new Response('not found', { status: 404 }));
 
       await expect(provider.chat(simpleRequest)).rejects.toThrow(InvalidResponseError);
     });
 
     it('should throw ProviderUnavailableError on 500', async () => {
-      vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response('server error', { status: 500 }),
-      );
+      vi.spyOn(global, 'fetch').mockResolvedValue(new Response('server error', { status: 500 }));
 
       await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
     });
@@ -128,12 +133,15 @@ describe('OllamaProvider', () => {
   describe('fetchAvailableModels', () => {
     it('should return all locally downloaded models', async () => {
       const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response(JSON.stringify({
-          models: [
-            { name: 'llama3:latest', size: 4700000000 },
-            { name: 'codellama:7b', size: 3800000000 },
-          ],
-        }), { status: 200, headers: { 'content-type': 'application/json' } }),
+        new Response(
+          JSON.stringify({
+            models: [
+              { name: 'llama3:latest', size: 4700000000 },
+              { name: 'codellama:7b', size: 3800000000 },
+            ],
+          }),
+          { status: 200, headers: { 'content-type': 'application/json' } }
+        )
       );
 
       const models = await OllamaProvider.fetchAvailableModels('http://localhost:11434');
@@ -153,9 +161,7 @@ describe('OllamaProvider', () => {
     });
 
     it('should return empty array on non-ok response', async () => {
-      vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response('error', { status: 500 }),
-      );
+      vi.spyOn(global, 'fetch').mockResolvedValue(new Response('error', { status: 500 }));
 
       const models = await OllamaProvider.fetchAvailableModels();
       expect(models).toEqual([]);
@@ -167,7 +173,12 @@ describe('OllamaProvider', () => {
       const chunks = [
         JSON.stringify({ message: { content: 'Hello' }, done: false }) + '\n',
         JSON.stringify({ message: { content: ' world' }, done: false }) + '\n',
-        JSON.stringify({ message: { content: '' }, done: true, prompt_eval_count: 5, eval_count: 10 }) + '\n',
+        JSON.stringify({
+          message: { content: '' },
+          done: true,
+          prompt_eval_count: 5,
+          eval_count: 10,
+        }) + '\n',
       ];
 
       const encoder = new TextEncoder();
@@ -180,9 +191,7 @@ describe('OllamaProvider', () => {
         },
       });
 
-      vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response(stream, { status: 200 }),
-      );
+      vi.spyOn(global, 'fetch').mockResolvedValue(new Response(stream, { status: 200 }));
 
       const received: any[] = [];
       const streamReq: AIRequest = { ...simpleRequest, stream: true };
@@ -193,7 +202,7 @@ describe('OllamaProvider', () => {
       expect(received.length).toBeGreaterThanOrEqual(2);
       expect(received[0].type).toBe('content_delta');
       expect(received[0].content).toBe('Hello');
-      const doneChunk = received.find(c => c.type === 'done');
+      const doneChunk = received.find((c) => c.type === 'done');
       expect(doneChunk).toBeDefined();
       expect(doneChunk.usage.totalTokens).toBe(15);
     });

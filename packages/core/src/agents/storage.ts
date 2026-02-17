@@ -174,30 +174,28 @@ export class SubAgentStorage extends PgBaseStorage {
           profile.maxTokenBudget,
           JSON.stringify(profile.allowedTools),
           profile.defaultModel,
-        ],
+        ]
       );
     }
   }
 
   async getProfile(id: string): Promise<AgentProfile | null> {
-    const row = await this.queryOne<ProfileRow>(
-      `SELECT * FROM agents.profiles WHERE id = $1`,
-      [id],
-    );
+    const row = await this.queryOne<ProfileRow>(`SELECT * FROM agents.profiles WHERE id = $1`, [
+      id,
+    ]);
     return row ? profileFromRow(row) : null;
   }
 
   async getProfileByName(name: string): Promise<AgentProfile | null> {
-    const row = await this.queryOne<ProfileRow>(
-      `SELECT * FROM agents.profiles WHERE name = $1`,
-      [name],
-    );
+    const row = await this.queryOne<ProfileRow>(`SELECT * FROM agents.profiles WHERE name = $1`, [
+      name,
+    ]);
     return row ? profileFromRow(row) : null;
   }
 
   async listProfiles(): Promise<AgentProfile[]> {
     const rows = await this.queryMany<ProfileRow>(
-      `SELECT * FROM agents.profiles ORDER BY is_builtin DESC, name ASC`,
+      `SELECT * FROM agents.profiles ORDER BY is_builtin DESC, name ASC`
     );
     return rows.map(profileFromRow);
   }
@@ -216,7 +214,7 @@ export class SubAgentStorage extends PgBaseStorage {
         data.maxTokenBudget ?? 50000,
         JSON.stringify(data.allowedTools ?? []),
         data.defaultModel ?? null,
-      ],
+      ]
     );
     return profileFromRow(row!);
   }
@@ -261,7 +259,7 @@ export class SubAgentStorage extends PgBaseStorage {
 
     const row = await this.queryOne<ProfileRow>(
       `UPDATE agents.profiles SET ${updates.join(', ')} WHERE id = $${paramIdx} RETURNING *`,
-      values,
+      values
     );
     return row ? profileFromRow(row) : null;
   }
@@ -269,7 +267,7 @@ export class SubAgentStorage extends PgBaseStorage {
   async deleteProfile(id: string): Promise<boolean> {
     const count = await this.execute(
       `DELETE FROM agents.profiles WHERE id = $1 AND is_builtin = false`,
-      [id],
+      [id]
     );
     return count > 0;
   }
@@ -307,7 +305,7 @@ export class SubAgentStorage extends PgBaseStorage {
         data.timeoutMs,
         data.initiatedBy ?? null,
         data.correlationId ?? null,
-      ],
+      ]
     );
     return delegationFromRow(row!);
   }
@@ -322,7 +320,7 @@ export class SubAgentStorage extends PgBaseStorage {
       tokensUsedCompletion: number;
       startedAt: number;
       completedAt: number;
-    }>,
+    }>
   ): Promise<DelegationRecord | null> {
     const updates: string[] = [];
     const values: unknown[] = [];
@@ -362,7 +360,7 @@ export class SubAgentStorage extends PgBaseStorage {
     values.push(id);
     const row = await this.queryOne<DelegationRow>(
       `UPDATE agents.delegations SET ${updates.join(', ')} WHERE id = $${paramIdx} RETURNING *`,
-      values,
+      values
     );
     return row ? delegationFromRow(row) : null;
   }
@@ -370,7 +368,7 @@ export class SubAgentStorage extends PgBaseStorage {
   async getDelegation(id: string): Promise<DelegationRecord | null> {
     const row = await this.queryOne<DelegationRow>(
       `SELECT * FROM agents.delegations WHERE id = $1`,
-      [id],
+      [id]
     );
     return row ? delegationFromRow(row) : null;
   }
@@ -400,12 +398,12 @@ export class SubAgentStorage extends PgBaseStorage {
 
     const countResult = await this.queryOne<{ count: string }>(
       `SELECT COUNT(*) as count FROM agents.delegations ${where}`,
-      values,
+      values
     );
 
     const rows = await this.queryMany<DelegationRow>(
       `SELECT * FROM agents.delegations ${where} ORDER BY created_at DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
-      [...values, limit, offset],
+      [...values, limit, offset]
     );
 
     return {
@@ -416,7 +414,7 @@ export class SubAgentStorage extends PgBaseStorage {
 
   async getActiveDelegations(): Promise<DelegationRecord[]> {
     const rows = await this.queryMany<DelegationRow>(
-      `SELECT * FROM agents.delegations WHERE status IN ('pending', 'running') ORDER BY created_at ASC`,
+      `SELECT * FROM agents.delegations WHERE status IN ('pending', 'running') ORDER BY created_at ASC`
     );
     return rows.map(delegationFromRow);
   }
@@ -430,7 +428,7 @@ export class SubAgentStorage extends PgBaseStorage {
          INNER JOIN tree t ON d.parent_delegation_id = t.id
        )
        SELECT * FROM tree ORDER BY depth ASC, created_at ASC`,
-      [rootId],
+      [rootId]
     );
     return rows.map(delegationFromRow);
   }
@@ -458,7 +456,7 @@ export class SubAgentStorage extends PgBaseStorage {
         data.toolCalls ? JSON.stringify(data.toolCalls) : null,
         data.toolResult ? JSON.stringify(data.toolResult) : null,
         data.tokenCount ?? 0,
-      ],
+      ]
     );
     return messageFromRow(row!);
   }
@@ -466,7 +464,7 @@ export class SubAgentStorage extends PgBaseStorage {
   async getDelegationMessages(delegationId: string): Promise<DelegationMessageRecord[]> {
     const rows = await this.queryMany<DelegationMessageRow>(
       `SELECT * FROM agents.delegation_messages WHERE delegation_id = $1 ORDER BY created_at ASC`,
-      [delegationId],
+      [delegationId]
     );
     return rows.map(messageFromRow);
   }

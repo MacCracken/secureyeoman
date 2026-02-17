@@ -84,13 +84,13 @@ describe('InputValidator', () => {
     it('should block DROP TABLE injection', () => {
       const result = validator.validate('; DROP TABLE users;');
       expect(result.blocked).toBe(true);
-      expect(result.warnings.some(w => w.code.includes('SQL'))).toBe(true);
+      expect(result.warnings.some((w) => w.code.includes('SQL'))).toBe(true);
     });
 
     it('should generate warning for UNION SELECT (non-blocking)', () => {
       const result = validator.validate('UNION ALL SELECT * FROM users');
       expect(result.blocked).toBe(false);
-      expect(result.warnings.some(w => w.code.includes('SQL_UNION'))).toBe(true);
+      expect(result.warnings.some((w) => w.code.includes('SQL_UNION'))).toBe(true);
     });
   });
 
@@ -108,7 +108,7 @@ describe('InputValidator', () => {
     it('should generate warning for event handlers (non-blocking)', () => {
       const result = validator.validate('<div onclick="alert(1)">');
       expect(result.blocked).toBe(false);
-      expect(result.warnings.some(w => w.code.includes('XSS'))).toBe(true);
+      expect(result.warnings.some((w) => w.code.includes('XSS'))).toBe(true);
     });
   });
 
@@ -126,7 +126,7 @@ describe('InputValidator', () => {
     it('should generate warning for command substitution (non-blocking)', () => {
       const result = validator.validate('$(whoami)');
       expect(result.blocked).toBe(false);
-      expect(result.warnings.some(w => w.code.includes('COMMAND'))).toBe(true);
+      expect(result.warnings.some((w) => w.code.includes('COMMAND'))).toBe(true);
     });
   });
 
@@ -147,7 +147,7 @@ describe('InputValidator', () => {
       const result = validator.validate('hello\0world');
       expect(result.sanitized).not.toContain('\0');
       // Null byte (\u0000) is caught by the control character regex in stage 2
-      expect(result.warnings.some(w => w.code === 'DANGEROUS_UNICODE')).toBe(true);
+      expect(result.warnings.some((w) => w.code === 'DANGEROUS_UNICODE')).toBe(true);
     });
   });
 
@@ -155,13 +155,13 @@ describe('InputValidator', () => {
     it('should remove zero-width characters', () => {
       const result = validator.validate('he\u200Bllo');
       expect(result.sanitized).not.toContain('\u200B');
-      expect(result.warnings.some(w => w.code === 'DANGEROUS_UNICODE')).toBe(true);
+      expect(result.warnings.some((w) => w.code === 'DANGEROUS_UNICODE')).toBe(true);
     });
 
     it('should remove bidirectional overrides', () => {
       const result = validator.validate('text\u202Emore');
       expect(result.sanitized).not.toContain('\u202E');
-      expect(result.warnings.some(w => w.code === 'DANGEROUS_UNICODE')).toBe(true);
+      expect(result.warnings.some((w) => w.code === 'DANGEROUS_UNICODE')).toBe(true);
     });
   });
 

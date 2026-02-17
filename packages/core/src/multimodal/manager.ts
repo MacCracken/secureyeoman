@@ -5,7 +5,19 @@
  * and image generation (via direct OpenAI API calls).
  */
 
-import type { MultimodalConfig, VisionRequest, VisionResult, STTRequest, STTResult, TTSRequest, TTSResult, ImageGenRequest, ImageGenResult, AIRequest, AIResponse } from '@friday/shared';
+import type {
+  MultimodalConfig,
+  VisionRequest,
+  VisionResult,
+  STTRequest,
+  STTResult,
+  TTSRequest,
+  TTSResult,
+  ImageGenRequest,
+  ImageGenResult,
+  AIRequest,
+  AIResponse,
+} from '@friday/shared';
 import type { MultimodalStorage } from './storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { HookPoint, HookContext, HookResult } from '../extensions/types.js';
@@ -15,8 +27,9 @@ const FETCH_TIMEOUT_MS = 30_000;
 const ALLOWED_DALLE_HOSTS = ['oaidalleapiprodscus.blob.core.windows.net'];
 
 function sanitizeErrorMessage(msg: string): string {
-  return msg.replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
-            .replace(/Bearer [a-zA-Z0-9._-]+/g, 'Bearer [REDACTED]');
+  return msg
+    .replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
+    .replace(/Bearer [a-zA-Z0-9._-]+/g, 'Bearer [REDACTED]');
 }
 
 function isAllowedDalleUrl(url: string): boolean {
@@ -44,11 +57,7 @@ export class MultimodalManager {
   private readonly config: MultimodalConfig;
   private initialized = false;
 
-  constructor(
-    storage: MultimodalStorage,
-    deps: MultimodalManagerDeps,
-    config: MultimodalConfig,
-  ) {
+  constructor(storage: MultimodalStorage, deps: MultimodalManagerDeps, config: MultimodalConfig) {
     this.storage = storage;
     this.deps = deps;
     this.config = config;
@@ -101,8 +110,16 @@ export class MultimodalManager {
         durationMs,
       };
 
-      await this.storage.completeJob(jobId, result as unknown as Record<string, unknown>, durationMs);
-      void this.deps.extensionManager?.emit('multimodal:image-analyzed', { event: 'multimodal:image-analyzed', data: { jobId, result }, timestamp: Date.now() });
+      await this.storage.completeJob(
+        jobId,
+        result as unknown as Record<string, unknown>,
+        durationMs
+      );
+      void this.deps.extensionManager?.emit('multimodal:image-analyzed', {
+        event: 'multimodal:image-analyzed',
+        data: { jobId, result },
+        timestamp: Date.now(),
+      });
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
@@ -164,8 +181,16 @@ export class MultimodalManager {
         durationMs,
       };
 
-      await this.storage.completeJob(jobId, result as unknown as Record<string, unknown>, durationMs);
-      void this.deps.extensionManager?.emit('multimodal:audio-transcribed', { event: 'multimodal:audio-transcribed', data: { jobId, result }, timestamp: Date.now() });
+      await this.storage.completeJob(
+        jobId,
+        result as unknown as Record<string, unknown>,
+        durationMs
+      );
+      void this.deps.extensionManager?.emit('multimodal:audio-transcribed', {
+        event: 'multimodal:audio-transcribed',
+        data: { jobId, result },
+        timestamp: Date.now(),
+      });
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
@@ -224,8 +249,16 @@ export class MultimodalManager {
         durationMs,
       };
 
-      await this.storage.completeJob(jobId, { format: result.format, durationMs, audioSizeBytes: audioBase64.length }, durationMs);
-      void this.deps.extensionManager?.emit('multimodal:speech-generated', { event: 'multimodal:speech-generated', data: { jobId, format: result.format }, timestamp: Date.now() });
+      await this.storage.completeJob(
+        jobId,
+        { format: result.format, durationMs, audioSizeBytes: audioBase64.length },
+        durationMs
+      );
+      void this.deps.extensionManager?.emit('multimodal:speech-generated', {
+        event: 'multimodal:speech-generated',
+        data: { jobId, format: result.format },
+        timestamp: Date.now(),
+      });
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
@@ -277,7 +310,7 @@ export class MultimodalManager {
       }
 
       const data = (await response.json()) as {
-        data: Array<{ url: string; revised_prompt?: string }>;
+        data: { url: string; revised_prompt?: string }[];
       };
 
       const firstImage = data.data[0];
@@ -296,8 +329,16 @@ export class MultimodalManager {
         durationMs,
       };
 
-      await this.storage.completeJob(jobId, result as unknown as Record<string, unknown>, durationMs);
-      void this.deps.extensionManager?.emit('multimodal:image-generated', { event: 'multimodal:image-generated', data: { jobId, result }, timestamp: Date.now() });
+      await this.storage.completeJob(
+        jobId,
+        result as unknown as Record<string, unknown>,
+        durationMs
+      );
+      void this.deps.extensionManager?.emit('multimodal:image-generated', {
+        event: 'multimodal:image-generated',
+        data: { jobId, result },
+        timestamp: Date.now(),
+      });
       return result;
     } catch (error) {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));

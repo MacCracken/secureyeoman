@@ -52,8 +52,22 @@ describe('SecuritySettings', () => {
     vi.resetAllMocks();
     mockFetchRoles.mockResolvedValue({
       roles: [
-        { id: 'role_admin', name: 'admin', permissions: [{ resource: 'read', action: '*' }, { resource: 'write', action: '*' }, { resource: 'delete', action: '*' }], isBuiltin: true },
-        { id: 'role_viewer', name: 'viewer', permissions: [{ resource: 'read', action: '*' }], isBuiltin: true },
+        {
+          id: 'role_admin',
+          name: 'admin',
+          permissions: [
+            { resource: 'read', action: '*' },
+            { resource: 'write', action: '*' },
+            { resource: 'delete', action: '*' },
+          ],
+          isBuiltin: true,
+        },
+        {
+          id: 'role_viewer',
+          name: 'viewer',
+          permissions: [{ resource: 'read', action: '*' }],
+          isBuiltin: true,
+        },
       ],
     });
     mockFetchAssignments.mockResolvedValue({ assignments: [] });
@@ -85,13 +99,19 @@ describe('SecuritySettings', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
   });
@@ -117,7 +137,10 @@ describe('SecuritySettings', () => {
       allowSubAgents: true,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -178,7 +201,10 @@ describe('SecuritySettings', () => {
       allowSubAgents: true,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowMultimodal: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');

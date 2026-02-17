@@ -25,7 +25,7 @@ const DEFAULT_BASE_URL = 'http://localhost:11434';
 interface OllamaMessage {
   role: 'system' | 'user' | 'assistant' | 'tool';
   content: string;
-  tool_calls?: Array<{ function: { name: string; arguments: Record<string, unknown> } }>;
+  tool_calls?: { function: { name: string; arguments: Record<string, unknown> } }[];
 }
 
 interface OllamaChatResponse {
@@ -33,7 +33,7 @@ interface OllamaChatResponse {
   message: {
     role: string;
     content: string;
-    tool_calls?: Array<{ function: { name: string; arguments: Record<string, unknown> } }>;
+    tool_calls?: { function: { name: string; arguments: Record<string, unknown> } }[];
   };
   done: boolean;
   total_duration?: number;
@@ -71,7 +71,7 @@ export class OllamaProvider extends BaseProvider {
     try {
       const res = await fetch(`${baseUrl}/api/tags`);
       if (!res.ok) return [];
-      const data = (await res.json()) as { models?: Array<{ name: string; size: number }> };
+      const data = (await res.json()) as { models?: { name: string; size: number }[] };
       return (data.models ?? []).map((m) => ({
         id: m.name,
         size: m.size,
@@ -156,7 +156,7 @@ export class OllamaProvider extends BaseProvider {
   private buildRequestBody(
     request: AIRequest,
     model: string,
-    stream: boolean,
+    stream: boolean
   ): Record<string, unknown> {
     return {
       model,
@@ -191,7 +191,7 @@ export class OllamaProvider extends BaseProvider {
       }
 
       return {
-        role: msg.role as OllamaMessage['role'],
+        role: msg.role,
         content: msg.content ?? '',
       };
     });
@@ -265,7 +265,11 @@ export class OllamaProvider extends BaseProvider {
 
       const msg = error instanceof Error ? error.message : String(error);
       if (msg.includes('ECONNREFUSED') || msg.includes('fetch failed')) {
-        throw new ProviderUnavailableError('ollama', undefined, error instanceof Error ? error : undefined);
+        throw new ProviderUnavailableError(
+          'ollama',
+          undefined,
+          error instanceof Error ? error : undefined
+        );
       }
       throw error;
     }

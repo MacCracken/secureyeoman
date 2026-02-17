@@ -8,7 +8,12 @@ import type { SecureLogger } from '../logging/logger.js';
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   };
@@ -30,12 +35,16 @@ describe('PluginLoader', () => {
   });
 
   it('should load a valid plugin from a .js file', async () => {
-    writePlugin(tmpDir, 'test-plugin.mjs', `
+    writePlugin(
+      tmpDir,
+      'test-plugin.mjs',
+      `
       export const platform = 'test-platform';
       export function createIntegration() {
         return { platform: 'test-platform' };
       }
-    `);
+    `
+    );
 
     const loader = new PluginLoader({ pluginDir: tmpDir, logger: noopLogger() });
     const plugins = await loader.loadAll();
@@ -46,9 +55,13 @@ describe('PluginLoader', () => {
   });
 
   it('should reject plugin with missing exports', async () => {
-    writePlugin(tmpDir, 'bad-plugin.mjs', `
+    writePlugin(
+      tmpDir,
+      'bad-plugin.mjs',
+      `
       export const notAPlatform = true;
-    `);
+    `
+    );
 
     const loader = new PluginLoader({ pluginDir: tmpDir, logger: noopLogger() });
     const plugins = await loader.loadAll();
@@ -58,9 +71,13 @@ describe('PluginLoader', () => {
   });
 
   it('should handle plugin load errors gracefully', async () => {
-    writePlugin(tmpDir, 'broken.mjs', `
+    writePlugin(
+      tmpDir,
+      'broken.mjs',
+      `
       throw new Error('Module init failed');
-    `);
+    `
+    );
 
     const loader = new PluginLoader({ pluginDir: tmpDir, logger: noopLogger() });
     const plugins = await loader.loadAll();
@@ -81,10 +98,14 @@ describe('PluginLoader', () => {
   it('should load plugin from directory with index.js', async () => {
     const pluginDir = join(tmpDir, 'my-plugin');
     mkdirSync(pluginDir);
-    writePlugin(pluginDir, 'index.js', `
+    writePlugin(
+      pluginDir,
+      'index.js',
+      `
       module.exports.platform = 'dir-platform';
       module.exports.createIntegration = function() { return {}; };
-    `);
+    `
+    );
 
     const loader = new PluginLoader({ pluginDir: tmpDir, logger: noopLogger() });
     const plugins = await loader.loadAll();

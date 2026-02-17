@@ -65,11 +65,11 @@ export class MediaHandler {
     if (attachment.size && attachment.size > this.maxSizeBytes) {
       throw new MediaError(
         `Attachment exceeds size limit: ${attachment.size} bytes > ${this.maxSizeBytes} bytes`,
-        'SIZE_LIMIT_EXCEEDED',
+        'SIZE_LIMIT_EXCEEDED'
       );
     }
 
-    const filename = attachment.fileName ?? `${randomBytes(8).toString('hex')}`;
+    const filename = attachment.fileName ?? randomBytes(8).toString('hex');
     const filePath = join(this.tempDir, filename);
 
     if (attachment.data) {
@@ -78,7 +78,7 @@ export class MediaHandler {
       if (buffer.length > this.maxSizeBytes) {
         throw new MediaError(
           `Decoded attachment exceeds size limit: ${buffer.length} bytes`,
-          'SIZE_LIMIT_EXCEEDED',
+          'SIZE_LIMIT_EXCEEDED'
         );
       }
       writeFileSync(filePath, buffer);
@@ -94,7 +94,7 @@ export class MediaHandler {
       unlinkSync(filePath);
       throw new MediaError(
         `Downloaded file exceeds size limit: ${stat.size} bytes`,
-        'SIZE_LIMIT_EXCEEDED',
+        'SIZE_LIMIT_EXCEEDED'
       );
     }
 
@@ -135,7 +135,7 @@ export class MediaHandler {
     if (contentLength && Number(contentLength) > this.maxSizeBytes) {
       throw new MediaError(
         `Remote file exceeds size limit: ${contentLength} bytes`,
-        'SIZE_LIMIT_EXCEEDED',
+        'SIZE_LIMIT_EXCEEDED'
       );
     }
 
@@ -143,7 +143,7 @@ export class MediaHandler {
     if (buffer.length > this.maxSizeBytes) {
       throw new MediaError(
         `Downloaded data exceeds size limit: ${buffer.length} bytes`,
-        'SIZE_LIMIT_EXCEEDED',
+        'SIZE_LIMIT_EXCEEDED'
       );
     }
 
@@ -201,7 +201,7 @@ export class MediaHandler {
 export class MediaError extends Error {
   constructor(
     message: string,
-    public readonly code: string,
+    public readonly code: string
   ) {
     super(message);
     this.name = 'MediaError';

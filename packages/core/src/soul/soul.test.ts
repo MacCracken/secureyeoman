@@ -11,7 +11,12 @@ import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -29,7 +34,10 @@ function defaultConfig(overrides?: Partial<SoulConfig>): SoulConfig {
 
 function createDeps(): SoulManagerDeps & { auditStorage: InMemoryAuditStorage } {
   const auditStorage = new InMemoryAuditStorage();
-  const auditChain = new AuditChain({ storage: auditStorage, signingKey: 'test-signing-key-must-be-at-least-32-chars!!' });
+  const auditChain = new AuditChain({
+    storage: auditStorage,
+    signingKey: 'test-signing-key-must-be-at-least-32-chars!!',
+  });
   return {
     auditChain,
     auditStorage,
@@ -121,19 +129,26 @@ describe('SoulStorage', () => {
     });
 
     it('should throw when setting non-existent personality as active', async () => {
-      await expect(storage.setActivePersonality('nonexistent')).rejects.toThrow('Personality not found');
+      await expect(storage.setActivePersonality('nonexistent')).rejects.toThrow(
+        'Personality not found'
+      );
     });
 
     it('should update a personality', async () => {
       const p = await storage.createPersonality(TEST_PERSONALITY);
-      const updated = await storage.updatePersonality(p.id, { name: 'UpdatedBot', voice: 'warm and friendly' });
+      const updated = await storage.updatePersonality(p.id, {
+        name: 'UpdatedBot',
+        voice: 'warm and friendly',
+      });
       expect(updated.name).toBe('UpdatedBot');
       expect(updated.voice).toBe('warm and friendly');
       expect(updated.description).toBe(p.description); // unchanged
     });
 
     it('should throw when updating non-existent personality', async () => {
-      await expect(storage.updatePersonality('nonexistent', { name: 'X' })).rejects.toThrow('Personality not found');
+      await expect(storage.updatePersonality('nonexistent', { name: 'X' })).rejects.toThrow(
+        'Personality not found'
+      );
     });
 
     it('should delete a personality', async () => {
@@ -165,12 +180,18 @@ describe('SoulStorage', () => {
     });
 
     it('should store voice field correctly', async () => {
-      const p = await storage.createPersonality({ ...TEST_PERSONALITY, voice: 'warm and authoritative' });
+      const p = await storage.createPersonality({
+        ...TEST_PERSONALITY,
+        voice: 'warm and authoritative',
+      });
       expect(p.voice).toBe('warm and authoritative');
     });
 
     it('should store preferredLanguage field correctly', async () => {
-      const p = await storage.createPersonality({ ...TEST_PERSONALITY, preferredLanguage: 'Spanish' });
+      const p = await storage.createPersonality({
+        ...TEST_PERSONALITY,
+        preferredLanguage: 'Spanish',
+      });
       expect(p.preferredLanguage).toBe('Spanish');
     });
   });
@@ -220,7 +241,9 @@ describe('SoulStorage', () => {
     });
 
     it('should throw when updating non-existent skill', async () => {
-      await expect(storage.updateSkill('nonexistent', { name: 'X' })).rejects.toThrow('Skill not found');
+      await expect(storage.updateSkill('nonexistent', { name: 'X' })).rejects.toThrow(
+        'Skill not found'
+      );
     });
 
     it('should delete a skill', async () => {
@@ -231,7 +254,12 @@ describe('SoulStorage', () => {
 
     it('should list skills with filters', async () => {
       await storage.createSkill(TEST_SKILL);
-      await storage.createSkill({ ...TEST_SKILL, name: 'debug', source: 'ai_proposed', status: 'pending_approval' });
+      await storage.createSkill({
+        ...TEST_SKILL,
+        name: 'debug',
+        source: 'ai_proposed',
+        status: 'pending_approval',
+      });
 
       expect(await storage.listSkills()).toHaveLength(2);
       expect(await storage.listSkills({ source: 'user' })).toHaveLength(1);
@@ -276,11 +304,13 @@ describe('SoulStorage', () => {
     it('should store tools as JSON', async () => {
       const s = await storage.createSkill({
         ...TEST_SKILL,
-        tools: [{
-          name: 'search',
-          description: 'Search tool',
-          parameters: { type: 'object', properties: { query: { type: 'string' } } },
-        }],
+        tools: [
+          {
+            name: 'search',
+            description: 'Search tool',
+            parameters: { type: 'object', properties: { query: { type: 'string' } } },
+          },
+        ],
       });
       expect(s.tools).toHaveLength(1);
       expect(s.tools[0].name).toBe('search');
@@ -382,7 +412,9 @@ describe('SoulManager', () => {
     it('should prevent deleting the active personality', async () => {
       const p = await manager.createPersonality(TEST_PERSONALITY);
       await manager.setPersonality(p.id);
-      await expect(manager.deletePersonality(p.id)).rejects.toThrow('Cannot delete the active personality');
+      await expect(manager.deletePersonality(p.id)).rejects.toThrow(
+        'Cannot delete the active personality'
+      );
     });
 
     it('should update personality', async () => {
@@ -402,7 +434,9 @@ describe('SoulManager', () => {
       const mgr = new SoulManager(storage, defaultConfig({ maxSkills: 2 }), deps);
       await mgr.createSkill(TEST_SKILL);
       await mgr.createSkill({ ...TEST_SKILL, name: 'skill2' });
-      await expect(mgr.createSkill({ ...TEST_SKILL, name: 'skill3' })).rejects.toThrow('Maximum skill limit');
+      await expect(mgr.createSkill({ ...TEST_SKILL, name: 'skill3' })).rejects.toThrow(
+        'Maximum skill limit'
+      );
     });
 
     it('should enable and disable skills', async () => {
@@ -422,13 +456,21 @@ describe('SoulManager', () => {
 
   describe('skill approval workflow', () => {
     it('should approve a pending skill', async () => {
-      const s = await manager.createSkill({ ...TEST_SKILL, status: 'pending_approval', source: 'ai_proposed' });
+      const s = await manager.createSkill({
+        ...TEST_SKILL,
+        status: 'pending_approval',
+        source: 'ai_proposed',
+      });
       const approved = await manager.approveSkill(s.id);
       expect(approved.status).toBe('active');
     });
 
     it('should reject a pending skill (deletes it)', async () => {
-      const s = await manager.createSkill({ ...TEST_SKILL, status: 'pending_approval', source: 'ai_proposed' });
+      const s = await manager.createSkill({
+        ...TEST_SKILL,
+        status: 'pending_approval',
+        source: 'ai_proposed',
+      });
       await manager.rejectSkill(s.id);
       expect(await manager.getSkill(s.id)).toBeNull();
     });
@@ -450,29 +492,43 @@ describe('SoulManager', () => {
 
   describe('learning modes', () => {
     it('should propose a skill when ai_proposed mode is enabled', async () => {
-      const mgr = new SoulManager(storage, defaultConfig({ learningMode: ['user_authored', 'ai_proposed'] }), deps);
-      const s = await mgr.proposeSkill({ name: 'proposed', description: 'test', instructions: 'do stuff' });
+      const mgr = new SoulManager(
+        storage,
+        defaultConfig({ learningMode: ['user_authored', 'ai_proposed'] }),
+        deps
+      );
+      const s = await mgr.proposeSkill({
+        name: 'proposed',
+        description: 'test',
+        instructions: 'do stuff',
+      });
       expect(s.source).toBe('ai_proposed');
       expect(s.status).toBe('pending_approval');
       expect(s.enabled).toBe(false);
     });
 
     it('should reject proposal when ai_proposed mode is not enabled', async () => {
-      await expect(manager.proposeSkill({ name: 'proposed', description: 'test', instructions: 'do stuff' }))
-        .rejects.toThrow('AI-proposed learning mode is not enabled');
+      await expect(
+        manager.proposeSkill({ name: 'proposed', description: 'test', instructions: 'do stuff' })
+      ).rejects.toThrow('AI-proposed learning mode is not enabled');
     });
 
     it('should learn a skill when autonomous mode is enabled', async () => {
       const mgr = new SoulManager(storage, defaultConfig({ learningMode: ['autonomous'] }), deps);
-      const s = await mgr.learnSkill({ name: 'learned', description: 'test', instructions: 'do stuff' });
+      const s = await mgr.learnSkill({
+        name: 'learned',
+        description: 'test',
+        instructions: 'do stuff',
+      });
       expect(s.source).toBe('ai_learned');
       expect(s.status).toBe('active');
       expect(s.enabled).toBe(true);
     });
 
     it('should reject learning when autonomous mode is not enabled', async () => {
-      await expect(manager.learnSkill({ name: 'learned', description: 'test', instructions: 'do stuff' }))
-        .rejects.toThrow('Autonomous learning mode is not enabled');
+      await expect(
+        manager.learnSkill({ name: 'learned', description: 'test', instructions: 'do stuff' })
+      ).rejects.toThrow('Autonomous learning mode is not enabled');
     });
   });
 
@@ -551,7 +607,10 @@ describe('SoulManager', () => {
     });
 
     it('should include voice when set', async () => {
-      const p = await manager.createPersonality({ ...TEST_PERSONALITY, voice: 'warm and authoritative' });
+      const p = await manager.createPersonality({
+        ...TEST_PERSONALITY,
+        voice: 'warm and authoritative',
+      });
       await manager.setPersonality(p.id);
 
       const prompt = await manager.composeSoulPrompt();
@@ -559,7 +618,10 @@ describe('SoulManager', () => {
     });
 
     it('should include preferred language when set', async () => {
-      const p = await manager.createPersonality({ ...TEST_PERSONALITY, preferredLanguage: 'Japanese' });
+      const p = await manager.createPersonality({
+        ...TEST_PERSONALITY,
+        preferredLanguage: 'Japanese',
+      });
       await manager.setPersonality(p.id);
 
       const prompt = await manager.composeSoulPrompt();
@@ -647,12 +709,31 @@ describe('SoulManager', () => {
             timestamp: 1700000000000,
             durationMs: 15,
             checks: [
-              { name: 'system_health', type: 'system_health', status: 'ok' as const, message: 'All good' },
+              {
+                name: 'system_health',
+                type: 'system_health',
+                status: 'ok' as const,
+                message: 'All good',
+              },
             ],
           },
           tasks: [
-            { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 300000, lastRunAt: 1700000000000, config: {} },
-            { name: 'self_reflection', type: 'reflective_task', enabled: true, intervalMs: 1800000, lastRunAt: null, config: { prompt: 'reflect' } },
+            {
+              name: 'system_health',
+              type: 'system_health',
+              enabled: true,
+              intervalMs: 300000,
+              lastRunAt: 1700000000000,
+              config: {},
+            },
+            {
+              name: 'self_reflection',
+              type: 'reflective_task',
+              enabled: true,
+              intervalMs: 1800000,
+              lastRunAt: null,
+              config: { prompt: 'reflect' },
+            },
           ],
         }),
         getLastBeat: () => null,

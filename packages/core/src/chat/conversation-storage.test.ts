@@ -32,7 +32,10 @@ describe('ConversationStorage', () => {
   });
 
   it('creates a conversation with personalityId', async () => {
-    const conv = await storage.createConversation({ title: 'With personality', personalityId: 'p-1' });
+    const conv = await storage.createConversation({
+      title: 'With personality',
+      personalityId: 'p-1',
+    });
     expect(conv.personalityId).toBe('p-1');
   });
 
@@ -71,8 +74,9 @@ describe('ConversationStorage', () => {
   });
 
   it('throws when updating non-existent conversation', async () => {
-    await expect(storage.updateConversation('nonexistent', { title: 'X' }))
-      .rejects.toThrow('Conversation not found');
+    await expect(storage.updateConversation('nonexistent', { title: 'X' })).rejects.toThrow(
+      'Conversation not found'
+    );
   });
 
   it('deletes a conversation', async () => {

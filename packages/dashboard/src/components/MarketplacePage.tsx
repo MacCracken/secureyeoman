@@ -51,7 +51,9 @@ export function MarketplacePage() {
           className="w-full bg-card border border-border rounded-lg pl-10 pr-3 py-2.5 text-sm"
           placeholder="Search skills..."
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value);
+          }}
         />
       </div>
 
@@ -88,7 +90,9 @@ export function MarketplacePage() {
                 {skill.installed ? (
                   <button
                     className="btn btn-ghost text-destructive flex items-center gap-2 w-full justify-center"
-                    onClick={() => uninstallMut.mutate(skill.id)}
+                    onClick={() => {
+                      uninstallMut.mutate(skill.id);
+                    }}
                     disabled={uninstallMut.isPending}
                   >
                     <Trash2 className="w-4 h-4" /> Uninstall
@@ -96,7 +100,9 @@ export function MarketplacePage() {
                 ) : (
                   <button
                     className="btn btn-primary flex items-center gap-2 w-full justify-center"
-                    onClick={() => installMut.mutate(skill.id)}
+                    onClick={() => {
+                      installMut.mutate(skill.id);
+                    }}
                     disabled={installMut.isPending}
                   >
                     {installMut.isPending ? (

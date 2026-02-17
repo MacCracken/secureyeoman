@@ -54,12 +54,14 @@ describe('GeminiProvider', () => {
     it('should map request and response', async () => {
       mockGenerateContent.mockResolvedValue({
         response: {
-          candidates: [{
-            content: {
-              parts: [{ text: 'Hello from Gemini!' }],
+          candidates: [
+            {
+              content: {
+                parts: [{ text: 'Hello from Gemini!' }],
+              },
+              finishReason: 'STOP',
             },
-            finishReason: 'STOP',
-          }],
+          ],
           usageMetadata: {
             promptTokenCount: 5,
             candidatesTokenCount: 10,
@@ -79,17 +81,21 @@ describe('GeminiProvider', () => {
     it('should handle function call responses', async () => {
       mockGenerateContent.mockResolvedValue({
         response: {
-          candidates: [{
-            content: {
-              parts: [{
-                functionCall: {
-                  name: 'search',
-                  args: { query: 'weather' },
-                },
-              }],
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    functionCall: {
+                      name: 'search',
+                      args: { query: 'weather' },
+                    },
+                  },
+                ],
+              },
+              finishReason: 'STOP',
             },
-            finishReason: 'STOP',
-          }],
+          ],
           usageMetadata: {
             promptTokenCount: 10,
             candidatesTokenCount: 5,
@@ -172,9 +178,7 @@ describe('GeminiProvider', () => {
       expect(models[0].id).toBe('gemini-2.0-flash');
       expect(models[0].displayName).toBe('Gemini 2.0 Flash');
       expect(models[1].id).toBe('gemini-2.5-pro-preview');
-      expect(mockFetch).toHaveBeenCalledWith(
-        expect.stringContaining('key=test-key'),
-      );
+      expect(mockFetch).toHaveBeenCalledWith(expect.stringContaining('key=test-key'));
     });
 
     it('should return empty array on fetch failure', async () => {

@@ -16,7 +16,12 @@ describe('ProxyAuth', () => {
 
   describe('verify', () => {
     it('should return valid result for valid token', async () => {
-      const client = mockClient({ valid: true, userId: 'admin', role: 'admin', permissions: ['*'] });
+      const client = mockClient({
+        valid: true,
+        userId: 'admin',
+        role: 'admin',
+        permissions: ['*'],
+      });
       auth = new ProxyAuth(client);
 
       const result = await auth.verify('valid-token');

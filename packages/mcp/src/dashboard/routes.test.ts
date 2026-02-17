@@ -128,7 +128,13 @@ describe('dashboard routes', () => {
     registerDashboardRoutes(app, auth, mcpServer);
     await app.ready();
 
-    const routes = ['/dashboard', '/dashboard/tools', '/dashboard/resources', '/dashboard/prompts', '/dashboard/logs'];
+    const routes = [
+      '/dashboard',
+      '/dashboard/tools',
+      '/dashboard/resources',
+      '/dashboard/prompts',
+      '/dashboard/logs',
+    ];
     for (const route of routes) {
       const res = await app.inject({ method: 'GET', url: route });
       expect(res.statusCode).toBe(401);

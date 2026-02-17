@@ -60,8 +60,12 @@ export class AgentCrypto {
       if (keyStorePath) {
         mkdirSync(dirname(keyStorePath), { recursive: true });
         const toStore = {
-          x25519Private: this.x25519PrivateKey.export({ format: 'der', type: 'pkcs8' }).toString('base64'),
-          ed25519Private: this.ed25519PrivateKey.export({ format: 'der', type: 'pkcs8' }).toString('base64'),
+          x25519Private: this.x25519PrivateKey
+            .export({ format: 'der', type: 'pkcs8' })
+            .toString('base64'),
+          ed25519Private: this.ed25519PrivateKey
+            .export({ format: 'der', type: 'pkcs8' })
+            .toString('base64'),
         };
         writeFileSync(keyStorePath, JSON.stringify(toStore), { mode: 0o600 });
       }
@@ -92,7 +96,7 @@ export class AgentCrypto {
     // 3. Derive encryption key via HKDF
     const nonce = randomBytes(12);
     const derivedKey = Buffer.from(
-      hkdfSync('sha256', sharedSecret, nonce, 'friday-agent-comms', 32),
+      hkdfSync('sha256', sharedSecret, nonce, 'friday-agent-comms', 32)
     );
 
     // 4. Encrypt with AES-256-GCM
@@ -127,7 +131,7 @@ export class AgentCrypto {
     // 2. Derive decryption key via HKDF
     const nonce = Buffer.from(encrypted.nonce, 'base64');
     const derivedKey = Buffer.from(
-      hkdfSync('sha256', sharedSecret, nonce, 'friday-agent-comms', 32),
+      hkdfSync('sha256', sharedSecret, nonce, 'friday-agent-comms', 32)
     );
 
     // 3. Decrypt with AES-256-GCM

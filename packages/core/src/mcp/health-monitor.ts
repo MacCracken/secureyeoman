@@ -33,7 +33,7 @@ export class McpHealthMonitor {
   start(): void {
     if (this.timer) return;
     this.timer = setInterval(() => {
-      this.checkAll().catch((err) => {
+      this.checkAll().catch((err: unknown) => {
         this.logger.error('Health check cycle failed', { error: String(err) });
       });
     }, this.config.checkIntervalMs);

@@ -54,7 +54,7 @@ export class OpenAIProvider extends BaseProvider {
         headers: { Authorization: `Bearer ${apiKey}` },
       });
       if (!res.ok) return [];
-      const data = (await res.json()) as { data?: Array<{ id: string; owned_by: string }> };
+      const data = (await res.json()) as { data?: { id: string; owned_by: string }[] };
       return (data.data ?? [])
         .filter((m) => m.owned_by === 'openai' || m.owned_by === 'system')
         .map((m) => ({

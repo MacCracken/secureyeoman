@@ -8,7 +8,7 @@ import type { RuntimeType } from './types.js';
 
 export function registerExecutionRoutes(
   app: FastifyInstance,
-  deps: { executionManager: CodeExecutionManager },
+  deps: { executionManager: CodeExecutionManager }
 ): void {
   const { executionManager } = deps;
 
@@ -25,7 +25,7 @@ export function registerExecutionRoutes(
           timeout?: number;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       try {
         const result = await executionManager.execute({
@@ -47,7 +47,7 @@ export function registerExecutionRoutes(
           error: err instanceof Error ? err.message : 'Execution failed',
         });
       }
-    },
+    }
   );
 
   // ── Session routes ────────────────────────────────────────────
@@ -59,32 +59,24 @@ export function registerExecutionRoutes(
 
   app.get(
     '/api/v1/execution/sessions/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const session = await executionManager.getSession(request.params.id);
       if (!session) {
         return reply.code(404).send({ error: 'Session not found' });
       }
       return session;
-    },
+    }
   );
 
   app.delete(
     '/api/v1/execution/sessions/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
-      const terminated = await executionManager.terminateSession(
-        request.params.id,
-      );
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const terminated = await executionManager.terminateSession(request.params.id);
       if (!terminated) {
         return reply.code(404).send({ error: 'Session not found or not active' });
       }
       return { success: true };
-    },
+    }
   );
 
   // ── Execution history ─────────────────────────────────────────
@@ -98,7 +90,7 @@ export function registerExecutionRoutes(
           limit?: string;
           offset?: string;
         };
-      }>,
+      }>
     ) => {
       const q = request.query;
       return executionManager.getExecutionHistory({
@@ -106,37 +98,31 @@ export function registerExecutionRoutes(
         limit: q.limit ? Number(q.limit) : undefined,
         offset: q.offset ? Number(q.offset) : undefined,
       });
-    },
+    }
   );
 
   // ── Approval routes ───────────────────────────────────────────
 
   app.post(
     '/api/v1/execution/approve/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const approval = await executionManager.approve(request.params.id);
       if (!approval) {
         return reply.code(404).send({ error: 'Pending approval not found' });
       }
       return { approval };
-    },
+    }
   );
 
   app.delete(
     '/api/v1/execution/approve/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const approval = await executionManager.reject(request.params.id);
       if (!approval) {
         return reply.code(404).send({ error: 'Pending approval not found' });
       }
       return { approval };
-    },
+    }
   );
 
   // ── Config route ──────────────────────────────────────────────

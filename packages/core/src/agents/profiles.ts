@@ -12,7 +12,8 @@ export const BUILTIN_PROFILES: Omit<AgentProfile, 'createdAt' | 'updatedAt'>[] =
   {
     id: 'builtin-researcher',
     name: 'researcher',
-    description: 'Information gathering specialist. Excels at web search, documentation lookup, and synthesizing findings into concise reports.',
+    description:
+      'Information gathering specialist. Excels at web search, documentation lookup, and synthesizing findings into concise reports.',
     systemPrompt: `You are a Research Agent. Your role is to gather, verify, and synthesize information.
 
 Guidelines:
@@ -30,7 +31,8 @@ Guidelines:
   {
     id: 'builtin-coder',
     name: 'coder',
-    description: 'Code generation and debugging specialist. Writes clean, tested code and identifies bugs with precision.',
+    description:
+      'Code generation and debugging specialist. Writes clean, tested code and identifies bugs with precision.',
     systemPrompt: `You are a Coding Agent. Your role is to write, review, and debug code.
 
 Guidelines:
@@ -48,7 +50,8 @@ Guidelines:
   {
     id: 'builtin-analyst',
     name: 'analyst',
-    description: 'Data analysis and comparison specialist. Evaluates options, identifies patterns, and provides structured assessments.',
+    description:
+      'Data analysis and comparison specialist. Evaluates options, identifies patterns, and provides structured assessments.',
     systemPrompt: `You are an Analysis Agent. Your role is to analyze data, compare options, and provide assessments.
 
 Guidelines:
@@ -66,7 +69,8 @@ Guidelines:
   {
     id: 'builtin-summarizer',
     name: 'summarizer',
-    description: 'Content compression specialist. Distills lengthy content into concise, actionable summaries.',
+    description:
+      'Content compression specialist. Distills lengthy content into concise, actionable summaries.',
     systemPrompt: `You are a Summarization Agent. Your role is to compress and distill information.
 
 Guidelines:

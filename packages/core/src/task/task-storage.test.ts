@@ -153,7 +153,7 @@ describe('TaskStorage', () => {
       const { tasks, total } = await storage.listTasks({ status: 'completed' });
       expect(total).toBe(2);
       expect(tasks).toHaveLength(2);
-      expect(tasks.every(t => t.status === 'completed')).toBe(true);
+      expect(tasks.every((t) => t.status === 'completed')).toBe(true);
     });
 
     it('filters by type', async () => {
@@ -166,14 +166,18 @@ describe('TaskStorage', () => {
     });
 
     it('filters by userId', async () => {
-      await storage.storeTask(makeTask({
-        id: 'a',
-        securityContext: { userId: 'alice', role: 'admin', permissionsUsed: [] },
-      }));
-      await storage.storeTask(makeTask({
-        id: 'b',
-        securityContext: { userId: 'bob', role: 'viewer', permissionsUsed: [] },
-      }));
+      await storage.storeTask(
+        makeTask({
+          id: 'a',
+          securityContext: { userId: 'alice', role: 'admin', permissionsUsed: [] },
+        })
+      );
+      await storage.storeTask(
+        makeTask({
+          id: 'b',
+          securityContext: { userId: 'bob', role: 'viewer', permissionsUsed: [] },
+        })
+      );
 
       const { tasks, total } = await storage.listTasks({ userId: 'alice' });
       expect(total).toBe(1);
@@ -216,10 +220,18 @@ describe('TaskStorage', () => {
     });
 
     it('computes stats correctly', async () => {
-      await storage.storeTask(makeTask({ id: 'a', status: TaskStatus.COMPLETED, type: TaskType.QUERY }));
-      await storage.storeTask(makeTask({ id: 'b', status: TaskStatus.COMPLETED, type: TaskType.QUERY }));
-      await storage.storeTask(makeTask({ id: 'c', status: TaskStatus.FAILED, type: TaskType.EXECUTE }));
-      await storage.storeTask(makeTask({ id: 'd', status: TaskStatus.PENDING, type: TaskType.FILE }));
+      await storage.storeTask(
+        makeTask({ id: 'a', status: TaskStatus.COMPLETED, type: TaskType.QUERY })
+      );
+      await storage.storeTask(
+        makeTask({ id: 'b', status: TaskStatus.COMPLETED, type: TaskType.QUERY })
+      );
+      await storage.storeTask(
+        makeTask({ id: 'c', status: TaskStatus.FAILED, type: TaskType.EXECUTE })
+      );
+      await storage.storeTask(
+        makeTask({ id: 'd', status: TaskStatus.PENDING, type: TaskType.FILE })
+      );
 
       // Add duration to completed tasks
       await storage.updateTask('a', { durationMs: 100 });
@@ -241,12 +253,24 @@ describe('TaskStorage', () => {
 
     it('getStats should return correct counts with mixed statuses', async () => {
       // Insert tasks with all possible terminal statuses
-      await storage.storeTask(makeTask({ id: 'c1', status: TaskStatus.COMPLETED, type: TaskType.QUERY }));
-      await storage.storeTask(makeTask({ id: 'c2', status: TaskStatus.COMPLETED, type: TaskType.EXECUTE }));
-      await storage.storeTask(makeTask({ id: 'c3', status: TaskStatus.COMPLETED, type: TaskType.QUERY }));
-      await storage.storeTask(makeTask({ id: 'f1', status: TaskStatus.FAILED, type: TaskType.QUERY }));
-      await storage.storeTask(makeTask({ id: 'p1', status: TaskStatus.PENDING, type: TaskType.FILE }));
-      await storage.storeTask(makeTask({ id: 'r1', status: TaskStatus.RUNNING, type: TaskType.EXECUTE }));
+      await storage.storeTask(
+        makeTask({ id: 'c1', status: TaskStatus.COMPLETED, type: TaskType.QUERY })
+      );
+      await storage.storeTask(
+        makeTask({ id: 'c2', status: TaskStatus.COMPLETED, type: TaskType.EXECUTE })
+      );
+      await storage.storeTask(
+        makeTask({ id: 'c3', status: TaskStatus.COMPLETED, type: TaskType.QUERY })
+      );
+      await storage.storeTask(
+        makeTask({ id: 'f1', status: TaskStatus.FAILED, type: TaskType.QUERY })
+      );
+      await storage.storeTask(
+        makeTask({ id: 'p1', status: TaskStatus.PENDING, type: TaskType.FILE })
+      );
+      await storage.storeTask(
+        makeTask({ id: 'r1', status: TaskStatus.RUNNING, type: TaskType.EXECUTE })
+      );
 
       // Add durations to some tasks
       await storage.updateTask('c1', { durationMs: 100 });

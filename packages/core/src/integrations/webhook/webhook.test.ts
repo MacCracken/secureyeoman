@@ -9,7 +9,12 @@ import type { SecureLogger } from '../../logging/logger.js';
 function noopLogger(): SecureLogger {
   const noop = () => {};
   return {
-    trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop,
+    trace: noop,
+    debug: noop,
+    info: noop,
+    warn: noop,
+    error: noop,
+    fatal: noop,
     child: () => noopLogger(),
     level: 'silent',
   } as SecureLogger;
@@ -63,9 +68,7 @@ describe('GenericWebhookIntegration', () => {
     });
 
     it('should initialize with empty config (no URL, no secret)', async () => {
-      await expect(
-        adapter.init(makeConfig({ config: {} }), makeDeps()),
-      ).resolves.not.toThrow();
+      await expect(adapter.init(makeConfig({ config: {} }), makeDeps())).resolves.not.toThrow();
     });
   });
 
@@ -144,7 +147,10 @@ describe('GenericWebhookIntegration', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      await adapter.init(makeConfig({ config: { webhookUrl: 'https://example.com/hook' } }), makeDeps());
+      await adapter.init(
+        makeConfig({ config: { webhookUrl: 'https://example.com/hook' } }),
+        makeDeps()
+      );
       await adapter.sendMessage('chat1', 'Hello');
 
       const [, opts] = mockFetch.mock.calls[0];
@@ -175,7 +181,10 @@ describe('GenericWebhookIntegration', () => {
     });
 
     it('should accept any payload when no secret configured', async () => {
-      await adapter.init(makeConfig({ config: { webhookUrl: 'https://example.com/hook' } }), makeDeps());
+      await adapter.init(
+        makeConfig({ config: { webhookUrl: 'https://example.com/hook' } }),
+        makeDeps()
+      );
       expect(adapter.verifyWebhook('anything', '')).toBe(true);
     });
   });
@@ -222,9 +231,7 @@ describe('GenericWebhookIntegration', () => {
     });
 
     it('should throw if not initialized', async () => {
-      await expect(
-        adapter.handleInbound({ text: 'test' }),
-      ).rejects.toThrow('not initialized');
+      await expect(adapter.handleInbound({ text: 'test' })).rejects.toThrow('not initialized');
     });
   });
 

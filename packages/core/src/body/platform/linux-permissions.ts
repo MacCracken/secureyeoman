@@ -78,7 +78,7 @@ export class LinuxPermissionManager implements PlatformPermissionManager {
     try {
       const { stdout } = await execAsync('busctl --user list 2>/dev/null | grep -q portal');
 
-      if (stdout || true) {
+      if (stdout !== undefined) {
         return {
           granted: true,
           state: 'granted',

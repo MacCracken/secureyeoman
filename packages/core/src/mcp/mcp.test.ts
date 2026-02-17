@@ -147,9 +147,7 @@ describe('McpClientManager', () => {
 
   it('should clear in-memory tools but retain in DB', async () => {
     const server = await storage.addServer({ name: 'Clearable', enabled: true });
-    await client.registerTools(server.id, 'Clearable', [
-      { name: 'tool_a', description: 'A' },
-    ]);
+    await client.registerTools(server.id, 'Clearable', [{ name: 'tool_a', description: 'A' }]);
     expect(await client.getAllTools()).toHaveLength(1);
 
     await client.clearTools(server.id);
@@ -163,9 +161,7 @@ describe('McpClientManager', () => {
 
   it('should permanently delete tools with deleteTools', async () => {
     const server = await storage.addServer({ name: 'Deletable', enabled: true });
-    await client.registerTools(server.id, 'Deletable', [
-      { name: 'tool_b', description: 'B' },
-    ]);
+    await client.registerTools(server.id, 'Deletable', [{ name: 'tool_b', description: 'B' }]);
     expect(await client.getAllTools()).toHaveLength(1);
 
     await client.deleteTools(server.id);
@@ -175,9 +171,7 @@ describe('McpClientManager', () => {
 
   it('should return pre-registered tools on discoverTools', async () => {
     const server = await storage.addServer({ name: 'Pre-registered', enabled: true });
-    await client.registerTools(server.id, 'Pre-registered', [
-      { name: 'tool_x', description: 'X' },
-    ]);
+    await client.registerTools(server.id, 'Pre-registered', [{ name: 'tool_x', description: 'X' }]);
 
     const tools = await client.discoverTools(server.id);
     expect(tools).toHaveLength(1);
@@ -227,9 +221,7 @@ describe('McpClientManager', () => {
 
   it('should restore tools via restoreTools even when server is still disabled in DB', async () => {
     const server = await storage.addServer({ name: 'Restore Test', enabled: true });
-    await client.registerTools(server.id, 'Restore Test', [
-      { name: 'tool_a', description: 'A' },
-    ]);
+    await client.registerTools(server.id, 'Restore Test', [{ name: 'tool_a', description: 'A' }]);
 
     // Disable in DB and clear memory
     await storage.updateServer(server.id, { enabled: false });

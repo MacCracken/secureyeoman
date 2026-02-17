@@ -6,10 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { A2AManager } from './manager.js';
 import type { TrustLevel } from './types.js';
 
-export function registerA2ARoutes(
-  app: FastifyInstance,
-  deps: { a2aManager: A2AManager },
-): void {
+export function registerA2ARoutes(app: FastifyInstance, deps: { a2aManager: A2AManager }): void {
   const { a2aManager } = deps;
 
   // ── Peer routes ────────────────────────────────────────────
@@ -28,7 +25,7 @@ export function registerA2ARoutes(
           name?: string;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       try {
         const peer = await a2aManager.addPeer(request.body.url, request.body.name);
@@ -38,21 +35,18 @@ export function registerA2ARoutes(
           error: err instanceof Error ? err.message : 'Failed to add peer',
         });
       }
-    },
+    }
   );
 
   app.delete(
     '/api/v1/a2a/peers/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply,
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const removed = await a2aManager.removePeer(request.params.id);
       if (!removed) {
         return reply.code(404).send({ error: 'Peer not found' });
       }
       return { success: true };
-    },
+    }
   );
 
   app.put(
@@ -62,17 +56,14 @@ export function registerA2ARoutes(
         Params: { id: string };
         Body: { trustLevel: TrustLevel };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
-      const updated = await a2aManager.updateTrust(
-        request.params.id,
-        request.body.trustLevel,
-      );
+      const updated = await a2aManager.updateTrust(request.params.id, request.body.trustLevel);
       if (!updated) {
         return reply.code(404).send({ error: 'Peer not found' });
       }
       return { peer: updated };
-    },
+    }
   );
 
   // ── Discovery ──────────────────────────────────────────────
@@ -100,13 +91,10 @@ export function registerA2ARoutes(
           task: string;
         };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       try {
-        const message = await a2aManager.delegate(
-          request.body.peerId,
-          request.body.task,
-        );
+        const message = await a2aManager.delegate(request.body.peerId, request.body.task);
         if (!message) {
           return reply.code(404).send({ error: 'Peer not found or unreachable' });
         }
@@ -116,7 +104,7 @@ export function registerA2ARoutes(
           error: err instanceof Error ? err.message : 'Delegation failed',
         });
       }
-    },
+    }
   );
 
   // ── Message history ────────────────────────────────────────
@@ -130,7 +118,7 @@ export function registerA2ARoutes(
           limit?: string;
           offset?: string;
         };
-      }>,
+      }>
     ) => {
       const q = request.query;
       return a2aManager.getMessageHistory({
@@ -138,7 +126,7 @@ export function registerA2ARoutes(
         limit: q.limit ? Number(q.limit) : undefined,
         offset: q.offset ? Number(q.offset) : undefined,
       });
-    },
+    }
   );
 
   // ── Config ─────────────────────────────────────────────────

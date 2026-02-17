@@ -11,7 +11,7 @@ import { wrapToolHandler } from './tool-utils.js';
 export function registerAuditTools(
   server: McpServer,
   client: CoreApiClient,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   server.tool(
     'audit_query',
@@ -23,11 +23,11 @@ export function registerAuditTools(
     },
     wrapToolHandler('audit_query', middleware, async (args) => {
       const query: Record<string, string> = { limit: String(args.limit) };
-      if (args.event) query['event'] = args.event;
-      if (args.level) query['level'] = args.level;
+      if (args.event) query.event = args.event;
+      if (args.level) query.level = args.level;
       const result = await client.get('/api/v1/audit', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -37,7 +37,7 @@ export function registerAuditTools(
     wrapToolHandler('audit_verify', middleware, async () => {
       const result = await client.post('/api/v1/audit/verify');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -47,6 +47,6 @@ export function registerAuditTools(
     wrapToolHandler('audit_stats', middleware, async () => {
       const result = await client.get('/api/v1/audit/stats');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 }

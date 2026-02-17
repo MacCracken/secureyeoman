@@ -45,15 +45,13 @@ export async function discoverPlugins(directory: string): Promise<ExtensionManif
         id: parsed.id,
         name: parsed.name,
         version: parsed.version,
-        hooks: (parsed.hooks as Record<string, unknown>[]).filter(
-          (h) =>
-            typeof h.point === 'string' &&
-            typeof h.semantics === 'string',
-        ).map((h) => ({
-          point: h.point as ExtensionManifest['hooks'][number]['point'],
-          semantics: h.semantics as ExtensionManifest['hooks'][number]['semantics'],
-          priority: typeof h.priority === 'number' ? h.priority : undefined,
-        })),
+        hooks: (parsed.hooks as Record<string, unknown>[])
+          .filter((h) => typeof h.point === 'string' && typeof h.semantics === 'string')
+          .map((h) => ({
+            point: h.point as ExtensionManifest['hooks'][number]['point'],
+            semantics: h.semantics as ExtensionManifest['hooks'][number]['semantics'],
+            priority: typeof h.priority === 'number' ? h.priority : undefined,
+          })),
       };
 
       manifests.push(manifest);

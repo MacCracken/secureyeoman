@@ -5,17 +5,23 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { MultimodalManager } from './manager.js';
 import type { MultimodalJobType, MultimodalJobStatus } from '@friday/shared';
-import { VisionRequestSchema, STTRequestSchema, TTSRequestSchema, ImageGenRequestSchema } from '@friday/shared';
+import {
+  VisionRequestSchema,
+  STTRequestSchema,
+  TTSRequestSchema,
+  ImageGenRequestSchema,
+} from '@friday/shared';
 
 function sanitizeError(error: unknown): string {
   const msg = error instanceof Error ? error.message : String(error);
-  return msg.replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
-            .replace(/Bearer [a-zA-Z0-9._-]+/g, 'Bearer [REDACTED]');
+  return msg
+    .replace(/sk-[a-zA-Z0-9]{20,}/g, '[REDACTED]')
+    .replace(/Bearer [a-zA-Z0-9._-]+/g, 'Bearer [REDACTED]');
 }
 
 export function registerMultimodalRoutes(
   app: FastifyInstance,
-  deps: { multimodalManager: MultimodalManager },
+  deps: { multimodalManager: MultimodalManager }
 ): void {
   const { multimodalManager } = deps;
 
@@ -28,7 +34,7 @@ export function registerMultimodalRoutes(
       request: FastifyRequest<{
         Body: { imageBase64: string; mimeType: string; prompt?: string };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const parsed = VisionRequestSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -43,7 +49,7 @@ export function registerMultimodalRoutes(
           error: sanitizeError(err),
         });
       }
-    },
+    }
   );
 
   // ── STT (Speech-to-Text) ──────────────────────────────────────────
@@ -55,7 +61,7 @@ export function registerMultimodalRoutes(
       request: FastifyRequest<{
         Body: { audioBase64: string; format?: string; language?: string };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const parsed = STTRequestSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -70,7 +76,7 @@ export function registerMultimodalRoutes(
           error: sanitizeError(err),
         });
       }
-    },
+    }
   );
 
   // ── TTS (Text-to-Speech) ──────────────────────────────────────────
@@ -81,7 +87,7 @@ export function registerMultimodalRoutes(
       request: FastifyRequest<{
         Body: { text: string; voice?: string; model?: string; responseFormat?: string };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const parsed = TTSRequestSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -96,7 +102,7 @@ export function registerMultimodalRoutes(
           error: sanitizeError(err),
         });
       }
-    },
+    }
   );
 
   // ── Image Generation ──────────────────────────────────────────────
@@ -107,7 +113,7 @@ export function registerMultimodalRoutes(
       request: FastifyRequest<{
         Body: { prompt: string; size?: string; quality?: string; style?: string };
       }>,
-      reply: FastifyReply,
+      reply: FastifyReply
     ) => {
       const parsed = ImageGenRequestSchema.safeParse(request.body);
       if (!parsed.success) {
@@ -122,7 +128,7 @@ export function registerMultimodalRoutes(
           error: sanitizeError(err),
         });
       }
-    },
+    }
   );
 
   // ── Jobs ──────────────────────────────────────────────────────────
@@ -132,7 +138,7 @@ export function registerMultimodalRoutes(
     async (
       request: FastifyRequest<{
         Querystring: { type?: string; status?: string; limit?: string; offset?: string };
-      }>,
+      }>
     ) => {
       return multimodalManager.getStorage().listJobs({
         type: request.query.type as MultimodalJobType | undefined,
@@ -140,7 +146,7 @@ export function registerMultimodalRoutes(
         limit: request.query.limit ? parseInt(request.query.limit, 10) : undefined,
         offset: request.query.offset ? parseInt(request.query.offset, 10) : undefined,
       });
-    },
+    }
   );
 
   // ── Config ────────────────────────────────────────────────────────

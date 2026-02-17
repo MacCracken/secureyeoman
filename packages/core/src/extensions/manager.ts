@@ -35,6 +35,10 @@ export class ExtensionManager {
   private readonly hooks = new Map<string, HookRegistration>();
   private readonly hooksByPoint = new Map<HookPoint, HookRegistration[]>();
 
+  get storage(): ExtensionManagerDeps['storage'] {
+    return this.deps.storage;
+  }
+
   constructor(config: ExtensionConfig, deps: ExtensionManagerDeps) {
     this.config = config;
     this.deps = deps;
@@ -68,7 +72,7 @@ export class ExtensionManager {
   registerHook(
     hookPoint: HookPoint,
     handler: HookHandler,
-    opts?: { priority?: number; semantics?: HookSemantics; extensionId?: string },
+    opts?: { priority?: number; semantics?: HookSemantics; extensionId?: string }
   ): string {
     const id = uuidv7();
     const registration: HookRegistration = {
@@ -314,9 +318,7 @@ export class ExtensionManager {
       return;
     }
 
-    const matching = webhooks.filter(
-      (wh) => wh.enabled && wh.hookPoints.includes(hookPoint),
-    );
+    const matching = webhooks.filter((wh) => wh.enabled && wh.hookPoints.includes(hookPoint));
 
     if (matching.length === 0) return;
 
@@ -327,9 +329,7 @@ export class ExtensionManager {
       timestamp: context.timestamp,
     });
 
-    const deliveries = matching.map((webhook) =>
-      this.deliverWebhook(webhook, payload),
-    );
+    const deliveries = matching.map((webhook) => this.deliverWebhook(webhook, payload));
 
     // Fire-and-forget — don't block hook processing on webhook delivery
     await Promise.allSettled(deliveries);
@@ -342,14 +342,14 @@ export class ExtensionManager {
     };
 
     if (webhook.secret) {
-      const signature = createHmac('sha256', webhook.secret)
-        .update(payload)
-        .digest('hex');
+      const signature = createHmac('sha256', webhook.secret).update(payload).digest('hex');
       headers['X-Friday-Signature'] = `sha256=${signature}`;
     }
 
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), this.config.webhookTimeout);
+    const timeout = setTimeout(() => {
+      controller.abort();
+    }, this.config.webhookTimeout);
 
     try {
       const response = await fetch(webhook.url, {

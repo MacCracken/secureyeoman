@@ -166,12 +166,18 @@ export class GitHubIntegration implements WebhookIntegration {
    * Send a message to GitHub by posting a comment.
    * chatId format: `owner/repo/issues/123` or `owner/repo/pulls/123`
    */
-  async sendMessage(chatId: string, text: string, _metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    _metadata?: Record<string, unknown>
+  ): Promise<string> {
     if (!this.octokit) throw new Error('Integration not initialized');
 
     const parts = chatId.split('/');
     if (parts.length < 4) {
-      throw new Error(`Invalid chatId format: expected "owner/repo/issues|pulls/number", got "${chatId}"`);
+      throw new Error(
+        `Invalid chatId format: expected "owner/repo/issues|pulls/number", got "${chatId}"`
+      );
     }
 
     const owner = parts[0]!;

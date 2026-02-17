@@ -24,10 +24,7 @@ export class AppendOnlyLogWriter {
    */
   private open(): void {
     mkdirSync(dirname(this.filePath), { recursive: true });
-    this.fd = openSync(
-      this.filePath,
-      constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND,
-    );
+    this.fd = openSync(this.filePath, constants.O_WRONLY | constants.O_CREAT | constants.O_APPEND);
   }
 
   /**

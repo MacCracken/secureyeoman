@@ -13,13 +13,15 @@ export function registerKnowledgeResources(server: McpServer, client: CoreApiCli
     async () => {
       const result = await client.get('/api/v1/brain/knowledge');
       return {
-        contents: [{
-          uri: 'friday://knowledge/all',
-          mimeType: 'application/json',
-          text: JSON.stringify(result, null, 2),
-        }],
+        contents: [
+          {
+            uri: 'friday://knowledge/all',
+            mimeType: 'application/json',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
       };
-    },
+    }
   );
 
   server.resource(
@@ -30,12 +32,14 @@ export function registerKnowledgeResources(server: McpServer, client: CoreApiCli
       const id = uri.pathname.split('/').pop() ?? '';
       const result = await client.get(`/api/v1/brain/knowledge/${id}`);
       return {
-        contents: [{
-          uri: uri.href,
-          mimeType: 'application/json',
-          text: JSON.stringify(result, null, 2),
-        }],
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: 'application/json',
+            text: JSON.stringify(result, null, 2),
+          },
+        ],
       };
-    },
+    }
   );
 }

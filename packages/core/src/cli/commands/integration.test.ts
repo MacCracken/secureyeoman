@@ -4,18 +4,31 @@ import { integrationCommand } from './integration.js';
 function createStreams() {
   let stdoutBuf = '';
   let stderrBuf = '';
-  const stdout = { write: (s: string) => { stdoutBuf += s; return true; } } as NodeJS.WritableStream;
-  const stderr = { write: (s: string) => { stderrBuf += s; return true; } } as NodeJS.WritableStream;
+  const stdout = {
+    write: (s: string) => {
+      stdoutBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
+  const stderr = {
+    write: (s: string) => {
+      stderrBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
   return { stdout, stderr, getStdout: () => stdoutBuf, getStderr: () => stderrBuf };
 }
 
 function mockFetch(response: { ok: boolean; status: number; data: unknown }) {
-  vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-    ok: response.ok,
-    status: response.status,
-    headers: { get: () => 'application/json' },
-    json: async () => response.data,
-  }));
+  vi.stubGlobal(
+    'fetch',
+    vi.fn().mockResolvedValue({
+      ok: response.ok,
+      status: response.status,
+      headers: { get: () => 'application/json' },
+      json: async () => response.data,
+    })
+  );
 }
 
 describe('integration command', () => {

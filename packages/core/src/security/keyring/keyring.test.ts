@@ -83,7 +83,7 @@ describe('LinuxSecretServiceProvider', () => {
       'get returns undefined for non-existent key',
       () => {
         expect(provider.get(SERVICE_NAME, '__NONEXISTENT_TEST_KEY__')).toBeUndefined();
-      },
+      }
     );
   });
 });
@@ -188,9 +188,7 @@ describe('KeyringManager', () => {
       (process.platform === 'darwin' && new MacOSKeychainProvider().isAvailable());
 
     if (!hasKeyring) {
-      expect(() => manager.initialize('keyring', [])).toThrow(
-        /no system keyring is available/i,
-      );
+      expect(() => manager.initialize('keyring', [])).toThrow(/no system keyring is available/i);
     }
   });
 });

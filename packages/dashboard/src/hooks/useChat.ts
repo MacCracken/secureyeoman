@@ -25,7 +25,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [activeConversationId, setActiveConversationId] = useState<string | null>(
-    options?.conversationId ?? null,
+    options?.conversationId ?? null
   );
   const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const prevExternalId = useRef<string | null | undefined>(undefined);
@@ -56,14 +56,14 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       .then((detail) => {
         setMessages(
           detail.messages.map((m) => ({
-            role: m.role as 'user' | 'assistant',
+            role: m.role,
             content: m.content,
             timestamp: m.createdAt,
             model: m.model ?? undefined,
             provider: m.provider ?? undefined,
             tokensUsed: m.tokensUsed ?? undefined,
             brainContext: m.brainContext ?? undefined,
-          })),
+          }))
         );
       })
       .catch(() => {
@@ -122,10 +122,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     if (!convId) {
       try {
         const title = trimmed.length > 60 ? trimmed.slice(0, 57) + '...' : trimmed;
-        const conv = await createConversation(
-          title,
-          options?.personalityId ?? undefined,
-        );
+        const conv = await createConversation(title, options?.personalityId ?? undefined);
         convId = conv.id;
         autoCreatedIds.current.add(convId);
         setActiveConversationId(convId);

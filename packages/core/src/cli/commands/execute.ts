@@ -76,7 +76,12 @@ Options:
             ctx.stderr.write(`Execution failed: ${res.status}\n`);
             return 1;
           }
-          const data = res.data as { exitCode: number; stdout: string; stderr: string; duration: number };
+          const data = res.data as {
+            exitCode: number;
+            stdout: string;
+            stderr: string;
+            duration: number;
+          };
           if (jsonResult.value) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
@@ -93,7 +98,9 @@ Options:
             ctx.stderr.write(`Failed to fetch sessions: ${res.status}\n`);
             return 1;
           }
-          const data = res.data as { sessions: Array<{ id: string; runtime: string; status: string; createdAt: number }> };
+          const data = res.data as {
+            sessions: { id: string; runtime: string; status: string; createdAt: number }[];
+          };
           if (jsonResult.value) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
@@ -116,7 +123,15 @@ Options:
             ctx.stderr.write(`Failed to fetch history: ${res.status}\n`);
             return 1;
           }
-          const data = res.data as { executions: Array<{ id: string; exitCode: number; duration: number; createdAt: number }>; total: number };
+          const data = res.data as {
+            executions: {
+              id: string;
+              exitCode: number;
+              duration: number;
+              createdAt: number;
+            }[];
+            total: number;
+          };
           if (jsonResult.value) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
@@ -153,7 +168,9 @@ Options:
             ctx.stderr.write('Usage: secureyeoman execute reject <id>\n');
             return 1;
           }
-          const res = await apiCall(baseUrl, `/api/v1/execution/approve/${id}`, { method: 'DELETE' });
+          const res = await apiCall(baseUrl, `/api/v1/execution/approve/${id}`, {
+            method: 'DELETE',
+          });
           if (!res.ok) {
             ctx.stderr.write(`Rejection failed: ${res.status}\n`);
             return 1;

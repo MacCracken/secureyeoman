@@ -22,7 +22,10 @@ export interface AuditReportGeneratorDeps {
   logger: SecureLogger;
   auditChain: AuditChain;
   queryAuditLog: (options: AuditQueryOptions) => Promise<AuditQueryResult>;
-  queryTasks?: (filter?: { limit?: number; offset?: number }) => Promise<{ tasks: Task[]; total: number }>;
+  queryTasks?: (filter?: {
+    limit?: number;
+    offset?: number;
+  }) => Promise<{ tasks: Task[]; total: number }>;
   queryHeartbeatTasks?: () => HeartbeatTaskInfo[] | null;
 }
 
@@ -37,7 +40,10 @@ export class AuditReportGenerator {
   private logger: SecureLogger;
   private auditChain: AuditChain;
   private queryAuditLog: (options: AuditQueryOptions) => Promise<AuditQueryResult>;
-  private queryTasks?: (filter?: { limit?: number; offset?: number }) => Promise<{ tasks: Task[]; total: number }>;
+  private queryTasks?: (filter?: {
+    limit?: number;
+    offset?: number;
+  }) => Promise<{ tasks: Task[]; total: number }>;
   private queryHeartbeatTasks?: () => HeartbeatTaskInfo[] | null;
   private reports = new Map<string, AuditReport & { content: string }>();
 
@@ -59,7 +65,10 @@ export class AuditReportGenerator {
       const queryResult = await this.auditChain.verify();
       chainValid = queryResult.valid;
     } catch (err) {
-      this.logger.warn('Audit chain verification failed during report generation', { id, error: err instanceof Error ? err.message : String(err) });
+      this.logger.warn('Audit chain verification failed during report generation', {
+        id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // 2. Query audit log entries
@@ -78,7 +87,10 @@ export class AuditReportGenerator {
       const result = await this.queryAuditLog(queryOpts);
       auditEntries = result.entries;
     } catch (err) {
-      this.logger.warn('Failed to query audit entries for report', { id, error: err instanceof Error ? err.message : String(err) });
+      this.logger.warn('Failed to query audit entries for report', {
+        id,
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // 3. Query task history
@@ -88,7 +100,10 @@ export class AuditReportGenerator {
         const result = await this.queryTasks({ limit: 1000, offset: 0 });
         tasks = result.tasks;
       } catch (err) {
-        this.logger.warn('Failed to query tasks for report', { id, error: err instanceof Error ? err.message : String(err) });
+        this.logger.warn('Failed to query tasks for report', {
+          id,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
@@ -98,7 +113,10 @@ export class AuditReportGenerator {
       try {
         heartbeatTasks = this.queryHeartbeatTasks() ?? [];
       } catch (err) {
-        this.logger.warn('Failed to query heartbeat tasks for report', { id, error: err instanceof Error ? err.message : String(err) });
+        this.logger.warn('Failed to query heartbeat tasks for report', {
+          id,
+          error: err instanceof Error ? err.message : String(err),
+        });
       }
     }
 
@@ -116,14 +134,18 @@ export class AuditReportGenerator {
         content = formatCsvReport(reportData);
         break;
       default:
-        content = JSON.stringify({
-          title: options.title,
-          generatedAt: Date.now(),
-          chainValid,
-          auditEntries,
-          tasks,
-          heartbeatTasks,
-        }, null, 2);
+        content = JSON.stringify(
+          {
+            title: options.title,
+            generatedAt: Date.now(),
+            chainValid,
+            auditEntries,
+            tasks,
+            heartbeatTasks,
+          },
+          null,
+          2
+        );
     }
 
     const report: AuditReport & { content: string } = {

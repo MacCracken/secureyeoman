@@ -134,7 +134,7 @@ export class SecureIPC {
 
 export class MessageChannel {
   private key: Buffer;
-  private messageHandlers: Map<string, (data: unknown) => void> = new Map();
+  private messageHandlers = new Map<string, (data: unknown) => void>();
 
   constructor(key: Buffer) {
     this.key = key;

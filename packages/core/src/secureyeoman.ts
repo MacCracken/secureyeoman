@@ -279,8 +279,8 @@ export class SecureYeoman {
         {
           storage: this.authStorage,
           auditChain: this.auditChain,
-          rbac: this.rbac!,
-          rateLimiter: this.rateLimiter!,
+          rbac: this.rbac,
+          rateLimiter: this.rateLimiter,
           logger: this.logger.child({ component: 'AuthService' }),
         }
       );
@@ -348,8 +348,8 @@ export class SecureYeoman {
         }
 
         // Wire rotation callbacks
-        const authSvc = this.authService!;
-        const auditCh = this.auditChain!;
+        const authSvc = this.authService;
+        const auditCh = this.auditChain;
         const tokenSecretEnv = this.config.gateway.auth.tokenSecret;
         const signingKeyEnv = this.config.logging.audit.signingKeyEnv;
 
@@ -503,7 +503,7 @@ export class SecureYeoman {
       };
       this.taskExecutor = createTaskExecutor(
         this.validator,
-        this.rateLimiter!,
+        this.rateLimiter,
         this.auditChain,
         undefined,
         sandbox,
@@ -514,7 +514,7 @@ export class SecureYeoman {
 
       // Step 6.5: Wire up IntegrationManager + MessageRouter + ConversationManager
       this.conversationManager = new ConversationManager();
-      this.integrationManager = new IntegrationManager(this.integrationStorage!, {
+      this.integrationManager = new IntegrationManager(this.integrationStorage, {
         logger: this.logger.child({ component: 'IntegrationManager' }),
         onMessage: async (msg) => {
           this.conversationManager!.addMessage(msg);
@@ -523,9 +523,9 @@ export class SecureYeoman {
       });
       this.messageRouter = new MessageRouter({
         logger: this.logger.child({ component: 'MessageRouter' }),
-        taskExecutor: this.taskExecutor!,
+        taskExecutor: this.taskExecutor,
         integrationManager: this.integrationManager,
-        integrationStorage: this.integrationStorage!,
+        integrationStorage: this.integrationStorage,
       });
       // Register platform adapters
       this.integrationManager.registerPlatform('telegram', () => new TelegramIntegration());
@@ -541,7 +541,10 @@ export class SecureYeoman {
       this.integrationManager.registerPlatform('whatsapp', () => new WhatsAppIntegration());
       this.integrationManager.registerPlatform('signal', () => new SignalIntegration());
       this.integrationManager.registerPlatform('teams', () => new TeamsIntegration());
-      this.integrationManager.registerPlatform('googlecalendar', () => new GoogleCalendarIntegration());
+      this.integrationManager.registerPlatform(
+        'googlecalendar',
+        () => new GoogleCalendarIntegration()
+      );
       this.integrationManager.registerPlatform('notion', () => new NotionIntegration());
       this.integrationManager.registerPlatform('gitlab', () => new GitLabIntegration());
       // Start auto-reconnect health checks
@@ -550,16 +553,16 @@ export class SecureYeoman {
       this.logger.debug('Integration manager and message router initialized');
 
       // Step 6.6: Initialize heartbeat + heart system
-      if (this.config.heartbeat?.enabled !== false) {
+      if (this.config.heartbeat?.enabled) {
         this.heartbeatManager = new HeartbeatManager(
-          this.brainManager!,
+          this.brainManager,
           this.auditChain,
           this.logger.child({ component: 'HeartbeatManager' }),
           this.config.heartbeat,
           this.integrationManager
         );
         this.heartManager = new HeartManager(this.heartbeatManager);
-        this.soulManager!.setHeart(this.heartManager);
+        this.soulManager.setHeart(this.heartManager);
         this.heartbeatManager.start();
         this.logger.debug('Heart manager started', {
           intervalMs: this.config.heartbeat.intervalMs,
@@ -569,7 +572,7 @@ export class SecureYeoman {
       // Step 6.7: Initialize external brain sync (if configured)
       if (this.config.externalBrain?.enabled && this.config.externalBrain.path) {
         this.externalBrainSync = new ExternalBrainSync(
-          this.brainManager!,
+          this.brainManager,
           this.config.externalBrain,
           this.logger.child({ component: 'ExternalBrainSync' })
         );
@@ -581,7 +584,7 @@ export class SecureYeoman {
       }
 
       // Step 6.8: Initialize MCP system (if enabled)
-      if (this.config.mcp?.enabled !== false) {
+      if (this.config.mcp?.enabled) {
         this.mcpStorage = new McpStorage();
         this.mcpClientManager = new McpClientManager(this.mcpStorage, {
           logger: this.logger.child({ component: 'McpClient' }),
@@ -662,7 +665,7 @@ export class SecureYeoman {
               logger: this.logger.child({ component: 'SubAgentAI' }),
             },
             mcpClient: this.mcpClientManager ?? undefined,
-            auditChain: this.auditChain!,
+            auditChain: this.auditChain,
             logger: this.logger.child({ component: 'SubAgentManager' }),
             brainManager: this.brainManager ?? undefined,
             securityConfig: this.config.security,
@@ -683,7 +686,7 @@ export class SecureYeoman {
           this.extensionManager = new ExtensionManager(this.config.extensions, {
             storage: this.extensionStorage,
             logger: this.logger.child({ component: 'ExtensionManager' }),
-            auditChain: this.auditChain!,
+            auditChain: this.auditChain,
           });
           await this.extensionManager.initialize();
           this.logger.debug('Extension manager initialized');
@@ -701,7 +704,7 @@ export class SecureYeoman {
           this.executionManager = new CodeExecutionManager(this.config.execution, {
             storage: this.executionStorage,
             logger: this.logger.child({ component: 'CodeExecutionManager' }),
-            auditChain: this.auditChain!,
+            auditChain: this.auditChain,
           });
           await this.executionManager.initialize();
           this.logger.debug('Code execution manager initialized');
@@ -723,7 +726,7 @@ export class SecureYeoman {
             storage: this.a2aStorage,
             transport,
             logger: this.logger.child({ component: 'A2AManager' }),
-            auditChain: this.auditChain!,
+            auditChain: this.auditChain,
           });
           await this.a2aManager.initialize();
           this.logger.debug('A2A manager initialized');
@@ -742,18 +745,18 @@ export class SecureYeoman {
           const { PatternLearner } = await import('./proactive/pattern-learner.js');
           const proactiveStorage = new ProactiveStorage();
           const patternLearner = new PatternLearner(
-            this.brainManager!,
-            this.logger.child({ component: 'PatternLearner' }),
+            this.brainManager,
+            this.logger.child({ component: 'PatternLearner' })
           );
           this.proactiveManager = new ProactiveManager(
             proactiveStorage,
             {
               logger: this.logger.child({ component: 'ProactiveManager' }),
-              brainManager: this.brainManager!,
+              brainManager: this.brainManager,
               integrationManager: this.integrationManager ?? undefined,
             },
             this.config.proactive ?? {},
-            patternLearner,
+            patternLearner
           );
           await this.proactiveManager.initialize();
           this.logger.debug('Proactive manager initialized');
@@ -779,7 +782,7 @@ export class SecureYeoman {
           this.multimodalManager = new MultimodalManager(
             multimodalStorage,
             mmDeps,
-            this.config.multimodal ?? {},
+            this.config.multimodal ?? {}
           );
           await this.multimodalManager.initialize();
           this.logger.debug('Multimodal manager initialized');
@@ -1389,7 +1392,15 @@ export class SecureYeoman {
    * Update security policy toggles at runtime.
    * Changes are in-memory only (not persisted to YAML).
    */
-  updateSecurityPolicy(updates: { allowSubAgents?: boolean; allowA2A?: boolean; allowExtensions?: boolean; allowExecution?: boolean; allowProactive?: boolean; allowExperiments?: boolean; allowMultimodal?: boolean }): void {
+  updateSecurityPolicy(updates: {
+    allowSubAgents?: boolean;
+    allowA2A?: boolean;
+    allowExtensions?: boolean;
+    allowExecution?: boolean;
+    allowProactive?: boolean;
+    allowExperiments?: boolean;
+    allowMultimodal?: boolean;
+  }): void {
     this.ensureInitialized();
 
     if (updates.allowSubAgents !== undefined) {
@@ -1428,7 +1439,9 @@ export class SecureYeoman {
   }
 
   /** Persist security policy toggles to the database. */
-  private async persistSecurityPolicyToDb(updates: Record<string, boolean | undefined>): Promise<void> {
+  private async persistSecurityPolicyToDb(
+    updates: Record<string, boolean | undefined>
+  ): Promise<void> {
     try {
       const pool = getPool();
       const now = Date.now();
@@ -1437,7 +1450,7 @@ export class SecureYeoman {
         await pool.query(
           `INSERT INTO security.policy (key, value, updated_at) VALUES ($1, $2, $3)
            ON CONFLICT (key) DO UPDATE SET value = $2, updated_at = $3`,
-          [key, JSON.stringify(value), now],
+          [key, JSON.stringify(value), now]
         );
       }
     } catch (err) {
@@ -1452,9 +1465,17 @@ export class SecureYeoman {
     try {
       const pool = getPool();
       const result = await pool.query('SELECT key, value FROM security.policy');
-      const policyKeys = ['allowSubAgents', 'allowA2A', 'allowExtensions', 'allowExecution', 'allowProactive', 'allowExperiments', 'allowMultimodal'] as const;
+      const policyKeys = [
+        'allowSubAgents',
+        'allowA2A',
+        'allowExtensions',
+        'allowExecution',
+        'allowProactive',
+        'allowExperiments',
+        'allowMultimodal',
+      ] as const;
       for (const row of result.rows) {
-        if (policyKeys.includes(row.key as typeof policyKeys[number])) {
+        if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {
           (this.config!.security as Record<string, unknown>)[row.key] = JSON.parse(row.value);
         }
       }

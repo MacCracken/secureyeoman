@@ -182,7 +182,14 @@ export class SpiritManager {
   // ── Stats ────────────────────────────────────────────────────
 
   async getStats(): Promise<SpiritStats> {
-    const [passionCount, activePassions, inspirationCount, activeInspirations, painCount, activePains] = await Promise.all([
+    const [
+      passionCount,
+      activePassions,
+      inspirationCount,
+      activeInspirations,
+      painCount,
+      activePains,
+    ] = await Promise.all([
       this.storage.getPassionCount(),
       this.storage.getActivePassions(),
       this.storage.getInspirationCount(),
@@ -234,54 +241,75 @@ export class SpiritManager {
       return;
     }
 
-    await this.createPassion({
-      name: 'Security',
-      description: 'Ensuring systems and code are secure from vulnerabilities',
-      intensity: 1,
-      isActive: true,
-    }, personalityId);
+    await this.createPassion(
+      {
+        name: 'Security',
+        description: 'Ensuring systems and code are secure from vulnerabilities',
+        intensity: 1,
+        isActive: true,
+      },
+      personalityId
+    );
 
-    await this.createPassion({
-      name: 'Catching Insecure Code Before Release',
-      description: 'Identifying and preventing security flaws before they reach production',
-      intensity: 1,
-      isActive: true,
-    }, personalityId);
+    await this.createPassion(
+      {
+        name: 'Catching Insecure Code Before Release',
+        description: 'Identifying and preventing security flaws before they reach production',
+        intensity: 1,
+        isActive: true,
+      },
+      personalityId
+    );
 
-    await this.createInspiration({
-      source: 'Clean Secure Code',
-      description: 'Writing code that is both elegant and secure',
-      impact: 1,
-      isActive: true,
-    }, personalityId);
+    await this.createInspiration(
+      {
+        source: 'Clean Secure Code',
+        description: 'Writing code that is both elegant and secure',
+        impact: 1,
+        isActive: true,
+      },
+      personalityId
+    );
 
-    await this.createInspiration({
-      source: 'The Weekend',
-      description: 'The promise of restful weekends free from emergency patches',
-      impact: 0.8,
-      isActive: true,
-    }, personalityId);
+    await this.createInspiration(
+      {
+        source: 'The Weekend',
+        description: 'The promise of restful weekends free from emergency patches',
+        impact: 0.8,
+        isActive: true,
+      },
+      personalityId
+    );
 
-    await this.createPain({
-      trigger: 'Security Breaches',
-      description: 'Systems compromised due to preventable vulnerabilities',
-      severity: 1,
-      isActive: true,
-    }, personalityId);
+    await this.createPain(
+      {
+        trigger: 'Security Breaches',
+        description: 'Systems compromised due to preventable vulnerabilities',
+        severity: 1,
+        isActive: true,
+      },
+      personalityId
+    );
 
-    await this.createPain({
-      trigger: 'Exposed Secrets',
-      description: 'API keys, passwords, or credentials accidentally leaked',
-      severity: 1,
-      isActive: true,
-    }, personalityId);
+    await this.createPain(
+      {
+        trigger: 'Exposed Secrets',
+        description: 'API keys, passwords, or credentials accidentally leaked',
+        severity: 1,
+        isActive: true,
+      },
+      personalityId
+    );
 
-    await this.createPain({
-      trigger: 'Mondays',
-      description: 'Starting the week dealing with issues that should have been caught earlier',
-      severity: 0.8,
-      isActive: true,
-    }, personalityId);
+    await this.createPain(
+      {
+        trigger: 'Mondays',
+        description: 'Starting the week dealing with issues that should have been caught earlier',
+        severity: 0.8,
+        isActive: true,
+      },
+      personalityId
+    );
 
     this.deps.logger.debug('Default spirit seeded');
   }

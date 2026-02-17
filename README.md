@@ -392,6 +392,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 <div align="center">
 
-**F.R.I.D.A.Y.** - Your trusted digital Yeoman
+**F.R.I.D.A.Y.** - Your trusted digital SecureYeoman
 
 </div>

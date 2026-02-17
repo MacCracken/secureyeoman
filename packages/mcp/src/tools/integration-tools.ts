@@ -11,7 +11,7 @@ import { wrapToolHandler } from './tool-utils.js';
 export function registerIntegrationTools(
   server: McpServer,
   client: CoreApiClient,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   server.tool(
     'integration_list',
@@ -19,10 +19,10 @@ export function registerIntegrationTools(
     { platform: z.string().optional().describe('Filter by platform') },
     wrapToolHandler('integration_list', middleware, async (args) => {
       const query: Record<string, string> = {};
-      if (args.platform) query['platform'] = args.platform;
+      if (args.platform) query.platform = args.platform;
       const result = await client.get('/api/v1/integrations', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -39,7 +39,7 @@ export function registerIntegrationTools(
         text: args.text,
       });
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -49,6 +49,6 @@ export function registerIntegrationTools(
     wrapToolHandler('integration_status', middleware, async (args) => {
       const result = await client.get(`/api/v1/integrations/${args.id}`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 }

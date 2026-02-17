@@ -62,7 +62,7 @@ describe('McpHealthMonitor', () => {
       monitor.start();
       expect(logger.info).toHaveBeenCalledWith(
         'MCP health monitor started',
-        expect.objectContaining({ intervalMs: 5000 }),
+        expect.objectContaining({ intervalMs: 5000 })
       );
       monitor.stop();
     });
@@ -80,7 +80,7 @@ describe('McpHealthMonitor', () => {
       monitor.start();
       // info should only be called once for start
       const startCalls = (logger.info as ReturnType<typeof vi.fn>).mock.calls.filter(
-        (c: unknown[]) => c[0] === 'MCP health monitor started',
+        (c: unknown[]) => c[0] === 'MCP health monitor started'
       );
       expect(startCalls).toHaveLength(1);
       monitor.stop();
@@ -125,7 +125,9 @@ describe('McpHealthMonitor', () => {
       expect(health.status).toBe('healthy');
       expect(health.consecutiveFailures).toBe(0);
       expect(health.latencyMs).toBeGreaterThanOrEqual(0);
-      expect(storage.saveHealth).toHaveBeenCalledWith(expect.objectContaining({ serverId: 'srv-1' }));
+      expect(storage.saveHealth).toHaveBeenCalledWith(
+        expect.objectContaining({ serverId: 'srv-1' })
+      );
     });
 
     it('increments consecutiveFailures on failure', async () => {
@@ -175,7 +177,7 @@ describe('McpHealthMonitor', () => {
       expect(storage.updateServer).toHaveBeenCalledWith('srv-1', { enabled: false });
       expect(logger.error).toHaveBeenCalledWith(
         'MCP server auto-disabled due to consecutive failures',
-        expect.objectContaining({ serverId: 'srv-1', failures: 5 }),
+        expect.objectContaining({ serverId: 'srv-1', failures: 5 })
       );
     });
 

@@ -36,29 +36,29 @@ export class TelegramIntegration implements Integration {
     this.bot.command('start', async (ctx) => {
       await ctx.reply(
         `Hello! I'm ${config.displayName}.\n` +
-        'I can help you with tasks and questions.\n\n' +
-        'Commands:\n' +
-        '/help — Show available commands\n' +
-        '/status — Check agent status',
+          'I can help you with tasks and questions.\n\n' +
+          'Commands:\n' +
+          '/help — Show available commands\n' +
+          '/status — Check agent status'
       );
     });
 
     this.bot.command('help', async (ctx) => {
       await ctx.reply(
         'Available commands:\n' +
-        '/start — Welcome message\n' +
-        '/help — Show this help\n' +
-        '/status — Agent status\n\n' +
-        'Or just send me a message and I\'ll respond.',
+          '/start — Welcome message\n' +
+          '/help — Show this help\n' +
+          '/status — Agent status\n\n' +
+          "Or just send me a message and I'll respond."
       );
     });
 
     this.bot.command('status', async (ctx) => {
       await ctx.reply(
         `Agent: ${config.displayName}\n` +
-        `Platform: Telegram\n` +
-        `Status: Connected\n` +
-        `Uptime: Running`,
+          `Platform: Telegram\n` +
+          `Status: Connected\n` +
+          `Uptime: Running`
       );
     });
 
@@ -79,7 +79,9 @@ export class TelegramIntegration implements Integration {
         chatId: String(msg.chat.id),
         text: msg.text,
         attachments: [],
-        replyToMessageId: msg.reply_to_message ? String(msg.reply_to_message.message_id) : undefined,
+        replyToMessageId: msg.reply_to_message
+          ? String(msg.reply_to_message.message_id)
+          : undefined,
         platformMessageId: String(msg.message_id),
         metadata: {
           chatType: msg.chat.type,
@@ -107,7 +109,7 @@ export class TelegramIntegration implements Integration {
         const mmManager = this.deps?.multimodalManager;
         if (mmManager) {
           const file = await ctx.api.getFile(photo.file_id);
-          const fileUrl = `https://api.telegram.org/file/bot${(this.config!.config.botToken as string)}/${file.file_path}`;
+          const fileUrl = `https://api.telegram.org/file/bot${this.config!.config.botToken as string}/${file.file_path}`;
           const response = await fetch(fileUrl);
           const buffer = Buffer.from(await response.arrayBuffer());
           const base64 = buffer.toString('base64');
@@ -154,7 +156,7 @@ export class TelegramIntegration implements Integration {
         const mmManager = this.deps?.multimodalManager;
         if (mmManager && msg.voice.file_id) {
           const file = await ctx.api.getFile(msg.voice.file_id);
-          const fileUrl = `https://api.telegram.org/file/bot${(this.config!.config.botToken as string)}/${file.file_path}`;
+          const fileUrl = `https://api.telegram.org/file/bot${this.config!.config.botToken as string}/${file.file_path}`;
           const response = await fetch(fileUrl);
           const buffer = Buffer.from(await response.arrayBuffer());
           const base64 = buffer.toString('base64');
@@ -218,7 +220,11 @@ export class TelegramIntegration implements Integration {
     this.logger?.info('Telegram bot stopped');
   }
 
-  async sendMessage(chatId: string, text: string, _metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    _metadata?: Record<string, unknown>
+  ): Promise<string> {
     if (!this.bot) throw new Error('Integration not initialized');
 
     const sent = await this.bot.api.sendMessage(Number(chatId), text, {

@@ -83,10 +83,7 @@ export function detectNamespaceSupport(): NamespaceCapabilities {
 /**
  * Build an unshare command with the specified namespace flags
  */
-export function buildUnshareCommand(
-  command: string,
-  opts: NamespaceOptions = {},
-): string {
+export function buildUnshareCommand(command: string, opts: NamespaceOptions = {}): string {
   const flags: string[] = ['--user']; // Always use user namespace for unprivileged operation
 
   if (opts.pid) flags.push('--pid', '--fork');
@@ -109,10 +106,7 @@ export function buildUnshareCommand(
  * Run a command inside isolated namespaces.
  * Returns stdout. Throws on failure.
  */
-export function runInNamespace(
-  command: string,
-  opts: NamespaceOptions = {},
-): string {
+export function runInNamespace(command: string, opts: NamespaceOptions = {}): string {
   const caps = detectNamespaceSupport();
 
   if (!caps.unshareAvailable) {
@@ -122,7 +116,7 @@ export function runInNamespace(
   if (!caps.userNamespaces) {
     throw new NamespaceError(
       'User namespaces not available (check /proc/sys/user/max_user_namespaces)',
-      'USER_NS_UNAVAILABLE',
+      'USER_NS_UNAVAILABLE'
     );
   }
 
@@ -136,7 +130,7 @@ export function runInNamespace(
   } catch (err) {
     throw new NamespaceError(
       `Namespace execution failed: ${err instanceof Error ? err.message : String(err)}`,
-      'EXECUTION_FAILED',
+      'EXECUTION_FAILED'
     );
   }
 }
@@ -156,7 +150,7 @@ function isCommandAvailable(cmd: string): boolean {
 export class NamespaceError extends Error {
   constructor(
     message: string,
-    public readonly code: string,
+    public readonly code: string
   ) {
     super(message);
     this.name = 'NamespaceError';

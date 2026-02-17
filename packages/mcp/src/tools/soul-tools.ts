@@ -11,7 +11,7 @@ import { wrapToolHandler } from './tool-utils.js';
 export function registerSoulTools(
   server: McpServer,
   client: CoreApiClient,
-  middleware: ToolMiddleware,
+  middleware: ToolMiddleware
 ): void {
   server.tool(
     'personality_get',
@@ -20,7 +20,7 @@ export function registerSoulTools(
     wrapToolHandler('personality_get', middleware, async () => {
       const result = await client.get('/api/v1/soul/personality');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -30,7 +30,7 @@ export function registerSoulTools(
     wrapToolHandler('personality_switch', middleware, async (args) => {
       const result = await client.post(`/api/v1/soul/personalities/${args.id}/activate`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -39,10 +39,10 @@ export function registerSoulTools(
     { status: z.string().optional().describe('Filter by status') },
     wrapToolHandler('skill_list', middleware, async (args) => {
       const query: Record<string, string> = {};
-      if (args.status) query['status'] = args.status;
+      if (args.status) query.status = args.status;
       const result = await client.get('/api/v1/soul/skills', query);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 
   server.tool(
@@ -57,6 +57,6 @@ export function registerSoulTools(
         input: args.input ?? {},
       });
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
-    }),
+    })
   );
 }

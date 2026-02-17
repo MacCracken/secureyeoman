@@ -3,7 +3,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { ConsolidationManager, type ConsolidationConfig, type ConsolidationManagerDeps } from './manager.js';
+import {
+  ConsolidationManager,
+  type ConsolidationConfig,
+  type ConsolidationManagerDeps,
+} from './manager.js';
 import { parseConsolidationResponse, buildConsolidationPrompt } from './prompts.js';
 import type { Memory } from '../types.js';
 
@@ -54,7 +58,9 @@ function createMockDeps(): ConsolidationManagerDeps {
     storage: {
       getMemory: vi.fn(async (id: string) => makeMemory(id, `content for ${id}`)),
       queryMemories: vi.fn(async () => []),
-      createMemory: vi.fn(async (data: any) => makeMemory('new-mem', data.content, data.importance)),
+      createMemory: vi.fn(async (data: any) =>
+        makeMemory('new-mem', data.content, data.importance)
+      ),
       deleteMemory: vi.fn(async () => {}),
       getMemoryCount: vi.fn(async () => 0),
     } as any,
@@ -104,9 +110,7 @@ describe('ConsolidationManager', () => {
     });
 
     it('flags when similarity between flagThreshold and autoDedupThreshold', async () => {
-      (deps.vectorManager.searchMemories as any).mockResolvedValue([
-        { id: 'similar', score: 0.90 },
-      ]);
+      (deps.vectorManager.searchMemories as any).mockResolvedValue([{ id: 'similar', score: 0.9 }]);
 
       const memory = makeMemory('m1', 'somewhat similar');
       const result = await manager.onMemorySave(memory);
@@ -116,10 +120,7 @@ describe('ConsolidationManager', () => {
     });
 
     it('returns clean when disabled', async () => {
-      const disabledManager = new ConsolidationManager(
-        { ...defaultConfig, enabled: false },
-        deps,
-      );
+      const disabledManager = new ConsolidationManager({ ...defaultConfig, enabled: false }, deps);
       const result = await disabledManager.onMemorySave(makeMemory('m1', 'test'));
       expect(result).toBe('clean');
     });
@@ -156,9 +157,7 @@ describe('ConsolidationManager', () => {
       const mem2 = makeMemory('m2', 'The server is running on port 3000', 0.5);
 
       (deps.storage.queryMemories as any).mockResolvedValue([mem1, mem2]);
-      (deps.vectorManager.searchMemories as any).mockResolvedValue([
-        { id: 'm2', score: 0.92 },
-      ]);
+      (deps.vectorManager.searchMemories as any).mockResolvedValue([{ id: 'm2', score: 0.92 }]);
 
       const report = await manager.runDeepConsolidation();
       expect(report.totalCandidates).toBeGreaterThanOrEqual(0);
@@ -173,9 +172,7 @@ describe('ConsolidationManager', () => {
 
       const mem1 = makeMemory('m1', 'content', 0.8);
       (deps.storage.queryMemories as any).mockResolvedValue([mem1]);
-      (deps.vectorManager.searchMemories as any).mockResolvedValue([
-        { id: 'm2', score: 0.95 },
-      ]);
+      (deps.vectorManager.searchMemories as any).mockResolvedValue([{ id: 'm2', score: 0.95 }]);
 
       const report = await dryManager.runDeepConsolidation();
       expect(report.dryRun).toBe(true);
@@ -203,7 +200,7 @@ describe('ConsolidationManager', () => {
       manager.stop();
       expect(deps.logger.info).toHaveBeenCalledWith(
         'Consolidation scheduler started',
-        expect.any(Object),
+        expect.any(Object)
       );
     });
   });

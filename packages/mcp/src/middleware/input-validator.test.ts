@@ -25,19 +25,19 @@ describe('input-validator', () => {
 
   describe('SQL injection', () => {
     it('should block UNION SELECT', () => {
-      const result = validator.validate({ query: "1 UNION SELECT * FROM users" });
+      const result = validator.validate({ query: '1 UNION SELECT * FROM users' });
       expect(result.blocked).toBe(true);
       expect(result.blockReason).toContain('sql_union');
     });
 
     it('should block DROP TABLE', () => {
-      const result = validator.validate({ query: "DROP TABLE users" });
+      const result = validator.validate({ query: 'DROP TABLE users' });
       expect(result.blocked).toBe(true);
       expect(result.blockReason).toContain('sql_drop');
     });
 
     it('should block chained SQL statements', () => {
-      const result = validator.validate({ input: "; DELETE FROM users WHERE 1=1" });
+      const result = validator.validate({ input: '; DELETE FROM users WHERE 1=1' });
       expect(result.blocked).toBe(true);
     });
   });
@@ -101,7 +101,7 @@ describe('input-validator', () => {
     });
 
     it('should validate array values', () => {
-      const result = validator.validate({ items: ["safe", "'; DROP TABLE users; --"] });
+      const result = validator.validate({ items: ['safe', "'; DROP TABLE users; --"] });
       expect(result.blocked).toBe(true);
     });
   });

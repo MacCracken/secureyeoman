@@ -62,7 +62,7 @@ describe('system-tools', () => {
   it('should register all 3 system tools without errors', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() =>
-      registerSystemTools(server, mockClient(), makeConfig(), noopMiddleware()),
+      registerSystemTools(server, mockClient(), makeConfig(), noopMiddleware())
     ).not.toThrow();
   });
 

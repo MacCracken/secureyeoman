@@ -5,18 +5,35 @@ import { createNoopLogger } from '../logging/logger.js';
 import type { ReportData } from './audit-report.js';
 
 describe('AuditReportGenerator', () => {
-  const mockAuditChain = { verify: vi.fn().mockResolvedValue({ valid: true, entriesChecked: 0 }) } as any;
+  const mockAuditChain = {
+    verify: vi.fn().mockResolvedValue({ valid: true, entriesChecked: 0 }),
+  } as any;
   const mockAuditEntries = [
-    { id: '1', event: 'auth_success', level: 'info', message: 'User logged in', timestamp: Date.now() },
+    {
+      id: '1',
+      event: 'auth_success',
+      level: 'info',
+      message: 'User logged in',
+      timestamp: Date.now(),
+    },
     { id: '2', event: 'task_start', level: 'info', message: 'Task started', timestamp: Date.now() },
   ];
   const mockTasks = [
     { id: 't1', name: 'backup', type: 'system', status: 'completed', createdAt: Date.now() },
   ];
   const mockHeartbeatTasks = [
-    { name: 'health_check', type: 'http', enabled: true, intervalMs: 30000, lastRunAt: Date.now(), config: {} },
+    {
+      name: 'health_check',
+      type: 'http',
+      enabled: true,
+      intervalMs: 30000,
+      lastRunAt: Date.now(),
+      config: {},
+    },
   ];
-  const mockQueryAuditLog = vi.fn().mockResolvedValue({ entries: mockAuditEntries, total: 2, limit: 10000, offset: 0 });
+  const mockQueryAuditLog = vi
+    .fn()
+    .mockResolvedValue({ entries: mockAuditEntries, total: 2, limit: 10000, offset: 0 });
   const mockQueryTasks = vi.fn().mockResolvedValue({ tasks: mockTasks, total: 1 });
   const mockQueryHeartbeatTasks = vi.fn().mockReturnValue(mockHeartbeatTasks);
 
@@ -72,14 +89,24 @@ describe('AuditReportGenerator', () => {
   it('should pass filter options to queryAuditLog', async () => {
     const queryFn = vi.fn().mockResolvedValue({ entries: [], total: 0, limit: 100, offset: 0 });
     const gen = new AuditReportGenerator({ ...makeDeps(), queryAuditLog: queryFn });
-    await gen.generate({ title: 'Filtered', format: 'json', from: 1000, to: 2000, eventTypes: ['auth_success'], severities: ['info'], maxEntries: 500 });
-    expect(queryFn).toHaveBeenCalledWith(expect.objectContaining({
+    await gen.generate({
+      title: 'Filtered',
+      format: 'json',
       from: 1000,
       to: 2000,
-      event: ['auth_success'],
-      level: ['info'],
-      limit: 500,
-    }));
+      eventTypes: ['auth_success'],
+      severities: ['info'],
+      maxEntries: 500,
+    });
+    expect(queryFn).toHaveBeenCalledWith(
+      expect.objectContaining({
+        from: 1000,
+        to: 2000,
+        event: ['auth_success'],
+        level: ['info'],
+        limit: 500,
+      })
+    );
   });
 
   it('should handle missing task/heartbeat providers gracefully', async () => {
@@ -102,7 +129,9 @@ describe('AuditReportGenerator', () => {
       auditChain: { verify: vi.fn().mockRejectedValue(new Error('chain error')) } as any,
       queryAuditLog: vi.fn().mockRejectedValue(new Error('query error')),
       queryTasks: vi.fn().mockRejectedValue(new Error('tasks error')),
-      queryHeartbeatTasks: vi.fn().mockImplementation(() => { throw new Error('heartbeat error'); }),
+      queryHeartbeatTasks: vi.fn().mockImplementation(() => {
+        throw new Error('heartbeat error');
+      }),
     });
     // Should not throw — generates report with empty data
     const report = await gen.generate({ title: 'Error test', format: 'json' });
@@ -116,9 +145,13 @@ describe('AuditReportGenerator', () => {
 
 describe('Templates', () => {
   const makeData = (overrides?: Partial<ReportData>): ReportData => ({
-    auditEntries: [{ id: '1', event: 'test', level: 'info', message: 'hello', timestamp: Date.now() }],
+    auditEntries: [
+      { id: '1', event: 'test', level: 'info', message: 'hello', timestamp: Date.now() },
+    ],
     tasks: [{ id: 't1', name: 'job', type: 'system', status: 'completed', createdAt: Date.now() }],
-    heartbeatTasks: [{ name: 'ping', type: 'http', enabled: true, intervalMs: 5000, lastRunAt: Date.now() }],
+    heartbeatTasks: [
+      { name: 'ping', type: 'http', enabled: true, intervalMs: 5000, lastRunAt: Date.now() },
+    ],
     chainValid: true,
     ...overrides,
   });
@@ -144,7 +177,12 @@ describe('Templates', () => {
   });
 
   it('should handle empty data', () => {
-    const emptyData: ReportData = { auditEntries: [], tasks: [], heartbeatTasks: [], chainValid: false };
+    const emptyData: ReportData = {
+      auditEntries: [],
+      tasks: [],
+      heartbeatTasks: [],
+      chainValid: false,
+    };
     const html = formatHtmlReport('Empty', emptyData);
     expect(html).toContain('No audit entries');
     expect(html).toContain('No tasks recorded');
@@ -158,7 +196,15 @@ describe('Templates', () => {
 
   it('should escape HTML in entries', () => {
     const data = makeData({
-      auditEntries: [{ id: '1', event: 'test', level: 'info', message: '<script>alert("xss")</script>', timestamp: Date.now() }],
+      auditEntries: [
+        {
+          id: '1',
+          event: 'test',
+          level: 'info',
+          message: '<script>alert("xss")</script>',
+          timestamp: Date.now(),
+        },
+      ],
     });
     const html = formatHtmlReport('XSS Test', data);
     expect(html).not.toContain('<script>');

@@ -4,7 +4,14 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { stringify as stringifyYaml } from 'yaml';
-import { loadConfig, getSecret, requireSecret, validateSecrets, encryptConfigFile, decryptConfigFile } from './loader.js';
+import {
+  loadConfig,
+  getSecret,
+  requireSecret,
+  validateSecrets,
+  encryptConfigFile,
+  decryptConfigFile,
+} from './loader.js';
 
 describe('loadConfig', () => {
   const originalEnv = process.env;
@@ -191,13 +198,17 @@ describe('requireSecret', () => {
   it('should throw error when secret is not set', () => {
     delete process.env.MISSING_SECRET;
 
-    expect(() => requireSecret('MISSING_SECRET')).toThrow('Required secret not set: MISSING_SECRET');
+    expect(() => requireSecret('MISSING_SECRET')).toThrow(
+      'Required secret not set: MISSING_SECRET'
+    );
   });
 
   it('should throw error when secret is empty string', () => {
     process.env.EMPTY_REQUIRED = '';
 
-    expect(() => requireSecret('EMPTY_REQUIRED')).toThrow('Required secret not set: EMPTY_REQUIRED');
+    expect(() => requireSecret('EMPTY_REQUIRED')).toThrow(
+      'Required secret not set: EMPTY_REQUIRED'
+    );
   });
 });
 
@@ -368,7 +379,11 @@ describe('encrypted config', () => {
 
   it('should fall back to plain YAML when no .enc extension', () => {
     const yamlPath = join(tmpDir, 'config.yaml');
-    writeFileSync(yamlPath, stringifyYaml({ core: { environment: 'production' as const } }), 'utf-8');
+    writeFileSync(
+      yamlPath,
+      stringifyYaml({ core: { environment: 'production' as const } }),
+      'utf-8'
+    );
 
     const config = loadConfig({
       configPath: yamlPath,
