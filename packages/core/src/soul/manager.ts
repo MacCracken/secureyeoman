@@ -97,7 +97,7 @@ export class SoulManager {
         enabled: false,
         capabilities: [],
         heartEnabled: true,
-        creationConfig: { skills: false, tasks: false, personalities: false, experiments: false },
+        creationConfig: { skills: false, tasks: false, personalities: false, subAgents: false, customRoles: false, roleAssignments: false, experiments: false },
         selectedServers: [],
         mcpFeatures: { exposeGit: false, exposeFilesystem: false },
       },

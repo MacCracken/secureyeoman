@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     environment:
       POSTGRES_DB: friday
       POSTGRES_USER: friday
@@ -63,6 +63,18 @@ services:
       MCP_CORE_URL: "http://core:18789"
       MCP_EXPOSE_FILESYSTEM: "${MCP_EXPOSE_FILESYSTEM:-false}"
       MCP_ALLOWED_PATHS: "${MCP_ALLOWED_PATHS:-}"
+      # MCP_EXPOSE_WEB: "${MCP_EXPOSE_WEB:-false}"
+      # MCP_ALLOWED_URLS: "${MCP_ALLOWED_URLS:-}"
+      # MCP_WEB_RATE_LIMIT: "${MCP_WEB_RATE_LIMIT:-10}"
+      # MCP_EXPOSE_WEB_SCRAPING: "${MCP_EXPOSE_WEB_SCRAPING:-true}"
+      # MCP_EXPOSE_WEB_SEARCH: "${MCP_EXPOSE_WEB_SEARCH:-true}"
+      # MCP_WEB_SEARCH_PROVIDER: "${MCP_WEB_SEARCH_PROVIDER:-duckduckgo}"
+      # MCP_WEB_SEARCH_API_KEY: "${MCP_WEB_SEARCH_API_KEY:-}"
+      # MCP_EXPOSE_BROWSER: "${MCP_EXPOSE_BROWSER:-false}"
+      # MCP_BROWSER_ENGINE: "${MCP_BROWSER_ENGINE:-playwright}"
+      # MCP_BROWSER_HEADLESS: "${MCP_BROWSER_HEADLESS:-true}"
+      # MCP_BROWSER_MAX_PAGES: "${MCP_BROWSER_MAX_PAGES:-3}"
+      # MCP_BROWSER_TIMEOUT_MS: "${MCP_BROWSER_TIMEOUT_MS:-30000}"
       MCP_RATE_LIMIT_PER_TOOL: "${MCP_RATE_LIMIT_PER_TOOL:-30}"
       MCP_LOG_LEVEL: "${MCP_LOG_LEVEL:-info}"
       NODE_ENV: production

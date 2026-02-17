@@ -118,6 +118,24 @@ npm test -- --watch
 - Test critical paths and error cases
 - Use descriptive test names
 
+### Testing MCP Features
+
+When adding or modifying MCP tools:
+
+```bash
+# Run MCP package tests
+cd packages/mcp && npx vitest run
+
+# Run specific test file
+cd packages/mcp && npx vitest run src/tools/web-tools.test.ts
+```
+
+- **Web tools**: Use mock `fetch` for tests that would make HTTP requests. Test SSRF protection with private IPs, localhost, and cloud metadata endpoints.
+- **Browser tools**: Test placeholder behavior (should return "not yet available" until engine is integrated).
+- **Health monitoring**: Mock `McpStorage` and test health check logic, auto-disable thresholds, and timer lifecycle.
+- **Credential management**: Test encryption/decryption roundtrips with mocked storage. Verify IV randomization (same plaintext produces different ciphertexts).
+- **Config loader**: Test all new env vars (`MCP_EXPOSE_WEB`, `MCP_ALLOWED_URLS`, `MCP_EXPOSE_BROWSER`, etc.) with the `loadConfig()` function.
+
 ## Submitting Changes
 
 ### Branching Strategy
@@ -175,7 +193,7 @@ Types:
 
 ## Versioning
 
-F.R.I.D.A.Y. uses **calendar versioning** (`YYYY.M.D`). The version is the release date — e.g., `2026.2.15` for February 15, 2026.
+F.R.I.D.A.Y. uses **calendar versioning** (`YYYY.M.D`). The version is the release date — e.g., `2026.2.16` for February 16, 2026.
 
 To bump the version across all packages:
 

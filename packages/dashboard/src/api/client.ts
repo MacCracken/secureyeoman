@@ -672,14 +672,76 @@ export async function stopIntegration(id: string): Promise<{ message: string }> 
 
 // ─── Auth Roles ───────────────────────────────────────────────────
 
-export async function fetchRoles(): Promise<{
-  roles: Array<{ name: string; permissions: string[] }>;
-}> {
+export interface RoleInfo {
+  id: string;
+  name: string;
+  description?: string;
+  permissions: Array<{ resource: string; action: string }>;
+  inheritFrom?: string[];
+  isBuiltin: boolean;
+}
+
+export async function fetchRoles(): Promise<{ roles: RoleInfo[] }> {
   try {
     return await request('/auth/roles');
   } catch {
     return { roles: [] };
   }
+}
+
+export async function createRole(data: {
+  name: string;
+  description?: string;
+  permissions: Array<{ resource: string; action: string }>;
+  inheritFrom?: string[];
+}): Promise<{ role: RoleInfo }> {
+  return request('/auth/roles', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateRole(
+  id: string,
+  data: {
+    name?: string;
+    description?: string;
+    permissions?: Array<{ resource: string; action: string }>;
+    inheritFrom?: string[];
+  },
+): Promise<{ role: RoleInfo }> {
+  return request(`/auth/roles/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteRole(id: string): Promise<{ message: string }> {
+  return request(`/auth/roles/${id}`, { method: 'DELETE' });
+}
+
+export interface AssignmentInfo {
+  userId: string;
+  roleId: string;
+}
+
+export async function fetchAssignments(): Promise<{ assignments: AssignmentInfo[] }> {
+  try {
+    return await request('/auth/assignments');
+  } catch {
+    return { assignments: [] };
+  }
+}
+
+export async function assignRole(data: { userId: string; roleId: string }): Promise<{ assignment: AssignmentInfo }> {
+  return request('/auth/assignments', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function revokeAssignment(userId: string): Promise<{ message: string }> {
+  return request(`/auth/assignments/${encodeURIComponent(userId)}`, { method: 'DELETE' });
 }
 
 // ─── Audit Stats ──────────────────────────────────────────────────
@@ -1059,21 +1121,81 @@ export async function fetchMcpResources(): Promise<{ resources: McpResourceDef[]
 export async function fetchMcpConfig(): Promise<{
   exposeGit: boolean;
   exposeFilesystem: boolean;
+  exposeWeb: boolean;
+  exposeWebScraping: boolean;
+  exposeWebSearch: boolean;
+  exposeBrowser: boolean;
 }> {
   try {
     return await request('/mcp/config');
   } catch {
-    return { exposeGit: false, exposeFilesystem: false };
+    return { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: true, exposeWebSearch: true, exposeBrowser: false };
   }
 }
 
 export async function updateMcpConfig(data: {
   exposeGit?: boolean;
   exposeFilesystem?: boolean;
-}): Promise<{ exposeGit: boolean; exposeFilesystem: boolean }> {
+  exposeWeb?: boolean;
+  exposeWebScraping?: boolean;
+  exposeWebSearch?: boolean;
+  exposeBrowser?: boolean;
+}): Promise<{
+  exposeGit: boolean;
+  exposeFilesystem: boolean;
+  exposeWeb: boolean;
+  exposeWebScraping: boolean;
+  exposeWebSearch: boolean;
+  exposeBrowser: boolean;
+}> {
   return request('/mcp/config', {
     method: 'PATCH',
     body: JSON.stringify(data),
+  });
+}
+
+// ─── MCP Health ─────────────────────────────────────────────
+
+export async function fetchMcpHealth(): Promise<{ health: Array<import('../types').McpServerHealth> }> {
+  try {
+    return await request('/mcp/health');
+  } catch {
+    return { health: [] };
+  }
+}
+
+export async function fetchMcpServerHealth(serverId: string): Promise<import('../types').McpServerHealth | null> {
+  try {
+    return await request(`/mcp/servers/${serverId}/health`);
+  } catch {
+    return null;
+  }
+}
+
+export async function triggerMcpHealthCheck(serverId: string): Promise<import('../types').McpServerHealth> {
+  return request(`/mcp/servers/${serverId}/health/check`, { method: 'POST' });
+}
+
+// ─── MCP Credentials ───────────────────────────────────────
+
+export async function fetchMcpCredentialKeys(serverId: string): Promise<{ keys: string[] }> {
+  try {
+    return await request(`/mcp/servers/${serverId}/credentials`);
+  } catch {
+    return { keys: [] };
+  }
+}
+
+export async function storeMcpCredential(serverId: string, key: string, value: string): Promise<void> {
+  await request(`/mcp/servers/${serverId}/credentials/${encodeURIComponent(key)}`, {
+    method: 'PUT',
+    body: JSON.stringify({ value }),
+  });
+}
+
+export async function deleteMcpCredential(serverId: string, key: string): Promise<void> {
+  await request(`/mcp/servers/${serverId}/credentials/${encodeURIComponent(key)}`, {
+    method: 'DELETE',
   });
 }
 
@@ -1198,4 +1320,545 @@ export async function renameConversation(id: string, title: string): Promise<Con
     method: 'PUT',
     body: JSON.stringify({ title }),
   });
+}
+
+// ─── Semantic Search API ──────────────────────────────────────────
+
+export async function searchSimilar(params: {
+  query: string;
+  threshold?: number;
+  type?: string;
+  limit?: number;
+}): Promise<{ results: Array<{ id: string; score: number; metadata?: Record<string, unknown> }> }> {
+  const queryParams = new URLSearchParams();
+  queryParams.set('query', params.query);
+  if (params.threshold !== undefined) queryParams.set('threshold', String(params.threshold));
+  if (params.type) queryParams.set('type', params.type);
+  if (params.limit) queryParams.set('limit', String(params.limit));
+  return request(`/brain/search/similar?${queryParams.toString()}`);
+}
+
+export async function reindexBrain(): Promise<{ message: string; memoriesCount: number; knowledgeCount: number }> {
+  return request('/brain/reindex', { method: 'POST' });
+}
+
+// ─── Consolidation API ─────────────────────────────────────────
+
+export async function runConsolidation(): Promise<{ report: unknown }> {
+  return request('/brain/consolidation/run', { method: 'POST' });
+}
+
+export async function fetchConsolidationSchedule(): Promise<{ schedule: string }> {
+  return request('/brain/consolidation/schedule');
+}
+
+export async function updateConsolidationSchedule(schedule: string): Promise<{ schedule: string }> {
+  return request('/brain/consolidation/schedule', {
+    method: 'PUT',
+    body: JSON.stringify({ schedule }),
+  });
+}
+
+export async function fetchConsolidationHistory(): Promise<{ history: Array<{ timestamp: number; totalCandidates: number; summary: Record<string, number>; dryRun: boolean; durationMs: number }> }> {
+  try {
+    return await request('/brain/consolidation/history');
+  } catch {
+    return { history: [] };
+  }
+}
+
+// ─── History Compression API ──────────────────────────────────────
+
+export interface HistoryEntry {
+  id: string;
+  conversationId: string;
+  tier: 'message' | 'topic' | 'bulk';
+  content: string;
+  tokenCount: number;
+  sequence: number;
+  createdAt: number;
+  sealedAt: number | null;
+}
+
+export interface CompressedContext {
+  messages: unknown[];
+  topics: unknown[];
+  bulk: unknown[];
+  totalTokens: number;
+  tokenBudget: { messages: number; topics: number; bulk: number };
+}
+
+export async function fetchConversationHistory(
+  conversationId: string,
+  tier?: string,
+): Promise<{ entries: HistoryEntry[]; total: number }> {
+  const params = tier ? `?tier=${tier}` : '';
+  try {
+    return await request(`/conversations/${conversationId}/history${params}`);
+  } catch {
+    return { entries: [], total: 0 };
+  }
+}
+
+export async function sealConversationTopic(conversationId: string): Promise<{ message: string }> {
+  return request(`/conversations/${conversationId}/seal-topic`, { method: 'POST' });
+}
+
+export async function fetchCompressedContext(
+  conversationId: string,
+  maxTokens?: number,
+): Promise<CompressedContext> {
+  const params = maxTokens ? `?maxTokens=${maxTokens}` : '';
+  return request(`/conversations/${conversationId}/compressed-context${params}`);
+}
+
+// ─── Sub-Agent Delegation API ─────────────────────────────────────
+
+export interface AgentProfileInfo {
+  id: string;
+  name: string;
+  description: string;
+  systemPrompt: string;
+  maxTokenBudget: number;
+  allowedTools: string[];
+  defaultModel: string | null;
+  isBuiltin: boolean;
+  createdAt?: number;
+  updatedAt?: number;
+}
+
+export interface DelegationInfo {
+  id: string;
+  parentDelegationId: string | null;
+  profileId: string;
+  task: string;
+  context: string | null;
+  status: string;
+  result: string | null;
+  error: string | null;
+  depth: number;
+  maxDepth: number;
+  tokenBudget: number;
+  tokensUsedPrompt: number;
+  tokensUsedCompletion: number;
+  timeoutMs: number;
+  startedAt: number | null;
+  completedAt: number | null;
+  createdAt: number;
+  initiatedBy: string | null;
+  correlationId: string | null;
+}
+
+export interface DelegationResultInfo {
+  delegationId: string;
+  profile: string;
+  status: string;
+  result: string | null;
+  error: string | null;
+  tokenUsage: { prompt: number; completion: number; total: number };
+  durationMs: number;
+  subDelegations: DelegationResultInfo[];
+}
+
+export interface ActiveDelegationInfo {
+  delegationId: string;
+  profileId: string;
+  profileName: string;
+  task: string;
+  status: string;
+  depth: number;
+  tokensUsed: number;
+  tokenBudget: number;
+  startedAt: number;
+  elapsedMs: number;
+}
+
+export async function fetchAgentProfiles(): Promise<{ profiles: AgentProfileInfo[] }> {
+  try {
+    return await request('/agents/profiles');
+  } catch {
+    return { profiles: [] };
+  }
+}
+
+export async function createAgentProfile(data: {
+  name: string;
+  description?: string;
+  systemPrompt: string;
+  maxTokenBudget?: number;
+  allowedTools?: string[];
+  defaultModel?: string | null;
+}): Promise<{ profile: AgentProfileInfo }> {
+  return request('/agents/profiles', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateAgentProfile(
+  id: string,
+  data: Partial<{
+    name: string;
+    description: string;
+    systemPrompt: string;
+    maxTokenBudget: number;
+    allowedTools: string[];
+    defaultModel: string | null;
+  }>,
+): Promise<{ profile: AgentProfileInfo }> {
+  return request(`/agents/profiles/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteAgentProfile(id: string): Promise<{ success: boolean }> {
+  return request(`/agents/profiles/${id}`, { method: 'DELETE' });
+}
+
+export async function delegateTask(data: {
+  profile: string;
+  task: string;
+  context?: string;
+  maxTokenBudget?: number;
+  maxDepth?: number;
+  timeout?: number;
+}): Promise<DelegationResultInfo> {
+  return request('/agents/delegate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchDelegations(params?: {
+  status?: string;
+  profileId?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ delegations: DelegationInfo[]; total: number }> {
+  const query = new URLSearchParams();
+  if (params?.status) query.set('status', params.status);
+  if (params?.profileId) query.set('profileId', params.profileId);
+  if (params?.limit) query.set('limit', params.limit.toString());
+  if (params?.offset) query.set('offset', params.offset.toString());
+  const qs = query.toString();
+  try {
+    return await request(`/agents/delegations${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { delegations: [], total: 0 };
+  }
+}
+
+export async function fetchActiveDelegations(): Promise<{ delegations: ActiveDelegationInfo[] }> {
+  try {
+    return await request('/agents/delegations/active');
+  } catch {
+    return { delegations: [] };
+  }
+}
+
+export async function fetchDelegation(
+  id: string,
+): Promise<{ delegation: DelegationInfo; tree: DelegationInfo[] } | null> {
+  try {
+    return await request(`/agents/delegations/${id}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function cancelDelegation(id: string): Promise<{ success: boolean }> {
+  return request(`/agents/delegations/${id}/cancel`, { method: 'POST' });
+}
+
+export async function fetchDelegationMessages(
+  delegationId: string,
+): Promise<{ messages: Array<Record<string, unknown>> }> {
+  try {
+    return await request(`/agents/delegations/${delegationId}/messages`);
+  } catch {
+    return { messages: [] };
+  }
+}
+
+export async function fetchAgentConfig(): Promise<{ config: Record<string, unknown>; allowedBySecurityPolicy: boolean }> {
+  try {
+    return await request('/agents/config');
+  } catch {
+    return { config: {}, allowedBySecurityPolicy: false };
+  }
+}
+
+export interface SecurityPolicy {
+  allowSubAgents: boolean;
+  allowA2A: boolean;
+  allowExtensions: boolean;
+  allowExecution: boolean;
+}
+
+export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
+  try {
+    return await request('/security/policy');
+  } catch {
+    return { allowSubAgents: false, allowA2A: false, allowExtensions: false, allowExecution: true };
+  }
+}
+
+export async function updateSecurityPolicy(data: Partial<SecurityPolicy>): Promise<SecurityPolicy> {
+  return request('/security/policy', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+// ─── Extensions API (Phase 6.4a) ──────────────────────────────────
+
+export async function fetchExtensions(): Promise<{ extensions: Array<{ id: string; name: string; version: string; enabled: boolean; createdAt: number }> }> {
+  try {
+    return await request('/extensions');
+  } catch {
+    return { extensions: [] };
+  }
+}
+
+export async function registerExtension(data: {
+  id: string;
+  name: string;
+  version: string;
+  hooks: Array<{ point: string; semantics: string; priority?: number }>;
+}): Promise<{ extension: Record<string, unknown> }> {
+  return request('/extensions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function removeExtension(id: string): Promise<{ success: boolean }> {
+  return request(`/extensions/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchExtensionHooks(): Promise<{ hooks: Array<{ id: string; extensionId: string; hookPoint: string; semantics: string; priority: number; enabled: boolean }> }> {
+  try {
+    return await request('/extensions/hooks');
+  } catch {
+    return { hooks: [] };
+  }
+}
+
+export async function registerExtensionHook(data: {
+  extensionId: string;
+  hookPoint: string;
+  semantics: string;
+  priority?: number;
+}): Promise<{ hook: Record<string, unknown> }> {
+  return request('/extensions/hooks', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function removeExtensionHook(id: string): Promise<{ success: boolean }> {
+  return request(`/extensions/hooks/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchExtensionWebhooks(): Promise<{ webhooks: Array<{ id: string; url: string; hookPoints: string[]; enabled: boolean }> }> {
+  try {
+    return await request('/extensions/webhooks');
+  } catch {
+    return { webhooks: [] };
+  }
+}
+
+export async function registerExtensionWebhook(data: {
+  url: string;
+  hookPoints: string[];
+  secret?: string;
+  enabled?: boolean;
+}): Promise<{ webhook: Record<string, unknown> }> {
+  return request('/extensions/webhooks', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateExtensionWebhook(
+  id: string,
+  data: Partial<{ url: string; hookPoints: string[]; enabled: boolean }>
+): Promise<{ webhook: Record<string, unknown> }> {
+  return request(`/extensions/webhooks/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function removeExtensionWebhook(id: string): Promise<{ success: boolean }> {
+  return request(`/extensions/webhooks/${id}`, { method: 'DELETE' });
+}
+
+export async function discoverExtensions(): Promise<{ extensions: Array<Record<string, unknown>> }> {
+  return request('/extensions/discover', { method: 'POST' });
+}
+
+export async function fetchExtensionConfig(): Promise<{ config: Record<string, unknown> }> {
+  try {
+    return await request('/extensions/config');
+  } catch {
+    return { config: {} };
+  }
+}
+
+// ─── Code Execution API (Phase 6.4b) ──────────────────────────────
+
+export async function executeCode(data: {
+  runtime: string;
+  code: string;
+  sessionId?: string;
+  timeout?: number;
+}): Promise<{
+  id: string;
+  sessionId: string;
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  duration: number;
+  truncated: boolean;
+}> {
+  return request('/execution/run', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchExecutionSessions(): Promise<{ sessions: Array<{ id: string; runtime: string; status: string; createdAt: number; lastActivity: number }> }> {
+  try {
+    return await request('/execution/sessions');
+  } catch {
+    return { sessions: [] };
+  }
+}
+
+export async function fetchExecutionSession(id: string): Promise<{ id: string; runtime: string; status: string; createdAt: number; lastActivity: number } | null> {
+  try {
+    return await request(`/execution/sessions/${id}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function terminateExecutionSession(id: string): Promise<{ success: boolean }> {
+  return request(`/execution/sessions/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchExecutionHistory(params?: {
+  sessionId?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ executions: Array<{ id: string; sessionId: string; exitCode: number; stdout: string; stderr: string; duration: number; createdAt: number }>; total: number }> {
+  const query = new URLSearchParams();
+  if (params?.sessionId) query.set('sessionId', params.sessionId);
+  if (params?.limit) query.set('limit', params.limit.toString());
+  if (params?.offset) query.set('offset', params.offset.toString());
+  const qs = query.toString();
+  try {
+    return await request(`/execution/history${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { executions: [], total: 0 };
+  }
+}
+
+export async function approveExecution(id: string): Promise<{ approval: Record<string, unknown> }> {
+  return request(`/execution/approve/${id}`, { method: 'POST' });
+}
+
+export async function rejectExecution(id: string): Promise<{ approval: Record<string, unknown> }> {
+  return request(`/execution/approve/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchExecutionConfig(): Promise<{ config: Record<string, unknown> }> {
+  try {
+    return await request('/execution/config');
+  } catch {
+    return { config: {} };
+  }
+}
+
+// ─── A2A Protocol API (Phase 6.5) ─────────────────────────────────
+
+export async function fetchA2APeers(): Promise<{ peers: Array<{ id: string; name: string; url: string; trustLevel: string; status: string; lastSeen: number; capabilities: Array<{ name: string; description: string; version: string }> }> }> {
+  try {
+    return await request('/a2a/peers');
+  } catch {
+    return { peers: [] };
+  }
+}
+
+export async function addA2APeer(data: {
+  url: string;
+  name?: string;
+}): Promise<{ peer: Record<string, unknown> }> {
+  return request('/a2a/peers', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function removeA2APeer(id: string): Promise<{ success: boolean }> {
+  return request(`/a2a/peers/${id}`, { method: 'DELETE' });
+}
+
+export async function updateA2ATrust(
+  id: string,
+  level: string
+): Promise<{ peer: Record<string, unknown> }> {
+  return request(`/a2a/peers/${id}/trust`, {
+    method: 'PUT',
+    body: JSON.stringify({ level }),
+  });
+}
+
+export async function discoverA2APeers(): Promise<{ peers: Array<Record<string, unknown>> }> {
+  return request('/a2a/discover', { method: 'POST' });
+}
+
+export async function fetchA2ACapabilities(): Promise<{ capabilities: Array<{ name: string; description: string; version: string }> }> {
+  try {
+    return await request('/a2a/capabilities');
+  } catch {
+    return { capabilities: [] };
+  }
+}
+
+export async function delegateA2ATask(data: {
+  peerId: string;
+  task: string;
+}): Promise<{ message: Record<string, unknown> }> {
+  return request('/a2a/delegate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchA2AMessages(params?: {
+  peerId?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ messages: Array<{ id: string; type: string; fromPeerId: string; toPeerId: string; payload: unknown; timestamp: number }>; total: number }> {
+  const query = new URLSearchParams();
+  if (params?.peerId) query.set('peerId', params.peerId);
+  if (params?.limit) query.set('limit', params.limit.toString());
+  if (params?.offset) query.set('offset', params.offset.toString());
+  const qs = query.toString();
+  try {
+    return await request(`/a2a/messages${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { messages: [], total: 0 };
+  }
+}
+
+export async function fetchA2AConfig(): Promise<{ config: Record<string, unknown> }> {
+  try {
+    return await request('/a2a/config');
+  } catch {
+    return { config: {} };
+  }
 }

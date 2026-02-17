@@ -85,10 +85,15 @@ export interface SkillFilter {
   enabled?: boolean;
 }
 
+import type { VectorMemoryManager } from './vector/manager.js';
+import type { ConsolidationManager } from './consolidation/manager.js';
+
 export interface BrainManagerDeps {
   auditChain: AuditChain;
   logger: SecureLogger;
   auditStorage?: AuditStorage;
+  vectorMemoryManager?: VectorMemoryManager;
+  consolidationManager?: ConsolidationManager;
 }
 
 export interface BrainStats {

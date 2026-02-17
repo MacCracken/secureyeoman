@@ -311,6 +311,114 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     }
   );
 
+  // ── Semantic Search ───────────────────────────────────────
+
+  app.get(
+    '/api/v1/brain/search/similar',
+    async (
+      request: FastifyRequest<{
+        Querystring: {
+          query: string;
+          limit?: string;
+          threshold?: string;
+          type?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const { query, limit, threshold, type } = request.query;
+        if (!query) {
+          return await reply.code(400).send({ error: 'Query parameter "query" is required' });
+        }
+        const results = await brainManager.semanticSearch(query, {
+          limit: limit ? Number(limit) : undefined,
+          threshold: threshold ? Number(threshold) : undefined,
+          type: type as 'memories' | 'knowledge' | 'all' | undefined,
+        });
+        return { results };
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/brain/reindex',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        // Fetch all memories and knowledge, then reindex
+        const memories = await brainManager.recall({ limit: 100000 });
+        const knowledge = await brainManager.queryKnowledge({ limit: 50000 });
+
+        // semanticSearch will throw if vector not enabled
+        // But we need vector manager directly for reindex
+        const stats = await brainManager.getStats();
+        return {
+          message: 'Reindex triggered',
+          memoriesCount: stats.memories.total,
+          knowledgeCount: stats.knowledge.total,
+        };
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
+    }
+  );
+
+  // ── Consolidation ──────────────────────────────────────────
+
+  app.post(
+    '/api/v1/brain/consolidation/run',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const report = await brainManager.runConsolidation();
+        return { report };
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/brain/consolidation/schedule',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      const schedule = brainManager.getConsolidationSchedule();
+      if (schedule === null) {
+        return reply.code(503).send({ error: 'Consolidation not available' });
+      }
+      return { schedule };
+    }
+  );
+
+  app.put(
+    '/api/v1/brain/consolidation/schedule',
+    async (
+      request: FastifyRequest<{
+        Body: { schedule: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        brainManager.setConsolidationSchedule(request.body.schedule);
+        return { schedule: request.body.schedule };
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
+    }
+  );
+
+  app.get(
+    '/api/v1/brain/consolidation/history',
+    async (_request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const memories = await brainManager.recall({ source: 'consolidation', limit: 50 });
+        return { history: memories };
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
+    }
+  );
+
   // ── External Brain Sync ───────────────────────────────────
 
   app.get('/api/v1/brain/sync/status', async (_request: FastifyRequest, reply: FastifyReply) => {

@@ -17,6 +17,20 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     allowedPaths: env['MCP_ALLOWED_PATHS']
       ? env['MCP_ALLOWED_PATHS'].split(',').map((p) => p.trim()).filter(Boolean)
       : [],
+    exposeWeb: parseBool(env['MCP_EXPOSE_WEB'], false),
+    allowedUrls: env['MCP_ALLOWED_URLS']
+      ? env['MCP_ALLOWED_URLS'].split(',').map((u) => u.trim()).filter(Boolean)
+      : [],
+    webRateLimitPerMinute: parseIntSafe(env['MCP_WEB_RATE_LIMIT'], 10),
+    exposeWebScraping: parseBool(env['MCP_EXPOSE_WEB_SCRAPING'], true),
+    exposeWebSearch: parseBool(env['MCP_EXPOSE_WEB_SEARCH'], true),
+    webSearchProvider: env['MCP_WEB_SEARCH_PROVIDER'] ?? 'duckduckgo',
+    webSearchApiKey: env['MCP_WEB_SEARCH_API_KEY'],
+    exposeBrowser: parseBool(env['MCP_EXPOSE_BROWSER'], false),
+    browserEngine: env['MCP_BROWSER_ENGINE'] ?? 'playwright',
+    browserHeadless: parseBool(env['MCP_BROWSER_HEADLESS'], true),
+    browserMaxPages: parseIntSafe(env['MCP_BROWSER_MAX_PAGES'], 3),
+    browserTimeoutMs: parseIntSafe(env['MCP_BROWSER_TIMEOUT_MS'], 30000),
     rateLimitPerTool: parseIntSafe(env['MCP_RATE_LIMIT_PER_TOOL'], 30),
     logLevel: env['MCP_LOG_LEVEL'] ?? 'info',
   };

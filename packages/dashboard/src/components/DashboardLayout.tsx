@@ -53,6 +53,18 @@ const SkillsPage = lazy(() => import('./SkillsPage').then((m) => ({ default: m.S
 const ConnectionsPage = lazy(() =>
   import('./ConnectionsPage').then((m) => ({ default: m.ConnectionsPage }))
 );
+const SubAgentsPage = lazy(() =>
+  import('./SubAgentsPage').then((m) => ({ default: m.SubAgentsPage }))
+);
+const ExtensionsPage = lazy(() =>
+  import('./ExtensionsPage').then((m) => ({ default: m.ExtensionsPage }))
+);
+const CodeExecutionPage = lazy(() =>
+  import('./CodeExecutionPage').then((m) => ({ default: m.CodeExecutionPage }))
+);
+const A2APage = lazy(() =>
+  import('./A2APage').then((m) => ({ default: m.A2APage }))
+);
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -202,8 +214,12 @@ export function DashboardLayout() {
                   <Route path="/personality" element={<PersonalityEditor />} />
                   <Route path="/skills" element={<SkillsPage />} />
                   <Route path="/marketplace" element={<SkillsPage />} />
+                  <Route path="/agents" element={<SubAgentsPage />} />
                   <Route path="/connections" element={<ConnectionsPage />} />
                   <Route path="/mcp" element={<ConnectionsPage />} />
+                  <Route path="/extensions" element={<ExtensionsPage />} />
+                  <Route path="/execution" element={<CodeExecutionPage />} />
+                  <Route path="/a2a" element={<A2APage />} />
                   <Route path="/experiments" element={<ExperimentsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/security-settings" element={<SettingsPage />} />

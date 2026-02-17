@@ -73,6 +73,9 @@ friday/
 │   │       ├── soul/          # Personality + identity
 │   │       ├── task/          # Task execution + storage
 │   │       ├── integrations/  # Platform adapters (Telegram, Discord, Slack, GitHub)
+│   │       ├── extensions/    # Lifecycle hook system and extension manager
+│   │       ├── execution/     # Sandboxed code execution (Python, Node.js, shell)
+│   │       ├── a2a/           # Agent-to-Agent protocol (discovery, delegation, messaging)
 │   │       └── utils/         # Crypto utilities
 │   └── dashboard/             # React dashboard
 │       └── src/
@@ -112,6 +115,15 @@ friday/
 
 **Key Modules**:
 - `ai/` - AI provider abstraction (Anthropic, OpenAI, Gemini, Ollama) with configurable fallback chain on rate limits / provider unavailability
+- `ai/embeddings/` - Embedding providers (local SentenceTransformers, OpenAI/Gemini API) for vector semantic memory
+- `brain/vector/` - Vector store adapters (FAISS, Qdrant) with VectorMemoryManager orchestrating semantic indexing and search
+- `brain/consolidation/` - LLM-powered memory consolidation with on-save dedup and scheduled deep analysis
+- `chat/compression/` - 3-tier progressive history compression (message → topic → bulk) with LLM summarization
+- `agents/` - Sub-agent delegation system with specialized profiles (researcher, coder, analyst, summarizer), recursive delegation, token budgets, and context isolation
+- `extensions/` - Lifecycle extension hooks with 24 hook points (observe, transform, veto semantics), filesystem-based plugin discovery, EventEmitter integration, and outbound webhook dispatch
+- `execution/` - Sandboxed code execution tool supporting Python, Node.js, and shell runtimes with persistent sessions, streaming output, approval policies, and secrets filtering
+- `a2a/` - Agent-to-Agent protocol for cross-instance delegation using E2E encrypted messaging, mDNS/DNS-SD discovery, capability negotiation, and trust progression (untrusted/verified/trusted)
+- `mcp/` - MCP client manager (external server connections, tool discovery), MCP health monitor (periodic checks, auto-disable), MCP credential manager (AES-256-GCM encrypted credential storage, injection into server environment)
 - `task/` - Task queue, execution, and persistence
 - `logging/` - Structured logging with cryptographic audit chain
 - `config/` - Configuration loading and validation
@@ -127,8 +139,10 @@ friday/
 - Rate limiting and threat detection
 
 **Key Modules**:
-- `rbac.ts` - Role-based access control
+- `rbac.ts` - Role-based access control with full CRUD (custom roles, user-role assignments)
+- `rbac-storage.ts` - PostgreSQL persistent storage for role definitions and assignments
 - `auth.ts` - JWT and API key authentication
+- `auth-routes.ts` - Auth + RBAC role management REST endpoints (7 routes)
 - `secrets.ts` - Encrypted storage and keyring integration
 - `rate-limiter.ts` - Sliding window rate limiting
 

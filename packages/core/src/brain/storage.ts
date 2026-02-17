@@ -528,6 +528,66 @@ export class BrainStorage extends PgBaseStorage {
     return Number(row?.count ?? 0);
   }
 
+  // ── Vector Similarity ───────────────────────────────────────────
+
+  async queryMemoriesBySimilarity(
+    embedding: number[],
+    limit: number,
+    threshold: number,
+  ): Promise<Array<Memory & { similarity: number }>> {
+    const vectorStr = `[${embedding.join(',')}]`;
+    const rows = await this.queryMany<MemoryRow & { similarity: number }>(
+      `SELECT *, 1 - (embedding <=> $1::vector) AS similarity
+       FROM brain.memories
+       WHERE embedding IS NOT NULL
+         AND 1 - (embedding <=> $1::vector) >= $2
+       ORDER BY similarity DESC
+       LIMIT $3`,
+      [vectorStr, threshold, limit],
+    );
+    return rows.map((row) => ({
+      ...rowToMemory(row),
+      similarity: row.similarity,
+    }));
+  }
+
+  async queryKnowledgeBySimilarity(
+    embedding: number[],
+    limit: number,
+    threshold: number,
+  ): Promise<Array<KnowledgeEntry & { similarity: number }>> {
+    const vectorStr = `[${embedding.join(',')}]`;
+    const rows = await this.queryMany<KnowledgeRow & { similarity: number }>(
+      `SELECT *, 1 - (embedding <=> $1::vector) AS similarity
+       FROM brain.knowledge
+       WHERE embedding IS NOT NULL
+         AND 1 - (embedding <=> $1::vector) >= $2
+       ORDER BY similarity DESC
+       LIMIT $3`,
+      [vectorStr, threshold, limit],
+    );
+    return rows.map((row) => ({
+      ...rowToKnowledge(row),
+      similarity: row.similarity,
+    }));
+  }
+
+  async updateMemoryEmbedding(id: string, embedding: number[]): Promise<void> {
+    const vectorStr = `[${embedding.join(',')}]`;
+    await this.execute(
+      'UPDATE brain.memories SET embedding = $1::vector WHERE id = $2',
+      [vectorStr, id],
+    );
+  }
+
+  async updateKnowledgeEmbedding(id: string, embedding: number[]): Promise<void> {
+    const vectorStr = `[${embedding.join(',')}]`;
+    await this.execute(
+      'UPDATE brain.knowledge SET embedding = $1::vector WHERE id = $2',
+      [vectorStr, id],
+    );
+  }
+
   // ── Brain Meta ───────────────────────────────────────────────
 
   async getMeta(key: string): Promise<string | null> {

@@ -166,6 +166,29 @@ dashboard:
 
 See [Configuration Reference](../configuration.md) for all available fields.
 
+### Vector Memory Setup (Optional)
+
+To enable semantic vector memory, add to your config:
+
+```yaml
+brain:
+  vector:
+    enabled: true
+    provider: local          # 'local' for SentenceTransformers, 'api' for OpenAI/Gemini
+    backend: faiss           # 'faiss' (in-process) or 'qdrant' (distributed)
+    similarityThreshold: 0.7
+    maxResults: 10
+    local:
+      model: all-MiniLM-L6-v2
+```
+
+For local embeddings, ensure Python 3.9+ with `sentence-transformers` is installed. For API embeddings (OpenAI/Gemini), the corresponding API key must be configured.
+
+For Qdrant backend, start a Qdrant instance:
+```bash
+docker run -p 6333:6333 qdrant/qdrant
+```
+
 ---
 
 ## Quick Start
@@ -389,8 +412,12 @@ F.R.I.D.A.Y. v1.2 adds powerful new capabilities for teams and advanced workflow
 Connect to external tools via the Model Context Protocol (MCP). F.R.I.D.A.Y. can:
 - **Use external tools** from MCP servers (search engines, code interpreters, databases)
 - **Expose its own skills** as MCP tools for other systems to invoke
+- **Web scraping & search** — Built-in tools for scraping webpages (markdown, HTML, batch) and web search (DuckDuckGo, SerpAPI, Tavily) with SSRF protection
+- **Browser automation** — Placeholder tools for Playwright/Puppeteer integration (coming soon)
+- **Health monitoring** — Automatic periodic health checks for external MCP servers with auto-disable on failure
+- **Credential management** — Encrypted storage (AES-256-GCM) for API keys and tokens per external MCP server
 
-Configure MCP servers in the dashboard or via the `/api/v1/mcp/` API.
+Configure MCP servers in the dashboard or via the `/api/v1/mcp/` API. Enable web tools with `MCP_EXPOSE_WEB=true`.
 
 ### Audit Reports
 Generate comprehensive audit reports with filtering by time range, event type, user, or severity. Export to JSON, HTML, or CSV for compliance and analysis.
@@ -401,11 +428,85 @@ Multi-team support with workspace isolation. Each workspace has its own personal
 ### A/B Testing
 Compare model performance, prompt templates, or configuration changes. Create experiments with traffic allocation and automatic metric collection (latency, cost, success rate).
 
+### Role Management
+Full RBAC management from the Dashboard (Settings > Security) and CLI. Create custom roles with granular permissions, assign roles to users, and revoke assignments. Built-in roles are protected from modification.
+
+```bash
+# List all roles
+secureyeoman role list
+
+# Create a custom role
+secureyeoman role create --name "Custom Ops" --permissions "tasks:read,metrics:read"
+
+# Assign a role to a user
+secureyeoman role assign --user ops-user --role role_custom_ops
+
+# Revoke an assignment
+secureyeoman role revoke --user ops-user
+```
+
 ### Skill Marketplace
 Discover and share skills with the community. Search, install, and publish skills with cryptographic signature verification.
 
 ### Cost Optimization
 Get AI-powered recommendations to reduce costs based on your usage patterns. Suggests model changes, caching strategies, and configuration tweaks.
+
+### Configure Extensions
+
+To add lifecycle hooks for custom behavior, create extension files in `~/.secureyeoman/extensions/`:
+
+```bash
+# Create extensions directory
+mkdir -p ~/.secureyeoman/extensions
+
+# Extensions are TypeScript/JavaScript files with numeric prefix ordering
+# Example: ~/.secureyeoman/extensions/_50_custom_logger.ts
+```
+
+Enable extensions in your config:
+
+```yaml
+extensions:
+  enabled: true
+  directory: ~/.secureyeoman/extensions
+  allowWebhooks: true
+```
+
+See [Configuration Reference](../configuration.md) for all extension options.
+
+### Configure Code Execution
+
+To enable the agent to write and execute code (Python, Node.js, shell) within the sandbox:
+
+```yaml
+security:
+  codeExecution:
+    enabled: true
+    autoApprove: false          # require manual approval per execution
+    allowedRuntimes:
+      - python
+      - nodejs
+      - shell
+    sessionTimeout: 300000      # 5 minutes
+    maxConcurrent: 5
+```
+
+When `autoApprove` is `false` (default), each code execution request triggers a dashboard approval prompt. Set `autoApprove: true` only in trusted/automated environments.
+
+### Configure A2A Protocol
+
+To enable cross-instance agent delegation via the Agent-to-Agent protocol:
+
+```yaml
+a2a:
+  enabled: true
+  discoveryMethod: mdns         # mdns (LAN), dns-sd (WAN), or static
+  port: 18790
+  maxPeers: 10
+  trustedPeers: []              # pre-trusted peer agent IDs
+```
+
+For LAN deployments, mDNS auto-discovers other FRIDAY instances. For WAN, configure DNS-SD SRV/TXT records. Peers start as untrusted and can be promoted to verified or trusted via the dashboard or API.
 
 ---
 

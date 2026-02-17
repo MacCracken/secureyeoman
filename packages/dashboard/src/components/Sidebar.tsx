@@ -1,5 +1,6 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Shield,
   LayoutDashboard,
@@ -9,7 +10,11 @@ import {
   Zap,
   Cable,
   Code,
+  Users,
   Settings,
+  Puzzle,
+  Terminal,
+  Network,
   PanelLeftOpen,
   PanelLeftClose,
   FlaskConical,
@@ -28,6 +33,7 @@ import { useSidebar } from '../hooks/useSidebar';
 import { useTheme } from '../hooks/useTheme';
 import { getAccessToken } from '../api/client';
 import { NewEntityDialog } from './NewEntityDialog';
+import { fetchExtensionConfig, fetchExecutionConfig, fetchA2AConfig } from '../api/client';
 
 export interface SidebarProps {
   isConnected: boolean;
@@ -37,11 +43,12 @@ export interface SidebarProps {
   onLogout: () => void;
 }
 
-const NAV_ITEMS: {
+const NAV_ITEMS_WITHOUT_AGENTS: {
   to: string;
   label: string;
   icon: React.ReactNode;
   end?: boolean;
+  enabled?: boolean;
 }[] = [
   { to: '/', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" />, end: true },
   { to: '/chat', label: 'Chat', icon: <MessageSquare className="w-5 h-5" /> },
@@ -50,6 +57,9 @@ const NAV_ITEMS: {
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
   { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
+  { to: '/extensions', label: 'Extensions', icon: <Puzzle className="w-5 h-5" />, enabled: true },
+  { to: '/execution', label: 'Execution', icon: <Terminal className="w-5 h-5" />, enabled: true },
+  { to: '/a2a', label: 'A2A Network', icon: <Network className="w-5 h-5" />, enabled: true },
   { to: '/experiments', label: 'Experiments', icon: <FlaskConical className="w-5 h-5" /> },
   { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
 ];
@@ -87,6 +97,52 @@ export function Sidebar({
   const [newDialogOpen, setNewDialogOpen] = useState(false);
   const profileRef = useRef<HTMLDivElement>(null);
   const role = parseJwtRole();
+
+  const { data: agentsData } = useQuery({
+    queryKey: ['subAgentProfiles'],
+    queryFn: () => fetch('/api/v1/agents/profiles').then((r) => r.json()),
+    staleTime: 30000,
+  });
+
+  const { data: extensionConfig } = useQuery({
+    queryKey: ['extensionConfig'],
+    queryFn: fetchExtensionConfig,
+    staleTime: 30000,
+  });
+
+  const { data: executionConfig } = useQuery({
+    queryKey: ['executionConfig'],
+    queryFn: fetchExecutionConfig,
+    staleTime: 30000,
+  });
+
+  const { data: a2aConfig } = useQuery({
+    queryKey: ['a2aConfig'],
+    queryFn: fetchA2AConfig,
+    staleTime: 30000,
+  });
+
+  const hasSubAgents = (agentsData?.profiles?.length ?? 0) > 0;
+  const extensionsEnabled = extensionConfig?.config?.enabled === true;
+  const executionEnabled = executionConfig?.config?.enabled === true;
+  const a2aEnabled = a2aConfig?.config?.enabled === true;
+
+  const NAV_ITEMS = useMemo(() => {
+    const items = [...NAV_ITEMS_WITHOUT_AGENTS];
+    if (hasSubAgents) {
+      items.splice(6, 0, {
+        to: '/agents',
+        label: 'Sub-Agents',
+        icon: <Users className="w-5 h-5" />,
+      });
+    }
+    return items.filter((item) => {
+      if (item.to === '/extensions') return extensionsEnabled;
+      if (item.to === '/execution') return executionEnabled;
+      if (item.to === '/a2a') return a2aEnabled;
+      return true;
+    });
+  }, [hasSubAgents, extensionsEnabled, executionEnabled, a2aEnabled]);
 
   useEffect(() => {
     setMobileOpen(false);

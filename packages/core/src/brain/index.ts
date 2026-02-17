@@ -21,3 +21,20 @@ export type {
   BrainStats,
   AuditStorage,
 } from './types.js';
+
+// Vector Memory
+export { VectorMemoryManager, type VectorMemoryManagerDeps } from './vector/manager.js';
+export { createVectorStore } from './vector/index.js';
+export type { VectorStore, VectorResult } from './vector/types.js';
+
+// Memory Consolidation
+export {
+  ConsolidationManager,
+  type ConsolidationConfig,
+  type ConsolidationManagerDeps,
+} from './consolidation/manager.js';
+export type {
+  ConsolidationActionType,
+  ConsolidationAction,
+  ConsolidationReport,
+} from './consolidation/types.js';

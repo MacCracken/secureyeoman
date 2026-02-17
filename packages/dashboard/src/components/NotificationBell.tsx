@@ -8,6 +8,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Bell, X, Check, Trash2, Shield, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import { useWebSocket } from '../hooks/useWebSocket';
+import { sanitizeText } from '../utils/sanitize';
 import type { WebSocketMessage } from '../types';
 
 interface Notification {
@@ -172,13 +173,13 @@ export function NotificationBell() {
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between">
                       <p className={`text-xs font-medium truncate ${n.read ? '' : 'text-foreground'}`}>
-                        {n.title}
+                        {sanitizeText(n.title)}
                       </p>
                       {!n.read && (
                         <span className="w-1.5 h-1.5 bg-primary rounded-full flex-shrink-0 ml-1" />
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground truncate">{n.message}</p>
+                    <p className="text-xs text-muted-foreground truncate">{sanitizeText(n.message)}</p>
                     <p className="text-[10px] text-muted-foreground mt-0.5">{formatTime(n.timestamp)}</p>
                   </div>
                 </button>

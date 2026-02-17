@@ -70,4 +70,86 @@ describe('config', () => {
     const config = loadConfig({ MCP_ALLOWED_PATHS: '' });
     expect(config.allowedPaths).toEqual([]);
   });
+
+  // ─── Web config defaults ─────────────────────────────────
+
+  it('should default MCP_EXPOSE_WEB to false', () => {
+    const config = loadConfig({});
+    expect(config.exposeWeb).toBe(false);
+  });
+
+  it('should parse MCP_EXPOSE_WEB=true', () => {
+    const config = loadConfig({ MCP_EXPOSE_WEB: 'true' });
+    expect(config.exposeWeb).toBe(true);
+  });
+
+  it('should split MCP_ALLOWED_URLS on commas', () => {
+    const config = loadConfig({
+      MCP_ALLOWED_URLS: 'example.com, api.github.com ,docs.rs',
+    });
+    expect(config.allowedUrls).toEqual(['example.com', 'api.github.com', 'docs.rs']);
+  });
+
+  it('should default MCP_WEB_RATE_LIMIT to 10', () => {
+    const config = loadConfig({});
+    expect(config.webRateLimitPerMinute).toBe(10);
+  });
+
+  it('should default MCP_WEB_SEARCH_PROVIDER to duckduckgo', () => {
+    const config = loadConfig({});
+    expect(config.webSearchProvider).toBe('duckduckgo');
+  });
+
+  it('should accept serpapi as MCP_WEB_SEARCH_PROVIDER', () => {
+    const config = loadConfig({ MCP_WEB_SEARCH_PROVIDER: 'serpapi' });
+    expect(config.webSearchProvider).toBe('serpapi');
+  });
+
+  it('should accept tavily as MCP_WEB_SEARCH_PROVIDER', () => {
+    const config = loadConfig({ MCP_WEB_SEARCH_PROVIDER: 'tavily' });
+    expect(config.webSearchProvider).toBe('tavily');
+  });
+
+  it('should throw on invalid MCP_WEB_SEARCH_PROVIDER', () => {
+    expect(() => loadConfig({ MCP_WEB_SEARCH_PROVIDER: 'google' })).toThrow();
+  });
+
+  // ─── Browser config defaults ──────────────────────────────
+
+  it('should default MCP_EXPOSE_BROWSER to false', () => {
+    const config = loadConfig({});
+    expect(config.exposeBrowser).toBe(false);
+  });
+
+  it('should default MCP_BROWSER_ENGINE to playwright', () => {
+    const config = loadConfig({});
+    expect(config.browserEngine).toBe('playwright');
+  });
+
+  it('should default MCP_BROWSER_MAX_PAGES to 3', () => {
+    const config = loadConfig({});
+    expect(config.browserMaxPages).toBe(3);
+  });
+
+  it('should default MCP_BROWSER_TIMEOUT_MS to 30000', () => {
+    const config = loadConfig({});
+    expect(config.browserTimeoutMs).toBe(30000);
+  });
+
+  it('should parse browser config from env vars', () => {
+    const config = loadConfig({
+      MCP_EXPOSE_BROWSER: 'true',
+      MCP_BROWSER_ENGINE: 'puppeteer',
+      MCP_BROWSER_MAX_PAGES: '5',
+      MCP_BROWSER_TIMEOUT_MS: '60000',
+    });
+    expect(config.exposeBrowser).toBe(true);
+    expect(config.browserEngine).toBe('puppeteer');
+    expect(config.browserMaxPages).toBe(5);
+    expect(config.browserTimeoutMs).toBe(60000);
+  });
+
+  it('should throw on invalid MCP_BROWSER_ENGINE', () => {
+    expect(() => loadConfig({ MCP_BROWSER_ENGINE: 'selenium' })).toThrow();
+  });
 });

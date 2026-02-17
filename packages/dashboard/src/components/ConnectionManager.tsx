@@ -53,6 +53,7 @@ const TOKEN_FIELD: FormFieldDef = {
 };
 
 const PLATFORM_META: Record<string, PlatformMeta> = {
+  // ─── Messaging ───────────────────────────────────────────────
   telegram: {
     name: 'Telegram',
     description: 'Connect to Telegram Bot API for messaging',
@@ -102,6 +103,156 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'Install to workspace and copy tokens',
     ],
   },
+  whatsapp: {
+    name: 'WhatsApp',
+    description: 'Connect to WhatsApp via WhatsApp Web Protocol',
+    icon: <MessageCircle className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'sessionDir',
+        label: 'Session Directory',
+        type: 'text',
+        placeholder: 'Optional custom session path',
+        helpText: 'Directory to store session data (default: .sessions/whatsapp)',
+      },
+    ],
+    setupSteps: [
+      'Start the integration',
+      'Scan the QR code with your phone (WhatsApp > Settings > Linked Devices)',
+      'Keep your phone connected for initial setup',
+      'Session will be saved for future connections',
+    ],
+  },
+  signal: {
+    name: 'Signal',
+    description: 'Connect to Signal via signal-cli or bot gateway',
+    icon: <MessageCircle className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'signalCliUrl',
+        label: 'Signal CLI URL',
+        type: 'text',
+        placeholder: 'http://localhost:8080',
+        helpText: 'URL of signal-cli REST API server',
+      },
+      {
+        key: 'signalCliToken',
+        label: 'Signal CLI Token',
+        type: 'password',
+        placeholder: 'Optional API token',
+        helpText: 'Token for signal-cli REST API authentication',
+      },
+      {
+        key: 'webhookSecret',
+        label: 'Webhook Secret',
+        type: 'password',
+        placeholder: 'Optional webhook verification',
+        helpText: 'Secret to verify incoming webhook messages',
+      },
+    ],
+    setupSteps: [
+      'Run signal-cli in daemon mode: signal-cli -u +1234567890 daemon',
+      'Or use a signal bot gateway service',
+      'Configure the REST API URL above',
+      'For inbound: configure webhook endpoint /api/v1/webhooks/signal',
+    ],
+  },
+  teams: {
+    name: 'Microsoft Teams',
+    description: 'Connect to Microsoft Teams via Bot Framework',
+    icon: <MessageSquare className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'botId',
+        label: 'Bot ID (Application ID)',
+        type: 'text',
+        placeholder: 'xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx',
+        helpText: 'Azure AD Application ID',
+      },
+      {
+        key: 'botPassword',
+        label: 'Bot Password',
+        type: 'password',
+        placeholder: 'Client Secret',
+        helpText: 'Application client secret from Azure Portal',
+      },
+      {
+        key: 'tenantId',
+        label: 'Tenant ID',
+        type: 'text',
+        placeholder: 'Optional for multi-tenant',
+        helpText: 'Azure tenant ID (optional for single-tenant)',
+      },
+    ],
+    setupSteps: [
+      'Go to Azure Portal > App registrations',
+      'Create a new application',
+      'Add Messaging endpoint (ngrok recommended for dev)',
+      'Create Client Secret in Certificates & secrets',
+      'Register bot in Bot Framework Portal',
+      'Add Teams channel',
+    ],
+  },
+  imessage: {
+    name: 'iMessage',
+    description: 'Connect to macOS Messages.app (macOS only)',
+    icon: <MessageCircle className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'pollIntervalMs',
+        label: 'Poll Interval (ms)',
+        type: 'text',
+        placeholder: '5000',
+        helpText: 'How often to check for new messages (default: 5000)',
+      },
+    ],
+    setupSteps: [
+      'Grant Full Disk Access to FRIDAY in System Settings > Privacy & Security',
+      'Enable Messages.app in Accessibility (if needed)',
+      'Start the integration on macOS',
+    ],
+  },
+  googlechat: {
+    name: 'Google Chat',
+    description: 'Connect to Google Chat spaces via Bot API',
+    icon: <MessageSquare className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      { ...TOKEN_FIELD, helpText: 'Service account JSON key or Bot token' },
+      {
+        key: 'spaceId',
+        label: 'Space ID',
+        type: 'text',
+        placeholder: 'Spaces/...',
+        helpText: 'The Google Chat space to connect to',
+      },
+    ],
+    setupSteps: [
+      'Go to Google Cloud Console',
+      'Create a project and enable Google Chat API',
+      'Create a Service Account and download JSON key',
+      'Configure Chat API: add bot, set permissions',
+      'Copy the Space ID from the Chat space URL',
+    ],
+  },
+  // ─── Productivity ───────────────────────────────────────────
+  gmail: {
+    name: 'Gmail',
+    description: 'Connect to Gmail via Google OAuth2',
+    icon: <Mail className="w-6 h-6" />,
+    fields: [...BASE_FIELDS],
+    setupSteps: [
+      'Configure GMAIL_OAUTH_CLIENT_ID and GMAIL_OAUTH_CLIENT_SECRET in .env',
+      'Click Connect with Google in dashboard',
+      'Grant permissions to read/send emails',
+      'Configure display name and filters',
+    ],
+  },
+  // ─── Developer Tools ────────────────────────────────────────
   github: {
     name: 'GitHub',
     description: 'Receive webhooks from GitHub repositories',
@@ -130,6 +281,7 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'Select events: push, pull_request, issues',
     ],
   },
+  // ─── Utilities ─────────────────────────────────────────────
   cli: {
     name: 'CLI',
     description: 'Local command-line interface (built-in)',
@@ -166,29 +318,6 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'Set the URL to your /api/v1/webhooks/custom endpoint',
       'Optionally set a secret for request verification',
       'Test the connection by triggering an event',
-    ],
-  },
-  googlechat: {
-    name: 'Google Chat',
-    description: 'Connect to Google Chat spaces via Bot API',
-    icon: <MessageSquare className="w-6 h-6" />,
-    fields: [
-      ...BASE_FIELDS,
-      { ...TOKEN_FIELD, helpText: 'Service account JSON key or Bot token' },
-      {
-        key: 'spaceId',
-        label: 'Space ID',
-        type: 'text',
-        placeholder: 'Spaces/...',
-        helpText: 'The Google Chat space to connect to',
-      },
-    ],
-    setupSteps: [
-      'Go to Google Cloud Console',
-      'Create a project and enable Google Chat API',
-      'Create a Service Account and download JSON key',
-      'Configure Chat API: add bot, set permissions',
-      'Copy the Space ID from the Chat space URL',
     ],
   },
 };

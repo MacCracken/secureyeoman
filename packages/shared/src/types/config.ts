@@ -9,7 +9,85 @@
 
 import { z } from 'zod';
 import { SoulConfigSchema, BrainConfigSchema, SpiritConfigSchema, BodyConfigSchema, CommsConfigSchema, HeartbeatConfigSchema, ExternalBrainConfigSchema } from './soul.js';
+import { z as zz } from 'zod';
+
+// ─── History Compression Config ─────────────────────────────────
+export const HistoryCompressionConfigSchema = zz
+  .object({
+    enabled: zz.boolean().default(false),
+    tiers: zz
+      .object({
+        messagePct: zz.number().min(0).max(100).default(50),
+        topicPct: zz.number().min(0).max(100).default(30),
+        bulkPct: zz.number().min(0).max(100).default(20),
+      })
+      .default({}),
+    maxMessageChars: zz.number().int().positive().default(100000),
+    topicSummaryTokens: zz.number().int().positive().default(200),
+    bulkSummaryTokens: zz.number().int().positive().default(300),
+    bulkMergeSize: zz.number().int().positive().default(5),
+    topicBoundary: zz
+      .object({
+        keywords: zz.array(zz.string()).default(['new topic', "let's move on", 'moving on', 'anyway', 'switching to']),
+        silenceMinutes: zz.number().positive().default(15),
+        tokenThreshold: zz.number().int().positive().default(2000),
+      })
+      .default({}),
+    model: zz.string().nullable().default(null),
+  })
+  .default({});
+
+export type HistoryCompressionConfig = zz.infer<typeof HistoryCompressionConfigSchema>;
+
+export const ConversationConfigSchema = zz
+  .object({
+    compression: HistoryCompressionConfigSchema,
+  })
+  .default({});
+
+export type ConversationConfig = zz.infer<typeof ConversationConfigSchema>;
 import { McpConfigSchema } from './mcp.js';
+import { DelegationConfigSchema } from './delegation.js';
+
+// ─── Extension Hooks Config (Phase 6.4a) ──────────────────────────
+export const ExtensionConfigSchema = zz
+  .object({
+    enabled: zz.boolean().default(false),
+    directory: zz.string().default('./extensions'),
+    allowWebhooks: zz.boolean().default(false),
+    webhookTimeout: zz.number().int().positive().max(30000).default(5000),
+    maxHooksPerPoint: zz.number().int().positive().max(50).default(10),
+  })
+  .default({});
+
+export type ExtensionConfig = zz.infer<typeof ExtensionConfigSchema>;
+
+// ─── Code Execution Config (Phase 6.4b) ───────────────────────────
+export const ExecutionConfigSchema = zz
+  .object({
+    enabled: zz.boolean().default(false),
+    allowedRuntimes: zz.array(zz.enum(['node', 'python', 'shell'])).default(['node']),
+    sessionTimeout: zz.number().int().positive().default(1800000),
+    maxConcurrent: zz.number().int().positive().max(20).default(5),
+    approvalPolicy: zz.enum(['none', 'first-time', 'always']).default('first-time'),
+    secretPatterns: zz.array(zz.string()).default([]),
+  })
+  .default({});
+
+export type ExecutionConfig = zz.infer<typeof ExecutionConfigSchema>;
+
+// ─── A2A Protocol Config (Phase 6.5) ──────────────────────────────
+export const A2AConfigSchema = zz
+  .object({
+    enabled: zz.boolean().default(false),
+    discoveryMethod: zz.enum(['mdns', 'manual', 'hybrid']).default('manual'),
+    trustedPeers: zz.array(zz.string()).default([]),
+    port: zz.number().int().min(1024).max(65535).default(18790),
+    maxPeers: zz.number().int().positive().max(100).default(20),
+  })
+  .default({});
+
+export type A2AConfig = zz.infer<typeof A2AConfigSchema>;
 
 // Safe path validation (no path traversal)
 const SafePathSchema = z.string()
@@ -93,6 +171,14 @@ export const SecurityConfigSchema = z.object({
   sandbox: SandboxConfigSchema,
   rateLimiting: RateLimitingConfigSchema,
   inputValidation: InputValidationConfigSchema,
+  /** Top-level kill switch for sub-agent delegation. When false, no personality can enable sub-agents. */
+  allowSubAgents: z.boolean().default(false),
+  /** Allow A2A (Agent-to-Agent) networking. Sub-item of delegation — requires allowSubAgents to be effective for external peers. */
+  allowA2A: z.boolean().default(false),
+  /** Allow lifecycle extension hooks. */
+  allowExtensions: z.boolean().default(false),
+  /** Allow sandboxed code execution. Enabled by default since execution is sandboxed. */
+  allowExecution: z.boolean().default(true),
   secretBackend: z.enum(['auto', 'keyring', 'env', 'file']).default('auto'),
   rotation: z.object({
     enabled: z.boolean().default(false),
@@ -259,6 +345,11 @@ export const ConfigSchema = z.object({
   heartbeat: HeartbeatConfigSchema,
   externalBrain: ExternalBrainConfigSchema,
   mcp: McpConfigSchema,
+  conversation: ConversationConfigSchema,
+  delegation: DelegationConfigSchema,
+  extensions: ExtensionConfigSchema,
+  execution: ExecutionConfigSchema,
+  a2a: A2AConfigSchema,
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

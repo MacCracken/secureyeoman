@@ -34,6 +34,7 @@ import { useChat } from '../hooks/useChat';
 import { useVoice } from '../hooks/useVoice';
 import { usePushToTalk } from '../hooks/usePushToTalk';
 import type { Personality, BrainContext, Conversation } from '../types';
+import { sanitizeText } from '../utils/sanitize';
 
 export function ChatPage() {
   const [showModelWidget, setShowModelWidget] = useState(false);
@@ -548,14 +549,14 @@ export function ChatPage() {
                       {msg.brainContext.contextSnippets.length > 0 && (
                         <ul className="list-disc list-inside space-y-0.5 text-muted-foreground">
                           {msg.brainContext.contextSnippets.map((s, j) => (
-                            <li key={j}>{s}</li>
+                            <li key={j}>{sanitizeText(s)}</li>
                           ))}
                         </ul>
                       )}
                     </div>
                   )}
 
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <p className="text-sm whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
 
                   <div className="flex items-center gap-2 mt-1">
                     {msg.tokensUsed !== undefined && (

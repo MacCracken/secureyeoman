@@ -20,6 +20,23 @@ export const PlatformSchema = z.enum([
   'googlechat',
   'gmail',
   'email',
+  'whatsapp',
+  'signal',
+  'teams',
+  'googlecalendar',
+  'notion',
+  'airtable',
+  'gitlab',
+  'spotify',
+  'youtube',
+  'figma',
+  'stripe',
+  'zapier',
+  'linear',
+  'todoist',
+  'aws',
+  'azure',
+  'openweather',
 ]);
 export type Platform = z.infer<typeof PlatformSchema>;
 

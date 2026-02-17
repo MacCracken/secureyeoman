@@ -60,6 +60,10 @@ describe('ConnectionsPage', () => {
     mockFetchMcpConfig.mockResolvedValue({
       exposeGit: false,
       exposeFilesystem: false,
+      exposeWeb: false,
+      exposeWebScraping: false,
+      exposeWebSearch: false,
+      exposeBrowser: false,
     });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });

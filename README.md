@@ -2,11 +2,11 @@
 
 > **F**ully **R**esponsive **I**ntegrated **D**igitally **A**daptable **Y**eoman
 
-[![Version](https://img.shields.io/badge/Version-2026.2.15-blue.svg)](https://github.com/MacCracken/FRIDAY/releases/tag/v2026.2.15)
+[![Version](https://img.shields.io/badge/Version-2026.2.16-blue.svg)](https://github.com/MacCracken/FRIDAY/releases/tag/v2026.2.16)
 [![CI](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/FRIDAY/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 1700+](https://img.shields.io/badge/Tests-1700%2B-brightgreen.svg)]()
+[![Tests: 1800+](https://img.shields.io/badge/Tests-1800%2B-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -48,9 +48,13 @@ F.R.I.D.A.Y. is a **secure autonomous agent system** built around the **SecureYe
 | **Observability** | Cryptographic audit trails (HMAC-SHA256 chain), Prometheus metrics, Grafana dashboards, structured JSONL log rotation, audit retention enforcement, audit export |
 | **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama, LM Studio, LocalAI (local), OpenCode Zen; automatic fallback chains on rate limits/outages; dynamic model discovery |
 | **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); overview with stat cards (tasks, heartbeat, audit, memory) and services status panel (core, Postgres, audit chain, MCP); system flow graph (ReactFlow) with live connection edges; task history, security events, resource monitor, personality editor, skills manager, code editor (Monaco), notification & retention settings |
-| **Agent Architecture** | Soul (identity/archetypes/personality), Spirit (passions/inspirations/pains), Brain (memory/knowledge/skills with decay & pruning), Body (heartbeat/vital signs/screen capture) |
+| **Agent Architecture** | Soul (identity/archetypes/personality), Spirit (passions/inspirations/pains), Brain (memory/knowledge/skills with decay & pruning, vector semantic search via FAISS/Qdrant, LLM-powered memory consolidation), Body (heartbeat/vital signs/screen capture) |
+| **Cognitive Architecture** | Vector semantic memory (local SentenceTransformers + OpenAI/Gemini API embeddings), FAISS and Qdrant vector backends, LLM-powered memory consolidation with on-save dedup and scheduled deep analysis, 3-tier progressive history compression (message → topic → bulk) with AI summarization |
+| **Extensions** | 24 lifecycle hook points (observe/transform/veto semantics), TypeScript plugin modules with filesystem discovery, EventEmitter integration, outbound webhook dispatch with HMAC signing, hot-reload support |
+| **Code Execution** | Sandboxed code execution (Python, Node.js, shell) within Landlock/seccomp sandbox, persistent sessions, streaming output via WebSocket, approval policies (manual/auto/session-trust), streaming secrets filter, full audit trail |
+| **A2A Protocol** | Agent-to-Agent cross-instance delegation via E2E encrypted messaging, peer discovery (mDNS/DNS-SD/static), capability negotiation, trust progression (untrusted/verified/trusted), remote delegation in unified delegation tree |
 | **Integrations** | Telegram, Discord, Slack, GitHub, Google Chat, Gmail, Email (IMAP/SMTP), CLI, Generic Webhook — plugin architecture with unified message routing |
-| **MCP Protocol** | Standalone `@friday/mcp` service (22+ tools, 7 resources, 4 prompts); auto-registers with core; streamable HTTP, SSE, and stdio transports; connect external MCP servers with persistent tool discovery |
+| **MCP Protocol** | Standalone `@friday/mcp` service (34+ tools including web scraping, search, browser automation placeholders; 7 resources, 4 prompts); SSRF-protected web tools; health monitoring for external servers; AES-256-GCM encrypted credential storage; streamable HTTP, SSE, and stdio transports; feature toggles with dashboard UI |
 | **Marketplace** | Skill discovery, search, install/uninstall (syncs with Brain skills), publish with cryptographic signature verification |
 | **Team Collaboration** | Workspaces with isolation, member management, workspace-scoped RBAC |
 | **Reports & Analytics** | Audit report generator (JSON/HTML/CSV), cost optimization recommendations, A/B testing framework |
@@ -256,6 +260,9 @@ friday/
 │   │       ├── body/            # Vital signs (heartbeat, capture, health)
 │   │       ├── comms/           # E2E encrypted agent comms (X25519 + AES-256-GCM)
 │   │       ├── gateway/         # Fastify API server, auth, RBAC, security headers
+│   │       ├── extensions/      # Lifecycle hook system and extension manager
+│   │       ├── execution/       # Sandboxed code execution (Python, Node.js, shell)
+│   │       ├── a2a/             # Agent-to-Agent protocol (discovery, delegation, messaging)
 │   │       ├── integrations/    # Platform adapters (Telegram, Discord, Slack, GitHub, Google Chat, CLI, Webhook)
 │   │       ├── logging/         # Audit chain + storage + file writer + rotation
 │   │       ├── marketplace/     # Skill marketplace (discovery, install, publish)
@@ -324,7 +331,7 @@ npm run build --workspace=@friday/mcp
 
 ### Versioning
 
-F.R.I.D.A.Y. uses **calendar versioning** in the format `YYYY.M.D` (e.g., `2026.2.15` for February 15, 2026). The version reflects the release date, not a semver progression.
+F.R.I.D.A.Y. uses **calendar versioning** in the format `YYYY.M.D` (e.g., `2026.2.16` for February 16, 2026). The version reflects the release date, not a semver progression.
 
 To update the version across all packages:
 

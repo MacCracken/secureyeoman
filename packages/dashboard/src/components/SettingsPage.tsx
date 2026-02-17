@@ -1,21 +1,21 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Settings, Shield, Key, Blocks } from 'lucide-react';
+import { Settings, Shield, Key, Blocks, Users, Clock, Archive } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchSoulConfig, fetchMcpServers } from '../api/client';
+import { fetchSoulConfig, fetchAuditStats, fetchMetrics } from '../api/client';
 import { NotificationSettings } from './NotificationSettings';
 import { LogRetentionSettings } from './LogRetentionSettings';
-import { SecuritySettings } from './SecuritySettings';
+import { SecuritySettings, RolesSettings } from './SecuritySettings';
 import { ApiKeysSettings } from './ApiKeysSettings';
 
-type TabType = 'general' | 'security' | 'api-keys';
+type TabType = 'general' | 'security' | 'keys' | 'roles' | 'logs';
 
 export function SettingsPage() {
   const location = useLocation();
   const getInitialTab = (): TabType => {
     const path = location.pathname;
     if (path.includes('/security-settings')) return 'security';
-    if (path.includes('/api-keys')) return 'api-keys';
+    if (path.includes('/api-keys')) return 'keys';
     return 'general';
   };
 
@@ -31,10 +31,10 @@ export function SettingsPage() {
         <p className="text-sm text-muted-foreground mt-1">System configuration and preferences</p>
       </div>
 
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 border-b border-border overflow-x-auto scrollbar-hide -mx-4 px-4 md:mx-0 md:px-0">
         <button
           onClick={() => setActiveTab('general')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'general'
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -45,7 +45,7 @@ export function SettingsPage() {
         </button>
         <button
           onClick={() => setActiveTab('security')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'security'
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -55,21 +55,45 @@ export function SettingsPage() {
           Security
         </button>
         <button
-          onClick={() => setActiveTab('api-keys')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'api-keys'
+          onClick={() => setActiveTab('keys')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'keys'
               ? 'border-primary text-primary'
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
           <Key className="w-4 h-4" />
-          API Keys
+          Keys
+        </button>
+        <button
+          onClick={() => setActiveTab('roles')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'roles'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Roles
+        </button>
+        <button
+          onClick={() => setActiveTab('logs')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'logs'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Archive className="w-4 h-4" />
+          Logs
         </button>
       </div>
 
       {activeTab === 'general' && <GeneralTab />}
       {activeTab === 'security' && <SecuritySettings />}
-      {activeTab === 'api-keys' && <ApiKeysSettings />}
+      {activeTab === 'keys' && <ApiKeysSettings />}
+      {activeTab === 'roles' && <RolesSettings />}
+      {activeTab === 'logs' && <LogsTab />}
     </div>
   );
 }
@@ -82,15 +106,20 @@ function GeneralTab() {
     queryFn: fetchSoulConfig,
   });
 
-  const { data: mcpData } = useQuery({
-    queryKey: ['mcpServers'],
-    queryFn: fetchMcpServers,
+  const { data: auditStats, isLoading: auditLoading } = useQuery({
+    queryKey: ['audit-stats'],
+    queryFn: fetchAuditStats,
+  });
+
+  const { data: metrics } = useQuery({
+    queryKey: ['metrics'],
+    queryFn: fetchMetrics,
+    refetchInterval: 10000,
   });
 
   return (
     <div className="space-y-6">
       <NotificationSettings />
-      <LogRetentionSettings />
 
       {soulConfig && (
         <div className="card p-4 space-y-3">
@@ -121,30 +150,93 @@ function GeneralTab() {
         </div>
       )}
 
-      <div className="card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-medium text-sm flex items-center gap-2">
-            <Blocks className="w-4 h-4" />
-            MCP Servers
-          </h3>
-          <button
-            className="text-xs text-primary hover:text-primary/80"
-            onClick={() => navigate('/mcp')}
-          >
-            Manage
-          </button>
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Clock className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Rate Limiting</h3>
         </div>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-xs text-muted-foreground block">Configured</span>
-            <span>{mcpData?.total ?? 0} servers</span>
-          </div>
-          <div>
-            <span className="text-xs text-muted-foreground block">Enabled</span>
-            <span>{mcpData?.servers?.filter((s) => s.enabled).length ?? 0} servers</span>
+        <div className="p-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Rate Limit Hits</p>
+              <p className="text-xl font-bold">{metrics?.security?.rateLimitHitsTotal ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Blocked Requests</p>
+              <p className="text-xl font-bold">{metrics?.security?.blockedRequestsTotal ?? 0}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Injection Attempts</p>
+              <p className="text-xl font-bold text-destructive">
+                {metrics?.security?.injectionAttemptsTotal ?? 0}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Permission Denials</p>
+              <p className="text-xl font-bold">{metrics?.security?.permissionDenialsTotal ?? 0}</p>
+            </div>
           </div>
         </div>
       </div>
+
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Audit Chain</h3>
+        </div>
+        <div className="p-4">
+          {auditLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="w-4 h-4 animate-spin" /> Loading audit stats...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Chain Status</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {auditStats?.chainValid ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-success" />
+                      <span className="font-medium text-success">Valid</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-destructive" />
+                      <span className="font-medium text-destructive">Invalid</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Entries</p>
+                <p className="text-xl font-bold">{auditStats?.totalEntries ?? 0}</p>
+              </div>
+              {auditStats?.lastVerification && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Last Verification</p>
+                  <p className="text-sm">
+                    {new Date(auditStats.lastVerification).toLocaleString()}
+                  </p>
+                </div>
+              )}
+              {auditStats?.dbSizeEstimateMb !== undefined && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Database Size</p>
+                  <p className="text-sm">{auditStats.dbSizeEstimateMb.toFixed(1)} MB</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LogsTab() {
+  return (
+    <div className="space-y-6">
+      <LogRetentionSettings />
     </div>
   );
 }

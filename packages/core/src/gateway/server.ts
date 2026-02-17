@@ -41,6 +41,10 @@ import { registerExperimentRoutes } from '../experiment/experiment-routes.js';
 import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js';
 import { registerTerminalRoutes } from './terminal-routes.js';
 import { registerConversationRoutes } from '../chat/conversation-routes.js';
+import { registerAgentRoutes } from '../agents/agent-routes.js';
+import { registerExtensionRoutes } from '../extensions/extension-routes.js';
+import { registerExecutionRoutes } from '../execution/execution-routes.js';
+import { registerA2ARoutes } from '../a2a/a2a-routes.js';
 import { formatPrometheusMetrics } from './prometheus.js';
 
 /** Read version from the closest package.json (core → root). */
@@ -263,6 +267,7 @@ export class GatewayServer {
       registerAuthRoutes(this.app, {
         authService: this.authService,
         rateLimiter: this.secureYeoman.getRateLimiter(),
+        rbac: this.secureYeoman.getRBAC(),
       });
     }
 
@@ -405,6 +410,58 @@ export class GatewayServer {
       }
     } catch {
       // Conversation storage may not be available — skip routes
+    }
+
+    // Agent delegation routes
+    try {
+      const subAgentManager = this.secureYeoman.getSubAgentManager();
+      if (subAgentManager) {
+        registerAgentRoutes(this.app, { subAgentManager });
+        this.getLogger().info('Agent delegation routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Agent delegation routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Extension routes
+    try {
+      const extensionManager = this.secureYeoman.getExtensionManager();
+      if (extensionManager) {
+        registerExtensionRoutes(this.app, { extensionManager });
+        this.getLogger().info('Extension routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Extension routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Code execution routes
+    try {
+      const executionManager = this.secureYeoman.getExecutionManager();
+      if (executionManager) {
+        registerExecutionRoutes(this.app, { executionManager });
+        this.getLogger().info('Execution routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Execution routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // A2A protocol routes
+    try {
+      const a2aManager = this.secureYeoman.getA2AManager();
+      if (a2aManager) {
+        registerA2ARoutes(this.app, { a2aManager });
+        this.getLogger().info('A2A routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('A2A routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
     }
 
     // Prometheus metrics endpoint (unauthenticated)
@@ -740,6 +797,48 @@ export class GatewayServer {
             limit: 50,
             offset: 0,
           };
+        }
+      }
+    );
+
+    // Security policy — exposes security toggles relevant to the dashboard
+    this.app.get('/api/v1/security/policy', async () => {
+      const config = this.secureYeoman.getConfig();
+      return {
+        allowSubAgents: config.security.allowSubAgents,
+        allowA2A: config.security.allowA2A,
+        allowExtensions: config.security.allowExtensions,
+        allowExecution: config.security.allowExecution,
+      };
+    });
+
+    // Security policy — update toggles
+    this.app.patch(
+      '/api/v1/security/policy',
+      async (
+        request: FastifyRequest<{
+          Body: { allowSubAgents?: boolean; allowA2A?: boolean; allowExtensions?: boolean; allowExecution?: boolean };
+        }>,
+        reply: FastifyReply
+      ) => {
+        try {
+          const { allowSubAgents, allowA2A, allowExtensions, allowExecution } = request.body;
+          if (allowSubAgents === undefined && allowA2A === undefined && allowExtensions === undefined && allowExecution === undefined) {
+            return reply.code(400).send({ error: 'No valid fields provided' });
+          }
+          this.secureYeoman.updateSecurityPolicy({ allowSubAgents, allowA2A, allowExtensions, allowExecution });
+          const config = this.secureYeoman.getConfig();
+          return {
+            allowSubAgents: config.security.allowSubAgents,
+            allowA2A: config.security.allowA2A,
+            allowExtensions: config.security.allowExtensions,
+            allowExecution: config.security.allowExecution,
+          };
+        } catch (err) {
+          this.getLogger().error('Failed to update security policy', {
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return reply.code(500).send({ error: 'Failed to update security policy' });
         }
       }
     );

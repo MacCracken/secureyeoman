@@ -25,6 +25,7 @@ import { usePushToTalk } from '../hooks/usePushToTalk';
 import { useTheme } from '../hooks/useTheme';
 import { VoiceOverlay } from './VoiceOverlay';
 import type { Personality, ChatMessage } from '../types';
+import { sanitizeText } from '../utils/sanitize';
 
 type MonacoEditor = Parameters<OnMount>[0];
 
@@ -517,7 +518,7 @@ export function CodePage() {
                         {msg.role === 'user' ? 'You' : (currentPersonality?.name ?? 'Assistant')}
                       </span>
                     </div>
-                    <p className="text-xs whitespace-pre-wrap">{msg.content}</p>
+                    <p className="text-xs whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
                     {msg.role === 'assistant' && (
                       <button
                         onClick={() => handleInsertAtCursor(msg)}

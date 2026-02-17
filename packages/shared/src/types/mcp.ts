@@ -85,6 +85,18 @@ export const McpServiceConfigSchema = z.object({
   tokenSecret: z.string().min(32).optional(),
   exposeFilesystem: z.boolean().default(false),
   allowedPaths: z.array(z.string()).default([]),
+  exposeWeb: z.boolean().default(false),
+  allowedUrls: z.array(z.string()).default([]),
+  webRateLimitPerMinute: z.number().int().min(1).max(100).default(10),
+  exposeWebScraping: z.boolean().default(true),
+  exposeWebSearch: z.boolean().default(true),
+  webSearchProvider: z.enum(['duckduckgo', 'serpapi', 'tavily']).default('duckduckgo'),
+  webSearchApiKey: z.string().optional(),
+  exposeBrowser: z.boolean().default(false),
+  browserEngine: z.enum(['playwright', 'puppeteer']).default('playwright'),
+  browserHeadless: z.boolean().default(true),
+  browserMaxPages: z.number().int().min(1).max(10).default(3),
+  browserTimeoutMs: z.number().int().min(5000).max(120000).default(30000),
   rateLimitPerTool: z.number().int().min(1).max(1000).default(30),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
 });
@@ -101,3 +113,17 @@ export const McpConfigSchema = z.object({
 }).default({});
 
 export type McpConfig = z.infer<typeof McpConfigSchema>;
+
+// ─── MCP Server Health ─────────────────────────────────────
+
+export const McpServerHealthSchema = z.object({
+  serverId: z.string().min(1),
+  status: z.enum(['healthy', 'degraded', 'unhealthy', 'unknown']).default('unknown'),
+  latencyMs: z.number().nonnegative().nullable().default(null),
+  consecutiveFailures: z.number().int().nonnegative().default(0),
+  lastCheckedAt: z.number().int().nonnegative().nullable().default(null),
+  lastSuccessAt: z.number().int().nonnegative().nullable().default(null),
+  lastError: z.string().nullable().default(null),
+});
+
+export type McpServerHealth = z.infer<typeof McpServerHealthSchema>;

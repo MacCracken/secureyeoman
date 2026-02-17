@@ -45,6 +45,7 @@ import {
   updateExternalBrainConfig,
   triggerExternalSync,
   fetchMcpConfig,
+  fetchSecurityPolicy,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type {
@@ -56,6 +57,7 @@ import type {
   KnowledgeEntry,
   HeartbeatTask,
 } from '../types';
+import { sanitizeText } from '../utils/sanitize';
 
 const LOCAL_MCP_NAME = 'YEOMAN MCP';
 
@@ -553,7 +555,7 @@ function BrainSection() {
                     </span>
                     <span className="text-xs text-muted-foreground">src: {k.source}</span>
                   </div>
-                  <p className="mt-0.5">{k.content}</p>
+                  <p className="mt-0.5">{sanitizeText(k.content)}</p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button
@@ -886,11 +888,22 @@ interface BodySectionProps {
   onEnabledCapsChange: (caps: Record<string, boolean>) => void;
   mcpFeatures: { exposeGit: boolean; exposeFilesystem: boolean };
   onMcpFeaturesChange: (features: { exposeGit: boolean; exposeFilesystem: boolean }) => void;
-  creationConfig: { skills: boolean; tasks: boolean; personalities: boolean; experiments: boolean };
+  creationConfig: {
+    skills: boolean;
+    tasks: boolean;
+    personalities: boolean;
+    subAgents: boolean;
+    customRoles: boolean;
+    roleAssignments: boolean;
+    experiments: boolean;
+  };
   onCreationConfigChange: (config: {
     skills: boolean;
     tasks: boolean;
     personalities: boolean;
+    subAgents: boolean;
+    customRoles: boolean;
+    roleAssignments: boolean;
     experiments: boolean;
   }) => void;
 }
@@ -907,7 +920,7 @@ function BodySection({
   creationConfig,
   onCreationConfigChange,
 }: BodySectionProps) {
-  const capabilities = ['vision', 'limb_movement', 'auditory', 'haptic'] as const;
+  const capabilities = ['auditory', 'haptic', 'limb_movement', 'vision', 'vocalization'] as const;
   const { data: serversData, isLoading: serversLoading } = useQuery({
     queryKey: ['mcpServers'],
     queryFn: () => fetch('/api/v1/mcp/servers').then((r) => r.json()),
@@ -920,16 +933,30 @@ function BodySection({
     queryFn: fetchMcpConfig,
   });
 
+  // Fetch top-level security policy to gate sub-agent toggle
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+  });
+  const subAgentsBlockedByPolicy = securityPolicy?.allowSubAgents === false;
+
   const creationItems = [
     { key: 'tasks' as const, label: 'New Tasks', icon: '📋' },
     { key: 'skills' as const, label: 'New Skills', icon: '🧠' },
-    { key: 'personalities' as const, label: 'New Personalities', icon: '👤' },
     { key: 'experiments' as const, label: 'New Experiments', icon: '🧪' },
+    { key: 'personalities' as const, label: 'New Personalities', icon: '👤' },
+    { key: 'subAgents' as const, label: 'New Sub-Agents', icon: '🤖', blockedByPolicy: subAgentsBlockedByPolicy },
+    { key: 'customRoles' as const, label: 'New Custom Roles', icon: '🛡️' },
+    { key: 'roleAssignments' as const, label: 'Assign Roles', icon: '🔑' },
   ];
 
-  const allEnabled = creationItems.every((item) => creationConfig[item.key]);
+  const allEnabled = creationItems
+    .filter((item) => !('blockedByPolicy' in item && item.blockedByPolicy))
+    .every((item) => creationConfig[item.key]);
 
-  const toggleCreationItem = (key: 'skills' | 'tasks' | 'personalities' | 'experiments') => {
+  const toggleCreationItem = (
+    key: 'skills' | 'tasks' | 'personalities' | 'subAgents' | 'customRoles' | 'roleAssignments' | 'experiments'
+  ) => {
     onCreationConfigChange({
       ...creationConfig,
       [key]: !creationConfig[key],
@@ -942,22 +969,16 @@ function BodySection({
       skills: newValue,
       tasks: newValue,
       personalities: newValue,
+      // Respect top-level security policy — never enable subAgents when blocked
+      subAgents: subAgentsBlockedByPolicy ? false : newValue,
+      customRoles: newValue,
+      roleAssignments: newValue,
       experiments: newValue,
     });
   };
 
   const capabilityInfo: Record<string, { icon: string; description: string; available: boolean }> =
     {
-      vision: {
-        icon: '👁️',
-        description: 'Screen capture and visual input',
-        available: true,
-      },
-      limb_movement: {
-        icon: '⌨️',
-        description: 'Keyboard/mouse control and system commands',
-        available: true,
-      },
       auditory: {
         icon: '👂',
         description: 'Microphone input and audio output',
@@ -966,6 +987,21 @@ function BodySection({
       haptic: {
         icon: '🖐️',
         description: 'Tactile feedback and notifications',
+        available: false,
+      },
+      limb_movement: {
+        icon: '⌨️',
+        description: 'Keyboard/mouse control and system commands',
+        available: true,
+      },
+      vision: {
+        icon: '👁️',
+        description: 'Screen capture and visual input',
+        available: true,
+      },
+      vocalization: {
+        icon: '🗣️',
+        description: 'Text-to-speech voice output',
         available: false,
       },
     };
@@ -1198,33 +1234,42 @@ function BodySection({
           </label>
         </div>
         <p className="text-xs text-muted-foreground mb-3">
-          Allow this personality to autonomously create new skills, tasks, experiments, and
+          Allow this personality to autonomously create new skills, tasks, roles, experiments, and
           personalities.
         </p>
         <div className="space-y-2">
           {creationItems.map((item) => {
-            const isEnabled = creationConfig[item.key];
+            const blocked = 'blockedByPolicy' in item && item.blockedByPolicy;
+            const isEnabled = blocked ? false : creationConfig[item.key];
             return (
               <div
                 key={item.key}
                 className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
-                  isEnabled ? 'bg-success/5 border-success/30' : 'bg-muted/50 border-border'
+                  blocked
+                    ? 'bg-muted/30 border-border opacity-60'
+                    : isEnabled
+                      ? 'bg-success/5 border-success/30'
+                      : 'bg-muted/50 border-border'
                 }`}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-base">{item.icon}</span>
                   <span className="font-medium">{item.label}</span>
+                  {blocked && (
+                    <span className="text-xs text-destructive">(disabled by security policy)</span>
+                  )}
                 </div>
-                <label className="relative inline-flex items-center cursor-pointer">
+                <label className={`relative inline-flex items-center ${blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}>
                   <input
                     type="checkbox"
                     checked={isEnabled}
-                    onChange={() => toggleCreationItem(item.key)}
+                    onChange={() => !blocked && toggleCreationItem(item.key)}
+                    disabled={blocked}
                     className="sr-only peer"
                   />
                   <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
                   <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
-                    {isEnabled ? 'Enabled' : 'Disabled'}
+                    {blocked ? 'Blocked' : isEnabled ? 'Enabled' : 'Disabled'}
                   </span>
                 </label>
               </div>
@@ -1272,7 +1317,15 @@ export function PersonalityEditor() {
       enabled: false,
       capabilities: [],
       heartEnabled: true,
-      creationConfig: { skills: false, tasks: false, personalities: false, experiments: false },
+      creationConfig: {
+        skills: false,
+        tasks: false,
+        personalities: false,
+        subAgents: false,
+        customRoles: false,
+        roleAssignments: false,
+        experiments: false,
+      },
     },
   });
 
@@ -1280,6 +1333,9 @@ export function PersonalityEditor() {
     skills: false,
     tasks: false,
     personalities: false,
+    subAgents: false,
+    customRoles: false,
+    roleAssignments: false,
     experiments: false,
   });
 
@@ -1380,7 +1436,15 @@ export function PersonalityEditor() {
       enabled: false,
       capabilities: [],
       heartEnabled: true,
-      creationConfig: { skills: false, tasks: false, personalities: false, experiments: false },
+      creationConfig: {
+        skills: false,
+        tasks: false,
+        personalities: false,
+        subAgents: false,
+        customRoles: false,
+        roleAssignments: false,
+        experiments: false,
+      },
     };
     setForm({
       name: p.name,
@@ -1398,6 +1462,9 @@ export function PersonalityEditor() {
       skills: body.creationConfig?.skills ?? false,
       tasks: body.creationConfig?.tasks ?? false,
       personalities: body.creationConfig?.personalities ?? false,
+      subAgents: body.creationConfig?.subAgents ?? false,
+      customRoles: body.creationConfig?.customRoles ?? false,
+      roleAssignments: body.creationConfig?.roleAssignments ?? false,
       experiments: body.creationConfig?.experiments ?? false,
     });
     setAllowConnections(body.enabled ?? false);
@@ -1422,7 +1489,15 @@ export function PersonalityEditor() {
       enabled: false,
       capabilities: [],
       heartEnabled: true,
-      creationConfig: { skills: false, tasks: false, personalities: false, experiments: false },
+      creationConfig: {
+        skills: false,
+        tasks: false,
+        personalities: false,
+        subAgents: false,
+        customRoles: false,
+        roleAssignments: false,
+        experiments: false,
+      },
     };
     setForm({
       name: '',
@@ -1436,7 +1511,15 @@ export function PersonalityEditor() {
       includeArchetypes: false,
       body,
     });
-    setCreationConfig({ skills: false, tasks: false, personalities: false, experiments: false });
+    setCreationConfig({
+      skills: false,
+      tasks: false,
+      personalities: false,
+      subAgents: false,
+      customRoles: false,
+      roleAssignments: false,
+      experiments: false,
+    });
     setAllowConnections(false);
     setSelectedServers([]);
     setEnabledCaps({ vision: false, limb_movement: false, auditory: false, haptic: false });
