@@ -9,7 +9,7 @@ import {
   fetchWithRetry,
   RetryableError,
 } from './proxy-manager.js';
-import type { McpServiceConfig } from '@friday/shared';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 
 function makeConfig(overrides: Partial<McpServiceConfig> = {}): McpServiceConfig {
   return {

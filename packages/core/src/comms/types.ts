@@ -2,9 +2,9 @@
  * Comms Module — Internal Types for agent-to-agent communication.
  */
 
-export type { CommsConfig } from '@friday/shared';
-import type { MessageType } from '@friday/shared';
-export type { MessageType } from '@friday/shared';
+export type { CommsConfig } from '@secureyeoman/shared';
+import type { MessageType } from '@secureyeoman/shared';
+export type { MessageType } from '@secureyeoman/shared';
 
 export interface AgentIdentity {
   id: string;

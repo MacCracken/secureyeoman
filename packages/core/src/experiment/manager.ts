@@ -2,7 +2,7 @@
  * Experiment Manager — create/start/stop experiments, traffic routing
  */
 
-import type { Experiment, ExperimentCreate } from '@friday/shared';
+import type { Experiment, ExperimentCreate } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import { ExperimentStorage } from './storage.js';
 

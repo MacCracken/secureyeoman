@@ -6,7 +6,7 @@ import type {
   AIStreamChunk,
   ModelConfig,
   FallbackModelConfig,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import { RateLimitError, ProviderUnavailableError, AuthenticationError } from './errors.js';
 
 // Mock getSecret to return a fake key

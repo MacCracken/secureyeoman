@@ -25,7 +25,7 @@ import {
   type Task,
   type TaskCreate,
   type ResourceUsage,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import type { Sandbox, SandboxOptions } from '../sandbox/types.js';
 import type { TaskStorage } from './task-storage.js';
 

@@ -3,7 +3,7 @@
  * Meticulous Senior Software Engineer and Lead Reviewer for production-grade code reviews.
  */
 
-import type { MarketplaceSkill } from '@friday/shared';
+import type { MarketplaceSkill } from '@secureyeoman/shared';
 
 export const seniorSoftwareEngineerAuditSkill: Partial<MarketplaceSkill> = {
   name: 'Sr. Software Engineer - Audit / Code Review',

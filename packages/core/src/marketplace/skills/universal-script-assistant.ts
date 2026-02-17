@@ -3,7 +3,7 @@
  * Elite script consultant and developmental editor — from concept to final draft
  */
 
-import type { MarketplaceSkill } from '@friday/shared';
+import type { MarketplaceSkill } from '@secureyeoman/shared';
 
 export const universalScriptAssistantSkill: Partial<MarketplaceSkill> = {
   name: 'Universal Script Assistant',

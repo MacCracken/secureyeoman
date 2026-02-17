@@ -6,7 +6,7 @@
  * tools are available.
  */
 
-import type { AgentProfile } from '@friday/shared';
+import type { AgentProfile } from '@secureyeoman/shared';
 
 export const BUILTIN_PROFILES: Omit<AgentProfile, 'createdAt' | 'updatedAt'>[] = [
   {

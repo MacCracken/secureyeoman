@@ -10,7 +10,7 @@ import type {
   IntegrationCreate,
   UnifiedMessage,
   Platform,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import type { z } from 'zod';
 

@@ -2,7 +2,7 @@
  * Dashboard Manager — CRUD operations for custom dashboards
  */
 
-import type { CustomDashboard, CustomDashboardCreate } from '@friday/shared';
+import type { CustomDashboard, CustomDashboardCreate } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import { DashboardStorage } from './storage.js';
 

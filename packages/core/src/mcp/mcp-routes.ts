@@ -6,7 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { McpClientManager } from './client.js';
 import type { McpStorage } from './storage.js';
 import type { McpServer } from './server.js';
-import type { McpToolManifest } from '@friday/shared';
+import type { McpToolManifest } from '@secureyeoman/shared';
 import type { McpHealthMonitor } from './health-monitor.js';
 import type { McpCredentialManager } from './credential-manager.js';
 
@@ -204,7 +204,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       try {
         const { serverId, toolName, args } = request.body;
         const result =
-          serverId === 'friday-local'
+          serverId === 'secureyeoman-local'
             ? await mcpServer.handleToolCall(toolName, args ?? {})
             : await mcpClient.callTool(serverId, toolName, args ?? {});
         return { result };

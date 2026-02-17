@@ -6,7 +6,7 @@
  * sendMessage() is a no-op since CLI consumers read responses directly.
  */
 
-import type { IntegrationConfig, Platform } from '@friday/shared';
+import type { IntegrationConfig, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 

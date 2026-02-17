@@ -24,7 +24,7 @@ import type {
   SecurityConfig,
   AIMessage,
   Tool,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 
 export interface SubAgentManagerDeps {
   storage: SubAgentStorage;

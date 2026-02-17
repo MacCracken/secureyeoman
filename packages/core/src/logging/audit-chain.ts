@@ -10,7 +10,7 @@
  */
 
 import { sha256, hmacSha256, secureCompare, uuidv7 } from '../utils/crypto.js';
-import { AuditEntrySchema, type AuditEntry } from '@friday/shared';
+import { AuditEntrySchema, type AuditEntry } from '@secureyeoman/shared';
 import { getLogger, type SecureLogger } from './logger.js';
 
 const GENESIS_HASH = '0'.repeat(64); // Genesis block previous hash

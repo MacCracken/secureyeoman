@@ -6,8 +6,8 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AuthService } from '../security/auth.js';
 import { AuthError } from '../security/auth.js';
 import type { RateLimiterLike } from '../security/rate-limiter.js';
-import type { Role } from '@friday/shared';
-import { RoleDefinitionSchema } from '@friday/shared';
+import type { Role } from '@secureyeoman/shared';
+import { RoleDefinitionSchema } from '@secureyeoman/shared';
 import type { RBAC } from '../security/rbac.js';
 
 /** Built-in role IDs that cannot be mutated or deleted via the API. */

@@ -18,7 +18,7 @@ export function WebPage({ embedded }: { embedded?: boolean } = {}) {
   ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 sm:space-y-4 min-w-0 overflow-hidden">
       {!embedded && (
         <div>
           <h1 className="text-xl sm:text-2xl font-bold">Web</h1>
@@ -29,12 +29,12 @@ export function WebPage({ embedded }: { embedded?: boolean } = {}) {
       )}
 
       {/* Sub-tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex overflow-x-auto scrollbar-hide gap-0.5 sm:gap-1 border-b border-border -mx-1 px-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'

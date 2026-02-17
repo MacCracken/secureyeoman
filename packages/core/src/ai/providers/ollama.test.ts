@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { OllamaProvider } from './ollama.js';
-import type { AIRequest, ModelConfig } from '@friday/shared';
+import type { AIRequest, ModelConfig } from '@secureyeoman/shared';
 import { ProviderUnavailableError, InvalidResponseError } from '../errors.js';
 
 function makeConfig(): { model: ModelConfig; retryConfig: { maxRetries: number } } {

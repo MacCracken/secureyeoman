@@ -6,7 +6,7 @@ import type {
   ProactiveTrigger,
   ProactiveTriggerCreate,
   Suggestion,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 
 // ── Mock Storage ─────────────────────────────────────────────────
 

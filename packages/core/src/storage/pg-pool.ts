@@ -3,7 +3,7 @@
  */
 
 import pg from 'pg';
-import type { DatabaseConfig } from '@friday/shared';
+import type { DatabaseConfig } from '@secureyeoman/shared';
 
 const { Pool, types } = pg;
 

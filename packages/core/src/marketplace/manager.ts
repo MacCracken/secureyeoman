@@ -2,8 +2,8 @@
  * Marketplace Manager — search, install, uninstall, publish skills
  */
 
-import type { MarketplaceSkill } from '@friday/shared';
-import { SkillCreateSchema } from '@friday/shared';
+import type { MarketplaceSkill } from '@secureyeoman/shared';
+import { SkillCreateSchema } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
 import { MarketplaceStorage } from './storage.js';

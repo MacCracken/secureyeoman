@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SubAgentManager } from './manager.js';
-import type { DelegationConfig } from '@friday/shared';
+import type { DelegationConfig } from '@secureyeoman/shared';
 
 // Mock AIClient
 const { MockAIClient } = vi.hoisted(() => {

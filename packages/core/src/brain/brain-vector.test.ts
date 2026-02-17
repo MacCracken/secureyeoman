@@ -7,7 +7,7 @@ import { BrainManager } from './manager.js';
 import type { BrainStorage } from './storage.js';
 import type { BrainManagerDeps, Memory, KnowledgeEntry } from './types.js';
 import type { VectorMemoryManager } from './vector/manager.js';
-import type { BrainConfig } from '@friday/shared';
+import type { BrainConfig } from '@secureyeoman/shared';
 
 function makeMemory(id: string, content: string): Memory {
   return {

@@ -17,7 +17,7 @@ import type {
   ImageGenResult,
   AIRequest,
   AIResponse,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import type { MultimodalStorage } from './storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { HookPoint, HookContext, HookResult } from '../extensions/types.js';

@@ -1,5 +1,5 @@
 /**
- * @friday/shared
+ * @secureyeoman/shared
  *
  * Shared types, schemas, and utilities for SecureYeoman
  */

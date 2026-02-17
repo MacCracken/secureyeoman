@@ -332,7 +332,7 @@ describe('encrypted config', () => {
   let tmpDir: string;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'friday-config-'));
+    tmpDir = mkdtempSync(join(tmpdir(), 'secureyeoman-config-'));
   });
 
   afterEach(() => {

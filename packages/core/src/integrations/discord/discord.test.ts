@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import type { IntegrationConfig, UnifiedMessage } from '@friday/shared';
+import type { IntegrationConfig, UnifiedMessage } from '@secureyeoman/shared';
 import type { IntegrationDeps } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 

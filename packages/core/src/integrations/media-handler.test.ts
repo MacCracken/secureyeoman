@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { MediaHandler, MediaError } from './media-handler.js';
-import type { MessageAttachment } from '@friday/shared';
+import type { MessageAttachment } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 
 function noopLogger(): SecureLogger {
@@ -25,7 +25,7 @@ describe('MediaHandler', () => {
   let handler: MediaHandler;
 
   beforeEach(() => {
-    tmpDir = mkdtempSync(join(tmpdir(), 'friday-media-test-'));
+    tmpDir = mkdtempSync(join(tmpdir(), 'secureyeoman-media-test-'));
     handler = new MediaHandler({
       maxSizeBytes: 1024, // 1KB for tests
       tempDir: tmpDir,

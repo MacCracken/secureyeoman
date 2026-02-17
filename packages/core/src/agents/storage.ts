@@ -12,7 +12,7 @@ import type {
   AgentProfileCreate,
   AgentProfileUpdate,
   DelegationStatus,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 
 // ─── Row types ──────────────────────────────────────────────────────
 

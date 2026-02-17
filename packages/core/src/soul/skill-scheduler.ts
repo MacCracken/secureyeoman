@@ -5,7 +5,7 @@
  * See ADR 023: Scheduled Skill Execution
  */
 
-import type { Skill, SkillAction } from '@friday/shared';
+import type { Skill, SkillAction } from '@secureyeoman/shared';
 
 export interface ScheduledSkill {
   id: string;

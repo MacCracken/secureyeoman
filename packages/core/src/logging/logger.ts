@@ -10,7 +10,7 @@
 
 import pino, { type Logger as PinoLogger, type LoggerOptions } from 'pino';
 import { sanitizeForLogging } from '../utils/crypto.js';
-import type { LoggingConfig } from '@friday/shared';
+import type { LoggingConfig } from '@secureyeoman/shared';
 
 export type LogLevel = 'trace' | 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 

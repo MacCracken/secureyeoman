@@ -16,7 +16,7 @@ function mockClient(): CoreApiClient {
 }
 
 describe('soul-prompts', () => {
-  it('should register friday:compose-prompt', () => {
+  it('should register secureyeoman:compose-prompt', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() => registerSoulPrompts(server, mockClient())).not.toThrow();
   });

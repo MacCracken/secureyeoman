@@ -19,7 +19,7 @@ import fastifyWebsocket from '@fastify/websocket';
 import { WebSocket } from 'ws';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
 import { type SecureYeoman } from '../secureyeoman.js';
-import type { GatewayConfig } from '@friday/shared';
+import type { GatewayConfig } from '@secureyeoman/shared';
 import type { AuthService } from '../security/auth.js';
 import { createAuthHook, createRbacHook } from './auth-middleware.js';
 import { registerAuthRoutes } from './auth-routes.js';
@@ -32,7 +32,7 @@ import { registerIntegrationRoutes } from '../integrations/integration-routes.js
 import { registerChatRoutes } from '../ai/chat-routes.js';
 import { registerModelRoutes } from '../ai/model-routes.js';
 import { uuidv7, sha256 } from '../utils/crypto.js';
-import { Task, TaskType, TaskStatus } from '@friday/shared';
+import { Task, TaskType, TaskStatus } from '@secureyeoman/shared';
 import { registerMcpRoutes } from '../mcp/mcp-routes.js';
 import { registerReportRoutes } from '../reporting/report-routes.js';
 import { registerDashboardRoutes } from '../dashboard/dashboard-routes.js';
@@ -828,7 +828,7 @@ export class GatewayServer {
           const q = request.query;
 
           // These are the audit event names that qualify as "security events".
-          // They align with the SecurityEventType enum in @friday/shared and
+          // They align with the SecurityEventType enum in @secureyeoman/shared and
           // cover authentication, authorisation, rate limiting, injection
           // detection, sandbox violations, and configuration changes.
           const SECURITY_EVENT_TYPES = [
@@ -1050,7 +1050,7 @@ export class GatewayServer {
             to: q.to ? Number(q.to) : undefined,
             limit: q.limit ? Number(q.limit) : 100_000,
           });
-          const filename = `friday-audit-${new Date().toISOString().slice(0, 10)}.json`;
+          const filename = `secureyeoman-audit-${new Date().toISOString().slice(0, 10)}.json`;
           return reply
             .header('Content-Type', 'application/json')
             .header('Content-Disposition', `attachment; filename="${filename}"`)

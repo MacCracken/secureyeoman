@@ -551,7 +551,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
 
       try {
         await externalSync.updateConfig(
-          request.body as Partial<import('@friday/shared').ExternalBrainConfig>
+          request.body as Partial<import('@secureyeoman/shared').ExternalBrainConfig>
         );
         return { success: true };
       } catch (err) {

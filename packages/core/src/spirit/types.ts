@@ -15,7 +15,7 @@ export type {
   Pain,
   PainCreate,
   PainUpdate,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';

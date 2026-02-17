@@ -6,7 +6,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
-import type { AuditEntry } from '@friday/shared';
+import type { AuditEntry } from '@secureyeoman/shared';
 import type { AuditChainStorage } from './audit-chain.js';
 
 export interface AuditQueryOptions {

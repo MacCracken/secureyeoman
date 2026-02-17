@@ -19,7 +19,7 @@ import type {
   BrainStats,
 } from './types.js';
 import type { AuditQueryOptions, AuditQueryResult } from '../logging/sqlite-storage.js';
-import type { Skill, SkillCreate, SkillUpdate, Tool, BrainConfig } from '@friday/shared';
+import type { Skill, SkillCreate, SkillUpdate, Tool, BrainConfig } from '@secureyeoman/shared';
 import type { VectorResult } from './vector/types.js';
 
 export class BrainManager {

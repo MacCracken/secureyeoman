@@ -24,9 +24,9 @@ export type {
   HeartbeatCheckType,
   ExternalBrainConfig,
   ExternalBrainProvider,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 
-export type { Tool } from '@friday/shared';
+export type { Tool } from '@secureyeoman/shared';
 
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';

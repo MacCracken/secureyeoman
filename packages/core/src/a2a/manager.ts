@@ -5,7 +5,7 @@
  * queries across the A2A mesh network.
  */
 
-import type { A2AConfig } from '@friday/shared';
+import type { A2AConfig } from '@secureyeoman/shared';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { A2AStorage } from './storage.js';

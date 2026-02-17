@@ -3,7 +3,7 @@
  * Pragmatic Senior Software Engineer with 20+ years of experience in distributed systems and clean architecture.
  */
 
-import type { MarketplaceSkill } from '@friday/shared';
+import type { MarketplaceSkill } from '@secureyeoman/shared';
 
 export const seniorSoftwareEngineerSkill: Partial<MarketplaceSkill> = {
   name: 'Senior Software Engineer',

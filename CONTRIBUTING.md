@@ -47,7 +47,7 @@ npm run dev
 npm test
 
 # Run tests for specific package
-npm test --workspace=@friday/core
+npm test --workspace=@secureyeoman/core
 
 # Run tests with coverage
 npm test -- --coverage

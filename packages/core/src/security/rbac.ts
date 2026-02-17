@@ -9,7 +9,7 @@
  */
 
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
-import { RoleSchema, type Permission, type RoleDefinition } from '@friday/shared';
+import { RoleSchema, type Permission, type RoleDefinition } from '@secureyeoman/shared';
 import type { RBACStorage } from './rbac-storage.js';
 import type { CaptureResource, CaptureAction, CaptureScope } from '../body/types.js';
 

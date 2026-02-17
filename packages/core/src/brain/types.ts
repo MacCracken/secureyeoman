@@ -4,7 +4,7 @@
  * Re-exports shared types and defines internal interfaces.
  */
 
-export type { Skill, SkillCreate, SkillUpdate, Tool } from '@friday/shared';
+export type { Skill, SkillCreate, SkillUpdate, Tool } from '@secureyeoman/shared';
 
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';

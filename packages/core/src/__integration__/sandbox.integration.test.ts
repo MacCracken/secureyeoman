@@ -7,7 +7,7 @@ import { createTaskExecutor, type TaskHandler, type ExecutionContext } from '../
 import { InputValidator } from '../security/input-validator.js';
 import { RateLimiter } from '../security/rate-limiter.js';
 import { initializeRBAC } from '../security/rbac.js';
-import { TaskType } from '@friday/shared';
+import { TaskType } from '@secureyeoman/shared';
 import type { SandboxOptions } from '../sandbox/types.js';
 
 const SIGNING_KEY = 'a'.repeat(64);

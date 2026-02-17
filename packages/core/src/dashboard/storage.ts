@@ -2,7 +2,7 @@
  * Dashboard Storage — PostgreSQL persistence for custom dashboard layouts
  */
 
-import type { CustomDashboard, CustomDashboardCreate } from '@friday/shared';
+import type { CustomDashboard, CustomDashboardCreate } from '@secureyeoman/shared';
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 

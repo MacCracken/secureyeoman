@@ -8,7 +8,7 @@
 
 import { Octokit } from '@octokit/rest';
 import { Webhooks } from '@octokit/webhooks';
-import type { IntegrationConfig, UnifiedMessage, Platform } from '@friday/shared';
+import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { WebhookIntegration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 

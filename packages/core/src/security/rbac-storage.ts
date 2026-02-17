@@ -29,7 +29,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
-import type { RoleDefinition, Permission } from '@friday/shared';
+import type { RoleDefinition, Permission } from '@secureyeoman/shared';
 
 // ── Row types ────────────────────────────────────────────────────────────
 

@@ -10,7 +10,7 @@ import type {
   Suggestion,
   ProactiveAction,
   ProactiveConfig,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import type { ProactiveManagerDeps, ActionResult } from './types.js';
 import type { ProactiveStorage } from './storage.js';
 import type { PatternLearner } from './pattern-learner.js';

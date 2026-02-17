@@ -10,7 +10,7 @@ import type {
   IntegrationCreate,
   IntegrationUpdate,
   Platform,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import type { IntegrationStorage } from './storage.js';
 import type {
   Integration,

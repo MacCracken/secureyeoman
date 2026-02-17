@@ -145,21 +145,21 @@ export function AgentsPage() {
     : (availableSections[0]?.id ?? 'delegation');
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Users className="w-6 h-6 text-primary" />
-        <h1 className="text-2xl font-bold">Agents</h1>
+    <div className="space-y-3 sm:space-y-4 min-w-0 overflow-hidden">
+      <div className="flex items-center gap-2 sm:gap-3">
+        <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
+        <h1 className="text-xl sm:text-2xl font-bold truncate">Agents</h1>
       </div>
 
       {/* Section tabs */}
-      <div className="flex gap-1 border-b border-border overflow-x-auto">
+      <div className="flex overflow-x-auto scrollbar-hide gap-0.5 sm:gap-1 border-b border-border -mx-1 px-1">
         {availableSections.map((section) => (
           <button
             key={section.id}
             onClick={() => {
               setActiveSection(section.id);
             }}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            className={`flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
               effectiveSection === section.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'

@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { UsageTracker } from './usage-tracker.js';
-import type { TokenUsage } from '@friday/shared';
+import type { TokenUsage } from '@secureyeoman/shared';
 
 function makeUsage(total: number, cached = 0): TokenUsage {
   return {

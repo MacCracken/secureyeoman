@@ -2,7 +2,7 @@
  * Workspace Manager — CRUD, member management, context scoping
  */
 
-import type { Workspace, WorkspaceCreate, WorkspaceMember } from '@friday/shared';
+import type { Workspace, WorkspaceCreate, WorkspaceMember } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import { WorkspaceStorage } from './storage.js';
 

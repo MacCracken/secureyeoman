@@ -2,7 +2,7 @@
  * MCP Service Configuration — loads config from environment variables.
  */
 
-import { McpServiceConfigSchema, type McpServiceConfig } from '@friday/shared';
+import { McpServiceConfigSchema, type McpServiceConfig } from '@secureyeoman/shared';
 
 export function loadConfig(
   env: Record<string, string | undefined> = process.env

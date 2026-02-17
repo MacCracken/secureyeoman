@@ -6,7 +6,7 @@
  * No webhooks — polling or event-driven via the agent loop.
  */
 
-import type { IntegrationConfig, UnifiedMessage, Platform } from '@friday/shared';
+import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 import { createHmac, createHash } from 'crypto';

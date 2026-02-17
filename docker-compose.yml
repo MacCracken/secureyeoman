@@ -1,3 +1,5 @@
+name: secureyeoman
+
 services:
   postgres:
     image: pgvector/pgvector:pg16
@@ -24,7 +26,7 @@ services:
     ports:
       - "18789:18789"
     volumes:
-      - secureyeoman-data:/app/data
+      - data:/app/data
     env_file: .env
     environment:
       SECUREYEOMAN_HOST: "0.0.0.0"
@@ -102,7 +104,7 @@ services:
       - "3000:3000"
     volumes:
       - .:/app
-      - dashboard-node-modules:/app/node_modules
+      - node-modules:/app/node_modules
     environment:
       VITE_GATEWAY_URL: "http://core:18789"
       VITE_HOST: "0.0.0.0"
@@ -112,5 +114,5 @@ services:
 
 volumes:
   pgdata:
-  secureyeoman-data:
-  dashboard-node-modules:
+  data:
+  node-modules:

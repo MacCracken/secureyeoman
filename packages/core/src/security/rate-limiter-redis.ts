@@ -11,7 +11,7 @@
 
 import { Redis as RedisClient } from 'ioredis';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
-import type { SecurityConfig } from '@friday/shared';
+import type { SecurityConfig } from '@secureyeoman/shared';
 import type { RateLimitResult, RateLimitRule } from './rate-limiter.js';
 
 export class RedisRateLimiter {
@@ -24,7 +24,7 @@ export class RedisRateLimiter {
   private totalHits = 0;
   private totalChecks = 0;
 
-  constructor(config: SecurityConfig['rateLimiting'], redisUrl: string, redisPrefix = 'friday:rl') {
+  constructor(config: SecurityConfig['rateLimiting'], redisUrl: string, redisPrefix = 'secureyeoman:rl') {
     this.redis = new RedisClient(redisUrl, {
       maxRetriesPerRequest: 3,
       lazyConnect: true,

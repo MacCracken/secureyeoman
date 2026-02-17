@@ -2,7 +2,7 @@
  * Cost Optimizer — analyzes usage data and produces recommendations
  */
 
-import type { CostRecommendation, CostAnalysis } from '@friday/shared';
+import type { CostRecommendation, CostAnalysis } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import type { UsageTracker } from './usage-tracker.js';
 import { uuidv7 } from '../utils/crypto.js';

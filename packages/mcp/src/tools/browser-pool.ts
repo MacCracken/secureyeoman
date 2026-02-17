@@ -4,7 +4,7 @@
  * Lazy-launches a browser and manages a pool of pages with configurable limits.
  */
 
-import type { McpServiceConfig } from '@friday/shared';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 
 // Playwright types — dynamically imported to keep it optional
 type Browser = import('playwright').Browser;

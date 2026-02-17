@@ -11,7 +11,7 @@ import type {
   AIStreamChunk,
   AIProviderName,
   ModelConfig,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import { RetryManager, type RetryConfig } from '../retry-manager.js';
 import type { SecureLogger } from '../../logging/logger.js';
 

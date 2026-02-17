@@ -6,7 +6,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
-import type { MultimodalJob, MultimodalJobType, MultimodalJobStatus } from '@friday/shared';
+import type { MultimodalJob, MultimodalJobType, MultimodalJobStatus } from '@secureyeoman/shared';
 
 // ─── Row types ──────────────────────────────────────────────────────
 

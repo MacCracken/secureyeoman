@@ -5,7 +5,7 @@ import {
   getAvailableModelsAsync,
   _clearDynamicCache,
 } from './cost-calculator.js';
-import type { TokenUsage } from '@friday/shared';
+import type { TokenUsage } from '@secureyeoman/shared';
 
 describe('CostCalculator', () => {
   const calc = new CostCalculator();

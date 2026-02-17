@@ -14,7 +14,7 @@ import {
   type Interaction,
   type TextChannel,
 } from 'discord.js';
-import type { IntegrationConfig, UnifiedMessage, Platform } from '@friday/shared';
+import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
 

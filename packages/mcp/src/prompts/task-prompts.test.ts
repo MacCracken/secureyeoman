@@ -3,7 +3,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { registerTaskPrompts } from './task-prompts.js';
 
 describe('task-prompts', () => {
-  it('should register friday:plan-task prompt', () => {
+  it('should register secureyeoman:plan-task prompt', () => {
     const server = new McpServer({ name: 'test', version: '1.0.0' });
     expect(() => registerTaskPrompts(server)).not.toThrow();
   });

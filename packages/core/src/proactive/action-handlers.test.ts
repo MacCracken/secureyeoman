@@ -13,7 +13,7 @@ import type {
   RemindAction,
   ExecuteAction,
   LearnAction,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 
 // ── Mock Logger ──────────────────────────────────────────────────
 
@@ -276,7 +276,7 @@ describe('executeWebhookAction', () => {
 
     const fetchOptions = mockFetch.mock.calls[0][1];
     const body = JSON.parse(fetchOptions.body);
-    expect(body.source).toBe('friday-proactive');
+    expect(body.source).toBe('secureyeoman-proactive');
     expect(body.timestamp).toBeTypeOf('number');
   });
 

@@ -2,7 +2,7 @@
  * Built-in Proactive Triggers — 5 default triggers (disabled by default).
  */
 
-import type { ProactiveTrigger } from '@friday/shared';
+import type { ProactiveTrigger } from '@secureyeoman/shared';
 
 export const BUILTIN_TRIGGERS: ProactiveTrigger[] = [
   {

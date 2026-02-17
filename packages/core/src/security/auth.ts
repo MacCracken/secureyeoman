@@ -7,7 +7,7 @@
 
 import { SignJWT, jwtVerify, type JWTPayload } from 'jose';
 import { sha256, secureCompare, generateSecureToken, uuidv7 } from '../utils/crypto.js';
-import { TokenPayloadSchema, type Role } from '@friday/shared';
+import { TokenPayloadSchema, type Role } from '@secureyeoman/shared';
 import { generateTOTPSecret, verifyTOTP, generateRecoveryCodes, buildTOTPUri } from './totp.js';
 import type { AuthStorage, ApiKeyRow } from './auth-storage.js';
 import type { AuditChain } from '../logging/audit-chain.js';

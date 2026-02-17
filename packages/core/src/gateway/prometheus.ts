@@ -5,7 +5,7 @@
  * for scraping by Prometheus or compatible systems.
  */
 
-import type { MetricsSnapshot } from '@friday/shared';
+import type { MetricsSnapshot } from '@secureyeoman/shared';
 
 /**
  * Format a MetricsSnapshot into Prometheus text exposition format.

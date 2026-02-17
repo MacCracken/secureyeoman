@@ -96,7 +96,7 @@ export class AgentCrypto {
     // 3. Derive encryption key via HKDF
     const nonce = randomBytes(12);
     const derivedKey = Buffer.from(
-      hkdfSync('sha256', sharedSecret, nonce, 'friday-agent-comms', 32)
+      hkdfSync('sha256', sharedSecret, nonce, 'secureyeoman-agent-comms', 32)
     );
 
     // 4. Encrypt with AES-256-GCM
@@ -131,7 +131,7 @@ export class AgentCrypto {
     // 2. Derive decryption key via HKDF
     const nonce = Buffer.from(encrypted.nonce, 'base64');
     const derivedKey = Buffer.from(
-      hkdfSync('sha256', sharedSecret, nonce, 'friday-agent-comms', 32)
+      hkdfSync('sha256', sharedSecret, nonce, 'secureyeoman-agent-comms', 32)
     );
 
     // 3. Decrypt with AES-256-GCM

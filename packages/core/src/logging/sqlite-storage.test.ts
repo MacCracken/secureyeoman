@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
 import { SQLiteAuditStorage } from './sqlite-storage.js';
-import type { AuditEntry } from '@friday/shared';
+import type { AuditEntry } from '@secureyeoman/shared';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
 
 function makeEntry(overrides: Partial<AuditEntry> = {}): AuditEntry {

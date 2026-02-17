@@ -5,8 +5,8 @@
  * Flow: Platform → Integration.onMessage → MessageRouter → TaskExecutor → response → Integration.sendMessage
  */
 
-import type { UnifiedMessage } from '@friday/shared';
-import { TaskType } from '@friday/shared';
+import type { UnifiedMessage } from '@secureyeoman/shared';
+import { TaskType } from '@secureyeoman/shared';
 import type { TaskExecutor, ExecutionContext } from '../task/executor.js';
 import type { IntegrationManager } from './manager.js';
 import type { IntegrationStorage } from './storage.js';

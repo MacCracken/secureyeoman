@@ -37,7 +37,7 @@ export function LogRetentionSettings() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `friday-audit-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `secureyeoman-audit-${new Date().toISOString().slice(0, 10)}.json`;
       document.body.appendChild(a);
       a.click();
       a.remove();

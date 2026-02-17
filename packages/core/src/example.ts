@@ -30,8 +30,8 @@ async function main() {
             database: {
               host: 'localhost',
               port: 5432,
-              database: 'friday',
-              user: 'friday',
+              database: 'secureyeoman',
+              user: 'secureyeoman',
               passwordEnv: 'POSTGRES_PASSWORD',
               ssl: false,
               poolSize: 5,

@@ -5,7 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { IntegrationManager } from './manager.js';
 import type { IntegrationStorage } from './storage.js';
-import type { IntegrationCreate, IntegrationUpdate } from '@friday/shared';
+import type { IntegrationCreate, IntegrationUpdate } from '@secureyeoman/shared';
 
 export interface IntegrationRoutesOptions {
   integrationManager: IntegrationManager;

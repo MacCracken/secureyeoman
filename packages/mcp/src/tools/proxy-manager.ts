@@ -5,7 +5,7 @@
  * Feature-gated behind MCP_PROXY_ENABLED (default: false).
  */
 
-import type { McpServiceConfig } from '@friday/shared';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 
 // ─── Types ───────────────────────────────────────────────────
 

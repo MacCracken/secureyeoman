@@ -5,7 +5,7 @@
 
 import type { BrainManager } from '../brain/manager.js';
 import type { SecureLogger } from '../logging/logger.js';
-import type { ProactiveTriggerCreate } from '@friday/shared';
+import type { ProactiveTriggerCreate } from '@secureyeoman/shared';
 
 export interface InteractionEvent {
   type: string;

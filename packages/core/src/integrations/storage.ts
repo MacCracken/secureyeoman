@@ -12,7 +12,7 @@ import type {
   IntegrationStatus,
   UnifiedMessage,
   Platform,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 import { uuidv7 } from '../utils/crypto.js';
 
 // ─── Row Types ───────────────────────────────────────────────

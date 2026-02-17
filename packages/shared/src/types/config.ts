@@ -177,7 +177,7 @@ const RateLimitingConfigSchema = z
     defaultWindowMs: z.number().int().positive().max(3600000).default(60000),
     defaultMaxRequests: z.number().int().positive().max(10000).default(100),
     redisUrl: z.string().url().optional(),
-    redisPrefix: z.string().max(64).default('friday:rl').optional(),
+    redisPrefix: z.string().max(64).default('secureyeoman:rl').optional(),
   })
   .default({});
 

@@ -5,7 +5,7 @@
  * management and risk mitigation.
  */
 
-import type { MarketplaceSkill } from '@friday/shared';
+import type { MarketplaceSkill } from '@secureyeoman/shared';
 
 export const veteranFinancialManagerSkill: Partial<MarketplaceSkill> = {
   name: 'Veteran Financial Manager/Trader',

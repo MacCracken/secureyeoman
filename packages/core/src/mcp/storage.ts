@@ -3,7 +3,7 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
-import type { McpServerConfig, McpServerCreate, McpToolDef, McpServerHealth } from '@friday/shared';
+import type { McpServerConfig, McpServerCreate, McpToolDef, McpServerHealth } from '@secureyeoman/shared';
 import { uuidv7 } from '../utils/crypto.js';
 
 export interface McpFeatureConfig {

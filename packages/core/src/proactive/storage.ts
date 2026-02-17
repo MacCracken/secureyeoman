@@ -11,7 +11,7 @@ import type {
   ProactiveTriggerCreate,
   Suggestion,
   SuggestionStatus,
-} from '@friday/shared';
+} from '@secureyeoman/shared';
 
 // ─── Row types ──────────────────────────────────────────────────────
 
