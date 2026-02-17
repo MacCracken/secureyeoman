@@ -379,7 +379,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 Security is our top priority. For security issues:
 
 - **DO NOT** open a public issue
-- Email: security@friday.dev
+- Email: security@secureyeoman.ai
 - See our [Security Policy](SECURITY.md)
 
 ---
@@ -392,6 +392,6 @@ This project is licensed under the [MIT License](LICENSE).
 
 <div align="center">
 
-**F.R.I.D.A.Y.** - Your trusted digital SecureYeoman
+**SECUREYEOMAN** - Your trusted digital Yeoman
 
 </div>
