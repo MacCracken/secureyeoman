@@ -375,7 +375,7 @@ function ExecutionGated({ children }: { children: React.ReactNode }) {
   });
 
   const enabled =
-    (configData?.config)!?.enabled === true || securityPolicy?.allowExecution === true;
+    (configData?.config)?.enabled === true || securityPolicy?.allowExecution === true;
 
   if (!enabled) {
     return (

@@ -45,7 +45,7 @@ export function ExtensionsPage() {
   });
 
   const enabled =
-    (configData?.config)!?.enabled === true || securityPolicy?.allowExtensions === true;
+    (configData?.config)?.enabled === true || securityPolicy?.allowExtensions === true;
 
   const discoverMut = useMutation({
     mutationFn: discoverExtensions,

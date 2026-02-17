@@ -76,7 +76,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
 
   const peers = peersData?.peers ?? [];
 
-  const enabled = (configData?.config)!?.enabled === true || securityPolicy?.allowA2A === true;
+  const enabled = (configData?.config)?.enabled === true || securityPolicy?.allowA2A === true;
 
   const discoverMut = useMutation({
     mutationFn: discoverA2APeers,

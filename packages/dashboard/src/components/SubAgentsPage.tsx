@@ -94,7 +94,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
   });
 
   const enabled =
-    (configData?.config)!?.enabled === true ||
+    (configData?.config)?.enabled === true ||
     configData?.allowedBySecurityPolicy === true ||
     securityPolicy?.allowSubAgents === true;
 
