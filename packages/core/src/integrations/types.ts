@@ -97,6 +97,9 @@ export const DEFAULT_RATE_LIMITS: Record<string, PlatformRateLimit> = {
   googlecalendar: { maxPerSecond: 10 },
   notion: { maxPerSecond: 3 },
   gitlab: { maxPerSecond: 10 },
+  jira: { maxPerSecond: 10 },
+  aws: { maxPerSecond: 10 },
+  azure: { maxPerSecond: 10 },
 };
 
 // ─── Dependencies ────────────────────────────────────────────

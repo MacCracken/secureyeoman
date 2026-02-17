@@ -151,5 +151,6 @@ export const AIProviderNameSchema = z.enum([
   'lmstudio',
   'localai',
   'deepseek',
+  'mistral',
 ]);
 export type AIProviderName = z.infer<typeof AIProviderNameSchema>;

@@ -540,6 +540,15 @@ export class GatewayServer {
       return this.secureYeoman.getMetrics();
     });
 
+    // Cost breakdown endpoint
+    this.app.get('/api/v1/costs/breakdown', async () => {
+      const aiStats = this.secureYeoman.getAiUsageStats();
+      return {
+        byProvider: aiStats?.byProvider ?? {},
+        recommendations: [],
+      };
+    });
+
     // Tasks endpoints
     this.app.get(
       '/api/v1/tasks',

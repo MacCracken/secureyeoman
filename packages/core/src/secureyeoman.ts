@@ -74,6 +74,9 @@ import { TeamsIntegration } from './integrations/teams/index.js';
 import { GoogleCalendarIntegration } from './integrations/googlecalendar/index.js';
 import { NotionIntegration } from './integrations/notion/index.js';
 import { GitLabIntegration } from './integrations/gitlab/index.js';
+import { JiraIntegration } from './integrations/jira/index.js';
+import { AwsIntegration } from './integrations/aws/index.js';
+import { AzureDevOpsIntegration } from './integrations/azure/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
 import { HeartManager } from './body/heart.js';
 import { ExternalBrainSync } from './brain/external-sync.js';
@@ -548,6 +551,9 @@ export class SecureYeoman {
       );
       this.integrationManager.registerPlatform('notion', () => new NotionIntegration());
       this.integrationManager.registerPlatform('gitlab', () => new GitLabIntegration());
+      this.integrationManager.registerPlatform('jira', () => new JiraIntegration());
+      this.integrationManager.registerPlatform('aws', () => new AwsIntegration());
+      this.integrationManager.registerPlatform('azure', () => new AzureDevOpsIntegration());
       // Start auto-reconnect health checks
       this.integrationManager.startHealthChecks();
 
@@ -993,6 +999,13 @@ export class SecureYeoman {
   }
 
   /**
+   * Get detailed AI usage statistics including per-provider breakdown.
+   */
+  getAiUsageStats() {
+    return this.aiClient?.getUsageStats();
+  }
+
+  /**
    * Query audit log entries
    */
   async queryAuditLog(options: AuditQueryOptions = {}): Promise<AuditQueryResult> {
@@ -1363,6 +1376,7 @@ export class SecureYeoman {
       'lmstudio',
       'localai',
       'deepseek',
+      'mistral',
     ];
     if (!validProviders.includes(provider)) {
       throw new Error(

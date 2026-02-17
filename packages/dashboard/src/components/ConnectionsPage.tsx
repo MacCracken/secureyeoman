@@ -56,6 +56,7 @@ import {
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo } from '../types';
 import { sanitizeText } from '../utils/sanitize';
+import { McpPrebuilts } from './McpPrebuilts';
 
 const LOCAL_MCP_NAME = 'YEOMAN MCP';
 
@@ -515,12 +516,133 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'Add a Secret Token and select events: push, merge request, issues, note',
     ],
   },
+  jira: {
+    name: 'Jira',
+    description: 'Connect to Jira for issue tracking and project management',
+    icon: <Wrench className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'instanceUrl',
+        label: 'Instance URL',
+        type: 'text' as const,
+        placeholder: 'https://your-domain.atlassian.net',
+        helpText: 'Your Jira Cloud or Server instance URL',
+      },
+      {
+        key: 'email',
+        label: 'Email',
+        type: 'text' as const,
+        placeholder: 'you@example.com',
+        helpText: 'Email associated with your Jira account',
+      },
+      {
+        key: 'apiToken',
+        label: 'API Token',
+        type: 'password' as const,
+        placeholder: 'Jira API token',
+        helpText: 'Generate at id.atlassian.com/manage-profile/security/api-tokens',
+      },
+      {
+        key: 'projectKey',
+        label: 'Project Key',
+        type: 'text' as const,
+        placeholder: 'PROJ',
+        helpText: 'Default project key for issue operations',
+      },
+    ],
+    setupSteps: [
+      'Go to id.atlassian.com and generate an API token',
+      'Enter your Jira instance URL and email',
+      'Paste the API token above',
+      'Optionally set a project key for default operations',
+      'For webhooks: configure at Jira > System > WebHooks',
+    ],
+  },
+  aws: {
+    name: 'AWS',
+    description: 'Connect to AWS services (Lambda, STS) for cloud operations',
+    icon: <Globe className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'accessKeyId',
+        label: 'Access Key ID',
+        type: 'text' as const,
+        placeholder: 'AKIAIOSFODNN7EXAMPLE',
+        helpText: 'IAM Access Key ID',
+      },
+      {
+        key: 'secretAccessKey',
+        label: 'Secret Access Key',
+        type: 'password' as const,
+        placeholder: 'Secret Access Key',
+        helpText: 'IAM Secret Access Key',
+      },
+      {
+        key: 'region',
+        label: 'Region',
+        type: 'text' as const,
+        placeholder: 'us-east-1',
+        helpText: 'AWS region (e.g. us-east-1, eu-west-1)',
+      },
+      {
+        key: 'defaultLambda',
+        label: 'Default Lambda',
+        type: 'text' as const,
+        placeholder: 'Optional function name',
+        helpText: 'Default Lambda function for message delivery',
+      },
+    ],
+    setupSteps: [
+      'Create an IAM user with programmatic access',
+      'Attach policies for Lambda invoke and STS',
+      'Copy the Access Key ID and Secret Access Key',
+      'Set the AWS region for your resources',
+    ],
+  },
+  azure: {
+    name: 'Azure DevOps',
+    description: 'Connect to Azure DevOps for work items, builds, and pipelines',
+    icon: <GitBranch className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'organizationUrl',
+        label: 'Organization URL',
+        type: 'text' as const,
+        placeholder: 'https://dev.azure.com/your-org',
+        helpText: 'Your Azure DevOps organization URL',
+      },
+      {
+        key: 'personalAccessToken',
+        label: 'Personal Access Token',
+        type: 'password' as const,
+        placeholder: 'Azure DevOps PAT',
+        helpText: 'Generate at dev.azure.com > User Settings > PATs',
+      },
+      {
+        key: 'project',
+        label: 'Project',
+        type: 'text' as const,
+        placeholder: 'MyProject',
+        helpText: 'Azure DevOps project name',
+      },
+    ],
+    setupSteps: [
+      'Go to dev.azure.com > User Settings > Personal Access Tokens',
+      'Create a token with Work Items (Read & Write) and Build scopes',
+      'Enter your organization URL and project name',
+      'For webhooks: configure at Project Settings > Service Hooks',
+    ],
+  },
 };
 
-type TabType = 'messaging' | 'email' | 'devops' | 'calendar' | 'mcp' | 'oauth';
+type TabType = 'integrations' | 'mcp';
+type IntegrationSubTab = 'messaging' | 'email' | 'calendar' | 'devops' | 'oauth';
 
 // Platform categorization for tab filtering
-const DEVOPS_PLATFORMS = new Set(['github', 'gitlab']);
+const DEVOPS_PLATFORMS = new Set(['github', 'gitlab', 'jira', 'aws', 'azure']);
 const CALENDAR_PLATFORMS = new Set(['googlecalendar']);
 const EMAIL_PLATFORMS = new Set(['gmail', 'email']);
 const PRODUCTIVITY_PLATFORMS = new Set(['notion']);
@@ -566,27 +688,37 @@ export function ConnectionsPage() {
   const queryClient = useQueryClient();
   const location = useLocation();
 
-  const getInitialTab = (): TabType => {
+  const getInitialTab = (): { tab: TabType; subTab: IntegrationSubTab } => {
     const path = location.pathname;
-    if (path.includes('/email')) return 'email';
-    if (path.includes('/mcp')) return 'mcp';
-    if (path.includes('/oauth')) return 'oauth';
-    // Also check query params (e.g., /connections?tab=mcp)
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
-    if (
-      tabParam === 'mcp' ||
-      tabParam === 'email' ||
-      tabParam === 'oauth' ||
-      tabParam === 'messaging' ||
-      tabParam === 'devops' ||
-      tabParam === 'calendar'
-    )
-      return tabParam;
-    return 'messaging';
+
+    if (path.includes('/mcp') || tabParam === 'mcp') {
+      return { tab: 'mcp', subTab: 'messaging' };
+    }
+
+    // Map legacy flat tab params to the new nested structure
+    const subTabMap: Record<string, IntegrationSubTab> = {
+      messaging: 'messaging',
+      email: 'email',
+      calendar: 'calendar',
+      devops: 'devops',
+      oauth: 'oauth',
+    };
+
+    if (tabParam && subTabMap[tabParam]) {
+      return { tab: 'integrations', subTab: subTabMap[tabParam]! };
+    }
+
+    if (path.includes('/email')) return { tab: 'integrations', subTab: 'email' };
+    if (path.includes('/oauth')) return { tab: 'integrations', subTab: 'oauth' };
+
+    return { tab: 'integrations', subTab: 'messaging' };
   };
 
-  const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
+  const initialState = getInitialTab();
+  const [activeTab, setActiveTab] = useState<TabType>(initialState.tab);
+  const [activeSubTab, setActiveSubTab] = useState<IntegrationSubTab>(initialState.subTab);
   const [showAddMcpForm, setShowAddMcpForm] = useState(false);
   const [mcpForm, setMcpForm] = useState<AddServerForm>(EMPTY_FORM);
   const [connectingPlatform, setConnectingPlatform] = useState<string | null>(null);
@@ -884,12 +1016,8 @@ export function ConnectionsPage() {
       <div className="flex overflow-x-auto scrollbar-hide gap-0.5 sm:gap-1 border-b border-border -mx-1 px-1">
         {(
           [
-            ['messaging', 'Messaging', <MessageCircle key="msg" className="w-4 h-4" />],
-            ['email', 'Email', <Mail key="email" className="w-4 h-4" />],
-            ['calendar', 'Calendar', <Calendar key="cal" className="w-4 h-4" />],
-            ['devops', 'DevOps', <GitBranchIcon key="devops" className="w-4 h-4" />],
+            ['integrations', 'Integrations', <Cable key="int" className="w-4 h-4" />],
             ['mcp', 'MCP', <Wrench key="mcp" className="w-4 h-4" />],
-            ['oauth', 'OAuth', <ArrowRightLeft key="oauth" className="w-4 h-4" />],
           ] as [TabType, string, React.ReactNode][]
         ).map(([tab, label, icon]) => (
           <button
@@ -915,113 +1043,154 @@ export function ConnectionsPage() {
         </div>
       )}
 
-      {activeTab === 'messaging' && (
-        <MessagingTab
-          integrations={integrations.filter(
-            (i) =>
-              !DEVOPS_PLATFORMS.has(i.platform) &&
-              !CALENDAR_PLATFORMS.has(i.platform) &&
-              !EMAIL_PLATFORMS.has(i.platform) &&
-              !PRODUCTIVITY_PLATFORMS.has(i.platform)
-          )}
-          platformsData={availablePlatforms}
-          hasRegisteredPlatforms={hasRegisteredPlatforms}
-          unregisteredPlatforms={unregisteredPlatforms}
-          connectingPlatform={connectingPlatform}
-          formData={formData}
-          onConnectPlatform={setConnectingPlatform}
-          onFormDataChange={setFormData}
-          onCreateIntegration={createIntegrationMut.mutate}
-          isCreating={createIntegrationMut.isPending}
-          createError={createIntegrationMut.error}
-          onStart={startIntegrationMut.mutate}
-          onStop={stopIntegrationMut.mutate}
-          onDelete={(id) => {
-            setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
-          }}
-          isStarting={startIntegrationMut.isPending}
-          isStopping={stopIntegrationMut.isPending}
-          isDeleting={deleteIntegrationMut.isPending}
-          onTest={testIntegrationMut.mutate}
-          isTesting={testIntegrationMut.isPending}
-          testResult={testResult}
-        />
-      )}
+      {activeTab === 'integrations' && (
+        <div className="space-y-4">
+          <div className="flex overflow-x-auto scrollbar-hide gap-0.5 sm:gap-1 -mx-1 px-1">
+            {(
+              [
+                ['messaging', 'Messaging', <MessageCircle key="msg" className="w-3.5 h-3.5" />],
+                ['email', 'Email', <Mail key="email" className="w-3.5 h-3.5" />],
+                ['calendar', 'Calendar', <Calendar key="cal" className="w-3.5 h-3.5" />],
+                ['devops', 'DevOps', <GitBranchIcon key="devops" className="w-3.5 h-3.5" />],
+                ['oauth', 'OAuth', <ArrowRightLeft key="oauth" className="w-3.5 h-3.5" />],
+              ] as [IntegrationSubTab, string, React.ReactNode][]
+            ).map(([subTab, label, icon]) => (
+              <button
+                key={subTab}
+                onClick={() => setActiveSubTab(subTab)}
+                className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
+                  activeSubTab === subTab
+                    ? 'bg-primary/10 text-primary'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-surface'
+                }`}
+              >
+                {icon}
+                {label}
+              </button>
+            ))}
+          </div>
 
-      {activeTab === 'email' && (
-        <EmailTab
-          integrations={integrations.filter(
-            (i) => i.platform === 'gmail' || i.platform === 'email'
+          {activeSubTab === 'messaging' && (
+            <MessagingTab
+              integrations={integrations.filter(
+                (i) =>
+                  !DEVOPS_PLATFORMS.has(i.platform) &&
+                  !CALENDAR_PLATFORMS.has(i.platform) &&
+                  !EMAIL_PLATFORMS.has(i.platform) &&
+                  !PRODUCTIVITY_PLATFORMS.has(i.platform)
+              )}
+              platformsData={availablePlatforms}
+              hasRegisteredPlatforms={hasRegisteredPlatforms}
+              unregisteredPlatforms={unregisteredPlatforms}
+              connectingPlatform={connectingPlatform}
+              formData={formData}
+              onConnectPlatform={setConnectingPlatform}
+              onFormDataChange={setFormData}
+              onCreateIntegration={createIntegrationMut.mutate}
+              isCreating={createIntegrationMut.isPending}
+              createError={createIntegrationMut.error}
+              onStart={startIntegrationMut.mutate}
+              onStop={stopIntegrationMut.mutate}
+              onDelete={(id) => {
+                setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+              }}
+              isStarting={startIntegrationMut.isPending}
+              isStopping={stopIntegrationMut.isPending}
+              isDeleting={deleteIntegrationMut.isPending}
+              onTest={testIntegrationMut.mutate}
+              isTesting={testIntegrationMut.isPending}
+              testResult={testResult}
+            />
           )}
-          onStart={startIntegrationMut.mutate}
-          onStop={stopIntegrationMut.mutate}
-          onDelete={(id) => {
-            setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
-          }}
-          isStarting={startIntegrationMut.isPending}
-          isStopping={stopIntegrationMut.isPending}
-          isDeleting={deleteIntegrationMut.isPending}
-          availablePlatforms={availablePlatforms}
-        />
-      )}
 
-      {activeTab === 'devops' && (
-        <MessagingTab
-          integrations={integrations.filter(
-            (i) => DEVOPS_PLATFORMS.has(i.platform) || PRODUCTIVITY_PLATFORMS.has(i.platform)
+          {activeSubTab === 'email' && (
+            <EmailTab
+              integrations={integrations.filter(
+                (i) => i.platform === 'gmail' || i.platform === 'email'
+              )}
+              onStart={startIntegrationMut.mutate}
+              onStop={stopIntegrationMut.mutate}
+              onDelete={(id) => {
+                setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+              }}
+              isStarting={startIntegrationMut.isPending}
+              isStopping={stopIntegrationMut.isPending}
+              isDeleting={deleteIntegrationMut.isPending}
+              availablePlatforms={availablePlatforms}
+            />
           )}
-          platformsData={availablePlatforms}
-          hasRegisteredPlatforms={hasRegisteredPlatforms}
-          unregisteredPlatforms={unregisteredDevopsPlatforms}
-          connectingPlatform={connectingPlatform}
-          formData={formData}
-          onConnectPlatform={setConnectingPlatform}
-          onFormDataChange={setFormData}
-          onCreateIntegration={createIntegrationMut.mutate}
-          isCreating={createIntegrationMut.isPending}
-          createError={createIntegrationMut.error}
-          onStart={startIntegrationMut.mutate}
-          onStop={stopIntegrationMut.mutate}
-          onDelete={(id) => {
-            setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
-          }}
-          isStarting={startIntegrationMut.isPending}
-          isStopping={stopIntegrationMut.isPending}
-          isDeleting={deleteIntegrationMut.isPending}
-          onTest={testIntegrationMut.mutate}
-          isTesting={testIntegrationMut.isPending}
-          testResult={testResult}
-        />
-      )}
 
-      {activeTab === 'calendar' && (
-        <MessagingTab
-          integrations={integrations.filter((i) => CALENDAR_PLATFORMS.has(i.platform))}
-          platformsData={availablePlatforms}
-          hasRegisteredPlatforms={hasRegisteredPlatforms}
-          unregisteredPlatforms={unregisteredCalendarPlatforms}
-          connectingPlatform={connectingPlatform}
-          formData={formData}
-          onConnectPlatform={setConnectingPlatform}
-          onFormDataChange={setFormData}
-          onCreateIntegration={createIntegrationMut.mutate}
-          isCreating={createIntegrationMut.isPending}
-          createError={createIntegrationMut.error}
-          onStart={startIntegrationMut.mutate}
-          onStop={stopIntegrationMut.mutate}
-          onDelete={(id) => {
-            setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
-          }}
-          isStarting={startIntegrationMut.isPending}
-          isStopping={stopIntegrationMut.isPending}
-          isDeleting={deleteIntegrationMut.isPending}
-          onTest={testIntegrationMut.mutate}
-          isTesting={testIntegrationMut.isPending}
-          testResult={testResult}
-        />
+          {activeSubTab === 'devops' && (
+            <MessagingTab
+              integrations={integrations.filter(
+                (i) => DEVOPS_PLATFORMS.has(i.platform) || PRODUCTIVITY_PLATFORMS.has(i.platform)
+              )}
+              platformsData={availablePlatforms}
+              hasRegisteredPlatforms={hasRegisteredPlatforms}
+              unregisteredPlatforms={unregisteredDevopsPlatforms}
+              connectingPlatform={connectingPlatform}
+              formData={formData}
+              onConnectPlatform={setConnectingPlatform}
+              onFormDataChange={setFormData}
+              onCreateIntegration={createIntegrationMut.mutate}
+              isCreating={createIntegrationMut.isPending}
+              createError={createIntegrationMut.error}
+              onStart={startIntegrationMut.mutate}
+              onStop={stopIntegrationMut.mutate}
+              onDelete={(id) => {
+                setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+              }}
+              isStarting={startIntegrationMut.isPending}
+              isStopping={stopIntegrationMut.isPending}
+              isDeleting={deleteIntegrationMut.isPending}
+              onTest={testIntegrationMut.mutate}
+              isTesting={testIntegrationMut.isPending}
+              testResult={testResult}
+            />
+          )}
+
+          {activeSubTab === 'calendar' && (
+            <MessagingTab
+              integrations={integrations.filter((i) => CALENDAR_PLATFORMS.has(i.platform))}
+              platformsData={availablePlatforms}
+              hasRegisteredPlatforms={hasRegisteredPlatforms}
+              unregisteredPlatforms={unregisteredCalendarPlatforms}
+              connectingPlatform={connectingPlatform}
+              formData={formData}
+              onConnectPlatform={setConnectingPlatform}
+              onFormDataChange={setFormData}
+              onCreateIntegration={createIntegrationMut.mutate}
+              isCreating={createIntegrationMut.isPending}
+              createError={createIntegrationMut.error}
+              onStart={startIntegrationMut.mutate}
+              onStop={stopIntegrationMut.mutate}
+              onDelete={(id) => {
+                setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+              }}
+              isStarting={startIntegrationMut.isPending}
+              isStopping={stopIntegrationMut.isPending}
+              isDeleting={deleteIntegrationMut.isPending}
+              onTest={testIntegrationMut.mutate}
+              isTesting={testIntegrationMut.isPending}
+              testResult={testResult}
+            />
+          )}
+
+          {activeSubTab === 'oauth' && (
+            <OAuthTab
+              integrations={integrations}
+              onDelete={(id) => {
+                setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+              }}
+              isDeleting={deleteIntegrationMut.isPending}
+            />
+          )}
+        </div>
       )}
 
       {activeTab === 'mcp' && (
+        <>
+        <McpPrebuilts />
         <McpTab
           servers={servers}
           externalServers={externalServers}
@@ -1062,16 +1231,7 @@ export function ConnectionsPage() {
           }}
           onToggleToolVisibility={toggleToolVisibility}
         />
-      )}
-
-      {activeTab === 'oauth' && (
-        <OAuthTab
-          integrations={integrations}
-          onDelete={(id) => {
-            setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
-          }}
-          isDeleting={deleteIntegrationMut.isPending}
-        />
+        </>
       )}
     </div>
   );

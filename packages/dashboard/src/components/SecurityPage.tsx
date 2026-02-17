@@ -746,6 +746,29 @@ const LEVEL_ICONS = {
   },
 } as const;
 
+const AUDIT_FILTER_PRESETS_KEY = 'secureyeoman:audit-filter-presets';
+
+interface AuditFilterPreset {
+  name: string;
+  level: string;
+  event: string;
+  from?: string;
+  to?: string;
+}
+
+function loadPresets(): AuditFilterPreset[] {
+  try {
+    const raw = localStorage.getItem(AUDIT_FILTER_PRESETS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function savePresets(presets: AuditFilterPreset[]) {
+  localStorage.setItem(AUDIT_FILTER_PRESETS_KEY, JSON.stringify(presets));
+}
+
 function AuditLogTab({
   reviewed,
   onMarkReviewed,
@@ -755,9 +778,15 @@ function AuditLogTab({
   onMarkReviewed: (ids: string[]) => void;
   onMarkAllReviewed: () => void;
 }) {
-  const [filters, setFilters] = useState({ level: '', event: '', offset: 0 });
+  const [filters, setFilters] = useState({ level: '', event: '', offset: 0, from: '', to: '' });
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [presets, setPresets] = useState<AuditFilterPreset[]>(loadPresets);
+  const [presetName, setPresetName] = useState('');
+  const [showSavePreset, setShowSavePreset] = useState(false);
   const limit = 20;
+
+  const fromTs = filters.from ? new Date(filters.from).getTime() : undefined;
+  const toTs = filters.to ? new Date(filters.to + 'T23:59:59').getTime() : undefined;
 
   const { data, isLoading } = useQuery({
     queryKey: ['audit-entries', filters],
@@ -765,6 +794,8 @@ function AuditLogTab({
       fetchAuditEntries({
         level: filters.level || undefined,
         event: filters.event || undefined,
+        from: fromTs,
+        to: toTs,
         limit,
         offset: filters.offset,
       }),
@@ -817,42 +848,179 @@ function AuditLogTab({
             <CheckCircle className="w-3 h-3" />
             Mark all reviewed
           </button>
-          <select
-            value={filters.level}
-            onChange={(e) => {
-              setFilters({ ...filters, level: e.target.value, offset: 0 });
-            }}
-            className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="">All Levels</option>
-            <option value="info">Info</option>
-            <option value="warn">Warning</option>
-            <option value="error">Error</option>
-            <option value="security">Security</option>
-          </select>
-          <select
-            value={filters.event}
-            onChange={(e) => {
-              setFilters({ ...filters, event: e.target.value, offset: 0 });
-            }}
-            className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
-          >
-            <option value="">All Events</option>
-            <option value="auth_success">Auth Success</option>
-            <option value="auth_failure">Auth Failure</option>
-            <option value="rate_limit">Rate Limit</option>
-            <option value="injection_attempt">Injection Attempt</option>
-            <option value="permission_denied">Permission Denied</option>
-            <option value="anomaly">Anomaly</option>
-            <option value="sandbox_violation">Sandbox Violation</option>
-            <option value="config_change">Config Change</option>
-            <option value="secret_access">Secret Access</option>
-            <option value="task_start">Task Start</option>
-            <option value="task_complete">Task Complete</option>
-            <option value="task_fail">Task Fail</option>
-            <option value="mcp_tool_call">MCP Tool Call</option>
-          </select>
         </div>
+      </div>
+
+      {/* Filters Row */}
+      <div className="flex flex-wrap items-end gap-2">
+        <select
+          value={filters.level}
+          onChange={(e) => {
+            setFilters({ ...filters, level: e.target.value, offset: 0 });
+          }}
+          className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">All Levels</option>
+          <option value="info">Info</option>
+          <option value="warn">Warning</option>
+          <option value="error">Error</option>
+          <option value="security">Security</option>
+        </select>
+        <select
+          value={filters.event}
+          onChange={(e) => {
+            setFilters({ ...filters, event: e.target.value, offset: 0 });
+          }}
+          className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
+        >
+          <option value="">All Events</option>
+          <option value="auth_success">Auth Success</option>
+          <option value="auth_failure">Auth Failure</option>
+          <option value="rate_limit">Rate Limit</option>
+          <option value="injection_attempt">Injection Attempt</option>
+          <option value="permission_denied">Permission Denied</option>
+          <option value="anomaly">Anomaly</option>
+          <option value="sandbox_violation">Sandbox Violation</option>
+          <option value="config_change">Config Change</option>
+          <option value="secret_access">Secret Access</option>
+          <option value="task_start">Task Start</option>
+          <option value="task_complete">Task Complete</option>
+          <option value="task_fail">Task Fail</option>
+          <option value="mcp_tool_call">MCP Tool Call</option>
+        </select>
+        <div className="flex items-center gap-1">
+          <label className="text-xs text-muted-foreground">From</label>
+          <input
+            type="date"
+            value={filters.from}
+            onChange={(e) => {
+              setFilters({ ...filters, from: e.target.value, offset: 0 });
+            }}
+            className="bg-card border border-border rounded-lg px-2 py-2 text-sm"
+          />
+        </div>
+        <div className="flex items-center gap-1">
+          <label className="text-xs text-muted-foreground">To</label>
+          <input
+            type="date"
+            value={filters.to}
+            onChange={(e) => {
+              setFilters({ ...filters, to: e.target.value, offset: 0 });
+            }}
+            className="bg-card border border-border rounded-lg px-2 py-2 text-sm"
+          />
+        </div>
+        {(filters.level || filters.event || filters.from || filters.to) && (
+          <button
+            onClick={() => setFilters({ level: '', event: '', from: '', to: '', offset: 0 })}
+            className="text-xs text-primary hover:underline py-2"
+          >
+            Clear all
+          </button>
+        )}
+      </div>
+
+      {/* Presets */}
+      <div className="flex flex-wrap items-center gap-2">
+        {presets.map((preset, i) => (
+          <div key={i} className="flex items-center gap-0.5">
+            <button
+              onClick={() =>
+                setFilters({
+                  level: preset.level,
+                  event: preset.event,
+                  from: preset.from ?? '',
+                  to: preset.to ?? '',
+                  offset: 0,
+                })
+              }
+              className="px-2.5 py-1 text-xs rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
+            >
+              {preset.name}
+            </button>
+            <button
+              onClick={() => {
+                const updated = presets.filter((_, j) => j !== i);
+                setPresets(updated);
+                savePresets(updated);
+              }}
+              className="text-muted-foreground hover:text-destructive text-xs px-0.5"
+              title="Remove preset"
+            >
+              ×
+            </button>
+          </div>
+        ))}
+        {!showSavePreset ? (
+          <button
+            onClick={() => setShowSavePreset(true)}
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+            title="Save current filters as preset"
+          >
+            + Save preset
+          </button>
+        ) : (
+          <div className="flex items-center gap-1">
+            <input
+              type="text"
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              placeholder="Preset name"
+              className="bg-card border border-border rounded px-2 py-1 text-xs w-28"
+              autoFocus
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && presetName.trim()) {
+                  const newPreset: AuditFilterPreset = {
+                    name: presetName.trim(),
+                    level: filters.level,
+                    event: filters.event,
+                    from: filters.from || undefined,
+                    to: filters.to || undefined,
+                  };
+                  const updated = [...presets, newPreset];
+                  setPresets(updated);
+                  savePresets(updated);
+                  setPresetName('');
+                  setShowSavePreset(false);
+                }
+                if (e.key === 'Escape') {
+                  setShowSavePreset(false);
+                  setPresetName('');
+                }
+              }}
+            />
+            <button
+              onClick={() => {
+                if (presetName.trim()) {
+                  const newPreset: AuditFilterPreset = {
+                    name: presetName.trim(),
+                    level: filters.level,
+                    event: filters.event,
+                    from: filters.from || undefined,
+                    to: filters.to || undefined,
+                  };
+                  const updated = [...presets, newPreset];
+                  setPresets(updated);
+                  savePresets(updated);
+                  setPresetName('');
+                  setShowSavePreset(false);
+                }
+              }}
+              className="text-xs text-primary"
+            >
+              Save
+            </button>
+            <button
+              onClick={() => {
+                setShowSavePreset(false);
+                setPresetName('');
+              }}
+              className="text-xs text-muted-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
 
       {isLoading ? (
@@ -863,10 +1031,10 @@ function AuditLogTab({
         <div className="card p-12 text-center">
           <FileText className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">No audit entries found</p>
-          {(filters.level || filters.event) && (
+          {(filters.level || filters.event || filters.from || filters.to) && (
             <button
               onClick={() => {
-                setFilters({ level: '', event: '', offset: 0 });
+                setFilters({ level: '', event: '', from: '', to: '', offset: 0 });
               }}
               className="text-sm text-primary hover:underline mt-2"
             >

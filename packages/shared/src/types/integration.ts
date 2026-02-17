@@ -34,6 +34,7 @@ export const PlatformSchema = z.enum([
   'zapier',
   'linear',
   'todoist',
+  'jira',
   'aws',
   'azure',
   'openweather',

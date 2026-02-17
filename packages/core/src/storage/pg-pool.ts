@@ -48,13 +48,15 @@ export function initPool(config: PgPoolConfig): pg.Pool {
 }
 
 export function initPoolFromConfig(dbConfig: DatabaseConfig): pg.Pool {
-  const password = process.env[dbConfig.passwordEnv] ?? 'friday_dev';
+  const password = process.env[dbConfig.passwordEnv] ?? 'secureyeoman_dev';
   const host = process.env.DATABASE_HOST ?? dbConfig.host;
+  const user = process.env.DATABASE_USER ?? dbConfig.user;
+  const database = process.env.DATABASE_NAME ?? dbConfig.database;
   return initPool({
     host,
     port: dbConfig.port,
-    database: dbConfig.database,
-    user: dbConfig.user,
+    database,
+    user,
     password,
     ssl: dbConfig.ssl,
     poolSize: dbConfig.poolSize,
