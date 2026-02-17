@@ -6,9 +6,9 @@ Accepted (2026-02-16)
 
 ## Context
 
-FRIDAY can orchestrate tasks through pre-built tools and MCP, but cannot dynamically write and execute code to solve novel problems. When the agent encounters a task that doesn't map to an existing tool — data transformation, custom API interaction, mathematical computation — it has no recourse.
+SecureYeoman can orchestrate tasks through pre-built tools and MCP, but cannot dynamically write and execute code to solve novel problems. When the agent encounters a task that doesn't map to an existing tool — data transformation, custom API interaction, mathematical computation — it has no recourse.
 
-Agent Zero demonstrates that code execution (Python, Node.js, shell) with persistent sessions dramatically expands agent autonomy. FRIDAY already has production-grade sandbox infrastructure (Landlock, seccomp-bpf, macOS sandbox) that can contain code execution safely.
+Agent Zero demonstrates that code execution (Python, Node.js, shell) with persistent sessions dramatically expands agent autonomy. SecureYeoman already has production-grade sandbox infrastructure (Landlock, seccomp-bpf, macOS sandbox) that can contain code execution safely.
 
 ## Decision
 

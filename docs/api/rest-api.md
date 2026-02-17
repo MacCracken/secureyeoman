@@ -1,6 +1,6 @@
 # REST API Reference
 
-> Complete API documentation for F.R.I.D.A.Y. SecureYeoman system
+> Complete API documentation for SecureYeoman
 
 This documentation covers the complete API surface. For real-time events, see:
 - [WebSocket API](websocket-api.md) - Real-time WebSocket channels
@@ -1976,7 +1976,7 @@ List configured MCP servers.
   "servers": [
     {
       "id": "01234abc...",
-      "name": "FRIDAY Internal MCP",
+      "name": "SecureYeoman Internal MCP",
       "description": "Built-in MCP server",
       "transport": "streamable-http",
       "url": "http://127.0.0.1:3001",
@@ -2075,10 +2075,10 @@ List all discovered tools from connected MCP servers.
   "tools": [
     {
       "name": "knowledge_search",
-      "description": "Search the FRIDAY knowledge base",
+      "description": "Search the SecureYeoman knowledge base",
       "inputSchema": {},
       "serverId": "abc123",
-      "serverName": "FRIDAY Internal MCP"
+      "serverName": "SecureYeoman Internal MCP"
     }
   ],
   "total": 34

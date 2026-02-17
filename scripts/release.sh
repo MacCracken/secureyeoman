@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────
-# FRIDAY Release Script
+# SecureYeoman Release Script
 #
 # Usage: bash scripts/release.sh <version>
 #   version: semver (e.g., 0.2.0, 1.0.0-beta.1)
@@ -35,7 +35,7 @@ if ! echo "$VERSION" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$'; the
 fi
 
 echo "╔══════════════════════════════════════════╗"
-echo "║       FRIDAY Release: v$VERSION"
+echo "║       SecureYeoman Release: v$VERSION"
 echo "╚══════════════════════════════════════════╝"
 echo ""
 

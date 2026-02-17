@@ -225,7 +225,7 @@ curl http://localhost:18789/api/v1/audit?limit=50 \
 
 ### MCP Integration
 
-Connect F.R.I.D.A.Y. to any MCP-compatible client (Claude Desktop, etc.):
+Connect SecureYeoman to any MCP-compatible client (Claude Desktop, etc.):
 
 ```json
 {
@@ -330,7 +330,7 @@ npm run build --workspace=@friday/mcp
 
 ### Versioning
 
-F.R.I.D.A.Y. uses **calendar versioning** in the format `YYYY.M.D` (e.g., `2026.2.16` for February 16, 2026). The version reflects the release date, not a semver progression.
+SecureYeoman uses **calendar versioning** in the format `YYYY.M.D` (e.g., `2026.2.16` for February 16, 2026). The version reflects the release date, not a semver progression.
 
 To update the version across all packages:
 

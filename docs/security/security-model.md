@@ -1,6 +1,6 @@
 # Security Model
 
-> Comprehensive security architecture and threat model for F.R.I.D.A.Y.
+> Comprehensive security architecture and threat model for SecureYeoman
 
 ## Table of Contents
 
@@ -16,7 +16,7 @@
 
 ## Security Philosophy
 
-F.R.I.D.A.Y. follows these security principles:
+SecureYeoman follows these security principles:
 
 ### 1. Security First
 - Security is not an afterthought—it's a core design principle

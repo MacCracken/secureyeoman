@@ -1,6 +1,6 @@
 # Kubernetes Deployment Guide
 
-Deploy F.R.I.D.A.Y. to a Kubernetes cluster using Helm.
+Deploy SecureYeoman to a Kubernetes cluster using Helm.
 
 ## Prerequisites
 
@@ -90,7 +90,7 @@ kubectl create secret docker-registry ghcr-secret \
 
 ### Database
 
-F.R.I.D.A.Y. expects a PostgreSQL database with pgvector extension:
+SecureYeoman expects a PostgreSQL database with pgvector extension:
 
 ```yaml
 database:

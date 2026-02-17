@@ -1,6 +1,6 @@
 # Getting Started Guide
 
-> How to install, configure, and run F.R.I.D.A.Y.
+> How to install, configure, and run SecureYeoman
 
 ## Prerequisites
 
@@ -310,7 +310,7 @@ npx vitest run tests/security/ tests/chaos/
 
 ## MCP Service (Optional)
 
-The MCP service (`@friday/mcp`) exposes FRIDAY's capabilities as MCP tools, resources, and prompts for use with Claude Desktop and other MCP clients.
+The MCP service (`@friday/mcp`) exposes SecureYeoman's capabilities as MCP tools, resources, and prompts for use with Claude Desktop and other MCP clients.
 
 ### 1. Configure Environment
 
@@ -406,10 +406,10 @@ Edit personality and skills in the dashboard Soul Manager page.
 
 ## v1.2 Features
 
-F.R.I.D.A.Y. v1.2 adds powerful new capabilities for teams and advanced workflows:
+SecureYeoman v1.2 adds powerful new capabilities for teams and advanced workflows:
 
 ### MCP Protocol Support
-Connect to external tools via the Model Context Protocol (MCP). F.R.I.D.A.Y. can:
+Connect to external tools via the Model Context Protocol (MCP). SecureYeoman can:
 - **Use external tools** from MCP servers (search engines, code interpreters, databases)
 - **Expose its own skills** as MCP tools for other systems to invoke
 - **Web scraping & search** — Built-in tools for scraping webpages (markdown, HTML, batch) and web search (DuckDuckGo, SerpAPI, Tavily) with SSRF protection
@@ -423,7 +423,7 @@ Configure MCP servers in the dashboard or via the `/api/v1/mcp/` API. Enable web
 Generate comprehensive audit reports with filtering by time range, event type, user, or severity. Export to JSON, HTML, or CSV for compliance and analysis.
 
 ### Team Workspaces
-Multi-team support with workspace isolation. Each workspace has its own personality, skills, and access control. Perfect for shared F.R.I.D.A.Y. deployments across departments.
+Multi-team support with workspace isolation. Each workspace has its own personality, skills, and access control. Perfect for shared SecureYeoman deployments across departments.
 
 ### A/B Testing
 Compare model performance, prompt templates, or configuration changes. Create experiments with traffic allocation and automatic metric collection (latency, cost, success rate).
@@ -506,7 +506,7 @@ a2a:
   trustedPeers: []              # pre-trusted peer agent IDs
 ```
 
-For LAN deployments, mDNS auto-discovers other FRIDAY instances. For WAN, configure DNS-SD SRV/TXT records. Peers start as untrusted and can be promoted to verified or trusted via the dashboard or API.
+For LAN deployments, mDNS auto-discovers other SecureYeoman instances. For WAN, configure DNS-SD SRV/TXT records. Peers start as untrusted and can be promoted to verified or trusted via the dashboard or API.
 
 ---
 

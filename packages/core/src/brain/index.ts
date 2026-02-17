@@ -1,5 +1,5 @@
 /**
- * Brain Module — Memory, Knowledge, and Skills for FRIDAY
+ * Brain Module — Memory, Knowledge, and Skills for SecureYeoman
  *
  * In Our Image: No-Thing-Ness → The One (Soul) → The Plurality (Spirit/Brain/Body)
  */

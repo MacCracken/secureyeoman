@@ -7,7 +7,7 @@
 
 ## Context
 
-FRIDAY's roadmap (Phase 8) calls for WebMCP — web scraping, search, and browser automation. The MCP service already has a well-established toggleable feature pattern (git/filesystem) with environment variables, Zod schemas, API visibility filtering, persistent config, and dashboard toggles. We need to extend this pattern to add web capabilities as first-class tools while maintaining security (SSRF protection) and operational safety (rate limiting, output caps).
+SecureYeoman's roadmap (Phase 8) calls for WebMCP — web scraping, search, and browser automation. The MCP service already has a well-established toggleable feature pattern (git/filesystem) with environment variables, Zod schemas, API visibility filtering, persistent config, and dashboard toggles. We need to extend this pattern to add web capabilities as first-class tools while maintaining security (SSRF protection) and operational safety (rate limiting, output caps).
 
 Additionally, external MCP server connections need health monitoring and credential management to be production-ready.
 

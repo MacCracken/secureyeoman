@@ -136,7 +136,7 @@ async function safeFetch(
       redirect: 'manual',
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
       headers: {
-        'User-Agent': 'FRIDAY-WebMCP/1.0 (bot)',
+        'User-Agent': 'SecureYeoman-WebMCP/1.0 (bot)',
         Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
       },
     });
@@ -267,7 +267,7 @@ async function searchDuckDuckGo(query: string, maxResults: number): Promise<Sear
   const response = await fetch(url, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
     headers: {
-      'User-Agent': 'FRIDAY-WebMCP/1.0 (bot)',
+      'User-Agent': 'SecureYeoman-WebMCP/1.0 (bot)',
     },
   });
 

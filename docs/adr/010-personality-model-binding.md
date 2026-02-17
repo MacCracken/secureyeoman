@@ -6,7 +6,7 @@ Accepted
 
 ## Context
 
-FRIDAY supports multiple personalities, but the dashboard chat was locked to the active personality. Users needed to switch the active personality (a global setting) just to have a conversation with a different persona. Additionally, different personalities benefit from different models — a creative writing persona may work best with a larger model, while a quick-answer persona can use a smaller, cheaper one.
+SecureYeoman supports multiple personalities, but the dashboard chat was locked to the active personality. Users needed to switch the active personality (a global setting) just to have a conversation with a different persona. Additionally, different personalities benefit from different models — a creative writing persona may work best with a larger model, while a quick-answer persona can use a smaller, cheaper one.
 
 ## Decision
 

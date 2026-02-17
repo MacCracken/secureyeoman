@@ -6,14 +6,14 @@ Accepted
 
 ## Context
 
-F.R.I.D.A.Y. needs to interoperate with external tools and expose its own skills to other systems. The Model Context Protocol (MCP) provides a standardized interface for AI systems to share tools and resources across boundaries.
+SecureYeoman needs to interoperate with external tools and expose its own skills to other systems. The Model Context Protocol (MCP) provides a standardized interface for AI systems to share tools and resources across boundaries.
 
 ## Decision
 
 Implement bidirectional MCP protocol support with two components:
 
-1. **McpClientManager** — Connects to external MCP servers, discovers tools/resources, and makes them available to F.R.I.D.A.Y.'s AI workflows
-2. **McpServer** — Exposes F.R.I.D.A.Y.'s skills as MCP tools and knowledge as MCP resources, allowing external systems to leverage the agent
+1. **McpClientManager** — Connects to external MCP servers, discovers tools/resources, and makes them available to SecureYeoman's AI workflows
+2. **McpServer** — Exposes SecureYeoman's skills as MCP tools and knowledge as MCP resources, allowing external systems to leverage the agent
 
 ### Implementation
 
@@ -26,7 +26,7 @@ Implement bidirectional MCP protocol support with two components:
 
 ## Consequences
 
-- F.R.I.D.A.Y. can leverage external tools (e.g., search engines, code interpreters, databases) via MCP
-- External systems can invoke F.R.I.D.A.Y.'s skills programmatically without re-implementing logic
+- SecureYeoman can leverage external tools (e.g., search engines, code interpreters, databases) via MCP
+- External systems can invoke SecureYeoman's skills programmatically without re-implementing logic
 - MCP server adds a new attack surface — requires authentication and rate limiting on the exposed port
 - SQLite schema extended with `mcp_servers` table

@@ -1,4 +1,4 @@
-# Contributing to F.R.I.D.A.Y.
+# Contributing to SecureYeoman
 
 We welcome contributions! This guide will help you get started.
 
@@ -193,7 +193,7 @@ Types:
 
 ## Versioning
 
-F.R.I.D.A.Y. uses **calendar versioning** (`YYYY.M.D`). The version is the release date — e.g., `2026.2.16` for February 16, 2026.
+SecureYeoman uses **calendar versioning** (`YYYY.M.D`). The version is the release date — e.g., `2026.2.16` for February 16, 2026.
 
 To bump the version across all packages:
 
@@ -238,4 +238,4 @@ Please read our [Code of Conduct](CODE_OF_CONDUCT.md) and follow it in all inter
 
 For security issues, please see our [Security Policy](SECURITY.md).
 
-Thank you for contributing to F.R.I.D.A.Y.!
+Thank you for contributing to SecureYeoman!

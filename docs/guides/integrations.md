@@ -1,6 +1,6 @@
 # Integration Setup Guide
 
-FRIDAY supports multiple platform integrations for receiving and responding to messages.
+SecureYeoman supports multiple platform integrations for receiving and responding to messages.
 
 ## Supported Platforms
 
@@ -164,13 +164,13 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 - `issue_comment` — Comments on issues and PRs
 
 ### Sending Responses
-FRIDAY responds to GitHub events by posting comments. The `chatId` format is:
+SecureYeoman responds to GitHub events by posting comments. The `chatId` format is:
 `owner/repo/issues/123` or `owner/repo/pulls/456`
 
 ## Gmail
 
 ### Overview
-Gmail integration uses OAuth2 for secure access to your Gmail account. FRIDAY polls for new messages using the Gmail History API and can send replies via the Gmail REST API.
+Gmail integration uses OAuth2 for secure access to your Gmail account. SecureYeoman polls for new messages using the Gmail History API and can send replies via the Gmail REST API.
 
 ### Setup
 1. Go to **Dashboard > Connections > Email** tab
@@ -224,7 +224,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 ### Overview
 The generic Email integration connects to any standard IMAP/SMTP mail server. This works with ProtonMail Bridge, Outlook, Yahoo Mail, Fastmail, self-hosted mail servers, and any provider that supports IMAP for reading and SMTP for sending.
 
-FRIDAY uses IMAP IDLE for real-time new mail notifications with a fallback polling interval. Outbound messages are sent via SMTP using nodemailer.
+SecureYeoman uses IMAP IDLE for real-time new mail notifications with a fallback polling interval. Outbound messages are sent via SMTP using nodemailer.
 
 ### Setup via Dashboard
 1. Go to **Dashboard > Connections > Email** tab
@@ -280,7 +280,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 
 #### ProtonMail Bridge
 
-[ProtonMail Bridge](https://proton.me/mail/bridge) is a desktop application that runs a local IMAP/SMTP server, allowing any standard email client (or FRIDAY) to connect to your ProtonMail account.
+[ProtonMail Bridge](https://proton.me/mail/bridge) is a desktop application that runs a local IMAP/SMTP server, allowing any standard email client (or SecureYeoman) to connect to your ProtonMail account.
 
 **Install ProtonMail Bridge:**
 
@@ -305,7 +305,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
    - **IMAP**: `127.0.0.1:1143`
    - **SMTP**: `127.0.0.1:1025`
 
-**Configure in FRIDAY:**
+**Configure in SecureYeoman:**
 
 | Setting | Value |
 |---------|-------|
@@ -318,7 +318,7 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 | TLS | Off |
 | Allow Self-Signed | On |
 
-> **Docker note**: If FRIDAY runs in Docker and Bridge runs on the host, use `host.docker.internal` instead of `127.0.0.1` for the IMAP/SMTP host. The `docker-compose.yml` includes `extra_hosts: host.docker.internal:host-gateway` for Linux compatibility.
+> **Docker note**: If SecureYeoman runs in Docker and Bridge runs on the host, use `host.docker.internal` instead of `127.0.0.1` for the IMAP/SMTP host. The `docker-compose.yml` includes `extra_hosts: host.docker.internal:host-gateway` for Linux compatibility.
 
 **Headless / server usage**: ProtonMail Bridge also supports a CLI mode for headless servers:
 ```bash
@@ -455,7 +455,7 @@ POST /api/v1/webhooks/custom/:integrationId
 **Signature verification**: If a `secret` is configured, include an `X-Webhook-Signature` header with the HMAC-SHA256 signature: `sha256=<hex digest>`.
 
 ### Outbound Messages
-When FRIDAY sends a message via this integration, it POSTs to the configured `webhookUrl`:
+When SecureYeoman sends a message via this integration, it POSTs to the configured `webhookUrl`:
 ```json
 {
   "chatId": "channel-1",
@@ -472,7 +472,7 @@ When FRIDAY sends a message via this integration, it POSTs to the configured `we
 
 ### Requirements
 - macOS with Messages.app
-- Full Disk Access permission granted to the FRIDAY process (needed to read `~/Library/Messages/chat.db`)
+- Full Disk Access permission granted to the SecureYeoman process (needed to read `~/Library/Messages/chat.db`)
 - `osascript` available in PATH
 
 ### Setup
@@ -659,10 +659,10 @@ POST /api/v1/webhooks/custom/:id
 ## MCP Service (`@friday/mcp`)
 
 ### Overview
-The MCP service package (`@friday/mcp`) is a standalone MCP (Model Context Protocol) server that exposes FRIDAY's internal capabilities as MCP tools, resources, and prompts. It supports Claude Desktop via stdio, browser-based clients via SSE, and API access via Streamable HTTP.
+The MCP service package (`@friday/mcp`) is a standalone MCP (Model Context Protocol) server that exposes SecureYeoman's internal capabilities as MCP tools, resources, and prompts. It supports Claude Desktop via stdio, browser-based clients via SSE, and API access via Streamable HTTP.
 
 ### Prerequisites
-- A running FRIDAY core instance
+- A running SecureYeoman core instance
 - `SECUREYEOMAN_TOKEN_SECRET` set in your `.env` file (shared with core)
 
 ### Step 1: Configure Environment
@@ -748,7 +748,7 @@ The MCP service should appear in core's MCP server list and on the dashboard MCP
 
 | Category | Tools | Description |
 |----------|-------|-------------|
-| **Brain** | `knowledge_search`, `knowledge_get`, `knowledge_store`, `memory_recall` | Search and manage FRIDAY's knowledge base and memories |
+| **Brain** | `knowledge_search`, `knowledge_get`, `knowledge_store`, `memory_recall` | Search and manage SecureYeoman's knowledge base and memories |
 | **Tasks** | `task_create`, `task_list`, `task_get`, `task_cancel` | Create and manage agent tasks |
 | **System** | `system_health`, `system_metrics`, `system_config` | Monitor system health and configuration |
 | **Integrations** | `integration_list`, `integration_send`, `integration_status` | Manage platform integrations |

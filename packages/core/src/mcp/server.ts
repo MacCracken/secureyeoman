@@ -1,5 +1,5 @@
 /**
- * MCP Server — exposes FRIDAY skills as tools and brain knowledge as resources
+ * MCP Server — exposes SecureYeoman skills as tools and brain knowledge as resources
  */
 
 import type { SecureLogger } from '../logging/logger.js';
@@ -35,7 +35,7 @@ export class McpServer {
           description: skill.description || skill.name,
           inputSchema: { type: 'object', properties: {} },
           serverId: 'friday-local',
-          serverName: 'FRIDAY',
+          serverName: 'SecureYeoman',
         });
       }
     }
@@ -49,11 +49,11 @@ export class McpServer {
     if (this.brainManager) {
       resources.push({
         uri: 'friday://knowledge/all',
-        name: 'FRIDAY Knowledge Base',
-        description: 'All knowledge entries from FRIDAY brain',
+        name: 'SecureYeoman Knowledge Base',
+        description: 'All knowledge entries from SecureYeoman brain',
         mimeType: 'application/json',
         serverId: 'friday-local',
-        serverName: 'FRIDAY',
+        serverName: 'SecureYeoman',
       });
     }
 

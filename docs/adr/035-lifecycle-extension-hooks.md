@@ -6,7 +6,7 @@ Accepted (2026-02-16)
 
 ## Context
 
-Customizing FRIDAY's behavior currently requires modifying core TypeScript code. There is no way for users or third-party developers to inject logic at key lifecycle stages without forking the codebase.
+Customizing SecureYeoman's behavior currently requires modifying core TypeScript code. There is no way for users or third-party developers to inject logic at key lifecycle stages without forking the codebase.
 
 Agent Zero's 24-hook extension system with filesystem-based discovery and numeric ordering demonstrates that a well-designed hook architecture enables deep customization without core modifications.
 
@@ -30,7 +30,7 @@ Two complementary mechanisms:
 ### Extension Discovery
 
 ```
-Built-in:     packages/core/extensions/          (shipped with FRIDAY)
+Built-in:     packages/core/extensions/          (shipped with SecureYeoman)
 User:         ~/.secureyeoman/extensions/         (user customizations)
 Workspace:    <workspace>/extensions/             (workspace-scoped)
 ```

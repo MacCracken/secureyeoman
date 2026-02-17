@@ -56,7 +56,7 @@ Add a public method to expose running adapter instances. Required by the webhook
 
 - All 8 platforms defined in `PlatformSchema` now have registered adapters and appear as "Available" with Connect buttons on the dashboard
 - Google Chat promoted from Beta to Stable
-- External services can now push data into FRIDAY via the generic webhook endpoint
+- External services can now push data into SecureYeoman via the generic webhook endpoint
 - The `getAdapter()` method is a narrow API surface; it exposes the raw adapter which could theoretically be misused, but is only called from the trusted route handler
 - Removing `helpUrl` means no "Docs" links on platform cards until a documentation serving solution is implemented
 

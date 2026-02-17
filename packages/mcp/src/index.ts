@@ -1,7 +1,7 @@
 /**
- * @friday/mcp — FRIDAY MCP Service Package
+ * @friday/mcp — SecureYeoman MCP Service Package
  *
- * Exposes FRIDAY capabilities as MCP tools, resources, and prompts.
+ * Exposes SecureYeoman capabilities as MCP tools, resources, and prompts.
  */
 
 export { McpServiceServer, createMcpServiceServer } from './server.js';

@@ -1,6 +1,6 @@
 # Architecture Overview
 
-> Technical architecture and system design for F.R.I.D.A.Y. and SecureYeoman
+> Technical architecture and system design for SecureYeoman
 
 ## Table of Contents
 
@@ -19,7 +19,7 @@
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│                   FRIDAY Dashboard                      │
+│                SecureYeoman Dashboard                    │
 │            (React + TanStack + ReactFlow)               │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌───────────┐  │
 │  │ Overview │ │   Chat   │ │  Tasks   │ │  General  │ │
@@ -257,7 +257,7 @@ The active personality is the sole source of identity in the composed prompt. Th
 **Location**: `packages/core/src/comms/`
 
 **Responsibilities**:
-- E2E encrypted messaging between FRIDAY instances
+- E2E encrypted messaging between SecureYeoman instances
 - Peer agent discovery and management
 - Secret sanitization (strips API keys, tokens from payloads)
 - Local message log with retention policies
@@ -544,7 +544,7 @@ Dashboard Display (WebSocket)
 
 ## Kubernetes Deployment
 
-F.R.I.D.A.Y. supports production deployment on Kubernetes via Helm charts located in `deploy/helm/friday/`.
+SecureYeoman supports production deployment on Kubernetes via Helm charts located in `deploy/helm/friday/`.
 
 ### Architecture
 
@@ -594,4 +594,4 @@ See [Kubernetes Deployment Guide](../guides/kubernetes-deployment.md) for setup 
 
 ---
 
-*This architecture document reflects the current state of F.R.I.D.A.Y. and evolves as the system develops.*
+*This architecture document reflects the current state of SecureYeoman and evolves as the system develops.*

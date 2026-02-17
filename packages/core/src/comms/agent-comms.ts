@@ -1,5 +1,5 @@
 /**
- * AgentComms — E2E encrypted communication between FRIDAY agents.
+ * AgentComms — E2E encrypted communication between SecureYeoman agents.
  *
  * Manages peer discovery, message encryption/decryption, and local logging.
  */

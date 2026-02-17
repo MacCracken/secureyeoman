@@ -71,7 +71,7 @@ A lightweight dashboard served by the MCP service's Fastify instance. Access req
 **Rejected.** Duplicates auth infrastructure, creates a second attack surface, and risks credential sprawl. Delegating to core's auth keeps the security boundary tight.
 
 ### 3. Use MCP SDK's built-in auth
-**Rejected.** The MCP SDK's auth is designed for public registries. FRIDAY needs enterprise RBAC tied to its own user model.
+**Rejected.** The MCP SDK's auth is designed for public registries. SecureYeoman needs enterprise RBAC tied to its own user model.
 
 ## Consequences
 
@@ -79,7 +79,7 @@ A lightweight dashboard served by the MCP service's Fastify instance. Access req
 - Clean separation of concerns — MCP protocol handling isolated from agent core
 - Full MCP protocol compliance — tools, resources, prompts, all three transports
 - Claude Desktop integration via stdio transport
-- 20+ tools exposing FRIDAY's full capability surface
+- 20+ tools exposing SecureYeoman's full capability surface
 - Dashboard for tool testing and monitoring
 - Independently deployable (as Docker container alongside core)
 

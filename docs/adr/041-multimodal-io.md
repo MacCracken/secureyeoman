@@ -10,7 +10,7 @@ Accepted
 
 ## Context
 
-FRIDAY currently only processes text input and output. Users interacting via integrations like Telegram often send photos and voice messages, which are silently ignored. Adding multimodal capabilities (vision, speech-to-text, text-to-speech, and image generation) would significantly improve the user experience across all communication channels.
+SecureYeoman currently only processes text input and output. Users interacting via integrations like Telegram often send photos and voice messages, which are silently ignored. Adding multimodal capabilities (vision, speech-to-text, text-to-speech, and image generation) would significantly improve the user experience across all communication channels.
 
 The existing codebase already has relevant scaffolding:
 - `MessageAttachment` schema supports image/audio/video/file/location types

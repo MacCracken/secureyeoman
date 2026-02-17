@@ -50,7 +50,7 @@ export class GeminiProvider extends BaseProvider {
 
   /**
    * Fetch available models from Google's ListModels REST API.
-   * Filters to models that support `generateContent` (the method FRIDAY uses).
+   * Filters to models that support `generateContent` (the method SecureYeoman uses).
    */
   static async fetchAvailableModels(apiKey: string): Promise<GeminiModelInfo[]> {
     const url = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey}&pageSize=100`;

@@ -1,13 +1,13 @@
 #!/usr/bin/env bash
 # ──────────────────────────────────────────────────────────────
-# FRIDAY Load Test Orchestrator
+# SecureYeoman Load Test Orchestrator
 #
 # Usage: bash tests/load/run.sh [suite]
 #   suite: all | api | auth | ws | tasks  (default: all)
 #
 # Prerequisites:
 #   - k6 installed (https://k6.io/docs/getting-started/installation/)
-#   - FRIDAY server running on BASE_URL (default http://localhost:3000)
+#   - SecureYeoman server running on BASE_URL (default http://localhost:3000)
 #
 # Environment:
 #   BASE_URL=http://localhost:3000
@@ -24,7 +24,7 @@ RESULTS_DIR="${SCRIPT_DIR}/results"
 mkdir -p "$RESULTS_DIR"
 
 echo "╔══════════════════════════════════════════════════════╗"
-echo "║           FRIDAY Load Test Suite                     ║"
+echo "║           SecureYeoman Load Test Suite                ║"
 echo "╠══════════════════════════════════════════════════════╣"
 echo "║  Base URL: $BASE_URL"
 echo "║  Suite:    $SUITE"
@@ -42,7 +42,7 @@ fi
 # Check server is reachable
 if ! curl -sf "$BASE_URL/health" >/dev/null 2>&1; then
   echo "WARNING: Server at $BASE_URL is not reachable."
-  echo "Start FRIDAY first: npm run dev --workspace=@friday/core"
+  echo "Start SecureYeoman first: npm run dev --workspace=@friday/core"
   exit 1
 fi
 

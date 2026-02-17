@@ -2,23 +2,23 @@
 
 **Status**: Accepted
 **Date**: 2026-02-16
-**Deciders**: FRIDAY Core Team
+**Deciders**: SecureYeoman Core Team
 
 ---
 
 ## Context
 
-FRIDAY currently operates in a purely reactive mode — it responds when a user sends a message, executes a task on demand, or fires a scheduled heartbeat check. There is no mechanism for FRIDAY to initiate contact, surface timely insights, or act on observed patterns without being explicitly asked.
+SecureYeoman currently operates in a purely reactive mode — it responds when a user sends a message, executes a task on demand, or fires a scheduled heartbeat check. There is no mechanism for SecureYeoman to initiate contact, surface timely insights, or act on observed patterns without being explicitly asked.
 
-As FRIDAY accumulates knowledge about the user (Phase 7.1 Adaptive Learning — preferences, behavioral patterns, interaction history), a natural next step is to leverage that knowledge proactively. Users should not have to remember to ask FRIDAY for a daily standup summary, a weekly review, or a heads-up about a deadline — FRIDAY should anticipate these needs and surface them through the appropriate channel at the right time.
+As SecureYeoman accumulates knowledge about the user (Phase 7.1 Adaptive Learning — preferences, behavioral patterns, interaction history), a natural next step is to leverage that knowledge proactively. Users should not have to remember to ask SecureYeoman for a daily standup summary, a weekly review, or a heads-up about a deadline — SecureYeoman should anticipate these needs and surface them through the appropriate channel at the right time.
 
-The challenge is providing this capability without making FRIDAY intrusive, without creating a security surface for unauthorized agent-initiated actions, and without duplicating infrastructure already present in HeartbeatManager, ExtensionManager, BrainManager, and IntegrationManager.
+The challenge is providing this capability without making SecureYeoman intrusive, without creating a security surface for unauthorized agent-initiated actions, and without duplicating infrastructure already present in HeartbeatManager, ExtensionManager, BrainManager, and IntegrationManager.
 
 ---
 
 ## Decision
 
-Introduce a **ProactiveManager** module under `packages/core/src/proactive/` that provides a general-purpose trigger and suggestion engine. ProactiveManager is the single coordination layer for all proactive behavior in FRIDAY.
+Introduce a **ProactiveManager** module under `packages/core/src/proactive/` that provides a general-purpose trigger and suggestion engine. ProactiveManager is the single coordination layer for all proactive behavior in SecureYeoman.
 
 ### Trigger Types
 
@@ -27,7 +27,7 @@ ProactiveManager supports five trigger types:
 | Type | Description |
 |------|-------------|
 | `schedule` | Cron-based or interval-based time triggers (e.g., daily at 09:00) |
-| `event` | React to internal FRIDAY events emitted by ExtensionManager hooks (e.g., `task_completed`, `memory_save_after`) |
+| `event` | React to internal SecureYeoman events emitted by ExtensionManager hooks (e.g., `task_completed`, `memory_save_after`) |
 | `pattern` | Fire when BrainManager detects a recurring behavioral pattern meeting a threshold |
 | `webhook` | External HTTP POST to a dedicated proactive webhook endpoint activates a trigger |
 | `llm` | An LLM prompt is evaluated on a schedule; the trigger fires only when the model returns affirmative |
@@ -116,7 +116,7 @@ All trigger types could be modeled as Tasks in the existing task queue. However,
 
 ### Positive
 
-- FRIDAY gains initiative — can surface timely, context-aware suggestions without user prompting
+- SecureYeoman gains initiative — can surface timely, context-aware suggestions without user prompting
 - Built-in trigger templates reduce configuration friction for common patterns
 - Security gate (`allowProactive`) ensures the feature is opt-in and audited
 - Reuses existing infrastructure: HeartbeatManager scheduling, ExtensionManager hooks, IntegrationManager delivery, BrainManager pattern queries, WebSocket push

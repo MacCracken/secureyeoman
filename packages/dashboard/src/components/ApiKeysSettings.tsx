@@ -93,7 +93,7 @@ export function ApiKeysSettings() {
           API Keys
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Manage API keys for programmatic access to FRIDAY
+          Manage API keys for programmatic access to SecureYeoman
         </p>
       </div>
 

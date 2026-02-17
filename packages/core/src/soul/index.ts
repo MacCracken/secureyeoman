@@ -1,5 +1,5 @@
 /**
- * Soul Module — Personality, Skills & Sacred Archetypes for FRIDAY
+ * Soul Module — Personality, Skills & Sacred Archetypes for SecureYeoman
  *
  * In Our Image: No-Thing-Ness → The One (Soul) → The Plurality (Spirit/Brain/Body)
  */

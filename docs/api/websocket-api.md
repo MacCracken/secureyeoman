@@ -1,6 +1,6 @@
 # WebSocket API Reference
 
-> Real-time communication for F.R.I.D.A.Y. dashboard and clients
+> Real-time communication for SecureYeoman dashboard and clients
 
 ## Connection
 
@@ -367,7 +367,7 @@ class FridayWebSocket {
     this.ws = new WebSocket(`${url}${auth}`);
     
     this.ws.onopen = () => {
-      console.log('Connected to F.R.I.D.A.Y. WebSocket');
+      console.log('Connected to SecureYeoman WebSocket');
     };
     
     this.ws.onmessage = (event) => {
@@ -469,7 +469,7 @@ class FridayWebSocket:
             auth = f"?api_key={self.api_key}"
         
         self.ws = await websockets.connect(f"{self.url}{auth}")
-        print("Connected to F.R.I.D.A.Y. WebSocket")
+        print("Connected to SecureYeoman WebSocket")
         
         asyncio.create_task(self.message_loop())
 

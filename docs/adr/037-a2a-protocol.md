@@ -6,9 +6,9 @@ Accepted (2026-02-16)
 
 ## Context
 
-Phase 6.3 established sub-agent delegation within a single FRIDAY instance — the primary agent spawns subordinate agents locally. However, in multi-instance deployments (e.g., specialized FRIDAY instances per team or function), there is no mechanism for one FRIDAY to delegate tasks to another over the network.
+Phase 6.3 established sub-agent delegation within a single SecureYeoman instance — the primary agent spawns subordinate agents locally. However, in multi-instance deployments (e.g., specialized SecureYeoman instances per team or function), there is no mechanism for one SecureYeoman instance to delegate tasks to another over the network.
 
-FRIDAY already has E2E encrypted inter-agent communication (Phase 2.5, `comms/` module) using X25519 key exchange, Ed25519 signing, and AES-256-GCM encryption. This provides the transport security foundation needed for cross-instance delegation.
+SecureYeoman already has E2E encrypted inter-agent communication (Phase 2.5, `comms/` module) using X25519 key exchange, Ed25519 signing, and AES-256-GCM encryption. This provides the transport security foundation needed for cross-instance delegation.
 
 ## Decision
 
@@ -61,7 +61,7 @@ The A2A protocol extends `SubAgentManager` with a `RemoteDelegationTransport`:
 ## Consequences
 
 ### Positive
-- Specialized FRIDAY instances can collaborate on complex tasks
+- Specialized SecureYeoman instances can collaborate on complex tasks
 - Leverages existing E2E encryption — no new security infrastructure needed
 - Transparent to the delegation tree — local and remote delegations unified
 - Discovery mechanisms scale from dev (mDNS) to production (DNS-SD)
@@ -75,7 +75,7 @@ The A2A protocol extends `SubAgentManager` with a `RemoteDelegationTransport`:
 ### Risks
 - Man-in-the-middle on discovery (mDNS spoofing) — mitigated by requiring signed capability responses
 - Resource exhaustion from external delegation requests — mitigated by per-peer rate limits and capacity checks
-- Protocol drift between FRIDAY versions — mitigated by version negotiation in capability exchange
+- Protocol drift between SecureYeoman versions — mitigated by version negotiation in capability exchange
 
 ## Implementation Notes
 

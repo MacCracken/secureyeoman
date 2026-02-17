@@ -6,7 +6,7 @@ Implemented
 
 ## Context
 
-FRIDAY operates as a single-agent system — one personality handles all tasks regardless of complexity. When faced with multi-step tasks requiring different expertise (research, coding, analysis), the single agent must context-switch, polluting its conversation context and reducing focus.
+SecureYeoman operates as a single-agent system — one personality handles all tasks regardless of complexity. When faced with multi-step tasks requiring different expertise (research, coding, analysis), the single agent must context-switch, polluting its conversation context and reducing focus.
 
 Agent Zero's hierarchical multi-agent delegation demonstrates that spawning specialized subordinate agents with isolated contexts dramatically improves complex task handling.
 
@@ -16,7 +16,7 @@ Agent Zero's hierarchical multi-agent delegation demonstrates that spawning spec
 
 Sub-agents receive distinct prompt profiles rather than inheriting the parent's Soul. Each profile is an optimized persona for a task type:
 
-**Default profiles** (shipped with FRIDAY):
+**Default profiles** (shipped with SecureYeoman):
 
 | Profile | Purpose | Prompt Focus |
 |---------|---------|-------------|

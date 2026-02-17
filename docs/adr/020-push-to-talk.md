@@ -7,7 +7,7 @@
 
 Push-to-talk (PTT) provides explicit voice activation via keyboard shortcut. Unlike always-on voice wake, PTT only captures audio while the key is held, providing a balance between convenience and privacy.
 
-This ADR details the implementation of Push-to-Talk for F.R.I.D.A.Y.
+This ADR details the implementation of Push-to-Talk for SecureYeoman
 
 ## Decision
 

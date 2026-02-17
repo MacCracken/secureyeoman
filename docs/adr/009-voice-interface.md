@@ -6,7 +6,7 @@
 
 ## Context
 
-Users requested hands-free interaction with F.R.I.D.A.Y. via voice — speech-to-text for input and text-to-speech for assistant responses. This needed to work on both the Chat page and the new Code page's chat sidebar.
+Users requested hands-free interaction with SecureYeoman via voice — speech-to-text for input and text-to-speech for assistant responses. This needed to work on both the Chat page and the new Code page's chat sidebar.
 
 ## Decision
 

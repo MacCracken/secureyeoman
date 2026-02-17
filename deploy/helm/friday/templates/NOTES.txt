@@ -1,4 +1,4 @@
-F.R.I.D.A.Y. has been deployed!
+SecureYeoman has been deployed!
 
 Release: {{ .Release.Name }}
 Namespace: {{ include "friday.namespace" . }}
