@@ -393,21 +393,23 @@ export function SecuritySettings() {
             }
           />
 
-          {/* A2A Networks — sub-item of delegation */}
-          <div className="ml-6 pl-4 border-l-2 border-border">
-            <PolicyToggle
-              label="A2A Networks"
-              icon={<Network className="w-4 h-4 text-muted-foreground" />}
-              enabled={a2aAllowed}
-              isPending={policyMutation.isPending}
-              onToggle={() => policyMutation.mutate({ allowA2A: !a2aAllowed })}
-              description={
-                a2aAllowed
-                  ? 'Agent-to-Agent networking is enabled. Internal A2A communication is active; external peers require Sub-Agent Delegation to be allowed.'
-                  : 'A2A networking is disabled. No peer discovery, delegation, or agent-to-agent communication will occur.'
-              }
-            />
-          </div>
+          {/* A2A Networks — sub-item of delegation, only visible when sub-agents enabled */}
+          {subAgentsAllowed && (
+            <div className="ml-6 pl-4 border-l-2 border-border">
+              <PolicyToggle
+                label="A2A Networks"
+                icon={<Network className="w-4 h-4 text-muted-foreground" />}
+                enabled={a2aAllowed}
+                isPending={policyMutation.isPending}
+                onToggle={() => policyMutation.mutate({ allowA2A: !a2aAllowed })}
+                description={
+                  a2aAllowed
+                    ? 'Agent-to-Agent networking is enabled. Internal A2A communication is active; external peers require Sub-Agent Delegation to be allowed.'
+                    : 'A2A networking is disabled. No peer discovery, delegation, or agent-to-agent communication will occur.'
+                }
+              />
+            </div>
+          )}
         </div>
       </div>
 

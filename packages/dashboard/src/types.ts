@@ -161,6 +161,9 @@ export interface Personality {
       exposeGit?: boolean;
       exposeFilesystem?: boolean;
       exposeWeb?: boolean;
+      exposeWebScraping?: boolean;
+      exposeWebSearch?: boolean;
+      exposeBrowser?: boolean;
     };
   };
   createdAt: number;
@@ -195,6 +198,9 @@ export interface PersonalityCreate {
       exposeGit?: boolean;
       exposeFilesystem?: boolean;
       exposeWeb?: boolean;
+      exposeWebScraping?: boolean;
+      exposeWebSearch?: boolean;
+      exposeBrowser?: boolean;
     };
   };
 }

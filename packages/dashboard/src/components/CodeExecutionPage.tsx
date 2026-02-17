@@ -19,6 +19,7 @@ import {
   approveExecution,
   rejectExecution,
   fetchExecutionConfig,
+  fetchSecurityPolicy,
 } from '../api/client';
 
 type TabId = 'execute' | 'sessions' | 'history';
@@ -45,7 +46,15 @@ export function CodeExecutionPage() {
     queryFn: fetchExecutionConfig,
   });
 
-  const enabled = (configData?.config as Record<string, unknown>)?.enabled === true;
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+    staleTime: 30000,
+  });
+
+  const enabled =
+    (configData?.config as Record<string, unknown>)?.enabled === true ||
+    securityPolicy?.allowExecution === true;
 
   if (!enabled) {
     return (
@@ -146,7 +155,7 @@ function ExecuteTab() {
             <select
               value={runtime}
               onChange={(e) => setRuntime(e.target.value)}
-              className="input text-sm py-1.5 px-2 w-36"
+              className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-36"
             >
               <option value="node">Node.js</option>
               <option value="python">Python</option>
@@ -158,7 +167,7 @@ function ExecuteTab() {
             <input
               value={sessionId}
               onChange={(e) => setSessionId(e.target.value)}
-              className="input text-sm py-1.5 px-2 w-48"
+              className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-48"
               placeholder="auto-generated"
             />
           </div>
@@ -168,7 +177,7 @@ function ExecuteTab() {
               type="number"
               value={timeout}
               onChange={(e) => setTimeout(Number(e.target.value))}
-              className="input text-sm py-1.5 px-2 w-28"
+              className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-28"
               min={1000}
               max={300000}
             />
@@ -179,7 +188,7 @@ function ExecuteTab() {
           <textarea
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            className="input w-full text-sm py-2 min-h-[200px] resize-y font-mono"
+            className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[200px] resize-y font-mono"
             placeholder={
               runtime === 'node'
                 ? 'console.log("Hello, world!");'
@@ -372,7 +381,7 @@ function HistoryTab() {
         <input
           value={sessionFilter}
           onChange={(e) => setSessionFilter(e.target.value)}
-          className="input text-sm py-1.5 px-2 w-60"
+          className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-60"
           placeholder="Filter by session ID..."
         />
       </div>

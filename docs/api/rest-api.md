@@ -1684,6 +1684,36 @@ Send a message to a personality and receive an AI response. When `personalityId`
 }
 ```
 
+#### POST /api/v1/chat/feedback
+
+Submit feedback on an assistant message for adaptive learning.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "conversationId": "conv-123",
+  "messageId": "msg-5",
+  "feedback": "positive",
+  "details": "Great explanation"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `conversationId` | string | Yes | Conversation ID |
+| `messageId` | string | Yes | Message ID being rated |
+| `feedback` | string | Yes | `positive`, `negative`, or `correction` |
+| `details` | string | No | Additional context |
+
+**Response**
+```json
+{
+  "stored": true
+}
+```
+
 ---
 
 ### Model Management
@@ -1842,6 +1872,22 @@ Create a new integration.
   "config": { "botToken": "..." }
 }
 ```
+
+#### POST /api/v1/integrations/{id}/test
+
+Test an integration's connection credentials without starting/stopping.
+
+**Required Permissions**: `integrations.write`
+
+**Response**:
+```json
+{
+  "ok": true,
+  "message": "Connection successful"
+}
+```
+
+Returns `{ ok: false, message: "..." }` on failure. If the adapter does not implement `testConnection()`, returns a message indicating the adapter is running and whether it is healthy.
 
 #### POST /api/v1/integrations/{id}/start
 

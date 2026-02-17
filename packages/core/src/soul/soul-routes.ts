@@ -348,7 +348,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               experiments: false,
             },
             selectedServers: [],
-            mcpFeatures: { exposeGit: false, exposeFilesystem: false },
+            mcpFeatures: { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false },
           },
         };
 

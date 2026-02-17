@@ -28,9 +28,9 @@ Add 6 web tools following the exact same pattern as filesystem tools:
 
 Tools are always registered at the MCP protocol level. Feature toggles (`exposeWeb`, `exposeWebScraping`, `exposeWebSearch`) control visibility in the core API response, not whether tools exist on the server.
 
-### Browser Automation (Phase 8.3 — Deferred)
+### Browser Automation (Phase 8.3 — Complete)
 
-Register 6 placeholder browser tools (`browser_navigate`, `browser_screenshot`, `browser_click`, `browser_fill`, `browser_evaluate`, `browser_pdf`) that return "not yet available" messages. The `exposeBrowser` toggle controls visibility. Full implementation requires Playwright or Puppeteer as a dependency.
+6 browser tools implemented with Playwright (`browser_navigate`, `browser_screenshot`, `browser_click`, `browser_fill`, `browser_evaluate`, `browser_pdf`). A `BrowserPool` manager handles lazy browser launch, page pool with `MCP_BROWSER_MAX_PAGES` limit, `MCP_BROWSER_TIMEOUT_MS` enforcement, and graceful shutdown. Playwright is an optional dependency — tools return "not available" when `exposeBrowser` is false or Playwright is not installed.
 
 ### Security: SSRF Protection
 

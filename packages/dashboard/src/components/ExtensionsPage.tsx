@@ -10,6 +10,7 @@ import {
   Anchor,
   ToggleLeft,
   ToggleRight,
+  X,
 } from 'lucide-react';
 import {
   fetchExtensions,
@@ -23,6 +24,7 @@ import {
   removeExtensionWebhook,
   discoverExtensions,
   fetchExtensionConfig,
+  fetchSecurityPolicy,
 } from '../api/client';
 
 type TabId = 'extensions' | 'hooks' | 'webhooks';
@@ -36,7 +38,15 @@ export function ExtensionsPage() {
     queryFn: fetchExtensionConfig,
   });
 
-  const enabled = (configData?.config as Record<string, unknown>)?.enabled === true;
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+    staleTime: 30000,
+  });
+
+  const enabled =
+    (configData?.config as Record<string, unknown>)?.enabled === true ||
+    securityPolicy?.allowExtensions === true;
 
   const discoverMut = useMutation({
     mutationFn: discoverExtensions,
@@ -117,6 +127,11 @@ export function ExtensionsPage() {
 function ExtensionsTab() {
   const queryClient = useQueryClient();
   const [showRegister, setShowRegister] = useState(false);
+  const [extId, setExtId] = useState('');
+  const [extName, setExtName] = useState('');
+  const [extVersion, setExtVersion] = useState('1.0.0');
+  const [extHooksText, setExtHooksText] = useState('');
+  const [extError, setExtError] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['extensions'],
@@ -130,7 +145,47 @@ function ExtensionsTab() {
     },
   });
 
+  const registerMut = useMutation({
+    mutationFn: registerExtension,
+    onSuccess: () => {
+      setExtId('');
+      setExtName('');
+      setExtVersion('1.0.0');
+      setExtHooksText('');
+      setExtError('');
+      setShowRegister(false);
+      void queryClient.invalidateQueries({ queryKey: ['extensions'] });
+    },
+    onError: (err) => {
+      setExtError(err instanceof Error ? err.message : 'Registration failed');
+    },
+  });
+
   const extensions = data?.extensions ?? [];
+
+  const clearExtForm = () => {
+    setExtId('');
+    setExtName('');
+    setExtVersion('1.0.0');
+    setExtHooksText('');
+    setExtError('');
+  };
+
+  const handleRegister = () => {
+    const hooks = extHooksText
+      .split('\n')
+      .filter((line) => line.trim())
+      .map((line) => {
+        const parts = line.split(',').map((p) => p.trim());
+        return {
+          point: parts[0] || '',
+          semantics: parts[1] || 'observe',
+          priority: parts[2] ? parseInt(parts[2], 10) : undefined,
+        };
+      });
+    setExtError('');
+    registerMut.mutate({ id: extId, name: extName, version: extVersion, hooks });
+  };
 
   if (isLoading) {
     return (
@@ -144,13 +199,68 @@ function ExtensionsTab() {
     <div className="space-y-3">
       <div className="flex justify-end">
         <button
-          onClick={() => setShowRegister(true)}
+          onClick={() => setShowRegister(!showRegister)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           Register Extension
         </button>
       </div>
+
+      {showRegister && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm">Register Extension</span>
+            <button onClick={() => { setShowRegister(false); clearExtForm(); }} className="btn-ghost p-1 rounded">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Extension ID</label>
+            <input
+              value={extId}
+              onChange={(e) => setExtId(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="e.g. my-extension"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Name</label>
+            <input
+              value={extName}
+              onChange={(e) => setExtName(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="My Extension"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Version</label>
+            <input
+              value={extVersion}
+              onChange={(e) => setExtVersion(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="1.0.0"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Hooks (one per line: point, semantics, priority)</label>
+            <textarea
+              value={extHooksText}
+              onChange={(e) => setExtHooksText(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[80px] resize-y font-mono"
+              placeholder={"pre-chat, observe, 10\npost-task, transform, 20"}
+            />
+          </div>
+          {extError && <p className="text-xs text-destructive">{extError}</p>}
+          <button
+            className="btn btn-primary"
+            disabled={!extId.trim() || !extName.trim() || registerMut.isPending}
+            onClick={handleRegister}
+          >
+            {registerMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register'}
+          </button>
+        </div>
+      )}
 
       {extensions.length === 0 && (
         <div className="card p-8 text-center">
@@ -189,115 +299,6 @@ function ExtensionsTab() {
           </div>
         ))}
       </div>
-
-      {showRegister && (
-        <RegisterExtensionDialog
-          onClose={() => setShowRegister(false)}
-          onRegistered={() => {
-            setShowRegister(false);
-            void queryClient.invalidateQueries({ queryKey: ['extensions'] });
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function RegisterExtensionDialog({
-  onClose,
-  onRegistered,
-}: {
-  onClose: () => void;
-  onRegistered: () => void;
-}) {
-  const [id, setId] = useState('');
-  const [name, setName] = useState('');
-  const [version, setVersion] = useState('1.0.0');
-  const [hooksText, setHooksText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async () => {
-    if (!id.trim() || !name.trim()) return;
-    setSubmitting(true);
-    setError('');
-    try {
-      const hooks = hooksText
-        .split('\n')
-        .filter((line) => line.trim())
-        .map((line) => {
-          const parts = line.split(',').map((p) => p.trim());
-          return {
-            point: parts[0] || '',
-            semantics: parts[1] || 'observe',
-            priority: parts[2] ? parseInt(parts[2], 10) : undefined,
-          };
-        });
-      await registerExtension({ id, name, version, hooks });
-      onRegistered();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-background border rounded-lg p-6 w-full max-w-lg shadow-lg" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">Register Extension</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium block mb-1">Extension ID</label>
-            <input
-              value={id}
-              onChange={(e) => setId(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="e.g. my-extension"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Name</label>
-            <input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="My Extension"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Version</label>
-            <input
-              value={version}
-              onChange={(e) => setVersion(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="1.0.0"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Hooks (one per line: point, semantics, priority)</label>
-            <textarea
-              value={hooksText}
-              onChange={(e) => setHooksText(e.target.value)}
-              className="input w-full text-sm py-2 min-h-[80px] resize-y font-mono"
-              placeholder={"pre-chat, observe, 10\npost-task, transform, 20"}
-            />
-          </div>
-          {error && <p className="text-xs text-destructive">{error}</p>}
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted/50">
-            Cancel
-          </button>
-          <button
-            onClick={() => void handleSubmit()}
-            disabled={!id.trim() || !name.trim() || submitting}
-            className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register'}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -307,11 +308,23 @@ function RegisterExtensionDialog({
 function HooksTab() {
   const queryClient = useQueryClient();
   const [showRegister, setShowRegister] = useState(false);
+  const [hookExtId, setHookExtId] = useState('');
+  const [hookPoint, setHookPoint] = useState('');
+  const [hookSemantics, setHookSemantics] = useState('observe');
+  const [hookPriority, setHookPriority] = useState(10);
+  const [hookError, setHookError] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['extensionHooks'],
     queryFn: fetchExtensionHooks,
   });
+
+  const { data: extData } = useQuery({
+    queryKey: ['extensions'],
+    queryFn: fetchExtensions,
+  });
+
+  const extensions = extData?.extensions ?? [];
 
   const removeMut = useMutation({
     mutationFn: removeExtensionHook,
@@ -320,7 +333,31 @@ function HooksTab() {
     },
   });
 
+  const registerMut = useMutation({
+    mutationFn: registerExtensionHook,
+    onSuccess: () => {
+      setHookExtId('');
+      setHookPoint('');
+      setHookSemantics('observe');
+      setHookPriority(10);
+      setHookError('');
+      setShowRegister(false);
+      void queryClient.invalidateQueries({ queryKey: ['extensionHooks'] });
+    },
+    onError: (err) => {
+      setHookError(err instanceof Error ? err.message : 'Registration failed');
+    },
+  });
+
   const hooks = data?.hooks ?? [];
+
+  const clearHookForm = () => {
+    setHookExtId('');
+    setHookPoint('');
+    setHookSemantics('observe');
+    setHookPriority(10);
+    setHookError('');
+  };
 
   if (isLoading) {
     return (
@@ -341,13 +378,78 @@ function HooksTab() {
     <div className="space-y-3">
       <div className="flex justify-end">
         <button
-          onClick={() => setShowRegister(true)}
+          onClick={() => setShowRegister(!showRegister)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           Register Hook
         </button>
       </div>
+
+      {showRegister && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm">Register Hook</span>
+            <button onClick={() => { setShowRegister(false); clearHookForm(); }} className="btn-ghost p-1 rounded">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Extension</label>
+            <select
+              value={hookExtId}
+              onChange={(e) => setHookExtId(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Select extension...</option>
+              {extensions.map((ext) => (
+                <option key={ext.id} value={ext.id}>{ext.name} ({ext.id})</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Hook Point</label>
+            <input
+              value={hookPoint}
+              onChange={(e) => setHookPoint(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="e.g. pre-chat, post-task, on-error"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Semantics</label>
+            <select
+              value={hookSemantics}
+              onChange={(e) => setHookSemantics(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="observe">observe</option>
+              <option value="transform">transform</option>
+              <option value="validate">validate</option>
+              <option value="block">block</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Priority</label>
+            <input
+              type="number"
+              value={hookPriority}
+              onChange={(e) => setHookPriority(Number(e.target.value))}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              min={0}
+              max={1000}
+            />
+          </div>
+          {hookError && <p className="text-xs text-destructive">{hookError}</p>}
+          <button
+            className="btn btn-primary"
+            disabled={!hookExtId.trim() || !hookPoint.trim() || registerMut.isPending}
+            onClick={() => { setHookError(''); registerMut.mutate({ extensionId: hookExtId, hookPoint, semantics: hookSemantics, priority: hookPriority }); }}
+          >
+            {registerMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register'}
+          </button>
+        </div>
+      )}
 
       {hooks.length === 0 && (
         <div className="card p-8 text-center">
@@ -386,121 +488,6 @@ function HooksTab() {
           </div>
         ))}
       </div>
-
-      {showRegister && (
-        <RegisterHookDialog
-          onClose={() => setShowRegister(false)}
-          onRegistered={() => {
-            setShowRegister(false);
-            void queryClient.invalidateQueries({ queryKey: ['extensionHooks'] });
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function RegisterHookDialog({
-  onClose,
-  onRegistered,
-}: {
-  onClose: () => void;
-  onRegistered: () => void;
-}) {
-  const [extensionId, setExtensionId] = useState('');
-  const [hookPoint, setHookPoint] = useState('');
-  const [semantics, setSemantics] = useState('observe');
-  const [priority, setPriority] = useState(10);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  const { data: extData } = useQuery({
-    queryKey: ['extensions'],
-    queryFn: fetchExtensions,
-  });
-
-  const extensions = extData?.extensions ?? [];
-
-  const handleSubmit = async () => {
-    if (!extensionId.trim() || !hookPoint.trim()) return;
-    setSubmitting(true);
-    setError('');
-    try {
-      await registerExtensionHook({ extensionId, hookPoint, semantics, priority });
-      onRegistered();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-background border rounded-lg p-6 w-full max-w-lg shadow-lg" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">Register Hook</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium block mb-1">Extension</label>
-            <select
-              value={extensionId}
-              onChange={(e) => setExtensionId(e.target.value)}
-              className="input w-full text-sm py-2"
-            >
-              <option value="">Select extension...</option>
-              {extensions.map((ext) => (
-                <option key={ext.id} value={ext.id}>{ext.name} ({ext.id})</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Hook Point</label>
-            <input
-              value={hookPoint}
-              onChange={(e) => setHookPoint(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="e.g. pre-chat, post-task, on-error"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Semantics</label>
-            <select
-              value={semantics}
-              onChange={(e) => setSemantics(e.target.value)}
-              className="input w-full text-sm py-2"
-            >
-              <option value="observe">observe</option>
-              <option value="transform">transform</option>
-              <option value="validate">validate</option>
-              <option value="block">block</option>
-            </select>
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Priority</label>
-            <input
-              type="number"
-              value={priority}
-              onChange={(e) => setPriority(Number(e.target.value))}
-              className="input w-full text-sm py-2"
-              min={0}
-              max={1000}
-            />
-          </div>
-          {error && <p className="text-xs text-destructive">{error}</p>}
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted/50">
-            Cancel
-          </button>
-          <button
-            onClick={() => void handleSubmit()}
-            disabled={!extensionId.trim() || !hookPoint.trim() || submitting}
-            className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register'}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
@@ -510,6 +497,10 @@ function RegisterHookDialog({
 function WebhooksTab() {
   const queryClient = useQueryClient();
   const [showRegister, setShowRegister] = useState(false);
+  const [whUrl, setWhUrl] = useState('');
+  const [whHookPointsText, setWhHookPointsText] = useState('');
+  const [whSecret, setWhSecret] = useState('');
+  const [whError, setWhError] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['extensionWebhooks'],
@@ -523,7 +514,29 @@ function WebhooksTab() {
     },
   });
 
+  const registerMut = useMutation({
+    mutationFn: registerExtensionWebhook,
+    onSuccess: () => {
+      setWhUrl('');
+      setWhHookPointsText('');
+      setWhSecret('');
+      setWhError('');
+      setShowRegister(false);
+      void queryClient.invalidateQueries({ queryKey: ['extensionWebhooks'] });
+    },
+    onError: (err) => {
+      setWhError(err instanceof Error ? err.message : 'Registration failed');
+    },
+  });
+
   const webhooks = data?.webhooks ?? [];
+
+  const clearWhForm = () => {
+    setWhUrl('');
+    setWhHookPointsText('');
+    setWhSecret('');
+    setWhError('');
+  };
 
   if (isLoading) {
     return (
@@ -537,13 +550,64 @@ function WebhooksTab() {
     <div className="space-y-3">
       <div className="flex justify-end">
         <button
-          onClick={() => setShowRegister(true)}
+          onClick={() => setShowRegister(!showRegister)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium border rounded-lg hover:bg-muted/50 transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
           Register Webhook
         </button>
       </div>
+
+      {showRegister && (
+        <div className="card p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="font-medium text-sm">Register Webhook</span>
+            <button onClick={() => { setShowRegister(false); clearWhForm(); }} className="btn-ghost p-1 rounded">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">URL</label>
+            <input
+              value={whUrl}
+              onChange={(e) => setWhUrl(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="https://example.com/webhook"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Hook Points (comma-separated)</label>
+            <input
+              value={whHookPointsText}
+              onChange={(e) => setWhHookPointsText(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="pre-chat, post-task, on-error"
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Secret (optional)</label>
+            <input
+              type="password"
+              value={whSecret}
+              onChange={(e) => setWhSecret(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+              placeholder="Webhook signing secret"
+            />
+          </div>
+          {whError && <p className="text-xs text-destructive">{whError}</p>}
+          <button
+            className="btn btn-primary"
+            disabled={!whUrl.trim() || !whHookPointsText.trim() || registerMut.isPending}
+            onClick={() => {
+              const hookPoints = whHookPointsText.split(',').map((p) => p.trim()).filter(Boolean);
+              setWhError('');
+              registerMut.mutate({ url: whUrl, hookPoints, secret: whSecret || undefined, enabled: true });
+            }}
+          >
+            {registerMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register'}
+          </button>
+        </div>
+      )}
 
       {webhooks.length === 0 && (
         <div className="card p-8 text-center">
@@ -586,104 +650,6 @@ function WebhooksTab() {
             </div>
           </div>
         ))}
-      </div>
-
-      {showRegister && (
-        <RegisterWebhookDialog
-          onClose={() => setShowRegister(false)}
-          onRegistered={() => {
-            setShowRegister(false);
-            void queryClient.invalidateQueries({ queryKey: ['extensionWebhooks'] });
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function RegisterWebhookDialog({
-  onClose,
-  onRegistered,
-}: {
-  onClose: () => void;
-  onRegistered: () => void;
-}) {
-  const [url, setUrl] = useState('');
-  const [hookPointsText, setHookPointsText] = useState('');
-  const [secret, setSecret] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async () => {
-    if (!url.trim() || !hookPointsText.trim()) return;
-    setSubmitting(true);
-    setError('');
-    try {
-      const hookPoints = hookPointsText
-        .split(',')
-        .map((p) => p.trim())
-        .filter(Boolean);
-      await registerExtensionWebhook({
-        url,
-        hookPoints,
-        secret: secret || undefined,
-        enabled: true,
-      });
-      onRegistered();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
-      <div className="bg-background border rounded-lg p-6 w-full max-w-lg shadow-lg" onClick={(e) => e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">Register Webhook</h3>
-        <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium block mb-1">URL</label>
-            <input
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="https://example.com/webhook"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Hook Points (comma-separated)</label>
-            <input
-              value={hookPointsText}
-              onChange={(e) => setHookPointsText(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="pre-chat, post-task, on-error"
-            />
-          </div>
-          <div>
-            <label className="text-sm font-medium block mb-1">Secret (optional)</label>
-            <input
-              type="password"
-              value={secret}
-              onChange={(e) => setSecret(e.target.value)}
-              className="input w-full text-sm py-2"
-              placeholder="Webhook signing secret"
-            />
-          </div>
-          {error && <p className="text-xs text-destructive">{error}</p>}
-        </div>
-        <div className="flex justify-end gap-2 mt-4">
-          <button onClick={onClose} className="px-3 py-1.5 text-sm border rounded-lg hover:bg-muted/50">
-            Cancel
-          </button>
-          <button
-            onClick={() => void handleSubmit()}
-            disabled={!url.trim() || !hookPointsText.trim() || submitting}
-            className="px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50"
-          >
-            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Register'}
-          </button>
-        </div>
       </div>
     </div>
   );

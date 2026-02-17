@@ -32,6 +32,9 @@ import {
   Hash,
   Smartphone,
   Users,
+  Calendar,
+  BookOpen,
+  GitMerge,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -48,6 +51,7 @@ import {
   startIntegration,
   stopIntegration,
   deleteIntegration,
+  testIntegration,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo } from '../types';
@@ -413,9 +417,114 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'Start the integration on macOS',
     ],
   },
+  googlecalendar: {
+    name: 'Google Calendar',
+    description: 'Connect to Google Calendar for event management',
+    icon: <Calendar className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'accessToken',
+        label: 'Access Token',
+        type: 'password',
+        placeholder: 'OAuth2 access token',
+        helpText: 'OAuth2 access token from Google',
+      },
+      {
+        key: 'refreshToken',
+        label: 'Refresh Token',
+        type: 'password',
+        placeholder: 'OAuth2 refresh token',
+        helpText: 'Used to refresh expired access tokens',
+      },
+      {
+        key: 'calendarId',
+        label: 'Calendar ID',
+        type: 'text',
+        placeholder: 'primary',
+        helpText: 'Calendar ID to poll (default: primary)',
+      },
+    ],
+    setupSteps: [
+      'Go to Google Cloud Console and enable Calendar API',
+      'Create OAuth2 credentials (Web Application)',
+      'Complete the OAuth consent flow to get tokens',
+      'Paste access and refresh tokens above',
+    ],
+  },
+  notion: {
+    name: 'Notion',
+    description: 'Connect to Notion workspaces for page and database access',
+    icon: <BookOpen className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'apiKey',
+        label: 'Integration Token',
+        type: 'password',
+        placeholder: 'ntn_...',
+        helpText: 'Internal integration token from Notion',
+      },
+      {
+        key: 'databaseId',
+        label: 'Database ID',
+        type: 'text',
+        placeholder: 'Optional database ID',
+        helpText: 'Specific database to poll (optional)',
+      },
+    ],
+    setupSteps: [
+      'Go to notion.so/my-integrations',
+      'Create a new internal integration',
+      'Copy the integration token',
+      'Share your database/pages with the integration',
+    ],
+  },
+  gitlab: {
+    name: 'GitLab',
+    description: 'Receive webhooks from GitLab repositories',
+    icon: <GitMerge className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'personalAccessToken',
+        label: 'Personal Access Token',
+        type: 'password' as const,
+        placeholder: 'glpat-...',
+        helpText: 'Token with api scope',
+      },
+      {
+        key: 'webhookSecret',
+        label: 'Webhook Secret',
+        type: 'password' as const,
+        placeholder: 'Webhook Secret Token',
+        helpText: 'Secret token to verify webhook authenticity',
+      },
+      {
+        key: 'gitlabUrl',
+        label: 'GitLab URL',
+        type: 'text',
+        placeholder: 'https://gitlab.com',
+        helpText: 'GitLab instance URL (default: gitlab.com)',
+      },
+    ],
+    setupSteps: [
+      'Generate a Personal Access Token at GitLab > User Settings > Access Tokens',
+      'Create a webhook in repo Settings > Webhooks',
+      'Set URL to your /api/v1/webhooks/gitlab endpoint',
+      'Add a Secret Token and select events: push, merge request, issues, note',
+    ],
+  },
 };
 
-type TabType = 'messaging' | 'email' | 'mcp' | 'oauth';
+type TabType = 'messaging' | 'email' | 'devops' | 'calendar' | 'mcp' | 'oauth';
+
+// Platform categorization for tab filtering
+const DEVOPS_PLATFORMS = new Set(['github', 'gitlab']);
+const CALENDAR_PLATFORMS = new Set(['googlecalendar']);
+const EMAIL_PLATFORMS = new Set(['gmail', 'email']);
+const PRODUCTIVITY_PLATFORMS = new Set(['notion']);
+// Messaging = everything not in the above sets
 
 const STATUS_CONFIG: Record<
   IntegrationInfo['status'],
@@ -462,6 +571,10 @@ export function ConnectionsPage() {
     if (path.includes('/email')) return 'email';
     if (path.includes('/mcp')) return 'mcp';
     if (path.includes('/oauth')) return 'oauth';
+    // Also check query params (e.g., /connections?tab=mcp)
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam === 'mcp' || tabParam === 'email' || tabParam === 'oauth' || tabParam === 'messaging' || tabParam === 'devops' || tabParam === 'calendar') return tabParam;
     return 'messaging';
   };
 
@@ -545,7 +658,15 @@ export function ConnectionsPage() {
   const externalServers = servers.filter((s) => s.name !== LOCAL_MCP_NAME);
   const activePlatformIds = new Set(integrations.map((i) => i.platform));
   const unregisteredPlatforms = Object.keys(PLATFORM_META)
-    .filter((p) => !activePlatformIds.has(p) && p !== 'gmail' && p !== 'email')
+    .filter((p) => !activePlatformIds.has(p) && !EMAIL_PLATFORMS.has(p) && !DEVOPS_PLATFORMS.has(p) && !CALENDAR_PLATFORMS.has(p) && !PRODUCTIVITY_PLATFORMS.has(p))
+    .sort((a, b) => PLATFORM_META[a].name.localeCompare(PLATFORM_META[b].name));
+
+  const unregisteredDevopsPlatforms = Object.keys(PLATFORM_META)
+    .filter((p) => !activePlatformIds.has(p) && (DEVOPS_PLATFORMS.has(p) || PRODUCTIVITY_PLATFORMS.has(p)))
+    .sort((a, b) => PLATFORM_META[a].name.localeCompare(PLATFORM_META[b].name));
+
+  const unregisteredCalendarPlatforms = Object.keys(PLATFORM_META)
+    .filter((p) => !activePlatformIds.has(p) && CALENDAR_PLATFORMS.has(p))
     .sort((a, b) => PLATFORM_META[a].name.localeCompare(PLATFORM_META[b].name));
 
   const toolsByServer = tools.reduce<Record<string, McpToolDef[]>>((acc, tool) => {
@@ -664,6 +785,20 @@ export function ConnectionsPage() {
     },
   });
 
+  const [testResult, setTestResult] = useState<{ id: string; ok: boolean; message: string } | null>(null);
+
+  const testIntegrationMut = useMutation({
+    mutationFn: (id: string) => testIntegration(id),
+    onSuccess: (data, id) => {
+      setTestResult({ id, ...data });
+      setTimeout(() => setTestResult(null), 5000);
+    },
+    onError: (err: Error, id) => {
+      setTestResult({ id, ok: false, message: err.message || 'Test failed' });
+      setTimeout(() => setTestResult(null), 5000);
+    },
+  });
+
   const handleAddEnvVar = () => {
     setMcpForm((f) => ({ ...f, env: [...f.env, { key: '', value: '' }] }));
   };
@@ -723,12 +858,14 @@ export function ConnectionsPage() {
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex overflow-x-auto scrollbar-hide gap-0.5 sm:gap-1 border-b border-border -mx-1 px-1">
         {(
           [
             ['messaging', 'Messaging', <MessageCircle key="msg" className="w-4 h-4" />],
             ['email', 'Email', <Mail key="email" className="w-4 h-4" />],
-            ['mcp', 'MCP Servers', <Wrench key="mcp" className="w-4 h-4" />],
+            ['calendar', 'Calendar', <Calendar key="cal" className="w-4 h-4" />],
+            ['devops', 'DevOps', <GitBranchIcon key="devops" className="w-4 h-4" />],
+            ['mcp', 'MCP', <Wrench key="mcp" className="w-4 h-4" />],
             ['oauth', 'OAuth', <ArrowRightLeft key="oauth" className="w-4 h-4" />],
           ] as [TabType, string, React.ReactNode][]
         ).map(([tab, label, icon]) => (
@@ -737,14 +874,14 @@ export function ConnectionsPage() {
             onClick={() => {
               setActiveTab(tab);
             }}
-            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-1.5 px-2.5 sm:px-4 py-2 text-xs sm:text-sm font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
               activeTab === tab
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
             {icon}
-            {label}
+            <span className="hidden sm:inline">{label}</span>
           </button>
         ))}
       </div>
@@ -757,7 +894,9 @@ export function ConnectionsPage() {
 
       {activeTab === 'messaging' && (
         <MessagingTab
-          integrations={integrations}
+          integrations={integrations.filter(
+            (i) => !DEVOPS_PLATFORMS.has(i.platform) && !CALENDAR_PLATFORMS.has(i.platform) && !EMAIL_PLATFORMS.has(i.platform) && !PRODUCTIVITY_PLATFORMS.has(i.platform)
+          )}
           platformsData={availablePlatforms}
           hasRegisteredPlatforms={hasRegisteredPlatforms}
           unregisteredPlatforms={unregisteredPlatforms}
@@ -776,6 +915,9 @@ export function ConnectionsPage() {
           isStarting={startIntegrationMut.isPending}
           isStopping={stopIntegrationMut.isPending}
           isDeleting={deleteIntegrationMut.isPending}
+          onTest={testIntegrationMut.mutate}
+          isTesting={testIntegrationMut.isPending}
+          testResult={testResult}
         />
       )}
 
@@ -793,6 +935,64 @@ export function ConnectionsPage() {
           isStopping={stopIntegrationMut.isPending}
           isDeleting={deleteIntegrationMut.isPending}
           availablePlatforms={availablePlatforms}
+        />
+      )}
+
+      {activeTab === 'devops' && (
+        <MessagingTab
+          integrations={integrations.filter(
+            (i) => DEVOPS_PLATFORMS.has(i.platform) || PRODUCTIVITY_PLATFORMS.has(i.platform)
+          )}
+          platformsData={availablePlatforms}
+          hasRegisteredPlatforms={hasRegisteredPlatforms}
+          unregisteredPlatforms={unregisteredDevopsPlatforms}
+          connectingPlatform={connectingPlatform}
+          formData={formData}
+          onConnectPlatform={setConnectingPlatform}
+          onFormDataChange={setFormData}
+          onCreateIntegration={createIntegrationMut.mutate}
+          isCreating={createIntegrationMut.isPending}
+          createError={createIntegrationMut.error}
+          onStart={startIntegrationMut.mutate}
+          onStop={stopIntegrationMut.mutate}
+          onDelete={(id) => {
+            setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+          }}
+          isStarting={startIntegrationMut.isPending}
+          isStopping={stopIntegrationMut.isPending}
+          isDeleting={deleteIntegrationMut.isPending}
+          onTest={testIntegrationMut.mutate}
+          isTesting={testIntegrationMut.isPending}
+          testResult={testResult}
+        />
+      )}
+
+      {activeTab === 'calendar' && (
+        <MessagingTab
+          integrations={integrations.filter(
+            (i) => CALENDAR_PLATFORMS.has(i.platform)
+          )}
+          platformsData={availablePlatforms}
+          hasRegisteredPlatforms={hasRegisteredPlatforms}
+          unregisteredPlatforms={unregisteredCalendarPlatforms}
+          connectingPlatform={connectingPlatform}
+          formData={formData}
+          onConnectPlatform={setConnectingPlatform}
+          onFormDataChange={setFormData}
+          onCreateIntegration={createIntegrationMut.mutate}
+          isCreating={createIntegrationMut.isPending}
+          createError={createIntegrationMut.error}
+          onStart={startIntegrationMut.mutate}
+          onStop={stopIntegrationMut.mutate}
+          onDelete={(id) => {
+            setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+          }}
+          isStarting={startIntegrationMut.isPending}
+          isStopping={stopIntegrationMut.isPending}
+          isDeleting={deleteIntegrationMut.isPending}
+          onTest={testIntegrationMut.mutate}
+          isTesting={testIntegrationMut.isPending}
+          testResult={testResult}
         />
       )}
 
@@ -870,6 +1070,9 @@ function MessagingTab({
   isStarting,
   isStopping,
   isDeleting,
+  onTest,
+  isTesting,
+  testResult,
 }: {
   integrations: IntegrationInfo[];
   platformsData: Set<string>;
@@ -888,6 +1091,9 @@ function MessagingTab({
   isStarting: boolean;
   isStopping: boolean;
   isDeleting: boolean;
+  onTest: (id: string) => void;
+  isTesting: boolean;
+  testResult: { id: string; ok: boolean; message: string } | null;
 }) {
   return (
     <div className="space-y-6">
@@ -909,7 +1115,7 @@ function MessagingTab({
       {integrations.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted">Configured Integrations</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {integrations.map((integration) => (
               <IntegrationCard
                 key={integration.id}
@@ -920,6 +1126,9 @@ function MessagingTab({
                 isStarting={isStarting}
                 isStopping={isStopping}
                 isDeleting={isDeleting}
+                onTest={onTest}
+                isTesting={isTesting}
+                testResult={testResult?.id === integration.id ? testResult : null}
               />
             ))}
           </div>
@@ -928,7 +1137,7 @@ function MessagingTab({
 
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-muted">Available Platforms</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {unregisteredPlatforms.map((platformId) => {
             const meta = PLATFORM_META[platformId];
             const isRegistered = platformsData.has(platformId);
@@ -1055,6 +1264,9 @@ function IntegrationCard({
   isStarting,
   isStopping,
   isDeleting,
+  onTest,
+  isTesting,
+  testResult,
 }: {
   integration: IntegrationInfo;
   onStart: (id: string) => void;
@@ -1063,6 +1275,9 @@ function IntegrationCard({
   isStarting: boolean;
   isStopping: boolean;
   isDeleting: boolean;
+  onTest?: (id: string) => void;
+  isTesting?: boolean;
+  testResult?: { ok: boolean; message: string } | null;
 }) {
   const meta = PLATFORM_META[integration.platform] ?? {
     name: integration.platform,
@@ -1075,20 +1290,20 @@ function IntegrationCard({
   const isLoading = isStarting || isStopping || isDeleting;
 
   return (
-    <div className="card p-4">
-      <div className="flex items-start gap-3">
-        <div className="p-2 rounded-lg bg-surface text-muted">{meta.icon}</div>
+    <div className="card p-3 sm:p-4">
+      <div className="flex items-start gap-2.5 sm:gap-3">
+        <div className="p-1.5 sm:p-2 rounded-lg bg-surface text-muted shrink-0">{meta.icon}</div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between">
-            <h3 className="font-medium text-sm">{integration.displayName}</h3>
-            <span className={`text-xs flex items-center gap-1 ${statusConfig.color}`}>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="font-medium text-sm truncate">{integration.displayName}</h3>
+            <span className={`text-xs flex items-center gap-1 shrink-0 ${statusConfig.color}`}>
               {statusConfig.icon}
-              {statusConfig.label}
+              <span className="hidden xs:inline">{statusConfig.label}</span>
             </span>
           </div>
           <p className="text-xs text-muted mt-1">{meta.name}</p>
-          <div className="flex items-center gap-3 mt-2 text-xs text-muted">
-            <span>{integration.messageCount} messages</span>
+          <div className="flex items-center gap-2 sm:gap-3 mt-2 text-xs text-muted flex-wrap">
+            <span>{integration.messageCount} msgs</span>
             {integration.lastMessageAt && (
               <span>Last: {formatRelativeTime(integration.lastMessageAt)}</span>
             )}
@@ -1114,6 +1329,14 @@ function IntegrationCard({
           )}
         </div>
       </div>
+      {testResult && (
+        <div className={`flex items-center gap-1.5 mt-2 px-2 py-1 rounded text-xs ${
+          testResult.ok ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+        }`}>
+          {testResult.ok ? <CheckCircle className="w-3 h-3" /> : <XCircle className="w-3 h-3" />}
+          {testResult.message}
+        </div>
+      )}
       <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border">
         {isConnected ? (
           <button
@@ -1134,6 +1357,16 @@ function IntegrationCard({
             className="text-xs text-muted hover:text-primary transition-colors"
           >
             Start
+          </button>
+        )}
+        {onTest && (
+          <button
+            onClick={() => onTest(integration.id)}
+            disabled={isLoading || isTesting}
+            className="text-xs text-muted hover:text-primary transition-colors flex items-center gap-1"
+          >
+            {isTesting ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+            Test
           </button>
         )}
         <button
@@ -1632,12 +1865,11 @@ function LocalServerCard({
             </label>
             <label
               className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-              title="Browser automation (requires Playwright or Puppeteer — coming soon)"
+              title="Browser automation via Playwright"
             >
               <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-medium">Browser Automation</span>
-                <span className="text-[10px] text-muted-foreground ml-1">(preview)</span>
               </div>
               <input
                 type="checkbox"
@@ -1948,7 +2180,7 @@ function EmailTab({
       {hasGmail && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted">Connected Accounts</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {integrations.map((integration) => (
               <IntegrationCard
                 key={integration.id}
@@ -2094,7 +2326,7 @@ function EmailTab({
       {!showConfig && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted">Add Email Account</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             <div className="card p-4">
               <div className="flex items-start gap-3">
                 <div className="p-2 rounded-lg bg-surface text-muted">
@@ -2424,7 +2656,7 @@ function OAuthTab({
       {connectedOAuth.length > 0 && (
         <div className="space-y-3">
           <h3 className="text-sm font-medium text-muted">Connected OAuth Providers</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {connectedOAuth.map((integration) => (
               <div key={integration.id} className="card p-4">
                 <div className="flex items-center justify-between">
@@ -2454,7 +2686,7 @@ function OAuthTab({
 
       <div className="space-y-3">
         <h3 className="text-sm font-medium text-muted">Available OAuth Providers</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {oauthProviders.map((provider) => {
             const isConnected = connectedOAuth.some((i) => i.platform === provider.id);
 

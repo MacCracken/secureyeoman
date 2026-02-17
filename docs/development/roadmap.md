@@ -29,7 +29,7 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 - TypeScript project structure with strict mode, ESLint, Prettier, Vitest
 - Configuration management (YAML + env vars + Zod validation)
 - Base agent loop with task queue, event-driven architecture, graceful shutdown
-- Multi-provider AI integration (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen)
+- Multi-provider AI integration (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen, DeepSeek)
 - Structured logging with UUID v7, correlation IDs, SQLite WAL storage
 - Cryptographic audit chain (HMAC-SHA256, integrity verification)
 - Log query API with REST endpoint
@@ -144,8 +144,8 @@ Expand integrations across multiple categories to reach parity with platforms li
 | Platform | Status | Priority |
 |----------|--------|----------|
 | Gmail | ✅ Stable | — |
-| Google Calendar | 🔲 Planned | High |
-| Notion | 🔲 Planned | High |
+| Google Calendar | ✅ Stable | — |
+| Notion | ✅ Stable | — |
 | Airtable | 🔲 Planned | Medium |
 | Linear/Jira | 🔲 Planned | Medium |
 | Todoist | 🔲 Planned | Low |
@@ -155,7 +155,7 @@ Expand integrations across multiple categories to reach parity with platforms li
 | Platform | Status | Priority |
 |----------|--------|----------|
 | GitHub | ✅ Stable | — |
-| GitLab | 🔲 Planned | High |
+| GitLab | ✅ Stable | — |
 | Jira | 🔲 Planned | Medium |
 | AWS | 🔲 Planned | Medium |
 | Azure DevOps | 🔲 Planned | Low |
@@ -181,7 +181,7 @@ Expand integrations across multiple categories to reach parity with platforms li
 | LM Studio | ✅ Stable | — |
 | LocalAI | ✅ Stable | — |
 | OpenCode Zen | ✅ Stable | — |
-| DeepSeek | 🔲 Planned | High |
+| DeepSeek | ✅ Stable | — |
 | Mistral | 🔲 Planned | Medium |
 
 ### Integration Architecture Improvements
@@ -198,6 +198,7 @@ Expand integrations across multiple categories to reach parity with platforms li
 - [ ] **Vector Memory Explorer** — Dashboard view for semantic search across memories with similarity scores, embedding visualization, and manual memory entry
 - [ ] **Memory Consolidation Panel** — View consolidation runs, merged memories, trends chart (memory count over time), and manual trigger option
 - [ ] **History Compression Viewer** — Per-conversation compression indicators, tier breakdown (current/topic/bulk), and token usage by tier
+- [x] **Inline Form Pattern** — Replaced modal dialogs with inline collapsible card forms on Sub-Agents, Extensions, and A2A pages (ADR 039)
 - [ ] **Sub-Agent Execution Tree** — Visual tree of spawned sub-agents with status, depth, and results; budget consumption per agent
 - [ ] **Lifecycle Hook Debugger** — Hook registration view, execution log, and test trigger for each hook point
 - [ ] **Code Execution Console** — In-browser code editor with output streaming, session management, and approval queue
@@ -205,12 +206,12 @@ Expand integrations across multiple categories to reach parity with platforms li
 - [ ] **Audit Log Explorer** — Advanced filtering, export to CSV/JSON, integrity verification status
 - [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
 
-### Adaptive Learning
+### Adaptive Learning (7.1)
 
-- [ ] Feedback collection system (inline ratings, explicit corrections)
-- [ ] User preference profile (stored in Brain)
-- [ ] Behavioral pattern analyzer
-- [ ] Adaptive response tuning
+- [x] Feedback collection system (inline ratings, explicit corrections)
+- [x] User preference profile (stored in Brain as 'preference' memories)
+- [x] Behavioral pattern analyzer (conversation analysis)
+- [x] Adaptive response tuning (preference injection into system prompt)
 
 ### Proactive Assistance
 
@@ -339,13 +340,13 @@ All core modules maintain >80% coverage thresholds.
 | Phase 6.4a: Lifecycle Hooks | Complete |
 | Phase 6.4b: Code Execution | Complete |
 | Phase 6.5: A2A Protocol | Complete |
-| Phase 7: Integration Expansion | In Progress |
-| Phase 7.1: Adaptive Learning | Planned |
+| Phase 7: Integration Expansion | Complete (DeepSeek, Google Calendar, Notion, GitLab) |
+| Phase 7.1: Adaptive Learning | Complete |
 | Phase 7.2: Proactive Assistance | Planned |
 | Phase 7.3: Multimodal I/O | Planned |
 | Phase 8.1: Web Scraping Tools | Complete |
 | Phase 8.2: Web Search Tools | Complete |
-| Phase 8.3: Browser Automation | Deferred (placeholders registered) |
+| Phase 8.3: Browser Automation | Complete (Playwright) |
 | Phase 8.6: MCP Infrastructure (Health/Credentials) | Complete |
 | Phase 8.7: Dashboard UI (Toggles/Health/Credentials) | Complete |
 
@@ -353,7 +354,7 @@ All core modules maintain >80% coverage thresholds.
 
 ## Phase 8: WebMCP — Web Intelligence & Browser Automation
 
-**Status**: In Progress (8.1, 8.2, 8.6, 8.7 Complete; 8.3–8.5 Planned) | **Reference**: [Bright Data MCP](https://github.com/brightdata/brightdata-mcp)
+**Status**: In Progress (8.1, 8.2, 8.3, 8.6, 8.7 Complete; 8.4–8.5 Planned) | **Reference**: [Bright Data MCP](https://github.com/brightdata/brightdata-mcp)
 
 Enable FRIDAY with real-time web browsing, scraping, and browser automation capabilities.
 
@@ -397,14 +398,16 @@ The [Bright Data MCP](https://github.com/brightdata/brightdata-mcp) provides:
 - [x] `web_search` — Web search with configurable backend (DuckDuckGo, SerpAPI, Tavily)
 - [x] `web_search_batch` — Batch search for research tasks (max 5 queries)
 
-#### 8.3 — Browser Automation (Deferred — requires Playwright/Puppeteer)
+#### 8.3 — Browser Automation (Complete — Playwright)
 
-- [ ] `browser_navigate` — Navigate to URL and return page content (placeholder registered)
-- [ ] `browser_screenshot` — Visual capture of pages (placeholder registered)
-- [ ] `browser_click` — Interactive element clicking (placeholder registered)
-- [ ] `browser_fill` — Form filling automation (placeholder registered)
-- [ ] `browser_evaluate` — Execute JavaScript in browser context (placeholder registered)
-- [ ] `browser_pdf` — Generate PDF from webpage (placeholder registered)
+- [x] `browser_navigate` — Navigate to URL, return title + URL + content snippet
+- [x] `browser_screenshot` — Capture viewport or full page as base64 PNG
+- [x] `browser_click` — Click element by CSS selector with configurable wait
+- [x] `browser_fill` — Fill form field by CSS selector
+- [x] `browser_evaluate` — Execute JavaScript in browser context, return JSON
+- [x] `browser_pdf` — Generate PDF from webpage as base64
+- [x] `BrowserPool` manager — lazy launch, page limit enforcement, timeout, graceful shutdown
+- [x] `playwright` as optional dependency (users install separately)
 
 #### 8.4 — Specialized Extractors
 

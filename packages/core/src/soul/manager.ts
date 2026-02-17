@@ -99,7 +99,7 @@ export class SoulManager {
         heartEnabled: true,
         creationConfig: { skills: false, tasks: false, personalities: false, subAgents: false, customRoles: false, roleAssignments: false, experiments: false },
         selectedServers: [],
-        mcpFeatures: { exposeGit: false, exposeFilesystem: false },
+        mcpFeatures: { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false },
       },
     });
 
@@ -329,13 +329,26 @@ export class SoulManager {
     const mcpFeatures = personality?.body?.mcpFeatures ?? {
       exposeGit: false,
       exposeFilesystem: false,
+      exposeWeb: false,
+      exposeWebScraping: false,
+      exposeWebSearch: false,
+      exposeBrowser: false,
     };
     if (selectedServers.length > 0) {
       lines.push('');
       lines.push('### MCP Connections');
       lines.push(`Connected servers: ${selectedServers.join(', ')}`);
+      const webParts: string[] = [];
+      if (mcpFeatures.exposeWeb) {
+        const webSubs: string[] = [];
+        if (mcpFeatures.exposeWebScraping) webSubs.push('scraping');
+        if (mcpFeatures.exposeWebSearch) webSubs.push('search');
+        webParts.push(webSubs.length > 0 ? `enabled (${webSubs.join(', ')})` : 'enabled');
+      } else {
+        webParts.push('disabled');
+      }
       lines.push(
-        `Tool categories — Git: ${mcpFeatures.exposeGit ? 'enabled' : 'disabled'}, Filesystem: ${mcpFeatures.exposeFilesystem ? 'enabled' : 'disabled'}`
+        `Tool categories — Git: ${mcpFeatures.exposeGit ? 'enabled' : 'disabled'}, Filesystem: ${mcpFeatures.exposeFilesystem ? 'enabled' : 'disabled'}, Web: ${webParts[0]}, Browser: ${mcpFeatures.exposeBrowser ? 'enabled' : 'disabled'}`
       );
     }
 

@@ -31,6 +31,7 @@ const mockFetchMcpTools = vi.mocked(api.fetchMcpTools);
 const mockFetchMcpConfig = vi.mocked(api.fetchMcpConfig);
 const mockFetchIntegrations = vi.mocked(api.fetchIntegrations);
 const mockFetchAvailablePlatforms = vi.mocked(api.fetchAvailablePlatforms);
+const mockTestIntegration = vi.mocked(api.testIntegration);
 
 function createQueryClient() {
   return new QueryClient({
@@ -77,7 +78,7 @@ describe('ConnectionsPage', () => {
   it('renders all three tabs', async () => {
     renderComponent();
     expect(await screen.findByText('Messaging')).toBeInTheDocument();
-    expect(screen.getByText('MCP Servers')).toBeInTheDocument();
+    expect(screen.getByText('MCP')).toBeInTheDocument();
     expect(screen.getByText('OAuth')).toBeInTheDocument();
   });
 
@@ -92,7 +93,7 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     renderComponent();
 
-    const mcpTab = await screen.findByText('MCP Servers');
+    const mcpTab = await screen.findByText('MCP');
     await user.click(mcpTab);
 
     expect(screen.getByText('Add Server')).toBeInTheDocument();
@@ -162,7 +163,7 @@ describe('ConnectionsPage', () => {
 
     renderComponent();
 
-    const mcpTab = await screen.findByText('MCP Servers');
+    const mcpTab = await screen.findByText('MCP');
     await user.click(mcpTab);
 
     expect(screen.getByText('Test MCP')).toBeInTheDocument();
@@ -172,7 +173,7 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     renderComponent();
 
-    const mcpTab = await screen.findByText('MCP Servers');
+    const mcpTab = await screen.findByText('MCP');
     await user.click(mcpTab);
 
     const addButton = screen.getByText('Add Server');
@@ -206,5 +207,78 @@ describe('ConnectionsPage', () => {
 
     expect(screen.getByText('Connected OAuth Providers')).toBeInTheDocument();
     expect(screen.getAllByText('Google').length).toBeGreaterThan(0);
+  });
+
+  it('shows Test button for each integration', async () => {
+    mockFetchIntegrations.mockResolvedValue({
+      integrations: createIntegrationList(),
+      total: 3,
+      running: 1,
+    });
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['telegram', 'discord', 'slack'] });
+
+    renderComponent();
+    await screen.findByText('Friday Telegram');
+
+    const testButtons = screen.getAllByText('Test');
+    expect(testButtons.length).toBe(3);
+  });
+
+  it('calls testIntegration when Test button clicked', async () => {
+    const user = userEvent.setup();
+    mockTestIntegration.mockResolvedValue({ ok: true, message: 'Connection OK' });
+    mockFetchIntegrations.mockResolvedValue({
+      integrations: createIntegrationList(),
+      total: 3,
+      running: 1,
+    });
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['telegram', 'discord', 'slack'] });
+
+    renderComponent();
+    await screen.findByText('Friday Telegram');
+
+    const testButtons = screen.getAllByText('Test');
+    await user.click(testButtons[0]);
+
+    // Integrations are sorted alphabetically, so "Dev Discord" comes first
+    expect(mockTestIntegration).toHaveBeenCalledWith('int-discord-1');
+  });
+
+  it('displays success result after test', async () => {
+    const user = userEvent.setup();
+    mockTestIntegration.mockResolvedValue({ ok: true, message: 'Connection OK' });
+    mockFetchIntegrations.mockResolvedValue({
+      integrations: createIntegrationList(),
+      total: 3,
+      running: 1,
+    });
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['telegram', 'discord', 'slack'] });
+
+    renderComponent();
+    await screen.findByText('Friday Telegram');
+
+    const testButtons = screen.getAllByText('Test');
+    await user.click(testButtons[0]);
+
+    expect(await screen.findByText('Connection OK')).toBeInTheDocument();
+  });
+
+  it('displays failure result after test', async () => {
+    const user = userEvent.setup();
+    mockTestIntegration.mockResolvedValue({ ok: false, message: 'Invalid token' });
+    mockFetchIntegrations.mockResolvedValue({
+      integrations: createIntegrationList(),
+      total: 3,
+      running: 1,
+    });
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['telegram', 'discord', 'slack'] });
+
+    renderComponent();
+    await screen.findByText('Friday Telegram');
+
+    const testButtons = screen.getAllByText('Test');
+    await user.click(testButtons[0]);
+
+    expect(await screen.findByText('Invalid token')).toBeInTheDocument();
   });
 });
