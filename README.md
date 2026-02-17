@@ -352,7 +352,7 @@ npm run build --workspace=@secureyeoman/mcp
 
 ### Versioning
 
-SecureYeoman uses **calendar versioning** in the format `YYYY.M.D` (e.g., `2026.2.16` for February 16, 2026). The version reflects the release date, not a semver progression.
+SecureYeoman uses **calendar versioning** in the format `YYYY.M.D` (e.g., `2026.2.17` for February 17, 2026). The version reflects the release date, not a semver progression.
 
 To update the version across all packages:
 

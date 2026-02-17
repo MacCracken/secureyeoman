@@ -1,19 +1,24 @@
 /**
- * Agents Page — Consolidated view for Sub-Agent Delegation and A2A Networking.
- *
- * Combines the former SubAgentsPage and A2APage into a single, unified Agents view
- * with two primary sections accessible via top-level tabs.
+ * Agents Page — Consolidated view for Sub-Agent Delegation, A2A Networking,
+ * Multimodal I/O, Web (Browser Automation + Scraper Config), and Vector Memory Explorer.
  */
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Users, Network, ShieldAlert, Wand2 } from 'lucide-react';
-import { fetchAgentConfig, fetchSecurityPolicy, fetchA2AConfig } from '../api/client';
+import { Users, Network, ShieldAlert, Wand2, Globe, Brain } from 'lucide-react';
+import {
+  fetchAgentConfig,
+  fetchSecurityPolicy,
+  fetchA2AConfig,
+  fetchActivePersonality,
+} from '../api/client';
 import { SubAgentsPage } from './SubAgentsPage';
 import { A2APage } from './A2APage';
 import { MultimodalPage } from './MultimodalPage';
+import { WebPage } from './WebPage';
+import { VectorMemoryExplorerPage } from './VectorMemoryExplorerPage';
 
-type SectionId = 'multimodal' | 'delegation' | 'a2a';
+type SectionId = 'multimodal' | 'web' | 'vectorMemory' | 'delegation' | 'a2a';
 
 export function AgentsPage() {
   const [activeSection, setActiveSection] = useState<SectionId>('delegation');
@@ -34,6 +39,12 @@ export function AgentsPage() {
     queryFn: fetchA2AConfig,
   });
 
+  const { data: personalityData } = useQuery({
+    queryKey: ['activePersonality'],
+    queryFn: fetchActivePersonality,
+    staleTime: 30000,
+  });
+
   const subAgentsEnabled =
     (agentConfig?.config)?.enabled === true ||
     agentConfig?.allowedBySecurityPolicy === true ||
@@ -43,7 +54,19 @@ export function AgentsPage() {
 
   const multimodalEnabled = securityPolicy?.allowMultimodal === true;
 
-  const neitherEnabled = !subAgentsEnabled && !a2aEnabled && !multimodalEnabled;
+  // Web tab: enabled when the active personality has any web/browser MCP tools enabled
+  const mcpFeatures = personalityData?.personality?.body?.mcpFeatures;
+  const webEnabled =
+    mcpFeatures?.exposeWeb === true ||
+    mcpFeatures?.exposeWebScraping === true ||
+    mcpFeatures?.exposeWebSearch === true ||
+    mcpFeatures?.exposeBrowser === true;
+
+  // Vector Memory Explorer: always available (brain is a core subsystem)
+  const vectorMemoryEnabled = true;
+
+  const neitherEnabled =
+    !subAgentsEnabled && !a2aEnabled && !multimodalEnabled && !webEnabled && !vectorMemoryEnabled;
 
   if (neitherEnabled) {
     return (
@@ -72,12 +95,29 @@ export function AgentsPage() {
       enabled: multimodalEnabled,
     },
     {
+      id: 'web',
+      label: 'Web',
+      icon: <Globe className="w-4 h-4" />,
+      enabled: webEnabled,
+    },
+    {
+      id: 'vectorMemory',
+      label: 'Vector Memory',
+      icon: <Brain className="w-4 h-4" />,
+      enabled: vectorMemoryEnabled,
+    },
+    {
       id: 'delegation',
       label: 'Sub-Agents',
       icon: <Users className="w-4 h-4" />,
       enabled: subAgentsEnabled,
     },
-    { id: 'a2a', label: 'A2A Network', icon: <Network className="w-4 h-4" />, enabled: a2aEnabled },
+    {
+      id: 'a2a',
+      label: 'A2A Network',
+      icon: <Network className="w-4 h-4" />,
+      enabled: a2aEnabled,
+    },
   ];
 
   const availableSections = sections.filter((s) => s.enabled);
@@ -91,6 +131,8 @@ export function AgentsPage() {
           <h1 className="text-2xl font-bold">Agents</h1>
         </div>
         {availableSections[0].id === 'multimodal' && <MultimodalPage embedded />}
+        {availableSections[0].id === 'web' && <WebPage embedded />}
+        {availableSections[0].id === 'vectorMemory' && <VectorMemoryExplorerPage embedded />}
         {availableSections[0].id === 'delegation' && <SubAgentsPage embedded />}
         {availableSections[0].id === 'a2a' && <A2APage embedded />}
       </div>
@@ -110,14 +152,14 @@ export function AgentsPage() {
       </div>
 
       {/* Section tabs */}
-      <div className="flex gap-1 border-b border-border">
+      <div className="flex gap-1 border-b border-border overflow-x-auto">
         {availableSections.map((section) => (
           <button
             key={section.id}
             onClick={() => {
               setActiveSection(section.id);
             }}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               effectiveSection === section.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -130,6 +172,8 @@ export function AgentsPage() {
       </div>
 
       {effectiveSection === 'multimodal' && <MultimodalPage embedded />}
+      {effectiveSection === 'web' && <WebPage embedded />}
+      {effectiveSection === 'vectorMemory' && <VectorMemoryExplorerPage embedded />}
       {effectiveSection === 'delegation' && <SubAgentsPage embedded />}
       {effectiveSection === 'a2a' && <A2APage embedded />}
     </div>

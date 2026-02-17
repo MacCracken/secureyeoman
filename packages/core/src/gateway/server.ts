@@ -47,6 +47,7 @@ import { registerExecutionRoutes } from '../execution/execution-routes.js';
 import { registerA2ARoutes } from '../a2a/a2a-routes.js';
 import { registerProactiveRoutes } from '../proactive/proactive-routes.js';
 import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
+import { registerBrowserRoutes } from '../browser/browser-routes.js';
 import { formatPrometheusMetrics } from './prometheus.js';
 
 /** Read version from the closest package.json (core → root). */
@@ -506,6 +507,35 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Multimodal routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Browser Automation Session routes
+    try {
+      const browserSessionStorage = this.secureYeoman.getBrowserSessionStorage();
+      if (browserSessionStorage) {
+        // Security policy gate: block browser session requests when disabled
+        this.app.addHook('onRequest', async (request, reply) => {
+          if (request.url.startsWith('/api/v1/browser/')) {
+            const currentMcpStorage = this.secureYeoman.getMcpStorage();
+            const currentCfg = currentMcpStorage ? await currentMcpStorage.getConfig() : null;
+            if (!currentCfg?.exposeBrowser) {
+              return reply
+                .code(403)
+                .send({ error: 'Forbidden: Browser automation is disabled' });
+            }
+          }
+        });
+        // browserConfig is fetched at request time via the /api/v1/browser/config route
+        registerBrowserRoutes(this.app, {
+          browserSessionStorage,
+          browserConfig: { exposeBrowser: true },
+        });
+        this.getLogger().info('Browser automation routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Browser automation routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

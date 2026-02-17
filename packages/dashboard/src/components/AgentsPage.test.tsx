@@ -10,6 +10,8 @@ vi.mock('../api/client', () => ({
   fetchAgentConfig: vi.fn(),
   fetchSecurityPolicy: vi.fn(),
   fetchA2AConfig: vi.fn(),
+  fetchMcpConfig: vi.fn(),
+  fetchActivePersonality: vi.fn(),
   // SubAgentsPage dependencies
   fetchAgentProfiles: vi.fn(),
   fetchDelegations: vi.fn(),
@@ -30,6 +32,18 @@ vi.mock('../api/client', () => ({
   fetchA2AMessages: vi.fn(),
   // MultimodalPage dependencies
   fetchMultimodalJobs: vi.fn(),
+  // BrowserAutomationPage / WebPage dependencies
+  fetchBrowserSessions: vi.fn(),
+  closeBrowserSession: vi.fn(),
+  updateMcpConfig: vi.fn(),
+  // VectorMemoryExplorerPage dependencies
+  fetchMemories: vi.fn(),
+  fetchKnowledge: vi.fn(),
+  searchSimilar: vi.fn(),
+  addMemory: vi.fn(),
+  deleteMemory: vi.fn(),
+  deleteKnowledge: vi.fn(),
+  reindexBrain: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -37,6 +51,7 @@ import * as api from '../api/client';
 const mockFetchAgentConfig = vi.mocked(api.fetchAgentConfig);
 const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchA2AConfig = vi.mocked(api.fetchA2AConfig);
+const mockFetchActivePersonality = vi.mocked(api.fetchActivePersonality);
 const mockFetchAgentProfiles = vi.mocked(api.fetchAgentProfiles);
 const mockFetchActiveDelegations = vi.mocked(api.fetchActiveDelegations);
 const mockFetchDelegations = vi.mocked(api.fetchDelegations);
@@ -44,6 +59,9 @@ const mockFetchA2APeers = vi.mocked(api.fetchA2APeers);
 const mockFetchA2ACapabilities = vi.mocked(api.fetchA2ACapabilities);
 const mockFetchA2AMessages = vi.mocked(api.fetchA2AMessages);
 const mockFetchMultimodalJobs = vi.mocked(api.fetchMultimodalJobs);
+const mockFetchBrowserSessions = vi.mocked(api.fetchBrowserSessions);
+const mockFetchMemories = vi.mocked(api.fetchMemories);
+const mockFetchKnowledge = vi.mocked(api.fetchKnowledge);
 
 function createQueryClient() {
   return new QueryClient({
@@ -80,6 +98,9 @@ describe('AgentsPage', () => {
     });
     mockFetchSecurityPolicy.mockResolvedValue(DEFAULT_POLICY);
     mockFetchA2AConfig.mockResolvedValue({ config: { enabled: true } });
+    mockFetchActivePersonality.mockResolvedValue({
+      personality: null,
+    });
     // SubAgentsPage data
     mockFetchAgentProfiles.mockResolvedValue({ profiles: [] });
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
@@ -90,6 +111,11 @@ describe('AgentsPage', () => {
     mockFetchA2AMessages.mockResolvedValue({ messages: [], total: 0 });
     // MultimodalPage data
     mockFetchMultimodalJobs.mockResolvedValue({ jobs: [], total: 0 });
+    // BrowserAutomationPage data
+    mockFetchBrowserSessions.mockResolvedValue({ sessions: [], total: 0 });
+    // VectorMemoryExplorerPage data
+    mockFetchMemories.mockResolvedValue({ memories: [] });
+    mockFetchKnowledge.mockResolvedValue({ knowledge: [] });
   });
 
   // ── Header ──────────────────────────────────────────────────
@@ -99,56 +125,45 @@ describe('AgentsPage', () => {
     expect(await screen.findByText('Agents')).toBeInTheDocument();
   });
 
-  // ── Disabled State ──────────────────────────────────────────
-
-  it('shows disabled message when no agent features are enabled', async () => {
-    mockFetchAgentConfig.mockResolvedValue({
-      config: { enabled: false },
-      allowedBySecurityPolicy: false,
-    });
-    mockFetchSecurityPolicy.mockResolvedValue({
-      allowSubAgents: false,
-      allowA2A: false,
-      allowExtensions: false,
-      allowExecution: true,
-      allowProactive: false,
-      allowExperiments: false,
-      allowMultimodal: false,
-    });
-    mockFetchA2AConfig.mockResolvedValue({ config: { enabled: false } });
-    renderComponent();
-    expect(await screen.findByText('Agent Features Not Enabled')).toBeInTheDocument();
-  });
-
-  it('shows agents page when only multimodal is enabled', async () => {
-    mockFetchAgentConfig.mockResolvedValue({
-      config: { enabled: false },
-      allowedBySecurityPolicy: false,
-    });
-    mockFetchSecurityPolicy.mockResolvedValue({
-      allowSubAgents: false,
-      allowA2A: false,
-      allowExtensions: false,
-      allowExecution: true,
-      allowProactive: false,
-      allowExperiments: false,
-      allowMultimodal: true,
-    });
-    mockFetchA2AConfig.mockResolvedValue({ config: { enabled: false } });
-    renderComponent();
-    // Wait for multimodal content to appear (job viewer)
-    expect(await screen.findByText('Jobs')).toBeInTheDocument();
-    // Should not show the disabled message
-    expect(screen.queryByText('Agent Features Not Enabled')).not.toBeInTheDocument();
-  });
-
   // ── Tab Visibility ──────────────────────────────────────────
 
-  it('shows all three tabs when all features are enabled', async () => {
+  it('shows core tabs when features are enabled', async () => {
     renderComponent();
     expect(await screen.findByText('Multimodal')).toBeInTheDocument();
     expect(screen.getByText('Sub-Agents')).toBeInTheDocument();
     expect(screen.getByText('A2A Network')).toBeInTheDocument();
+    expect(screen.getByText('Vector Memory')).toBeInTheDocument();
+  });
+
+  it('shows Web tab when personality has web MCP features', async () => {
+    mockFetchActivePersonality.mockResolvedValue({
+      personality: {
+        id: 'p1',
+        name: 'Test',
+        isActive: true,
+        body: { mcpFeatures: { exposeBrowser: true } },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      } as any,
+    });
+    renderComponent();
+    expect(await screen.findByText('Web')).toBeInTheDocument();
+  });
+
+  it('hides Web tab when personality has no web MCP features', async () => {
+    mockFetchActivePersonality.mockResolvedValue({
+      personality: {
+        id: 'p1',
+        name: 'Test',
+        isActive: true,
+        body: { mcpFeatures: { exposeGit: true } },
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      } as any,
+    });
+    renderComponent();
+    expect(await screen.findByText('Multimodal')).toBeInTheDocument();
+    expect(screen.queryByText('Web')).not.toBeInTheDocument();
   });
 
   it('hides Multimodal tab when allowMultimodal is false', async () => {
@@ -186,27 +201,6 @@ describe('AgentsPage', () => {
     expect(screen.queryByText('A2A Network')).not.toBeInTheDocument();
   });
 
-  // ── Single Section ──────────────────────────────────────────
-
-  it('renders single section directly without tabs when only one is enabled', async () => {
-    mockFetchAgentConfig.mockResolvedValue({
-      config: { enabled: false },
-      allowedBySecurityPolicy: false,
-    });
-    mockFetchSecurityPolicy.mockResolvedValue({
-      ...DEFAULT_POLICY,
-      allowSubAgents: false,
-      allowA2A: false,
-      allowMultimodal: true,
-    });
-    mockFetchA2AConfig.mockResolvedValue({ config: { enabled: false } });
-    renderComponent();
-    // Should show multimodal content directly (no tab bar)
-    await screen.findByText('Agents');
-    // No tab buttons when single section
-    expect(screen.queryByRole('button', { name: 'Multimodal' })).not.toBeInTheDocument();
-  });
-
   // ── Tab Switching ───────────────────────────────────────────
 
   it('defaults to Sub-Agents tab', async () => {
@@ -229,5 +223,13 @@ describe('AgentsPage', () => {
     await screen.findByText('A2A Network');
     await user.click(screen.getByText('A2A Network'));
     expect(await screen.findByText('No peers connected')).toBeInTheDocument();
+  });
+
+  it('switches to Vector Memory tab on click', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Vector Memory');
+    await user.click(screen.getByText('Vector Memory'));
+    expect((await screen.findAllByText('Semantic Search')).length).toBeGreaterThan(0);
   });
 });

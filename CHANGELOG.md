@@ -4,6 +4,33 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 13: Dashboard & Tooling — Complete (2026.2.17)
+
+### Browser Automation Session Manager (new)
+- New `browser.sessions` PostgreSQL table for tracking browser automation sessions
+- `BrowserSessionStorage` class extending `PgBaseStorage` with full CRUD, filtering, and stats
+- REST API routes: `GET /api/v1/browser/sessions`, `GET /api/v1/browser/sessions/:id`, `POST /api/v1/browser/sessions/:id/close`, `GET /api/v1/browser/config`, `GET /api/v1/browser/sessions/stats`
+- Session event instrumentation on all 6 Playwright browser tools (`browser_navigate`, `browser_screenshot`, `browser_click`, `browser_fill`, `browser_evaluate`, `browser_pdf`)
+- Dashboard `BrowserAutomationPage` component with stats cards, status/tool filters, paginated session table, expandable row detail with screenshot preview and close button
+- Dashboard API client functions: `fetchBrowserSessions`, `fetchBrowserSession`, `closeBrowserSession`, `fetchBrowserConfig`
+
+### Web Scraper Configuration Panel (new)
+- `WebScraperConfigPage` component with URL allowlist management, rate limiting, and proxy settings
+- `WebPage` wrapper component with sub-tabs for Browser Automation and Scraper Config
+- Extended `McpFeatureConfig` with scraper settings (allowedUrls, webRateLimitPerMinute, proxy fields)
+- PATCH `/api/v1/mcp/config` now supports scraper configuration updates
+- Web tab in Agents page gated by active personality's `mcpFeatures` (exposeWeb/exposeWebScraping/exposeWebSearch/exposeBrowser)
+
+### Vector Memory Explorer (new)
+- `VectorMemoryExplorerPage` component with 4 sub-tabs: Semantic Search, Memories, Knowledge, Add Entry
+- Semantic search with configurable similarity threshold, type filtering, and similarity score visualization
+- Memory and knowledge browsing with expandable rows, delete actions, and reindex button
+- Manual memory entry form with type, source, importance, and content fields
+- Dashboard API client functions: `addMemory`, `deleteMemory`
+- Vector Memory tab always visible in Agents page (brain is a core subsystem)
+
+---
+
 ## Phase 11 (Partial): Expanded Integrations — In Progress
 
 ### Mistral AI Provider (new)

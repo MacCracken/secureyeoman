@@ -23,7 +23,8 @@
 | | **Release 2026.2.17** | **2026-02-17** | **Released** |
 | 11 | Dashboard UX | — | Complete |
 | 12 | Expanded Integrations | — | Complete |
-| 13 | Dashboard & Tooling | — | In Progress |
+| 13 | Dashboard & Tooling | 2026.2.17 | Complete |
+| 14 | Integration Expansion | — | Planned |
 
 ---
 
@@ -369,23 +370,52 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 
 ## Phase 13: Dashboard & Tooling
 
-**Status**: In Progress
+**Status**: Complete
 
 ### Memory & Intelligence
-- [ ] **Vector Memory Explorer** — Dashboard view for semantic search across memories with similarity scores, embedding visualization, and manual memory entry
-
-### Developer Tools
-- [ ] **Lifecycle Hook Debugger** — Hook registration view, execution log, and test trigger for each hook point
+- [x] **Vector Memory Explorer** — Dashboard view for semantic search across memories with similarity scores, embedding visualization, and manual memory entry
 
 ### WebMCP Dashboard
-- [ ] **Web Scraper Configuration Panel** — UI for configuring scraping jobs, URL allowlists, and proxy settings
-- [ ] **Browser Automation Session Manager** — View active browser sessions, screenshots, and session lifecycle controls
+- [x] **Web Scraper Configuration Panel** — UI for configuring scraping jobs, URL allowlists, and proxy settings
+- [x] **Browser Automation Session Manager** — View active browser sessions, screenshots, and session lifecycle controls
 
-### Component Development
+---
+
+## Phase 14: Integration Expansion
+
+**Status**: Planned
+
+### Dashboard & Tooling (from Phase 13)
+- [ ] **Lifecycle Hook Debugger** — Hook registration view, execution log, and test trigger for each hook point
 - [ ] **Storybook** — Component development environment for dashboard UI components
-
-### Administration
 - [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
+
+### CLI Cleanup
+- [ ] **CLI Modernization** — Update and clean up CLI commands to align with latest subsystems (browser, vector memory, web scraper, A2A, multimodal)
+
+### Productivity Integrations
+- [ ] **Airtable** — Base CRUD operations, record management, view filtering
+- [ ] **Linear** — Issue creation, status updates, sprint management, webhook listeners
+- [ ] **Todoist** — Task management, project sync, due date handling
+
+### Services & Cloud Integrations
+- [ ] **Spotify** — Playback control, playlist management, now playing info
+- [ ] **YouTube** — Video search, channel info, playlist management
+- [ ] **Figma** — File access, comment sync, design file metadata
+- [ ] **Stripe** — Payment status webhooks, customer lookup, invoice triggers
+- [ ] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation
+
+### Integration Architecture Improvements
+- [ ] **Dynamic Integration Loading** — Load/unload integrations at runtime without restart
+- [ ] **OAuth2 First-Class Support** — Unified OAuth2 flow for Google services (Gmail, Calendar, Drive)
+- [ ] **Webhook Transformation Rules** — Custom payload transformation templates
+- [ ] **Outbound Webhooks** — Event-driven HTTP callbacks for integration events
+
+### Platform-Specific Enhancements
+- [ ] **Telegram** — Inline keyboards, photo/document handling, voice messages
+- [ ] **Discord** — Thread support, modal dialogs, slash command registration
+- [ ] **Slack** — Interactive messages with block actions, modal dialogs, workflow builder
+- [ ] **GitHub** — PR review automation, code search tools, issue automation workflows
 
 ---
 

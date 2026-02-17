@@ -13,6 +13,13 @@ export interface McpFeatureConfig {
   exposeWebScraping: boolean;
   exposeWebSearch: boolean;
   exposeBrowser: boolean;
+  // Web scraper configuration (Phase 13)
+  allowedUrls: string[];
+  webRateLimitPerMinute: number;
+  proxyEnabled: boolean;
+  proxyProviders: string[];
+  proxyStrategy: string;
+  proxyDefaultCountry: string;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -22,6 +29,12 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   exposeWebScraping: true,
   exposeWebSearch: true,
   exposeBrowser: false,
+  allowedUrls: [],
+  webRateLimitPerMinute: 10,
+  proxyEnabled: false,
+  proxyProviders: [],
+  proxyStrategy: 'round-robin',
+  proxyDefaultCountry: '',
 };
 
 export class McpStorage extends PgBaseStorage {

@@ -13,6 +13,21 @@ import { wrapToolHandler } from './tool-utils.js';
 import { BrowserPool } from './browser-pool.js';
 import { ProxyManager } from './proxy-manager.js';
 
+export interface BrowserSessionEvent {
+  type: 'create' | 'complete' | 'fail' | 'close';
+  id?: string;
+  toolName?: string;
+  url?: string;
+  title?: string;
+  viewportW?: number;
+  viewportH?: number;
+  screenshot?: string;
+  durationMs?: number;
+  error?: string;
+}
+
+export type OnBrowserSessionEvent = (event: BrowserSessionEvent) => void | Promise<void>;
+
 const NOT_AVAILABLE_MSG =
   'Browser automation is not available. Set MCP_EXPOSE_BROWSER=true and install Playwright ' +
   '(npm install playwright && npx playwright install chromium) to enable browser tools.';
@@ -41,8 +56,18 @@ export function getBrowserPool(): BrowserPool | null {
 export function registerBrowserTools(
   server: McpServer,
   config: McpServiceConfig,
-  middleware: ToolMiddleware
+  middleware: ToolMiddleware,
+  onSessionEvent?: OnBrowserSessionEvent
 ): void {
+  const emit = (event: BrowserSessionEvent) => {
+    if (onSessionEvent) {
+      try {
+        void onSessionEvent(event);
+      } catch {
+        // Non-fatal: session tracking should never break tool execution
+      }
+    }
+  };
   server.tool(
     'browser_navigate',
     'Navigate to a URL and return page title, URL, and a content snippet',
@@ -55,6 +80,10 @@ export function registerBrowserTools(
       if (!config.exposeBrowser) {
         return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
       }
+
+      const startTime = Date.now();
+      emit({ type: 'create', toolName: 'browser_navigate', url: args.url });
+      let sessionId: string | undefined;
 
       const pool = getPool(config);
       const page = await pool.getPage();
@@ -71,12 +100,30 @@ export function registerBrowserTools(
           'document.body ? document.body.innerText.slice(0, 2000) : ""'
         );
 
+        emit({
+          type: 'complete',
+          id: sessionId,
+          toolName: 'browser_navigate',
+          url,
+          title,
+          durationMs: Date.now() - startTime,
+        });
+
         return {
           content: [
             { type: 'text' as const, text: JSON.stringify({ title, url, snippet }, null, 2) },
           ],
         };
+      } catch (err) {
+        emit({
+          type: 'fail',
+          id: sessionId,
+          toolName: 'browser_navigate',
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
       } finally {
+        emit({ type: 'close', id: sessionId });
         await pool.releasePage(page);
       }
     })
@@ -96,6 +143,15 @@ export function registerBrowserTools(
         return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
       }
 
+      const startTime = Date.now();
+      emit({
+        type: 'create',
+        toolName: 'browser_screenshot',
+        url: args.url,
+        viewportW: args.width,
+        viewportH: args.height,
+      });
+
       const pool = getPool(config);
       const page = await pool.getPage();
       try {
@@ -104,6 +160,18 @@ export function registerBrowserTools(
 
         const buffer = await page.screenshot({ fullPage: args.fullPage });
         const base64 = buffer.toString('base64');
+        const title = await page.title();
+
+        emit({
+          type: 'complete',
+          toolName: 'browser_screenshot',
+          url: page.url(),
+          title,
+          screenshot: base64,
+          viewportW: args.width,
+          viewportH: args.height,
+          durationMs: Date.now() - startTime,
+        });
 
         return {
           content: [
@@ -114,7 +182,15 @@ export function registerBrowserTools(
             { type: 'text' as const, text: `data:image/png;base64,${base64}` },
           ],
         };
+      } catch (err) {
+        emit({
+          type: 'fail',
+          toolName: 'browser_screenshot',
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
       } finally {
+        emit({ type: 'close', toolName: 'browser_screenshot' });
         await pool.releasePage(page);
       }
     })
@@ -138,6 +214,9 @@ export function registerBrowserTools(
         return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
       }
 
+      const startTime = Date.now();
+      emit({ type: 'create', toolName: 'browser_click' });
+
       const pool = getPool(config);
       const page = await pool.getPage();
       try {
@@ -146,10 +225,25 @@ export function registerBrowserTools(
           await page.waitForTimeout(args.waitAfter);
         }
 
+        emit({
+          type: 'complete',
+          toolName: 'browser_click',
+          url: page.url(),
+          durationMs: Date.now() - startTime,
+        });
+
         return {
           content: [{ type: 'text' as const, text: `Clicked element matching "${args.selector}"` }],
         };
+      } catch (err) {
+        emit({
+          type: 'fail',
+          toolName: 'browser_click',
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
       } finally {
+        emit({ type: 'close', toolName: 'browser_click' });
         await pool.releasePage(page);
       }
     })
@@ -167,10 +261,20 @@ export function registerBrowserTools(
         return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
       }
 
+      const startTime = Date.now();
+      emit({ type: 'create', toolName: 'browser_fill' });
+
       const pool = getPool(config);
       const page = await pool.getPage();
       try {
         await page.fill(args.selector, args.value);
+
+        emit({
+          type: 'complete',
+          toolName: 'browser_fill',
+          url: page.url(),
+          durationMs: Date.now() - startTime,
+        });
 
         return {
           content: [
@@ -180,7 +284,15 @@ export function registerBrowserTools(
             },
           ],
         };
+      } catch (err) {
+        emit({
+          type: 'fail',
+          toolName: 'browser_fill',
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
       } finally {
+        emit({ type: 'close', toolName: 'browser_fill' });
         await pool.releasePage(page);
       }
     })
@@ -197,15 +309,33 @@ export function registerBrowserTools(
         return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
       }
 
+      const startTime = Date.now();
+      emit({ type: 'create', toolName: 'browser_evaluate' });
+
       const pool = getPool(config);
       const page = await pool.getPage();
       try {
         const result = await page.evaluate(args.script);
 
+        emit({
+          type: 'complete',
+          toolName: 'browser_evaluate',
+          url: page.url(),
+          durationMs: Date.now() - startTime,
+        });
+
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],
         };
+      } catch (err) {
+        emit({
+          type: 'fail',
+          toolName: 'browser_evaluate',
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
       } finally {
+        emit({ type: 'close', toolName: 'browser_evaluate' });
         await pool.releasePage(page);
       }
     })
@@ -223,6 +353,9 @@ export function registerBrowserTools(
         return { content: [{ type: 'text' as const, text: NOT_AVAILABLE_MSG }], isError: true };
       }
 
+      const startTime = Date.now();
+      emit({ type: 'create', toolName: 'browser_pdf', url: args.url });
+
       const pool = getPool(config);
       const page = await pool.getPage();
       try {
@@ -230,6 +363,15 @@ export function registerBrowserTools(
 
         const buffer = await page.pdf({ format: args.format });
         const base64 = buffer.toString('base64');
+        const title = await page.title();
+
+        emit({
+          type: 'complete',
+          toolName: 'browser_pdf',
+          url: page.url(),
+          title,
+          durationMs: Date.now() - startTime,
+        });
 
         return {
           content: [
@@ -237,7 +379,15 @@ export function registerBrowserTools(
             { type: 'text' as const, text: `data:application/pdf;base64,${base64}` },
           ],
         };
+      } catch (err) {
+        emit({
+          type: 'fail',
+          toolName: 'browser_pdf',
+          error: err instanceof Error ? err.message : String(err),
+        });
+        throw err;
       } finally {
+        emit({ type: 'close', toolName: 'browser_pdf' });
         await pool.releasePage(page);
       }
     })

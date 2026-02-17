@@ -193,7 +193,7 @@ Types:
 
 ## Versioning
 
-SecureYeoman uses **calendar versioning** (`YYYY.M.D`). The version is the release date — e.g., `2026.2.16` for February 16, 2026.
+SecureYeoman uses **calendar versioning** (`YYYY.M.D`). The version is the release date — e.g., `2026.2.17` for February 17, 2026.
 
 To bump the version across all packages:
 

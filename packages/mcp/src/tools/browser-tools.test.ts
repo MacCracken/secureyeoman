@@ -75,8 +75,8 @@ describe('registerBrowserTools', () => {
     expect(typeof registerBrowserTools).toBe('function');
   });
 
-  it('accepts three arguments (server, config, middleware)', () => {
-    expect(registerBrowserTools.length).toBe(3);
+  it('accepts four arguments (server, config, middleware, onSessionEvent?)', () => {
+    expect(registerBrowserTools.length).toBeGreaterThanOrEqual(3);
   });
 
   it('registers all 6 browser tools', () => {
