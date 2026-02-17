@@ -6,6 +6,57 @@ All notable changes to SecureYeoman are documented in this file.
 
 ## [2026.2.17] — 2026-02-17
 
+### Phase 7.3: Multimodal I/O — Complete
+
+#### Integration Wiring
+- Wired MultimodalManager into IntegrationManager via late-injection setter pattern
+- Vision processing for image attachments in Discord and Slack adapters
+- Voice message transcription already working in Telegram adapter (now connected)
+
+#### Voice Output (TTS)
+- TTS audio in outbound responses via metadata on `sendMessage()`
+- Telegram sends voice messages (OGG via grammy `InputFile`)
+- Discord attaches audio files to embed messages
+- MessageRouter synthesizes TTS when multimodal is enabled
+
+#### Per-Personality Voice
+- MessageRouter reads active personality's `voice` field for TTS voice selection
+- Maps to OpenAI TTS voices (alloy, echo, fable, onyx, nova, shimmer)
+
+#### MCP Multimodal Tools
+- `multimodal_generate_image` — DALL-E image generation
+- `multimodal_analyze_image` — Vision analysis
+- `multimodal_speak` — Text-to-speech
+- `multimodal_transcribe` — Speech-to-text
+- `multimodal_jobs` — List multimodal processing jobs
+
+#### Dashboard
+- Multimodal job viewer page with type/status filters, pagination, expandable rows
+- Stats cards (total, completed, failed, success rate)
+- Sidebar nav item (conditionally visible via `allowMultimodal` policy)
+
+### Phase 8.5: Anti-Bot & Proxy Integration
+
+#### Proxy Rotation
+- Multi-provider proxy support: Bright Data, ScrapingBee, ScraperAPI
+- Round-robin and random rotation strategies
+- Geo-targeting via ISO 3166-1 alpha-2 country codes
+- Feature toggle: `MCP_PROXY_ENABLED` (default: false)
+
+#### CAPTCHA Detection
+- Heuristic CAPTCHA detection (reCAPTCHA, hCaptcha, Cloudflare challenge)
+- Auto-retry with provider rotation on CAPTCHA detection
+
+#### Retry Logic
+- Exponential backoff with jitter for 429, 503, 502, 500, network errors
+- Configurable max retries and base delay
+
+#### Browser Integration
+- Playwright browser launch respects proxy configuration
+
+#### Documentation
+- ADR 044: Anti-Bot & Proxy Integration
+
 ### Phase 9: Kubernetes Production Deployment
 
 #### Helm Chart
@@ -54,6 +105,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 #### Repository
 - Updated all repo URL references from `MacCracken/FRIDAY` to `MacCracken/secureyeoman`
+- Renamed all product-level "F.R.I.D.A.Y." / "FRIDAY" references to "SecureYeoman" across 79 files (preserving "F.R.I.D.A.Y." as the default agent personality name)
 
 ---
 
@@ -428,4 +480,4 @@ SecureYeoman — a secure, local-first AI assistant with enterprise-grade protec
 
 ---
 
-*Last updated: February 16, 2026*
+*Last updated: February 17, 2026*

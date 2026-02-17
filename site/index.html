@@ -60,7 +60,7 @@
       <div class="hero-content">
         <div class="hero-badge">
           <span class="badge-dot"></span>
-          <span>v2026.2.16 Now Available</span>
+          <span>v2026.2.17 Now Available</span>
           <a
             href="https://github.com/MacCracken/secureyeoman/releases"
             target="_blank"
@@ -457,6 +457,7 @@
           <div class="setup-tabs">
             <button class="tab-btn active" data-tab="npm">npm</button>
             <button class="tab-btn" data-tab="docker">Docker</button>
+            <button class="tab-btn" data-tab="kubernetes">Kubernetes</button>
             <button class="tab-btn" data-tab="source">Source</button>
           </div>
           <div class="setup-content">
@@ -476,7 +477,7 @@
                 <div class="window-body">
                   <pre><code><span class="comment"># Clone the repository</span>
 <span class="prompt">$</span> git clone https://github.com/MacCracken/secureyeoman.git
-<span class="prompt">$</span> cd FRIDAY
+<span class="prompt">$</span> cd secureyeoman
 
 <span class="comment"># Install dependencies</span>
 <span class="prompt">$</span> npm install
@@ -513,6 +514,36 @@
 <span class="comment"># Fresh start</span>
 <span class="prompt">$</span> docker compose down -v
 <span class="prompt">$</span> docker compose up -d</code></pre>
+                </div>
+              </div>
+            </div>
+            <div class="tab-panel" id="kubernetes">
+              <div class="code-window">
+                <div class="window-header">
+                  <div class="window-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span class="window-title">terminal</span>
+                  <button class="copy-btn">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <div class="window-body">
+                  <pre><code><span class="comment"># Deploy with Helm (EKS, GKE, AKS)</span>
+<span class="prompt">$</span> helm install friday deploy/helm/friday \
+    --namespace friday --create-namespace \
+    --set secrets.postgresPassword=your-password \
+    --set database.host=your-db.example.com
+
+<span class="comment"># Production deployment</span>
+<span class="prompt">$</span> helm install friday deploy/helm/friday \
+    -f deploy/helm/friday/values-production.yaml \
+    --namespace friday-production --create-namespace
+
+<span class="comment"># Verify</span>
+<span class="prompt">$</span> helm test friday --namespace friday</code></pre>
                 </div>
               </div>
             </div>

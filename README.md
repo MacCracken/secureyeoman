@@ -2,7 +2,7 @@
 
 > Comes with default Agent Personality F.R.I.D.A.Y. **F**ully **R**esponsive **I**ntegrated **D**igitally **A**daptable **Y**eoman
 
-[![Version](https://img.shields.io/badge/Version-2026.2.16-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.16)
+[![Version](https://img.shields.io/badge/Version-2026.2.17-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.17)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
@@ -10,6 +10,7 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Helm-326CE5.svg)](https://helm.sh/)
 
 > A secure, local-first AI assistant with enterprise-grade protection and comprehensive observability.
 
@@ -59,7 +60,8 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Team Collaboration** | Workspaces with isolation, member management, workspace-scoped RBAC |
 | **Reports & Analytics** | Audit report generator (JSON/HTML/CSV), cost optimization recommendations, A/B testing framework |
 | **Voice** | Push-to-talk (Ctrl+Shift+V), browser-native speech recognition & synthesis, voice overlay |
-| **Development** | TypeScript strict mode, 2100+ tests across 134+ files, Docker multi-stage builds, CI/CD pipeline (lint/typecheck/test/build/security audit) |
+| **Deployment** | Docker multi-stage builds, Kubernetes Helm chart (EKS/GKE/AKS), GHCR image registry, HPA autoscaling, PodDisruptionBudgets, NetworkPolicies, ExternalSecret CRD support |
+| **Development** | TypeScript strict mode, 2100+ tests across 134+ files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint) |
 
 ---
 
@@ -141,6 +143,26 @@ docker compose exec -T postgres psql -U friday friday < backup.sql
 docker build -t friday .
 docker run --env-file .env -p 18789:18789 friday
 ```
+
+### Kubernetes (Helm)
+
+```bash
+# Lint and install
+helm lint deploy/helm/friday
+helm install friday deploy/helm/friday \
+  --namespace friday --create-namespace \
+  --set secrets.postgresPassword=your-password \
+  --set database.host=your-db-host.example.com
+
+# Production deployment
+helm install friday deploy/helm/friday \
+  -f deploy/helm/friday/values-production.yaml \
+  --namespace friday-production --create-namespace \
+  --set secrets.postgresPassword=your-password \
+  --set database.host=production-db.example.com
+```
+
+See the [Kubernetes Deployment Guide](docs/guides/kubernetes-deployment.md) for cloud-specific configurations (EKS, GKE, AKS).
 
 ### Environment Variables
 
@@ -274,8 +296,8 @@ friday/
 │   ├── dashboard/       # React UI (Vite + Tailwind + TanStack Query)
 │   └── mcp/             # Standalone MCP service (34+ tools, 7 resources, 4 prompts)
 ├── tests/               # Security, load (k6), and chaos tests
-├── deploy/              # Docker, Prometheus, Grafana, Loki configs
-├── docs/                # Documentation + ADRs (42 decision records)
+├── deploy/              # Docker, Helm chart, Prometheus, Grafana, Loki configs
+├── docs/                # Documentation + ADRs (43 decision records)
 │   ├── api/             # REST API + WebSocket API + OpenAPI 3.1 spec
 │   ├── adr/             # Architecture Decision Records
 │   ├── guides/          # Getting started, integrations
@@ -353,9 +375,10 @@ This updates all `package.json` files in the monorepo. The core server reads its
 | **OpenAPI Spec** | [OpenAPI 3.1](docs/openapi.yaml) |
 | **Security Model** | [Security Model](docs/security/security-model.md) |
 | **Deployment** | [Deployment Guide](docs/deployment.md) |
+| **Kubernetes** | [Kubernetes Deployment Guide](docs/guides/kubernetes-deployment.md) |
 | **Integrations** | [Integration Setup](docs/guides/integrations.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (42 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (43 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |

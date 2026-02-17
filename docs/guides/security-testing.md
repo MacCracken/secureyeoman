@@ -111,6 +111,14 @@ The smoke test:
 
 Environment variables: `CLUSTER_NAME`, `NAMESPACE`, `TIMEOUT`.
 
+## Proxy Security
+
+When proxy integration is enabled (`MCP_PROXY_ENABLED=true`), the following security properties are maintained:
+
+- **SSRF validation** still applies to the original target URL. Private/reserved IPs (127.0.0.0/8, 10.0.0.0/8, 169.254.0.0/16, etc.) and blocked hostnames (localhost, metadata.google.internal) are rejected regardless of proxy configuration.
+- **Proxy credentials** (API keys, proxy URLs) are never exposed in tool output or error messages.
+- **Domain allowlist** (`MCP_ALLOWED_URLS`) is enforced on the target URL, not the proxy URL.
+
 ## CI Integration
 
 Security tests run as part of the CI pipeline. See `.github/workflows/ci.yml` for the security test job configuration.

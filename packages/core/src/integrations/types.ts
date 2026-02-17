@@ -104,7 +104,7 @@ export const DEFAULT_RATE_LIMITS: Record<string, PlatformRateLimit> = {
 export interface IntegrationDeps {
   logger: SecureLogger;
   onMessage: (message: UnifiedMessage) => Promise<void>;
-  /** Multimodal manager for vision/STT processing (optional) */
+  /** Multimodal manager for vision/STT/TTS processing (optional) */
   multimodalManager?: {
     analyzeImage: (req: {
       imageBase64: string;
@@ -112,6 +112,12 @@ export interface IntegrationDeps {
       prompt?: string;
     }) => Promise<{ description: string }>;
     transcribeAudio: (req: { audioBase64: string; format: string }) => Promise<{ text: string }>;
+    synthesizeSpeech: (req: {
+      text: string;
+      voice?: string;
+      model?: string;
+      responseFormat?: string;
+    }) => Promise<{ audioBase64: string; format: string }>;
   } | null;
 }
 

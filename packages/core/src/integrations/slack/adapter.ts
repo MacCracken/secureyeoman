@@ -46,9 +46,11 @@ export class SlackIntegration implements Integration {
     this.app.message(async ({ message }) => {
       const msg = message as Record<string, any>;
       if (msg.subtype) return; // skip edited, deleted, etc.
-      if (!msg.text) return;
 
       const files = (msg.files ?? []) as Record<string, any>[];
+      // Allow messages with file attachments through even if text is empty
+      if (!msg.text && files.length === 0) return;
+
       const unified: UnifiedMessage = {
         id: `sl_${msg.ts}`,
         integrationId: config.id,
@@ -57,7 +59,7 @@ export class SlackIntegration implements Integration {
         senderId: String(msg.user ?? ''),
         senderName: String(msg.user ?? 'Unknown'),
         chatId: String(msg.channel),
-        text: String(msg.text),
+        text: String(msg.text ?? ''),
         attachments: files.map((f: Record<string, any>) => ({
           type: 'file' as const,
           url: f.url_private ?? undefined,
@@ -73,6 +75,26 @@ export class SlackIntegration implements Integration {
         },
         timestamp: parseFloat(msg.ts) * 1000,
       };
+
+      // Vision processing for image attachments
+      const mmManager = this.deps?.multimodalManager;
+      if (mmManager) {
+        for (const att of unified.attachments ?? []) {
+          if (att.mimeType?.startsWith('image/') && att.url) {
+            try {
+              const resp = await fetch(att.url, {
+                headers: { Authorization: `Bearer ${config.config.botToken as string}` },
+              });
+              const buf = Buffer.from(await resp.arrayBuffer());
+              const result = await mmManager.analyzeImage({
+                imageBase64: buf.toString('base64'),
+                mimeType: att.mimeType!,
+              });
+              unified.text = `[Image: ${result.description}]\n${unified.text}`;
+            } catch { /* non-fatal */ }
+          }
+        }
+      }
 
       void this.deps!.onMessage(unified);
     });

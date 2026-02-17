@@ -39,6 +39,17 @@ export function loadConfig(
     browserTimeoutMs: parseIntSafe(env.MCP_BROWSER_TIMEOUT_MS, 30000),
     rateLimitPerTool: parseIntSafe(env.MCP_RATE_LIMIT_PER_TOOL, 30),
     logLevel: env.MCP_LOG_LEVEL ?? 'info',
+    proxyEnabled: parseBool(env.MCP_PROXY_ENABLED, false),
+    proxyProviders: env.MCP_PROXY_PROVIDERS
+      ? env.MCP_PROXY_PROVIDERS.split(',').map(p => p.trim()).filter(Boolean)
+      : [],
+    proxyStrategy: env.MCP_PROXY_STRATEGY ?? 'round-robin',
+    proxyDefaultCountry: env.MCP_PROXY_DEFAULT_COUNTRY,
+    proxyBrightdataUrl: env.MCP_PROXY_BRIGHTDATA_URL,
+    proxyScrapingbeeKey: env.MCP_PROXY_SCRAPINGBEE_KEY,
+    proxyScraperapiKey: env.MCP_PROXY_SCRAPERAPI_KEY,
+    proxyMaxRetries: parseIntSafe(env.MCP_PROXY_MAX_RETRIES, 3),
+    proxyRetryBaseDelayMs: parseIntSafe(env.MCP_PROXY_RETRY_BASE_DELAY_MS, 1000),
   };
 
   return McpServiceConfigSchema.parse(raw);

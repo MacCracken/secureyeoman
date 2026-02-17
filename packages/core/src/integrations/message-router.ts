@@ -17,6 +17,16 @@ export interface MessageRouterDeps {
   taskExecutor: TaskExecutor;
   integrationManager: IntegrationManager;
   integrationStorage: IntegrationStorage;
+  multimodalManager?: {
+    synthesizeSpeech: (req: {
+      text: string;
+      voice?: string;
+      model?: string;
+      responseFormat?: string;
+    }) => Promise<{ audioBase64: string; format: string }>;
+  } | null;
+  /** Resolve the active personality for TTS voice selection */
+  getActivePersonality?: () => Promise<{ voice?: string | null } | null>;
 }
 
 export class MessageRouter {
@@ -24,6 +34,17 @@ export class MessageRouter {
 
   constructor(deps: MessageRouterDeps) {
     this.deps = deps;
+  }
+
+  /** Inject multimodal + personality deps after construction (avoids init-order issues). */
+  setMultimodalDeps(deps: {
+    multimodalManager: MessageRouterDeps['multimodalManager'];
+    getActivePersonality?: MessageRouterDeps['getActivePersonality'];
+  }): void {
+    (this.deps as MessageRouterDeps).multimodalManager = deps.multimodalManager;
+    if (deps.getActivePersonality) {
+      (this.deps as MessageRouterDeps).getActivePersonality = deps.getActivePersonality;
+    }
   }
 
   /**
@@ -92,11 +113,40 @@ export class MessageRouter {
 
       // If the task completed synchronously, send a response back
       if (task.status === 'completed' && task.result?.success) {
+        const responseText = `Task ${task.id} completed successfully.`;
+        const metadata: Record<string, unknown> = {
+          taskId: task.id,
+          replyToMessageId: message.platformMessageId,
+        };
+
+        // Synthesize TTS audio if multimodal manager is available
+        if (this.deps.multimodalManager) {
+          try {
+            // Per-personality voice selection
+            const OPENAI_VOICES = ['alloy', 'echo', 'fable', 'onyx', 'nova', 'shimmer'];
+            let voice: string | undefined;
+            if (this.deps.getActivePersonality) {
+              const personality = await this.deps.getActivePersonality();
+              if (personality?.voice && OPENAI_VOICES.includes(personality.voice)) {
+                voice = personality.voice;
+              }
+            }
+            const ttsResult = await this.deps.multimodalManager.synthesizeSpeech({
+              text: responseText,
+              voice,
+            });
+            metadata.audioBase64 = ttsResult.audioBase64;
+            metadata.audioFormat = ttsResult.format;
+          } catch (err) {
+            logger.warn(`TTS synthesis failed: ${err instanceof Error ? err.message : String(err)}`);
+          }
+        }
+
         await integrationManager.sendMessage(
           message.integrationId,
           message.chatId,
-          `Task ${task.id} completed successfully.`,
-          { taskId: task.id, replyToMessageId: message.platformMessageId }
+          responseText,
+          metadata
         );
       }
     } catch (err) {

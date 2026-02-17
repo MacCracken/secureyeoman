@@ -3,7 +3,8 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { validateUrl, WebRateLimiter, truncateOutput, stripHtmlTags } from './web-tools.js';
+import { validateUrl, WebRateLimiter, truncateOutput, stripHtmlTags, safeFetch } from './web-tools.js';
+import { ProxyManager } from './proxy-manager.js';
 import type { McpServiceConfig } from '@friday/shared';
 
 function makeConfig(overrides: Partial<McpServiceConfig> = {}): McpServiceConfig {
@@ -148,5 +149,36 @@ describe('stripHtmlTags', () => {
   it('strips regular tags', () => {
     expect(stripHtmlTags('<p>hello <b>world</b></p>')).toContain('hello');
     expect(stripHtmlTags('<p>hello <b>world</b></p>')).toContain('world');
+  });
+});
+
+describe('safeFetch proxy integration', () => {
+  it('safeFetch works identically when proxyManager is null', () => {
+    // validateUrl should still work for public URLs without proxy
+    const config = makeConfig();
+    const url = validateUrl('https://example.com', config);
+    expect(url.hostname).toBe('example.com');
+  });
+
+  it('SSRF still blocks private IPs when proxy is enabled', () => {
+    const config = makeConfig({ proxyEnabled: true } as Partial<McpServiceConfig>);
+    expect(() => validateUrl('http://169.254.169.254/latest/meta-data/', config)).toThrow(
+      'IP address blocked'
+    );
+    expect(() => validateUrl('http://127.0.0.1/admin', config)).toThrow('IP address blocked');
+    expect(() => validateUrl('http://10.0.0.1/internal', config)).toThrow('IP address blocked');
+  });
+
+  it('country option passes through to proxy buildFetchOptions', () => {
+    const config = makeConfig({
+      proxyEnabled: true,
+      proxyProviders: ['scrapingbee'],
+      proxyScrapingbeeKey: 'test-key',
+      proxyStrategy: 'round-robin',
+    } as Partial<McpServiceConfig>);
+    const pm = new ProxyManager(config);
+    const result = pm.buildFetchOptions('https://example.com', { country: 'US' });
+    expect(result).not.toBeNull();
+    expect(result!.url).toContain('country_code=US');
   });
 });

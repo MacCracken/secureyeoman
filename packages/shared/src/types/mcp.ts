@@ -99,6 +99,15 @@ export const McpServiceConfigSchema = z.object({
   browserTimeoutMs: z.number().int().min(5000).max(120000).default(30000),
   rateLimitPerTool: z.number().int().min(1).max(1000).default(30),
   logLevel: z.enum(['trace', 'debug', 'info', 'warn', 'error', 'fatal']).default('info'),
+  proxyEnabled: z.boolean().default(false),
+  proxyProviders: z.array(z.enum(['brightdata', 'scrapingbee', 'scraperapi'])).default([]),
+  proxyStrategy: z.enum(['round-robin', 'random']).default('round-robin'),
+  proxyDefaultCountry: z.string().length(2).optional(),
+  proxyBrightdataUrl: z.string().optional(),
+  proxyScrapingbeeKey: z.string().optional(),
+  proxyScraperapiKey: z.string().optional(),
+  proxyMaxRetries: z.number().int().min(0).max(10).default(3),
+  proxyRetryBaseDelayMs: z.number().int().min(100).max(10000).default(1000),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

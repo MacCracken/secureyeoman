@@ -442,7 +442,14 @@ mcp:
 
 ### MCP Service (`@friday/mcp`)
 
-The standalone MCP service package provides full MCP protocol compliance with 34+ tools (including web scraping, search, and browser automation placeholders), 7 resources, 4 prompts, and 3 transports. It runs as a separate process and communicates with core via REST API. External MCP servers benefit from health monitoring and encrypted credential management.
+The standalone MCP service package provides full MCP protocol compliance with 39+ tools (including web scraping, search, browser automation, and multimodal tools), 7 resources, 4 prompts, and 3 transports. It runs as a separate process and communicates with core via REST API. External MCP servers benefit from health monitoring and encrypted credential management.
+
+**Multimodal MCP Tools** (requires `allowMultimodal` security policy enabled):
+- `multimodal_generate_image` — DALL-E image generation
+- `multimodal_analyze_image` — Vision analysis
+- `multimodal_speak` — Text-to-speech
+- `multimodal_transcribe` — Speech-to-text
+- `multimodal_jobs` — List multimodal processing jobs
 
 Configuration is via environment variables (not the YAML config file):
 
@@ -470,6 +477,15 @@ Configuration is via environment variables (not the YAML config file):
 | `MCP_BROWSER_TIMEOUT_MS` | `30000` | Browser navigation timeout in ms (5000–120000) |
 | `MCP_RATE_LIMIT_PER_TOOL` | `30` | Max tool calls per second per tool (1–1000) |
 | `MCP_LOG_LEVEL` | `info` | Log level: `trace`, `debug`, `info`, `warn`, `error`, `fatal` |
+| `MCP_PROXY_ENABLED` | `false` | Master toggle for proxy rotation layer |
+| `MCP_PROXY_PROVIDERS` | *(empty)* | Comma-separated list: `brightdata`, `scrapingbee`, `scraperapi` |
+| `MCP_PROXY_STRATEGY` | `round-robin` | Provider selection strategy: `round-robin` or `random` |
+| `MCP_PROXY_DEFAULT_COUNTRY` | *(empty)* | Default ISO 3166-1 alpha-2 country code for geo-targeting (e.g., `US`) |
+| `MCP_PROXY_BRIGHTDATA_URL` | *(empty)* | Bright Data proxy URL (e.g., `http://user:pass@brd.superproxy.io:22225`) |
+| `MCP_PROXY_SCRAPINGBEE_KEY` | *(empty)* | ScrapingBee API key |
+| `MCP_PROXY_SCRAPERAPI_KEY` | *(empty)* | ScraperAPI API key |
+| `MCP_PROXY_MAX_RETRIES` | `3` | Max retry attempts on failure/CAPTCHA (0–10) |
+| `MCP_PROXY_RETRY_BASE_DELAY_MS` | `1000` | Base delay for exponential backoff in ms (100–10000) |
 
 **Authentication:** The MCP service self-mints a service JWT on startup using the shared `SECUREYEOMAN_TOKEN_SECRET`. No manual token configuration is needed — just ensure `SECUREYEOMAN_TOKEN_SECRET` is set in your `.env` file (it's the same secret used by core for JWT signing).
 

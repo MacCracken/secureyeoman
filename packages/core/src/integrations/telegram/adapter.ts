@@ -6,7 +6,7 @@
  * through the IntegrationManager's onMessage callback.
  */
 
-import { Bot } from 'grammy';
+import { Bot, InputFile } from 'grammy';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@friday/shared';
 import type { Integration, IntegrationDeps } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
@@ -223,9 +223,21 @@ export class TelegramIntegration implements Integration {
   async sendMessage(
     chatId: string,
     text: string,
-    _metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>
   ): Promise<string> {
     if (!this.bot) throw new Error('Integration not initialized');
+
+    // Send TTS audio if provided in metadata
+    if (metadata?.audioBase64 && typeof metadata.audioBase64 === 'string') {
+      try {
+        const buf = Buffer.from(metadata.audioBase64, 'base64');
+        await this.bot.api.sendVoice(Number(chatId), new InputFile(buf, 'response.ogg'));
+      } catch (err) {
+        this.logger?.warn('Failed to send TTS voice message', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
 
     const sent = await this.bot.api.sendMessage(Number(chatId), text, {
       parse_mode: 'Markdown',

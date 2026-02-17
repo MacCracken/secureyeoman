@@ -11,6 +11,8 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@friday/shared';
 import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler } from './tool-utils.js';
+import { ProxyManager, fetchWithRetry, detectCaptcha, RetryableError } from './proxy-manager.js';
+import type { ProxyRequestOptions } from './proxy-manager.js';
 
 const MAX_OUTPUT_BYTES = 500 * 1024; // 500KB output cap
 const MAX_BATCH_URLS = 10;
@@ -117,7 +119,9 @@ class WebRateLimiter {
 async function safeFetch(
   urlStr: string,
   config: McpServiceConfig,
-  webLimiter: WebRateLimiter
+  webLimiter: WebRateLimiter,
+  proxyManager: ProxyManager | null = null,
+  options?: { country?: string }
 ): Promise<{ body: string; finalUrl: string; contentType: string }> {
   const rate = webLimiter.check();
   if (!rate.allowed) {
@@ -126,41 +130,92 @@ async function safeFetch(
     );
   }
 
-  let currentUrl = urlStr;
-  let redirectCount = 0;
+  const doFetch = async (): Promise<{ body: string; finalUrl: string; contentType: string }> => {
+    let currentUrl = urlStr;
+    let redirectCount = 0;
 
-  while (redirectCount <= MAX_REDIRECTS) {
-    validateUrl(currentUrl, config);
+    while (redirectCount <= MAX_REDIRECTS) {
+      // SSRF validation always applies to the target URL
+      validateUrl(currentUrl, config);
 
-    const response = await fetch(currentUrl, {
-      redirect: 'manual',
-      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      headers: {
-        'User-Agent': 'SecureYeoman-WebMCP/1.0 (bot)',
-        Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-      },
-    });
+      let fetchUrl = currentUrl;
+      let extraHeaders: Record<string, string> = {};
 
-    // Handle redirects manually (re-validate each hop)
-    if ([301, 302, 303, 307, 308].includes(response.status)) {
-      const location = response.headers.get('location');
-      if (!location) throw new Error('Redirect without Location header');
-      currentUrl = new URL(location, currentUrl).href;
-      redirectCount++;
-      continue;
+      if (proxyManager) {
+        const proxyOpts = proxyManager.buildFetchOptions(currentUrl, {
+          country: options?.country ?? config.proxyDefaultCountry,
+        });
+        if (proxyOpts) {
+          fetchUrl = proxyOpts.url;
+          extraHeaders = proxyOpts.headers;
+        }
+      }
+
+      const response = await fetch(fetchUrl, {
+        redirect: 'manual',
+        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        headers: {
+          'User-Agent': 'SecureYeoman-WebMCP/1.0 (bot)',
+          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          ...extraHeaders,
+        },
+      });
+
+      // Handle redirects manually (re-validate each hop)
+      if ([301, 302, 303, 307, 308].includes(response.status)) {
+        const location = response.headers.get('location');
+        if (!location) throw new Error('Redirect without Location header');
+        currentUrl = new URL(location, currentUrl).href;
+        redirectCount++;
+        continue;
+      }
+
+      const contentType = response.headers.get('content-type') ?? 'text/html';
+      const body = await response.text();
+
+      // CAPTCHA detection when proxy is active
+      if (proxyManager && detectCaptcha(body, response.status)) {
+        throw new RetryableError('CAPTCHA detected', response.status, true);
+      }
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      return { body, finalUrl: currentUrl, contentType };
     }
 
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    throw new Error(`Too many redirects (max ${MAX_REDIRECTS})`);
+  };
+
+  // Wrap in fetchWithRetry when proxy is enabled
+  if (proxyManager) {
+    // fetchWithRetry expects () => Promise<Response>, but we need our full pipeline.
+    // We wrap the doFetch call in a retry loop manually.
+    let lastError: Error | null = null;
+    const maxRetries = config.proxyMaxRetries;
+    const baseDelay = config.proxyRetryBaseDelayMs;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await doFetch();
+      } catch (err) {
+        if (err instanceof RetryableError || (err instanceof Error && err.message.startsWith('HTTP 429'))) {
+          lastError = err;
+          if (attempt < maxRetries) {
+            const delay = Math.min(baseDelay * Math.pow(2, attempt) + Math.random() * 0.3 * baseDelay * Math.pow(2, attempt), 15000);
+            await new Promise((resolve) => setTimeout(resolve, delay));
+            continue;
+          }
+        } else {
+          throw err;
+        }
+      }
     }
-
-    const contentType = response.headers.get('content-type') ?? 'text/html';
-    const body = await response.text();
-
-    return { body, finalUrl: currentUrl, contentType };
+    throw lastError ?? new Error('Proxy fetch exhausted all retries');
   }
 
-  throw new Error(`Too many redirects (max ${MAX_REDIRECTS})`);
+  return doFetch();
 }
 
 function truncateOutput(text: string): string {
@@ -367,6 +422,7 @@ export function registerWebTools(
   middleware: ToolMiddleware
 ): void {
   const webLimiter = new WebRateLimiter(config.webRateLimitPerMinute);
+  const proxyManager = config.proxyEnabled ? new ProxyManager(config) : null;
 
   // 1. web_scrape_markdown — convert webpage to clean LLM-ready markdown
   server.tool(
@@ -374,9 +430,10 @@ export function registerWebTools(
     'Scrape a webpage and convert to clean LLM-ready markdown (requires MCP_EXPOSE_WEB=true)',
     {
       url: z.string().describe('URL to scrape'),
+      country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
     },
     wrapToolHandler('web_scrape_markdown', middleware, async (args) => {
-      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter);
+      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, { country: args.country });
       const markdown = htmlToMarkdown(body);
       const output = truncateOutput(`# Scraped: ${finalUrl}\n\n${markdown}`);
       return { content: [{ type: 'text' as const, text: output }] };
@@ -390,9 +447,10 @@ export function registerWebTools(
     {
       url: z.string().describe('URL to scrape'),
       selector: z.string().optional().describe('CSS selector to extract (basic: #id, .class, tag)'),
+      country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
     },
     wrapToolHandler('web_scrape_html', middleware, async (args) => {
-      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter);
+      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, { country: args.country });
       const html = args.selector ? extractWithSelector(body, args.selector) : body;
       const output = truncateOutput(html);
       return {
@@ -407,11 +465,12 @@ export function registerWebTools(
     'Scrape multiple URLs in parallel and return markdown (max 10 URLs, requires MCP_EXPOSE_WEB=true)',
     {
       urls: z.array(z.string()).min(1).max(MAX_BATCH_URLS).describe('URLs to scrape (max 10)'),
+      country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
     },
     wrapToolHandler('web_scrape_batch', middleware, async (args) => {
       const results = await Promise.allSettled(
         args.urls.map(async (url: string) => {
-          const { body, finalUrl } = await safeFetch(url, config, webLimiter);
+          const { body, finalUrl } = await safeFetch(url, config, webLimiter, proxyManager, { country: args.country });
           const markdown = htmlToMarkdown(body);
           return { url: finalUrl, markdown };
         })
@@ -445,9 +504,10 @@ export function registerWebTools(
           })
         )
         .describe('Fields to extract'),
+      country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
     },
     wrapToolHandler('web_extract_structured', middleware, async (args) => {
-      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter);
+      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, { country: args.country });
       const text = stripHtmlTags(body);
 
       // Best-effort extraction based on field descriptions
@@ -559,4 +619,4 @@ export function registerWebTools(
 }
 
 // Exported for testing
-export { validateUrl, WebRateLimiter, truncateOutput, htmlToMarkdown, stripHtmlTags };
+export { validateUrl, WebRateLimiter, truncateOutput, htmlToMarkdown, stripHtmlTags, safeFetch };

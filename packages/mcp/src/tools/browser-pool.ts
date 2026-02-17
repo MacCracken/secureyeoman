@@ -14,6 +14,9 @@ export interface BrowserPoolOptions {
   headless: boolean;
   maxPages: number;
   timeoutMs: number;
+  proxyServer?: string;
+  proxyUsername?: string;
+  proxyPassword?: string;
 }
 
 export class BrowserPool {
@@ -25,11 +28,17 @@ export class BrowserPool {
     this.options = options;
   }
 
-  static fromConfig(config: McpServiceConfig): BrowserPool {
+  static fromConfig(
+    config: McpServiceConfig,
+    proxy?: { server: string; username?: string; password?: string }
+  ): BrowserPool {
     return new BrowserPool({
       headless: config.browserHeadless,
       maxPages: config.browserMaxPages,
       timeoutMs: config.browserTimeoutMs,
+      proxyServer: proxy?.server,
+      proxyUsername: proxy?.username,
+      proxyPassword: proxy?.password,
     });
   }
 
@@ -47,9 +56,19 @@ export class BrowserPool {
       );
     }
 
-    this.browser = await playwright.chromium.launch({
+    const launchOptions: Record<string, unknown> = {
       headless: this.options.headless,
-    });
+    };
+
+    if (this.options.proxyServer) {
+      launchOptions.proxy = {
+        server: this.options.proxyServer,
+        username: this.options.proxyUsername,
+        password: this.options.proxyPassword,
+      };
+    }
+
+    this.browser = await playwright.chromium.launch(launchOptions as Parameters<typeof playwright.chromium.launch>[0]);
 
     return this.browser;
   }

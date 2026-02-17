@@ -19,6 +19,7 @@ import { registerFilesystemTools } from './filesystem-tools.js';
 import { registerGitTools } from './git-tools.js';
 import { registerWebTools } from './web-tools.js';
 import { registerBrowserTools } from './browser-tools.js';
+import { registerMultimodalTools } from './multimodal-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -47,4 +48,5 @@ export function registerAllTools(
   registerFilesystemTools(server, config, middleware);
   registerWebTools(server, config, middleware);
   registerBrowserTools(server, config, middleware);
+  registerMultimodalTools(server, client, middleware);
 }

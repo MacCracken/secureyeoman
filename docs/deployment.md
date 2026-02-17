@@ -11,8 +11,8 @@
 ### Install
 
 ```bash
-git clone https://github.com/your-org/friday.git
-cd friday
+git clone https://github.com/MacCracken/secureyeoman.git
+cd secureyeoman
 npm ci
 npm run build
 ```
@@ -276,6 +276,25 @@ This starts:
 - **Prometheus** (port 9090) — Metrics
 
 Import the Grafana dashboard from `deploy/grafana/friday-dashboard.json`.
+
+## Kubernetes
+
+For Kubernetes deployments using Helm, see the dedicated [Kubernetes Deployment Guide](guides/kubernetes-deployment.md).
+
+The Helm chart supports:
+- **Cloud-agnostic**: EKS, GKE, AKS via values overrides
+- **Autoscaling**: HPA for core and MCP services
+- **Observability**: Prometheus ServiceMonitor, PrometheusRule (9 alerts), Grafana dashboard
+- **Security**: Non-root containers, NetworkPolicies, ExternalSecret CRD support
+- **Environments**: Dev, staging, and production values files
+
+```bash
+# Quick start
+helm install friday deploy/helm/friday \
+  --namespace friday --create-namespace \
+  --set secrets.postgresPassword=your-password \
+  --set database.host=your-db.example.com
+```
 
 ## Backup
 

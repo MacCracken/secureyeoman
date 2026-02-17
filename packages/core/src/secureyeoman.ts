@@ -526,6 +526,7 @@ export class SecureYeoman {
         taskExecutor: this.taskExecutor,
         integrationManager: this.integrationManager,
         integrationStorage: this.integrationStorage,
+        // multimodalManager and getActivePersonality are wired later at Step 6c
       });
       // Register platform adapters
       this.integrationManager.registerPlatform('telegram', () => new TelegramIntegration());
@@ -785,6 +786,32 @@ export class SecureYeoman {
             this.config.multimodal ?? {}
           );
           await this.multimodalManager.initialize();
+          // Wire multimodal into IntegrationManager (created earlier at Step 6.5)
+          // Wrap methods to adapt strict Zod-inferred types to the loose IntegrationDeps interface
+          if (this.integrationManager) {
+            const mmRef = this.multimodalManager;
+            this.integrationManager.setMultimodalManager({
+              analyzeImage: (req) => mmRef.analyzeImage(req as Parameters<typeof mmRef.analyzeImage>[0]),
+              transcribeAudio: (req) => mmRef.transcribeAudio(req as Parameters<typeof mmRef.transcribeAudio>[0]),
+              synthesizeSpeech: (req) => mmRef.synthesizeSpeech(req as Parameters<typeof mmRef.synthesizeSpeech>[0]),
+            });
+          }
+          // Wire multimodal + personality into MessageRouter for TTS on outbound
+          if (this.messageRouter) {
+            const mmRef = this.multimodalManager;
+            const soul = this.soulManager;
+            this.messageRouter.setMultimodalDeps({
+              multimodalManager: {
+                synthesizeSpeech: (req) => mmRef.synthesizeSpeech(req as Parameters<typeof mmRef.synthesizeSpeech>[0]),
+              },
+              getActivePersonality: soul
+                ? async () => {
+                    const p = await soul.getActivePersonality();
+                    return p ? { voice: p.voice } : null;
+                  }
+                : undefined,
+            });
+          }
           this.logger.debug('Multimodal manager initialized');
         } catch (error) {
           this.logger.warn('Multimodal manager initialization failed (non-fatal)', {
