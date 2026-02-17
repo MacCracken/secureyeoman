@@ -120,8 +120,8 @@ export const DatabaseConfigSchema = z
   .object({
     host: z.string().default('localhost'),
     port: z.number().default(5432),
-    database: z.string().default('friday'),
-    user: z.string().default('friday'),
+    database: z.string().default('secureyeoman'),
+    user: z.string().default('secureyeoman'),
     passwordEnv: z.string().default('POSTGRES_PASSWORD'),
     ssl: z.boolean().default(false),
     poolSize: z.number().default(20),
@@ -357,6 +357,7 @@ export const FallbackModelConfigSchema = z.object({
     'lmstudio',
     'localai',
     'deepseek',
+    'mistral',
   ]),
   model: z.string(),
   apiKeyEnv: EnvVarRefSchema,
@@ -380,6 +381,7 @@ export const ModelConfigSchema = z.object({
       'lmstudio',
       'localai',
       'deepseek',
+      'mistral',
     ])
     .default('anthropic'),
   model: z.string().default('claude-sonnet-4-20250514'),

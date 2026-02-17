@@ -15,6 +15,7 @@ import {
   Puzzle,
   Sparkles,
   FlaskConical,
+  DollarSign,
   PanelLeftOpen,
   PanelLeftClose,
   RefreshCw,
@@ -70,6 +71,7 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
     icon: <FlaskConical className="w-5 h-5" />,
     enabled: true,
   },
+  { to: '/costs', label: 'Costs', icon: <DollarSign className="w-5 h-5" /> },
   { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
 ];
 

@@ -31,6 +31,8 @@ services:
       NODE_ENV: production
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-secureyeoman_dev}
       DATABASE_HOST: postgres
+      DATABASE_USER: secureyeoman
+      DATABASE_NAME: secureyeoman
       GITHUB_OAUTH_CLIENT_ID: ${GITHUB_OAUTH_CLIENT_ID:-}
       GITHUB_OAUTH_CLIENT_SECRET: ${GITHUB_OAUTH_CLIENT_SECRET:-}
       GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}

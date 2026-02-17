@@ -276,6 +276,70 @@ export function registerIntegrationRoutes(
     }
   );
 
+  // ── Jira Webhooks ───────────────────────────────────────
+
+  app.post(
+    '/api/v1/webhooks/jira/:id',
+    {
+      config: { rawBody: true },
+    } as any,
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const config = await integrationManager.getIntegration(request.params.id);
+      if (config?.platform !== 'jira') {
+        return reply.code(404).send({ error: 'Jira integration not found' });
+      }
+
+      const event = request.headers['x-atlassian-webhook-identifier'] as string | undefined;
+
+      try {
+        const { JiraIntegration } = await import('./jira/adapter.js');
+        const adapter = integrationManager.getAdapter(request.params.id);
+        if (!adapter || !(adapter instanceof JiraIntegration)) {
+          return reply.code(400).send({ error: 'Jira integration is not running' });
+        }
+
+        const body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+        const token = (request.headers['x-webhook-secret'] as string) ?? '';
+        await adapter.handleWebhook(event ?? 'unknown', body, token);
+        return { received: true, event: event ?? 'jira' };
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
+    }
+  );
+
+  // ── Azure DevOps Webhooks ─────────────────────────────────
+
+  app.post(
+    '/api/v1/webhooks/azure/:id',
+    {
+      config: { rawBody: true },
+    } as any,
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const config = await integrationManager.getIntegration(request.params.id);
+      if (config?.platform !== 'azure') {
+        return reply.code(404).send({ error: 'Azure DevOps integration not found' });
+      }
+
+      try {
+        const { AzureDevOpsIntegration } = await import('./azure/adapter.js');
+        const adapter = integrationManager.getAdapter(request.params.id);
+        if (!adapter || !(adapter instanceof AzureDevOpsIntegration)) {
+          return reply.code(400).send({ error: 'Azure DevOps integration is not running' });
+        }
+
+        const body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
+        const token = (request.headers['x-webhook-secret'] as string) ?? '';
+        const parsed = typeof request.body === 'string' ? JSON.parse(request.body) : request.body;
+        const eventType = (parsed as Record<string, unknown>).eventType as string | undefined;
+        await adapter.handleWebhook(eventType ?? 'unknown', body, token);
+        return { received: true, event: eventType ?? 'azure' };
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
+    }
+  );
+
   // ── Generic Webhook Inbound ─────────────────────────────
   // Custom webhook endpoint for the generic webhook integration.
 

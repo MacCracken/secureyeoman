@@ -2241,3 +2241,34 @@ export async function generateImage(data: {
     body: JSON.stringify(data),
   });
 }
+
+// ─── Cost Analytics (Phase 10) ─────────────────────────────────────
+
+export interface CostProviderBreakdown {
+  tokensUsed: number;
+  costUsd: number;
+  calls: number;
+  errors: number;
+}
+
+export interface CostBreakdownResponse {
+  byProvider: Record<string, CostProviderBreakdown>;
+  recommendations: {
+    id: string;
+    title: string;
+    description: string;
+    priority: 'low' | 'medium' | 'high';
+    estimatedSavingsUsd: number;
+    currentCostUsd: number;
+    suggestedAction: string;
+    category: string;
+  }[];
+}
+
+export async function fetchCostBreakdown(): Promise<CostBreakdownResponse> {
+  try {
+    return await request<CostBreakdownResponse>('/costs/breakdown');
+  } catch {
+    return { byProvider: {}, recommendations: [] };
+  }
+}

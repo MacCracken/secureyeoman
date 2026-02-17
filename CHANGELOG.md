@@ -4,6 +4,68 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 11 (Partial): Expanded Integrations — In Progress
+
+### Mistral AI Provider (new)
+- New `MistralProvider` using OpenAI-compatible API at `https://api.mistral.ai/v1`
+- Known models: mistral-large-latest, mistral-medium-latest, mistral-small-latest, codestral-latest, open-mistral-nemo
+- Full streaming, tool calling, and fallback chain support
+- Added to shared types, config schemas, and AI client factory
+
+### Developer Tool Integrations (new)
+- **Jira**: REST API v3 adapter with issue/comment webhooks, Basic Auth (email:apiToken)
+- **AWS**: Lambda invocation + STS GetCallerIdentity, AWS Signature V4 (no SDK dependency)
+- **Azure DevOps**: Work item + build webhooks, PAT-based Basic Auth
+
+### MCP Pre-built Integrations (new)
+- Featured MCP Servers grid on the MCP tab with one-click connect
+- Pre-built catalog: Bright Data, Exa, E2B, Supabase
+- Inline env var form, auto-detection of already-connected servers
+
+### Connections Page Consolidation
+- Restructured from 6 flat tabs to 2 top-level tabs: **Integrations** and **MCP**
+- Integrations tab contains sub-tabs: Messaging, Email, Calendar, DevOps, OAuth
+- OAuth moved from top-level into Integrations sub-tabs
+- New DEVOPS_PLATFORMS entries: jira, aws, azure
+- PLATFORM_META entries added for Jira, AWS, Azure DevOps with setup steps
+
+---
+
+## Phase 10: Dashboard UX Enhancements — Complete
+
+### Cost Analytics Page (new)
+- New `/costs` route with dedicated sidebar link (DollarSign icon, above Settings)
+- Summary cards: Cost Today, Cost This Month, Total API Calls, Avg Latency
+- Token overview: Tokens Used Today, Tokens Cached Today, API Errors
+- Provider breakdown table sorted by cost (descending) with totals footer
+- Cost recommendations section with priority badges (high/medium/low)
+- New `/api/v1/costs/breakdown` endpoint exposing per-provider usage stats
+- ResourceMonitor "Estimated Cost" section now clickable, navigates to `/costs`
+
+### Sub-Agent Execution Tree
+- Visual tree view in delegation detail (History tab > expand delegation > Show Execution Tree)
+- Hierarchical display using `parentDelegationId` with depth-based indentation
+- Each node shows: status icon, task, status badge, depth, token usage bar, duration
+- Fetches tree data lazily via `fetchDelegation(id)` on toggle
+
+### Memory Consolidation Panel — Enhanced
+- Stats overview cards: Total Memories, Total Merged, Consolidation Runs, Avg Duration
+- Consolidation trends stacked bar chart (last 10 runs) with color-coded actions (merged/replaced/updated/kept)
+- Legend for trend bar colors
+- Updated styling from raw Tailwind gray classes to dashboard theme tokens (card, muted-foreground, etc.)
+
+### Audit Log Enhancements
+- Date-range filtering with native date pickers (From/To) wired to existing `from`/`to` API parameters
+- Saved filter presets stored in localStorage
+- Preset chips with one-click apply and remove (×) button
+- Save preset flow: inline name input with Enter/Escape keyboard support
+- "Clear all" button when any filter is active
+
+### Deferred to Phase 12
+- Integration management UI, vector memory explorer, lifecycle hook debugger, web scraper config panel, browser automation session manager, Storybook, workspace management admin UI
+
+---
+
 ## [2026.2.17] — 2026-02-17
 
 ### Phase 8.8: Memory/Brain Hardening — [ADR 045](docs/adr/045-memory-audit-hardening.md)
@@ -513,4 +575,4 @@ SecureYeoman — a secure, local-first AI assistant with enterprise-grade protec
 
 ---
 
-*Last updated: February 17, 2026*
+*Last updated: February 2026*

@@ -17,6 +17,7 @@ import {
   Pie,
   Cell,
 } from 'recharts';
+import { useNavigate } from 'react-router-dom';
 import { Cpu, HardDrive, Zap, DollarSign } from 'lucide-react';
 import type { MetricsSnapshot } from '../types';
 
@@ -32,6 +33,7 @@ interface HistoryPoint {
 const MAX_HISTORY_POINTS = 30;
 
 export function ResourceMonitor({ metrics }: ResourceMonitorProps) {
+  const navigate = useNavigate();
   const historyRef = useRef<HistoryPoint[]>([]);
   const [memoryHistory, setMemoryHistory] = useState<HistoryPoint[]>([]);
 
@@ -162,7 +164,11 @@ export function ResourceMonitor({ metrics }: ResourceMonitorProps) {
         </div>
 
         {/* Cost */}
-        <div className="p-4 rounded-lg bg-muted/30">
+        <div
+          className="p-4 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+          onClick={() => navigate('/costs')}
+          title="View cost analytics"
+        >
           <div className="flex items-center gap-2 mb-2">
             <DollarSign className="w-4 h-4 text-success" />
             <span className="font-medium">Estimated Cost</span>

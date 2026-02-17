@@ -15,12 +15,14 @@ import {
   ChevronRight,
   ChevronDown,
   Eye,
+  GitBranch,
   X,
 } from 'lucide-react';
 import {
   fetchAgentProfiles,
   fetchDelegations,
   fetchActiveDelegations,
+  fetchDelegation,
   cancelDelegation,
   delegateTask,
   createAgentProfile,
@@ -408,12 +410,20 @@ function HistoryTab() {
 }
 
 function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
+  const [showTree, setShowTree] = useState(false);
   const { data: messagesData } = useQuery({
     queryKey: ['delegationMessages', delegation.id],
     queryFn: () => fetchDelegationMessages(delegation.id),
   });
 
+  const { data: treeData } = useQuery({
+    queryKey: ['delegationTree', delegation.id],
+    queryFn: () => fetchDelegation(delegation.id),
+    enabled: showTree,
+  });
+
   const messages = messagesData?.messages ?? [];
+  const tree = treeData?.tree ?? [];
 
   return (
     <div className="border-t px-4 py-3 space-y-3">
@@ -431,6 +441,27 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
           <pre className="text-xs bg-destructive/10 p-2 rounded">{delegation.error}</pre>
         </div>
       )}
+
+      {/* Execution Tree Toggle */}
+      <button
+        onClick={() => setShowTree(!showTree)}
+        className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+      >
+        <GitBranch className="w-3.5 h-3.5" />
+        {showTree ? 'Hide Execution Tree' : 'Show Execution Tree'}
+      </button>
+
+      {showTree && (
+        <div className="p-3 rounded-lg bg-muted/20 border border-border/50">
+          <p className="text-xs font-medium text-muted-foreground mb-2">Execution Tree</p>
+          {tree.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No sub-delegations found.</p>
+          ) : (
+            <ExecutionTree nodes={tree} rootId={delegation.id} />
+          )}
+        </div>
+      )}
+
       {messages.length > 0 && (
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-1">
@@ -461,6 +492,88 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
         </div>
       )}
     </div>
+  );
+}
+
+// ── Execution Tree ───────────────────────────────────────────────
+
+interface TreeNode extends DelegationInfo {
+  children: TreeNode[];
+}
+
+function buildTree(nodes: DelegationInfo[], rootId: string): TreeNode[] {
+  const nodeMap = new Map<string, TreeNode>();
+  for (const node of nodes) {
+    nodeMap.set(node.id, { ...node, children: [] });
+  }
+  const roots: TreeNode[] = [];
+  for (const node of nodeMap.values()) {
+    if (node.parentDelegationId && nodeMap.has(node.parentDelegationId)) {
+      nodeMap.get(node.parentDelegationId)!.children.push(node);
+    } else if (node.id !== rootId) {
+      roots.push(node);
+    }
+  }
+  // If root itself is in the tree, use it
+  if (nodeMap.has(rootId)) {
+    return [nodeMap.get(rootId)!];
+  }
+  return roots;
+}
+
+function ExecutionTree({ nodes, rootId }: { nodes: DelegationInfo[]; rootId: string }) {
+  const tree = buildTree(nodes, rootId);
+  if (tree.length === 0) {
+    return <p className="text-xs text-muted-foreground">Single delegation (no sub-agents spawned).</p>;
+  }
+  return (
+    <div className="space-y-0.5">
+      {tree.map((node) => (
+        <TreeNodeRow key={node.id} node={node} depth={0} />
+      ))}
+    </div>
+  );
+}
+
+function TreeNodeRow({ node, depth }: { node: TreeNode; depth: number }) {
+  const totalTokens = node.tokensUsedPrompt + node.tokensUsedCompletion;
+  const pct = node.tokenBudget > 0 ? Math.min((totalTokens / node.tokenBudget) * 100, 100) : 0;
+
+  return (
+    <>
+      <div
+        className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/30 transition-colors"
+        style={{ paddingLeft: `${depth * 20 + 8}px` }}
+      >
+        {depth > 0 && (
+          <span className="text-muted-foreground/40 text-xs">{'└'}</span>
+        )}
+        <span className="shrink-0">{STATUS_ICONS[node.status]}</span>
+        <span className="text-xs font-medium truncate flex-1" title={node.task}>
+          {node.task.length > 60 ? node.task.slice(0, 60) + '...' : node.task}
+        </span>
+        <span className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[node.status] ?? ''}`}>
+          {node.status}
+        </span>
+        <span className="text-xs text-muted-foreground whitespace-nowrap">
+          d:{node.depth}
+        </span>
+        <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
+          {totalTokens.toLocaleString()}/{node.tokenBudget.toLocaleString()}
+        </span>
+        <div className="w-12">
+          <TokenBar used={totalTokens} budget={node.tokenBudget} />
+        </div>
+        {node.completedAt && node.startedAt && (
+          <span className="text-xs text-muted-foreground whitespace-nowrap">
+            {formatDuration(node.completedAt - node.startedAt)}
+          </span>
+        )}
+      </div>
+      {node.children.map((child) => (
+        <TreeNodeRow key={child.id} node={child} depth={depth + 1} />
+      ))}
+    </>
   );
 }
 

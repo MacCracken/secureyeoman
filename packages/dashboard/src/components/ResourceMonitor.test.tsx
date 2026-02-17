@@ -1,8 +1,13 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { ResourceMonitor } from './ResourceMonitor';
 import { createMetricsSnapshot } from '../test/mocks';
+
+function renderWithRouter(ui: React.ReactElement) {
+  return render(<MemoryRouter>{ui}</MemoryRouter>);
+}
 
 // ── Mock recharts ────────────────────────────────────────────────
 // Recharts uses SVG heavily and needs ResizeObserver in jsdom.
@@ -30,37 +35,37 @@ vi.mock('recharts', () => ({
 
 describe('ResourceMonitor', () => {
   it('renders Memory Usage heading', () => {
-    render(<ResourceMonitor metrics={createMetricsSnapshot()} />);
+    renderWithRouter(<ResourceMonitor metrics={createMetricsSnapshot()} />);
     expect(screen.getByText('Memory Usage')).toBeInTheDocument();
   });
 
   it('renders CPU usage bar with correct values', () => {
-    render(<ResourceMonitor metrics={createMetricsSnapshot()} />);
+    renderWithRouter(<ResourceMonitor metrics={createMetricsSnapshot()} />);
     expect(screen.getByText('CPU Usage')).toBeInTheDocument();
     // 34.5% / 100%
     expect(screen.getByText('34.5% / 100%')).toBeInTheDocument();
   });
 
   it('renders Memory bar with correct values', () => {
-    render(<ResourceMonitor metrics={createMetricsSnapshot()} />);
+    renderWithRouter(<ResourceMonitor metrics={createMetricsSnapshot()} />);
     expect(screen.getByText('Memory')).toBeInTheDocument();
     // 256.0MB / 1024MB
     expect(screen.getByText('256.0MB / 1024MB')).toBeInTheDocument();
   });
 
   it('renders Token Usage Today section with formatted count', () => {
-    render(<ResourceMonitor metrics={createMetricsSnapshot()} />);
+    renderWithRouter(<ResourceMonitor metrics={createMetricsSnapshot()} />);
     expect(screen.getByText('Token Usage Today')).toBeInTheDocument();
     expect(screen.getByText('48,500')).toBeInTheDocument();
   });
 
   it('renders cached tokens count', () => {
-    render(<ResourceMonitor metrics={createMetricsSnapshot()} />);
+    renderWithRouter(<ResourceMonitor metrics={createMetricsSnapshot()} />);
     expect(screen.getByText('12300 cached')).toBeInTheDocument();
   });
 
   it('renders Estimated Cost section', () => {
-    render(<ResourceMonitor metrics={createMetricsSnapshot()} />);
+    renderWithRouter(<ResourceMonitor metrics={createMetricsSnapshot()} />);
     expect(screen.getByText('Estimated Cost')).toBeInTheDocument();
     expect(screen.getByText('$1.23')).toBeInTheDocument();
     expect(screen.getByText('$28.45')).toBeInTheDocument();
@@ -69,12 +74,12 @@ describe('ResourceMonitor', () => {
   });
 
   it('shows "Collecting memory data..." when no history points exist', () => {
-    render(<ResourceMonitor metrics={createMetricsSnapshot()} />);
+    renderWithRouter(<ResourceMonitor metrics={createMetricsSnapshot()} />);
     expect(screen.getByText('Collecting memory data...')).toBeInTheDocument();
   });
 
   it('handles undefined metrics gracefully', () => {
-    render(<ResourceMonitor metrics={undefined} />);
+    renderWithRouter(<ResourceMonitor metrics={undefined} />);
     expect(screen.getByText('CPU Usage')).toBeInTheDocument();
     expect(screen.getByText('0.0% / 100%')).toBeInTheDocument();
     expect(screen.getByText('0.0MB / 1024MB')).toBeInTheDocument();
@@ -90,7 +95,7 @@ describe('ResourceMonitor', () => {
         cpuPercent: 85,
       },
     });
-    render(<ResourceMonitor metrics={metrics} />);
+    renderWithRouter(<ResourceMonitor metrics={metrics} />);
     // The value display should have warning class
     expect(screen.getByText('85.0% / 100%')).toBeInTheDocument();
   });
@@ -102,7 +107,7 @@ describe('ResourceMonitor', () => {
         cpuPercent: 97,
       },
     });
-    render(<ResourceMonitor metrics={metrics} />);
+    renderWithRouter(<ResourceMonitor metrics={metrics} />);
     expect(screen.getByText('97.0% / 100%')).toBeInTheDocument();
   });
 });

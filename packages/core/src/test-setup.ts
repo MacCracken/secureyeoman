@@ -1,7 +1,7 @@
 /**
  * Test Setup — PostgreSQL pool initialization for test suites.
  *
- * Connects to a test database (defaults to localhost:5432/friday_test).
+ * Connects to a test database (defaults to localhost:5432/secureyeoman_test).
  * Call `setupTestDb()` in `beforeAll()` and `teardownTestDb()` in `afterAll()`.
  * Call `truncateAllTables()` in `beforeEach()` for clean test state.
  */
@@ -20,9 +20,9 @@ export async function setupTestDb(): Promise<void> {
 
   const host = process.env.TEST_DB_HOST ?? process.env.DATABASE_HOST ?? 'localhost';
   const port = Number(process.env.TEST_DB_PORT ?? '5432');
-  const database = process.env.TEST_DB_NAME ?? 'friday_test';
-  const user = process.env.TEST_DB_USER ?? 'friday';
-  const password = process.env.TEST_DB_PASSWORD ?? process.env.POSTGRES_PASSWORD ?? 'friday_dev';
+  const database = process.env.TEST_DB_NAME ?? 'secureyeoman_test';
+  const user = process.env.TEST_DB_USER ?? 'secureyeoman';
+  const password = process.env.TEST_DB_PASSWORD ?? process.env.POSTGRES_PASSWORD ?? 'secureyeoman_dev';
 
   initPool({
     host,

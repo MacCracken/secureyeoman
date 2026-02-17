@@ -411,7 +411,7 @@ export class BrainStorage extends PgBaseStorage {
         data.instructions ?? '',
         JSON.stringify(data.tools ?? []),
         JSON.stringify(data.triggerPatterns ?? []),
-        data.enabled,
+        data.enabled ?? true,
         data.source ?? 'user',
         data.status ?? 'active',
         now,

@@ -7,16 +7,16 @@
 ## Development Phases
 
 ```
-Phase 1          Phase 2          Phase 2.5        Phase 3          Phase 4          Phase 5          Phase 6          Phase 8          Phase 9
-Foundation       Security         Infrastructure   Dashboard        Integrations     Production       Cognitive        WebMCP           Kubernetes
-   |                |                |                |                |                |                |                |                |
-   v                v                v                v                v                v                v                v                v
-[Core Agent] -> [RBAC/Crypto] -> [Brain/Comms] -> [React UI] -> [Platforms] -> [Hardening] -> [Intelligence] -> [Web Tools] -> [K8s Deploy]
-   |                |                |                |                |                |                |                |                |
-   +- Task Loop     +- Encryption    +- CLI           +- Metrics       +- Telegram      +- Load Testing  +- Vector Memory +- Web Scraping  +- Helm Chart
-   +- Logging       +- Sandbox       +- Brain/Soul    +- History       +- Discord       +- Security Test +- Consolidation +- Web Search    +- GHCR Images
-   +- Config        +- Validation    +- E2E Comms     +- Connections   +- Slack         +- Prometheus    +- History Comp. +- Browser (WIP) +- HPA/PDB
-   +- Storage       +- Rate Limit    +- Fallbacks     +- Security      +- GitHub        +- Docs          +- Sub-Agents    +- Health Monitor+- NetworkPolicy
+Phase 1          Phase 2          Phase 2.5        Phase 3          Phase 4          Phase 5          Phase 6          Phase 8          Phase 9          Phase 10
+Foundation       Security         Infrastructure   Dashboard        Integrations     Production       Cognitive        WebMCP           Kubernetes       Dashboard UX
+   |                |                |                |                |                |                |                |                |                |
+   v                v                v                v                v                v                v                v                v                v
+[Core Agent] -> [RBAC/Crypto] -> [Brain/Comms] -> [React UI] -> [Platforms] -> [Hardening] -> [Intelligence] -> [Web Tools] -> [K8s Deploy] -> [UX Polish]
+   |                |                |                |                |                |                |                |                |                |
+   +- Task Loop     +- Encryption    +- CLI           +- Metrics       +- Telegram      +- Load Testing  +- Vector Memory +- Web Scraping  +- Helm Chart    +- Cost Analytics
+   +- Logging       +- Sandbox       +- Brain/Soul    +- History       +- Discord       +- Security Test +- Consolidation +- Web Search    +- GHCR Images   +- Exec Tree
+   +- Config        +- Validation    +- E2E Comms     +- Connections   +- Slack         +- Prometheus    +- History Comp. +- Browser (WIP) +- HPA/PDB       +- Memory Trends
+   +- Storage       +- Rate Limit    +- Fallbacks     +- Security      +- GitHub        +- Docs          +- Sub-Agents    +- Health Monitor+- NetworkPolicy  +- Audit Filters
    +- AI Providers  +- mTLS          +- Task Storage  +- Soul UI       +- Webhooks      +- Deployment    +- Hooks/CodeExec+- Credentials   +- Observability
 ```
 
@@ -29,7 +29,7 @@ Foundation       Security         Infrastructure   Dashboard        Integrations
 - TypeScript project structure with strict mode, ESLint, Prettier, Vitest
 - Configuration management (YAML + env vars + Zod validation)
 - Base agent loop with task queue, event-driven architecture, graceful shutdown
-- Multi-provider AI integration (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen, DeepSeek)
+- Multi-provider AI integration (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen, DeepSeek, Mistral)
 - Structured logging with UUID v7, correlation IDs, SQLite WAL storage
 - Cryptographic audit chain (HMAC-SHA256, integrity verification)
 - Log query API with REST endpoint
@@ -266,8 +266,9 @@ url: "https://mcp.supabase.io"
 | Phase 9: Kubernetes Deployment | Complete |
 | Phase 8.8: Memory/Brain Hardening | Complete |
 | **2026.2.17 Release** | **Released 2026-02-17** |
-| Phase 10: Dashboard UX Enhancements | Planned |
-| Phase 11: Integration Expansion | Planned |
+| Phase 10: Dashboard UX Enhancements | Complete |
+| Phase 11: Expanded Integrations (Partial) | In Progress |
+| Phase 12: Deferred Dashboard & Tooling | Planned |
 
 ---
 
@@ -343,126 +344,79 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 
 ## Phase 10: Dashboard UX Enhancements
 
-**Status**: Planned
+**Status**: Complete
 
-Comprehensive dashboard improvements and new UI components for better user experience.
+Focused dashboard improvements: cost analytics, agent visualization, memory trends, and audit log enhancements.
 
-### Dashboard UI (from Phase 8.7)
+### Costs View
 
-- [ ] Web scraper configuration panel
-- [ ] Browser automation session manager
-- [ ] Extraction history and results viewer
+- [x] **Cost Analytics Page** — New page linked from Dashboard Overview estimated costs card; token usage by provider, daily/weekly/monthly trends, cost projections
 
-### Dashboard Improvements
-
-#### Component Development
-
-- [ ] **Storybook** — Component development environment for dashboard UI components
-
-#### Integration Management
-
-- [ ] **Integration Management UI** — Visual integration grid by category (Messaging, Productivity, Dev Tools, Services) with status indicators, connect/disconnect flows, and health metrics
-
-#### Memory & Intelligence
-
-- [ ] **Vector Memory Explorer** — Dashboard view for semantic search across memories with similarity scores, embedding visualization, and manual memory entry
-- [ ] **Memory Consolidation Panel** — View consolidation runs, merged memories, trends chart (memory count over time), and manual trigger option
-- [ ] **History Compression Viewer** — Per-conversation compression indicators, tier breakdown (current/topic/bulk), and token usage by tier
-
-#### Agent Visualization
+### Agent Visualization
 
 - [x] **Inline Form Pattern** — Replaced modal dialogs with inline collapsible card forms on Sub-Agents, Extensions, and A2A pages (ADR 039)
-- [ ] **Sub-Agent Execution Tree** — Visual tree of spawned sub-agents with status, depth, and results; budget consumption per agent
+- [x] **Sub-Agent Execution Tree** — Visual tree of spawned sub-agents with status, depth, and results; budget consumption per agent (subview of Dashboard > Sub-Agents)
 
-#### Developer Tools
+### Memory & Intelligence
 
-- [ ] **Lifecycle Hook Debugger** — Hook registration view, execution log, and test trigger for each hook point
-- [ ] **Code Execution Console** — In-browser code editor with output streaming, session management, and approval queue
+- [x] **Memory Consolidation Panel** — View consolidation runs, merged memories, trends chart (memory count over time), and manual trigger option
 
-#### Analytics & Monitoring
+### Security & Audit
 
-- [ ] **Cost Analytics Dashboard** — Token usage by provider, daily/weekly/monthly trends, cost projections
-- [ ] **Audit Log Explorer** — Advanced filtering, export to CSV/JSON, integrity verification status
-
-#### Administration
-
-- [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
-
-### Multimodal Dashboard (from Phase 7.3) — Complete
-
-- [x] Vision processing pipeline for inline images (integration-level image routing)
-- [x] Voice message transcription in integration adapters (auto-STT for voice messages)
-- [x] Voice output for integration responses (TTS audio attachments in Telegram/Discord/etc.)
-- [x] Image generation tool exposure via MCP
-- [x] Dashboard multimodal job viewer (consolidated into Agents page as sub-tab)
-- [x] Per-personality TTS voice/model selection (link voice field to TTS config)
+- [x] **Audit Log Enhancements** — Date-range filtering and saved filter presets (extends existing Security > Audit Log)
 
 ---
 
-## Phase 11: Integration Expansion
+## Phase 11: Expanded Integrations (Partial)
+
+**Status**: In Progress
+
+### AI Providers
+- Mistral AI provider (OpenAI-compatible, mistral-large/medium/small/codestral/nemo) — **Complete**
+
+### Developer Tool Integrations
+- Jira integration (REST API v3, Basic Auth, webhook support) — **Complete**
+- AWS integration (Lambda invoke, STS identity, SigV4 signing) — **Complete**
+- Azure DevOps integration (Work items, builds, PAT auth, webhooks) — **Complete**
+
+### MCP Pre-built Integrations
+- One-click connect for Bright Data, Exa, E2B, Supabase — **Complete**
+
+### Connections Page Consolidation
+- Restructured tabs: Integrations (Messaging/Email/Calendar/DevOps/OAuth sub-tabs) + MCP — **Complete**
+
+---
+
+## Phase 12: Deferred Dashboard & Tooling
 
 **Status**: Planned
 
-Expand integration ecosystem with new platforms, architecture improvements, and platform-specific enhancements.
+Items deferred from Phase 10 for future implementation.
 
-### Productivity Integrations
+### Integration Management
 
-- [ ] **Airtable** — Base CRUD operations, record management, view filtering
-- [ ] **Linear/Jira** — Issue creation, status updates, sprint management, webhook listeners
-- [ ] **Todoist** — Task management, project sync, due date handling
+- [ ] **Integration Management UI** — Visual integration grid by category (Messaging, Productivity, Dev Tools, Services) with status indicators, connect/disconnect flows, and health metrics
 
-### Developer Tools Integrations
+### Memory & Intelligence
 
-- [ ] **Jira** — Full REST API integration: issues, projects, workflows, comments
-- [ ] **AWS** — Lambda invocation, S3 operations, SNS publishing, CloudWatch logs
-- [ ] **Azure DevOps** — Work item management, build triggers, release pipelines
+- [ ] **Vector Memory Explorer** — Dashboard view for semantic search across memories with similarity scores, embedding visualization, and manual memory entry
 
-### Services & Cloud Integrations
+### Developer Tools
 
-- [ ] **Spotify** — Playback control, playlist management, now playing info
-- [ ] **YouTube** — Video search, channel info, playlist management
-- [ ] **Figma** — File access, comment sync, design file metadata
-- [ ] **Stripe** — Payment status webhooks, customer lookup, invoice triggers
-- [ ] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation
+- [ ] **Lifecycle Hook Debugger** — Hook registration view, execution log, and test trigger for each hook point
 
-### AI Provider Expansions
+### WebMCP Dashboard (from Phase 8.7)
 
-- [ ] **Mistral** — Full API integration with chat completion, embeddings support
+- [ ] **Web Scraper Configuration Panel** — UI for configuring scraping jobs, URL allowlists, and proxy settings
+- [ ] **Browser Automation Session Manager** — View active browser sessions, screenshots, and session lifecycle controls
 
-### Integration Architecture Improvements
+### Component Development
 
-- [ ] **Skill/Plugin Marketplace** — Community submission portal with signature verification, version management, rating system
-- [ ] **Dynamic Integration Loading** — Load/unload integrations at runtime without restart
-- [ ] **OAuth2 First-Class Support** — Unified OAuth2 flow for Google services (Gmail, Calendar, Drive)
-- [ ] **Webhook Transformation Rules** — Custom payload transformation templates with variable substitution
-- [ ] **Integration Health Monitoring** — Per-integration health metrics, alerting on failure thresholds
-- [ ] **Outbound Webhooks** — Event-driven HTTP callbacks for integration events
+- [ ] **Storybook** — Component development environment for dashboard UI components
 
-### Platform-Specific Enhancements
+### Administration
 
-#### Telegram
-- [ ] Inline keyboards with callback buttons
-- [ ] Photo/document upload and download
-- [ ] Voice message handling
-
-#### Discord
-- [ ] Thread support for multi-turn conversations
-- [ ] Modal dialogs for complex forms
-- [ ] Slash command registration
-
-#### Slack
-- [ ] Interactive messages with block actions
-- [ ] Modal dialogs (surface API)
-- [ ] Workflow builder integration
-
-#### GitHub
-- [ ] PR review automation via AI (auto-review suggestions)
-- [ ] Code search and file browsing tools
-- [ ] Issue automation workflows
-
-### MCP Pre-built Integrations
-
-- [ ] One-click connect for popular MCP servers (Bright Data, Exa, E2B, Supabase)
+- [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
 
 ---
 
