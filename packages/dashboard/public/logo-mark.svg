@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0ea5e9;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#8b5cf6;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="logoGradDark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0284c7;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:1" />
+    </linearGradient>
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  
+  <!-- Outer shield shape -->
+  <path d="M50 5 L90 20 L90 45 Q90 75 50 95 Q10 75 10 45 L10 20 Z" 
+        fill="url(#logoGrad)" 
+        filter="url(#glow)"/>
+  
+  <!-- Inner shield border for depth -->
+  <path d="M50 12 L82 24 L82 44 Q82 70 50 86 Q18 70 18 44 L18 24 Z" 
+        fill="none" 
+        stroke="rgba(255,255,255,0.3)" 
+        stroke-width="2"/>
+  
+  <!-- Stylized Y (Yeoman) / Bow motif -->
+  <!-- The Y represents both "Yeoman" and a bow stance -->
+  <g fill="white">
+    <!-- Left arm of Y -->
+    <path d="M35 28 L50 48 L50 55 L30 32 Z"/>
+    <!-- Right arm of Y -->
+    <path d="M65 28 L50 48 L50 55 L70 32 Z"/>
+    <!-- Stem of Y extending down like an arrow -->
+    <rect x="46" y="48" width="8" height="30" rx="1"/>
+    <!-- Arrow tip at bottom -->
+    <path d="M42 78 L50 88 L58 78 Z"/>
+  </g>
+  
+  <!-- Subtle bow string suggestion -->
+  <path d="M30 32 Q50 40 70 32" 
+        fill="none" 
+        stroke="rgba(255,255,255,0.4)" 
+        stroke-width="1.5" 
+        stroke-linecap="round"/>
+</svg>
