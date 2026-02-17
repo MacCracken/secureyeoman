@@ -15,11 +15,19 @@ import {
   Database,
   Server,
   Link,
+  Bot,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSidebar } from '../hooks/useSidebar';
 import { useWebSocket } from '../hooks/useWebSocket';
-import { fetchMetrics, fetchHealth, fetchOnboardingStatus, fetchHeartbeatStatus, fetchMcpServers } from '../api/client';
+import {
+  fetchMetrics,
+  fetchHealth,
+  fetchOnboardingStatus,
+  fetchHeartbeatStatus,
+  fetchMcpServers,
+  fetchActiveDelegations,
+} from '../api/client';
 import { Sidebar } from './Sidebar';
 import { SearchBar } from './SearchBar';
 import { NotificationBell } from './NotificationBell';
@@ -38,11 +46,8 @@ const ResourceMonitor = lazy(() =>
 const PersonalityEditor = lazy(() =>
   import('./PersonalityEditor').then((m) => ({ default: m.PersonalityEditor }))
 );
-const CodePage = lazy(() => import('./CodePage').then((m) => ({ default: m.CodePage })));
+const EditorPage = lazy(() => import('./EditorPage').then((m) => ({ default: m.EditorPage })));
 const ChatPage = lazy(() => import('./ChatPage').then((m) => ({ default: m.ChatPage })));
-const ExperimentsPage = lazy(() =>
-  import('./ExperimentsPage').then((m) => ({ default: m.ExperimentsPage }))
-);
 const SettingsPage = lazy(() =>
   import('./SettingsPage').then((m) => ({ default: m.SettingsPage }))
 );
@@ -53,18 +58,12 @@ const SkillsPage = lazy(() => import('./SkillsPage').then((m) => ({ default: m.S
 const ConnectionsPage = lazy(() =>
   import('./ConnectionsPage').then((m) => ({ default: m.ConnectionsPage }))
 );
-const SubAgentsPage = lazy(() =>
-  import('./SubAgentsPage').then((m) => ({ default: m.SubAgentsPage }))
-);
+const AgentsPage = lazy(() => import('./AgentsPage').then((m) => ({ default: m.AgentsPage })));
 const ExtensionsPage = lazy(() =>
   import('./ExtensionsPage').then((m) => ({ default: m.ExtensionsPage }))
 );
-const CodeExecutionPage = lazy(() =>
-  import('./CodeExecutionPage').then((m) => ({ default: m.CodeExecutionPage }))
-);
-const A2APage = lazy(() =>
-  import('./A2APage').then((m) => ({ default: m.A2APage }))
-);
+const ProactivePage = lazy(() => import('./ProactivePage').then((m) => ({ default: m.ProactivePage })));
+const ExperimentsPage = lazy(() => import('./ExperimentsPage').then((m) => ({ default: m.ExperimentsPage })));
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -207,19 +206,21 @@ export function DashboardLayout() {
                 <Routes>
                   <Route path="/" element={<OverviewPage metrics={metrics} health={health} />} />
                   <Route path="/chat" element={<ChatPage />} />
-                  <Route path="/code" element={<CodePage />} />
+                  <Route path="/editor" element={<EditorPage />} />
+                  <Route path="/code" element={<Navigate to="/editor" replace />} />
                   <Route path="/security" element={<SecurityPage />} />
                   <Route path="/tasks" element={<SecurityPage />} />
                   <Route path="/reports" element={<SecurityPage />} />
                   <Route path="/personality" element={<PersonalityEditor />} />
                   <Route path="/skills" element={<SkillsPage />} />
                   <Route path="/marketplace" element={<SkillsPage />} />
-                  <Route path="/agents" element={<SubAgentsPage />} />
+                  <Route path="/agents" element={<AgentsPage />} />
                   <Route path="/connections" element={<ConnectionsPage />} />
                   <Route path="/mcp" element={<ConnectionsPage />} />
                   <Route path="/extensions" element={<ExtensionsPage />} />
-                  <Route path="/execution" element={<CodeExecutionPage />} />
-                  <Route path="/a2a" element={<A2APage />} />
+                  <Route path="/execution" element={<Navigate to="/editor" replace />} />
+                  <Route path="/a2a" element={<Navigate to="/agents" replace />} />
+                  <Route path="/proactive" element={<ProactivePage />} />
                   <Route path="/experiments" element={<ExperimentsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route path="/security-settings" element={<SettingsPage />} />
@@ -262,6 +263,12 @@ function OverviewPage({ metrics, health }: { metrics?: MetricsSnapshot; health?:
     refetchInterval: 30_000,
   });
 
+  const { data: activeDelegations } = useQuery({
+    queryKey: ['activeDelegations'],
+    queryFn: fetchActiveDelegations,
+    refetchInterval: 10_000,
+  });
+
   const heartbeatTasks = heartbeatStatus?.tasks ?? [];
   const mcpServers = mcpData?.servers ?? [];
   const enabledMcpServers = mcpServers.filter((s) => s.enabled).length;
@@ -271,7 +278,33 @@ function OverviewPage({ metrics, health }: { metrics?: MetricsSnapshot; health?:
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Quick Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+        <StatCard
+          title="Active Agents"
+          value={activeDelegations?.delegations?.length ?? 0}
+          icon={<Bot className="w-4 h-4 sm:w-5 sm:h-5" />}
+          subtitle={
+            activeDelegations?.delegations?.length
+              ? `Depth: ${Math.max(...(activeDelegations.delegations.map((d) => d.depth) || [0]))}`
+              : undefined
+          }
+          onClick={() => navigate('/agents')}
+        />
+        <StatCard
+          title="Heartbeat"
+          value={heartbeatStatus?.beatCount ?? 0}
+          icon={<Heart className="w-4 h-4 sm:w-5 sm:h-5" />}
+          subtitle={`${enabledHeartbeats}/${heartbeatTasks.length} tasks`}
+          trend={heartbeatRunning ? 'Running' : 'Stopped'}
+          trendUp={heartbeatRunning}
+          onClick={() => navigate('/security?tab=tasks&heartbeat=1')}
+        />
+        <StatCard
+          title="Active Tasks"
+          value={metrics?.tasks?.inProgress ?? 0}
+          icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />}
+          subtitle={`${metrics?.tasks?.queueDepth ?? 0} queued`}
+        />
         <StatCard
           title="Tasks Today"
           value={metrics?.tasks?.total ?? 0}
@@ -284,19 +317,9 @@ function OverviewPage({ metrics, health }: { metrics?: MetricsSnapshot; health?:
           trendUp={metrics?.tasks?.successRate ? metrics.tasks.successRate > 0.9 : undefined}
         />
         <StatCard
-          title="Active Tasks"
-          value={metrics?.tasks?.inProgress ?? 0}
-          icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />}
-          subtitle={`${metrics?.tasks?.queueDepth ?? 0} queued`}
-        />
-        <StatCard
-          title="Heartbeat"
-          value={heartbeatStatus?.beatCount ?? 0}
-          icon={<Heart className="w-4 h-4 sm:w-5 sm:h-5" />}
-          subtitle={`${enabledHeartbeats}/${heartbeatTasks.length} tasks`}
-          trend={heartbeatRunning ? 'Running' : 'Stopped'}
-          trendUp={heartbeatRunning}
-          onClick={() => navigate('/security?tab=tasks&heartbeat=1')}
+          title="Memory Usage"
+          value={`${(metrics?.resources?.memoryUsedMb ?? 0).toFixed(1)} MB`}
+          icon={<HardDrive className="w-4 h-4 sm:w-5 sm:h-5" />}
         />
         <StatCard
           title="Audit Entries"
@@ -306,18 +329,15 @@ function OverviewPage({ metrics, health }: { metrics?: MetricsSnapshot; health?:
           trendUp={metrics?.security?.auditChainValid}
           onClick={() => navigate('/security?tab=audit')}
         />
-        <StatCard
-          title="Memory Usage"
-          value={`${(metrics?.resources?.memoryUsedMb ?? 0).toFixed(1)} MB`}
-          icon={<HardDrive className="w-4 h-4 sm:w-5 sm:h-5" />}
-        />
       </div>
 
       {/* System Overview */}
       <div className="card">
         <div className="card-header">
           <h2 className="card-title text-base sm:text-lg">System Overview</h2>
-          <p className="card-description text-xs sm:text-sm">Infrastructure status and real-time visualization</p>
+          <p className="card-description text-xs sm:text-sm">
+            Infrastructure status and real-time visualization
+          </p>
         </div>
         <div className="card-content space-y-3 sm:space-y-4">
           {/* Services Status */}
@@ -418,7 +438,11 @@ function ServiceStatus({
         <span className={ok ? 'text-green-500' : 'text-destructive'}>{icon}</span>
       </div>
       <p className="text-[10px] sm:text-xs font-medium truncate">{label}</p>
-      <p className={`text-[10px] sm:text-xs mt-0.5 truncate ${ok ? 'text-green-500' : 'text-destructive'}`}>{detail}</p>
+      <p
+        className={`text-[10px] sm:text-xs mt-0.5 truncate ${ok ? 'text-green-500' : 'text-destructive'}`}
+      >
+        {detail}
+      </p>
     </div>
   );
 }
@@ -454,8 +478,14 @@ function StatCard({ title, value, icon, trend, trendUp, subtitle, onClick }: Sta
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="text-xs sm:text-sm text-muted-foreground truncate">{title}</p>
-          <p className="text-lg sm:text-xl lg:text-2xl font-bold mt-0.5 sm:mt-1 truncate">{value}</p>
-          {subtitle && <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">{subtitle}</p>}
+          <p className="text-lg sm:text-xl lg:text-2xl font-bold mt-0.5 sm:mt-1 truncate">
+            {value}
+          </p>
+          {subtitle && (
+            <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">
+              {subtitle}
+            </p>
+          )}
           {trend && (
             <p
               className={`text-[10px] sm:text-xs mt-0.5 sm:mt-1 flex items-center gap-1 ${
@@ -472,7 +502,9 @@ function StatCard({ title, value, icon, trend, trendUp, subtitle, onClick }: Sta
             </p>
           )}
         </div>
-        <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg text-primary flex-shrink-0">{icon}</div>
+        <div className="p-1.5 sm:p-2 bg-primary/10 rounded-lg text-primary flex-shrink-0">
+          {icon}
+        </div>
       </div>
     </div>
   );

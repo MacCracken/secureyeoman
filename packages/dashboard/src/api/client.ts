@@ -1610,13 +1610,16 @@ export interface SecurityPolicy {
   allowA2A: boolean;
   allowExtensions: boolean;
   allowExecution: boolean;
+  allowProactive: boolean;
+  allowExperiments: boolean;
+  allowMultimodal: boolean;
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
   try {
     return await request('/security/policy');
   } catch {
-    return { allowSubAgents: false, allowA2A: false, allowExtensions: false, allowExecution: true };
+    return { allowSubAgents: false, allowA2A: false, allowExtensions: false, allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false };
   }
 }
 
@@ -1877,4 +1880,230 @@ export async function fetchA2AConfig(): Promise<{ config: Record<string, unknown
   } catch {
     return { config: {} };
   }
+}
+
+// ─── Proactive Assistance API (Phase 7.2) ──────────────────────────
+
+export interface ProactiveTriggerData {
+  id: string;
+  name: string;
+  description?: string;
+  enabled: boolean;
+  type: 'schedule' | 'event' | 'pattern' | 'webhook' | 'llm';
+  condition: Record<string, unknown>;
+  action: Record<string, unknown>;
+  approvalMode: 'auto' | 'suggest' | 'manual';
+  cooldownMs: number;
+  limitPerDay: number;
+  builtin: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface ProactiveSuggestionData {
+  id: string;
+  triggerId: string;
+  triggerName: string;
+  action: Record<string, unknown>;
+  context: Record<string, unknown>;
+  confidence: number;
+  suggestedAt: string;
+  status: 'pending' | 'approved' | 'dismissed' | 'executed' | 'expired';
+  expiresAt: string;
+  approvedAt?: string;
+  executedAt?: string;
+  dismissedAt?: string;
+  result?: Record<string, unknown>;
+}
+
+export interface ProactivePatternData {
+  id: string;
+  type: 'temporal' | 'sequential' | 'contextual';
+  description: string;
+  confidence: number;
+  occurrences: number;
+  lastSeen: number;
+  context: Record<string, unknown>;
+}
+
+export async function fetchProactiveTriggers(filter?: { type?: string; enabled?: boolean }): Promise<{ triggers: ProactiveTriggerData[] }> {
+  const query = new URLSearchParams();
+  if (filter?.type) query.set('type', filter.type);
+  if (filter?.enabled !== undefined) query.set('enabled', String(filter.enabled));
+  const qs = query.toString();
+  try {
+    return await request(`/proactive/triggers${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { triggers: [] };
+  }
+}
+
+export async function fetchBuiltinTriggers(): Promise<{ triggers: ProactiveTriggerData[] }> {
+  try {
+    return await request('/proactive/triggers/builtin');
+  } catch {
+    return { triggers: [] };
+  }
+}
+
+export async function createProactiveTrigger(data: Omit<ProactiveTriggerData, 'id' | 'createdAt' | 'updatedAt' | 'builtin'>): Promise<ProactiveTriggerData> {
+  return request('/proactive/triggers', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateProactiveTrigger(id: string, data: Partial<ProactiveTriggerData>): Promise<ProactiveTriggerData> {
+  return request(`/proactive/triggers/${id}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteProactiveTrigger(id: string): Promise<{ success: boolean }> {
+  return request(`/proactive/triggers/${id}`, { method: 'DELETE' });
+}
+
+export async function enableProactiveTrigger(id: string): Promise<ProactiveTriggerData> {
+  return request(`/proactive/triggers/${id}/enable`, { method: 'POST' });
+}
+
+export async function disableProactiveTrigger(id: string): Promise<ProactiveTriggerData> {
+  return request(`/proactive/triggers/${id}/disable`, { method: 'POST' });
+}
+
+export async function testProactiveTrigger(id: string): Promise<{ success: boolean; message: string }> {
+  return request(`/proactive/triggers/${id}/test`, { method: 'POST' });
+}
+
+export async function enableBuiltinTrigger(id: string): Promise<ProactiveTriggerData> {
+  return request(`/proactive/triggers/builtin/${id}/enable`, { method: 'POST' });
+}
+
+export async function fetchProactiveSuggestions(filter?: { status?: string; limit?: number; offset?: number }): Promise<{ suggestions: ProactiveSuggestionData[]; total: number }> {
+  const query = new URLSearchParams();
+  if (filter?.status) query.set('status', filter.status);
+  if (filter?.limit) query.set('limit', String(filter.limit));
+  if (filter?.offset) query.set('offset', String(filter.offset));
+  const qs = query.toString();
+  try {
+    return await request(`/proactive/suggestions${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { suggestions: [], total: 0 };
+  }
+}
+
+export async function approveProactiveSuggestion(id: string): Promise<{ success: boolean; message: string }> {
+  return request(`/proactive/suggestions/${id}/approve`, { method: 'POST' });
+}
+
+export async function dismissProactiveSuggestion(id: string): Promise<{ success: boolean }> {
+  return request(`/proactive/suggestions/${id}/dismiss`, { method: 'POST' });
+}
+
+export async function clearExpiredSuggestions(): Promise<{ deleted: number }> {
+  return request('/proactive/suggestions/expired', { method: 'DELETE' });
+}
+
+export async function fetchProactivePatterns(): Promise<{ patterns: ProactivePatternData[] }> {
+  try {
+    return await request('/proactive/patterns');
+  } catch {
+    return { patterns: [] };
+  }
+}
+
+export async function convertPatternToTrigger(patternId: string): Promise<ProactiveTriggerData> {
+  return request(`/proactive/patterns/${patternId}/convert`, { method: 'POST' });
+}
+
+export async function fetchProactiveStatus(): Promise<Record<string, unknown>> {
+  try {
+    return await request('/proactive/status');
+  } catch {
+    return { initialized: false, enabled: false };
+  }
+}
+
+export async function fetchProactiveConfig(): Promise<{ config: Record<string, unknown> }> {
+  try {
+    return await request('/proactive/status');
+  } catch {
+    return { config: {} };
+  }
+}
+
+// ─── Multimodal API (Phase 7.3) ───────────────────────────────────
+
+export async function fetchMultimodalConfig(): Promise<Record<string, unknown>> {
+  try {
+    return await request('/multimodal/config');
+  } catch {
+    return { enabled: false };
+  }
+}
+
+export async function fetchMultimodalJobs(params?: {
+  type?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ jobs: Array<Record<string, unknown>>; total: number }> {
+  try {
+    const query = new URLSearchParams();
+    if (params?.type) query.set('type', params.type);
+    if (params?.status) query.set('status', params.status);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.offset) query.set('offset', String(params.offset));
+    const qs = query.toString();
+    return await request(`/multimodal/jobs${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { jobs: [], total: 0 };
+  }
+}
+
+export async function analyzeImage(data: {
+  imageBase64: string;
+  mimeType: string;
+  prompt?: string;
+}): Promise<{ description: string; labels: string[]; durationMs: number }> {
+  return request('/multimodal/vision/analyze', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function transcribeAudio(data: {
+  audioBase64: string;
+  format?: string;
+  language?: string;
+}): Promise<{ text: string; language?: string; durationMs: number }> {
+  return request('/multimodal/audio/transcribe', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function synthesizeSpeech(data: {
+  text: string;
+  voice?: string;
+  model?: string;
+  responseFormat?: string;
+}): Promise<{ audioBase64: string; format: string; durationMs: number }> {
+  return request('/multimodal/audio/speak', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function generateImage(data: {
+  prompt: string;
+  size?: string;
+  quality?: string;
+  style?: string;
+}): Promise<{ imageUrl: string; revisedPrompt?: string; durationMs: number }> {
+  return request('/multimodal/image/generate', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
 }

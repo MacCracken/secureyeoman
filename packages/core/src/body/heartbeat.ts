@@ -48,6 +48,7 @@ interface HeartbeatCheck {
     | 'integration_health'
     | 'reflective_task'
     | 'llm_analysis'
+    | 'proactive'
     | 'custom';
   enabled: boolean;
   intervalMs?: number;
@@ -632,6 +633,14 @@ export class HeartbeatManager {
         return this.checkIntegrationHealth(check);
       case 'reflective_task':
         return this.runReflectiveTask(check);
+      case 'proactive':
+        return {
+          name: check.name,
+          type: 'proactive',
+          status: 'ok',
+          message: 'Proactive check executed',
+          data: check.config,
+        };
       case 'custom':
         return {
           name: check.name,

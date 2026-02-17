@@ -45,6 +45,8 @@ import { registerAgentRoutes } from '../agents/agent-routes.js';
 import { registerExtensionRoutes } from '../extensions/extension-routes.js';
 import { registerExecutionRoutes } from '../execution/execution-routes.js';
 import { registerA2ARoutes } from '../a2a/a2a-routes.js';
+import { registerProactiveRoutes } from '../proactive/proactive-routes.js';
+import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
 import { formatPrometheusMetrics } from './prometheus.js';
 
 /** Read version from the closest package.json (core → root). */
@@ -92,6 +94,7 @@ const CHANNEL_PERMISSIONS: Record<string, { resource: string; action: string }> 
   audit: { resource: 'audit', action: 'read' },
   tasks: { resource: 'tasks', action: 'read' },
   security: { resource: 'security_events', action: 'read' },
+  proactive: { resource: 'proactive', action: 'read' },
 };
 
 export interface GatewayServerOptions {
@@ -464,6 +467,41 @@ export class GatewayServer {
       });
     }
 
+    // Proactive assistance routes
+    try {
+      const proactiveManager = this.secureYeoman.getProactiveManager();
+      if (proactiveManager) {
+        registerProactiveRoutes(this.app, { proactiveManager });
+        this.getLogger().info('Proactive routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Proactive routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Multimodal I/O routes
+    try {
+      const multimodalManager = this.secureYeoman.getMultimodalManager();
+      if (multimodalManager) {
+        // Security policy gate: block multimodal requests when disabled
+        this.app.addHook('onRequest', async (request, reply) => {
+          if (request.url.startsWith('/api/v1/multimodal/')) {
+            const config = this.secureYeoman.getConfig();
+            if (!config.security.allowMultimodal) {
+              return reply.code(403).send({ error: 'Forbidden: Multimodal I/O is disabled by security policy' });
+            }
+          }
+        });
+        registerMultimodalRoutes(this.app, { multimodalManager });
+        this.getLogger().info('Multimodal routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Multimodal routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     // Prometheus metrics endpoint (unauthenticated)
     this.app.get('/metrics', async (_request, reply) => {
       try {
@@ -809,6 +847,9 @@ export class GatewayServer {
         allowA2A: config.security.allowA2A,
         allowExtensions: config.security.allowExtensions,
         allowExecution: config.security.allowExecution,
+        allowProactive: config.security.allowProactive,
+        allowExperiments: config.security.allowExperiments,
+        allowMultimodal: config.security.allowMultimodal,
       };
     });
 
@@ -817,22 +858,25 @@ export class GatewayServer {
       '/api/v1/security/policy',
       async (
         request: FastifyRequest<{
-          Body: { allowSubAgents?: boolean; allowA2A?: boolean; allowExtensions?: boolean; allowExecution?: boolean };
+          Body: { allowSubAgents?: boolean; allowA2A?: boolean; allowExtensions?: boolean; allowExecution?: boolean; allowProactive?: boolean; allowExperiments?: boolean; allowMultimodal?: boolean };
         }>,
         reply: FastifyReply
       ) => {
         try {
-          const { allowSubAgents, allowA2A, allowExtensions, allowExecution } = request.body;
-          if (allowSubAgents === undefined && allowA2A === undefined && allowExtensions === undefined && allowExecution === undefined) {
+          const { allowSubAgents, allowA2A, allowExtensions, allowExecution, allowProactive, allowExperiments, allowMultimodal } = request.body;
+          if (allowSubAgents === undefined && allowA2A === undefined && allowExtensions === undefined && allowExecution === undefined && allowProactive === undefined && allowExperiments === undefined && allowMultimodal === undefined) {
             return reply.code(400).send({ error: 'No valid fields provided' });
           }
-          this.secureYeoman.updateSecurityPolicy({ allowSubAgents, allowA2A, allowExtensions, allowExecution });
+          this.secureYeoman.updateSecurityPolicy({ allowSubAgents, allowA2A, allowExtensions, allowExecution, allowProactive, allowExperiments, allowMultimodal });
           const config = this.secureYeoman.getConfig();
           return {
             allowSubAgents: config.security.allowSubAgents,
             allowA2A: config.security.allowA2A,
             allowExtensions: config.security.allowExtensions,
             allowExecution: config.security.allowExecution,
+            allowProactive: config.security.allowProactive,
+            allowExperiments: config.security.allowExperiments,
+            allowMultimodal: config.security.allowMultimodal,
           };
         } catch (err) {
           this.getLogger().error('Failed to update security policy', {

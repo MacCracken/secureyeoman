@@ -47,16 +47,12 @@ vi.mock('./PersonalityEditor', () => ({
   PersonalityEditor: () => <div>PersonalityEditor</div>,
 }));
 
-vi.mock('./CodePage', () => ({
-  CodePage: () => <div>CodePage</div>,
+vi.mock('./EditorPage', () => ({
+  EditorPage: () => <div>EditorPage</div>,
 }));
 
 vi.mock('./ChatPage', () => ({
   ChatPage: () => <div>ChatPage</div>,
-}));
-
-vi.mock('./ExperimentsPage', () => ({
-  ExperimentsPage: () => <div>ExperimentsPage</div>,
 }));
 
 vi.mock('./SettingsPage', () => ({
@@ -69,6 +65,14 @@ vi.mock('./SkillsPage', () => ({
 
 vi.mock('./ConnectionsPage', () => ({
   ConnectionsPage: () => <div>ConnectionsPage</div>,
+}));
+
+vi.mock('./AgentsPage', () => ({
+  AgentsPage: () => <div>AgentsPage</div>,
+}));
+
+vi.mock('./ExperimentsPage', () => ({
+  ExperimentsPage: () => <div>ExperimentsPage</div>,
 }));
 
 // ── Mock hooks and other components ─────────────────────────────────
@@ -113,6 +117,7 @@ vi.mock('../api/client', () => ({
   fetchOnboardingStatus: vi.fn(),
   fetchHeartbeatStatus: vi.fn(),
   fetchMcpServers: vi.fn(),
+  fetchActiveDelegations: vi.fn(),
 }));
 
 import * as api from '../api/client';

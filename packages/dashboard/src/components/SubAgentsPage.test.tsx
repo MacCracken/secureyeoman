@@ -124,7 +124,7 @@ describe('SubAgentsPage', () => {
       allowSubAgents: true,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     mockFetchAgentProfiles.mockResolvedValue(MOCK_PROFILES);
     mockFetchActiveDelegations.mockResolvedValue(MOCK_ACTIVE_DELEGATIONS);
@@ -147,7 +147,7 @@ describe('SubAgentsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Delegation Not Enabled')).toBeInTheDocument();
@@ -162,7 +162,7 @@ describe('SubAgentsPage', () => {
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -177,7 +177,7 @@ describe('SubAgentsPage', () => {
       allowSubAgents: true,
       allowA2A: false,
       allowExtensions: false,
-      allowExecution: true,
+      allowExecution: true, allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();

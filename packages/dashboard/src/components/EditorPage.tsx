@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import Editor, { loader, type OnMount } from '@monaco-editor/react';
 import {
   Send,
@@ -17,8 +18,24 @@ import {
   File,
   Folder,
   Mic,
+  Square,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react';
-import { fetchPersonalities, executeTerminalCommand } from '../api/client';
+import {
+  fetchPersonalities,
+  executeTerminalCommand,
+  executeCode,
+  fetchExecutionSessions,
+  terminateExecutionSession,
+  fetchExecutionHistory,
+  approveExecution,
+  rejectExecution,
+  fetchExecutionConfig,
+  fetchSecurityPolicy,
+} from '../api/client';
 import { useChat } from '../hooks/useChat';
 import { useVoice } from '../hooks/useVoice';
 import { usePushToTalk } from '../hooks/usePushToTalk';
@@ -37,6 +54,8 @@ interface TerminalOutput {
   exitCode: number;
   timestamp: number;
 }
+
+type BottomTab = 'terminal' | 'sessions' | 'history';
 
 const LANG_MAP: Record<string, string> = {
   ts: 'typescript',
@@ -71,7 +90,285 @@ function detectLanguage(filename: string): string {
   return LANG_MAP[ext] ?? 'plaintext';
 }
 
-export function CodePage() {
+// ── Helpers ──────────────────────────────────────────────────────
+
+function formatDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  const remainingSeconds = seconds % 60;
+  return `${minutes}m ${remainingSeconds}s`;
+}
+
+// ── Status maps (from CodeExecutionPage) ─────────────────────────
+
+const SESSION_STATUS_ICONS: Record<string, React.ReactNode> = {
+  active: <CheckCircle className="w-3.5 h-3.5 text-green-500" />,
+  idle: <Clock className="w-3.5 h-3.5 text-yellow-500" />,
+  terminated: <Square className="w-3.5 h-3.5 text-muted-foreground" />,
+  error: <XCircle className="w-3.5 h-3.5 text-red-500" />,
+};
+
+const SESSION_STATUS_COLORS: Record<string, string> = {
+  active: 'bg-green-500/10 text-green-500 border-green-500/20',
+  idle: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
+  terminated: 'bg-muted text-muted-foreground border-border',
+  error: 'bg-red-500/10 text-red-500 border-red-500/20',
+};
+
+// ── Bottom Tab: Sessions ─────────────────────────────────────────
+
+function SessionsPanel() {
+  const queryClient = useQueryClient();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['executionSessions'],
+    queryFn: fetchExecutionSessions,
+    refetchInterval: 5000,
+  });
+
+  const terminateMut = useMutation({
+    mutationFn: terminateExecutionSession,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['executionSessions'] });
+    },
+  });
+
+  const sessions = data?.sessions ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-4">
+        <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (sessions.length === 0) {
+    return (
+      <div className="py-4 text-center">
+        <p className="text-muted-foreground text-xs">No active sessions</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1.5 p-2 overflow-y-auto">
+      {sessions.map((session) => (
+        <div key={session.id} className="flex items-center justify-between gap-2 px-2 py-1.5 rounded bg-muted/30 text-xs">
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            {SESSION_STATUS_ICONS[session.status] ?? <Clock className="w-3.5 h-3.5 text-muted-foreground" />}
+            <span className="font-mono">{session.id.slice(0, 12)}</span>
+            <span className={`px-1.5 py-0.5 rounded border ${SESSION_STATUS_COLORS[session.status] ?? 'bg-muted text-muted-foreground border-border'}`}>
+              {session.status}
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary">
+              {session.runtime}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-muted-foreground hidden sm:inline">
+              {new Date(session.lastActivity).toLocaleTimeString()}
+            </span>
+            <button
+              onClick={() => terminateMut.mutate(session.id)}
+              className="btn-ghost p-1 rounded text-destructive hover:bg-destructive/10"
+              title="Terminate session"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── Bottom Tab: History ──────────────────────────────────────────
+
+function HistoryPanel() {
+  const queryClient = useQueryClient();
+  const [sessionFilter, setSessionFilter] = useState('');
+  const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['executionHistory', sessionFilter],
+    queryFn: () =>
+      fetchExecutionHistory({
+        sessionId: sessionFilter || undefined,
+        limit: 50,
+      }),
+    refetchInterval: 5000,
+  });
+
+  const approveMut = useMutation({
+    mutationFn: approveExecution,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['executionHistory'] });
+    },
+  });
+
+  const rejectMut = useMutation({
+    mutationFn: rejectExecution,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['executionHistory'] });
+    },
+  });
+
+  const executions = data?.executions ?? [];
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      <div className="flex items-center gap-2 px-2 py-1.5 border-b">
+        <input
+          value={sessionFilter}
+          onChange={(e) => setSessionFilter(e.target.value)}
+          className="bg-card border border-border rounded text-xs py-1 px-2 w-48"
+          placeholder="Filter by session ID..."
+        />
+      </div>
+
+      <div className="flex-1 overflow-y-auto">
+        {isLoading && (
+          <div className="flex justify-center py-4">
+            <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+          </div>
+        )}
+
+        {!isLoading && executions.length === 0 && (
+          <div className="py-4 text-center">
+            <p className="text-muted-foreground text-xs">No execution history</p>
+          </div>
+        )}
+
+        {executions.length > 0 && (
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border text-left">
+                <th className="px-2 py-1.5 font-medium text-muted-foreground">Status</th>
+                <th className="px-2 py-1.5 font-medium text-muted-foreground">Session</th>
+                <th className="px-2 py-1.5 font-medium text-muted-foreground">Exit</th>
+                <th className="px-2 py-1.5 font-medium text-muted-foreground">Duration</th>
+                <th className="px-2 py-1.5 font-medium text-muted-foreground">Time</th>
+                <th className="px-2 py-1.5 font-medium text-muted-foreground">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {executions.map((exec) => (
+                <tr
+                  key={exec.id}
+                  className="border-b border-border/50 hover:bg-muted/30 cursor-pointer"
+                  onClick={() => setExpandedId(expandedId === exec.id ? null : exec.id)}
+                >
+                  <td className="px-2 py-1.5">
+                    {exec.exitCode === 0 ? (
+                      <CheckCircle className="w-3.5 h-3.5 text-green-500" />
+                    ) : (
+                      <XCircle className="w-3.5 h-3.5 text-red-500" />
+                    )}
+                  </td>
+                  <td className="px-2 py-1.5 font-mono">{exec.sessionId.slice(0, 8)}</td>
+                  <td className="px-2 py-1.5">
+                    <span className={`px-1 py-0.5 rounded border ${
+                      exec.exitCode === 0
+                        ? 'bg-green-500/10 text-green-500 border-green-500/20'
+                        : 'bg-red-500/10 text-red-500 border-red-500/20'
+                    }`}>
+                      {exec.exitCode}
+                    </span>
+                  </td>
+                  <td className="px-2 py-1.5 text-muted-foreground">{formatDuration(exec.duration)}</td>
+                  <td className="px-2 py-1.5 text-muted-foreground">
+                    {new Date(exec.createdAt).toLocaleTimeString()}
+                  </td>
+                  <td className="px-2 py-1.5">
+                    <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => approveMut.mutate(exec.id)}
+                        className="btn-ghost p-0.5 rounded text-green-500 hover:bg-green-500/10"
+                        title="Approve"
+                      >
+                        <CheckCircle className="w-3 h-3" />
+                      </button>
+                      <button
+                        onClick={() => rejectMut.mutate(exec.id)}
+                        className="btn-ghost p-0.5 rounded text-red-500 hover:bg-red-500/10"
+                        title="Reject"
+                      >
+                        <XCircle className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+
+        {expandedId && (() => {
+          const exec = executions.find((e) => e.id === expandedId);
+          if (!exec) return null;
+          return (
+            <div className="mx-2 my-1 p-2 rounded bg-muted/30 space-y-1">
+              <h4 className="text-xs font-medium">Detail: {exec.id.slice(0, 12)}</h4>
+              {exec.stdout && (
+                <pre className="text-[10px] bg-muted p-1.5 rounded whitespace-pre-wrap max-h-24 overflow-y-auto font-mono">
+                  {exec.stdout}
+                </pre>
+              )}
+              {exec.stderr && (
+                <pre className="text-[10px] bg-destructive/10 p-1.5 rounded whitespace-pre-wrap max-h-24 overflow-y-auto font-mono">
+                  {exec.stderr}
+                </pre>
+              )}
+              {!exec.stdout && !exec.stderr && (
+                <p className="text-[10px] text-muted-foreground italic">No output recorded</p>
+              )}
+            </div>
+          );
+        })()}
+      </div>
+    </div>
+  );
+}
+
+// ── Execution gate wrapper ───────────────────────────────────────
+
+function ExecutionGated({ children }: { children: React.ReactNode }) {
+  const { data: configData } = useQuery({
+    queryKey: ['executionConfig'],
+    queryFn: fetchExecutionConfig,
+  });
+
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+    staleTime: 30000,
+  });
+
+  const enabled =
+    (configData?.config as Record<string, unknown>)?.enabled === true ||
+    securityPolicy?.allowExecution === true;
+
+  if (!enabled) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-4">
+        <Terminal className="w-8 h-8 text-muted-foreground mb-2" />
+        <p className="text-xs font-medium">Code Execution Not Enabled</p>
+        <p className="text-[10px] text-muted-foreground mt-1">
+          Enable sandboxed execution in Security settings.
+        </p>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+// ── Main Component ───────────────────────────────────────────────
+
+export function EditorPage() {
   const { theme } = useTheme();
   const [filename, setFilename] = useState('untitled.ts');
   const [language, setLanguage] = useState(() => detectLanguage('untitled.ts'));
@@ -82,6 +379,7 @@ export function CodePage() {
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string | null>(null);
   const [terminalInput, setTerminalInput] = useState('');
   const [terminalHistory, setTerminalHistory] = useState<TerminalOutput[]>([]);
+  const [activeBottomTab, setActiveBottomTab] = useState<BottomTab>('terminal');
   const editorRef = useRef<MonacoEditor | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
@@ -183,10 +481,10 @@ export function CodePage() {
 
   // Refocus terminal input after command completes
   useEffect(() => {
-    if (!terminalMutation.isPending && terminalInputRef.current) {
+    if (!terminalMutation.isPending && terminalInputRef.current && activeBottomTab === 'terminal') {
       terminalInputRef.current.focus();
     }
-  }, [terminalMutation.isPending, terminalHistory.length]);
+  }, [terminalMutation.isPending, terminalHistory.length, activeBottomTab]);
 
   // Update language when filename changes
   useEffect(() => {
@@ -270,9 +568,7 @@ export function CodePage() {
       return;
     }
 
-    const escapedCode = code.replace(/'/g, "'\\''").replace(/"/g, '\\"');
     const writeCommand = `cat << 'FRIDAY_EOF' > "${filePath}"\n${code}\nFRIDAY_EOF`;
-
     const runCommand = runner.includes(' ') ? `${runner} ${filePath}` : `${runner} "${filePath}"`;
 
     terminalMutation.mutate(
@@ -351,15 +647,21 @@ export function CodePage() {
     setTerminalHistory([]);
   }, []);
 
+  const BOTTOM_TABS: { id: BottomTab; label: string }[] = [
+    { id: 'terminal', label: 'Terminal' },
+    { id: 'sessions', label: 'Sessions' },
+    { id: 'history', label: 'History' },
+  ];
+
   return (
     <div className="flex flex-col h-[calc(100vh-100px)] sm:h-[calc(100vh-140px)]">
       {/* Page header */}
       <div className="flex items-center gap-3 pb-3 border-b mb-3">
         <Code2 className="w-6 h-6 text-primary" />
-        <h2 className="text-lg font-semibold">Code Editor</h2>
+        <h2 className="text-lg font-semibold">Editor</h2>
       </div>
 
-      {/* Three-panel responsive layout: Editor | Chat side by side, Terminal at bottom */}
+      {/* Three-panel responsive layout: Editor | Chat side by side, Bottom panel */}
       <div className="flex-1 flex flex-col gap-3 min-h-0 overflow-y-auto">
         {/* Top row — Code Editor & Chat side by side */}
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 lg:min-h-0">
@@ -616,100 +918,131 @@ export function CodePage() {
           </div>
         </div>
 
-        {/* Bottom panel — Terminal (full width, below Editor+Chat) */}
+        {/* Bottom panel — Tabbed (Terminal / Sessions / History / Experiments) */}
         <div className="flex flex-col h-[150px] sm:h-[180px] lg:h-[200px] border rounded-lg overflow-hidden bg-card flex-shrink-0">
-          {/* Terminal toolbar */}
-          <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30 flex-wrap">
-            <Terminal className="w-4 h-4 text-primary flex-shrink-0" />
-            <div className="flex items-center gap-1 flex-1 min-w-0">
-              <FolderOpen className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-              <input
-                type="text"
-                value={cwd}
-                onChange={(e) => setCwd(e.target.value)}
-                className="bg-transparent border-none px-1 py-0.5 text-xs font-mono flex-1 min-w-0 focus:outline-none focus:ring-1 focus:ring-primary rounded"
-                placeholder="Working directory"
-              />
+          {/* Tab bar */}
+          <div className="flex items-center border-b bg-muted/30 min-w-0">
+            <div className="flex flex-shrink-0">
+              {BOTTOM_TABS.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveBottomTab(tab.id)}
+                  className={`px-3 py-1.5 text-xs font-medium border-b-2 transition-colors whitespace-nowrap ${
+                    activeBottomTab === tab.id
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
             </div>
-            <button
-              onClick={clearTerminal}
-              className="btn-ghost text-xs p-1.5 rounded hover:text-destructive flex-shrink-0"
-              title="Clear terminal"
-            >
-              <Trash2 className="w-3 h-3" />
-            </button>
+            {activeBottomTab === 'terminal' && (
+              <div className="flex items-center gap-2 ml-auto px-2 min-w-0 overflow-hidden">
+                <FolderOpen className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                <input
+                  type="text"
+                  value={cwd}
+                  onChange={(e) => setCwd(e.target.value)}
+                  className="bg-transparent border-none px-1 py-0.5 text-xs font-mono min-w-0 focus:outline-none focus:ring-1 focus:ring-primary rounded"
+                  placeholder="Working directory"
+                />
+                <button
+                  onClick={clearTerminal}
+                  className="btn-ghost text-xs p-1 rounded hover:text-destructive flex-shrink-0"
+                  title="Clear terminal"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Terminal output */}
-          <div
-            className={`flex-1 overflow-y-auto px-3 py-2 font-mono text-xs space-y-1 ${
-              theme === 'dark' ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'
-            }`}
-          >
-            {terminalHistory.length === 0 && !terminalInput && (
-              <div className="text-muted-foreground opacity-50">
-                # Terminal ready. Type commands below.
-              </div>
-            )}
-            {terminalHistory.map((entry) => (
-              <div key={entry.id} className="space-y-1">
-                <div className="flex items-start gap-1">
-                  <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>➜</span>
-                  <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>
-                    {cwd}
-                  </span>
-                  <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>$</span>
-                  <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
-                    {entry.command}
-                  </span>
+          {/* Tab content */}
+          {activeBottomTab === 'terminal' && (
+            <div
+              className={`flex-1 overflow-y-auto px-3 py-2 font-mono text-xs space-y-1 ${
+                theme === 'dark' ? 'bg-black text-white' : 'bg-gray-100 text-gray-900'
+              }`}
+            >
+              {terminalHistory.length === 0 && !terminalInput && (
+                <div className="text-muted-foreground opacity-50">
+                  # Terminal ready. Type commands below.
                 </div>
-                {entry.output && (
-                  <div
-                    className={`whitespace-pre-wrap pl-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
-                  >
-                    {entry.output}
+              )}
+              {terminalHistory.map((entry) => (
+                <div key={entry.id} className="space-y-1">
+                  <div className="flex items-start gap-1">
+                    <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>➜</span>
+                    <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>
+                      {cwd}
+                    </span>
+                    <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>$</span>
+                    <span className={theme === 'dark' ? 'text-white' : 'text-gray-900'}>
+                      {entry.command}
+                    </span>
                   </div>
-                )}
-                {entry.error && (
-                  <div
-                    className={`whitespace-pre-wrap pl-4 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}
-                  >
-                    {entry.error}
-                  </div>
-                )}
-                {entry.exitCode !== 0 && (
-                  <div
-                    className={`text-[10px] pl-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`}
-                  >
-                    Exit code: {entry.exitCode}
-                  </div>
-                )}
+                  {entry.output && (
+                    <div
+                      className={`whitespace-pre-wrap pl-4 ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                    >
+                      {entry.output}
+                    </div>
+                  )}
+                  {entry.error && (
+                    <div
+                      className={`whitespace-pre-wrap pl-4 ${theme === 'dark' ? 'text-red-400' : 'text-red-600'}`}
+                    >
+                      {entry.error}
+                    </div>
+                  )}
+                  {entry.exitCode !== 0 && (
+                    <div
+                      className={`text-[10px] pl-4 ${theme === 'dark' ? 'text-red-500' : 'text-red-600'}`}
+                    >
+                      Exit code: {entry.exitCode}
+                    </div>
+                  )}
+                </div>
+              ))}
+              {terminalMutation.isPending && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <span>Running...</span>
+                </div>
+              )}
+              {/* Current input line */}
+              <div className="flex items-center gap-1">
+                <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>➜</span>
+                <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>{cwd}</span>
+                <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>$</span>
+                <input
+                  ref={terminalInputRef}
+                  type="text"
+                  value={terminalInput}
+                  onChange={(e) => setTerminalInput(e.target.value)}
+                  onKeyDown={handleTerminalKeyDown}
+                  placeholder="Type command..."
+                  disabled={terminalMutation.isPending}
+                  className={`flex-1 bg-transparent border-none px-0 py-0 text-xs font-mono focus:outline-none ${theme === 'dark' ? 'text-white placeholder:text-gray-500' : 'text-gray-900 placeholder:text-gray-400'} disabled:opacity-50`}
+                />
               </div>
-            ))}
-            {terminalMutation.isPending && (
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                <span>Running...</span>
-              </div>
-            )}
-            {/* Current input line */}
-            <div className="flex items-center gap-1">
-              <span className={theme === 'dark' ? 'text-green-400' : 'text-green-600'}>➜</span>
-              <span className={theme === 'dark' ? 'text-blue-400' : 'text-blue-600'}>{cwd}</span>
-              <span className={theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}>$</span>
-              <input
-                ref={terminalInputRef}
-                type="text"
-                value={terminalInput}
-                onChange={(e) => setTerminalInput(e.target.value)}
-                onKeyDown={handleTerminalKeyDown}
-                placeholder="Type command..."
-                disabled={terminalMutation.isPending}
-                className={`flex-1 bg-transparent border-none px-0 py-0 text-xs font-mono focus:outline-none ${theme === 'dark' ? 'text-white placeholder:text-gray-500' : 'text-gray-900 placeholder:text-gray-400'} disabled:opacity-50`}
-              />
+              <div ref={terminalEndRef} />
             </div>
-            <div ref={terminalEndRef} />
-          </div>
+          )}
+
+          {activeBottomTab === 'sessions' && (
+            <ExecutionGated>
+              <SessionsPanel />
+            </ExecutionGated>
+          )}
+
+          {activeBottomTab === 'history' && (
+            <ExecutionGated>
+              <HistoryPanel />
+            </ExecutionGated>
+          )}
+
         </div>
       </div>
     </div>

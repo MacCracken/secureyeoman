@@ -4,9 +4,61 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { CodeExecutionPage } from './CodeExecutionPage';
+
+// Mock scrollIntoView (not available in jsdom)
+Element.prototype.scrollIntoView = vi.fn();
+
+// Mock Monaco editor
+vi.mock('@monaco-editor/react', () => ({
+  default: () => <div data-testid="monaco-editor">Monaco Editor</div>,
+  loader: { config: vi.fn() },
+}));
+
+// Mock hooks
+vi.mock('../hooks/useChat', () => ({
+  useChat: () => ({
+    messages: [],
+    input: '',
+    setInput: vi.fn(),
+    handleSend: vi.fn(),
+    isPending: false,
+    clearMessages: vi.fn(),
+  }),
+}));
+
+vi.mock('../hooks/useVoice', () => ({
+  useVoice: () => ({
+    voiceEnabled: false,
+    isListening: false,
+    supported: false,
+    transcript: '',
+    toggleVoice: vi.fn(),
+    speak: vi.fn(),
+    clearTranscript: vi.fn(),
+  }),
+}));
+
+vi.mock('../hooks/usePushToTalk', () => ({
+  usePushToTalk: () => ({
+    isActive: false,
+    audioLevel: 0,
+    duration: 0,
+    transcript: '',
+    error: null,
+  }),
+}));
+
+vi.mock('../hooks/useTheme', () => ({
+  useTheme: () => ({ theme: 'dark', toggle: vi.fn() }),
+}));
+
+vi.mock('./VoiceOverlay', () => ({
+  VoiceOverlay: () => null,
+}));
 
 vi.mock('../api/client', () => ({
+  fetchPersonalities: vi.fn().mockResolvedValue({ personalities: [] }),
+  executeTerminalCommand: vi.fn(),
   executeCode: vi.fn(),
   fetchExecutionSessions: vi.fn(),
   terminateExecutionSession: vi.fn(),
@@ -18,12 +70,12 @@ vi.mock('../api/client', () => ({
 }));
 
 import * as api from '../api/client';
+import { EditorPage } from './EditorPage';
 
 const mockFetchExecutionConfig = vi.mocked(api.fetchExecutionConfig);
 const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchExecutionSessions = vi.mocked(api.fetchExecutionSessions);
 const mockFetchExecutionHistory = vi.mocked(api.fetchExecutionHistory);
-const mockExecuteCode = vi.mocked(api.executeCode);
 const mockTerminateExecutionSession = vi.mocked(api.terminateExecutionSession);
 
 function createQueryClient() {
@@ -36,7 +88,7 @@ function renderComponent() {
   return render(
     <MemoryRouter>
       <QueryClientProvider client={createQueryClient()}>
-        <CodeExecutionPage />
+        <EditorPage />
       </QueryClientProvider>
     </MemoryRouter>,
   );
@@ -84,15 +136,17 @@ const MOCK_HISTORY = {
   ],
 };
 
-describe('CodeExecutionPage', () => {
+describe('EditorPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    (api.fetchPersonalities as ReturnType<typeof vi.fn>).mockResolvedValue({ personalities: [] });
     mockFetchExecutionConfig.mockResolvedValue({ config: { enabled: true } });
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
       allowExtensions: false,
       allowExecution: true,
+      allowProactive: false, allowExperiments: false, allowMultimodal: false,
     });
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
     mockFetchExecutionHistory.mockResolvedValue({ ...MOCK_HISTORY, total: MOCK_HISTORY.executions.length });
@@ -100,109 +154,62 @@ describe('CodeExecutionPage', () => {
 
   // ── Rendering ──────────────────────────────────────────────
 
-  it('renders the heading', async () => {
+  it('renders the Editor heading', async () => {
     renderComponent();
-    expect(await screen.findByText('Code Execution')).toBeInTheDocument();
+    expect(await screen.findByText('Editor')).toBeInTheDocument();
   });
 
-  it('shows disabled state when config and security policy both disallow', async () => {
-    mockFetchExecutionConfig.mockResolvedValue({ config: { enabled: false } });
-    mockFetchSecurityPolicy.mockResolvedValue({
-      allowSubAgents: false,
-      allowA2A: false,
-      allowExtensions: false,
-      allowExecution: false,
-    });
+  it('renders bottom panel tab bar with all tabs', async () => {
     renderComponent();
-    expect(await screen.findByText('Code Execution Not Enabled')).toBeInTheDocument();
-  });
-
-  it('shows enabled state when only security policy allows', async () => {
-    mockFetchExecutionConfig.mockResolvedValue({ config: { enabled: false } });
-    renderComponent();
-    expect(await screen.findByText('Runtime')).toBeInTheDocument();
-  });
-
-  it('shows enabled state when only config.enabled is true', async () => {
-    mockFetchSecurityPolicy.mockResolvedValue({
-      allowSubAgents: false,
-      allowA2A: false,
-      allowExtensions: false,
-      allowExecution: false,
-    });
-    renderComponent();
-    expect(await screen.findByText('Runtime')).toBeInTheDocument();
-  });
-
-  // ── Tabs ───────────────────────────────────────────────────
-
-  it('renders Execute, Sessions, and History tabs', async () => {
-    renderComponent();
-    await screen.findByText('Runtime');
+    expect(await screen.findByText('Terminal')).toBeInTheDocument();
     expect(screen.getByText('Sessions')).toBeInTheDocument();
     expect(screen.getByText('History')).toBeInTheDocument();
   });
 
-  // ── Execute Tab ────────────────────────────────────────────
+  // ── Tab switching ──────────────────────────────────────────
 
-  it('shows runtime selector with options', async () => {
-    renderComponent();
-    await screen.findByText('Runtime');
-    expect(screen.getByDisplayValue('Node.js')).toBeInTheDocument();
-  });
-
-  it('shows code textarea with placeholder', async () => {
-    renderComponent();
-    await screen.findByText('Runtime');
-    const textarea = screen.getByPlaceholderText('console.log("Hello, world!");');
-    expect(textarea).toBeInTheDocument();
-  });
-
-  it('executes code when Execute button is clicked', async () => {
-    const user = userEvent.setup();
-    mockExecuteCode.mockResolvedValue({
-      id: 'exec-new',
-      sessionId: 'sess-new',
-      exitCode: 0,
-      stdout: '42',
-      stderr: '',
-      duration: 50,
-      truncated: false,
-    });
-    renderComponent();
-    await screen.findByText('Runtime');
-    const textarea = screen.getByPlaceholderText('console.log("Hello, world!");');
-    await user.type(textarea, 'console.log(42)');
-    // Find the Execute button (not the tab) - tab is first, action button is second in DOM
-    const executeButtons = screen.getAllByText('Execute');
-    fireEvent.click(executeButtons[executeButtons.length - 1]);
-    await waitFor(() => {
-      expect(mockExecuteCode).toHaveBeenCalled();
-      expect(mockExecuteCode.mock.calls[0][0]).toEqual(
-        expect.objectContaining({
-          runtime: 'node',
-          code: 'console.log(42)',
-        }),
-      );
-    });
-  });
-
-  // ── Sessions Tab ───────────────────────────────────────────
-
-  it('shows sessions when Sessions tab is clicked', async () => {
+  it('switches to Sessions tab and shows sessions', async () => {
     const user = userEvent.setup();
     renderComponent();
-    await screen.findByText('Runtime');
+    await screen.findByText('Terminal');
     await user.click(screen.getByText('Sessions'));
     expect(await screen.findByText('active')).toBeInTheDocument();
     expect(screen.getByText('node')).toBeInTheDocument();
   });
 
+  it('switches to History tab and shows execution history', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await screen.findByText('Terminal');
+    await user.click(screen.getByText('History'));
+    expect(await screen.findByText('150ms')).toBeInTheDocument();
+  });
+
+  // ── Execution gate ─────────────────────────────────────────
+
+  it('shows disabled state in Sessions when execution is off', async () => {
+    const user = userEvent.setup();
+    mockFetchExecutionConfig.mockResolvedValue({ config: { enabled: false } });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowExtensions: false,
+      allowExecution: false,
+      allowProactive: false, allowExperiments: false, allowMultimodal: false,
+    });
+    renderComponent();
+    await screen.findByText('Terminal');
+    await user.click(screen.getByText('Sessions'));
+    expect(await screen.findByText('Code Execution Not Enabled')).toBeInTheDocument();
+  });
+
+  // ── Sessions tab actions ───────────────────────────────────
+
   it('shows empty sessions state', async () => {
     const user = userEvent.setup();
     mockFetchExecutionSessions.mockResolvedValue({ sessions: [] });
     renderComponent();
-    await screen.findByText('Runtime');
+    await screen.findByText('Terminal');
     await user.click(screen.getByText('Sessions'));
     expect(await screen.findByText('No active sessions')).toBeInTheDocument();
   });
@@ -211,7 +218,7 @@ describe('CodeExecutionPage', () => {
     const user = userEvent.setup();
     mockTerminateExecutionSession.mockResolvedValue(undefined as never);
     renderComponent();
-    await screen.findByText('Runtime');
+    await screen.findByText('Terminal');
     await user.click(screen.getByText('Sessions'));
     await screen.findByText('active');
     const terminateButtons = screen.getAllByTitle('Terminate session');
@@ -222,21 +229,13 @@ describe('CodeExecutionPage', () => {
     });
   });
 
-  // ── History Tab ────────────────────────────────────────────
-
-  it('shows execution history when History tab is clicked', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-    await screen.findByText('Runtime');
-    await user.click(screen.getByText('History'));
-    expect(await screen.findByText('150ms')).toBeInTheDocument();
-  });
+  // ── History tab ────────────────────────────────────────────
 
   it('shows empty history state', async () => {
     const user = userEvent.setup();
     mockFetchExecutionHistory.mockResolvedValue({ executions: [], total: 0 });
     renderComponent();
-    await screen.findByText('Runtime');
+    await screen.findByText('Terminal');
     await user.click(screen.getByText('History'));
     expect(await screen.findByText('No execution history')).toBeInTheDocument();
   });

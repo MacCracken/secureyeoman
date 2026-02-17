@@ -91,6 +91,103 @@ export class TelegramIntegration implements Integration {
       await this.deps!.onMessage(unified);
     });
 
+    // ── Inbound photo messages ──────────────────────────────
+    this.bot.on('message:photo', async (ctx) => {
+      const msg = ctx.message;
+      const from = msg.from;
+      const photos = msg.photo;
+      // Use the largest photo size
+      const photo = photos[photos.length - 1];
+      if (!photo) return;
+
+      let text = msg.caption ?? '';
+
+      // If multimodal manager is available, analyze the image
+      try {
+        const mmManager = this.deps?.multimodalManager;
+        if (mmManager) {
+          const file = await ctx.api.getFile(photo.file_id);
+          const fileUrl = `https://api.telegram.org/file/bot${(this.config!.config.botToken as string)}/${file.file_path}`;
+          const response = await fetch(fileUrl);
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const base64 = buffer.toString('base64');
+
+          const result = await mmManager.analyzeImage({
+            imageBase64: base64,
+            mimeType: 'image/jpeg',
+            prompt: msg.caption ?? undefined,
+          });
+          text = `[Image: ${result.description}]${msg.caption ? `\n${msg.caption}` : ''}`;
+        }
+      } catch (err) {
+        this.logger?.warn('Failed to analyze photo', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+
+      const unified: UnifiedMessage = {
+        id: `tg_${msg.message_id}`,
+        integrationId: config.id,
+        platform: 'telegram',
+        direction: 'inbound',
+        senderId: String(from.id),
+        senderName: [from.first_name, from.last_name].filter(Boolean).join(' '),
+        chatId: String(msg.chat.id),
+        text,
+        attachments: [],
+        platformMessageId: String(msg.message_id),
+        metadata: { chatType: msg.chat.type, isBot: from.is_bot },
+        timestamp: msg.date * 1000,
+      };
+      await this.deps!.onMessage(unified);
+    });
+
+    // ── Inbound voice messages ──────────────────────────────
+    this.bot.on('message:voice', async (ctx) => {
+      const msg = ctx.message;
+      const from = msg.from;
+
+      let text = '[Voice message]';
+
+      // If multimodal manager is available, transcribe the audio
+      try {
+        const mmManager = this.deps?.multimodalManager;
+        if (mmManager && msg.voice.file_id) {
+          const file = await ctx.api.getFile(msg.voice.file_id);
+          const fileUrl = `https://api.telegram.org/file/bot${(this.config!.config.botToken as string)}/${file.file_path}`;
+          const response = await fetch(fileUrl);
+          const buffer = Buffer.from(await response.arrayBuffer());
+          const base64 = buffer.toString('base64');
+
+          const result = await mmManager.transcribeAudio({
+            audioBase64: base64,
+            format: 'ogg',
+          });
+          text = `[Voice: ${result.text}]`;
+        }
+      } catch (err) {
+        this.logger?.warn('Failed to transcribe voice', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+
+      const unified: UnifiedMessage = {
+        id: `tg_${msg.message_id}`,
+        integrationId: config.id,
+        platform: 'telegram',
+        direction: 'inbound',
+        senderId: String(from.id),
+        senderName: [from.first_name, from.last_name].filter(Boolean).join(' '),
+        chatId: String(msg.chat.id),
+        text,
+        attachments: [],
+        platformMessageId: String(msg.message_id),
+        metadata: { chatType: msg.chat.type, isBot: from.is_bot },
+        timestamp: msg.date * 1000,
+      };
+      await this.deps!.onMessage(unified);
+    });
+
     // ── Error handler ──────────────────────────────────────
     this.bot.catch((err) => {
       this.logger?.error('Telegram bot error', {
