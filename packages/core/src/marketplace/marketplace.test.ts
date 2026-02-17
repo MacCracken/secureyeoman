@@ -91,7 +91,7 @@ describe('MarketplaceStorage', () => {
   it('should seed builtin skills', async () => {
     await storage.seedBuiltinSkills();
     const { skills, total } = await storage.search();
-    expect(total).toBe(4);
+    expect(total).toBe(7);
     const summarizeSkill = skills.find((s) => s.name === 'Summarize Text');
     expect(summarizeSkill).toBeDefined();
     expect(summarizeSkill!.author).toBe('YEOMAN');
@@ -139,7 +139,7 @@ describe('MarketplaceManager', () => {
   it('should seed builtin skills via manager', async () => {
     await manager.seedBuiltinSkills();
     const { skills, total } = await manager.search();
-    expect(total).toBe(4);
+    expect(total).toBe(7);
     const summarizeSkill = skills.find((s) => s.name === 'Summarize Text');
     expect(summarizeSkill).toBeDefined();
   });

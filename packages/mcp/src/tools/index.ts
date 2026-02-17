@@ -18,7 +18,7 @@ import { registerAuditTools } from './audit-tools.js';
 import { registerFilesystemTools } from './filesystem-tools.js';
 import { registerGitTools } from './git-tools.js';
 import { registerWebTools } from './web-tools.js';
-import { registerBrowserTools } from './browser-tools.js';
+import { registerBrowserTools, type OnBrowserSessionEvent } from './browser-tools.js';
 import { registerMultimodalTools } from './multimodal-tools.js';
 
 export interface ToolMiddleware {
@@ -32,7 +32,8 @@ export function registerAllTools(
   server: McpServer,
   client: CoreApiClient,
   config: McpServiceConfig,
-  middleware: ToolMiddleware
+  middleware: ToolMiddleware,
+  onBrowserSessionEvent?: OnBrowserSessionEvent
 ): void {
   registerBrainTools(server, client, middleware);
   registerTaskTools(server, client, middleware);
@@ -47,6 +48,6 @@ export function registerAllTools(
   registerGitTools(server, config, middleware);
   registerFilesystemTools(server, config, middleware);
   registerWebTools(server, config, middleware);
-  registerBrowserTools(server, config, middleware);
+  registerBrowserTools(server, config, middleware, onBrowserSessionEvent);
   registerMultimodalTools(server, client, middleware);
 }

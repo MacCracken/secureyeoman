@@ -185,6 +185,7 @@ export class SecureYeoman {
   private a2aManager: A2AManager | null = null;
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
+  private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
   private initialized = false;
   private startedAt: number | null = null;
   private shutdownPromise: Promise<void> | null = null;
@@ -826,6 +827,31 @@ export class SecureYeoman {
         }
       }
 
+      // Step 6d: Initialize Browser Session Storage (for browser automation tracking)
+      {
+        let browserEnabled = false;
+        if (this.mcpStorage) {
+          try {
+            const mcpCfg = await this.mcpStorage.getConfig();
+            browserEnabled = mcpCfg.exposeBrowser;
+          } catch {
+            // ignore — default to false
+          }
+        }
+        if (browserEnabled) {
+          try {
+            const { BrowserSessionStorage } = await import('./browser/storage.js');
+            this.browserSessionStorage = new BrowserSessionStorage();
+            await this.browserSessionStorage.ensureTables();
+            this.logger.debug('Browser session storage initialized');
+          } catch (error) {
+            this.logger.warn('Browser session storage initialization failed (non-fatal)', {
+              error: error instanceof Error ? error.message : 'Unknown error',
+            });
+          }
+        }
+      }
+
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
         event: 'system_initialized',
@@ -1349,6 +1375,11 @@ export class SecureYeoman {
     return this.multimodalManager;
   }
 
+  getBrowserSessionStorage(): import('./browser/storage.js').BrowserSessionStorage | null {
+    this.ensureInitialized();
+    return this.browserSessionStorage;
+  }
+
   /**
    * Get the integration storage instance
    */
@@ -1798,6 +1829,10 @@ export class SecureYeoman {
     if (this.multimodalManager) {
       this.multimodalManager.close();
       this.multimodalManager = null;
+    }
+    if (this.browserSessionStorage) {
+      this.browserSessionStorage.close();
+      this.browserSessionStorage = null;
     }
     if (this.a2aStorage) {
       this.a2aStorage.close();

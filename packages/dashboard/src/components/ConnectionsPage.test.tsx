@@ -65,6 +65,12 @@ describe('ConnectionsPage', () => {
       exposeWebScraping: false,
       exposeWebSearch: false,
       exposeBrowser: false,
+      allowedUrls: [],
+      webRateLimitPerMinute: 10,
+      proxyEnabled: false,
+      proxyProviders: [],
+      proxyStrategy: 'round-robin',
+      proxyDefaultCountry: '',
     });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });

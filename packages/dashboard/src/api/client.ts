@@ -848,6 +848,23 @@ export async function fetchMemories(query?: string): Promise<{ memories: Memory[
   }
 }
 
+export async function addMemory(data: {
+  type: 'episodic' | 'semantic' | 'procedural' | 'preference';
+  content: string;
+  source: string;
+  context?: Record<string, string>;
+  importance?: number;
+}): Promise<{ memory: Memory }> {
+  return request('/brain/memories', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteMemory(id: string): Promise<{ message: string }> {
+  return request(`/brain/memories/${id}`, { method: 'DELETE' });
+}
+
 // ─── Model Info ───────────────────────────────────────────────
 
 export async function fetchModelInfo(): Promise<ModelInfoResponse> {
@@ -1144,14 +1161,22 @@ export async function fetchMcpResources(): Promise<{ resources: McpResourceDef[]
   }
 }
 
-export async function fetchMcpConfig(): Promise<{
+export interface McpConfigResponse {
   exposeGit: boolean;
   exposeFilesystem: boolean;
   exposeWeb: boolean;
   exposeWebScraping: boolean;
   exposeWebSearch: boolean;
   exposeBrowser: boolean;
-}> {
+  allowedUrls: string[];
+  webRateLimitPerMinute: number;
+  proxyEnabled: boolean;
+  proxyProviders: string[];
+  proxyStrategy: string;
+  proxyDefaultCountry: string;
+}
+
+export async function fetchMcpConfig(): Promise<McpConfigResponse> {
   try {
     return await request('/mcp/config');
   } catch {
@@ -1162,25 +1187,17 @@ export async function fetchMcpConfig(): Promise<{
       exposeWebScraping: true,
       exposeWebSearch: true,
       exposeBrowser: false,
+      allowedUrls: [],
+      webRateLimitPerMinute: 10,
+      proxyEnabled: false,
+      proxyProviders: [],
+      proxyStrategy: 'round-robin',
+      proxyDefaultCountry: '',
     };
   }
 }
 
-export async function updateMcpConfig(data: {
-  exposeGit?: boolean;
-  exposeFilesystem?: boolean;
-  exposeWeb?: boolean;
-  exposeWebScraping?: boolean;
-  exposeWebSearch?: boolean;
-  exposeBrowser?: boolean;
-}): Promise<{
-  exposeGit: boolean;
-  exposeFilesystem: boolean;
-  exposeWeb: boolean;
-  exposeWebScraping: boolean;
-  exposeWebSearch: boolean;
-  exposeBrowser: boolean;
-}> {
+export async function updateMcpConfig(data: Partial<McpConfigResponse>): Promise<McpConfigResponse> {
   return request('/mcp/config', {
     method: 'PATCH',
     body: JSON.stringify(data),
@@ -2240,6 +2257,51 @@ export async function generateImage(data: {
     method: 'POST',
     body: JSON.stringify(data),
   });
+}
+
+// ─── Browser Automation (Phase 13) ─────────────────────────────────
+
+export async function fetchBrowserSessions(params?: {
+  status?: string;
+  toolName?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ sessions: Record<string, unknown>[]; total: number }> {
+  try {
+    const query = new URLSearchParams();
+    if (params?.status) query.set('status', params.status);
+    if (params?.toolName) query.set('toolName', params.toolName);
+    if (params?.limit) query.set('limit', String(params.limit));
+    if (params?.offset) query.set('offset', String(params.offset));
+    const qs = query.toString();
+    return await request(`/browser/sessions${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { sessions: [], total: 0 };
+  }
+}
+
+export async function fetchBrowserSession(id: string): Promise<Record<string, unknown> | null> {
+  try {
+    return await request(`/browser/sessions/${id}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function closeBrowserSession(id: string): Promise<Record<string, unknown> | null> {
+  try {
+    return await request(`/browser/sessions/${id}/close`, { method: 'POST' });
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchBrowserConfig(): Promise<Record<string, unknown>> {
+  try {
+    return await request('/browser/config');
+  } catch {
+    return { exposeBrowser: false };
+  }
 }
 
 // ─── Cost Analytics (Phase 10) ─────────────────────────────────────

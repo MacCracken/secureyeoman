@@ -238,6 +238,12 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           exposeWebScraping?: boolean;
           exposeWebSearch?: boolean;
           exposeBrowser?: boolean;
+          allowedUrls?: string[];
+          webRateLimitPerMinute?: number;
+          proxyEnabled?: boolean;
+          proxyProviders?: string[];
+          proxyStrategy?: string;
+          proxyDefaultCountry?: string;
         };
       }>
     ) => {
