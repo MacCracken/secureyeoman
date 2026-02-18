@@ -227,6 +227,63 @@ Revoke API key.
 
 ---
 
+### OAuth2 Connections
+
+#### GET /api/v1/auth/oauth/:provider
+
+Initiate an OAuth2 authorization flow. Redirects to the provider's authorization page.
+
+**Supported providers**: `google`, `github`, `gmail`, `googlecalendar`, `googledrive`
+
+Google service providers (`gmail`, `googlecalendar`, `googledrive`) request `access_type=offline` so refresh tokens are issued.
+
+#### GET /api/v1/auth/oauth/:provider/callback
+
+OAuth2 callback endpoint. After code exchange, tokens for Google services are persisted in the unified `OAuthTokenService` store.
+
+- `gmail` → redirects to `/connections/email?connected=true&...`
+- `googlecalendar` → redirects to `/connections/calendar?connected=true&...`
+- `googledrive` → redirects to `/connections/drive?connected=true&...`
+- Others → redirects to `/connections/oauth?connected=true&...`
+
+#### GET /api/v1/auth/oauth/tokens
+
+List all stored OAuth tokens (metadata only — no raw access/refresh token values).
+
+**Required Permissions**: `admin`
+
+**Response**
+```json
+{
+  "tokens": [
+    {
+      "id": "01234abc...",
+      "provider": "googlecalendar",
+      "email": "user@example.com",
+      "userId": "google_sub_123",
+      "scopes": "openid email calendar.readonly calendar.events",
+      "expiresAt": 1708300000000,
+      "createdAt": 1708296400000,
+      "updatedAt": 1708296400000
+    }
+  ],
+  "total": 1
+}
+```
+
+#### DELETE /api/v1/auth/oauth/tokens/:id
+
+Revoke a stored OAuth token by ID.
+
+**Required Permissions**: `admin`
+
+**Response**
+```json
+{ "message": "Token revoked" }
+```
+
+---
+
 ### Roles & Permissions (RBAC)
 
 #### GET /api/v1/auth/roles
@@ -708,7 +765,7 @@ Update security policy configuration.
 | `allowExtensions` | boolean | `false` | Allow lifecycle extension hooks |
 | `allowExecution` | boolean | `true` | Allow sandboxed code execution |
 | `allowProactive` | boolean | `false` | Allow proactive triggers, suggestions, and pattern learning |
-| `allowMultimodal` | boolean | `false` | Allow multimodal I/O (vision, speech, image generation) |
+| `allowMultimodal` | boolean | `false` | Allow multimodal I/O (vision, speech, image generation, haptic feedback) |
 | `allowExperiments` | boolean | `false` | Allow A/B experiments (must be explicitly enabled after initialization) |
 
 **Response**
@@ -1914,6 +1971,59 @@ Stop an integration.
 
 **Required Permissions**: `integrations.write`
 
+#### POST /api/v1/integrations/{id}/reload
+
+Reload an integration at runtime without restarting the server. Stops the adapter (if running), fetches the latest config from the database, and starts a fresh adapter instance. Use this after updating credentials via `PUT /api/v1/integrations/:id` to apply changes immediately.
+
+**Required Permissions**: `integrations.write`
+
+**Response**
+```json
+{ "message": "Integration reloaded" }
+```
+
+#### GET /api/v1/integrations/plugins
+
+List all external integration plugins loaded from `INTEGRATION_PLUGIN_DIR`.
+
+**Required Permissions**: `integrations.read`
+
+**Response**
+```json
+{
+  "plugins": [
+    {
+      "platform": "my-custom-platform",
+      "path": "/opt/plugins/my-platform.mjs",
+      "hasConfigSchema": true
+    }
+  ],
+  "total": 1
+}
+```
+
+#### POST /api/v1/integrations/plugins/load
+
+Load an external integration plugin at runtime from an absolute file path. The plugin is registered immediately as a new platform factory.
+
+**Required Permissions**: `integrations.write` (admin-only recommended)
+
+**Request Body**
+```json
+{ "path": "/opt/plugins/my-platform.mjs" }
+```
+
+**Response** (`201 Created`)
+```json
+{
+  "plugin": {
+    "platform": "my-custom-platform",
+    "path": "/opt/plugins/my-platform.mjs",
+    "hasConfigSchema": false
+  }
+}
+```
+
 #### GET /api/v1/integrations/{id}/messages
 
 List messages for an integration.
@@ -1948,6 +2058,7 @@ Receive generic webhook events. Optionally verifies HMAC-SHA256 signature if a `
 
 **Headers**
 - `X-Webhook-Signature` (optional): `sha256=<hex digest>` HMAC-SHA256 signature
+- `X-Webhook-Event` (optional): Event type string — used to filter transform rules with a `matchEvent` field
 
 **Request Body** (JSON)
 ```json
@@ -1958,6 +2069,275 @@ Receive generic webhook events. Optionally verifies HMAC-SHA256 signature if a `
   "text": "Build passed",
   "metadata": {}
 }
+```
+
+If webhook transform rules exist for this integration, fields in the body may be overridden
+by the rule's JSONPath extractions before the payload is normalised.
+
+---
+
+### Webhook Transform Rules
+
+Webhook transform rules let you reshape inbound webhook payloads from any provider (GitHub, Stripe,
+PagerDuty, etc.) into `UnifiedMessage` fields without writing custom adapters. Rules are applied
+in `priority` order (lowest number first) before `adapter.handleInbound()` is called.
+
+#### GET /api/v1/webhook-transforms
+
+List all webhook transform rules.
+
+**Required Permissions**: Authenticated
+
+**Query Parameters**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `integrationId` | string | Filter to rules for this integration (plus global rules) |
+| `enabled` | boolean | Filter by enabled state |
+
+**Response**
+```json
+{
+  "rules": [
+    {
+      "id": "01234abc...",
+      "integrationId": "intg_abc123",
+      "name": "GitHub push text",
+      "matchEvent": "push",
+      "priority": 10,
+      "enabled": true,
+      "extractRules": [
+        { "field": "text",     "path": "$.head_commit.message" },
+        { "field": "senderId", "path": "$.pusher.name", "default": "github-bot" }
+      ],
+      "template": "{{text}} — by {{senderId}}",
+      "createdAt": 1700000000000,
+      "updatedAt": 1700000000000
+    }
+  ],
+  "total": 1
+}
+```
+
+#### GET /api/v1/webhook-transforms/{id}
+
+Get a single webhook transform rule.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "rule": { "id": "...", "name": "...", "..." : "..." }
+}
+```
+
+#### POST /api/v1/webhook-transforms
+
+Create a new webhook transform rule.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "name": "GitHub push text",
+  "integrationId": "intg_abc123",
+  "matchEvent": "push",
+  "priority": 10,
+  "enabled": true,
+  "extractRules": [
+    { "field": "text",     "path": "$.head_commit.message" },
+    { "field": "senderId", "path": "$.pusher.name", "default": "github-bot" },
+    { "field": "repo",     "path": "$.repository.full_name" }
+  ],
+  "template": "[{{repo}}] {{text}} — by {{senderId}}"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Human-readable rule name |
+| `integrationId` | string\|null | No | Target integration; `null` = applies to all webhook integrations |
+| `matchEvent` | string\|null | No | Only apply when `X-Webhook-Event` header equals this value |
+| `priority` | integer | No | Application order; lower = first (default: `100`) |
+| `enabled` | boolean | No | Whether rule is active (default: `true`) |
+| `extractRules` | array | No | JSONPath extraction instructions (see below) |
+| `template` | string\|null | No | `{{field}}` template rendered to produce `text` |
+
+**ExtractRule object**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `field` | string | Yes | Target field: `text`, `senderId`, `senderName`, `chatId`, or any custom metadata key |
+| `path` | string | Yes | JSONPath expression: `$.field`, `$.a.b`, `$.arr[0].field` |
+| `default` | string | No | Fallback value when the path yields no match |
+
+**Response** (201)
+```json
+{
+  "rule": { "id": "...", "name": "GitHub push text", "..." : "..." }
+}
+```
+
+#### PUT /api/v1/webhook-transforms/{id}
+
+Update a webhook transform rule (partial update).
+
+**Required Permissions**: Authenticated
+
+**Request Body** — any subset of POST fields
+
+**Response**
+```json
+{
+  "rule": { "id": "...", "..." : "..." }
+}
+```
+
+#### DELETE /api/v1/webhook-transforms/{id}
+
+Delete a webhook transform rule.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{ "message": "Transform rule deleted" }
+```
+
+---
+
+### Outbound Webhooks
+
+Outbound webhooks let external systems subscribe to SecureYeoman integration events. When a
+subscribed event occurs (e.g. a message is received, an integration starts), SecureYeoman POSTs
+a JSON payload to every enabled matching URL.
+
+**Payload shape:**
+```json
+{
+  "event": "message.inbound",
+  "timestamp": 1700000000000,
+  "data": {
+    "integrationId": "intg_abc123",
+    "platform": "slack",
+    "senderId": "U012AB3CD",
+    "senderName": "Alice",
+    "chatId": "C1234567",
+    "text": "Hello agent!",
+    "timestamp": 1700000000000
+  }
+}
+```
+
+**Available event types:**
+
+| Event | Fires when |
+|-------|-----------|
+| `message.inbound` | A message is received from any integration |
+| `message.outbound` | A message is sent via any integration |
+| `integration.started` | An adapter starts successfully |
+| `integration.stopped` | An adapter is stopped |
+| `integration.error` | An adapter fails to start |
+
+**Security headers:**
+- `X-SecureYeoman-Event`: event type string (always present)
+- `X-Webhook-Signature`: `sha256=<hmac>` (present only when `secret` is configured)
+
+#### GET /api/v1/outbound-webhooks
+
+List outbound webhook subscriptions.
+
+**Required Permissions**: Authenticated
+
+**Query Parameters**
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `enabled` | boolean | Filter by enabled state |
+
+**Response**
+```json
+{
+  "webhooks": [
+    {
+      "id": "01234abc...",
+      "name": "Notify n8n",
+      "url": "https://n8n.example.com/webhook/abc",
+      "secret": null,
+      "events": ["message.inbound", "integration.error"],
+      "enabled": true,
+      "lastFiredAt": 1700000000000,
+      "lastStatusCode": 200,
+      "consecutiveFailures": 0,
+      "createdAt": 1700000000000,
+      "updatedAt": 1700000000000
+    }
+  ],
+  "total": 1
+}
+```
+
+#### GET /api/v1/outbound-webhooks/{id}
+
+Get a single outbound webhook subscription.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{ "webhook": { "id": "...", "..." : "..." } }
+```
+
+#### POST /api/v1/outbound-webhooks
+
+Create a new outbound webhook subscription.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "name": "Notify n8n",
+  "url": "https://n8n.example.com/webhook/abc",
+  "secret": "my-signing-secret",
+  "events": ["message.inbound", "integration.error"],
+  "enabled": true
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `name` | string | Yes | Human-readable name |
+| `url` | string | Yes | Target callback URL |
+| `secret` | string\|null | No | HMAC-SHA256 signing secret |
+| `events` | string[] | No | Event types to subscribe to (default: `[]`) |
+| `enabled` | boolean | No | Whether subscription is active (default: `true`) |
+
+**Response** (201)
+```json
+{ "webhook": { "id": "...", "name": "Notify n8n", "..." : "..." } }
+```
+
+#### PUT /api/v1/outbound-webhooks/{id}
+
+Update an outbound webhook subscription (partial update).
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{ "webhook": { "id": "...", "..." : "..." } }
+```
+
+#### DELETE /api/v1/outbound-webhooks/{id}
+
+Delete an outbound webhook subscription.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{ "message": "Outbound webhook deleted" }
 ```
 
 ---
@@ -3350,13 +3730,30 @@ Generate an image using OpenAI DALL-E.
 | `revisedPrompt` | string? | DALL-E's revised prompt |
 | `durationMs` | number | Processing time |
 
+### POST /api/v1/multimodal/haptic/trigger
+
+Dispatch a haptic feedback pattern. The server emits a `multimodal:haptic-triggered` extension hook; connected clients (browser dashboard, native apps) execute the pattern on available hardware via the Web Vibration API or equivalent.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `pattern` | number \| number[]? | Vibration pattern in ms — single duration or alternating on/off array (max 20 steps, max 10 000 ms each; default: `200`) |
+| `description` | string? | Optional label for logging/extension context (max 256 chars) |
+
+**Response**:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `triggered` | boolean | Whether the trigger was dispatched |
+| `patternMs` | number | Total pattern duration in ms |
+| `durationMs` | number | Processing time |
+
 ### GET /api/v1/multimodal/jobs
 
 List multimodal processing jobs.
 
 | Query Param | Type | Description |
 |-------------|------|-------------|
-| `type` | string? | Filter by job type (`vision`, `stt`, `tts`, `image_gen`) |
+| `type` | string? | Filter by job type (`vision`, `stt`, `tts`, `image_gen`, `haptic`) |
 | `status` | string? | Filter by status (`pending`, `running`, `completed`, `failed`) |
 | `limit` | number? | Page size (default: 50) |
 | `offset` | number? | Pagination offset |

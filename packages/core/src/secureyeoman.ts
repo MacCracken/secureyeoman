@@ -57,6 +57,7 @@ import { AgentComms } from './comms/agent-comms.js';
 import { TaskStorage } from './task/task-storage.js';
 import { IntegrationStorage } from './integrations/storage.js';
 import { IntegrationManager } from './integrations/manager.js';
+import { PluginLoader } from './integrations/plugin-loader.js';
 import { MessageRouter } from './integrations/message-router.js';
 import { ConversationManager } from './integrations/conversation.js';
 import { TelegramIntegration } from './integrations/telegram/index.js';
@@ -563,6 +564,26 @@ export class SecureYeoman {
       this.integrationManager.registerPlatform('jira', () => new JiraIntegration());
       this.integrationManager.registerPlatform('aws', () => new AwsIntegration());
       this.integrationManager.registerPlatform('azure', () => new AzureDevOpsIntegration());
+
+      // Wire up external plugin loader (INTEGRATION_PLUGIN_DIR env var)
+      const pluginDir = process.env['INTEGRATION_PLUGIN_DIR'];
+      if (pluginDir) {
+        const pluginLoader = new PluginLoader({
+          pluginDir,
+          logger: this.logger.child({ component: 'PluginLoader' }),
+        });
+        const externalPlugins = await pluginLoader.loadAll();
+        for (const plugin of externalPlugins) {
+          this.integrationManager.registerPlatform(
+            plugin.platform,
+            plugin.factory,
+            plugin.configSchema
+          );
+        }
+        this.integrationManager.setPluginLoader(pluginLoader);
+        this.logger.info(`Loaded ${externalPlugins.length} external integration plugin(s)`);
+      }
+
       // Start auto-reconnect health checks
       this.integrationManager.startHealthChecks();
 
@@ -1420,6 +1441,13 @@ export class SecureYeoman {
       throw new Error('Integration storage is not available');
     }
     return this.integrationStorage;
+  }
+
+  /**
+   * Get the message router instance (may return null if not yet initialised).
+   */
+  getMessageRouter(): MessageRouter | null {
+    return this.messageRouter;
   }
 
   /**

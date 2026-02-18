@@ -106,13 +106,13 @@ beforeEach(() => {
 describe('SecurityPage — System Details tab', () => {
   it('renders the System Details tab button', () => {
     renderWithRoute('/security');
-    expect(screen.getByText('System Details')).toBeInTheDocument();
+    expect(screen.getByText('System')).toBeInTheDocument();
   });
 
   it('shows system details content when tab=nodes', async () => {
     renderWithRoute('/security?tab=nodes');
-    expect(await screen.findByText('System Details', { selector: 'h3' })).toBeInTheDocument();
-    expect(screen.getByText('Detailed status for each system component')).toBeInTheDocument();
+    expect(await screen.findByText('System', { selector: 'h3' })).toBeInTheDocument();
+    expect(screen.getByText('Status for each system component')).toBeInTheDocument();
   });
 
   it('renders all 7 node panels', async () => {
@@ -295,10 +295,10 @@ describe('SecurityPage — System Details tab', () => {
   it('switches to System Details tab when clicking the tab button', async () => {
     renderWithRoute('/security');
 
-    fireEvent.click(screen.getByText('System Details'));
+    fireEvent.click(screen.getByText('System'));
 
     expect(
-      await screen.findByText('Detailed status for each system component')
+      await screen.findByText('Status for each system component')
     ).toBeInTheDocument();
   });
 });

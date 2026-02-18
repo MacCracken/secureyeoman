@@ -14,6 +14,9 @@ function createMockManager(): MultimodalManager {
     generateImage: vi
       .fn()
       .mockResolvedValue({ imageUrl: 'https://example.openai.com/img.png', durationMs: 10 }),
+    triggerHaptic: vi
+      .fn()
+      .mockResolvedValue({ triggered: true, patternMs: 200, durationMs: 1 }),
     getStorage: vi.fn().mockReturnValue({
       listJobs: vi.fn().mockResolvedValue({ jobs: [], total: 0 }),
     }),
@@ -159,6 +162,82 @@ describe('Multimodal Routes — validation', () => {
         payload: { prompt: 'A cat in a hat' },
       });
       expect(res.statusCode).toBe(200);
+    });
+  });
+
+  describe('POST /api/v1/multimodal/haptic/trigger', () => {
+    it('accepts empty body and uses default pattern', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/haptic/trigger',
+        payload: {},
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(body.triggered).toBe(true);
+    });
+
+    it('accepts a single number pattern', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/haptic/trigger',
+        payload: { pattern: 500 },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(manager.triggerHaptic).toHaveBeenCalledWith(expect.objectContaining({ pattern: 500 }));
+    });
+
+    it('accepts an array pattern', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/haptic/trigger',
+        payload: { pattern: [200, 100, 200] },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('accepts optional description', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/haptic/trigger',
+        payload: { pattern: 300, description: 'notification' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(manager.triggerHaptic).toHaveBeenCalledWith(
+        expect.objectContaining({ description: 'notification' })
+      );
+    });
+
+    it('rejects pattern step exceeding 10 000 ms', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/haptic/trigger',
+        payload: { pattern: 10_001 },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('rejects array pattern longer than 20 steps', async () => {
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/haptic/trigger',
+        payload: { pattern: Array(21).fill(100) },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('returns 500 and sanitized error when triggerHaptic throws', async () => {
+      (manager.triggerHaptic as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('Haptic pattern duration 6000ms exceeds maximum 5000ms')
+      );
+
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/multimodal/haptic/trigger',
+        payload: { pattern: [3000, 3000] },
+      });
+      expect(res.statusCode).toBe(500);
+      expect(JSON.parse(res.payload).error).toContain('exceeds maximum');
     });
   });
 

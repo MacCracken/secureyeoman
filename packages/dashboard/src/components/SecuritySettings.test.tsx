@@ -150,7 +150,7 @@ describe('SecuritySettings', () => {
   it('renders Lifecycle Extensions section', async () => {
     renderComponent();
     expect(await screen.findByText('Lifecycle Extensions')).toBeInTheDocument();
-    expect(screen.getByLabelText('Toggle Extensions')).toBeInTheDocument();
+    expect(screen.getByLabelText('Toggle Lifecycle Extensions')).toBeInTheDocument();
   });
 
   it('renders Code Execution section enabled by default', async () => {
@@ -217,7 +217,7 @@ describe('SecuritySettings', () => {
 
   it('calls updateSecurityPolicy when toggling Extensions', async () => {
     renderComponent();
-    const toggle = await screen.findByLabelText('Toggle Extensions');
+    const toggle = await screen.findByLabelText('Toggle Lifecycle Extensions');
     fireEvent.click(toggle);
     await waitFor(() => {
       expect(mockUpdateSecurityPolicy).toHaveBeenCalled();

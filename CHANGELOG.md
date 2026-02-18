@@ -4,7 +4,51 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 15 (in progress) — Developer Consolidation, Cost Persistence & Hook Debugger
+## Phase 15 (in progress) — Integration Architecture Improvements, Developer Consolidation, Cost Persistence & Hook Debugger
+
+### OAuth2 First-Class Support — [ADR 050](docs/adr/050-oauth2-first-class-support.md)
+- **`oauth_tokens` PostgreSQL table** (migration 012) — unified storage for OAuth2 tokens with `UNIQUE(provider, email)` constraint; `upsertToken` keeps the record current on re-authentication
+- **`OAuthTokenStorage`** — CRUD wrapper; `listTokens()` returns metadata only (no raw token values)
+- **`OAuthTokenService`** — automatic token refresh 5 minutes before expiry via Google's token endpoint; `getValidToken(provider, email)` is the single access point for all integrations
+- **`googlecalendar` and `googledrive` OAuth providers** — added to `OAUTH_PROVIDERS` in `oauth-routes.ts`; both request `access_type=offline` so refresh tokens are issued; redirect to `/connections/calendar` and `/connections/drive` respectively
+- **`GoogleCalendarIntegration` updated** — uses `OAuthTokenService` when `oauthTokenService` dep is available and `email` is set in config; falls back to inline token path for backward compatibility
+- **`IntegrationManager.setOAuthTokenService()`** — enables post-construction injection (parallel to `setMultimodalManager`)
+- **`GET /api/v1/auth/oauth/tokens`** — list all stored OAuth tokens (provider, email, scopes, expiry — no raw token values)
+- **`DELETE /api/v1/auth/oauth/tokens/:id`** — revoke a stored token
+- **`truncateAllTables()` updated** — now also truncates public-schema user tables so `oauth_tokens`, `usage_records`, and future tables are cleaned between tests
+
+### Outbound Webhooks — [ADR 052](docs/adr/052-outbound-webhooks.md)
+- **`outbound_webhooks` PostgreSQL table** (migration 014) — stores event-subscribed HTTP callback endpoints; tracks `last_fired_at`, `last_status_code`, `consecutive_failures` for delivery health monitoring
+- **`OutboundWebhookStorage`** — CRUD with `listForEvent(event)` using PostgreSQL `@>` JSONB containment for efficient subscriber lookup; `recordSuccess()`/`recordFailure()` update delivery counters
+- **`OutboundWebhookDispatcher`** — fire-and-forget delivery with exponential backoff retries (default 3 retries, 1 s base); `X-SecureYeoman-Event` header always included; `X-Webhook-Signature` HMAC-SHA256 header included when `secret` is configured
+- **Event types**: `message.inbound`, `message.outbound`, `integration.started`, `integration.stopped`, `integration.error`
+- **`IntegrationManager`** — fires `integration.started`, `integration.stopped`, `integration.error`, and `message.outbound` events; dispatcher injected via `setOutboundWebhookDispatcher()`
+- **`MessageRouter`** — fires `message.inbound` at the start of `handleInbound()`; dispatcher injected via `setOutboundWebhookDispatcher()`
+- **`SecureYeoman.getMessageRouter()`** — new accessor for the gateway server to wire the dispatcher into the message router
+- **`GET /api/v1/outbound-webhooks`** — list subscriptions (filter: `enabled`)
+- **`GET /api/v1/outbound-webhooks/:id`** — retrieve a subscription
+- **`POST /api/v1/outbound-webhooks`** — create a subscription
+- **`PUT /api/v1/outbound-webhooks/:id`** — update a subscription (partial)
+- **`DELETE /api/v1/outbound-webhooks/:id`** — delete a subscription
+
+### Webhook Transformation Rules — [ADR 051](docs/adr/051-webhook-transformation-rules.md)
+- **`webhook_transform_rules` PostgreSQL table** (migration 013) — stores ordered JSONPath extraction rules per integration (or globally with `integration_id = NULL`); fields: `match_event`, `priority`, `enabled`, `extract_rules` (JSONB), `template`
+- **`WebhookTransformStorage`** — CRUD wrapper with `listRules(filter?)` that returns integration-specific rules plus global (null integrationId) rules, sorted by priority ascending
+- **`WebhookTransformer`** — applies matching rules to raw inbound payloads; supports JSONPath subset (`$.field`, `$.a.b`, `$.arr[0].field`), `default` fallback values, `{{field}}` template rendering, `matchEvent` header filter, and per-rule `enabled` toggle
+- **`/api/v1/webhooks/custom/:id` updated** — transformation patch applied between signature verification and `adapter.handleInbound()`; reads `X-Webhook-Event` header for event-type filtering
+- **`GET /api/v1/webhook-transforms`** — list all transform rules (filter: `integrationId`, `enabled`)
+- **`GET /api/v1/webhook-transforms/:id`** — retrieve a single rule
+- **`POST /api/v1/webhook-transforms`** — create a new transform rule
+- **`PUT /api/v1/webhook-transforms/:id`** — update a rule (partial update)
+- **`DELETE /api/v1/webhook-transforms/:id`** — delete a rule
+
+### Dynamic Integration Loading — [ADR 049](docs/adr/049-dynamic-integration-loading.md)
+- **`IntegrationManager.reloadIntegration(id)`** — stops a running integration, re-fetches the latest config from PostgreSQL, and starts a fresh adapter instance; enables zero-downtime credential rotation (update via `PUT /api/v1/integrations/:id` then call `/reload`)
+- **`IntegrationManager.setPluginLoader()` / `getLoadedPlugins()` / `loadPlugin()`** — plugin loader attached to the manager for runtime plugin introspection and on-demand loading
+- **`INTEGRATION_PLUGIN_DIR` env var** — on startup, SecureYeoman scans the directory for `.js`/`.mjs` plugin files and registers each as a platform factory; plugins not present in the binary are auto-discovered
+- **`POST /api/v1/integrations/:id/reload`** — reload a single integration in-place without affecting others
+- **`GET /api/v1/integrations/plugins`** — list all externally loaded plugins (platform, path, schema presence)
+- **`POST /api/v1/integrations/plugins/load`** — load an external plugin at runtime from an absolute file path and register its platform factory immediately
 
 ### Lifecycle Hook Debugger
 - **`HookExecutionEntry` type** — new entry shape in `types.ts`: hookPoint, handlerCount, durationMs, vetoed, errors, timestamp, isTest flag
@@ -15,7 +59,7 @@ All notable changes to SecureYeoman are documented in this file.
   - `GET /api/v1/extensions/hooks/log?hookPoint=&limit=` — query the execution log
   - `POST /api/v1/extensions/hooks/test` — trigger a test emit, returns `{ result, durationMs }`
 - **Debugger tab** added as the 4th tab on `ExtensionsPage` (Extensions → Hooks → Webhooks → **Debugger**):
-  - **Test Trigger panel** — grouped `<optgroup>` selector covering all 37 hook points across 9 categories, JSON payload textarea, **Fire Test** button, inline result chip showing OK / vetoed / errors + duration
+  - **Test Trigger panel** — grouped `<optgroup>` selector covering all 38 hook points across 9 categories, JSON payload textarea, **Fire Test** button, inline result chip showing OK / vetoed / errors + duration
   - **Execution Log** — live-refreshing list (5 s interval, manual refresh button), filter by hook point, colored left-border per outcome (green OK, yellow vetoed, red error), `test` purple badge for manually fired events, handler count, duration, error preview with overflow tooltip, timestamp
   - Empty state with guidance to use the test trigger or wait for system events
 
@@ -35,6 +79,15 @@ All notable changes to SecureYeoman are documented in this file.
 - All 42 `server.tool()` calls across 10 MCP tool files migrated to the non-deprecated `server.registerTool()` API
 - `SSEServerTransport` in `packages/mcp/src/transport/sse.ts` kept for legacy client compat with targeted `eslint-disable` comments
 - Removed unused `fetchWithRetry` and `ProxyRequestOptions` imports from `web-tools.ts`
+
+### Haptic Body Capability
+- **`HapticRequestSchema` / `HapticResultSchema`** — Zod schemas in `packages/shared/src/types/multimodal.ts`; request accepts a `pattern` (single ms duration or on/off array up to 20 steps, max 10 000 ms per step) and optional `description`; result returns `triggered`, `patternMs` (total pattern duration), and `durationMs`
+- **`'haptic'` in `MultimodalJobTypeSchema`** — haptic is now a first-class job type alongside `vision`, `stt`, `tts`, and `image_gen`
+- **`haptic` config block in `MultimodalConfigSchema`** — `enabled` (default `true`) and `maxPatternDurationMs` (default 5 000 ms) enforce a server-side cap on total pattern length
+- **`MultimodalManager.triggerHaptic()`** — validates config gate, enforces max pattern duration, creates a job entry, emits `multimodal:haptic-triggered` extension hook (connected clients respond via Web Vibration API or equivalent), returns result
+- **`'multimodal:haptic-triggered'` hook point** — added to `HookPoint` union in `packages/core/src/extensions/types.ts`; follows the same observe/transform/veto semantics as all other hook points
+- **`POST /api/v1/multimodal/haptic/trigger`** — new REST endpoint in `multimodal-routes.ts`; validates body via `HapticRequestSchema`, delegates to `MultimodalManager.triggerHaptic()`
+- **Dashboard UI** — haptic capability toggle in Personality Editor (Body > Capabilities) enabled; previously showed "Not available" badge, now renders the same toggle switch as Auditory/Vision
 
 ### Tooling
 - `npm audit fix` run; 12 moderate ajv/ESLint vulnerabilities formally documented as accepted risk in [ADR 048](docs/adr/048-eslint-ajv-vulnerability-accepted-risk.md)
@@ -350,7 +403,7 @@ All notable changes to SecureYeoman are documented in this file.
 - `MultimodalManager` orchestrator with job tracking in PostgreSQL
 - `MultimodalStorage` extends PgBaseStorage (migration 010)
 - Security policy toggle: `allowMultimodal` in SecuritySettings dashboard
-- 4 extension hook points: `multimodal:image-analyzed`, `multimodal:audio-transcribed`, `multimodal:speech-generated`, `multimodal:image-generated`
+- 5 extension hook points: `multimodal:image-analyzed`, `multimodal:audio-transcribed`, `multimodal:speech-generated`, `multimodal:image-generated`, `multimodal:haptic-triggered`
 - `MediaHandler.toBase64()` helper for file conversion
 - Telegram adapter handles photo and voice messages via MultimodalManager
 - Dashboard API client functions for all multimodal endpoints

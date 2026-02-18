@@ -71,6 +71,15 @@ describe('MultimodalStorage', () => {
       expect(insertCall[1]).toContain('telegram');
       expect(insertCall[1]).toContain('msg_1');
     });
+
+    it('accepts haptic as a job type', async () => {
+      const id = await storage.createJob('haptic', { pattern: [200, 100, 200], patternMs: 500 });
+      expect(id).toBe('test-uuid-123');
+      expect(mockPool.query).toHaveBeenCalledWith(
+        expect.stringContaining('INSERT INTO multimodal.jobs'),
+        expect.arrayContaining(['test-uuid-123', 'haptic'])
+      );
+    });
   });
 
   describe('completeJob', () => {
@@ -140,20 +149,24 @@ describe('MultimodalStorage', () => {
   });
 
   describe('getJobStats', () => {
-    it('returns grouped stats', async () => {
+    it('returns grouped stats including haptic', async () => {
       mockPool.query.mockResolvedValueOnce({
         rows: [
           { type: 'vision', status: 'completed', count: '5' },
           { type: 'vision', status: 'failed', count: '1' },
           { type: 'stt', status: 'completed', count: '3' },
+          { type: 'haptic', status: 'completed', count: '7' },
+          { type: 'haptic', status: 'failed', count: '2' },
         ],
-        rowCount: 3,
+        rowCount: 5,
       });
 
       const stats = await storage.getJobStats();
       expect(stats.vision.completed).toBe(5);
       expect(stats.vision.failed).toBe(1);
       expect(stats.stt.completed).toBe(3);
+      expect(stats.haptic.completed).toBe(7);
+      expect(stats.haptic.failed).toBe(2);
     });
   });
 });

@@ -19,6 +19,8 @@ import type {
   PlatformRateLimit,
 } from './types.js';
 import { DEFAULT_RATE_LIMITS } from './types.js';
+import type { PluginLoader, LoadedPlugin } from './plugin-loader.js';
+import type { OutboundWebhookDispatcher } from './outbound-webhook-dispatcher.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { z } from 'zod';
 
@@ -26,6 +28,7 @@ export interface IntegrationManagerDeps {
   logger: SecureLogger;
   onMessage: IntegrationDeps['onMessage'];
   multimodalManager?: IntegrationDeps['multimodalManager'];
+  oauthTokenService?: IntegrationDeps['oauthTokenService'];
 }
 
 export interface AutoReconnectConfig {
@@ -63,6 +66,12 @@ export class IntegrationManager {
   // Rate limiting
   private readonly rateBuckets = new Map<string, RateLimitBucket>();
 
+  // Plugin loader (optional — enables listing dynamically loaded external plugins)
+  private pluginLoader: PluginLoader | null = null;
+
+  // Outbound webhook dispatcher (optional — fires integration lifecycle events)
+  private outboundWebhookDispatcher: OutboundWebhookDispatcher | null = null;
+
   constructor(
     storage: IntegrationStorage,
     deps: IntegrationManagerDeps,
@@ -82,6 +91,16 @@ export class IntegrationManager {
     (this.deps).multimodalManager = mm;
   }
 
+  /** Inject oauthTokenService after construction (avoids init-order issues). */
+  setOAuthTokenService(svc: IntegrationDeps['oauthTokenService']): void {
+    (this.deps).oauthTokenService = svc;
+  }
+
+  /** Inject outbound webhook dispatcher after construction (avoids init-order issues). */
+  setOutboundWebhookDispatcher(dispatcher: OutboundWebhookDispatcher | null): void {
+    this.outboundWebhookDispatcher = dispatcher;
+  }
+
   // ── Factory Registration ─────────────────────────────────
 
   registerPlatform(platform: Platform, factory: () => Integration, configSchema?: z.ZodType): void {
@@ -94,6 +113,32 @@ export class IntegrationManager {
 
   getAvailablePlatforms(): Platform[] {
     return [...this.factories.keys()];
+  }
+
+  /** Attach a PluginLoader so getLoadedPlugins() can report external plugins. */
+  setPluginLoader(loader: PluginLoader): void {
+    this.pluginLoader = loader;
+  }
+
+  /** Return metadata for all externally loaded plugins (empty if no loader set). */
+  getLoadedPlugins(): LoadedPlugin[] {
+    return this.pluginLoader?.getPlugins() ?? [];
+  }
+
+  /**
+   * Load an external plugin at runtime from an absolute file path.
+   * The path must reside within the configured plugin directory.
+   * After loading, the platform factory is registered so new integrations
+   * of that platform can be created immediately.
+   */
+  async loadPlugin(modulePath: string): Promise<LoadedPlugin> {
+    if (!this.pluginLoader) {
+      throw new Error('No plugin loader configured');
+    }
+    const plugin = await this.pluginLoader.loadPlugin(modulePath);
+    this.registerPlatform(plugin.platform, plugin.factory, plugin.configSchema);
+    this.deps.logger.info(`Runtime plugin loaded: ${plugin.platform} from ${modulePath}`);
+    return plugin;
   }
 
   // ── Config CRUD ──────────────────────────────────────────
@@ -170,6 +215,7 @@ export class IntegrationManager {
         logger: this.deps.logger.child({ integration: id, platform: config.platform }),
         onMessage: this.deps.onMessage,
         multimodalManager: this.deps.multimodalManager,
+        oauthTokenService: this.deps.oauthTokenService,
       });
 
       await integration.start();
@@ -181,10 +227,23 @@ export class IntegrationManager {
       this.reconnectState.delete(id);
 
       this.deps.logger.info(`Integration started: ${config.displayName} (${config.platform})`);
+
+      this.outboundWebhookDispatcher?.dispatch('integration.started', {
+        integrationId: id,
+        platform: config.platform,
+        displayName: config.displayName,
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       await this.storage.updateStatus(id, 'error', message);
       this.deps.logger.error(`Failed to start integration ${id}: ${message}`);
+
+      this.outboundWebhookDispatcher?.dispatch('integration.error', {
+        integrationId: id,
+        platform: config.platform,
+        displayName: config.displayName,
+        error: message,
+      });
       throw err;
     }
   }
@@ -201,11 +260,18 @@ export class IntegrationManager {
       );
     }
 
+    const stoppedConfig = entry.config;
     this.registry.delete(id);
     this.reconnectState.delete(id);
     this.rateBuckets.delete(id);
     await this.storage.updateStatus(id, 'disconnected');
     this.deps.logger.info(`Integration stopped: ${id}`);
+
+    this.outboundWebhookDispatcher?.dispatch('integration.stopped', {
+      integrationId: id,
+      platform: stoppedConfig.platform,
+      displayName: stoppedConfig.displayName,
+    });
   }
 
   async startAll(): Promise<void> {
@@ -226,6 +292,28 @@ export class IntegrationManager {
     for (const id of ids) {
       await this.stopIntegration(id);
     }
+  }
+
+  /**
+   * Reload an integration at runtime without restarting the server.
+   * Stops the adapter (if running), picks up the latest config from the
+   * database, and starts a fresh adapter instance.
+   *
+   * Useful after updating integration credentials or configuration via the
+   * PUT /api/v1/integrations/:id endpoint — call reload to apply changes
+   * immediately.
+   */
+  async reloadIntegration(id: string): Promise<void> {
+    const config = await this.storage.getIntegration(id);
+    if (!config) throw new Error(`Integration ${id} not found`);
+
+    if (this.registry.has(id)) {
+      this.deps.logger.info(`Reloading integration: ${id} — stopping current instance`);
+      await this.stopIntegration(id);
+    }
+
+    this.deps.logger.info(`Reloading integration: ${id} — starting fresh instance`);
+    await this.startIntegration(id);
   }
 
   // ── Health + Auto-Reconnect ───────────────────────────────
@@ -374,6 +462,7 @@ export class IntegrationManager {
 
     const platformMessageId = await entry.integration.sendMessage(chatId, text, metadata);
 
+    const outboundTimestamp = Date.now();
     await this.storage.storeMessage({
       integrationId,
       platform: entry.config.platform,
@@ -385,7 +474,16 @@ export class IntegrationManager {
       attachments: [],
       metadata: metadata ?? {},
       platformMessageId,
-      timestamp: Date.now(),
+      timestamp: outboundTimestamp,
+    });
+
+    this.outboundWebhookDispatcher?.dispatch('message.outbound', {
+      integrationId,
+      platform: entry.config.platform,
+      chatId,
+      text,
+      platformMessageId,
+      timestamp: outboundTimestamp,
     });
 
     return platformMessageId;

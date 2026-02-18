@@ -44,6 +44,7 @@ const defaultConfig = {
   stt: { enabled: true, provider: 'openai' as const, maxDurationSeconds: 120, model: 'whisper-1' },
   tts: { enabled: true, provider: 'openai' as const, voice: 'alloy', model: 'tts-1' },
   imageGen: { enabled: true, provider: 'openai' as const, model: 'dall-e-3', maxPerDay: 50 },
+  haptic: { enabled: true, maxPatternDurationMs: 5_000 },
 };
 
 describe('MultimodalManager', () => {
@@ -296,6 +297,79 @@ describe('MultimodalManager', () => {
       vi.unstubAllGlobals();
       if (origKey) process.env.OPENAI_API_KEY = origKey;
       else delete process.env.OPENAI_API_KEY;
+    });
+  });
+
+  describe('triggerHaptic', () => {
+    it('returns triggered result with correct patternMs for single duration', async () => {
+      const result = await manager.triggerHaptic({ pattern: 300 });
+
+      expect(result.triggered).toBe(true);
+      expect(result.patternMs).toBe(300);
+      expect(result.durationMs).toBeGreaterThanOrEqual(0);
+      expect(storage.createJob).toHaveBeenCalledWith('haptic', expect.any(Object));
+      expect(storage.completeJob).toHaveBeenCalled();
+      expect(deps.extensionManager!.emit).toHaveBeenCalledWith(
+        'multimodal:haptic-triggered',
+        expect.any(Object)
+      );
+    });
+
+    it('sums pattern array into correct patternMs', async () => {
+      const result = await manager.triggerHaptic({ pattern: [200, 100, 200] });
+
+      expect(result.triggered).toBe(true);
+      expect(result.patternMs).toBe(500);
+    });
+
+    it('emits hook with pattern array and description', async () => {
+      await manager.triggerHaptic({ pattern: [100, 50, 100], description: 'alert' });
+
+      expect(deps.extensionManager!.emit).toHaveBeenCalledWith(
+        'multimodal:haptic-triggered',
+        expect.objectContaining({
+          data: expect.objectContaining({
+            pattern: [100, 50, 100],
+            patternMs: 250,
+            description: 'alert',
+          }),
+        })
+      );
+    });
+
+    it('throws when haptic is disabled', async () => {
+      const disabledManager = new MultimodalManager(storage, deps, {
+        ...defaultConfig,
+        haptic: { enabled: false, maxPatternDurationMs: 5_000 },
+      });
+      await disabledManager.initialize();
+
+      await expect(disabledManager.triggerHaptic({ pattern: 200 })).rejects.toThrow(
+        'Haptic capability is disabled'
+      );
+    });
+
+    it('throws when pattern total exceeds maxPatternDurationMs', async () => {
+      await expect(manager.triggerHaptic({ pattern: [3000, 3000] })).rejects.toThrow(
+        'exceeds maximum'
+      );
+      // Validation fires before createJob, so no job is created or failed
+      expect(storage.createJob).not.toHaveBeenCalled();
+    });
+
+    it('accepts pattern exactly at the limit', async () => {
+      const result = await manager.triggerHaptic({ pattern: 5_000 });
+      expect(result.triggered).toBe(true);
+      expect(result.patternMs).toBe(5_000);
+    });
+
+    it('logs job failure on error', async () => {
+      (storage.completeJob as ReturnType<typeof vi.fn>).mockRejectedValue(
+        new Error('DB write failed')
+      );
+
+      await expect(manager.triggerHaptic({ pattern: 200 })).rejects.toThrow('DB write failed');
+      expect(storage.failJob).toHaveBeenCalledWith('job_123', 'DB write failed');
     });
   });
 

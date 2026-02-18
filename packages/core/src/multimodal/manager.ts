@@ -15,6 +15,8 @@ import type {
   TTSResult,
   ImageGenRequest,
   ImageGenResult,
+  HapticRequest,
+  HapticResult,
   AIRequest,
   AIResponse,
 } from '@secureyeoman/shared';
@@ -344,6 +346,54 @@ export class MultimodalManager {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error('Image generation failed', { error: msg });
+      throw new Error(msg);
+    }
+  }
+
+  /**
+   * Trigger haptic feedback — dispatches a pattern via the extension hook system
+   * so connected clients (e.g. browser Web Vibration API) can respond.
+   */
+  async triggerHaptic(request: HapticRequest): Promise<HapticResult> {
+    if (!this.config.haptic.enabled) {
+      throw new Error('Haptic capability is disabled');
+    }
+
+    const pattern = Array.isArray(request.pattern) ? request.pattern : [request.pattern];
+    const patternMs = pattern.reduce((sum, n) => sum + n, 0);
+
+    if (patternMs > this.config.haptic.maxPatternDurationMs) {
+      throw new Error(
+        `Haptic pattern duration ${patternMs}ms exceeds maximum ${this.config.haptic.maxPatternDurationMs}ms`
+      );
+    }
+
+    const jobId = await this.storage.createJob('haptic', {
+      pattern,
+      patternMs,
+      description: request.description,
+    });
+
+    const start = Date.now();
+    try {
+      const durationMs = Date.now() - start;
+      const result: HapticResult = { triggered: true, patternMs, durationMs };
+
+      await this.storage.completeJob(
+        jobId,
+        result as unknown as Record<string, unknown>,
+        durationMs
+      );
+      void this.deps.extensionManager?.emit('multimodal:haptic-triggered', {
+        event: 'multimodal:haptic-triggered',
+        data: { jobId, pattern, patternMs, description: request.description },
+        timestamp: Date.now(),
+      });
+      return result;
+    } catch (error) {
+      const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
+      await this.storage.failJob(jobId, msg);
+      this.deps.logger.error('Haptic trigger failed', { error: msg });
       throw new Error(msg);
     }
   }

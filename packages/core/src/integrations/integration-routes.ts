@@ -6,10 +6,24 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { IntegrationManager } from './manager.js';
 import type { IntegrationStorage } from './storage.js';
 import type { IntegrationCreate, IntegrationUpdate } from '@secureyeoman/shared';
+import type {
+  WebhookTransformStorage,
+  WebhookTransformCreate,
+  WebhookTransformUpdate,
+  WebhookTransformFilter,
+} from './webhook-transform-storage.js';
+import { WebhookTransformer } from './webhook-transformer.js';
+import type {
+  OutboundWebhookStorage,
+  OutboundWebhookCreate,
+  OutboundWebhookUpdate,
+} from './outbound-webhook-storage.js';
 
 export interface IntegrationRoutesOptions {
   integrationManager: IntegrationManager;
   integrationStorage: IntegrationStorage;
+  webhookTransformStorage?: WebhookTransformStorage;
+  outboundWebhookStorage?: OutboundWebhookStorage;
 }
 
 function errorMessage(err: unknown): string {
@@ -20,7 +34,15 @@ export function registerIntegrationRoutes(
   app: FastifyInstance,
   opts: IntegrationRoutesOptions
 ): void {
-  const { integrationManager, integrationStorage } = opts;
+  const {
+    integrationManager,
+    integrationStorage,
+    webhookTransformStorage,
+    outboundWebhookStorage,
+  } = opts;
+  const webhookTransformer = webhookTransformStorage
+    ? new WebhookTransformer(webhookTransformStorage)
+    : null;
 
   // ── Available Platforms ───────────────────────────────────
 
@@ -139,6 +161,58 @@ export function registerIntegrationRoutes(
         return reply.send(result);
       } catch (err) {
         return reply.send({ ok: false, message: errorMessage(err) });
+      }
+    }
+  );
+
+  // ── Reload ────────────────────────────────────────────────
+
+  app.post(
+    '/api/v1/integrations/:id/reload',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        await integrationManager.reloadIntegration(request.params.id);
+        return { message: 'Integration reloaded' };
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
+      }
+    }
+  );
+
+  // ── Plugins ────────────────────────────────────────────────
+
+  app.get('/api/v1/integrations/plugins', async () => {
+    const plugins = integrationManager.getLoadedPlugins();
+    return {
+      plugins: plugins.map((p) => ({
+        platform: p.platform,
+        path: p.path,
+        hasConfigSchema: p.configSchema !== undefined,
+      })),
+      total: plugins.length,
+    };
+  });
+
+  app.post(
+    '/api/v1/integrations/plugins/load',
+    async (
+      request: FastifyRequest<{ Body: { path: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!request.body?.path) {
+        return reply.code(400).send({ error: 'Missing path in request body' });
+      }
+      try {
+        const plugin = await integrationManager.loadPlugin(request.body.path);
+        return reply.code(201).send({
+          plugin: {
+            platform: plugin.platform,
+            path: plugin.path,
+            hasConfigSchema: plugin.configSchema !== undefined,
+          },
+        });
+      } catch (err) {
+        return reply.code(400).send({ error: errorMessage(err) });
       }
     }
   );
@@ -365,12 +439,171 @@ export function registerIntegrationRoutes(
           return reply.code(401).send({ error: 'Invalid webhook signature' });
         }
 
-        const parsed = typeof request.body === 'string' ? JSON.parse(request.body) : request.body;
-        await adapter.handleInbound(parsed as Record<string, unknown>);
+        let parsed: Record<string, unknown> =
+          typeof request.body === 'string' ? JSON.parse(request.body) : request.body;
+
+        // Apply webhook transformation rules (if any are configured)
+        if (webhookTransformer) {
+          const event = request.headers['x-webhook-event'] as string | undefined;
+          const patch = await webhookTransformer.applyRules(parsed, request.params.id, event);
+          if (Object.keys(patch).length > 0) {
+            parsed = { ...parsed, ...patch };
+          }
+        }
+
+        await adapter.handleInbound(parsed);
         return { received: true };
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
       }
     }
   );
+
+  // ── Webhook Transform Rules ───────────────────────────────
+  // Only registered when webhookTransformStorage is provided.
+
+  if (webhookTransformStorage) {
+    app.get(
+      '/api/v1/webhook-transforms',
+      async (
+        request: FastifyRequest<{
+          Querystring: { integrationId?: string; enabled?: string };
+        }>
+      ) => {
+        const filter: WebhookTransformFilter = {};
+        if (request.query.integrationId !== undefined) {
+          filter.integrationId = request.query.integrationId || null;
+        }
+        if (request.query.enabled !== undefined) {
+          filter.enabled = request.query.enabled === 'true';
+        }
+        const rules = await webhookTransformStorage.listRules(filter);
+        return { rules, total: rules.length };
+      }
+    );
+
+    app.get(
+      '/api/v1/webhook-transforms/:id',
+      async (
+        request: FastifyRequest<{ Params: { id: string } }>,
+        reply: FastifyReply
+      ) => {
+        const rule = await webhookTransformStorage.getRule(request.params.id);
+        if (!rule) return reply.code(404).send({ error: 'Transform rule not found' });
+        return { rule };
+      }
+    );
+
+    app.post(
+      '/api/v1/webhook-transforms',
+      async (
+        request: FastifyRequest<{ Body: WebhookTransformCreate }>,
+        reply: FastifyReply
+      ) => {
+        try {
+          const rule = await webhookTransformStorage.createRule(request.body);
+          return reply.code(201).send({ rule });
+        } catch (err) {
+          return reply.code(400).send({ error: errorMessage(err) });
+        }
+      }
+    );
+
+    app.put(
+      '/api/v1/webhook-transforms/:id',
+      async (
+        request: FastifyRequest<{ Params: { id: string }; Body: WebhookTransformUpdate }>,
+        reply: FastifyReply
+      ) => {
+        const rule = await webhookTransformStorage.updateRule(request.params.id, request.body);
+        if (!rule) return reply.code(404).send({ error: 'Transform rule not found' });
+        return { rule };
+      }
+    );
+
+    app.delete(
+      '/api/v1/webhook-transforms/:id',
+      async (
+        request: FastifyRequest<{ Params: { id: string } }>,
+        reply: FastifyReply
+      ) => {
+        const deleted = await webhookTransformStorage.deleteRule(request.params.id);
+        if (!deleted) return reply.code(404).send({ error: 'Transform rule not found' });
+        return { message: 'Transform rule deleted' };
+      }
+    );
+  }
+
+  // ── Outbound Webhooks ─────────────────────────────────────
+  // Only registered when outboundWebhookStorage is provided.
+
+  if (outboundWebhookStorage) {
+    app.get(
+      '/api/v1/outbound-webhooks',
+      async (
+        request: FastifyRequest<{ Querystring: { enabled?: string } }>
+      ) => {
+        const filter: { enabled?: boolean } = {};
+        if (request.query.enabled !== undefined) {
+          filter.enabled = request.query.enabled === 'true';
+        }
+        const webhooks = await outboundWebhookStorage.listWebhooks(filter);
+        return { webhooks, total: webhooks.length };
+      }
+    );
+
+    app.get(
+      '/api/v1/outbound-webhooks/:id',
+      async (
+        request: FastifyRequest<{ Params: { id: string } }>,
+        reply: FastifyReply
+      ) => {
+        const webhook = await outboundWebhookStorage.getWebhook(request.params.id);
+        if (!webhook) return reply.code(404).send({ error: 'Outbound webhook not found' });
+        return { webhook };
+      }
+    );
+
+    app.post(
+      '/api/v1/outbound-webhooks',
+      async (
+        request: FastifyRequest<{ Body: OutboundWebhookCreate }>,
+        reply: FastifyReply
+      ) => {
+        try {
+          const webhook = await outboundWebhookStorage.createWebhook(request.body);
+          return reply.code(201).send({ webhook });
+        } catch (err) {
+          return reply.code(400).send({ error: errorMessage(err) });
+        }
+      }
+    );
+
+    app.put(
+      '/api/v1/outbound-webhooks/:id',
+      async (
+        request: FastifyRequest<{ Params: { id: string }; Body: OutboundWebhookUpdate }>,
+        reply: FastifyReply
+      ) => {
+        const webhook = await outboundWebhookStorage.updateWebhook(
+          request.params.id,
+          request.body
+        );
+        if (!webhook) return reply.code(404).send({ error: 'Outbound webhook not found' });
+        return { webhook };
+      }
+    );
+
+    app.delete(
+      '/api/v1/outbound-webhooks/:id',
+      async (
+        request: FastifyRequest<{ Params: { id: string } }>,
+        reply: FastifyReply
+      ) => {
+        const deleted = await outboundWebhookStorage.deleteWebhook(request.params.id);
+        if (!deleted) return reply.code(404).send({ error: 'Outbound webhook not found' });
+        return { message: 'Outbound webhook deleted' };
+      }
+    );
+  }
 }

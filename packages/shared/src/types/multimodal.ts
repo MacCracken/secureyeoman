@@ -66,9 +66,27 @@ export const ImageGenResultSchema = z.object({
   durationMs: z.number().int().nonnegative(),
 });
 
+// ─── Haptic Schemas ─────────────────────────────────────────────────
+
+export const HapticRequestSchema = z.object({
+  pattern: z
+    .union([
+      z.number().int().positive().max(10_000),
+      z.array(z.number().int().nonnegative().max(10_000)).min(1).max(20),
+    ])
+    .default(200),
+  description: z.string().max(256).optional(),
+});
+
+export const HapticResultSchema = z.object({
+  triggered: z.boolean(),
+  patternMs: z.number().int().nonnegative(),
+  durationMs: z.number().int().nonnegative(),
+});
+
 // ─── Job Tracking Schema ────────────────────────────────────────────
 
-export const MultimodalJobTypeSchema = z.enum(['vision', 'stt', 'tts', 'image_gen']);
+export const MultimodalJobTypeSchema = z.enum(['vision', 'stt', 'tts', 'image_gen', 'haptic']);
 
 export const MultimodalJobStatusSchema = z.enum(['pending', 'running', 'completed', 'failed']);
 
@@ -122,6 +140,12 @@ export const MultimodalConfigSchema = z
         maxPerDay: z.number().int().positive().max(1000).default(50),
       })
       .default({}),
+    haptic: z
+      .object({
+        enabled: z.boolean().default(true),
+        maxPatternDurationMs: z.number().int().positive().max(10_000).default(5_000),
+      })
+      .default({}),
   })
   .default({});
 
@@ -135,6 +159,8 @@ export type TTSRequest = z.infer<typeof TTSRequestSchema>;
 export type TTSResult = z.infer<typeof TTSResultSchema>;
 export type ImageGenRequest = z.infer<typeof ImageGenRequestSchema>;
 export type ImageGenResult = z.infer<typeof ImageGenResultSchema>;
+export type HapticRequest = z.infer<typeof HapticRequestSchema>;
+export type HapticResult = z.infer<typeof HapticResultSchema>;
 export type MultimodalJobType = z.infer<typeof MultimodalJobTypeSchema>;
 export type MultimodalJobStatus = z.infer<typeof MultimodalJobStatusSchema>;
 export type MultimodalJob = z.infer<typeof MultimodalJobSchema>;

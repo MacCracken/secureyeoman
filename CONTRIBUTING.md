@@ -17,6 +17,7 @@ We welcome contributions! This guide will help you get started.
 
 - Node.js 20 LTS or later
 - npm (project uses npm workspaces)
+- Docker & Docker Compose (for PostgreSQL; or use a local Postgres installation)
 - Git
 
 ### First Time Setup
@@ -24,33 +25,63 @@ We welcome contributions! This guide will help you get started.
 ```bash
 # Clone the repository
 git clone https://github.com/MacCracken/secureyeoman.git
-cd friday
+cd secureyeoman
 
 # Install dependencies
 npm install
 
-# Set required environment variables
-export SECUREYEOMAN_SIGNING_KEY="your-signing-key-at-least-32-chars"
-export SECUREYEOMAN_TOKEN_SECRET="your-token-secret-at-least-32-chars"
-export SECUREYEOMAN_ENCRYPTION_KEY="your-encryption-key-at-least-32-chars"
-export SECUREYEOMAN_ADMIN_PASSWORD="your-admin-password-at-least-32-chars"
-export ANTHROPIC_API_KEY="sk-ant-..."
+# Copy the developer environment template and fill in your AI provider key(s)
+cp .env.dev.example .env
+# Edit .env — at minimum set ANTHROPIC_API_KEY (or another provider key)
 
-# Start development server
+# Start PostgreSQL via Docker Compose
+docker compose up -d
+
+# Start development server (builds and watches all packages)
 npm run dev
 ```
+
+### Setting Up the Test Database
+
+The test suite uses a dedicated `secureyeoman_test` database that is separate from the development database. Create it once before running tests:
+
+```bash
+# Option A — using createdb (if PostgreSQL client tools are installed)
+createdb -U secureyeoman -h localhost secureyeoman_test
+
+# Option B — using Node.js (no pg tools needed)
+node --input-type=module <<'EOF'
+import pg from 'pg';
+const c = new pg.Client({
+  host: 'localhost', database: 'postgres',
+  user: 'secureyeoman', password: 'secureyeoman_dev',
+});
+await c.connect();
+await c.query('CREATE DATABASE secureyeoman_test');
+await c.end();
+console.log('Created secureyeoman_test');
+EOF
+```
+
+Migrations run automatically the first time the test suite starts — no manual migration step needed.
 
 ### Running Tests
 
 ```bash
-# Run all tests
+# Run all tests (requires secureyeoman_test database to exist)
 npm test
 
-# Run tests for specific package
+# Run tests for a specific package
 npm test --workspace=@secureyeoman/core
+
+# Run a single test file
+npx vitest run packages/core/src/multimodal/manager.test.ts
 
 # Run tests with coverage
 npm test -- --coverage
+
+# Watch mode during development
+npm test -- --watch
 ```
 
 ## Code Style
@@ -87,36 +118,35 @@ npm run format:check
 packages/
 ├── shared/
 │   └── src/
-│       └── *.test.ts
+│       └── *.test.ts          # Type/schema unit tests (no DB required)
 ├── core/
 │   └── src/
-│       └── *.test.ts
+│       ├── *.test.ts          # Unit & storage tests (storage tests need secureyeoman_test DB)
+│       └── __integration__/   # Full integration tests (need running server + DB)
 └── dashboard/
     └── src/
-        └── *.test.ts
+        └── *.test.ts          # React component tests (jsdom, no DB required)
 ```
 
-### Running Tests
+**Current totals**: 137 test files · 2205 tests · 2204 passing · 1 intentionally skipped
 
-```bash
-# Unit tests
-npm test
+### Test Categories
 
-# Integration tests
-npm test:integration
-
-# Security + chaos tests
-npx vitest run tests/security/ tests/chaos/
-
-# Watch mode
-npm test -- --watch
-```
+| Category | DB Required | Example files |
+|----------|-------------|---------------|
+| Unit (shared types, utils) | No | `shared/src/types/*.test.ts` |
+| Unit (mocked storage) | No | `core/src/multimodal/*.test.ts` |
+| Storage (real SQL) | Yes — `secureyeoman_test` | `core/src/brain/brain.test.ts` |
+| Dashboard components | No (jsdom) | `dashboard/src/components/*.test.tsx` |
+| Integration | Yes — running server | `core/src/__integration__/*.test.ts` |
 
 ### Test Coverage
 
-- Aim for 80%+ coverage on new code
+- Aim for 80%+ line/function coverage on new code (enforced by Vitest thresholds)
 - Test critical paths and error cases
 - Use descriptive test names
+- **Mocked-storage tests** (e.g. `multimodal/storage.test.ts`): mock `pg-pool.js` via `vi.mock()` and assert SQL patterns
+- **Real-storage tests** (e.g. `brain/brain.test.ts`): call `setupTestDb()` in `beforeAll`, use `truncateAllTables()` in `beforeEach`
 
 ### Testing MCP Features
 
@@ -124,10 +154,10 @@ When adding or modifying MCP tools:
 
 ```bash
 # Run MCP package tests
-cd packages/mcp && npx vitest run
+npx vitest run --workspace=packages/mcp
 
-# Run specific test file
-cd packages/mcp && npx vitest run src/tools/web-tools.test.ts
+# Run a specific tool test file
+npx vitest run packages/mcp/src/tools/web-tools.test.ts
 ```
 
 - **Web tools**: Use mock `fetch` for tests that would make HTTP requests. Test SSRF protection with private IPs, localhost, and cloud metadata endpoints.
@@ -135,6 +165,23 @@ cd packages/mcp && npx vitest run src/tools/web-tools.test.ts
 - **Health monitoring**: Mock `McpStorage` and test health check logic, auto-disable thresholds, and timer lifecycle.
 - **Credential management**: Test encryption/decryption roundtrips with mocked storage. Verify IV randomization (same plaintext produces different ciphertexts).
 - **Config loader**: Test all new env vars (`MCP_EXPOSE_WEB`, `MCP_ALLOWED_URLS`, `MCP_EXPOSE_BROWSER`, etc.) with the `loadConfig()` function.
+
+### Testing Body Capabilities (Multimodal)
+
+When adding or modifying multimodal capabilities (vision, auditory, haptic, etc.):
+
+```bash
+npx vitest run \
+  packages/core/src/multimodal/manager.test.ts \
+  packages/core/src/multimodal/multimodal-routes.test.ts \
+  packages/core/src/multimodal/storage.test.ts
+```
+
+These tests use a mocked pg pool — no test database required. Follow the pattern in `manager.test.ts` when adding a new capability:
+1. Add the capability config to `defaultConfig` in the test
+2. Add a `describe` block with: disabled check, success path, edge cases, extension hook assertion
+3. Add the route in `multimodal-routes.test.ts`: valid body, invalid body (Zod rejections), error propagation
+4. Add job type coverage in `storage.test.ts`
 
 ## Submitting Changes
 

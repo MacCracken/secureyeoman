@@ -1111,7 +1111,7 @@ function BodySection({
       haptic: {
         icon: '🖐️',
         description: 'Tactile feedback and notifications',
-        available: false,
+        available: true,
       },
       limb_movement: {
         icon: '⌨️',
@@ -1341,7 +1341,8 @@ function BodySection({
                 (cap === 'vision' ||
                   cap === 'auditory' ||
                   cap === 'limb_movement' ||
-                  cap === 'vocalization');
+                  cap === 'vocalization' ||
+                  cap === 'haptic');
 
               return (
                 <div

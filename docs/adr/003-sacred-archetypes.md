@@ -39,7 +39,7 @@ The preamble explicitly lists the five descending layers (Soul, Spirit, Brain, B
 - Every AI prompt begins with the cosmological narrative (when `includeArchetypes` is true), grounding the agent's identity in the sacred hierarchy
 - All five layers (Soul, Spirit, Brain, Body, Heart) have proper headers with framing sentences, creating a consistent and self-documenting prompt structure
 - Heart is a `###` subsection of Body, reflecting their hierarchical relationship (Body → Heart)
-- The Body section lists capability placeholders (vision, limb_movement, auditory, haptic) for future physical interfaces
+- The Body section lists per-personality capabilities (vision, limb_movement, auditory, haptic, vocalization) with enabled/disabled status injected from personality config
 - The `includeArchetypes` toggle allows per-personality control over whether the cosmological preamble appears
 - The archetypes constant is available for use by other modules (e.g., dashboard display, documentation generation)
 - Prompt length increases by ~550 characters for the preamble plus ~100 characters per layer header — well within the token budget

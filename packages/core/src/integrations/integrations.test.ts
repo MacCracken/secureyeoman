@@ -482,6 +482,103 @@ describe('IntegrationManager', () => {
     });
     expect(config.id).toBeDefined();
   });
+
+  // ── reloadIntegration ───────────────────────────────────────
+
+  describe('reloadIntegration', () => {
+    it('should stop and restart a running integration', async () => {
+      const mockIntegration = createMockIntegration();
+      manager.registerPlatform('telegram', () => mockIntegration);
+      const config = await manager.createIntegration({
+        platform: 'telegram',
+        displayName: 'Bot',
+        enabled: true,
+        config: {},
+      });
+
+      await manager.startIntegration(config.id);
+      expect(manager.isRunning(config.id)).toBe(true);
+
+      await manager.reloadIntegration(config.id);
+
+      // stop should have been called once (from the reload), start twice (initial + reload)
+      expect(mockIntegration.stop).toHaveBeenCalledTimes(1);
+      expect(mockIntegration.start).toHaveBeenCalledTimes(2);
+      expect(manager.isRunning(config.id)).toBe(true);
+    });
+
+    it('should start integration that was not running', async () => {
+      const mockIntegration = createMockIntegration();
+      manager.registerPlatform('telegram', () => mockIntegration);
+      const config = await manager.createIntegration({
+        platform: 'telegram',
+        displayName: 'Bot',
+        enabled: true,
+        config: {},
+      });
+
+      // Not running — reload should just start it
+      await manager.reloadIntegration(config.id);
+
+      expect(mockIntegration.stop).not.toHaveBeenCalled();
+      expect(mockIntegration.start).toHaveBeenCalledTimes(1);
+      expect(manager.isRunning(config.id)).toBe(true);
+    });
+
+    it('should throw for non-existent integration', async () => {
+      await expect(manager.reloadIntegration('no-such-id')).rejects.toThrow('not found');
+    });
+  });
+
+  // ── Plugin management ───────────────────────────────────────
+
+  describe('getLoadedPlugins / loadPlugin', () => {
+    it('should return empty array when no plugin loader is set', () => {
+      expect(manager.getLoadedPlugins()).toEqual([]);
+    });
+
+    it('should return plugins from the attached loader', () => {
+      const mockPlugin = {
+        platform: 'custom' as any,
+        factory: () => createMockIntegration(),
+        path: '/plugins/custom.js',
+      };
+      const mockLoader = {
+        getPlugins: vi.fn().mockReturnValue([mockPlugin]),
+        loadPlugin: vi.fn(),
+        loadAll: vi.fn(),
+        getPlugin: vi.fn(),
+      } as any;
+      manager.setPluginLoader(mockLoader);
+
+      const plugins = manager.getLoadedPlugins();
+      expect(plugins).toHaveLength(1);
+      expect(plugins[0].platform).toBe('custom');
+    });
+
+    it('should throw loadPlugin when no loader is set', async () => {
+      await expect(manager.loadPlugin('/some/path.js')).rejects.toThrow('No plugin loader');
+    });
+
+    it('should load plugin via loader and register the platform', async () => {
+      const mockPlugin = {
+        platform: 'custom' as any,
+        factory: () => createMockIntegration(),
+        path: '/plugins/custom.js',
+      };
+      const mockLoader = {
+        getPlugins: vi.fn().mockReturnValue([]),
+        loadPlugin: vi.fn().mockResolvedValue(mockPlugin),
+        loadAll: vi.fn(),
+        getPlugin: vi.fn(),
+      } as any;
+      manager.setPluginLoader(mockLoader);
+
+      const plugin = await manager.loadPlugin('/plugins/custom.js');
+      expect(plugin.platform).toBe('custom');
+      expect(manager.getAvailablePlatforms()).toContain('custom');
+    });
+  });
 });
 
 // ── MessageRouter Tests ──────────────────────────────────────────

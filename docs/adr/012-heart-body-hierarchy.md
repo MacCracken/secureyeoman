@@ -47,13 +47,14 @@ Heartbeat #N at <timestamp> (<duration>ms):
 
 ### Body Capabilities
 
-The `BodyCapability` enum defines future physical interfaces:
-- `vision` — camera/screen capture input
-- `limb_movement` — keyboard/mouse/system command output
-- `auditory` — microphone/speaker I/O
-- `haptic` — tactile feedback
+The `BodyCapability` enum defines physical interfaces:
+- `vision` — camera/screen capture input (implemented — Phase 7.3)
+- `limb_movement` — keyboard/mouse/system command output (implemented)
+- `auditory` — microphone/speaker I/O (implemented — Phase 7.3)
+- `haptic` — tactile feedback via pattern-based vibration trigger (implemented — Phase 15)
+- `vocalization` — text-to-speech voice output (implemented — Phase 7.3)
 
-These are currently placeholder entries in the prompt. As capabilities are implemented, they will transition from "not yet configured" to active status with relevant data.
+Each capability is toggled per-personality in the Dashboard (Personality Editor > Body > Capabilities). When enabled, the capability name is injected into the AI system prompt as `enabled`; when disabled, as `disabled`. Actual enforcement happens at the API/manager level — the capabilities list in the prompt is informational for the agent, not a hard permission gate.
 
 ## Consequences
 
