@@ -7,6 +7,7 @@ import type { SecureLogger } from '../../logging/logger.js';
 // ── Mock grammy ────────────────────────────────────────────────────
 
 const mockSendMessage = vi.fn().mockResolvedValue({ message_id: 42 });
+const mockSendVoice = vi.fn().mockResolvedValue({ message_id: 43 });
 const mockStop = vi.fn();
 const mockStart = vi.fn(({ onStart }: { onStart?: () => void } = {}) => {
   onStart?.();
@@ -17,7 +18,7 @@ const handlers = new Map<string, (...args: unknown[]) => unknown>();
 
 vi.mock('grammy', () => {
   class MockBot {
-    api = { sendMessage: mockSendMessage };
+    api = { sendMessage: mockSendMessage, sendVoice: mockSendVoice };
     command(cmd: string, handler: (...args: unknown[]) => unknown) {
       handlers.set(`command:${cmd}`, handler);
     }
@@ -113,6 +114,16 @@ describe('TelegramIntegration', () => {
       expect(handlers.has('message:text')).toBe(true);
     });
 
+    it('should register callback_query:data handler', async () => {
+      await adapter.init(createConfig(), createDeps());
+      expect(handlers.has('callback_query:data')).toBe(true);
+    });
+
+    it('should register message:document handler', async () => {
+      await adapter.init(createConfig(), createDeps());
+      expect(handlers.has('message:document')).toBe(true);
+    });
+
     it('should register error handler', async () => {
       await adapter.init(createConfig(), createDeps());
       expect(mockCatch).toHaveBeenCalledOnce();
@@ -160,6 +171,24 @@ describe('TelegramIntegration', () => {
         parse_mode: 'Markdown',
       });
       expect(id).toBe('42');
+    });
+
+    it('should send message with replyMarkup when provided', async () => {
+      await adapter.init(createConfig(), createDeps());
+      const keyboard = { inline_keyboard: [[{ text: 'Yes', callback_data: 'yes' }]] };
+      await adapter.sendMessage('12345', 'Choose:', { replyMarkup: keyboard });
+      expect(mockSendMessage).toHaveBeenCalledWith(12345, 'Choose:', {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+      });
+    });
+
+    it('should not include reply_markup when replyMarkup is not in metadata', async () => {
+      await adapter.init(createConfig(), createDeps());
+      await adapter.sendMessage('12345', 'Hello');
+      expect(mockSendMessage).toHaveBeenCalledWith(12345, 'Hello', {
+        parse_mode: 'Markdown',
+      });
     });
 
     it('should throw if not initialized', async () => {
@@ -239,6 +268,124 @@ describe('TelegramIntegration', () => {
       await handler(fakeCtx);
       const msg: UnifiedMessage = onMessage.mock.calls[0][0];
       expect(msg.replyToMessageId).toBe('50');
+    });
+
+    it('callback_query:data handler should call onMessage with callbackData', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(createConfig(), createDeps({ onMessage }));
+
+      const handler = handlers.get('callback_query:data') as (ctx: unknown) => Promise<void>;
+      expect(handler).toBeDefined();
+
+      const answerCallbackQuery = vi.fn().mockResolvedValue(undefined);
+      const fakeCtx = {
+        callbackQuery: {
+          id: 'cbq_001',
+          data: 'button_yes',
+          from: { id: 555, first_name: 'John', last_name: 'Doe' },
+          message: { chat: { id: 777 }, message_id: 50 },
+        },
+        answerCallbackQuery,
+      };
+
+      await handler(fakeCtx);
+
+      expect(answerCallbackQuery).toHaveBeenCalledOnce();
+      expect(onMessage).toHaveBeenCalledOnce();
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.id).toBe('tg_cbq_cbq_001');
+      expect(msg.text).toBe('button_yes');
+      expect(msg.platform).toBe('telegram');
+      expect(msg.direction).toBe('inbound');
+      expect(msg.metadata?.callbackData).toBe('button_yes');
+      expect(msg.metadata?.callbackQueryId).toBe('cbq_001');
+    });
+
+    it('callback_query:data handler should use from.id as chatId when message is absent', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(createConfig(), createDeps({ onMessage }));
+
+      const handler = handlers.get('callback_query:data') as (ctx: unknown) => Promise<void>;
+      const answerCallbackQuery = vi.fn().mockResolvedValue(undefined);
+      const fakeCtx = {
+        callbackQuery: {
+          id: 'cbq_002',
+          data: 'action',
+          from: { id: 999, first_name: 'Alice' },
+          message: undefined,
+        },
+        answerCallbackQuery,
+      };
+
+      await handler(fakeCtx);
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.chatId).toBe('999');
+    });
+
+    it('message:document handler should call onMessage with file attachment', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(createConfig(), createDeps({ onMessage }));
+
+      const handler = handlers.get('message:document') as (ctx: unknown) => Promise<void>;
+      expect(handler).toBeDefined();
+
+      const fakeCtx = {
+        message: {
+          message_id: 200,
+          from: { id: 555, first_name: 'John', last_name: 'Doe', is_bot: false },
+          chat: { id: 777, type: 'private' },
+          caption: 'My document',
+          document: {
+            file_id: 'file_abc123',
+            file_name: 'report.pdf',
+            mime_type: 'application/pdf',
+            file_size: 12345,
+          },
+          date: 1700000000,
+        },
+      };
+
+      await handler(fakeCtx);
+
+      expect(onMessage).toHaveBeenCalledOnce();
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.id).toBe('tg_200');
+      expect(msg.text).toBe('My document');
+      expect(msg.attachments).toHaveLength(1);
+      expect(msg.attachments![0].type).toBe('file');
+      expect(msg.attachments![0].fileName).toBe('report.pdf');
+      expect(msg.attachments![0].mimeType).toBe('application/pdf');
+      expect(msg.attachments![0].size).toBe(12345);
+      expect(msg.metadata?.fileId).toBe('file_abc123');
+      expect(msg.metadata?.chatType).toBe('private');
+    });
+
+    it('message:document handler should handle missing caption and optional fields', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(createConfig(), createDeps({ onMessage }));
+
+      const handler = handlers.get('message:document') as (ctx: unknown) => Promise<void>;
+      const fakeCtx = {
+        message: {
+          message_id: 201,
+          from: { id: 555, first_name: 'Jane', is_bot: false },
+          chat: { id: 888, type: 'group' },
+          caption: undefined,
+          document: {
+            file_id: 'file_xyz',
+            file_name: undefined,
+            mime_type: undefined,
+            file_size: undefined,
+          },
+          date: 1700000001,
+        },
+      };
+
+      await handler(fakeCtx);
+      const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+      expect(msg.text).toBe('');
+      expect(msg.attachments![0].fileName).toBeUndefined();
+      expect(msg.attachments![0].mimeType).toBeUndefined();
     });
   });
 

@@ -190,6 +190,69 @@ export class TelegramIntegration implements Integration {
       await this.deps!.onMessage(unified);
     });
 
+    // ── Callback query handler (inline keyboards) ──────────
+    this.bot.on('callback_query:data', async (ctx) => {
+      const query = ctx.callbackQuery;
+      await ctx.answerCallbackQuery(); // required acknowledgement
+
+      const from = query.from;
+      const unified: UnifiedMessage = {
+        id: `tg_cbq_${query.id}`,
+        integrationId: config.id,
+        platform: 'telegram',
+        direction: 'inbound',
+        senderId: String(from.id),
+        senderName: [from.first_name, from.last_name].filter(Boolean).join(' '),
+        chatId: String(query.message?.chat.id ?? from.id),
+        text: query.data,
+        attachments: [],
+        platformMessageId: query.id,
+        metadata: {
+          callbackQueryId: query.id,
+          callbackData: query.data,
+          messageId: query.message?.message_id,
+        },
+        timestamp: Date.now(),
+      };
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await this.deps!.onMessage(unified);
+    });
+
+    // ── Document handler ───────────────────────────────────
+    this.bot.on('message:document', async (ctx) => {
+      const msg = ctx.message;
+      const from = msg.from;
+      const doc = msg.document;
+
+      const unified: UnifiedMessage = {
+        id: `tg_${msg.message_id}`,
+        integrationId: config.id,
+        platform: 'telegram',
+        direction: 'inbound',
+        senderId: String(from.id),
+        senderName: [from.first_name, from.last_name].filter(Boolean).join(' '),
+        chatId: String(msg.chat.id),
+        text: msg.caption ?? '',
+        attachments: [
+          {
+            type: 'file',
+            fileName: doc.file_name ?? undefined,
+            mimeType: doc.mime_type ?? undefined,
+            size: doc.file_size ?? undefined,
+          },
+        ],
+        platformMessageId: String(msg.message_id),
+        metadata: {
+          chatType: msg.chat.type,
+          isBot: from.is_bot,
+          fileId: doc.file_id,
+        },
+        timestamp: msg.date * 1000,
+      };
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+      await this.deps!.onMessage(unified);
+    });
+
     // ── Error handler ──────────────────────────────────────
     this.bot.catch((err) => {
       this.logger?.error('Telegram bot error', {
@@ -239,8 +302,10 @@ export class TelegramIntegration implements Integration {
       }
     }
 
+    const replyMarkup = metadata?.replyMarkup;
     const sent = await this.bot.api.sendMessage(Number(chatId), text, {
       parse_mode: 'Markdown',
+      ...(replyMarkup !== undefined ? { reply_markup: replyMarkup as any } : {}),
     });
     return String(sent.message_id);
   }

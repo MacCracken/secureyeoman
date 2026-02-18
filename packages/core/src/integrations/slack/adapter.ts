@@ -3,9 +3,10 @@
  *
  * Uses socket mode (no public URL needed).
  * Normalizes inbound messages to UnifiedMessage with `sl_` prefix.
+ * Supports Block Kit button actions, modal dialogs, and Workflow Builder steps.
  */
 
-import { App } from '@slack/bolt';
+import { App, WorkflowStep } from '@slack/bolt';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
 import type { SecureLogger } from '../../logging/logger.js';
@@ -123,8 +124,38 @@ export class SlackIntegration implements Integration {
       void this.deps!.onMessage(unified);
     });
 
+    // Block Kit button action handler
+    this.app.action({ type: 'button' }, async ({ action, ack, body }) => {
+      await ack();
+
+      const act = action as Record<string, any>;
+      const bodyRec = body as Record<string, any>;
+
+      const unified: UnifiedMessage = {
+        id: `sl_action_${Date.now()}`,
+        integrationId: config.id,
+        platform: 'slack',
+        direction: 'inbound',
+        senderId: String(bodyRec.user?.id ?? ''),
+        senderName: String(bodyRec.user?.name ?? 'Unknown'),
+        chatId: String(bodyRec.channel?.id ?? bodyRec.container?.channel_id ?? ''),
+        text: String(act.value ?? act.action_id ?? ''),
+        attachments: [],
+        platformMessageId: String(act.action_id ?? Date.now()),
+        metadata: {
+          isBlockAction: true,
+          actionId: act.action_id,
+          blockId: act.block_id,
+          value: act.value,
+        },
+        timestamp: Date.now(),
+      };
+
+      void this.deps!.onMessage(unified);
+    });
+
     // Slash command: /friday
-    this.app.command('/friday', async ({ command, ack, respond }) => {
+    this.app.command('/friday', async ({ command, ack }) => {
       await ack();
 
       const unified: UnifiedMessage = {
@@ -156,6 +187,120 @@ export class SlackIntegration implements Integration {
       });
     });
 
+    // Slash command: /friday-modal — opens a modal dialog
+    this.app.command('/friday-modal', async ({ command, ack, client }) => {
+      await ack();
+
+      await client.views.open({
+        trigger_id: command.trigger_id,
+        view: {
+          type: 'modal',
+          callback_id: 'friday_modal',
+          title: { type: 'plain_text', text: 'FRIDAY' },
+          submit: { type: 'plain_text', text: 'Submit' },
+          close: { type: 'plain_text', text: 'Cancel' },
+          blocks: [
+            {
+              type: 'input',
+              block_id: 'task_block',
+              element: {
+                type: 'plain_text_input',
+                action_id: 'task_input',
+                multiline: true,
+                placeholder: { type: 'plain_text', text: 'Describe your task...' },
+              },
+              label: { type: 'plain_text', text: 'Task' },
+            },
+          ],
+        },
+      });
+    });
+
+    // Modal view submission: friday_modal
+    this.app.view('friday_modal', async ({ ack, view, body }) => {
+      await ack();
+
+      const taskText =
+        (view.state.values as any)?.task_block?.task_input?.value ?? '';
+      const user = (body as any).user as Record<string, any>;
+
+      const unified: UnifiedMessage = {
+        id: `sl_modal_${Date.now()}`,
+        integrationId: config.id,
+        platform: 'slack',
+        direction: 'inbound',
+        senderId: String(user?.id ?? ''),
+        senderName: String(user?.name ?? 'Unknown'),
+        chatId: String((body as any).view?.root_view_id ?? ''),
+        text: taskText,
+        attachments: [],
+        platformMessageId: view.id,
+        metadata: {
+          isModalSubmit: true,
+          modalCallbackId: view.callback_id,
+        },
+        timestamp: Date.now(),
+      };
+
+      void this.deps!.onMessage(unified);
+    });
+
+    // Workflow step: friday_process
+    const ws = new WorkflowStep('friday_process', {
+      edit: async ({ ack, step, configure }) => {
+        await ack();
+        await configure({
+          blocks: [
+            {
+              type: 'input',
+              block_id: 'task_block',
+              element: {
+                type: 'plain_text_input',
+                action_id: 'task_input',
+                placeholder: { type: 'plain_text', text: 'Task to process...' },
+              },
+              label: { type: 'plain_text', text: 'Task' },
+            },
+          ],
+        });
+      },
+      save: async ({ ack, step, view, update }) => {
+        await ack();
+        const taskText = (view.state.values as any)?.task_block?.task_input?.value ?? '';
+        await update({ inputs: { task: { value: taskText } }, outputs: [] });
+      },
+      execute: async ({ step, complete, fail }) => {
+        const taskText = String((step.inputs as any)?.task?.value ?? '');
+
+        const unified: UnifiedMessage = {
+          id: `sl_wf_${Date.now()}`,
+          integrationId: config.id,
+          platform: 'slack',
+          direction: 'inbound',
+          senderId: 'workflow',
+          senderName: 'Workflow',
+          chatId: 'workflow',
+          text: taskText,
+          attachments: [],
+          platformMessageId: `wf_${Date.now()}`,
+          metadata: {
+            isWorkflowStep: true,
+            workflowStepId: 'friday_process',
+          },
+          timestamp: Date.now(),
+        };
+
+        try {
+          await this.deps!.onMessage(unified);
+          await complete({ outputs: {} });
+        } catch (err) {
+          await fail({ error: { message: err instanceof Error ? err.message : String(err) } });
+        }
+      },
+    });
+
+    this.app.step(ws);
+
     this.logger?.info('Slack integration initialized');
   }
 
@@ -183,10 +328,12 @@ export class SlackIntegration implements Integration {
     if (!this.app) throw new Error('Integration not initialized');
 
     const threadTs = metadata?.threadTs as string | undefined;
+    const blocks = metadata?.blocks as any[] | undefined;
 
     const result = await this.app.client.chat.postMessage({
       channel: chatId,
       text,
+      ...(blocks ? { blocks } : {}),
       thread_ts: threadTs,
     });
 

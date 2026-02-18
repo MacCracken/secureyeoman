@@ -1,9 +1,10 @@
 /**
  * GitHubIntegration — GitHub adapter using Octokit + Webhooks.
  *
- * Handles push, pull_request, issues, and issue_comment events.
+ * Handles push, pull_request, pull_request_review, pull_request_review_comment,
+ * issues, and issue_comment events.
  * Normalizes inbound webhook payloads to UnifiedMessage with `gh_` prefix.
- * sendMessage() posts comments via the GitHub API.
+ * sendMessage() posts comments or PR reviews via the GitHub API.
  */
 
 import { Octokit } from '@octokit/rest';
@@ -93,10 +94,78 @@ export class GitHubIntegration implements WebhookIntegration {
       void this.deps!.onMessage(unified);
     });
 
+    // ── Pull request review events ───────────────────────
+    this.webhooks.on('pull_request_review', ({ id, payload }) => {
+      const review = (payload as any).review;
+      const pr = (payload as any).pull_request;
+      const repo = payload.repository;
+      const owner = repo.owner.login;
+      const repoName = repo.name;
+
+      const unified: UnifiedMessage = {
+        id: `gh_review_${id}`,
+        integrationId: config.id,
+        platform: 'github',
+        direction: 'inbound',
+        senderId: payload.sender?.login ?? '',
+        senderName: payload.sender?.login ?? 'unknown',
+        chatId: `${owner}/${repoName}/pulls/${pr.number}`,
+        text: review.body ?? `PR review ${payload.action}: ${review.state}`,
+        attachments: [],
+        platformMessageId: String(review.id),
+        metadata: {
+          event: 'pull_request_review',
+          action: payload.action,
+          reviewState: review.state,
+          reviewId: review.id,
+          prNumber: pr.number,
+          prUrl: pr.html_url,
+        },
+        timestamp: Date.now(),
+      };
+      void this.deps!.onMessage(unified);
+    });
+
+    // ── Pull request review comment events ───────────────
+    this.webhooks.on('pull_request_review_comment', ({ id, payload }) => {
+      const comment = (payload as any).comment;
+      const pr = (payload as any).pull_request;
+      const repo = payload.repository;
+      const owner = repo.owner.login;
+      const repoName = repo.name;
+
+      const unified: UnifiedMessage = {
+        id: `gh_review_comment_${id}`,
+        integrationId: config.id,
+        platform: 'github',
+        direction: 'inbound',
+        senderId: payload.sender?.login ?? '',
+        senderName: payload.sender?.login ?? 'unknown',
+        chatId: `${owner}/${repoName}/pulls/${pr.number}`,
+        text: comment.body ?? '',
+        attachments: [],
+        platformMessageId: String(comment.id),
+        metadata: {
+          event: 'pull_request_review_comment',
+          action: payload.action,
+          path: comment.path,
+          line: comment.line,
+          prNumber: pr.number,
+          commentUrl: comment.html_url,
+        },
+        timestamp: new Date(comment.created_at).getTime(),
+      };
+      void this.deps!.onMessage(unified);
+    });
+
     // ── Issues events ────────────────────────────────────
-    this.webhooks.on('issues', ({ id, payload }) => {
+    this.webhooks.on('issues', async ({ id, payload }) => {
       const issue = payload.issue;
       const repo = payload.repository;
+      const owner = repo.owner.login;
+      const repoName = repo.name;
+      const issue_number = issue.number;
+
       const unified: UnifiedMessage = {
         id: `gh_issue_${id}`,
         integrationId: config.id,
@@ -104,20 +173,44 @@ export class GitHubIntegration implements WebhookIntegration {
         direction: 'inbound',
         senderId: payload.sender?.login ?? '',
         senderName: payload.sender?.login ?? 'unknown',
-        chatId: `${repo.owner.login}/${repo.name}/issues/${issue.number}`,
-        text: `Issue #${issue.number} ${payload.action}: ${issue.title}`,
+        chatId: `${owner}/${repoName}/issues/${issue_number}`,
+        text: `Issue #${issue_number} ${payload.action}: ${issue.title}`,
         attachments: [],
         platformMessageId: String(issue.id),
         metadata: {
           event: 'issues',
           action: payload.action,
-          issueNumber: issue.number,
+          issueNumber: issue_number,
           issueState: issue.state,
           issueUrl: issue.html_url,
         },
         timestamp: Date.now(),
       };
       void this.deps!.onMessage(unified);
+
+      // Auto-label on opened events
+      if (payload.action === 'opened' && config.config.autoLabelKeywords) {
+        const keywords = config.config.autoLabelKeywords as Record<string, string[]>;
+        const issueText = `${issue.title} ${issue.body ?? ''}`.toLowerCase();
+        const labelsToAdd = Object.entries(keywords)
+          .filter(([, triggers]) => triggers.some((kw) => issueText.includes(kw.toLowerCase())))
+          .map(([label]) => label);
+
+        if (labelsToAdd.length > 0) {
+          try {
+            await this.octokit!.issues.addLabels({
+              owner,
+              repo: repoName,
+              issue_number,
+              labels: labelsToAdd,
+            });
+          } catch (err) {
+            this.logger?.warn('Failed to auto-label issue', {
+              error: err instanceof Error ? err.message : String(err),
+            });
+          }
+        }
+      }
     });
 
     // ── Issue comment events ─────────────────────────────
@@ -144,6 +237,15 @@ export class GitHubIntegration implements WebhookIntegration {
         },
         timestamp: new Date(comment.created_at).getTime(),
       };
+
+      // Code search trigger: @friday search: <query>
+      if (/^@friday\s+search:/i.test(comment.body ?? '')) {
+        unified.metadata!.isCodeSearchTrigger = true;
+        unified.metadata!.searchQuery = (comment.body ?? '')
+          .replace(/^@friday\s+search:/i, '')
+          .trim();
+      }
+
       void this.deps!.onMessage(unified);
     });
 
@@ -163,13 +265,14 @@ export class GitHubIntegration implements WebhookIntegration {
   }
 
   /**
-   * Send a message to GitHub by posting a comment.
+   * Send a message to GitHub by posting a comment or a PR review.
    * chatId format: `owner/repo/issues/123` or `owner/repo/pulls/123`
+   * If metadata.reviewEvent is set, posts a PR review instead of a comment.
    */
   async sendMessage(
     chatId: string,
     text: string,
-    _metadata?: Record<string, unknown>
+    metadata?: Record<string, unknown>
   ): Promise<string> {
     if (!this.octokit) throw new Error('Integration not initialized');
 
@@ -186,6 +289,22 @@ export class GitHubIntegration implements WebhookIntegration {
     const issueNumber = parseInt(numberStr, 10);
     if (isNaN(issueNumber)) {
       throw new Error(`Invalid issue/PR number in chatId: ${numberStr}`);
+    }
+
+    // PR review: metadata.reviewEvent is set and chatId is a pulls URL
+    if (metadata?.reviewEvent && parts[2] === 'pulls') {
+      const result = await this.octokit.pulls.createReview({
+        owner,
+        repo,
+        pull_number: issueNumber,
+        body: text,
+        event: metadata.reviewEvent as 'COMMENT' | 'APPROVE' | 'REQUEST_CHANGES',
+        ...(metadata.commitId ? { commit_id: metadata.commitId as string } : {}),
+        ...(metadata.reviewComments
+          ? { comments: metadata.reviewComments as any[] }
+          : {}),
+      });
+      return String(result.data.id);
     }
 
     const result = await this.octokit.issues.createComment({
