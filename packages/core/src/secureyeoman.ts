@@ -1622,6 +1622,7 @@ export class SecureYeoman {
     allowExecution?: boolean;
     allowProactive?: boolean;
     allowExperiments?: boolean;
+    allowStorybook?: boolean;
     allowMultimodal?: boolean;
   }): void {
     this.ensureInitialized();
@@ -1643,6 +1644,9 @@ export class SecureYeoman {
     }
     if (updates.allowExperiments !== undefined) {
       this.config!.security.allowExperiments = updates.allowExperiments;
+    }
+    if (updates.allowStorybook !== undefined) {
+      this.config!.security.allowStorybook = updates.allowStorybook;
     }
     if (updates.allowMultimodal !== undefined) {
       this.config!.security.allowMultimodal = updates.allowMultimodal;
@@ -1695,6 +1699,7 @@ export class SecureYeoman {
         'allowExecution',
         'allowProactive',
         'allowExperiments',
+        'allowStorybook',
         'allowMultimodal',
       ] as const;
       for (const row of result.rows) {

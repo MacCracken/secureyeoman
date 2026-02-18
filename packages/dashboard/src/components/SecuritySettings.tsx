@@ -28,6 +28,7 @@ import {
   Image,
   FlaskConical,
   Code2,
+  BookOpen,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -381,6 +382,7 @@ export function SecuritySettings() {
   const proactiveAllowed = securityPolicy?.allowProactive ?? false;
   const multimodalAllowed = securityPolicy?.allowMultimodal ?? false;
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
+  const storybookAllowed = securityPolicy?.allowStorybook ?? false;
   const roleIds = roles.map((r) => r.id);
 
   const handleCreateRole = (form: RoleFormData) => {
@@ -682,6 +684,22 @@ export function SecuritySettings() {
                 experimentsAllowed
                   ? 'A/B experiments are enabled. You can create, run, and manage experiments to test different configurations and behaviors.'
                   : 'A/B experiments are disabled. Enable this setting to access the Experiments page and create A/B tests. This must be explicitly enabled after initialization.'
+              }
+            />
+          </div>
+          <div className="border-t border-border pt-4">
+            <PolicyToggle
+              label="Storybook"
+              icon={<BookOpen className="w-4 h-4 text-muted-foreground" />}
+              enabled={storybookAllowed}
+              isPending={policyMutation.isPending}
+              onToggle={() => {
+                policyMutation.mutate({ allowStorybook: !storybookAllowed });
+              }}
+              description={
+                storybookAllowed
+                  ? 'Storybook component development environment is enabled. Access the component gallery from the Developers section.'
+                  : 'Storybook is disabled. Enable this setting to access the component development environment in the Developers section.'
               }
             />
           </div>

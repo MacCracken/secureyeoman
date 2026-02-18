@@ -1700,6 +1700,7 @@ export interface SecurityPolicy {
   allowExecution: boolean;
   allowProactive: boolean;
   allowExperiments: boolean;
+  allowStorybook: boolean;
   allowMultimodal: boolean;
 }
 
@@ -1714,6 +1715,7 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     };
   }

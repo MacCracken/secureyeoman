@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Code2, Puzzle, FlaskConical } from 'lucide-react';
+import { Code2, Puzzle, FlaskConical, BookOpen } from 'lucide-react';
 import { ExtensionsPage } from './ExtensionsPage';
 import { ExperimentsPage } from './ExperimentsPage';
+import { StorybookPage } from './StorybookPage';
 
-type DevTab = 'extensions' | 'experiments';
+type DevTab = 'extensions' | 'experiments' | 'storybook';
 
 export function DeveloperPage() {
   const [activeTab, setActiveTab] = useState<DevTab>('extensions');
@@ -38,9 +39,20 @@ export function DeveloperPage() {
           <FlaskConical className="w-4 h-4" />
           Experiments
         </button>
+        <button
+          onClick={() => { setActiveTab('storybook'); }}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+            activeTab === 'storybook'
+              ? 'bg-background shadow-sm text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <BookOpen className="w-4 h-4" />
+          Storybook
+        </button>
       </div>
 
-      {activeTab === 'extensions' ? <ExtensionsPage /> : <ExperimentsPage />}
+      {activeTab === 'extensions' ? <ExtensionsPage /> : activeTab === 'experiments' ? <ExperimentsPage /> : <StorybookPage />}
     </div>
   );
 }

@@ -61,7 +61,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Reports & Analytics** | Audit report generator (JSON/HTML/CSV), cost optimization recommendations, A/B testing framework |
 | **Voice** | Push-to-talk (Ctrl+Shift+V), browser-native speech recognition & synthesis, voice overlay |
 | **Deployment** | Docker multi-stage builds, Kubernetes Helm chart (EKS/GKE/AKS), GHCR image registry, HPA autoscaling, PodDisruptionBudgets, NetworkPolicies, ExternalSecret CRD support |
-| **Development** | TypeScript strict mode, 2100+ tests across 134+ files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint) |
+| **Development** | TypeScript strict mode, 2100+ tests across 134+ files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint); **Storybook** component development environment integrated into the Developers section (gated by `allowStorybook` security policy), with quick-start instructions, component story gallery, and iframe to localhost:6006 |
 
 ---
 
