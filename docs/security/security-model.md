@@ -778,6 +778,18 @@ When enabled, strict ingress/egress rules apply:
 
 ---
 
+## Accepted-Risk Dev Dependency Vulnerabilities
+
+Some `npm audit` findings are accepted risks because they exist exclusively in dev tooling and have no production exposure. These are formally documented in ADRs rather than silently suppressed.
+
+| Advisory | Package | Severity | Exposure | Resolution | ADR |
+|---|---|---|---|---|---|
+| GHSA-2g4f-4pwh-qvx6 | `ajv@6.x` (via `eslint` / `@eslint/eslintrc`) | Moderate | Dev-only. ReDoS requires `$data` option — not used by ESLint. Never shipped to users. | Wait for `eslint` to upgrade to `ajv >= 8.18.0`. | [ADR 048](../adr/048-eslint-ajv-vulnerability-accepted-risk.md) |
+
+**Policy**: Any accepted-risk finding must have a corresponding ADR with an explicit attack surface assessment, documented resolution criteria, and a [Dependency Watch](../development/roadmap.md#dependency-watch) entry in the roadmap.
+
+---
+
 ## Related Documentation
 
 - [API Security](../api/rest-api.md#authentication)

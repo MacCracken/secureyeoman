@@ -68,13 +68,16 @@ export function registerBrowserTools(
       }
     }
   };
-  server.tool(
+
+  server.registerTool(
     'browser_navigate',
-    'Navigate to a URL and return page title, URL, and a content snippet',
     {
-      url: z.string().describe('URL to navigate to'),
-      waitFor: z.string().optional().describe('CSS selector to wait for before returning'),
-      timeout: z.number().int().min(1000).max(120000).default(30000).describe('Timeout in ms'),
+      description: 'Navigate to a URL and return page title, URL, and a content snippet',
+      inputSchema: {
+        url: z.string().describe('URL to navigate to'),
+        waitFor: z.string().optional().describe('CSS selector to wait for before returning'),
+        timeout: z.number().int().min(1000).max(120000).default(30000).describe('Timeout in ms'),
+      },
     },
     wrapToolHandler('browser_navigate', middleware, async (args) => {
       if (!config.exposeBrowser) {
@@ -129,14 +132,16 @@ export function registerBrowserTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'browser_screenshot',
-    'Take a screenshot of a webpage and return it as base64 PNG',
     {
-      url: z.string().describe('URL to screenshot'),
-      fullPage: z.boolean().default(false).describe('Capture full page or viewport only'),
-      width: z.number().int().min(320).max(3840).default(1280).describe('Viewport width'),
-      height: z.number().int().min(240).max(2160).default(720).describe('Viewport height'),
+      description: 'Take a screenshot of a webpage and return it as base64 PNG',
+      inputSchema: {
+        url: z.string().describe('URL to screenshot'),
+        fullPage: z.boolean().default(false).describe('Capture full page or viewport only'),
+        width: z.number().int().min(320).max(3840).default(1280).describe('Viewport width'),
+        height: z.number().int().min(240).max(2160).default(720).describe('Viewport height'),
+      },
     },
     wrapToolHandler('browser_screenshot', middleware, async (args) => {
       if (!config.exposeBrowser) {
@@ -196,18 +201,20 @@ export function registerBrowserTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'browser_click',
-    'Click an element on the current page by CSS selector',
     {
-      selector: z.string().describe('CSS selector of element to click'),
-      waitAfter: z
-        .number()
-        .int()
-        .min(0)
-        .max(10000)
-        .default(1000)
-        .describe('Wait time after click in ms'),
+      description: 'Click an element on the current page by CSS selector',
+      inputSchema: {
+        selector: z.string().describe('CSS selector of element to click'),
+        waitAfter: z
+          .number()
+          .int()
+          .min(0)
+          .max(10000)
+          .default(1000)
+          .describe('Wait time after click in ms'),
+      },
     },
     wrapToolHandler('browser_click', middleware, async (args) => {
       if (!config.exposeBrowser) {
@@ -249,12 +256,14 @@ export function registerBrowserTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'browser_fill',
-    'Fill in a form field on a page by CSS selector',
     {
-      selector: z.string().describe('CSS selector of the input element'),
-      value: z.string().describe('Value to fill in'),
+      description: 'Fill in a form field on a page by CSS selector',
+      inputSchema: {
+        selector: z.string().describe('CSS selector of the input element'),
+        value: z.string().describe('Value to fill in'),
+      },
     },
     wrapToolHandler('browser_fill', middleware, async (args) => {
       if (!config.exposeBrowser) {
@@ -298,11 +307,13 @@ export function registerBrowserTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'browser_evaluate',
-    'Execute JavaScript in the browser context and return the JSON result',
     {
-      script: z.string().describe('JavaScript code to evaluate'),
+      description: 'Execute JavaScript in the browser context and return the JSON result',
+      inputSchema: {
+        script: z.string().describe('JavaScript code to evaluate'),
+      },
     },
     wrapToolHandler('browser_evaluate', middleware, async (args) => {
       if (!config.exposeBrowser) {
@@ -341,12 +352,14 @@ export function registerBrowserTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'browser_pdf',
-    'Generate a PDF from a webpage and return it as base64',
     {
-      url: z.string().describe('URL to generate PDF from'),
-      format: z.enum(['A4', 'Letter', 'Legal']).default('A4').describe('Paper format'),
+      description: 'Generate a PDF from a webpage and return it as base64',
+      inputSchema: {
+        url: z.string().describe('URL to generate PDF from'),
+        format: z.enum(['A4', 'Letter', 'Legal']).default('A4').describe('Paper format'),
+      },
     },
     wrapToolHandler('browser_pdf', middleware, async (args) => {
       if (!config.exposeBrowser) {

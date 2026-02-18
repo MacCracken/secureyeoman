@@ -13,10 +13,12 @@ export function registerIntegrationTools(
   client: CoreApiClient,
   middleware: ToolMiddleware
 ): void {
-  server.tool(
+  server.registerTool(
     'integration_list',
-    'List all integrations',
-    { platform: z.string().optional().describe('Filter by platform') },
+    {
+      description: 'List all integrations',
+      inputSchema: { platform: z.string().optional().describe('Filter by platform') },
+    },
     wrapToolHandler('integration_list', middleware, async (args) => {
       const query: Record<string, string> = {};
       if (args.platform) query.platform = args.platform;
@@ -25,13 +27,15 @@ export function registerIntegrationTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'integration_send',
-    'Send a message via an integration',
     {
-      integrationId: z.string().describe('Integration ID'),
-      chatId: z.string().describe('Chat/channel ID'),
-      text: z.string().describe('Message text'),
+      description: 'Send a message via an integration',
+      inputSchema: {
+        integrationId: z.string().describe('Integration ID'),
+        chatId: z.string().describe('Chat/channel ID'),
+        text: z.string().describe('Message text'),
+      },
     },
     wrapToolHandler('integration_send', middleware, async (args) => {
       const result = await client.post(`/api/v1/integrations/${args.integrationId}/messages`, {
@@ -42,10 +46,12 @@ export function registerIntegrationTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'integration_status',
-    'Check integration health',
-    { id: z.string().describe('Integration ID') },
+    {
+      description: 'Check integration health',
+      inputSchema: { id: z.string().describe('Integration ID') },
+    },
     wrapToolHandler('integration_status', middleware, async (args) => {
       const result = await client.get(`/api/v1/integrations/${args.id}`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
