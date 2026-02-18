@@ -203,7 +203,7 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
                       <React.Fragment key={job.id}>
                         <tr
                           className="border-b hover:bg-muted/30 cursor-pointer transition-colors"
-                          onClick={() => setExpandedId(expanded ? null : job.id)}
+                          onClick={() => { setExpandedId(expanded ? null : job.id); }}
                         >
                           <td className="py-2 pr-3">
                             {expanded ? (
@@ -281,14 +281,14 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
                 <button
                   className="btn-ghost text-xs px-2 py-1"
                   disabled={page === 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  onClick={() => { setPage((p) => Math.max(0, p - 1)); }}
                 >
                   Previous
                 </button>
                 <button
                   className="btn-ghost text-xs px-2 py-1"
                   disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => { setPage((p) => p + 1); }}
                 >
                   Next
                 </button>

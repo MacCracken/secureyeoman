@@ -116,8 +116,8 @@ export class AwsIntegration implements Integration {
       }
 
       const text = await resp.text();
-      const arnMatch = text.match(/<Arn>(.*?)<\/Arn>/);
-      const accountMatch = text.match(/<Account>(.*?)<\/Account>/);
+      const arnMatch = /<Arn>(.*?)<\/Arn>/.exec(text);
+      const accountMatch = /<Account>(.*?)<\/Account>/.exec(text);
       return {
         ok: true,
         message: `Connected as ${arnMatch?.[1] ?? 'unknown'} (Account: ${accountMatch?.[1] ?? 'unknown'})`,

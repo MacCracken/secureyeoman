@@ -185,12 +185,12 @@ export class JiraIntegration implements WebhookIntegration {
         payload.webhookEvent === 'jira:issue_created' ||
         payload.webhookEvent === 'jira:issue_updated'
       ) {
-        unified = this.handleIssueEvent(payload as JiraIssuePayload);
+        unified = this.handleIssueEvent(payload);
       } else if (
         payload.webhookEvent === 'comment_created' ||
         payload.webhookEvent === 'comment_updated'
       ) {
-        unified = this.handleCommentEvent(payload as JiraCommentPayload);
+        unified = this.handleCommentEvent(payload);
       }
     }
 

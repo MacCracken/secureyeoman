@@ -79,7 +79,7 @@ export class IntegrationManager {
 
   /** Inject multimodalManager after construction (avoids init-order issues). */
   setMultimodalManager(mm: IntegrationDeps['multimodalManager']): void {
-    (this.deps as IntegrationManagerDeps).multimodalManager = mm;
+    (this.deps).multimodalManager = mm;
   }
 
   // ── Factory Registration ─────────────────────────────────

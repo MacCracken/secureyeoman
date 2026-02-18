@@ -41,9 +41,9 @@ export class MessageRouter {
     multimodalManager: MessageRouterDeps['multimodalManager'];
     getActivePersonality?: MessageRouterDeps['getActivePersonality'];
   }): void {
-    (this.deps as MessageRouterDeps).multimodalManager = deps.multimodalManager;
+    (this.deps).multimodalManager = deps.multimodalManager;
     if (deps.getActivePersonality) {
-      (this.deps as MessageRouterDeps).getActivePersonality = deps.getActivePersonality;
+      (this.deps).getActivePersonality = deps.getActivePersonality;
     }
   }
 
