@@ -42,18 +42,15 @@
 ### Multi-Agent Systems
 - [ ] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style — agents create and register new tools as needed)
 
-### Enterprise
-- [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
-
 ### Visualization
 - [ ] **WebGL Graph Rendering** — Investigate and basic implementation for large graph visualization
 - [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
 
+### Personality Configuration
+- [ ] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
+      
 ### ML-based Security
 - [ ] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events
-
-### Encryption
-- [ ] **HSM Integration** — Hardware Security Module integration for key management
 
 ### Real-time Collaboration
 - [ ] **CRDT Implementation** — Conflict-free Replicated Data Types for collaborative editing
@@ -96,13 +93,12 @@
 ## Phase 19: SaaS ready
 
 **Status**: Pending
-
-### Personality Configuration
-- [ ] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
       
-### Security & Access
+### Security & Enterprise Access
+- [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
 - [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
 - [ ] **Roles & Permissions Review/Audit** — Comprehensive review of RBAC roles, permissions, and access controls to ensure completeness and alignment with feature set
+- [ ] **Encryption - HSM Integration** — Hardware Security Module integration for key management
 
 ### Guided Setup CLI
 - [ ] **Interactive Init Command** — `secureyeoman init` with interactive wizard for first-time setup (generate keys, configure AI providers, set up integrations)
