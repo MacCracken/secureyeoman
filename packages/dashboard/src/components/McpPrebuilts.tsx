@@ -112,7 +112,7 @@ export function McpPrebuilts() {
                 </div>
                 {!isConnected && !isExpanded && (
                   <button
-                    onClick={() => setExpandedServer(server.name)}
+                    onClick={() => { setExpandedServer(server.name); }}
                     className="btn btn-primary text-xs px-3 py-1.5 shrink-0"
                   >
                     Connect
@@ -131,10 +131,10 @@ export function McpPrebuilts() {
                         type="password"
                         value={envValues[`${server.name}:${v.key}`] ?? ''}
                         onChange={(e) =>
-                          setEnvValues((prev) => ({
+                          { setEnvValues((prev) => ({
                             ...prev,
                             [`${server.name}:${v.key}`]: e.target.value,
-                          }))
+                          })); }
                         }
                         placeholder={v.key}
                         className="input w-full text-xs"
@@ -149,7 +149,7 @@ export function McpPrebuilts() {
                     )}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => connectMut.mutate(server)}
+                      onClick={() => { connectMut.mutate(server); }}
                       disabled={isConnecting}
                       className="btn btn-primary text-xs px-3 py-1.5"
                     >
@@ -160,7 +160,7 @@ export function McpPrebuilts() {
                       )}
                     </button>
                     <button
-                      onClick={() => setExpandedServer(null)}
+                      onClick={() => { setExpandedServer(null); }}
                       className="btn btn-ghost text-xs px-3 py-1.5"
                     >
                       Cancel

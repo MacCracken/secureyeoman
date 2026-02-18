@@ -444,7 +444,7 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
 
       {/* Execution Tree Toggle */}
       <button
-        onClick={() => setShowTree(!showTree)}
+        onClick={() => { setShowTree(!showTree); }}
         className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
       >
         <GitBranch className="w-3.5 h-3.5" />

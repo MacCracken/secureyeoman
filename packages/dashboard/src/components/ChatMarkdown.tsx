@@ -221,7 +221,7 @@ export function ChatMarkdown({ content, size = 'sm' }: ChatMarkdownProps) {
 
     // ── Code: inline only (block handled via pre) ────────────────
     code: ({ className, children }: { className?: string; children?: React.ReactNode }) => {
-      const hasLang = /language-/.test(className ?? '');
+      const hasLang = (className ?? '').includes('language-');
       if (hasLang) return <code className={className}>{children}</code>;
       return (
         <code className={`bg-background/60 border border-muted-foreground/10 px-1 py-0.5 rounded font-mono ${textSmall}`}>
@@ -353,7 +353,7 @@ export function ChatMarkdown({ content, size = 'sm' }: ChatMarkdownProps) {
 
     // ── Horizontal rule ──────────────────────────────────────────
     hr: () => <hr className="border-muted-foreground/20 my-3" />,
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }), [isSm, textBase, textSmall, codeFontSize, theme]);
 
   return (

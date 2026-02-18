@@ -128,7 +128,7 @@ export class RetryableError extends Error {
   constructor(
     message: string,
     public readonly status?: number,
-    public readonly isCaptcha: boolean = false
+    public readonly isCaptcha = false
   ) {
     super(message);
     this.name = 'RetryableError';

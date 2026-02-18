@@ -148,7 +148,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
           <p className="text-xs text-muted-foreground">Reindex</p>
           <button
             className="text-xs mt-1 text-primary hover:underline disabled:opacity-50"
-            onClick={() => reindexMutation.mutate()}
+            onClick={() => { reindexMutation.mutate(); }}
             disabled={reindexMutation.isPending}
           >
             {reindexMutation.isPending ? 'Reindexing...' : 'Reindex All'}
@@ -164,7 +164,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
+            onClick={() => { setActiveTab(tab.id); }}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
@@ -189,14 +189,14 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => { setSearchQuery(e.target.value); }}
                 placeholder="Search for similar memories..."
                 className="w-full sm:flex-1 bg-card border border-border rounded-lg text-sm py-1.5 px-3"
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
               <select
                 value={searchType}
-                onChange={(e) => setSearchType(e.target.value as 'all' | 'memories' | 'knowledge')}
+                onChange={(e) => { setSearchType(e.target.value as 'all' | 'memories' | 'knowledge'); }}
                 className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-full sm:w-32"
               >
                 <option value="all">All</option>
@@ -211,7 +211,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                   max={1}
                   step={0.05}
                   value={searchThreshold}
-                  onChange={(e) => setSearchThreshold(parseFloat(e.target.value) || 0.7)}
+                  onChange={(e) => { setSearchThreshold(parseFloat(e.target.value) || 0.7); }}
                   className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-16"
                 />
               </div>
@@ -231,7 +231,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
               </div>
             )}
 
-            {searchResults && searchResults.length === 0 && (
+            {searchResults?.length === 0 && (
               <div className="text-center py-8 text-muted-foreground text-sm">
                 No similar entries found above threshold {searchThreshold}.
               </div>
@@ -291,7 +291,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                     <React.Fragment key={mem.id}>
                       <div
                         className="flex items-center gap-2 py-2 px-1 border-b hover:bg-muted/30 cursor-pointer"
-                        onClick={() => setExpandedId(expanded ? null : mem.id)}
+                        onClick={() => { setExpandedId(expanded ? null : mem.id); }}
                       >
                         {expanded ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
                         <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
@@ -353,7 +353,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                     <React.Fragment key={entry.id}>
                       <div
                         className="flex items-center gap-2 py-2 px-1 border-b hover:bg-muted/30 cursor-pointer"
-                        onClick={() => setExpandedId(expanded ? null : entry.id)}
+                        onClick={() => { setExpandedId(expanded ? null : entry.id); }}
                       >
                         {expanded ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
                         <span className="text-xs bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded">
@@ -406,7 +406,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 <label className="text-xs text-muted-foreground block mb-1">Type</label>
                 <select
                   value={newType}
-                  onChange={(e) => setNewType(e.target.value as typeof newType)}
+                  onChange={(e) => { setNewType(e.target.value as typeof newType); }}
                   className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-full"
                 >
                   <option value="semantic">Semantic</option>
@@ -420,7 +420,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 <input
                   type="text"
                   value={newSource}
-                  onChange={(e) => setNewSource(e.target.value)}
+                  onChange={(e) => { setNewSource(e.target.value); }}
                   className="bg-card border border-border rounded-lg text-sm py-1.5 px-3 w-full"
                 />
               </div>
@@ -432,7 +432,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                   max={1}
                   step={0.05}
                   value={newImportance}
-                  onChange={(e) => setNewImportance(parseFloat(e.target.value) || 0.5)}
+                  onChange={(e) => { setNewImportance(parseFloat(e.target.value) || 0.5); }}
                   className="bg-card border border-border rounded-lg text-sm py-1.5 px-3 w-full"
                 />
               </div>
@@ -441,7 +441,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
               <label className="text-xs text-muted-foreground block mb-1">Content</label>
               <textarea
                 value={newContent}
-                onChange={(e) => setNewContent(e.target.value)}
+                onChange={(e) => { setNewContent(e.target.value); }}
                 placeholder="Enter memory content..."
                 rows={4}
                 className="w-full bg-card border border-border rounded-lg text-sm py-2 px-3 resize-y"

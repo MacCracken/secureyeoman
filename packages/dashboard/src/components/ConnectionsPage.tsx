@@ -707,7 +707,7 @@ export function ConnectionsPage() {
     };
 
     if (tabParam && subTabMap[tabParam]) {
-      return { tab: 'integrations', subTab: subTabMap[tabParam]! };
+      return { tab: 'integrations', subTab: subTabMap[tabParam] };
     }
 
     if (path.includes('/email')) return { tab: 'integrations', subTab: 'email' };
@@ -1057,7 +1057,7 @@ export function ConnectionsPage() {
             ).map(([subTab, label, icon]) => (
               <button
                 key={subTab}
-                onClick={() => setActiveSubTab(subTab)}
+                onClick={() => { setActiveSubTab(subTab); }}
                 className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
                   activeSubTab === subTab
                     ? 'bg-primary/10 text-primary'
@@ -1302,7 +1302,7 @@ function MessagingTab({
             <div className="mb-4 p-3 bg-surface rounded-md">
               <p className="text-xs font-medium text-muted mb-2">Setup Steps</p>
               <ol className="text-xs space-y-1">
-                {PLATFORM_META[connectingPlatform].setupSteps!.map((step, idx) => (
+                {PLATFORM_META[connectingPlatform].setupSteps.map((step, idx) => (
                   <li key={idx} className="flex gap-2">
                     <span className="text-muted">{idx + 1}.</span>
                     <span>{step}</span>
@@ -1375,7 +1375,7 @@ function MessagingTab({
             </h3>
             {addablePlatforms.length > 0 && !connectingPlatform && (
               <button
-                onClick={() => setShowAddPicker(!showAddPicker)}
+                onClick={() => { setShowAddPicker(!showAddPicker); }}
                 className="btn btn-primary text-xs px-3 py-1.5 flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1407,7 +1407,7 @@ function MessagingTab({
           <p className="text-sm text-muted-foreground">No integrations connected yet</p>
           {addablePlatforms.length > 0 && (
             <button
-              onClick={() => setShowAddPicker(true)}
+              onClick={() => { setShowAddPicker(true); }}
               className="btn btn-primary text-xs px-4 py-2 inline-flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -1423,7 +1423,7 @@ function MessagingTab({
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">Choose a platform</h3>
             <button
-              onClick={() => setShowAddPicker(false)}
+              onClick={() => { setShowAddPicker(false); }}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
               Cancel

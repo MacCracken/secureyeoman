@@ -223,7 +223,7 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
                       <React.Fragment key={session.id}>
                         <tr
                           className="border-b hover:bg-muted/30 cursor-pointer transition-colors"
-                          onClick={() => setExpandedId(expanded ? null : session.id)}
+                          onClick={() => { setExpandedId(expanded ? null : session.id); }}
                         >
                           <td className="py-1.5 sm:py-2 pr-2 sm:pr-3">
                             {expanded ? (
@@ -330,14 +330,14 @@ export function BrowserAutomationPage({ embedded }: { embedded?: boolean } = {})
                 <button
                   className="btn-ghost text-xs px-2 py-1"
                   disabled={page === 0}
-                  onClick={() => setPage((p) => Math.max(0, p - 1))}
+                  onClick={() => { setPage((p) => Math.max(0, p - 1)); }}
                 >
                   Previous
                 </button>
                 <button
                   className="btn-ghost text-xs px-2 py-1"
                   disabled={page >= totalPages - 1}
-                  onClick={() => setPage((p) => p + 1)}
+                  onClick={() => { setPage((p) => p + 1); }}
                 >
                   Next
                 </button>

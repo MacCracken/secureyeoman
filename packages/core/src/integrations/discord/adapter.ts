@@ -107,7 +107,7 @@ export class DiscordIntegration implements Integration {
                 const buf = Buffer.from(await resp.arrayBuffer());
                 const result = await mmManager.analyzeImage({
                   imageBase64: buf.toString('base64'),
-                  mimeType: att.mimeType!,
+                  mimeType: att.mimeType,
                 });
                 unified.text = `[Image: ${result.description}]\n${unified.text}`;
               } catch { /* non-fatal */ }

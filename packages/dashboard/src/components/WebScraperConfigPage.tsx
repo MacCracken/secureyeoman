@@ -122,10 +122,10 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
             <input
               type="text"
               value={newUrl}
-              onChange={(e) => setNewUrl(e.target.value)}
+              onChange={(e) => { setNewUrl(e.target.value); }}
               placeholder="https://example.com/*"
               className="flex-1 bg-card border border-border rounded-lg text-sm py-1.5 px-3"
-              onKeyDown={(e) => e.key === 'Enter' && handleAddUrl()}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleAddUrl(); }}
             />
             <button
               className="btn-ghost text-xs px-3 py-1.5 flex items-center gap-1 w-full sm:w-auto"
@@ -146,7 +146,7 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
                   <span className="font-mono text-xs truncate">{url}</span>
                   <button
                     className="btn-ghost text-xs p-1 text-destructive hover:bg-destructive/10"
-                    onClick={() => handleRemoveUrl(url)}
+                    onClick={() => { handleRemoveUrl(url); }}
                     disabled={saveMutation.isPending}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
