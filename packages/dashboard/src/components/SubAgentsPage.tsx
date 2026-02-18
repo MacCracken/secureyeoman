@@ -17,7 +17,9 @@ import {
   Eye,
   GitBranch,
   X,
+  Layers,
 } from 'lucide-react';
+import { SwarmsPage } from './SwarmsPage';
 import {
   fetchAgentProfiles,
   fetchDelegations,
@@ -36,7 +38,7 @@ import {
   type DelegationResultInfo,
 } from '../api/client';
 
-type TabId = 'active' | 'history' | 'profiles';
+type TabId = 'active' | 'history' | 'profiles' | 'swarms';
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   running: <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />,
@@ -119,10 +121,11 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
     );
   }
 
-  const tabs: { id: TabId; label: string }[] = [
+  const tabs: { id: TabId; label: string; icon?: React.ReactNode }[] = [
     { id: 'active', label: 'Active' },
     { id: 'history', label: 'History' },
     { id: 'profiles', label: 'Profiles' },
+    { id: 'swarms', label: 'Swarms', icon: <Layers className="w-3.5 h-3.5" /> },
   ];
 
   return (
@@ -219,12 +222,13 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
             onClick={() => {
               setActiveTab(tab.id);
             }}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
                 : 'border-transparent text-muted-foreground hover:text-foreground'
             }`}
           >
+            {tab.icon}
             {tab.label}
           </button>
         ))}
@@ -242,6 +246,9 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
             setShowNewProfile(false);
           }}
         />
+      )}
+      {activeTab === 'swarms' && (
+        <SwarmsPage allowSubAgents={enabled} />
       )}
     </div>
   );

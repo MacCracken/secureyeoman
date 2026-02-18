@@ -61,10 +61,40 @@ const GET_DELEGATION_RESULT_TOOL: Tool = {
   },
 };
 
+const CREATE_SWARM_TOOL: Tool = {
+  name: 'create_swarm',
+  description:
+    'Launch a coordinated agent swarm using a named template for complex multi-step tasks.',
+  parameters: {
+    type: 'object',
+    properties: {
+      template: {
+        type: 'string',
+        description:
+          'ID or name of the swarm template to use (e.g. "research-and-code", "code-review")',
+      },
+      task: {
+        type: 'string',
+        description: 'The task for the swarm to accomplish',
+      },
+      context: {
+        type: 'string',
+        description: 'Optional additional context provided to all members of the swarm',
+      },
+      tokenBudget: {
+        type: 'number',
+        description: 'Optional total token budget for the entire swarm run',
+      },
+    },
+    required: ['template', 'task'],
+  },
+};
+
 export const DELEGATION_TOOLS: Tool[] = [
   DELEGATE_TASK_TOOL,
   LIST_SUB_AGENTS_TOOL,
   GET_DELEGATION_RESULT_TOOL,
+  CREATE_SWARM_TOOL,
 ];
 
 /**

@@ -40,7 +40,6 @@
 **Status**: Pending
 
 ### Multi-Agent Systems
-- [ ] **Agent Swarms** — Coordinated multi-agent execution for complex tasks with role-based specialization (researcher, coder, reviewer, etc.)
 - [ ] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style — agents create and register new tools as needed)
 
 ### Enterprise

@@ -99,6 +99,8 @@ import { MarketplaceManager } from './marketplace/manager.js';
 import { ConversationStorage } from './chat/conversation-storage.js';
 import { SubAgentStorage } from './agents/storage.js';
 import { SubAgentManager } from './agents/manager.js';
+import { SwarmStorage } from './agents/swarm-storage.js';
+import { SwarmManager } from './agents/swarm-manager.js';
 import { ExtensionStorage } from './extensions/storage.js';
 import { ExtensionManager } from './extensions/manager.js';
 import { ExecutionStorage } from './execution/storage.js';
@@ -181,6 +183,8 @@ export class SecureYeoman {
   private chatConversationStorage: ConversationStorage | null = null;
   private subAgentStorage: SubAgentStorage | null = null;
   private subAgentManager: SubAgentManager | null = null;
+  private swarmStorage: SwarmStorage | null = null;
+  private swarmManager: SwarmManager | null = null;
   private extensionStorage: ExtensionStorage | null = null;
   private extensionManager: ExtensionManager | null = null;
   private executionStorage: ExecutionStorage | null = null;
@@ -738,6 +742,22 @@ export class SecureYeoman {
           });
           await this.subAgentManager.initialize();
           this.logger.debug('Sub-agent delegation system initialized');
+
+          // Step 6.11b: Initialize swarm manager (requires subAgentManager)
+          try {
+            this.swarmStorage = new SwarmStorage();
+            this.swarmManager = new SwarmManager({
+              storage: this.swarmStorage,
+              subAgentManager: this.subAgentManager,
+              logger: this.logger.child({ component: 'SwarmManager' }),
+            });
+            await this.swarmManager.initialize();
+            this.logger.debug('Swarm manager initialized');
+          } catch (swarmError) {
+            this.logger.warn('Swarm manager initialization failed (non-fatal)', {
+              error: swarmError instanceof Error ? swarmError.message : 'Unknown error',
+            });
+          }
         } catch (error) {
           this.logger.warn('Sub-agent delegation initialization failed (non-fatal)', {
             error: error instanceof Error ? error.message : 'Unknown error',
@@ -1430,6 +1450,14 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the swarm manager instance (may be null if delegation is disabled)
+   */
+  getSwarmManager(): SwarmManager | null {
+    this.ensureInitialized();
+    return this.swarmManager;
+  }
+
+  /**
    * Get the extension manager instance (may be null if extensions are disabled)
    */
   getExtensionManager(): ExtensionManager | null {
@@ -1960,6 +1988,11 @@ export class SecureYeoman {
       this.subAgentStorage.close();
       this.subAgentStorage = null;
       this.subAgentManager = null;
+    }
+    if (this.swarmStorage) {
+      this.swarmStorage.close();
+      this.swarmStorage = null;
+      this.swarmManager = null;
     }
     if (this.extensionStorage) {
       this.extensionStorage.close();
