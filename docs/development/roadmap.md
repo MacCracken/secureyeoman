@@ -40,8 +40,6 @@
 ### Dashboard & Tooling
 - [ ] **Storybook** — Component development environment for dashboard UI components, integrated into Developers section as its own view with Settings > Security > Developers toggle to enable/disable display (subview pattern like Extensions/Experiments)
 
-### Security & Access
-
 ### Productivity Integrations
 - [ ] **Airtable** — Base CRUD operations, record management, view filtering
 - [ ] **Linear** — Issue creation, status updates, sprint management, webhook listeners
@@ -60,16 +58,11 @@
 ### Vector Memory
 - [ ] **ChromaDB Backend** — ChromaDB as additional vector backend option for memory storage
 
-### Marketplace & Community
-- [ ] **Provider Marketplace** — Centralized SecureYeoman skill provider marketplace (skill discovery, installation, management)
-- [ ] **Community Skills** — Community-contributed skill extensions registry with `secureyeoman_community_skills.git` sub-repo support for portable, structured agent capabilities
-
 ### Platform-Specific Enhancements
 - [ ] **Telegram** — Inline keyboards, photo/document handling, voice messages
 - [ ] **Discord** — Thread support, modal dialogs, slash command registration
 - [ ] **Slack** — Interactive messages with block actions, modal dialogs, workflow builder
 - [ ] **GitHub** — PR review automation, code search tools, issue automation workflows
-
 ---
 
 ## Phase 17: Advanced Capabilities
@@ -80,6 +73,10 @@
 - [ ] **Agent Swarms** — Coordinated multi-agent execution for complex tasks with role-based specialization (researcher, coder, reviewer, etc.)
 - [ ] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style — agents create and register new tools as needed)
 
+### Marketplace & Community
+- [ ] **Provider Marketplace** — Centralized SecureYeoman skill provider marketplace (skill discovery, installation, management)
+- [ ] **Community Skills** — Community-contributed skill extensions registry with `secureyeoman_community_skills.git` sub-repo support for portable, structured agent capabilities
+      
 ### Enterprise
 - [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
 - [ ] **Managed Cloud Offering** — SaaS deployment option for organizations preferring managed infrastructure
