@@ -4,6 +4,16 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 16: Integration Expansion II — In Progress (2026.2.18)
+
+### ChromaDB Vector Backend
+- **`packages/core/src/brain/vector/chroma-store.ts`** — new `ChromaVectorStore` implementing the `VectorStore` interface; connects to a running ChromaDB server via its HTTP REST API v1; cosine similarity (`hnsw:space: cosine`; `score = 1 − distance`); no extra npm dependencies — uses Node.js global `fetch`; collection UUID caching with `withReconnect<T>` retry pattern (clears cached ID and retries once on transient failure); clamps `n_results` to collection count to prevent ChromaDB's `n_results > count` error
+- **`packages/shared/src/types/soul.ts`** — added `'chroma'` to `VectorConfigSchema` backend enum; added `chroma` config section with `url` (default `http://localhost:8000`) and `collection` (default `secureyeoman_memories`) fields
+- **`packages/core/src/brain/vector/index.ts`** — factory updated to instantiate `ChromaVectorStore` when `config.backend === 'chroma'`; exports `ChromaVectorStore` and `ChromaStoreConfig`
+- **`packages/core/src/brain/vector/chroma-store.test.ts`** — 24 tests using `vi.stubGlobal('fetch', ...)` (no real ChromaDB server required); covers: `ensureCollection` error propagation, collection UUID caching/reuse, `insert`/`insertBatch`, cosine distance → similarity conversion, threshold filtering, `n_results` clamping, `delete`, `count`, `healthCheck`, `close` (cache invalidation), reconnect retry
+
+---
+
 ## Phase 15: Integration Expansion — Complete (2026.2.18) — [ADR 049](docs/adr/049-dynamic-integration-loading.md), [ADR 050](docs/adr/050-oauth2-first-class-support.md), [ADR 051](docs/adr/051-webhook-transformation-rules.md), [ADR 052](docs/adr/052-outbound-webhooks.md), [ADR 048](docs/adr/048-eslint-ajv-vulnerability-accepted-risk.md)
 
 ### AI Model System Default
