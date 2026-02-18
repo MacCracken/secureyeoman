@@ -2441,3 +2441,122 @@ export async function fetchCostHistory(params: CostHistoryParams = {}): Promise<
     return { records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } };
   }
 }
+
+// ─── Agent Swarms API (Phase 17) ───────────────────────────────────
+
+export interface SwarmRoleInfo {
+  role: string;
+  profileName: string;
+  description: string;
+}
+
+export interface SwarmTemplate {
+  id: string;
+  name: string;
+  description: string;
+  strategy: 'sequential' | 'parallel' | 'dynamic';
+  roles: SwarmRoleInfo[];
+  coordinatorProfile: string | null;
+  isBuiltin: boolean;
+  createdAt: number;
+}
+
+export interface SwarmMember {
+  id: string;
+  swarmRunId: string;
+  role: string;
+  profileName: string;
+  delegationId: string | null;
+  status: string;
+  result: string | null;
+  seqOrder: number;
+  createdAt: number;
+  startedAt: number | null;
+  completedAt: number | null;
+}
+
+export interface SwarmRun {
+  id: string;
+  templateId: string;
+  templateName: string;
+  task: string;
+  context: string | null;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  strategy: 'sequential' | 'parallel' | 'dynamic';
+  result: string | null;
+  error: string | null;
+  tokenBudget: number;
+  tokensUsedPrompt: number;
+  tokensUsedCompletion: number;
+  createdAt: number;
+  startedAt: number | null;
+  completedAt: number | null;
+  initiatedBy: string | null;
+  members?: SwarmMember[];
+}
+
+export async function fetchSwarmTemplates(): Promise<{ templates: SwarmTemplate[] }> {
+  try {
+    return await request('/agents/swarms/templates');
+  } catch {
+    return { templates: [] };
+  }
+}
+
+export async function createSwarmTemplate(data: {
+  name: string;
+  description?: string;
+  strategy: string;
+  roles: SwarmRoleInfo[];
+  coordinatorProfile?: string | null;
+}): Promise<{ template: SwarmTemplate }> {
+  return request('/agents/swarms/templates', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteSwarmTemplate(id: string): Promise<{ success: boolean }> {
+  return request(`/agents/swarms/templates/${id}`, { method: 'DELETE' });
+}
+
+export async function executeSwarm(data: {
+  templateId: string;
+  task: string;
+  context?: string;
+  tokenBudget?: number;
+}): Promise<{ run: SwarmRun }> {
+  return request('/agents/swarms', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchSwarmRuns(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ runs: SwarmRun[]; total: number }> {
+  const query = new URLSearchParams();
+  if (params?.status) query.set('status', params.status);
+  if (params?.limit) query.set('limit', params.limit.toString());
+  if (params?.offset) query.set('offset', params.offset.toString());
+  const qs = query.toString();
+  try {
+    return await request(`/agents/swarms${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { runs: [], total: 0 };
+  }
+}
+
+export async function fetchSwarmRun(id: string): Promise<{ run: SwarmRun } | null> {
+  try {
+    return await request(`/agents/swarms/${id}`);
+  } catch {
+    return null;
+  }
+}
+
+export async function cancelSwarmRun(id: string): Promise<{ success: boolean }> {
+  return request(`/agents/swarms/${id}/cancel`, { method: 'POST' });
+}

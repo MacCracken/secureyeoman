@@ -47,6 +47,7 @@ import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js'
 import { registerTerminalRoutes } from './terminal-routes.js';
 import { registerConversationRoutes } from '../chat/conversation-routes.js';
 import { registerAgentRoutes } from '../agents/agent-routes.js';
+import { registerSwarmRoutes } from '../agents/swarm-routes.js';
 import { registerExtensionRoutes } from '../extensions/extension-routes.js';
 import { registerExecutionRoutes } from '../execution/execution-routes.js';
 import { registerA2ARoutes } from '../a2a/a2a-routes.js';
@@ -480,6 +481,19 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Agent delegation routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Swarm routes
+    try {
+      const swarmManager = this.secureYeoman.getSwarmManager();
+      if (swarmManager) {
+        registerSwarmRoutes(this.app, { swarmManager });
+        this.getLogger().info('Swarm routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Swarm routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

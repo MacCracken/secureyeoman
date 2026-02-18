@@ -328,6 +328,26 @@ export {
   type MarketplaceSearch,
 } from './marketplace.js';
 
+// Swarm types
+export {
+  SwarmStrategySchema,
+  SwarmStatusSchema,
+  SwarmRoleConfigSchema,
+  SwarmTemplateSchema,
+  SwarmTemplateCreateSchema,
+  SwarmMemberSchema,
+  SwarmRunSchema,
+  SwarmRunParamsSchema,
+  type SwarmStrategy,
+  type SwarmStatus,
+  type SwarmRoleConfig,
+  type SwarmTemplate,
+  type SwarmTemplateCreate,
+  type SwarmMember,
+  type SwarmRun,
+  type SwarmRunParams,
+} from './swarm.js';
+
 // Delegation types
 export {
   AgentProfileSchema,

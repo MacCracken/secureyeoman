@@ -35,7 +35,9 @@ export type HookPoint =
   | 'multimodal:audio-transcribed'
   | 'multimodal:speech-generated'
   | 'multimodal:image-generated'
-  | 'multimodal:haptic-triggered';
+  | 'multimodal:haptic-triggered'
+  | 'swarm:before-execute'
+  | 'swarm:after-execute';
 
 export type HookSemantics = 'observe' | 'transform' | 'veto';
 

@@ -4,6 +4,25 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 17: Agent Swarms — Complete (2026.2.18)
+
+### Agent Swarms — [ADR 055](docs/adr/055-agent-swarms.md)
+Coordinated multi-agent execution with role-based specialization, built on top of the existing sub-agent delegation system (ADR 034).
+
+- **`packages/shared/src/types/swarm.ts`** — Zod schemas: `SwarmStrategy`, `SwarmStatus`, `SwarmRoleConfig`, `SwarmTemplate`, `SwarmMember`, `SwarmRun`, `SwarmRunParams`
+- **`packages/core/src/storage/migrations/017_swarms.sql`** — Tables: `agents.swarm_templates`, `agents.swarm_runs`, `agents.swarm_members` with indexes
+- **`packages/core/src/agents/swarm-templates.ts`** — `BUILTIN_SWARM_TEMPLATES`: `research-and-code`, `analyze-and-summarize`, `parallel-research`, `code-review`
+- **`packages/core/src/agents/swarm-storage.ts`** — `SwarmStorage` extending `PgBaseStorage`; template CRUD, run lifecycle, member tracking
+- **`packages/core/src/agents/swarm-manager.ts`** — `SwarmManager`; dispatches `sequential` (for-loop with context chaining), `parallel` (`Promise.all` + optional coordinator), `dynamic` (single coordinator delegation) strategies via `SubAgentManager.delegate()`
+- **`packages/core/src/agents/swarm-routes.ts`** — REST: `GET/POST /api/v1/agents/swarms/templates`, `POST/GET/GET/:id/POST/:id/cancel /api/v1/agents/swarms`
+- **`packages/core/src/agents/tools.ts`** — Added `create_swarm` MCP tool
+- **`packages/core/src/extensions/types.ts`** — Added `'swarm:before-execute'` and `'swarm:after-execute'` hook points
+- **`packages/dashboard/src/components/SwarmsPage.tsx`** — Template grid with strategy badges + role chip pipeline, launch form, run history with member pipeline
+- **`packages/dashboard/src/components/SwarmsPage.test.tsx`** — Disabled state, template cards, strategy badge, Launch button, run history
+- **`packages/dashboard/src/components/SubAgentsPage.tsx`** — Added 4th tab `'swarms'` with `Layers` icon
+
+---
+
 ## Phase 16: Integration Enhancements — Complete (2026.2.18)
 
 ### Storybook Developer Integration — [ADR 054](docs/adr/054-storybook-developer-integration.md)
