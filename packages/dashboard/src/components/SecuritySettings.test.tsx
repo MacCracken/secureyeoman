@@ -102,6 +102,7 @@ describe('SecuritySettings', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
@@ -111,6 +112,7 @@ describe('SecuritySettings', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
@@ -140,6 +142,7 @@ describe('SecuritySettings', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();
@@ -204,6 +207,7 @@ describe('SecuritySettings', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();

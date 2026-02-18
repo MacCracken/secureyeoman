@@ -81,6 +81,7 @@ describe('MultimodalPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: true,
     });
     mockFetchMultimodalJobs.mockResolvedValue(MOCK_JOBS);
@@ -96,6 +97,7 @@ describe('MultimodalPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();
@@ -112,6 +114,7 @@ describe('MultimodalPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();
@@ -140,6 +143,7 @@ describe('MultimodalPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent({ embedded: true });

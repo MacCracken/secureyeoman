@@ -20,7 +20,7 @@ import {
   ActionRowBuilder,
   type ModalActionRowComponentBuilder,
   type Message,
-  type CommandInteraction,
+  type ChatInputCommandInteraction,
   type Interaction,
   type TextChannel,
   type ModalSubmitInteraction,
@@ -115,7 +115,7 @@ export class DiscordIntegration implements Integration {
         message.channel.type === ChannelType.PublicThread ||
         message.channel.type === ChannelType.PrivateThread;
       const channelName = isThread
-        ? `${(message.channel as any).parent?.name ?? 'thread'}/${message.channel.name}`
+        ? `${(message.channel as any).parent?.name ?? 'thread'}/${(message.channel as any).name}`
         : (message.channel as TextChannel).name ?? '';
 
       const unified: UnifiedMessage = {
@@ -202,7 +202,7 @@ export class DiscordIntegration implements Integration {
 
       if (!interaction.isCommand()) return;
 
-      const cmd = interaction as CommandInteraction;
+      const cmd = interaction as ChatInputCommandInteraction;
       const { commandName } = cmd;
 
       if (commandName === 'help') {
