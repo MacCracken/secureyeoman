@@ -208,6 +208,8 @@ export const SecurityConfigSchema = z.object({
   allowProactive: z.boolean().default(false),
   /** Allow A/B experiments. Must be explicitly enabled after initialization. */
   allowExperiments: z.boolean().default(false),
+  /** Allow Storybook component development environment in dashboard. */
+  allowStorybook: z.boolean().default(false),
   /** Allow multimodal I/O (vision, STT, TTS, image generation). */
   allowMultimodal: z.boolean().default(false),
   secretBackend: z.enum(['auto', 'keyring', 'env', 'file']).default('auto'),

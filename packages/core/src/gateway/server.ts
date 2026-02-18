@@ -995,6 +995,7 @@ export class GatewayServer {
         allowExecution: config.security.allowExecution,
         allowProactive: config.security.allowProactive,
         allowExperiments: config.security.allowExperiments,
+        allowStorybook: config.security.allowStorybook,
         allowMultimodal: config.security.allowMultimodal,
       };
     });
@@ -1011,6 +1012,7 @@ export class GatewayServer {
             allowExecution?: boolean;
             allowProactive?: boolean;
             allowExperiments?: boolean;
+            allowStorybook?: boolean;
             allowMultimodal?: boolean;
           };
         }>,
@@ -1024,6 +1026,7 @@ export class GatewayServer {
             allowExecution,
             allowProactive,
             allowExperiments,
+            allowStorybook,
             allowMultimodal,
           } = request.body;
           if (
@@ -1033,6 +1036,7 @@ export class GatewayServer {
             allowExecution === undefined &&
             allowProactive === undefined &&
             allowExperiments === undefined &&
+            allowStorybook === undefined &&
             allowMultimodal === undefined
           ) {
             return reply.code(400).send({ error: 'No valid fields provided' });
@@ -1044,6 +1048,7 @@ export class GatewayServer {
             allowExecution,
             allowProactive,
             allowExperiments,
+            allowStorybook,
             allowMultimodal,
           });
           const config = this.secureYeoman.getConfig();
@@ -1054,6 +1059,7 @@ export class GatewayServer {
             allowExecution: config.security.allowExecution,
             allowProactive: config.security.allowProactive,
             allowExperiments: config.security.allowExperiments,
+            allowStorybook: config.security.allowStorybook,
             allowMultimodal: config.security.allowMultimodal,
           };
         } catch (err) {

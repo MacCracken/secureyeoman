@@ -141,6 +141,7 @@ export function Sidebar({
   const proactiveEnabled =
     (securityPolicy?.allowProactive ?? false) || (proactiveConfig?.config as any)?.enabled === true;
   const experimentsEnabled = securityPolicy?.allowExperiments ?? false;
+  const storybookEnabled = securityPolicy?.allowStorybook ?? false;
 
   const NAV_ITEMS = useMemo(() => {
     const items = [...NAV_ITEMS_WITHOUT_AGENTS];
@@ -152,11 +153,11 @@ export function Sidebar({
       });
     }
     return items.filter((item) => {
-      if (item.to === '/developers') return extensionsEnabled || experimentsEnabled;
+      if (item.to === '/developers') return extensionsEnabled || experimentsEnabled || storybookEnabled;
       if (item.to === '/proactive') return proactiveEnabled;
       return true;
     });
-  }, [hasAgents, extensionsEnabled, proactiveEnabled, experimentsEnabled]);
+  }, [hasAgents, extensionsEnabled, proactiveEnabled, experimentsEnabled, storybookEnabled]);
 
   useEffect(() => {
     setMobileOpen(false);

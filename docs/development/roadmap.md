@@ -39,7 +39,7 @@
 **Status**: In Progress
 
 ### Dashboard & Tooling
-- [ ] **Storybook** — Component development environment for dashboard UI components, integrated into Developers section as its own view with Settings > Security > Developers toggle to enable/disable display (subview pattern like Extensions/Experiments)
+- [x] **Storybook** — Component development environment for dashboard UI components, integrated into Developers section as its own view with Settings > Security > Developers toggle to enable/disable display (subview pattern like Extensions/Experiments)
 
 ### Vector Memory
 - [x] **ChromaDB Backend** — ChromaDB as additional vector backend option for memory storage

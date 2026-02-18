@@ -6,6 +6,9 @@ All notable changes to SecureYeoman are documented in this file.
 
 ## Phase 16: Integration Expansion II — In Progress (2026.2.18)
 
+### Storybook Developer Integration — [ADR 054](docs/adr/054-storybook-developer-integration.md)
+Component development environment integrated into Developers section as its own subview; gated by `allowStorybook` security policy toggle in Settings > Security > Developers; disabled state mirrors Experiments pattern; enabled state provides quick-start instructions, component story gallery, and iframe to localhost:6006
+
 ### Platform-Specific Integration Enhancements — [ADR 053](docs/adr/053-platform-specific-integration-enhancements.md)
 - **Telegram** — `callback_query:data` handler normalises inline keyboard button taps to `UnifiedMessage` (metadata: `callbackData`, `callbackQueryId`); `message:document` handler adds file attachments with `metadata.fileId`; `sendMessage()` forwards `replyMarkup` metadata as `reply_markup` to grammy
 - **Discord** — Upgraded to discord.js v14 (`GatewayIntentBits`, `EmbedBuilder`, `addFields`, `REST`, `Routes`, `MessageContent` intent); slash command registration via `REST.put` on the `ready` event (guild-scoped = instant, global = ~1 hour); thread channel detection via `ChannelType` (`metadata.isThread`, `metadata.threadId`); `/feedback` slash command opens a `ModalBuilder` paragraph input; modal submit handler normalises to `UnifiedMessage` with `metadata.isModalSubmit`; `sendMessage()` supports `threadId` and `startThread` metadata
