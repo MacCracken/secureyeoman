@@ -28,12 +28,13 @@
 | | **Release 2026.2.18** | **2026-02-18** | **Released** |
 | 16 | Integration Expansion II | — | In Progress |
 | 17 | Advanced Capabilities | — | Pending |
-| 18 | SaaS ready | — | Pending |
-| 19 | Onboarding & First Run | — | Pending |
+| 18 | Skills Marketplace & Community | - | Pending |
+| 19 | SaaS ready | — | Pending |
+| 20 | Onboarding & First Run | — | Pending |
 
 ---
 
-## Phase 16: Integration Expansion II
+## Phase 16: Integration Enhancements
 
 **Status**: In Progress
 
@@ -81,7 +82,7 @@
 
 ---
 
-## Phase 18 Marketplace & Community
+## Phase 18 Skills Marketplace & Community
 
 **Status**: Pending
 
