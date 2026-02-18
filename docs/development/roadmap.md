@@ -30,7 +30,6 @@
 | 17 | Advanced Capabilities | — | Pending |
 | 18 | SaaS ready | — | Pending |
 | 19 | Onboarding & First Run | — | Pending |
-| 20 | Efficiency & Embedded | — | Pending |
 
 ---
 
@@ -46,7 +45,14 @@
 - [ ] **Linear** — Issue creation, status updates, sprint management, webhook listeners
 - [ ] **Todoist** — Task management, project sync, due date handling
 
-### Services & Cloud Integrations
+### Integration Connection Updates
+
+#### Messaging Connections
+- [ ] **QQ** — Message handling, group management, file transfer
+- [ ] **DingTalk** — Enterprise messaging, workflow integration, calendar sync
+- [ ] **Line** — Message API, sticker support, rich menu handling
+
+#### Services & Cloud
 - [ ] **Spotify** — Playback control, playlist management, now playing info
 - [ ] **YouTube** — Video search, channel info, playlist management
 - [ ] **Figma** — File access, comment sync, design file metadata
@@ -60,10 +66,10 @@
 - [x] **ChromaDB Backend** — ChromaDB as additional vector backend option for memory storage
 
 ### Platform-Specific Enhancements
-- [ ] **Telegram** — Inline keyboards, photo/document handling, voice messages
-- [ ] **Discord** — Thread support, modal dialogs, slash command registration
-- [ ] **Slack** — Interactive messages with block actions, modal dialogs, workflow builder
-- [ ] **GitHub** — PR review automation, code search tools, issue automation workflows
+- [x] **Telegram** — Inline keyboards, photo/document handling, voice messages
+- [x] **Discord** — Thread support, modal dialogs, slash command registration
+- [x] **Slack** — Interactive messages with block actions, modal dialogs, workflow builder
+- [x] **GitHub** — PR review automation, code search tools, issue automation workflows
 ---
 
 ## Phase 17: Advanced Capabilities
@@ -124,6 +130,14 @@
 
 ### Performance
 - [ ] **Memory Footprint Optimization** — Study PicoClaw for potential memory reductions; target <1GB baseline
+- [ ] **Fast Boot** — Optimize startup time for better UX; target <10s startup (learn from PicoClaw's 1s boot)
+
+### Deployment
+- [ ] **Single Binary** — Simplify deployment with Go-based components
+- [ ] **Embedded Ready** — Consider future IoT/edge use cases
+
+### Development
+- [ ] **Go/Rust Runtime** — Potential future language option for core components
 
 ---
 
@@ -133,24 +147,6 @@
 
 ### Onboarding
 - [ ] **First Install Onboarding** — CLI and Dashboard guided setup experience for new installations; builds on Phase 18 CLI Improvements (`secureyeoman init` wizard, rich output) for maximum effectiveness
-
----
-
-## Phase 20: Efficiency & Embedded
-
-**Status**: Pending
-
-### Performance Optimization
-- [ ] **Fast Boot** — Optimize startup time for better UX; target <10s startup (learn from PicoClaw's 1s boot)
-- [ ] **Memory Footprint Optimization** — Study PicoClaw for potential memory reductions
-
-### Deployment
-- [ ] **Single Binary** — Simplify deployment with Go-based components
-- [ ] **Embedded Ready** — Consider future IoT/edge use cases
-
-### Development
-- [ ] **AI-Bootstrapped Development** — Use AI to optimize codebase
-- [ ] **Go/Rust Runtime** — Potential future language option for core components
 
 ---
 

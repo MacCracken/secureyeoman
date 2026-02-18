@@ -1,18 +1,29 @@
 /**
- * DiscordIntegration — Discord Bot adapter using discord.js.
+ * DiscordIntegration — Discord Bot adapter using discord.js v14.
  *
- * Supports slash commands (/ask, /status, /help) and regular messages.
+ * Supports slash commands (/ask, /status, /help, /feedback) and regular messages.
  * Normalizes inbound messages to UnifiedMessage with `dc_` prefix.
+ * Registers slash commands via REST on the `ready` event.
+ * Supports thread channels and modal dialogs.
  */
 
 import {
   Client,
-  Intents,
-  MessageEmbed,
+  GatewayIntentBits,
+  EmbedBuilder,
+  REST,
+  Routes,
+  ChannelType,
+  ModalBuilder,
+  TextInputBuilder,
+  TextInputStyle,
+  ActionRowBuilder,
+  type ModalActionRowComponentBuilder,
   type Message,
   type CommandInteraction,
   type Interaction,
   type TextChannel,
+  type ModalSubmitInteraction,
 } from 'discord.js';
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
@@ -39,6 +50,10 @@ const SLASH_COMMANDS = [
     name: 'help',
     description: 'Show available commands',
   },
+  {
+    name: 'feedback',
+    description: 'Submit feedback to FRIDAY',
+  },
 ];
 
 export class DiscordIntegration implements Integration {
@@ -62,14 +77,46 @@ export class DiscordIntegration implements Integration {
     }
 
     this.client = new Client({
-      intents: [Intents.FLAGS.GUILDS, Intents.FLAGS.GUILD_MESSAGES],
+      intents: [
+        GatewayIntentBits.Guilds,
+        GatewayIntentBits.GuildMessages,
+        GatewayIntentBits.MessageContent,
+      ],
     });
 
-    // Handle regular messages
+    // ── Slash command registration on ready ──────────────
+    this.client.once('ready', async () => {
+      try {
+        const clientId = this.config?.config.clientId as string | undefined;
+        const guildId = this.config?.config.guildId as string | undefined;
+        if (!clientId) return;
+
+        const rest = new REST().setToken(this.config!.config.botToken as string);
+        const route = guildId
+          ? Routes.applicationGuildCommands(clientId, guildId)
+          : Routes.applicationCommands(clientId);
+
+        await rest.put(route, { body: SLASH_COMMANDS });
+        this.logger?.info('Discord slash commands registered');
+      } catch (err) {
+        this.logger?.warn('Discord slash command registration failed', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    });
+
+    // ── Handle regular messages ──────────────────────────
     this.client.on('messageCreate', (message: Message) => {
       if (message.author.bot) return;
       // Allow messages with attachments through even if text is empty
       if (!message.content.trim() && message.attachments.size === 0) return;
+
+      const isThread =
+        message.channel.type === ChannelType.PublicThread ||
+        message.channel.type === ChannelType.PrivateThread;
+      const channelName = isThread
+        ? `${(message.channel as any).parent?.name ?? 'thread'}/${message.channel.name}`
+        : (message.channel as TextChannel).name ?? '';
 
       const unified: UnifiedMessage = {
         id: `dc_${message.id}`,
@@ -91,7 +138,9 @@ export class DiscordIntegration implements Integration {
         platformMessageId: message.id,
         metadata: {
           guildId: message.guildId,
-          channelName: (message.channel as TextChannel).name,
+          channelName,
+          isThread,
+          threadId: isThread ? message.channelId : undefined,
         },
         timestamp: message.createdTimestamp,
       };
@@ -120,23 +169,53 @@ export class DiscordIntegration implements Integration {
       }
     });
 
-    // Handle slash commands
+    // ── Handle slash commands and modals ─────────────────
     this.client.on('interactionCreate', (interaction: Interaction) => {
+      // Handle modal submissions
+      if ((interaction as any).isModalSubmit?.()) {
+        const modal = interaction as ModalSubmitInteraction;
+        const feedbackText = modal.fields.getTextInputValue('feedback_input');
+        void modal.reply({ content: 'Thank you for your feedback!', ephemeral: true });
+
+        const unified: UnifiedMessage = {
+          id: `dc_modal_${modal.id}`,
+          integrationId: config.id,
+          platform: 'discord',
+          direction: 'inbound',
+          senderId: modal.user.id,
+          senderName: modal.user.username,
+          chatId: modal.channelId ?? '',
+          text: feedbackText,
+          attachments: [],
+          platformMessageId: modal.id,
+          metadata: {
+            isModalSubmit: true,
+            modalCustomId: modal.customId,
+            guildId: modal.guildId,
+          },
+          timestamp: modal.createdTimestamp,
+        };
+
+        void this.deps!.onMessage(unified);
+        return;
+      }
+
       if (!interaction.isCommand()) return;
 
-      const cmd = interaction;
+      const cmd = interaction as CommandInteraction;
       const { commandName } = cmd;
 
       if (commandName === 'help') {
         void cmd.reply({
           embeds: [
-            new MessageEmbed()
+            new EmbedBuilder()
               .setTitle('FRIDAY Help')
               .setDescription(
                 '**Commands:**\n' +
                   '`/ask <question>` — Ask FRIDAY a question\n' +
                   '`/status` — Check agent status\n' +
-                  '`/help` — Show this help\n\n' +
+                  '`/help` — Show this help\n' +
+                  '`/feedback` — Submit feedback\n\n' +
                   'Or just send a message in a channel where FRIDAY is listening.'
               )
               .setColor(0x5865f2),
@@ -148,14 +227,35 @@ export class DiscordIntegration implements Integration {
       if (commandName === 'status') {
         void cmd.reply({
           embeds: [
-            new MessageEmbed()
+            new EmbedBuilder()
               .setTitle('FRIDAY Status')
-              .addField('Agent', config.displayName, true)
-              .addField('Platform', 'Discord', true)
-              .addField('Status', 'Connected', true)
+              .addFields(
+                { name: 'Agent', value: config.displayName, inline: true },
+                { name: 'Platform', value: 'Discord', inline: true },
+                { name: 'Status', value: 'Connected', inline: true }
+              )
               .setColor(0x57f287),
           ],
         });
+        return;
+      }
+
+      if (commandName === 'feedback') {
+        const modal = new ModalBuilder()
+          .setCustomId('friday_feedback')
+          .setTitle('Submit Feedback');
+
+        const feedbackInput = new TextInputBuilder()
+          .setCustomId('feedback_input')
+          .setLabel('Your feedback')
+          .setStyle(TextInputStyle.Paragraph);
+
+        const row = new ActionRowBuilder<ModalActionRowComponentBuilder>().addComponents(
+          feedbackInput
+        );
+
+        modal.addComponents(row);
+        void (cmd as any).showModal(modal);
         return;
       }
 
@@ -218,12 +318,13 @@ export class DiscordIntegration implements Integration {
   ): Promise<string> {
     if (!this.client) throw new Error('Integration not initialized');
 
-    const channel = await this.client.channels.fetch(chatId);
+    const targetChannelId = (metadata?.threadId as string) ?? chatId;
+    const channel = await this.client.channels.fetch(targetChannelId);
     if (!channel || !('send' in channel)) {
-      throw new Error(`Channel ${chatId} not found or not a text channel`);
+      throw new Error(`Channel ${targetChannelId} not found or not a text channel`);
     }
 
-    const embed = new MessageEmbed().setDescription(text).setColor(0x5865f2).setTimestamp();
+    const embed = new EmbedBuilder().setDescription(text).setColor(0x5865f2).setTimestamp();
 
     const sendOpts: Record<string, unknown> = { embeds: [embed] };
 
@@ -235,6 +336,11 @@ export class DiscordIntegration implements Integration {
     }
 
     const sent = await (channel as TextChannel).send(sendOpts);
+
+    if (metadata?.startThread && typeof metadata.startThread === 'string') {
+      await (sent as any).startThread({ name: metadata.startThread });
+    }
+
     return sent.id;
   }
 

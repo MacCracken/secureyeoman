@@ -10,15 +10,25 @@ const mockChannel = {
 };
 
 const mockClientOn = vi.fn();
-const mockLogin = vi.fn().mockResolvedValue('token');
+const mockLogin = vi.fn();
 const mockDestroy = vi.fn();
 const mockIsReady = vi.fn().mockReturnValue(true);
 const mockChannelsFetch = vi.fn().mockResolvedValue(mockChannel);
 const mockRestPut = vi.fn().mockResolvedValue(undefined);
 
+// Tracks ready handlers so mockLogin can fire them
+const readyHandlers: Array<() => Promise<void>> = [];
+
 vi.mock('discord.js', () => {
+  const mockClientOnce = vi.fn((event: string, handler: () => Promise<void>) => {
+    if (event === 'ready') {
+      readyHandlers.push(handler);
+    }
+  });
+
   class MockClient {
     on = mockClientOn;
+    once = mockClientOnce;
     login = mockLogin;
     destroy = mockDestroy;
     isReady = mockIsReady;
@@ -52,6 +62,36 @@ vi.mock('discord.js', () => {
     }
   }
 
+  class MockModalBuilder {
+    setCustomId() {
+      return this;
+    }
+    setTitle() {
+      return this;
+    }
+    addComponents() {
+      return this;
+    }
+  }
+
+  class MockTextInputBuilder {
+    setCustomId() {
+      return this;
+    }
+    setLabel() {
+      return this;
+    }
+    setStyle() {
+      return this;
+    }
+  }
+
+  class MockActionRowBuilder {
+    addComponents() {
+      return this;
+    }
+  }
+
   return {
     Client: MockClient,
     Intents: {
@@ -65,13 +105,25 @@ vi.mock('discord.js', () => {
       GuildMessages: 2,
       MessageContent: 3,
     },
+    ChannelType: {
+      GuildText: 0,
+      PublicThread: 11,
+      PrivateThread: 12,
+    },
+    TextInputStyle: {
+      Short: 1,
+      Paragraph: 2,
+    },
     REST: MockREST,
     Routes: {
-      applicationGuildCommands: vi.fn(() => '/commands'),
-      applicationCommands: vi.fn(() => '/commands'),
+      applicationGuildCommands: vi.fn((clientId: string, guildId: string) => `/guilds/${guildId}/commands`),
+      applicationCommands: vi.fn((clientId: string) => `/applications/${clientId}/commands`),
     },
     MessageEmbed: MockEmbedBuilder,
     EmbedBuilder: MockEmbedBuilder,
+    ModalBuilder: MockModalBuilder,
+    TextInputBuilder: MockTextInputBuilder,
+    ActionRowBuilder: MockActionRowBuilder,
   };
 });
 
@@ -110,11 +162,20 @@ function makeDeps(onMessage = vi.fn().mockResolvedValue(undefined)): Integration
   return { logger: noopLogger(), onMessage };
 }
 
+// Fires all registered ready handlers (simulates client becoming ready after login)
+async function fireReadyHandlers() {
+  for (const h of readyHandlers) {
+    await h();
+  }
+}
+
 describe('DiscordIntegration', () => {
   let integration: DiscordIntegration;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    readyHandlers.length = 0;
+    mockLogin.mockResolvedValue('token');
     integration = new DiscordIntegration();
   });
 
@@ -199,9 +260,51 @@ describe('DiscordIntegration', () => {
   it('should handle slash command registration failure gracefully', async () => {
     mockRestPut.mockRejectedValueOnce(new Error('API error'));
 
-    // Should not throw
     const int = new DiscordIntegration();
     await int.init(makeConfig({ config: { botToken: 'token', clientId: 'cid' } }), makeDeps());
+    await int.start();
+    // Fire ready handlers — registration will fail but should not throw
+    await fireReadyHandlers();
+    // No assertion needed; test passes if no exception was thrown
+  });
+
+  it('should call REST.put to register slash commands on ready', async () => {
+    await integration.init(
+      makeConfig({ config: { botToken: 'token', clientId: 'client_123' } }),
+      makeDeps()
+    );
+    await integration.start();
+    await fireReadyHandlers();
+    expect(mockRestPut).toHaveBeenCalledOnce();
+  });
+
+  it('should use applicationGuildCommands for guild-scoped registration', async () => {
+    const { Routes } = await import('discord.js');
+    await integration.init(
+      makeConfig({ config: { botToken: 'token', clientId: 'client_123', guildId: 'guild_456' } }),
+      makeDeps()
+    );
+    await integration.start();
+    await fireReadyHandlers();
+    expect(Routes.applicationGuildCommands).toHaveBeenCalledWith('client_123', 'guild_456');
+  });
+
+  it('should use applicationCommands for global registration (no guildId)', async () => {
+    const { Routes } = await import('discord.js');
+    await integration.init(
+      makeConfig({ config: { botToken: 'token', clientId: 'client_123' } }),
+      makeDeps()
+    );
+    await integration.start();
+    await fireReadyHandlers();
+    expect(Routes.applicationCommands).toHaveBeenCalledWith('client_123');
+  });
+
+  it('should skip registration if no clientId', async () => {
+    await integration.init(makeConfig({ config: { botToken: 'token' } }), makeDeps());
+    await integration.start();
+    await fireReadyHandlers();
+    expect(mockRestPut).not.toHaveBeenCalled();
   });
 
   it('should handle messageCreate events', async () => {
@@ -214,6 +317,70 @@ describe('DiscordIntegration', () => {
     expect(messageCreateCall).toBeDefined();
   });
 
+  it('should detect thread channels and set metadata.isThread', async () => {
+    const onMessage = vi.fn().mockResolvedValue(undefined);
+    await integration.init(makeConfig(), { logger: noopLogger(), onMessage });
+
+    const messageCreateHandler = mockClientOn.mock.calls.find(
+      (call: any[]) => call[0] === 'messageCreate'
+    )?.[1] as ((msg: any) => void) | undefined;
+    expect(messageCreateHandler).toBeDefined();
+
+    const fakeThreadMessage = {
+      author: { bot: false, id: 'u1', username: 'user1', displayName: 'User One' },
+      content: 'Hello in thread',
+      channelId: 'thread_ch',
+      id: 'msg_t1',
+      channel: {
+        type: 11, // PublicThread
+        name: 'my-thread',
+        parent: { name: 'general' },
+      },
+      attachments: { size: 0, map: () => [] },
+      reference: null,
+      guildId: 'guild_1',
+      createdTimestamp: 1700000000000,
+    };
+
+    messageCreateHandler!(fakeThreadMessage);
+
+    // Allow microtask to settle
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(onMessage).toHaveBeenCalledOnce();
+    const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+    expect(msg.metadata?.isThread).toBe(true);
+    expect(msg.metadata?.threadId).toBe('thread_ch');
+  });
+
+  it('should not set isThread for regular guild text channels', async () => {
+    const onMessage = vi.fn().mockResolvedValue(undefined);
+    await integration.init(makeConfig(), { logger: noopLogger(), onMessage });
+
+    const messageCreateHandler = mockClientOn.mock.calls.find(
+      (call: any[]) => call[0] === 'messageCreate'
+    )?.[1] as ((msg: any) => void) | undefined;
+
+    const fakeMessage = {
+      author: { bot: false, id: 'u1', username: 'user1', displayName: 'User One' },
+      content: 'Hello',
+      channelId: 'ch_1',
+      id: 'msg_1',
+      channel: { type: 0, name: 'general' }, // GuildText
+      attachments: { size: 0, map: () => [] },
+      reference: null,
+      guildId: 'guild_1',
+      createdTimestamp: 1700000000000,
+    };
+
+    messageCreateHandler!(fakeMessage);
+    await new Promise((r) => setTimeout(r, 0));
+
+    const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+    expect(msg.metadata?.isThread).toBe(false);
+    expect(msg.metadata?.threadId).toBeUndefined();
+  });
+
   it('should handle interactionCreate events', async () => {
     await integration.init(makeConfig(), makeDeps());
 
@@ -221,6 +388,81 @@ describe('DiscordIntegration', () => {
       (call: any[]) => call[0] === 'interactionCreate'
     );
     expect(interactionCall).toBeDefined();
+  });
+
+  it('/feedback command should call showModal', async () => {
+    await integration.init(makeConfig(), makeDeps());
+
+    const interactionHandler = mockClientOn.mock.calls.find(
+      (call: any[]) => call[0] === 'interactionCreate'
+    )?.[1] as ((interaction: any) => void) | undefined;
+    expect(interactionHandler).toBeDefined();
+
+    const showModal = vi.fn();
+    const fakeInteraction = {
+      isModalSubmit: () => false,
+      isCommand: () => true,
+      commandName: 'feedback',
+      id: 'int_1',
+      user: { id: 'u1', username: 'user1' },
+      channelId: 'ch_1',
+      guildId: 'guild_1',
+      createdTimestamp: Date.now(),
+      options: { getString: vi.fn() },
+      deferReply: vi.fn(),
+      reply: vi.fn(),
+      showModal,
+    };
+
+    interactionHandler!(fakeInteraction);
+
+    expect(showModal).toHaveBeenCalledOnce();
+  });
+
+  it('modal submit should call onMessage with isModalSubmit metadata', async () => {
+    const onMessage = vi.fn().mockResolvedValue(undefined);
+    await integration.init(makeConfig(), { logger: noopLogger(), onMessage });
+
+    const interactionHandler = mockClientOn.mock.calls.find(
+      (call: any[]) => call[0] === 'interactionCreate'
+    )?.[1] as ((interaction: any) => void) | undefined;
+
+    const fakeModalSubmit = {
+      isModalSubmit: () => true,
+      id: 'modal_1',
+      customId: 'friday_feedback',
+      user: { id: 'u1', username: 'user1' },
+      channelId: 'ch_1',
+      guildId: 'guild_1',
+      createdTimestamp: Date.now(),
+      fields: {
+        getTextInputValue: vi.fn().mockReturnValue('Great product!'),
+      },
+      reply: vi.fn().mockResolvedValue(undefined),
+    };
+
+    interactionHandler!(fakeModalSubmit);
+
+    // Flush microtasks
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(onMessage).toHaveBeenCalledOnce();
+    const msg: UnifiedMessage = onMessage.mock.calls[0][0];
+    expect(msg.text).toBe('Great product!');
+    expect(msg.metadata?.isModalSubmit).toBe(true);
+    expect(msg.metadata?.modalCustomId).toBe('friday_feedback');
+  });
+
+  it('should support sendMessage with threadId metadata', async () => {
+    await integration.init(makeConfig(), makeDeps());
+    await integration.start();
+
+    const threadChannel = { send: vi.fn().mockResolvedValue({ id: 'thread_msg_1' }), name: 'thread' };
+    mockChannelsFetch.mockResolvedValueOnce(threadChannel);
+
+    const msgId = await integration.sendMessage('ch_123', 'Hello thread!', { threadId: 'thread_ch_456' });
+    expect(mockChannelsFetch).toHaveBeenCalledWith('thread_ch_456');
+    expect(msgId).toBe('thread_msg_1');
   });
 
   it('should register error handler', async () => {
