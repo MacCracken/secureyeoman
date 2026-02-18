@@ -46,7 +46,7 @@
 - [ ] **Airtable** — Base CRUD operations, record management, view filtering
 - [ ] **Linear** — Issue creation, status updates, sprint management, webhook listeners
 - [ ] **Todoist** — Task management, project sync, due date handling
-- [ ] 
+
 #### Messaging Connections
 - [ ] **QQ** — Message handling, group management, file transfer
 - [ ] **DingTalk** — Enterprise messaging, workflow integration, calendar sync
