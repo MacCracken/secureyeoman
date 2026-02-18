@@ -1,9 +1,11 @@
 /**
  * Cost Analytics Page
  *
- * Displays cost breakdowns, provider usage, and optimization recommendations
+ * Displays cost breakdowns, provider usage, and optimization recommendations.
+ * Includes a History tab with date/provider/model/personality filtering.
  */
 
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import {
   DollarSign,
@@ -13,14 +15,60 @@ import {
   BarChart3,
   ArrowRight,
   Loader2,
+  X,
 } from 'lucide-react';
-import { fetchMetrics, fetchCostBreakdown } from '../api/client';
-import type { CostBreakdownResponse } from '../api/client';
-import type { MetricsSnapshot } from '../types';
+import {
+  fetchMetrics,
+  fetchCostBreakdown,
+  fetchCostHistory,
+  fetchPersonalities,
+} from '../api/client';
+import type { CostBreakdownResponse, CostHistoryParams } from '../api/client';
+import type { MetricsSnapshot, Personality } from '../types';
+
+type TabId = 'summary' | 'history';
 
 // ── Component ────────────────────────────────────────────────────────
 
 export function CostsPage() {
+  const [activeTab, setActiveTab] = useState<TabId>('summary');
+
+  return (
+    <div className="space-y-6">
+      {/* Page Header */}
+      <div>
+        <h1 className="text-2xl font-bold">Cost Analytics</h1>
+        <p className="text-muted-foreground text-sm mt-1">
+          Monitor spending, token usage, and optimization opportunities
+        </p>
+      </div>
+
+      {/* Tab Switcher */}
+      <div className="flex gap-1 border-b border-border">
+        {(['summary', 'history'] as TabId[]).map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
+              activeTab === tab
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+
+      {activeTab === 'summary' && <SummaryTab />}
+      {activeTab === 'history' && <HistoryTab />}
+    </div>
+  );
+}
+
+// ── Summary Tab ──────────────────────────────────────────────────────
+
+function SummaryTab() {
   const { data: metrics, isLoading: metricsLoading } = useQuery<MetricsSnapshot>({
     queryKey: ['metrics'],
     queryFn: fetchMetrics,
@@ -39,15 +87,7 @@ export function CostsPage() {
   const recommendations = breakdown?.recommendations ?? [];
 
   return (
-    <div className="space-y-6">
-      {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold">Cost Analytics</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Monitor spending, token usage, and optimization opportunities
-        </p>
-      </div>
-
+    <>
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <SummaryCard
@@ -222,6 +262,251 @@ export function CostsPage() {
               {recommendations.map((rec) => (
                 <RecommendationCard key={rec.id} recommendation={rec} />
               ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+// ── History Tab ──────────────────────────────────────────────────────
+
+const EMPTY_FILTERS: CostHistoryParams = {
+  from: '',
+  to: '',
+  provider: '',
+  model: '',
+  personalityId: '',
+  groupBy: 'day',
+};
+
+function HistoryTab() {
+  const [filters, setFilters] = useState<CostHistoryParams>(EMPTY_FILTERS);
+  const [appliedFilters, setAppliedFilters] = useState<CostHistoryParams>(EMPTY_FILTERS);
+
+  const { data: personalitiesData } = useQuery<{ personalities: Personality[] }>({
+    queryKey: ['personalities'],
+    queryFn: fetchPersonalities,
+  });
+  const personalities = personalitiesData?.personalities ?? [];
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['costs-history', appliedFilters],
+    queryFn: () => {
+      const params: CostHistoryParams = {};
+      if (appliedFilters.from) {
+        params.from = String(new Date(appliedFilters.from).getTime());
+      }
+      if (appliedFilters.to) {
+        // End-of-day for the "to" date
+        const d = new Date(appliedFilters.to);
+        d.setHours(23, 59, 59, 999);
+        params.to = String(d.getTime());
+      }
+      if (appliedFilters.provider) params.provider = appliedFilters.provider;
+      if (appliedFilters.model) params.model = appliedFilters.model;
+      if (appliedFilters.personalityId) params.personalityId = appliedFilters.personalityId;
+      params.groupBy = appliedFilters.groupBy ?? 'day';
+      return fetchCostHistory(params);
+    },
+  });
+
+  const records = data?.records ?? [];
+  const totals = data?.totals ?? { totalTokens: 0, costUsd: 0, calls: 0 };
+
+  const hasActiveFilters = Object.entries(appliedFilters).some(
+    ([k, v]) => k !== 'groupBy' && v !== ''
+  );
+
+  const handleClear = () => {
+    setFilters(EMPTY_FILTERS);
+    setAppliedFilters(EMPTY_FILTERS);
+  };
+
+  const handleApply = () => {
+    setAppliedFilters({ ...filters });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* Filter bar */}
+      <div className="card p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium text-sm">Filters</h3>
+          {hasActiveFilters && (
+            <button
+              onClick={handleClear}
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-3 h-3" />
+              Clear
+            </button>
+          )}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">From</label>
+            <input
+              type="date"
+              value={filters.from ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">To</label>
+            <input
+              type="date"
+              value={filters.to ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Provider</label>
+            <select
+              value={filters.provider ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, provider: e.target.value }))}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            >
+              <option value="">All providers</option>
+              <option value="anthropic">Anthropic</option>
+              <option value="openai">OpenAI</option>
+              <option value="gemini">Gemini</option>
+              <option value="ollama">Ollama</option>
+              <option value="deepseek">DeepSeek</option>
+              <option value="mistral">Mistral</option>
+              <option value="lmstudio">LM Studio</option>
+              <option value="localai">LocalAI</option>
+              <option value="opencode">OpenCode</option>
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Model</label>
+            <input
+              type="text"
+              value={filters.model ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
+              placeholder="Filter by model name…"
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Personality</label>
+            <select
+              value={filters.personalityId ?? ''}
+              onChange={(e) => setFilters((f) => ({ ...f, personalityId: e.target.value }))}
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            >
+              <option value="">All personalities</option>
+              {personalities.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs text-muted-foreground">Group By</label>
+            <select
+              value={filters.groupBy ?? 'day'}
+              onChange={(e) =>
+                setFilters((f) => ({ ...f, groupBy: e.target.value as 'day' | 'hour' }))
+              }
+              className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
+            >
+              <option value="day">Day</option>
+              <option value="hour">Hour</option>
+            </select>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <button
+            onClick={handleApply}
+            className="px-4 py-2 rounded-md bg-primary text-primary-foreground text-sm font-medium hover:bg-primary/90"
+          >
+            Apply
+          </button>
+        </div>
+      </div>
+
+      {/* Results table */}
+      <div className="card">
+        <div className="card-header">
+          <h2 className="card-title">Usage History</h2>
+          <p className="card-description">Aggregated token usage and cost over time</p>
+        </div>
+        <div className="card-content">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : records.length === 0 ? (
+            <div className="text-center py-12 text-sm text-muted-foreground">
+              No usage records found for the selected filters.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                      Provider
+                    </th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Model</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">
+                      Personality
+                    </th>
+                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">
+                      Tokens
+                    </th>
+                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">Cost</th>
+                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">
+                      Calls
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {records.map((row, i) => {
+                    const personality = personalities.find((p) => p.id === row.personalityId);
+                    return (
+                      <tr key={i} className="border-b border-border/50 hover:bg-muted/20">
+                        <td className="py-3 px-4 font-mono text-xs">{row.date}</td>
+                        <td className="py-3 px-4">{row.provider}</td>
+                        <td className="py-3 px-4 font-mono text-xs max-w-[180px] truncate">
+                          {row.model}
+                        </td>
+                        <td className="py-3 px-4 text-muted-foreground text-xs">
+                          {personality?.name ?? row.personalityId ?? '—'}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono">
+                          {row.totalTokens.toLocaleString()}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono">
+                          ${row.costUsd.toFixed(4)}
+                        </td>
+                        <td className="py-3 px-4 text-right font-mono">{row.calls}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-border font-bold">
+                    <td className="py-3 px-4" colSpan={4}>
+                      Total
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono">
+                      {totals.totalTokens.toLocaleString()}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono">
+                      ${totals.costUsd.toFixed(4)}
+                    </td>
+                    <td className="py-3 px-4 text-right font-mono">{totals.calls}</td>
+                  </tr>
+                </tfoot>
+              </table>
             </div>
           )}
         </div>

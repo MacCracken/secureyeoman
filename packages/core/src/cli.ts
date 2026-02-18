@@ -7,7 +7,7 @@
  *   secureyeoman start --port 3001    # Custom port
  *   secureyeoman health               # Health check
  *   secureyeoman status               # Server overview
- *   secureyeoman init                 # Interactive onboarding
+ *   secureyeoman init                 # Interactive onboarding (Phase 18)
  *   secureyeoman config               # Show config
  *   secureyeoman integration          # Manage integrations
  *   secureyeoman role                 # Manage RBAC roles & assignments
@@ -15,6 +15,11 @@
  *   secureyeoman execute              # Sandboxed code execution
  *   secureyeoman a2a                  # A2A protocol management
  *   secureyeoman repl                 # Interactive REPL
+ *   secureyeoman browser              # Browser automation sessions
+ *   secureyeoman memory               # Vector memory operations
+ *   secureyeoman scraper              # Web scraper configuration
+ *   secureyeoman multimodal           # Multimodal I/O operations
+ *   secureyeoman model                # AI model management (info, list, switch, default)
  */
 
 import { createRouter } from './cli/router.js';
@@ -29,6 +34,11 @@ import { roleCommand } from './cli/commands/role.js';
 import { extensionCommand } from './cli/commands/extension.js';
 import { executeCommand } from './cli/commands/execute.js';
 import { a2aCommand } from './cli/commands/a2a.js';
+import { browserCommand } from './cli/commands/browser.js';
+import { memoryCommand } from './cli/commands/memory.js';
+import { scraperCommand } from './cli/commands/scraper.js';
+import { multimodalCommand } from './cli/commands/multimodal.js';
+import { modelCommand } from './cli/commands/model.js';
 
 const router = createRouter('start');
 
@@ -44,6 +54,11 @@ router.register(roleCommand);
 router.register(extensionCommand);
 router.register(executeCommand);
 router.register(a2aCommand);
+router.register(browserCommand);
+router.register(memoryCommand);
+router.register(scraperCommand);
+router.register(multimodalCommand);
+router.register(modelCommand);
 
 // Help command
 router.register({

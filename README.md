@@ -246,6 +246,73 @@ curl http://localhost:18789/api/v1/audit?limit=50 \
   -H "Authorization: Bearer $TOKEN"
 ```
 
+### CLI
+
+```bash
+# Start the server (default)
+secureyeoman start
+
+# Start with custom port
+secureyeoman start --port 3001
+
+# Check server health
+secureyeoman health
+
+# Show server status
+secureyeoman status
+
+# Show configuration
+secureyeoman config
+
+# Manage integrations
+secureyeoman integration list
+secureyeoman integration connect telegram
+
+# Manage RBAC roles
+secureyeoman role list
+secureyeoman role create operator
+
+# Manage lifecycle hooks
+secureyeoman extension list
+
+# Run sandboxed code
+secureyeoman execute --lang javascript --code "console.log('hello')"
+
+# Manage A2A protocol
+secureyeoman a2a list
+
+# Browser automation
+secureyeoman browser list
+secureyeoman browser stats
+secureyeoman browser config
+
+# Vector memory
+secureyeoman memory search "recent conversations"
+secureyeoman memory stats
+secureyeoman memory consolidate
+
+# Web scraper / MCP tools
+secureyeoman scraper config
+secureyeoman scraper tools
+secureyeoman scraper servers
+
+# Multimodal I/O
+secureyeoman multimodal config
+secureyeoman multimodal jobs
+secureyeoman multimodal speak "Hello world"
+
+# AI model management
+secureyeoman model info
+secureyeoman model list
+secureyeoman model switch anthropic claude-sonnet-4-6
+secureyeoman model default get
+secureyeoman model default set anthropic claude-haiku-4-5
+secureyeoman model default clear
+
+# Show help
+secureyeoman help
+```
+
 ### MCP Integration
 
 Connect SecureYeoman to any MCP-compatible client (Claude Desktop, etc.):

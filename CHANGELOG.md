@@ -6,6 +6,34 @@ All notable changes to SecureYeoman are documented in this file.
 
 ## Phase 15 (in progress) — Integration Architecture Improvements, Developer Consolidation, Cost Persistence & Hook Debugger
 
+### AI Model System Default
+- **Migration 016** — `system_preferences` PostgreSQL table (`key TEXT PRIMARY KEY`, `value TEXT`, `updated_at BIGINT`) — generic key-value store for system-level settings
+- **`SystemPreferencesStorage`** — new `packages/core/src/config/system-preferences-storage.ts`; extends `PgBaseStorage`; methods: `init()`, `get(key)`, `set(key, value)` (upsert via `ON CONFLICT`), `delete(key)`, `list()`
+- **`SecureYeoman`** — initializes `SystemPreferencesStorage` at Step 5.6; after `AIClient.init()` applies stored `model.provider` / `model.model` via `switchModel()`; new public methods: `setModelDefault(provider, model)` (validates, switches, persists), `clearModelDefault()` (removes both keys), `getModelDefault()` (returns `{ provider, model }` or `null`); new `getSystemPreferences()` accessor
+- **`GET /api/v1/model/default`** — returns `{ provider, model }` (either set values or `null / null`)
+- **`POST /api/v1/model/default`** — sets persistent model default; body: `{ provider, model }`
+- **`DELETE /api/v1/model/default`** — clears persistent model default
+- **Dashboard API client** — new `ModelDefaultResponse` interface; `fetchModelDefault()`, `setModelDefault(data)`, `clearModelDefault()` functions added to `packages/dashboard/src/api/client.ts`
+- **Settings > Security** — "AI Model Default" card added as the **top section** (above MCP Servers); shows current default badge (green = set, muted = using config file); provider `<select>` with all 9 providers + model `<input>` + Set Default button + Clear link; queries `['model-default']` and `['model-info']`; mutations invalidate both query keys on success
+- **`secureyeoman model` CLI command** — new `packages/core/src/cli/commands/model.ts`; subcommands: `info` (show current provider/model/maxTokens/temperature), `list [--provider PROV]` (list available models with pricing), `switch <provider> <model>` (transient), `default get/set/clear` (persistent); `--json` flag; default URL `http://127.0.0.1:18789`; registered in `cli.ts`
+
+### Settings Security Reorganization
+- **MCP Servers card moved to top** — Settings > Security — MCP Servers card moved to the top of the security settings list for higher visibility; now appears before Proactive Assistance, Multimodal I/O, Sub-Agent Delegation, and Code Execution cards
+
+### Cost History View
+- **Migration 015** — `015_usage_personality.sql` adds `personality_id TEXT` column and index to `usage_records` table
+- **`UsageRecord.personalityId?`** — Optional `personalityId` field added to the `UsageRecord` interface in `usage-tracker.ts`
+- **`UsageStorage` updated** — `insert()` persists `personality_id`; `loadRecent()` maps it back; new `queryHistory(filter)` method returns SQL-aggregated rows grouped by day or hour with SUM of tokens/cost and COUNT of calls; supports optional `from`, `to`, `provider`, `model`, `personalityId`, and `groupBy` filters
+- **`AIClient.setSoulManager()`** — New method for post-construction SoulManager injection; `trackUsage()` and streaming `done` chunk handler both call `soulManager.getActivePersonality()` to populate `personalityId` on each usage record
+- **`SecureYeoman`** — Calls `aiClient.setSoulManager()` immediately after SoulManager initialization; stores `usageStorage` as a class field with `getUsageStorage()` accessor
+- **`GET /api/v1/costs/history`** — New gateway endpoint; query params: `from`, `to`, `provider`, `model`, `personalityId`, `groupBy` (day|hour); returns `{ records, totals }`
+- **`fetchCostHistory(params)`** — New dashboard API client function with `CostHistoryParams`, `CostHistoryRow`, and `CostHistoryResponse` types
+- **CostsPage History tab** — Summary/History tab switcher added to Cost Analytics page; History tab has filter bar (From, To, Provider, Model, Personality dropdown from API, Group By), results table with Date / Provider / Model / Personality / Tokens / Cost / Calls columns, totals footer row, and empty state
+
+### Email (SMTP) Confirmed Operational
+- **Email integration confirmed fully operational** — IMAP receive + SMTP send implemented in `packages/core/src/integrations/email/adapter.ts` (374 lines); registered in `secureyeoman.ts`; documented in `docs/guides/integrations.md` with provider presets
+- **REST API docs updated** — `docs/api/rest-api.md` POST /api/v1/integrations section now includes a complete Email (SMTP) curl example showing all 12 config fields with ProtonMail Bridge defaults and a config field reference table
+
 ### OAuth2 First-Class Support — [ADR 050](docs/adr/050-oauth2-first-class-support.md)
 - **`oauth_tokens` PostgreSQL table** (migration 012) — unified storage for OAuth2 tokens with `UNIQUE(provider, email)` constraint; `upsertToken` keeps the record current on re-authentication
 - **`OAuthTokenStorage`** — CRUD wrapper; `listTokens()` returns metadata only (no raw token values)
@@ -79,6 +107,14 @@ All notable changes to SecureYeoman are documented in this file.
 - All 42 `server.tool()` calls across 10 MCP tool files migrated to the non-deprecated `server.registerTool()` API
 - `SSEServerTransport` in `packages/mcp/src/transport/sse.ts` kept for legacy client compat with targeted `eslint-disable` comments
 - Removed unused `fetchWithRetry` and `ProxyRequestOptions` imports from `web-tools.ts`
+
+### CLI Modernization
+- **New CLI commands** for managing recent subsystems:
+  - `secureyeoman browser` — Manage browser automation sessions (list, stats, config, session details)
+  - `secureyeoman memory` — Vector memory operations (search, memories, knowledge, stats, consolidate, reindex)
+  - `secureyeoman scraper` — Web scraper/MCP configuration (config, tools, servers)
+  - `secureyeoman multimodal` — Multimodal I/O operations (config, jobs, vision-analyze, speak, transcribe, generate)
+- Commands follow the existing modular command router pattern and connect to REST APIs
 
 ### Haptic Body Capability
 - **`HapticRequestSchema` / `HapticResultSchema`** — Zod schemas in `packages/shared/src/types/multimodal.ts`; request accepts a `pattern` (single ms duration or on/off array up to 20 steps, max 10 000 ms per step) and optional `description`; result returns `triggered`, `patternMs` (total pattern duration), and `durationMs`

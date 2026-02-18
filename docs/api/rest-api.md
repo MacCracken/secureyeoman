@@ -1847,6 +1847,64 @@ Switch the AI model at runtime. The switch is not persisted across restarts.
 }
 ```
 
+#### GET /api/v1/model/default
+
+Get the persistent model default (survives restarts). Returns `null` values when no override is set.
+
+**Required Permissions**: Authenticated
+
+**Response** (default set)
+```json
+{
+  "provider": "openai",
+  "model": "gpt-4o"
+}
+```
+
+**Response** (no default set)
+```json
+{
+  "provider": null,
+  "model": null
+}
+```
+
+#### POST /api/v1/model/default
+
+Set a persistent model default. Applies immediately and survives restarts (stored in `system_preferences` table).
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+```json
+{
+  "provider": "anthropic",
+  "model": "claude-haiku-4-5"
+}
+```
+
+**Response**
+```json
+{
+  "success": true,
+  "provider": "anthropic",
+  "model": "claude-haiku-4-5"
+}
+```
+
+#### DELETE /api/v1/model/default
+
+Clear the persistent model default. The model will revert to the config file default on next restart.
+
+**Required Permissions**: Authenticated
+
+**Response**
+```json
+{
+  "success": true
+}
+```
+
 ---
 
 ## Error Handling
@@ -1942,6 +2000,50 @@ Create a new integration.
   "config": { "botToken": "..." }
 }
 ```
+
+**Email (SMTP) example** — IMAP receive + SMTP send via ProtonMail Bridge (or any IMAP/SMTP server):
+
+```bash
+curl -X POST http://localhost:18789/api/v1/integrations \
+  -H "Authorization: Bearer <jwt-token>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "email",
+    "displayName": "My Email",
+    "enabled": true,
+    "config": {
+      "imapHost": "127.0.0.1",
+      "imapPort": 1143,
+      "imapSecure": false,
+      "smtpHost": "127.0.0.1",
+      "smtpPort": 1025,
+      "smtpSecure": false,
+      "username": "user@protonmail.com",
+      "password": "bridge-app-password",
+      "fromAddress": "user@protonmail.com",
+      "checkIntervalMs": 60000,
+      "maxEmailsPerCheck": 10,
+      "markAsRead": true
+    }
+  }'
+```
+
+Config fields:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `imapHost` | string | IMAP server hostname |
+| `imapPort` | number | IMAP server port (993 for SSL, 143 for STARTTLS) |
+| `imapSecure` | boolean | Use TLS for IMAP connection |
+| `smtpHost` | string | SMTP server hostname |
+| `smtpPort` | number | SMTP server port (465 for SSL, 587 for STARTTLS) |
+| `smtpSecure` | boolean | Use TLS for SMTP connection |
+| `username` | string | Email account username |
+| `password` | string | Email account password or app-specific password |
+| `fromAddress` | string | From address used when sending replies |
+| `checkIntervalMs` | number | How often to poll for new mail (milliseconds) |
+| `maxEmailsPerCheck` | number | Maximum emails fetched per poll cycle |
+| `markAsRead` | boolean | Mark fetched emails as read in the mailbox |
 
 #### POST /api/v1/integrations/{id}/test
 

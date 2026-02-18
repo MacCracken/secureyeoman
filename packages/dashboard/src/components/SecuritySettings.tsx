@@ -42,6 +42,10 @@ import {
   fetchSecurityPolicy,
   updateSecurityPolicy,
   fetchMcpServers,
+  fetchModelDefault,
+  setModelDefault,
+  clearModelDefault,
+  fetchModelInfo,
 } from '../api/client';
 import type { RoleInfo, AssignmentInfo } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
@@ -266,6 +270,16 @@ export function SecuritySettings() {
     queryFn: fetchMcpServers,
   });
 
+  const { data: modelDefault } = useQuery({
+    queryKey: ['model-default'],
+    queryFn: fetchModelDefault,
+  });
+
+  const { data: modelInfo } = useQuery({
+    queryKey: ['model-info'],
+    queryFn: fetchModelInfo,
+  });
+
   // ── Mutations ───────────────────────────────────────────────────
   const invalidateRoles = () => queryClient.invalidateQueries({ queryKey: ['auth-roles'] });
   const invalidateAssignments = () =>
@@ -332,7 +346,24 @@ export function SecuritySettings() {
     },
   });
 
+  const setDefaultMutation = useMutation({
+    mutationFn: setModelDefault,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['model-default'] });
+      void queryClient.invalidateQueries({ queryKey: ['model-info'] });
+    },
+  });
+
+  const clearDefaultMutation = useMutation({
+    mutationFn: clearModelDefault,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['model-default'] });
+    },
+  });
+
   // ── Local state ─────────────────────────────────────────────────
+  const [draftProvider, setDraftProvider] = useState('');
+  const [draftModel, setDraftModel] = useState('');
   const [showRoleForm, setShowRoleForm] = useState(false);
   const [editingRole, setEditingRole] = useState<RoleInfo | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<RoleInfo | null>(null);
@@ -388,9 +419,122 @@ export function SecuritySettings() {
     });
   };
 
+  const MODEL_PROVIDER_LABELS: Record<string, string> = {
+    anthropic: 'Anthropic',
+    openai: 'OpenAI',
+    gemini: 'Gemini',
+    ollama: 'Ollama (Local)',
+    opencode: 'OpenCode (Zen)',
+    lmstudio: 'LM Studio (Local)',
+    localai: 'LocalAI (Local)',
+    deepseek: 'DeepSeek',
+    mistral: 'Mistral',
+  };
+
+  const modelsByProvider = modelInfo?.available ?? {};
+  const draftKey = draftProvider && draftModel ? `${draftProvider}::${draftModel}` : '';
+
   return (
     <div className="space-y-6">
       <h2 className="text-lg font-semibold">Security</h2>
+
+      {/* AI Model Default */}
+      <div className="card p-4 space-y-3">
+        <div>
+          <h3 className="font-medium text-sm">AI Model Default</h3>
+          <p className="text-xs text-muted-foreground mt-1">
+            Persistent model used after restart. Overrides config file.
+          </p>
+        </div>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Current default:</span>
+          {modelDefault?.provider && modelDefault?.model ? (
+            <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">
+              {MODEL_PROVIDER_LABELS[modelDefault.provider] ?? modelDefault.provider} / {modelDefault.model}
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+              Using config file
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="flex flex-col gap-1 flex-1 min-w-48">
+            <label className="text-xs font-medium text-muted-foreground">Model</label>
+            <select
+              className="input text-sm h-8"
+              value={draftKey}
+              onChange={(e) => {
+                const [p, ...rest] = e.target.value.split('::');
+                setDraftProvider(p ?? '');
+                setDraftModel(rest.join('::'));
+              }}
+            >
+              <option value="">Select a model…</option>
+              {Object.entries(modelsByProvider).map(([provider, models]) => (
+                <optgroup key={provider} label={MODEL_PROVIDER_LABELS[provider] ?? provider}>
+                  {models.map((m) => (
+                    <option key={`${provider}::${m.model}`} value={`${provider}::${m.model}`}>
+                      {m.model}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+          <button
+            className="btn btn-primary text-sm h-8"
+            disabled={!draftProvider || !draftModel || setDefaultMutation.isPending}
+            onClick={() => {
+              if (draftProvider && draftModel) {
+                setDefaultMutation.mutate({ provider: draftProvider, model: draftModel });
+              }
+            }}
+          >
+            {setDefaultMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Set Default'}
+          </button>
+          {modelDefault?.provider && modelDefault?.model && (
+            <button
+              className="text-xs text-destructive hover:text-destructive/80"
+              disabled={clearDefaultMutation.isPending}
+              onClick={() => clearDefaultMutation.mutate()}
+            >
+              {clearDefaultMutation.isPending ? 'Clearing…' : 'Clear'}
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* MCP Servers */}
+      <div className="card p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium text-sm flex items-center gap-2">
+            <Blocks className="w-4 h-4" />
+            MCP Servers
+          </h3>
+          <button
+            className="text-xs text-primary hover:text-primary/80"
+            onClick={() => navigate('/connections?tab=mcp')}
+          >
+            Manage
+          </button>
+        </div>
+        <div className="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span className="text-xs text-muted-foreground block">Configured</span>
+            <span>{(mcpData as unknown as { total?: number })?.total ?? 0} servers</span>
+          </div>
+          <div>
+            <span className="text-xs text-muted-foreground block">Enabled</span>
+            <span>
+              {(mcpData as unknown as { servers?: { enabled: boolean }[] })?.servers?.filter(
+                (s) => s.enabled
+              ).length ?? 0}{' '}
+              servers
+            </span>
+          </div>
+        </div>
+      </div>
 
       {/* Proactive Assistance Policy */}
       <div className="card">
@@ -501,37 +645,6 @@ export function SecuritySettings() {
                 : 'Sandboxed code execution is disabled. No code can be executed through the execution engine.'
             }
           />
-        </div>
-      </div>
-
-      {/* MCP Servers */}
-      <div className="card p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="font-medium text-sm flex items-center gap-2">
-            <Blocks className="w-4 h-4" />
-            MCP Servers
-          </h3>
-          <button
-            className="text-xs text-primary hover:text-primary/80"
-            onClick={() => navigate('/connections?tab=mcp')}
-          >
-            Manage
-          </button>
-        </div>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-xs text-muted-foreground block">Configured</span>
-            <span>{(mcpData as unknown as { total?: number })?.total ?? 0} servers</span>
-          </div>
-          <div>
-            <span className="text-xs text-muted-foreground block">Enabled</span>
-            <span>
-              {(mcpData as unknown as { servers?: { enabled: boolean }[] })?.servers?.filter(
-                (s) => s.enabled
-              ).length ?? 0}{' '}
-              servers
-            </span>
-          </div>
         </div>
       </div>
 

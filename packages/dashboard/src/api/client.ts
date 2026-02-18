@@ -881,6 +881,35 @@ export async function switchModel(data: {
   });
 }
 
+// ─── Model Default (persistent) ───────────────────────────────
+
+export interface ModelDefaultResponse {
+  provider: string | null;
+  model: string | null;
+}
+
+export async function fetchModelDefault(): Promise<ModelDefaultResponse> {
+  try {
+    return await request<ModelDefaultResponse>('/model/default');
+  } catch {
+    return { provider: null, model: null };
+  }
+}
+
+export async function setModelDefault(data: {
+  provider: string;
+  model: string;
+}): Promise<{ success: boolean }> {
+  return request('/model/default', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function clearModelDefault(): Promise<{ success: boolean }> {
+  return request('/model/default', { method: 'DELETE' });
+}
+
 // ─── Spirit API ───────────────────────────────────────────────
 
 export async function fetchPassions(): Promise<{ passions: Passion[] }> {
@@ -2364,5 +2393,49 @@ export async function fetchCostBreakdown(): Promise<CostBreakdownResponse> {
     return await request<CostBreakdownResponse>('/costs/breakdown');
   } catch {
     return { byProvider: {}, recommendations: [] };
+  }
+}
+
+export interface CostHistoryRow {
+  date: string;
+  provider: string;
+  model: string;
+  personalityId: string | null;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  totalTokens: number;
+  costUsd: number;
+  calls: number;
+}
+
+export interface CostHistoryResponse {
+  records: CostHistoryRow[];
+  totals: { totalTokens: number; costUsd: number; calls: number };
+}
+
+export interface CostHistoryParams {
+  from?: string;
+  to?: string;
+  provider?: string;
+  model?: string;
+  personalityId?: string;
+  groupBy?: 'day' | 'hour';
+}
+
+export async function fetchCostHistory(params: CostHistoryParams = {}): Promise<CostHistoryResponse> {
+  const qs = new URLSearchParams();
+  if (params.from) qs.set('from', params.from);
+  if (params.to) qs.set('to', params.to);
+  if (params.provider) qs.set('provider', params.provider);
+  if (params.model) qs.set('model', params.model);
+  if (params.personalityId) qs.set('personalityId', params.personalityId);
+  if (params.groupBy) qs.set('groupBy', params.groupBy);
+
+  const query = qs.toString();
+  try {
+    return await request<CostHistoryResponse>(`/costs/history${query ? `?${query}` : ''}`);
+  } catch {
+    return { records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } };
   }
 }
