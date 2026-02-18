@@ -32,3 +32,5 @@ Each personality can optionally declare a `defaultModel` (`{ provider, model }` 
 - Manual model override is preserved within a session to respect user intent
 - The `defaultModel` field is nullable and optional — existing personalities are unaffected
 - Database migration is backward-compatible (adds column with empty-string default)
+
+> **Extension (Phase 17)**: ADR 056 extends this decision by adding a per-personality `modelFallbacks` array, allowing each personality to define its own ordered fallback chain tried when the primary model fails.

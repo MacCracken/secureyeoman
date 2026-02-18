@@ -333,6 +333,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
           voice: request.body?.voice ?? defaults.voice,
           preferredLanguage: request.body?.preferredLanguage ?? defaults.preferredLanguage,
           defaultModel: request.body?.defaultModel ?? null,
+          modelFallbacks: request.body?.modelFallbacks ?? [],
           includeArchetypes: request.body?.includeArchetypes ?? agentName === 'FRIDAY',
           body: request.body?.body ?? {
             enabled: false,

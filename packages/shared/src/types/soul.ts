@@ -20,6 +20,12 @@ export const DefaultModelSchema = z
 
 export type DefaultModel = z.infer<typeof DefaultModelSchema>;
 
+export const ModelFallbackEntrySchema = z.object({
+  provider: z.string().min(1),
+  model: z.string().min(1),
+});
+export type ModelFallbackEntry = z.infer<typeof ModelFallbackEntrySchema>;
+
 // ─── Body Config (owns Heart) ───────────────────────────────
 
 export const BodyCapabilitySchema = z.enum([
@@ -108,6 +114,7 @@ export const PersonalitySchema = z.object({
   voice: z.string().max(200).default(''),
   preferredLanguage: z.string().max(100).default(''),
   defaultModel: DefaultModelSchema,
+  modelFallbacks: z.array(ModelFallbackEntrySchema).max(5).default([]),
   includeArchetypes: z.boolean().default(true),
   isActive: z.boolean().default(false),
   body: BodyConfigSchema.default({}),

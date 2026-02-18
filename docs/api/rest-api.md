@@ -910,6 +910,7 @@ Create new personality.
 | `voice` | string | No | Voice style description |
 | `preferredLanguage` | string | No | Preferred language for responses |
 | `defaultModel` | object\|null | No | Default model `{ provider, model }` for this personality |
+| `modelFallbacks` | array | No | Ordered fallback models (max 5) `[{ provider, model }]` tried when the primary fails |
 
 #### GET /api/v1/soul/prompt/preview
 

@@ -413,6 +413,25 @@ Each entry in the `fallbacks` array configures an alternative model to try when 
 | `temperature` | number | No | Sampling temperature (inherits from primary) |
 | `requestTimeoutMs` | number | No | Request timeout in ms (inherits from primary) |
 
+### Per-Personality Model Fallbacks
+
+Each personality can declare its own ordered fallback chain via the `modelFallbacks` field (max 5 entries). This is set through the dashboard Personality Editor or via the CLI:
+
+```bash
+# View fallbacks for the active personality
+secureyeoman model personality-fallbacks get
+
+# Set fallbacks for a specific personality (tried in order on failure)
+secureyeoman model personality-fallbacks set --personality-id <id> openai/gpt-4o anthropic/claude-haiku-4-5-20251001
+
+# Clear fallbacks
+secureyeoman model personality-fallbacks clear --personality-id <id>
+```
+
+When a personality's `modelFallbacks` list is non-empty, it **overrides** the system-level `model.fallbacks` for requests using that personality. When the list is empty (the default), system-level fallbacks apply unchanged.
+
+Each entry requires only `provider` and `model`. The API key environment variable is resolved automatically from the provider name. Supported providers: `anthropic`, `openai`, `gemini`, `deepseek`, `mistral`, `opencode`.
+
 ### soul
 
 | Field | Type | Default | Description |

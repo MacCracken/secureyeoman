@@ -92,6 +92,7 @@ export class SoulManager {
       voice: '',
       preferredLanguage: '',
       defaultModel: null,
+      modelFallbacks: [],
       includeArchetypes: agentName === 'FRIDAY',
       body: {
         enabled: false,

@@ -194,6 +194,46 @@ describe('SoulStorage', () => {
       });
       expect(p.preferredLanguage).toBe('Spanish');
     });
+
+    it('should create personality with modelFallbacks', async () => {
+      const fallbacks = [{ provider: 'openai', model: 'gpt-4o' }];
+      const p = await storage.createPersonality({ ...TEST_PERSONALITY, modelFallbacks: fallbacks });
+      expect(p.modelFallbacks).toEqual(fallbacks);
+    });
+
+    it('should default modelFallbacks to empty array', async () => {
+      const p = await storage.createPersonality(TEST_PERSONALITY);
+      expect(p.modelFallbacks).toEqual([]);
+    });
+
+    it('should update modelFallbacks', async () => {
+      const p = await storage.createPersonality(TEST_PERSONALITY);
+      const fallbacks = [
+        { provider: 'openai', model: 'gpt-4o' },
+        { provider: 'gemini', model: 'gemini-2.0-flash' },
+      ];
+      const updated = await storage.updatePersonality(p.id, { modelFallbacks: fallbacks });
+      expect(updated.modelFallbacks).toEqual(fallbacks);
+    });
+
+    it('should clear modelFallbacks on update', async () => {
+      const p = await storage.createPersonality({
+        ...TEST_PERSONALITY,
+        modelFallbacks: [{ provider: 'openai', model: 'gpt-4o' }],
+      });
+      const updated = await storage.updatePersonality(p.id, { modelFallbacks: [] });
+      expect(updated.modelFallbacks).toEqual([]);
+    });
+
+    it('should roundtrip modelFallbacks through get', async () => {
+      const fallbacks = [
+        { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+        { provider: 'openai', model: 'gpt-4o-mini' },
+      ];
+      const p = await storage.createPersonality({ ...TEST_PERSONALITY, modelFallbacks: fallbacks });
+      const retrieved = await storage.getPersonality(p.id);
+      expect(retrieved?.modelFallbacks).toEqual(fallbacks);
+    });
   });
 
   describe('agent name (soul_meta)', () => {

@@ -88,13 +88,22 @@ export class AIClient {
 
   /**
    * Non-streaming chat completion with fallback support.
+   *
+   * @param requestFallbacks - Optional per-request fallback chain. When provided, overrides
+   *   the system-level `config.model.fallbacks` for this call only.
    */
-  async chat(request: AIRequest, context?: Record<string, unknown>): Promise<AIResponse> {
+  async chat(
+    request: AIRequest,
+    context?: Record<string, unknown>,
+    requestFallbacks?: FallbackModelConfig[]
+  ): Promise<AIResponse> {
     // Check daily limit
     const limit = this.usageTracker.checkLimit();
     if (!limit.allowed) {
       throw new TokenLimitError(this.providerName);
     }
+
+    const fallbacks = requestFallbacks ?? this.fallbackConfigs;
 
     // Try primary provider
     let primaryError: Error | undefined;
@@ -102,7 +111,7 @@ export class AIClient {
       return await this.doChatWithProvider(this.provider, this.providerName, request, context);
     } catch (error) {
       primaryError = error as Error;
-      if (!this.isFallbackEligible(primaryError) || this.fallbackConfigs.length === 0) {
+      if (!this.isFallbackEligible(primaryError) || fallbacks.length === 0) {
         throw primaryError;
       }
     }
@@ -111,11 +120,11 @@ export class AIClient {
     await this.auditRecord('ai_fallback_triggered', {
       primaryProvider: this.providerName,
       error: primaryError.message,
-      fallbackCount: this.fallbackConfigs.length,
+      fallbackCount: fallbacks.length,
     });
 
-    for (let i = 0; i < this.fallbackConfigs.length; i++) {
-      const fbConfig = this.fallbackConfigs[i]!;
+    for (let i = 0; i < fallbacks.length; i++) {
+      const fbConfig = fallbacks[i]!;
       const fbProviderName = fbConfig.provider;
 
       await this.auditRecord('ai_fallback_attempt', {
@@ -125,7 +134,7 @@ export class AIClient {
       });
 
       try {
-        const fbProvider = this.getFallbackProvider(i);
+        const fbProvider = this.getOrCreateFallbackProvider(i, fbConfig);
         const response = await this.doChatWithProvider(
           fbProvider,
           fbProviderName,
@@ -153,7 +162,7 @@ export class AIClient {
     // All fallbacks exhausted
     await this.auditRecord('ai_fallback_exhausted', {
       primaryProvider: this.providerName,
-      fallbackCount: this.fallbackConfigs.length,
+      fallbackCount: fallbacks.length,
     });
 
     throw primaryError;
@@ -161,15 +170,21 @@ export class AIClient {
 
   /**
    * Streaming chat completion (async generator) with fallback support.
+   *
+   * @param requestFallbacks - Optional per-request fallback chain. When provided, overrides
+   *   the system-level `config.model.fallbacks` for this call only.
    */
   async *chatStream(
     request: AIRequest,
-    context?: Record<string, unknown>
+    context?: Record<string, unknown>,
+    requestFallbacks?: FallbackModelConfig[]
   ): AsyncGenerator<AIStreamChunk, void, unknown> {
     const limit = this.usageTracker.checkLimit();
     if (!limit.allowed) {
       throw new TokenLimitError(this.providerName);
     }
+
+    const fallbacks = requestFallbacks ?? this.fallbackConfigs;
 
     // Try primary provider
     let primaryError: Error | undefined;
@@ -178,7 +193,7 @@ export class AIClient {
       return;
     } catch (error) {
       primaryError = error as Error;
-      if (!this.isFallbackEligible(primaryError) || this.fallbackConfigs.length === 0) {
+      if (!this.isFallbackEligible(primaryError) || fallbacks.length === 0) {
         throw primaryError;
       }
     }
@@ -187,12 +202,12 @@ export class AIClient {
     await this.auditRecord('ai_fallback_triggered', {
       primaryProvider: this.providerName,
       error: primaryError.message,
-      fallbackCount: this.fallbackConfigs.length,
+      fallbackCount: fallbacks.length,
       stream: true,
     });
 
-    for (let i = 0; i < this.fallbackConfigs.length; i++) {
-      const fbConfig = this.fallbackConfigs[i]!;
+    for (let i = 0; i < fallbacks.length; i++) {
+      const fbConfig = fallbacks[i]!;
       const fbProviderName = fbConfig.provider;
 
       await this.auditRecord('ai_fallback_attempt', {
@@ -203,7 +218,7 @@ export class AIClient {
       });
 
       try {
-        const fbProvider = this.getFallbackProvider(i);
+        const fbProvider = this.getOrCreateFallbackProvider(i, fbConfig);
         yield* this.doChatStreamWithProvider(fbProvider, fbProviderName, request, context);
 
         await this.auditRecord('ai_fallback_success', {
@@ -225,7 +240,7 @@ export class AIClient {
     // All fallbacks exhausted
     await this.auditRecord('ai_fallback_exhausted', {
       primaryProvider: this.providerName,
-      fallbackCount: this.fallbackConfigs.length,
+      fallbackCount: fallbacks.length,
       stream: true,
     });
 
@@ -272,13 +287,25 @@ export class AIClient {
 
   /**
    * Lazily instantiate a fallback provider, caching it for reuse.
+   * When called with an explicit fbConfig (per-request fallbacks), uses a separate cache key
+   * that won't collide with the system-level fallback providers.
    * Inherits retry config and unset fields from the primary model config.
    */
-  private getFallbackProvider(index: number): AIProvider {
-    let provider = this.fallbackProviders.get(index);
-    if (provider) return provider;
-
-    const fbConfig = this.fallbackConfigs[index]!;
+  private getOrCreateFallbackProvider(index: number, fbConfig: FallbackModelConfig): AIProvider {
+    // Use a negative index offset to distinguish per-request fallbacks from system-level ones
+    const cacheKey = index;
+    const cached = this.fallbackProviders.get(cacheKey);
+    // Only reuse cached provider if it matches the same provider+model
+    if (cached) {
+      const systemFbConfig = this.fallbackConfigs[index];
+      if (
+        systemFbConfig &&
+        systemFbConfig.provider === fbConfig.provider &&
+        systemFbConfig.model === fbConfig.model
+      ) {
+        return cached;
+      }
+    }
 
     // Build a full ModelConfig by inheriting unset fields from primary
     const fullModelConfig: ModelConfig = {
@@ -296,8 +323,12 @@ export class AIClient {
       fallbacks: [],
     };
 
-    provider = this.createProvider({ model: fullModelConfig, retryConfig: this.retryConfig });
-    this.fallbackProviders.set(index, provider);
+    const provider = this.createProvider({ model: fullModelConfig, retryConfig: this.retryConfig });
+    // Only cache system-level fallbacks (when they match the configured index)
+    if (this.fallbackConfigs[index]?.provider === fbConfig.provider &&
+        this.fallbackConfigs[index]?.model === fbConfig.model) {
+      this.fallbackProviders.set(cacheKey, provider);
+    }
     return provider;
   }
 

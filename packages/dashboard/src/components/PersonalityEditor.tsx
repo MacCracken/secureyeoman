@@ -1787,6 +1787,7 @@ export function PersonalityEditor() {
     voice: '',
     preferredLanguage: '',
     defaultModel: null,
+    modelFallbacks: [],
     includeArchetypes: true,
     body: {
       enabled: false,
@@ -1803,6 +1804,8 @@ export function PersonalityEditor() {
       },
     },
   });
+
+  const [pendingFallback, setPendingFallback] = useState('');
 
   const [creationConfig, setCreationConfig] = useState({
     skills: false,
@@ -1963,6 +1966,7 @@ export function PersonalityEditor() {
       voice: p.voice,
       preferredLanguage: p.preferredLanguage,
       defaultModel: p.defaultModel,
+      modelFallbacks: p.modelFallbacks ?? [],
       includeArchetypes: p.includeArchetypes,
       body,
     });
@@ -2036,6 +2040,7 @@ export function PersonalityEditor() {
       voice: '',
       preferredLanguage: '',
       defaultModel: null,
+      modelFallbacks: [],
       includeArchetypes: false,
       body,
     });
@@ -2229,6 +2234,23 @@ export function PersonalityEditor() {
               </p>
             </div>
 
+            <label className="flex flex-col gap-1 cursor-pointer" data-testid="archetype-toggle">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.includeArchetypes ?? false}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, includeArchetypes: e.target.checked }));
+                  }}
+                  className="rounded border-muted-foreground"
+                />
+                <span className="text-sm">Include Sacred Archetypes</span>
+              </div>
+              <span className="text-xs text-muted-foreground ml-6">
+                Preamble is presented in prompt
+              </span>
+            </label>
+
             <div>
               <label className="block text-sm font-medium mb-2">Traits</label>
               <div className="space-y-2">
@@ -2324,22 +2346,97 @@ export function PersonalityEditor() {
               </p>
             </div>
 
-            <label className="flex flex-col gap-1 cursor-pointer" data-testid="archetype-toggle">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={form.includeArchetypes ?? false}
-                  onChange={(e) => {
-                    setForm((f) => ({ ...f, includeArchetypes: e.target.checked }));
-                  }}
-                  className="rounded border-muted-foreground"
-                />
-                <span className="text-sm">Include Sacred Archetypes</span>
-              </div>
-              <span className="text-xs text-muted-foreground ml-6">
-                Preamble is presented in prompt
-              </span>
-            </label>
+            {/* ── Model Fallbacks ─────────────────────────────────── */}
+            <div>
+              <label className="block text-sm font-medium mb-1">Model Fallbacks</label>
+              <p className="text-xs text-muted-foreground mb-2">
+                Ordered list of fallback models (max 5). Tried in order if the primary model
+                fails due to rate limits or unavailability.
+              </p>
+
+              {/* Current fallbacks list */}
+              {(form.modelFallbacks ?? []).length > 0 && (
+                <div className="space-y-1 mb-2" data-testid="fallback-list">
+                  {(form.modelFallbacks ?? []).map((fb, idx) => (
+                    <div
+                      key={`${fb.provider}/${fb.model}-${String(idx)}`}
+                      className="flex items-center gap-2 text-sm bg-muted/40 px-2 py-1 rounded"
+                    >
+                      <span className="text-muted-foreground text-xs w-4">{idx + 1}.</span>
+                      <span className="flex-1 font-mono text-xs">
+                        {fb.provider}/{fb.model}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setForm((f) => ({
+                            ...f,
+                            modelFallbacks: (f.modelFallbacks ?? []).filter((_, i) => i !== idx),
+                          }))
+                        }
+                        className="text-muted-foreground hover:text-destructive text-xs px-1"
+                        aria-label="Remove fallback"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add fallback dropdown */}
+              {(form.modelFallbacks ?? []).length < 5 && (
+                <div className="flex gap-2">
+                  <select
+                    value={pendingFallback}
+                    onChange={(e) => setPendingFallback(e.target.value)}
+                    className="flex-1 px-3 py-2 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                    data-testid="fallback-add-select"
+                  >
+                    <option value="">Add fallback model…</option>
+                    {modelData?.available &&
+                      Object.entries(modelData.available).flatMap(([provider, models]) =>
+                        models
+                          .filter((m) => {
+                            const key = `${provider}/${m.model}`;
+                            const isDefault = form.defaultModel
+                              ? `${form.defaultModel.provider}/${form.defaultModel.model}` === key
+                              : false;
+                            const alreadyAdded = (form.modelFallbacks ?? []).some(
+                              (fb) => `${fb.provider}/${fb.model}` === key
+                            );
+                            return !isDefault && !alreadyAdded;
+                          })
+                          .map((m) => (
+                            <option key={`${provider}/${m.model}`} value={`${provider}/${m.model}`}>
+                              {provider}/{m.model}
+                            </option>
+                          ))
+                      )}
+                  </select>
+                  <button
+                    type="button"
+                    disabled={!pendingFallback}
+                    onClick={() => {
+                      if (!pendingFallback) return;
+                      const [provider, ...rest] = pendingFallback.split('/');
+                      setForm((f) => ({
+                        ...f,
+                        modelFallbacks: [
+                          ...(f.modelFallbacks ?? []),
+                          { provider: provider!, model: rest.join('/') },
+                        ],
+                      }));
+                      setPendingFallback('');
+                    }}
+                    className="px-3 py-2 rounded border bg-primary text-primary-foreground text-sm disabled:opacity-40"
+                    data-testid="fallback-add-btn"
+                  >
+                    Add
+                  </button>
+                </div>
+              )}
+            </div>
           </CollapsibleSection>
 
           {/* Spirit Section */}
