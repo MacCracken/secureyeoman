@@ -26,7 +26,7 @@
 | 14 | Dashboard Chat Enhancements | 2026.2.17 | Complete |
 | 15 | Integration Expansion | 2026.2.18 | Complete |
 | | **Release 2026.2.18** | **2026-02-18** | **Released** |
-| 16 | Integration Expansion II | — | In Progress |
+| 16 | Integration Enhancements | — | In Progress |
 | 17 | Advanced Capabilities | — | Pending |
 | 18 | Skills Marketplace & Community | - | Pending |
 | 19 | SaaS ready | — | Pending |
