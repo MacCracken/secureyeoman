@@ -48,7 +48,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Security** | RBAC (Admin/Operator/Auditor/Viewer), JWT + API key auth, mTLS, AES-256-GCM encryption at rest, sandboxed execution (Landlock/macOS sandbox), rate limiting (per-user, per-IP, global), HTTP security headers (HSTS, CSP, X-Frame-Options), CORS policy enforcement |
 | **Observability** | Cryptographic audit trails (HMAC-SHA256 chain), Prometheus metrics, Grafana dashboards, structured JSONL log rotation, audit retention enforcement, audit export |
 | **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama, LM Studio, LocalAI (local), OpenCode Zen, DeepSeek, Mistral; automatic fallback chains on rate limits/outages; dynamic model discovery |
-| **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); overview with stat cards (tasks, heartbeat, audit, memory) and services status panel (core, Postgres, audit chain, MCP); system flow graph (ReactFlow) with live connection edges; task history, security events, resource monitor, personality editor, skills manager, code editor (Monaco), notification & retention settings |
+| **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); overview with stat cards (tasks, heartbeat, audit, memory) and services status panel (core, Postgres, audit chain, MCP); system flow graph (ReactFlow) with live connection edges; task history, security events, resource monitor, personality editor, skills manager, code editor (Monaco), notification & retention settings; **rich chat rendering** — assistant messages rendered as full Markdown with syntax-highlighted code (Prism, dark/light theme-aware), interactive Mermaid diagrams, KaTeX math expressions, GitHub-style alert callouts, task list checkboxes, and styled tables |
 | **Agent Architecture** | Soul (identity/archetypes/personality), Spirit (passions/inspirations/pains), Brain (memory/knowledge/skills with decay & pruning, vector semantic search via FAISS/Qdrant, LLM-powered memory consolidation), Body (heartbeat/vital signs/screen capture) |
 | **Cognitive Architecture** | Vector semantic memory (local SentenceTransformers + OpenAI/Gemini API embeddings), FAISS and Qdrant vector backends, LLM-powered memory consolidation with on-save dedup and scheduled deep analysis, 3-tier progressive history compression (message → topic → bulk) with AI summarization |
 | **Extensions** | 24 lifecycle hook points (observe/transform/veto semantics), TypeScript plugin modules with filesystem discovery, EventEmitter integration, outbound webhook dispatch with HMAC signing, hot-reload support |
@@ -216,7 +216,8 @@ Access http://localhost:3000 after starting the system. The dashboard provides:
 - **Security**: Security event log with severity filtering, heartbeat task viewer
 - **Connections**: Integration management (connect/start/stop platforms), MCP server management
 - **Personality**: Identity editor, archetype selector, skill builder
-- **Code**: Monaco editor with personality-scoped AI chat sidebar
+- **Code**: Monaco editor with personality-scoped AI chat sidebar; assistant messages render as rich Markdown
+- **Chat**: Conversational AI interface with full Markdown rendering — syntax-highlighted code blocks (Prism, language-labelled, theme-aware), interactive Mermaid diagrams, KaTeX math (`$inline$` / `$$block$$`), GitHub-style alert callouts (`[!NOTE]`, `[!TIP]`, `[!WARNING]`, `[!CAUTION]`, `[!IMPORTANT]`), task list checkboxes, and styled tables
 - **Settings**: Notification preferences, log retention policy, API key management, audit export
 
 ### API

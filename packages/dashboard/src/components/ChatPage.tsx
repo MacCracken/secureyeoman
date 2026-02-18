@@ -38,6 +38,7 @@ import { useVoice } from '../hooks/useVoice';
 import { usePushToTalk } from '../hooks/usePushToTalk';
 import type { Personality, BrainContext, Conversation } from '../types';
 import { sanitizeText } from '../utils/sanitize';
+import { ChatMarkdown } from './ChatMarkdown';
 
 export function ChatPage() {
   const [showModelWidget, setShowModelWidget] = useState(false);
@@ -601,7 +602,11 @@ export function ChatPage() {
                     </div>
                   )}
 
-                  <p className="text-sm whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
+                  {msg.role === 'assistant' ? (
+                    <ChatMarkdown content={sanitizeText(msg.content)} size="sm" />
+                  ) : (
+                    <p className="text-sm whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
+                  )}
 
                   <div className="flex items-center gap-2 mt-1">
                     {msg.tokensUsed !== undefined && (
@@ -675,7 +680,7 @@ export function ChatPage() {
             );
           })}
 
-          {/* Typing indicator */}
+          {/* Thinking indicator */}
           {isPending && (
             <div className="flex justify-start">
               <div className="bg-muted rounded-lg px-4 py-3">
@@ -683,19 +688,22 @@ export function ChatPage() {
                   <Bot className="w-3 h-3" />
                   <span className="text-xs opacity-70">{personality?.name ?? 'Assistant'}</span>
                 </div>
-                <div className="flex gap-1 mt-2">
-                  <span
-                    className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
-                    style={{ animationDelay: '0ms' }}
-                  />
-                  <span
-                    className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
-                    style={{ animationDelay: '150ms' }}
-                  />
-                  <span
-                    className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
-                    style={{ animationDelay: '300ms' }}
-                  />
+                <div className="flex items-center gap-2 mt-2">
+                  <span className="text-xs text-muted-foreground animate-pulse">Thinking</span>
+                  <div className="flex gap-1">
+                    <span
+                      className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                      style={{ animationDelay: '0ms' }}
+                    />
+                    <span
+                      className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                      style={{ animationDelay: '150ms' }}
+                    />
+                    <span
+                      className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
+                      style={{ animationDelay: '300ms' }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>

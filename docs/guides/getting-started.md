@@ -401,6 +401,8 @@ Edit personality and skills in the dashboard Soul Manager page.
 - **Security Events**: Monitor security alerts
 - **Soul Manager**: Edit personality and skills
 - **Connections**: Configure platform integrations
+- **Chat**: Conversational AI interface with rich content rendering — assistant responses are displayed as full Markdown including syntax-highlighted code blocks (with language label and dark/light theme), interactive Mermaid diagrams (flowcharts, sequence diagrams, etc.), typeset math expressions via KaTeX (`$inline$` and `$$block$$`), GitHub-style alert callouts (`[!NOTE]`, `[!TIP]`, `[!WARNING]`, `[!CAUTION]`, `[!IMPORTANT]`), task list checkboxes, and styled tables
+- **Code Editor**: Monaco-based editor with an AI chat sidebar that also uses the same rich Markdown rendering for assistant responses
 
 ---
 

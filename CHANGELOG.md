@@ -4,6 +4,29 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 14: Dashboard Chat Enhancements — Complete (2026.2.17)
+
+### Chat Markdown Rendering (new)
+
+- New `ChatMarkdown` component (`packages/dashboard/src/components/ChatMarkdown.tsx`) replacing plain text rendering for all assistant messages in `ChatPage` and `EditorPage`
+- **react-markdown + remark-gfm** — assistant messages render as full GitHub-Flavored Markdown (headings, emphasis, tables, strikethrough, autolinks)
+- **react-syntax-highlighter (Prism)** — fenced code blocks render with syntax highlighting, language label in the top-right corner, and automatic dark/light theme switching via CSS variables
+- **mermaid v11** — ` ```mermaid ` code blocks are intercepted before syntax highlighting and rendered as interactive SVG diagrams via the Mermaid JS library; parse errors fall back to a styled error callout with the raw source preserved
+- **remark-math + rehype-katex + katex** — `$inline$` and `$$block$$` LaTeX expressions render as typeset math via KaTeX; KaTeX CSS loaded globally
+- **GitHub-style alerts** — blockquotes beginning with `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, or `[!CAUTION]` render as themed callout boxes with icon and colored left border matching the GitHub alert palette
+- **Task list checkboxes** — `- [ ]` and `- [x]` GFM task list items render as styled read-only checkboxes (pointer-events disabled)
+- **Enhanced table styling** — `overflow-x-auto` wrapper, hover row highlighting, and border styling consistent with the dashboard theme
+- **"Thinking..." label** — pending/streaming indicator in both `ChatPage` and `EditorPage` now shows a "Thinking..." text label alongside the existing bouncing dots animation
+
+### New Dashboard Dependencies
+- `react-markdown` — core markdown-to-React renderer
+- `remark-gfm` — GFM extension for react-markdown (tables, task lists, strikethrough, autolinks)
+- `react-syntax-highlighter` + `@types/react-syntax-highlighter` — Prism-based syntax highlighting
+- `mermaid` — diagram and flowchart rendering (v11)
+- `remark-math` + `rehype-katex` + `katex` — LaTeX/math rendering pipeline
+
+---
+
 ## Phase 13: Dashboard & Tooling — Complete (2026.2.17)
 
 ### Browser Automation Session Manager (new)

@@ -105,6 +105,7 @@ services:
     volumes:
       - .:/app
       - node-modules:/app/node_modules
+      - dashboard-node-modules:/app/packages/dashboard/node_modules
     environment:
       VITE_GATEWAY_URL: "http://core:18789"
       VITE_HOST: "0.0.0.0"
@@ -116,3 +117,4 @@ volumes:
   pgdata:
   data:
   node-modules:
+  dashboard-node-modules:

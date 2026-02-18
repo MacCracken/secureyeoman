@@ -28,3 +28,7 @@ Add an in-dashboard Chat tab that:
 - **History in request**: Full message history is sent with each request, which means large conversations will consume more tokens. This is acceptable for a dashboard testing tool.
 - **Leverages existing infrastructure**: No new AI provider code, no new storage, no new auth — just wiring existing components together.
 - **Token cost**: Dashboard chat uses the same AI client and token limits as integrations.
+
+## Follow-up
+
+- **ADR 047**: Extends this decision by introducing full Markdown rendering for assistant messages (`ChatMarkdown` component) — covering syntax highlighting, Mermaid diagrams, KaTeX math, GitHub-style alert callouts, and task list checkboxes.

@@ -186,7 +186,8 @@ secureyeoman/
 - `TaskHistory` - Historical task browser
 - `SecurityEvents` - Audit log viewer with heartbeat task section (auto-expandable via URL param)
 - `ConnectionManager` - Platform integration UI
-- `ChatPage` - Conversational AI interface
+- `ChatPage` - Conversational AI interface with `ChatMarkdown` for rich assistant message rendering
+- `ChatMarkdown` - Markdown renderer for assistant messages: react-markdown + remark-gfm (GFM tables/task-lists/alerts), Prism syntax highlighting (react-syntax-highlighter, dark/light theme-aware), mermaid v11 diagram rendering with error fallback, KaTeX math via remark-math + rehype-katex, GitHub-style alert callouts, and styled tables with overflow handling
 
 ### 5. Soul System
 
@@ -441,6 +442,10 @@ Dashboard Display (WebSocket)
 | State Management | TanStack Query | Cache management, real-time updates |
 | UI Components | Tailwind CSS | Utility-first, consistent |
 | Visualization | ReactFlow | Interactive node graphs |
+| Markdown Rendering | react-markdown + remark-gfm | Full GFM rendering for chat messages |
+| Syntax Highlighting | react-syntax-highlighter (Prism) | Language-aware code block highlighting, theme-aware |
+| Diagram Rendering | mermaid v11 | Interactive SVG diagrams from fenced code blocks |
+| Math Rendering | remark-math + rehype-katex + KaTeX | LaTeX inline and block math typesetting |
 | TypeScript | TypeScript 5 | Type safety, developer experience |
 
 ### Development
