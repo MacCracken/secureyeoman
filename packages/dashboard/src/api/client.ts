@@ -1814,6 +1814,38 @@ export async function fetchExtensionConfig(): Promise<{ config: Record<string, u
   }
 }
 
+export async function fetchHookExecutionLog(hookPoint?: string, limit = 100): Promise<{
+  entries: {
+    id: string;
+    hookPoint: string;
+    handlerCount: number;
+    durationMs: number;
+    vetoed: boolean;
+    errors: string[];
+    timestamp: number;
+    isTest: boolean;
+  }[];
+}> {
+  const params = new URLSearchParams();
+  if (hookPoint) params.set('hookPoint', hookPoint);
+  params.set('limit', String(limit));
+  try {
+    return await request(`/extensions/hooks/log?${params.toString()}`);
+  } catch {
+    return { entries: [] };
+  }
+}
+
+export async function testHookPoint(data: {
+  hookPoint: string;
+  data?: unknown;
+}): Promise<{
+  result: { vetoed: boolean; errors: string[]; transformed?: unknown };
+  durationMs: number;
+}> {
+  return request('/extensions/hooks/test', { method: 'POST', body: JSON.stringify(data) });
+}
+
 // ─── Code Execution API (Phase 6.4b) ──────────────────────────────
 
 export async function executeCode(data: {

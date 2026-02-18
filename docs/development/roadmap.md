@@ -25,7 +25,7 @@
 | 13 | Dashboard & Tooling | 2026.2.17 | Complete |
 | 14 | Dashboard Chat Enhancements | 2026.2.17 | Complete |
 | | **Release 2026.2.17** | **2026-02-17** | **Released** |
-| 15 | Integration Expansion | — | Planned |
+| 15 | Integration Expansion | — | In Progress |
 
 ---
 
@@ -52,6 +52,12 @@ WebMCP        Kubernetes    Dashboard UX  Integrations+ Dash & Tools  Chat Markd
    v             v             v             v             v             v
 [Web Tools]   [K8s Deploy]  [UX Polish]   [Expand]      [Browser/Vec] [ChatMarkdown]
                               ── Release 2026.2.17 ──
+
+Phase 15
+Integration Expansion
+   |
+   v
+[Dev UX / Persistence / MCP Migration]  ← In Progress
 ```
 
 ---
@@ -408,10 +414,28 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 
 ## Phase 15: Integration Expansion
 
-**Status**: Planned
+**Status**: In Progress
+
+### Developer UX
+- [x] **Developers Page** — Unified sidebar item combining Extensions and Experiments as switchable tabs (`/developers`)
+- [x] **Security > Developers Section** — Lifecycle Extensions and Experiments policy toggles consolidated into a single "Developers" card in Settings > Security, matching the Sub-Agent Delegation pattern
+- [x] **PolicyToggle label fix** — Sub-item toggles (A2A Networks, Lifecycle Extensions, Experiments) now display visible text labels alongside status indicators
+
+### AI Cost Persistence
+- [x] **`UsageStorage`** — PostgreSQL-backed storage for AI usage records (`usage_records` table, 90-day retention)
+- [x] **`UsageTracker.init()`** — Async initialization method that loads historical records from the database on startup so cost/token data survives process restarts
+- [x] **Fire-and-forget DB writes** — `record()` persists to PostgreSQL non-blocking (never delays AI call latency)
+
+### MCP SDK Migration — [ADR 026](../adr/026-mcp-service-package.md)
+- [x] **`server.tool()` → `server.registerTool()`** — Migrated all 42 MCP tool registrations across 10 tool files to the new stable API (audit, brain, integration, soul, system, task, multimodal, filesystem, browser, web tools)
+- [x] **`SSEServerTransport`** — Retained for legacy client compatibility; deprecation warnings suppressed per ADR 048 policy with inline `eslint-disable-next-line` comments
+
+### Tooling & Audit
+- [x] **ESLint lint fixes** — Resolved all 51 lint errors (50 via `--fix`, 1 manual fix in `WebScraperConfigPage.tsx`); warnings reduced from 1640 → 1592
+- [x] **ajv ReDoS accepted risk** — [ADR 048](../adr/048-eslint-ajv-vulnerability-accepted-risk.md) formally documents the ESLint-internal `ajv@6.x` GHSA-2g4f-4pwh-qvx6 finding as accepted risk (dev-only, zero production exposure)
 
 ### Dashboard & Tooling (deferred)
-- [ ] **Lifecycle Hook Debugger** — Hook registration view, execution log, and test trigger for each hook point
+- [x] **Lifecycle Hook Debugger** — 4th tab on Extensions page: test trigger with grouped hook point selector + JSON payload, in-memory execution log (200-entry circular buffer, 5s live refresh, filter by hook point), per-entry status indicators (OK / vetoed / error), test vs live event badges
 - [ ] **Storybook** — Component development environment for dashboard UI components
 - [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
 
@@ -451,8 +475,8 @@ Tracked third-party dependencies with known issues that require upstream resolut
 | Dependency | Issue | Blocked By | Check When | ADR |
 |---|---|---|---|---|
 | `eslint` / `typescript-eslint` | `ajv@6.x` inside ESLint triggers GHSA-2g4f-4pwh-qvx6 (ReDoS, moderate). Dev-only, zero production exposure. Fix requires ESLint to internally upgrade to `ajv >= 8.18.0`. | ESLint 9.x hard-codes ajv 6 API — npm `overrides` breaks ESLint; `--force` downgrades typescript-eslint. | Any `eslint` or `typescript-eslint` release | [ADR 048](../adr/048-eslint-ajv-vulnerability-accepted-risk.md) |
-| MCP SDK — `tool` API | `@modelcontextprotocol/sdk` deprecated `.tool()` in favour of `.registerTool()`. Current usage triggers `@typescript-eslint/no-deprecated` warnings across `packages/mcp/src/tools/`. | Awaiting stable `registerTool` API surface and migration guide from MCP SDK maintainers. | MCP SDK minor/major releases | [ADR 026](../adr/026-mcp-service-package.md) |
-| MCP SDK — `SSEServerTransport` | `SSEServerTransport` deprecated in favour of `StreamableHTTPServerTransport`. Used in `packages/mcp/src/transport/sse.ts`. | Migration requires client-side transport compatibility verification. | MCP SDK releases | [ADR 026](../adr/026-mcp-service-package.md) |
+| ~~MCP SDK — `tool` API~~ | ~~`@modelcontextprotocol/sdk` deprecated `.tool()` in favour of `.registerTool()`.~~ **Resolved in Phase 15** — all 42 call sites migrated to `server.registerTool()`. | — | — | [ADR 026](../adr/026-mcp-service-package.md) |
+| MCP SDK — `SSEServerTransport` | `SSEServerTransport` deprecated in favour of `StreamableHTTPServerTransport`. Retained in `packages/mcp/src/transport/sse.ts` for legacy client compatibility; deprecation warnings suppressed. | Migration requires client-side transport compatibility verification. | MCP SDK releases | [ADR 026](../adr/026-mcp-service-package.md) |
 
 ---
 
@@ -482,4 +506,4 @@ Tracked third-party dependencies with known issues that require upstream resolut
 
 ---
 
-*Last updated: February 2026*
+*Last updated: 2026-02-17 — Phase 15 in progress*

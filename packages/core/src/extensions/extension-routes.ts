@@ -209,6 +209,42 @@ export function registerExtensionRoutes(
     }
   );
 
+  // ── Hook debugger routes ─────────────────────────────────────
+
+  app.get(
+    '/api/v1/extensions/hooks/log',
+    async (
+      request: FastifyRequest<{
+        Querystring: { hookPoint?: string; limit?: string };
+      }>
+    ) => {
+      const hookPoint = request.query.hookPoint as HookPoint | undefined;
+      const limit = request.query.limit ? parseInt(request.query.limit, 10) : 100;
+      const entries = extensionManager.getExecutionLog(hookPoint, limit);
+      return { entries };
+    }
+  );
+
+  app.post(
+    '/api/v1/extensions/hooks/test',
+    async (
+      request: FastifyRequest<{
+        Body: { hookPoint: HookPoint; data?: unknown };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const startTime = Date.now();
+        const result = await extensionManager.testEmit(request.body.hookPoint, request.body.data);
+        return { result, durationMs: Date.now() - startTime };
+      } catch (err) {
+        return reply.code(400).send({
+          error: err instanceof Error ? err.message : 'Test emit failed',
+        });
+      }
+    }
+  );
+
   // ── Discovery route ──────────────────────────────────────────
 
   app.post(

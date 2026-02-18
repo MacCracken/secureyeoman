@@ -35,6 +35,7 @@ import { DeepSeekProvider } from './providers/deepseek.js';
 import { MistralProvider } from './providers/mistral.js';
 import { CostCalculator } from './cost-calculator.js';
 import { UsageTracker, type UsageStats } from './usage-tracker.js';
+import type { UsageStorage } from './usage-storage.js';
 import { TokenLimitError, RateLimitError, ProviderUnavailableError } from './errors.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
@@ -49,6 +50,7 @@ export interface AIClientConfig {
 export interface AIClientDeps {
   auditChain?: AuditChain;
   logger?: SecureLogger;
+  usageStorage?: UsageStorage;
 }
 
 export class AIClient {
@@ -65,7 +67,7 @@ export class AIClient {
 
   constructor(config: AIClientConfig, deps: AIClientDeps = {}) {
     this.costCalculator = new CostCalculator();
-    this.usageTracker = new UsageTracker(config.model.maxTokensPerDay);
+    this.usageTracker = new UsageTracker(config.model.maxTokensPerDay, deps.usageStorage);
     this.auditChain = deps.auditChain ?? null;
     this.logger = deps.logger ?? null;
     this.providerName = config.model.provider;
@@ -233,6 +235,14 @@ export class AIClient {
    */
   getUsageTracker(): UsageTracker {
     return this.usageTracker;
+  }
+
+  /**
+   * Load historical usage records from the database.
+   * Call once after construction, before the first AI request.
+   */
+  async init(): Promise<void> {
+    await this.usageTracker.init();
   }
 
   /**

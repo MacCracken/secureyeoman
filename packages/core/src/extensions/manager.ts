@@ -19,6 +19,7 @@ import type {
   HookSemantics,
   WebhookConfig,
   ExtensionManifest,
+  HookExecutionEntry,
 } from './types.js';
 import { uuidv7 } from '../utils/crypto.js';
 import { createHmac } from 'node:crypto';
@@ -34,6 +35,8 @@ export class ExtensionManager {
   private readonly deps: ExtensionManagerDeps;
   private readonly hooks = new Map<string, HookRegistration>();
   private readonly hooksByPoint = new Map<HookPoint, HookRegistration[]>();
+  private readonly executionLog: HookExecutionEntry[] = [];
+  private static readonly MAX_EXECUTION_LOG = 200;
 
   get storage(): ExtensionManagerDeps['storage'] {
     return this.deps.storage;
@@ -107,7 +110,12 @@ export class ExtensionManager {
     this.deps.logger.debug('Hook unregistered', { hookId: id });
   }
 
-  async emit(hookPoint: HookPoint, context: HookContext): Promise<HookResult> {
+  async emit(
+    hookPoint: HookPoint,
+    context: HookContext,
+    opts?: { isTest?: boolean }
+  ): Promise<HookResult> {
+    const startTime = Date.now();
     const result: HookResult = {
       vetoed: false,
       errors: [],
@@ -117,6 +125,7 @@ export class ExtensionManager {
     if (!registrations || registrations.length === 0) {
       // Also dispatch to webhooks even if no in-memory hooks
       await this.dispatchWebhooks(hookPoint, context);
+      this.pushExecutionEntry(hookPoint, 0, Date.now() - startTime, result, opts?.isTest ?? false);
       return result;
     }
 
@@ -159,6 +168,13 @@ export class ExtensionManager {
                 result.errors.push(...hookResult.errors);
               }
               await this.dispatchWebhooks(hookPoint, context);
+              this.pushExecutionEntry(
+                hookPoint,
+                sorted.indexOf(registration) + 1,
+                Date.now() - startTime,
+                result,
+                opts?.isTest ?? false
+              );
               return result;
             }
             if (hookResult.errors.length > 0) {
@@ -181,7 +197,39 @@ export class ExtensionManager {
     // Dispatch to webhooks
     await this.dispatchWebhooks(hookPoint, context);
 
+    this.pushExecutionEntry(
+      hookPoint,
+      sorted.length,
+      Date.now() - startTime,
+      result,
+      opts?.isTest ?? false
+    );
+
     return result;
+  }
+
+  /**
+   * Fire a test emit for a hook point without affecting real system state.
+   * Logs the execution with isTest=true so the debugger can distinguish it.
+   */
+  async testEmit(hookPoint: HookPoint, data?: unknown): Promise<HookResult> {
+    const context: HookContext = {
+      event: hookPoint,
+      data: data ?? {},
+      timestamp: Date.now(),
+    };
+    return this.emit(hookPoint, context, { isTest: true });
+  }
+
+  /**
+   * Return recent hook execution log entries, newest first.
+   * Optionally filter by hook point.
+   */
+  getExecutionLog(hookPoint?: HookPoint, limit = 100): HookExecutionEntry[] {
+    const entries = hookPoint
+      ? this.executionLog.filter((e) => e.hookPoint === hookPoint)
+      : [...this.executionLog];
+    return entries.reverse().slice(0, limit);
   }
 
   async registerWebhook(config: Omit<WebhookConfig, 'id'>): Promise<WebhookConfig> {
@@ -283,6 +331,32 @@ export class ExtensionManager {
   }
 
   // ── Private helpers ────────────────────────────────────────────
+
+  private pushExecutionEntry(
+    hookPoint: HookPoint,
+    handlerCount: number,
+    durationMs: number,
+    result: HookResult,
+    isTest: boolean
+  ): void {
+    const entry: HookExecutionEntry = {
+      id: uuidv7(),
+      hookPoint,
+      handlerCount,
+      durationMs,
+      vetoed: result.vetoed,
+      errors: [...result.errors],
+      timestamp: Date.now(),
+      isTest,
+    };
+
+    this.executionLog.push(entry);
+
+    // Trim to cap size (keep newest entries)
+    if (this.executionLog.length > ExtensionManager.MAX_EXECUTION_LOG) {
+      this.executionLog.splice(0, this.executionLog.length - ExtensionManager.MAX_EXECUTION_LOG);
+    }
+  }
 
   private addToPointIndex(registration: HookRegistration): void {
     const list = this.hooksByPoint.get(registration.hookPoint) ?? [];

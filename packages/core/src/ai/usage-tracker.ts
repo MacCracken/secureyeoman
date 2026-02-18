@@ -1,11 +1,13 @@
 /**
  * Usage Tracker
  *
- * In-memory daily/monthly aggregation of token usage and cost per provider.
+ * Daily/monthly aggregation of token usage and cost per provider.
+ * Persists records to PostgreSQL via UsageStorage so data survives restarts.
  * Enforces configurable daily token limits.
  */
 
 import type { TokenUsage, AIProviderName } from '@secureyeoman/shared';
+import type { UsageStorage } from './usage-storage.js';
 
 export interface UsageRecord {
   provider: AIProviderName;
@@ -45,22 +47,40 @@ function monthKey(ts: number): string {
 export class UsageTracker {
   private readonly records: UsageRecord[] = [];
   private readonly maxTokensPerDay: number | undefined;
+  private readonly storage: UsageStorage | undefined;
 
   // Aggregate counters
   private apiCallsTotal = 0;
   private apiErrorsTotal = 0;
   private apiLatencyTotalMs = 0;
 
-  constructor(maxTokensPerDay?: number) {
+  constructor(maxTokensPerDay?: number, storage?: UsageStorage) {
     this.maxTokensPerDay = maxTokensPerDay;
+    this.storage = storage;
   }
 
   /**
-   * Record a completed AI call.
+   * Load historical records from the database.
+   * Call once during startup before any record() calls.
+   */
+  async init(): Promise<void> {
+    if (!this.storage) return;
+    const historical = await this.storage.loadRecent();
+    this.records.push(...historical);
+  }
+
+  /**
+   * Record a completed AI call and persist it to the database.
    */
   record(record: UsageRecord): void {
     this.records.push(record);
     this.apiCallsTotal++;
+    if (this.storage) {
+      // Fire-and-forget — never block the AI call on DB I/O
+      void this.storage.insert(record).catch(() => {
+        // Non-fatal: in-memory record is already stored above
+      });
+    }
   }
 
   /**

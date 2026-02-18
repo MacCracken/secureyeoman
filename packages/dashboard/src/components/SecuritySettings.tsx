@@ -27,6 +27,7 @@ import {
   Sparkles,
   Image,
   FlaskConical,
+  Code2,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -187,6 +188,7 @@ function PolicyToggle({
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           {icon}
+          {icon && <span className="text-sm font-medium">{label}</span>}
           {enabled ? (
             <>
               <CheckCircle className="w-5 h-5 text-success" />
@@ -479,29 +481,6 @@ export function SecuritySettings() {
         </div>
       </div>
 
-      {/* Extensions Policy */}
-      <div className="card">
-        <div className="p-4 border-b flex items-center gap-2">
-          <Puzzle className="w-5 h-5 text-primary" />
-          <h3 className="font-medium">Lifecycle Extensions</h3>
-        </div>
-        <div className="p-4">
-          <PolicyToggle
-            label="Extensions"
-            enabled={extensionsAllowed}
-            isPending={policyMutation.isPending}
-            onToggle={() => {
-              policyMutation.mutate({ allowExtensions: !extensionsAllowed });
-            }}
-            description={
-              extensionsAllowed
-                ? 'Lifecycle extension hooks are enabled. Plugins can observe, transform, or veto events across the system.'
-                : 'Lifecycle extension hooks are disabled. No plugins will be loaded or executed.'
-            }
-          />
-        </div>
-      </div>
-
       {/* Sandbox Execution Policy */}
       <div className="card">
         <div className="p-4 border-b flex items-center gap-2">
@@ -520,29 +499,6 @@ export function SecuritySettings() {
               executionAllowed
                 ? 'Sandboxed code execution is enabled. Code runs in isolated environments with secrets filtering and approval policies.'
                 : 'Sandboxed code execution is disabled. No code can be executed through the execution engine.'
-            }
-          />
-        </div>
-      </div>
-
-      {/* Experiments Policy */}
-      <div className="card">
-        <div className="p-4 border-b flex items-center gap-2">
-          <FlaskConical className="w-5 h-5 text-primary" />
-          <h3 className="font-medium">Experiments</h3>
-        </div>
-        <div className="p-4">
-          <PolicyToggle
-            label="Experiments"
-            enabled={experimentsAllowed}
-            isPending={policyMutation.isPending}
-            onToggle={() => {
-              policyMutation.mutate({ allowExperiments: !experimentsAllowed });
-            }}
-            description={
-              experimentsAllowed
-                ? 'A/B experiments are enabled. You can create, run, and manage experiments to test different configurations and behaviors.'
-                : 'A/B experiments are disabled. Enable this setting to access the Experiments page and create A/B tests. This must be explicitly enabled after initialization.'
             }
           />
         </div>
@@ -575,6 +531,46 @@ export function SecuritySettings() {
               ).length ?? 0}{' '}
               servers
             </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Developers */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Code2 className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Developers</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <PolicyToggle
+            label="Lifecycle Extensions"
+            icon={<Puzzle className="w-4 h-4 text-muted-foreground" />}
+            enabled={extensionsAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowExtensions: !extensionsAllowed });
+            }}
+            description={
+              extensionsAllowed
+                ? 'Lifecycle extension hooks are enabled. Plugins can observe, transform, or veto events across the system.'
+                : 'Lifecycle extension hooks are disabled. No plugins will be loaded or executed.'
+            }
+          />
+          <div className="border-t border-border pt-4">
+            <PolicyToggle
+              label="Experiments"
+              icon={<FlaskConical className="w-4 h-4 text-muted-foreground" />}
+              enabled={experimentsAllowed}
+              isPending={policyMutation.isPending}
+              onToggle={() => {
+                policyMutation.mutate({ allowExperiments: !experimentsAllowed });
+              }}
+              description={
+                experimentsAllowed
+                  ? 'A/B experiments are enabled. You can create, run, and manage experiments to test different configurations and behaviors.'
+                  : 'A/B experiments are disabled. Enable this setting to access the Experiments page and create A/B tests. This must be explicitly enabled after initialization.'
+              }
+            />
           </div>
         </div>
       </div>
