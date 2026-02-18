@@ -146,6 +146,9 @@
 ### Development
 - [ ] **Go/Rust Runtime** — Potential future language option for core components
 
+### Major Audit
+- [ ] **Audit all the things** - Code, Documentation, ADR, & Tests
+
 ---
 
 ## Phase 20: Onboarding & First Run
