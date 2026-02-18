@@ -13,12 +13,14 @@ export function registerBrainTools(
   client: CoreApiClient,
   middleware: ToolMiddleware
 ): void {
-  server.tool(
+  server.registerTool(
     'knowledge_search',
-    'Search brain knowledge by query',
     {
-      query: z.string().describe('Search query'),
-      limit: z.number().int().min(1).max(100).default(10).describe('Max results'),
+      description: 'Search brain knowledge by query',
+      inputSchema: {
+        query: z.string().describe('Search query'),
+        limit: z.number().int().min(1).max(100).default(10).describe('Max results'),
+      },
     },
     wrapToolHandler('knowledge_search', middleware, async (args) => {
       const query: Record<string, string> = { q: args.query, limit: String(args.limit) };
@@ -27,23 +29,27 @@ export function registerBrainTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'knowledge_get',
-    'Get a specific knowledge entry by ID',
-    { id: z.string().describe('Knowledge entry ID') },
+    {
+      description: 'Get a specific knowledge entry by ID',
+      inputSchema: { id: z.string().describe('Knowledge entry ID') },
+    },
     wrapToolHandler('knowledge_get', middleware, async (args) => {
       const result = await client.get(`/api/v1/brain/knowledge/${args.id}`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );
 
-  server.tool(
+  server.registerTool(
     'knowledge_store',
-    'Store new knowledge in the brain',
     {
-      content: z.string().describe('Knowledge content'),
-      type: z.string().describe('Knowledge type (e.g., fact, procedure, reference)'),
-      source: z.string().optional().describe('Source of the knowledge'),
+      description: 'Store new knowledge in the brain',
+      inputSchema: {
+        content: z.string().describe('Knowledge content'),
+        type: z.string().describe('Knowledge type (e.g., fact, procedure, reference)'),
+        source: z.string().optional().describe('Source of the knowledge'),
+      },
     },
     wrapToolHandler('knowledge_store', middleware, async (args) => {
       const result = await client.post('/api/v1/brain/knowledge', args);
@@ -51,12 +57,14 @@ export function registerBrainTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'memory_recall',
-    'Recall relevant memories by query',
     {
-      query: z.string().describe('Memory recall query'),
-      types: z.array(z.string()).optional().describe('Filter by memory types'),
+      description: 'Recall relevant memories by query',
+      inputSchema: {
+        query: z.string().describe('Memory recall query'),
+        types: z.array(z.string()).optional().describe('Filter by memory types'),
+      },
     },
     wrapToolHandler('memory_recall', middleware, async (args) => {
       const query: Record<string, string> = { q: args.query };

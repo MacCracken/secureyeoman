@@ -11,8 +11,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler } from './tool-utils.js';
-import { ProxyManager, fetchWithRetry, detectCaptcha, RetryableError } from './proxy-manager.js';
-import type { ProxyRequestOptions } from './proxy-manager.js';
+import { ProxyManager, detectCaptcha, RetryableError } from './proxy-manager.js';
 
 const MAX_OUTPUT_BYTES = 500 * 1024; // 500KB output cap
 const MAX_BATCH_URLS = 10;
@@ -425,12 +424,14 @@ export function registerWebTools(
   const proxyManager = config.proxyEnabled ? new ProxyManager(config) : null;
 
   // 1. web_scrape_markdown — convert webpage to clean LLM-ready markdown
-  server.tool(
+  server.registerTool(
     'web_scrape_markdown',
-    'Scrape a webpage and convert to clean LLM-ready markdown (requires MCP_EXPOSE_WEB=true)',
     {
-      url: z.string().describe('URL to scrape'),
-      country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+      description: 'Scrape a webpage and convert to clean LLM-ready markdown (requires MCP_EXPOSE_WEB=true)',
+      inputSchema: {
+        url: z.string().describe('URL to scrape'),
+        country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+      },
     },
     wrapToolHandler('web_scrape_markdown', middleware, async (args) => {
       const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, { country: args.country });
@@ -441,13 +442,15 @@ export function registerWebTools(
   );
 
   // 2. web_scrape_html — raw HTML extraction with optional CSS selector
-  server.tool(
+  server.registerTool(
     'web_scrape_html',
-    'Scrape raw HTML from a webpage, optionally filtering by CSS selector (requires MCP_EXPOSE_WEB=true)',
     {
-      url: z.string().describe('URL to scrape'),
-      selector: z.string().optional().describe('CSS selector to extract (basic: #id, .class, tag)'),
-      country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+      description: 'Scrape raw HTML from a webpage, optionally filtering by CSS selector (requires MCP_EXPOSE_WEB=true)',
+      inputSchema: {
+        url: z.string().describe('URL to scrape'),
+        selector: z.string().optional().describe('CSS selector to extract (basic: #id, .class, tag)'),
+        country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+      },
     },
     wrapToolHandler('web_scrape_html', middleware, async (args) => {
       const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, { country: args.country });
@@ -460,12 +463,14 @@ export function registerWebTools(
   );
 
   // 3. web_scrape_batch — parallel multi-URL scraping
-  server.tool(
+  server.registerTool(
     'web_scrape_batch',
-    'Scrape multiple URLs in parallel and return markdown (max 10 URLs, requires MCP_EXPOSE_WEB=true)',
     {
-      urls: z.array(z.string()).min(1).max(MAX_BATCH_URLS).describe('URLs to scrape (max 10)'),
-      country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+      description: 'Scrape multiple URLs in parallel and return markdown (max 10 URLs, requires MCP_EXPOSE_WEB=true)',
+      inputSchema: {
+        urls: z.array(z.string()).min(1).max(MAX_BATCH_URLS).describe('URLs to scrape (max 10)'),
+        country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+      },
     },
     wrapToolHandler('web_scrape_batch', middleware, async (args) => {
       const results = await Promise.allSettled(
@@ -490,21 +495,23 @@ export function registerWebTools(
   );
 
   // 4. web_extract_structured — structured JSON extraction from pages
-  server.tool(
+  server.registerTool(
     'web_extract_structured',
-    'Extract structured data from a webpage as JSON based on a schema description (requires MCP_EXPOSE_WEB=true)',
     {
-      url: z.string().describe('URL to extract data from'),
-      fields: z
-        .array(
-          z.object({
-            name: z.string().describe('Field name'),
-            selector: z.string().optional().describe('CSS selector hint'),
-            description: z.string().describe('What this field should contain'),
-          })
-        )
-        .describe('Fields to extract'),
-      country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+      description: 'Extract structured data from a webpage as JSON based on a schema description (requires MCP_EXPOSE_WEB=true)',
+      inputSchema: {
+        url: z.string().describe('URL to extract data from'),
+        fields: z
+          .array(
+            z.object({
+              name: z.string().describe('Field name'),
+              selector: z.string().optional().describe('CSS selector hint'),
+              description: z.string().describe('What this field should contain'),
+            })
+          )
+          .describe('Fields to extract'),
+        country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+      },
     },
     wrapToolHandler('web_extract_structured', middleware, async (args) => {
       const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, { country: args.country });
@@ -534,12 +541,14 @@ export function registerWebTools(
   );
 
   // 5. web_search — web search with configurable backend
-  server.tool(
+  server.registerTool(
     'web_search',
-    'Search the web using configurable search backend (requires MCP_EXPOSE_WEB=true)',
     {
-      query: z.string().min(1).max(500).describe('Search query'),
-      maxResults: z.number().int().min(1).max(20).default(10).describe('Maximum results to return'),
+      description: 'Search the web using configurable search backend (requires MCP_EXPOSE_WEB=true)',
+      inputSchema: {
+        query: z.string().min(1).max(500).describe('Search query'),
+        maxResults: z.number().int().min(1).max(20).default(10).describe('Maximum results to return'),
+      },
     },
     wrapToolHandler('web_search', middleware, async (args) => {
       const rate = webLimiter.check();
@@ -568,22 +577,24 @@ export function registerWebTools(
   );
 
   // 6. web_search_batch — batch search for research tasks
-  server.tool(
+  server.registerTool(
     'web_search_batch',
-    'Run multiple search queries in parallel for research (max 5 queries, requires MCP_EXPOSE_WEB=true)',
     {
-      queries: z
-        .array(z.string().min(1).max(500))
-        .min(1)
-        .max(MAX_BATCH_QUERIES)
-        .describe('Search queries (max 5)'),
-      maxResultsPerQuery: z
-        .number()
-        .int()
-        .min(1)
-        .max(10)
-        .default(5)
-        .describe('Max results per query'),
+      description: 'Run multiple search queries in parallel for research (max 5 queries, requires MCP_EXPOSE_WEB=true)',
+      inputSchema: {
+        queries: z
+          .array(z.string().min(1).max(500))
+          .min(1)
+          .max(MAX_BATCH_QUERIES)
+          .describe('Search queries (max 5)'),
+        maxResultsPerQuery: z
+          .number()
+          .int()
+          .min(1)
+          .max(10)
+          .default(5)
+          .describe('Max results per query'),
+      },
     },
     wrapToolHandler('web_search_batch', middleware, async (args) => {
       const results = await Promise.allSettled(

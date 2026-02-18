@@ -3,6 +3,9 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+// eslint-disable-next-line @typescript-eslint/no-deprecated -- SSEServerTransport is kept for
+// legacy MCP client compatibility. New clients should use StreamableHTTPServerTransport via
+// the /mcp/v1 endpoint. See ADR 048 / roadmap Dependency Watch for migration tracking.
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { ProxyAuth } from '../auth/proxy-auth.js';
@@ -16,6 +19,7 @@ export interface SseTransportOptions {
 export function registerSseTransport(opts: SseTransportOptions): void {
   const { app, mcpServer, auth } = opts;
 
+  // eslint-disable-next-line @typescript-eslint/no-deprecated -- see import comment above
   const transports = new Map<string, SSEServerTransport>();
 
   app.get('/mcp/v1/sse', async (request: FastifyRequest, reply: FastifyReply) => {
@@ -29,6 +33,7 @@ export function registerSseTransport(opts: SseTransportOptions): void {
       return reply.code(401).send({ error: 'Invalid or expired token' });
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-deprecated -- see import comment above
     const transport = new SSEServerTransport('/mcp/v1/message', reply.raw);
     const sessionId = crypto.randomUUID();
     transports.set(sessionId, transport);

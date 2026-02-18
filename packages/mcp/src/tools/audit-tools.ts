@@ -13,13 +13,15 @@ export function registerAuditTools(
   client: CoreApiClient,
   middleware: ToolMiddleware
 ): void {
-  server.tool(
+  server.registerTool(
     'audit_query',
-    'Query the audit log',
     {
-      event: z.string().optional().describe('Filter by event type'),
-      level: z.string().optional().describe('Filter by level'),
-      limit: z.number().int().min(1).max(500).default(50).describe('Max results'),
+      description: 'Query the audit log',
+      inputSchema: {
+        event: z.string().optional().describe('Filter by event type'),
+        level: z.string().optional().describe('Filter by level'),
+        limit: z.number().int().min(1).max(500).default(50).describe('Max results'),
+      },
     },
     wrapToolHandler('audit_query', middleware, async (args) => {
       const query: Record<string, string> = { limit: String(args.limit) };
@@ -30,20 +32,24 @@ export function registerAuditTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'audit_verify',
-    'Verify audit chain integrity',
-    {},
+    {
+      description: 'Verify audit chain integrity',
+      inputSchema: {},
+    },
     wrapToolHandler('audit_verify', middleware, async () => {
       const result = await client.post('/api/v1/audit/verify');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );
 
-  server.tool(
+  server.registerTool(
     'audit_stats',
-    'Get audit statistics',
-    {},
+    {
+      description: 'Get audit statistics',
+      inputSchema: {},
+    },
     wrapToolHandler('audit_stats', middleware, async () => {
       const result = await client.get('/api/v1/audit/stats');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };

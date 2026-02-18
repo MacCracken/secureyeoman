@@ -53,10 +53,12 @@ export function registerFilesystemTools(
     }
   }
 
-  server.tool(
+  server.registerTool(
     'fs_read',
-    'Read a file (requires MCP_EXPOSE_FILESYSTEM=true and admin role)',
-    { path: z.string().describe('File path to read') },
+    {
+      description: 'Read a file (requires MCP_EXPOSE_FILESYSTEM=true and admin role)',
+      inputSchema: { path: z.string().describe('File path to read') },
+    },
     wrapToolHandler('fs_read', middleware, async (args) => {
       const filePath = await validateRealPath(args.path);
       const stat = await fs.stat(filePath);
@@ -68,12 +70,14 @@ export function registerFilesystemTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'fs_write',
-    'Write a file (requires MCP_EXPOSE_FILESYSTEM=true and admin role)',
     {
-      path: z.string().describe('File path to write'),
-      content: z.string().describe('File content'),
+      description: 'Write a file (requires MCP_EXPOSE_FILESYSTEM=true and admin role)',
+      inputSchema: {
+        path: z.string().describe('File path to write'),
+        content: z.string().describe('File content'),
+      },
     },
     wrapToolHandler('fs_write', middleware, async (args) => {
       if (Buffer.byteLength(args.content) > MAX_WRITE_SIZE) {
@@ -92,10 +96,12 @@ export function registerFilesystemTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'fs_list',
-    'List directory contents (requires MCP_EXPOSE_FILESYSTEM=true)',
-    { path: z.string().describe('Directory path') },
+    {
+      description: 'List directory contents (requires MCP_EXPOSE_FILESYSTEM=true)',
+      inputSchema: { path: z.string().describe('Directory path') },
+    },
     wrapToolHandler('fs_list', middleware, async (args) => {
       const dirPath = await validateRealPath(args.path);
       const entries = await fs.readdir(dirPath, { withFileTypes: true });
@@ -107,12 +113,14 @@ export function registerFilesystemTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'fs_search',
-    'Search files by glob pattern (requires MCP_EXPOSE_FILESYSTEM=true)',
     {
-      pattern: z.string().describe('Glob pattern'),
-      path: z.string().optional().describe('Base directory for search'),
+      description: 'Search files by glob pattern (requires MCP_EXPOSE_FILESYSTEM=true)',
+      inputSchema: {
+        pattern: z.string().describe('Glob pattern'),
+        path: z.string().optional().describe('Base directory for search'),
+      },
     },
     wrapToolHandler('fs_search', middleware, async (args) => {
       const basePath = args.path ? await validateRealPath(args.path) : config.allowedPaths[0];

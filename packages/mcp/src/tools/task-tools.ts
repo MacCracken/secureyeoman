@@ -13,13 +13,15 @@ export function registerTaskTools(
   client: CoreApiClient,
   middleware: ToolMiddleware
 ): void {
-  server.tool(
+  server.registerTool(
     'task_create',
-    'Create a new task',
     {
-      name: z.string().describe('Task name'),
-      type: z.string().describe('Task type'),
-      description: z.string().optional().describe('Task description'),
+      description: 'Create a new task',
+      inputSchema: {
+        name: z.string().describe('Task name'),
+        type: z.string().describe('Task type'),
+        description: z.string().optional().describe('Task description'),
+      },
     },
     wrapToolHandler('task_create', middleware, async (args) => {
       const result = await client.post('/api/v1/tasks', args);
@@ -27,13 +29,15 @@ export function registerTaskTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'task_list',
-    'List tasks with optional filters',
     {
-      status: z.string().optional().describe('Filter by status'),
-      type: z.string().optional().describe('Filter by type'),
-      limit: z.number().int().min(1).max(100).default(20).describe('Max results'),
+      description: 'List tasks with optional filters',
+      inputSchema: {
+        status: z.string().optional().describe('Filter by status'),
+        type: z.string().optional().describe('Filter by type'),
+        limit: z.number().int().min(1).max(100).default(20).describe('Max results'),
+      },
     },
     wrapToolHandler('task_list', middleware, async (args) => {
       const query: Record<string, string> = {};
@@ -45,20 +49,24 @@ export function registerTaskTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'task_get',
-    'Get task details by ID',
-    { id: z.string().describe('Task ID') },
+    {
+      description: 'Get task details by ID',
+      inputSchema: { id: z.string().describe('Task ID') },
+    },
     wrapToolHandler('task_get', middleware, async (args) => {
       const result = await client.get(`/api/v1/tasks/${args.id}`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );
 
-  server.tool(
+  server.registerTool(
     'task_cancel',
-    'Cancel a running task',
-    { id: z.string().describe('Task ID') },
+    {
+      description: 'Cancel a running task',
+      inputSchema: { id: z.string().describe('Task ID') },
+    },
     wrapToolHandler('task_cancel', middleware, async (args) => {
       const result = await client.delete(`/api/v1/tasks/${args.id}`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };

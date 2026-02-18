@@ -13,30 +13,36 @@ export function registerSoulTools(
   client: CoreApiClient,
   middleware: ToolMiddleware
 ): void {
-  server.tool(
+  server.registerTool(
     'personality_get',
-    'Get the active personality configuration',
-    {},
+    {
+      description: 'Get the active personality configuration',
+      inputSchema: {},
+    },
     wrapToolHandler('personality_get', middleware, async () => {
       const result = await client.get('/api/v1/soul/personality');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );
 
-  server.tool(
+  server.registerTool(
     'personality_switch',
-    'Switch the active personality',
-    { id: z.string().describe('Personality ID to activate') },
+    {
+      description: 'Switch the active personality',
+      inputSchema: { id: z.string().describe('Personality ID to activate') },
+    },
     wrapToolHandler('personality_switch', middleware, async (args) => {
       const result = await client.post(`/api/v1/soul/personalities/${args.id}/activate`);
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );
 
-  server.tool(
+  server.registerTool(
     'skill_list',
-    'List available skills',
-    { status: z.string().optional().describe('Filter by status') },
+    {
+      description: 'List available skills',
+      inputSchema: { status: z.string().optional().describe('Filter by status') },
+    },
     wrapToolHandler('skill_list', middleware, async (args) => {
       const query: Record<string, string> = {};
       if (args.status) query.status = args.status;
@@ -45,12 +51,14 @@ export function registerSoulTools(
     })
   );
 
-  server.tool(
+  server.registerTool(
     'skill_execute',
-    'Execute a skill by ID',
     {
-      skillId: z.string().describe('Skill ID'),
-      input: z.record(z.unknown()).optional().describe('Input data for the skill'),
+      description: 'Execute a skill by ID',
+      inputSchema: {
+        skillId: z.string().describe('Skill ID'),
+        input: z.record(z.unknown()).optional().describe('Input data for the skill'),
+      },
     },
     wrapToolHandler('skill_execute', middleware, async (args) => {
       const result = await client.post(`/api/v1/soul/skills/${args.skillId}/execute`, {

@@ -15,30 +15,36 @@ export function registerSystemTools(
   config: McpServiceConfig,
   middleware: ToolMiddleware
 ): void {
-  server.tool(
+  server.registerTool(
     'system_health',
-    'Get system health status',
-    {},
+    {
+      description: 'Get system health status',
+      inputSchema: {},
+    },
     wrapToolHandler('system_health', middleware, async () => {
       const result = await client.get('/health');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );
 
-  server.tool(
+  server.registerTool(
     'system_metrics',
-    'Get system metrics snapshot',
-    {},
+    {
+      description: 'Get system metrics snapshot',
+      inputSchema: {},
+    },
     wrapToolHandler('system_metrics', middleware, async () => {
       const result = await client.get('/api/v1/metrics');
       return { content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }] };
     })
   );
 
-  server.tool(
+  server.registerTool(
     'system_config',
-    'Get current system configuration (secrets redacted)',
-    {},
+    {
+      description: 'Get current system configuration (secrets redacted)',
+      inputSchema: {},
+    },
     wrapToolHandler('system_config', middleware, async () => {
       // Return local MCP config with sensitive fields stripped
       const safeConfig = {
