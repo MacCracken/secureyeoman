@@ -449,7 +449,7 @@ export function SecuritySettings() {
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Current default:</span>
           {modelDefault?.provider && modelDefault?.model ? (
-            <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-xs font-medium text-success">
+            <span className="badge badge-success">
               {MODEL_PROVIDER_LABELS[modelDefault.provider] ?? modelDefault.provider} / {modelDefault.model}
             </span>
           ) : (
@@ -462,7 +462,7 @@ export function SecuritySettings() {
           <div className="flex flex-col gap-1 flex-1 min-w-48">
             <label className="text-xs font-medium text-muted-foreground">Model</label>
             <select
-              className="input text-sm h-8"
+              className="w-full px-2 py-1 text-sm rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               value={draftKey}
               onChange={(e) => {
                 const [p, ...rest] = e.target.value.split('::');
