@@ -150,7 +150,7 @@ Component development environment integrated into Developers section as its own 
 
 ---
 
-## Phase 14: Dashboard Chat Enhancements — Complete (2026.2.17)
+## Phase 14: Dashboard Chat Enhancements — Complete (2026.2.17) — [ADR 047](docs/adr/047-dashboard-chat-markdown.md)
 
 ### Chat Markdown Rendering (new)
 

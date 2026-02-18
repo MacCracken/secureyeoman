@@ -27,29 +27,12 @@
 | | **Release 2026.2.17** | **2026-02-17** | **Released** |
 | 15 | Integration Expansion | 2026.2.18 | Complete |
 | 16 | Integration Enhancements | 2026.2.18 | Complete |
-| | **Release 2026.2.18** | **2026-02-18** | **Released** |
+| | **Release 2026.2.18** | **2026-02-18** | **Pending** |
 | 17 | Advanced Capabilities | — | Pending |
 | 18 | Skills Marketplace & Community | - | Pending |
 | 19 | SaaS ready | — | Pending |
 | 20 | Onboarding & First Run | — | Pending |
 
----
-
-## Phase 16: Integration Enhancements
-
-**Status**: Complete
-
-### Dashboard & Tooling
-- [x] **Storybook** — Component development environment for dashboard UI components, integrated into Developers section as its own view with Settings > Security > Developers toggle to enable/disable display (subview pattern like Extensions/Experiments)
-
-### Vector Memory
-- [x] **ChromaDB Backend** — ChromaDB as additional vector backend option for memory storage
-
-### Platform-Specific Enhancements
-- [x] **Telegram** — Inline keyboards, photo/document handling, voice messages
-- [x] **Discord** — Thread support, modal dialogs, slash command registration
-- [x] **Slack** — Interactive messages with block actions, modal dialogs, workflow builder
-- [x] **GitHub** — PR review automation, code search tools, issue automation workflows
 ---
 
 ## Phase 17: Advanced Capabilities
