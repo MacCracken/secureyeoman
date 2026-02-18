@@ -58,7 +58,30 @@
 - [ ] **Agent Swarms** — Coordinated multi-agent execution for complex tasks with role-based specialization (researcher, coder, reviewer, etc.)
 - [ ] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style — agents create and register new tools as needed)
 
-### Marketplace & Community
+### Enterprise
+- [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
+- [ ] **Managed Cloud Offering** — SaaS deployment option for organizations preferring managed infrastructure
+
+### Visualization
+- [ ] **WebGL Graph Rendering** — Investigate and basic implementation for large graph visualization
+- [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
+
+### ML-based Security
+- [ ] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events
+
+### Encryption
+- [ ] **HSM Integration** — Hardware Security Module integration for key management
+
+### Real-time Collaboration
+- [ ] **CRDT Implementation** — Conflict-free Replicated Data Types for collaborative editing
+
+### Sandbox
+- [ ] **gVisor Integration** — Additional sandbox isolation layer using gVisor
+- [ ] **WASM Isolation** — WebAssembly-based code execution sandboxing
+
+---
+
+## Phase 18 Marketplace & Community
 
 #### Skills
 - [ ] **Provider Marketplace** — Centralized SecureYeoman skill provider marketplace (skill discovery, installation, management)
@@ -83,30 +106,7 @@
 - [ ] **Stripe** — Payment status webhooks, customer lookup, invoice triggers
 - [ ] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation
 
-### Enterprise
-- [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
-- [ ] **Managed Cloud Offering** — SaaS deployment option for organizations preferring managed infrastructure
-
-### Visualization
-- [ ] **WebGL Graph Rendering** — Investigate and basic implementation for large graph visualization
-- [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
-
-### ML-based Security
-- [ ] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events
-
-### Encryption
-- [ ] **HSM Integration** — Hardware Security Module integration for key management
-
-### Real-time Collaboration
-- [ ] **CRDT Implementation** — Conflict-free Replicated Data Types for collaborative editing
-
-### Sandbox
-- [ ] **gVisor Integration** — Additional sandbox isolation layer using gVisor
-- [ ] **WASM Isolation** — WebAssembly-based code execution sandboxing
-
----
-
-## Phase 18: SaaS ready
+## Phase 19: SaaS ready
 
 **Status**: Pending
 ### Personality Configuration
@@ -142,7 +142,7 @@
 
 ---
 
-## Phase 19: Onboarding & First Run
+## Phase 20: Onboarding & First Run
 
 **Status**: Pending
 
