@@ -70,6 +70,15 @@ export async function truncateAllTables(): Promise<void> {
       await pool.query(`TRUNCATE ${schema}."${row.tablename}" CASCADE`);
     }
   }
+
+  // Also truncate public-schema user tables (e.g. oauth_tokens, usage_records, outbound_webhooks)
+  // Excludes schema_migrations so migration state is preserved across test runs.
+  const publicRes = await pool.query(
+    `SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename != 'schema_migrations'`
+  );
+  for (const row of publicRes.rows) {
+    await pool.query(`TRUNCATE public."${row.tablename}" CASCADE`);
+  }
 }
 
 /**

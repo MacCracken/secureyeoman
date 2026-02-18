@@ -7,6 +7,7 @@ import type { AuthService } from '../security/auth.js';
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 import { AuthError } from '../security/auth.js';
 import { generateSecureToken, sha256 } from '../utils/crypto.js';
+import type { OAuthTokenService } from './oauth-token-service.js';
 
 export interface OAuthProvider {
   id: string;
@@ -36,6 +37,14 @@ export interface OAuthServiceConfig {
     clientSecret: string;
   };
   gmail?: {
+    clientId: string;
+    clientSecret: string;
+  };
+  googlecalendar?: {
+    clientId: string;
+    clientSecret: string;
+  };
+  googledrive?: {
     clientId: string;
     clientSecret: string;
   };
@@ -80,6 +89,38 @@ const OAUTH_PROVIDERS: Record<string, OAuthProvider> = {
       'https://www.googleapis.com/auth/gmail.readonly',
       'https://www.googleapis.com/auth/gmail.send',
       'https://www.googleapis.com/auth/gmail.modify',
+    ],
+  },
+  googlecalendar: {
+    id: 'googlecalendar',
+    name: 'Google Calendar',
+    clientId: '',
+    clientSecret: '',
+    authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    userInfoUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
+    scopes: [
+      'openid',
+      'email',
+      'profile',
+      'https://www.googleapis.com/auth/calendar.readonly',
+      'https://www.googleapis.com/auth/calendar.events',
+    ],
+  },
+  googledrive: {
+    id: 'googledrive',
+    name: 'Google Drive',
+    clientId: '',
+    clientSecret: '',
+    authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    userInfoUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
+    scopes: [
+      'openid',
+      'email',
+      'profile',
+      'https://www.googleapis.com/auth/drive.readonly',
+      'https://www.googleapis.com/auth/drive.file',
     ],
   },
 };
@@ -144,6 +185,41 @@ export class OAuthService {
       if (provider) {
         provider.clientId = gmailClientId;
         provider.clientSecret = gmailClientSecret;
+      }
+    }
+
+    // Google Calendar OAuth — reuses Google OAuth creds by default
+    const calendarClientId =
+      env.GOOGLE_CALENDAR_OAUTH_CLIENT_ID || env.GOOGLE_OAUTH_CLIENT_ID;
+    const calendarClientSecret =
+      env.GOOGLE_CALENDAR_OAUTH_CLIENT_SECRET || env.GOOGLE_OAUTH_CLIENT_SECRET;
+    if (calendarClientId && calendarClientSecret) {
+      this.config.googlecalendar = {
+        clientId: calendarClientId,
+        clientSecret: calendarClientSecret,
+      };
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      const provider = OAUTH_PROVIDERS['googlecalendar'];
+      if (provider) {
+        provider.clientId = calendarClientId;
+        provider.clientSecret = calendarClientSecret;
+      }
+    }
+
+    // Google Drive OAuth — reuses Google OAuth creds by default
+    const driveClientId = env.GOOGLE_DRIVE_OAUTH_CLIENT_ID || env.GOOGLE_OAUTH_CLIENT_ID;
+    const driveClientSecret =
+      env.GOOGLE_DRIVE_OAUTH_CLIENT_SECRET || env.GOOGLE_OAUTH_CLIENT_SECRET;
+    if (driveClientId && driveClientSecret) {
+      this.config.googledrive = {
+        clientId: driveClientId,
+        clientSecret: driveClientSecret,
+      };
+      // eslint-disable-next-line @typescript-eslint/dot-notation
+      const provider = OAUTH_PROVIDERS['googledrive'];
+      if (provider) {
+        provider.clientId = driveClientId;
+        provider.clientSecret = driveClientSecret;
       }
     }
   }
@@ -295,10 +371,12 @@ export interface OAuthRoutesOptions {
   authService: AuthService;
   oauthService: OAuthService;
   baseUrl: string;
+  /** Optional — when provided, tokens for Google services are persisted and can be managed via API. */
+  oauthTokenService?: OAuthTokenService;
 }
 
 export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptions): void {
-  const { oauthService, baseUrl } = opts;
+  const { oauthService, baseUrl, oauthTokenService } = opts;
 
   // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
   const getRedirectUri = (provider: string) => `${baseUrl}/api/v1/auth/oauth/${provider}/callback`;
@@ -332,8 +410,8 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
         state,
       });
 
-      // Gmail needs offline access for refresh tokens
-      if (providerId === 'gmail') {
+      // Google services need offline access for refresh tokens
+      if (providerId === 'gmail' || providerId === 'googlecalendar' || providerId === 'googledrive') {
         params.set('access_type', 'offline');
         params.set('prompt', 'consent');
       }
@@ -375,7 +453,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
 
         const connectionToken = oauthService.generateOAuthConnectionToken(providerId, userInfo.id);
 
-        // Gmail: store tokens server-side for the claim endpoint
+        // Gmail: store tokens server-side for the claim endpoint (legacy flow)
         if (providerId === 'gmail') {
           PENDING_GMAIL_TOKENS.set(connectionToken, {
             accessToken: tokens.accessToken,
@@ -385,8 +463,44 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
           });
           setTimeout(() => PENDING_GMAIL_TOKENS.delete(connectionToken), PENDING_TOKEN_EXPIRY_MS);
 
+          // Also persist in unified token store when available
+          if (oauthTokenService && userInfo.email) {
+            await oauthTokenService.storeToken({
+              provider: 'gmail',
+              email: userInfo.email,
+              userId: userInfo.id,
+              accessToken: tokens.accessToken,
+              refreshToken: tokens.refreshToken,
+              scopes: OAUTH_PROVIDERS['gmail']?.scopes.join(' ') ?? '',
+              expiresIn: 3600,
+            });
+          }
+
           return await reply.redirect(
             `/connections/email?connected=true&provider=gmail&email=${encodeURIComponent(userInfo.email || '')}&token=${connectionToken}`
+          );
+        }
+
+        // Google Calendar / Google Drive: persist tokens in unified token store
+        if (
+          (providerId === 'googlecalendar' || providerId === 'googledrive') &&
+          oauthTokenService &&
+          userInfo.email
+        ) {
+          await oauthTokenService.storeToken({
+            provider: providerId,
+            email: userInfo.email,
+            userId: userInfo.id,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            scopes: OAUTH_PROVIDERS[providerId]?.scopes.join(' ') ?? '',
+            expiresIn: 3600,
+          });
+
+          const redirectPage =
+            providerId === 'googlecalendar' ? 'calendar' : 'drive';
+          return await reply.redirect(
+            `/connections/${redirectPage}?connected=true&provider=${providerId}&email=${encodeURIComponent(userInfo.email)}&token=${connectionToken}`
           );
         }
 
@@ -480,6 +594,31 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
           },
         },
       };
+    }
+  );
+
+  // ── OAuth Token Management ──────────────────────────────────
+  // These routes expose the unified OAuth token store for admin use.
+
+  app.get('/api/v1/auth/oauth/tokens', async (_request: FastifyRequest, reply: FastifyReply) => {
+    if (!oauthTokenService) {
+      return reply.code(503).send({ error: 'OAuth token service not configured' });
+    }
+    const tokens = await oauthTokenService.listTokens();
+    return { tokens, total: tokens.length };
+  });
+
+  app.delete(
+    '/api/v1/auth/oauth/tokens/:id',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      if (!oauthTokenService) {
+        return reply.code(503).send({ error: 'OAuth token service not configured' });
+      }
+      const deleted = await oauthTokenService.revokeToken(request.params.id);
+      if (!deleted) {
+        return reply.code(404).send({ error: 'Token not found' });
+      }
+      return { message: 'Token revoked' };
     }
   );
 }

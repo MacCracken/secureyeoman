@@ -7,6 +7,7 @@
 
 import type { IntegrationConfig, UnifiedMessage, Platform } from '@secureyeoman/shared';
 import type { Integration, IntegrationDeps, PlatformRateLimit } from '../types.js';
+import type { OAuthTokenService } from '../../gateway/oauth-token-service.js';
 import type { SecureLogger } from '../../logging/logger.js';
 
 // ─── Config & API types ─────────────────────────────────────
@@ -17,6 +18,8 @@ interface GoogleCalendarConfig {
   tokenExpiresAt?: number;
   calendarId?: string;
   pollIntervalMs?: number;
+  /** Email used to look up OAuth tokens from OAuthTokenService (unified token flow). */
+  email?: string;
 }
 
 interface CalendarEvent {
@@ -49,6 +52,7 @@ export class GoogleCalendarIntegration implements Integration {
   private calendarConfig: GoogleCalendarConfig | null = null;
   private deps: IntegrationDeps | null = null;
   private logger: SecureLogger | null = null;
+  private oauthTokenService: OAuthTokenService | null = null;
   private running = false;
   private pollTimer: ReturnType<typeof setInterval> | null = null;
   private lastPollTime: string | null = null;
@@ -56,21 +60,39 @@ export class GoogleCalendarIntegration implements Integration {
   private refreshToken = '';
   private tokenExpiresAt = 0;
   private calendarId = 'primary';
+  /** Email used as lookup key with OAuthTokenService. */
+  private tokenEmail = '';
 
   async init(config: IntegrationConfig, deps: IntegrationDeps): Promise<void> {
     this.config = config;
     this.deps = deps;
     this.logger = deps.logger;
+    this.oauthTokenService = deps.oauthTokenService ?? null;
 
     const gc = config.config as unknown as GoogleCalendarConfig;
     this.calendarConfig = gc;
-    this.accessToken = gc.accessToken;
-    this.refreshToken = gc.refreshToken;
-    this.tokenExpiresAt = gc.tokenExpiresAt ?? 0;
     this.calendarId = gc.calendarId ?? 'primary';
 
-    if (!this.accessToken || !this.refreshToken) {
-      throw new Error('Google Calendar integration requires accessToken and refreshToken');
+    if (this.oauthTokenService && gc.email) {
+      // Prefer unified token service when available
+      this.tokenEmail = gc.email;
+      const token = await this.oauthTokenService.getValidToken('googlecalendar', gc.email);
+      if (!token) {
+        throw new Error(
+          `No OAuth token found for Google Calendar (${gc.email}). ` +
+          'Authenticate via /api/v1/auth/oauth/googlecalendar first.'
+        );
+      }
+      this.accessToken = token;
+    } else {
+      // Fallback: tokens stored directly in integration config
+      this.accessToken = gc.accessToken;
+      this.refreshToken = gc.refreshToken;
+      this.tokenExpiresAt = gc.tokenExpiresAt ?? 0;
+
+      if (!this.accessToken || !this.refreshToken) {
+        throw new Error('Google Calendar integration requires accessToken and refreshToken');
+      }
     }
 
     // Verify token works
@@ -227,15 +249,24 @@ export class GoogleCalendarIntegration implements Integration {
   // ─── Token refresh ──────────────────────────────────────
 
   private async ensureValidToken(): Promise<void> {
-    // Refresh if token expires within 5 minutes
+    // Use the unified token service if available (preferred path)
+    if (this.oauthTokenService && this.tokenEmail) {
+      const token = await this.oauthTokenService.getValidToken('googlecalendar', this.tokenEmail);
+      if (token) {
+        this.accessToken = token;
+      }
+      return;
+    }
+
+    // Fallback: inline token refresh (legacy / no-service path)
     if (this.tokenExpiresAt && Date.now() < this.tokenExpiresAt - 5 * 60 * 1000) {
       return;
     }
 
     const clientId =
-      process.env.GOOGLE_CALENDAR_OAUTH_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID;
+      process.env['GOOGLE_CALENDAR_OAUTH_CLIENT_ID'] || process.env['GOOGLE_OAUTH_CLIENT_ID'];
     const clientSecret =
-      process.env.GOOGLE_CALENDAR_OAUTH_CLIENT_SECRET || process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+      process.env['GOOGLE_CALENDAR_OAUTH_CLIENT_SECRET'] || process.env['GOOGLE_OAUTH_CLIENT_SECRET'];
 
     if (!clientId || !clientSecret) {
       this.logger?.warn('Cannot refresh Google Calendar token: missing OAuth credentials');

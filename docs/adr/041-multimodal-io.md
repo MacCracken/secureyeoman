@@ -16,7 +16,7 @@ The existing codebase already has relevant scaffolding:
 - `MessageAttachment` schema supports image/audio/video/file/location types
 - `UnifiedMessage.attachments[]` exists but is never populated
 - `MediaHandler` handles file download/validation/size limits/cleanup
-- `BodyCapabilitySchema` includes `'auditory'`, `'vision'`, `'vocalization'`
+- `BodyCapabilitySchema` includes `'auditory'`, `'vision'`, `'vocalization'`, `'haptic'`
 
 ## Decision
 
@@ -62,15 +62,22 @@ Multimodal I/O is gated by a `allowMultimodal` security policy toggle, consisten
 
 All multimodal operations are tracked as jobs in a `multimodal.jobs` PostgreSQL table. This enables monitoring, debugging, and usage analytics.
 
+### 8. Haptic Feedback via Extension Hook System
+
+Haptic capability (`BodyCapabilitySchema: 'haptic'`) is implemented as a first-class multimodal job type. `MultimodalManager.triggerHaptic()` accepts a vibration pattern (single duration ms or an on/off array following the Web Vibration API convention), validates it against a configurable `maxPatternDurationMs` ceiling, then emits a `multimodal:haptic-triggered` extension hook. Connected clients (browser dashboard, native apps) subscribe to this hook and drive device haptics directly; no separate hardware driver is required on the server.
+
+**Rationale**: Haptic feedback is a pure signal-dispatch operation — the server defines the pattern intent, clients execute it on available hardware. Routing through the extension hook system keeps the pattern consistent with all other multimodal events and avoids coupling to any specific platform SDK.
+
 ## Consequences
 
 ### Positive
 
 - Users can send photos and voice messages via Telegram
 - Vision analysis leverages existing AIClient infrastructure
-- Job tracking provides observability
+- Job tracking provides observability for all five multimodal job types
 - Security toggle provides admin control
 - Extension hooks enable custom post-processing
+- Haptic triggers dispatch patterns to connected clients without server-side hardware dependencies
 
 ### Negative
 

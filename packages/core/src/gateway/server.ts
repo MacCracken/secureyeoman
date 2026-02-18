@@ -24,11 +24,16 @@ import type { AuthService } from '../security/auth.js';
 import { createAuthHook, createRbacHook } from './auth-middleware.js';
 import { registerAuthRoutes } from './auth-routes.js';
 import { registerOAuthRoutes, OAuthService } from './oauth-routes.js';
+import { OAuthTokenStorage } from './oauth-token-storage.js';
+import { OAuthTokenService } from './oauth-token-service.js';
 import { registerSoulRoutes } from '../soul/soul-routes.js';
 import { registerBrainRoutes } from '../brain/brain-routes.js';
 import { registerSpiritRoutes } from '../spirit/spirit-routes.js';
 import { registerCommsRoutes } from '../comms/comms-routes.js';
 import { registerIntegrationRoutes } from '../integrations/integration-routes.js';
+import { WebhookTransformStorage } from '../integrations/webhook-transform-storage.js';
+import { OutboundWebhookStorage } from '../integrations/outbound-webhook-storage.js';
+import { OutboundWebhookDispatcher } from '../integrations/outbound-webhook-dispatcher.js';
 import { registerChatRoutes } from '../ai/chat-routes.js';
 import { registerModelRoutes } from '../ai/model-routes.js';
 import { uuidv7, sha256 } from '../utils/crypto.js';
@@ -282,7 +287,36 @@ export class GatewayServer {
       const oauthService = new OAuthService();
       const scheme = this.config.tls.enabled ? 'https' : 'http';
       const baseUrl = `${scheme}://${this.config.host === '0.0.0.0' ? 'localhost' : this.config.host}:${this.config.port}`;
-      registerOAuthRoutes(this.app, { authService: this.authService, oauthService, baseUrl });
+
+      // Unified OAuth token service — persists Google tokens across restarts
+      const oauthTokenStorage = new OAuthTokenStorage();
+      const googleClientId =
+        process.env['GOOGLE_OAUTH_CLIENT_ID'] ?? process.env['GMAIL_OAUTH_CLIENT_ID'];
+      const googleClientSecret =
+        process.env['GOOGLE_OAUTH_CLIENT_SECRET'] ?? process.env['GMAIL_OAUTH_CLIENT_SECRET'];
+      const oauthTokenService = new OAuthTokenService({
+        storage: oauthTokenStorage,
+        logger: this.logger ?? createNoopLogger(),
+        googleCredentials:
+          googleClientId && googleClientSecret
+            ? { clientId: googleClientId, clientSecret: googleClientSecret }
+            : undefined,
+      });
+
+      registerOAuthRoutes(this.app, {
+        authService: this.authService,
+        oauthService,
+        baseUrl,
+        oauthTokenService,
+      });
+
+      // Wire token service to integration manager so adapters can use it
+      try {
+        const integrationManager = this.secureYeoman.getIntegrationManager();
+        integrationManager.setOAuthTokenService(oauthTokenService);
+      } catch {
+        // Integration manager may not be available — skip wiring
+      }
     }
 
     // Soul routes
@@ -331,7 +365,22 @@ export class GatewayServer {
     try {
       const integrationManager = this.secureYeoman.getIntegrationManager();
       const integrationStorage = this.secureYeoman.getIntegrationStorage();
-      registerIntegrationRoutes(this.app, { integrationManager, integrationStorage });
+      const webhookTransformStorage = new WebhookTransformStorage();
+      const outboundWebhookStorage = new OutboundWebhookStorage();
+      const outboundDispatcher = new OutboundWebhookDispatcher(
+        outboundWebhookStorage,
+        this.logger.child({ component: 'outbound-webhook-dispatcher' })
+      );
+      integrationManager.setOutboundWebhookDispatcher(outboundDispatcher);
+      // Wire dispatcher into message router if it exposes the setter
+      const messageRouter = this.secureYeoman.getMessageRouter?.();
+      messageRouter?.setOutboundWebhookDispatcher?.(outboundDispatcher);
+      registerIntegrationRoutes(this.app, {
+        integrationManager,
+        integrationStorage,
+        webhookTransformStorage,
+        outboundWebhookStorage,
+      });
     } catch {
       // Integration manager may not be available — skip routes
     }

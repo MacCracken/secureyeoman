@@ -26,6 +26,8 @@
 | 14 | Dashboard Chat Enhancements | 2026.2.17 | Complete |
 | | **Release 2026.2.17** | **2026-02-17** | **Released** |
 | 15 | Integration Expansion | — | In Progress |
+| 16 | Integration Expansion II | — | Pending |
+| 17 | Advanced Capabilities | — | Pending |
 
 ---
 
@@ -53,11 +55,14 @@ WebMCP        Kubernetes    Dashboard UX  Integrations+ Dash & Tools  Chat Markd
 [Web Tools]   [K8s Deploy]  [UX Polish]   [Expand]      [Browser/Vec] [ChatMarkdown]
                               ── Release 2026.2.17 ──
 
-Phase 15
-Integration Expansion
-   |
-   v
-[Dev UX / Persistence / MCP Migration]  ← In Progress
+Phase 15      Phase 16      Phase 17
+Integration  Productivity  Advanced
+Expansion    Services      Capabilities
+    |            |            |
+    v            v            v
+[Dev UX /    [Productivity  [WebGL/ML/
+Persistence  Cloud/Svc     HSM/CRDT]
+ /MCP]        Integrations]
 ```
 
 ---
@@ -262,14 +267,15 @@ Integration Expansion
 - [x] WebSocket push for real-time suggestion delivery
 
 ### Multimodal I/O
-- [x] Multimodal type system (Vision, STT, TTS, ImageGen schemas + job tracking)
+- [x] Multimodal type system (Vision, STT, TTS, ImageGen, Haptic schemas + job tracking)
 - [x] MultimodalManager with OpenAI TTS/STT and DALL-E integration
-- [x] REST API routes (analyze, transcribe, speak, generate)
+- [x] REST API routes (analyze, transcribe, speak, generate, haptic trigger)
 - [x] Vision processing pipeline for inline images (Discord, Slack, Telegram)
 - [x] Voice message transcription (auto-STT for voice messages)
 - [x] Voice output for integration responses (TTS audio attachments)
 - [x] Image generation tool exposure via MCP (5 multimodal MCP tools)
 - [x] Per-personality TTS voice/model selection
+- [x] Haptic feedback (`POST /api/v1/multimodal/haptic/trigger`) — pattern dispatch via `multimodal:haptic-triggered` extension hook; dashboard capability toggle enabled
 
 ---
 
@@ -421,10 +427,14 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 - [x] **Security > Developers Section** — Lifecycle Extensions and Experiments policy toggles consolidated into a single "Developers" card in Settings > Security, matching the Sub-Agent Delegation pattern
 - [x] **PolicyToggle label fix** — Sub-item toggles (A2A Networks, Lifecycle Extensions, Experiments) now display visible text labels alongside status indicators
 
+### Settings Security Reorganization
+- [ ] **MCP Servers** — Move MCP Servers to the top of the Security subview in Dashboard > Settings
+
 ### AI Cost Persistence
 - [x] **`UsageStorage`** — PostgreSQL-backed storage for AI usage records (`usage_records` table, 90-day retention)
 - [x] **`UsageTracker.init()`** — Async initialization method that loads historical records from the database on startup so cost/token data survives process restarts
 - [x] **Fire-and-forget DB writes** — `record()` persists to PostgreSQL non-blocking (never delays AI call latency)
+- [ ] **Cost History View** — Long-term historical cost analytics view in Cost Analytics page (beyond daily) with filtering by date range, provider, model, and personality
 
 ### MCP SDK Migration — [ADR 026](../adr/026-mcp-service-package.md)
 - [x] **`server.tool()` → `server.registerTool()`** — Migrated all 42 MCP tool registrations across 10 tool files to the new stable API (audit, brain, integration, soul, system, task, multimodal, filesystem, browser, web tools)
@@ -436,11 +446,28 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 
 ### Dashboard & Tooling (deferred)
 - [x] **Lifecycle Hook Debugger** — 4th tab on Extensions page: test trigger with grouped hook point selector + JSON payload, in-memory execution log (200-entry circular buffer, 5s live refresh, filter by hook point), per-entry status indicators (OK / vetoed / error), test vs live event badges
-- [ ] **Storybook** — Component development environment for dashboard UI components
-- [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
 
 ### CLI Cleanup
 - [ ] **CLI Modernization** — Update and clean up CLI commands to align with latest subsystems (browser, vector memory, web scraper, A2A, multimodal)
+
+### Settings & Preferences
+- [ ] **AI Model System Default** — Ability for user to set AI model system default in Settings > General tab
+
+### Communication
+- [ ] **Email (SMTP)** — Send and receive emails via SMTP integration, email-to-message routing
+
+---
+
+## Phase 16: Integration Expansion II
+
+**Status**: Pending
+
+### Dashboard & Tooling
+- [ ] **Storybook** — Component development environment for dashboard UI components, integrated into Developers section as its own view with Settings > Security > Developers toggle to enable/disable display (subview pattern like Extensions/Experiments)
+- [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
+
+### Security & Access
+- [ ] **Roles & Permissions Review/Audit** — Comprehensive review of RBAC roles, permissions, and access controls to ensure completeness and alignment with feature set
 
 ### Productivity Integrations
 - [ ] **Airtable** — Base CRUD operations, record management, view filtering
@@ -454,17 +481,61 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 - [ ] **Stripe** — Payment status webhooks, customer lookup, invoice triggers
 - [ ] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation
 
-### Integration Architecture Improvements
-- [ ] **Dynamic Integration Loading** — Load/unload integrations at runtime without restart
-- [ ] **OAuth2 First-Class Support** — Unified OAuth2 flow for Google services (Gmail, Calendar, Drive)
-- [ ] **Webhook Transformation Rules** — Custom payload transformation templates
-- [ ] **Outbound Webhooks** — Event-driven HTTP callbacks for integration events
+### Integration Architecture Improvements — [ADR 049](../adr/049-dynamic-integration-loading.md), [ADR 050](../adr/050-oauth2-first-class-support.md), [ADR 051](../adr/051-webhook-transformation-rules.md), [ADR 052](../adr/052-outbound-webhooks.md)
+- [x] **Dynamic Integration Loading** — `reloadIntegration()` for zero-downtime credential rotation; `INTEGRATION_PLUGIN_DIR` auto-discovery; `POST /api/v1/integrations/:id/reload`, `GET /api/v1/integrations/plugins`, `POST /api/v1/integrations/plugins/load`
+- [x] **OAuth2 First-Class Support** — Unified `OAuthTokenService` + `oauth_tokens` table; `googlecalendar`/`googledrive` OAuth providers; `GET/DELETE /api/v1/auth/oauth/tokens`; GoogleCalendarIntegration uses token service
+- [x] **Webhook Transformation Rules** — `webhook_transform_rules` table (migration 013); `WebhookTransformStorage` + `WebhookTransformer`; JSONPath extraction, `{{field}}` templates, event filtering, priority ordering; full CRUD API at `/api/v1/webhook-transforms`
+- [x] **Outbound Webhooks** — `outbound_webhooks` table (migration 014); `OutboundWebhookDispatcher` with fire-and-forget delivery, exponential backoff retries, HMAC signing; events: `message.inbound`, `message.outbound`, `integration.started`, `integration.stopped`, `integration.error`; full CRUD API at `/api/v1/outbound-webhooks`
+
+### Personality Configuration
+- [ ] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
+
+### Vector Memory
+- [ ] **ChromaDB Backend** — ChromaDB as additional vector backend option for memory storage
+
+### Marketplace & Community
+- [ ] **Provider Marketplace** — Centralized SecureYeoman skill provider marketplace (skill discovery, installation, management)
+- [ ] **Community Skills** — Community-contributed skill extensions registry with `secureyeoman_community_skills.git` sub-repo support for portable, structured agent capabilities
 
 ### Platform-Specific Enhancements
 - [ ] **Telegram** — Inline keyboards, photo/document handling, voice messages
 - [ ] **Discord** — Thread support, modal dialogs, slash command registration
 - [ ] **Slack** — Interactive messages with block actions, modal dialogs, workflow builder
 - [ ] **GitHub** — PR review automation, code search tools, issue automation workflows
+
+---
+
+## Phase 17: Advanced Capabilities
+
+**Status**: Pending
+
+### Multi-Agent Systems
+- [ ] **Agent Swarms** — Coordinated multi-agent execution for complex tasks with role-based specialization (researcher, coder, reviewer, etc.)
+- [ ] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style - agents create and register new tools as needed)
+
+### Enterprise
+- [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
+- [ ] **Managed Cloud Offering** — SaaS deployment option for organizations preferring managed infrastructure
+
+### Visualization
+- [ ] **WebGL Graph Rendering** — Investigate and basic implementation for large graph visualization
+- [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
+
+### ML-based Security
+- [ ] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events
+
+### Onboarding
+- [ ] **First Install Onboarding** — CLI and Dashboard guided setup experience for new installations
+
+### Encryption
+- [ ] **HSM Integration** — Hardware Security Module integration for key management
+
+### Real-time Collaboration
+- [ ] **CRDT Implementation** — Conflict-free Replicated Data Types for collaborative editing
+
+### Sandbox
+- [ ] **gVisor Integration** — Additional sandbox isolation layer using gVisor
+- [ ] **WASM Isolation** — WebAssembly-based code execution sandboxing
 
 ---
 
@@ -482,16 +553,7 @@ Tracked third-party dependencies with known issues that require upstream resolut
 
 ## Future Enhancements
 
-- ML-based anomaly detection
 - Mobile app (native iOS/Android)
-- ChromaDB as additional vector backend option
-
-### Research Areas
-
-- Sandbox: gVisor, WASM isolation (Landlock already implemented)
-- Encryption: HSM integration (AES-256-GCM already implemented)
-- Visualization: WebGL for large graphs, layout algorithms (Dagre, ELK)
-- Real-time: CRDT for collaborative editing (Redis pub/sub already implemented)
 
 ---
 
@@ -506,4 +568,4 @@ Tracked third-party dependencies with known issues that require upstream resolut
 
 ---
 
-*Last updated: 2026-02-17 — Phase 15 in progress*
+*Last updated: 2026-02-18 — Phases 15-17 added*

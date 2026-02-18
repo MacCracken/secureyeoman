@@ -11,6 +11,7 @@ import type { TaskExecutor, ExecutionContext } from '../task/executor.js';
 import type { IntegrationManager } from './manager.js';
 import type { IntegrationStorage } from './storage.js';
 import type { SecureLogger } from '../logging/logger.js';
+import type { OutboundWebhookDispatcher } from './outbound-webhook-dispatcher.js';
 
 export interface MessageRouterDeps {
   logger: SecureLogger;
@@ -27,6 +28,8 @@ export interface MessageRouterDeps {
   } | null;
   /** Resolve the active personality for TTS voice selection */
   getActivePersonality?: () => Promise<{ voice?: string | null } | null>;
+  /** Optional outbound webhook dispatcher — fires message.inbound events */
+  outboundWebhookDispatcher?: OutboundWebhookDispatcher | null;
 }
 
 export class MessageRouter {
@@ -47,6 +50,11 @@ export class MessageRouter {
     }
   }
 
+  /** Inject outbound webhook dispatcher after construction (avoids init-order issues). */
+  setOutboundWebhookDispatcher(dispatcher: OutboundWebhookDispatcher | null): void {
+    (this.deps).outboundWebhookDispatcher = dispatcher;
+  }
+
   /**
    * Handle an inbound message from any platform.
    * This is the callback given to IntegrationDeps.onMessage.
@@ -57,6 +65,17 @@ export class MessageRouter {
     logger.info(
       `Inbound message from ${message.platform}:${message.chatId} by ${message.senderName}`
     );
+
+    // Fire outbound webhook event (non-blocking)
+    this.deps.outboundWebhookDispatcher?.dispatch('message.inbound', {
+      integrationId: message.integrationId,
+      platform: message.platform,
+      senderId: message.senderId,
+      senderName: message.senderName,
+      chatId: message.chatId,
+      text: message.text,
+      timestamp: message.timestamp,
+    });
 
     // Store the inbound message
     await integrationStorage.storeMessage({

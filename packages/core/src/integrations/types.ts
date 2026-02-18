@@ -12,6 +12,7 @@ import type {
   Platform,
 } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
+import type { OAuthTokenService } from '../gateway/oauth-token-service.js';
 import type { z } from 'zod';
 
 // ─── Integration Lifecycle ───────────────────────────────────
@@ -107,6 +108,8 @@ export const DEFAULT_RATE_LIMITS: Record<string, PlatformRateLimit> = {
 export interface IntegrationDeps {
   logger: SecureLogger;
   onMessage: (message: UnifiedMessage) => Promise<void>;
+  /** OAuth token service — provides valid (auto-refreshed) tokens for Google services (optional) */
+  oauthTokenService?: OAuthTokenService | null;
   /** Multimodal manager for vision/STT/TTS processing (optional) */
   multimodalManager?: {
     analyzeImage: (req: {

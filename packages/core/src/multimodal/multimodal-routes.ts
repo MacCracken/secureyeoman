@@ -10,6 +10,7 @@ import {
   STTRequestSchema,
   TTSRequestSchema,
   ImageGenRequestSchema,
+  HapticRequestSchema,
 } from '@secureyeoman/shared';
 
 function sanitizeError(error: unknown): string {
@@ -122,6 +123,32 @@ export function registerMultimodalRoutes(
 
       try {
         const result = await multimodalManager.generateImage(parsed.data);
+        return result;
+      } catch (err) {
+        return reply.code(500).send({
+          error: sanitizeError(err),
+        });
+      }
+    }
+  );
+
+  // ── Haptic ────────────────────────────────────────────────────────
+
+  app.post(
+    '/api/v1/multimodal/haptic/trigger',
+    async (
+      request: FastifyRequest<{
+        Body: { pattern?: number | number[]; description?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const parsed = HapticRequestSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.code(400).send({ error: 'Invalid request body' });
+      }
+
+      try {
+        const result = await multimodalManager.triggerHaptic(parsed.data);
         return result;
       } catch (err) {
         return reply.code(500).send({
