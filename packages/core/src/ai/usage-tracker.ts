@@ -15,6 +15,7 @@ export interface UsageRecord {
   usage: TokenUsage;
   costUsd: number;
   timestamp: number;
+  personalityId?: string;
 }
 
 export interface UsageStats {

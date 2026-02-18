@@ -28,41 +28,22 @@
 | 15 | Integration Expansion | — | In Progress |
 | 16 | Integration Expansion II | — | Pending |
 | 17 | Advanced Capabilities | — | Pending |
+| 18 | CLI Improvements | — | Pending |
+| 19 | Onboarding & First Run | — | Pending |
 
 ---
 
 ## Phase Overview
 
 ```
-Phase 1       Phase 2       Phase 3       Phase 4       Phase 5       Phase 6
-Foundation    Security      Infra         Dashboard     Integrations  Production
-   |             |             |             |             |             |
-   v             v             v             v             v             v
-[Core Agent] [RBAC/Crypto] [Brain/Comms] [React UI]   [Platforms]   [Hardening]
-                                    ── Release 2026.2.15 ──
-
-Phase 7       Phase 8
-Cognitive     Extensions
-   |             |
-   v             v
-[Memory/AI]  [Hooks/A2A]
-     ── Release 2026.2.16 ──
-
-Phase 9       Phase 10      Phase 11      Phase 12      Phase 13      Phase 14
-WebMCP        Kubernetes    Dashboard UX  Integrations+ Dash & Tools  Chat Markdown
-   |             |             |             |             |             |
-   v             v             v             v             v             v
-[Web Tools]   [K8s Deploy]  [UX Polish]   [Expand]      [Browser/Vec] [ChatMarkdown]
-                              ── Release 2026.2.17 ──
-
-Phase 15      Phase 16      Phase 17
-Integration  Productivity  Advanced
-Expansion    Services      Capabilities
-    |            |            |
-    v            v            v
-[Dev UX /    [Productivity  [WebGL/ML/
-Persistence  Cloud/Svc     HSM/CRDT]
- /MCP]        Integrations]
+Phase 15      Phase 16      Phase 17      Phase 18      Phase 19
+Integration  Productivity  Advanced     CLI          Onboarding
+Expansion    Services      Capabilities Improvements  & First Run
+    |            |            |            |            |
+    v            v            v            v            v
+[Dev UX /    [Productivity  [WebGL/ML/ [Guided     [CLI + Dashboard
+Persistence  Cloud/Svc     HSM/CRDT]   Setup CLI    Guided Setup]
+ /MCP]        Integrations]             Enhancements]
 ```
 
 ---
@@ -428,13 +409,13 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 - [x] **PolicyToggle label fix** — Sub-item toggles (A2A Networks, Lifecycle Extensions, Experiments) now display visible text labels alongside status indicators
 
 ### Settings Security Reorganization
-- [ ] **MCP Servers** — Move MCP Servers to the top of the Security subview in Dashboard > Settings
+- [x] **MCP Servers** — Move MCP Servers to the top of the Security subview in Dashboard > Settings
 
 ### AI Cost Persistence
 - [x] **`UsageStorage`** — PostgreSQL-backed storage for AI usage records (`usage_records` table, 90-day retention)
 - [x] **`UsageTracker.init()`** — Async initialization method that loads historical records from the database on startup so cost/token data survives process restarts
 - [x] **Fire-and-forget DB writes** — `record()` persists to PostgreSQL non-blocking (never delays AI call latency)
-- [ ] **Cost History View** — Long-term historical cost analytics view in Cost Analytics page (beyond daily) with filtering by date range, provider, model, and personality
+- [x] **Cost History View** — Long-term historical cost analytics view in Cost Analytics page (beyond daily) with filtering by date range, provider, model, and personality; migration 015 adds `personality_id` to `usage_records`; `GET /api/v1/costs/history` endpoint with groupBy=day|hour aggregation; History tab in CostsPage with filter bar and totals row
 
 ### MCP SDK Migration — [ADR 026](../adr/026-mcp-service-package.md)
 - [x] **`server.tool()` → `server.registerTool()`** — Migrated all 42 MCP tool registrations across 10 tool files to the new stable API (audit, brain, integration, soul, system, task, multimodal, filesystem, browser, web tools)
@@ -448,13 +429,13 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 - [x] **Lifecycle Hook Debugger** — 4th tab on Extensions page: test trigger with grouped hook point selector + JSON payload, in-memory execution log (200-entry circular buffer, 5s live refresh, filter by hook point), per-entry status indicators (OK / vetoed / error), test vs live event badges
 
 ### CLI Cleanup
-- [ ] **CLI Modernization** — Update and clean up CLI commands to align with latest subsystems (browser, vector memory, web scraper, A2A, multimodal)
+- [x] **CLI Modernization** — Update and clean up CLI commands to align with latest subsystems (browser, vector memory, web scraper, A2A, multimodal)
 
 ### Settings & Preferences
-- [ ] **AI Model System Default** — Ability for user to set AI model system default in Settings > General tab
+- [x] **AI Model System Default** — Persistent model default stored in `system_preferences` PostgreSQL table (migration 016); `SystemPreferencesStorage` key-value class; `SecureYeoman.setModelDefault()` / `clearModelDefault()` persist + apply; `GET/POST/DELETE /api/v1/model/default` REST endpoints; Settings > Security top card with provider select + model input + Set/Clear controls; `secureyeoman model` CLI command (info, list, switch, default get/set/clear)
 
 ### Communication
-- [ ] **Email (SMTP)** — Send and receive emails via SMTP integration, email-to-message routing
+- [x] **Email (SMTP)** — Send and receive emails via SMTP integration, email-to-message routing; IMAP receive + SMTP send fully implemented in `packages/core/src/integrations/email/adapter.ts`, registered in `secureyeoman.ts`; REST API docs updated with Email config example
 
 ---
 
@@ -524,9 +505,6 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 ### ML-based Security
 - [ ] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events
 
-### Onboarding
-- [ ] **First Install Onboarding** — CLI and Dashboard guided setup experience for new installations
-
 ### Encryption
 - [ ] **HSM Integration** — Hardware Security Module integration for key management
 
@@ -536,6 +514,34 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 ### Sandbox
 - [ ] **gVisor Integration** — Additional sandbox isolation layer using gVisor
 - [ ] **WASM Isolation** — WebAssembly-based code execution sandboxing
+
+---
+
+## Phase 18: CLI Improvements
+
+**Status**: Pending
+
+### Guided Setup CLI
+- [ ] **Interactive Init Command** — `secureyeoman init` with interactive wizard for first-time setup (generate keys, configure AI providers, set up integrations)
+- [ ] **Configuration Wizard** — Guided config file generation with prompts for required settings
+
+### CLI Enhancements
+- [ ] **Shell Completions** — Auto-generate shell completions for bash, zsh, fish
+- [ ] **Configuration Validation** — `secureyeoman config validate` to check config file before startup
+- [ ] **Plugin Management** — `secureyeoman plugin` command for managing extensions and integrations from CLI
+
+### Output Improvements
+- [ ] **Rich Output** — Colored output, tables, and progress indicators for long-running operations
+- [ ] **JSON Output** — `--json` flag support for all commands for scripting
+
+---
+
+## Phase 19: Onboarding & First Run
+
+**Status**: Pending
+
+### Onboarding
+- [ ] **First Install Onboarding** — CLI and Dashboard guided setup experience for new installations; builds on Phase 18 CLI Improvements (`secureyeoman init` wizard, rich output) for maximum effectiveness
 
 ---
 
@@ -568,4 +574,4 @@ Tracked third-party dependencies with known issues that require upstream resolut
 
 ---
 
-*Last updated: 2026-02-18 — Phases 15-17 added*
+*Last updated: 2026-02-18 — Phase 17: Advanced Capabilities, Phase 18: CLI Improvements, Phase 19: Onboarding*

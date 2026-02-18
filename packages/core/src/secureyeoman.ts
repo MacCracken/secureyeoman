@@ -106,6 +106,7 @@ import { CodeExecutionManager } from './execution/manager.js';
 import { A2AStorage } from './a2a/storage.js';
 import { A2AManager } from './a2a/manager.js';
 import { RemoteDelegationTransport } from './a2a/transport.js';
+import { SystemPreferencesStorage } from './config/system-preferences-storage.js';
 import { initPoolFromConfig, getPool } from './storage/pg-pool.js';
 import { runMigrations } from './storage/migrations/runner.js';
 import { closePool } from './storage/pg-pool.js';
@@ -140,6 +141,7 @@ export class SecureYeoman {
   private rbac: RBAC | null = null;
   private taskExecutor: TaskExecutor | null = null;
   private aiClient: AIClient | null = null;
+  private usageStorage: UsageStorage | null = null;
   private authStorage: AuthStorage | null = null;
   private authService: AuthService | null = null;
   private gateway: GatewayServer | null = null;
@@ -188,6 +190,8 @@ export class SecureYeoman {
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
+  private systemPreferences: SystemPreferencesStorage | null = null;
+  private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
   private shutdownPromise: Promise<void> | null = null;
@@ -376,9 +380,15 @@ export class SecureYeoman {
         this.logger.debug('Secret rotation manager started');
       }
 
+      // Step 5.6: Initialize system preferences storage
+      this.systemPreferences = new SystemPreferencesStorage();
+      await this.systemPreferences.init();
+      this.logger.debug('System preferences storage initialized');
+
       // Step 5.6: Initialize AI client with persistent usage storage
       try {
-        const usageStorage = new UsageStorage();
+        this.usageStorage = new UsageStorage();
+        const usageStorage = this.usageStorage;
         await usageStorage.init();
 
         this.aiClient = new AIClient(
@@ -399,6 +409,20 @@ export class SecureYeoman {
         // Load historical records so cost totals survive restarts
         await this.aiClient.init();
         this.logger.debug('AI client initialized', { provider: this.config.model.provider });
+
+        // Apply persisted model default if one exists
+        if (this.systemPreferences) {
+          const storedProvider = await this.systemPreferences.get('model.provider');
+          const storedModel = await this.systemPreferences.get('model.model');
+          if (storedProvider && storedModel) {
+            this.switchModel(storedProvider, storedModel);
+            this.modelDefaultSet = true;
+            this.logger.debug('Applied persisted model default', {
+              provider: storedProvider,
+              model: storedModel,
+            });
+          }
+        }
       } catch (error) {
         // AI client failure is non-fatal — the system can run without AI
         this.logger.warn('AI client initialization failed (non-fatal)', {
@@ -452,6 +476,11 @@ export class SecureYeoman {
         this.logger.debug('Soul default personality created (onboarding)');
       }
       this.logger.debug('Soul manager initialized');
+
+      // Wire SoulManager into AIClient for personality_id tracking
+      if (this.aiClient && this.soulManager) {
+        this.aiClient.setSoulManager(this.soulManager);
+      }
 
       // Step 5.7c: Initialize agent comms (if enabled)
       if (this.config.comms?.enabled) {
@@ -1201,6 +1230,13 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the usage storage instance (may return null if AI client failed to init)
+   */
+  getUsageStorage(): UsageStorage | null {
+    return this.usageStorage;
+  }
+
+  /**
    * Get the AI client instance
    */
   getAIClient(): AIClient {
@@ -1517,6 +1553,62 @@ export class SecureYeoman {
       });
       throw error;
     }
+  }
+
+  /**
+   * Set a persistent AI model default that survives restarts.
+   * Validates the provider, switches the active model, and persists the choice.
+   */
+  async setModelDefault(provider: string, model: string): Promise<void> {
+    this.ensureInitialized();
+
+    if (!this.systemPreferences) {
+      throw new Error('System preferences storage is not available');
+    }
+
+    // switchModel already validates the provider and throws on invalid input
+    this.switchModel(provider, model);
+
+    await this.systemPreferences.set('model.provider', provider);
+    await this.systemPreferences.set('model.model', model);
+    this.modelDefaultSet = true;
+
+    this.logger?.info('AI model default persisted', { provider, model });
+  }
+
+  /**
+   * Clear the persistent AI model default.
+   * The model will revert to the config file default on next restart.
+   */
+  async clearModelDefault(): Promise<void> {
+    this.ensureInitialized();
+
+    if (!this.systemPreferences) {
+      throw new Error('System preferences storage is not available');
+    }
+
+    await this.systemPreferences.delete('model.provider');
+    await this.systemPreferences.delete('model.model');
+    this.modelDefaultSet = false;
+
+    this.logger?.info('AI model default cleared');
+  }
+
+  /**
+   * Return the current persisted model default, or null if none is set.
+   */
+  getModelDefault(): { provider: string; model: string } | null {
+    if (!this.modelDefaultSet) return null;
+    const config = this.config;
+    if (!config) return null;
+    return { provider: config.model.provider, model: config.model.model };
+  }
+
+  /**
+   * Get the system preferences storage instance.
+   */
+  getSystemPreferences(): SystemPreferencesStorage | null {
+    return this.systemPreferences;
   }
 
   /**

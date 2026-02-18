@@ -18,6 +18,29 @@ interface UsageRow {
   total_tokens: number;
   cost_usd: number;
   recorded_at: string; // BIGINT comes back as string from pg driver
+  personality_id: string | null;
+}
+
+export interface HistoryRow {
+  date: string;
+  provider: string;
+  model: string;
+  personalityId: string | null;
+  inputTokens: number;
+  outputTokens: number;
+  cachedTokens: number;
+  totalTokens: number;
+  costUsd: number;
+  calls: number;
+}
+
+export interface HistoryFilter {
+  from?: number;
+  to?: number;
+  provider?: string;
+  model?: string;
+  personalityId?: string;
+  groupBy?: 'day' | 'hour';
 }
 
 // Keep 90 days of history — enough for monthly rollups with headroom.
@@ -35,19 +58,23 @@ export class UsageStorage extends PgBaseStorage {
         cached_tokens INTEGER         NOT NULL DEFAULT 0,
         total_tokens INTEGER          NOT NULL DEFAULT 0,
         cost_usd     DOUBLE PRECISION NOT NULL DEFAULT 0,
-        recorded_at  BIGINT           NOT NULL
+        recorded_at  BIGINT           NOT NULL,
+        personality_id TEXT
       )
     `);
     await this.execute(
       `CREATE INDEX IF NOT EXISTS usage_records_recorded_at_idx ON usage_records (recorded_at)`
+    );
+    await this.execute(
+      `CREATE INDEX IF NOT EXISTS usage_records_personality_idx ON usage_records (personality_id)`
     );
   }
 
   async insert(record: UsageRecord): Promise<void> {
     await this.execute(
       `INSERT INTO usage_records
-         (provider, model, input_tokens, output_tokens, cached_tokens, total_tokens, cost_usd, recorded_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+         (provider, model, input_tokens, output_tokens, cached_tokens, total_tokens, cost_usd, recorded_at, personality_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
       [
         record.provider,
         record.model,
@@ -57,6 +84,7 @@ export class UsageStorage extends PgBaseStorage {
         record.usage.totalTokens,
         record.costUsd,
         record.timestamp,
+        record.personalityId ?? null,
       ]
     );
   }
@@ -65,7 +93,7 @@ export class UsageStorage extends PgBaseStorage {
   async loadRecent(): Promise<UsageRecord[]> {
     const since = Date.now() - RETENTION_MS;
     const rows = await this.queryMany<UsageRow>(
-      `SELECT provider, model, input_tokens, output_tokens, cached_tokens, total_tokens, cost_usd, recorded_at
+      `SELECT provider, model, input_tokens, output_tokens, cached_tokens, total_tokens, cost_usd, recorded_at, personality_id
          FROM usage_records
         WHERE recorded_at >= $1
         ORDER BY recorded_at ASC`,
@@ -83,6 +111,91 @@ export class UsageStorage extends PgBaseStorage {
       },
       costUsd: row.cost_usd,
       timestamp: Number(row.recorded_at),
+      personalityId: row.personality_id ?? undefined,
+    }));
+  }
+
+  /**
+   * Query aggregated cost history with optional filters and grouping.
+   * Returns one row per (date-bucket, provider, model, personality_id).
+   */
+  async queryHistory(filter: HistoryFilter = {}): Promise<HistoryRow[]> {
+    const { from, to, provider, model, personalityId, groupBy = 'day' } = filter;
+
+    const conditions: string[] = [];
+    const params: unknown[] = [];
+
+    if (from !== undefined) {
+      params.push(from);
+      conditions.push(`recorded_at >= $${params.length}`);
+    }
+    if (to !== undefined) {
+      params.push(to);
+      conditions.push(`recorded_at <= $${params.length}`);
+    }
+    if (provider) {
+      params.push(provider);
+      conditions.push(`provider = $${params.length}`);
+    }
+    if (model) {
+      params.push(`%${model}%`);
+      conditions.push(`model ILIKE $${params.length}`);
+    }
+    if (personalityId) {
+      params.push(personalityId);
+      conditions.push(`personality_id = $${params.length}`);
+    }
+
+    const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    // Truncate epoch-ms timestamp to day or hour bucket using integer arithmetic
+    const bucketExpr =
+      groupBy === 'hour'
+        ? `to_char(to_timestamp(recorded_at / 1000), 'YYYY-MM-DD"T"HH24":00:00"')`
+        : `to_char(to_timestamp(recorded_at / 1000), 'YYYY-MM-DD')`;
+
+    const sql = `
+      SELECT
+        ${bucketExpr}                   AS date,
+        provider,
+        model,
+        personality_id,
+        SUM(input_tokens)::INTEGER      AS input_tokens,
+        SUM(output_tokens)::INTEGER     AS output_tokens,
+        SUM(cached_tokens)::INTEGER     AS cached_tokens,
+        SUM(total_tokens)::INTEGER      AS total_tokens,
+        SUM(cost_usd)                   AS cost_usd,
+        COUNT(*)::INTEGER               AS calls
+      FROM usage_records
+      ${where}
+      GROUP BY 1, provider, model, personality_id
+      ORDER BY 1 ASC, provider, model
+    `;
+
+    const rows = await this.queryMany<{
+      date: string;
+      provider: string;
+      model: string;
+      personality_id: string | null;
+      input_tokens: number;
+      output_tokens: number;
+      cached_tokens: number;
+      total_tokens: number;
+      cost_usd: number;
+      calls: number;
+    }>(sql, params);
+
+    return rows.map((row) => ({
+      date: row.date,
+      provider: row.provider,
+      model: row.model,
+      personalityId: row.personality_id,
+      inputTokens: Number(row.input_tokens),
+      outputTokens: Number(row.output_tokens),
+      cachedTokens: Number(row.cached_tokens),
+      totalTokens: Number(row.total_tokens),
+      costUsd: Number(row.cost_usd),
+      calls: Number(row.calls),
     }));
   }
 

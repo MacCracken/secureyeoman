@@ -73,6 +73,50 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
     }
   );
 
+  // ── Persistent model default ────────────────────────────────────────
+
+  app.get('/api/v1/model/default', async (_request, reply: FastifyReply) => {
+    try {
+      const def = secureYeoman.getModelDefault();
+      return { provider: def?.provider ?? null, model: def?.model ?? null };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return reply.code(500).send({ error: message });
+    }
+  });
+
+  app.post(
+    '/api/v1/model/default',
+    async (request: FastifyRequest<{ Body: SwitchModelBody }>, reply: FastifyReply) => {
+      const { provider, model } = request.body;
+
+      if (!provider || !model) {
+        return reply.code(400).send({ error: 'provider and model are required' });
+      }
+
+      try {
+        await secureYeoman.setModelDefault(provider, model);
+        return { success: true, provider, model };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        if (message.startsWith('Invalid provider')) {
+          return reply.code(400).send({ error: message });
+        }
+        return reply.code(500).send({ error: `Failed to set model default: ${message}` });
+      }
+    }
+  );
+
+  app.delete('/api/v1/model/default', async (_request, reply: FastifyReply) => {
+    try {
+      await secureYeoman.clearModelDefault();
+      return { success: true };
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      return reply.code(500).send({ error: message });
+    }
+  });
+
   // Cost optimization recommendations
   app.get('/api/v1/model/cost-recommendations', async (_request, reply: FastifyReply) => {
     try {

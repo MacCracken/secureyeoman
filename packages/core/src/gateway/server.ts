@@ -628,6 +628,56 @@ export class GatewayServer {
       };
     });
 
+    // Cost history endpoint
+    this.app.get(
+      '/api/v1/costs/history',
+      async (
+        request: FastifyRequest<{
+          Querystring: {
+            from?: string;
+            to?: string;
+            provider?: string;
+            model?: string;
+            personalityId?: string;
+            groupBy?: string;
+          };
+        }>
+      ) => {
+        const usageStorage = this.secureYeoman.getUsageStorage();
+        if (!usageStorage) {
+          return { records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } };
+        }
+
+        const q = request.query;
+        const parseNum = (v?: string): number | undefined => {
+          if (!v) return undefined;
+          const n = Number(v);
+          return Number.isNaN(n) ? undefined : n;
+        };
+
+        const records = await usageStorage.queryHistory({
+          from: parseNum(q.from),
+          to: parseNum(q.to),
+          provider: q.provider || undefined,
+          model: q.model || undefined,
+          personalityId: q.personalityId || undefined,
+          groupBy: q.groupBy === 'hour' ? 'hour' : 'day',
+        });
+
+        const totals = records.reduce(
+          (acc, r) => {
+            acc.totalTokens += r.totalTokens;
+            acc.costUsd += r.costUsd;
+            acc.calls += r.calls;
+            return acc;
+          },
+          { totalTokens: 0, costUsd: 0, calls: 0 }
+        );
+
+        return { records, totals };
+      }
+    );
+
     // Tasks endpoints
     this.app.get(
       '/api/v1/tasks',

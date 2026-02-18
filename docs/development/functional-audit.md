@@ -56,8 +56,8 @@
 | **Google Chat** | ✅ Stable | ✅ | ❌ |
 | **MS Teams** | ✅ Stable | ❌ | ❌ |
 | **iMessage** | ✅ Beta | ✅ | ❌ |
-| **Email (SMTP)** | ❌ | ✅ | ❌ |
-| **OAuth2** | ⚠️ Planned (Phase 16) | ❌ | ❌ |
+| **Email (SMTP)** | ✅ Stable | ✅ | ❌ |
+| **OAuth2** | ✅ First-class (Google) | ❌ | ❌ |
 
 ### 4. Tools & Automation
 
@@ -90,7 +90,7 @@
 |---------|--------------|----------|------------|
 | **Sub-Agents** | ✅ With budget/depth | ✅ Workspaces | ✅ Hierarchical |
 | **A2A Protocol** | ✅ | ❌ | ❌ |
-| **Agent Swarms** | ❌ | ❌ | ✅ |
+| **Agent Swarms** | ⚠️ Planned (Phase 17) | ❌ | ✅ |
 | **Delegation Controls** | ✅ | ❌ | ❌ |
 
 ### 7. Dashboard & UX
@@ -111,8 +111,8 @@
 | **Kubernetes** | ✅ Helm charts | ❌ | ❌ |
 | **Prometheus** | ✅ Metrics | ❌ | ❌ |
 | **Workspace/Team** | ⚠️ Planned (Phase 16) | ❌ | ✅ |
-| **SSO/SAML** | ❌ | ❌ | ✅ (some) |
-| **Onboarding** | ⚠️ Planned (Phase 17) | ❌ | ✅ |
+| **SSO/SAML** | ⚠️ Planned (Phase 17) | ❌ | ✅ (some) |
+| **Onboarding** | ⚠️ Planned (Phase 19) | ❌ | ✅ |
 
 ---
 
@@ -129,6 +129,9 @@
 8. **Multi-voice TTS** - Per-personality voice selection
 9. **Haptic Feedback** - Pattern-based triggers
 10. **Usage Tracking** - PostgreSQL-backed with persistence
+11. **OAuth2 First-Class** - Google services with automatic token refresh
+12. **Email (SMTP)** - IMAP receive + SMTP send with provider presets
+13. **CLI Improvements** - Interactive init, shell completions, rich output (Phase 18)
 
 ---
 
@@ -136,38 +139,37 @@
 
 ### ❌ Missing vs OpenClaw
 1. **Community Skills** - 5,700+ community skills vs SecureYeoman hooks
-2. **Email Integration** - SMTP support
-3. **Canvas/UI Rendering** - Built-in UI rendering
+2. **Canvas/UI Rendering** - Built-in UI rendering
 
 ### ❌ Missing vs Agent Zero
 1. **Dynamic Tool Creation** - Agent Zero creates tools on the fly
 2. **Full VM Isolation** - Agent Zero runs in Docker VM
 
 ### ❌ Missing vs Market
-1. **SSO/SAML** - Enterprise identity
-2. **Managed Cloud** - SaaS offering
-3. **Mobile App** - Native iOS/Android
+1. **Mobile App** - Native iOS/Android
 
 ---
 
-## Recommendations for Phase 16-17
+## Recommendations for Phase 16-19
 
-### High Priority
+### High Priority (Phase 16)
 1. **Community Skills Marketplace** - Compete with 5,700+ OpenClaw skills
-2. **OAuth2 First-Class** - Google services (Gmail, Calendar, Drive)
-3. **Workspace Management** - Multi-tenant enterprise
-4. **ChromaDB Backend** - Additional vector option
+2. **Workspace Management** - Multi-tenant enterprise
+3. **ChromaDB Backend** - Additional vector option
 
-### Medium Priority
+### Medium Priority (Phase 17)
 1. **SSO/SAML Integration** - Enterprise identity
-2. **Email Integration** - SMTP support
-3. **Dynamic Tool Creation** - Agent Zero-style
-4. **Mobile Companion App**
+2. **Dynamic Tool Creation** - Agent Zero-style
+3. **Agent Swarms** - Coordinated multi-agent execution
 
-### Lower Priority
-1. **Canvas/UI Rendering**
-2. **Agent Swarms**
-3. **Managed Cloud Offering**
+### CLI Improvements (Phase 18)
+1. **Interactive Init** - `secureyeoman init` wizard
+2. **Shell Completions** - bash, zsh, fish
+3. **Rich Output** - Colored output, tables, progress indicators
+
+### Onboarding (Phase 19)
+1. **First Install Onboarding** - CLI and Dashboard guided setup
+2. **Managed Cloud Offering** - SaaS deployment option
 
 ---
 
@@ -188,4 +190,4 @@
 
 ---
 
-*Generated: 2026-02-18*
+*Generated: 2026-02-18 — Updated for Phases 15-19 roadmap*

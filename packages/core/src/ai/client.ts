@@ -41,6 +41,7 @@ import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { getSecret } from '../config/loader.js';
 import type { RetryConfig } from './retry-manager.js';
+import type { SoulManager } from '../soul/manager.js';
 
 export interface AIClientConfig {
   model: ModelConfig;
@@ -51,6 +52,7 @@ export interface AIClientDeps {
   auditChain?: AuditChain;
   logger?: SecureLogger;
   usageStorage?: UsageStorage;
+  soulManager?: SoulManager;
 }
 
 export class AIClient {
@@ -64,6 +66,7 @@ export class AIClient {
   private readonly fallbackConfigs: FallbackModelConfig[];
   private readonly fallbackProviders = new Map<number, AIProvider>();
   private readonly retryConfig?: Partial<RetryConfig>;
+  private soulManager: SoulManager | null;
 
   constructor(config: AIClientConfig, deps: AIClientDeps = {}) {
     this.costCalculator = new CostCalculator();
@@ -74,7 +77,13 @@ export class AIClient {
     this.primaryModelConfig = config.model;
     this.fallbackConfigs = config.model.fallbacks ?? [];
     this.retryConfig = config.retryConfig;
+    this.soulManager = deps.soulManager ?? null;
     this.provider = this.createProvider(config);
+  }
+
+  /** Inject or replace the SoulManager after construction. */
+  setSoulManager(manager: SoulManager): void {
+    this.soulManager = manager;
   }
 
   /**
@@ -316,7 +325,7 @@ export class AIClient {
       const response = await provider.chat(request);
       const elapsed = Date.now() - startTime;
 
-      this.trackUsage(response, elapsed);
+      await this.trackUsage(response, elapsed);
 
       await this.auditRecord('ai_response', {
         provider: response.provider,
@@ -376,12 +385,17 @@ export class AIClient {
             chunk.usage
           );
 
+          const streamPersonality = this.soulManager
+            ? await this.soulManager.getActivePersonality().catch(() => null)
+            : null;
+
           this.usageTracker.record({
             provider: providerName,
             model: request.model ?? 'default',
             usage: chunk.usage,
             costUsd,
             timestamp: Date.now(),
+            personalityId: streamPersonality?.id,
           });
           this.usageTracker.recordLatency(elapsed);
 
@@ -443,12 +457,16 @@ export class AIClient {
     }
   }
 
-  private trackUsage(response: AIResponse, elapsed: number): void {
+  private async trackUsage(response: AIResponse, elapsed: number): Promise<void> {
     const costUsd = this.costCalculator.calculate(
       this.providerName,
       response.model,
       response.usage
     );
+
+    const personality = this.soulManager
+      ? await this.soulManager.getActivePersonality().catch(() => null)
+      : null;
 
     this.usageTracker.record({
       provider: this.providerName,
@@ -456,6 +474,7 @@ export class AIClient {
       usage: response.usage,
       costUsd,
       timestamp: Date.now(),
+      personalityId: personality?.id,
     });
     this.usageTracker.recordLatency(elapsed);
   }
