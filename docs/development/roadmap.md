@@ -28,7 +28,7 @@
 | | **Release 2026.2.18** | **2026-02-18** | **Released** |
 | 16 | Integration Expansion II | — | In Progress |
 | 17 | Advanced Capabilities | — | Pending |
-| 18 | CLI Improvements | — | Pending |
+| 18 | SaaS ready | — | Pending |
 | 19 | Onboarding & First Run | — | Pending |
 
 ---
@@ -39,7 +39,6 @@
 
 ### Dashboard & Tooling
 - [ ] **Storybook** — Component development environment for dashboard UI components, integrated into Developers section as its own view with Settings > Security > Developers toggle to enable/disable display (subview pattern like Extensions/Experiments)
-- [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
 
 ### Security & Access
 
@@ -104,11 +103,12 @@
 
 ---
 
-## Phase 18: CLI Improvements
+## Phase 18: SaaS ready
 
 **Status**: Pending
 
 ### Security & Access
+- [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
 - [ ] **Roles & Permissions Review/Audit** — Comprehensive review of RBAC roles, permissions, and access controls to ensure completeness and alignment with feature set
 
 ### Guided Setup CLI

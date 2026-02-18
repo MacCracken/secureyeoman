@@ -4,7 +4,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChatPage } from './ChatPage';
-import { createChatResponse } from '../test/mocks';
+import { createChatResponse, createModelInfoResponse } from '../test/mocks';
 
 // ── Mock API client ──────────────────────────────────────────────
 vi.mock('../api/client', () => ({
@@ -32,6 +32,7 @@ vi.mock('./ModelWidget', () => ({
 import * as api from '../api/client';
 
 const mockFetchPersonalities = vi.mocked(api.fetchPersonalities);
+const mockFetchModelInfo = vi.mocked(api.fetchModelInfo);
 const mockSendChatMessage = vi.mocked(api.sendChatMessage);
 const mockRememberChatMessage = vi.mocked(api.rememberChatMessage);
 const mockFetchConversations = vi.mocked(api.fetchConversations);
@@ -52,11 +53,12 @@ function createQueryClient() {
 
 function renderComponent() {
   const qc = createQueryClient();
-  return render(
+  const result = render(
     <QueryClientProvider client={qc}>
       <ChatPage />
     </QueryClientProvider>
   );
+  return { qc, ...result };
 }
 
 const defaultPersonality = {
@@ -450,5 +452,108 @@ describe('ChatPage', () => {
     renderComponent();
     expect(screen.getByText('Conversations are automatically saved.')).toBeInTheDocument();
     expect(screen.queryByText(/session-only/)).not.toBeInTheDocument();
+  });
+
+  // ── Model display (regression: query key was ['modelInfo'] instead of ['model-info']) ──
+
+  it('model button shows current model name from fetchModelInfo', async () => {
+    mockFetchModelInfo.mockResolvedValue(createModelInfoResponse());
+    renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText('claude-sonnet-4-20250514')).toBeInTheDocument();
+    });
+  });
+
+  it('model button falls back to "Model" label when no model info is loaded', async () => {
+    // fetchModelInfo has no mock return value → modelInfoData stays undefined
+    renderComponent();
+
+    // Should not throw and should render the fallback
+    await waitFor(() => {
+      expect(screen.getByText('Model')).toBeInTheDocument();
+    });
+  });
+
+  it('empty state shows Using Model text with provider/model from model-info cache', async () => {
+    mockFetchModelInfo.mockResolvedValue(createModelInfoResponse());
+    renderComponent();
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(/Using Model:.*anthropic\/claude-sonnet-4-20250514/)
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('model button updates when the model-info cache entry is replaced (shared query key fix)', async () => {
+    mockFetchModelInfo.mockResolvedValue(createModelInfoResponse());
+    const { qc } = renderComponent();
+
+    await waitFor(() => {
+      expect(screen.getByText('claude-sonnet-4-20250514')).toBeInTheDocument();
+    });
+
+    // Simulate what ModelWidget does after a successful switch: update the ['model-info'] cache.
+    // If ChatPage were still using ['modelInfo'] this update would be invisible to it.
+    qc.setQueryData(
+      ['model-info'],
+      createModelInfoResponse({
+        current: { provider: 'openai', model: 'gpt-4o', maxTokens: 4096, temperature: 0.7 },
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('gpt-4o')).toBeInTheDocument();
+    });
+
+    // Old model name should no longer appear in the button
+    expect(screen.queryByText('claude-sonnet-4-20250514')).not.toBeInTheDocument();
+  });
+
+  // ── Memory toggle ──
+
+  it('memory toggle shows Memory On by default', () => {
+    renderComponent();
+    expect(screen.getByText('Memory On')).toBeInTheDocument();
+  });
+
+  it('memory toggle switches label to Memory Off when clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.click(screen.getByText('Memory On'));
+
+    expect(screen.getByText('Memory Off')).toBeInTheDocument();
+    expect(screen.queryByText('Memory On')).not.toBeInTheDocument();
+  });
+
+  it('memory toggle switches back to Memory On when clicked again', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.click(screen.getByText('Memory On'));
+    await user.click(screen.getByText('Memory Off'));
+
+    expect(screen.getByText('Memory On')).toBeInTheDocument();
+  });
+
+  it('memory toggle button passes memoryEnabled to useChat (off → message omits memory)', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    // Turn memory off
+    await user.click(screen.getByText('Memory On'));
+    expect(screen.getByText('Memory Off')).toBeInTheDocument();
+
+    // Send a message and verify memoryEnabled=false is forwarded
+    const textarea = screen.getByPlaceholderText(/Message/);
+    await user.type(textarea, 'No memory!{enter}');
+
+    await waitFor(() => {
+      expect(mockSendChatMessage).toHaveBeenCalled();
+    });
+    const call = mockSendChatMessage.mock.calls[0][0];
+    expect(call.memoryEnabled).toBe(false);
   });
 });

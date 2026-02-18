@@ -60,7 +60,7 @@ export function ChatPage() {
   });
 
   const { data: modelInfoData } = useQuery({
-    queryKey: ['modelInfo'],
+    queryKey: ['model-info'],
     queryFn: fetchModelInfo,
   });
 
@@ -211,7 +211,7 @@ export function ChatPage() {
         model: personality.defaultModel.model,
       })
         .then(() => {
-          queryClient.invalidateQueries({ queryKey: ['modelInfo'] });
+          queryClient.invalidateQueries({ queryKey: ['model-info'] });
         })
         .catch(() => {
           // Silently fail - user can manually switch if needed
@@ -219,10 +219,6 @@ export function ChatPage() {
     }
   }, [effectivePersonalityId, queryClient]);
 
-  // Handle model switch via ModelWidget
-  const handleModelSwitch = useCallback(() => {
-    // Model widget handles its own state
-  }, []);
 
   // Feed voice transcript into input
   useEffect(() => {
@@ -449,7 +445,7 @@ export function ChatPage() {
                           model: p.defaultModel.model,
                         })
                           .then(() => {
-                            queryClient.invalidateQueries({ queryKey: ['modelInfo'] });
+                            queryClient.invalidateQueries({ queryKey: ['model-info'] });
                           })
                           .catch(() => {});
                       }
@@ -500,9 +496,10 @@ export function ChatPage() {
               onClick={() => {
                 setShowModelWidget((v) => !v);
               }}
-              className="btn-ghost text-xs px-3 py-1.5 rounded-full border"
+              className="btn-ghost text-xs px-3 py-1.5 rounded-full border font-mono"
+              title={currentModel ?? 'Select model'}
             >
-              Model
+              {modelInfoData?.current.model ?? 'Model'}
             </button>
             {showModelWidget && (
               <div className="absolute right-0 top-full mt-2 z-50">
@@ -510,7 +507,6 @@ export function ChatPage() {
                   onClose={() => {
                     setShowModelWidget(false);
                   }}
-                  onModelSwitch={handleModelSwitch}
                 />
               </div>
             )}
