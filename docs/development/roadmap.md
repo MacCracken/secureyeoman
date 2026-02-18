@@ -30,6 +30,7 @@
 | 17 | Advanced Capabilities | — | Pending |
 | 18 | SaaS ready | — | Pending |
 | 19 | Onboarding & First Run | — | Pending |
+| 20 | Efficiency & Embedded | — | Pending |
 
 ---
 
@@ -121,6 +122,9 @@
 - [ ] **Rich Output** — Colored output, tables, and progress indicators for long-running operations
 - [ ] **JSON Output** — `--json` flag support for all commands for scripting
 
+### Performance
+- [ ] **Memory Footprint Optimization** — Study PicoClaw for potential memory reductions; target <1GB baseline
+
 ---
 
 ## Phase 19: Onboarding & First Run
@@ -129,6 +133,24 @@
 
 ### Onboarding
 - [ ] **First Install Onboarding** — CLI and Dashboard guided setup experience for new installations; builds on Phase 18 CLI Improvements (`secureyeoman init` wizard, rich output) for maximum effectiveness
+
+---
+
+## Phase 20: Efficiency & Embedded
+
+**Status**: Pending
+
+### Performance Optimization
+- [ ] **Fast Boot** — Optimize startup time for better UX; target <10s startup (learn from PicoClaw's 1s boot)
+- [ ] **Memory Footprint Optimization** — Study PicoClaw for potential memory reductions
+
+### Deployment
+- [ ] **Single Binary** — Simplify deployment with Go-based components
+- [ ] **Embedded Ready** — Consider future IoT/edge use cases
+
+### Development
+- [ ] **AI-Bootstrapped Development** — Use AI to optimize codebase
+- [ ] **Go/Rust Runtime** — Potential future language option for core components
 
 ---
 
