@@ -24,9 +24,10 @@
 | 12 | Expanded Integrations | 2026.2.17 | Complete |
 | 13 | Dashboard & Tooling | 2026.2.17 | Complete |
 | 14 | Dashboard Chat Enhancements | 2026.2.17 | Complete |
+| | **Release 2026.2.17** | **2026-02-17** | **Released** |
 | 15 | Integration Expansion | 2026.2.18 | Complete |
+| 16 | Integration Enhancements | 2026.2.18 | Complete |
 | | **Release 2026.2.18** | **2026-02-18** | **Released** |
-| 16 | Integration Enhancements | — | In Progress |
 | 17 | Advanced Capabilities | — | Pending |
 | 18 | Skills Marketplace & Community | - | Pending |
 | 19 | SaaS ready | — | Pending |
@@ -36,7 +37,7 @@
 
 ## Phase 16: Integration Enhancements
 
-**Status**: In Progress
+**Status**: Complete
 
 ### Dashboard & Tooling
 - [x] **Storybook** — Component development environment for dashboard UI components, integrated into Developers section as its own view with Settings > Security > Developers toggle to enable/disable display (subview pattern like Extensions/Experiments)
@@ -188,4 +189,4 @@ Tracked third-party dependencies with known issues that require upstream resolut
 
 ---
 
-*Last updated: 2026-02-18 — Phase 15 complete; Phase 16: Integration Expansion II in progress*
+*Last updated: 2026-02-18 — Phase 16 complete; Phase 17: Advanced Capabilities pending*

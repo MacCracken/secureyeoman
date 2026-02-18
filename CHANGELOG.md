@@ -4,7 +4,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 16: Integration Expansion II — In Progress (2026.2.18)
+## Phase 16: Integration Enhancements — Complete (2026.2.18)
 
 ### Storybook Developer Integration — [ADR 054](docs/adr/054-storybook-developer-integration.md)
 Component development environment integrated into Developers section as its own subview; gated by `allowStorybook` security policy toggle in Settings > Security > Developers; disabled state mirrors Experiments pattern; enabled state provides quick-start instructions, component story gallery, and iframe to localhost:6006
