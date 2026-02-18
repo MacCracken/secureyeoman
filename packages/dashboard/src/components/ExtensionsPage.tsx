@@ -11,6 +11,13 @@ import {
   ToggleLeft,
   ToggleRight,
   X,
+  Bug,
+  Play,
+  CheckCircle2,
+  AlertCircle,
+  FlaskConical,
+  Clock,
+  RefreshCw,
 } from 'lucide-react';
 import {
   fetchExtensions,
@@ -25,9 +32,46 @@ import {
   discoverExtensions,
   fetchExtensionConfig,
   fetchSecurityPolicy,
+  fetchHookExecutionLog,
+  testHookPoint,
 } from '../api/client';
 
-type TabId = 'extensions' | 'hooks' | 'webhooks';
+const ALL_HOOK_POINTS = [
+  'system:startup',
+  'system:shutdown',
+  'system:error',
+  'task:before-create',
+  'task:after-create',
+  'task:before-execute',
+  'task:after-execute',
+  'task:on-error',
+  'memory:before-store',
+  'memory:after-store',
+  'memory:before-recall',
+  'memory:after-recall',
+  'message:before-send',
+  'message:after-send',
+  'message:before-receive',
+  'message:after-receive',
+  'ai:before-request',
+  'ai:after-response',
+  'ai:on-error',
+  'security:auth-success',
+  'security:auth-failure',
+  'security:rate-limited',
+  'agent:before-delegate',
+  'agent:after-delegate',
+  'proactive:trigger-fired',
+  'proactive:action-executed',
+  'proactive:suggestion-approved',
+  'proactive:suggestion-dismissed',
+  'multimodal:image-analyzed',
+  'multimodal:audio-transcribed',
+  'multimodal:speech-generated',
+  'multimodal:image-generated',
+] as const;
+
+type TabId = 'extensions' | 'hooks' | 'webhooks' | 'debugger';
 
 export function ExtensionsPage() {
   const [activeTab, setActiveTab] = useState<TabId>('extensions');
@@ -77,6 +121,7 @@ export function ExtensionsPage() {
     { id: 'extensions', label: 'Extensions' },
     { id: 'hooks', label: 'Hooks' },
     { id: 'webhooks', label: 'Webhooks' },
+    { id: 'debugger', label: 'Debugger' },
   ];
 
   return (
@@ -121,6 +166,7 @@ export function ExtensionsPage() {
       {activeTab === 'extensions' && <ExtensionsTab />}
       {activeTab === 'hooks' && <HooksTab />}
       {activeTab === 'webhooks' && <WebhooksTab />}
+      {activeTab === 'debugger' && <DebuggerTab />}
     </div>
   );
 }
@@ -727,6 +773,346 @@ function WebhooksTab() {
             </div>
           </div>
         ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Debugger Tab ──────────────────────────────────────────────────
+
+const HOOK_POINT_GROUPS: { group: string; points: string[] }[] = [
+  { group: 'System', points: ['system:startup', 'system:shutdown', 'system:error'] },
+  {
+    group: 'Task',
+    points: [
+      'task:before-create',
+      'task:after-create',
+      'task:before-execute',
+      'task:after-execute',
+      'task:on-error',
+    ],
+  },
+  {
+    group: 'Memory',
+    points: [
+      'memory:before-store',
+      'memory:after-store',
+      'memory:before-recall',
+      'memory:after-recall',
+    ],
+  },
+  {
+    group: 'Message',
+    points: [
+      'message:before-send',
+      'message:after-send',
+      'message:before-receive',
+      'message:after-receive',
+    ],
+  },
+  {
+    group: 'AI',
+    points: ['ai:before-request', 'ai:after-response', 'ai:on-error'],
+  },
+  {
+    group: 'Security',
+    points: ['security:auth-success', 'security:auth-failure', 'security:rate-limited'],
+  },
+  {
+    group: 'Agent',
+    points: ['agent:before-delegate', 'agent:after-delegate'],
+  },
+  {
+    group: 'Proactive',
+    points: [
+      'proactive:trigger-fired',
+      'proactive:action-executed',
+      'proactive:suggestion-approved',
+      'proactive:suggestion-dismissed',
+    ],
+  },
+  {
+    group: 'Multimodal',
+    points: [
+      'multimodal:image-analyzed',
+      'multimodal:audio-transcribed',
+      'multimodal:speech-generated',
+      'multimodal:image-generated',
+    ],
+  },
+];
+
+function DebuggerTab() {
+  const queryClient = useQueryClient();
+  const [testHookPointValue, setTestHookPointValue] = useState(ALL_HOOK_POINTS[0] as string);
+  const [testPayload, setTestPayload] = useState('{}');
+  const [testPayloadError, setTestPayloadError] = useState('');
+  const [lastResult, setLastResult] = useState<{
+    vetoed: boolean;
+    errors: string[];
+    durationMs: number;
+  } | null>(null);
+  const [filterPoint, setFilterPoint] = useState('');
+
+  const {
+    data: logData,
+    isLoading: logLoading,
+    refetch: refetchLog,
+    isFetching,
+  } = useQuery({
+    queryKey: ['hookExecutionLog', filterPoint],
+    queryFn: () => fetchHookExecutionLog(filterPoint || undefined),
+    refetchInterval: 5000,
+  });
+
+  const testMut = useMutation({
+    mutationFn: testHookPoint,
+    onSuccess: (data) => {
+      setLastResult({ ...data.result, durationMs: data.durationMs });
+      setTestPayloadError('');
+      void queryClient.invalidateQueries({ queryKey: ['hookExecutionLog'] });
+    },
+    onError: (err) => {
+      setTestPayloadError(err instanceof Error ? err.message : 'Test failed');
+    },
+  });
+
+  const handleTest = () => {
+    setTestPayloadError('');
+    let parsedData: unknown = {};
+    if (testPayload.trim()) {
+      try {
+        parsedData = JSON.parse(testPayload);
+      } catch {
+        setTestPayloadError('Invalid JSON payload');
+        return;
+      }
+    }
+    testMut.mutate({ hookPoint: testHookPointValue, data: parsedData });
+  };
+
+  const entries = logData?.entries ?? [];
+
+  return (
+    <div className="space-y-4">
+      {/* Test Trigger Panel */}
+      <div className="card p-4 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <Bug className="w-4 h-4 text-primary" />
+          <span className="font-medium text-sm">Test Trigger</span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">
+              Hook Point
+            </label>
+            <select
+              value={testHookPointValue}
+              onChange={(e) => {
+                setTestHookPointValue(e.target.value);
+              }}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
+            >
+              {HOOK_POINT_GROUPS.map((group) => (
+                <optgroup key={group.group} label={group.group}>
+                  {group.points.map((point) => (
+                    <option key={point} value={point}>
+                      {point}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">
+              Payload (JSON)
+            </label>
+            <textarea
+              value={testPayload}
+              onChange={(e) => {
+                setTestPayload(e.target.value);
+              }}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-xs font-mono min-h-[72px] resize-none"
+              placeholder="{}"
+            />
+          </div>
+        </div>
+
+        {testPayloadError && <p className="text-xs text-destructive">{testPayloadError}</p>}
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleTest}
+            disabled={testMut.isPending}
+            className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+          >
+            {testMut.isPending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Play className="w-3.5 h-3.5" />
+            )}
+            Fire Test
+          </button>
+
+          {lastResult && (
+            <div
+              className={`flex items-center gap-2 text-xs px-2.5 py-1.5 rounded-lg border ${
+                lastResult.errors.length > 0
+                  ? 'bg-destructive/10 text-destructive border-destructive/20'
+                  : lastResult.vetoed
+                    ? 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20'
+                    : 'bg-green-500/10 text-green-600 border-green-500/20'
+              }`}
+            >
+              {lastResult.errors.length > 0 ? (
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              ) : lastResult.vetoed ? (
+                <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+              ) : (
+                <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />
+              )}
+              <span>
+                {lastResult.vetoed
+                  ? 'Vetoed'
+                  : lastResult.errors.length > 0
+                    ? `${lastResult.errors.length} error(s)`
+                    : 'OK'}
+              </span>
+              <span className="text-muted-foreground">{lastResult.durationMs}ms</span>
+              {lastResult.errors.length > 0 && (
+                <span className="truncate max-w-[200px]" title={lastResult.errors.join('; ')}>
+                  — {lastResult.errors[0]}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Execution Log */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium">Execution Log</span>
+            <span className="text-xs text-muted-foreground">(last 100, refreshes every 5s)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <select
+              value={filterPoint}
+              onChange={(e) => {
+                setFilterPoint(e.target.value);
+              }}
+              className="bg-card border border-border rounded-lg px-2 py-1 text-xs"
+            >
+              <option value="">All hook points</option>
+              {HOOK_POINT_GROUPS.map((group) => (
+                <optgroup key={group.group} label={group.group}>
+                  {group.points.map((point) => (
+                    <option key={point} value={point}>
+                      {point}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+            <button
+              onClick={() => {
+                void refetchLog();
+              }}
+              disabled={isFetching}
+              className="btn-ghost p-1.5 rounded"
+              title="Refresh log"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+            </button>
+          </div>
+        </div>
+
+        {logLoading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : entries.length === 0 ? (
+          <div className="card p-8 text-center">
+            <Bug className="w-8 h-8 mx-auto text-muted-foreground mb-3 opacity-40" />
+            <p className="text-muted-foreground text-sm">No executions recorded yet</p>
+            <p className="text-muted-foreground text-xs mt-1">
+              Use the test trigger above or wait for system events
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            {entries.map((entry) => (
+              <div
+                key={entry.id}
+                className={`card px-4 py-2.5 border-l-2 ${
+                  entry.errors.length > 0
+                    ? 'border-l-destructive'
+                    : entry.vetoed
+                      ? 'border-l-yellow-500'
+                      : 'border-l-green-500'
+                }`}
+              >
+                <div className="flex items-center gap-3 flex-wrap">
+                  {/* Status icon */}
+                  {entry.errors.length > 0 ? (
+                    <AlertCircle className="w-3.5 h-3.5 text-destructive flex-shrink-0" />
+                  ) : entry.vetoed ? (
+                    <AlertCircle className="w-3.5 h-3.5 text-yellow-500 flex-shrink-0" />
+                  ) : (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                  )}
+
+                  {/* Hook point */}
+                  <span className="text-sm font-medium font-mono">{entry.hookPoint}</span>
+
+                  {/* Test badge */}
+                  {entry.isTest && (
+                    <span className="flex items-center gap-1 text-xs px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-500 border border-purple-500/20">
+                      <FlaskConical className="w-3 h-3" />
+                      test
+                    </span>
+                  )}
+
+                  {/* Vetoed badge */}
+                  {entry.vetoed && (
+                    <span className="text-xs px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 border border-yellow-500/20">
+                      vetoed
+                    </span>
+                  )}
+
+                  {/* Handler count */}
+                  <span className="text-xs text-muted-foreground">
+                    {entry.handlerCount} handler{entry.handlerCount !== 1 ? 's' : ''}
+                  </span>
+
+                  {/* Duration */}
+                  <span className="text-xs text-muted-foreground">{entry.durationMs}ms</span>
+
+                  {/* Errors */}
+                  {entry.errors.length > 0 && (
+                    <span
+                      className="text-xs text-destructive truncate max-w-[240px]"
+                      title={entry.errors.join('; ')}
+                    >
+                      {entry.errors[0]}
+                      {entry.errors.length > 1 && ` (+${entry.errors.length - 1} more)`}
+                    </span>
+                  )}
+
+                  {/* Timestamp */}
+                  <span className="text-xs text-muted-foreground ml-auto">
+                    {new Date(entry.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

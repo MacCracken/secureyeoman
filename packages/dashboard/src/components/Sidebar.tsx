@@ -12,9 +12,8 @@ import {
   Code,
   Users,
   Settings,
-  Puzzle,
+  Code2,
   Sparkles,
-  FlaskConical,
   DollarSign,
   PanelLeftOpen,
   PanelLeftClose,
@@ -64,13 +63,7 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
   { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
   { to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" />, enabled: true },
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
-  { to: '/extensions', label: 'Extensions', icon: <Puzzle className="w-5 h-5" />, enabled: true },
-  {
-    to: '/experiments',
-    label: 'Experiments',
-    icon: <FlaskConical className="w-5 h-5" />,
-    enabled: true,
-  },
+  { to: '/developers', label: 'Developers', icon: <Code2 className="w-5 h-5" />, enabled: true },
   { to: '/costs', label: 'Costs', icon: <DollarSign className="w-5 h-5" /> },
   { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
 ];
@@ -159,8 +152,7 @@ export function Sidebar({
       });
     }
     return items.filter((item) => {
-      if (item.to === '/extensions') return extensionsEnabled;
-      if (item.to === '/experiments') return experimentsEnabled;
+      if (item.to === '/developers') return extensionsEnabled || experimentsEnabled;
       if (item.to === '/proactive') return proactiveEnabled;
       return true;
     });

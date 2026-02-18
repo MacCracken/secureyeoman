@@ -43,6 +43,7 @@ import { SandboxManager, type SandboxManagerConfig } from './sandbox/manager.js'
 import type { SandboxOptions } from './sandbox/types.js';
 import { GatewayServer, createGatewayServer } from './gateway/server.js';
 import { AIClient } from './ai/client.js';
+import { UsageStorage } from './ai/usage-storage.js';
 import { AuthStorage } from './security/auth-storage.js';
 import { AuthService } from './security/auth.js';
 import { sha256 } from './utils/crypto.js';
@@ -374,8 +375,11 @@ export class SecureYeoman {
         this.logger.debug('Secret rotation manager started');
       }
 
-      // Step 5.6: Initialize AI client
+      // Step 5.6: Initialize AI client with persistent usage storage
       try {
+        const usageStorage = new UsageStorage();
+        await usageStorage.init();
+
         this.aiClient = new AIClient(
           {
             model: this.config.model,
@@ -387,8 +391,12 @@ export class SecureYeoman {
           {
             auditChain: this.auditChain,
             logger: this.logger.child({ component: 'AIClient' }),
+            usageStorage,
           }
         );
+
+        // Load historical records so cost totals survive restarts
+        await this.aiClient.init();
         this.logger.debug('AI client initialized', { provider: this.config.model.provider });
       } catch (error) {
         // AI client failure is non-fatal — the system can run without AI

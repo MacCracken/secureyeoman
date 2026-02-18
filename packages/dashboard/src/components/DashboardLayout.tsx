@@ -60,14 +60,11 @@ const ConnectionsPage = lazy(() =>
   import('./ConnectionsPage').then((m) => ({ default: m.ConnectionsPage }))
 );
 const AgentsPage = lazy(() => import('./AgentsPage').then((m) => ({ default: m.AgentsPage })));
-const ExtensionsPage = lazy(() =>
-  import('./ExtensionsPage').then((m) => ({ default: m.ExtensionsPage }))
+const DeveloperPage = lazy(() =>
+  import('./DeveloperPage').then((m) => ({ default: m.DeveloperPage }))
 );
 const ProactivePage = lazy(() =>
   import('./ProactivePage').then((m) => ({ default: m.ProactivePage }))
-);
-const ExperimentsPage = lazy(() =>
-  import('./ExperimentsPage').then((m) => ({ default: m.ExperimentsPage }))
 );
 const CostsPage = lazy(() =>
   import('./CostsPage').then((m) => ({ default: m.CostsPage }))
@@ -227,11 +224,12 @@ export function DashboardLayout() {
                   <Route path="/agents" element={<AgentsPage />} />
                   <Route path="/connections" element={<ConnectionsPage />} />
                   <Route path="/mcp" element={<ConnectionsPage />} />
-                  <Route path="/extensions" element={<ExtensionsPage />} />
+                  <Route path="/developers" element={<DeveloperPage />} />
+                  <Route path="/extensions" element={<Navigate to="/developers" replace />} />
+                  <Route path="/experiments" element={<Navigate to="/developers" replace />} />
                   <Route path="/execution" element={<Navigate to="/editor" replace />} />
                   <Route path="/a2a" element={<Navigate to="/agents" replace />} />
                   <Route path="/proactive" element={<ProactivePage />} />
-                  <Route path="/experiments" element={<ExperimentsPage />} />
                   <Route path="/multimodal" element={<Navigate to="/agents" replace />} />
                   <Route path="/costs" element={<CostsPage />} />
                   <Route path="/settings" element={<SettingsPage />} />

@@ -79,3 +79,18 @@ export interface ExtensionManifest {
     priority?: number;
   }[];
 }
+
+/**
+ * A single entry in the hook execution log.
+ * One entry is recorded per emit() call (not per individual handler).
+ */
+export interface HookExecutionEntry {
+  id: string;
+  hookPoint: HookPoint;
+  handlerCount: number;
+  durationMs: number;
+  vetoed: boolean;
+  errors: string[];
+  timestamp: number;
+  isTest: boolean;
+}

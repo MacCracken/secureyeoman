@@ -4,6 +4,44 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 15 (in progress) — Developer Consolidation, Cost Persistence & Hook Debugger
+
+### Lifecycle Hook Debugger
+- **`HookExecutionEntry` type** — new entry shape in `types.ts`: hookPoint, handlerCount, durationMs, vetoed, errors, timestamp, isTest flag
+- **`ExtensionManager` execution log** — in-memory circular buffer (max 200 entries); every `emit()` call appends an entry after dispatch
+- **`ExtensionManager.testEmit()`** — fires a test emit at any hook point with optional JSON payload; entries are marked `isTest: true` so the UI can distinguish them from live events
+- **`ExtensionManager.getExecutionLog()`** — returns entries newest-first, optionally filtered by hook point and limited in count
+- **Two new API routes** on `extension-routes.ts`:
+  - `GET /api/v1/extensions/hooks/log?hookPoint=&limit=` — query the execution log
+  - `POST /api/v1/extensions/hooks/test` — trigger a test emit, returns `{ result, durationMs }`
+- **Debugger tab** added as the 4th tab on `ExtensionsPage` (Extensions → Hooks → Webhooks → **Debugger**):
+  - **Test Trigger panel** — grouped `<optgroup>` selector covering all 37 hook points across 9 categories, JSON payload textarea, **Fire Test** button, inline result chip showing OK / vetoed / errors + duration
+  - **Execution Log** — live-refreshing list (5 s interval, manual refresh button), filter by hook point, colored left-border per outcome (green OK, yellow vetoed, red error), `test` purple badge for manually fired events, handler count, duration, error preview with overflow tooltip, timestamp
+  - Empty state with guidance to use the test trigger or wait for system events
+
+### Developers Sidebar & Settings Consolidation
+- **New `DeveloperPage`** — unified "Developers" view in the dashboard sidebar that hosts both the Extensions and Experiments pages as switchable tab views (Extensions | Experiments tabs)
+- **Sidebar** — replaced the separate Extensions and Experiments nav items with a single **Developers** entry; item is visible when either feature is enabled (`allowExtensions || allowExperiments`)
+- **Settings > Security** — Extensions and Experiments policy toggles removed from their standalone cards and consolidated into a new **Developers** section at the bottom of the security settings list; section mirrors the Sub-Agent Delegation layout with both toggles as sub-items
+- Old `/extensions` and `/experiments` routes now redirect to `/developers` for backward compatibility
+
+### AI Cost Persistence
+- **`UsageStorage`** — new `PgBaseStorage`-backed storage class (`packages/core/src/ai/usage-storage.ts`) with a `usage_records` PostgreSQL table; persists every AI call (provider, model, token breakdown, cost, timestamp)
+- **`UsageTracker`** — now accepts an optional `UsageStorage`; `record()` writes to DB fire-and-forget; new async `init()` loads the last 90 days of records on startup so daily/monthly cost totals survive process restarts
+- **`AIClient`** — accepts `usageStorage` in `AIClientDeps`; exposes `init()` that delegates to the tracker
+- **`SecureYeoman`** — creates and initialises `UsageStorage`, wires it to `AIClient`, and calls `aiClient.init()` during startup (Step 5.6); 90-day retention window with indexed `recorded_at` for fast rollup queries
+
+### MCP Tool API Migration (from previous session)
+- All 42 `server.tool()` calls across 10 MCP tool files migrated to the non-deprecated `server.registerTool()` API
+- `SSEServerTransport` in `packages/mcp/src/transport/sse.ts` kept for legacy client compat with targeted `eslint-disable` comments
+- Removed unused `fetchWithRetry` and `ProxyRequestOptions` imports from `web-tools.ts`
+
+### Tooling
+- `npm audit fix` run; 12 moderate ajv/ESLint vulnerabilities formally documented as accepted risk in [ADR 048](docs/adr/048-eslint-ajv-vulnerability-accepted-risk.md)
+- Lint errors reduced from 51 → 0; warnings reduced from 1640 → 1592
+
+---
+
 ## Phase 14: Dashboard Chat Enhancements — Complete (2026.2.17)
 
 ### Chat Markdown Rendering (new)
