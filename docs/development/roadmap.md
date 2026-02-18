@@ -45,7 +45,6 @@
 
 ### Enterprise
 - [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
-- [ ] **Managed Cloud Offering** — SaaS deployment option for organizations preferring managed infrastructure
 
 ### Visualization
 - [ ] **WebGL Graph Rendering** — Investigate and basic implementation for large graph visualization
@@ -158,6 +157,7 @@ Tracked third-party dependencies with known issues that require upstream resolut
 ## Future Enhancements
 
 - Mobile app (native iOS/Android)
+- Cloud Managed Offering
 
 ---
 
