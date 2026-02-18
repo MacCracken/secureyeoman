@@ -369,7 +369,7 @@ export class GatewayServer {
       const outboundWebhookStorage = new OutboundWebhookStorage();
       const outboundDispatcher = new OutboundWebhookDispatcher(
         outboundWebhookStorage,
-        this.logger.child({ component: 'outbound-webhook-dispatcher' })
+        this.getLogger().child({ component: 'outbound-webhook-dispatcher' })
       );
       integrationManager.setOutboundWebhookDispatcher(outboundDispatcher);
       // Wire dispatcher into message router if it exposes the setter

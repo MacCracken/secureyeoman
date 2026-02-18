@@ -4,7 +4,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 15 (in progress) — Integration Architecture Improvements, Developer Consolidation, Cost Persistence & Hook Debugger
+## Phase 15: Integration Expansion — Complete (2026.2.18) — [ADR 049](docs/adr/049-dynamic-integration-loading.md), [ADR 050](docs/adr/050-oauth2-first-class-support.md), [ADR 051](docs/adr/051-webhook-transformation-rules.md), [ADR 052](docs/adr/052-outbound-webhooks.md), [ADR 048](docs/adr/048-eslint-ajv-vulnerability-accepted-risk.md)
 
 ### AI Model System Default
 - **Migration 016** — `system_preferences` PostgreSQL table (`key TEXT PRIMARY KEY`, `value TEXT`, `updated_at BIGINT`) — generic key-value store for system-level settings
@@ -181,7 +181,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 11 (Partial): Expanded Integrations — In Progress
+## Phase 12: Expanded Integrations — Complete (2026.2.17) — [ADR 046](docs/adr/046-phase11-mistral-devtools-mcp-prebuilts.md)
 
 ### Mistral AI Provider (new)
 - New `MistralProvider` using OpenAI-compatible API at `https://api.mistral.ai/v1`
@@ -208,7 +208,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 10: Dashboard UX Enhancements — Complete
+## Phase 11: Dashboard UX — Complete (2026.2.17) — [ADR 039](docs/adr/039-inline-form-pattern.md)
 
 ### Cost Analytics Page (new)
 - New `/costs` route with dedicated sidebar link (DollarSign icon, above Settings)
@@ -243,7 +243,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## [2026.2.17] — 2026-02-17
+## [2026.2.17] — 2026-02-17 — [ADR 045](docs/adr/045-memory-audit-hardening.md), [ADR 041](docs/adr/041-multimodal-io.md), [ADR 044](docs/adr/044-anti-bot-proxy-integration.md), [ADR 042](docs/adr/042-kubernetes-deployment.md), [ADR 043](docs/adr/043-kubernetes-observability.md)
 
 ### Phase 8.8: Memory/Brain Hardening — [ADR 045](docs/adr/045-memory-audit-hardening.md)
 
@@ -381,7 +381,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## [2026.2.16c] — 2026-02-16
+## [2026.2.16c] — 2026-02-16 — [ADR 034](docs/adr/034-sub-agent-delegation.md)
 
 ### Dashboard: Navigation Consolidation & Experiments
 
@@ -411,7 +411,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## [2026.2.16b] — 2026-02-16
+## [2026.2.16b] — 2026-02-16 — [ADR 041](docs/adr/041-multimodal-io.md)
 
 ### Phase 7.3: Multimodal I/O
 
@@ -447,7 +447,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## [2026.2.16] — 2026-02-16
+## [2026.2.16] — 2026-02-16 — [ADR 039](docs/adr/039-inline-form-pattern.md), [ADR 035](docs/adr/035-lifecycle-extension-hooks.md), [ADR 036](docs/adr/036-sandboxed-code-execution.md), [ADR 037](docs/adr/037-a2a-protocol.md), [ADR 038](docs/adr/038-webmcp-ecosystem-tools.md), [ADR 040](docs/adr/040-proactive-assistance.md)
 
 ### Dashboard: Inline Form Pattern
 
@@ -673,7 +673,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## [2026.2.15] — 2026-02-15
+## [2026.2.15] — 2026-02-15 — [ADR 000](docs/adr/000-secureyeoman-architecture-overview.md), [ADR 001](docs/adr/001-dashboard-chat.md), [ADR 004](docs/adr/004-mcp-protocol.md), [ADR 015](docs/adr/015-rbac-capture-permissions.md), [ADR 025](docs/adr/025-cli-webhook-googlechat-integrations.md), [ADR 026](docs/adr/026-mcp-service-package.md), [ADR 027](docs/adr/027-gateway-security-hardening.md), [ADR 030](docs/adr/030-unified-connections-oauth.md)
 
 ### Initial Release
 
@@ -752,4 +752,4 @@ SecureYeoman — a secure, local-first AI assistant with enterprise-grade protec
 
 ---
 
-*Last updated: February 2026*
+*Last updated: 2026-02-18*
