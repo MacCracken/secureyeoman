@@ -487,3 +487,4 @@ This project is licensed under the [MIT License](LICENSE).
 **SECUREYEOMAN** - Your trusted digital Yeoman
 
 </div>
+# secureyeoman-community-skills
