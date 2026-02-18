@@ -110,6 +110,7 @@ describe('A2APage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     mockFetchA2APeers.mockResolvedValue(MOCK_PEERS);
@@ -136,6 +137,7 @@ describe('A2APage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();
@@ -157,6 +159,7 @@ describe('A2APage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();

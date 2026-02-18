@@ -86,6 +86,7 @@ const DEFAULT_POLICY = {
   allowExecution: true,
   allowProactive: false,
   allowExperiments: false,
+  allowStorybook: false,
   allowMultimodal: true,
 };
 

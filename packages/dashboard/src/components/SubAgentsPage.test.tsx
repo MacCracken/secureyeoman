@@ -127,6 +127,7 @@ describe('SubAgentsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     mockFetchAgentProfiles.mockResolvedValue(MOCK_PROFILES);
@@ -156,6 +157,7 @@ describe('SubAgentsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();
@@ -174,6 +176,7 @@ describe('SubAgentsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();
@@ -192,6 +195,7 @@ describe('SubAgentsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();

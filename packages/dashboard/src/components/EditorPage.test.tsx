@@ -148,6 +148,7 @@ describe('EditorPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
@@ -202,6 +203,7 @@ describe('EditorPage', () => {
       allowExecution: false,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();

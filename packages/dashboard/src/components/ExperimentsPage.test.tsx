@@ -50,6 +50,7 @@ describe('ExperimentsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
 
@@ -68,6 +69,7 @@ describe('ExperimentsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: true,
+      allowStorybook: false,
       allowMultimodal: false,
     });
 
@@ -85,6 +87,7 @@ describe('ExperimentsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: true,
+      allowStorybook: false,
       allowMultimodal: false,
     });
 
@@ -100,6 +103,7 @@ describe('ExperimentsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
 

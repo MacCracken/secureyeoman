@@ -90,6 +90,7 @@ describe('ExtensionsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     mockFetchExtensions.mockResolvedValue(MOCK_EXTENSIONS);
@@ -113,6 +114,7 @@ describe('ExtensionsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();
@@ -128,6 +130,7 @@ describe('ExtensionsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();
@@ -144,6 +147,7 @@ describe('ExtensionsPage', () => {
       allowExecution: true,
       allowProactive: false,
       allowExperiments: false,
+      allowStorybook: false,
       allowMultimodal: false,
     });
     renderComponent();
