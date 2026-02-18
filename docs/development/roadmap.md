@@ -47,7 +47,7 @@
 - [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
 
 ### Personality Configuration
-- [ ] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
+- [x] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
       
 ### ML-based Security
 - [ ] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events

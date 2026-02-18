@@ -94,6 +94,8 @@ export {
 
 // Soul types
 export {
+  ModelFallbackEntrySchema,
+  type ModelFallbackEntry,
   PersonalitySchema,
   PersonalityCreateSchema,
   PersonalityUpdateSchema,

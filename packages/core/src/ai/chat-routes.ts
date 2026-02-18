@@ -7,9 +7,29 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
-import type { AIRequest, Tool } from '@secureyeoman/shared';
+import type { AIRequest, Tool, FallbackModelConfig, AIProviderName } from '@secureyeoman/shared';
 import type { McpToolDef } from '@secureyeoman/shared';
 import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
+
+// Map provider name → standard API key env var (no-key providers get empty string)
+const PROVIDER_KEY_ENV: Record<string, string> = {
+  anthropic: 'ANTHROPIC_API_KEY',
+  openai: 'OPENAI_API_KEY',
+  gemini: 'GOOGLE_GENERATIVE_AI_API_KEY',
+  deepseek: 'DEEPSEEK_API_KEY',
+  mistral: 'MISTRAL_API_KEY',
+  opencode: 'OPENCODE_API_KEY',
+};
+
+function resolvePersonalityFallbacks(
+  fallbacks: Array<{ provider: string; model: string }>
+): FallbackModelConfig[] {
+  return fallbacks.map((f) => ({
+    provider: f.provider as AIProviderName,
+    model: f.model,
+    apiKeyEnv: PROVIDER_KEY_ENV[f.provider] ?? '',
+  }));
+}
 
 export interface ChatRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -196,7 +216,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       };
 
       try {
-        const response = await aiClient.chat(aiRequest, { source: 'dashboard_chat' });
+        const personalityFallbacks =
+          personality?.modelFallbacks?.length
+            ? resolvePersonalityFallbacks(personality.modelFallbacks)
+            : undefined;
+
+        const response = await aiClient.chat(aiRequest, { source: 'dashboard_chat' }, personalityFallbacks);
 
         // Persist messages to conversation storage when conversationId is provided
         if (conversationId) {

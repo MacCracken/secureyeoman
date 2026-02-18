@@ -11,19 +11,23 @@ const USAGE = `
 Usage: secureyeoman model [--url URL] [--token TOKEN] [--json] <action> [args]
 
 Actions:
-  info                           Show current model (provider, model, maxTokens, temperature)
-  list [--provider PROV]         List available models (optionally filter by provider)
-  switch <provider> <model>      Switch model for this session only (transient)
-  default get                    Show the persistent model default
-  default set <provider> <model> Set persistent model default (survives restarts)
-  default clear                  Remove persistent model default
+  info                                          Show current model (provider, model, maxTokens, temperature)
+  list [--provider PROV]                        List available models (optionally filter by provider)
+  switch <provider> <model>                     Switch model for this session only (transient)
+  default get                                   Show the persistent model default
+  default set <provider> <model>                Set persistent model default (survives restarts)
+  default clear                                 Remove persistent model default
+  personality-fallbacks get [--personality-id ID]                    Show fallback list for a personality
+  personality-fallbacks set [--personality-id ID] <prov/model> ...   Set ordered fallback list (max 5)
+  personality-fallbacks clear [--personality-id ID]                  Clear fallback list
 
 Options:
-  --url <url>       Server URL (default: ${DEFAULT_URL})
-  --token <token>   Auth token
-  --json            Output raw JSON
-  --provider <prov> Filter provider (for list)
-  -h, --help        Show this help
+  --url <url>              Server URL (default: ${DEFAULT_URL})
+  --token <token>          Auth token
+  --json                   Output raw JSON
+  --provider <prov>        Filter provider (for list)
+  --personality-id <id>    Target personality ID (defaults to active)
+  -h, --help               Show this help
 `;
 
 export const modelCommand: Command = {
@@ -50,11 +54,14 @@ export const modelCommand: Command = {
     argv = jsonResult.rest;
     const providerResult = extractFlag(argv, 'provider');
     argv = providerResult.rest;
+    const personalityIdResult = extractFlag(argv, 'personality-id');
+    argv = personalityIdResult.rest;
 
     const baseUrl = urlResult.value ?? DEFAULT_URL;
     const token = tokenResult.value;
     const jsonOutput = jsonResult.value;
     const filterProvider = providerResult.value;
+    const personalityId = personalityIdResult.value;
 
     const action = argv[0];
     const actionArgs = argv.slice(1);
@@ -69,6 +76,8 @@ export const modelCommand: Command = {
           return await modelSwitch(ctx, baseUrl, token, jsonOutput, actionArgs);
         case 'default':
           return await modelDefault(ctx, baseUrl, token, jsonOutput, actionArgs);
+        case 'personality-fallbacks':
+          return await personalityFallbacks(ctx, baseUrl, token, jsonOutput, personalityId, actionArgs);
         default:
           ctx.stderr.write(`Unknown action: ${String(action)}\n`);
           ctx.stderr.write(USAGE + '\n');
@@ -311,5 +320,172 @@ async function defaultClear(
   }
 
   ctx.stdout.write('Model default cleared\n');
+  return 0;
+}
+
+// ── personality-fallbacks ──────────────────────────────────────────────
+
+async function personalityFallbacks(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  json: boolean,
+  personalityId: string | undefined,
+  args: string[]
+): Promise<number> {
+  const sub = args[0];
+  const subArgs = args.slice(1);
+
+  switch (sub) {
+    case 'get':
+      return await pfGet(ctx, baseUrl, token, json, personalityId);
+    case 'set':
+      return await pfSet(ctx, baseUrl, token, json, personalityId, subArgs);
+    case 'clear':
+      return await pfClear(ctx, baseUrl, token, json, personalityId);
+    default:
+      ctx.stderr.write(
+        'Usage: secureyeoman model personality-fallbacks <get|set|clear> [--personality-id ID]\n'
+      );
+      return 1;
+  }
+}
+
+/** Resolve the target personality: by ID when provided, otherwise the active personality. */
+async function resolvePersonality(
+  baseUrl: string,
+  token: string | undefined,
+  personalityId: string | undefined
+): Promise<{ id: string; modelFallbacks: Array<{ provider: string; model: string }> } | null> {
+  if (personalityId) {
+    const result = await apiCall(baseUrl, `/api/v1/soul/personalities/${personalityId}`, { token });
+    if (!result.ok) return null;
+    return result.data as { id: string; modelFallbacks: Array<{ provider: string; model: string }> };
+  }
+
+  const result = await apiCall(baseUrl, '/api/v1/soul/personality', { token });
+  if (!result.ok) return null;
+  return result.data as { id: string; modelFallbacks: Array<{ provider: string; model: string }> };
+}
+
+async function pfGet(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  json: boolean,
+  personalityId: string | undefined
+): Promise<number> {
+  const personality = await resolvePersonality(baseUrl, token, personalityId);
+  if (!personality) {
+    ctx.stderr.write('Failed to resolve personality\n');
+    return 1;
+  }
+
+  const fallbacks = personality.modelFallbacks ?? [];
+
+  if (json) {
+    ctx.stdout.write(JSON.stringify(fallbacks, null, 2) + '\n');
+    return 0;
+  }
+
+  if (fallbacks.length === 0) {
+    ctx.stdout.write('No model fallbacks configured for this personality.\n');
+  } else {
+    ctx.stdout.write(`Model fallbacks for personality ${personality.id}:\n`);
+    for (let i = 0; i < fallbacks.length; i++) {
+      const fb = fallbacks[i]!;
+      ctx.stdout.write(`  ${String(i + 1)}. ${fb.provider}/${fb.model}\n`);
+    }
+  }
+  return 0;
+}
+
+async function pfSet(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  json: boolean,
+  personalityId: string | undefined,
+  args: string[]
+): Promise<number> {
+  if (args.length === 0) {
+    ctx.stderr.write(
+      'Usage: secureyeoman model personality-fallbacks set [--personality-id ID] <provider/model> [...]\n'
+    );
+    return 1;
+  }
+
+  if (args.length > 5) {
+    ctx.stderr.write('Error: maximum 5 fallback models allowed\n');
+    return 1;
+  }
+
+  const modelFallbacks = args.map((entry) => {
+    const [provider, ...rest] = entry.split('/');
+    return { provider: provider ?? '', model: rest.join('/') };
+  });
+
+  const personality = await resolvePersonality(baseUrl, token, personalityId);
+  if (!personality) {
+    ctx.stderr.write('Failed to resolve personality\n');
+    return 1;
+  }
+
+  const result = await apiCall(baseUrl, `/api/v1/soul/personalities/${personality.id}`, {
+    method: 'PUT',
+    body: { modelFallbacks },
+    token,
+  });
+
+  if (!result.ok) {
+    const err = (result.data as Record<string, string>)?.error ?? `HTTP ${String(result.status)}`;
+    ctx.stderr.write(`Failed to set model fallbacks: ${err}\n`);
+    return 1;
+  }
+
+  if (json) {
+    ctx.stdout.write(JSON.stringify((result.data as Record<string, unknown>)?.modelFallbacks ?? modelFallbacks, null, 2) + '\n');
+    return 0;
+  }
+
+  ctx.stdout.write(`Model fallbacks updated for personality ${personality.id}:\n`);
+  for (let i = 0; i < modelFallbacks.length; i++) {
+    const fb = modelFallbacks[i]!;
+    ctx.stdout.write(`  ${String(i + 1)}. ${fb.provider}/${fb.model}\n`);
+  }
+  return 0;
+}
+
+async function pfClear(
+  ctx: CommandContext,
+  baseUrl: string,
+  token: string | undefined,
+  json: boolean,
+  personalityId: string | undefined
+): Promise<number> {
+  const personality = await resolvePersonality(baseUrl, token, personalityId);
+  if (!personality) {
+    ctx.stderr.write('Failed to resolve personality\n');
+    return 1;
+  }
+
+  const result = await apiCall(baseUrl, `/api/v1/soul/personalities/${personality.id}`, {
+    method: 'PUT',
+    body: { modelFallbacks: [] },
+    token,
+  });
+
+  if (!result.ok) {
+    const err = (result.data as Record<string, string>)?.error ?? `HTTP ${String(result.status)}`;
+    ctx.stderr.write(`Failed to clear model fallbacks: ${err}\n`);
+    return 1;
+  }
+
+  if (json) {
+    ctx.stdout.write(JSON.stringify({ modelFallbacks: [] }, null, 2) + '\n');
+    return 0;
+  }
+
+  ctx.stdout.write(`Model fallbacks cleared for personality ${personality.id}.\n`);
   return 0;
 }

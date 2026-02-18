@@ -243,4 +243,193 @@ describe('model command', () => {
     expect(code).toBe(1);
     expect(getStderr()).toContain('Unknown action');
   });
+
+  // ── personality-fallbacks get ─────────────────────────────────────
+
+  it('personality-fallbacks get prints fallbacks from active personality', async () => {
+    mockFetch({
+      id: 'p1',
+      modelFallbacks: [{ provider: 'openai', model: 'gpt-4o' }],
+    });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await modelCommand.run({ argv: ['personality-fallbacks', 'get'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('openai/gpt-4o');
+  });
+
+  it('personality-fallbacks get prints "No model fallbacks" when list is empty', async () => {
+    mockFetch({ id: 'p1', modelFallbacks: [] });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await modelCommand.run({ argv: ['personality-fallbacks', 'get'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('No model fallbacks');
+  });
+
+  it('personality-fallbacks get --json outputs raw JSON array', async () => {
+    const fallbacks = [{ provider: 'gemini', model: 'gemini-2.0-flash' }];
+    mockFetch({ id: 'p1', modelFallbacks: fallbacks });
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await modelCommand.run({
+      argv: ['--json', 'personality-fallbacks', 'get'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as typeof fallbacks;
+    expect(parsed[0]?.provider).toBe('gemini');
+  });
+
+  // ── personality-fallbacks set ─────────────────────────────────────
+
+  it('personality-fallbacks set calls PUT with correct body', async () => {
+    const fetchMock = vi
+      .fn()
+      // First call resolves active personality
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ id: 'p1', modelFallbacks: [] }),
+      })
+      // Second call is the PUT update
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({
+          id: 'p1',
+          modelFallbacks: [{ provider: 'anthropic', model: 'claude-haiku-4-5-20251001' }],
+        }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await modelCommand.run({
+      argv: ['personality-fallbacks', 'set', 'anthropic/claude-haiku-4-5-20251001'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('anthropic/claude-haiku-4-5-20251001');
+
+    // Verify the PUT request body
+    const [, putOpts] = fetchMock.mock.calls[1] as [string, RequestInit];
+    const body = JSON.parse((putOpts as { body: string }).body) as {
+      modelFallbacks: Array<{ provider: string; model: string }>;
+    };
+    expect(body.modelFallbacks).toEqual([
+      { provider: 'anthropic', model: 'claude-haiku-4-5-20251001' },
+    ]);
+  });
+
+  it('personality-fallbacks set with --personality-id fetches by ID', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ id: 'my-id', modelFallbacks: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ id: 'my-id', modelFallbacks: [{ provider: 'openai', model: 'gpt-4o' }] }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr } = createStreams();
+    const code = await modelCommand.run({
+      argv: ['personality-fallbacks', 'set', '--personality-id', 'my-id', 'openai/gpt-4o'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    const [getUrl] = fetchMock.mock.calls[0] as [string];
+    expect(getUrl).toContain('/my-id');
+  });
+
+  it('personality-fallbacks set returns error when no models given', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await modelCommand.run({
+      argv: ['personality-fallbacks', 'set'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
+
+  // ── personality-fallbacks clear ───────────────────────────────────
+
+  it('personality-fallbacks clear calls PUT with modelFallbacks: []', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ id: 'p1', modelFallbacks: [{ provider: 'openai', model: 'gpt-4o' }] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ id: 'p1', modelFallbacks: [] }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await modelCommand.run({ argv: ['personality-fallbacks', 'clear'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('cleared');
+
+    const [, putOpts] = fetchMock.mock.calls[1] as [string, RequestInit];
+    const body = JSON.parse((putOpts as { body: string }).body) as {
+      modelFallbacks: unknown[];
+    };
+    expect(body.modelFallbacks).toEqual([]);
+  });
+
+  it('personality-fallbacks clear --json outputs JSON', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ id: 'p1', modelFallbacks: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ id: 'p1', modelFallbacks: [] }),
+      });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await modelCommand.run({
+      argv: ['--json', 'personality-fallbacks', 'clear'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as { modelFallbacks: unknown[] };
+    expect(parsed.modelFallbacks).toEqual([]);
+  });
+
+  // ── personality-fallbacks unknown sub ─────────────────────────────
+
+  it('personality-fallbacks returns error for unknown sub-action', async () => {
+    const { stdout, stderr, getStderr } = createStreams();
+    const code = await modelCommand.run({
+      argv: ['personality-fallbacks', 'bogus'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(1);
+    expect(getStderr()).toContain('Usage');
+  });
 });
