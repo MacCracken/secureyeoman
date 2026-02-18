@@ -40,25 +40,6 @@
 ### Dashboard & Tooling
 - [ ] **Storybook** — Component development environment for dashboard UI components, integrated into Developers section as its own view with Settings > Security > Developers toggle to enable/disable display (subview pattern like Extensions/Experiments)
 
-### Integration Connection Updates
-
-#### Productivity Integrations
-- [ ] **Airtable** — Base CRUD operations, record management, view filtering
-- [ ] **Linear** — Issue creation, status updates, sprint management, webhook listeners
-- [ ] **Todoist** — Task management, project sync, due date handling
-
-#### Messaging Connections
-- [ ] **QQ** — Message handling, group management, file transfer
-- [ ] **DingTalk** — Enterprise messaging, workflow integration, calendar sync
-- [ ] **Line** — Message API, sticker support, rich menu handling
-
-#### Services & Cloud
-- [ ] **Spotify** — Playback control, playlist management, now playing info
-- [ ] **YouTube** — Video search, channel info, playlist management
-- [ ] **Figma** — File access, comment sync, design file metadata
-- [ ] **Stripe** — Payment status webhooks, customer lookup, invoice triggers
-- [ ] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation
-
 ### Vector Memory
 - [x] **ChromaDB Backend** — ChromaDB as additional vector backend option for memory storage
 
@@ -78,9 +59,30 @@
 - [ ] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style — agents create and register new tools as needed)
 
 ### Marketplace & Community
+
+#### Skills
 - [ ] **Provider Marketplace** — Centralized SecureYeoman skill provider marketplace (skill discovery, installation, management)
 - [ ] **Community Skills** — Community-contributed skill extensions registry with `secureyeoman_community_skills.git` sub-repo support for portable, structured agent capabilities
       
+#### Integration Connection Updates
+
+##### Productivity Integrations
+- [ ] **Airtable** — Base CRUD operations, record management, view filtering
+- [ ] **Linear** — Issue creation, status updates, sprint management, webhook listeners
+- [ ] **Todoist** — Task management, project sync, due date handling
+
+##### Messaging Connections
+- [ ] **QQ** — Message handling, group management, file transfer
+- [ ] **DingTalk** — Enterprise messaging, workflow integration, calendar sync
+- [ ] **Line** — Message API, sticker support, rich menu handling
+
+##### Services & Cloud
+- [ ] **Spotify** — Playback control, playlist management, now playing info
+- [ ] **YouTube** — Video search, channel info, playlist management
+- [ ] **Figma** — File access, comment sync, design file metadata
+- [ ] **Stripe** — Payment status webhooks, customer lookup, invoice triggers
+- [ ] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation
+
 ### Enterprise
 - [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
 - [ ] **Managed Cloud Offering** — SaaS deployment option for organizations preferring managed infrastructure
