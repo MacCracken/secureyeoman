@@ -56,7 +56,7 @@
 - [ ] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
 
 ### Vector Memory
-- [ ] **ChromaDB Backend** — ChromaDB as additional vector backend option for memory storage
+- [x] **ChromaDB Backend** — ChromaDB as additional vector backend option for memory storage
 
 ### Platform-Specific Enhancements
 - [ ] **Telegram** — Inline keyboards, photo/document handling, voice messages

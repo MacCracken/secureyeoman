@@ -1,20 +1,23 @@
 # Functionality Audit: SecureYeoman vs Competitors
 
-> Comparative analysis of SecureYeoman against OpenClaw, Agent Zero, and Personal AI Agents
+> Comparative analysis of SecureYeoman against OpenClaw, Agent Zero, PicoClaw, and Personal AI Agents
 
 ---
 
 ## Executive Summary
 
-| Aspect | SecureYeoman | OpenClaw | Agent Zero | Personal AI (Market) |
-|--------|--------------|----------|------------|---------------------|
-| **Focus** | Enterprise-grade secure AI agent | Consumer/local-first personal AI | Developer automation framework | Managed SaaS solutions |
-| **Deployment** | Self-hosted, server-centric | Local-first, desktop/server | Docker-based VM | Cloud-hosted |
-| **Security** | **Strong** - RBAC, encryption, audit | Basic | Basic (Docker isolation) | Variable |
-| **Multi-channel** | 8+ platforms | 13+ platforms | CLI/Web only | Platform-specific |
-| **Multi-agent** | Sub-agents, A2A protocol | Workspace/agent routing | Hierarchical agents | Limited |
-| **Memory** | Vector (FAISS/Qdrant), consolidation | Markdown/YAML file-based | Persistent memory | Cloud storage |
-| **Customization** | Hooks, extensions, skills | Skills, plugins | Dynamic tool creation | Limited |
+| Aspect | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Personal AI (Market) |
+|--------|--------------|----------|------------|----------|---------------------|
+| **Focus** | Enterprise-grade secure AI agent | Consumer/local-first personal AI | Developer automation framework | Ultra-lightweight embedded AI | Managed SaaS solutions |
+| **Deployment** | Self-hosted, server-centric | Local-first, desktop/server | Docker-based VM | $10 hardware, embedded | Cloud-hosted |
+| **Language** | TypeScript | TypeScript | Python | Go | Various |
+| **RAM Usage** | ~1GB+ | >1GB | >100MB | **<10MB** | Cloud-based |
+| **Startup Time** | ~30s+ | >500s | >30s | **<1s** | N/A |
+| **Security** | **Strong** - RBAC, encryption, audit | Basic | Basic (Docker isolation) | Basic (sandbox) | Variable |
+| **Multi-channel** | 8+ platforms | 13+ platforms | CLI/Web only | 5 platforms | Platform-specific |
+| **Multi-agent** | Sub-agents, A2A protocol | Workspace/agent routing | Hierarchical agents | Sub-agents (spawn) | Limited |
+| **Memory** | Vector (FAISS/Qdrant), consolidation | Markdown/YAML file-based | Persistent memory | File-based | Cloud storage |
+| **Customization** | Hooks, extensions, skills | Skills, plugins | Dynamic tool creation | Skills | Limited |
 
 ---
 
@@ -22,76 +25,85 @@
 
 ### 1. Core Architecture
 
-| Feature | SecureYeoman | OpenClaw | Agent Zero |
-|---------|--------------|----------|------------|
-| **Agent Type** | Server-first, API-driven | Gateway-based, message-driven | Docker VM with Linux |
-| **Language** | TypeScript | TypeScript/JS | Python |
-| **Database** | PostgreSQL + SQLite | File-based (Markdown) | File-based |
-| **AI Providers** | 10+ (Anthropic, OpenAI, Gemini, Ollama, etc.) | Multiple | Multiple |
-| **MCP Support** | Full MCP server + client | Limited | No |
-| **Enterprise Ready** | ✅ Production-hardened | ❌ Developer-focused | ❌ Experimental |
+| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw |
+|---------|--------------|----------|------------|----------|
+| **Agent Type** | Server-first, API-driven | Gateway-based, message-driven | Docker VM with Linux | Single binary, embedded |
+| **Language** | TypeScript | TypeScript/JS | Python | Go |
+| **Database** | PostgreSQL + SQLite | File-based (Markdown) | File-based | File-based |
+| **AI Providers** | 10+ (Anthropic, OpenAI, Gemini, Ollama, etc.) | Multiple | Multiple | OpenRouter, Zhipu, Groq, Anthropic, OpenAI, Gemini, DeepSeek |
+| **MCP Support** | Full MCP server + client | Limited | No | ❌ |
+| **Memory Footprint** | ~1GB+ | >1GB | >100MB | **<10MB** |
+| **Startup Time** | ~30s+ | >500s | >30s | **<1s** |
+| **Enterprise Ready** | ✅ Production-hardened | ❌ Developer-focused | ❌ Experimental | ❌ Embedded/IoT focus |
 
 ### 2. Security & Compliance
 
-| Feature | SecureYeoman | OpenClaw | Agent Zero |
-|---------|--------------|----------|------------|
-| **RBAC** | ✅ Full (Admin/Operator/Auditor/Viewer) | ❌ | ❌ |
-| **Encryption at Rest** | ✅ AES-256-GCM | ❌ | ❌ |
-| **Audit Chain** | ✅ HMAC-SHA256 | ❌ | ❌ |
-| **Input Validation** | ✅ Prompt injection defense | ❌ | ❌ |
-| **Rate Limiting** | ✅ Per-user, per-IP, global | Basic | ❌ |
-| **Sandboxing** | ✅ Landlock (Linux), sandbox-exec (macOS) | ❌ | Docker-only |
-| **API Keys** | ✅ With rate limiting | Basic | ❌ |
-| **mTLS** | ✅ | ❌ | ❌ |
+| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw |
+|---------|--------------|----------|------------|----------|
+| **RBAC** | ✅ Full (Admin/Operator/Auditor/Viewer) | ❌ | ❌ | ❌ |
+| **Encryption at Rest** | ✅ AES-256-GCM | ❌ | ❌ | ❌ |
+| **Audit Chain** | ✅ HMAC-SHA256 | ❌ | ❌ | ❌ |
+| **Input Validation** | ✅ Prompt injection defense | ❌ | ❌ | ❌ |
+| **Rate Limiting** | ✅ Per-user, per-IP, global | Basic | ❌ | ❌ |
+| **Sandboxing** | ✅ Landlock (Linux), sandbox-exec (macOS) | ❌ | Docker-only | ✅ Workspace restriction |
+| **API Keys** | ✅ With rate limiting | Basic | ❌ | ✅ Config-based |
+| **mTLS** | ✅ | ❌ | ❌ | ❌ |
 
 ### 3. Messaging & Integrations
 
-| Feature | SecureYeoman | OpenClaw | Agent Zero |
-|---------|--------------|----------|------------|
-| **Telegram** | ✅ Stable | ✅ | ❌ |
-| **Discord** | ✅ Stable | ✅ | ❌ |
-| **Slack** | ✅ Stable | ✅ | ❌ |
-| **WhatsApp** | ✅ Stable | ✅ | ❌ |
-| **Signal** | ✅ Stable | ✅ | ❌ |
-| **Google Chat** | ✅ Stable | ✅ | ❌ |
-| **MS Teams** | ✅ Stable | ❌ | ❌ |
-| **iMessage** | ✅ Beta | ✅ | ❌ |
-| **Email (SMTP)** | ✅ Stable | ✅ | ❌ |
-| **OAuth2** | ✅ First-class (Google) | ❌ | ❌ |
+| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw |
+|---------|--------------|----------|------------|----------|
+| **Telegram** | ✅ Stable | ✅ | ❌ | ✅ |
+| **Discord** | ✅ Stable | ✅ | ❌ | ✅ |
+| **Slack** | ✅ Stable | ✅ | ❌ | ❌ |
+| **WhatsApp** | ✅ Stable | ✅ | ❌ | ❌ |
+| **Signal** | ✅ Stable | ✅ | ❌ | ❌ |
+| **Google Chat** | ✅ Stable | ✅ | ❌ | ❌ |
+| **MS Teams** | ✅ Stable | ❌ | ❌ | ❌ |
+| **iMessage** | ✅ Beta | ✅ | ❌ | ❌ |
+| **Email (SMTP)** | ✅ Stable | ✅ | ❌ | ❌ |
+| **OAuth2** | ✅ First-class (Google) | ❌ | ❌ | ❌ |
+| **QQ** | ❌ | ✅ | ❌ | ✅ |
+| **DingTalk** | ❌ | ✅ | ❌ | ✅ |
+| **LINE** | ❌ | ✅ | ❌ | ✅ |
 
 ### 4. Tools & Automation
 
-| Feature | SecureYeoman | OpenClaw | Agent Zero |
-|---------|--------------|----------|------------|
-| **Browser Automation** | ✅ Playwright | ✅ Built-in | ✅ |
-| **Web Scraping** | ✅ Advanced | ✅ | ❌ |
-| **Web Search** | ✅ Multi-provider | ✅ | ❌ |
-| **Shell Execution** | ✅ Sandboxed | ✅ | ✅ |
-| **File Operations** | ✅ Sandboxed | ✅ | ✅ |
-| **Calendar** | ✅ Google Calendar | ✅ | ❌ |
-| **Code Execution** | ✅ Sandboxed | ✅ | ✅ |
-| **Custom Skills** | ✅ Lifecycle hooks | ✅ 5,700+ community | ✅ Dynamic |
-| **MCP Tools** | ✅ 42 tools | ❌ | ❌ |
+| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw |
+|---------|--------------|----------|------------|----------|
+| **Browser Automation** | ✅ Playwright | ✅ Built-in | ✅ | ❌ |
+| **Web Scraping** | ✅ Advanced | ✅ | ❌ | ❌ |
+| **Web Search** | ✅ Multi-provider | ✅ | ❌ | ✅ (Brave, DuckDuckGo) |
+| **Shell Execution** | ✅ Sandboxed | ✅ | ✅ | ✅ (restricted) |
+| **File Operations** | ✅ Sandboxed | ✅ | ✅ | ✅ (workspace-restricted) |
+| **Calendar** | ✅ Google Calendar | ✅ | ❌ | ❌ |
+| **Code Execution** | ✅ Sandboxed | ✅ | ✅ | ❌ |
+| **Custom Skills** | ✅ Lifecycle hooks | ✅ 5,700+ community | ✅ Dynamic | ✅ Skills |
+| **MCP Tools** | ✅ 42 tools | ❌ | ❌ | ❌ |
+| **Cron/Scheduling** | ✅ | ❌ | ❌ | ✅ |
+| **Heartbeat Tasks** | ✅ | ❌ | ✅ | ✅ |
+| **Sub-agent Spawn** | ✅ | ✅ | ✅ | ✅ |
 
 ### 5. Memory & Knowledge
 
-| Feature | SecureYeoman | OpenClaw | Agent Zero |
-|---------|--------------|----------|------------|
-| **Vector Memory** | ✅ FAISS, Qdrant | ❌ | ❌ |
-| **ChromaDB** | ⚠️ Planned (Phase 16) | ❌ | ❌ |
-| **Semantic Search** | ✅ | ❌ | ❌ |
-| **Memory Consolidation** | ✅ LLM-driven | ✅ File-based | ✅ |
-| **History Compression** | ✅ Progressive | ✅ | ❌ |
-| **Importance Scoring** | ✅ | ❌ | ❌ |
+| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw |
+|---------|--------------|----------|------------|----------|
+| **Vector Memory** | ✅ FAISS, Qdrant | ❌ | ❌ | ❌ |
+| **ChromaDB** | ⚠️ Planned (Phase 16) | ❌ | ❌ | ❌ |
+| **Semantic Search** | ✅ | ❌ | ❌ | ❌ |
+| **Memory Consolidation** | ✅ LLM-driven | ✅ File-based | ✅ | ❌ |
+| **History Compression** | ✅ Progressive | ✅ | ❌ | ❌ |
+| **Importance Scoring** | ✅ | ❌ | ❌ | ❌ |
+| **Workspace Memory** | ✅ | ✅ | ✅ | ✅ (MEMORY.md) |
 
 ### 6. Multi-Agent & Collaboration
 
-| Feature | SecureYeoman | OpenClaw | Agent Zero |
-|---------|--------------|----------|------------|
-| **Sub-Agents** | ✅ With budget/depth | ✅ Workspaces | ✅ Hierarchical |
-| **A2A Protocol** | ✅ | ❌ | ❌ |
-| **Agent Swarms** | ⚠️ Planned (Phase 17) | ❌ | ✅ |
-| **Delegation Controls** | ✅ | ❌ | ❌ |
+| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw |
+|---------|--------------|----------|------------|----------|
+| **Sub-Agents** | ✅ With budget/depth | ✅ Workspaces | ✅ Hierarchical | ✅ Spawn |
+| **A2A Protocol** | ✅ | ❌ | ❌ | ❌ |
+| **Agent Swarms** | ⚠️ Planned (Phase 17) | ❌ | ✅ | ❌ |
+| **Delegation Controls** | ✅ | ❌ | ❌ | ❌ |
 
 ### 7. Dashboard & UX
 
@@ -106,13 +118,15 @@
 
 ### 8. Enterprise Features
 
-| Feature | SecureYeoman | OpenClaw | Agent Zero |
-|---------|--------------|----------|------------|
-| **Kubernetes** | ✅ Helm charts | ❌ | ❌ |
-| **Prometheus** | ✅ Metrics | ❌ | ❌ |
-| **Workspace/Team** | ⚠️ Planned (Phase 16) | ❌ | ✅ |
-| **SSO/SAML** | ⚠️ Planned (Phase 17) | ❌ | ✅ (some) |
-| **Onboarding** | ⚠️ Planned (Phase 19) | ❌ | ✅ |
+| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw |
+|---------|--------------|----------|------------|----------|
+| **Kubernetes** | ✅ Helm charts | ❌ | ❌ | ❌ |
+| **Prometheus** | ✅ Metrics | ❌ | ❌ | ❌ |
+| **Workspace/Team** | ⚠️ Planned (Phase 16) | ❌ | ✅ | ❌ |
+| **SSO/SAML** | ⚠️ Planned (Phase 17) | ❌ | ✅ (some) | ❌ |
+| **Onboarding** | ⚠️ Planned (Phase 19) | ❌ | ✅ | ✅ (onboard CLI) |
+| **Single Binary** | ❌ | ❌ | ❌ | ✅ |
+| **Embedded Deployment** | ❌ | ❌ | ❌ | ✅ ($10 hardware) |
 
 ---
 
@@ -145,6 +159,12 @@
 1. **Dynamic Tool Creation** - Agent Zero creates tools on the fly
 2. **Full VM Isolation** - Agent Zero runs in Docker VM
 
+### ❌ Missing vs PicoClaw
+1. **Ultra-low Memory Footprint** - <10MB vs 1GB+ (optimization opportunity)
+2. **Sub-second Startup** - <1s vs 30s+ (optimization opportunity)
+3. **$10 Hardware Deployment** - Embedded device support
+4. **Go-based Runtime** - Potential future language option for core
+
 ### ❌ Missing vs Market
 1. **Mobile App** - Native iOS/Android
 
@@ -156,11 +176,13 @@
 1. **Community Skills Marketplace** - Compete with 5,700+ OpenClaw skills
 2. **Workspace Management** - Multi-tenant enterprise
 3. **ChromaDB Backend** - Additional vector option
+4. **Memory Footprint Optimization** - Study PicoClaw for potential reductions
 
 ### Medium Priority (Phase 17)
 1. **SSO/SAML Integration** - Enterprise identity
 2. **Dynamic Tool Creation** - Agent Zero-style
 3. **Agent Swarms** - Coordinated multi-agent execution
+4. **Faster Startup Time** - Target <10s startup (learn from PicoClaw's 1s boot)
 
 ### CLI Improvements (Phase 18)
 1. **Interactive Init** - `secureyeoman init` wizard
@@ -171,6 +193,13 @@
 1. **First Install Onboarding** - CLI and Dashboard guided setup
 2. **Managed Cloud Offering** - SaaS deployment option
 
+### Learning from PicoClaw
+While SecureYeoman targets enterprise deployment (where resources are less constrained), we can learn from PicoClaw's approach:
+1. **Fast Boot** - Optimize startup time for better UX
+2. **Single Binary** - Simplify deployment with Go-based components
+3. **Embedded Ready** - Consider future IoT/edge use cases
+4. **AI-Bootstrapped Development** - Use AI to optimize codebase
+
 ---
 
 ## Competitive Positioning
@@ -179,6 +208,7 @@
 |----------------|---------------------|
 | **Enterprise Self-Hosted** | Leader - Only option with full security |
 | **Developer Automation** | Challenger - OpenClaw/Agent Zero lead |
+| **Embedded/IoT AI** | Not positioned - PicoClaw leads here |
 | **Consumer Personal AI** | Not positioned - Local-first focus differs |
 | **Managed SaaS** | Not positioned - Self-hosted only |
 
@@ -187,7 +217,8 @@
 - Vector memory with semantic search
 - MCP ecosystem
 - Kubernetes production readiness
+- **Unlike PicoClaw**: Full enterprise features (RBAC, encryption, audit) at the cost of higher resource usage
 
 ---
 
-*Generated: 2026-02-18 — Updated for Phases 15-19 roadmap*
+*Generated: 2026-02-18 — Updated for Phases 15-19 roadmap — Added PicoClaw comparison*

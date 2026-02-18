@@ -175,7 +175,7 @@ brain:
   vector:
     enabled: true
     provider: local          # 'local' for SentenceTransformers, 'api' for OpenAI/Gemini
-    backend: faiss           # 'faiss' (in-process) or 'qdrant' (distributed)
+    backend: faiss           # 'faiss' (in-process), 'qdrant' (distributed), or 'chroma' (ChromaDB)
     similarityThreshold: 0.7
     maxResults: 10
     local:
@@ -188,6 +188,12 @@ For Qdrant backend, start a Qdrant instance:
 ```bash
 docker run -p 6333:6333 qdrant/qdrant
 ```
+
+For ChromaDB backend, start a ChromaDB instance (no extra npm deps required — uses native fetch):
+```bash
+docker run -p 8000:8000 chromadb/chroma
+```
+Then set `backend: chroma` and optionally configure `chroma.url` / `chroma.collection` in your soul config.
 
 ---
 
