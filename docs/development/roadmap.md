@@ -83,6 +83,8 @@
 
 ## Phase 18 Marketplace & Community
 
+**Status**: Pending
+
 #### Skills
 - [ ] **Provider Marketplace** — Centralized SecureYeoman skill provider marketplace (skill discovery, installation, management)
 - [ ] **Community Skills** — Community-contributed skill extensions registry with `secureyeoman_community_skills.git` sub-repo support for portable, structured agent capabilities
@@ -106,9 +108,12 @@
 - [ ] **Stripe** — Payment status webhooks, customer lookup, invoice triggers
 - [ ] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation
 
+---
+
 ## Phase 19: SaaS ready
 
 **Status**: Pending
+
 ### Personality Configuration
 - [ ] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
       
