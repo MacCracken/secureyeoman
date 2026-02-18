@@ -40,13 +40,13 @@
 ### Dashboard & Tooling
 - [ ] **Storybook** — Component development environment for dashboard UI components, integrated into Developers section as its own view with Settings > Security > Developers toggle to enable/disable display (subview pattern like Extensions/Experiments)
 
-### Productivity Integrations
+### Integration Connection Updates
+
+#### Productivity Integrations
 - [ ] **Airtable** — Base CRUD operations, record management, view filtering
 - [ ] **Linear** — Issue creation, status updates, sprint management, webhook listeners
 - [ ] **Todoist** — Task management, project sync, due date handling
-
-### Integration Connection Updates
-
+- [ ] 
 #### Messaging Connections
 - [ ] **QQ** — Message handling, group management, file transfer
 - [ ] **DingTalk** — Enterprise messaging, workflow integration, calendar sync
@@ -58,9 +58,6 @@
 - [ ] **Figma** — File access, comment sync, design file metadata
 - [ ] **Stripe** — Payment status webhooks, customer lookup, invoice triggers
 - [ ] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation
-
-### Personality Configuration
-- [ ] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
 
 ### Vector Memory
 - [x] **ChromaDB Backend** — ChromaDB as additional vector backend option for memory storage
@@ -110,7 +107,9 @@
 ## Phase 18: SaaS ready
 
 **Status**: Pending
-
+### Personality Configuration
+- [ ] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
+      
 ### Security & Access
 - [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
 - [ ] **Roles & Permissions Review/Audit** — Comprehensive review of RBAC roles, permissions, and access controls to ensure completeness and alignment with feature set
