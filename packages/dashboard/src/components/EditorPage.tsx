@@ -43,6 +43,7 @@ import { useTheme } from '../hooks/useTheme';
 import { VoiceOverlay } from './VoiceOverlay';
 import type { Personality, ChatMessage } from '../types';
 import { sanitizeText } from '../utils/sanitize';
+import { ChatMarkdown } from './ChatMarkdown';
 
 type MonacoEditor = Parameters<OnMount>[0];
 
@@ -858,7 +859,11 @@ export function EditorPage() {
                         {msg.role === 'user' ? 'You' : (currentPersonality?.name ?? 'Assistant')}
                       </span>
                     </div>
-                    <p className="text-xs whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
+                    {msg.role === 'assistant' ? (
+                      <ChatMarkdown content={sanitizeText(msg.content)} size="xs" />
+                    ) : (
+                      <p className="text-xs whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
+                    )}
                     {msg.role === 'assistant' && (
                       <button
                         onClick={() => {
@@ -875,7 +880,7 @@ export function EditorPage() {
                 </div>
               ))}
 
-              {/* Typing indicator */}
+              {/* Thinking indicator */}
               {isPending && (
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-lg px-3 py-2">
@@ -885,19 +890,24 @@ export function EditorPage() {
                         {currentPersonality?.name ?? 'Assistant'}
                       </span>
                     </div>
-                    <div className="flex gap-1 mt-1.5">
-                      <span
-                        className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
-                        style={{ animationDelay: '0ms' }}
-                      />
-                      <span
-                        className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
-                        style={{ animationDelay: '150ms' }}
-                      />
-                      <span
-                        className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
-                        style={{ animationDelay: '300ms' }}
-                      />
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <span className="text-[10px] text-muted-foreground animate-pulse">
+                        Thinking
+                      </span>
+                      <div className="flex gap-1">
+                        <span
+                          className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
+                          style={{ animationDelay: '0ms' }}
+                        />
+                        <span
+                          className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
+                          style={{ animationDelay: '150ms' }}
+                        />
+                        <span
+                          className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
+                          style={{ animationDelay: '300ms' }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>

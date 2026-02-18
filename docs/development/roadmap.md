@@ -23,8 +23,9 @@
 | 11 | Dashboard UX | 2026.2.17 | Complete |
 | 12 | Expanded Integrations | 2026.2.17 | Complete |
 | 13 | Dashboard & Tooling | 2026.2.17 | Complete |
+| 14 | Dashboard Chat Enhancements | 2026.2.17 | Complete |
 | | **Release 2026.2.17** | **2026-02-17** | **Released** |
-| 14 | Integration Expansion | — | Planned |
+| 15 | Integration Expansion | — | Planned |
 
 ---
 
@@ -45,12 +46,12 @@ Cognitive     Extensions
 [Memory/AI]  [Hooks/A2A]
      ── Release 2026.2.16 ──
 
-Phase 9       Phase 10      Phase 11      Phase 12      Phase 13
-WebMCP        Kubernetes    Dashboard UX  Integrations+ Dash & Tools
-   |             |             |             |             |
-   v             v             v             v             v
-[Web Tools]   [K8s Deploy]  [UX Polish]   [Expand]      [Browser/Vec]
-                        ── Release 2026.2.17 ──
+Phase 9       Phase 10      Phase 11      Phase 12      Phase 13      Phase 14
+WebMCP        Kubernetes    Dashboard UX  Integrations+ Dash & Tools  Chat Markdown
+   |             |             |             |             |             |
+   v             v             v             v             v             v
+[Web Tools]   [K8s Deploy]  [UX Polish]   [Expand]      [Browser/Vec] [ChatMarkdown]
+                              ── Release 2026.2.17 ──
 ```
 
 ---
@@ -388,11 +389,28 @@ Production-grade Kubernetes deployment using Helm charts, cloud-agnostic design 
 
 ---
 
-## Phase 14: Integration Expansion
+## Phase 14: Dashboard Chat Enhancements — [ADR 047](../adr/047-dashboard-chat-markdown.md)
+
+**Status**: Complete
+
+### Chat Markdown Rendering
+- [x] **`ChatMarkdown` component** — Dedicated markdown renderer for all assistant messages in `ChatPage` and `EditorPage`
+- [x] **react-markdown + remark-gfm** — Full GitHub-Flavored Markdown rendering (headings, emphasis, tables, strikethrough, autolinks)
+- [x] **Syntax-highlighted code blocks** — react-syntax-highlighter (Prism) with language label and dark/light theme awareness
+- [x] **Mermaid diagrams** — ` ```mermaid ` blocks rendered as interactive SVG via mermaid v11 with error handling fallback
+- [x] **LaTeX / math rendering** — `$inline$` and `$$block$$` expressions rendered via remark-math + rehype-katex + KaTeX
+- [x] **GitHub-style alerts** — `[!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]` blockquotes rendered as themed callout boxes
+- [x] **Task list checkboxes** — `- [ ]` / `- [x]` GFM task items rendered as styled read-only checkboxes
+- [x] **Enhanced table styling** — `overflow-x-auto` wrapper, hover states, and border styling consistent with dashboard theme
+- [x] **"Thinking..." label** — Pending/streaming indicator in `ChatPage` and `EditorPage` shows text label alongside bouncing dots
+
+---
+
+## Phase 15: Integration Expansion
 
 **Status**: Planned
 
-### Dashboard & Tooling (from Phase 13)
+### Dashboard & Tooling (deferred)
 - [ ] **Lifecycle Hook Debugger** — Hook registration view, execution log, and test trigger for each hook point
 - [ ] **Storybook** — Component development environment for dashboard UI components
 - [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
