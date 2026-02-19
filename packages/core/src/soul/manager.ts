@@ -517,9 +517,9 @@ export class SoulManager {
       parts.push(bodyPrompt);
     }
 
-    // Skills from Brain or Soul storage
+    // Skills from Brain or Soul storage — filter to this personality + global skills
     const skills = this.brain
-      ? await this.brain.getActiveSkills()
+      ? await this.brain.getActiveSkills(personality?.id ?? null)
       : await this.storage.getEnabledSkills();
 
     for (const skill of skills) {
