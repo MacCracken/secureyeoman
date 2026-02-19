@@ -14,10 +14,10 @@
 
 * **F**ully
 * **R**esponsive
-> **I**ntegrated
-> **D**igitally
-> **A**daptable
-> **Y**eoman
+* **I**ntegrated
+* **D**igitally
+* **A**daptable
+* **Y**eoman
 
 ---
 
