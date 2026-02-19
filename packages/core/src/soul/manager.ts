@@ -111,6 +111,7 @@ export class SoulManager {
           allowDynamicTools: false,
         },
         selectedServers: [],
+        selectedIntegrations: [],
         mcpFeatures: {
           exposeGit: false,
           exposeFilesystem: false,

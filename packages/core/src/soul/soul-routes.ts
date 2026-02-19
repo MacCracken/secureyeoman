@@ -352,6 +352,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               allowDynamicTools: false,
             },
             selectedServers: [],
+            selectedIntegrations: [],
             mcpFeatures: {
               exposeGit: false,
               exposeFilesystem: false,

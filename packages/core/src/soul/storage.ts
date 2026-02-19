@@ -92,6 +92,7 @@ function rowToPersonality(row: PersonalityRow): Personality {
         experiments: false,
       },
       selectedServers: [],
+      selectedIntegrations: [],
       mcpFeatures: {
         exposeGit: false,
         exposeFilesystem: false,

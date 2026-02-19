@@ -161,6 +161,7 @@ export interface Personality {
       allowDynamicTools?: boolean;
     };
     selectedServers?: string[];
+    selectedIntegrations?: string[];
     mcpFeatures?: {
       exposeGit?: boolean;
       exposeFilesystem?: boolean;
@@ -217,6 +218,7 @@ export interface PersonalityCreate {
       allowDynamicTools?: boolean;
     };
     selectedServers?: string[];
+    selectedIntegrations?: string[];
     mcpFeatures?: {
       exposeGit?: boolean;
       exposeFilesystem?: boolean;

@@ -51,9 +51,11 @@
 - [ ] **Integration Access Enforcement** — `selectedIntegrations` per-personality field is stored and exposed in the Personality Editor (UI ships in current release). Backend enforcement is a follow-up: gate inbound message routing so a personality only receives events from its allowed integrations; gate outbound send calls in sub-agent delegation chains so spawned agents cannot use integrations outside their allowlist. Mirrors the existing `selectedServers` MCP enforcement pattern in `chat-routes.ts`.
 
 ##### Productivity Integrations
-- [ ] **Airtable** — Base CRUD operations, record management, view filtering
+- [x] **Airtable** — Base CRUD operations, record management, view filtering; Productivity tab
 - [x] **Linear** — Issue creation, status updates, sprint management, webhook listeners
-- [ ] **Todoist** — Task management, project sync, due date handling
+- [x] **Todoist** — Task management, project sync, due date handling; Productivity tab
+- [x] **Spotify** — Playback control, playlist management, now playing info; Productivity tab
+- [x] **YouTube** — Video search, channel info, playlist management; Productivity tab
 
 ##### Messaging Connections
 - [x] **QQ** — Message handling, group management, file transfer
@@ -61,8 +63,6 @@
 - [x] **Line** — Message API, sticker support, rich menu handling
 
 ##### Services & Cloud
-- [ ] **Spotify** — Playback control, playlist management, now playing info
-- [ ] **YouTube** — Video search, channel info, playlist management
 - [x] **Figma** — File access, comment sync, design file metadata; One-Click MCP Featured Server
 - [x] **Stripe** — Payment status webhooks, customer lookup, invoice triggers; One-Click MCP Featured Server
 - [x] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation; One-Click MCP Featured Server
@@ -155,4 +155,4 @@ Tracked third-party dependencies with known issues that require upstream resolut
 
 ---
 
-*Last updated: 2026-02-18 — Phase 17 complete; Phase 18 in progress: 7 integrations shipped (Figma, Stripe, Zapier, Linear, QQ, DingTalk, Line); Productivity integration view added (Notion, Stripe, Linear, Google Calendar consolidated; Calendar tab removed) — see [Changelog](../../CHANGELOG.md) for all completed work*
+*Last updated: 2026-02-18 — Phase 17 complete; Phase 18 in progress: 11 integrations shipped (Figma, Stripe, Zapier, Linear, QQ, DingTalk, Line, Airtable, Todoist, Spotify, YouTube); Productivity tab consolidates Notion, Stripe, Linear, Google Calendar, Airtable, Todoist, Spotify, YouTube — see [Changelog](../../CHANGELOG.md) for all completed work*

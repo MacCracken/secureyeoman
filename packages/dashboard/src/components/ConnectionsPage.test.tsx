@@ -432,4 +432,48 @@ describe('ConnectionsPage', () => {
     await user.click(addBtn);
     expect(screen.getByText('Google Calendar')).toBeInTheDocument();
   });
+
+  it('shows Airtable in available platforms under Productivity', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['airtable'] });
+    renderComponent();
+    const productivityTab = await screen.findByText('Productivity');
+    await user.click(productivityTab);
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('Airtable')).toBeInTheDocument();
+  });
+
+  it('shows Todoist in available platforms under Productivity', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['todoist'] });
+    renderComponent();
+    const productivityTab = await screen.findByText('Productivity');
+    await user.click(productivityTab);
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('Todoist')).toBeInTheDocument();
+  });
+
+  it('shows Spotify in available platforms under Productivity', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['spotify'] });
+    renderComponent();
+    const productivityTab = await screen.findByText('Productivity');
+    await user.click(productivityTab);
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('Spotify')).toBeInTheDocument();
+  });
+
+  it('shows YouTube in available platforms under Productivity', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['youtube'] });
+    renderComponent();
+    const productivityTab = await screen.findByText('Productivity');
+    await user.click(productivityTab);
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('YouTube')).toBeInTheDocument();
+  });
 });
