@@ -300,6 +300,8 @@ export const SkillSchema = z.object({
   status: SkillStatusSchema.default('active'),
   usageCount: z.number().int().nonnegative().default(0),
   lastUsedAt: z.number().int().nonnegative().nullable().default(null),
+  personalityId: z.string().nullable().optional(),
+  personalityName: z.string().nullable().optional(),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
 });
@@ -312,6 +314,7 @@ export const SkillCreateSchema = SkillSchema.omit({
   updatedAt: true,
   usageCount: true,
   lastUsedAt: true,
+  personalityName: true,
 });
 
 export type SkillCreate = z.infer<typeof SkillCreateSchema>;

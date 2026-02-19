@@ -16,6 +16,12 @@ import {
   X,
   Download,
   User,
+  Users,
+  RefreshCw,
+  CheckCircle,
+  AlertCircle,
+  Shield,
+  GitBranch,
 } from 'lucide-react';
 import {
   fetchSkills,
@@ -29,19 +35,22 @@ import {
   fetchMarketplaceSkills,
   installMarketplaceSkill,
   uninstallMarketplaceSkill,
+  syncCommunitySkills,
+  fetchCommunityStatus,
   fetchPersonalities,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
-import type { Skill, SkillCreate, Personality } from '../types';
+import type { Skill, SkillCreate, Personality, MarketplaceSkill } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 
-type TabType = 'my-skills' | 'marketplace';
+type TabType = 'my-skills' | 'marketplace' | 'community';
 
 const SOURCE_LABELS: Record<string, string> = {
   user: 'User',
   ai_proposed: 'AI Proposed',
   ai_learned: 'AI Learned',
   marketplace: 'Marketplace',
+  community: 'Community',
 };
 
 const STATUS_BADGES: Record<string, string> = {
@@ -54,6 +63,7 @@ export function SkillsPage() {
   const location = useLocation();
   const getInitialTab = (): TabType => {
     const path = location.pathname;
+    if (path.includes('/community')) return 'community';
     if (path.includes('/marketplace')) return 'marketplace';
     return 'my-skills';
   };
@@ -69,16 +79,14 @@ export function SkillsPage() {
             Skills
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Manage your skills and browse the marketplace
+            Manage your skills, browse the marketplace, and sync community skills
           </p>
         </div>
       </div>
 
       <div className="flex gap-1 border-b border-border">
         <button
-          onClick={() => {
-            setActiveTab('my-skills');
-          }}
+          onClick={() => setActiveTab('my-skills')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'my-skills'
               ? 'border-primary text-primary'
@@ -89,9 +97,7 @@ export function SkillsPage() {
           Personal Skills
         </button>
         <button
-          onClick={() => {
-            setActiveTab('marketplace');
-          }}
+          onClick={() => setActiveTab('marketplace')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'marketplace'
               ? 'border-primary text-primary'
@@ -101,14 +107,27 @@ export function SkillsPage() {
           <Store className="w-4 h-4" />
           Marketplace
         </button>
+        <button
+          onClick={() => setActiveTab('community')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            activeTab === 'community'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Users className="w-4 h-4" />
+          Community
+        </button>
       </div>
 
       {activeTab === 'my-skills' && <MySkillsTab />}
-
       {activeTab === 'marketplace' && <MarketplaceTab />}
+      {activeTab === 'community' && <CommunityTab />}
     </div>
   );
 }
+
+// ─── Personal Skills Tab ──────────────────────────────────────────────────────
 
 function MySkillsTab() {
   const queryClient = useQueryClient();
@@ -251,9 +270,7 @@ function MySkillsTab() {
         </button>
         <select
           value={filterStatus}
-          onChange={(e) => {
-            setFilterStatus(e.target.value);
-          }}
+          onChange={(e) => setFilterStatus(e.target.value)}
           className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
         >
           <option value="">All Status</option>
@@ -263,15 +280,15 @@ function MySkillsTab() {
         </select>
         <select
           value={filterSource}
-          onChange={(e) => {
-            setFilterSource(e.target.value);
-          }}
+          onChange={(e) => setFilterSource(e.target.value)}
           className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
         >
           <option value="">All Sources</option>
           <option value="user">User</option>
           <option value="ai_proposed">AI Proposed</option>
           <option value="ai_learned">AI Learned</option>
+          <option value="marketplace">Marketplace</option>
+          <option value="community">Community</option>
         </select>
         {pendingCount > 0 && (
           <span className="badge badge-warning">{pendingCount} pending approval</span>
@@ -286,25 +303,19 @@ function MySkillsTab() {
               className="bg-background border rounded-lg px-3 py-2 text-sm"
               placeholder="Skill name"
               value={form.name}
-              onChange={(e) => {
-                setForm({ ...form, name: e.target.value });
-              }}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
             />
             <input
               className="bg-background border rounded-lg px-3 py-2 text-sm"
               placeholder="Description"
               value={form.description}
-              onChange={(e) => {
-                setForm({ ...form, description: e.target.value });
-              }}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
             />
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <select
                 value={form.personalityId ?? ''}
-                onChange={(e) => {
-                  setForm({ ...form, personalityId: e.target.value || null });
-                }}
+                onChange={(e) => setForm({ ...form, personalityId: e.target.value || null })}
                 className="w-full bg-background border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
               >
                 <option value="">Global (All Personalities)</option>
@@ -315,18 +326,8 @@ function MySkillsTab() {
                 ))}
               </select>
               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg
-                  className="w-4 h-4 text-muted-foreground"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 9l-7 7-7-7"
-                  />
+                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </div>
             </div>
@@ -334,18 +335,14 @@ function MySkillsTab() {
               className="bg-background border rounded-lg px-3 py-2 text-sm min-h-[80px]"
               placeholder="Instructions (what the skill does)"
               value={form.instructions}
-              onChange={(e) => {
-                setForm({ ...form, instructions: e.target.value });
-              }}
+              onChange={(e) => setForm({ ...form, instructions: e.target.value })}
             />
             <div className="flex gap-2">
               <input
                 className="bg-background border rounded-lg px-3 py-2 text-sm flex-1"
                 placeholder="Trigger patterns (e.g., /mycommand)"
                 value={triggerInput}
-                onChange={(e) => {
-                  setTriggerInput(e.target.value);
-                }}
+                onChange={(e) => setTriggerInput(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -362,11 +359,7 @@ function MySkillsTab() {
                 {(form.triggerPatterns || []).map((p, i) => (
                   <span key={i} className="badge flex items-center gap-1">
                     {p}
-                    <button
-                      onClick={() => {
-                        handleRemoveTrigger(i);
-                      }}
-                    >
+                    <button onClick={() => handleRemoveTrigger(i)}>
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -381,12 +374,7 @@ function MySkillsTab() {
               >
                 {createMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
               </button>
-              <button
-                onClick={() => {
-                  setEditing(null);
-                }}
-                className="btn btn-ghost"
-              >
+              <button onClick={() => setEditing(null)} className="btn btn-ghost">
                 Cancel
               </button>
             </div>
@@ -445,18 +433,14 @@ function MySkillsTab() {
                   {skill.status === 'pending_approval' && (
                     <>
                       <button
-                        onClick={() => {
-                          approveMut.mutate(skill.id);
-                        }}
+                        onClick={() => approveMut.mutate(skill.id)}
                         className="btn btn-ghost p-2"
                         title="Approve"
                       >
                         <ThumbsUp className="w-4 h-4 text-success" />
                       </button>
                       <button
-                        onClick={() => {
-                          rejectMut.mutate(skill.id);
-                        }}
+                        onClick={() => rejectMut.mutate(skill.id)}
                         className="btn btn-ghost p-2"
                         title="Reject"
                       >
@@ -483,18 +467,11 @@ function MySkillsTab() {
                       )}
                     </button>
                   )}
-                  <button
-                    onClick={() => {
-                      startEdit(skill);
-                    }}
-                    className="btn btn-ghost p-2"
-                  >
+                  <button onClick={() => startEdit(skill)} className="btn btn-ghost p-2">
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => {
-                      setDeleteTarget(skill);
-                    }}
+                    onClick={() => setDeleteTarget(skill)}
                     className="btn btn-ghost p-2"
                   >
                     <Trash2 className="w-4 h-4 text-destructive" />
@@ -516,20 +493,139 @@ function MySkillsTab() {
           deleteMut.mutate(deleteTarget!.id);
           setDeleteTarget(null);
         }}
-        onCancel={() => {
-          setDeleteTarget(null);
-        }}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );
 }
+
+// ─── Shared skill card ────────────────────────────────────────────────────────
+
+function SkillCard({
+  skill,
+  onInstall,
+  onUninstall,
+  installing,
+  uninstalling,
+  badge,
+}: {
+  skill: MarketplaceSkill;
+  onInstall: () => void;
+  onUninstall: () => void;
+  installing: boolean;
+  uninstalling: boolean;
+  badge?: React.ReactNode;
+}) {
+  return (
+    <div className="card p-4 flex flex-col h-full hover:shadow-md transition-shadow">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2 mb-1">
+        <h3 className="font-medium text-sm line-clamp-1 flex-1">{skill.name}</h3>
+        <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
+          v{skill.version}
+        </span>
+      </div>
+
+      {/* Badges row */}
+      <div className="flex items-center gap-1.5 mb-2">
+        <span className="text-[10px] text-muted-foreground">{skill.category}</span>
+        {badge}
+      </div>
+
+      {/* Description */}
+      <p className="text-xs text-muted-foreground mb-4 line-clamp-3 flex-1">
+        {sanitizeText(skill.description)}
+      </p>
+
+      {/* Footer */}
+      <div className="pt-3 border-t border-border mt-auto">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-xs font-medium text-foreground">{skill.author}</span>
+          <span className="text-[10px] text-muted-foreground">
+            {skill.downloadCount.toLocaleString()} installs
+          </span>
+        </div>
+
+        {skill.installed ? (
+          <button
+            onClick={onUninstall}
+            disabled={uninstalling}
+            className="btn btn-ghost text-destructive flex items-center gap-2 w-full justify-center text-xs py-2"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Uninstall
+          </button>
+        ) : (
+          <button
+            onClick={onInstall}
+            disabled={installing}
+            className="btn btn-primary flex items-center gap-2 w-full justify-center text-xs py-2"
+          >
+            {installing ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Download className="w-3.5 h-3.5" />
+            )}
+            Install
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Personality Selector (shared) ───────────────────────────────────────────
+
+function PersonalitySelector({
+  personalities,
+  value,
+  onChange,
+  required,
+}: {
+  personalities: Personality[];
+  value: string;
+  onChange: (id: string) => void;
+  required?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-muted-foreground whitespace-nowrap">Install to:</span>
+      <div className="relative">
+        <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="bg-card border border-border rounded-lg pl-10 pr-8 py-2.5 text-sm min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
+        >
+          {!required && <option value="">Global (All Personalities)</option>}
+          {required && <option value="">— Select a personality —</option>}
+          {personalities.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name} {p.isActive ? '(Active)' : ''}
+            </option>
+          ))}
+        </select>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Marketplace Tab ──────────────────────────────────────────────────────────
 
 function MarketplaceTab() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [installingId, setInstallingId] = useState<string | null>(null);
+  const [uninstallingId, setUninstallingId] = useState<string | null>(null);
 
+  // Fetch all non-community skills
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace', query],
     queryFn: () => fetchMarketplaceSkills(query || undefined),
@@ -542,9 +638,7 @@ function MarketplaceTab() {
 
   const personalities = personalitiesData?.personalities ?? [];
   const activePersonality = personalities.find((p) => p.isActive);
-  const selectedPersonality = personalities.find((p) => p.id === selectedPersonalityId);
 
-  // Set default personality to active one only once when data loads
   useEffect(() => {
     if (activePersonality && !hasInitialized) {
       setSelectedPersonalityId(activePersonality.id);
@@ -560,17 +654,46 @@ function MarketplaceTab() {
   const installMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
       installMarketplaceSkill(id, personalityId),
-    onSuccess: invalidate,
+    onSuccess: () => { invalidate(); setInstallingId(null); },
+    onError: () => setInstallingId(null),
   });
 
   const uninstallMut = useMutation({
     mutationFn: uninstallMarketplaceSkill,
-    onSuccess: invalidate,
+    onSuccess: () => { invalidate(); setUninstallingId(null); },
+    onError: () => setUninstallingId(null),
   });
+
+  // Separate builtin and published, exclude community
+  const allSkills = (data?.skills ?? []).filter((s) => s.source !== 'community');
+  const builtinSkills = allSkills.filter((s) => s.source === 'builtin');
+  const publishedSkills = allSkills.filter((s) => s.source === 'published');
+
+  const renderGrid = (skills: MarketplaceSkill[], badgeFn?: (s: MarketplaceSkill) => React.ReactNode) => (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {skills.map((skill) => (
+        <SkillCard
+          key={skill.id}
+          skill={skill}
+          badge={badgeFn?.(skill)}
+          installing={installingId === skill.id && installMut.isPending}
+          uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
+          onInstall={() => {
+            setInstallingId(skill.id);
+            installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
+          }}
+          onUninstall={() => {
+            setUninstallingId(skill.id);
+            uninstallMut.mutate(skill.id);
+          }}
+        />
+      ))}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
-      {/* Search and Personality Selector */}
+      {/* Toolbar */}
       <div className="flex flex-col lg:flex-row gap-4">
         <div className="relative flex-1 max-w-2xl">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -578,53 +701,21 @@ function MarketplaceTab() {
             className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             placeholder="Search skills by name, description, or author..."
             value={query}
-            onChange={(e) => {
-              setQuery(e.target.value);
-            }}
+            onChange={(e) => setQuery(e.target.value)}
           />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground whitespace-nowrap">Install to:</span>
-          <div className="relative">
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <select
-              value={selectedPersonalityId}
-              onChange={(e) => {
-                setSelectedPersonalityId(e.target.value);
-              }}
-              className="bg-card border border-border rounded-lg pl-10 pr-8 py-2.5 text-sm min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
-            >
-              <option value="">Global (All Personalities)</option>
-              {personalities.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} {p.isActive ? '(Active)' : ''}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-              <svg
-                className="w-4 h-4 text-muted-foreground"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </div>
-          </div>
-        </div>
+        <PersonalitySelector
+          personalities={personalities}
+          value={selectedPersonalityId}
+          onChange={setSelectedPersonalityId}
+        />
       </div>
 
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      ) : !data?.skills.length ? (
+      ) : allSkills.length === 0 ? (
         <div className="card p-12 text-center">
           <Store className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">
@@ -632,74 +723,244 @@ function MarketplaceTab() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {data.skills.map((skill) => (
-            <div
-              key={skill.id}
-              className="card p-4 flex flex-col h-full hover:shadow-md transition-shadow"
-            >
-              {/* Header */}
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <h3 className="font-medium text-sm line-clamp-1 flex-1">{skill.name}</h3>
-                <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground shrink-0">
-                  v{skill.version}
+        <div className="space-y-8">
+          {/* YEOMAN Built-ins */}
+          {builtinSkills.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Shield className="w-4 h-4 text-primary" />
+                <h3 className="text-sm font-semibold text-foreground">YEOMAN Built-ins</h3>
+                <span className="text-xs text-muted-foreground">({builtinSkills.length})</span>
+              </div>
+              {renderGrid(builtinSkills, () => (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                  <Shield className="w-2.5 h-2.5" />
+                  YEOMAN
                 </span>
+              ))}
+            </section>
+          )}
+
+          {/* Published */}
+          {publishedSkills.length > 0 && (
+            <section>
+              <div className="flex items-center gap-2 mb-4">
+                <Store className="w-4 h-4 text-muted-foreground" />
+                <h3 className="text-sm font-semibold text-foreground">Published</h3>
+                <span className="text-xs text-muted-foreground">({publishedSkills.length})</span>
               </div>
+              {renderGrid(publishedSkills)}
+            </section>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
-              {/* Category Tag */}
-              <span className="text-[10px] text-muted-foreground mb-2 inline-block">
-                {skill.category}
-              </span>
+// ─── Community Tab ────────────────────────────────────────────────────────────
 
-              {/* Description */}
-              <p className="text-xs text-muted-foreground mb-4 line-clamp-3 flex-1">
-                {sanitizeText(skill.description)}
-              </p>
+function CommunityTab() {
+  const queryClient = useQueryClient();
+  const [query, setQuery] = useState('');
+  const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
+  const [hasInitialized, setHasInitialized] = useState(false);
+  const [installingId, setInstallingId] = useState<string | null>(null);
+  const [uninstallingId, setUninstallingId] = useState<string | null>(null);
+  const [syncResult, setSyncResult] = useState<{
+    added: number;
+    updated: number;
+    skipped: number;
+    errors: string[];
+  } | null>(null);
 
-              {/* Footer */}
-              <div className="pt-3 border-t border-border mt-auto">
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <span className="font-medium text-foreground">{skill.author}</span>
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">
-                    {skill.downloadCount.toLocaleString()} installs
+  const { data, isLoading } = useQuery({
+    queryKey: ['marketplace-community', query],
+    queryFn: () => fetchMarketplaceSkills(query || undefined, 'community'),
+  });
+
+  const { data: statusData } = useQuery({
+    queryKey: ['community-status'],
+    queryFn: fetchCommunityStatus,
+  });
+
+  const { data: personalitiesData } = useQuery({
+    queryKey: ['personalities'],
+    queryFn: fetchPersonalities,
+  });
+
+  const personalities = personalitiesData?.personalities ?? [];
+  const activePersonality = personalities.find((p) => p.isActive);
+
+  // Default to active personality — community installs are always per-personality
+  useEffect(() => {
+    if (activePersonality && !hasInitialized) {
+      setSelectedPersonalityId(activePersonality.id);
+      setHasInitialized(true);
+    }
+  }, [activePersonality, hasInitialized]);
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: ['marketplace-community'] });
+    void queryClient.invalidateQueries({ queryKey: ['community-status'] });
+    void queryClient.invalidateQueries({ queryKey: ['skills'] });
+  };
+
+  const syncMut = useMutation({
+    mutationFn: syncCommunitySkills,
+    onSuccess: (result) => {
+      setSyncResult(result);
+      invalidate();
+    },
+  });
+
+  const installMut = useMutation({
+    mutationFn: ({ id, personalityId }: { id: string; personalityId: string }) =>
+      installMarketplaceSkill(id, personalityId),
+    onSuccess: () => { invalidate(); setInstallingId(null); },
+    onError: () => setInstallingId(null),
+  });
+
+  const uninstallMut = useMutation({
+    mutationFn: uninstallMarketplaceSkill,
+    onSuccess: () => { invalidate(); setUninstallingId(null); },
+    onError: () => setUninstallingId(null),
+  });
+
+  const skills = data?.skills ?? [];
+  const canInstall = !!selectedPersonalityId;
+
+  const lastSynced = statusData?.lastSyncedAt
+    ? new Date(statusData.lastSyncedAt).toLocaleString()
+    : null;
+
+  return (
+    <div className="space-y-6">
+      {/* Header bar */}
+      <div className="flex flex-col lg:flex-row gap-4">
+        <div className="relative flex-1 max-w-2xl">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <input
+            className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            placeholder="Search community skills..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </div>
+
+        {/* Per-personality required */}
+        <PersonalitySelector
+          personalities={personalities}
+          value={selectedPersonalityId}
+          onChange={setSelectedPersonalityId}
+          required
+        />
+
+        {/* Sync button */}
+        <button
+          onClick={() => { setSyncResult(null); syncMut.mutate(); }}
+          disabled={syncMut.isPending}
+          className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
+          title={statusData?.communityRepoPath ? `Sync from ${statusData.communityRepoPath}` : 'Sync from community repo'}
+        >
+          <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
+          {syncMut.isPending ? 'Syncing…' : 'Sync'}
+        </button>
+      </div>
+
+      {/* Repo path + last synced info */}
+      {statusData && (
+        <div className="flex items-center gap-3 text-xs text-muted-foreground">
+          <GitBranch className="w-3.5 h-3.5 shrink-0" />
+          <span className="font-mono truncate">{statusData.communityRepoPath ?? 'No path configured'}</span>
+          {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
+        </div>
+      )}
+
+      {/* Per-personality notice */}
+      {!canInstall && (
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20 text-xs text-warning-foreground">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          Select a personality above — community skills must be installed per-personality.
+        </div>
+      )}
+
+      {/* Sync result */}
+      {syncResult && (
+        <div className={`p-3 rounded-lg border text-xs space-y-1 ${
+          syncResult.errors.length > 0
+            ? 'bg-warning/10 border-warning/20'
+            : 'bg-success/10 border-success/20'
+        }`}>
+          <div className="flex items-center gap-2 font-medium">
+            {syncResult.errors.length > 0 ? (
+              <AlertCircle className="w-4 h-4 text-warning" />
+            ) : (
+              <CheckCircle className="w-4 h-4 text-success" />
+            )}
+            Sync complete — {syncResult.added} added, {syncResult.updated} updated, {syncResult.skipped} skipped
+            {syncResult.errors.length > 0 && `, ${syncResult.errors.length} error(s)`}
+          </div>
+          {syncResult.errors.length > 0 && (
+            <ul className="mt-1 space-y-0.5 text-muted-foreground">
+              {syncResult.errors.map((e, i) => (
+                <li key={i} className="truncate">· {e}</li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      {/* Skills grid */}
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
+        </div>
+      ) : skills.length === 0 ? (
+        <div className="card p-12 text-center space-y-3">
+          <Users className="w-12 h-12 mx-auto text-muted-foreground" />
+          <p className="text-muted-foreground font-medium">No community skills found</p>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            Clone{' '}
+            <span className="font-mono">secureyeoman-community-skills</span> alongside this project,
+            then click <strong>Sync</strong> to import skills.
+          </p>
+          {statusData?.communityRepoPath && (
+            <p className="text-xs text-muted-foreground font-mono">{statusData.communityRepoPath}</p>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div className="flex items-center gap-2">
+            <GitBranch className="w-4 h-4 text-muted-foreground" />
+            <h3 className="text-sm font-semibold text-foreground">Community Skills</h3>
+            <span className="text-xs text-muted-foreground">({skills.length})</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            {skills.map((skill) => (
+              <SkillCard
+                key={skill.id}
+                skill={skill}
+                badge={
+                  <span className="inline-flex items-center gap-1 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">
+                    <GitBranch className="w-2.5 h-2.5" />
+                    Community
                   </span>
-                </div>
-
-                {skill.installed ? (
-                  <button
-                    onClick={() => {
-                      uninstallMut.mutate(skill.id);
-                    }}
-                    disabled={uninstallMut.isPending}
-                    className="btn btn-ghost text-destructive flex items-center gap-2 w-full justify-center text-xs py-2"
-                  >
-                    <Trash2 className="w-3.5 h-3.5" />
-                    Uninstall
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => {
-                      installMut.mutate({
-                        id: skill.id,
-                        personalityId: selectedPersonalityId || undefined,
-                      });
-                    }}
-                    disabled={installMut.isPending}
-                    className="btn btn-primary flex items-center gap-2 w-full justify-center text-xs py-2"
-                  >
-                    {installMut.isPending ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    ) : (
-                      <Download className="w-3.5 h-3.5" />
-                    )}
-                    Install
-                  </button>
-                )}
-              </div>
-            </div>
-          ))}
+                }
+                installing={installingId === skill.id && installMut.isPending}
+                uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
+                onInstall={() => {
+                  if (!canInstall) return;
+                  setInstallingId(skill.id);
+                  installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId });
+                }}
+                onUninstall={() => {
+                  setUninstallingId(skill.id);
+                  uninstallMut.mutate(skill.id);
+                }}
+              />
+            ))}
+          </div>
         </div>
       )}
     </div>

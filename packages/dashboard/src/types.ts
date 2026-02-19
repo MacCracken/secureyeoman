@@ -289,6 +289,23 @@ export interface KnowledgeEntry {
   updatedAt: number;
 }
 
+export interface MarketplaceSkill {
+  id: string;
+  name: string;
+  description: string;
+  version: string;
+  author: string;
+  category: string;
+  tags: string[];
+  downloadCount: number;
+  rating: number;
+  instructions: string;
+  installed: boolean;
+  source: 'builtin' | 'community' | 'published';
+  publishedAt: number;
+  updatedAt: number;
+}
+
 export interface Skill {
   id: string;
   name: string;

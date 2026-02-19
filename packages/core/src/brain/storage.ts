@@ -59,6 +59,7 @@ interface SkillRow {
   status: string;
   usage_count: number;
   last_used_at: number | null;
+  personality_id: string | null;
   created_at: number;
   updated_at: number;
 }
@@ -117,6 +118,7 @@ function rowToSkill(row: SkillRow): Skill {
     status: row.status as Skill['status'],
     usageCount: row.usage_count,
     lastUsedAt: row.last_used_at,
+    personalityId: row.personality_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -402,8 +404,8 @@ export class BrainStorage extends PgBaseStorage {
     const id = uuidv7();
 
     await this.query(
-      `INSERT INTO brain.skills (id, name, description, instructions, tools, trigger_patterns, enabled, source, status, usage_count, last_used_at, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, 0, NULL, $10, $11)`,
+      `INSERT INTO brain.skills (id, name, description, instructions, tools, trigger_patterns, enabled, source, status, personality_id, usage_count, last_used_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10, 0, NULL, $11, $12)`,
       [
         id,
         data.name,
@@ -414,6 +416,7 @@ export class BrainStorage extends PgBaseStorage {
         data.enabled ?? true,
         data.source ?? 'user',
         data.status ?? 'active',
+        data.personalityId ?? null,
         now,
         now,
       ]

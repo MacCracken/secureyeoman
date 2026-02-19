@@ -48,8 +48,12 @@ export function registerMarketplaceRoutes(
 
   app.post(
     '/api/v1/marketplace/:id/install',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-      if (!(await marketplaceManager.install(request.params.id)))
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: { personalityId?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const personalityId = request.body?.personalityId || undefined;
+      if (!(await marketplaceManager.install(request.params.id, personalityId)))
         return reply.code(404).send({ error: 'Skill not found' });
       return { message: 'Skill installed' };
     }

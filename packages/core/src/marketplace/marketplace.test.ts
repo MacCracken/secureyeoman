@@ -201,6 +201,30 @@ describe('MarketplaceManager with BrainManager', () => {
     const brainSkills = await brainManager.listSkills({ source: 'marketplace' });
     expect(brainSkills).toHaveLength(1);
   });
+
+  it('should set personalityId on the brain skill when provided', async () => {
+    const skill = await manager.publish({
+      name: 'Personality Skill',
+      instructions: 'Scoped to a personality',
+    });
+    await manager.install(skill.id, 'test-personality-id');
+
+    const brainSkills = await brainManager.listSkills({ source: 'marketplace' });
+    expect(brainSkills).toHaveLength(1);
+    expect(brainSkills[0].personalityId).toBe('test-personality-id');
+  });
+
+  it('should set personalityId=null when no personalityId provided (global)', async () => {
+    const skill = await manager.publish({
+      name: 'Global Skill',
+      instructions: 'Not scoped to a personality',
+    });
+    await manager.install(skill.id);
+
+    const brainSkills = await brainManager.listSkills({ source: 'marketplace' });
+    expect(brainSkills).toHaveLength(1);
+    expect(brainSkills[0].personalityId).toBeNull();
+  });
 });
 
 describe('Community Skill Sync', () => {
@@ -313,6 +337,17 @@ describe('Community Skill Sync', () => {
     expect(result.added).toBe(0);
     expect(result.errors.length).toBeGreaterThan(0);
     expect(result.errors[0]).toMatch(/not found/i);
+  });
+
+  it('should use configured communityRepoPath when no argument passed', async () => {
+    writeSkill('skills/development/configured-skill.json', {
+      name: 'Configured Path Skill',
+      instructions: 'Uses configured path',
+    });
+    // No argument — falls back to the communityRepoPath set in constructor (tmpDir)
+    const result = await manager.syncFromCommunity();
+    expect(result.added).toBe(1);
+    expect(result.errors).toHaveLength(0);
   });
 
   it('should return community status with skill count and last synced time', async () => {

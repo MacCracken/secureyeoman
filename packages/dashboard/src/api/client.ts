@@ -1291,10 +1291,12 @@ export async function deleteMcpCredential(serverId: string, key: string): Promis
 // ─── Marketplace API ────────────────────────────────────────────
 
 export async function fetchMarketplaceSkills(
-  query?: string
-): Promise<{ skills: any[]; total: number }> {
+  query?: string,
+  source?: string
+): Promise<{ skills: import('../types').MarketplaceSkill[]; total: number }> {
   const params = new URLSearchParams();
   if (query) params.set('query', query);
+  if (source) params.set('source', source);
   const qs = params.toString();
   return request(`/marketplace${qs ? `?${qs}` : ''}`);
 }
@@ -1311,6 +1313,23 @@ export async function installMarketplaceSkill(
 
 export async function uninstallMarketplaceSkill(id: string): Promise<{ message: string }> {
   return request(`/marketplace/${id}/uninstall`, { method: 'POST' });
+}
+
+export async function syncCommunitySkills(): Promise<{
+  added: number;
+  updated: number;
+  skipped: number;
+  errors: string[];
+}> {
+  return request('/marketplace/community/sync', { method: 'POST' });
+}
+
+export async function fetchCommunityStatus(): Promise<{
+  communityRepoPath: string | null;
+  skillCount: number;
+  lastSyncedAt: number | null;
+}> {
+  return request('/marketplace/community/status');
 }
 
 // ─── Reports API ────────────────────────────────────────────────

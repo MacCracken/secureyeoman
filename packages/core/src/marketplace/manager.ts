@@ -45,7 +45,7 @@ export class MarketplaceManager {
     return await this.storage.getSkill(id);
   }
 
-  async install(id: string): Promise<boolean> {
+  async install(id: string, personalityId?: string): Promise<boolean> {
     const skill = await this.storage.getSkill(id);
     if (!skill) return false;
     if (skill.installed) return true;
@@ -63,9 +63,10 @@ export class MarketplaceManager {
               tools: skill.tools,
               source: brainSource,
               enabled: true,
+              personalityId: personalityId ?? null,
             })
           );
-          this.logger.info('Brain skill created from marketplace', { id, name: skill.name, source: brainSource });
+          this.logger.info('Brain skill created from marketplace', { id, name: skill.name, source: brainSource, personalityId: personalityId ?? null });
         } catch (err) {
           this.logger.error('Failed to create brain skill from marketplace', {
             id,
