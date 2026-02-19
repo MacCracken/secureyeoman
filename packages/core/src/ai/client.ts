@@ -73,6 +73,7 @@ export class AIClient {
   private readonly fallbackProviders = new Map<number, AIProvider>();
   private readonly retryConfig?: Partial<RetryConfig>;
   private soulManager: SoulManager | null;
+  private initPromise: Promise<void> | null = null;
 
   constructor(config: AIClientConfig, deps: AIClientDeps = {}) {
     this.costCalculator = new CostCalculator();
@@ -104,6 +105,7 @@ export class AIClient {
     context?: Record<string, unknown>,
     requestFallbacks?: FallbackModelConfig[]
   ): Promise<AIResponse> {
+    await this.ensureInitialized();
     // Check daily limit
     const limit = this.usageTracker.checkLimit();
     if (!limit.allowed) {
@@ -186,6 +188,7 @@ export class AIClient {
     context?: Record<string, unknown>,
     requestFallbacks?: FallbackModelConfig[]
   ): AsyncGenerator<AIStreamChunk, void, unknown> {
+    await this.ensureInitialized();
     const limit = this.usageTracker.checkLimit();
     if (!limit.allowed) {
       throw new TokenLimitError(this.providerName);
@@ -270,10 +273,23 @@ export class AIClient {
 
   /**
    * Load historical usage records from the database.
-   * Call once after construction, before the first AI request.
+   * Safe to call multiple times — subsequent calls are no-ops.
+   * Called automatically on the first chat()/chatStream() invocation;
+   * you may also call it explicitly during startup if eager seeding is preferred.
    */
   async init(): Promise<void> {
-    await this.usageTracker.init();
+    if (!this.initPromise) {
+      this.initPromise = this.usageTracker.init();
+    }
+    await this.initPromise;
+  }
+
+  /** Ensure usage history is loaded before processing a request. */
+  private async ensureInitialized(): Promise<void> {
+    if (!this.initPromise) {
+      this.initPromise = this.usageTracker.init();
+    }
+    await this.initPromise;
   }
 
   /**

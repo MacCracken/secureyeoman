@@ -27,6 +27,18 @@ export async function runMigrations(): Promise<void> {
     .filter((f) => f.endsWith('.sql'))
     .sort();
 
+  if (files.length === 0) return;
+
+  // Fast-path: if the highest-numbered file is already the latest recorded migration,
+  // all migrations have been applied — skip the per-file SELECT loop entirely.
+  const latestFile = files[files.length - 1]!.replace('.sql', '');
+  const latest = await pool.query<{ id: string }>(
+    'SELECT id FROM schema_migrations ORDER BY id DESC LIMIT 1'
+  );
+  if (latest.rows[0]?.id === latestFile) {
+    return;
+  }
+
   for (const file of files) {
     const id = file.replace('.sql', '');
 

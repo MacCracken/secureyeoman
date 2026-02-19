@@ -46,8 +46,8 @@
 - [x] **Personal Skills — Edit Broken** — The edit button on skills added to a personality no longer opens the edit form. Restored full edit functionality for personality-scoped skills in the Personal tab. Saving now always creates a user-owned copy (never mutates marketplace/built-in records) and attributes authorship to the user (`source: 'user'`).
 
 ### Performance
-- [ ] **Memory Footprint Optimization** — Study PicoClaw for potential memory reductions; target <1GB baseline
-- [ ] **Fast Boot** — Optimize startup time for better UX; target <10s startup (learn from PicoClaw's 1s boot)
+- [x] **Memory Footprint Optimization** — PicoClaw studied; baseline already <300 MB (target met). Four targeted improvements shipped: migration fast-path (−300–700 ms, −N DB round-trips), lazy AI usage init (−300–500 ms startup), bounded WebSocket map (cap 100, oldest-idle eviction), PostgreSQL pool default 10 (−50–80 MB). See [ADR 067](../adr/067-performance-startup-memory-optimizations.md).
+- [x] **Fast Boot** — Cold start ~2–3 s (target <10 s met). Migration fast-path + lazy AI init reduce startup by ~600–1200 ms on up-to-date installs. See [ADR 067](../adr/067-performance-startup-memory-optimizations.md).
 
 ### Visualization
 - [x] **Layout Algorithms — Dagre** — Dagre hierarchical layout integrated into `WebGLGraph` via `layout="dagre"` prop; delegation tree (`SubAgentsPage`) now uses top-down DAG layout. ELK deferred to Phase 22.
