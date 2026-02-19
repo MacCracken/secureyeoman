@@ -63,9 +63,9 @@
 | **iMessage** | ✅ Beta | ✅ | ❌ | ❌ |
 | **Email (SMTP)** | ✅ Stable | ✅ | ❌ | ❌ |
 | **OAuth2** | ✅ First-class (Google) | ❌ | ❌ | ❌ |
-| **QQ** | ❌ | ✅ | ❌ | ✅ |
-| **DingTalk** | ❌ | ✅ | ❌ | ✅ |
-| **LINE** | ❌ | ✅ | ❌ | ✅ |
+| **QQ** | ✅ | ✅ | ❌ | ✅ |
+| **DingTalk** | ✅ | ✅ | ❌ | ✅ |
+| **LINE** | ✅ | ✅ | ❌ | ✅ |
 
 ### 4. Tools & Automation
 
