@@ -103,6 +103,8 @@ import { DashboardStorage } from './dashboard/storage.js';
 import { DashboardManager } from './dashboard/manager.js';
 import { WorkspaceStorage } from './workspace/storage.js';
 import { WorkspaceManager } from './workspace/manager.js';
+import { SsoStorage } from './security/sso-storage.js';
+import { SsoManager } from './security/sso-manager.js';
 import { ExperimentStorage } from './experiment/storage.js';
 import { ExperimentManager } from './experiment/manager.js';
 import { MarketplaceStorage } from './marketplace/storage.js';
@@ -132,6 +134,8 @@ export interface SecureYeomanOptions {
   auditStorage?: AuditChainStorage;
   /** Enable gateway server on startup */
   enableGateway?: boolean;
+  /** Path to pre-built dashboard dist for SPA serving */
+  dashboardDist?: string;
 }
 
 export interface SecureYeomanState {
@@ -188,6 +192,8 @@ export class SecureYeoman {
   private dashboardManager: DashboardManager | null = null;
   private workspaceStorage: WorkspaceStorage | null = null;
   private workspaceManager: WorkspaceManager | null = null;
+  private ssoStorage: SsoStorage | null = null;
+  private ssoManager: SsoManager | null = null;
   private experimentStorage: ExperimentStorage | null = null;
   private experimentManager: ExperimentManager | null = null;
   private marketplaceStorage: MarketplaceStorage | null = null;
@@ -311,6 +317,15 @@ export class SecureYeoman {
         }
       );
       this.logger.debug('Auth service initialized');
+
+      // Step 5.6: Initialize SSO manager
+      this.ssoStorage = new SsoStorage();
+      this.ssoManager = new SsoManager({
+        storage: this.ssoStorage,
+        authService: this.authService,
+        logger: this.logger.child({ component: 'SsoManager' }),
+      });
+      this.logger.debug('SSO manager initialized');
 
       // Step 5.55: Initialize secret rotation (if enabled)
       if (this.config.security.rotation.enabled) {
@@ -734,6 +749,7 @@ export class SecureYeoman {
       this.workspaceManager = new WorkspaceManager(this.workspaceStorage, {
         logger: this.logger.child({ component: 'WorkspaceManager' }),
       });
+      await this.workspaceManager.ensureDefaultWorkspace();
       this.logger.debug('Workspace manager initialized');
 
       this.experimentStorage = new ExperimentStorage();
@@ -1483,6 +1499,16 @@ export class SecureYeoman {
     return this.workspaceManager;
   }
 
+  getSsoStorage(): SsoStorage | null {
+    this.ensureInitialized();
+    return this.ssoStorage;
+  }
+
+  getSsoManager(): SsoManager | null {
+    this.ensureInitialized();
+    return this.ssoManager;
+  }
+
   /**
    * Get the experiment manager instance
    */
@@ -1881,6 +1907,7 @@ export class SecureYeoman {
       config: this.config!.gateway,
       secureYeoman: this,
       authService: this.authService ?? undefined,
+      dashboardDist: this.options.dashboardDist,
     });
 
     await this.gateway.start();
@@ -2080,6 +2107,11 @@ export class SecureYeoman {
       this.workspaceStorage.close();
       this.workspaceStorage = null;
       this.workspaceManager = null;
+    }
+    if (this.ssoStorage) {
+      this.ssoStorage.close();
+      this.ssoStorage = null;
+      this.ssoManager = null;
     }
     if (this.experimentStorage) {
       this.experimentStorage.close();

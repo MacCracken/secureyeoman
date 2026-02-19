@@ -37,7 +37,12 @@ export type HookPoint =
   | 'multimodal:image-generated'
   | 'multimodal:haptic-triggered'
   | 'swarm:before-execute'
-  | 'swarm:after-execute';
+  | 'swarm:after-execute'
+  // Phase 21: binary and mcp-bridge sub-agent hooks
+  | 'agent:binary-before-execute'
+  | 'agent:binary-after-execute'
+  | 'agent:mcp-bridge-before-execute'
+  | 'agent:mcp-bridge-after-execute';
 
 export type HookSemantics = 'observe' | 'transform' | 'veto';
 

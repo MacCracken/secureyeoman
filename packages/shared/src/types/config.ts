@@ -199,6 +199,8 @@ export const SecurityConfigSchema = z.object({
   inputValidation: InputValidationConfigSchema,
   /** Top-level kill switch for sub-agent delegation. When false, no personality can enable sub-agents. */
   allowSubAgents: z.boolean().default(false),
+  /** Allow sub-agents with type='binary' to spawn child processes. Off by default. */
+  allowBinaryAgents: z.boolean().default(false),
   /** Allow A2A (Agent-to-Agent) networking. Sub-item of delegation — requires allowSubAgents to be effective for external peers. */
   allowA2A: z.boolean().default(false),
   /** Allow Agent Swarms — multi-agent orchestration. Sub-item of delegation — requires allowSubAgents to be effective. */
@@ -426,6 +428,16 @@ export const ModelConfigSchema = z.object({
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;
 
+// Storage backend configuration (Phase 22 — single binary / SQLite tier 2)
+export const StorageBackendConfigSchema = z
+  .object({
+    backend: z.enum(['pg', 'sqlite', 'auto']).default('auto'),
+    sqlite: z.object({ path: z.string().default('~/.secureyeoman/data.db') }).default({}),
+  })
+  .default({});
+
+export type StorageBackendConfig = z.infer<typeof StorageBackendConfigSchema>;
+
 // Complete configuration schema
 export const ConfigSchema = z.object({
   version: z.string().default('1.0'),
@@ -450,6 +462,7 @@ export const ConfigSchema = z.object({
   a2a: A2AConfigSchema,
   proactive: ProactiveConfigSchema,
   multimodal: MultimodalConfigSchema,
+  storage: StorageBackendConfigSchema,
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

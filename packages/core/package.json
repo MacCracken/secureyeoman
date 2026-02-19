@@ -25,6 +25,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.3",
     "@fastify/compress": "^8.0.1",
+    "@fastify/static": "^8.0.0",
     "@fastify/websocket": "^11.2.0",
     "@secureyeoman/shared": "*",
     "@google/generative-ai": "^0.24.1",
@@ -42,6 +43,7 @@
     "jose": "^6.0.0",
     "nodemailer": "^8.0.1",
     "openai": "^6.19.0",
+    "openid-client": "^6.0.0",
     "pg": "^8.13.1",
     "pino": "^9.3.2",
     "pino-pretty": "^11.2.2",

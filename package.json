@@ -21,7 +21,8 @@
     "clean": "rm -rf node_modules packages/*/node_modules packages/*/dist",
     "security:audit": "npm audit --audit-level=moderate",
     "release-notes": "npx tsx scripts/generate-release-notes.ts",
-    "version:set": "bash scripts/set-version.sh"
+    "version:set": "bash scripts/set-version.sh",
+    "build:binary": "bash scripts/build-binary.sh"
   },
   "engines": {
     "node": ">=20.0.0"

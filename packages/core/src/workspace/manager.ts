@@ -4,7 +4,7 @@
 
 import type { Workspace, WorkspaceCreate, WorkspaceMember } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
-import { WorkspaceStorage } from './storage.js';
+import { WorkspaceStorage, type WorkspaceUpdate } from './storage.js';
 
 export interface WorkspaceManagerDeps {
   logger: SecureLogger;
@@ -45,9 +45,46 @@ export class WorkspaceManager {
     return m;
   }
 
+  async update(id: string, data: WorkspaceUpdate): Promise<Workspace | null> {
+    const ws = await this.storage.update(id, data);
+    if (ws) this.logger.info('Workspace updated', { id });
+    return ws;
+  }
+
   async removeMember(workspaceId: string, userId: string): Promise<boolean> {
     const ok = await this.storage.removeMember(workspaceId, userId);
     if (ok) this.logger.info('Member removed from workspace', { workspaceId, userId });
     return ok;
+  }
+
+  async updateMemberRole(workspaceId: string, userId: string, role: string): Promise<WorkspaceMember | null> {
+    const m = await this.storage.updateMemberRole(workspaceId, userId, role);
+    if (m) this.logger.info('Member role updated', { workspaceId, userId, role });
+    return m;
+  }
+
+  async listMembers(workspaceId: string): Promise<WorkspaceMember[]> {
+    return this.storage.listMembers(workspaceId);
+  }
+
+  async getMember(workspaceId: string, userId: string): Promise<WorkspaceMember | null> {
+    return this.storage.getMember(workspaceId, userId);
+  }
+
+  /**
+   * Ensures a "Default" workspace exists on first boot. Creates it and adds
+   * the admin user as owner if no workspaces are present.
+   */
+  async ensureDefaultWorkspace(): Promise<void> {
+    const existing = await this.storage.list();
+    if (existing.length > 0) return;
+
+    const ws = await this.storage.create({
+      name: 'Default',
+      description: 'Default workspace',
+      settings: {},
+    });
+    await this.storage.addMember(ws.id, 'admin', 'admin');
+    this.logger.info('Default workspace created', { id: ws.id });
   }
 }

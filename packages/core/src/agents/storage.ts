@@ -27,6 +27,13 @@ interface ProfileRow {
   is_builtin: boolean;
   created_at: string;
   updated_at: string;
+  // Phase 21 fields
+  type: string;
+  command: string | null;
+  command_args: string[] | null;
+  command_env: Record<string, string> | null;
+  mcp_tool: string | null;
+  mcp_tool_input: string | null;
 }
 
 interface DelegationRow {
@@ -76,6 +83,12 @@ function profileFromRow(row: ProfileRow): AgentProfile {
     isBuiltin: row.is_builtin,
     createdAt: new Date(row.created_at).getTime(),
     updatedAt: new Date(row.updated_at).getTime(),
+    type: (row.type ?? 'llm') as 'llm' | 'binary' | 'mcp-bridge',
+    command: row.command ?? undefined,
+    commandArgs: row.command_args ?? undefined,
+    commandEnv: row.command_env ?? undefined,
+    mcpTool: row.mcp_tool ?? undefined,
+    mcpToolInput: row.mcp_tool_input ?? undefined,
   };
 }
 
@@ -203,8 +216,10 @@ export class SubAgentStorage extends PgBaseStorage {
   async createProfile(data: AgentProfileCreate): Promise<AgentProfile> {
     const id = uuidv7();
     const row = await this.queryOne<ProfileRow>(
-      `INSERT INTO agents.profiles (id, name, description, system_prompt, max_token_budget, allowed_tools, default_model, is_builtin)
-       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, false)
+      `INSERT INTO agents.profiles
+         (id, name, description, system_prompt, max_token_budget, allowed_tools, default_model, is_builtin,
+          type, command, command_args, command_env, mcp_tool, mcp_tool_input)
+       VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7, false, $8, $9, $10::jsonb, $11::jsonb, $12, $13)
        RETURNING *`,
       [
         id,
@@ -214,6 +229,12 @@ export class SubAgentStorage extends PgBaseStorage {
         data.maxTokenBudget ?? 50000,
         JSON.stringify(data.allowedTools ?? []),
         data.defaultModel ?? null,
+        (data as any).type ?? 'llm',
+        (data as any).command ?? null,
+        (data as any).commandArgs ? JSON.stringify((data as any).commandArgs) : null,
+        (data as any).commandEnv ? JSON.stringify((data as any).commandEnv) : null,
+        (data as any).mcpTool ?? null,
+        (data as any).mcpToolInput ?? null,
       ]
     );
     return profileFromRow(row!);
@@ -251,6 +272,13 @@ export class SubAgentStorage extends PgBaseStorage {
       updates.push(`default_model = $${paramIdx++}`);
       values.push(data.defaultModel);
     }
+    const d = data as any;
+    if (d.type !== undefined) { updates.push(`type = $${paramIdx++}`); values.push(d.type); }
+    if (d.command !== undefined) { updates.push(`command = $${paramIdx++}`); values.push(d.command); }
+    if (d.commandArgs !== undefined) { updates.push(`command_args = $${paramIdx++}::jsonb`); values.push(JSON.stringify(d.commandArgs)); }
+    if (d.commandEnv !== undefined) { updates.push(`command_env = $${paramIdx++}::jsonb`); values.push(JSON.stringify(d.commandEnv)); }
+    if (d.mcpTool !== undefined) { updates.push(`mcp_tool = $${paramIdx++}`); values.push(d.mcpTool); }
+    if (d.mcpToolInput !== undefined) { updates.push(`mcp_tool_input = $${paramIdx++}`); values.push(d.mcpToolInput); }
 
     if (updates.length === 0) return existing;
 

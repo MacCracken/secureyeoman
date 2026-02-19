@@ -1,73 +1,39 @@
-# Stage 1: Build
-FROM node:20-alpine AS builder
+# Dockerfile — Binary-based image (Phase 22)
+#
+# Uses a pre-compiled Bun binary (~80 MB) instead of the multi-stage
+# Node.js build (~600 MB). Build the binary first with:
+#   npm run build:binary
+#
+# Then build this image:
+#   docker build -t secureyeoman .
+
+FROM debian:bookworm-slim
 
 LABEL org.opencontainers.image.source="https://github.com/MacCracken/secureyeoman"
 LABEL org.opencontainers.image.description="SecureYeoman — Secure, local-first AI assistant"
 LABEL org.opencontainers.image.licenses="MIT"
 
-WORKDIR /app
-
-# Copy workspace package manifests first for layer caching
-COPY package.json package-lock.json ./
-COPY packages/shared/package.json packages/shared/
-COPY packages/core/package.json packages/core/
-COPY packages/dashboard/package.json packages/dashboard/
-COPY packages/mcp/package.json packages/mcp/
-
-# Install all deps (including devDeps for build)
-RUN npm ci
-
-# Copy source
-COPY tsconfig.json ./
-COPY packages/shared/ packages/shared/
-COPY packages/core/ packages/core/
-COPY packages/dashboard/ packages/dashboard/
-COPY packages/mcp/ packages/mcp/
-
-# Build: shared → core → dashboard → mcp
-RUN npm run build
-
-# Copy SQL migration files (TypeScript doesn't copy non-TS assets)
-RUN cp packages/core/src/storage/migrations/*.sql packages/core/dist/storage/migrations/
-
-# Copy bundled community skills (available at /app/community-skills in the container)
-COPY community-skills/ community-skills/
-
-# Stage 2: Runtime
-FROM node:20-alpine
-
-RUN addgroup -S secureyeoman && adduser -S secureyeoman -G secureyeoman \
+RUN groupadd -r secureyeoman && useradd -r -g secureyeoman -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
  && chown -R secureyeoman:secureyeoman /home/secureyeoman
 
-WORKDIR /app
+# Copy the pre-built binary (built via npm run build:binary)
+COPY dist/secureyeoman-linux-x64 /usr/local/bin/secureyeoman
+RUN chmod +x /usr/local/bin/secureyeoman
 
-# Copy workspace package manifests
-COPY package.json package-lock.json ./
-COPY packages/shared/package.json packages/shared/
-COPY packages/core/package.json packages/core/
-COPY packages/dashboard/package.json packages/dashboard/
-COPY packages/mcp/package.json packages/mcp/
+# Optional: bundled community skills
+COPY community-skills/ /usr/share/secureyeoman/community-skills/
 
-# Install production deps only
-RUN npm ci --omit=dev && npm cache clean --force
+# Dashboard dist is embedded inside the binary as assets (via --assets flag in build-binary.sh)
+# If a separate dist is preferred, mount it at /usr/share/secureyeoman/dashboard or
+# pass --dashboard-dist <path> on startup.
 
-# Copy built output from builder
-COPY --from=builder /app/packages/shared/dist/ packages/shared/dist/
-COPY --from=builder /app/packages/core/dist/ packages/core/dist/
-COPY --from=builder /app/packages/dashboard/dist/ packages/dashboard/dist/
-COPY --from=builder /app/packages/mcp/dist/ packages/mcp/dist/
-
-# Bundled community skills (default COMMUNITY_REPO_PATH=./community-skills)
-COPY --from=builder /app/community-skills/ community-skills/
-
-# Gateway port (core) and MCP port
 EXPOSE 18789
-EXPOSE 3001
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:18789/health || exit 1
+  CMD secureyeoman health --json || exit 1
 
 USER secureyeoman
 
-CMD ["node", "packages/core/dist/cli.js"]
+ENTRYPOINT ["secureyeoman"]
+CMD ["start"]

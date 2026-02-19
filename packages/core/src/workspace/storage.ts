@@ -6,6 +6,12 @@ import type { Workspace, WorkspaceCreate, WorkspaceMember } from '@secureyeoman/
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 
+export interface WorkspaceUpdate {
+  name?: string;
+  description?: string;
+  settings?: Record<string, unknown>;
+}
+
 export class WorkspaceStorage extends PgBaseStorage {
   constructor() {
     super();
@@ -69,6 +75,28 @@ export class WorkspaceStorage extends PgBaseStorage {
     return workspaces;
   }
 
+  async update(id: string, data: WorkspaceUpdate): Promise<Workspace | null> {
+    const updates: string[] = [];
+    const values: unknown[] = [];
+    let idx = 1;
+
+    if (data.name !== undefined) { updates.push(`name = $${idx++}`); values.push(data.name); }
+    if (data.description !== undefined) { updates.push(`description = $${idx++}`); values.push(data.description); }
+    if (data.settings !== undefined) { updates.push(`settings = $${idx++}`); values.push(JSON.stringify(data.settings)); }
+
+    if (updates.length === 0) return this.get(id);
+
+    updates.push(`updated_at = $${idx++}`);
+    values.push(Date.now());
+    values.push(id);
+
+    await this.execute(
+      `UPDATE workspace.workspaces SET ${updates.join(', ')} WHERE id = $${idx}`,
+      values
+    );
+    return this.get(id);
+  }
+
   async delete(id: string): Promise<boolean> {
     const changes = await this.execute('DELETE FROM workspace.workspaces WHERE id = $1', [id]);
     return changes > 0;
@@ -91,6 +119,33 @@ export class WorkspaceStorage extends PgBaseStorage {
       [workspaceId, userId]
     );
     return changes > 0;
+  }
+
+  async updateMemberRole(workspaceId: string, userId: string, role: string): Promise<WorkspaceMember | null> {
+    const now = Date.now();
+    const count = await this.execute(
+      'UPDATE workspace.members SET role = $1 WHERE workspace_id = $2 AND user_id = $3',
+      [role, workspaceId, userId]
+    );
+    if (count === 0) return null;
+    return { userId, role: role as WorkspaceMember['role'], joinedAt: now };
+  }
+
+  async listMembers(workspaceId: string): Promise<WorkspaceMember[]> {
+    return this.getMembers(workspaceId);
+  }
+
+  async getMember(workspaceId: string, userId: string): Promise<WorkspaceMember | null> {
+    const row = await this.queryOne<Record<string, unknown>>(
+      'SELECT * FROM workspace.members WHERE workspace_id = $1 AND user_id = $2',
+      [workspaceId, userId]
+    );
+    if (!row) return null;
+    return {
+      userId: row.user_id as string,
+      role: row.role as WorkspaceMember['role'],
+      joinedAt: row.joined_at as number,
+    };
   }
 
   private async getMembers(workspaceId: string): Promise<WorkspaceMember[]> {

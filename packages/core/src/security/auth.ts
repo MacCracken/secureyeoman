@@ -368,6 +368,40 @@ export class AuthService {
     return await this.deps.storage.cleanupExpiredTokens();
   }
 
+  /**
+   * Issue access + refresh tokens for any user (used by SSO callback).
+   * The userId must correspond to a row in auth.users.
+   */
+  async createUserSession(userId: string, role: Role = 'viewer'): Promise<LoginResult> {
+    const permissions = buildPermissionStrings(role, this.deps.rbac);
+    const accessJti = uuidv7();
+    const refreshJti = uuidv7();
+
+    const accessToken = await this.signToken(
+      { sub: userId, role, permissions, jti: accessJti, type: 'access' },
+      this.config.tokenExpirySeconds
+    );
+    const refreshToken = await this.signToken(
+      { sub: userId, role, permissions, jti: refreshJti, type: 'refresh' },
+      this.config.refreshTokenExpirySeconds
+    );
+
+    return {
+      accessToken,
+      refreshToken,
+      expiresIn: this.config.tokenExpirySeconds,
+      tokenType: 'Bearer',
+    };
+  }
+
+  /** User management delegated to storage */
+  async listUsers() { return this.deps.storage.listUsers(); }
+  async getUserById(id: string) { return this.deps.storage.getUserById(id); }
+  async getUserByEmail(email: string) { return this.deps.storage.getUserByEmail(email); }
+  async createUser(data: import('@secureyeoman/shared').UserCreate) { return this.deps.storage.createUser(data); }
+  async updateUser(id: string, data: import('@secureyeoman/shared').UserUpdate) { return this.deps.storage.updateUser(id, data); }
+  async deleteUser(id: string) { return this.deps.storage.deleteUser(id); }
+
   // ── Password Reset ──────────────────────────────────────────────
 
   async resetPassword(currentPassword: string, newPassword: string): Promise<void> {

@@ -26,8 +26,8 @@ services:
     ports:
       - "18789:18789"
     volumes:
-      - data:/app/data
-      - ./community-skills:/app/community-skills
+      - data:/home/secureyeoman/.secureyeoman
+      - ./community-skills:/usr/share/secureyeoman/community-skills
     env_file: .env
     environment:
       SECUREYEOMAN_HOST: "0.0.0.0"
@@ -43,7 +43,7 @@ services:
       GMAIL_OAUTH_CLIENT_ID: ${GMAIL_OAUTH_CLIENT_ID:-}
       GMAIL_OAUTH_CLIENT_SECRET: ${GMAIL_OAUTH_CLIENT_SECRET:-}
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:18789/health"]
+      test: ["CMD", "secureyeoman", "health", "--json"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -53,9 +53,10 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # MCP service uses the 'mcp-server' subcommand of the main binary
   mcp:
     build: .
-    command: ["node", "packages/mcp/dist/cli.js"]
+    command: ["mcp-server"]
     ports:
       - "3001:3001"
     env_file: .env
@@ -68,18 +69,6 @@ services:
       MCP_CORE_URL: "http://core:18789"
       MCP_EXPOSE_FILESYSTEM: "${MCP_EXPOSE_FILESYSTEM:-false}"
       MCP_ALLOWED_PATHS: "${MCP_ALLOWED_PATHS:-}"
-      # MCP_EXPOSE_WEB: "${MCP_EXPOSE_WEB:-false}"
-      # MCP_ALLOWED_URLS: "${MCP_ALLOWED_URLS:-}"
-      # MCP_WEB_RATE_LIMIT: "${MCP_WEB_RATE_LIMIT:-10}"
-      # MCP_EXPOSE_WEB_SCRAPING: "${MCP_EXPOSE_WEB_SCRAPING:-true}"
-      # MCP_EXPOSE_WEB_SEARCH: "${MCP_EXPOSE_WEB_SEARCH:-true}"
-      # MCP_WEB_SEARCH_PROVIDER: "${MCP_WEB_SEARCH_PROVIDER:-duckduckgo}"
-      # MCP_WEB_SEARCH_API_KEY: "${MCP_WEB_SEARCH_API_KEY:-}"
-      # MCP_EXPOSE_BROWSER: "${MCP_EXPOSE_BROWSER:-false}"
-      # MCP_BROWSER_ENGINE: "${MCP_BROWSER_ENGINE:-playwright}"
-      # MCP_BROWSER_HEADLESS: "${MCP_BROWSER_HEADLESS:-true}"
-      # MCP_BROWSER_MAX_PAGES: "${MCP_BROWSER_MAX_PAGES:-3}"
-      # MCP_BROWSER_TIMEOUT_MS: "${MCP_BROWSER_TIMEOUT_MS:-30000}"
       MCP_RATE_LIMIT_PER_TOOL: "${MCP_RATE_LIMIT_PER_TOOL:-30}"
       MCP_LOG_LEVEL: "${MCP_LOG_LEVEL:-info}"
       NODE_ENV: production
@@ -97,7 +86,9 @@ services:
       - full
     restart: unless-stopped
 
-  dashboard:
+  # Dashboard is now served by the core gateway (SPA serving via @fastify/static).
+  # The separate dashboard service below is for local development only.
+  dashboard-dev:
     image: node:20-alpine
     working_dir: /app
     command: sh -c "npm install && npm run dev:dashboard"
@@ -113,6 +104,8 @@ services:
     depends_on:
       core:
         condition: service_healthy
+    profiles:
+      - dev
 
 volumes:
   pgdata:

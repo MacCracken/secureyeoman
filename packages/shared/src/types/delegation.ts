@@ -21,7 +21,26 @@ export const AgentProfileSchema = z.object({
   isBuiltin: z.boolean().default(false),
   createdAt: z.number().optional(),
   updatedAt: z.number().optional(),
-});
+  // ── Phase 21: Extensible sub-agent types ──────────────────────────
+  /** Execution backend for this profile. Default 'llm' = existing agentic loop. */
+  type: z.enum(['llm', 'binary', 'mcp-bridge']).default('llm'),
+  /** For type='binary': path or name of executable on PATH. */
+  command: z.string().max(2000).optional(),
+  /** Extra args passed to the binary after the implicit JSON payload arg. */
+  commandArgs: z.array(z.string()).optional(),
+  /** Additional env vars injected into the binary process. */
+  commandEnv: z.record(z.string(), z.string()).optional(),
+  /** For type='mcp-bridge': name of the MCP tool to call. */
+  mcpTool: z.string().max(200).optional(),
+  /** Mustache template for the MCP tool's input JSON. Supports {{task}} and {{context}}. */
+  mcpToolInput: z.string().max(5000).optional(),
+}).refine(
+  (p) => p.type !== 'binary' || !!p.command,
+  { message: "'binary' profile type requires 'command' to be set", path: ['command'] }
+).refine(
+  (p) => p.type !== 'mcp-bridge' || !!p.mcpTool,
+  { message: "'mcp-bridge' profile type requires 'mcpTool' to be set", path: ['mcpTool'] }
+);
 
 export type AgentProfile = z.infer<typeof AgentProfileSchema>;
 
