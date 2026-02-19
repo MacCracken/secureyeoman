@@ -1347,6 +1347,23 @@ img {
   gap: var(--space-4);
 }
 
+.footer-creator {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-top: var(--space-4);
+}
+
+.footer-creator a {
+  color: var(--text-primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.footer-creator a:hover {
+  color: var(--accent-primary);
+}
+
 .footer-social a {
   width: 40px;
   height: 40px;
