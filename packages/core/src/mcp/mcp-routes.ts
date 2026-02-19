@@ -18,18 +18,6 @@ export interface McpRoutesOptions {
   credentialManager?: McpCredentialManager;
 }
 
-const LOCAL_MCP_NAME = 'YEOMAN MCP';
-const GIT_TOOL_PREFIXES = ['git_', 'github_'];
-const FS_TOOL_PREFIXES = ['fs_'];
-const WEB_TOOL_PREFIXES = ['web_'];
-const WEB_SCRAPING_TOOLS = [
-  'web_scrape_markdown',
-  'web_scrape_html',
-  'web_scrape_batch',
-  'web_extract_structured',
-];
-const WEB_SEARCH_TOOLS = ['web_search', 'web_search_batch'];
-const BROWSER_TOOL_PREFIXES = ['browser_'];
 
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : 'Unknown error';
@@ -151,44 +139,9 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     }
   );
 
-  // List all discovered tools (from external servers), filtered by feature config
+  // List all discovered tools (from external MCP servers only)
   app.get('/api/v1/mcp/tools', async () => {
-    const external = mcpClient.getAllTools();
-    const exposed = await mcpServer.getExposedTools();
-    const allTools = [...external, ...exposed];
-
-    // Find the YEOMAN MCP server to get its ID
-    const servers = await mcpStorage.listServers();
-    const localServer = servers.find((s) => s.name === LOCAL_MCP_NAME);
-    const config = await mcpStorage.getConfig();
-
-    const tools = allTools.filter((tool) => {
-      if (tool.serverId === localServer?.id) {
-        if (!config.exposeGit && GIT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) {
-          return false;
-        }
-        if (!config.exposeFilesystem && FS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) {
-          return false;
-        }
-        if (!config.exposeWeb && WEB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) {
-          return false;
-        }
-        // Granular web sub-toggles
-        if (config.exposeWeb) {
-          if (!config.exposeWebScraping && WEB_SCRAPING_TOOLS.includes(tool.name)) {
-            return false;
-          }
-          if (!config.exposeWebSearch && WEB_SEARCH_TOOLS.includes(tool.name)) {
-            return false;
-          }
-        }
-        if (!config.exposeBrowser && BROWSER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) {
-          return false;
-        }
-      }
-      return true;
-    });
-
+    const tools = mcpClient.getAllTools();
     return { tools, total: tools.length };
   });
 
