@@ -430,8 +430,12 @@ export class SecureYeoman {
           }
         );
 
-        // Historical usage records are loaded lazily on the first AI request
-        // (via AIClient.ensureInitialized) — no eager DB load at startup.
+        // Fire usage history init in the background — non-blocking so startup
+        // stays fast, but ensures the tracker is seeded well before the first
+        // metrics poll (dashboard refetches every 30 s).
+        void this.aiClient.init().catch((err: unknown) =>
+          this.logger?.warn('AI usage history init failed', { err })
+        );
         this.logger.debug('AI client initialized', { provider: this.config.model.provider });
 
         // Apply persisted model default if one exists.
