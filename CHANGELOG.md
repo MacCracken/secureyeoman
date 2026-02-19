@@ -4,6 +4,62 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 19: Skills / MCP Tool Separation (2026-02-19) — [ADR 064](docs/adr/064-skills-mcp-tool-separation.md)
+
+### MCP Discovered Tools — Backend Fix
+- **`GET /api/v1/mcp/tools`** now returns only tools discovered from external MCP servers (`mcpClient.getAllTools()`). YEOMAN's own skills exposed via the MCP server role were incorrectly merged into this response. The broken `tool.serverId === localServer?.id` filter (hardcoded string vs DB UUID mismatch) is removed.
+- **Dead constants removed** from `mcp-routes.ts`: `LOCAL_MCP_NAME`, `GIT_TOOL_PREFIXES`, `FS_TOOL_PREFIXES`, `WEB_TOOL_PREFIXES`, `WEB_SCRAPING_TOOLS`, `WEB_SEARCH_TOOLS`, `BROWSER_TOOL_PREFIXES`
+
+### MCP Discovered Tools — Dashboard Fix
+- **`ConnectionsPage`** — Removed `isLocal` variable and `{!isLocal && ...}` guard from the Discovered Tools tool list. Since YEOMAN's own skills are no longer returned by the API, all tools in the list are external and the visibility toggle is always shown.
+
+### Skills — Installed Tab
+- **New "Installed" tab** — Dashboard → Skills now has four tabs: Personal Skills | Marketplace | Community | **Installed**
+- **Installed tab** surfaces all soul/brain skills with `source: 'marketplace' | 'community'` in a single view
+- **Personality filter** — All Personalities / Global (No Personality) / per-personality; shows live `X of Y installed` count
+- **Grouped by source** — Marketplace section and Community section with counts
+- **Same list-card format** as Personal Skills (status badge, source label, personality/Global pill, description)
+- **Actions** — Enable/disable toggle and remove (delete) with a descriptive confirmation dialog
+- **Empty states** — "No installed skills" with guidance to the Marketplace/Community tabs; "No skills for this personality" when filtered
+
+### personalityId Bug Fix (Marketplace Install)
+- **`MarketplaceManager.install(id, personalityId?)`** now accepts and forwards `personalityId` to `brainManager.createSkill()`. Previously all installed skills showed as "Global" regardless of which personality was selected.
+- **`POST /api/v1/marketplace/:id/install`** — Route now extracts `personalityId` from request body
+- **`SkillSchema` / `SkillCreateSchema`** (`packages/shared/src/types/soul.ts`) — Added `personalityId` (nullable optional) and `personalityName` (computed, excluded from create)
+- **Brain storage** — `createSkill()` INSERT now includes `personality_id` column; `rowToSkill()` maps `personality_id` back
+- **Soul storage** — Same `personality_id` changes for the no-brain fallback path
+- **`soulManager.listSkills()`** — Enriches returned skills with `personalityName` via a personalities lookup when `personalityId` is set
+- **Personal Skills source filter** — Now includes Marketplace and Community options in the dropdown
+- **Migration `020_soul_skills_personality.sql`** — `ALTER TABLE soul.skills ADD COLUMN IF NOT EXISTS personality_id TEXT` with index
+- **2 new tests** in `marketplace.test.ts`: personalityId persisted on install; null personalityId (Global) on install without personality
+
+### Cost Summary — Data Loss After Restart Fix
+- **Root cause** — `applyModelSwitch()` created a new `AIClient` without passing the existing `UsageTracker`, discarding all in-memory records. The Summary tab reads from the tracker; the History tab queries the DB directly. Any saved model default triggered this on every startup.
+- **`AIClientDeps.usageTracker?`** — New optional field; constructor uses provided tracker if present, creates a fresh one otherwise
+- **`applyModelSwitch()`** now passes `usageTracker: this.aiClient?.getUsageTracker()` so the tracker (and all its DB-seeded records) survives model switches and Docker rebuilds
+
+### Types
+- **`Skill.source`** (`packages/dashboard/src/types.ts`) — Extended from `'user' | 'ai_proposed' | 'ai_learned'` to include `'marketplace' | 'community'` to match the actual API response and enable type-safe filtering in the Installed tab
+
+### Files Changed
+- `packages/core/src/mcp/mcp-routes.ts`
+- `packages/core/src/ai/client.ts`
+- `packages/core/src/secureyeoman.ts`
+- `packages/core/src/marketplace/manager.ts`
+- `packages/core/src/marketplace/marketplace-routes.ts`
+- `packages/core/src/marketplace/marketplace.test.ts`
+- `packages/core/src/brain/storage.ts`
+- `packages/core/src/soul/storage.ts`
+- `packages/core/src/soul/manager.ts`
+- `packages/core/src/storage/migrations/020_soul_skills_personality.sql`
+- `packages/shared/src/types/soul.ts`
+- `packages/dashboard/src/components/SkillsPage.tsx`
+- `packages/dashboard/src/components/ConnectionsPage.tsx`
+- `packages/dashboard/src/types.ts`
+- `docs/adr/064-skills-mcp-tool-separation.md` (new)
+
+---
+
 ## Community Skills — Docker Fix & Dashboard Community Tab (2026-02-18)
 
 ### Docker Path Fix
