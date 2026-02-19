@@ -60,7 +60,7 @@
       <div class="hero-content">
         <div class="hero-badge">
           <span class="badge-dot"></span>
-          <span>v2026.2.17 Now Available</span>
+          <span>v2026.2.19 Now Available</span>
           <a
             href="https://github.com/MacCracken/secureyeoman/releases"
             target="_blank"
@@ -121,6 +121,11 @@
             <span class="stat-value">34+</span>
             <span class="stat-label">MCP Tools</span>
           </div>
+          <div class="stat-divider"></div>
+          <div class="stat">
+            <span class="stat-value">21</span>
+            <span class="stat-label">CLI Commands</span>
+          </div>
         </div>
       </div>
     </section>
@@ -153,6 +158,10 @@
           <div class="provider-logo" title="OpenCode Zen">
             <i class="fas fa-code"></i>
             <span>OpenCode</span>
+          </div>
+          <div class="provider-logo" title="Mistral">
+            <i class="fas fa-wind"></i>
+            <span>Mistral</span>
           </div>
           <div class="provider-logo" title="LM Studio">
             <i class="fas fa-laptop-code"></i>
@@ -218,8 +227,8 @@
             </div>
             <h3 class="feature-title">Cognitive Architecture</h3>
             <p class="feature-desc">
-              Vector semantic memory with FAISS/Qdrant backends. LLM-powered memory consolidation
-              with 3-tier history compression.
+              Vector semantic memory with FAISS/Qdrant/ChromaDB backends. LLM-powered memory
+              consolidation with 3-tier history compression.
             </p>
             <ul class="feature-list">
               <li>Semantic search</li>
@@ -231,12 +240,29 @@
 
           <div class="feature-card">
             <div class="feature-icon-wrapper">
+              <i class="fas fa-desktop"></i>
+            </div>
+            <h3 class="feature-title">Rich Dashboard</h3>
+            <p class="feature-desc">
+              React + Vite + Tailwind dashboard with real-time WebSocket updates. Rich chat
+              rendering with Markdown, syntax highlighting, Mermaid diagrams, and KaTeX math.
+            </p>
+            <ul class="feature-list">
+              <li>Real-time updates</li>
+              <li>Markdown rendering</li>
+              <li>Mermaid diagrams</li>
+              <li>KaTeX math</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
               <i class="fas fa-plug"></i>
             </div>
             <h3 class="feature-title">Universal Integrations</h3>
             <p class="feature-desc">
-              Connect with Telegram, Discord, Slack, GitHub, Gmail, and more. MCP protocol support
-              with 34+ built-in tools.
+              Connect with Telegram, Discord, Slack, GitHub, GitLab, Gmail, Google Calendar, Notion,
+              Jira, AWS, Azure DevOps, and more. MCP protocol support with 34+ built-in tools.
             </p>
             <ul class="feature-list">
               <li>Multi-platform support</li>
@@ -252,11 +278,11 @@
             </div>
             <h3 class="feature-title">Code Execution</h3>
             <p class="feature-desc">
-              Sandboxed code execution in Python, Node.js, and shell with Landlock/seccomp
-              sandboxing and streaming output.
+              Sandboxed code execution in Python, Node.js, and shell with
+              Landlock/seccomp/gVisor/WASM sandboxing and streaming output.
             </p>
             <ul class="feature-list">
-              <li>Sandboxed execution</li>
+              <li>Multi-sandbox options</li>
               <li>Multi-language support</li>
               <li>Streaming output</li>
               <li>Approval workflows</li>
@@ -277,6 +303,125 @@
               <li>Peer discovery</li>
               <li>Capability negotiation</li>
               <li>Trust progression</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-robot"></i>
+            </div>
+            <h3 class="feature-title">Multi-Agent Swarms</h3>
+            <p class="feature-desc">
+              Sub-agent delegation with role-based profiles. Agent swarms with sequential, parallel,
+              and dynamic strategies. Dynamic tool creation at runtime.
+            </p>
+            <ul class="feature-list">
+              <li>Swarm templates</li>
+              <li>Dynamic tools</li>
+              <li>Role-based profiles</li>
+              <li>Sequential/parallel/dynamic</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-microphone"></i>
+            </div>
+            <h3 class="feature-title">Voice & Multimodal</h3>
+            <p class="feature-desc">
+              Push-to-talk with browser-native speech recognition and synthesis. Voice overlay for
+              seamless interaction.
+            </p>
+            <ul class="feature-list">
+              <li>Push-to-talk</li>
+              <li>Speech synthesis</li>
+              <li>Voice overlay</li>
+              <li>Browser-native</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-chart-bar"></i>
+            </div>
+            <h3 class="feature-title">Reports & Analytics</h3>
+            <p class="feature-desc">
+              Audit report generator with JSON/HTML/CSV export. Cost optimization recommendations
+              and A/B testing framework.
+            </p>
+            <ul class="feature-list">
+              <li>Report generation</li>
+              <li>Cost insights</li>
+              <li>A/B testing</li>
+              <li>Export options</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-user-friends"></i>
+            </div>
+            <h3 class="feature-title">Team Collaboration</h3>
+            <p class="feature-desc">
+              Workspaces with isolation, member management, and workspace-scoped RBAC for team
+              environments.
+            </p>
+            <ul class="feature-list">
+              <li>Workspace isolation</li>
+              <li>Member management</li>
+              <li>Workspace RBAC</li>
+              <li>Team analytics</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-terminal"></i>
+            </div>
+            <h3 class="feature-title">CLI & Development</h3>
+            <p class="feature-desc">
+              21 CLI commands with shell completions. Integrated Storybook for component development
+              with dark/light theme support.
+            </p>
+            <ul class="feature-list">
+              <li>21 CLI commands</li>
+              <li>Shell completions</li>
+              <li>Storybook</li>
+              <li>JSON output</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-store"></i>
+            </div>
+            <h3 class="feature-title">Skill Marketplace</h3>
+            <p class="feature-desc">
+              Discover, install, and publish skills. Community skills from bundled local repo or
+              GitHub with source tracking.
+            </p>
+            <ul class="feature-list">
+              <li>Skill discovery</li>
+              <li>Community skills</li>
+              <li>Publish skills</li>
+              <li>Per-personality install</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-puzzle-piece"></i>
+            </div>
+            <h3 class="feature-title">Extensions & Hooks</h3>
+            <p class="feature-desc">
+              38 lifecycle hook points with observe/transform/veto semantics. TypeScript plugin
+              modules with hot-reload support and webhook dispatch.
+            </p>
+            <ul class="feature-list">
+              <li>38 hook points</li>
+              <li>TypeScript plugins</li>
+              <li>Hot reload</li>
+              <li>Webhook dispatch</li>
             </ul>
           </div>
         </div>
@@ -437,8 +582,24 @@
               <span>GitHub</span>
             </div>
             <div class="bottom-item">
+              <i class="fab fa-gitlab"></i>
+              <span>GitLab</span>
+            </div>
+            <div class="bottom-item">
+              <i class="fab fa-google"></i>
+              <span>Gmail/Calendar</span>
+            </div>
+            <div class="bottom-item">
               <i class="fas fa-envelope"></i>
               <span>Email</span>
+            </div>
+            <div class="bottom-item">
+              <i class="fab fa-jira"></i>
+              <span>Jira</span>
+            </div>
+            <div class="bottom-item">
+              <i class="fas fa-notion"></i>
+              <span>Notion</span>
             </div>
           </div>
         </div>
