@@ -59,9 +59,9 @@
 - [ ] **Configuration Wizard** — Guided config file generation with prompts for required settings
 
 ### CLI Enhancements
-- [ ] **Shell Completions** — Auto-generate shell completions for bash, zsh, fish
-- [ ] **Configuration Validation** — `secureyeoman config validate` to check config file before startup
-- [ ] **Plugin Management** — `secureyeoman plugin` command for managing extensions and integrations from CLI
+- [x] **Shell Completions** — Auto-generate shell completions for bash, zsh, fish
+- [x] **Configuration Validation** — `secureyeoman config validate` to check config file before startup
+- [x] **Plugin Management** — `secureyeoman plugin` command for managing extensions and integrations from CLI
 
 ### Output Improvements
 - [ ] **Rich Output** — Colored output, tables, and progress indicators for long-running operations
