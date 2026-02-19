@@ -30,8 +30,9 @@
 | 17 | Advanced Capabilities | 2026.2.18 | Complete |
 | | **Release 2026.2.18** | **2026-02-18** | **Released** |
 | 18 | Skills Marketplace & Community | - | Pending |
-| 19 | SaaS ready | — | Pending |
-| 20 | Onboarding & First Run | — | Pending |
+| 19 | Per-Personality Access | — | Pending |
+| 20 | SaaS ready | — | Pending |
+| 21 | Onboarding & First Run | — | Pending |
 
 ---
 
@@ -46,9 +47,6 @@
 - [ ] **Marketplace Website** or just use git-repo
       
 #### Integration Connection Updates
-
-##### Per-Personality Integration Access (enforcement)
-- [ ] **Integration Access Enforcement** — `selectedIntegrations` per-personality field is stored and exposed in the Personality Editor (UI ships in current release). Backend enforcement is a follow-up: gate inbound message routing so a personality only receives events from its allowed integrations; gate outbound send calls in sub-agent delegation chains so spawned agents cannot use integrations outside their allowlist. Mirrors the existing `selectedServers` MCP enforcement pattern in `chat-routes.ts`.
 
 ##### Productivity Integrations
 - [x] **Airtable** — Base CRUD operations, record management, view filtering; Productivity tab
@@ -69,7 +67,17 @@
 
 ---
 
-## Phase 19: SaaS ready
+## Phase 19: Per-Personality Access
+
+**Status**: Pending
+
+##### Integration & Skill Access (enforcement)
+- [ ] **Integration Access Enforcement** — `selectedIntegrations` per-personality field is stored and exposed in the Personality Editor (UI ships in current release). Backend enforcement is a follow-up: gate inbound message routing so a personality only receives events from its allowed integrations; gate outbound send calls in sub-agent delegation chains so spawned agents cannot use integrations outside their allowlist. Mirrors the existing `selectedServers` MCP enforcement pattern in `chat-routes.ts`.
+- [ ] **Skills / MCP Tool Separation** — Separate discovered MCP tools from Skills in the Discovered Tools view; surface available Skills in Skills > All Skills with a dedicated view, keeping Personal Skills in their own section distinct from marketplace/MCP-sourced skills
+
+---
+
+## Phase 20: SaaS ready
 
 **Status**: Pending
 
@@ -109,15 +117,12 @@
 ### Development
 - [ ] **Go/Rust Runtime** — Potential future language option for core components
 
-### Skills & Tools UX
-- [ ] **Skills / MCP Tool Separation** — Separate discovered MCP tools from Skills in the Discovered Tools view; surface available Skills in Skills > All Skills with a dedicated view, keeping Personal Skills in their own section distinct from marketplace/MCP-sourced skills
-
 ### Major Audit
 - [ ] **Audit all the things** - Code, Documentation, ADR, & Tests
 
 ---
 
-## Phase 20: Onboarding & First Run
+## Phase 21: Onboarding & First Run
 
 **Status**: Pending
 
