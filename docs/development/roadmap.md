@@ -95,6 +95,16 @@
 
 ---
 
+## Phase 22: Security & Enterprise Access
+
+**Status**: In Progress
+
+### Security
+
+- [x] **RBAC Audit**: role inventory, permission validation, route coverage (~80 new ROUTE_PERMISSIONS entries), mTLS role lookup fix — see [ADR 068](../adr/068-rbac-audit-phase-22.md)
+
+---
+
 ## Phase 22: Future Implementations
 
 **Status**: Pending

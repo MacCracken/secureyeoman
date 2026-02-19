@@ -4,6 +4,39 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 22 (partial): Security — RBAC Audit (2026-02-19) — [ADR 068](docs/adr/068-rbac-audit-phase-22.md)
+
+### Security
+
+- **Fixed `connections` → `integrations` resource naming** — `role_operator` and `role_viewer` referenced `connections` but every integration route requires `integrations`. Operator and viewer now correctly access `/api/v1/integrations/*`.
+- **Fixed mTLS role assignment** — `createAuthHook` now looks up the persisted RBAC role for the certificate CN via `rbac.getUserRole()` instead of hardcoding `operator` for all mTLS clients. Falls back to `operator` when no assignment exists.
+- **Replaced wildcard auth-management permissions** — `POST /api/v1/auth/verify`, `GET/POST /api/v1/auth/api-keys`, and `DELETE /api/v1/auth/api-keys/:id` no longer use `{ resource: '*', action: '*' }`. They now map to `auth:read` or `auth:write` specifically. `auth:write` remains admin-only; `auth:read` is granted to operator.
+- **Expanded `role_operator`** — Added 15 new resource permissions: `spirit`, `brain`, `comms`, `model`, `mcp`, `dashboards`, `workspaces`, `experiments`, `marketplace`, `multimodal`, `chat`, `execution`, `agents`, `proactive`, `browser`, `extensions`, `auth:read`.
+- **Expanded `role_viewer`** — Added read-only access to `integrations`, `spirit`, `brain`, `model`, `mcp`, `marketplace`, `dashboards`, `workspaces`, `reports`, `chat`.
+- **Expanded `role_auditor`** — Added read access to `execution`, `agents`, `proactive`, `browser`.
+- **Added ~80 missing ROUTE_PERMISSIONS entries** across 12 route groups: soul sub-routes, spirit, chat/conversations, execution, terminal, agents, proactive, A2A, browser, extensions, auth management, OAuth management, integration extras, webhooks, model extras.
+- **Added `/api/v1/auth/reset-password` to TOKEN_ONLY_ROUTES** — password reset is token-authenticated, no RBAC check needed.
+
+### Bug Fix
+
+- **Marketplace builtin skills not available in chat** — `seedBuiltinSkills()` now auto-installs builtin skills into `brain.skills` after seeding. Previously, builtins were only written to `marketplace.skills` (with `installed = false`) and never reached `brain.getActiveSkills()`, so they were never injected into the system prompt. Community skills still require explicit user opt-in.
+
+### Files Changed
+
+- `packages/core/src/security/rbac.ts` — updated operator, viewer, auditor role definitions
+- `packages/core/src/gateway/auth-middleware.ts` — Fix A (mTLS role lookup), Fix B (auth wildcard), Fix C (~80 new ROUTE_PERMISSIONS), Fix D (rbac in AuthHookOptions), TOKEN_ONLY_ROUTES
+- `packages/core/src/gateway/server.ts` — pass `rbac` to `createAuthHook`
+- `packages/core/src/__integration__/helpers.ts` — pass `rbac` to `createAuthHook`
+- `packages/core/src/__integration__/soul.integration.test.ts` — pass `rbac` to `createAuthHook`
+- `packages/core/src/gateway/auth-middleware.test.ts` — new test cases for operator role, mTLS role assignment, auth management routes
+- `packages/core/src/marketplace/manager.ts` — auto-install builtin skills after seeding
+- `packages/core/src/marketplace/storage.ts` — add `getSkillsBySource()`
+- `packages/core/src/brain/manager.ts` — add `findSkillByNameAndSource()`
+- `docs/adr/068-rbac-audit-phase-22.md` — new ADR
+- `docs/security/security-model.md` — updated RBAC permission matrix
+
+---
+
 ## Phase 20 (partial): Bug Fix — Costs Page Blanks After Restart (2026-02-19)
 
 ### Bug Fix

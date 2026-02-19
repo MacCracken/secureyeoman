@@ -148,6 +148,14 @@ export class MarketplaceStorage extends PgBaseStorage {
     return { skills: rows.map((r) => this.rowToSkill(r)), total };
   }
 
+  async getSkillsBySource(source: string): Promise<MarketplaceSkill[]> {
+    const rows = await this.queryMany<Record<string, unknown>>(
+      'SELECT * FROM marketplace.skills WHERE source = $1',
+      [source]
+    );
+    return rows.map((r) => this.rowToSkill(r));
+  }
+
   async setInstalled(id: string, installed: boolean): Promise<boolean> {
     const changes = await this.execute(
       'UPDATE marketplace.skills SET installed = $1, updated_at = $2 WHERE id = $3',

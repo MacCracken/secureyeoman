@@ -311,17 +311,51 @@ const validationPipeline = {
 ```
 
 #### RBAC Enforcement
+
+Role permission matrix (as of Phase 22 RBAC audit — see [ADR 068](../adr/068-rbac-audit-phase-22.md)):
+
+| Resource       | admin | operator | auditor | viewer |
+|----------------|:-----:|:--------:|:-------:|:------:|
+| `tasks`        | ✓ all | read/write/execute/cancel | read | read |
+| `integrations` | ✓ all | read/write/delete/test | — | read |
+| `metrics`      | ✓ all | read | read | read |
+| `logs`         | ✓ all | read | read/export | — |
+| `audit`        | ✓ all | — | read/export/verify | — |
+| `security_events` | ✓ all | — | read | — |
+| `reports`      | ✓ all | read/write | read/write | read |
+| `soul`         | ✓ all | read/write | — | read |
+| `spirit`       | ✓ all | read/write | — | read |
+| `brain`        | ✓ all | read/write | — | read |
+| `comms`        | ✓ all | read/write | — | — |
+| `model`        | ✓ all | read/write | — | read |
+| `mcp`          | ✓ all | read/write/execute | — | read |
+| `dashboards`   | ✓ all | read/write | — | read |
+| `workspaces`   | ✓ all | read/write | — | read |
+| `experiments`  | ✓ all | read/write | — | — |
+| `marketplace`  | ✓ all | read/write | — | read |
+| `multimodal`   | ✓ all | read/write | — | — |
+| `chat`         | ✓ all | read/write/execute | — | read |
+| `execution`    | ✓ all | read/write/execute | read | — |
+| `agents`       | ✓ all | read/write | read | — |
+| `proactive`    | ✓ all | read/write | read | — |
+| `browser`      | ✓ all | read/write | read | — |
+| `extensions`   | ✓ all | read/write | — | — |
+| `auth`         | ✓ all | **read only** | — | — |
+| `capture.screen` | ✓ all | capture/configure/review (≤5m) | review | — |
+| `capture.camera` | ✓ all | capture (≤1m) | review | — |
+| `voice`        | ✓ all | listen/tts | — | — |
+
+**Notes:**
+- `auth:write` (create/delete API keys, manage roles and assignments) is **admin-only**.
+- `auth:read` (list own API keys, verify token) is granted to **operator** and above.
+- Unmapped routes default-deny to **admin-only**.
+- mTLS clients use their persisted RBAC role assignment; fallback is `operator` when no assignment exists.
+
 ```typescript
 const rbacSystem = {
-  roles: {
-    admin: { permissions: ["*"] },
-    operator: { permissions: ["tasks.*", "metrics.read", "capture.screen"] },
-    auditor: { permissions: ["audit.*", "metrics.read", "capture.review"] },
-    viewer: { permissions: ["metrics.read", "tasks.read"] },
-    capture_operator: { permissions: ["capture.screen", "capture.camera"] },
-    security_auditor: { permissions: ["capture.review", "audit.*"] }
-  },
   middleware: "enforce_permissions_on_all_routes",
+  defaultDeny: true,         // unmapped routes → admin only
+  mTLSFallback: "operator",  // when no role assignment found for cert CN
   management: {
     // Full CRUD via REST API: GET/POST/PUT/DELETE /api/v1/auth/roles
     // User assignment: GET/POST /api/v1/auth/assignments, DELETE /api/v1/auth/assignments/:userId

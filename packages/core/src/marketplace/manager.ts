@@ -120,6 +120,17 @@ export class MarketplaceManager {
 
   async seedBuiltinSkills(): Promise<void> {
     await this.storage.seedBuiltinSkills();
+
+    // Auto-install any builtin skills that don't yet have a brain entry
+    if (this.brainManager) {
+      const builtins = await this.storage.getSkillsBySource('builtin');
+      for (const skill of builtins) {
+        const alreadyInBrain = await this.brainManager.findSkillByNameAndSource(skill.name, 'marketplace');
+        if (!alreadyInBrain) {
+          await this.install(skill.id);
+        }
+      }
+    }
   }
 
   /**
