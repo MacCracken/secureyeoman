@@ -45,18 +45,12 @@
 ### Bug Fixes
 - [ ] **Personal Skills — Edit Broken** — The edit button on skills added to a personality no longer opens the edit form. Restore full edit functionality for personality-scoped skills in the Personal tab.
 
+### Performance
+- [ ] **Memory Footprint Optimization** — Study PicoClaw for potential memory reductions; target <1GB baseline
+- [ ] **Fast Boot** — Optimize startup time for better UX; target <10s startup (learn from PicoClaw's 1s boot)
+
 ### Visualization
 - [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
-
-### Security & Enterprise Access
-- [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
-- [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
-- [ ] **Roles & Permissions Review/Audit** — Comprehensive review of RBAC roles, permissions, and access controls to ensure completeness and alignment with feature set
-- [ ] **Encryption - HSM Integration** — Hardware Security Module integration for key management
-
-### Guided Setup CLI
-- [ ] **Interactive Init Command** — `secureyeoman init` with interactive wizard for first-time setup (generate keys, configure AI providers, set up integrations)
-- [ ] **Configuration Wizard** — Guided config file generation with prompts for required settings
 
 ### CLI Enhancements
 - [x] **Shell Completions** — Auto-generate shell completions for bash, zsh, fish
@@ -67,9 +61,12 @@
 - [x] **Rich Output** — Colored output, tables, and progress indicators for long-running operations
 - [x] **JSON Output** — `--json` flag support for all commands for scripting
 
-### Performance
-- [ ] **Memory Footprint Optimization** — Study PicoClaw for potential memory reductions; target <1GB baseline
-- [ ] **Fast Boot** — Optimize startup time for better UX; target <10s startup (learn from PicoClaw's 1s boot)
+### Security & Enterprise Access
+- [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
+- [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
+- [ ] **Roles & Permissions Review/Audit** — Comprehensive review of RBAC roles, permissions, and access controls to ensure completeness and alignment with feature set
+- [ ] **Encryption - HSM Integration** — Hardware Security Module integration for key management
+
 
 ### Deployment
 - [ ] **Single Binary** — Simplify deployment with Go-based components
@@ -77,6 +74,10 @@
 
 ### Development
 - [ ] **Go/Rust Runtime** — Potential future language option for core components
+
+### Guided Setup CLI
+- [ ] **Interactive Init Command** — `secureyeoman init` with interactive wizard for first-time setup (generate keys, configure AI providers, set up integrations)
+- [ ] **Configuration Wizard** — Guided config file generation with prompts for required settings
 
 ### Major Audit
 - [ ] **Audit all the things** - Code, Documentation, ADR, & Tests
