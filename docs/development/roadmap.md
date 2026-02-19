@@ -32,7 +32,7 @@
 | | **Release 2026.2.18** | **2026-02-18** | **Released** |
 | 19 | Per-Personality Access | 2026.2.19 | Complete |
 | | **Release 2026.2.19** | **2026-02-19** | **Pending** |
-| 20 | SaaS ready | — | Pending |
+| 20 | SaaS ready | — | In Progress |
 | 21 | Onboarding & First Run | — | Pending |
 | 22 | Future Implementations | — | Pending |
 
@@ -40,7 +40,7 @@
 
 ## Phase 20: SaaS ready
 
-**Status**: Pending
+**Status**: In Progress
 
 ### Bug Fixes
 - [x] **Personal Skills — Edit Broken** — The edit button on skills added to a personality no longer opens the edit form. Restored full edit functionality for personality-scoped skills in the Personal tab. Saving now always creates a user-owned copy (never mutates marketplace/built-in records) and attributes authorship to the user (`source: 'user'`).
