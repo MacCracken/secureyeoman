@@ -2454,6 +2454,13 @@ export async function fetchCostHistory(params: CostHistoryParams = {}): Promise<
   }
 }
 
+export async function resetUsageStat(stat: 'errors' | 'latency'): Promise<{ success: boolean }> {
+  return request('/costs/reset', {
+    method: 'POST',
+    body: JSON.stringify({ stat }),
+  });
+}
+
 // ─── Agent Swarms API (Phase 17) ───────────────────────────────────
 
 export interface SwarmRoleInfo {

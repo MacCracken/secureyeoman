@@ -1,4 +1,7 @@
-import { describe, it, expect, beforeAll, beforeEach, afterAll } from 'vitest';
+import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach } from 'vitest';
 import { MarketplaceStorage } from './storage.js';
 import { MarketplaceManager } from './manager.js';
 import { BrainStorage } from '../brain/storage.js';
@@ -197,5 +200,129 @@ describe('MarketplaceManager with BrainManager', () => {
     await manager.install(skill.id);
     const brainSkills = await brainManager.listSkills({ source: 'marketplace' });
     expect(brainSkills).toHaveLength(1);
+  });
+});
+
+describe('Community Skill Sync', () => {
+  let storage: MarketplaceStorage;
+  let manager: MarketplaceManager;
+  let tmpDir: string;
+
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
+  });
+
+  beforeEach(async () => {
+    await truncateAllTables();
+    storage = new MarketplaceStorage();
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sy-community-test-'));
+    manager = new MarketplaceManager(storage, {
+      logger: createNoopLogger(),
+      communityRepoPath: tmpDir,
+    });
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  function writeSkill(relPath: string, content: object) {
+    const fullPath = path.join(tmpDir, relPath);
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+    fs.writeFileSync(fullPath, JSON.stringify(content));
+  }
+
+  it('should sync community skills from a local path', async () => {
+    writeSkill('skills/development/test-skill.json', {
+      name: 'Test Skill',
+      description: 'A test skill',
+      instructions: 'Do the thing',
+      category: 'development',
+      author: 'tester',
+      tags: ['test'],
+    });
+
+    const result = await manager.syncFromCommunity();
+    expect(result.added).toBe(1);
+    expect(result.errors).toHaveLength(0);
+
+    const { skills } = await manager.search(undefined, undefined, 20, 0, 'community');
+    expect(skills).toHaveLength(1);
+    expect(skills[0].name).toBe('Test Skill');
+    expect(skills[0].source).toBe('community');
+  });
+
+  it('should upsert (not duplicate) on second sync', async () => {
+    writeSkill('skills/development/test-skill.json', {
+      name: 'Upsert Skill',
+      instructions: 'First version',
+    });
+
+    await manager.syncFromCommunity();
+    await manager.syncFromCommunity();
+
+    const { total } = await manager.search(undefined, undefined, 20, 0, 'community');
+    expect(total).toBe(1);
+  });
+
+  it('should set source=community on brain skill when community skill is installed', async () => {
+    const { brainManager } = createBrainManager();
+    const mgr = new MarketplaceManager(storage, {
+      logger: createNoopLogger(),
+      brainManager,
+      communityRepoPath: tmpDir,
+    });
+
+    writeSkill('skills/utilities/helper.json', {
+      name: 'Community Helper',
+      instructions: 'Help with things',
+    });
+
+    await mgr.syncFromCommunity();
+    const { skills } = await mgr.search(undefined, undefined, 20, 0, 'community');
+    expect(skills).toHaveLength(1);
+
+    await mgr.install(skills[0].id);
+    const communityBrainSkills = await brainManager.listSkills({ source: 'community' });
+    expect(communityBrainSkills).toHaveLength(1);
+    expect(communityBrainSkills[0].name).toBe('Community Helper');
+  });
+
+  it('should skip invalid JSON files and continue importing valid ones', async () => {
+    writeSkill('skills/development/good-skill.json', {
+      name: 'Good Skill',
+      instructions: 'Works fine',
+    });
+    // Malformed JSON
+    const badPath = path.join(tmpDir, 'skills', 'development', 'bad-skill.json');
+    fs.writeFileSync(badPath, '{ not valid json }}}');
+    // Valid JSON but missing required name
+    writeSkill('skills/development/no-name.json', { instructions: 'No name here' });
+
+    const result = await manager.syncFromCommunity();
+    expect(result.added).toBe(1);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+
+  it('should return an error for a non-existent community path', async () => {
+    const result = await manager.syncFromCommunity('/non/existent/path');
+    expect(result.added).toBe(0);
+    expect(result.errors.length).toBeGreaterThan(0);
+    expect(result.errors[0]).toMatch(/not found/i);
+  });
+
+  it('should return community status with skill count and last synced time', async () => {
+    writeSkill('skills/productivity/status-skill.json', {
+      name: 'Status Skill',
+      instructions: 'For status testing',
+    });
+    await manager.syncFromCommunity();
+    const status = await manager.getCommunityStatus();
+    expect(status.skillCount).toBe(1);
+    expect(status.lastSyncedAt).toBeGreaterThan(0);
   });
 });

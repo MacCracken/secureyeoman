@@ -36,13 +36,14 @@ export class MarketplaceStorage extends PgBaseStorage {
       instructions: data.instructions ?? '',
       tools: data.tools ?? [],
       installed: data.installed ?? false,
+      source: data.source ?? 'published',
       publishedAt: data.publishedAt ?? now,
       updatedAt: data.updatedAt ?? now,
     };
     await this.execute(
       `INSERT INTO marketplace.skills
-        (id, name, description, version, author, category, tags, download_count, rating, instructions, tools, installed, published_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)`,
+        (id, name, description, version, author, category, tags, download_count, rating, instructions, tools, installed, source, published_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
       [
         id,
         skill.name,
@@ -56,6 +57,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         skill.instructions,
         JSON.stringify(skill.tools),
         skill.installed,
+        skill.source,
         skill.publishedAt,
         skill.updatedAt,
       ]
@@ -71,11 +73,48 @@ export class MarketplaceStorage extends PgBaseStorage {
     return row ? this.rowToSkill(row) : null;
   }
 
+  async findByNameAndSource(name: string, source: string): Promise<MarketplaceSkill | null> {
+    const row = await this.queryOne<Record<string, unknown>>(
+      'SELECT * FROM marketplace.skills WHERE name = $1 AND source = $2',
+      [name, source]
+    );
+    return row ? this.rowToSkill(row) : null;
+  }
+
+  async updateSkill(id: string, data: Partial<MarketplaceSkill>): Promise<boolean> {
+    const now = Date.now();
+    const changes = await this.execute(
+      `UPDATE marketplace.skills SET
+        name = COALESCE($1, name),
+        description = COALESCE($2, description),
+        version = COALESCE($3, version),
+        author = COALESCE($4, author),
+        category = COALESCE($5, category),
+        tags = COALESCE($6, tags),
+        instructions = COALESCE($7, instructions),
+        updated_at = $8
+       WHERE id = $9`,
+      [
+        data.name ?? null,
+        data.description ?? null,
+        data.version ?? null,
+        data.author ?? null,
+        data.category ?? null,
+        data.tags ? JSON.stringify(data.tags) : null,
+        data.instructions ?? null,
+        now,
+        id,
+      ]
+    );
+    return changes > 0;
+  }
+
   async search(
     query?: string,
     category?: string,
     limit = 20,
-    offset = 0
+    offset = 0,
+    source?: string
   ): Promise<{ skills: MarketplaceSkill[]; total: number }> {
     let paramIdx = 1;
     let where = ' WHERE 1=1';
@@ -89,6 +128,11 @@ export class MarketplaceStorage extends PgBaseStorage {
     if (category) {
       where += ` AND category = $${paramIdx}`;
       params.push(category);
+      paramIdx += 1;
+    }
+    if (source) {
+      where += ` AND source = $${paramIdx}`;
+      params.push(source);
       paramIdx += 1;
     }
 
@@ -132,6 +176,7 @@ export class MarketplaceStorage extends PgBaseStorage {
       instructions: (row.instructions as string) ?? '',
       tools: row.tools as MarketplaceSkill['tools'],
       installed: row.installed as boolean,
+      source: ((row.source as string) ?? 'published') as MarketplaceSkill['source'],
       publishedAt: row.published_at as number,
       updatedAt: row.updated_at as number,
     };
@@ -154,7 +199,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         [skill.name, skill.author]
       );
       if (!exists) {
-        await this.addSkill(skill);
+        await this.addSkill({ ...skill, source: 'builtin' });
       }
     }
   }

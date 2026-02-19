@@ -6,7 +6,7 @@
  */
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   DollarSign,
   TrendingUp,
@@ -16,12 +16,14 @@ import {
   ArrowRight,
   Loader2,
   X,
+  RotateCcw,
 } from 'lucide-react';
 import {
   fetchMetrics,
   fetchCostBreakdown,
   fetchCostHistory,
   fetchPersonalities,
+  resetUsageStat,
 } from '../api/client';
 import type { CostBreakdownResponse, CostHistoryParams } from '../api/client';
 import type { MetricsSnapshot, Personality } from '../types';
@@ -69,6 +71,8 @@ export function CostsPage() {
 // ── Summary Tab ──────────────────────────────────────────────────────
 
 function SummaryTab() {
+  const queryClient = useQueryClient();
+
   const { data: metrics, isLoading: metricsLoading } = useQuery<MetricsSnapshot>({
     queryKey: ['metrics'],
     queryFn: fetchMetrics,
@@ -79,6 +83,13 @@ function SummaryTab() {
     queryKey: ['costs-breakdown'],
     queryFn: fetchCostBreakdown,
     refetchInterval: 60_000,
+  });
+
+  const resetMutation = useMutation({
+    mutationFn: resetUsageStat,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['metrics'] });
+    },
   });
 
   const isLoading = metricsLoading || breakdownLoading;
@@ -113,6 +124,8 @@ function SummaryTab() {
           label="Avg Latency"
           value={`${(resources?.apiLatencyAvgMs ?? 0).toFixed(0)} ms`}
           loading={metricsLoading}
+          onReset={() => resetMutation.mutate('latency')}
+          resetting={resetMutation.isPending && resetMutation.variables === 'latency'}
         />
       </div>
 
@@ -139,7 +152,22 @@ function SummaryTab() {
           </p>
         </div>
         <div className="p-4 rounded-lg bg-muted/30">
-          <p className="text-xs text-muted-foreground mb-1">API Errors</p>
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-xs text-muted-foreground">API Errors</p>
+            <button
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 disabled:opacity-50"
+              disabled={resetMutation.isPending}
+              onClick={() => resetMutation.mutate('errors')}
+              title="Reset error counter"
+            >
+              {resetMutation.isPending && resetMutation.variables === 'errors' ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <RotateCcw className="w-3 h-3" />
+              )}
+              Reset
+            </button>
+          </div>
           <p className="text-xl font-bold">
             {metricsLoading ? (
               <Loader2 className="w-4 h-4 animate-spin inline" />
@@ -522,14 +550,33 @@ interface SummaryCardProps {
   label: string;
   value: string;
   loading?: boolean;
+  onReset?: () => void;
+  resetting?: boolean;
 }
 
-function SummaryCard({ icon, label, value, loading }: SummaryCardProps) {
+function SummaryCard({ icon, label, value, loading, onReset, resetting }: SummaryCardProps) {
   return (
     <div className="p-4 rounded-lg bg-muted/30">
-      <div className="flex items-center gap-2 mb-2">
-        {icon}
-        <span className="text-sm text-muted-foreground">{label}</span>
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {icon}
+          <span className="text-sm text-muted-foreground">{label}</span>
+        </div>
+        {onReset && (
+          <button
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 disabled:opacity-50"
+            disabled={resetting}
+            onClick={onReset}
+            title={`Reset ${label}`}
+          >
+            {resetting ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <RotateCcw className="w-3 h-3" />
+            )}
+            Reset
+          </button>
+        )}
       </div>
       <p className="text-2xl font-bold">
         {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : value}

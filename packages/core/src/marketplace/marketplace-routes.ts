@@ -23,7 +23,7 @@ export function registerMarketplaceRoutes(
     '/api/v1/marketplace',
     async (
       request: FastifyRequest<{
-        Querystring: { query?: string; category?: string; limit?: string; offset?: string };
+        Querystring: { query?: string; category?: string; limit?: string; offset?: string; source?: string };
       }>
     ) => {
       const q = request.query;
@@ -31,7 +31,8 @@ export function registerMarketplaceRoutes(
         q.query,
         q.category,
         q.limit ? Number(q.limit) : undefined,
-        q.offset ? Number(q.offset) : undefined
+        q.offset ? Number(q.offset) : undefined,
+        q.source
       );
     }
   );
@@ -83,4 +84,24 @@ export function registerMarketplaceRoutes(
       return { message: 'Skill removed' };
     }
   );
+
+  // Community sync — uses the config-locked communityRepoPath; no path accepted
+  // from the request body to prevent path traversal attacks.
+  app.post('/api/v1/marketplace/community/sync', async (_request, reply: FastifyReply) => {
+    try {
+      const result = await marketplaceManager.syncFromCommunity();
+      return result;
+    } catch (err) {
+      return reply.code(500).send({ error: errorMessage(err) });
+    }
+  });
+
+  app.get('/api/v1/marketplace/community/status', async (_request, reply: FastifyReply) => {
+    try {
+      const status = await marketplaceManager.getCommunityStatus();
+      return status;
+    } catch (err) {
+      return reply.code(500).send({ error: errorMessage(err) });
+    }
+  });
 }

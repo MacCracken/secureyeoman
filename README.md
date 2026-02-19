@@ -2,7 +2,7 @@
 
 > Comes with default Agent Personality F.R.I.D.A.Y. **F**ully **R**esponsive **I**ntegrated **D**igitally **A**daptable **Y**eoman
 
-[![Version](https://img.shields.io/badge/Version-2026.2.17-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.17)
+[![Version](https://img.shields.io/badge/Version-2026.2.19-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.19)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
@@ -57,7 +57,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Multi-Agent Architecture** | Sub-agent delegation system with role-based profiles (researcher, coder, analyst, reviewer, summarizer); Agent Swarms with named templates and three strategies — `sequential` (context-chaining pipeline), `parallel` (`Promise.all` + optional coordinator synthesis), `dynamic` (coordinator-driven, uses `delegate_task` internally); `create_swarm` MCP tool; 4 built-in templates; dashboard Swarms tab; **Dynamic Tool Creation** — agents can generate and register new tools at runtime (Agent Zero-style), gated by `allowDynamicTools` security policy with `sandboxDynamicTools` isolation |
 | **Integrations** | Telegram (inline keyboards, document attachments), Discord (threads, modals, slash command registration via REST), Slack (Block Kit actions, modal dialogs, Workflow Builder steps), GitHub (PR review automation, issue auto-labeling, code search triggers), GitLab, Google Chat, Gmail, Email (IMAP/SMTP), Google Calendar, Notion, Jira, AWS, Azure DevOps, CLI, Generic Webhook — plugin architecture with unified message routing |
 | **MCP Protocol** | Standalone `@secureyeoman/mcp` service (34+ tools including web scraping, search, browser automation placeholders; 7 resources, 4 prompts); SSRF-protected web tools; health monitoring for external servers; AES-256-GCM encrypted credential storage; streamable HTTP, SSE, and stdio transports; feature toggles with dashboard UI; one-click pre-built integrations for Bright Data, Exa, E2B, and Supabase |
-| **Marketplace** | Skill discovery, search, install/uninstall (syncs with Brain skills), publish with cryptographic signature verification |
+| **Marketplace** | Skill discovery, search, install/uninstall (syncs with Brain skills), publish; **Community Skills** — local-path sync from [`secureyeoman-community-skills`](https://github.com/MacCracken/secureyeoman-community-skills) or any compatible repo; source tracking (`builtin` / `community` / `published`) |
 | **Team Collaboration** | Workspaces with isolation, member management, workspace-scoped RBAC |
 | **Reports & Analytics** | Audit report generator (JSON/HTML/CSV), cost optimization recommendations, A/B testing framework |
 | **Voice** | Push-to-talk (Ctrl+Shift+V), browser-native speech recognition & synthesis, voice overlay |
@@ -345,6 +345,23 @@ Connect SecureYeoman to any MCP-compatible client (Claude Desktop, etc.):
 ```
 
 Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile mcp`).
+
+### Community Skills
+
+The [secureyeoman-community-skills](https://github.com/MacCracken/secureyeoman-community-skills) repository contains community-contributed skills you can sync into your local marketplace.
+
+```bash
+# Clone alongside secureyeoman
+git clone https://github.com/MacCracken/secureyeoman-community-skills.git ../secureyeoman-community-skills
+
+# Sync skills (uses COMMUNITY_REPO_PATH from .env, default: ../secureyeoman-community-skills)
+curl -X POST http://localhost:18789/api/v1/marketplace/community/sync
+
+# Browse community skills
+curl http://localhost:18789/api/v1/marketplace?source=community
+```
+
+To point at a different community repo or your own fork, set `COMMUNITY_REPO_PATH` in your `.env`.
 
 ---
 
