@@ -1,15 +1,15 @@
 /**
  * Migration Runner — Applies numbered SQL migrations in order.
  *
+ * In normal Node.js / tsx dev mode: uses the static MIGRATION_MANIFEST
+ * (imported from manifest.ts) to avoid readdirSync issues in bundled
+ * environments such as Bun compiled single binaries.
+ *
  * Tracks applied migrations in a `schema_migrations` table.
  */
 
-import { readFileSync, readdirSync } from 'node:fs';
-import { join, dirname } from 'node:path';
-import { fileURLToPath } from 'node:url';
 import { getPool } from '../pg-pool.js';
-
-const __dirname = dirname(fileURLToPath(import.meta.url));
+import { MIGRATION_MANIFEST } from './manifest.js';
 
 export async function runMigrations(): Promise<void> {
   const pool = getPool();
@@ -22,34 +22,27 @@ export async function runMigrations(): Promise<void> {
     )
   `);
 
-  // Find all .sql files in this directory
-  const files = readdirSync(__dirname)
-    .filter((f) => f.endsWith('.sql'))
-    .sort();
+  const migrations = MIGRATION_MANIFEST;
+  if (migrations.length === 0) return;
 
-  if (files.length === 0) return;
-
-  // Fast-path: if the highest-numbered file is already the latest recorded migration,
-  // all migrations have been applied — skip the per-file SELECT loop entirely.
-  const latestFile = files[files.length - 1]!.replace('.sql', '');
+  // Fast-path: if the highest-numbered entry is already the latest recorded
+  // migration, all migrations have been applied — skip the per-item loop.
+  const latestId = migrations[migrations.length - 1]!.id;
   const latest = await pool.query<{ id: string }>(
     'SELECT id FROM schema_migrations ORDER BY id DESC LIMIT 1'
   );
-  if (latest.rows[0]?.id === latestFile) {
+  if (latest.rows[0]?.id === latestId) {
     return;
   }
 
-  for (const file of files) {
-    const id = file.replace('.sql', '');
-
+  for (const { id, sql } of migrations) {
     // Check if already applied
     const existing = await pool.query('SELECT id FROM schema_migrations WHERE id = $1', [id]);
     if (existing.rows.length > 0) {
       continue;
     }
 
-    // Read and execute
-    const sql = readFileSync(join(__dirname, file), 'utf-8');
+    // Execute migration SQL
     await pool.query(sql);
 
     // Record as applied

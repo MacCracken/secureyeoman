@@ -45,6 +45,7 @@ import { modelCommand } from './cli/commands/model.js';
 import { policyCommand } from './cli/commands/policy.js';
 import { completionCommand } from './cli/commands/completion.js';
 import { pluginCommand } from './cli/commands/plugin.js';
+import { mcpServerCommand } from './cli/commands/mcp-server.js';
 
 const router = createRouter('start');
 
@@ -68,6 +69,7 @@ router.register(modelCommand);
 router.register(policyCommand);
 router.register(completionCommand);
 router.register(pluginCommand);
+router.register(mcpServerCommand);
 
 // Help command
 router.register({

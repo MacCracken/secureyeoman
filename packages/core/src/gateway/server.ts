@@ -12,10 +12,11 @@
 
 import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dirname, resolve } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fastifyCompress from '@fastify/compress';
 import fastifyWebsocket from '@fastify/websocket';
+import fastifyStatic from '@fastify/static';
 import { WebSocket } from 'ws';
 import { getLogger, createNoopLogger, type SecureLogger } from '../logging/logger.js';
 import { type SecureYeoman } from '../secureyeoman.js';
@@ -42,6 +43,7 @@ import { registerMcpRoutes } from '../mcp/mcp-routes.js';
 import { registerReportRoutes } from '../reporting/report-routes.js';
 import { registerDashboardRoutes } from '../dashboard/dashboard-routes.js';
 import { registerWorkspaceRoutes } from '../workspace/workspace-routes.js';
+import { registerSsoRoutes } from './sso-routes.js';
 import { registerExperimentRoutes } from '../experiment/experiment-routes.js';
 import { registerMarketplaceRoutes } from '../marketplace/marketplace-routes.js';
 import { registerTerminalRoutes } from './terminal-routes.js';
@@ -110,12 +112,15 @@ export interface GatewayServerOptions {
   config: GatewayConfig;
   secureYeoman: SecureYeoman;
   authService?: AuthService;
+  /** Path to the pre-built dashboard dist directory for SPA serving. */
+  dashboardDist?: string;
 }
 
 export class GatewayServer {
   private readonly config: GatewayConfig;
   private readonly secureYeoman: SecureYeoman;
   private readonly authService: AuthService | undefined;
+  private readonly dashboardDist: string | undefined;
   private readonly app: FastifyInstance;
   private readonly clients = new Map<string, WebSocketClient>();
   private logger: SecureLogger | null = null;
@@ -128,6 +133,7 @@ export class GatewayServer {
     this.config = options.config;
     this.secureYeoman = options.secureYeoman;
     this.authService = options.authService;
+    this.dashboardDist = options.dashboardDist;
 
     // Build HTTPS options when TLS is enabled
     const httpsOpts = this.config.tls.enabled
@@ -283,6 +289,20 @@ export class GatewayServer {
       });
     }
 
+    // SSO routes
+    try {
+      const ssoManager = this.secureYeoman.getSsoManager();
+      const ssoStorage = this.secureYeoman.getSsoStorage();
+      if (ssoManager && ssoStorage) {
+        const scheme = this.config.tls.enabled ? 'https' : 'http';
+        const host = this.config.host === '0.0.0.0' ? 'localhost' : this.config.host;
+        const dashboardUrl = `${scheme}://${host}:${this.config.port}`;
+        registerSsoRoutes(this.app, { ssoManager, ssoStorage, dashboardUrl });
+      }
+    } catch {
+      // SSO manager may not be available — skip routes
+    }
+
     // OAuth routes
     if (this.authService) {
       const oauthService = new OAuthService();
@@ -432,8 +452,8 @@ export class GatewayServer {
     // Workspace routes
     try {
       const workspaceManager = this.secureYeoman.getWorkspaceManager();
-      if (workspaceManager) {
-        registerWorkspaceRoutes(this.app, { workspaceManager });
+      if (workspaceManager && this.authService) {
+        registerWorkspaceRoutes(this.app, { workspaceManager, authService: this.authService });
       }
     } catch {
       // Workspace manager may not be available — skip routes
@@ -1243,6 +1263,24 @@ export class GatewayServer {
       }
     );
 
+    // SPA static serving (must be last — any non-API route falls through to index.html)
+    const distPath = this.resolveDashboardDist();
+    if (distPath) {
+      void this.app.register(fastifyStatic, {
+        root: distPath,
+        prefix: '/',
+        decorateReply: false,
+      });
+      // SPA fallback: non-API 404s → index.html
+      this.app.setNotFoundHandler((_request, reply) => {
+        if (_request.url.startsWith('/api/') || _request.url.startsWith('/ws/')) {
+          return reply.code(404).send({ error: 'Not found' });
+        }
+        return reply.sendFile('index.html', distPath);
+      });
+      this.getLogger().info('Dashboard SPA serving enabled', { distPath });
+    }
+
     // WebSocket endpoint — auth is handled via ?token= query param
     // (browser WebSocket API does not support custom headers)
     this.app.get('/ws/metrics', { websocket: true }, async (socket, request) => {
@@ -1357,6 +1395,26 @@ export class GatewayServer {
         });
       });
     });
+  }
+
+  /**
+   * Resolve the dashboard dist path from options, env var, or conventional locations.
+   * Returns null if no built dashboard is found (dev mode).
+   */
+  private resolveDashboardDist(): string | null {
+    const candidates = [
+      this.dashboardDist,
+      process.env['SECUREYEOMAN_DASHBOARD_DIST'],
+      join(dirname(fileURLToPath(import.meta.url)), '../../../../dashboard/dist'),
+      '/usr/share/secureyeoman/dashboard',
+    ].filter(Boolean) as string[];
+
+    for (const p of candidates) {
+      if (existsSync(join(p, 'index.html'))) {
+        return p;
+      }
+    }
+    return null;
   }
 
   /**

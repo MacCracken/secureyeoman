@@ -167,6 +167,35 @@ export const TokenPayloadSchema = z.object({
   iat: z.number().int().positive(), // Issued at
   exp: z.number().int().positive(), // Expiry
   jti: z.string().uuid(), // Token ID for revocation
+  // Optional enrichment fields (non-breaking — absent on admin tokens)
+  email: z.string().optional(),
+  displayName: z.string().optional(),
 });
 
 export type TokenPayload = z.infer<typeof TokenPayloadSchema>;
+
+// ─── User ────────────────────────────────────────────────────────────
+
+export const UserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  displayName: z.string().default(''),
+  isAdmin: z.boolean().default(false),
+  createdAt: z.number().int().positive(),
+  updatedAt: z.number().int().positive(),
+});
+
+export type User = z.infer<typeof UserSchema>;
+
+export const UserCreateSchema = z.object({
+  id: z.string().optional(),
+  email: z.string().email(),
+  displayName: z.string().default(''),
+  hashedPassword: z.string().nullable().optional(),
+  isAdmin: z.boolean().default(false),
+});
+
+export type UserCreate = z.infer<typeof UserCreateSchema>;
+
+export const UserUpdateSchema = UserCreateSchema.partial().omit({ id: true });
+export type UserUpdate = z.infer<typeof UserUpdateSchema>;

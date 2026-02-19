@@ -85,12 +85,15 @@ export const startCommand: Command = {
     argv = configResult.rest;
     const logLevelResult = extractFlag(argv, 'log-level', 'l');
     argv = logLevelResult.rest;
+    const dashboardDistResult = extractFlag(argv, 'dashboard-dist');
+    argv = dashboardDistResult.rest;
     const tlsResult = extractBoolFlag(argv, 'tls');
 
     const port = portResult.value ? Number(portResult.value) : undefined;
     const host = hostResult.value;
     const configPath = configResult.value;
     const logLevel = logLevelResult.value;
+    const dashboardDist = dashboardDistResult.value;
     const tls = tlsResult.value;
 
     // Build config overrides
@@ -136,6 +139,7 @@ export const startCommand: Command = {
           overrides: Object.keys(overrides).length > 0 ? overrides : undefined,
         },
         enableGateway: true,
+        dashboardDist: dashboardDist ?? undefined,
       });
 
       const config = instance.getConfig();

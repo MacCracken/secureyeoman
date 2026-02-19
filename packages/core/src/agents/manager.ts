@@ -11,6 +11,7 @@ import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { spawn } from 'node:child_process';
 import { SubAgentStorage, type DelegationRecord } from './storage.js';
 import { getDelegationTools } from './tools.js';
 import type {
@@ -289,6 +290,15 @@ export class SubAgentManager {
     }, timeoutMs);
 
     try {
+      // Type dispatch: binary and mcp-bridge are zero-cost; llm is the default agentic loop
+      const profileType = (profile as any).type ?? 'llm';
+      if (profileType === 'binary') {
+        return await this.executeBinaryDelegation(delegationId, profile, params, startTime);
+      }
+      if (profileType === 'mcp-bridge') {
+        return await this.executeMcpBridgeDelegation(delegationId, profile, params, startTime, timeoutMs, signal);
+      }
+
       // Create fresh AIClient with profile's model override
       const aiConfig: AIClientConfig = {
         ...this.deps.aiClientConfig,
@@ -301,7 +311,13 @@ export class SubAgentManager {
 
       // Build tools: delegation tools (depth-filtered) + MCP tools
       const delegationTools = getDelegationTools(depth, maxDepth);
-      const tools: Tool[] = [...delegationTools];
+      // Fix: wire MCP tools to the LLM sub-agent (ADR 069)
+      const mcpTools: Tool[] = this.deps.mcpClient
+        ? (await this.deps.mcpClient.listTools()).filter(
+            (t) => profile.allowedTools.length === 0 || profile.allowedTools.includes(t.name)
+          )
+        : [];
+      const tools: Tool[] = [...delegationTools, ...mcpTools];
 
       // Compose messages
       const messages: AIMessage[] = [
@@ -437,6 +453,20 @@ export class SubAgentManager {
                 toolContent = result
                   ? JSON.stringify(result)
                   : JSON.stringify({ error: 'Delegation not found' });
+              } else if (this.deps.mcpClient) {
+                // Attempt to dispatch to MCP tool
+                try {
+                  const mcpResult = await this.deps.mcpClient.callTool(
+                    toolCall.name,
+                    toolCall.arguments ?? {}
+                  );
+                  toolContent = typeof mcpResult === 'string'
+                    ? mcpResult
+                    : JSON.stringify(mcpResult);
+                } catch (mcpErr) {
+                  toolContent = JSON.stringify({ error: `MCP tool error: ${mcpErr instanceof Error ? mcpErr.message : String(mcpErr)}` });
+                  isError = true;
+                }
               } else {
                 // Unknown tool — return error
                 toolContent = JSON.stringify({ error: `Unknown tool: ${toolCall.name}` });
@@ -523,6 +553,145 @@ export class SubAgentManager {
     } finally {
       clearTimeout(timeoutId);
     }
+  }
+
+  /**
+   * Execute a 'binary' profile: spawn the configured executable, write a JSON
+   * payload to stdin, parse stdout as { result: string, cost?: number }.
+   * Zero LLM token cost.
+   */
+  private async executeBinaryDelegation(
+    delegationId: string,
+    profile: AgentProfile,
+    params: DelegationParams,
+    startTime: number
+  ): Promise<DelegationResult> {
+    if (!this.deps.securityConfig?.allowBinaryAgents) {
+      const err = 'Binary sub-agents are disabled by security policy (allowBinaryAgents: false)';
+      await this.storage.updateDelegation(delegationId, {
+        status: 'failed', error: err, completedAt: Date.now(),
+        tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+      });
+      return { delegationId, profile: profile.name, status: 'failed', result: null, error: err,
+        tokenUsage: { prompt: 0, completion: 0, total: 0 }, durationMs: Date.now() - startTime, subDelegations: [] };
+    }
+
+    const p = profile as any;
+    const command: string = p.command;
+    const commandArgs: string[] = p.commandArgs ?? [];
+    const commandEnv: Record<string, string> = { ...process.env as any, ...(p.commandEnv ?? {}) };
+
+    const payload = JSON.stringify({
+      delegationId,
+      task: params.task,
+      context: params.context,
+      tokenBudget: params.maxTokenBudget,
+    });
+
+    const result = await new Promise<string>((resolve, reject) => {
+      const child = spawn(command, commandArgs, {
+        env: commandEnv,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+
+      let stdout = '';
+      let stderr = '';
+      child.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
+      child.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+
+      child.on('error', reject);
+      child.on('close', (code) => {
+        if (code !== 0) {
+          reject(new Error(`Binary exited with code ${code}: ${stderr}`));
+          return;
+        }
+        try {
+          const parsed = JSON.parse(stdout.trim());
+          resolve(typeof parsed.result === 'string' ? parsed.result : JSON.stringify(parsed));
+        } catch {
+          resolve(stdout.trim());
+        }
+      });
+
+      child.stdin.write(payload + '\n');
+      child.stdin.end();
+    });
+
+    await this.storage.updateDelegation(delegationId, {
+      status: 'completed', result,
+      tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+      completedAt: Date.now(),
+    });
+
+    return {
+      delegationId, profile: profile.name, status: 'completed', result, error: null,
+      tokenUsage: { prompt: 0, completion: 0, total: 0 },
+      durationMs: Date.now() - startTime, subDelegations: [],
+    };
+  }
+
+  /**
+   * Execute an 'mcp-bridge' profile: call a named MCP tool with a Mustache-style
+   * template interpolated input. Zero LLM token cost.
+   */
+  private async executeMcpBridgeDelegation(
+    delegationId: string,
+    profile: AgentProfile,
+    params: DelegationParams,
+    startTime: number,
+    timeoutMs: number,
+    signal: AbortSignal
+  ): Promise<DelegationResult> {
+    if (!this.deps.mcpClient) {
+      const err = 'MCP client not available — cannot execute mcp-bridge delegation';
+      await this.storage.updateDelegation(delegationId, {
+        status: 'failed', error: err, completedAt: Date.now(),
+        tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+      });
+      return { delegationId, profile: profile.name, status: 'failed', result: null, error: err,
+        tokenUsage: { prompt: 0, completion: 0, total: 0 }, durationMs: Date.now() - startTime, subDelegations: [] };
+    }
+
+    const p = profile as any;
+    const mcpTool: string = p.mcpTool;
+    const templateStr: string = p.mcpToolInput ?? '{"task":"{{task}}","context":"{{context}}"}';
+
+    // Simple Mustache-style template interpolation
+    const interpolated = templateStr
+      .replace(/\{\{task\}\}/g, params.task.replace(/"/g, '\\"'))
+      .replace(/\{\{context\}\}/g, (params.context ?? '').replace(/"/g, '\\"'));
+
+    let toolInput: Record<string, unknown>;
+    try {
+      toolInput = JSON.parse(interpolated);
+    } catch {
+      toolInput = { task: params.task, context: params.context };
+    }
+
+    const mcpResultRaw = await Promise.race([
+      this.deps.mcpClient.callTool(mcpTool, toolInput),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('MCP bridge timeout')), timeoutMs)
+      ),
+      new Promise<never>((_, reject) => {
+        if (signal.aborted) reject(new Error('Delegation aborted'));
+        signal.addEventListener('abort', () => reject(new Error('Delegation aborted')));
+      }),
+    ]);
+
+    const result = typeof mcpResultRaw === 'string' ? mcpResultRaw : JSON.stringify(mcpResultRaw);
+
+    await this.storage.updateDelegation(delegationId, {
+      status: 'completed', result,
+      tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+      completedAt: Date.now(),
+    });
+
+    return {
+      delegationId, profile: profile.name, status: 'completed', result, error: null,
+      tokenUsage: { prompt: 0, completion: 0, total: 0 },
+      durationMs: Date.now() - startTime, subDelegations: [],
+    };
   }
 
   private async buildResultFromRecord(record: DelegationRecord): Promise<DelegationResult> {

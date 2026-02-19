@@ -38,12 +38,18 @@ export {
   AuditEntrySchema,
   RateLimitRuleSchema,
   TokenPayloadSchema,
+  UserSchema,
+  UserCreateSchema,
+  UserUpdateSchema,
   type SecurityEvent,
   type Permission,
   type RoleDefinition,
   type AuditEntry,
   type RateLimitRule,
   type TokenPayload,
+  type User,
+  type UserCreate,
+  type UserUpdate,
 } from './security.js';
 
 // Metrics types
@@ -398,10 +404,12 @@ export {
   ExtensionConfigSchema,
   ExecutionConfigSchema,
   A2AConfigSchema,
+  StorageBackendConfigSchema,
   type DatabaseConfig,
   type ExtensionConfig,
   type ExecutionConfig,
   type A2AConfig,
+  type StorageBackendConfig,
 } from './config.js';
 
 // Proactive types

@@ -4,6 +4,123 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 22 (complete): Single Binary Distribution (2026-02-19) — [ADR 073](docs/adr/073-single-binary-distribution.md)
+
+### Feature
+
+- **Bun compile pipeline** — `scripts/build-binary.sh` produces self-contained executables for Linux x64/arm64 and macOS arm64. No Node.js, npm, or runtime required on target machines.
+- **Two-tier distribution** — Tier 1 binaries (PostgreSQL-backed) include the embedded dashboard; Tier 2 `lite` binaries (SQLite, Linux only) have no external dependencies for edge/embedded deployments.
+- **`mcp-server` subcommand** — The core binary now includes an `mcp-server` subcommand, eliminating the need for a separate `secureyeoman-mcp` process in single-binary deployments.
+- **Docker image: 80 MB** — `Dockerfile` rebuilt from `debian:bookworm-slim` + pre-compiled binary, down from ~600 MB multi-stage Node.js image.
+- **Storage backend abstraction** — `packages/core/src/storage/backend.ts` resolves `pg` or `sqlite` automatically (`auto` mode): PostgreSQL when `DATABASE_URL` is set, SQLite otherwise. Configurable via `storage.backend` in config.
+- **GitHub Actions release workflow** — `.github/workflows/release-binary.yml` triggers on version tags, cross-compiles all targets, uploads artifacts and `SHA256SUMS` to GitHub Releases.
+- **Install script** — `site/install.sh` detects OS/arch, fetches the latest release tag, downloads the correct binary, and sets it executable.
+
+### Files Changed
+
+- `scripts/build-binary.sh` — NEW: Bun compile pipeline (Tier 1 + Tier 2, SHA256 checksums)
+- `packages/mcp/src/cli.ts` — refactored to export `runMcpServer(argv)` for embedding; direct-execution guard preserved
+- `packages/core/src/cli/commands/mcp-server.ts` — NEW: `mcp-server` subcommand forwarding to `@secureyeoman/mcp`
+- `packages/core/src/cli.ts` — registered `mcp-server` command
+- `packages/core/src/storage/backend.ts` — NEW: `resolveBackend()` auto-detection logic
+- `packages/shared/src/types/config.ts` — `StorageBackendConfigSchema`; `storage` field added to `ConfigSchema`
+- `Dockerfile` — replaced multi-stage Node build with binary-based `debian:bookworm-slim` image
+- `docker-compose.yml` — removed separate dashboard service (gateway now serves SPA); MCP service uses `mcp-server` subcommand; added `dashboard-dev` profile
+- `package.json` — added `build:binary` script
+- `.github/workflows/release-binary.yml` — NEW: GitHub Actions release workflow
+- `site/install.sh` — NEW: curl-pipe install script
+- `docs/adr/073-single-binary-distribution.md` — NEW
+
+---
+
+## Phase 21 (complete): Extensible Sub-Agent Types + Gateway Prerequisites (2026-02-19) — [ADR 072](docs/adr/072-extensible-sub-agent-types.md)
+
+### Feature
+
+- **`binary` sub-agent type** — Agent profiles with `type: 'binary'` spawn an external process, write the delegation as JSON to stdin, and read the result from stdout. Zero token cost; gated by `security.allowBinaryAgents` policy.
+- **`mcp-bridge` sub-agent type** — Agent profiles with `type: 'mcp-bridge'` call a named MCP tool directly (no LLM loop). Supports Mustache interpolation (`{{task}}`, `{{context}}`) in `mcpToolInput`. Zero token cost.
+- **MCP tool wiring fix** — `manager.ts` lines 302–304: `mcpClient.listTools()` was never appended to the LLM sub-agent tools array. Fixed: MCP tools are now filtered by `allowedTools` and included in every LLM delegation.
+- **Migration manifest** — `packages/core/src/storage/migrations/manifest.ts` statically imports all SQL files as text. `runner.ts` now uses the manifest instead of `readdirSync(__dirname)`, making migrations work inside Bun compiled binaries.
+- **SPA static serving** — `@fastify/static` registered after all API routes; non-API 404s return `index.html` (SPA fallback). `resolveDashboardDist()` checks CLI flag → env var → relative path → `/usr/share/secureyeoman/dashboard`.
+- **`--dashboard-dist` CLI flag** — `secureyeoman start --dashboard-dist <path>` overrides the dashboard distribution directory.
+- **4 new extension hook points** — `agent:binary-before-execute`, `agent:binary-after-execute`, `agent:mcp-bridge-before-execute`, `agent:mcp-bridge-after-execute`.
+
+### Files Changed
+
+- `packages/shared/src/types/delegation.ts` — `AgentProfileSchema` extended with `type`, `command`, `commandArgs`, `commandEnv`, `mcpTool`, `mcpToolInput`; Zod cross-field refinements for `binary`/`mcp-bridge`
+- `packages/shared/src/types/config.ts` — `allowBinaryAgents: boolean` added to `SecurityConfigSchema`
+- `packages/core/src/storage/migrations/026_agent_profile_types.sql` — NEW: `type`, `command`, `command_args`, `command_env`, `mcp_tool`, `mcp_tool_input` columns + DB constraints
+- `packages/core/src/storage/migrations/manifest.ts` — NEW: static SQL manifest (001–026)
+- `packages/core/src/storage/migrations/runner.ts` — replaced `readdirSync` with `MIGRATION_MANIFEST` import
+- `packages/core/src/agents/storage.ts` — `ProfileRow`, `profileFromRow()`, `createProfile()`, `updateProfile()` updated with new fields
+- `packages/core/src/agents/manager.ts` — type dispatch fork; `executeBinaryDelegation()`; `executeMcpBridgeDelegation()`; MCP tool wiring fix; MCP tool call dispatch in tool handler
+- `packages/core/src/extensions/types.ts` — 4 new `HookPoint` values
+- `packages/core/src/gateway/server.ts` — `@fastify/static` registration; `resolveDashboardDist()`; SPA fallback `setNotFoundHandler`; SSO routes registered
+- `packages/core/src/cli/commands/start.ts` — `--dashboard-dist` flag
+- `packages/core/package.json` — added `@fastify/static ^8.0.0`
+- `docs/adr/072-extensible-sub-agent-types.md` — NEW
+
+---
+
+## Phase 20b (complete): SSO/OIDC (2026-02-19) — [ADR 071](docs/adr/071-sso-oidc-implementation.md)
+
+### Feature
+
+- **OIDC identity providers** — Admins configure Okta, Azure AD, Auth0 (and any standards-compliant OIDC issuer) via `POST /api/v1/auth/sso/providers`. Credentials stored in `auth.identity_providers`.
+- **PKCE authorization flow** — `GET /api/v1/auth/sso/authorize/:providerId` initiates OIDC discovery + PKCE. State stored in `auth.sso_state` (PostgreSQL, 10-minute TTL) — survives restarts.
+- **Callback + JWT issuance** — `GET /api/v1/auth/sso/callback/:providerId` exchanges the code, fetches userinfo, provisions or looks up the local user, and redirects to the dashboard with a SecureYeoman JWT.
+- **JIT user provisioning** — On first IDP login, a `auth.users` row and `auth.identity_mappings` record are created automatically (`auto_provision: true`). Provisioning can be disabled per provider to require pre-created accounts.
+- **SSO state table** — `auth.sso_state` stores PKCE verifier + redirect URI per login attempt. `cleanupExpiredSsoState()` called on callback to prune stale rows.
+- **`openid-client` v6** — Standards-compliant OIDC/OAuth2 client with Issuer discovery and PKCE support.
+
+### Files Changed
+
+- `packages/core/src/storage/migrations/024_sso_identity_providers.sql` — NEW: `auth.identity_providers`, `auth.identity_mappings`
+- `packages/core/src/storage/migrations/025_sso_state.sql` — NEW: `auth.sso_state`
+- `packages/core/src/security/sso-storage.ts` — NEW: `SsoStorage` (IDP CRUD, mapping CRUD, state CRUD)
+- `packages/core/src/security/sso-manager.ts` — NEW: `SsoManager` (OIDC discovery, PKCE, callback, JIT provisioning)
+- `packages/core/src/gateway/sso-routes.ts` — NEW: SSO route handlers (authorize, callback, provider management)
+- `packages/core/src/secureyeoman.ts` — `SsoStorage` + `SsoManager` initialized; `getSsoStorage()` / `getSsoManager()` getters; shutdown cleanup
+- `packages/core/package.json` — added `openid-client ^6.0.0`
+- `docs/adr/071-sso-oidc-implementation.md` — NEW
+
+---
+
+## Phase 20a (complete): Workspace Management (2026-02-19) — [ADR 070](docs/adr/070-workspace-management-ui.md)
+
+### Feature
+
+- **Multi-user foundation** — `auth.users` table added (migration 022). Stores `id, email, display_name, hashed_password (nullable for SSO-only), is_admin`. Admin singleton row seeded on migration. `auth.api_keys.user_id` already linked — no schema change needed there.
+- **User CRUD** — `AuthStorage` gains `createUser()`, `getUserById()`, `getUserByEmail()`, `listUsers()`, `updateUser()`, `deleteUser()` (admin row protected). `AuthService` exposes thin user management wrappers + `createUserSession(userId, role)` for SSO token issuance.
+- **Workspace improvements** — `WorkspaceManager` gains `update()`, `listMembers()`, `getMember()`, `updateMemberRole()`, and `ensureDefaultWorkspace()`. The last method runs on boot: creates a "Default" workspace and adds the admin user as owner if no workspaces exist.
+- **Workspace schema additions** — Migration 023 adds `identity_provider_id`, `sso_domain` to `workspace.workspaces` and `display_name` to `workspace.members`.
+- **Complete workspace REST API** — `workspace-routes.ts` rewritten:
+  - `PUT /api/v1/workspaces/:id` — update workspace
+  - `GET /api/v1/workspaces/:id/members` — list members
+  - `POST /api/v1/workspaces/:id/members` — add member
+  - `PUT /api/v1/workspaces/:id/members/:userId` — change role
+  - `DELETE /api/v1/workspaces/:id/members/:userId` — remove member
+  - `GET /api/v1/users` — list users (admin)
+  - `POST /api/v1/users` — create user (admin)
+  - `DELETE /api/v1/users/:id` — delete user (admin)
+- **Token claims extended** — `TokenPayloadSchema` gains optional `email` and `displayName` fields (non-breaking; existing tokens remain valid).
+
+### Files Changed
+
+- `packages/shared/src/types/security.ts` — `UserSchema`, `UserCreateSchema`, `UserUpdateSchema`; optional `email` + `displayName` in `TokenPayloadSchema`
+- `packages/shared/src/types/index.ts` — new type exports
+- `packages/core/src/storage/migrations/022_users.sql` — NEW: `auth.users` table + admin seed row
+- `packages/core/src/storage/migrations/023_workspace_improvements.sql` — NEW: workspace schema additions
+- `packages/core/src/security/auth-storage.ts` — user CRUD methods
+- `packages/core/src/security/auth.ts` — `createUserSession(userId, role)`; user management wrappers
+- `packages/core/src/workspace/storage.ts` — `WorkspaceUpdate`; `update()`, `listMembers()`, `getMember()`, `updateMemberRole()`
+- `packages/core/src/workspace/manager.ts` — `update()`, `listMembers()`, `getMember()`, `updateMemberRole()`, `ensureDefaultWorkspace()`
+- `packages/core/src/workspace/workspace-routes.ts` — full REST API rewrite with member + user endpoints
+- `packages/core/src/secureyeoman.ts` — `ensureDefaultWorkspace()` called on boot; `dashboardDist` option threaded through
+- `docs/adr/070-workspace-management-ui.md` — NEW
+
+---
+
 ## Phase 20 (partial): Skill Deletion & Marketplace Sync (2026-02-19) — [ADR 069](docs/adr/069-skill-personality-scoping-and-deletion-sync.md)
 
 ### Bug Fix

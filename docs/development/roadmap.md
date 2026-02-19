@@ -31,8 +31,8 @@
 | 18 | Skills Marketplace & Community | 2026.2.18 | Complete |
 | | **Release 2026.2.18** | **2026-02-18** | **Released** |
 | 19 | Per-Personality Access | 2026.2.19 | Complete |
-| | **Release 2026.2.19** | **2026-02-19** | **Pending** |
-| 20 | SaaS ready | — | In Progress |
+| 20 | SaaS ready | 2026.2.19 | Complete |
+| | **Release 2026.2.19** | **2026-02-19** | **Released** |
 | 21 | Onboarding & First Run | — | Pending |
 | 22 | Future Implementations | — | Pending |
 
@@ -40,7 +40,7 @@
 
 ## Phase 20: SaaS ready
 
-**Status**: In Progress
+**Status**: Complete
 
 ### Bug Fixes
 - [x] **Personal Skills — Edit Broken** — The edit button on skills added to a personality no longer opens the edit form. Restored full edit functionality for personality-scoped skills in the Personal tab. Saving now always creates a user-owned copy (never mutates marketplace/built-in records) and attributes authorship to the user (`source: 'user'`).
@@ -67,15 +67,20 @@
 - [x] **JSON Output** — `--json` flag support for all commands for scripting
 
 ### Security & Enterprise Access
-- [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
-- [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
-- [x] **RBAC Audit** — Role inventory, permission validation, ~80 missing ROUTE_PERMISSIONS entries added, `connections`→`integrations` rename, mTLS role lookup fix, wildcard auth permissions replaced — see [ADR 068](../adr/068-rbac-audit-phase-22.md)
-### Deployment
-- [ ] **Single Binary** — Simplify deployment with Go-based components
-- [ ] **Embedded Ready** — Consider future IoT/edge use cases
+- [x] **SSO/SAML** — OIDC integration (Okta, Azure AD, Auth0 and any standards-compliant issuer) via `openid-client` v6. PKCE flow, JIT user provisioning, IDP management API, workspace-IDP binding. See [ADR 071](../adr/071-sso-oidc-implementation.md).
+- [x] **Workspace Management** — Multi-user foundation (`auth.users`), `ensureDefaultWorkspace()` on boot, full member management REST API, workspace update/member CRUD routes. See [ADR 070](../adr/070-workspace-management-ui.md).
+- [x] **RBAC Audit** — Role inventory, permission validation, ~80 missing ROUTE_PERMISSIONS entries added, `connections`→`integrations` rename, mTLS role lookup fix, wildcard auth permissions replaced. See [ADR 068](../adr/068-rbac-audit-phase-22.md).
 
-### Development
-- [ ] **Go/Rust Runtime** — Potential future language option for core components
+### Sub-Agent Extensibility + Gateway Prerequisites
+- [x] **`binary` sub-agent type** — Spawn external processes as zero-cost sub-agents (JSON stdin/stdout protocol); gated by `security.allowBinaryAgents`. See [ADR 072](../adr/072-extensible-sub-agent-types.md).
+- [x] **`mcp-bridge` sub-agent type** — Delegate directly to a named MCP tool with Mustache template interpolation; zero token cost. See [ADR 072](../adr/072-extensible-sub-agent-types.md).
+- [x] **MCP tool wiring fix** — `manager.ts` now correctly wires `mcpClient.listTools()` into the LLM sub-agent tools array (was always empty despite the comment).
+- [x] **Migration manifest** — `manifest.ts` statically imports all SQL files; runner replaced `readdirSync(__dirname)` so migrations work inside Bun compiled binaries.
+- [x] **SPA static serving** — `@fastify/static` + `setNotFoundHandler` serves the dashboard SPA from the binary; `--dashboard-dist` CLI flag for custom path.
+
+### Deployment
+- [x] **Single Binary** — Bun compile pipeline (`scripts/build-binary.sh`) produces self-contained executables for Linux x64/arm64 and macOS arm64. `mcp-server` subcommand embedded. Docker image reduced from ~600 MB to ~80 MB. See [ADR 073](../adr/073-single-binary-distribution.md).
+- [x] **Embedded Ready** — Tier 2 `lite` binaries (SQLite, Linux only) have zero external dependencies. `storage.backend: auto` selects SQLite when no `DATABASE_URL` is present. See [ADR 073](../adr/073-single-binary-distribution.md).
 
 ---
 
@@ -164,4 +169,4 @@ Tracked third-party dependencies with known issues that require upstream resolut
 
 ---
 
-*Last updated: 2026-02-19*
+*Last updated: 2026-02-19 — Phase 20 complete (Workspace Management, SSO/OIDC, Sub-Agent Types, Single Binary)*
