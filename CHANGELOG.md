@@ -6,6 +6,12 @@ All notable changes to SecureYeoman are documented in this file.
 
 ## Phase 19: Skills / MCP Tool Separation (2026-02-19) — [ADR 064](docs/adr/064-skills-mcp-tool-separation.md)
 
+### Integration Access Enforcement
+- **`MessageRouter.handleInbound()`** now enforces `selectedIntegrations` per-personality allowlist. Messages from integrations not in the list are dropped (logged, stored for audit, but not forwarded to the task executor). An empty `selectedIntegrations` array (the default) allows all integrations — fully backward compatible.
+- **`MessageRouterDeps.getActivePersonality`** return type extended to include `selectedIntegrations?: string[]`
+- **`secureyeoman.ts`** — `getActivePersonality` callback now returns `selectedIntegrations: p.body?.selectedIntegrations ?? []` alongside `voice`
+- Mirrors the existing `selectedServers` MCP enforcement pattern in `chat-routes.ts`; both integration platforms and MCP servers are now gated by personality allowlist
+
 ### MCP Discovered Tools — Backend Fix
 - **`GET /api/v1/mcp/tools`** now returns only tools discovered from external MCP servers (`mcpClient.getAllTools()`). YEOMAN's own skills exposed via the MCP server role were incorrectly merged into this response. The broken `tool.serverId === localServer?.id` filter (hardcoded string vs DB UUID mismatch) is removed.
 - **Dead constants removed** from `mcp-routes.ts`: `LOCAL_MCP_NAME`, `GIT_TOOL_PREFIXES`, `FS_TOOL_PREFIXES`, `WEB_TOOL_PREFIXES`, `WEB_SCRAPING_TOOLS`, `WEB_SEARCH_TOOLS`, `BROWSER_TOOL_PREFIXES`
@@ -42,6 +48,7 @@ All notable changes to SecureYeoman are documented in this file.
 - **`Skill.source`** (`packages/dashboard/src/types.ts`) — Extended from `'user' | 'ai_proposed' | 'ai_learned'` to include `'marketplace' | 'community'` to match the actual API response and enable type-safe filtering in the Installed tab
 
 ### Files Changed
+- `packages/core/src/integrations/message-router.ts`
 - `packages/core/src/mcp/mcp-routes.ts`
 - `packages/core/src/ai/client.ts`
 - `packages/core/src/secureyeoman.ts`

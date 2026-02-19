@@ -2159,7 +2159,7 @@ function McpTab({
       {localServer && (
         <LocalServerCard
           server={localServer}
-          toolCount={tools.filter((t) => t.serverId === localServer.id).length}
+          toolCount={tools.filter((t) => t.serverName === LOCAL_MCP_NAME).length}
           onDelete={() => {
             onDelete(localServer.id);
           }}
