@@ -64,8 +64,10 @@
 **Status**: Pending
 
 #### Skills
-- [ ] **Provider Marketplace** — Centralized SecureYeoman skill provider marketplace (skill discovery, installation, management)
-- [ ] **Community Skills** — Community-contributed skill extensions registry with `secureyeoman_community_skills.git` sub-repo support for portable, structured agent capabilities
+- [ ] ** Marketplace Updates** — Centralize YEOMAN skill provider marketplace skills to (skill discovery, installation, management) from a folder of
+'https://github.com/MacCracken/secureyeoman-community-skills'
+- [ ] **Community Skills** — Community-contributed skill extensions registry with `https://github.com/MacCracken/secureyeoman-community-skills.git` sub-repo support for portable, structured agent capabilities
+- [ ] **Marketplace Website** or just use git-repo
       
 #### Integration Connection Updates
 
