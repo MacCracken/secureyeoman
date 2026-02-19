@@ -516,8 +516,7 @@ function BrainSection({ personalityId }: { personalityId: string | null }) {
   const isPrimary = (topic: string) => PRIMARY_TOPICS.includes(topic);
 
   return (
-    <CollapsibleSection title="Brain">
-
+    <CollapsibleSection title="Brain - Intellect">
       {/* 1. External Knowledge Base — moved to top */}
       <div className="border-b pb-3 mb-1">
         <h4 className="text-sm font-medium mb-2">External Knowledge Base</h4>
@@ -687,65 +686,14 @@ function BrainSection({ personalityId }: { personalityId: string | null }) {
           }}
         />
 
-      <div className="space-y-2 mb-3">
-        {knowledge.length === 0 && (
-          <p className="text-xs text-muted-foreground">No knowledge entries yet.</p>
-        )}
-        {knowledge.map((k: KnowledgeEntry) => (
-          <div key={k.id} className="text-sm bg-muted px-3 py-2 rounded space-y-1">
-            {editingId === k.id ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <strong>[{k.topic}]</strong>
-                  {isPrimary(k.topic) && (
-                    <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-primary/20 text-primary">
-                      PRIMARY
-                    </span>
-                  )}
-                </div>
-                <textarea
-                  value={editContent}
-                  onChange={(e) => {
-                    setEditContent(e.target.value);
-                  }}
-                  className="w-full px-2 py-1 text-sm rounded border bg-background resize-y"
-                  rows={3}
-                />
-                <div className="flex items-center gap-2 flex-wrap">
-                  <label className="text-xs text-muted-foreground">Confidence:</label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={editConfidence}
-                    onChange={(e) => {
-                      setEditConfidence(parseFloat(e.target.value));
-                    }}
-                    className="w-24"
-                  />
-                  <span className="text-xs">{editConfidence.toFixed(2)}</span>
-                  <div className="flex-1" />
-                  <button
-                    onClick={() => {
-                      setEditingId(null);
-                    }}
-                    className="btn btn-ghost text-xs px-2 py-1"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleSaveEdit}
-                    disabled={updateMut.isPending}
-                    className="btn btn-primary text-xs px-2 py-1 flex items-center gap-1"
-                  >
-                    <Save className="w-3 h-3" /> Save
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
+        <div className="space-y-2 mb-3">
+          {knowledge.length === 0 && (
+            <p className="text-xs text-muted-foreground">No knowledge entries yet.</p>
+          )}
+          {knowledge.map((k: KnowledgeEntry) => (
+            <div key={k.id} className="text-sm bg-muted px-3 py-2 rounded space-y-1">
+              {editingId === k.id ? (
+                <div className="space-y-2">
                   <div className="flex items-center gap-2 flex-wrap">
                     <strong>[{k.topic}]</strong>
                     {isPrimary(k.topic) && (
@@ -753,73 +701,123 @@ function BrainSection({ personalityId }: { personalityId: string | null }) {
                         PRIMARY
                       </span>
                     )}
-                    <span className="text-xs text-muted-foreground">
-                      (confidence: {k.confidence})
-                    </span>
-                    <span className="text-xs text-muted-foreground">src: {k.source}</span>
                   </div>
-                  <p className="mt-0.5">{sanitizeText(k.content)}</p>
-                </div>
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  <button
-                    onClick={() => {
-                      startEdit(k);
+                  <textarea
+                    value={editContent}
+                    onChange={(e) => {
+                      setEditContent(e.target.value);
                     }}
-                    className="btn-ghost p-1 text-muted-foreground hover:text-foreground"
-                    title="Edit"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setDeleteTarget(k);
-                    }}
-                    className="btn-ghost p-1 text-muted-foreground hover:text-destructive"
-                    title="Delete"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
+                    className="w-full px-2 py-1 text-sm rounded border bg-background resize-y"
+                    rows={3}
+                  />
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <label className="text-xs text-muted-foreground">Confidence:</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="1"
+                      step="0.05"
+                      value={editConfidence}
+                      onChange={(e) => {
+                        setEditConfidence(parseFloat(e.target.value));
+                      }}
+                      className="w-24"
+                    />
+                    <span className="text-xs">{editConfidence.toFixed(2)}</span>
+                    <div className="flex-1" />
+                    <button
+                      onClick={() => {
+                        setEditingId(null);
+                      }}
+                      className="btn btn-ghost text-xs px-2 py-1"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveEdit}
+                      disabled={updateMut.isPending}
+                      className="btn btn-primary text-xs px-2 py-1 flex items-center gap-1"
+                    >
+                      <Save className="w-3 h-3" /> Save
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Teach form */}
-      <div className="space-y-2">
-        <h4 className="text-sm font-medium">Teach</h4>
-        <div className="flex gap-2 flex-wrap">
-          <input
-            type="text"
-            placeholder="Topic"
-            value={teachTopic}
-            onChange={(e) => {
-              setTeachTopic(e.target.value);
-            }}
-            className="w-32 px-2 py-1 text-sm rounded border bg-background"
-          />
-          <input
-            type="text"
-            placeholder="Content"
-            value={teachContent}
-            onChange={(e) => {
-              setTeachContent(e.target.value);
-            }}
-            className="flex-1 min-w-0 px-2 py-1 text-sm rounded border bg-background"
-          />
-          <button
-            onClick={() => {
-              learnMut.mutate();
-            }}
-            disabled={!teachTopic.trim() || !teachContent.trim() || learnMut.isPending}
-            className="btn btn-primary text-xs px-2 py-1"
-          >
-            {learnMut.isPending ? 'Teaching...' : 'Teach'}
-          </button>
+              ) : (
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <strong>[{k.topic}]</strong>
+                      {isPrimary(k.topic) && (
+                        <span className="text-[10px] font-bold uppercase px-1.5 py-0.5 rounded bg-primary/20 text-primary">
+                          PRIMARY
+                        </span>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        (confidence: {k.confidence})
+                      </span>
+                      <span className="text-xs text-muted-foreground">src: {k.source}</span>
+                    </div>
+                    <p className="mt-0.5">{sanitizeText(k.content)}</p>
+                  </div>
+                  <div className="flex items-center gap-1 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        startEdit(k);
+                      }}
+                      className="btn-ghost p-1 text-muted-foreground hover:text-foreground"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        setDeleteTarget(k);
+                      }}
+                      className="btn-ghost p-1 text-muted-foreground hover:text-destructive"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
-      </div>
 
+        {/* Teach form */}
+        <div className="space-y-2">
+          <h4 className="text-sm font-medium">Teach</h4>
+          <div className="flex gap-2 flex-wrap">
+            <input
+              type="text"
+              placeholder="Topic"
+              value={teachTopic}
+              onChange={(e) => {
+                setTeachTopic(e.target.value);
+              }}
+              className="w-32 px-2 py-1 text-sm rounded border bg-background"
+            />
+            <input
+              type="text"
+              placeholder="Content"
+              value={teachContent}
+              onChange={(e) => {
+                setTeachContent(e.target.value);
+              }}
+              className="flex-1 min-w-0 px-2 py-1 text-sm rounded border bg-background"
+            />
+            <button
+              onClick={() => {
+                learnMut.mutate();
+              }}
+              disabled={!teachTopic.trim() || !teachContent.trim() || learnMut.isPending}
+              className="btn btn-primary text-xs px-2 py-1"
+            >
+              {learnMut.isPending ? 'Teaching...' : 'Teach'}
+            </button>
+          </div>
+        </div>
       </CollapsibleSection>
 
       {/* 3. Skills sub-section */}
@@ -840,21 +838,19 @@ function BrainSection({ personalityId }: { personalityId: string | null }) {
                 className="text-primary hover:underline"
               >
                 Skills Marketplace
-              </button>
-              {' '}or{' '}
+              </button>{' '}
+              or{' '}
               <button
                 onClick={() => navigate('/skills', { state: { initialTab: 'community' } })}
                 className="text-primary hover:underline"
               >
                 Community
-              </button>
-              {' '}tabs, or create a personal skill in the{' '}
-              <button
-                onClick={() => navigate('/skills')}
-                className="text-primary hover:underline"
-              >
+              </button>{' '}
+              tabs, or create a personal skill in the{' '}
+              <button onClick={() => navigate('/skills')} className="text-primary hover:underline">
                 Skills → Personal
-              </button>{' '}tab.
+              </button>{' '}
+              tab.
             </p>
           </div>
         ) : (
@@ -880,7 +876,6 @@ function BrainSection({ personalityId }: { personalityId: string | null }) {
           </div>
         )}
       </CollapsibleSection>
-
     </CollapsibleSection>
   );
 }
@@ -1890,7 +1885,9 @@ function BodySection({
                     <span className="text-base">{item.icon}</span>
                     <span className="font-medium">{item.label}</span>
                     {blocked && (
-                      <span className="text-xs text-destructive">(disabled by security policy)</span>
+                      <span className="text-xs text-destructive">
+                        (disabled by security policy)
+                      </span>
                     )}
                   </div>
                   <label
@@ -2587,8 +2584,8 @@ export function PersonalityEditor() {
             <div>
               <label className="block text-sm font-medium mb-1">Model Fallbacks</label>
               <p className="text-xs text-muted-foreground mb-2">
-                Ordered list of fallback models (max 5). Tried in order if the primary model
-                fails due to rate limits or unavailability.
+                Ordered list of fallback models (max 5). Tried in order if the primary model fails
+                due to rate limits or unavailability.
               </p>
 
               {/* Current fallbacks list */}
