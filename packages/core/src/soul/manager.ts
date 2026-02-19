@@ -108,6 +108,7 @@ export class SoulManager {
           experiments: false,
           allowA2A: false,
           allowSwarms: false,
+          allowDynamicTools: false,
         },
         selectedServers: [],
         mcpFeatures: {

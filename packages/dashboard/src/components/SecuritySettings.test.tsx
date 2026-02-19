@@ -109,6 +109,8 @@ describe('SecuritySettings', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
@@ -120,6 +122,8 @@ describe('SecuritySettings', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: null, model: null });
@@ -153,6 +157,8 @@ describe('SecuritySettings', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -219,6 +225,8 @@ describe('SecuritySettings', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -246,6 +254,8 @@ describe('SecuritySettings', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -263,6 +273,8 @@ describe('SecuritySettings', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -345,5 +357,98 @@ describe('SecuritySettings', () => {
       expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
       expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowExperiments: true });
     });
+  });
+
+  // ── Dynamic Tool Creation ──────────────────────────────────────────
+
+  it('renders Dynamic Tool Creation toggle', async () => {
+    renderComponent();
+    expect(await screen.findByText('Dynamic Tool Creation')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Dynamic Tool Creation');
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('DTC sandbox toggle not shown when DTC is disabled', async () => {
+    renderComponent();
+    await screen.findByText('Dynamic Tool Creation');
+    expect(screen.queryByLabelText('Toggle Sandboxed Execution')).not.toBeInTheDocument();
+  });
+
+  it('shows sandbox toggle when DTC is enabled', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDynamicTools: true,
+      sandboxDynamicTools: true,
+    });
+    renderComponent();
+    const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
+    expect(sandboxToggle).toBeInTheDocument();
+  });
+
+  it('sandbox toggle is enabled by default when DTC is on', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDynamicTools: true,
+      sandboxDynamicTools: true,
+    });
+    renderComponent();
+    const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
+    expect(sandboxToggle.getAttribute('aria-checked')).toBe('true');
+  });
+
+  it('calls updateSecurityPolicy with allowDynamicTools when DTC toggled', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Dynamic Tool Creation');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowDynamicTools: true });
+    });
+  });
+
+  it('calls updateSecurityPolicy with sandboxDynamicTools when sandbox toggled', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDynamicTools: true,
+      sandboxDynamicTools: true,
+    });
+    renderComponent();
+    const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
+    fireEvent.click(sandboxToggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ sandboxDynamicTools: false });
+    });
+  });
+
+  it('AI model default: fetchModelDefault is called on mount', async () => {
+    renderComponent();
+    await screen.findByText('Security');
+    expect(vi.mocked(api.fetchModelDefault)).toHaveBeenCalled();
   });
 });

@@ -93,6 +93,8 @@ describe('ExtensionsPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     mockFetchExtensions.mockResolvedValue(MOCK_EXTENSIONS);
     mockFetchExtensionHooks.mockResolvedValue(MOCK_HOOKS);
@@ -118,6 +120,8 @@ describe('ExtensionsPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     renderComponent();
     expect(await screen.findByText('Extensions Not Enabled')).toBeInTheDocument();
@@ -135,6 +139,8 @@ describe('ExtensionsPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();
@@ -153,6 +159,8 @@ describe('ExtensionsPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();

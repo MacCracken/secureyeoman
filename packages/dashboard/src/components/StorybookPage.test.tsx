@@ -39,6 +39,8 @@ const BASE_POLICY = {
   allowExperiments: false,
   allowStorybook: false,
   allowMultimodal: false,
+  allowDynamicTools: false,
+  sandboxDynamicTools: true,
 };
 
 describe('StorybookPage', () => {

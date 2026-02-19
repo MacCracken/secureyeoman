@@ -40,12 +40,11 @@
 **Status**: Pending
 
 ### Multi-Agent Systems
-- [ ] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style — agents create and register new tools as needed)
+- [x] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style — agents create and register new tools as needed)
 - [x] **Swarms Security Policy** — Global `allowSwarms` toggle in security policy; Swarms tab visibility gated by policy; Swarms tab moved to second position in Sub-Agents view
 
 ### Visualization
 - [x] **WebGL Graph Rendering** — Investigate and basic implementation for large graph visualization
-- [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
 
 ### Personality Configuration
 - [x] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
@@ -53,9 +52,6 @@
       
 ### ML-based Security
 - [ ] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events
-
-### Real-time Collaboration
-- [ ] **CRDT Implementation** — Conflict-free Replicated Data Types for collaborative editing
 
 ### Sandbox
 - [ ] **gVisor Integration** — Additional sandbox isolation layer using gVisor
@@ -95,7 +91,13 @@
 ## Phase 19: SaaS ready
 
 **Status**: Pending
-      
+
+### Visualization
+- [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
+
+### Real-time Collaboration
+- [ ] **CRDT Implementation** — Conflict-free Replicated Data Types for collaborative editing
+
 ### Security & Enterprise Access
 - [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
 - [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace

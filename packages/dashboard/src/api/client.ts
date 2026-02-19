@@ -1703,6 +1703,8 @@ export interface SecurityPolicy {
   allowExperiments: boolean;
   allowStorybook: boolean;
   allowMultimodal: boolean;
+  allowDynamicTools: boolean;
+  sandboxDynamicTools: boolean;
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -1719,6 +1721,8 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     };
   }
 }

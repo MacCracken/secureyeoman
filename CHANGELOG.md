@@ -4,6 +4,26 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 17: Dynamic Tool Creation — [ADR 059](docs/adr/059-dynamic-tool-creation.md)
+
+Global `allowDynamicTools` / `sandboxDynamicTools` security policy toggles; per-personality `allowDynamicTools` in creation config; `secureyeoman policy` CLI command.
+
+- **`packages/shared/src/types/config.ts`** — Added `allowDynamicTools: z.boolean().default(false)` and `sandboxDynamicTools: z.boolean().default(true)` to `SecurityConfigSchema`
+- **`packages/shared/src/types/soul.ts`** — Added `allowDynamicTools: z.boolean().default(false)` to `CreationConfigSchema`
+- **`packages/core/src/secureyeoman.ts`** — `updateSecurityPolicy()` and `loadSecurityPolicyFromDb()` handle both DTC flags
+- **`packages/core/src/gateway/server.ts`** — GET/PATCH `/api/v1/security/policy` include `allowDynamicTools` and `sandboxDynamicTools`
+- **`packages/dashboard/src/api/client.ts`** — `SecurityPolicy` interface and fallback defaults updated
+- **`packages/dashboard/src/components/SecuritySettings.tsx`** — Dynamic Tool Creation card (Wrench icon) after Sub-Agent Delegation; Sandboxed Execution sub-toggle visible only when DTC enabled; `Wrench` imported from lucide-react
+- **`packages/dashboard/src/components/PersonalityEditor.tsx`** — `allowDynamicTools` added to `creationConfig` state, `creationItems`, `toggleCreationItem` key union, and `toggleAllCreation`; `dtcBlockedByPolicy` gate respects global policy
+- **`packages/core/src/cli/commands/policy.ts`** — New `secureyeoman policy` CLI command: `get`, `set <flag> <true|false>`, `dynamic-tools get|enable|disable`, `dynamic-tools sandbox enable|disable`, `dynamic-tools personality get|enable|disable [--personality-id ID]`
+- **`packages/core/src/cli/commands/policy.test.ts`** — 8 CLI tests
+- **`packages/core/src/cli.ts`** — `policyCommand` registered
+- **`packages/dashboard/src/components/SecuritySettings.test.tsx`** — All mock policy objects updated with DTC fields; 7 new DTC tests + AI model default persistence test
+- **`docs/adr/059-dynamic-tool-creation.md`** — ADR: opt-in model, sandbox-first approach, AI model default persistence status
+- **`docs/development/roadmap.md`** — DTC marked `[x]`
+
+---
+
 ## Phase 17: WebGL Graph Rendering — [ADR 058](docs/adr/058-webgl-graph-rendering.md)
 
 sigma.js + graphology + ForceAtlas2 layout; reusable `WebGLGraph` component; applied to delegation trees and A2A peer network topology.

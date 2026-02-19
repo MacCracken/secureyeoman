@@ -53,6 +53,8 @@ describe('ExperimentsPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
 
     renderComponent();
@@ -73,6 +75,8 @@ describe('ExperimentsPage', () => {
       allowExperiments: true,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
 
     renderComponent();
@@ -92,6 +96,8 @@ describe('ExperimentsPage', () => {
       allowExperiments: true,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
 
     renderComponent();
@@ -109,6 +115,8 @@ describe('ExperimentsPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
 
     renderComponent();

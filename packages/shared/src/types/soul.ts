@@ -50,6 +50,8 @@ export const CreationConfigSchema = z
     allowA2A: z.boolean().default(false),
     /** Allow this personality to use agent swarms when sub-agents are enabled. Gated by global allowSwarms policy. */
     allowSwarms: z.boolean().default(false),
+    /** Allow this personality to generate and register tools dynamically. Gated by global allowDynamicTools policy. */
+    allowDynamicTools: z.boolean().default(false),
   })
   .default({});
 

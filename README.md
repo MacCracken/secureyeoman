@@ -54,7 +54,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Extensions** | 38 lifecycle hook points (observe/transform/veto semantics), TypeScript plugin modules with filesystem discovery, EventEmitter integration, outbound webhook dispatch with HMAC signing, hot-reload support |
 | **Code Execution** | Sandboxed code execution (Python, Node.js, shell) within Landlock/seccomp sandbox, persistent sessions, streaming output via WebSocket, approval policies (manual/auto/session-trust), streaming secrets filter, full audit trail |
 | **A2A Protocol** | Agent-to-Agent cross-instance delegation via E2E encrypted messaging, peer discovery (mDNS/DNS-SD/static), capability negotiation, trust progression (untrusted/verified/trusted), remote delegation in unified delegation tree |
-| **Multi-Agent Architecture** | Sub-agent delegation system with role-based profiles (researcher, coder, analyst, reviewer, summarizer); Agent Swarms with named templates and three strategies — `sequential` (context-chaining pipeline), `parallel` (`Promise.all` + optional coordinator synthesis), `dynamic` (coordinator-driven, uses `delegate_task` internally); `create_swarm` MCP tool; 4 built-in templates; dashboard Swarms tab |
+| **Multi-Agent Architecture** | Sub-agent delegation system with role-based profiles (researcher, coder, analyst, reviewer, summarizer); Agent Swarms with named templates and three strategies — `sequential` (context-chaining pipeline), `parallel` (`Promise.all` + optional coordinator synthesis), `dynamic` (coordinator-driven, uses `delegate_task` internally); `create_swarm` MCP tool; 4 built-in templates; dashboard Swarms tab; **Dynamic Tool Creation** — agents can generate and register new tools at runtime (Agent Zero-style), gated by `allowDynamicTools` security policy with `sandboxDynamicTools` isolation |
 | **Integrations** | Telegram (inline keyboards, document attachments), Discord (threads, modals, slash command registration via REST), Slack (Block Kit actions, modal dialogs, Workflow Builder steps), GitHub (PR review automation, issue auto-labeling, code search triggers), GitLab, Google Chat, Gmail, Email (IMAP/SMTP), Google Calendar, Notion, Jira, AWS, Azure DevOps, CLI, Generic Webhook — plugin architecture with unified message routing |
 | **MCP Protocol** | Standalone `@secureyeoman/mcp` service (34+ tools including web scraping, search, browser automation placeholders; 7 resources, 4 prompts); SSRF-protected web tools; health monitoring for external servers; AES-256-GCM encrypted credential storage; streamable HTTP, SSE, and stdio transports; feature toggles with dashboard UI; one-click pre-built integrations for Bright Data, Exa, E2B, and Supabase |
 | **Marketplace** | Skill discovery, search, install/uninstall (syncs with Brain skills), publish with cryptographic signature verification |
@@ -309,6 +309,13 @@ secureyeoman model switch anthropic claude-sonnet-4-6
 secureyeoman model default get
 secureyeoman model default set anthropic claude-haiku-4-5
 secureyeoman model default clear
+
+# Security policy management
+secureyeoman policy get
+secureyeoman policy set allowDynamicTools true
+secureyeoman policy dynamic-tools enable
+secureyeoman policy dynamic-tools sandbox disable
+secureyeoman policy dynamic-tools personality enable --personality-id <id>
 
 # Show help
 secureyeoman help

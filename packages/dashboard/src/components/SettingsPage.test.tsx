@@ -84,6 +84,8 @@ describe('SettingsPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
   });
 

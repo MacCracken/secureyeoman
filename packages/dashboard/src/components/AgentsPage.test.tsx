@@ -89,6 +89,8 @@ const DEFAULT_POLICY = {
   allowExperiments: false,
   allowStorybook: false,
   allowMultimodal: true,
+  allowDynamicTools: false,
+  sandboxDynamicTools: true,
 };
 
 describe('AgentsPage', () => {

@@ -158,6 +158,7 @@ export interface Personality {
       experiments?: boolean;
       allowA2A?: boolean;
       allowSwarms?: boolean;
+      allowDynamicTools?: boolean;
     };
     selectedServers?: string[];
     mcpFeatures?: {
@@ -213,6 +214,7 @@ export interface PersonalityCreate {
       experiments?: boolean;
       allowA2A?: boolean;
       allowSwarms?: boolean;
+      allowDynamicTools?: boolean;
     };
     selectedServers?: string[];
     mcpFeatures?: {
