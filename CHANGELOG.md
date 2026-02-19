@@ -4,6 +4,31 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Dashboard: Integration Access Control & Branding Fix (2026-02-18)
+
+### Connections — Email tab
+- Fixed branding copy: "Friday" replaced with "SecureYeoman" in the Email tab description, Gmail label tooltip, and Gmail label placeholder.
+
+### Personality Editor — Integration Access
+- **`packages/shared/src/types/soul.ts`** — `selectedIntegrations: z.array(z.string()).default([])` added to `BodyConfigSchema` alongside the existing `selectedServers` field.
+- **`packages/dashboard/src/components/PersonalityEditor.tsx`** — New **Integration Access** collapsible section in the Body panel (mirrors the MCP Connections section). Fetches configured integrations from `/api/v1/integrations`; displays each integration as a labelled checkbox (displayName + platform); selected IDs are persisted in `body.selectedIntegrations`. An empty selection means no restriction — all integrations are accessible. `selectedIntegrations` state wired through load, save, and `BodySectionProps`.
+- **`docs/development/roadmap.md`** — Roadmap item added for backend enforcement of `selectedIntegrations` (per-personality inbound routing gate + sub-agent delegation chain enforcement).
+
+---
+
+## Dashboard: Productivity Integration View (2026-02-18) — [ADR 062](docs/adr/062-productivity-view-calendar-consolidation.md)
+
+### Dashboard — Connections › Integrations sub-tabs
+
+- **New "Productivity" sub-tab** added to Connections → Integrations, positioned between Calendar and DevOps. Surfaces Notion, Stripe, Google Calendar, and Linear — tools centred on work and productivity workflows.
+- **Calendar sub-tab removed** — Google Calendar moved into the Productivity tab; the standalone Calendar view is no longer necessary.
+- **Stripe moved** from `DEVOPS_PLATFORMS` to `PRODUCTIVITY_PLATFORMS` — better reflects its role as a business/productivity service rather than a DevOps tool.
+- **Linear** remains in `PRODUCTIVITY_PLATFORMS`; now surfaces exclusively under the Productivity tab (previously shown alongside DevOps).
+- **`packages/dashboard/src/components/ConnectionsPage.tsx`** — `IntegrationSubTab` union updated; `CALENDAR_PLATFORMS` constant removed; `PRODUCTIVITY_PLATFORMS` extended with `googlecalendar` and `stripe`; `DEVOPS_PLATFORMS` no longer contains `stripe`; `unregisteredCalendarPlatforms` variable removed; `unregisteredProductivityPlatforms` variable added; sub-tab array and render blocks updated.
+- **`packages/dashboard/src/components/ConnectionsPage.test.tsx`** — Stripe and Linear platform tests updated to navigate to the Productivity sub-tab; Google Calendar and Notion platform tests added under Productivity; Calendar sub-tab navigation removed; Productivity sub-tab navigation test added.
+
+---
+
 ## Phase 18: Services & Messaging Integrations (2026-02-18) — [ADR 061](docs/adr/061-phase18-services-messaging-integrations.md)
 
 ### Services Integrations

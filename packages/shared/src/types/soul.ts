@@ -101,6 +101,7 @@ export const BodyConfigSchema = z
     heartEnabled: z.boolean().default(true),
     creationConfig: CreationConfigSchema.default({}),
     selectedServers: z.array(z.string()).default([]),
+    selectedIntegrations: z.array(z.string()).default([]),
     mcpFeatures: McpFeaturesSchema.default({}),
     proactiveConfig: ProactivePersonalityConfigSchema.default({}),
   })

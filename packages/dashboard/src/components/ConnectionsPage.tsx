@@ -851,13 +851,12 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
 };
 
 type TabType = 'integrations' | 'mcp';
-type IntegrationSubTab = 'messaging' | 'email' | 'calendar' | 'devops' | 'oauth';
+type IntegrationSubTab = 'messaging' | 'email' | 'productivity' | 'devops' | 'oauth';
 
 // Platform categorization for tab filtering
-const DEVOPS_PLATFORMS = new Set(['github', 'gitlab', 'jira', 'aws', 'azure', 'figma', 'stripe', 'zapier']);
-const CALENDAR_PLATFORMS = new Set(['googlecalendar']);
+const DEVOPS_PLATFORMS = new Set(['github', 'gitlab', 'jira', 'aws', 'azure', 'figma', 'zapier']);
 const EMAIL_PLATFORMS = new Set(['gmail', 'email']);
-const PRODUCTIVITY_PLATFORMS = new Set(['notion', 'linear']);
+const PRODUCTIVITY_PLATFORMS = new Set(['notion', 'stripe', 'linear', 'googlecalendar']);
 // Messaging = everything not in the above sets
 
 const STATUS_CONFIG: Record<
@@ -913,7 +912,7 @@ export function ConnectionsPage() {
     const subTabMap: Record<string, IntegrationSubTab> = {
       messaging: 'messaging',
       email: 'email',
-      calendar: 'calendar',
+      productivity: 'productivity',
       devops: 'devops',
       oauth: 'oauth',
     };
@@ -1015,19 +1014,16 @@ export function ConnectionsPage() {
         !activePlatformIds.has(p) &&
         !EMAIL_PLATFORMS.has(p) &&
         !DEVOPS_PLATFORMS.has(p) &&
-        !CALENDAR_PLATFORMS.has(p) &&
         !PRODUCTIVITY_PLATFORMS.has(p)
     )
     .sort((a, b) => PLATFORM_META[a].name.localeCompare(PLATFORM_META[b].name));
 
-  const unregisteredDevopsPlatforms = Object.keys(PLATFORM_META)
-    .filter(
-      (p) => !activePlatformIds.has(p) && (DEVOPS_PLATFORMS.has(p) || PRODUCTIVITY_PLATFORMS.has(p))
-    )
+  const unregisteredProductivityPlatforms = Object.keys(PLATFORM_META)
+    .filter((p) => !activePlatformIds.has(p) && PRODUCTIVITY_PLATFORMS.has(p))
     .sort((a, b) => PLATFORM_META[a].name.localeCompare(PLATFORM_META[b].name));
 
-  const unregisteredCalendarPlatforms = Object.keys(PLATFORM_META)
-    .filter((p) => !activePlatformIds.has(p) && CALENDAR_PLATFORMS.has(p))
+  const unregisteredDevopsPlatforms = Object.keys(PLATFORM_META)
+    .filter((p) => !activePlatformIds.has(p) && DEVOPS_PLATFORMS.has(p))
     .sort((a, b) => PLATFORM_META[a].name.localeCompare(PLATFORM_META[b].name));
 
   const toolsByServer = tools.reduce<Record<string, McpToolDef[]>>((acc, tool) => {
@@ -1262,7 +1258,7 @@ export function ConnectionsPage() {
               [
                 ['messaging', 'Messaging', <MessageCircle key="msg" className="w-3.5 h-3.5" />],
                 ['email', 'Email', <Mail key="email" className="w-3.5 h-3.5" />],
-                ['calendar', 'Calendar', <Calendar key="cal" className="w-3.5 h-3.5" />],
+                ['productivity', 'Productivity', <LayoutGrid key="productivity" className="w-3.5 h-3.5" />],
                 ['devops', 'DevOps', <GitBranchIcon key="devops" className="w-3.5 h-3.5" />],
                 ['oauth', 'OAuth', <ArrowRightLeft key="oauth" className="w-3.5 h-3.5" />],
               ] as [IntegrationSubTab, string, React.ReactNode][]
@@ -1332,14 +1328,12 @@ export function ConnectionsPage() {
             />
           )}
 
-          {activeSubTab === 'devops' && (
+          {activeSubTab === 'productivity' && (
             <MessagingTab
-              integrations={integrations.filter(
-                (i) => DEVOPS_PLATFORMS.has(i.platform) || PRODUCTIVITY_PLATFORMS.has(i.platform)
-              )}
+              integrations={integrations.filter((i) => PRODUCTIVITY_PLATFORMS.has(i.platform))}
               platformsData={availablePlatforms}
               hasRegisteredPlatforms={hasRegisteredPlatforms}
-              unregisteredPlatforms={unregisteredDevopsPlatforms}
+              unregisteredPlatforms={unregisteredProductivityPlatforms}
               connectingPlatform={connectingPlatform}
               formData={formData}
               onConnectPlatform={setConnectingPlatform}
@@ -1361,12 +1355,12 @@ export function ConnectionsPage() {
             />
           )}
 
-          {activeSubTab === 'calendar' && (
+          {activeSubTab === 'devops' && (
             <MessagingTab
-              integrations={integrations.filter((i) => CALENDAR_PLATFORMS.has(i.platform))}
+              integrations={integrations.filter((i) => DEVOPS_PLATFORMS.has(i.platform))}
               platformsData={availablePlatforms}
               hasRegisteredPlatforms={hasRegisteredPlatforms}
-              unregisteredPlatforms={unregisteredCalendarPlatforms}
+              unregisteredPlatforms={unregisteredDevopsPlatforms}
               connectingPlatform={connectingPlatform}
               formData={formData}
               onConnectPlatform={setConnectingPlatform}
@@ -2585,8 +2579,9 @@ function EmailTab({
   return (
     <div className="space-y-6">
       <p className="text-sm text-muted">
-        Connect email accounts for direct email integration. Friday can read incoming emails and
-        optionally send replies on your behalf. Supports Gmail (OAuth) and any IMAP/SMTP provider.
+        Connect email accounts for direct email integration. SecureYeoman can read incoming emails
+        and optionally send replies on your behalf. Supports Gmail (OAuth) and any IMAP/SMTP
+        provider.
       </p>
 
       {oauthError && (
@@ -2696,7 +2691,7 @@ function EmailTab({
                   ? 'Process all incoming inbox messages'
                   : gmailForm.labelFilter === 'label'
                     ? 'Only process messages with this Gmail label'
-                    : 'Auto-creates a dedicated label for Friday'}
+                    : 'Auto-creates a dedicated label for SecureYeoman'}
               </p>
             </div>
 
@@ -2710,7 +2705,7 @@ function EmailTab({
                     setGmailForm((f) => ({ ...f, labelName: e.target.value }));
                   }}
                   placeholder={
-                    gmailForm.labelFilter === 'custom' ? `friday.${oauthEmail}` : 'e.g. Friday'
+                    gmailForm.labelFilter === 'custom' ? `secureyeoman.${oauthEmail}` : 'e.g. SecureYeoman'
                   }
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />

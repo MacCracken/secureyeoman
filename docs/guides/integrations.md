@@ -4,21 +4,37 @@ SecureYeoman supports multiple platform integrations for receiving and respondin
 
 ## Supported Platforms
 
-| Platform | Status | Features |
-|----------|--------|----------|
-| CLI      | Stable | Built-in REST API / command-line interface |
-| Discord  | Stable | Slash commands, embeds, guild messages |
-| Email (IMAP/SMTP) | Stable | Any IMAP/SMTP provider — ProtonMail Bridge, Outlook, Yahoo, Fastmail |
-| GitHub   | Stable | Webhooks, issue comments, PR events |
-| GitLab   | Stable | Webhooks, MR comments, issue events, self-hosted support |
-| Gmail    | Stable | OAuth2, polling, label filtering, send/receive |
-| Google Calendar | Stable | OAuth2, event polling, quick-add event creation |
-| Google Chat | Stable | Bot messages, card messages, space integration |
-| iMessage | Beta   | macOS only, AppleScript send, chat.db polling |
-| Notion   | Stable | API token, database polling, page creation |
-| Slack    | Stable | Socket mode, slash commands, mentions |
-| Telegram | Stable | Long-polling, commands, text messages |
-| Webhook  | Stable | Generic inbound/outbound HTTP webhooks |
+| Platform | Status | Dashboard tab | Features |
+|----------|--------|---------------|----------|
+| CLI      | Stable | Messaging | Built-in REST API / command-line interface |
+| Discord  | Stable | Messaging | Slash commands, embeds, guild messages |
+| Email (IMAP/SMTP) | Stable | Email | Any IMAP/SMTP provider — ProtonMail Bridge, Outlook, Yahoo, Fastmail |
+| Figma    | Stable | DevOps | File comments, design metadata, REST polling |
+| GitHub   | Stable | DevOps | Webhooks, issue comments, PR events |
+| GitLab   | Stable | DevOps | Webhooks, MR comments, issue events, self-hosted support |
+| Gmail    | Stable | Email | OAuth2, polling, label filtering, send/receive |
+| Google Calendar | Stable | Productivity | OAuth2, event polling, quick-add event creation |
+| Google Chat | Stable | Messaging | Bot messages, card messages, space integration |
+| iMessage | Beta   | Messaging | macOS only, AppleScript send, chat.db polling |
+| Linear   | Stable | Productivity | Webhook events, issue creation via GraphQL |
+| Notion   | Stable | Productivity | API token, database polling, page creation |
+| Slack    | Stable | Messaging | Socket mode, slash commands, mentions |
+| Stripe   | Stable | Productivity | Payment/invoice webhook events, HMAC-SHA256 verification |
+| Telegram | Stable | Messaging | Long-polling, commands, text messages |
+| Webhook  | Stable | Messaging | Generic inbound/outbound HTTP webhooks |
+| Zapier   | Stable | DevOps | Zap trigger webhooks, bidirectional catch-hook |
+
+### Dashboard tab organisation
+
+Integrations are grouped into sub-tabs in the Connections view:
+
+| Tab | Platforms |
+|-----|-----------|
+| **Messaging** | Telegram, Discord, Slack, WhatsApp, Signal, Teams, Google Chat, iMessage, QQ, DingTalk, Line, CLI, Webhook |
+| **Email** | Gmail, Email (IMAP/SMTP) |
+| **Productivity** | Notion, Stripe, Linear, Google Calendar |
+| **DevOps** | GitHub, GitLab, Jira, AWS, Azure, Figma, Zapier |
+| **OAuth** | Google OAuth, GitHub OAuth |
 
 ## CLI
 
@@ -506,6 +522,8 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 - Rate limited to 5 messages/second to avoid overwhelming Messages.app
 
 ## Google Calendar
+
+> **Dashboard location**: Connections → Integrations → **Productivity** tab
 
 ### Requirements
 - Google Cloud project with Calendar API enabled
