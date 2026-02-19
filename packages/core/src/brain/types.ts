@@ -84,6 +84,8 @@ export interface SkillFilter {
   source?: string;
   enabled?: boolean;
   personalityId?: string | null;
+  /** Return skills scoped to this personality AND global skills (personality_id IS NULL) */
+  forPersonalityId?: string;
 }
 
 import type { VectorMemoryManager } from './vector/manager.js';

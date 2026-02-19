@@ -92,9 +92,16 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
 
   app.get(
     '/api/v1/soul/skills',
-    async (request: FastifyRequest<{ Querystring: { status?: string; source?: string } }>) => {
-      const { status, source } = request.query;
-      const skills = await soulManager.listSkills({ status, source });
+    async (
+      request: FastifyRequest<{
+        Querystring: { status?: string; source?: string; personalityId?: string };
+      }>
+    ) => {
+      const { status, source, personalityId } = request.query;
+      const filter: Parameters<typeof soulManager.listSkills>[0] = { status, source };
+      // When personalityId is supplied, return skills for that personality plus global skills
+      if (personalityId) filter.forPersonalityId = personalityId;
+      const skills = await soulManager.listSkills(filter);
       return { skills };
     }
   );
