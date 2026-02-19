@@ -21,7 +21,7 @@ Goals:
 - Applied to the two surfaces above without disrupting existing list views.
 - Automatic force-directed layout without manual coordinate assignment.
 
-Layout algorithm integration (Dagre, ELK) is a separate Phase 17 roadmap item.
+Dagre hierarchical layout was integrated in Phase 20 (see [Decision](#decision) below). ELK integration is deferred to Phase 22.
 
 ---
 
@@ -33,8 +33,9 @@ Layout algorithm integration (Dagre, ELK) is a separate Phase 17 roadmap item.
 |---------|---------|------|
 | `graphology` | `^0.25.4` | Graph data structure — nodes, edges, attributes, traversal |
 | `sigma` | `^2.4.0` | WebGL renderer — purpose-built for graph networks |
-| `@react-sigma/core` | `^3.5.0` | React wrapper — `SigmaContainer`, `useLoadGraph`, `useRegisterEvents` |
+| `@react-sigma/core` | `^3.4.0` | React wrapper — `SigmaContainer`, `useLoadGraph`, `useRegisterEvents` |
 | `graphology-layout-forceatlas2` | `^0.10.1` | Force-directed layout (synchronous, 100 iterations) |
+| `dagre` | `^0.8.5` | Hierarchical DAG layout — top-down coordinate assignment for trees and directed acyclic graphs |
 
 **Why sigma.js over alternatives:**
 - Purpose-built for 2D graph network visualization using WebGL; handles 100k+ nodes at 60 fps.
@@ -48,11 +49,22 @@ Layout algorithm integration (Dagre, ELK) is a separate Phase 17 roadmap item.
 ```
 WebGLGraph (detects WebGL → SigmaContainer or fallback div)
   └── GraphLoader (inner, inside SigmaContainer context)
-        - useLoadGraph() → builds DirectedGraph, applies ForceAtlas2, calls loadGraph(graph)
+        - useLoadGraph() → builds DirectedGraph, applies layout, calls loadGraph(graph)
+            layout="forceatlas2" (default) → forceAtlas2.assign(graph, { iterations: 100 })
+            layout="dagre"                 → dagre.layout(g) → setNodeAttribute x/y per node
         - useRegisterEvents() → wires clickNode → onNodeClick prop
 ```
 
 `GraphLoader` must be a child of `SigmaContainer` to access sigma context hooks. This split follows the `@react-sigma/core` documentation pattern.
+
+### Layout prop
+
+`WebGLGraph` exposes a `layout?: 'forceatlas2' | 'dagre'` prop (exported as `WebGLGraphLayout`):
+
+- **`'forceatlas2'` (default)** — Organic force-directed layout. Best for hub-and-spoke topologies (A2A peer networks) where spatial clustering is meaningful.
+- **`'dagre'`** — Top-down hierarchical layout (`rankdir: 'TB'`, `nodesep: 60`, `ranksep: 80`). Best for trees and DAGs where the parent→child relationship should be visually obvious. Used by `SubAgentsPage` delegation tree.
+
+The `SubAgentsPage` delegation tree passes `layout="dagre"`. The `A2APage` peer network retains the default `'forceatlas2'`.
 
 ### WebGL detection
 
@@ -102,8 +114,8 @@ Run synchronously before `loadGraph`. Async/worker-based layout is deferred to t
 - Graceful degradation: environments without WebGL (CI, some headless browsers) show a fallback message.
 
 **Negative / trade-offs:**
-- Four new runtime dependencies (`sigma`, `graphology`, `@react-sigma/core`, `graphology-layout-forceatlas2`) add to bundle size.
-- ForceAtlas2 runs synchronously — for very large graphs (1000+ nodes) this may block the main thread. Async layout is deferred.
+- Five runtime dependencies (`sigma`, `graphology`, `@react-sigma/core`, `graphology-layout-forceatlas2`, `dagre`) add to bundle size. `dagre` is ~60 KB gzipped.
+- Both ForceAtlas2 and Dagre run synchronously — for very large graphs (1000+ nodes) this may block the main thread. Async/worker layout is deferred to Phase 22.
 - `@react-sigma/core` CSS import (`react-sigma.min.css`) must be mocked in tests.
 
 ---

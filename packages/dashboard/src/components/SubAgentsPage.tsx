@@ -524,6 +524,7 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
               nodes={graphNodes}
               edges={graphEdges}
               height={480}
+              layout="dagre"
               onNodeClick={(id) => {
                 const node = tree.find((d) => d.id === id);
                 if (node) {

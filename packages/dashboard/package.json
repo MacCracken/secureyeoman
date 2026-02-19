@@ -16,6 +16,7 @@
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
     "@react-sigma/core": "^3.4.0",
+    "dagre": "^0.8.5",
     "graphology": "^0.25.4",
     "graphology-layout-forceatlas2": "^0.10.1",
     "sigma": "^2.4.0",
@@ -44,6 +45,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/dagre": "^0.7.52",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "@types/react-syntax-highlighter": "^15.5.13",

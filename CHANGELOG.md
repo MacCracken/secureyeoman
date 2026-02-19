@@ -4,6 +4,26 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 20 (partial): Dagre Layout Algorithm (2026-02-19) — [ADR 058](docs/adr/058-webgl-graph-rendering.md)
+
+### Visualization
+
+- **`layout` prop added to `WebGLGraph`** — New `layout?: 'forceatlas2' | 'dagre'` prop selects between organic force-directed and hierarchical DAG layout. Default remains `'forceatlas2'` (no breaking change for existing consumers).
+- **Dagre integration** — When `layout="dagre"`, the component builds a `dagre.graphlib.Graph`, runs `dagre.layout()` for top-down (`rankdir: 'TB'`) coordinate assignment, and applies the resulting `x`/`y` positions to the graphology graph via `setNodeAttribute` before rendering. Settings: `nodesep: 60`, `ranksep: 80`.
+- **SubAgentsPage delegation tree uses Dagre** — The execution tree `<WebGLGraph>` now passes `layout="dagre"`, replacing ForceAtlas2 (which is unsuited to directed acyclic hierarchies). A2A peer-network graph is unchanged (`forceatlas2`).
+- **New dependencies** — `dagre@^0.8.5` (runtime), `@types/dagre@^0.7.52` (dev-only type definitions).
+- **6 new tests** — `WebGLGraph.test.tsx` gains layout-specific coverage: forceatlas2 default, explicit forceatlas2, dagre invocation, TB `rankdir` configuration, dagre node/edge registration count, and `x`/`y` position application via `setNodeAttribute`.
+
+### Files Changed
+
+- `packages/dashboard/src/components/WebGLGraph.tsx` — `layout` prop, dagre branch, `WebGLGraphLayout` type export
+- `packages/dashboard/src/components/WebGLGraph.test.tsx` — 6 new layout tests (13 total)
+- `packages/dashboard/src/components/SubAgentsPage.tsx` — `layout="dagre"` on delegation tree graph
+- `packages/dashboard/package.json` — `dagre`, `@types/dagre` added
+- `docs/adr/058-webgl-graph-rendering.md` — Updated to document dagre integration
+
+---
+
 ## Phase 20 (partial): Personal Skills — Edit Bug Fix (2026-02-19)
 
 ### Bug Fixes

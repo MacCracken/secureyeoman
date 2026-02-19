@@ -34,7 +34,7 @@
 | | **Release 2026.2.19** | **2026-02-19** | **Pending** |
 | 20 | SaaS ready | — | Pending |
 | 21 | Onboarding & First Run | — | Pending |
-| 22 | Marketplace Evolution | — | Pending |
+| 22 | Future Implementations | — | Pending |
 
 ---
 
@@ -50,7 +50,7 @@
 - [ ] **Fast Boot** — Optimize startup time for better UX; target <10s startup (learn from PicoClaw's 1s boot)
 
 ### Visualization
-- [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
+- [x] **Layout Algorithms — Dagre** — Dagre hierarchical layout integrated into `WebGLGraph` via `layout="dagre"` prop; delegation tree (`SubAgentsPage`) now uses top-down DAG layout. ELK deferred to Phase 22.
 
 ### CLI Enhancements
 - [x] **Shell Completions** — Auto-generate shell completions for bash, zsh, fish
@@ -93,11 +93,17 @@
 
 ---
 
-## Phase 22: Marketplace Evolution & Collaborative Editing
+## Phase 22: Future Implementations
 
 **Status**: Pending
 
-*Both items in this phase are demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
+*Items in this phase are demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
+
+### Layout Algorithms
+
+*Revisit once delegation trees and peer networks grow beyond a few dozen nodes and Dagre's static layout proves limiting.*
+
+- [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based layouts (layered, force, tree, orthogonal routing). ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre. Deferred from Phase 20.
 
 ### Marketplace Evolution
 
