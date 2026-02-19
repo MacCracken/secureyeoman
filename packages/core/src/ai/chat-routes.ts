@@ -152,14 +152,14 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       // Collect tools from personality MCP config + skill tools
       const tools: Tool[] = [];
 
-      // Skill-based tools
-      tools.push(...(await soulManager.getActiveTools()));
-
-      // MCP tools filtered by personality config
+      // Resolve personality first so tool gathering is scoped correctly
       const personality = personalityId
         ? ((await soulManager.getPersonality(personalityId)) ??
           (await soulManager.getActivePersonality()))
         : await soulManager.getActivePersonality();
+
+      // Skill-based tools — scoped to this personality + global skills
+      tools.push(...(await soulManager.getActiveTools(personality?.id ?? null)));
 
       const mcpClient = secureYeoman.getMcpClientManager();
       const mcpStorage = secureYeoman.getMcpStorage();

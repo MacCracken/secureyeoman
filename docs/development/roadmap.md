@@ -44,6 +44,8 @@
 
 ### Bug Fixes
 - [x] **Personal Skills — Edit Broken** — The edit button on skills added to a personality no longer opens the edit form. Restored full edit functionality for personality-scoped skills in the Personal tab. Saving now always creates a user-owned copy (never mutates marketplace/built-in records) and attributes authorship to the user (`source: 'user'`).
+- [x] **Chat showed skills from all personalities** — `composeSoulPrompt()` called `getActiveSkills()` without `personalityId`, so all enabled brain skills appeared in every personality's chat context. Fixed: brain skill query now scoped to `(personality_id = active OR personality_id IS NULL)`. See [ADR 069](../adr/069-skill-personality-scoping-and-deletion-sync.md).
+- [x] **Skill deletion not syncing marketplace.installed** — Deleting a skill via the personality editor left `marketplace.skills.installed = true`, preventing re-install. `soulManager.deleteSkill()` now calls `marketplace.onBrainSkillDeleted()` to reset the flag when the last brain record is removed. `marketplace.uninstall()` also fixed to delete ALL matching brain records (was only deleting the first). See [ADR 069](../adr/069-skill-personality-scoping-and-deletion-sync.md).
 
 ### Performance
 - [x] **Memory Footprint Optimization** — PicoClaw studied; baseline already <300 MB (target met). Four targeted improvements shipped: migration fast-path (−300–700 ms, −N DB round-trips), lazy AI usage init (−300–500 ms startup), bounded WebSocket map (cap 100, oldest-idle eviction), PostgreSQL pool default 10 (−50–80 MB). See [ADR 067](../adr/067-performance-startup-memory-optimizations.md).

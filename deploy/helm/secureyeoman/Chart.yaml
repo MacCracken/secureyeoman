@@ -3,7 +3,7 @@ name: secureyeoman
 description: SecureYeoman — Secure, local-first AI assistant
 type: application
 version: 0.1.0
-appVersion: "2026.2.17"
+appVersion: "2026.2.19"
 home: https://github.com/MacCracken/secureyeoman
 sources:
   - https://github.com/MacCracken/secureyeoman

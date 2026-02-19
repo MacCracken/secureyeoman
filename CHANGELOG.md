@@ -4,6 +4,48 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 20 (partial): Skill Deletion & Marketplace Sync (2026-02-19) — [ADR 069](docs/adr/069-skill-personality-scoping-and-deletion-sync.md)
+
+### Bug Fix
+
+- **Skill deletion not updating marketplace installed state** — Deleting a brain skill via the personality editor (`DELETE /api/v1/soul/skills/:id`) now resets `marketplace.skills.installed` to `false` when the last brain record for that skill is removed. Previously, the marketplace continued to show the skill as installed even after deletion, preventing re-install.
+- **Marketplace uninstall only removed first brain skill copy** — `marketplace.uninstall()` used `Array.find()` so only the first matching brain skill (by name+source) was deleted. Skills installed for multiple personalities left orphan records in `brain.skills` that continued to appear in chat. Fixed to use `Array.filter()` + loop to delete all copies.
+- **`onBrainSkillDeleted()` added to `MarketplaceManager`** — New method called by `SoulManager` after a brain skill is deleted; checks if any remaining brain records share the same name+source and, if none remain, resets `marketplace.installed = false`.
+- **`GET /api/v1/soul/skills?personalityId=<id>`** — New query param returns skills for a personality plus global skills (`personality_id IS NULL`), allowing UIs to surface and manage globally-installed skills.
+- **`getActiveTools()` not personality-scoped** — `getActiveTools()` in `brain/manager.ts` and `soul/manager.ts` called `getEnabledSkills()` without a `personalityId`, so tools from all personalities were exposed in every chat. Additionally, `chat-routes.ts` resolved the personality _after_ calling `getActiveTools()`, so the fix had no value to pass even when the parameter existed. Fixed by adding `personalityId?` to both `getActiveTools()` signatures and reordering `chat-routes.ts` to resolve personality before tool gathering.
+
+### Files Changed
+
+- `packages/core/src/brain/types.ts` — `forPersonalityId` added to `SkillFilter`
+- `packages/core/src/brain/storage.ts` — `getEnabledSkills(personalityId?)` OR clause; `listSkills()` `forPersonalityId` branch
+- `packages/core/src/brain/manager.ts` — `getActiveSkills(personalityId?)`; `getActiveTools(personalityId?)`
+- `packages/core/src/soul/types.ts` — `personalityId` and `forPersonalityId` added to `SkillFilter`
+- `packages/core/src/soul/manager.ts` — `marketplace` field, `setMarketplaceManager()`, `deleteSkill()` notifies marketplace; `composeSoulPrompt()` passes personality id; `getActiveTools(personalityId?)` propagates to brain
+- `packages/core/src/ai/chat-routes.ts` — personality resolved before `getActiveTools()`; `personality?.id ?? null` passed
+- `packages/core/src/marketplace/manager.ts` — `uninstall()` deletes all matching brain records; `onBrainSkillDeleted()` added
+- `packages/core/src/soul/soul-routes.ts` — `personalityId` query param on `GET /api/v1/soul/skills`
+- `packages/core/src/secureyeoman.ts` — `soulManager.setMarketplaceManager()` wired after marketplace init
+- `packages/core/src/marketplace/marketplace.test.ts` — 3 new tests
+- `packages/core/src/soul/soul.test.ts` — 2 new integration tests
+- `docs/adr/069-skill-personality-scoping-and-deletion-sync.md` — new ADR
+
+---
+
+## Phase 20 (partial): Personality-Scoped Skill Filtering (2026-02-19) — [ADR 069](docs/adr/069-skill-personality-scoping-and-deletion-sync.md)
+
+### Bug Fix
+
+- **Chat showed skills from all personalities** — `composeSoulPrompt()` called `getActiveSkills()` without `personalityId`, so all enabled brain skills (across all personalities) appeared in the active personality's system prompt. Skills installed for personality A polluted personality B's context. Fixed by passing `personality?.id ?? null` from `soul/manager.ts` through `brain/manager.ts` to `brain/storage.ts`, where `getEnabledSkills(personalityId)` adds `AND (personality_id = $1 OR personality_id IS NULL)`.
+
+### Files Changed
+
+- `packages/core/src/brain/types.ts` — `personalityId` added to `SkillFilter`
+- `packages/core/src/brain/storage.ts` — `getEnabledSkills(personalityId?)` with AND clause
+- `packages/core/src/brain/manager.ts` — `getActiveSkills(personalityId?)`
+- `packages/core/src/soul/manager.ts` — `composeSoulPrompt()` passes `personality?.id ?? null`
+
+---
+
 ## Phase 22 (partial): Security — RBAC Audit (2026-02-19) — [ADR 068](docs/adr/068-rbac-audit-phase-22.md)
 
 ### Security
@@ -17,10 +59,6 @@ All notable changes to SecureYeoman are documented in this file.
 - **Added ~80 missing ROUTE_PERMISSIONS entries** across 12 route groups: soul sub-routes, spirit, chat/conversations, execution, terminal, agents, proactive, A2A, browser, extensions, auth management, OAuth management, integration extras, webhooks, model extras.
 - **Added `/api/v1/auth/reset-password` to TOKEN_ONLY_ROUTES** — password reset is token-authenticated, no RBAC check needed.
 
-### Bug Fix
-
-- **Marketplace builtin skills not available in chat** — `seedBuiltinSkills()` now auto-installs builtin skills into `brain.skills` after seeding. Previously, builtins were only written to `marketplace.skills` (with `installed = false`) and never reached `brain.getActiveSkills()`, so they were never injected into the system prompt. Community skills still require explicit user opt-in.
-
 ### Files Changed
 
 - `packages/core/src/security/rbac.ts` — updated operator, viewer, auditor role definitions
@@ -29,9 +67,6 @@ All notable changes to SecureYeoman are documented in this file.
 - `packages/core/src/__integration__/helpers.ts` — pass `rbac` to `createAuthHook`
 - `packages/core/src/__integration__/soul.integration.test.ts` — pass `rbac` to `createAuthHook`
 - `packages/core/src/gateway/auth-middleware.test.ts` — new test cases for operator role, mTLS role assignment, auth management routes
-- `packages/core/src/marketplace/manager.ts` — auto-install builtin skills after seeding
-- `packages/core/src/marketplace/storage.ts` — add `getSkillsBySource()`
-- `packages/core/src/brain/manager.ts` — add `findSkillByNameAndSource()`
 - `docs/adr/068-rbac-audit-phase-22.md` — new ADR
 - `docs/security/security-model.md` — updated RBAC permission matrix
 
