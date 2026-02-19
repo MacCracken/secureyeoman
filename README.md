@@ -2,7 +2,7 @@
 
 > Comes with default Agent Personality F.R.I.D.A.Y. **F**ully **R**esponsive **I**ntegrated **D**igitally **A**daptable **Y**eoman
 
-[![Version](https://img.shields.io/badge/Version-2026.2.19-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.19)
+[![Version](https://img.shields.io/badge/Version-2026.2.18-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.18)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
