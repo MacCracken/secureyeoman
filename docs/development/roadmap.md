@@ -31,19 +31,10 @@
 | 18 | Skills Marketplace & Community | 2026.2.18 | Complete |
 | | **Release 2026.2.18** | **2026-02-18** | **Released** |
 | 19 | Per-Personality Access | 2026.2.19 | Complete |
+| | **Release 2026.2.19** | **2026-02-19** | **Pending** |
 | 20 | SaaS ready | — | Pending |
 | 21 | Onboarding & First Run | — | Pending |
 | 22 | Marketplace Evolution | — | Pending |
-
----
-
-## Phase 19: Per-Personality Access
-
-**Status**: Complete
-
-##### Integration & Skill Access (enforcement)
-- [x] **Integration Access Enforcement** — `selectedIntegrations` per-personality allowlist is now enforced in the inbound message routing path. `MessageRouter.handleInbound()` checks the active personality's `selectedIntegrations` array against `message.integrationId` before routing to the task executor. An empty array means "allow all" (default, fully backward compatible). Mirrors the `selectedServers` MCP enforcement pattern in `chat-routes.ts` — see [ADR 064](../adr/064-skills-mcp-tool-separation.md)
-- [x] **Skills / MCP Tool Separation** — Separate discovered MCP tools from Skills in the Discovered Tools view; surface available Skills in Skills > Installed with a dedicated view keeping the same format; personality filter on the Installed tab — see [ADR 064](../adr/064-skills-mcp-tool-separation.md)
 
 ---
 
