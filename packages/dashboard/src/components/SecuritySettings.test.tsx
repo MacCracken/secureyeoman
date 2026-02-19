@@ -122,7 +122,7 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
-    vi.mocked(api.fetchModelDefault).mockResolvedValue(null);
+    vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: null, model: null });
     vi.mocked(api.fetchModelInfo).mockResolvedValue({ current: { provider: 'anthropic', model: 'claude-opus-4-5', maxTokens: 8192, temperature: 0.7 }, available: {} });
   });
 
