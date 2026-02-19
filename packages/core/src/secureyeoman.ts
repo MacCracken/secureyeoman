@@ -86,6 +86,10 @@ import { QQIntegration } from './integrations/qq/index.js';
 import { DingTalkIntegration } from './integrations/dingtalk/index.js';
 import { LineIntegration } from './integrations/line/index.js';
 import { LinearIntegration } from './integrations/linear/index.js';
+import { AirtableIntegration } from './integrations/airtable/index.js';
+import { TodoistIntegration } from './integrations/todoist/index.js';
+import { SpotifyIntegration } from './integrations/spotify/index.js';
+import { YouTubeIntegration } from './integrations/youtube/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
 import { HeartManager } from './body/heart.js';
 import { ExternalBrainSync } from './brain/external-sync.js';
@@ -421,12 +425,14 @@ export class SecureYeoman {
         await this.aiClient.init();
         this.logger.debug('AI client initialized', { provider: this.config.model.provider });
 
-        // Apply persisted model default if one exists
+        // Apply persisted model default if one exists.
+        // Uses applyModelSwitch() directly because this.initialized is not yet
+        // true at this point — switchModel() would throw ensureInitialized().
         if (this.systemPreferences) {
           const storedProvider = await this.systemPreferences.get('model.provider');
           const storedModel = await this.systemPreferences.get('model.model');
           if (storedProvider && storedModel) {
-            this.switchModel(storedProvider, storedModel);
+            this.applyModelSwitch(storedProvider, storedModel);
             this.modelDefaultSet = true;
             this.logger.debug('Applied persisted model default', {
               provider: storedProvider,
@@ -611,6 +617,10 @@ export class SecureYeoman {
       this.integrationManager.registerPlatform('dingtalk', () => new DingTalkIntegration());
       this.integrationManager.registerPlatform('line', () => new LineIntegration());
       this.integrationManager.registerPlatform('linear', () => new LinearIntegration());
+      this.integrationManager.registerPlatform('airtable', () => new AirtableIntegration());
+      this.integrationManager.registerPlatform('todoist', () => new TodoistIntegration());
+      this.integrationManager.registerPlatform('spotify', () => new SpotifyIntegration());
+      this.integrationManager.registerPlatform('youtube', () => new YouTubeIntegration());
 
       // Wire up external plugin loader (INTEGRATION_PLUGIN_DIR env var)
       const pluginDir = process.env['INTEGRATION_PLUGIN_DIR'];
@@ -1534,7 +1544,14 @@ export class SecureYeoman {
    */
   switchModel(provider: string, model: string): void {
     this.ensureInitialized();
+    this.applyModelSwitch(provider, model);
+  }
 
+  /**
+   * Internal model-switch logic that can be called during initialization
+   * (before this.initialized = true) as well as at runtime.
+   */
+  private applyModelSwitch(provider: string, model: string): void {
     const validProviders = [
       'anthropic',
       'openai',
@@ -1579,7 +1596,7 @@ export class SecureYeoman {
       // Update the in-memory config so getConfig() reflects the change
       this.config = { ...this.config!, model: newModelConfig };
 
-      this.logger?.info('AI model switched at runtime', { provider, model });
+      this.logger?.info('AI model switched', { provider, model });
 
       void this.auditChain?.record({
         event: 'model_switched',

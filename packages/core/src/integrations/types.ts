@@ -108,6 +108,10 @@ export const DEFAULT_RATE_LIMITS: Record<string, PlatformRateLimit> = {
   dingtalk: { maxPerSecond: 20 },
   line: { maxPerSecond: 30 },
   linear: { maxPerSecond: 10 },
+  airtable: { maxPerSecond: 5 },
+  todoist: { maxPerSecond: 10 },
+  spotify: { maxPerSecond: 10 },
+  youtube: { maxPerSecond: 5 },
 };
 
 // ─── Dependencies ────────────────────────────────────────────
