@@ -38,52 +38,6 @@
 
 ---
 
-## Phase 20: SaaS ready
-
-**Status**: Complete
-
-### Bug Fixes
-- [x] **Personal Skills — Edit Broken** — The edit button on skills added to a personality no longer opens the edit form. Restored full edit functionality for personality-scoped skills in the Personal tab. Saving now always creates a user-owned copy (never mutates marketplace/built-in records) and attributes authorship to the user (`source: 'user'`).
-- [x] **Chat showed skills from all personalities** — `composeSoulPrompt()` called `getActiveSkills()` without `personalityId`, so all enabled brain skills appeared in every personality's chat context. Fixed: brain skill query now scoped to `(personality_id = active OR personality_id IS NULL)`. See [ADR 069](../adr/069-skill-personality-scoping-and-deletion-sync.md).
-- [x] **Skill deletion not syncing marketplace.installed** — Deleting a skill via the personality editor left `marketplace.skills.installed = true`, preventing re-install. `soulManager.deleteSkill()` now calls `marketplace.onBrainSkillDeleted()` to reset the flag when the last brain record is removed. `marketplace.uninstall()` also fixed to delete ALL matching brain records (was only deleting the first). See [ADR 069](../adr/069-skill-personality-scoping-and-deletion-sync.md).
-
-### Performance
-- [x] **Memory Footprint Optimization** — PicoClaw studied; baseline already <300 MB (target met). Four targeted improvements shipped: migration fast-path (−300–700 ms, −N DB round-trips), lazy AI usage init (−300–500 ms startup), bounded WebSocket map (cap 100, oldest-idle eviction), PostgreSQL pool default 10 (−50–80 MB). See [ADR 067](../adr/067-performance-startup-memory-optimizations.md).
-- [x] **Fast Boot** — Cold start ~2–3 s (target <10 s met). Migration fast-path + lazy AI init reduce startup by ~600–1200 ms on up-to-date installs. See [ADR 067](../adr/067-performance-startup-memory-optimizations.md).
-
-### Visualization
-- [x] **Layout Algorithms — Dagre** — Dagre hierarchical layout integrated into `WebGLGraph` via `layout="dagre"` prop; delegation tree (`SubAgentsPage`) now uses top-down DAG layout. ELK deferred to Phase 22.
-
-### UX
-- [x] **Personality Editor — Brain Skills Visibility** — Brain section reordered (External Knowledge Base first); collapsible Knowledge and Skills sub-sections added; skills scoped to the personality listed with per-skill Edit buttons; cross-page navigation via router state (`openSkillId`, `initialTab`); empty state with links to Marketplace/Community/Personal; 9 new tests.
-
-### CLI Enhancements
-- [x] **Shell Completions** — Auto-generate shell completions for bash, zsh, fish
-- [x] **Configuration Validation** — `secureyeoman config validate` to check config file before startup
-- [x] **Plugin Management** — `secureyeoman plugin` command for managing extensions and integrations from CLI
-
-### Output Improvements
-- [x] **Rich Output** — Colored output, tables, and progress indicators for long-running operations
-- [x] **JSON Output** — `--json` flag support for all commands for scripting
-
-### Security & Enterprise Access
-- [x] **SSO/SAML** — OIDC integration (Okta, Azure AD, Auth0 and any standards-compliant issuer) via `openid-client` v6. PKCE flow, JIT user provisioning, IDP management API, workspace-IDP binding. See [ADR 071](../adr/071-sso-oidc-implementation.md).
-- [x] **Workspace Management** — Multi-user foundation (`auth.users`), `ensureDefaultWorkspace()` on boot, full member management REST API, workspace update/member CRUD routes. See [ADR 070](../adr/070-workspace-management-ui.md).
-- [x] **RBAC Audit** — Role inventory, permission validation, ~80 missing ROUTE_PERMISSIONS entries added, `connections`→`integrations` rename, mTLS role lookup fix, wildcard auth permissions replaced. See [ADR 068](../adr/068-rbac-audit-phase-22.md).
-
-### Sub-Agent Extensibility + Gateway Prerequisites
-- [x] **`binary` sub-agent type** — Spawn external processes as zero-cost sub-agents (JSON stdin/stdout protocol); gated by `security.allowBinaryAgents`. See [ADR 072](../adr/072-extensible-sub-agent-types.md).
-- [x] **`mcp-bridge` sub-agent type** — Delegate directly to a named MCP tool with Mustache template interpolation; zero token cost. See [ADR 072](../adr/072-extensible-sub-agent-types.md).
-- [x] **MCP tool wiring fix** — `manager.ts` now correctly wires `mcpClient.listTools()` into the LLM sub-agent tools array (was always empty despite the comment).
-- [x] **Migration manifest** — `manifest.ts` statically imports all SQL files; runner replaced `readdirSync(__dirname)` so migrations work inside Bun compiled binaries.
-- [x] **SPA static serving** — `@fastify/static` + `setNotFoundHandler` serves the dashboard SPA from the binary; `--dashboard-dist` CLI flag for custom path.
-
-### Deployment
-- [x] **Single Binary** — Bun compile pipeline (`scripts/build-binary.sh`) produces self-contained executables for Linux x64/arm64 and macOS arm64. `mcp-server` subcommand embedded. Docker image reduced from ~600 MB to ~80 MB. See [ADR 073](../adr/073-single-binary-distribution.md).
-- [x] **Embedded Ready** — Tier 2 `lite` binaries (SQLite, Linux only) have zero external dependencies. `storage.backend: auto` selects SQLite when no `DATABASE_URL` is present. See [ADR 073](../adr/073-single-binary-distribution.md).
-
----
-
 ## Phase 21: Onboarding & First Run
 
 **Status**: Pending
