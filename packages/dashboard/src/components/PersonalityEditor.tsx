@@ -956,6 +956,8 @@ interface BodySectionProps {
   onAllowConnectionsChange: (enabled: boolean) => void;
   selectedServers: string[];
   onSelectedServersChange: (servers: string[]) => void;
+  selectedIntegrations: string[];
+  onSelectedIntegrationsChange: (integrations: string[]) => void;
   enabledCaps: Record<string, boolean>;
   onEnabledCapsChange: (caps: Record<string, boolean>) => void;
   mcpFeatures: {
@@ -1029,6 +1031,8 @@ function BodySection({
   onAllowConnectionsChange,
   selectedServers,
   onSelectedServersChange,
+  selectedIntegrations,
+  onSelectedIntegrationsChange,
   enabledCaps,
   onEnabledCapsChange,
   mcpFeatures,
@@ -1044,6 +1048,13 @@ function BodySection({
     queryFn: () => fetch('/api/v1/mcp/servers').then((r) => r.json()),
   });
   const servers = serversData?.servers ?? [];
+
+  const { data: integrationsData, isLoading: integrationsLoading } = useQuery({
+    queryKey: ['integrations'],
+    queryFn: () => fetch('/api/v1/integrations').then((r) => r.json()),
+  });
+  const integrations: { id: string; displayName: string; platform: string; status: string }[] =
+    integrationsData?.integrations ?? [];
 
   // Global MCP feature config — gates per-personality feature toggles
   const { data: globalMcpConfig } = useQuery({
@@ -1711,6 +1722,61 @@ function BodySection({
         </div>
       </CollapsibleSection>
 
+      {/* Integration Access */}
+      <CollapsibleSection title="Integration Access" defaultOpen={false}>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Select which integrations this personality can access. Leave all unchecked to allow
+            access to every configured integration.
+          </p>
+
+          {integrationsLoading ? (
+            <p className="text-xs text-muted-foreground">Loading integrations...</p>
+          ) : integrations.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No integrations configured. Add integrations in Connections &gt; Integrations.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {integrations.map((integration) => {
+                const isSelected = selectedIntegrations.includes(integration.id);
+                return (
+                  <label
+                    key={integration.id}
+                    className={`flex items-center gap-2 p-2 rounded border cursor-pointer transition-colors ${
+                      isSelected
+                        ? 'bg-success/5 border-success/30'
+                        : 'bg-muted/30 border-border hover:bg-muted/50'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          onSelectedIntegrationsChange([...selectedIntegrations, integration.id]);
+                        } else {
+                          onSelectedIntegrationsChange(
+                            selectedIntegrations.filter((id) => id !== integration.id)
+                          );
+                        }
+                      }}
+                      className="w-3.5 h-3.5 rounded accent-primary"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="text-xs font-medium">{integration.displayName}</span>
+                      <p className="text-[10px] text-muted-foreground truncate">
+                        {integration.platform}
+                      </p>
+                    </div>
+                  </label>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
       <CollapsibleSection title="Resource Creation" defaultOpen={false}>
         <div className="flex items-center justify-between mb-2">
           <h4 className="text-sm font-medium">Resource Creation</h4>
@@ -1907,6 +1973,7 @@ export function PersonalityEditor() {
 
   const [allowConnections, setAllowConnections] = useState(false);
   const [selectedServers, setSelectedServers] = useState<string[]>([]);
+  const [selectedIntegrations, setSelectedIntegrations] = useState<string[]>([]);
   const [enabledCaps, setEnabledCaps] = useState<Record<string, boolean>>({
     vision: false,
     limb_movement: false,
@@ -2072,6 +2139,7 @@ export function PersonalityEditor() {
     });
     setAllowConnections(body.enabled ?? false);
     setSelectedServers(body.selectedServers ?? []);
+    setSelectedIntegrations(body.selectedIntegrations ?? []);
     const caps = body.capabilities ?? [];
     setEnabledCaps({
       vision: caps.includes('vision'),
@@ -2193,6 +2261,7 @@ export function PersonalityEditor() {
         heartEnabled: true,
         creationConfig,
         selectedServers,
+        selectedIntegrations,
         mcpFeatures,
         proactiveConfig,
       },
@@ -2545,6 +2614,8 @@ export function PersonalityEditor() {
             onAllowConnectionsChange={setAllowConnections}
             selectedServers={selectedServers}
             onSelectedServersChange={setSelectedServers}
+            selectedIntegrations={selectedIntegrations}
+            onSelectedIntegrationsChange={setSelectedIntegrations}
             enabledCaps={enabledCaps}
             onEnabledCapsChange={setEnabledCaps}
             mcpFeatures={mcpFeatures}

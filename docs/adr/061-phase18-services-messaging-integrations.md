@@ -82,13 +82,13 @@ packages/core/src/integrations/
 - `packages/shared/src/types/integration.ts` — `qq`, `dingtalk`, `line` added to `PlatformSchema` (linear was pre-existing)
 - `packages/core/src/integrations/types.ts` — rate limits added for all 7 platforms
 - `packages/core/src/secureyeoman.ts` — 7 new `registerPlatform()` calls
-- `packages/dashboard/src/components/ConnectionsPage.tsx` — 7 new `PLATFORM_META` entries; `figma`, `stripe`, `zapier` added to `DEVOPS_PLATFORMS`; `linear` added to `PRODUCTIVITY_PLATFORMS`; `Figma`, `CreditCard`, `Zap`, `Building2`, `LayoutGrid` imported from lucide-react
+- `packages/dashboard/src/components/ConnectionsPage.tsx` — 7 new `PLATFORM_META` entries; `figma`, `zapier` added to `DEVOPS_PLATFORMS`; `stripe`, `linear` added to `PRODUCTIVITY_PLATFORMS` (stripe subsequently moved from DevOps — see ADR 062); `Figma`, `CreditCard`, `Zap`, `Building2`, `LayoutGrid` imported from lucide-react
 - `packages/dashboard/src/components/McpPrebuilts.tsx` — Figma, Stripe, Zapier, Linear added to `PREBUILT_SERVERS`
 
 ### Platform Categorization (Dashboard)
 
-- **DevOps & Services tab**: figma, stripe, zapier (alongside github, gitlab, jira, aws, azure)
-- **DevOps & Services tab (productivity)**: linear (alongside notion, via `PRODUCTIVITY_PLATFORMS`)
+- **DevOps tab**: figma, zapier (alongside github, gitlab, jira, aws, azure) — *note: stripe was initially added here but moved to Productivity in ADR 062*
+- **Productivity tab**: stripe, linear (alongside notion, googlecalendar, via `PRODUCTIVITY_PLATFORMS`) — *see ADR 062*
 - **Messaging tab**: qq, dingtalk, line (catch-all, same as telegram, discord, slack, etc.)
 
 ---

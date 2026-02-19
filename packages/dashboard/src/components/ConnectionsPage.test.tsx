@@ -307,8 +307,9 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['stripe'] });
     renderComponent();
-    const devopsTab = await screen.findByText('DevOps');
-    await user.click(devopsTab);
+    // Stripe is in PRODUCTIVITY_PLATFORMS — navigate to Productivity sub-tab
+    const productivityTab = await screen.findByText('Productivity');
+    await user.click(productivityTab);
     const addBtn = await screen.findByText('Add Integration');
     await user.click(addBtn);
     expect(screen.getByText('Stripe')).toBeInTheDocument();
@@ -381,9 +382,9 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['linear'] });
     renderComponent();
-    // Linear is in PRODUCTIVITY_PLATFORMS — shown under DevOps sub-tab
-    const devopsTab = await screen.findByText('DevOps');
-    await user.click(devopsTab);
+    // Linear is in PRODUCTIVITY_PLATFORMS — navigate to Productivity sub-tab
+    const productivityTab = await screen.findByText('Productivity');
+    await user.click(productivityTab);
     const addBtn = await screen.findByText('Add Integration');
     await user.click(addBtn);
     expect(screen.getByText('Linear')).toBeInTheDocument();
@@ -395,5 +396,40 @@ describe('ConnectionsPage', () => {
     const mcpTab = await screen.findByText('MCP');
     await user.click(mcpTab);
     expect(screen.getByText('Linear')).toBeInTheDocument();
+  });
+
+  // ── Productivity sub-tab ──────────────────────────────────
+
+  it('renders the Productivity sub-tab', async () => {
+    renderComponent();
+    expect(await screen.findByText('Productivity')).toBeInTheDocument();
+  });
+
+  it('does not render a Calendar sub-tab', async () => {
+    renderComponent();
+    await screen.findByText('Messaging'); // wait for render
+    expect(screen.queryByRole('button', { name: /^Calendar$/i })).not.toBeInTheDocument();
+  });
+
+  it('shows Notion in available platforms under Productivity', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['notion'] });
+    renderComponent();
+    const productivityTab = await screen.findByText('Productivity');
+    await user.click(productivityTab);
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('Notion')).toBeInTheDocument();
+  });
+
+  it('shows Google Calendar in available platforms under Productivity', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['googlecalendar'] });
+    renderComponent();
+    const productivityTab = await screen.findByText('Productivity');
+    await user.click(productivityTab);
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('Google Calendar')).toBeInTheDocument();
   });
 });
