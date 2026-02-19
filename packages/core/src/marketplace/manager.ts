@@ -87,8 +87,9 @@ export class MarketplaceManager {
         try {
           const brainSource = skill.source === 'community' ? 'community' : 'marketplace';
           const brainSkills = await this.brainManager.listSkills({ source: brainSource });
-          const match = brainSkills.find((s) => s.name === skill.name);
-          if (match) {
+          // Delete ALL brain skill records for this marketplace skill (global + per-personality)
+          const matches = brainSkills.filter((s) => s.name === skill.name);
+          for (const match of matches) {
             await this.brainManager.deleteSkill(match.id);
             this.logger.info('Brain skill removed (marketplace uninstall)', {
               id,
@@ -104,6 +105,41 @@ export class MarketplaceManager {
       }
     }
     return ok;
+  }
+
+  /**
+   * Called when a brain skill is deleted directly (e.g. via the personality editor).
+   * Resets marketplace.skills.installed if no brain skills remain for this skill.
+   */
+  async onBrainSkillDeleted(skillName: string, brainSource: string): Promise<void> {
+    if (brainSource !== 'marketplace' && brainSource !== 'community') return;
+    try {
+      // If any brain skills still exist for this name+source, stay installed
+      if (this.brainManager) {
+        const remaining = (await this.brainManager.listSkills({ source: brainSource })).filter(
+          (s) => s.name === skillName
+        );
+        if (remaining.length > 0) return;
+      }
+      // Find the marketplace record and reset installed flag
+      let mpSkill =
+        brainSource === 'community'
+          ? await this.storage.findByNameAndSource(skillName, 'community')
+          : (await this.storage.findByNameAndSource(skillName, 'published')) ??
+            (await this.storage.findByNameAndSource(skillName, 'builtin'));
+      if (mpSkill?.installed) {
+        await this.storage.setInstalled(mpSkill.id, false);
+        this.logger.info('Marketplace skill marked uninstalled (brain skill deleted)', {
+          name: skillName,
+          marketplaceId: mpSkill.id,
+        });
+      }
+    } catch (err) {
+      this.logger.error('Failed to sync marketplace installed state after brain skill deletion', {
+        skillName,
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
+    }
   }
 
   async publish(data: Partial<MarketplaceSkill>): Promise<MarketplaceSkill> {

@@ -498,6 +498,10 @@ export class BrainStorage extends PgBaseStorage {
         params.push(filter!.personalityId);
       }
     }
+    if (filter?.forPersonalityId) {
+      sql += ` AND (personality_id = $${idx++} OR personality_id IS NULL)`;
+      params.push(filter.forPersonalityId);
+    }
 
     sql += ' ORDER BY usage_count DESC, created_at DESC';
 

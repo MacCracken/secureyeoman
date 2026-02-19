@@ -15,6 +15,7 @@
 import { composeArchetypesPreamble } from './archetypes.js';
 import type { SoulStorage } from './storage.js';
 import type { BrainManager } from '../brain/manager.js';
+import type { MarketplaceManager } from '../marketplace/manager.js';
 import type { SpiritManager } from '../spirit/manager.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 import { HeartManager } from '../body/heart.js';
@@ -42,6 +43,11 @@ export class SoulManager {
   private readonly deps: SoulManagerDeps;
   private heartbeat: HeartbeatManager | null = null;
   private heartManager: HeartManager | null = null;
+  private marketplace: MarketplaceManager | null = null;
+
+  setMarketplaceManager(manager: MarketplaceManager): void {
+    this.marketplace = manager;
+  }
 
   constructor(
     storage: SoulStorage,
@@ -195,7 +201,12 @@ export class SoulManager {
 
   async deleteSkill(id: string): Promise<void> {
     if (this.brain) {
+      // Capture skill details before deletion so we can sync marketplace state
+      const skill = await this.brain.getSkill(id);
       await this.brain.deleteSkill(id);
+      if (skill && this.marketplace) {
+        await this.marketplace.onBrainSkillDeleted(skill.name, skill.source);
+      }
       return;
     }
     await this.storage.deleteSkill(id);

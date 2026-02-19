@@ -750,6 +750,10 @@ export class SecureYeoman {
           process.env['COMMUNITY_REPO_PATH'] ?? './community-skills',
       });
       await this.marketplaceManager.seedBuiltinSkills();
+      // Wire marketplace into soul so skill deletion keeps installed state in sync
+      if (this.soulManager) {
+        this.soulManager.setMarketplaceManager(this.marketplaceManager);
+      }
       this.logger.debug('Marketplace manager initialized');
 
       // Step 6.10: Initialize conversation storage

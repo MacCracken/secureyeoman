@@ -45,4 +45,8 @@ export interface SkillFilter {
   status?: string;
   source?: string;
   enabled?: boolean;
+  /** Exact personality filter (use with personalityId in brain/types SkillFilter) */
+  personalityId?: string | null;
+  /** Return skills for this personality AND global skills (personality_id IS NULL) */
+  forPersonalityId?: string;
 }
