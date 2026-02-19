@@ -121,7 +121,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 20 (partial): Skill Deletion & Marketplace Sync (2026-02-19) — [ADR 069](docs/adr/069-skill-personality-scoping-and-deletion-sync.md)
+## Phase 20 (complete): Skill Deletion & Marketplace Sync (2026-02-19) — [ADR 069](docs/adr/069-skill-personality-scoping-and-deletion-sync.md)
 
 ### Bug Fix
 
@@ -148,7 +148,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 20 (partial): Personality-Scoped Skill Filtering (2026-02-19) — [ADR 069](docs/adr/069-skill-personality-scoping-and-deletion-sync.md)
+## Phase 20 (complete): Personality-Scoped Skill Filtering (2026-02-19) — [ADR 069](docs/adr/069-skill-personality-scoping-and-deletion-sync.md)
 
 ### Bug Fix
 
@@ -163,7 +163,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 22 (partial): Security — RBAC Audit (2026-02-19) — [ADR 068](docs/adr/068-rbac-audit-phase-22.md)
+## Phase 20 (complete): Security — RBAC Audit (2026-02-19) — [ADR 068](docs/adr/068-rbac-audit-phase-22.md)
 
 ### Security
 
@@ -189,7 +189,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 20 (partial): Bug Fix — Costs Page Blanks After Restart (2026-02-19)
+## Phase 20 (complete): Bug Fix — Costs Page Blanks After Restart (2026-02-19)
 
 ### Bug Fix
 
@@ -202,7 +202,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 20 (partial): Startup & Memory Performance Optimizations (2026-02-19) — [ADR 067](docs/adr/067-performance-startup-memory-optimizations.md)
+## Phase 20 (complete): Startup & Memory Performance Optimizations (2026-02-19) — [ADR 067](docs/adr/067-performance-startup-memory-optimizations.md)
 
 ### Performance
 
@@ -222,7 +222,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 20 (partial): Personality Editor — Brain Skills Visibility (2026-02-19) — [ADR 066](docs/adr/066-personality-brain-skills-visibility.md)
+## Phase 20 (complete): Personality Editor — Brain Skills Visibility (2026-02-19) — [ADR 066](docs/adr/066-personality-brain-skills-visibility.md)
 
 ### UX
 
@@ -243,7 +243,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 20 (partial): Dagre Layout Algorithm (2026-02-19) — [ADR 058](docs/adr/058-webgl-graph-rendering.md)
+## Phase 20 (complete): Dagre Layout Algorithm (2026-02-19) — [ADR 058](docs/adr/058-webgl-graph-rendering.md)
 
 ### Visualization
 
@@ -263,7 +263,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 20 (partial): Personal Skills — Edit Bug Fix (2026-02-19)
+## Phase 20 (complete): Personal Skills — Edit Bug Fix (2026-02-19)
 
 ### Bug Fixes
 
@@ -280,7 +280,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 20 (partial): CLI Output Improvements (2026-02-19) — [ADR 065](docs/adr/065-cli-enhancements-completions-validate-plugin.md)
+## Phase 20 (complete): CLI Output Improvements (2026-02-19) — [ADR 065](docs/adr/065-cli-enhancements-completions-validate-plugin.md)
 
 ### Rich Output — Color & Progress
 - **`colorContext(stream)`** added to `cli/utils.ts` — returns `{ green, red, yellow, dim, bold, cyan }` helpers bound to the given output stream. Colors are stripped automatically on non-TTY streams and when `NO_COLOR` is set (respects the [NO_COLOR standard](https://no-color.org/)).
@@ -318,7 +318,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 20 (partial): CLI Enhancements (2026-02-19) — [ADR 065](docs/adr/065-cli-enhancements-completions-validate-plugin.md)
+## Phase 20 (complete): CLI Enhancements (2026-02-19) — [ADR 065](docs/adr/065-cli-enhancements-completions-validate-plugin.md)
 
 ### Shell Completions
 - **New `completion` command** — `secureyeoman completion <bash|zsh|fish>` prints a shell completion script to stdout
