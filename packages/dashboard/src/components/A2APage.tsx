@@ -16,6 +16,8 @@ import {
   ChevronRight,
   X,
 } from 'lucide-react';
+import { WebGLGraph } from './WebGLGraph';
+import type { WebGLGraphNode, WebGLGraphEdge } from './WebGLGraph';
 import {
   fetchA2APeers,
   addA2APeer,
@@ -29,7 +31,7 @@ import {
   fetchSecurityPolicy,
 } from '../api/client';
 
-type TabId = 'peers' | 'capabilities' | 'messages';
+type TabId = 'peers' | 'capabilities' | 'messages' | 'network';
 
 const TRUST_COLORS: Record<string, string> = {
   untrusted: 'bg-red-500/10 text-red-500 border-red-500/20',
@@ -127,6 +129,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
     { id: 'peers', label: 'Peers' },
     { id: 'capabilities', label: 'Capabilities' },
     { id: 'messages', label: 'Messages' },
+    { id: 'network', label: 'Network' },
   ];
 
   return (
@@ -249,6 +252,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
       {activeTab === 'peers' && <PeersTab />}
       {activeTab === 'capabilities' && <CapabilitiesTab />}
       {activeTab === 'messages' && <MessagesTab />}
+      {activeTab === 'network' && <NetworkTab peers={peers} />}
     </div>
   );
 }
@@ -699,6 +703,82 @@ function MessagesTab() {
             </div>
           );
         })}
+      </div>
+    </div>
+  );
+}
+
+// ── Network Tab ───────────────────────────────────────────────────
+
+const PEER_TRUST_COLOR: Record<string, string> = {
+  trusted: '#10b981',
+  verified: '#f59e0b',
+  untrusted: '#ef4444',
+};
+
+interface PeerEntry {
+  id: string;
+  name: string;
+  trustLevel: string;
+  status: string;
+}
+
+function NetworkTab({ peers }: { peers: PeerEntry[] }) {
+  if (peers.length === 0) {
+    return (
+      <div className="card p-8 text-center">
+        <Network className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
+        <p className="text-muted-foreground text-sm">No peers to visualize</p>
+        <p className="text-muted-foreground text-xs mt-1">
+          Add peers in the Peers tab to see the network topology.
+        </p>
+      </div>
+    );
+  }
+
+  const graphNodes: WebGLGraphNode[] = [
+    { id: '__self__', label: 'Local Agent', color: '#6366f1', size: 12 },
+    ...peers.map((p: PeerEntry) => ({
+      id: p.id,
+      label: p.name || p.id.slice(0, 10),
+      color: PEER_TRUST_COLOR[p.trustLevel] ?? '#888',
+      size: p.status === 'online' ? 8 : 5,
+    })),
+  ];
+
+  const graphEdges: WebGLGraphEdge[] = peers.map((p: PeerEntry) => ({
+    source: '__self__',
+    target: p.id,
+    color: p.status === 'online' ? '#10b981' : '#6b7280',
+  }));
+
+  return (
+    <div className="space-y-4">
+      <WebGLGraph nodes={graphNodes} edges={graphEdges} height={480} />
+      {/* Trust-level color legend */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground px-1">
+        <span className="font-medium">Trust level:</span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#10b981' }} />
+          Trusted
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#f59e0b' }} />
+          Verified
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#ef4444' }} />
+          Untrusted
+        </span>
+        <span className="ml-4 font-medium">Edge color:</span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#10b981' }} />
+          Online
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#6b7280' }} />
+          Offline
+        </span>
       </div>
     </div>
   );

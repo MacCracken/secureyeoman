@@ -15,6 +15,10 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "@react-sigma/core": "^3.4.0",
+    "graphology": "^0.25.4",
+    "graphology-layout-forceatlas2": "^0.10.1",
+    "sigma": "^2.4.0",
     "@secureyeoman/shared": "*",
     "@tanstack/react-query": "^5.56.2",
     "clsx": "^2.1.1",

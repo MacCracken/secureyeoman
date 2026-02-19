@@ -18,7 +18,11 @@ import {
   GitBranch,
   X,
   Layers,
+  List,
+  Share2,
 } from 'lucide-react';
+import { WebGLGraph } from './WebGLGraph';
+import type { WebGLGraphNode, WebGLGraphEdge } from './WebGLGraph';
 import { SwarmsPage } from './SwarmsPage';
 import {
   fetchAgentProfiles,
@@ -427,8 +431,18 @@ function HistoryTab() {
   );
 }
 
+const DELEGATION_STATUS_COLOR: Record<string, string> = {
+  running: '#f59e0b',
+  completed: '#10b981',
+  failed: '#ef4444',
+  timeout: '#ef4444',
+  cancelled: '#6b7280',
+  pending: '#818cf8',
+};
+
 function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
   const [showTree, setShowTree] = useState(false);
+  const [historyView, setHistoryView] = useState<'list' | 'graph'>('list');
   const { data: messagesData } = useQuery({
     queryKey: ['delegationMessages', delegation.id],
     queryFn: () => fetchDelegationMessages(delegation.id),
@@ -442,6 +456,17 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
 
   const messages = messagesData?.messages ?? [];
   const tree = treeData?.tree ?? [];
+
+  const graphNodes: WebGLGraphNode[] = tree.map((d) => ({
+    id: d.id,
+    label: d.task.slice(0, 30) + (d.task.length > 30 ? '…' : ''),
+    color: DELEGATION_STATUS_COLOR[d.status] ?? '#888',
+    size: d.depth === 0 ? 10 : 6,
+  }));
+
+  const graphEdges: WebGLGraphEdge[] = tree
+    .filter((d) => d.parentDelegationId)
+    .map((d) => ({ source: d.parentDelegationId!, target: d.id, color: '#555' }));
 
   return (
     <div className="border-t px-4 py-3 space-y-3">
@@ -461,19 +486,52 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
       )}
 
       {/* Execution Tree Toggle */}
-      <button
-        onClick={() => { setShowTree(!showTree); }}
-        className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
-      >
-        <GitBranch className="w-3.5 h-3.5" />
-        {showTree ? 'Hide Execution Tree' : 'Show Execution Tree'}
-      </button>
+      <div className="flex items-center justify-between gap-2">
+        <button
+          onClick={() => { setShowTree(!showTree); }}
+          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
+        >
+          <GitBranch className="w-3.5 h-3.5" />
+          {showTree ? 'Hide Execution Tree' : 'Show Execution Tree'}
+        </button>
+        {showTree && tree.length > 0 && (
+          <div className="flex items-center gap-0.5">
+            <button
+              onClick={() => { setHistoryView('list'); }}
+              className={`p-1 rounded transition-colors ${historyView === 'list' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              title="List view"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => { setHistoryView('graph'); }}
+              className={`p-1 rounded transition-colors ${historyView === 'graph' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
+              title="Graph view"
+            >
+              <Share2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
 
       {showTree && (
         <div className="p-3 rounded-lg bg-muted/20 border border-border/50">
           <p className="text-xs font-medium text-muted-foreground mb-2">Execution Tree</p>
           {tree.length === 0 ? (
             <p className="text-xs text-muted-foreground">No sub-delegations found.</p>
+          ) : historyView === 'graph' ? (
+            <WebGLGraph
+              nodes={graphNodes}
+              edges={graphEdges}
+              height={480}
+              onNodeClick={(id) => {
+                const node = tree.find((d) => d.id === id);
+                if (node) {
+                  // Highlight in console for now; future: scroll-to or modal
+                  console.debug('Graph node clicked:', node.task);
+                }
+              }}
+            />
           ) : (
             <ExecutionTree nodes={tree} rootId={delegation.id} />
           )}
