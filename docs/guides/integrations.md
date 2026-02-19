@@ -6,6 +6,7 @@ SecureYeoman supports multiple platform integrations for receiving and respondin
 
 | Platform | Status | Dashboard tab | Features |
 |----------|--------|---------------|----------|
+| Airtable | Stable | Productivity | Personal access token, base/record management |
 | CLI      | Stable | Messaging | Built-in REST API / command-line interface |
 | Discord  | Stable | Messaging | Slash commands, embeds, guild messages |
 | Email (IMAP/SMTP) | Stable | Email | Any IMAP/SMTP provider — ProtonMail Bridge, Outlook, Yahoo, Fastmail |
@@ -19,9 +20,12 @@ SecureYeoman supports multiple platform integrations for receiving and respondin
 | Linear   | Stable | Productivity | Webhook events, issue creation via GraphQL |
 | Notion   | Stable | Productivity | API token, database polling, page creation |
 | Slack    | Stable | Messaging | Socket mode, slash commands, mentions |
+| Spotify  | Stable | Productivity | Playback control, playlist access, OAuth2 |
 | Stripe   | Stable | Productivity | Payment/invoice webhook events, HMAC-SHA256 verification |
 | Telegram | Stable | Messaging | Long-polling, commands, text messages |
+| Todoist  | Stable | Productivity | Task and project management via REST API |
 | Webhook  | Stable | Messaging | Generic inbound/outbound HTTP webhooks |
+| YouTube  | Stable | Productivity | Video search, channel data, playlist management |
 | Zapier   | Stable | DevOps | Zap trigger webhooks, bidirectional catch-hook |
 
 ### Dashboard tab organisation
@@ -32,7 +36,7 @@ Integrations are grouped into sub-tabs in the Connections view:
 |-----|-----------|
 | **Messaging** | Telegram, Discord, Slack, WhatsApp, Signal, Teams, Google Chat, iMessage, QQ, DingTalk, Line, CLI, Webhook |
 | **Email** | Gmail, Email (IMAP/SMTP) |
-| **Productivity** | Notion, Stripe, Linear, Google Calendar |
+| **Productivity** | Notion, Stripe, Linear, Google Calendar, Airtable, Todoist, Spotify, YouTube |
 | **DevOps** | GitHub, GitLab, Jira, AWS, Azure, Figma, Zapier |
 | **OAuth** | Google OAuth, GitHub OAuth |
 

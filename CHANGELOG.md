@@ -4,6 +4,23 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Dashboard: Productivity Tab — Airtable, Todoist, Spotify, YouTube (2026-02-18)
+
+Four new platform options added to the Connections → Integrations → **Productivity** tab. All four platforms were already reserved in `PlatformSchema`; this release adds the dashboard UI metadata (`PLATFORM_META` entries) and surfaces them in the Productivity tab.
+
+- **Airtable** — personal access token + optional Base ID; record management and view filtering
+- **Todoist** — API token; task and project management
+- **Spotify** — Client ID + Client Secret + OAuth2 refresh token; playback control and playlist access
+- **YouTube** — YouTube Data API v3 key; video search, channel data, playlist management
+
+### Files changed
+- **`packages/dashboard/src/components/ConnectionsPage.tsx`** — `Database`, `ListTodo`, `Music2`, `PlayCircle` imported from lucide-react; `airtable`, `todoist`, `spotify`, `youtube` `PLATFORM_META` entries added; all four added to `PRODUCTIVITY_PLATFORMS`
+- **`packages/dashboard/src/components/ConnectionsPage.test.tsx`** — 4 new platform visibility tests under the Productivity sub-tab
+- **`docs/guides/integrations.md`** — 4 platforms added to the supported platform table and the tab organisation table
+- **`docs/development/roadmap.md`** — Airtable, Todoist, Spotify, YouTube marked `[x]`; Spotify and YouTube moved from Services & Cloud into Productivity Integrations section
+
+---
+
 ## Dashboard: Integration Access Control & Branding Fix (2026-02-18)
 
 ### Connections — Email tab

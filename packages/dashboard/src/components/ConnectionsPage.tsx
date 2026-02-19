@@ -40,6 +40,10 @@ import {
   BookOpen,
   GitMerge,
   LayoutGrid,
+  Database,
+  ListTodo,
+  Music2,
+  PlayCircle,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -848,6 +852,112 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'Select the event types: Issues and Comments',
     ],
   },
+  airtable: {
+    name: 'Airtable',
+    description: 'Connect to Airtable bases for record management and view filtering',
+    icon: <Database className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'apiKey',
+        label: 'Personal Access Token',
+        type: 'password' as const,
+        placeholder: 'pat...',
+        helpText: 'Personal access token from airtable.com/create/tokens',
+      },
+      {
+        key: 'baseId',
+        label: 'Base ID',
+        type: 'text' as const,
+        placeholder: 'appXXXXXXXXXXXXXX',
+        helpText: 'Airtable Base ID from the URL (optional — scopes access to one base)',
+      },
+    ],
+    setupSteps: [
+      'Go to airtable.com/create/tokens',
+      'Create a personal access token with data.records:read and data.records:write scopes',
+      'Copy the token and paste it above',
+      'Optionally add your Base ID to restrict access to a single base',
+    ],
+  },
+  todoist: {
+    name: 'Todoist',
+    description: 'Connect to Todoist for task and project management',
+    icon: <ListTodo className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'apiToken',
+        label: 'API Token',
+        type: 'password' as const,
+        placeholder: 'API token',
+        helpText: 'Found in Todoist Settings > Integrations > Developer',
+      },
+    ],
+    setupSteps: [
+      'Open Todoist and go to Settings > Integrations > Developer',
+      'Copy your API token',
+      'Paste the token above and connect',
+    ],
+  },
+  spotify: {
+    name: 'Spotify',
+    description: 'Control Spotify playback and access playlist and track data',
+    icon: <Music2 className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'clientId',
+        label: 'Client ID',
+        type: 'text' as const,
+        placeholder: 'Spotify Client ID',
+        helpText: 'From developer.spotify.com/dashboard',
+      },
+      {
+        key: 'clientSecret',
+        label: 'Client Secret',
+        type: 'password' as const,
+        placeholder: 'Spotify Client Secret',
+        helpText: 'From developer.spotify.com/dashboard',
+      },
+      {
+        key: 'refreshToken',
+        label: 'Refresh Token',
+        type: 'password' as const,
+        placeholder: 'Spotify OAuth2 refresh token',
+        helpText: 'Refresh token with user-read-playback-state and playlist scopes',
+      },
+    ],
+    setupSteps: [
+      'Go to developer.spotify.com/dashboard and create an app',
+      'Copy the Client ID and Client Secret',
+      'Run the OAuth2 Authorization Code flow to obtain a refresh token',
+      'Grant scopes: user-read-playback-state, user-modify-playback-state, playlist-read-private',
+      'Paste all three credentials above',
+    ],
+  },
+  youtube: {
+    name: 'YouTube',
+    description: 'Search videos, access channel data, and manage playlists via YouTube Data API',
+    icon: <PlayCircle className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        type: 'password' as const,
+        placeholder: 'AIza...',
+        helpText: 'YouTube Data API v3 key from console.cloud.google.com',
+      },
+    ],
+    setupSteps: [
+      'Go to console.cloud.google.com and create or select a project',
+      'Enable the YouTube Data API v3',
+      'Create an API key under APIs & Services > Credentials',
+      'Optionally restrict the key to the YouTube Data API v3',
+      'Paste the API key above',
+    ],
+  },
 };
 
 type TabType = 'integrations' | 'mcp';
@@ -856,7 +966,16 @@ type IntegrationSubTab = 'messaging' | 'email' | 'productivity' | 'devops' | 'oa
 // Platform categorization for tab filtering
 const DEVOPS_PLATFORMS = new Set(['github', 'gitlab', 'jira', 'aws', 'azure', 'figma', 'zapier']);
 const EMAIL_PLATFORMS = new Set(['gmail', 'email']);
-const PRODUCTIVITY_PLATFORMS = new Set(['notion', 'stripe', 'linear', 'googlecalendar']);
+const PRODUCTIVITY_PLATFORMS = new Set([
+  'notion',
+  'stripe',
+  'linear',
+  'googlecalendar',
+  'airtable',
+  'todoist',
+  'spotify',
+  'youtube',
+]);
 // Messaging = everything not in the above sets
 
 const STATUS_CONFIG: Record<
@@ -1283,7 +1402,6 @@ export function ConnectionsPage() {
               integrations={integrations.filter(
                 (i) =>
                   !DEVOPS_PLATFORMS.has(i.platform) &&
-                  !CALENDAR_PLATFORMS.has(i.platform) &&
                   !EMAIL_PLATFORMS.has(i.platform) &&
                   !PRODUCTIVITY_PLATFORMS.has(i.platform)
               )}
