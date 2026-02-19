@@ -4,6 +4,18 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 17: WebGL Graph Rendering — [ADR 058](docs/adr/058-webgl-graph-rendering.md)
+
+sigma.js + graphology + ForceAtlas2 layout; reusable `WebGLGraph` component; applied to delegation trees and A2A peer network topology.
+
+- **`packages/dashboard/package.json`** — Added `graphology ^0.25.4`, `sigma ^2.4.0`, `@react-sigma/core ^3.5.0`, `graphology-layout-forceatlas2 ^0.10.1`
+- **`packages/dashboard/src/components/WebGLGraph.tsx`** — New reusable WebGL graph component: WebGL detection with graceful fallback, `SigmaContainer` + `GraphLoader` inner component pattern, ForceAtlas2 auto-layout (100 iterations), `onNodeClick` event wiring
+- **`packages/dashboard/src/components/WebGLGraph.test.tsx`** — 7 tests: WebGL available/unavailable, node/edge count, click event, custom height, empty graph
+- **`packages/dashboard/src/components/SubAgentsPage.tsx`** — Delegation detail "Show Execution Tree" section gains `List` / `Share2` view toggle; graph mode renders colored nodes (status colors) with delegation tree edges
+- **`packages/dashboard/src/components/A2APage.tsx`** — New 4th "Network" tab: peer topology graph with trust-level node colors and online/offline edge colors; trust-level and edge-color legend; empty state when no peers
+
+---
+
 ## Phase 17: Agent Swarms — Complete (2026.2.18)
 
 ### Swarms Security Policy & Per-Personality Sub-Agent Settings — [ADR 057](docs/adr/057-swarms-policy-and-per-personality-subagent-settings.md)

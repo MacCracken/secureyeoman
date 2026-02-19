@@ -44,7 +44,7 @@
 - [x] **Swarms Security Policy** — Global `allowSwarms` toggle in security policy; Swarms tab visibility gated by policy; Swarms tab moved to second position in Sub-Agents view
 
 ### Visualization
-- [ ] **WebGL Graph Rendering** — Investigate and basic implementation for large graph visualization
+- [x] **WebGL Graph Rendering** — Investigate and basic implementation for large graph visualization
 - [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
 
 ### Personality Configuration
