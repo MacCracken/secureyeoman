@@ -1,8 +1,93 @@
 /**
- * CLI Utilities — Flag parsing, formatting, and HTTP helpers.
+ * CLI Utilities — Flag parsing, formatting, color output, and HTTP helpers.
  */
 
 import { randomBytes } from 'node:crypto';
+
+// ─── ANSI Color Support ──────────────────────────────────────────────────────
+
+const ANSI_RESET = '\x1b[0m';
+const ANSI_BOLD = '\x1b[1m';
+const ANSI_DIM = '\x1b[2m';
+const ANSI_RED = '\x1b[31m';
+const ANSI_GREEN = '\x1b[32m';
+const ANSI_YELLOW = '\x1b[33m';
+const ANSI_CYAN = '\x1b[36m';
+
+/** Returns true when the stream supports ANSI colors and NO_COLOR is unset. */
+function isTTYStream(stream: NodeJS.WritableStream): boolean {
+  return !process.env['NO_COLOR'] && !!(stream as NodeJS.WriteStream).isTTY;
+}
+
+/**
+ * Returns color helper functions bound to the given output stream.
+ * All helpers are no-ops (return plain text) when the stream is not a TTY
+ * or when the `NO_COLOR` environment variable is set.
+ */
+export function colorContext(stream: NodeJS.WritableStream) {
+  const enabled = isTTYStream(stream);
+  const wrap = (code: string) => (text: string) =>
+    enabled ? `${code}${text}${ANSI_RESET}` : text;
+  return {
+    green: wrap(ANSI_GREEN),
+    red: wrap(ANSI_RED),
+    yellow: wrap(ANSI_YELLOW),
+    dim: wrap(ANSI_DIM),
+    bold: wrap(ANSI_BOLD),
+    cyan: wrap(ANSI_CYAN),
+  };
+}
+
+// ─── Progress Spinner ────────────────────────────────────────────────────────
+
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+
+/**
+ * Minimal TTY spinner for long-running CLI operations.
+ *
+ * On non-TTY streams the spinner degrades gracefully: `start()` is silent
+ * and `stop()` prints a single summary line. This means pipes and CI logs
+ * never receive control characters.
+ */
+export class Spinner {
+  private frame = 0;
+  private timer: ReturnType<typeof setInterval> | undefined;
+  private readonly stream: NodeJS.WritableStream;
+  private readonly tty: boolean;
+  private running = false;
+
+  constructor(stream: NodeJS.WritableStream) {
+    this.stream = stream;
+    this.tty = isTTYStream(stream);
+  }
+
+  start(message: string): void {
+    if (!this.tty) return; // non-TTY: stay silent until stop()
+    this.running = true;
+    this.frame = 0;
+    this.stream.write(`  ${SPINNER_FRAMES[0]!} ${message}`);
+    this.timer = setInterval(() => {
+      this.frame = (this.frame + 1) % SPINNER_FRAMES.length;
+      this.stream.write(`\r  ${SPINNER_FRAMES[this.frame]!} ${message}`);
+    }, 80);
+  }
+
+  stop(finalMessage: string, success = true): void {
+    if (this.timer) {
+      clearInterval(this.timer);
+      this.timer = undefined;
+    }
+    const mark = success ? '✓' : '✗';
+    if (this.tty && this.running) {
+      const color = success ? ANSI_GREEN : ANSI_RED;
+      this.stream.write(`\r  ${color}${mark}${ANSI_RESET} ${finalMessage}\n`);
+    } else {
+      // non-TTY or spinner was never started on TTY
+      this.stream.write(`  ${mark} ${finalMessage}\n`);
+    }
+    this.running = false;
+  }
+}
 
 /** Extract a --flag value pair from argv, returning value and remaining args. */
 export function extractFlag(

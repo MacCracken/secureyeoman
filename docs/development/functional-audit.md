@@ -102,7 +102,7 @@
 |---------|--------------|----------|------------|----------|
 | **Sub-Agents** | ✅ With budget/depth | ✅ Workspaces | ✅ Hierarchical | ✅ Spawn |
 | **A2A Protocol** | ✅ | ❌ | ❌ | ❌ |
-| **Agent Swarms** | ⚠️ Planned (Phase 17) | ❌ | ✅ | ❌ |
+| **Agent Swarms** | ✅ Complete (Phase 17) | ❌ | ✅ | ❌ |
 | **Delegation Controls** | ✅ | ❌ | ❌ | ❌ |
 
 ### 7. Dashboard & UX
@@ -114,7 +114,7 @@
 | **Voice (STT/TTS)** | ✅ | ✅ | ❌ |
 | **Image Generation** | ✅ DALL-E | ✅ | ❌ |
 | **Mobile Support** | ❌ | ✅ (via messaging) | ❌ |
-| **Storybook** | ⚠️ Planned (Phase 16) | ❌ | ❌ |
+| **Storybook** | ✅ Complete (Phase 16) | ❌ | ❌ |
 
 ### 8. Enterprise Features
 
@@ -122,9 +122,9 @@
 |---------|--------------|----------|------------|----------|
 | **Kubernetes** | ✅ Helm charts | ❌ | ❌ | ❌ |
 | **Prometheus** | ✅ Metrics | ❌ | ❌ | ❌ |
-| **Workspace/Team** | ⚠️ Planned (Phase 16) | ❌ | ✅ | ❌ |
-| **SSO/SAML** | ⚠️ Planned (Phase 17) | ❌ | ✅ (some) | ❌ |
-| **Onboarding** | ⚠️ Planned (Phase 19) | ❌ | ✅ | ✅ (onboard CLI) |
+| **Workspace/Team** | ⚠️ Planned (Phase 20) | ❌ | ✅ | ❌ |
+| **SSO/SAML** | ⚠️ Planned (Phase 20) | ❌ | ✅ (some) | ❌ |
+| **Onboarding** | ⚠️ Planned (Phase 21) | ❌ | ✅ | ✅ (onboard CLI) |
 | **Single Binary** | ❌ | ❌ | ❌ | ✅ |
 | **Embedded Deployment** | ❌ | ❌ | ❌ | ✅ ($10 hardware) |
 
@@ -145,7 +145,7 @@
 10. **Usage Tracking** - PostgreSQL-backed with persistence
 11. **OAuth2 First-Class** - Google services with automatic token refresh
 12. **Email (SMTP)** - IMAP receive + SMTP send with provider presets
-13. **CLI Improvements** - Interactive init, shell completions, rich output (Phase 18)
+13. **CLI Improvements** - Interactive init, shell completions, rich output, plugin management (Phase 20, complete)
 
 ---
 
@@ -189,4 +189,4 @@
 
 ---
 
-*Generated: 2026-02-18 — Updated for Phases 15-19 roadmap — Added PicoClaw comparison*
+*Generated: 2026-02-19 — Updated for Phases 15-20 roadmap — Added PicoClaw comparison*

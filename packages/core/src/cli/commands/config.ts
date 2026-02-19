@@ -7,7 +7,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag } from '../utils.js';
+import { extractFlag, extractBoolFlag, colorContext } from '../utils.js';
 import { loadConfig, validateSecrets } from '../../config/loader.js';
 
 const USAGE = `
@@ -113,6 +113,7 @@ Options:
   argv = configPathResult.rest;
   const jsonResult = extractBoolFlag(argv, 'json');
 
+  const c = colorContext(ctx.stdout);
   const checks: { name: string; passed: boolean; error?: string }[] = [];
   let config: ReturnType<typeof loadConfig> | undefined;
 
@@ -161,19 +162,19 @@ Options:
   ctx.stdout.write('─'.repeat(40) + '\n\n');
 
   for (const check of checks) {
-    const mark = check.passed ? '✓' : '✗';
+    const mark = check.passed ? c.green('✓') : c.red('✗');
     const label = check.name.replace(/_/g, ' ');
     ctx.stdout.write(`  ${mark}  ${label}\n`);
     if (!check.passed && check.error) {
-      ctx.stdout.write(`       ${check.error}\n`);
+      ctx.stdout.write(`       ${c.dim(check.error)}\n`);
     }
   }
 
   ctx.stdout.write('\n');
   if (allPassed) {
-    ctx.stdout.write('Result: PASS — ready to start\n\n');
+    ctx.stdout.write(c.green('Result: PASS') + ' — ready to start\n\n');
   } else {
-    ctx.stdout.write('Result: FAIL — fix the issues above before starting\n\n');
+    ctx.stdout.write(c.red('Result: FAIL') + ' — fix the issues above before starting\n\n');
   }
 
   return allPassed ? 0 : 1;

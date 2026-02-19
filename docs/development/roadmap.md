@@ -64,8 +64,8 @@
 - [x] **Plugin Management** — `secureyeoman plugin` command for managing extensions and integrations from CLI
 
 ### Output Improvements
-- [ ] **Rich Output** — Colored output, tables, and progress indicators for long-running operations
-- [ ] **JSON Output** — `--json` flag support for all commands for scripting
+- [x] **Rich Output** — Colored output, tables, and progress indicators for long-running operations
+- [x] **JSON Output** — `--json` flag support for all commands for scripting
 
 ### Performance
 - [ ] **Memory Footprint Optimization** — Study PicoClaw for potential memory reductions; target <1GB baseline

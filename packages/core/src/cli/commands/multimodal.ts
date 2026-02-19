@@ -3,10 +3,11 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, apiCall } from '../utils.js';
+import { extractFlag, extractBoolFlag, apiCall, Spinner } from '../utils.js';
 
 export const multimodalCommand: Command = {
   name: 'multimodal',
+  aliases: ['mm'],
   description: 'Manage multimodal I/O operations (vision, audio, image generation)',
   usage: 'secureyeoman multimodal <config|jobs>',
 
@@ -30,6 +31,7 @@ Operations (require running server):
 
 Options:
   --url <url>       Server URL (default: http://127.0.0.1:3000)
+  --json            Output raw JSON
   -h, --help        Show this help
 `);
       return 0;
@@ -38,8 +40,11 @@ Options:
 
     const urlResult = extractFlag(argv, 'url');
     argv = urlResult.rest;
+    const jsonResult = extractBoolFlag(argv, 'json');
+    argv = jsonResult.rest;
 
     const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
+    const json = jsonResult.value;
     const subcommand = argv[0];
 
     try {
@@ -50,6 +55,10 @@ Options:
           return 1;
         }
         const config = result.data as Record<string, unknown>;
+        if (json) {
+          ctx.stdout.write(JSON.stringify(config, null, 2) + '\n');
+          return 0;
+        }
         ctx.stdout.write('\nMultimodal Configuration:\n');
         ctx.stdout.write(JSON.stringify(config, null, 2) + '\n');
       } else if (subcommand === 'jobs') {
@@ -64,6 +73,10 @@ Options:
           status: string;
           created_at: string;
         }>;
+        if (json) {
+          ctx.stdout.write(JSON.stringify(jobs, null, 2) + '\n');
+          return 0;
+        }
         if (jobs.length === 0) {
           ctx.stdout.write('No multimodal jobs found.\n');
           return 0;
@@ -76,51 +89,81 @@ Options:
         }
       } else if (subcommand === 'vision-analyze' && argv[1]) {
         const imageUrl = argv[1];
+        const spinner = new Spinner(ctx.stdout);
+        spinner.start('Analyzing image');
         const result = await apiCall(baseUrl, '/api/v1/multimodal/vision/analyze', {
           method: 'POST',
           body: { url: imageUrl },
         });
         if (!result.ok) {
-          ctx.stderr.write(`Vision analysis failed: HTTP ${result.status}\n`);
+          spinner.stop('Vision analysis failed', false);
+          ctx.stderr.write(`HTTP ${result.status}\n`);
           return 1;
+        }
+        spinner.stop('Analysis complete', true);
+        if (json) {
+          ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
+          return 0;
         }
         ctx.stdout.write('\nVision Analysis Result:\n');
         ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
       } else if (subcommand === 'speak' && argv[1]) {
         const text = argv.slice(1).join(' ');
+        const spinner = new Spinner(ctx.stdout);
+        spinner.start('Generating speech');
         const result = await apiCall(baseUrl, '/api/v1/multimodal/audio/speak', {
           method: 'POST',
           body: { text },
         });
         if (!result.ok) {
-          ctx.stderr.write(`Speech generation failed: HTTP ${result.status}\n`);
+          spinner.stop('Speech generation failed', false);
+          ctx.stderr.write(`HTTP ${result.status}\n`);
           return 1;
         }
-        ctx.stdout.write('\nSpeech generation job submitted:\n');
+        spinner.stop('Speech generation job submitted', true);
+        if (json) {
+          ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
+          return 0;
+        }
         ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
       } else if (subcommand === 'transcribe' && argv[1]) {
         const audioUrl = argv[1];
+        const spinner = new Spinner(ctx.stdout);
+        spinner.start('Transcribing audio');
         const result = await apiCall(baseUrl, '/api/v1/multimodal/audio/transcribe', {
           method: 'POST',
           body: { url: audioUrl },
         });
         if (!result.ok) {
-          ctx.stderr.write(`Transcription failed: HTTP ${result.status}\n`);
+          spinner.stop('Transcription failed', false);
+          ctx.stderr.write(`HTTP ${result.status}\n`);
           return 1;
+        }
+        spinner.stop('Transcription complete', true);
+        if (json) {
+          ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
+          return 0;
         }
         ctx.stdout.write('\nTranscription Result:\n');
         ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
       } else if (subcommand === 'generate' && argv[1]) {
         const prompt = argv.slice(1).join(' ');
+        const spinner = new Spinner(ctx.stdout);
+        spinner.start('Generating image');
         const result = await apiCall(baseUrl, '/api/v1/multimodal/image/generate', {
           method: 'POST',
           body: { prompt },
         });
         if (!result.ok) {
-          ctx.stderr.write(`Image generation failed: HTTP ${result.status}\n`);
+          spinner.stop('Image generation failed', false);
+          ctx.stderr.write(`HTTP ${result.status}\n`);
           return 1;
         }
-        ctx.stdout.write('\nImage generation job submitted:\n');
+        spinner.stop('Image generation job submitted', true);
+        if (json) {
+          ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
+          return 0;
+        }
         ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
       } else {
         ctx.stderr.write(`Unknown subcommand: ${subcommand}\n`);

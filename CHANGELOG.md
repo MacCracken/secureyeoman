@@ -4,6 +4,44 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 20 (partial): CLI Output Improvements (2026-02-19) — [ADR 065](docs/adr/065-cli-enhancements-completions-validate-plugin.md)
+
+### Rich Output — Color & Progress
+- **`colorContext(stream)`** added to `cli/utils.ts` — returns `{ green, red, yellow, dim, bold, cyan }` helpers bound to the given output stream. Colors are stripped automatically on non-TTY streams and when `NO_COLOR` is set (respects the [NO_COLOR standard](https://no-color.org/)).
+- **`Spinner` class** added to `cli/utils.ts` — TTY-aware braille spinner for long-running operations. Non-TTY mode: `start()` is silent, `stop()` prints a single `✓`/`✗` summary line (safe for pipes and CI).
+- **`health`** — Status label, check labels now colored: green `OK`/`pass`, red `ERROR`/`FAIL`
+- **`status`** — Server status, Sub-Agents, Policy labels now colored: green enabled/allowed, red disabled/restricted
+- **`config validate`** — ✓/✗ markers and `Result: PASS`/`FAIL` line now colored
+- **`memory consolidate` / `memory reindex`** — Progress spinner shown during HTTP request flight
+- **`multimodal vision-analyze` / `speak` / `transcribe` / `generate`** — Progress spinner for all async submit operations
+
+### JSON Output — Remaining Commands
+- **`browser`** — `--json` added to `list`, `stats`, `config`, `session`
+- **`memory`** — `--json` added to `search`, `memories`, `knowledge`, `stats`, `consolidate`, `reindex`
+- **`scraper`** — `--json` added to `config`, `tools`, `servers`
+- **`multimodal`** — `--json` added to `config`, `jobs`, `vision-analyze`, `speak`, `transcribe`, `generate`
+- All CLI commands (except interactive `repl`/`init`) now support `--json` for scripting
+
+### Tests
+- **27 new tests** across `utils.test.ts`, `browser.test.ts`, `memory.test.ts`, `scraper.test.ts`, `multimodal.test.ts` covering color context, Spinner, and all new `--json` paths
+
+### Files Changed
+- `packages/core/src/cli/utils.ts` — `colorContext()`, `Spinner`
+- `packages/core/src/cli/utils.test.ts` — 8 new tests
+- `packages/core/src/cli/commands/health.ts` — color output
+- `packages/core/src/cli/commands/status.ts` — color output
+- `packages/core/src/cli/commands/config.ts` — color output in validate
+- `packages/core/src/cli/commands/browser.ts` — `--json`
+- `packages/core/src/cli/commands/browser.test.ts` — 4 new tests
+- `packages/core/src/cli/commands/memory.ts` — `--json` + Spinner
+- `packages/core/src/cli/commands/memory.test.ts` — 6 new tests
+- `packages/core/src/cli/commands/scraper.ts` — `--json`
+- `packages/core/src/cli/commands/scraper.test.ts` — 4 new tests
+- `packages/core/src/cli/commands/multimodal.ts` — `--json` + Spinner
+- `packages/core/src/cli/commands/multimodal.test.ts` — 5 new tests
+
+---
+
 ## Phase 20 (partial): CLI Enhancements (2026-02-19) — [ADR 065](docs/adr/065-cli-enhancements-completions-validate-plugin.md)
 
 ### Shell Completions

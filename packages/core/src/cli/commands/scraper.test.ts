@@ -110,4 +110,64 @@ describe('scraper command', () => {
     const code = await scraperCommand.run({ argv: ['config'], stdout, stderr });
     expect(code).toBe(1);
   });
+
+  it('should output JSON with --json for config', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ exposeWeb: true }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await scraperCommand.run({ argv: ['config', '--json'], stdout, stderr });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as { exposeWeb: boolean };
+    expect(parsed.exposeWeb).toBe(true);
+  });
+
+  it('should output JSON with --json for tools', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ tools: [{ name: 'web_search', description: 'Search', inputSchema: {} }] }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await scraperCommand.run({ argv: ['tools', '--json'], stdout, stderr });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as { tools: Array<{ name: string }> };
+    expect(parsed.tools[0]?.name).toBe('web_search');
+  });
+
+  it('should output JSON with --json for servers', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => [{ id: 'mcp-1', name: 'filesystem', status: 'connected', enabled: true }],
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await scraperCommand.run({ argv: ['servers', '--json'], stdout, stderr });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as Array<{ id: string }>;
+    expect(parsed[0]?.id).toBe('mcp-1');
+  });
+
+  it('should include --json in help', async () => {
+    const { stdout, stderr, getStdout } = createStreams();
+    await scraperCommand.run({ argv: ['--help'], stdout, stderr });
+    expect(getStdout()).toContain('--json');
+  });
 });
