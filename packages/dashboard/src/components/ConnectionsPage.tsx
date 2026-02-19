@@ -2222,51 +2222,44 @@ function McpTab({
 
           {toolsExpanded && (
             <div className="mt-3 space-y-3">
-              {Object.entries(toolsByServer).map(([serverName, serverTools]) => {
-                const isLocal = serverName === LOCAL_MCP_NAME;
-                return (
-                  <div key={serverName}>
-                    <h4 className="text-xs font-medium text-muted-foreground mb-1">{serverName}</h4>
-                    <div className="space-y-1">
-                      {serverTools.map((tool) => {
-                        const toolKey = `${tool.serverId}:${tool.name}`;
-                        const isHidden = hiddenTools.has(toolKey);
-                        return (
-                          <div
-                            key={toolKey}
-                            className={`flex items-start gap-2 p-2 rounded bg-muted/30 text-sm ${isHidden ? 'opacity-40' : ''}`}
-                          >
-                            <Wrench className="w-3 h-3 text-muted-foreground mt-0.5 flex-shrink-0" />
-                            <div className="min-w-0 flex-1">
-                              <span className="font-mono text-xs">{tool.name}</span>
-                              {tool.description && (
-                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
-                                  {tool.description}
-                                </p>
-                              )}
-                            </div>
-                            {!isLocal && (
-                              <button
-                                onClick={() => {
-                                  onToggleToolVisibility(toolKey);
-                                }}
-                                className="text-muted-foreground hover:text-foreground p-0.5 shrink-0"
-                                title={isHidden ? 'Show tool' : 'Hide tool'}
-                              >
-                                {isHidden ? (
-                                  <EyeOff className="w-3 h-3" />
-                                ) : (
-                                  <Eye className="w-3 h-3" />
-                                )}
-                              </button>
+              {Object.entries(toolsByServer).map(([serverName, serverTools]) => (
+                <div key={serverName}>
+                  <h4 className="text-xs font-medium text-muted-foreground mb-1">{serverName}</h4>
+                  <div className="space-y-1">
+                    {serverTools.map((tool) => {
+                      const toolKey = `${tool.serverId}:${tool.name}`;
+                      const isHidden = hiddenTools.has(toolKey);
+                      return (
+                        <div
+                          key={toolKey}
+                          className={`flex items-start gap-2 p-2 rounded bg-muted/30 text-sm ${isHidden ? 'opacity-40' : ''}`}
+                        >
+                          <Wrench className="w-3 h-3 text-muted-foreground mt-0.5 flex-shrink-0" />
+                          <div className="min-w-0 flex-1">
+                            <span className="font-mono text-xs">{tool.name}</span>
+                            {tool.description && (
+                              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">
+                                {tool.description}
+                              </p>
                             )}
                           </div>
-                        );
-                      })}
-                    </div>
+                          <button
+                            onClick={() => onToggleToolVisibility(toolKey)}
+                            className="text-muted-foreground hover:text-foreground p-0.5 shrink-0"
+                            title={isHidden ? 'Show tool' : 'Hide tool'}
+                          >
+                            {isHidden ? (
+                              <EyeOff className="w-3 h-3" />
+                            ) : (
+                              <Eye className="w-3 h-3" />
+                            )}
+                          </button>
+                        </div>
+                      );
+                    })}
                   </div>
-                );
-              })}
+                </div>
+              ))}
             </div>
           )}
         </div>

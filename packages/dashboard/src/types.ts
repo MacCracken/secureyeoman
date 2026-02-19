@@ -314,7 +314,7 @@ export interface Skill {
   tools: { name: string; description: string; inputSchema: Record<string, unknown> }[];
   triggerPatterns: string[];
   enabled: boolean;
-  source: 'user' | 'ai_proposed' | 'ai_learned';
+  source: 'user' | 'ai_proposed' | 'ai_learned' | 'marketplace' | 'community';
   status: 'active' | 'pending_approval' | 'disabled';
   usageCount: number;
   lastUsedAt: number | null;
