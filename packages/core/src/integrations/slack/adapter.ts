@@ -124,8 +124,8 @@ export class SlackIntegration implements Integration {
       void this.deps!.onMessage(unified);
     });
 
-    // Block Kit button action handler
-    this.app.action({ type: 'button' }, async ({ action, ack, body }) => {
+    // Block Kit action handler (matches all action IDs via regex)
+    this.app.action(/.*/, async ({ action, ack, body }) => {
       await ack();
 
       const act = action as Record<string, any>;

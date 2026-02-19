@@ -152,8 +152,9 @@ describe('SlackIntegration', () => {
   it('should register block action handler', async () => {
     await integration.init(makeConfig(), makeDeps());
     expect(actionHandlers.length).toBeGreaterThan(0);
-    const buttonHandler = actionHandlers.find((h) => h.filter?.type === 'button');
-    expect(buttonHandler).toBeDefined();
+    // Adapter uses a catch-all regex — Bolt.js ActionConstraints.type does not support 'button'
+    const actionHandler = actionHandlers.find((h) => h.filter instanceof RegExp);
+    expect(actionHandler).toBeDefined();
   });
 
   it('should register friday_modal view handler', async () => {
@@ -250,8 +251,9 @@ describe('SlackIntegration', () => {
     const onMessage = vi.fn().mockResolvedValue(undefined);
     await integration.init(makeConfig(), makeDeps(onMessage));
 
-    const buttonHandler = actionHandlers.find((h) => h.filter?.type === 'button');
-    expect(buttonHandler).toBeDefined();
+    // Adapter registers a catch-all regex handler for all Block Kit actions
+    const actionHandler = actionHandlers.find((h) => h.filter instanceof RegExp);
+    expect(actionHandler).toBeDefined();
 
     const ack = vi.fn().mockResolvedValue(undefined);
     const fakeAction = {
@@ -265,7 +267,7 @@ describe('SlackIntegration', () => {
       channel: { id: 'C456' },
     };
 
-    await buttonHandler!.handler({ action: fakeAction, ack, body: fakeBody });
+    await actionHandler!.handler({ action: fakeAction, ack, body: fakeBody });
 
     expect(ack).toHaveBeenCalledOnce();
     expect(onMessage).toHaveBeenCalledOnce();
