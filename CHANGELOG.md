@@ -6,6 +6,31 @@ All notable changes to SecureYeoman are documented in this file.
 
 ## Phase 17: Agent Swarms — Complete (2026.2.18)
 
+### Swarms Security Policy & Per-Personality Sub-Agent Settings — [ADR 057](docs/adr/057-swarms-policy-and-per-personality-subagent-settings.md)
+Global `allowSwarms` policy toggle and per-personality A2A/Swarms enablement in creation config.
+
+- **`packages/shared/src/types/config.ts`** — Added `allowSwarms: z.boolean().default(false)` to `SecurityConfigSchema`
+- **`packages/shared/src/types/soul.ts`** — Added `allowA2A` and `allowSwarms` boolean fields to `CreationConfigSchema`
+- **`packages/core/src/secureyeoman.ts`** — `updateSecurityPolicy()` and `loadSecurityPolicyFromDb()` handle `allowSwarms`
+- **`packages/core/src/gateway/server.ts`** — GET/PATCH `/api/v1/security/policy` include `allowSwarms`
+- **`packages/dashboard/src/api/client.ts`** — `SecurityPolicy` interface includes `allowSwarms`
+- **`packages/dashboard/src/components/SecuritySettings.tsx`** — Agent Swarms toggle nested under Sub-Agent Delegation alongside A2A, uses `Layers` icon
+- **`packages/dashboard/src/components/SubAgentsPage.tsx`** — Swarms tab positioned second (`active → swarms → history → profiles`); hidden when `allowSwarms` is false; `useEffect` resets to Active tab when policy is disabled
+- **`packages/dashboard/src/components/PersonalityEditor.tsx`** — A2A Networks and Agent Swarms nested sub-toggles appear when `creationConfig.subAgents` is enabled; both respect global security policy (shown as "Blocked" when policy disallows)
+- **Tests** — 3 new tests in `SecuritySettings.test.tsx`, 2 new tests in `SubAgentsPage.test.tsx`
+
+### Per-Personality Model Fallbacks — [ADR 056](docs/adr/056-per-personality-model-fallbacks.md)
+Each personality can define an ordered fallback chain (max 5) tried when the primary model fails.
+
+- **`packages/shared/src/types/soul.ts`** — `ModelFallbackEntrySchema` + `modelFallbacks: z.array(...).max(5).default([])` on `PersonalitySchema`
+- **`packages/core/src/storage/migrations/018_personality_model_fallbacks.sql`** — `model_fallbacks JSONB NOT NULL DEFAULT '[]'`
+- **`packages/core/src/soul/storage.ts`** — `PersonalityRow`, `rowToPersonality`, `createPersonality`, `updatePersonality` include `model_fallbacks`
+- **`packages/core/src/ai/client.ts`** — `chat()` and `chatStream()` accept optional `requestFallbacks`; per-request fallbacks override system fallbacks
+- **`packages/core/src/ai/chat-routes.ts`** — `resolvePersonalityFallbacks()` maps personality `modelFallbacks` to `FallbackModelConfig[]` and passes to `aiClient.chat()`
+- **`packages/dashboard/src/components/PersonalityEditor.tsx`** — Model Fallbacks UI after Default Model; Include Sacred Archetypes moved to after System Prompt; `pendingFallback` dropdown filtered to exclude default and already-added models
+- **`packages/core/src/cli/commands/model.ts`** — `personality-fallbacks get/set/clear` subcommand with `--personality-id`
+- **Tests** — 5 new storage tests, 9 new CLI tests
+
 ### Agent Swarms — [ADR 055](docs/adr/055-agent-swarms.md)
 Coordinated multi-agent execution with role-based specialization, built on top of the existing sub-agent delegation system (ADR 034).
 

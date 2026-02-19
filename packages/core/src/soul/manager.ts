@@ -106,6 +106,8 @@ export class SoulManager {
           customRoles: false,
           roleAssignments: false,
           experiments: false,
+          allowA2A: false,
+          allowSwarms: false,
         },
         selectedServers: [],
         mcpFeatures: {

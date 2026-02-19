@@ -156,6 +156,8 @@ export interface Personality {
       customRoles?: boolean;
       roleAssignments?: boolean;
       experiments?: boolean;
+      allowA2A?: boolean;
+      allowSwarms?: boolean;
     };
     selectedServers?: string[];
     mcpFeatures?: {
@@ -209,6 +211,8 @@ export interface PersonalityCreate {
       customRoles?: boolean;
       roleAssignments?: boolean;
       experiments?: boolean;
+      allowA2A?: boolean;
+      allowSwarms?: boolean;
     };
     selectedServers?: string[];
     mcpFeatures?: {

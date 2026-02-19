@@ -86,6 +86,7 @@ describe('ExtensionsPage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: true,
       allowExecution: true,
       allowProactive: false,
@@ -110,6 +111,7 @@ describe('ExtensionsPage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -126,6 +128,7 @@ describe('ExtensionsPage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: true,
       allowExecution: true,
       allowProactive: false,
@@ -143,6 +146,7 @@ describe('ExtensionsPage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,

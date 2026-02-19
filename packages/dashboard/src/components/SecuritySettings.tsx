@@ -21,6 +21,7 @@ import {
   Trash2,
   UserPlus,
   Network,
+  Layers,
   Puzzle,
   Terminal,
   Blocks,
@@ -377,6 +378,7 @@ export function SecuritySettings() {
   const assignments = assignmentsData?.assignments ?? [];
   const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
   const a2aAllowed = securityPolicy?.allowA2A ?? false;
+  const swarmsAllowed = securityPolicy?.allowSwarms ?? false;
   const extensionsAllowed = securityPolicy?.allowExtensions ?? false;
   const executionAllowed = securityPolicy?.allowExecution ?? true;
   const proactiveAllowed = securityPolicy?.allowProactive ?? false;
@@ -605,9 +607,9 @@ export function SecuritySettings() {
             }
           />
 
-          {/* A2A Networks — sub-item of delegation, only visible when sub-agents enabled */}
+          {/* A2A Networks and Swarms — sub-items of delegation, only visible when sub-agents enabled */}
           {subAgentsAllowed && (
-            <div className="ml-6 pl-4 border-l-2 border-border">
+            <div className="ml-6 pl-4 border-l-2 border-border space-y-4">
               <PolicyToggle
                 label="A2A Networks"
                 icon={<Network className="w-4 h-4 text-muted-foreground" />}
@@ -620,6 +622,20 @@ export function SecuritySettings() {
                   a2aAllowed
                     ? 'Agent-to-Agent networking is enabled. Internal A2A communication is active; external peers require Sub-Agent Delegation to be allowed.'
                     : 'A2A networking is disabled. No peer discovery, delegation, or agent-to-agent communication will occur.'
+                }
+              />
+              <PolicyToggle
+                label="Agent Swarms"
+                icon={<Layers className="w-4 h-4 text-muted-foreground" />}
+                enabled={swarmsAllowed}
+                isPending={policyMutation.isPending}
+                onToggle={() => {
+                  policyMutation.mutate({ allowSwarms: !swarmsAllowed });
+                }}
+                description={
+                  swarmsAllowed
+                    ? 'Agent swarms are enabled. Personalities can orchestrate multi-agent swarm runs. The Swarms tab is visible in Sub-Agents.'
+                    : 'Agent swarms are disabled. No swarm orchestration can occur and the Swarms tab is hidden from Sub-Agents.'
                 }
               />
             </div>

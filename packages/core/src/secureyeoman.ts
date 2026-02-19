@@ -1646,6 +1646,7 @@ export class SecureYeoman {
   updateSecurityPolicy(updates: {
     allowSubAgents?: boolean;
     allowA2A?: boolean;
+    allowSwarms?: boolean;
     allowExtensions?: boolean;
     allowExecution?: boolean;
     allowProactive?: boolean;
@@ -1660,6 +1661,9 @@ export class SecureYeoman {
     }
     if (updates.allowA2A !== undefined) {
       this.config!.security.allowA2A = updates.allowA2A;
+    }
+    if (updates.allowSwarms !== undefined) {
+      this.config!.security.allowSwarms = updates.allowSwarms;
     }
     if (updates.allowExtensions !== undefined) {
       this.config!.security.allowExtensions = updates.allowExtensions;
@@ -1723,6 +1727,7 @@ export class SecureYeoman {
       const policyKeys = [
         'allowSubAgents',
         'allowA2A',
+        'allowSwarms',
         'allowExtensions',
         'allowExecution',
         'allowProactive',

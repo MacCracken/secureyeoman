@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import {
@@ -982,6 +982,8 @@ interface BodySectionProps {
     customRoles: boolean;
     roleAssignments: boolean;
     experiments: boolean;
+    allowA2A: boolean;
+    allowSwarms: boolean;
   };
   onCreationConfigChange: (config: {
     skills: boolean;
@@ -991,6 +993,8 @@ interface BodySectionProps {
     customRoles: boolean;
     roleAssignments: boolean;
     experiments: boolean;
+    allowA2A: boolean;
+    allowSwarms: boolean;
   }) => void;
   proactiveConfig: {
     enabled: boolean;
@@ -1051,6 +1055,8 @@ function BodySection({
     queryFn: fetchSecurityPolicy,
   });
   const subAgentsBlockedByPolicy = securityPolicy?.allowSubAgents === false;
+  const a2aBlockedByPolicy = securityPolicy?.allowA2A === false;
+  const swarmsBlockedByPolicy = securityPolicy?.allowSwarms === false;
 
   const creationItems = [
     { key: 'tasks' as const, label: 'New Tasks', icon: '📋' },
@@ -1080,6 +1086,8 @@ function BodySection({
       | 'customRoles'
       | 'roleAssignments'
       | 'experiments'
+      | 'allowA2A'
+      | 'allowSwarms'
   ) => {
     onCreationConfigChange({
       ...creationConfig,
@@ -1098,6 +1106,9 @@ function BodySection({
       customRoles: newValue,
       roleAssignments: newValue,
       experiments: newValue,
+      // A2A/Swarms are sub-settings of subAgents — not toggled by Enable All
+      allowA2A: creationConfig.allowA2A,
+      allowSwarms: creationConfig.allowSwarms,
     });
   };
 
@@ -1713,41 +1724,103 @@ function BodySection({
             const blocked = 'blockedByPolicy' in item && item.blockedByPolicy;
             const isEnabled = blocked ? false : creationConfig[item.key];
             return (
-              <div
-                key={item.key}
-                className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
-                  blocked
-                    ? 'bg-muted/30 border-border opacity-60'
-                    : isEnabled
-                      ? 'bg-success/5 border-success/30'
-                      : 'bg-muted/50 border-border'
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  <span className="text-base">{item.icon}</span>
-                  <span className="font-medium">{item.label}</span>
-                  {blocked && (
-                    <span className="text-xs text-destructive">(disabled by security policy)</span>
-                  )}
-                </div>
-                <label
-                  className={`relative inline-flex items-center ${blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+              <Fragment key={item.key}>
+                <div
+                  className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                    blocked
+                      ? 'bg-muted/30 border-border opacity-60'
+                      : isEnabled
+                        ? 'bg-success/5 border-success/30'
+                        : 'bg-muted/50 border-border'
+                  }`}
                 >
-                  <input
-                    type="checkbox"
-                    checked={isEnabled}
-                    onChange={() => {
-                      if (!blocked) toggleCreationItem(item.key);
-                    }}
-                    disabled={blocked}
-                    className="sr-only peer"
-                  />
-                  <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-                  <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
-                    {blocked ? 'Blocked' : isEnabled ? 'Enabled' : 'Disabled'}
-                  </span>
-                </label>
-              </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{item.icon}</span>
+                    <span className="font-medium">{item.label}</span>
+                    {blocked && (
+                      <span className="text-xs text-destructive">(disabled by security policy)</span>
+                    )}
+                  </div>
+                  <label
+                    className={`relative inline-flex items-center ${blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isEnabled}
+                      onChange={() => {
+                        if (!blocked) toggleCreationItem(item.key);
+                      }}
+                      disabled={blocked}
+                      className="sr-only peer"
+                    />
+                    <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                    <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
+                      {blocked ? 'Blocked' : isEnabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </label>
+                </div>
+
+                {/* A2A and Swarms sub-settings — only visible when New Sub-Agents is enabled */}
+                {item.key === 'subAgents' && creationConfig.subAgents && (
+                  <div className="ml-6 pl-4 border-l-2 border-border space-y-2">
+                    {[
+                      {
+                        key: 'allowA2A' as const,
+                        label: 'A2A Networks',
+                        icon: '🌐',
+                        blocked: a2aBlockedByPolicy,
+                      },
+                      {
+                        key: 'allowSwarms' as const,
+                        label: 'Agent Swarms',
+                        icon: '🐝',
+                        blocked: swarmsBlockedByPolicy,
+                      },
+                    ].map((sub) => {
+                      const subEnabled = sub.blocked ? false : creationConfig[sub.key];
+                      return (
+                        <div
+                          key={sub.key}
+                          className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                            sub.blocked
+                              ? 'bg-muted/30 border-border opacity-60'
+                              : subEnabled
+                                ? 'bg-success/5 border-success/30'
+                                : 'bg-muted/50 border-border'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2">
+                            <span className="text-base">{sub.icon}</span>
+                            <span className="font-medium">{sub.label}</span>
+                            {sub.blocked && (
+                              <span className="text-xs text-destructive">
+                                (disabled by security policy)
+                              </span>
+                            )}
+                          </div>
+                          <label
+                            className={`relative inline-flex items-center ${sub.blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={subEnabled}
+                              onChange={() => {
+                                if (!sub.blocked) toggleCreationItem(sub.key);
+                              }}
+                              disabled={sub.blocked}
+                              className="sr-only peer"
+                            />
+                            <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                            <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
+                              {sub.blocked ? 'Blocked' : subEnabled ? 'Enabled' : 'Disabled'}
+                            </span>
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Fragment>
             );
           })}
         </div>
@@ -1815,6 +1888,8 @@ export function PersonalityEditor() {
     customRoles: false,
     roleAssignments: false,
     experiments: false,
+    allowA2A: false,
+    allowSwarms: false,
   });
 
   const [allowConnections, setAllowConnections] = useState(false);
@@ -1978,6 +2053,8 @@ export function PersonalityEditor() {
       customRoles: body.creationConfig?.customRoles ?? false,
       roleAssignments: body.creationConfig?.roleAssignments ?? false,
       experiments: body.creationConfig?.experiments ?? false,
+      allowA2A: body.creationConfig?.allowA2A ?? false,
+      allowSwarms: body.creationConfig?.allowSwarms ?? false,
     });
     setAllowConnections(body.enabled ?? false);
     setSelectedServers(body.selectedServers ?? []);
@@ -2052,6 +2129,8 @@ export function PersonalityEditor() {
       customRoles: false,
       roleAssignments: false,
       experiments: false,
+      allowA2A: false,
+      allowSwarms: false,
     });
     setAllowConnections(false);
     setSelectedServers([]);

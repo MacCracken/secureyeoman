@@ -106,6 +106,7 @@ describe('A2APage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
       allowA2A: true,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -133,6 +134,7 @@ describe('A2APage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -155,6 +157,7 @@ describe('A2APage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,

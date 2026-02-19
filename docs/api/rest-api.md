@@ -731,6 +731,7 @@ Get current security policy configuration.
 {
   "allowSubAgents": true,
   "allowA2A": false,
+  "allowSwarms": false,
   "allowExtensions": false,
   "allowExecution": true,
   "allowProactive": false,
@@ -750,6 +751,7 @@ Update security policy configuration.
 {
   "allowSubAgents": true,
   "allowA2A": false,
+  "allowSwarms": false,
   "allowExtensions": false,
   "allowExecution": true,
   "allowProactive": false,
@@ -762,6 +764,7 @@ Update security policy configuration.
 |-------|------|---------|-------------|
 | `allowSubAgents` | boolean | `true` | Allow sub-agent delegation |
 | `allowA2A` | boolean | `false` | Allow A2A networking (requires sub-agents enabled) |
+| `allowSwarms` | boolean | `false` | Allow agent swarms / multi-agent orchestration (requires sub-agents enabled) |
 | `allowExtensions` | boolean | `false` | Allow lifecycle extension hooks |
 | `allowExecution` | boolean | `true` | Allow sandboxed code execution |
 | `allowProactive` | boolean | `false` | Allow proactive triggers, suggestions, and pattern learning |
@@ -774,6 +777,7 @@ Update security policy configuration.
   "policy": {
     "allowSubAgents": true,
     "allowA2A": false,
+    "allowSwarms": false,
     "allowExtensions": false,
     "allowExecution": true,
     "allowProactive": false,

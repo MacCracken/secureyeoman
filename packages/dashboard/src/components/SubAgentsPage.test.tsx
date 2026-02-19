@@ -123,6 +123,7 @@ describe('SubAgentsPage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -153,6 +154,7 @@ describe('SubAgentsPage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -172,6 +174,7 @@ describe('SubAgentsPage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -191,6 +194,7 @@ describe('SubAgentsPage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -218,6 +222,33 @@ describe('SubAgentsPage', () => {
     expect(await screen.findByText('Active')).toBeInTheDocument();
     expect(screen.getByText('History')).toBeInTheDocument();
     expect(screen.getByText('Profiles')).toBeInTheDocument();
+  });
+
+  it('hides Swarms tab when allowSwarms is false', async () => {
+    renderComponent();
+    await screen.findByText('Active');
+    expect(screen.queryByText('Swarms')).not.toBeInTheDocument();
+  });
+
+  it('shows Swarms tab immediately after Active when allowSwarms is true', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: true,
+      allowA2A: false,
+      allowSwarms: true,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+    });
+    renderComponent();
+    const tabs = await screen.findAllByRole('button', { name: /Active|Swarms|History|Profiles/i });
+    const labels = tabs.map((t) => t.textContent?.trim());
+    const activeIdx = labels.findIndex((l) => l === 'Active');
+    const swarmsIdx = labels.findIndex((l) => l === 'Swarms');
+    expect(swarmsIdx).toBeGreaterThan(-1);
+    expect(swarmsIdx).toBe(activeIdx + 1);
   });
 
   // ── Active Delegations Tab ─────────────────────────────────

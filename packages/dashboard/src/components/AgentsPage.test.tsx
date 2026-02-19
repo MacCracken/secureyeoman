@@ -82,6 +82,7 @@ function renderComponent() {
 const DEFAULT_POLICY = {
   allowSubAgents: true,
   allowA2A: true,
+  allowSwarms: false,
   allowExtensions: false,
   allowExecution: true,
   allowProactive: false,
