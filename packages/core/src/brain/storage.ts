@@ -490,6 +490,14 @@ export class BrainStorage extends PgBaseStorage {
       sql += ` AND enabled = $${idx++}`;
       params.push(filter.enabled);
     }
+    if ('personalityId' in (filter ?? {})) {
+      if (filter!.personalityId === null) {
+        sql += ' AND personality_id IS NULL';
+      } else {
+        sql += ` AND personality_id = $${idx++}`;
+        params.push(filter!.personalityId);
+      }
+    }
 
     sql += ' ORDER BY usage_count DESC, created_at DESC';
 
@@ -497,10 +505,19 @@ export class BrainStorage extends PgBaseStorage {
     return rows.map(rowToSkill);
   }
 
-  async getEnabledSkills(): Promise<Skill[]> {
-    const rows = await this.queryMany<SkillRow>(
-      "SELECT * FROM brain.skills WHERE enabled = true AND status = 'active' ORDER BY usage_count DESC, created_at DESC"
-    );
+  async getEnabledSkills(personalityId?: string | null): Promise<Skill[]> {
+    let sql = "SELECT * FROM brain.skills WHERE enabled = true AND status = 'active'";
+    const params: unknown[] = [];
+
+    if (personalityId !== undefined) {
+      // Return skills scoped to this personality OR global skills (personality_id IS NULL)
+      sql += ' AND (personality_id = $1 OR personality_id IS NULL)';
+      params.push(personalityId);
+    }
+
+    sql += ' ORDER BY usage_count DESC, created_at DESC';
+
+    const rows = await this.queryMany<SkillRow>(sql, params);
     return rows.map(rowToSkill);
   }
 

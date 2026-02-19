@@ -83,6 +83,7 @@ export interface SkillFilter {
   status?: string;
   source?: string;
   enabled?: boolean;
+  personalityId?: string | null;
 }
 
 import type { VectorMemoryManager } from './vector/manager.js';
