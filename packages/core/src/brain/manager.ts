@@ -470,12 +470,12 @@ export class BrainManager {
     return this.storage.getEnabledSkills(personalityId);
   }
 
-  async getActiveTools(): Promise<Tool[]> {
+  async getActiveTools(personalityId?: string | null): Promise<Tool[]> {
     if (!this.config.enabled) {
       return [];
     }
 
-    const skills = await this.storage.getEnabledSkills();
+    const skills = await this.storage.getEnabledSkills(personalityId);
     const tools: Tool[] = [];
     for (const skill of skills) {
       if (skill.tools && skill.tools.length > 0) {

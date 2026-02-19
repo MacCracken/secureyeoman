@@ -225,6 +225,64 @@ describe('MarketplaceManager with BrainManager', () => {
     expect(brainSkills).toHaveLength(1);
     expect(brainSkills[0].personalityId).toBeNull();
   });
+
+  it('should remove ALL brain skills (global + per-personality) on uninstall', async () => {
+    const skill = await manager.publish({ name: 'Multi-Install Skill', instructions: 'Shared' });
+    await manager.install(skill.id);
+    // Seed a second brain skill record (per-personality copy) to simulate re-install for another personality
+    await brainManager.createSkill({
+      name: 'Multi-Install Skill',
+      instructions: 'Shared',
+      source: 'marketplace',
+      personalityId: 'personality-a',
+      enabled: true,
+      status: 'active',
+      tools: [],
+      triggerPatterns: [],
+    });
+    expect(await brainManager.listSkills({ source: 'marketplace' })).toHaveLength(2);
+
+    await manager.uninstall(skill.id);
+    expect(await brainManager.listSkills({ source: 'marketplace' })).toHaveLength(0);
+    expect((await manager.getSkill(skill.id))!.installed).toBe(false);
+  });
+
+  it('should reset installed flag via onBrainSkillDeleted when no brain records remain', async () => {
+    const skill = await manager.publish({ name: 'Sync Target', instructions: 'Will be deleted' });
+    await manager.install(skill.id);
+    expect((await manager.getSkill(skill.id))!.installed).toBe(true);
+
+    // Simulate soul deleteSkill() path: brain record deleted, then notifies marketplace
+    const brainSkills = await brainManager.listSkills({ source: 'marketplace' });
+    await brainManager.deleteSkill(brainSkills[0].id);
+    await manager.onBrainSkillDeleted('Sync Target', 'marketplace');
+
+    expect((await manager.getSkill(skill.id))!.installed).toBe(false);
+  });
+
+  it('should NOT reset installed flag via onBrainSkillDeleted when other brain records remain', async () => {
+    const skill = await manager.publish({ name: 'Partially Deleted', instructions: 'Some remain' });
+    await manager.install(skill.id);
+    // Add a second brain skill record (per-personality copy)
+    await brainManager.createSkill({
+      name: 'Partially Deleted',
+      instructions: 'Some remain',
+      source: 'marketplace',
+      personalityId: 'personality-b',
+      enabled: true,
+      status: 'active',
+      tools: [],
+      triggerPatterns: [],
+    });
+
+    // Delete only the first (global) record, personality-b copy still exists
+    const allBrainSkills = await brainManager.listSkills({ source: 'marketplace' });
+    await brainManager.deleteSkill(allBrainSkills[0].id);
+    await manager.onBrainSkillDeleted('Partially Deleted', 'marketplace');
+
+    // personality-b brain record still exists — installed should stay true
+    expect((await manager.getSkill(skill.id))!.installed).toBe(true);
+  });
 });
 
 describe('Community Skill Sync', () => {

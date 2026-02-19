@@ -5,6 +5,10 @@ import type { SoulConfig, SoulManagerDeps, PersonalityCreate, SkillCreate } from
 import type { SecureLogger } from '../logging/logger.js';
 import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
+import { BrainStorage } from '../brain/storage.js';
+import { BrainManager } from '../brain/manager.js';
+import { MarketplaceStorage } from '../marketplace/storage.js';
+import { MarketplaceManager } from '../marketplace/manager.js';
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -854,5 +858,105 @@ describe('SoulManager', () => {
       const updated = await manager.getSkill(s.id);
       expect(updated?.usageCount).toBe(2);
     });
+  });
+});
+
+// ── SoulManager + MarketplaceManager integration ─────────────────
+
+describe('SoulManager skill deletion with marketplace sync', () => {
+  let soulStorage: SoulStorage;
+  let brainStorage: BrainStorage;
+  let brainManager: BrainManager;
+  let marketplaceStorage: MarketplaceStorage;
+  let marketplaceManager: MarketplaceManager;
+  let soulManager: SoulManager;
+
+  function deps(): SoulManagerDeps {
+    const auditStorage = new InMemoryAuditStorage();
+    const auditChain = new AuditChain({
+      storage: auditStorage,
+      signingKey: 'test-signing-key-must-be-at-least-32-chars!!',
+    });
+    return { auditChain, logger: noopLogger() };
+  }
+
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
+  });
+
+  beforeEach(async () => {
+    await truncateAllTables();
+    soulStorage = new SoulStorage();
+    brainStorage = new BrainStorage();
+    const auditStorage = new InMemoryAuditStorage();
+    const auditChain = new AuditChain({
+      storage: auditStorage,
+      signingKey: 'test-signing-key-must-be-at-least-32-chars!!',
+    });
+    brainManager = new BrainManager(
+      brainStorage,
+      { enabled: true, maxMemories: 10000, maxKnowledge: 5000, memoryRetentionDays: 90, importanceDecayRate: 0.01, contextWindowMemories: 10 },
+      { auditChain, logger: noopLogger() }
+    );
+    marketplaceStorage = new MarketplaceStorage();
+    marketplaceManager = new MarketplaceManager(marketplaceStorage, {
+      logger: noopLogger(),
+      brainManager,
+    });
+    soulManager = new SoulManager(soulStorage, defaultConfig(), deps(), brainManager);
+    soulManager.setMarketplaceManager(marketplaceManager);
+  });
+
+  it('should reset marketplace.installed when the last brain skill is deleted via deleteSkill', async () => {
+    const mpSkill = await marketplaceManager.publish({
+      name: 'Marketplace Test Skill',
+      instructions: 'Do things',
+    });
+    await marketplaceManager.install(mpSkill.id, 'personality-123');
+    expect((await marketplaceManager.getSkill(mpSkill.id))!.installed).toBe(true);
+
+    // Get the brain skill ID that was created on install
+    const brainSkills = await brainManager.listSkills({ source: 'marketplace' });
+    expect(brainSkills).toHaveLength(1);
+
+    // Delete via soulManager (simulates personality editor remove)
+    await soulManager.deleteSkill(brainSkills[0].id);
+
+    // Brain skill gone
+    expect(await brainManager.listSkills({ source: 'marketplace' })).toHaveLength(0);
+    // Marketplace installed flag reset
+    expect((await marketplaceManager.getSkill(mpSkill.id))!.installed).toBe(false);
+  });
+
+  it('should NOT reset marketplace.installed when other brain skill copies remain', async () => {
+    const mpSkill = await marketplaceManager.publish({
+      name: 'Shared Skill',
+      instructions: 'Shared across personalities',
+    });
+    await marketplaceManager.install(mpSkill.id, 'personality-a');
+    // Manually add a second brain record for a different personality
+    await brainManager.createSkill({
+      name: 'Shared Skill',
+      instructions: 'Shared across personalities',
+      source: 'marketplace',
+      personalityId: 'personality-b',
+      enabled: true,
+      status: 'active',
+      tools: [],
+      triggerPatterns: [],
+    });
+
+    const allBrainSkills = await brainManager.listSkills({ source: 'marketplace' });
+    expect(allBrainSkills).toHaveLength(2);
+
+    // Delete only the personality-a copy
+    await soulManager.deleteSkill(allBrainSkills[0].id);
+
+    // personality-b copy still exists — marketplace.installed should remain true
+    expect((await marketplaceManager.getSkill(mpSkill.id))!.installed).toBe(true);
   });
 });

@@ -35,6 +35,31 @@ import type {
   UserProfileUpdate,
 } from './types.js';
 
+/**
+ * Returns true when the user message is relevant to the given skill.
+ *
+ * Matching priority:
+ *  1. triggerPatterns — each entry is tried as a RegExp (case-insensitive);
+ *     falls back to plain substring if the pattern is invalid.
+ *  2. Skill-name keyword fallback — words from the skill name longer than
+ *     3 chars are matched as substrings in the message.
+ */
+function isSkillInContext(skill: Skill, message: string): boolean {
+  if (skill.triggerPatterns.length > 0) {
+    return skill.triggerPatterns.some((pattern) => {
+      try {
+        return new RegExp(pattern, 'i').test(message);
+      } catch {
+        return message.toLowerCase().includes(pattern.toLowerCase());
+      }
+    });
+  }
+  // Keyword fallback: significant words from the skill name
+  const words = skill.name.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+  const msg = message.toLowerCase();
+  return words.some((w) => msg.includes(w));
+}
+
 export class SoulManager {
   private readonly storage: SoulStorage;
   private readonly brain: BrainManager | null;
@@ -533,30 +558,52 @@ export class SoulManager {
       ? await this.brain.getActiveSkills(personality?.id ?? null)
       : await this.storage.getEnabledSkills();
 
-    for (const skill of skills) {
-      if (skill.instructions) {
-        parts.push(`## Skill: ${skill.name}\n${skill.instructions}`);
-      }
-    }
-
-    let prompt = parts.join('\n\n');
-
     // Token cap: estimate ~4 chars per token
     const maxChars = this.config.maxPromptTokens * 4;
+
+    if (skills.length > 0) {
+      // Always include a compact catalog so the AI knows what skills are available
+      const catalogLines = skills.map((s) => {
+        const desc = s.description?.trim() || s.name;
+        return `- **${s.name}**: ${desc}`;
+      });
+      parts.push(
+        `## Available Skills\nYou have access to the following skills. Full instructions are activated when the skill is relevant to the conversation.\n${catalogLines.join('\n')}`
+      );
+    }
+
+    // Build the base prompt (archetypes + soul + context + catalog)
+    let prompt = parts.join('\n\n');
     if (prompt.length > maxChars) {
       prompt = prompt.slice(0, maxChars);
+    }
+
+    // Determine which skills to fully expand:
+    // - With a message: only skills that match the context (triggerPatterns or keyword)
+    // - Without a message: all skills (can't be selective without input)
+    const skillsToExpand = input
+      ? skills.filter((s) => isSkillInContext(s, input))
+      : skills;
+
+    // Append full instructions for contextually relevant skills —
+    // stop before exceeding the cap (never slice mid-skill)
+    for (const skill of skillsToExpand) {
+      if (!skill.instructions) continue;
+      const section = `\n\n## Skill: ${skill.name}\n${skill.instructions}`;
+      if (prompt.length + section.length > maxChars) break;
+      prompt += section;
     }
 
     return prompt;
   }
 
-  async getActiveTools(): Promise<Tool[]> {
+  async getActiveTools(personalityId?: string | null): Promise<Tool[]> {
     if (!this.config.enabled) {
       return [];
     }
 
     if (this.brain) {
-      return this.brain.getActiveTools();
+      return this.brain.getActiveTools(personalityId);
     }
 
     const skills = await this.storage.getEnabledSkills();
