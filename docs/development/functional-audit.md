@@ -89,7 +89,7 @@
 | Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw |
 |---------|--------------|----------|------------|----------|
 | **Vector Memory** | ✅ FAISS, Qdrant | ❌ | ❌ | ❌ |
-| **ChromaDB** | ⚠️ Planned (Phase 16) | ❌ | ❌ | ❌ |
+| **ChromaDB** | ✅ | ❌ | ❌ | ❌ |
 | **Semantic Search** | ✅ | ❌ | ❌ | ❌ |
 | **Memory Consolidation** | ✅ LLM-driven | ✅ File-based | ✅ | ❌ |
 | **History Compression** | ✅ Progressive | ✅ | ❌ | ❌ |
@@ -113,7 +113,7 @@
 | **IDE Integration** | ✅ Monaco Editor | ❌ | ❌ |
 | **Voice (STT/TTS)** | ✅ | ✅ | ❌ |
 | **Image Generation** | ✅ DALL-E | ✅ | ❌ |
-| **Mobile Support** | ❌ | ✅ (via messaging) | ❌ |
+| **Mobile Support** | ✅ (via messaging) | ✅ (via messaging) | ❌ |
 | **Storybook** | ✅ | ❌ | ❌ |
 
 ### 8. Enterprise Features
@@ -122,7 +122,7 @@
 |---------|--------------|----------|------------|----------|
 | **Kubernetes** | ✅ Helm charts | ❌ | ❌ | ❌ |
 | **Prometheus** | ✅ Metrics | ❌ | ❌ | ❌ |
-| **Workspace/Team** | ⚠️ Planned (Phase 20) | ❌ | ✅ | ❌ |
+| **Workspace/Team** | ✅ | ❌ | ✅ | ❌ |
 | **SSO/SAML** | ⚠️ Planned (Phase 20) | ❌ | ✅ (some) | ❌ |
 | **Onboarding** | ⚠️ Planned (Phase 21) | ❌ | ✅ | ✅ (onboard CLI) |
 | **Single Binary** | ❌ | ❌ | ❌ | ✅ |
@@ -145,7 +145,7 @@
 10. **Usage Tracking** - PostgreSQL-backed with persistence
 11. **OAuth2 First-Class** - Google services with automatic token refresh
 12. **Email (SMTP)** - IMAP receive + SMTP send with provider presets
-13. **CLI Improvements** - Interactive init, shell completions, rich output, plugin management (Phase 20, complete)
+13. **CLI Improvements** - Interactive init, shell completions, rich output, plugin management
 
 ---
 
@@ -188,4 +188,4 @@
 
 ---
 
-*Generated: 2026-02-19 — Updated for Phases 15-20 roadmap — Added PicoClaw comparison*
+*Updated: 2026-02-19*
