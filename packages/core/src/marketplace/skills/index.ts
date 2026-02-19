@@ -4,7 +4,6 @@
  */
 
 export { summarizeTextSkill } from './summarize-text.js';
-export { universalScriptAssistantSkill } from './universal-script-assistant.js';
 export { veteranFinancialManagerSkill } from './veteran-financial-manager.js';
 export { seniorWebDesignerSkill } from './senior-web-designer.js';
 export { seniorSoftwareEngineerSkill } from './senior-software-engineer.js';

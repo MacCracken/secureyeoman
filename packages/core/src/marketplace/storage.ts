@@ -7,7 +7,6 @@ import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 import {
   summarizeTextSkill,
-  universalScriptAssistantSkill,
   veteranFinancialManagerSkill,
   seniorWebDesignerSkill,
   seniorSoftwareEngineerSkill,
@@ -185,7 +184,6 @@ export class MarketplaceStorage extends PgBaseStorage {
   async seedBuiltinSkills(): Promise<void> {
     const BUILTIN_SKILLS = [
       summarizeTextSkill,
-      universalScriptAssistantSkill,
       veteranFinancialManagerSkill,
       seniorWebDesignerSkill,
       seniorSoftwareEngineerSkill,
