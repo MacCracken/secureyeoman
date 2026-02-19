@@ -218,10 +218,18 @@ export class SoulManager {
   }
 
   async listSkills(filter?: SkillFilter): Promise<Skill[]> {
-    if (this.brain) {
-      return this.brain.listSkills(filter);
-    }
-    return this.storage.listSkills(filter);
+    const skills = this.brain
+      ? await this.brain.listSkills(filter)
+      : await this.storage.listSkills(filter);
+
+    const withPersonality = skills.filter((s) => s.personalityId);
+    if (withPersonality.length === 0) return skills;
+
+    const personalities = await this.storage.listPersonalities();
+    const pMap = new Map(personalities.map((p) => [p.id, p.name]));
+    return skills.map((s) =>
+      s.personalityId ? { ...s, personalityName: pMap.get(s.personalityId) ?? null } : s
+    );
   }
 
   async getSkill(id: string): Promise<Skill | null> {

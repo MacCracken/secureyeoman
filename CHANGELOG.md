@@ -4,6 +4,42 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Community Skills — Docker Fix & Dashboard Community Tab (2026-02-18)
+
+### Docker Path Fix
+- **`community-skills/`** — New directory bundled inside the project root containing the 5 seed skills. Resolves `Path not found: ../secureyeoman-community-skills` error in Docker where the external repo is outside the build context.
+- **`Dockerfile`** — `COPY community-skills/ community-skills/` added to both builder and runtime stages so `/app/community-skills` is always present in the container
+- **Default `COMMUNITY_REPO_PATH`** changed from `../secureyeoman-community-skills` → `./community-skills`
+- **`.env`, `.env.example`, `.env.dev.example`** — Updated default and comment
+
+### Dashboard — Community Tab
+- **Three-tab layout** — Dashboard → Skills now has: **Personal Skills** | **Marketplace** | **Community**
+- **Community tab** mirrors the Marketplace card grid and adds:
+  - **Sync button** — calls `POST /api/v1/marketplace/community/sync`; shows inline result (added / updated / skipped / errors)
+  - **Repo path + last synced** info line (from `GET /community/status`)
+  - **Per-personality required** — no Global option; defaults to active personality; install disabled until personality selected; warning notice when unselected
+  - **Community badge** (`GitBranch` icon) on each card
+  - **Empty state** with setup instructions
+- **Marketplace tab** reorganised into two named sections: **YEOMAN Built-ins** (Shield badge, primary tint) and **Published**; community skills excluded from this view
+- **Shared `SkillCard` component** extracted for reuse between Marketplace and Community tabs
+- **`MarketplaceSkill` type** added to `packages/dashboard/src/types.ts` (replaces `any[]` in API client)
+- **`fetchMarketplaceSkills`** updated to accept optional `source` param
+- **`syncCommunitySkills()`** and **`fetchCommunityStatus()`** added to dashboard API client
+
+### Files Changed
+- `community-skills/README.md` (new)
+- `community-skills/skills/**/*.json` (5 seed skills, new)
+- `Dockerfile`
+- `packages/core/src/secureyeoman.ts`
+- `packages/dashboard/src/components/SkillsPage.tsx`
+- `packages/dashboard/src/api/client.ts`
+- `packages/dashboard/src/types.ts`
+- `packages/core/src/marketplace/marketplace.test.ts`
+- `.env`, `.env.example`, `.env.dev.example`
+- `docs/adr/063-community-skills-registry.md`
+
+---
+
 ## Phase 18: Community Skills Registry (2026-02-18) — [ADR 063](docs/adr/063-community-skills-registry.md)
 
 ### Community Skills Repo (`secureyeoman-community-skills`)

@@ -30,6 +30,9 @@ RUN npm run build
 # Copy SQL migration files (TypeScript doesn't copy non-TS assets)
 RUN cp packages/core/src/storage/migrations/*.sql packages/core/dist/storage/migrations/
 
+# Copy bundled community skills (available at /app/community-skills in the container)
+COPY community-skills/ community-skills/
+
 # Stage 2: Runtime
 FROM node:20-alpine
 
@@ -54,6 +57,9 @@ COPY --from=builder /app/packages/shared/dist/ packages/shared/dist/
 COPY --from=builder /app/packages/core/dist/ packages/core/dist/
 COPY --from=builder /app/packages/dashboard/dist/ packages/dashboard/dist/
 COPY --from=builder /app/packages/mcp/dist/ packages/mcp/dist/
+
+# Bundled community skills (default COMMUNITY_REPO_PATH=./community-skills)
+COPY --from=builder /app/community-skills/ community-skills/
 
 # Gateway port (core) and MCP port
 EXPOSE 18789

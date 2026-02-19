@@ -348,20 +348,27 @@ Or connect via HTTP: `http://localhost:3001/mcp` (when running with `--profile m
 
 ### Community Skills
 
-The [secureyeoman-community-skills](https://github.com/MacCracken/secureyeoman-community-skills) repository contains community-contributed skills you can sync into your local marketplace.
+A `community-skills/` directory is bundled inside the project and available in Docker at `/app/community-skills` — no extra setup needed. Sync it from the Dashboard or API:
 
 ```bash
-# Clone alongside secureyeoman
-git clone https://github.com/MacCracken/secureyeoman-community-skills.git ../secureyeoman-community-skills
-
-# Sync skills (uses COMMUNITY_REPO_PATH from .env, default: ../secureyeoman-community-skills)
+# Sync bundled skills (default — works in Docker and local dev)
 curl -X POST http://localhost:18789/api/v1/marketplace/community/sync
 
 # Browse community skills
-curl http://localhost:18789/api/v1/marketplace?source=community
+curl "http://localhost:18789/api/v1/marketplace?source=community"
 ```
 
-To point at a different community repo or your own fork, set `COMMUNITY_REPO_PATH` in your `.env`.
+Or use the Dashboard → Skills → **Community** tab — includes a Sync button, per-personality install, and live sync results.
+
+**To use the full community repo** (more skills, community contributions):
+
+```bash
+git clone https://github.com/MacCracken/secureyeoman-community-skills.git
+# Then set in .env:
+COMMUNITY_REPO_PATH=/path/to/secureyeoman-community-skills
+```
+
+Community skills always install **per-personality** — select which personality gets the skill before installing.
 
 ---
 

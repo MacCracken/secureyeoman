@@ -75,6 +75,38 @@ Community skills must satisfy [`schema/skill.schema.json`](https://github.com/Ma
 
 ---
 
+## Docker / Container Path
+
+The default `COMMUNITY_REPO_PATH=../secureyeoman-community-skills` was inaccessible in Docker because the external repo lives outside the build context. The fix: a `community-skills/` directory is bundled inside the project root and COPY'd into the image at `/app/community-skills`. The default path is now `./community-skills` (relative to cwd).
+
+```
+project root/
+  community-skills/          ← bundled, included in Docker image
+    README.md
+    skills/
+      development/
+      productivity/
+      security/
+      utilities/
+```
+
+Users who want the full community repo can still set:
+```
+COMMUNITY_REPO_PATH=/path/to/secureyeoman-community-skills
+```
+or mount a volume into the container at a custom path and set `COMMUNITY_REPO_PATH` accordingly.
+
+## Dashboard — Community Tab
+
+The Marketplace view gained a dedicated **Community** tab (Dashboard → Skills → Community):
+- Same card grid layout as the Marketplace tab
+- **Sync button** — triggers `POST /api/v1/marketplace/community/sync` and shows inline result (added / updated / skipped / errors)
+- **Repo path + last synced** metadata line
+- **Per-personality required** — community skills always install to a specific personality (no Global option); the active personality is pre-selected; install is disabled until a personality is chosen
+- **Community badge** (`GitBranch` icon) on each card
+
+The Marketplace tab is now split into two named sections: **YEOMAN Built-ins** (Shield badge) and **Published**, with community skills excluded.
+
 ## Security Considerations
 
 - **No network calls from core** — the agent never fetches from the internet during sync; the user controls what's on disk
