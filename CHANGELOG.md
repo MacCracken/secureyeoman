@@ -4,6 +4,27 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 20 (partial): Personality Editor — Brain Skills Visibility (2026-02-19) — [ADR 066](docs/adr/066-personality-brain-skills-visibility.md)
+
+### UX
+
+- **Brain section reordered** — External Knowledge Base block moved to the top of the Brain section (was at the bottom); Knowledge and Skills sub-sections follow as collapsible children.
+- **Skills sub-section** — New collapsible Skills panel inside the Brain section lists all skills scoped to the personality being edited. Each skill shows a pencil Edit button that navigates directly to the Skills → Personal tab with the skill's edit form pre-opened.
+- **Empty state with navigable links** — When no skills are associated, the panel shows an empty state with links to the Skills Marketplace, Community tab, and Skills → Personal tab so users can quickly add skills from the right source.
+- **"Save first" hint** — For new (unsaved) personalities, the Skills sub-section shows a hint to save the personality before managing skills.
+- **Cross-page navigation via router state** — `navigate('/skills', { state: { openSkillId } })` carries intent to `SkillsPage`; `MySkillsTab` reads the state, calls `startEdit`, then clears the state via `navigate('/skills', { replace: true, state: null })`. Deep-linking to the Community tab from the empty-state link uses the same pattern (`location.state.initialTab = 'community'`).
+- **9 new tests** — `PersonalityEditor.test.tsx` (5 tests: list renders, edit opens form, Brain shows skills, Brain empty state, Edit navigates) and `SkillsPage.test.tsx` (4 tests: renders, opens edit form on openSkillId, clears state, initialTab community).
+
+### Files Changed
+
+- `packages/dashboard/src/components/PersonalityEditor.tsx` — `BrainSection` reordered and split into sub-sections; `fetchSkills` added; `useNavigate` added; `personalityId` prop added
+- `packages/dashboard/src/components/SkillsPage.tsx` — `useNavigate` added; `getInitialTab` reads `initialTab` from state; `MySkillsTab` reads `openSkillId` from state; both clear state after use
+- `packages/dashboard/src/components/PersonalityEditor.test.tsx` — New test file (5 tests)
+- `packages/dashboard/src/components/SkillsPage.test.tsx` — New test file (4 tests)
+- `docs/adr/066-personality-brain-skills-visibility.md` — New ADR
+
+---
+
 ## Phase 20 (partial): Dagre Layout Algorithm (2026-02-19) — [ADR 058](docs/adr/058-webgl-graph-rendering.md)
 
 ### Visualization

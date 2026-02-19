@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Wrench,
@@ -62,15 +62,25 @@ const STATUS_BADGES: Record<string, string> = {
 
 export function SkillsPage() {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const getInitialTab = (): TabType => {
     const path = location.pathname;
     if (path.includes('/community')) return 'community';
     if (path.includes('/marketplace')) return 'marketplace';
     if (path.includes('/installed')) return 'installed';
+    const stateTab = (location.state as { initialTab?: TabType } | null)?.initialTab;
+    if (stateTab) return stateTab;
     return 'my-skills';
   };
 
   const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
+
+  useEffect(() => {
+    if ((location.state as { initialTab?: string } | null)?.initialTab) {
+      navigate(location.pathname, { replace: true, state: null });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="space-y-6">
@@ -144,6 +154,8 @@ export function SkillsPage() {
 // ─── Personal Skills Tab ──────────────────────────────────────────────────────
 
 function MySkillsTab() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>('');
@@ -179,6 +191,17 @@ function MySkillsTab() {
 
   const skills = data?.skills ?? [];
   const pendingCount = skills.filter((s) => s.status === 'pending_approval').length;
+
+  useEffect(() => {
+    const openSkillId = (location.state as { openSkillId?: string } | null)?.openSkillId;
+    if (openSkillId && skills.length > 0) {
+      const skill = skills.find((s) => s.id === openSkillId);
+      if (skill) {
+        startEdit(skill);
+        navigate('/skills', { replace: true, state: null });
+      }
+    }
+  }, [location.state, skills]); // navigate and startEdit are stable
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['skills'] });
 

@@ -52,6 +52,9 @@
 ### Visualization
 - [x] **Layout Algorithms — Dagre** — Dagre hierarchical layout integrated into `WebGLGraph` via `layout="dagre"` prop; delegation tree (`SubAgentsPage`) now uses top-down DAG layout. ELK deferred to Phase 22.
 
+### UX
+- [x] **Personality Editor — Brain Skills Visibility** — Brain section reordered (External Knowledge Base first); collapsible Knowledge and Skills sub-sections added; skills scoped to the personality listed with per-skill Edit buttons; cross-page navigation via router state (`openSkillId`, `initialTab`); empty state with links to Marketplace/Community/Personal; 9 new tests.
+
 ### CLI Enhancements
 - [x] **Shell Completions** — Auto-generate shell completions for bash, zsh, fish
 - [x] **Configuration Validation** — `secureyeoman config validate` to check config file before startup
@@ -75,13 +78,6 @@
 ### Development
 - [ ] **Go/Rust Runtime** — Potential future language option for core components
 
-### Guided Setup CLI
-- [ ] **Interactive Init Command** — `secureyeoman init` with interactive wizard for first-time setup (generate keys, configure AI providers, set up integrations)
-- [ ] **Configuration Wizard** — Guided config file generation with prompts for required settings
-
-### Major Audit
-- [ ] **Audit all the things** - Code, Documentation, ADR, & Tests
-
 ---
 
 ## Phase 21: Onboarding & First Run
@@ -98,6 +94,15 @@
 **Status**: Pending
 
 *Items in this phase are demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
+
+### Guided Setup CLI
+
+- [ ] **Interactive Init Command** — `secureyeoman init` with interactive wizard for first-time setup (generate keys, configure AI providers, set up integrations)
+- [ ] **Configuration Wizard** — Guided config file generation with prompts for required settings
+
+### Major Audit
+
+- [ ] **Audit all the things** — Code, Documentation, ADR, & Tests
 
 ### Layout Algorithms
 
