@@ -53,6 +53,12 @@ export interface AIClientDeps {
   logger?: SecureLogger;
   usageStorage?: UsageStorage;
   soulManager?: SoulManager;
+  /**
+   * Pre-built tracker to reuse across model switches.
+   * When provided, usageStorage is ignored for tracker construction —
+   * the existing tracker (already seeded from DB) is carried over as-is.
+   */
+  usageTracker?: UsageTracker;
 }
 
 export class AIClient {
@@ -70,7 +76,8 @@ export class AIClient {
 
   constructor(config: AIClientConfig, deps: AIClientDeps = {}) {
     this.costCalculator = new CostCalculator();
-    this.usageTracker = new UsageTracker(config.model.maxTokensPerDay, deps.usageStorage);
+    this.usageTracker =
+      deps.usageTracker ?? new UsageTracker(config.model.maxTokensPerDay, deps.usageStorage);
     this.auditChain = deps.auditChain ?? null;
     this.logger = deps.logger ?? null;
     this.providerName = config.model.provider;

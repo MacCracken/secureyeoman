@@ -1616,6 +1616,11 @@ export class SecureYeoman {
         {
           auditChain: this.auditChain ?? undefined,
           logger: this.logger?.child({ component: 'AIClient' }),
+          // Carry the existing tracker across model switches so historical
+          // records and DB-seeded counters are not lost when the user changes
+          // provider/model (including the persisted default applied on startup).
+          usageStorage: this.usageStorage ?? undefined,
+          usageTracker: this.aiClient?.getUsageTracker(),
         }
       );
 
