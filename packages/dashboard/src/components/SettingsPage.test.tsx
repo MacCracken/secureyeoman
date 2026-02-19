@@ -86,6 +86,9 @@ describe('SettingsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
   });
 

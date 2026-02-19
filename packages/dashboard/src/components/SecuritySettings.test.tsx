@@ -111,6 +111,9 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
@@ -124,6 +127,9 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: null, model: null });
@@ -159,6 +165,9 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -227,6 +236,9 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -256,6 +268,9 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -275,6 +290,9 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -388,6 +406,9 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
       allowDynamicTools: true,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -407,6 +428,9 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
       allowDynamicTools: true,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -436,6 +460,9 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
       allowDynamicTools: true,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -450,5 +477,69 @@ describe('SecuritySettings', () => {
     renderComponent();
     await screen.findByText('Security');
     expect(vi.mocked(api.fetchModelDefault)).toHaveBeenCalled();
+  });
+
+  // ── ML Security ────────────────────────────────────────────────────
+
+  it('renders ML Security section header', async () => {
+    renderComponent();
+    expect(await screen.findByText('ML Security')).toBeInTheDocument();
+  });
+
+  it('renders Anomaly Detection toggle', async () => {
+    renderComponent();
+    expect(await screen.findByText('Anomaly Detection')).toBeInTheDocument();
+    expect(screen.getByLabelText('Toggle Anomaly Detection')).toBeInTheDocument();
+  });
+
+  it('Anomaly Detection is disabled by default (aria-checked=false)', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Anomaly Detection');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy with allowAnomalyDetection when toggled', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Anomaly Detection');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowAnomalyDetection: true });
+    });
+  });
+
+  // ── Sandbox Isolation ──────────────────────────────────────────────
+
+  it('renders Sandbox Isolation section header', async () => {
+    renderComponent();
+    expect(await screen.findByText('Sandbox Isolation')).toBeInTheDocument();
+  });
+
+  it('renders gVisor Isolation toggle', async () => {
+    renderComponent();
+    expect(await screen.findByText('gVisor Isolation')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle gVisor Isolation');
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy with sandboxGvisor when toggled', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle gVisor Isolation');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ sandboxGvisor: true });
+    });
+  });
+
+  it('calls updateSecurityPolicy with sandboxWasm when toggled', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle WASM Isolation');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ sandboxWasm: true });
+    });
   });
 });

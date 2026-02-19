@@ -31,6 +31,8 @@ import {
   Code2,
   BookOpen,
   Wrench,
+  Brain,
+  Cpu,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -388,6 +390,9 @@ export function SecuritySettings() {
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
   const dtcAllowed = securityPolicy?.allowDynamicTools ?? false;
   const sandboxDtcAllowed = securityPolicy?.sandboxDynamicTools ?? true;
+  const anomalyDetectionAllowed = securityPolicy?.allowAnomalyDetection ?? false;
+  const gvisorAllowed = securityPolicy?.sandboxGvisor ?? false;
+  const wasmAllowed = securityPolicy?.sandboxWasm ?? false;
   const roleIds = roles.map((r) => r.id);
 
   const handleCreateRole = (form: RoleFormData) => {
@@ -679,6 +684,24 @@ export function SecuritySettings() {
         </div>
       </div>
 
+      {/* ML Security */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Brain className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">ML Security</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <PolicyToggle
+            label="Anomaly Detection"
+            icon={<Brain className="w-4 h-4 text-muted-foreground" />}
+            enabled={anomalyDetectionAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => policyMutation.mutate({ allowAnomalyDetection: !anomalyDetectionAllowed })}
+            description="Use machine learning to detect unusual patterns in agent behavior, API calls, and security events. Disabled by default."
+          />
+        </div>
+      </div>
+
       {/* Sandbox Execution Policy */}
       <div className="card">
         <div className="p-4 border-b flex items-center gap-2">
@@ -698,6 +721,32 @@ export function SecuritySettings() {
                 ? 'Sandboxed code execution is enabled. Code runs in isolated environments with secrets filtering and approval policies.'
                 : 'Sandboxed code execution is disabled. No code can be executed through the execution engine.'
             }
+          />
+        </div>
+      </div>
+
+      {/* Sandbox Isolation */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Cpu className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Sandbox Isolation</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <PolicyToggle
+            label="gVisor Isolation"
+            icon={<Shield className="w-4 h-4 text-muted-foreground" />}
+            enabled={gvisorAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => policyMutation.mutate({ sandboxGvisor: !gvisorAllowed })}
+            description="Add a gVisor (runsc) kernel-level isolation layer to sandboxed execution. Requires gVisor installed on the host system."
+          />
+          <PolicyToggle
+            label="WASM Isolation"
+            icon={<Blocks className="w-4 h-4 text-muted-foreground" />}
+            enabled={wasmAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => policyMutation.mutate({ sandboxWasm: !wasmAllowed })}
+            description="Run code inside a WebAssembly sandbox for additional memory and capability isolation."
           />
         </div>
       </div>

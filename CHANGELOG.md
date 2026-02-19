@@ -4,6 +4,17 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 17: ML Security & Sandbox Isolation — Complete (2026-02-18) [ADR 060](docs/adr/060-ml-security-sandbox-isolation.md)
+
+- `allowAnomalyDetection` global policy toggle (ML anomaly detection engine, default off)
+- `sandboxGvisor` global policy toggle (gVisor kernel isolation layer, default off)
+- `sandboxWasm` global policy toggle (WASM execution isolation, default off)
+- Dashboard: ML Security card (Brain icon) + Sandbox Isolation card (Cpu icon) in Settings → Security
+- CLI: 3 new flags in `secureyeoman policy get` / `secureyeoman policy set`
+- 8 new SecuritySettings tests; all existing tests updated with 3 new mock fields
+
+---
+
 ## Phase 17: Dynamic Tool Creation — [ADR 059](docs/adr/059-dynamic-tool-creation.md)
 
 Global `allowDynamicTools` / `sandboxDynamicTools` security policy toggles; per-personality `allowDynamicTools` in creation config; `secureyeoman policy` CLI command.

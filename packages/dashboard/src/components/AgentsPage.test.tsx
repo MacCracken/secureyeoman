@@ -91,6 +91,9 @@ const DEFAULT_POLICY = {
   allowMultimodal: true,
   allowDynamicTools: false,
   sandboxDynamicTools: true,
+  allowAnomalyDetection: false,
+  sandboxGvisor: false,
+  sandboxWasm: false,
 };
 
 describe('AgentsPage', () => {

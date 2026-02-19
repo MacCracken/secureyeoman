@@ -95,6 +95,9 @@ describe('ExtensionsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     mockFetchExtensions.mockResolvedValue(MOCK_EXTENSIONS);
     mockFetchExtensionHooks.mockResolvedValue(MOCK_HOOKS);
@@ -122,6 +125,9 @@ describe('ExtensionsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     expect(await screen.findByText('Extensions Not Enabled')).toBeInTheDocument();
@@ -141,6 +147,9 @@ describe('ExtensionsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();
@@ -161,6 +170,9 @@ describe('ExtensionsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();

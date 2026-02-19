@@ -1705,6 +1705,9 @@ export interface SecurityPolicy {
   allowMultimodal: boolean;
   allowDynamicTools: boolean;
   sandboxDynamicTools: boolean;
+  allowAnomalyDetection: boolean;
+  sandboxGvisor: boolean;
+  sandboxWasm: boolean;
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -1723,6 +1726,9 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     };
   }
 }

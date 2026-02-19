@@ -218,6 +218,12 @@ export const SecurityConfigSchema = z.object({
   allowDynamicTools: z.boolean().default(false),
   /** Require dynamically-created tools to run inside a sandbox. Defaults true; only applies when allowDynamicTools is true. */
   sandboxDynamicTools: z.boolean().default(true),
+  /** Enable ML-based anomaly detection for agent behavior, API calls, and security events. Off by default. */
+  allowAnomalyDetection: z.boolean().default(false),
+  /** Enable gVisor (runsc) kernel-level isolation for sandboxed execution. Off by default; requires gVisor on host. */
+  sandboxGvisor: z.boolean().default(false),
+  /** Enable WebAssembly-based isolation for code execution. Off by default. */
+  sandboxWasm: z.boolean().default(false),
   secretBackend: z.enum(['auto', 'keyring', 'env', 'file']).default('auto'),
   rotation: z
     .object({

@@ -1655,6 +1655,9 @@ export class SecureYeoman {
     allowMultimodal?: boolean;
     allowDynamicTools?: boolean;
     sandboxDynamicTools?: boolean;
+    allowAnomalyDetection?: boolean;
+    sandboxGvisor?: boolean;
+    sandboxWasm?: boolean;
   }): void {
     this.ensureInitialized();
 
@@ -1690,6 +1693,15 @@ export class SecureYeoman {
     }
     if (updates.sandboxDynamicTools !== undefined) {
       this.config!.security.sandboxDynamicTools = updates.sandboxDynamicTools;
+    }
+    if (updates.allowAnomalyDetection !== undefined) {
+      this.config!.security.allowAnomalyDetection = updates.allowAnomalyDetection;
+    }
+    if (updates.sandboxGvisor !== undefined) {
+      this.config!.security.sandboxGvisor = updates.sandboxGvisor;
+    }
+    if (updates.sandboxWasm !== undefined) {
+      this.config!.security.sandboxWasm = updates.sandboxWasm;
     }
 
     this.logger?.info('Security policy updated', updates);
@@ -1744,6 +1756,9 @@ export class SecureYeoman {
         'allowMultimodal',
         'allowDynamicTools',
         'sandboxDynamicTools',
+        'allowAnomalyDetection',
+        'sandboxGvisor',
+        'sandboxWasm',
       ] as const;
       for (const row of result.rows) {
         if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {
