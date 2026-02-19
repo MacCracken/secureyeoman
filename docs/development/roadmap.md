@@ -28,9 +28,8 @@
 | 15 | Integration Expansion | 2026.2.18 | Complete |
 | 16 | Integration Enhancements | 2026.2.18 | Complete |
 | 17 | Advanced Capabilities | 2026.2.18 | Complete |
+| 18 | Skills Marketplace & Community | 2026.2.18 | Complete |
 | | **Release 2026.2.18** | **2026-02-18** | **Released** |
-| 18 | Skills Marketplace & Community | 2026.2.19 | Complete |
-| | **Release 2026.2.19** | **2026-02-19** | **Released** |
 | 19 | Per-Personality Access | — | Pending |
 | 20 | SaaS ready | — | Pending |
 | 21 | Onboarding & First Run | — | Pending |
@@ -147,4 +146,4 @@ Tracked third-party dependencies with known issues that require upstream resolut
 
 ---
 
-*Last updated: 2026-02-19 — Phase 18 complete: Community Skills Registry with local-path sync, source tracking, and 5 seed skills — see [Changelog](../../CHANGELOG.md) for all completed work*
+*Last updated: 2026-02-18*

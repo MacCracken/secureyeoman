@@ -1,7 +1,7 @@
 # ADR 063: Community Skills Registry — Local Path Sync
 
 **Status**: Accepted
-**Date**: 2026-02-19
+**Date**: 2026-02-18
 **Phase**: 18 — Skills Marketplace & Community
 
 ---

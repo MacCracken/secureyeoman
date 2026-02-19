@@ -4,7 +4,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 18: Community Skills Registry (2026-02-19) — [ADR 063](docs/adr/063-community-skills-registry.md)
+## Phase 18: Community Skills Registry (2026-02-18) — [ADR 063](docs/adr/063-community-skills-registry.md)
 
 ### Community Skills Repo (`secureyeoman-community-skills`)
 - **`README.md`** — Full description, skill format spec, category list, installation instructions, liability disclaimer

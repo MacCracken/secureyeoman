@@ -743,10 +743,7 @@ export class SecureYeoman {
         logger: this.logger.child({ component: 'MarketplaceManager' }),
         brainManager: this.brainManager ?? undefined,
         communityRepoPath:
-          process.env['COMMUNITY_REPO_PATH'] ??
-          (this.config.marketplace as { communityRepoPath?: string } | undefined)
-            ?.communityRepoPath ??
-          '../secureyeoman-community-skills',
+          process.env['COMMUNITY_REPO_PATH'] ?? '../secureyeoman-community-skills',
       });
       await this.marketplaceManager.seedBuiltinSkills();
       this.logger.debug('Marketplace manager initialized');
