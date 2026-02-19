@@ -288,4 +288,112 @@ describe('ConnectionsPage', () => {
 
     expect(await screen.findByText('Invalid token')).toBeInTheDocument();
   });
+
+  // ── New Phase 18 Integrations ─────────────────────────────
+
+  it('shows Figma in available platforms', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['figma'] });
+    renderComponent();
+    // Figma is in DEVOPS_PLATFORMS — navigate to DevOps sub-tab first
+    const devopsTab = await screen.findByText('DevOps');
+    await user.click(devopsTab);
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('Figma')).toBeInTheDocument();
+  });
+
+  it('shows Stripe in available platforms', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['stripe'] });
+    renderComponent();
+    const devopsTab = await screen.findByText('DevOps');
+    await user.click(devopsTab);
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('Stripe')).toBeInTheDocument();
+  });
+
+  it('shows Zapier in available platforms', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['zapier'] });
+    renderComponent();
+    const devopsTab = await screen.findByText('DevOps');
+    await user.click(devopsTab);
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('Zapier')).toBeInTheDocument();
+  });
+
+  it('shows QQ in available platforms', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['qq'] });
+    renderComponent();
+    // QQ is a messaging platform — open the picker on the default Messaging sub-tab
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('QQ')).toBeInTheDocument();
+  });
+
+  it('shows DingTalk in available platforms', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['dingtalk'] });
+    renderComponent();
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('DingTalk')).toBeInTheDocument();
+  });
+
+  it('shows Line in available platforms', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['line'] });
+    renderComponent();
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('Line')).toBeInTheDocument();
+  });
+
+  it('shows Figma MCP featured server on MCP tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    const mcpTab = await screen.findByText('MCP');
+    await user.click(mcpTab);
+    expect(screen.getByText('Figma')).toBeInTheDocument();
+  });
+
+  it('shows Stripe MCP featured server on MCP tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    const mcpTab = await screen.findByText('MCP');
+    await user.click(mcpTab);
+    expect(screen.getByText('Stripe')).toBeInTheDocument();
+  });
+
+  it('shows Zapier MCP featured server on MCP tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    const mcpTab = await screen.findByText('MCP');
+    await user.click(mcpTab);
+    expect(screen.getByText('Zapier')).toBeInTheDocument();
+  });
+
+  it('shows Linear in available platforms', async () => {
+    const user = userEvent.setup();
+    mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['linear'] });
+    renderComponent();
+    // Linear is in PRODUCTIVITY_PLATFORMS — shown under DevOps sub-tab
+    const devopsTab = await screen.findByText('DevOps');
+    await user.click(devopsTab);
+    const addBtn = await screen.findByText('Add Integration');
+    await user.click(addBtn);
+    expect(screen.getByText('Linear')).toBeInTheDocument();
+  });
+
+  it('shows Linear MCP featured server on MCP tab', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    const mcpTab = await screen.findByText('MCP');
+    await user.click(mcpTab);
+    expect(screen.getByText('Linear')).toBeInTheDocument();
+  });
 });

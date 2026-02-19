@@ -101,6 +101,13 @@ export const DEFAULT_RATE_LIMITS: Record<string, PlatformRateLimit> = {
   jira: { maxPerSecond: 10 },
   aws: { maxPerSecond: 10 },
   azure: { maxPerSecond: 10 },
+  figma: { maxPerSecond: 5 },
+  stripe: { maxPerSecond: 25 },
+  zapier: { maxPerSecond: 10 },
+  qq: { maxPerSecond: 30 },
+  dingtalk: { maxPerSecond: 20 },
+  line: { maxPerSecond: 30 },
+  linear: { maxPerSecond: 10 },
 };
 
 // ─── Dependencies ────────────────────────────────────────────

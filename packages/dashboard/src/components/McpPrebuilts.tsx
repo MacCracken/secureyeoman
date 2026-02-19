@@ -38,6 +38,30 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
       { key: 'SUPABASE_SERVICE_KEY', label: 'Service Key' },
     ],
   },
+  {
+    name: 'Figma',
+    description: 'Access Figma files, components, and design metadata via MCP tools',
+    command: 'npx -y figma-developer-mcp',
+    requiredEnvVars: [{ key: 'FIGMA_API_KEY', label: 'Figma Personal Access Token' }],
+  },
+  {
+    name: 'Stripe',
+    description: 'Query customers, invoices, payment intents, and subscriptions via Stripe MCP',
+    command: 'npx -y @stripe/mcp-server-stripe',
+    requiredEnvVars: [{ key: 'STRIPE_SECRET_KEY', label: 'Stripe Secret Key' }],
+  },
+  {
+    name: 'Zapier',
+    description: 'Trigger and manage Zaps, actions, and workflow automation via Zapier MCP',
+    command: 'npx -y @zapier/mcp-server',
+    requiredEnvVars: [{ key: 'ZAPIER_API_KEY', label: 'Zapier API Key' }],
+  },
+  {
+    name: 'Linear',
+    description: 'Create and query issues, projects, and cycles via the Linear MCP server',
+    command: 'npx -y @linear/mcp-server',
+    requiredEnvVars: [{ key: 'LINEAR_API_KEY', label: 'Linear API Key' }],
+  },
 ];
 
 export function McpPrebuilts() {

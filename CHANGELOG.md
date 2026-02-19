@@ -4,6 +4,35 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 18: Services & Messaging Integrations (2026-02-18) — [ADR 061](docs/adr/061-phase18-services-messaging-integrations.md)
+
+### Services Integrations
+
+- **Figma** (`packages/core/src/integrations/figma/`) — REST polling adapter; polls file comments via `X-Figma-Token`; `sendMessage()` posts comments; `testConnection()` via `GET /v1/me`; One-Click MCP Featured Server (`figma-developer-mcp`, requires `FIGMA_API_KEY`)
+- **Stripe** (`packages/core/src/integrations/stripe/`) — `WebhookIntegration`; verifies `Stripe-Signature` HMAC-SHA256 (`t=<ts>,v1=<sig>` format); handles `payment_intent.succeeded/failed`, `customer.created/deleted`, `invoice.paid/payment_failed`; `testConnection()` via `GET /v1/account`; One-Click MCP Featured Server (`@stripe/mcp-server-stripe`, requires `STRIPE_SECRET_KEY`)
+- **Zapier** (`packages/core/src/integrations/zapier/`) — `WebhookIntegration`; receives Zap trigger payloads inbound; `sendMessage()` POSTs to configured catch-hook URL; optional HMAC verification; One-Click MCP Featured Server (`@zapier/mcp-server`, requires `ZAPIER_API_KEY`)
+
+### Productivity Integrations
+
+- **Linear** (`packages/core/src/integrations/linear/`) — `WebhookIntegration`; HMAC-SHA256 signature verification (optional — unsigned events accepted if no secret configured); handles `Issue` create/update/remove and `Comment` events; `sendMessage()` creates issues via Linear GraphQL `issueCreate` mutation; `testConnection()` via `viewer` query; One-Click MCP Featured Server (`@linear/mcp-server`, requires `LINEAR_API_KEY`)
+
+### Messaging Integrations
+
+- **QQ** (`packages/core/src/integrations/qq/`) — OneBot v11 (CQ-HTTP/go-cqhttp) HTTP API; polls `/get_friend_list` for health; sends via `/send_private_msg` and `/send_group_msg`; `handleInboundEvent()` for OneBot HTTP push; `testConnection()` via `/get_login_info`
+- **DingTalk** (`packages/core/src/integrations/dingtalk/`) — `WebhookIntegration`; custom robot webhook inbound/outbound; text and markdown message support; `sessionWebhook` in-conversation reply routing; optional HMAC token verification; `testConnection()` verifies outbound URL
+- **Line** (`packages/core/src/integrations/line/`) — `WebhookIntegration`; HMAC-SHA256 base64 signature verification; handles message (text/sticker/image), follow, unfollow, join, leave events; reply-token and push-message outbound paths; `testConnection()` via `GET /v2/bot/info`
+
+### Platform Enum & UI
+
+- **`packages/shared/src/types/integration.ts`** — `qq`, `dingtalk`, `line` added to `PlatformSchema` (linear was pre-existing)
+- **`packages/core/src/integrations/types.ts`** — rate limits for all 7 new platforms
+- **`packages/core/src/secureyeoman.ts`** — 7 new `registerPlatform()` calls with imports
+- **`packages/dashboard/src/components/ConnectionsPage.tsx`** — 7 new `PLATFORM_META` entries (Figma/CreditCard/Zap/Building2/LayoutGrid icons); figma+stripe+zapier added to `DEVOPS_PLATFORMS`; linear added to `PRODUCTIVITY_PLATFORMS`
+- **`packages/dashboard/src/components/McpPrebuilts.tsx`** — Figma, Stripe, Zapier, Linear added to `PREBUILT_SERVERS` (8 total featured servers)
+- **`packages/dashboard/src/components/ConnectionsPage.test.tsx`** — 11 new tests: 7 platform name visibility tests + 4 MCP featured server tab tests
+
+---
+
 ## Phase 17: ML Security & Sandbox Isolation — Complete (2026-02-18) [ADR 060](docs/adr/060-ml-security-sandbox-isolation.md)
 
 - `allowAnomalyDetection` global policy toggle (ML anomaly detection engine, default off)
