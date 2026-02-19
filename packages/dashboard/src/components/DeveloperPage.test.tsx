@@ -39,13 +39,15 @@ function renderComponent() {
 const FULL_POLICY = {
   allowSubAgents: false,
   allowA2A: false,
-      allowSwarms: false,
+  allowSwarms: false,
   allowExtensions: true,
   allowExecution: true,
   allowProactive: false,
   allowExperiments: true,
   allowStorybook: true,
   allowMultimodal: false,
+  allowDynamicTools: false,
+  sandboxDynamicTools: true,
 };
 
 describe('DeveloperPage', () => {

@@ -84,6 +84,8 @@ describe('MultimodalPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: true,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     mockFetchMultimodalJobs.mockResolvedValue(MOCK_JOBS);
   });
@@ -101,6 +103,8 @@ describe('MultimodalPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     renderComponent();
     expect(
@@ -119,6 +123,8 @@ describe('MultimodalPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     renderComponent();
     await screen.findByText(/Multimodal processing is currently disabled/);
@@ -149,6 +155,8 @@ describe('MultimodalPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: true,
     });
     renderComponent({ embedded: true });
     await screen.findByText(/Multimodal processing is currently disabled/);

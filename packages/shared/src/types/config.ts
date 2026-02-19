@@ -214,6 +214,10 @@ export const SecurityConfigSchema = z.object({
   allowStorybook: z.boolean().default(false),
   /** Allow multimodal I/O (vision, STT, TTS, image generation). */
   allowMultimodal: z.boolean().default(false),
+  /** Allow agents to generate and register tools at runtime. Off by default. */
+  allowDynamicTools: z.boolean().default(false),
+  /** Require dynamically-created tools to run inside a sandbox. Defaults true; only applies when allowDynamicTools is true. */
+  sandboxDynamicTools: z.boolean().default(true),
   secretBackend: z.enum(['auto', 'keyring', 'env', 'file']).default('auto'),
   rotation: z
     .object({

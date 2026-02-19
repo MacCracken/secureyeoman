@@ -1653,6 +1653,8 @@ export class SecureYeoman {
     allowExperiments?: boolean;
     allowStorybook?: boolean;
     allowMultimodal?: boolean;
+    allowDynamicTools?: boolean;
+    sandboxDynamicTools?: boolean;
   }): void {
     this.ensureInitialized();
 
@@ -1682,6 +1684,12 @@ export class SecureYeoman {
     }
     if (updates.allowMultimodal !== undefined) {
       this.config!.security.allowMultimodal = updates.allowMultimodal;
+    }
+    if (updates.allowDynamicTools !== undefined) {
+      this.config!.security.allowDynamicTools = updates.allowDynamicTools;
+    }
+    if (updates.sandboxDynamicTools !== undefined) {
+      this.config!.security.sandboxDynamicTools = updates.sandboxDynamicTools;
     }
 
     this.logger?.info('Security policy updated', updates);
@@ -1734,6 +1742,8 @@ export class SecureYeoman {
         'allowExperiments',
         'allowStorybook',
         'allowMultimodal',
+        'allowDynamicTools',
+        'sandboxDynamicTools',
       ] as const;
       for (const row of result.rows) {
         if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {

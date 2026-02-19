@@ -20,6 +20,7 @@
  *   secureyeoman scraper              # Web scraper configuration
  *   secureyeoman multimodal           # Multimodal I/O operations
  *   secureyeoman model                # AI model management (info, list, switch, default)
+ *   secureyeoman policy               # Security policy management (get, set, dynamic-tools)
  */
 
 import { createRouter } from './cli/router.js';
@@ -39,6 +40,7 @@ import { memoryCommand } from './cli/commands/memory.js';
 import { scraperCommand } from './cli/commands/scraper.js';
 import { multimodalCommand } from './cli/commands/multimodal.js';
 import { modelCommand } from './cli/commands/model.js';
+import { policyCommand } from './cli/commands/policy.js';
 
 const router = createRouter('start');
 
@@ -59,6 +61,7 @@ router.register(memoryCommand);
 router.register(scraperCommand);
 router.register(multimodalCommand);
 router.register(modelCommand);
+router.register(policyCommand);
 
 // Help command
 router.register({

@@ -30,6 +30,7 @@ import {
   FlaskConical,
   Code2,
   BookOpen,
+  Wrench,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -385,6 +386,8 @@ export function SecuritySettings() {
   const multimodalAllowed = securityPolicy?.allowMultimodal ?? false;
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
+  const dtcAllowed = securityPolicy?.allowDynamicTools ?? false;
+  const sandboxDtcAllowed = securityPolicy?.sandboxDynamicTools ?? true;
   const roleIds = roles.map((r) => r.id);
 
   const handleCreateRole = (form: RoleFormData) => {
@@ -637,6 +640,39 @@ export function SecuritySettings() {
                     ? 'Agent swarms are enabled. Personalities can orchestrate multi-agent swarm runs. The Swarms tab is visible in Sub-Agents.'
                     : 'Agent swarms are disabled. No swarm orchestration can occur and the Swarms tab is hidden from Sub-Agents.'
                 }
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Dynamic Tool Creation Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Wrench className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Dynamic Tool Creation</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <PolicyToggle
+            label="Dynamic Tool Creation"
+            enabled={dtcAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowDynamicTools: !dtcAllowed });
+            }}
+            description="Allow agents to generate and register new tools at runtime. Disabled by default."
+          />
+          {dtcAllowed && (
+            <div className="ml-6 pl-4 border-l-2 border-border space-y-4">
+              <PolicyToggle
+                label="Sandboxed Execution"
+                icon={<Shield className="w-4 h-4 text-muted-foreground" />}
+                enabled={sandboxDtcAllowed}
+                isPending={policyMutation.isPending}
+                onToggle={() => {
+                  policyMutation.mutate({ sandboxDynamicTools: !sandboxDtcAllowed });
+                }}
+                description="Run dynamically-created tools inside an isolated sandbox. Strongly recommended. Enabled by default."
               />
             </div>
           )}
