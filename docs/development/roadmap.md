@@ -106,6 +106,9 @@
 ### Development
 - [ ] **Go/Rust Runtime** — Potential future language option for core components
 
+### Skills & Tools UX
+- [ ] **Skills / MCP Tool Separation** — Separate discovered MCP tools from Skills in the Discovered Tools view; surface available Skills in Skills > All Skills with a dedicated view, keeping Personal Skills in their own section distinct from marketplace/MCP-sourced skills
+
 ### Major Audit
 - [ ] **Audit all the things** - Code, Documentation, ADR, & Tests
 
