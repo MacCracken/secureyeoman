@@ -12,8 +12,8 @@
 
 > A secure, local-first AI assistant with enterprise-grade protection and comprehensive observability. Comes with default Agent Personality F.R.I.D.A.Y.
 
-> **F**ully
-> **R**esponsive
+* **F**ully
+* **R**esponsive
 > **I**ntegrated
 > **D**igitally
 > **A**daptable
