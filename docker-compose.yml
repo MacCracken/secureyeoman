@@ -27,6 +27,7 @@ services:
       - "18789:18789"
     volumes:
       - data:/app/data
+      - ./community-skills:/app/community-skills
     env_file: .env
     environment:
       SECUREYEOMAN_HOST: "0.0.0.0"

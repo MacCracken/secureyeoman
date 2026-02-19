@@ -201,7 +201,7 @@ describe('PersonalityEditor', () => {
     await user.click(editBtn);
 
     // Open Brain section
-    const brainHeader = await screen.findByText('Brain');
+    const brainHeader = await screen.findByText('Brain - Intellect');
     await user.click(brainHeader);
 
     // Open Skills sub-section
@@ -222,7 +222,7 @@ describe('PersonalityEditor', () => {
     const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
     await user.click(editBtn);
 
-    const brainHeader = await screen.findByText('Brain');
+    const brainHeader = await screen.findByText('Brain - Intellect');
     await user.click(brainHeader);
 
     const skillsHeader = await screen.findByText('Skills');
@@ -244,7 +244,7 @@ describe('PersonalityEditor', () => {
     const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
     await user.click(editBtn);
 
-    const brainHeader = await screen.findByText('Brain');
+    const brainHeader = await screen.findByText('Brain - Intellect');
     await user.click(brainHeader);
 
     const skillsHeader = await screen.findByText('Skills');
