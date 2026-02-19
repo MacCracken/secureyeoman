@@ -2,6 +2,7 @@ import { useMemo, useEffect } from 'react';
 import { SigmaContainer, useLoadGraph, useRegisterEvents } from '@react-sigma/core';
 import DirectedGraph from 'graphology';
 import forceAtlas2 from 'graphology-layout-forceatlas2';
+import dagre from 'dagre';
 import '@react-sigma/core/lib/react-sigma.min.css';
 
 export interface WebGLGraphNode {
@@ -17,12 +18,16 @@ export interface WebGLGraphEdge {
   color?: string;
 }
 
+export type WebGLGraphLayout = 'forceatlas2' | 'dagre';
+
 export interface WebGLGraphProps {
   nodes: WebGLGraphNode[];
   edges: WebGLGraphEdge[];
   height?: number;
   onNodeClick?: (id: string) => void;
   className?: string;
+  /** Layout algorithm. 'forceatlas2' suits network/cluster graphs; 'dagre' suits trees and DAGs. Default: 'forceatlas2'. */
+  layout?: WebGLGraphLayout;
 }
 
 // ── Inner component — must live inside SigmaContainer to access context hooks ──
@@ -31,10 +36,12 @@ function GraphLoader({
   nodes,
   edges,
   onNodeClick,
+  layout = 'forceatlas2',
 }: {
   nodes: WebGLGraphNode[];
   edges: WebGLGraphEdge[];
   onNodeClick?: (id: string) => void;
+  layout?: WebGLGraphLayout;
 }) {
   const loadGraph = useLoadGraph();
   const registerEvents = useRegisterEvents();
@@ -61,14 +68,36 @@ function GraphLoader({
     }
 
     if (graph.order > 1) {
-      forceAtlas2.assign(graph, {
-        iterations: 100,
-        settings: { gravity: 1, scalingRatio: 2 },
-      });
+      if (layout === 'dagre') {
+        // Hierarchical top-down layout via Dagre — ideal for trees and DAGs.
+        const g = new dagre.graphlib.Graph();
+        g.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 80 });
+        g.setDefaultEdgeLabel(() => ({}));
+
+        for (const node of nodes) {
+          g.setNode(node.id, { width: 30, height: 30 });
+        }
+        for (const edge of edges) {
+          g.setEdge(edge.source, edge.target);
+        }
+
+        dagre.layout(g);
+
+        for (const id of g.nodes()) {
+          const pos = g.node(id);
+          graph.setNodeAttribute(id, 'x', pos.x);
+          graph.setNodeAttribute(id, 'y', pos.y);
+        }
+      } else {
+        forceAtlas2.assign(graph, {
+          iterations: 100,
+          settings: { gravity: 1, scalingRatio: 2 },
+        });
+      }
     }
 
     loadGraph(graph);
-  }, [nodes, edges, loadGraph]);
+  }, [nodes, edges, loadGraph, layout]);
 
   useEffect(() => {
     registerEvents({
@@ -89,6 +118,7 @@ export function WebGLGraph({
   height = 400,
   onNodeClick,
   className,
+  layout = 'forceatlas2',
 }: WebGLGraphProps) {
   const hasWebGL = useMemo(() => {
     try {
@@ -124,7 +154,7 @@ export function WebGLGraph({
         maxCameraRatio: 10,
       }}
     >
-      <GraphLoader nodes={nodes} edges={edges} onNodeClick={onNodeClick} />
+      <GraphLoader nodes={nodes} edges={edges} onNodeClick={onNodeClick} layout={layout} />
     </SigmaContainer>
   );
 }

@@ -2,6 +2,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { WebGLGraph } from './WebGLGraph';
+// Imported after vi.mock hoisting — these resolve to the mocked versions
+import _forceAtlas2 from 'graphology-layout-forceatlas2';
+import _dagre from 'dagre';
 
 // ── Mocks ───────────────────────────────────────────────────────────
 
@@ -24,14 +27,23 @@ vi.mock('@react-sigma/core', () => ({
 
 vi.mock('@react-sigma/core/lib/react-sigma.min.css', () => ({}));
 
+// Pure vi.fn() inside factories — no external variable references needed
 vi.mock('graphology-layout-forceatlas2', () => ({
   default: { assign: vi.fn() },
+}));
+
+vi.mock('dagre', () => ({
+  default: {
+    graphlib: { Graph: vi.fn() },
+    layout: vi.fn(),
+  },
 }));
 
 // Spy functions to capture addNode/addEdge calls
 const addNodeSpy = vi.fn();
 const addEdgeSpy = vi.fn();
 const hasNodeSpy = vi.fn(() => true);
+const setNodeAttributeSpy = vi.fn();
 
 vi.mock('graphology', () => {
   // Must use a regular function (not arrow) so it can be used with `new`
@@ -39,10 +51,31 @@ vi.mock('graphology', () => {
     this.addNode = addNodeSpy;
     this.addEdge = addEdgeSpy;
     this.hasNode = hasNodeSpy;
+    this.setNodeAttribute = setNodeAttributeSpy;
     this.order = 3;
   }
   return { default: MockDirectedGraph };
 });
+
+// ── Typed references to mocked modules ─────────────────────────────
+// vi.mock is hoisted before imports resolve, so these are the mock versions.
+
+const fa2Mock = _forceAtlas2 as unknown as { assign: ReturnType<typeof vi.fn> };
+
+const dagMock = _dagre as unknown as {
+  graphlib: { Graph: ReturnType<typeof vi.fn> };
+  layout: ReturnType<typeof vi.fn>;
+};
+
+// dagre graph instance — returned by new dagre.graphlib.Graph()
+const mockDagreGraphInstance = {
+  setGraph: vi.fn(),
+  setDefaultEdgeLabel: vi.fn(),
+  setNode: vi.fn(),
+  setEdge: vi.fn(),
+  nodes: vi.fn(() => ['n1', 'n2', 'n3']),
+  node: vi.fn(() => ({ x: 100, y: 200 })),
+};
 
 // ── WebGL detection helper ──────────────────────────────────────────
 
@@ -80,6 +113,18 @@ describe('WebGLGraph', () => {
     addNodeSpy.mockClear();
     addEdgeSpy.mockClear();
     hasNodeSpy.mockClear().mockReturnValue(true);
+    setNodeAttributeSpy.mockClear();
+    fa2Mock.assign.mockClear();
+    dagMock.layout.mockClear();
+    dagMock.graphlib.Graph.mockClear().mockImplementation(function () {
+      return mockDagreGraphInstance;
+    });
+    mockDagreGraphInstance.setGraph.mockClear();
+    mockDagreGraphInstance.setDefaultEdgeLabel.mockClear();
+    mockDagreGraphInstance.setNode.mockClear();
+    mockDagreGraphInstance.setEdge.mockClear();
+    mockDagreGraphInstance.nodes.mockClear();
+    mockDagreGraphInstance.node.mockClear();
     vi.restoreAllMocks();
   });
 
@@ -139,5 +184,56 @@ describe('WebGLGraph', () => {
     await screen.findByTestId('sigma-container');
     expect(mockLoadGraph).toHaveBeenCalled();
     expect(addNodeSpy).toHaveBeenCalledTimes(0);
+  });
+
+  // ── Layout prop ─────────────────────────────────────────────────
+
+  it('uses forceatlas2 by default when no layout prop is given', async () => {
+    mockWebGLSupport(true);
+    render(<WebGLGraph nodes={sampleNodes} edges={sampleEdges} />);
+    await screen.findByTestId('sigma-container');
+    expect(fa2Mock.assign).toHaveBeenCalled();
+    expect(dagMock.layout).not.toHaveBeenCalled();
+  });
+
+  it('uses forceatlas2 when layout="forceatlas2" is explicit', async () => {
+    mockWebGLSupport(true);
+    render(<WebGLGraph nodes={sampleNodes} edges={sampleEdges} layout="forceatlas2" />);
+    await screen.findByTestId('sigma-container');
+    expect(fa2Mock.assign).toHaveBeenCalled();
+    expect(dagMock.layout).not.toHaveBeenCalled();
+  });
+
+  it('uses dagre when layout="dagre"', async () => {
+    mockWebGLSupport(true);
+    render(<WebGLGraph nodes={sampleNodes} edges={sampleEdges} layout="dagre" />);
+    await screen.findByTestId('sigma-container');
+    expect(dagMock.layout).toHaveBeenCalled();
+    expect(fa2Mock.assign).not.toHaveBeenCalled();
+  });
+
+  it('configures dagre graph with TB rankdir', async () => {
+    mockWebGLSupport(true);
+    render(<WebGLGraph nodes={sampleNodes} edges={sampleEdges} layout="dagre" />);
+    await screen.findByTestId('sigma-container');
+    expect(mockDagreGraphInstance.setGraph).toHaveBeenCalledWith(
+      expect.objectContaining({ rankdir: 'TB' })
+    );
+  });
+
+  it('registers each node and edge with dagre', async () => {
+    mockWebGLSupport(true);
+    render(<WebGLGraph nodes={sampleNodes} edges={sampleEdges} layout="dagre" />);
+    await screen.findByTestId('sigma-container');
+    expect(mockDagreGraphInstance.setNode).toHaveBeenCalledTimes(sampleNodes.length);
+    expect(mockDagreGraphInstance.setEdge).toHaveBeenCalledTimes(sampleEdges.length);
+  });
+
+  it('applies dagre x/y positions to graphology nodes', async () => {
+    mockWebGLSupport(true);
+    render(<WebGLGraph nodes={sampleNodes} edges={sampleEdges} layout="dagre" />);
+    await screen.findByTestId('sigma-container');
+    expect(setNodeAttributeSpy).toHaveBeenCalledWith(expect.any(String), 'x', 100);
+    expect(setNodeAttributeSpy).toHaveBeenCalledWith(expect.any(String), 'y', 200);
   });
 });
