@@ -13,6 +13,10 @@ import {
   Globe,
   Wrench,
   GitBranch,
+  Figma,
+  CreditCard,
+  Zap,
+  Building2,
   FolderOpen,
   Info,
   Eye,
@@ -35,6 +39,7 @@ import {
   Calendar,
   BookOpen,
   GitMerge,
+  LayoutGrid,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -636,16 +641,223 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'For webhooks: configure at Project Settings > Service Hooks',
     ],
   },
+  figma: {
+    name: 'Figma',
+    description: 'Access Figma files, comments, and design metadata',
+    icon: <Figma className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'accessToken',
+        label: 'Personal Access Token',
+        type: 'password' as const,
+        placeholder: 'figd_...',
+        helpText: 'Generate at figma.com > Account Settings > Personal access tokens',
+      },
+      {
+        key: 'fileKey',
+        label: 'File Key',
+        type: 'text' as const,
+        placeholder: 'File key from URL',
+        helpText: 'From the Figma file URL: figma.com/file/<FILE_KEY>/...',
+      },
+    ],
+    setupSteps: [
+      'Go to figma.com > Account Settings > Personal access tokens',
+      'Generate a new token with file read access',
+      'Copy the file key from your design file URL',
+      'Paste both above to start polling for comments',
+    ],
+  },
+  stripe: {
+    name: 'Stripe',
+    description: 'Receive payment, customer, and invoice events via Stripe webhooks',
+    icon: <CreditCard className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'secretKey',
+        label: 'Secret Key',
+        type: 'password' as const,
+        placeholder: 'sk_live_... or sk_test_...',
+        helpText: 'Stripe API secret key from dashboard.stripe.com/apikeys',
+      },
+      {
+        key: 'webhookSecret',
+        label: 'Webhook Secret',
+        type: 'password' as const,
+        placeholder: 'whsec_...',
+        helpText: 'Webhook signing secret from Stripe Dashboard > Webhooks',
+      },
+    ],
+    setupSteps: [
+      'Copy your Secret Key from dashboard.stripe.com/apikeys',
+      'Create a webhook at dashboard.stripe.com/webhooks',
+      'Set endpoint URL to your /api/v1/webhooks/stripe path',
+      'Select events: payment_intent.*, customer.*, invoice.*',
+      'Copy the signing secret (whsec_...) into Webhook Secret',
+    ],
+  },
+  zapier: {
+    name: 'Zapier',
+    description: 'Trigger and receive Zap events for workflow automation',
+    icon: <Zap className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'outboundUrl',
+        label: 'Outbound Webhook URL',
+        type: 'text' as const,
+        placeholder: 'https://hooks.zapier.com/hooks/catch/...',
+        helpText: 'Zapier catch-hook URL for outbound triggers',
+      },
+      {
+        key: 'webhookSecret',
+        label: 'Webhook Secret',
+        type: 'password' as const,
+        placeholder: 'Optional signing secret',
+        helpText: 'Optional HMAC secret to verify inbound Zap payloads',
+      },
+    ],
+    setupSteps: [
+      'In Zapier, create a new Zap with "Webhooks by Zapier" trigger (Catch Hook)',
+      'Copy the catch-hook URL into Outbound Webhook URL above',
+      'Point Zap actions at your /api/v1/webhooks/zapier endpoint for inbound',
+      'Optionally configure a signing secret for payload verification',
+    ],
+  },
+  qq: {
+    name: 'QQ',
+    description: 'Connect to QQ messaging via CQ-HTTP (OneBot v11) API',
+    icon: <MessageCircle className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'httpUrl',
+        label: 'CQ-HTTP URL',
+        type: 'text' as const,
+        placeholder: 'http://localhost:5700',
+        helpText: 'go-cqhttp or CQ-HTTP HTTP API endpoint',
+      },
+      {
+        key: 'accessToken',
+        label: 'Access Token',
+        type: 'password' as const,
+        placeholder: 'Optional auth token',
+        helpText: 'Access token for CQ-HTTP (if configured)',
+      },
+    ],
+    setupSteps: [
+      'Install go-cqhttp: github.com/Mrs4s/go-cqhttp',
+      'Configure HTTP API mode with your QQ account',
+      'Set the HTTP API URL (default: http://localhost:5700)',
+      'Configure event post URL to /api/v1/webhooks/qq for inbound events',
+    ],
+  },
+  dingtalk: {
+    name: 'DingTalk',
+    description: 'Enterprise messaging and workflow integration via DingTalk robots',
+    icon: <Building2 className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'outboundWebhookUrl',
+        label: 'Robot Webhook URL',
+        type: 'text' as const,
+        placeholder: 'https://oapi.dingtalk.com/robot/send?access_token=...',
+        helpText: 'Custom robot incoming webhook URL from DingTalk',
+      },
+      {
+        key: 'webhookToken',
+        label: 'Signing Token',
+        type: 'password' as const,
+        placeholder: 'Optional signing secret',
+        helpText: 'Security token for verifying inbound webhook signatures',
+      },
+    ],
+    setupSteps: [
+      'In DingTalk, go to a group > Settings > Intelligent Group Assistant',
+      'Add a Custom Robot and copy the webhook URL',
+      'Configure outgoing robot to POST to /api/v1/webhooks/dingtalk',
+      'Paste the robot webhook URL above for outbound messages',
+    ],
+  },
+  line: {
+    name: 'Line',
+    description: 'Line messaging with sticker support and rich menu handling',
+    icon: <MessageCircle className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'channelSecret',
+        label: 'Channel Secret',
+        type: 'password' as const,
+        placeholder: 'Channel Secret',
+        helpText: 'From Line Developers console > Basic Settings',
+      },
+      {
+        key: 'channelAccessToken',
+        label: 'Channel Access Token',
+        type: 'password' as const,
+        placeholder: 'Long-lived channel access token',
+        helpText: 'From Line Developers console > Messaging API > Channel access token',
+      },
+    ],
+    setupSteps: [
+      'Go to developers.line.biz and create a Messaging API channel',
+      'Copy the Channel Secret from Basic Settings',
+      'Issue a long-lived Channel Access Token from Messaging API tab',
+      'Set webhook URL to your /api/v1/webhooks/line endpoint',
+      'Enable "Use webhook" in the Line Developers console',
+    ],
+  },
+  linear: {
+    name: 'Linear',
+    description: 'Issue tracking with sprint management and webhook listeners',
+    icon: <LayoutGrid className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'apiKey',
+        label: 'API Key',
+        type: 'password' as const,
+        placeholder: 'lin_api_...',
+        helpText: 'Personal API key from Linear Settings > API',
+      },
+      {
+        key: 'webhookSecret',
+        label: 'Webhook Secret',
+        type: 'password' as const,
+        placeholder: 'Webhook signing secret',
+        helpText: 'Signing secret to verify inbound Linear webhooks (optional)',
+      },
+      {
+        key: 'teamId',
+        label: 'Default Team ID',
+        type: 'text' as const,
+        placeholder: 'Team ID',
+        helpText: 'Default team for issue creation (optional)',
+      },
+    ],
+    setupSteps: [
+      'Go to Linear Settings > API and create a personal API key',
+      'Copy the API key and paste it above',
+      'In Linear Settings > API > Webhooks, create a new webhook',
+      'Set the URL to your /api/v1/webhooks/linear endpoint',
+      'Copy the signing secret and paste it above',
+      'Select the event types: Issues and Comments',
+    ],
+  },
 };
 
 type TabType = 'integrations' | 'mcp';
 type IntegrationSubTab = 'messaging' | 'email' | 'calendar' | 'devops' | 'oauth';
 
 // Platform categorization for tab filtering
-const DEVOPS_PLATFORMS = new Set(['github', 'gitlab', 'jira', 'aws', 'azure']);
+const DEVOPS_PLATFORMS = new Set(['github', 'gitlab', 'jira', 'aws', 'azure', 'figma', 'stripe', 'zapier']);
 const CALENDAR_PLATFORMS = new Set(['googlecalendar']);
 const EMAIL_PLATFORMS = new Set(['gmail', 'email']);
-const PRODUCTIVITY_PLATFORMS = new Set(['notion']);
+const PRODUCTIVITY_PLATFORMS = new Set(['notion', 'linear']);
 // Messaging = everything not in the above sets
 
 const STATUS_CONFIG: Record<

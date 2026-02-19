@@ -27,35 +27,11 @@
 | | **Release 2026.2.17** | **2026-02-17** | **Released** |
 | 15 | Integration Expansion | 2026.2.18 | Complete |
 | 16 | Integration Enhancements | 2026.2.18 | Complete |
-| | **Release 2026.2.18** | **2026-02-18** | **Pending** |
-| 17 | Advanced Capabilities | — | Pending |
+| 17 | Advanced Capabilities | 2026.2.18 | Complete |
+| | **Release 2026.2.18** | **2026-02-18** | **Released** |
 | 18 | Skills Marketplace & Community | - | Pending |
 | 19 | SaaS ready | — | Pending |
 | 20 | Onboarding & First Run | — | Pending |
-
----
-
-## Phase 17: Advanced Capabilities
-
-**Status**: Complete
-
-### Multi-Agent Systems
-- [x] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style — agents create and register new tools as needed)
-- [x] **Swarms Security Policy** — Global `allowSwarms` toggle in security policy; Swarms tab visibility gated by policy; Swarms tab moved to second position in Sub-Agents view
-
-### Visualization
-- [x] **WebGL Graph Rendering** — Investigate and basic implementation for large graph visualization
-
-### Personality Configuration
-- [x] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
-- [x] **Per-Personality Sub-Agent Settings** — A2A and Swarm enablement toggles per personality (gated by global security policy)
-      
-### ML-based Security
-- [x] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events
-
-### Sandbox
-- [x] **gVisor Integration** — Additional sandbox isolation layer using gVisor
-- [x] **WASM Isolation** — WebAssembly-based code execution sandboxing
 
 ---
 
@@ -73,20 +49,20 @@
 
 ##### Productivity Integrations
 - [ ] **Airtable** — Base CRUD operations, record management, view filtering
-- [ ] **Linear** — Issue creation, status updates, sprint management, webhook listeners
+- [x] **Linear** — Issue creation, status updates, sprint management, webhook listeners
 - [ ] **Todoist** — Task management, project sync, due date handling
 
 ##### Messaging Connections
-- [ ] **QQ** — Message handling, group management, file transfer
-- [ ] **DingTalk** — Enterprise messaging, workflow integration, calendar sync
-- [ ] **Line** — Message API, sticker support, rich menu handling
+- [x] **QQ** — Message handling, group management, file transfer
+- [x] **DingTalk** — Enterprise messaging, workflow integration, calendar sync
+- [x] **Line** — Message API, sticker support, rich menu handling
 
 ##### Services & Cloud
 - [ ] **Spotify** — Playback control, playlist management, now playing info
 - [ ] **YouTube** — Video search, channel info, playlist management
-- [ ] **Figma** — File access, comment sync, design file metadata
-- [ ] **Stripe** — Payment status webhooks, customer lookup, invoice triggers
-- [ ] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation
+- [x] **Figma** — File access, comment sync, design file metadata; One-Click MCP Featured Server
+- [x] **Stripe** — Payment status webhooks, customer lookup, invoice triggers; One-Click MCP Featured Server
+- [x] **Zapier** — Zap trigger webhooks, action dispatch, webhook transformation; One-Click MCP Featured Server
 
 ---
 
@@ -173,4 +149,4 @@ Tracked third-party dependencies with known issues that require upstream resolut
 
 ---
 
-*Last updated: 2026-02-18 — Phase 17 complete; Phase 18: Skills Marketplace & Community pending*
+*Last updated: 2026-02-18 — Phase 17 complete; Phase 18 in progress: 7 integrations shipped (Figma, Stripe, Zapier, Linear, QQ, DingTalk, Line) — see [Changelog](../../CHANGELOG.md) for all completed work*

@@ -79,6 +79,13 @@ import { GitLabIntegration } from './integrations/gitlab/index.js';
 import { JiraIntegration } from './integrations/jira/index.js';
 import { AwsIntegration } from './integrations/aws/index.js';
 import { AzureDevOpsIntegration } from './integrations/azure/index.js';
+import { FigmaIntegration } from './integrations/figma/index.js';
+import { StripeIntegration } from './integrations/stripe/index.js';
+import { ZapierIntegration } from './integrations/zapier/index.js';
+import { QQIntegration } from './integrations/qq/index.js';
+import { DingTalkIntegration } from './integrations/dingtalk/index.js';
+import { LineIntegration } from './integrations/line/index.js';
+import { LinearIntegration } from './integrations/linear/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
 import { HeartManager } from './body/heart.js';
 import { ExternalBrainSync } from './brain/external-sync.js';
@@ -597,6 +604,13 @@ export class SecureYeoman {
       this.integrationManager.registerPlatform('jira', () => new JiraIntegration());
       this.integrationManager.registerPlatform('aws', () => new AwsIntegration());
       this.integrationManager.registerPlatform('azure', () => new AzureDevOpsIntegration());
+      this.integrationManager.registerPlatform('figma', () => new FigmaIntegration());
+      this.integrationManager.registerPlatform('stripe', () => new StripeIntegration());
+      this.integrationManager.registerPlatform('zapier', () => new ZapierIntegration());
+      this.integrationManager.registerPlatform('qq', () => new QQIntegration());
+      this.integrationManager.registerPlatform('dingtalk', () => new DingTalkIntegration());
+      this.integrationManager.registerPlatform('line', () => new LineIntegration());
+      this.integrationManager.registerPlatform('linear', () => new LinearIntegration());
 
       // Wire up external plugin loader (INTEGRATION_PLUGIN_DIR env var)
       const pluginDir = process.env['INTEGRATION_PLUGIN_DIR'];
