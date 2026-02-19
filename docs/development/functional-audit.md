@@ -102,7 +102,7 @@
 |---------|--------------|----------|------------|----------|
 | **Sub-Agents** | ✅ With budget/depth | ✅ Workspaces | ✅ Hierarchical | ✅ Spawn |
 | **A2A Protocol** | ✅ | ❌ | ❌ | ❌ |
-| **Agent Swarms** | ✅ Complete (Phase 17) | ❌ | ✅ | ❌ |
+| **Agent Swarms** | ✅ | ❌ | ✅ | ❌ |
 | **Delegation Controls** | ✅ | ❌ | ❌ | ❌ |
 
 ### 7. Dashboard & UX
@@ -114,7 +114,7 @@
 | **Voice (STT/TTS)** | ✅ | ✅ | ❌ |
 | **Image Generation** | ✅ DALL-E | ✅ | ❌ |
 | **Mobile Support** | ❌ | ✅ (via messaging) | ❌ |
-| **Storybook** | ✅ Complete (Phase 16) | ❌ | ❌ |
+| **Storybook** | ✅ | ❌ | ❌ |
 
 ### 8. Enterprise Features
 
@@ -156,8 +156,7 @@
 2. **Canvas/UI Rendering** - Built-in UI rendering
 
 ### ❌ Missing vs Agent Zero
-1. **Dynamic Tool Creation** - Agent Zero creates tools on the fly
-2. **Full VM Isolation** - Agent Zero runs in Docker VM
+1. **Full VM Isolation** - Agent Zero runs in Docker VM
 
 ### ❌ Missing vs PicoClaw
 1. **Ultra-low Memory Footprint** - <10MB vs 1GB+ (optimization opportunity)
