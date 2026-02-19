@@ -68,9 +68,6 @@
 - [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
 - [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
 - [ ] **Roles & Permissions Review/Audit** — Comprehensive review of RBAC roles, permissions, and access controls to ensure completeness and alignment with feature set
-- [ ] **Encryption - HSM Integration** — Hardware Security Module integration for key management
-
-
 ### Deployment
 - [ ] **Single Binary** — Simplify deployment with Go-based components
 - [ ] **Embedded Ready** — Consider future IoT/edge use cases
@@ -103,6 +100,10 @@
 **Status**: Pending
 
 *Items in this phase are demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
+
+### Encryption
+
+- [ ] **HSM Integration** — Hardware Security Module integration for key management
 
 ### Layout Algorithms
 
