@@ -430,8 +430,8 @@ export class SecureYeoman {
           }
         );
 
-        // Load historical records so cost totals survive restarts
-        await this.aiClient.init();
+        // Historical usage records are loaded lazily on the first AI request
+        // (via AIClient.ensureInitialized) — no eager DB load at startup.
         this.logger.debug('AI client initialized', { provider: this.config.model.provider });
 
         // Apply persisted model default if one exists.

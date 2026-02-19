@@ -124,7 +124,8 @@ export const DatabaseConfigSchema = z
     user: z.string().default('secureyeoman'),
     passwordEnv: z.string().default('POSTGRES_PASSWORD'),
     ssl: z.boolean().default(false),
-    poolSize: z.number().default(20),
+    /** Max PostgreSQL connections in the pool. Increase for multi-user/SaaS deployments. */
+    poolSize: z.number().default(10),
   })
   .default({});
 
@@ -356,6 +357,8 @@ export const GatewayConfigSchema = z.object({
   tls: TlsConfigSchema,
   cors: CorsConfigSchema,
   auth: AuthConfigSchema,
+  /** Maximum simultaneous WebSocket connections. Oldest idle client is evicted when exceeded. */
+  maxWsClients: z.number().int().min(1).default(100),
 });
 
 export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;

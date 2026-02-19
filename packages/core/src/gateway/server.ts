@@ -1264,6 +1264,27 @@ export class GatewayServer {
         }
       }
 
+      // Evict the oldest idle client when the cap is reached
+      if (this.clients.size >= this.config.maxWsClients) {
+        let oldestId: string | null = null;
+        let oldestPong = Infinity;
+        for (const [id, c] of this.clients) {
+          if (c.lastPong < oldestPong) {
+            oldestPong = c.lastPong;
+            oldestId = id;
+          }
+        }
+        if (oldestId) {
+          const evicted = this.clients.get(oldestId);
+          evicted?.ws.close(1008, 'Connection limit reached');
+          this.clients.delete(oldestId);
+          this.getLogger().warn('WebSocket client evicted (cap reached)', {
+            evictedId: oldestId,
+            cap: this.config.maxWsClients,
+          });
+        }
+      }
+
       const clientId = `client_${String(++this.clientIdCounter)}`;
 
       const client: WebSocketClient = {

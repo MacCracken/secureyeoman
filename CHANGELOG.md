@@ -4,6 +4,26 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 20 (partial): Startup & Memory Performance Optimizations (2026-02-19) — [ADR 067](docs/adr/067-performance-startup-memory-optimizations.md)
+
+### Performance
+
+- **Migration fast-path** — `runMigrations()` now issues a single `SELECT id … ORDER BY id DESC LIMIT 1` after ensuring the tracking table exists. If the result matches the highest-numbered `.sql` file, all migrations are applied and the function returns immediately — no per-file DB round-trips. Saves ~300–700 ms on every boot after initial setup.
+- **Lazy AI usage history init** — `aiClient.init()` (loading historical token/cost records from PostgreSQL) is no longer called at startup. `AIClient.chat()` and `AIClient.chatStream()` call `ensureInitialized()` which lazily triggers the load on the first AI request. The `init()` method is now idempotent. Saves ~300–500 ms from the startup critical path.
+- **Bounded WebSocket client map** — `GatewayServer` now enforces `gateway.maxWsClients` (default 100). When a new connection arrives at the cap, the oldest idle client (lowest `lastPong`) is evicted with close code 1008 and a warning is logged. Eliminates unbounded memory growth under misbehaving dashboard clients.
+- **PostgreSQL pool size default 10** — `database.poolSize` default reduced from 20 to 10; saves ~50–80 MB PostgreSQL memory at default config. Field is documented: increase for multi-user/SaaS deployments. Fully configurable via `secureyeoman.yaml` or env var.
+
+### Files Changed
+
+- `packages/core/src/storage/migrations/runner.ts` — fast-path check
+- `packages/core/src/ai/client.ts` — `initPromise`, `ensureInitialized()`, idempotent `init()`
+- `packages/core/src/secureyeoman.ts` — removed eager `aiClient.init()` call
+- `packages/core/src/gateway/server.ts` — cap + oldest-idle eviction on connect
+- `packages/shared/src/types/config.ts` — `maxWsClients` in GatewayConfig, `poolSize` default 10
+- `docs/adr/067-performance-startup-memory-optimizations.md` — new ADR
+
+---
+
 ## Phase 20 (partial): Personality Editor — Brain Skills Visibility (2026-02-19) — [ADR 066](docs/adr/066-personality-brain-skills-visibility.md)
 
 ### UX
