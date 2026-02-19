@@ -87,14 +87,6 @@
 ### Onboarding
 - [ ] **First Install Onboarding** — CLI and Dashboard guided setup experience for new installations; builds on Phase 18 CLI Improvements (`secureyeoman init` wizard, rich output) for maximum effectiveness
 
----
-
-## Phase 22: Future Implementations
-
-**Status**: Pending
-
-*Items in this phase are demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
-
 ### Guided Setup CLI
 
 - [ ] **Interactive Init Command** — `secureyeoman init` with interactive wizard for first-time setup (generate keys, configure AI providers, set up integrations)
@@ -103,6 +95,14 @@
 ### Major Audit
 
 - [ ] **Audit all the things** — Code, Documentation, ADR, & Tests
+
+---
+
+## Phase 22: Future Implementations
+
+**Status**: Pending
+
+*Items in this phase are demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
 
 ### Layout Algorithms
 
