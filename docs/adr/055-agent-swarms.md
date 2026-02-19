@@ -65,6 +65,8 @@ Four templates are seeded on startup:
 - `parallel` delegations all count against `maxConcurrent` simultaneously; templates with many roles may hit the concurrency limit
 - Dynamic strategy effectiveness depends on the coordinator profile's system prompt quality
 
+See ADR 057 for the `allowSwarms` security policy toggle and per-personality swarms enablement added in the same phase.
+
 ---
 
 ## Alternatives Considered

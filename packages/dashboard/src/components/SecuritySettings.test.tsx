@@ -19,6 +19,10 @@ vi.mock('../api/client', () => ({
   fetchSecurityPolicy: vi.fn(),
   updateSecurityPolicy: vi.fn(),
   fetchMcpServers: vi.fn(),
+  fetchModelDefault: vi.fn(),
+  setModelDefault: vi.fn(),
+  clearModelDefault: vi.fn(),
+  fetchModelInfo: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -98,6 +102,7 @@ describe('SecuritySettings', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -108,6 +113,7 @@ describe('SecuritySettings', () => {
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -116,6 +122,8 @@ describe('SecuritySettings', () => {
       allowMultimodal: false,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
+    vi.mocked(api.fetchModelDefault).mockResolvedValue(null);
+    vi.mocked(api.fetchModelInfo).mockResolvedValue({ current: { provider: 'anthropic', model: 'claude-opus-4-5', maxTokens: 8192, temperature: 0.7 }, available: {} });
   });
 
   it('renders the heading', async () => {
@@ -138,6 +146,7 @@ describe('SecuritySettings', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -203,6 +212,7 @@ describe('SecuritySettings', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -216,6 +226,50 @@ describe('SecuritySettings', () => {
     await waitFor(() => {
       expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
       expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowA2A: true });
+    });
+  });
+
+  it('hides Agent Swarms toggle when Sub-Agent Delegation is off', async () => {
+    renderComponent();
+    await screen.findByText('Sub-Agent Delegation');
+    expect(screen.queryByLabelText('Toggle Agent Swarms')).not.toBeInTheDocument();
+  });
+
+  it('shows Agent Swarms toggle when Sub-Agent Delegation is on', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: true,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+    });
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Agent Swarms');
+    expect(toggle).toBeInTheDocument();
+  });
+
+  it('calls updateSecurityPolicy when toggling Agent Swarms', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: true,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: true,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+    });
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Agent Swarms');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowSwarms: true });
     });
   });
 

@@ -200,6 +200,8 @@ export const SecurityConfigSchema = z.object({
   allowSubAgents: z.boolean().default(false),
   /** Allow A2A (Agent-to-Agent) networking. Sub-item of delegation — requires allowSubAgents to be effective for external peers. */
   allowA2A: z.boolean().default(false),
+  /** Allow Agent Swarms — multi-agent orchestration. Sub-item of delegation — requires allowSubAgents to be effective. */
+  allowSwarms: z.boolean().default(false),
   /** Allow lifecycle extension hooks. */
   allowExtensions: z.boolean().default(false),
   /** Allow sandboxed code execution. Enabled by default since execution is sandboxed. */

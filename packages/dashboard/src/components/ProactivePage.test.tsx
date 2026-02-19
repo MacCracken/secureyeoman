@@ -46,6 +46,7 @@ describe('ProactivePage', () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
@@ -64,6 +65,7 @@ describe('ProactivePage', () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: true,
@@ -90,6 +92,7 @@ describe('ProactivePage', () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: true,
@@ -135,6 +138,7 @@ describe('ProactivePage', () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: true,
@@ -181,6 +185,7 @@ describe('ProactivePage', () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: true,

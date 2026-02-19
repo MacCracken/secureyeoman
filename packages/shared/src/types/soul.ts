@@ -46,6 +46,10 @@ export const CreationConfigSchema = z
     customRoles: z.boolean().default(false),
     roleAssignments: z.boolean().default(false),
     experiments: z.boolean().default(false),
+    /** Allow this personality to use A2A networking when sub-agents are enabled. Gated by global allowA2A policy. */
+    allowA2A: z.boolean().default(false),
+    /** Allow this personality to use agent swarms when sub-agents are enabled. Gated by global allowSwarms policy. */
+    allowSwarms: z.boolean().default(false),
   })
   .default({});
 

@@ -336,6 +336,7 @@ externalBrain:
 |-------|------|---------|-------------|
 | `allowSubAgents` | boolean | `true` | Allow sub-agent delegation |
 | `allowA2A` | boolean | `false` | Allow A2A networking (requires sub-agents enabled) |
+| `allowSwarms` | boolean | `false` | Allow agent swarms / multi-agent orchestration (requires sub-agents enabled) |
 | `allowExtensions` | boolean | `false` | Allow lifecycle extension hooks |
 | `allowExecution` | boolean | `true` | Allow sandboxed code execution |
 

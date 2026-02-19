@@ -41,6 +41,7 @@
 
 ### Multi-Agent Systems
 - [ ] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style — agents create and register new tools as needed)
+- [x] **Swarms Security Policy** — Global `allowSwarms` toggle in security policy; Swarms tab visibility gated by policy; Swarms tab moved to second position in Sub-Agents view
 
 ### Visualization
 - [ ] **WebGL Graph Rendering** — Investigate and basic implementation for large graph visualization
@@ -48,6 +49,7 @@
 
 ### Personality Configuration
 - [x] **Per-Personality Model Defaults** — Ability to set model default and order of fallback per personality
+- [x] **Per-Personality Sub-Agent Settings** — A2A and Swarm enablement toggles per personality (gated by global security policy)
       
 ### ML-based Security
 - [ ] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events

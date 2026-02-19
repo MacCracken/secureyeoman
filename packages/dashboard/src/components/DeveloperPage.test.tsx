@@ -39,6 +39,7 @@ function renderComponent() {
 const FULL_POLICY = {
   allowSubAgents: false,
   allowA2A: false,
+      allowSwarms: false,
   allowExtensions: true,
   allowExecution: true,
   allowProactive: false,

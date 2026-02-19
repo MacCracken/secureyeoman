@@ -1696,6 +1696,7 @@ export async function fetchAgentConfig(): Promise<{
 export interface SecurityPolicy {
   allowSubAgents: boolean;
   allowA2A: boolean;
+  allowSwarms: boolean;
   allowExtensions: boolean;
   allowExecution: boolean;
   allowProactive: boolean;
@@ -1711,6 +1712,7 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
     return {
       allowSubAgents: false,
       allowA2A: false,
+      allowSwarms: false,
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,

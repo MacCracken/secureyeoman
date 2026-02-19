@@ -32,6 +32,7 @@ function renderComponent() {
 const BASE_POLICY = {
   allowSubAgents: false,
   allowA2A: false,
+  allowSwarms: false,
   allowExtensions: false,
   allowExecution: true,
   allowProactive: false,

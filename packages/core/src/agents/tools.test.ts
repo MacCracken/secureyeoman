@@ -4,10 +4,11 @@ import { getDelegationTools, DELEGATION_TOOLS } from './tools.js';
 describe('getDelegationTools', () => {
   it('returns all tools when not at max depth', () => {
     const tools = getDelegationTools(0, 3);
-    expect(tools).toHaveLength(3);
+    expect(tools).toHaveLength(4);
     expect(tools.map((t) => t.name)).toContain('delegate_task');
     expect(tools.map((t) => t.name)).toContain('list_sub_agents');
     expect(tools.map((t) => t.name)).toContain('get_delegation_result');
+    expect(tools.map((t) => t.name)).toContain('create_swarm');
   });
 
   it('excludes delegate_task at max depth - 1', () => {
@@ -35,7 +36,7 @@ describe('getDelegationTools', () => {
 
 describe('DELEGATION_TOOLS', () => {
   it('has correct tool count', () => {
-    expect(DELEGATION_TOOLS).toHaveLength(3);
+    expect(DELEGATION_TOOLS).toHaveLength(4);
   });
 
   it('has required parameters for delegate_task', () => {
@@ -55,5 +56,12 @@ describe('DELEGATION_TOOLS', () => {
     const tool = DELEGATION_TOOLS.find((t) => t.name === 'list_sub_agents');
     expect(tool).toBeDefined();
     expect(tool!.parameters.required).toHaveLength(0);
+  });
+
+  it('has required parameters for create_swarm', () => {
+    const tool = DELEGATION_TOOLS.find((t) => t.name === 'create_swarm');
+    expect(tool).toBeDefined();
+    expect(tool!.parameters.required).toContain('template');
+    expect(tool!.parameters.required).toContain('task');
   });
 });

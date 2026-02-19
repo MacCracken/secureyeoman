@@ -347,6 +347,8 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               customRoles: false,
               roleAssignments: false,
               experiments: false,
+              allowA2A: false,
+              allowSwarms: false,
             },
             selectedServers: [],
             mcpFeatures: {

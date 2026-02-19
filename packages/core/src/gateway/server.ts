@@ -1005,6 +1005,7 @@ export class GatewayServer {
       return {
         allowSubAgents: config.security.allowSubAgents,
         allowA2A: config.security.allowA2A,
+        allowSwarms: config.security.allowSwarms,
         allowExtensions: config.security.allowExtensions,
         allowExecution: config.security.allowExecution,
         allowProactive: config.security.allowProactive,
@@ -1022,6 +1023,7 @@ export class GatewayServer {
           Body: {
             allowSubAgents?: boolean;
             allowA2A?: boolean;
+            allowSwarms?: boolean;
             allowExtensions?: boolean;
             allowExecution?: boolean;
             allowProactive?: boolean;
@@ -1036,6 +1038,7 @@ export class GatewayServer {
           const {
             allowSubAgents,
             allowA2A,
+            allowSwarms,
             allowExtensions,
             allowExecution,
             allowProactive,
@@ -1046,6 +1049,7 @@ export class GatewayServer {
           if (
             allowSubAgents === undefined &&
             allowA2A === undefined &&
+            allowSwarms === undefined &&
             allowExtensions === undefined &&
             allowExecution === undefined &&
             allowProactive === undefined &&
@@ -1058,6 +1062,7 @@ export class GatewayServer {
           this.secureYeoman.updateSecurityPolicy({
             allowSubAgents,
             allowA2A,
+            allowSwarms,
             allowExtensions,
             allowExecution,
             allowProactive,
@@ -1069,6 +1074,7 @@ export class GatewayServer {
           return {
             allowSubAgents: config.security.allowSubAgents,
             allowA2A: config.security.allowA2A,
+            allowSwarms: config.security.allowSwarms,
             allowExtensions: config.security.allowExtensions,
             allowExecution: config.security.allowExecution,
             allowProactive: config.security.allowProactive,

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Users,
@@ -102,6 +102,15 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
     configData?.allowedBySecurityPolicy === true ||
     securityPolicy?.allowSubAgents === true;
 
+  const swarmsAllowed = securityPolicy?.allowSwarms ?? false;
+
+  // If swarms gets disabled while on the swarms tab, fall back to active
+  useEffect(() => {
+    if (activeTab === 'swarms' && !swarmsAllowed) {
+      setActiveTab('active');
+    }
+  }, [activeTab, swarmsAllowed]);
+
   if (!enabled) {
     return (
       <div className="space-y-4">
@@ -123,9 +132,11 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
 
   const tabs: { id: TabId; label: string; icon?: React.ReactNode }[] = [
     { id: 'active', label: 'Active' },
+    ...(swarmsAllowed
+      ? [{ id: 'swarms' as TabId, label: 'Swarms', icon: <Layers className="w-3.5 h-3.5" /> }]
+      : []),
     { id: 'history', label: 'History' },
     { id: 'profiles', label: 'Profiles' },
-    { id: 'swarms', label: 'Swarms', icon: <Layers className="w-3.5 h-3.5" /> },
   ];
 
   return (
