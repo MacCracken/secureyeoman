@@ -43,7 +43,7 @@
 **Status**: Pending
 
 ### Bug Fixes
-- [ ] **Personal Skills — Edit Broken** — The edit button on skills added to a personality no longer opens the edit form. Restore full edit functionality for personality-scoped skills in the Personal tab.
+- [x] **Personal Skills — Edit Broken** — The edit button on skills added to a personality no longer opens the edit form. Restored full edit functionality for personality-scoped skills in the Personal tab. Saving now always creates a user-owned copy (never mutates marketplace/built-in records) and attributes authorship to the user (`source: 'user'`).
 
 ### Performance
 - [ ] **Memory Footprint Optimization** — Study PicoClaw for potential memory reductions; target <1GB baseline

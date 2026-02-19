@@ -231,10 +231,15 @@ function MySkillsTab() {
   };
 
   const handleSubmit = () => {
-    if (editing) {
-      updateMut.mutate({ id: editing, d: form });
+    if (!editing) return;
+    const originalSkill = editing !== 'new' ? skills.find((s) => s.id === editing) : null;
+    const isNonUserSource = originalSkill && originalSkill.source !== 'user';
+
+    if (editing === 'new' || isNonUserSource) {
+      // Always create a fresh user-owned skill — never mutate marketplace/built-in records
+      createMut.mutate({ ...form, source: 'user' });
     } else {
-      createMut.mutate(form);
+      updateMut.mutate({ id: editing, d: { ...form, source: 'user' } });
     }
     setEditing(null);
     setForm({
@@ -255,10 +260,10 @@ function MySkillsTab() {
       instructions: s.instructions,
       triggerPatterns: s.triggerPatterns || [],
       enabled: s.enabled,
-      source: s.source,
-      personalityId: s.personalityId ?? null,
+      source: 'user',
+      personalityId: s.personalityId ?? activePersonality?.id ?? null,
     });
-    setTriggerInput((s.triggerPatterns || []).join(', '));
+    setTriggerInput('');
     setEditing(s.id);
   };
 
@@ -309,9 +314,9 @@ function MySkillsTab() {
         )}
       </div>
 
-      {editing === 'new' && (
+      {editing !== null && (
         <div className="card p-4 space-y-4">
-          <h3 className="font-semibold">Create New Skill</h3>
+          <h3 className="font-semibold">{editing === 'new' ? 'Create New Skill' : 'Edit Skill'}</h3>
           <div className="grid gap-3">
             <input
               className="bg-background border rounded-lg px-3 py-2 text-sm"
@@ -380,13 +385,24 @@ function MySkillsTab() {
                 ))}
               </div>
             )}
+            {editing !== 'new' && skills.find((s) => s.id === editing)?.source !== 'user' && (
+              <p className="text-xs text-muted-foreground">
+                Saving creates a personal copy — the original installed skill is unchanged.
+              </p>
+            )}
             <div className="flex gap-2">
               <button
                 onClick={handleSubmit}
-                disabled={createMut.isPending}
+                disabled={createMut.isPending || updateMut.isPending}
                 className="btn btn-primary"
               >
-                {createMut.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create'}
+                {createMut.isPending || updateMut.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : editing === 'new' ? (
+                  'Create'
+                ) : (
+                  'Save'
+                )}
               </button>
               <button onClick={() => setEditing(null)} className="btn btn-ghost">
                 Cancel

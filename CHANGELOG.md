@@ -4,6 +4,23 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 20 (partial): Personal Skills — Edit Bug Fix (2026-02-19)
+
+### Bug Fixes
+
+- **Personal Skills edit form restored** — Clicking the edit (pencil) button on any skill in the Personal tab now correctly opens the inline edit form. Previously, `startEdit()` set `editing` to the skill's UUID but the form only rendered when `editing === 'new'`, so the form never appeared for existing skills.
+- **`handleSubmit` create/update logic corrected** — The original condition `if (editing)` is truthy for both `'new'` and a UUID, causing the create path to call `updateSkill('new', …)` (which fails on the backend). Logic is now explicit: `editing === 'new'` → `createSkill`; existing ID → `updateSkill` (or `createSkill` for non-user-source skills).
+- **Marketplace/built-in skill protection** — Editing a skill whose `source` is not `'user'` (marketplace, community, ai_proposed, ai_learned) now creates a fresh personal copy via `createSkill` rather than mutating the installed record. The original marketplace entry is left untouched. A contextual note is shown in the form when this behaviour applies.
+- **Author attribution on save** — `source` is always forced to `'user'` on submit, ensuring every saved skill is attributed to the user regardless of the original skill's source.
+- **Personality scoping on edit** — `startEdit()` now falls back to `activePersonality?.id` when the skill has no `personalityId`, so edited copies are correctly associated with the active personality.
+- **Trigger input cleared on edit open** — `triggerInput` is reset to `''` when opening an existing skill for editing; existing patterns are already rendered as removable badges and do not need to be re-populated in the text field.
+
+### Files Changed
+
+- `packages/dashboard/src/components/SkillsPage.tsx` — `handleSubmit`, `startEdit`, form render condition, submit button
+
+---
+
 ## Phase 20 (partial): CLI Output Improvements (2026-02-19) — [ADR 065](docs/adr/065-cli-enhancements-completions-validate-plugin.md)
 
 ### Rich Output — Color & Progress
