@@ -21,6 +21,8 @@
  *   secureyeoman multimodal           # Multimodal I/O operations
  *   secureyeoman model                # AI model management (info, list, switch, default)
  *   secureyeoman policy               # Security policy management (get, set, dynamic-tools)
+ *   secureyeoman completion           # Generate shell completion scripts (bash, zsh, fish)
+ *   secureyeoman plugin               # Manage integration plugins (list, info, add, remove)
  */
 
 import { createRouter } from './cli/router.js';
@@ -41,6 +43,8 @@ import { scraperCommand } from './cli/commands/scraper.js';
 import { multimodalCommand } from './cli/commands/multimodal.js';
 import { modelCommand } from './cli/commands/model.js';
 import { policyCommand } from './cli/commands/policy.js';
+import { completionCommand } from './cli/commands/completion.js';
+import { pluginCommand } from './cli/commands/plugin.js';
 
 const router = createRouter('start');
 
@@ -62,6 +66,8 @@ router.register(scraperCommand);
 router.register(multimodalCommand);
 router.register(modelCommand);
 router.register(policyCommand);
+router.register(completionCommand);
+router.register(pluginCommand);
 
 // Help command
 router.register({

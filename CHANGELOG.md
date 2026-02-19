@@ -4,6 +4,44 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 20 (partial): CLI Enhancements (2026-02-19) — [ADR 065](docs/adr/065-cli-enhancements-completions-validate-plugin.md)
+
+### Shell Completions
+- **New `completion` command** — `secureyeoman completion <bash|zsh|fish>` prints a shell completion script to stdout
+- Supports bash (`_secureyeoman_completions` function, `complete -F`), zsh (`#compdef` + `_arguments`), and fish (`complete -c secureyeoman`)
+- All commands, subcommands, and key flags are included
+- Standard sourcing pattern: `source <(secureyeoman completion bash)` or permanent fish install
+- **7 tests** in `completion.test.ts`
+
+### Configuration Validation
+- **New `config validate` subcommand** — `secureyeoman config validate [--config PATH] [--json]`
+- Runs a full pre-startup check: config structure (`loadConfig`) + required secrets (`validateSecrets`)
+- Reports each check individually with ✓/✗ marker; exits 0 on full pass, 1 on any failure
+- `--json` outputs `{ valid, checks[] }` for CI pipeline integration
+- Existing `secureyeoman config` (no subcommand) behaviour unchanged — backward compatible
+- **6 new tests** added to `config.test.ts`
+
+### Plugin Management
+- **New `plugin` command** — `secureyeoman plugin <list|info|add|remove> [--dir PATH] [--json]`
+- Plugin directory resolved from `--dir` flag or `INTEGRATION_PLUGIN_DIR` env var (consistent with runtime)
+- `list` — scans plugin dir for `.js`/`.mjs` files and directory-based plugins (`index.js`)
+- `info <platform>` — shows file, path, and whether the plugin is loadable
+- `add <path>` — validates plugin exports (`platform` + `createIntegration`) then copies to plugin dir
+- `remove <platform>` — deletes plugin file; both `add` and `remove` print a "restart required" reminder
+- **20 tests** in `plugin.test.ts`
+
+### Files Changed
+- `packages/core/src/cli/commands/completion.ts` — New
+- `packages/core/src/cli/commands/completion.test.ts` — New (7 tests)
+- `packages/core/src/cli/commands/config.ts` — Add `validate` subcommand
+- `packages/core/src/cli/commands/config.test.ts` — Add 6 tests
+- `packages/core/src/cli/commands/plugin.ts` — New
+- `packages/core/src/cli/commands/plugin.test.ts` — New (20 tests)
+- `packages/core/src/cli.ts` — Register `completionCommand`, `pluginCommand`
+- `docs/adr/065-cli-enhancements-completions-validate-plugin.md` — New ADR
+
+---
+
 ## Phase 19: Skills / MCP Tool Separation (2026-02-19) — [ADR 064](docs/adr/064-skills-mcp-tool-separation.md)
 
 ### Integration Access Enforcement

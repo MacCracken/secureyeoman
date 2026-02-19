@@ -265,6 +265,10 @@ secureyeoman status
 # Show configuration
 secureyeoman config
 
+# Validate configuration before startup (CI/CD friendly)
+secureyeoman config validate
+secureyeoman config validate --json
+
 # Manage integrations
 secureyeoman integration list
 secureyeoman integration connect telegram
@@ -309,6 +313,17 @@ secureyeoman model switch anthropic claude-sonnet-4-6
 secureyeoman model default get
 secureyeoman model default set anthropic claude-haiku-4-5
 secureyeoman model default clear
+
+# Manage integration plugins
+secureyeoman plugin list
+secureyeoman plugin info <platform>
+secureyeoman plugin add /path/to/plugin.js
+secureyeoman plugin remove <platform>
+
+# Shell completions
+source <(secureyeoman completion bash)    # Bash
+source <(secureyeoman completion zsh)     # Zsh
+secureyeoman completion fish > ~/.config/fish/completions/secureyeoman.fish
 
 # Security policy management
 secureyeoman policy get
