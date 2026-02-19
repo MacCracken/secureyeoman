@@ -48,6 +48,9 @@ const FULL_POLICY = {
   allowMultimodal: false,
   allowDynamicTools: false,
   sandboxDynamicTools: true,
+  allowAnomalyDetection: false,
+  sandboxGvisor: false,
+  sandboxWasm: false,
 };
 
 describe('DeveloperPage', () => {

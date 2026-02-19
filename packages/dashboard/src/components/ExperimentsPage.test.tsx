@@ -55,6 +55,9 @@ describe('ExperimentsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
 
     renderComponent();
@@ -77,6 +80,9 @@ describe('ExperimentsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
 
     renderComponent();
@@ -98,6 +104,9 @@ describe('ExperimentsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
 
     renderComponent();
@@ -117,6 +126,9 @@ describe('ExperimentsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
 
     renderComponent();

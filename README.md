@@ -313,6 +313,9 @@ secureyeoman model default clear
 # Security policy management
 secureyeoman policy get
 secureyeoman policy set allowDynamicTools true
+secureyeoman policy set allowAnomalyDetection true    # ML anomaly detection
+secureyeoman policy set sandboxGvisor true            # gVisor kernel isolation (requires gVisor on host)
+secureyeoman policy set sandboxWasm true              # WASM execution isolation
 secureyeoman policy dynamic-tools enable
 secureyeoman policy dynamic-tools sandbox disable
 secureyeoman policy dynamic-tools personality enable --personality-id <id>

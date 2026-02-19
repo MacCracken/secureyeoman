@@ -132,6 +132,9 @@ describe('SubAgentsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     mockFetchAgentProfiles.mockResolvedValue(MOCK_PROFILES);
     mockFetchActiveDelegations.mockResolvedValue(MOCK_ACTIVE_DELEGATIONS);
@@ -165,6 +168,9 @@ describe('SubAgentsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     expect(await screen.findByText('Delegation Not Enabled')).toBeInTheDocument();
@@ -187,6 +193,9 @@ describe('SubAgentsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -209,6 +218,9 @@ describe('SubAgentsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -251,6 +263,9 @@ describe('SubAgentsPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     const tabs = await screen.findAllByRole('button', { name: /Active|Swarms|History|Profiles/i });

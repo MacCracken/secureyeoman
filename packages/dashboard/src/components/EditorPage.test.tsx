@@ -153,6 +153,9 @@ describe('EditorPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
     mockFetchExecutionHistory.mockResolvedValue({
@@ -211,6 +214,9 @@ describe('EditorPage', () => {
       allowMultimodal: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
     });
     renderComponent();
     await screen.findByText('Terminal');

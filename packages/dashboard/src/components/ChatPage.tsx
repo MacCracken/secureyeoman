@@ -496,7 +496,7 @@ export function ChatPage() {
               onClick={() => {
                 setShowModelWidget((v) => !v);
               }}
-              className="btn-ghost text-xs px-3 py-1.5 rounded-full border font-mono"
+              className="btn-ghost text-xs px-3 py-1.5 rounded-full border font-mono max-w-[10rem] truncate"
               title={currentModel ?? 'Select model'}
             >
               {modelInfoData?.current.model ?? 'Model'}

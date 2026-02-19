@@ -37,7 +37,7 @@
 
 ## Phase 17: Advanced Capabilities
 
-**Status**: Pending
+**Status**: Complete
 
 ### Multi-Agent Systems
 - [x] **Dynamic Tool Creation** — Agent-driven tool generation at runtime (Agent Zero-style — agents create and register new tools as needed)
@@ -51,11 +51,11 @@
 - [x] **Per-Personality Sub-Agent Settings** — A2A and Swarm enablement toggles per personality (gated by global security policy)
       
 ### ML-based Security
-- [ ] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events
+- [x] **Anomaly Detection** — Machine learning-based detection of unusual patterns in agent behavior, API calls, and security events
 
 ### Sandbox
-- [ ] **gVisor Integration** — Additional sandbox isolation layer using gVisor
-- [ ] **WASM Isolation** — WebAssembly-based code execution sandboxing
+- [x] **gVisor Integration** — Additional sandbox isolation layer using gVisor
+- [x] **WASM Isolation** — WebAssembly-based code execution sandboxing
 
 ---
 
@@ -173,4 +173,4 @@ Tracked third-party dependencies with known issues that require upstream resolut
 
 ---
 
-*Last updated: 2026-02-18 — Phase 16 complete; Phase 17: Advanced Capabilities pending*
+*Last updated: 2026-02-18 — Phase 17 complete; Phase 18: Skills Marketplace & Community pending*

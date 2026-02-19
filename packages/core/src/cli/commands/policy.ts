@@ -10,6 +10,9 @@ const DEFAULT_URL = 'http://127.0.0.1:18789';
 const ALL_POLICY_FLAGS = [
   'allowDynamicTools',
   'sandboxDynamicTools',
+  'allowAnomalyDetection',
+  'sandboxGvisor',
+  'sandboxWasm',
   'allowSubAgents',
   'allowA2A',
   'allowSwarms',

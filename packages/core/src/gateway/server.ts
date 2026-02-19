@@ -1014,6 +1014,9 @@ export class GatewayServer {
         allowMultimodal: config.security.allowMultimodal,
         allowDynamicTools: config.security.allowDynamicTools,
         sandboxDynamicTools: config.security.sandboxDynamicTools,
+        allowAnomalyDetection: config.security.allowAnomalyDetection,
+        sandboxGvisor: config.security.sandboxGvisor,
+        sandboxWasm: config.security.sandboxWasm,
       };
     });
 
@@ -1034,6 +1037,9 @@ export class GatewayServer {
             allowMultimodal?: boolean;
             allowDynamicTools?: boolean;
             sandboxDynamicTools?: boolean;
+            allowAnomalyDetection?: boolean;
+            sandboxGvisor?: boolean;
+            sandboxWasm?: boolean;
           };
         }>,
         reply: FastifyReply
@@ -1051,6 +1057,9 @@ export class GatewayServer {
             allowMultimodal,
             allowDynamicTools,
             sandboxDynamicTools,
+            allowAnomalyDetection,
+            sandboxGvisor,
+            sandboxWasm,
           } = request.body;
           if (
             allowSubAgents === undefined &&
@@ -1063,7 +1072,10 @@ export class GatewayServer {
             allowStorybook === undefined &&
             allowMultimodal === undefined &&
             allowDynamicTools === undefined &&
-            sandboxDynamicTools === undefined
+            sandboxDynamicTools === undefined &&
+            allowAnomalyDetection === undefined &&
+            sandboxGvisor === undefined &&
+            sandboxWasm === undefined
           ) {
             return reply.code(400).send({ error: 'No valid fields provided' });
           }
@@ -1079,6 +1091,9 @@ export class GatewayServer {
             allowMultimodal,
             allowDynamicTools,
             sandboxDynamicTools,
+            allowAnomalyDetection,
+            sandboxGvisor,
+            sandboxWasm,
           });
           const config = this.secureYeoman.getConfig();
           return {
@@ -1093,6 +1108,9 @@ export class GatewayServer {
             allowMultimodal: config.security.allowMultimodal,
             allowDynamicTools: config.security.allowDynamicTools,
             sandboxDynamicTools: config.security.sandboxDynamicTools,
+            allowAnomalyDetection: config.security.allowAnomalyDetection,
+            sandboxGvisor: config.security.sandboxGvisor,
+            sandboxWasm: config.security.sandboxWasm,
           };
         } catch (err) {
           this.getLogger().error('Failed to update security policy', {
