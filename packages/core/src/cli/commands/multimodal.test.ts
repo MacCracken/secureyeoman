@@ -127,4 +127,84 @@ describe('multimodal command', () => {
     const code = await multimodalCommand.run({ argv: ['config'], stdout, stderr });
     expect(code).toBe(1);
   });
+
+  it('should output JSON with --json for config', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ vision: { enabled: true } }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({ argv: ['config', '--json'], stdout, stderr });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as { vision: { enabled: boolean } };
+    expect(parsed.vision.enabled).toBe(true);
+  });
+
+  it('should output JSON with --json for jobs', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => [{ id: 'job-1', type: 'tts', status: 'completed', created_at: '2026-02-18T10:00:00Z' }],
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({ argv: ['jobs', '--json'], stdout, stderr });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as Array<{ id: string }>;
+    expect(parsed[0]?.id).toBe('job-1');
+  });
+
+  it('should show spinner on speak (non-TTY)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ jobId: 'job-123' }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({ argv: ['speak', 'Hello'], stdout, stderr });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('✓');
+  });
+
+  it('should show spinner on vision-analyze (non-TTY)', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ description: 'a cat' }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await multimodalCommand.run({
+      argv: ['vision-analyze', 'https://example.com/img.jpg'],
+      stdout,
+      stderr,
+    });
+    expect(code).toBe(0);
+    expect(getStdout()).toContain('✓');
+  });
+
+  it('should include --json in help', async () => {
+    const { stdout, stderr, getStdout } = createStreams();
+    await multimodalCommand.run({ argv: ['--help'], stdout, stderr });
+    expect(getStdout()).toContain('--json');
+  });
 });

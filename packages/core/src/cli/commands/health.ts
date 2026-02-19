@@ -3,7 +3,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatUptime, apiCall } from '../utils.js';
+import { extractFlag, extractBoolFlag, formatUptime, apiCall, colorContext } from '../utils.js';
 
 export const healthCommand: Command = {
   name: 'health',
@@ -48,12 +48,14 @@ Options:
         return data.status === 'ok' ? 0 : 1;
       }
 
+      const c = colorContext(ctx.stdout);
       const status = data.status as string;
       const version = data.version as string;
       const uptime = data.uptime as number;
       const checks = data.checks as Record<string, boolean>;
 
-      ctx.stdout.write(`\n  Status:   ${status === 'ok' ? 'OK' : 'ERROR'}\n`);
+      const statusLabel = status === 'ok' ? c.green('OK') : c.red('ERROR');
+      ctx.stdout.write(`\n  Status:   ${statusLabel}\n`);
       ctx.stdout.write(`  Version:  ${version}\n`);
       ctx.stdout.write(`  Uptime:   ${formatUptime(uptime)}\n`);
       ctx.stdout.write(`  Server:   ${baseUrl}\n`);
@@ -62,7 +64,8 @@ Options:
       if (checks) {
         ctx.stdout.write('\n  Checks:\n');
         for (const [name, ok] of Object.entries(checks)) {
-          ctx.stdout.write(`    ${name.padEnd(16)} ${ok ? 'pass' : 'FAIL'}\n`);
+          const label = ok ? c.green('pass') : c.red('FAIL');
+          ctx.stdout.write(`    ${name.padEnd(16)} ${label}\n`);
         }
       }
       ctx.stdout.write('\n');

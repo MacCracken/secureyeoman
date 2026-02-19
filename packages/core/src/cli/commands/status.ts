@@ -3,7 +3,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatUptime, apiCall } from '../utils.js';
+import { extractFlag, extractBoolFlag, formatUptime, apiCall, colorContext } from '../utils.js';
 
 export const statusCommand: Command = {
   name: 'status',
@@ -66,7 +66,8 @@ Options:
       }
 
       // Format human-readable output
-      const status = health.status === 'ok' ? 'OK' : 'ERROR';
+      const c = colorContext(ctx.stdout);
+      const statusStr = health.status === 'ok' ? 'OK' : 'ERROR';
       const version = (health.version as string) ?? 'unknown';
       const uptime = formatUptime((health.uptime as number) ?? 0);
 
@@ -79,11 +80,15 @@ Options:
       const allowSubAgents = policy?.allowSubAgents ?? false;
       const allowedByPolicy = agentConfig?.allowedBySecurityPolicy ?? false;
 
+      const statusLabel = statusStr === 'OK' ? c.green('OK') : c.red('ERROR');
+      const subAgentsLabel = allowSubAgents ? c.green('Enabled') : c.red('Disabled');
+      const policyLabel = allowedByPolicy ? c.green('Allowed') : c.red('Restricted');
+
       ctx.stdout.write(`
   SecureYeoman Status
 
     Server:       ${baseUrl}
-    Status:       ${status}
+    Status:       ${statusLabel}
     Version:      ${version}
     Uptime:       ${uptime}
 
@@ -91,11 +96,11 @@ Options:
     Personality:  ${activePersonality ? `Active (id: ${personalityId})` : 'None'}
 
     Security:
-      Sub-Agents:   ${allowSubAgents ? 'Enabled' : 'Disabled'}
-      Policy:       ${allowedByPolicy ? 'Allowed' : 'Restricted'}
+      Sub-Agents:   ${subAgentsLabel}
+      Policy:       ${policyLabel}
 \n`);
 
-      return status === 'OK' ? 0 : 1;
+      return statusStr === 'OK' ? 0 : 1;
     } catch (err) {
       ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
       return 1;

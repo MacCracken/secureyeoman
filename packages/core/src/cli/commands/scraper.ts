@@ -7,6 +7,7 @@ import { extractFlag, extractBoolFlag, formatTable, apiCall } from '../utils.js'
 
 export const scraperCommand: Command = {
   name: 'scraper',
+  aliases: ['sc'],
   description: 'Manage web scraping and MCP web tools',
   usage: 'secureyeoman scraper <config|tools|servers>',
 
@@ -25,6 +26,7 @@ Commands:
 
 Options:
   --url <url>       Server URL (default: http://127.0.0.1:3000)
+  --json            Output raw JSON
   -h, --help        Show this help
 `);
       return 0;
@@ -33,8 +35,11 @@ Options:
 
     const urlResult = extractFlag(argv, 'url');
     argv = urlResult.rest;
+    const jsonResult = extractBoolFlag(argv, 'json');
+    argv = jsonResult.rest;
 
     const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
+    const json = jsonResult.value;
     const subcommand = argv[0];
 
     try {
@@ -45,6 +50,10 @@ Options:
           return 1;
         }
         const config = result.data as Record<string, unknown>;
+        if (json) {
+          ctx.stdout.write(JSON.stringify(config, null, 2) + '\n');
+          return 0;
+        }
         ctx.stdout.write('\nMCP Scraper Configuration:\n');
         ctx.stdout.write(JSON.stringify(config, null, 2) + '\n');
       } else if (subcommand === 'tools') {
@@ -56,6 +65,10 @@ Options:
         const tools = result.data as {
           tools: Array<{ name: string; description: string; inputSchema: object }>;
         };
+        if (json) {
+          ctx.stdout.write(JSON.stringify(tools, null, 2) + '\n');
+          return 0;
+        }
         if (!tools.tools || tools.tools.length === 0) {
           ctx.stdout.write('No MCP tools available.\n');
           return 0;
@@ -78,13 +91,13 @@ Options:
           ctx.stderr.write(`Failed to fetch servers: HTTP ${result.status}\n`);
           return 1;
         }
-        const servers = result.data as Array<{
-          id: string;
-          name: string;
-          status: string;
-          enabled: boolean;
-        }>;
-        if (servers.length === 0) {
+        if (json) {
+          ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
+          return 0;
+        }
+        const data = result.data as { servers?: Array<{ id: string; name: string; status: string; enabled: boolean }> };
+        const servers = data.servers ?? (result.data as Array<{ id: string; name: string; status: string; enabled: boolean }>);
+        if (!servers || servers.length === 0) {
           ctx.stdout.write('No MCP servers registered.\n');
           return 0;
         }

@@ -101,4 +101,65 @@ describe('browser command', () => {
     const code = await browserCommand.run({ argv: [], stdout, stderr });
     expect(code).toBe(1);
   });
+
+  it('should output JSON with --json for list', async () => {
+    const sessions = [{ id: 'session-1', status: 'active', created_at: '2026-02-18T10:00:00Z' }];
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => sessions,
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await browserCommand.run({ argv: ['--json'], stdout, stderr });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as typeof sessions;
+    expect(parsed[0]?.id).toBe('session-1');
+  });
+
+  it('should output JSON with --json for stats', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ active: 2, total: 10 }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await browserCommand.run({ argv: ['stats', '--json'], stdout, stderr });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as { active: number; total: number };
+    expect(parsed.active).toBe(2);
+  });
+
+  it('should output JSON with --json for config', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        headers: { get: () => 'application/json' },
+        json: async () => ({ browserEnabled: true }),
+      })
+    );
+
+    const { stdout, stderr, getStdout } = createStreams();
+    const code = await browserCommand.run({ argv: ['config', '--json'], stdout, stderr });
+    expect(code).toBe(0);
+    const parsed = JSON.parse(getStdout()) as { browserEnabled: boolean };
+    expect(parsed.browserEnabled).toBe(true);
+  });
+
+  it('should include --json in help', async () => {
+    const { stdout, stderr, getStdout } = createStreams();
+    await browserCommand.run({ argv: ['--help'], stdout, stderr });
+    expect(getStdout()).toContain('--json');
+  });
 });

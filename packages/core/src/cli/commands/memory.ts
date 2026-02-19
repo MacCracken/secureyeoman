@@ -3,10 +3,11 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatTable, apiCall } from '../utils.js';
+import { extractFlag, extractBoolFlag, formatTable, apiCall, Spinner } from '../utils.js';
 
 export const memoryCommand: Command = {
   name: 'memory',
+  aliases: ['mem'],
   description: 'Manage vector memory and brain operations',
   usage: 'secureyeoman memory <search|memories|knowledge|stats|consolidate>',
 
@@ -29,6 +30,7 @@ Commands:
 Options:
   --url <url>       Server URL (default: http://127.0.0.1:3000)
   --limit <n>       Limit results (default: 10)
+  --json            Output raw JSON
   -h, --help        Show this help
 `);
       return 0;
@@ -39,9 +41,12 @@ Options:
     argv = urlResult.rest;
     const limitResult = extractFlag(argv, 'limit');
     argv = limitResult.rest;
+    const jsonResult = extractBoolFlag(argv, 'json');
+    argv = jsonResult.rest;
 
     const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
     const limit = limitResult.value ? Number(limitResult.value) : 10;
+    const json = jsonResult.value;
     const subcommand = argv[0];
 
     try {
@@ -61,6 +66,10 @@ Options:
           return 1;
         }
         const results = result.data as Array<{ id: string; content: string; similarity: number }>;
+        if (json) {
+          ctx.stdout.write(JSON.stringify(results, null, 2) + '\n');
+          return 0;
+        }
         if (results.length === 0) {
           ctx.stdout.write('No similar memories found.\n');
           return 0;
@@ -86,6 +95,10 @@ Options:
           content: string;
           importance: number;
         }>;
+        if (json) {
+          ctx.stdout.write(JSON.stringify(memories, null, 2) + '\n');
+          return 0;
+        }
         if (memories.length === 0) {
           ctx.stdout.write('No memories found.\n');
           return 0;
@@ -109,6 +122,10 @@ Options:
           return 1;
         }
         const knowledge = result.data as Array<{ id: string; title: string; content: string }>;
+        if (json) {
+          ctx.stdout.write(JSON.stringify(knowledge, null, 2) + '\n');
+          return 0;
+        }
         if (knowledge.length === 0) {
           ctx.stdout.write('No knowledge entries found.\n');
           return 0;
@@ -131,29 +148,49 @@ Options:
           return 1;
         }
         const stats = result.data as Record<string, unknown>;
+        if (json) {
+          ctx.stdout.write(JSON.stringify(stats, null, 2) + '\n');
+          return 0;
+        }
         ctx.stdout.write('\nMemory Statistics:\n');
         for (const [key, value] of Object.entries(stats)) {
           ctx.stdout.write(`  ${key}: ${JSON.stringify(value)}\n`);
         }
         ctx.stdout.write('\n');
       } else if (subcommand === 'consolidate') {
+        const spinner = new Spinner(ctx.stdout);
+        spinner.start('Running memory consolidation');
         const result = await apiCall(baseUrl, '/api/v1/brain/consolidation/run', {
           method: 'POST',
         });
         if (!result.ok) {
-          ctx.stderr.write(`Consolidation failed: HTTP ${result.status}\n`);
+          spinner.stop('Memory consolidation failed', false);
+          ctx.stderr.write(`HTTP ${result.status}\n`);
           return 1;
         }
-        ctx.stdout.write('Memory consolidation triggered successfully.\n');
+        if (json) {
+          spinner.stop('Done', true);
+          ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
+          return 0;
+        }
+        spinner.stop('Memory consolidation triggered successfully', true);
       } else if (subcommand === 'reindex') {
+        const spinner = new Spinner(ctx.stdout);
+        spinner.start('Rebuilding vector index');
         const result = await apiCall(baseUrl, '/api/v1/brain/reindex', {
           method: 'POST',
         });
         if (!result.ok) {
-          ctx.stderr.write(`Reindex failed: HTTP ${result.status}\n`);
+          spinner.stop('Vector index rebuild failed', false);
+          ctx.stderr.write(`HTTP ${result.status}\n`);
           return 1;
         }
-        ctx.stdout.write('Vector index rebuild triggered successfully.\n');
+        if (json) {
+          spinner.stop('Done', true);
+          ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
+          return 0;
+        }
+        spinner.stop('Vector index rebuild triggered successfully', true);
       } else {
         ctx.stderr.write(`Unknown subcommand: ${subcommand}\n`);
         ctx.stderr.write(`Run 'secureyeoman memory --help' for usage.\n`);
