@@ -12,12 +12,14 @@ All notable changes to SecureYeoman are documented in this file.
 - **`secureyeoman.ts`** — `getActivePersonality` callback now returns `selectedIntegrations: p.body?.selectedIntegrations ?? []` alongside `voice`
 - Mirrors the existing `selectedServers` MCP enforcement pattern in `chat-routes.ts`; both integration platforms and MCP servers are now gated by personality allowlist
 
-### MCP Discovered Tools — Backend Fix
-- **`GET /api/v1/mcp/tools`** now returns only tools discovered from external MCP servers (`mcpClient.getAllTools()`). YEOMAN's own skills exposed via the MCP server role were incorrectly merged into this response. The broken `tool.serverId === localServer?.id` filter (hardcoded string vs DB UUID mismatch) is removed.
-- **Dead constants removed** from `mcp-routes.ts`: `LOCAL_MCP_NAME`, `GIT_TOOL_PREFIXES`, `FS_TOOL_PREFIXES`, `WEB_TOOL_PREFIXES`, `WEB_SCRAPING_TOOLS`, `WEB_SEARCH_TOOLS`, `BROWSER_TOOL_PREFIXES`
+### MCP Discovered Tools — Skills Removed, Feature Gate Corrected
+- **`GET /api/v1/mcp/tools`** no longer merges YEOMAN's skill-as-tool set (`mcpServer.getExposedTools()`) into the response. Skills are not MCP tools and do not belong in the Discovered Tools view.
+- **Feature config filter restored and corrected** — YEOMAN's own tools (`serverName === 'YEOMAN MCP'`) are now filtered by the global feature toggles (Git, Filesystem, Web, Browser). The previous filter checked `tool.serverId === localServer?.id` which silently failed (hardcoded string `'secureyeoman-local'` vs DB UUID — never matched). Fixed to `tool.serverName === LOCAL_MCP_NAME`.
+- **Architecture**: External tools always pass through. YEOMAN's own tools pass only when the corresponding feature toggle is enabled. This is the gate between "available" and "exposed to the system"; personality `selectedServers` is the subsequent per-personality gate.
 
-### MCP Discovered Tools — Dashboard Fix
-- **`ConnectionsPage`** — Removed `isLocal` variable and `{!isLocal && ...}` guard from the Discovered Tools tool list. Since YEOMAN's own skills are no longer returned by the API, all tools in the list are external and the visibility toggle is always shown.
+### MCP Discovered Tools — Dashboard Fixes
+- **`ConnectionsPage`** — `isLocal` variable and `{!isLocal && ...}` guard removed from the tool list; all tools in the list are now toggleable (the guard was suppressing the eye button for YEOMAN tools, which are now always external-server tools).
+- **`LocalServerCard` `toolCount`** — Fixed from `t.serverId === localServer.id` (always zero — same UUID mismatch) to `t.serverName === LOCAL_MCP_NAME`. The tool count on the YEOMAN MCP card now correctly reflects how many YEOMAN tools are currently exposed and updates when feature toggles change.
 
 ### Skills — Installed Tab
 - **New "Installed" tab** — Dashboard → Skills now has four tabs: Personal Skills | Marketplace | Community | **Installed**
