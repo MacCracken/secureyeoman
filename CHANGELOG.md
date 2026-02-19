@@ -4,6 +4,19 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 20 (partial): Bug Fix — Costs Page Blanks After Restart (2026-02-19)
+
+### Bug Fix
+
+- **Costs/totals blank after restart** — The lazy AI usage init (Phase 20 performance work) deferred `aiClient.init()` until the first chat call. The metrics and costs API endpoints read directly from the in-memory usage tracker without triggering init, so the dashboard showed zeroes until a chat was made. Fixed by firing `init()` as a non-blocking background task immediately after `AIClient` construction — startup speed is unchanged, but the tracker is seeded within milliseconds so metrics are accurate from the first poll.
+
+### Files Changed
+
+- `packages/core/src/secureyeoman.ts` — `void this.aiClient.init().catch(...)` replaces removed init call
+- `docs/adr/067-performance-startup-memory-optimizations.md` — decision updated to reflect background-fire approach
+
+---
+
 ## Phase 20 (partial): Startup & Memory Performance Optimizations (2026-02-19) — [ADR 067](docs/adr/067-performance-startup-memory-optimizations.md)
 
 ### Performance

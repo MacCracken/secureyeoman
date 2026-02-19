@@ -40,11 +40,11 @@ PicoClaw achieves its extreme figures by being a Go single-binary with no databa
 
 **Before:** `aiClient.init()` was called eagerly at startup, immediately after constructing the AIClient. This loaded historical usage records (tokens, costs, errors, latency) from PostgreSQL — 3–4 sequential queries — before any AI call had been made.
 
-**After:** `AIClient` now tracks an `initPromise`. The `init()` method is idempotent (subsequent calls are no-ops). A private `ensureInitialized()` is called at the top of `chat()` and `chatStream()` — the DB load happens on the first actual AI request and never blocks startup. The `await this.aiClient.init()` line is removed from `secureyeoman.ts`.
+**After:** `AIClient` now tracks an `initPromise`. The `init()` method is idempotent (subsequent calls are no-ops). A private `ensureInitialized()` is called at the top of `chat()` and `chatStream()`. In `secureyeoman.ts`, `init()` is fired immediately after construction as a background task (`void this.aiClient.init().catch(...)`) — it does not block the startup path, but kicks off the DB load right away so the usage tracker is seeded before the first metrics poll.
 
-**Invariant preserved:** Token limit checking (`checkLimit()`) always sees accurate today's usage because `ensureInitialized()` completes before it is called.
+**Invariant preserved:** Token limit checking (`checkLimit()`) always sees accurate today's usage because `ensureInitialized()` completes before it is called. The metrics and cost endpoints always see accurate totals because init completes in the background within milliseconds of startup — well before the dashboard's 30 s refetch interval.
 
-**Gain:** Estimated 300–500 ms removed from the startup critical path. The cost is added latency on the very first AI request (once, not per-request).
+**Gain:** Estimated 300–500 ms removed from the startup critical path. No added latency on the first AI request (init runs concurrently with other startup work). Costs/totals page no longer blanks out after a restart.
 
 ---
 
