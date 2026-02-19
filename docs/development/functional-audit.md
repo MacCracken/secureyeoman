@@ -125,8 +125,8 @@
 | **Workspace/Team** | ✅ | ❌ | ✅ | ❌ |
 | **SSO/SAML** | ⚠️ Planned (Phase 20) | ❌ | ✅ (some) | ❌ |
 | **Onboarding** | ⚠️ Planned (Phase 21) | ❌ | ✅ | ✅ (onboard CLI) |
-| **Single Binary** | ❌ | ❌ | ❌ | ✅ |
-| **Embedded Deployment** | ❌ | ❌ | ❌ | ✅ ($10 hardware) |
+| **Single Binary** | ⚠️ Planned (Phase 20) | ❌ | ❌ | ✅ |
+| **Embedded Deployment** | ⚠️ Planned (Phase 20) | ❌ | ❌ | ✅ ($10 hardware) |
 
 ---
 
