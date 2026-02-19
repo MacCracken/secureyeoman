@@ -47,9 +47,6 @@
       
 #### Integration Connection Updates
 
-##### Per-Personality Integration Access (enforcement)
-- [ ] **Integration Access Enforcement** — `selectedIntegrations` per-personality field is stored and exposed in the Personality Editor (UI ships in current release). Backend enforcement is a follow-up: gate inbound message routing so a personality only receives events from its allowed integrations; gate outbound send calls in sub-agent delegation chains so spawned agents cannot use integrations outside their allowlist. Mirrors the existing `selectedServers` MCP enforcement pattern in `chat-routes.ts`.
-
 ##### Productivity Integrations
 - [ ] **Airtable** — Base CRUD operations, record management, view filtering
 - [x] **Linear** — Issue creation, status updates, sprint management, webhook listeners
@@ -69,7 +66,16 @@
 
 ---
 
-## Phase 19: SaaS ready
+## Phase 19: Per-Personality Access
+
+**Status**: Pending
+
+##### Integration & Skill Access (enforcement)
+- [ ] **Integration Access Enforcement** — `selectedIntegrations` per-personality field is stored and exposed in the Personality Editor (UI ships in current release). Backend enforcement is a follow-up: gate inbound message routing so a personality only receives events from its allowed integrations; gate outbound send calls in sub-agent delegation chains so spawned agents cannot use integrations outside their allowlist. Mirrors the existing `selectedServers` MCP enforcement pattern in `chat-routes.ts`.
+- [ ] **Skills / MCP Tool Separation** — Separate discovered MCP tools from Skills in the Discovered Tools view; surface available Skills in Skills > All Skills with a dedicated view, keeping Personal Skills in their own section distinct from marketplace/MCP-sourced skills
+---
+
+## Phase 20: SaaS ready
 
 **Status**: Pending
 
@@ -109,15 +115,12 @@
 ### Development
 - [ ] **Go/Rust Runtime** — Potential future language option for core components
 
-### Skills & Tools UX
-- [ ] **Skills / MCP Tool Separation** — Separate discovered MCP tools from Skills in the Discovered Tools view; surface available Skills in Skills > All Skills with a dedicated view, keeping Personal Skills in their own section distinct from marketplace/MCP-sourced skills
-
 ### Major Audit
 - [ ] **Audit all the things** - Code, Documentation, ADR, & Tests
 
 ---
 
-## Phase 20: Onboarding & First Run
+## Phase 21: Onboarding & First Run
 
 **Status**: Pending
 
