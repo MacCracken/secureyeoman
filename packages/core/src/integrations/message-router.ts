@@ -26,8 +26,11 @@ export interface MessageRouterDeps {
       responseFormat?: string;
     }) => Promise<{ audioBase64: string; format: string }>;
   } | null;
-  /** Resolve the active personality for TTS voice selection */
-  getActivePersonality?: () => Promise<{ voice?: string | null } | null>;
+  /** Resolve the active personality for TTS voice selection and integration access enforcement */
+  getActivePersonality?: () => Promise<{
+    voice?: string | null;
+    selectedIntegrations?: string[];
+  } | null>;
   /** Optional outbound webhook dispatcher — fires message.inbound events */
   outboundWebhookDispatcher?: OutboundWebhookDispatcher | null;
 }
@@ -97,6 +100,20 @@ export class MessageRouter {
     if (!message.text.trim()) {
       logger.debug('Skipping empty inbound message');
       return;
+    }
+
+    // Integration access enforcement — gate inbound routing by active personality's allowlist.
+    // An empty `selectedIntegrations` array means "allow all" (default / no restriction).
+    if (this.deps.getActivePersonality) {
+      const personality = await this.deps.getActivePersonality();
+      const allowedIntegrations = personality?.selectedIntegrations ?? [];
+      if (allowedIntegrations.length > 0 && !allowedIntegrations.includes(message.integrationId)) {
+        logger.info(
+          `Inbound message from integration ${message.integrationId} (${message.platform}) ` +
+            `blocked — not in active personality's integration allowlist`
+        );
+        return;
+      }
     }
 
     // Create execution context for the task

@@ -927,7 +927,12 @@ export class SecureYeoman {
               getActivePersonality: soul
                 ? async () => {
                     const p = await soul.getActivePersonality();
-                    return p ? { voice: p.voice } : null;
+                    return p
+                      ? {
+                          voice: p.voice,
+                          selectedIntegrations: p.body?.selectedIntegrations ?? [],
+                        }
+                      : null;
                   }
                 : undefined,
             });

@@ -1,4 +1,4 @@
-# ADR 064: Skills / MCP Tool Separation
+# ADR 064: Phase 19 — Per-Personality Access (Skills/MCP Separation & Integration Enforcement)
 
 **Status**: Accepted
 **Date**: 2026-02-19
@@ -25,6 +25,8 @@ An attempt to filter skills out using `tool.serverId === localServer?.id` was si
 
 Separately, installed marketplace and community skills (which land in the soul/brain skills table with `source: 'marketplace' | 'community'`) had no dedicated view. Users could filter for them in the Personal Skills tab but there was no first-class "what have I installed?" surface.
 
+The Personality schema has carried `selectedIntegrations: string[]` since Phase 15 and is exposed in the Personality Editor UI, but it was never enforced in the message routing path — every inbound integration message was forwarded to the task executor regardless of which integrations the active personality was configured to allow. The `selectedServers` field (for MCP tools) has been enforced in `chat-routes.ts` since Phase 9; integrations lacked the equivalent gate.
+
 Additionally, several point-of-install bugs were fixed in this phase:
 
 - **personalityId not persisted on install** — `MarketplaceManager.install()` did not accept or forward a `personalityId`. Skills installed to a specific personality always showed as "Global" in the Personal Skills view.
@@ -34,7 +36,39 @@ Additionally, several point-of-install bugs were fixed in this phase:
 
 ## Decisions
 
-### 1. Backend: `/api/v1/mcp/tools` returns only external tools
+### 1. Integration Access Enforcement — Inbound Message Gate
+
+`MessageRouter.handleInbound()` now checks the active personality's `selectedIntegrations` array against `message.integrationId` before routing to the task executor.
+
+```
+Inbound message
+  → store message (always — audit trail)
+  → skip if empty
+  → get active personality
+  → if selectedIntegrations.length > 0 AND integrationId not in list → DROP (log + return)
+  → submit to task executor
+```
+
+Semantics:
+- **Empty `selectedIntegrations` (default)** = allow all integrations. Fully backward compatible — no existing personality has restrictions.
+- **Non-empty list** = allowlist. Only messages from listed integration IDs reach the task executor.
+- Messages from blocked integrations are still **stored** (for audit) but not processed.
+- Outbound responses naturally stay within the same integration (`integrationManager.sendMessage(message.integrationId, ...)`) — no separate outbound gate needed for the common case.
+
+The pattern directly mirrors `selectedServers` enforcement in `chat-routes.ts`:
+
+```typescript
+// MCP tools (chat-routes.ts — existing)
+if (!selectedServers.includes(tool.serverName)) continue;
+
+// Integration messages (message-router.ts — new)
+if (allowedIntegrations.length > 0 && !allowedIntegrations.includes(message.integrationId)) {
+  logger.info(`Blocked: integration ${message.integrationId} not in personality allowlist`);
+  return;
+}
+```
+
+### 2. Backend: `/api/v1/mcp/tools` returns only external tools
 
 The route now returns exactly `mcpClient.getAllTools()` — tools discovered from external MCP servers the user has added. YEOMAN's own exposed skills are irrelevant to this endpoint.
 
@@ -94,6 +128,8 @@ The personalityId and Cost Summary fixes are correctness bugs — the data was a
 ## Consequences
 
 **Positive:**
+- Integration access enforcement now matches MCP server enforcement — both gated by personality allowlist
+- Empty allowlist = allow all (zero config required for existing deployments)
 - Clean conceptual separation: Connections → MCP shows only external connections; Skills → Installed shows skills you've installed
 - Backend route is a single line — no complex filter or ID-matching logic
 - Personality-scoped installed skill management in one dedicated view
@@ -108,6 +144,7 @@ The personalityId and Cost Summary fixes are correctness bugs — the data was a
 
 ## Future
 
+- **Sub-agent delegation integration gate** — When a sub-agent spawns with a specific personality profile, enforce that profile's `selectedIntegrations` on any outbound integration calls made by the delegated task. Requires delegation context to carry integration restrictions through the call chain.
 - Align Installed → Remove with marketplace uninstall to keep the `installed` flag in sync
 - Add name search/filter in the Installed tab
 - Show install date and per-personality install count in the Installed tab
@@ -117,6 +154,7 @@ The personalityId and Cost Summary fixes are correctness bugs — the data was a
 
 ## Files Changed
 
+- `packages/core/src/integrations/message-router.ts`
 - `packages/core/src/mcp/mcp-routes.ts`
 - `packages/core/src/ai/client.ts`
 - `packages/core/src/secureyeoman.ts`
