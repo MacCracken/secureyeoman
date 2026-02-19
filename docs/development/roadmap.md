@@ -67,7 +67,7 @@
 ### Security & Enterprise Access
 - [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
 - [ ] **Workspace Management** — Multi-workspace admin UI with user assignment, role management per workspace
-- [ ] **Roles & Permissions Review/Audit** — Comprehensive review of RBAC roles, permissions, and access controls to ensure completeness and alignment with feature set
+- [x] **RBAC Audit** — Role inventory, permission validation, ~80 missing ROUTE_PERMISSIONS entries added, `connections`→`integrations` rename, mTLS role lookup fix, wildcard auth permissions replaced — see [ADR 068](../adr/068-rbac-audit-phase-22.md)
 ### Deployment
 - [ ] **Single Binary** — Simplify deployment with Go-based components
 - [ ] **Embedded Ready** — Consider future IoT/edge use cases
@@ -92,16 +92,6 @@
 ### Major Audit
 
 - [ ] **Audit all the things** — Code, Documentation, ADR, & Tests
-
----
-
-## Phase 22: Security & Enterprise Access
-
-**Status**: In Progress
-
-### Security
-
-- [x] **RBAC Audit**: role inventory, permission validation, route coverage (~80 new ROUTE_PERMISSIONS entries), mTLS role lookup fix — see [ADR 068](../adr/068-rbac-audit-phase-22.md)
 
 ---
 
