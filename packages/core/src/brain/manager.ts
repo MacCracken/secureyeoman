@@ -433,6 +433,11 @@ export class BrainManager {
     return this.storage.listSkills(filter);
   }
 
+  async findSkillByNameAndSource(name: string, source: string): Promise<Skill | null> {
+    const skills = await this.storage.listSkills({ source });
+    return skills.find((s) => s.name === name) ?? null;
+  }
+
   async enableSkill(id: string): Promise<void> {
     await this.storage.updateSkill(id, { enabled: true });
   }

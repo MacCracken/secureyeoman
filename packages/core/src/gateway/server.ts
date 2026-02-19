@@ -251,7 +251,7 @@ export class GatewayServer {
     // Auth + RBAC hooks (after CORS, before routes)
     if (this.authService) {
       const logger = this.getLogger();
-      this.app.addHook('onRequest', createAuthHook({ authService: this.authService, logger }));
+      this.app.addHook('onRequest', createAuthHook({ authService: this.authService, logger, rbac: this.secureYeoman.getRBAC() }));
       this.app.addHook(
         'onRequest',
         createRbacHook({

@@ -98,6 +98,10 @@ describe('Auth Middleware', () => {
     app.delete('/api/v1/auth/api-keys/:id', async (req) => ({ user: req.authUser?.userId }));
     // unmapped route
     app.get('/api/v1/admin/danger', async (req) => ({ user: req.authUser?.userId }));
+    // routes for new RBAC tests
+    app.get('/api/v1/integrations', async (req) => ({ user: req.authUser?.userId }));
+    app.get('/api/v1/brain/memories', async (req) => ({ user: req.authUser?.userId }));
+    app.get('/api/v1/soul/users', async (req) => ({ user: req.authUser?.userId }));
 
     await app.ready();
   });
@@ -285,7 +289,7 @@ describe('Auth Middleware', () => {
       expect(res.statusCode).toBe(200);
     });
 
-    it('viewer cannot access POST /api/v1/auth/verify (admin-only)', async () => {
+    it('viewer cannot access POST /api/v1/auth/verify (no auth permission)', async () => {
       const key = await createViewerApiKey();
       const res = await app.inject({
         method: 'POST',
@@ -317,6 +321,154 @@ describe('Auth Middleware', () => {
         headers: { authorization: `Bearer ${token}` },
       });
       expect(res.statusCode).toBe(200);
+    });
+  });
+
+  // ── Operator role ────────────────────────────────────────────────
+
+  describe('operator role', () => {
+    async function createOperatorApiKey(): Promise<string> {
+      const { key } = await authService.createApiKey({
+        name: 'op-key',
+        role: 'operator',
+        userId: 'admin',
+      });
+      return key;
+    }
+
+    it('operator can read metrics', async () => {
+      const key = await createOperatorApiKey();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/metrics',
+        headers: { 'x-api-key': key },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('operator can read integrations', async () => {
+      const key = await createOperatorApiKey();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/integrations',
+        headers: { 'x-api-key': key },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('operator can read brain memories', async () => {
+      const key = await createOperatorApiKey();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/brain/memories',
+        headers: { 'x-api-key': key },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('operator can read soul/users', async () => {
+      const key = await createOperatorApiKey();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/soul/users',
+        headers: { 'x-api-key': key },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('operator can GET /api/v1/auth/api-keys (auth:read)', async () => {
+      const key = await createOperatorApiKey();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/api-keys',
+        headers: { 'x-api-key': key },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('operator cannot access unmapped admin-only routes', async () => {
+      const key = await createOperatorApiKey();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/admin/danger',
+        headers: { 'x-api-key': key },
+      });
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  // ── Auth management routes ────────────────────────────────────────
+
+  describe('auth management routes', () => {
+    it('admin can GET /api/v1/auth/api-keys', async () => {
+      const token = await loginAndGetToken();
+      const res = await app.inject({
+        method: 'GET',
+        url: '/api/v1/auth/api-keys',
+        headers: { authorization: `Bearer ${token}` },
+      });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('viewer cannot POST /api/v1/auth/api-keys (no auth:write)', async () => {
+      const key = await createViewerApiKey();
+      const res = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/api-keys',
+        headers: { 'x-api-key': key },
+        payload: {},
+      });
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  // ── mTLS role assignment ─────────────────────────────────────────
+
+  describe('mTLS role assignment', () => {
+    it('mTLS client with no role assignment falls back to operator role', async () => {
+      const { createAuthHook: createHook } = await import('./auth-middleware.js');
+      const hook = createHook({ authService, logger: noopLogger(), rbac });
+
+      const mockRequest = {
+        routeOptions: { url: '/api/v1/metrics' },
+        url: '/api/v1/metrics',
+        headers: {},
+        raw: {
+          socket: {
+            authorized: true,
+            getPeerCertificate: () => ({ subject: { CN: 'cert-user-unknown' } }),
+          },
+        },
+        authUser: undefined as any,
+      };
+
+      await hook(mockRequest as any, {} as any);
+      expect(mockRequest.authUser.role).toBe('operator');
+      expect(mockRequest.authUser.userId).toBe('cert-user-unknown');
+    });
+
+    it('mTLS client with viewer assignment gets viewer role', async () => {
+      await rbac.assignUserRole('cert-viewer', 'role_viewer', 'admin');
+
+      const { createAuthHook: createHook } = await import('./auth-middleware.js');
+      const hook = createHook({ authService, logger: noopLogger(), rbac });
+
+      const mockRequest = {
+        routeOptions: { url: '/api/v1/metrics' },
+        url: '/api/v1/metrics',
+        headers: {},
+        raw: {
+          socket: {
+            authorized: true,
+            getPeerCertificate: () => ({ subject: { CN: 'cert-viewer' } }),
+          },
+        },
+        authUser: undefined as any,
+      };
+
+      await hook(mockRequest as any, {} as any);
+      expect(mockRequest.authUser.role).toBe('role_viewer');
+      expect(mockRequest.authUser.userId).toBe('cert-viewer');
     });
   });
 });
