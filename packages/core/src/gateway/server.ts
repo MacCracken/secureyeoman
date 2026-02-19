@@ -692,6 +692,27 @@ export class GatewayServer {
       }
     );
 
+    // Reset a usage stat counter (errors or latency) to zero
+    this.app.post(
+      '/api/v1/costs/reset',
+      async (
+        request: FastifyRequest<{ Body: { stat: string } }>,
+        reply: FastifyReply
+      ) => {
+        const { stat } = request.body ?? {};
+        if (stat !== 'errors' && stat !== 'latency') {
+          return reply.code(400).send({ error: 'stat must be "errors" or "latency"' });
+        }
+        try {
+          await this.secureYeoman.resetUsageStat(stat);
+          return { success: true, stat };
+        } catch (err) {
+          const message = err instanceof Error ? err.message : 'Unknown error';
+          return reply.code(500).send({ error: message });
+        }
+      }
+    );
+
     // Tasks endpoints
     this.app.get(
       '/api/v1/tasks',

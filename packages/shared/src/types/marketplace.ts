@@ -18,6 +18,7 @@ export const MarketplaceSkillSchema = z.object({
   instructions: z.string().max(8000).default(''),
   tools: z.array(ToolSchema).default([]),
   installed: z.boolean().default(false),
+  source: z.enum(['builtin', 'community', 'published']).default('published'),
   publishedAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
 });

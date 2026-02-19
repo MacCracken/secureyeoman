@@ -370,7 +370,7 @@ export class AIClient {
 
       return response;
     } catch (error) {
-      this.usageTracker.recordError();
+      this.usageTracker.recordError(providerName, request.model ?? 'default');
       this.usageTracker.recordLatency(Date.now() - startTime);
 
       await this.auditRecord('ai_error', {
@@ -427,8 +427,8 @@ export class AIClient {
             costUsd,
             timestamp: Date.now(),
             personalityId: streamPersonality?.id,
+            latencyMs: elapsed,
           });
-          this.usageTracker.recordLatency(elapsed);
 
           await this.auditRecord('ai_stream_done', {
             provider: providerName,
@@ -440,7 +440,7 @@ export class AIClient {
         }
       }
     } catch (error) {
-      this.usageTracker.recordError();
+      this.usageTracker.recordError(providerName, request.model ?? 'default');
 
       await this.auditRecord('ai_stream_error', {
         provider: providerName,
@@ -506,8 +506,8 @@ export class AIClient {
       costUsd,
       timestamp: Date.now(),
       personalityId: personality?.id,
+      latencyMs: elapsed,
     });
-    this.usageTracker.recordLatency(elapsed);
   }
 
   private async auditRecord(event: string, metadata: Record<string, unknown>): Promise<void> {

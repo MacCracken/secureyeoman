@@ -155,6 +155,7 @@ export class SecureYeoman {
   private taskExecutor: TaskExecutor | null = null;
   private aiClient: AIClient | null = null;
   private usageStorage: UsageStorage | null = null;
+  private usagePruneTimer: ReturnType<typeof setInterval> | null = null;
   private authStorage: AuthStorage | null = null;
   private authService: AuthService | null = null;
   private gateway: GatewayServer | null = null;
@@ -405,6 +406,14 @@ export class SecureYeoman {
         this.usageStorage = new UsageStorage();
         const usageStorage = this.usageStorage;
         await usageStorage.init();
+
+        // Prune expired records daily (startup prune already done inside init())
+        const MS_PER_DAY = 24 * 60 * 60 * 1000;
+        this.usagePruneTimer = setInterval(() => {
+          void usageStorage.prune().catch(() => {
+            // Non-fatal — old records will be pruned on next startup
+          });
+        }, MS_PER_DAY);
 
         this.aiClient = new AIClient(
           {
@@ -733,6 +742,11 @@ export class SecureYeoman {
       this.marketplaceManager = new MarketplaceManager(this.marketplaceStorage, {
         logger: this.logger.child({ component: 'MarketplaceManager' }),
         brainManager: this.brainManager ?? undefined,
+        communityRepoPath:
+          process.env['COMMUNITY_REPO_PATH'] ??
+          (this.config.marketplace as { communityRepoPath?: string } | undefined)
+            ?.communityRepoPath ??
+          '../secureyeoman-community-skills',
       });
       await this.marketplaceManager.seedBuiltinSkills();
       this.logger.debug('Marketplace manager initialized');
@@ -1131,6 +1145,21 @@ export class SecureYeoman {
    */
   getAiUsageStats() {
     return this.aiClient?.getUsageStats();
+  }
+
+  /**
+   * Reset a usage stat counter to zero (persisted to DB via usage_resets table).
+   * Supported stats: 'errors' | 'latency'
+   */
+  async resetUsageStat(stat: 'errors' | 'latency'): Promise<void> {
+    this.ensureInitialized();
+    const tracker = this.aiClient?.getUsageTracker();
+    if (!tracker) throw new Error('Usage tracker not available');
+    if (stat === 'errors') {
+      await tracker.resetErrors();
+    } else {
+      await tracker.resetLatency();
+    }
   }
 
   /**
@@ -1969,6 +1998,12 @@ export class SecureYeoman {
     if (this.heartbeatManager) {
       this.heartbeatManager.stop();
       this.heartbeatManager = null;
+    }
+
+    // Stop daily usage prune timer
+    if (this.usagePruneTimer) {
+      clearInterval(this.usagePruneTimer);
+      this.usagePruneTimer = null;
     }
 
     // Close conversation manager

@@ -4,6 +4,54 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 18: Community Skills Registry (2026-02-19) — [ADR 063](docs/adr/063-community-skills-registry.md)
+
+### Community Skills Repo (`secureyeoman-community-skills`)
+- **`README.md`** — Full description, skill format spec, category list, installation instructions, liability disclaimer
+- **`CONTRIBUTING.md`** — Contribution standards, quality bar, review criteria
+- **`schema/skill.schema.json`** — JSON Schema (draft-07) for community skill validation; editor-side validation
+- **5 seed skills** — `code-reviewer`, `sql-expert` (development); `meeting-summarizer` (productivity); `security-researcher` (security); `data-formatter` (utilities)
+
+### Source Tracking
+- **`MarketplaceSkillSchema`** (`packages/shared/src/types/marketplace.ts`) — New `source: z.enum(['builtin', 'community', 'published']).default('published')` field on all marketplace skills
+- **`SkillSourceSchema`** (`packages/shared/src/types/soul.ts`) — Added `'community'` so installed community skills get `source: 'community'` in BrainSkill
+- **`seedBuiltinSkills()`** — Built-in YEOMAN skills now seeded with `source: 'builtin'`
+- **`install()`** — Community skills install into the Brain with `source: 'community'`; all others remain `'marketplace'`
+
+### Sync API
+- **`POST /api/v1/marketplace/community/sync`** — Reads all `*.json` files under the configured community repo path; upserts skills with `source: 'community'`; returns `{ added, updated, skipped, errors }`. Path is config-locked (no user-supplied path in body — prevents traversal).
+- **`GET /api/v1/marketplace/community/status`** — Returns `{ communityRepoPath, skillCount, lastSyncedAt }`
+- **`GET /api/v1/marketplace?source=community`** — Filter marketplace search by source
+
+### Schema / DB Changes
+- **`019_marketplace_source.sql`** — `ALTER TABLE marketplace.skills ADD COLUMN IF NOT EXISTS source TEXT NOT NULL DEFAULT 'published'`; retroactively tags existing YEOMAN built-ins as `source = 'builtin'`
+
+### Environment
+- **`.env`, `.env.example`, `.env.dev.example`** — `COMMUNITY_REPO_PATH` variable documented (defaults to `../secureyeoman-community-skills`)
+
+### Files Changed
+- `../secureyeoman-community-skills/README.md`
+- `../secureyeoman-community-skills/CONTRIBUTING.md`
+- `../secureyeoman-community-skills/schema/skill.schema.json`
+- `../secureyeoman-community-skills/skills/development/code-reviewer.json`
+- `../secureyeoman-community-skills/skills/development/sql-expert.json`
+- `../secureyeoman-community-skills/skills/productivity/meeting-summarizer.json`
+- `../secureyeoman-community-skills/skills/security/security-researcher.json`
+- `../secureyeoman-community-skills/skills/utilities/data-formatter.json`
+- `packages/shared/src/types/marketplace.ts`
+- `packages/shared/src/types/soul.ts`
+- `packages/core/src/storage/migrations/019_marketplace_source.sql`
+- `packages/core/src/marketplace/storage.ts`
+- `packages/core/src/marketplace/manager.ts`
+- `packages/core/src/marketplace/marketplace-routes.ts`
+- `packages/core/src/marketplace/marketplace.test.ts`
+- `packages/core/src/secureyeoman.ts`
+- `.env`, `.env.example`, `.env.dev.example`
+- `docs/adr/063-community-skills-registry.md`
+- `docs/development/roadmap.md`
+
+---
+
 ## Dashboard: Productivity Tab — Airtable, Todoist, Spotify, YouTube (2026-02-18)
 
 Four new platform options added to the Connections → Integrations → **Productivity** tab. All four platforms were already reserved in `PlatformSchema`; this release adds the dashboard UI metadata (`PLATFORM_META` entries) and surfaces them in the Productivity tab.
