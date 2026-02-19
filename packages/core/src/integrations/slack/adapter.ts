@@ -125,7 +125,7 @@ export class SlackIntegration implements Integration {
     });
 
     // Block Kit button action handler
-    this.app.action({ type: 'block_actions' }, async ({ action, ack, body }) => {
+    this.app.action({ type: 'button' }, async ({ action, ack, body }) => {
       await ack();
 
       const act = action as Record<string, any>;
