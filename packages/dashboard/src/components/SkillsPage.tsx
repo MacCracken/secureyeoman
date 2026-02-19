@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Wrench,
+  Bot,
   Store,
   Plus,
   Edit2,
@@ -94,8 +95,8 @@ export function SkillsPage() {
               : 'border-transparent text-muted-foreground hover:text-foreground'
           }`}
         >
-          <Wrench className="w-4 h-4" />
-          Personal Skills
+          <Bot className="w-4 h-4" />
+          Personal
         </button>
         <button
           onClick={() => setActiveTab('marketplace')}

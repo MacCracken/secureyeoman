@@ -42,11 +42,11 @@
 
 **Status**: Pending
 
+### Bug Fixes
+- [ ] **Personal Skills — Edit Broken** — The edit button on skills added to a personality no longer opens the edit form. Restore full edit functionality for personality-scoped skills in the Personal tab.
+
 ### Visualization
 - [ ] **Layout Algorithms** — Dagre and ELK integration for automatic graph layout
-
-### Real-time Collaboration
-- [ ] **CRDT Implementation** — Conflict-free Replicated Data Types for collaborative editing
 
 ### Security & Enterprise Access
 - [ ] **SSO/SAML** — Single sign-on integration with enterprise identity providers (Okta, Azure AD, Auth0, etc.)
@@ -92,9 +92,13 @@
 
 ---
 
-## Phase 22: Marketplace Evolution
+## Phase 22: Marketplace Evolution & Collaborative Editing
 
 **Status**: Pending
+
+*Both items in this phase are demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
+
+### Marketplace Evolution
 
 *Revisit after community responds to the Phase 18 local-path-sync approach — see [ADR 063](../adr/063-community-skills-registry.md).*
 
@@ -105,6 +109,14 @@ The current sync model (clone locally → sync on demand) is intentionally minim
 - [ ] **Hosted Discovery API** — A lightweight read-only API for browsing available community skills without cloning. Community repo publishes a generated `index.json` via CI.
 - [ ] **Cryptographic Skill Signing** — Authors sign skills with a keypair; SecureYeoman verifies signatures before installing. Reject unsigned skills in strict mode.
 - [ ] **Skill Ratings & Downloads** — Community feedback mechanism (stars, download counts) surfaced in the marketplace UI
+
+### Real-time Collaboration
+
+*Revisit once Phase 20 multi-workspace/multi-user is live and usage data shows concurrent editing is a real pain point. Do not build until users ask for it.*
+
+- [ ] **Optimistic Locking (Phase 20 prerequisite)** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner. Build this in Phase 20 as the lightweight foundation.
+- [ ] **Presence Indicators** — Show "Alice is editing this personality" to prevent concurrent edits at the UX level before investing in true merge semantics.
+- [ ] **CRDT Implementation** — Conflict-free Replicated Data Types (e.g. Yjs or Automerge) for concurrent editing of personality system prompts and skill instructions without conflicts. Only justified if presence indicators prove insufficient for observed usage patterns.
 
 ---
 
