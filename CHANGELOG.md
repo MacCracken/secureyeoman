@@ -4,6 +4,41 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 25 (2026-02-20): Bug Fixes — Docker Cold-Start (dev)
+
+### Bug Fixes
+
+- **`package-lock.json` out of sync with `package.json`** — `@vitest/coverage-v8` was added
+  to `packages/core/package.json` but `npm install` was never run to update the lock file.
+  `npm ci` (used in `Dockerfile.dev`) enforces strict lock-file parity and failed immediately,
+  making the dev Docker image unbuildable. Fixed by running `npm install` to regenerate
+  `package-lock.json`.
+
+- **`skill-scheduler.ts`: two TypeScript API mismatches** — Two violations of the `SecureLogger`
+  interface that blocked the TypeScript build:
+  1. `getLogger('skill-scheduler')` — `getLogger()` is a zero-argument global getter, not a
+     per-component factory. The name argument was removed.
+  2. `logger.error({ err }, 'Schedule event handler error')` — Arguments were in pino's
+     native `(obj, msg)` order, but `SecureLogger.error` is `(msg: string, context?: LogContext)`.
+     Fixed by swapping to `logger.error('Schedule event handler error', { err })`.
+
+- **`028_heartbeat_log` migration omitted from manifest** — `028_heartbeat_log.sql` (which
+  creates the `proactive` schema and `proactive.heartbeat_log` table) was never registered in
+  `packages/core/src/storage/migrations/manifest.ts`. The runner only applies manifested
+  entries; it does not auto-discover SQL files. On every cold-start the migration was skipped,
+  and `HeartbeatManager` emitted repeated `WARN: relation "proactive.heartbeat_log" does not
+  exist` on every heartbeat cycle. Fixed by adding the entry to the manifest.
+
+### Files Changed
+
+- `package-lock.json` — regenerated to include `@vitest/coverage-v8@4.0.18` and its
+  transitive deps
+- `packages/core/src/soul/skill-scheduler.ts` — `getLogger()` call corrected (no arg);
+  `logger.error` arg order fixed
+- `packages/core/src/storage/migrations/manifest.ts` — `028_heartbeat_log` entry added
+
+---
+
 ## Phase 25 (2026-02-20): Bug Fixes
 
 ### Bug Fixes
