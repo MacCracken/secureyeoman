@@ -5,16 +5,22 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { A2AManager } from './manager.js';
 import type { TrustLevel } from './types.js';
+import { sendError } from '../utils/errors.js';
 
 export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AManager }): void {
   const { a2aManager } = opts;
 
   // ── Peer routes ────────────────────────────────────────────
 
-  app.get('/api/v1/a2a/peers', async () => {
-    const peers = await a2aManager.listPeers();
-    return { peers };
-  });
+  app.get(
+    '/api/v1/a2a/peers',
+    async (request: FastifyRequest<{ Querystring: { status?: string; trustLevel?: string; limit?: string; offset?: string } }>) => {
+      const { status, trustLevel, limit: limitStr, offset: offsetStr } = request.query;
+      const limit = limitStr ? Number(limitStr) : undefined;
+      const offset = offsetStr ? Number(offsetStr) : undefined;
+      return a2aManager.listPeers({ status, trustLevel, limit, offset });
+    }
+  );
 
   app.post(
     '/api/v1/a2a/peers',
@@ -31,9 +37,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
         const peer = await a2aManager.addPeer(request.body.url, request.body.name);
         return reply.code(201).send({ peer });
       } catch (err) {
-        return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Failed to add peer',
-        });
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to add peer');
       }
     }
   );
@@ -43,7 +47,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const removed = await a2aManager.removePeer(request.params.id);
       if (!removed) {
-        return reply.code(404).send({ error: 'Peer not found' });
+        return sendError(reply, 404, 'Peer not found');
       }
       return reply.code(204).send();
     }
@@ -60,7 +64,7 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
     ) => {
       const updated = await a2aManager.updateTrust(request.params.id, request.body.trustLevel);
       if (!updated) {
-        return reply.code(404).send({ error: 'Peer not found' });
+        return sendError(reply, 404, 'Peer not found');
       }
       return { peer: updated };
     }
@@ -96,13 +100,11 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
       try {
         const message = await a2aManager.delegate(request.body.peerId, request.body.task);
         if (!message) {
-          return reply.code(404).send({ error: 'Peer not found or unreachable' });
+          return sendError(reply, 404, 'Peer not found or unreachable');
         }
         return reply.code(201).send({ message });
       } catch (err) {
-        return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Delegation failed',
-        });
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Delegation failed');
       }
     }
   );

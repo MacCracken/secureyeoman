@@ -4,6 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SwarmManager } from './swarm-manager.js';
+import { sendError } from '../utils/errors.js';
 
 export function registerSwarmRoutes(
   app: FastifyInstance,
@@ -13,17 +14,21 @@ export function registerSwarmRoutes(
 
   // ── Template routes ──────────────────────────────────────────
 
-  app.get('/api/v1/agents/swarms/templates', async () => {
-    const templates = await swarmManager.listTemplates();
-    return { templates };
-  });
+  app.get(
+    '/api/v1/agents/swarms/templates',
+    async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
+      const limit = request.query.limit ? Number(request.query.limit) : undefined;
+      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      return swarmManager.listTemplates({ limit, offset });
+    }
+  );
 
   app.get(
     '/api/v1/agents/swarms/templates/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const template = await swarmManager.getTemplate(request.params.id);
       if (!template) {
-        return reply.code(404).send({ error: 'Template not found' });
+        return sendError(reply, 404, 'Template not found');
       }
       return { template };
     }
@@ -57,9 +62,7 @@ export function registerSwarmRoutes(
         });
         return reply.code(201).send({ template });
       } catch (err) {
-        return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Failed to create template',
-        });
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to create template');
       }
     }
   );
@@ -69,14 +72,14 @@ export function registerSwarmRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const existing = await swarmManager.getTemplate(request.params.id);
       if (!existing) {
-        return reply.code(404).send({ error: 'Template not found' });
+        return sendError(reply, 404, 'Template not found');
       }
       if (existing.isBuiltin) {
-        return reply.code(403).send({ error: 'Cannot delete built-in templates' });
+        return sendError(reply, 403, 'Cannot delete built-in templates');
       }
       const deleted = await swarmManager.deleteTemplate(request.params.id);
       if (!deleted) {
-        return reply.code(500).send({ error: 'Failed to delete template' });
+        return sendError(reply, 500, 'Failed to delete template');
       }
       return reply.code(204).send();
     }
@@ -106,9 +109,7 @@ export function registerSwarmRoutes(
         });
         return reply.code(201).send({ run });
       } catch (err) {
-        return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Swarm execution failed',
-        });
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Swarm execution failed');
       }
     }
   );
@@ -134,7 +135,7 @@ export function registerSwarmRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const run = await swarmManager.getSwarmRun(request.params.id);
       if (!run) {
-        return reply.code(404).send({ error: 'Swarm run not found' });
+        return sendError(reply, 404, 'Swarm run not found');
       }
       return { run };
     }
@@ -147,9 +148,7 @@ export function registerSwarmRoutes(
         await swarmManager.cancelSwarm(request.params.id);
         return { success: true };
       } catch (err) {
-        return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Cancel failed',
-        });
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Cancel failed');
       }
     }
   );

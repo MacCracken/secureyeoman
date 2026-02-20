@@ -9,6 +9,7 @@ import { AuthError } from '../security/auth.js';
 import type { RBAC } from '../security/rbac.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
+import { sendError } from '../utils/errors.js';
 
 // ── Fastify augmentation ─────────────────────────────────────────────
 
@@ -508,9 +509,9 @@ export function createAuthHook(opts: AuthHookOptions) {
         return;
       } catch (err) {
         if (err instanceof AuthError) {
-          return reply.code(err.statusCode).send({ error: err.message });
+          return sendError(reply, err.statusCode, err.message);
         }
-        return reply.code(401).send({ error: 'Authentication failed' });
+        return sendError(reply, 401, 'Authentication failed');
       }
     }
 
@@ -522,13 +523,13 @@ export function createAuthHook(opts: AuthHookOptions) {
         return;
       } catch (err) {
         if (err instanceof AuthError) {
-          return reply.code(err.statusCode).send({ error: err.message });
+          return sendError(reply, err.statusCode, err.message);
         }
-        return reply.code(401).send({ error: 'Authentication failed' });
+        return sendError(reply, 401, 'Authentication failed');
       }
     }
 
-    return reply.code(401).send({ error: 'Missing authentication credentials' });
+    return sendError(reply, 401, 'Missing authentication credentials');
   };
 }
 
@@ -549,7 +550,7 @@ export function createRbacHook(opts: RbacHookOptions) {
 
     const user = request.authUser;
     if (!user) {
-      return reply.code(401).send({ error: 'Not authenticated' });
+      return sendError(reply, 401, 'Not authenticated');
     }
 
     // Look up required permission
@@ -560,7 +561,7 @@ export function createRbacHook(opts: RbacHookOptions) {
       // Unmapped route — admin only (default-deny)
       if (user.role !== 'admin') {
         await auditDenial(opts, user, path, request.method);
-        return reply.code(403).send({ error: 'Forbidden' });
+        return sendError(reply, 403, 'Forbidden');
       }
       return;
     }
@@ -576,7 +577,7 @@ export function createRbacHook(opts: RbacHookOptions) {
 
     if (!result.granted) {
       await auditDenial(opts, user, path, request.method);
-      return reply.code(403).send({ error: 'Forbidden' });
+      return sendError(reply, 403, 'Forbidden');
     }
   };
 }

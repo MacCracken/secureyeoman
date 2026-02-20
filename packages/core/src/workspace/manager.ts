@@ -29,8 +29,8 @@ export class WorkspaceManager {
     return await this.storage.get(id);
   }
 
-  async list(): Promise<Workspace[]> {
-    return await this.storage.list();
+  async list(opts?: { limit?: number; offset?: number }): Promise<{ workspaces: Workspace[]; total: number }> {
+    return await this.storage.list(opts);
   }
 
   async delete(id: string): Promise<boolean> {
@@ -63,8 +63,8 @@ export class WorkspaceManager {
     return member;
   }
 
-  async listMembers(workspaceId: string): Promise<WorkspaceMember[]> {
-    return this.storage.listMembers(workspaceId);
+  async listMembers(workspaceId: string, opts?: { limit?: number; offset?: number }): Promise<{ members: WorkspaceMember[]; total: number }> {
+    return this.storage.listMembers(workspaceId, opts);
   }
 
   async getMember(workspaceId: string, userId: string): Promise<WorkspaceMember | null> {
@@ -76,8 +76,8 @@ export class WorkspaceManager {
    * the admin user as owner if no workspaces are present.
    */
   async ensureDefaultWorkspace(): Promise<void> {
-    const existing = await this.storage.list();
-    if (existing.length > 0) return;
+    const { total } = await this.storage.list({ limit: 1 });
+    if (total > 0) return;
 
     const workspace = await this.storage.create({
       name: 'Default',

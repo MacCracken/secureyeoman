@@ -119,7 +119,7 @@ export class A2AStorage extends PgBaseStorage {
     return peerFromRow(row, caps);
   }
 
-  async listPeers(filter?: { status?: string; trustLevel?: string }): Promise<PeerAgent[]> {
+  async listPeers(filter?: { status?: string; trustLevel?: string; limit?: number; offset?: number }): Promise<{ peers: PeerAgent[]; total: number }> {
     const conditions: string[] = [];
     const values: unknown[] = [];
     let paramIdx = 1;
@@ -134,9 +134,17 @@ export class A2AStorage extends PgBaseStorage {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const rows = await this.queryMany<PeerRow>(
-      `SELECT * FROM a2a.peers ${where} ORDER BY last_seen DESC`,
+    const limit = filter?.limit ?? 50;
+    const offset = filter?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM a2a.peers ${where}`,
       values
+    );
+
+    const rows = await this.queryMany<PeerRow>(
+      `SELECT * FROM a2a.peers ${where} ORDER BY last_seen DESC LIMIT $${paramIdx++} OFFSET $${paramIdx++}`,
+      [...values, limit, offset]
     );
 
     const peers: PeerAgent[] = [];
@@ -144,7 +152,11 @@ export class A2AStorage extends PgBaseStorage {
       const caps = await this.getCapabilities(row.id);
       peers.push(peerFromRow(row, caps));
     }
-    return peers;
+
+    return {
+      peers,
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async updatePeer(

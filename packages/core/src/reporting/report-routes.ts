@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AuditReportGenerator } from './audit-report.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface ReportRoutesOptions {
   reportGenerator: AuditReportGenerator;
@@ -43,7 +43,7 @@ export function registerReportRoutes(app: FastifyInstance, opts: ReportRoutesOpt
           },
         });
       } catch (err) {
-        return reply.code(500).send({ error: toErrorMessage(err) });
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -52,7 +52,7 @@ export function registerReportRoutes(app: FastifyInstance, opts: ReportRoutesOpt
     '/api/v1/reports/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const report = reportGenerator.getReport(request.params.id);
-      if (!report) return reply.code(404).send({ error: 'Report not found' });
+      if (!report) return sendError(reply, 404, 'Report not found');
       return {
         report: {
           id: report.id,
@@ -70,7 +70,7 @@ export function registerReportRoutes(app: FastifyInstance, opts: ReportRoutesOpt
     '/api/v1/reports/:id/download',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const report = reportGenerator.getReport(request.params.id);
-      if (!report) return reply.code(404).send({ error: 'Report not found' });
+      if (!report) return sendError(reply, 404, 'Report not found');
 
       const contentType =
         report.format === 'html'

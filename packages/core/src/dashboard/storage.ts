@@ -50,11 +50,23 @@ export class DashboardStorage extends PgBaseStorage {
     return row ? this.rowToDashboard(row) : null;
   }
 
-  async list(): Promise<CustomDashboard[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM dashboard.custom_dashboards ORDER BY created_at DESC'
+  async list(opts?: { limit?: number; offset?: number }): Promise<{ dashboards: CustomDashboard[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM dashboard.custom_dashboards'
     );
-    return rows.map((r) => this.rowToDashboard(r));
+
+    const rows = await this.queryMany<Record<string, unknown>>(
+      'SELECT * FROM dashboard.custom_dashboards ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+
+    return {
+      dashboards: rows.map((r) => this.rowToDashboard(r)),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async update(id: string, data: Partial<CustomDashboardCreate>): Promise<CustomDashboard | null> {

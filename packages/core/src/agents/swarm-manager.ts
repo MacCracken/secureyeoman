@@ -37,8 +37,8 @@ export class SwarmManager {
 
   // ── Templates ─────────────────────────────────────────────────
 
-  async listTemplates(): Promise<SwarmTemplate[]> {
-    return this.storage.listTemplates();
+  async listTemplates(opts?: { limit?: number; offset?: number }): Promise<{ templates: SwarmTemplate[]; total: number }> {
+    return this.storage.listTemplates(opts);
   }
 
   async getTemplate(id: string): Promise<SwarmTemplate | null> {

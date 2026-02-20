@@ -156,18 +156,36 @@ export class SpiritStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listPassions(personalityId?: string): Promise<Passion[]> {
+  async listPassions(personalityId?: string, opts?: { limit?: number; offset?: number }): Promise<{ passions: Passion[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
     if (personalityId) {
-      const rows = await this.queryMany<PassionRow>(
-        'SELECT * FROM spirit.passions WHERE personality_id = $1 ORDER BY intensity DESC, created_at DESC',
+      const countResult = await this.queryOne<{ count: string }>(
+        'SELECT COUNT(*) as count FROM spirit.passions WHERE personality_id = $1',
         [personalityId]
       );
-      return rows.map(rowToPassion);
+      const rows = await this.queryMany<PassionRow>(
+        'SELECT * FROM spirit.passions WHERE personality_id = $1 ORDER BY intensity DESC, created_at DESC LIMIT $2 OFFSET $3',
+        [personalityId, limit, offset]
+      );
+      return {
+        passions: rows.map(rowToPassion),
+        total: parseInt(countResult?.count ?? '0', 10),
+      };
     }
-    const rows = await this.queryMany<PassionRow>(
-      'SELECT * FROM spirit.passions ORDER BY intensity DESC, created_at DESC'
+
+    const countResult = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM spirit.passions'
     );
-    return rows.map(rowToPassion);
+    const rows = await this.queryMany<PassionRow>(
+      'SELECT * FROM spirit.passions ORDER BY intensity DESC, created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+    return {
+      passions: rows.map(rowToPassion),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async getActivePassions(personalityId?: string): Promise<Passion[]> {
@@ -260,18 +278,36 @@ export class SpiritStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listInspirations(personalityId?: string): Promise<Inspiration[]> {
+  async listInspirations(personalityId?: string, opts?: { limit?: number; offset?: number }): Promise<{ inspirations: Inspiration[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
     if (personalityId) {
-      const rows = await this.queryMany<InspirationRow>(
-        'SELECT * FROM spirit.inspirations WHERE personality_id = $1 ORDER BY impact DESC, created_at DESC',
+      const countResult = await this.queryOne<{ count: string }>(
+        'SELECT COUNT(*) as count FROM spirit.inspirations WHERE personality_id = $1',
         [personalityId]
       );
-      return rows.map(rowToInspiration);
+      const rows = await this.queryMany<InspirationRow>(
+        'SELECT * FROM spirit.inspirations WHERE personality_id = $1 ORDER BY impact DESC, created_at DESC LIMIT $2 OFFSET $3',
+        [personalityId, limit, offset]
+      );
+      return {
+        inspirations: rows.map(rowToInspiration),
+        total: parseInt(countResult?.count ?? '0', 10),
+      };
     }
-    const rows = await this.queryMany<InspirationRow>(
-      'SELECT * FROM spirit.inspirations ORDER BY impact DESC, created_at DESC'
+
+    const countResult = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM spirit.inspirations'
     );
-    return rows.map(rowToInspiration);
+    const rows = await this.queryMany<InspirationRow>(
+      'SELECT * FROM spirit.inspirations ORDER BY impact DESC, created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+    return {
+      inspirations: rows.map(rowToInspiration),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async getActiveInspirations(personalityId?: string): Promise<Inspiration[]> {
@@ -361,18 +397,36 @@ export class SpiritStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listPains(personalityId?: string): Promise<Pain[]> {
+  async listPains(personalityId?: string, opts?: { limit?: number; offset?: number }): Promise<{ pains: Pain[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
     if (personalityId) {
-      const rows = await this.queryMany<PainRow>(
-        'SELECT * FROM spirit.pains WHERE personality_id = $1 ORDER BY severity DESC, created_at DESC',
+      const countResult = await this.queryOne<{ count: string }>(
+        'SELECT COUNT(*) as count FROM spirit.pains WHERE personality_id = $1',
         [personalityId]
       );
-      return rows.map(rowToPain);
+      const rows = await this.queryMany<PainRow>(
+        'SELECT * FROM spirit.pains WHERE personality_id = $1 ORDER BY severity DESC, created_at DESC LIMIT $2 OFFSET $3',
+        [personalityId, limit, offset]
+      );
+      return {
+        pains: rows.map(rowToPain),
+        total: parseInt(countResult?.count ?? '0', 10),
+      };
     }
-    const rows = await this.queryMany<PainRow>(
-      'SELECT * FROM spirit.pains ORDER BY severity DESC, created_at DESC'
+
+    const countResult = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM spirit.pains'
     );
-    return rows.map(rowToPain);
+    const rows = await this.queryMany<PainRow>(
+      'SELECT * FROM spirit.pains ORDER BY severity DESC, created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+    return {
+      pains: rows.map(rowToPain),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async getActivePains(personalityId?: string): Promise<Pain[]> {

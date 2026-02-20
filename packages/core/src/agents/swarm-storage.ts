@@ -159,11 +159,23 @@ export class SwarmStorage extends PgBaseStorage {
     return row ? templateFromRow(row) : null;
   }
 
-  async listTemplates(): Promise<SwarmTemplate[]> {
-    const rows = await this.queryMany<SwarmTemplateRow>(
-      `SELECT * FROM agents.swarm_templates ORDER BY is_builtin DESC, name ASC`
+  async listTemplates(opts?: { limit?: number; offset?: number }): Promise<{ templates: SwarmTemplate[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM agents.swarm_templates`
     );
-    return rows.map(templateFromRow);
+
+    const rows = await this.queryMany<SwarmTemplateRow>(
+      `SELECT * FROM agents.swarm_templates ORDER BY is_builtin DESC, name ASC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    return {
+      templates: rows.map(templateFromRow),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async createTemplate(data: SwarmTemplateCreate): Promise<SwarmTemplate> {

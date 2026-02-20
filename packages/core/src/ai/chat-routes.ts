@@ -10,6 +10,7 @@ import type { SecureYeoman } from '../secureyeoman.js';
 import type { AIRequest, Tool, FallbackModelConfig, AIProviderName } from '@secureyeoman/shared';
 import type { McpToolDef } from '@secureyeoman/shared';
 import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
+import { sendError } from '../utils/errors.js';
 
 // Map provider name → standard API key env var (no-key providers get empty string)
 const PROVIDER_KEY_ENV: Record<string, string> = {
@@ -78,16 +79,14 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       } = request.body;
 
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
-        return reply.code(400).send({ error: 'Message is required' });
+        return sendError(reply, 400, 'Message is required');
       }
 
       let aiClient;
       try {
         aiClient = secureYeoman.getAIClient();
       } catch {
-        return reply.code(503).send({
-          error: 'AI client is not available. Check provider configuration and API keys.',
-        });
+        return sendError(reply, 503, 'AI client is not available. Check provider configuration and API keys.');
       }
 
       // Gather Brain context metadata (best-effort — Brain may not be available)
@@ -274,7 +273,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         };
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'Unknown error';
-        return reply.code(502).send({ error: `AI request failed: ${errMsg}` });
+        return sendError(reply, 502, `AI request failed: ${errMsg}`);
       }
     }
   );
@@ -287,7 +286,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       const { content, context } = request.body;
 
       if (!content || typeof content !== 'string' || content.trim().length === 0) {
-        return reply.code(400).send({ error: 'Content is required' });
+        return sendError(reply, 400, 'Content is required');
       }
 
       try {
@@ -301,7 +300,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         return { memory };
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'Brain is not available';
-        return reply.code(503).send({ error: errMsg });
+        return sendError(reply, 503, errMsg);
       }
     }
   );
@@ -314,16 +313,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       const { conversationId, messageId, feedback, details } = request.body;
 
       if (!conversationId || !messageId || !feedback) {
-        return reply
-          .code(400)
-          .send({ error: 'conversationId, messageId, and feedback are required' });
+        return sendError(reply, 400, 'conversationId, messageId, and feedback are required');
       }
 
       const validFeedback: FeedbackType[] = ['positive', 'negative', 'correction'];
       if (!validFeedback.includes(feedback)) {
-        return reply
-          .code(400)
-          .send({ error: `feedback must be one of: ${validFeedback.join(', ')}` });
+        return sendError(reply, 400, `feedback must be one of: ${validFeedback.join(', ')}`);
       }
 
       try {
@@ -333,7 +328,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         return { stored: true };
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'Brain is not available';
-        return reply.code(503).send({ error: errMsg });
+        return sendError(reply, 503, errMsg);
       }
     }
   );

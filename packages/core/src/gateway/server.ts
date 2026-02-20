@@ -59,6 +59,7 @@ import { registerProactiveRoutes } from '../proactive/proactive-routes.js';
 import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
 import { registerBrowserRoutes } from '../browser/browser-routes.js';
 import { formatPrometheusMetrics } from './prometheus.js';
+import { httpStatusName, sendError } from '../utils/errors.js';
 
 /** Read version from the closest package.json (core → root). */
 function getPackageVersion(): string {
@@ -282,6 +283,13 @@ export class GatewayServer {
   }
 
   private setupRoutes(): void {
+    // Global error handler — catches body-parse failures, unhandled throws, etc.
+    this.app.setErrorHandler((err, _request, reply) => {
+      const statusCode = (err as any).statusCode ?? 500;
+      const message = statusCode < 500 ? err.message : 'An unexpected error occurred';
+      reply.code(statusCode).send({ error: httpStatusName(statusCode), message, statusCode });
+    });
+
     // Auth routes
     if (this.authService) {
       registerAuthRoutes(this.app, {
@@ -583,9 +591,7 @@ export class GatewayServer {
           if (request.url.startsWith('/api/v1/multimodal/')) {
             const config = this.secureYeoman.getConfig();
             if (!config.security.allowMultimodal) {
-              return reply
-                .code(403)
-                .send({ error: 'Forbidden: Multimodal I/O is disabled by security policy' });
+              return sendError(reply, 403, 'Forbidden: Multimodal I/O is disabled by security policy');
             }
           }
         });
@@ -608,9 +614,7 @@ export class GatewayServer {
             const currentMcpStorage = this.secureYeoman.getMcpStorage();
             const currentCfg = currentMcpStorage ? await currentMcpStorage.getConfig() : null;
             if (!currentCfg?.exposeBrowser) {
-              return reply
-                .code(403)
-                .send({ error: 'Forbidden: Browser automation is disabled' });
+              return sendError(reply, 403, 'Forbidden: Browser automation is disabled');
             }
           }
         });
@@ -725,14 +729,14 @@ export class GatewayServer {
       ) => {
         const { stat } = request.body ?? {};
         if (stat !== 'errors' && stat !== 'latency') {
-          return reply.code(400).send({ error: 'stat must be "errors" or "latency"' });
+          return sendError(reply, 400, 'stat must be "errors" or "latency"');
         }
         try {
           await this.secureYeoman.resetUsageStat(stat);
           return { success: true, stat };
         } catch (err) {
           const message = err instanceof Error ? err.message : 'Unknown error';
-          return reply.code(500).send({ error: message });
+          return sendError(reply, 500, message);
         }
       }
     );
@@ -789,11 +793,11 @@ export class GatewayServer {
           const taskStorage = this.secureYeoman.getTaskStorage();
           const task = taskStorage.getTask(request.params.id);
           if (!task) {
-            return reply.code(404).send({ error: 'Task not found' });
+            return sendError(reply, 404, 'Task not found');
           }
           return task;
         } catch {
-          return reply.code(500).send({ error: 'Task storage not available' });
+          return sendError(reply, 500, 'Task storage not available');
         }
       }
     );
@@ -812,13 +816,13 @@ export class GatewayServer {
           const taskStorage = this.secureYeoman.getTaskStorage();
           const task = taskStorage.getTask(request.params.id);
           if (!task) {
-            return reply.code(404).send({ error: 'Task not found' });
+            return sendError(reply, 404, 'Task not found');
           }
           const { name, type, description } = request.body;
           taskStorage.updateTaskMetadata(request.params.id, { name, type, description });
           return taskStorage.getTask(request.params.id);
         } catch {
-          return reply.code(500).send({ error: 'Failed to update task' });
+          return sendError(reply, 500, 'Failed to update task');
         }
       }
     );
@@ -836,12 +840,12 @@ export class GatewayServer {
           const taskStorage = this.secureYeoman.getTaskStorage();
           const task = taskStorage.getTask(request.params.id);
           if (!task) {
-            return reply.code(404).send({ error: 'Task not found' });
+            return sendError(reply, 404, 'Task not found');
           }
           taskStorage.deleteTask(request.params.id);
           return { success: true };
         } catch {
-          return reply.code(500).send({ error: 'Failed to delete task' });
+          return sendError(reply, 500, 'Failed to delete task');
         }
       }
     );
@@ -878,7 +882,7 @@ export class GatewayServer {
           } = request.body;
 
           if (!name) {
-            return reply.code(400).send({ error: 'Task name is required' });
+            return sendError(reply, 400, 'Task name is required');
           }
 
           const task: Task = {
@@ -919,7 +923,7 @@ export class GatewayServer {
           return reply.code(201).send(task);
         } catch (err) {
           this.getLogger().error('Failed to create task', { error: String(err) });
-          return reply.code(500).send({ error: 'Failed to create task' });
+          return sendError(reply, 500, 'Failed to create task');
         }
       }
     );
@@ -1122,7 +1126,7 @@ export class GatewayServer {
             sandboxGvisor === undefined &&
             sandboxWasm === undefined
           ) {
-            return reply.code(400).send({ error: 'No valid fields provided' });
+            return sendError(reply, 400, 'No valid fields provided');
           }
           this.secureYeoman.updateSecurityPolicy({
             allowSubAgents,
@@ -1161,7 +1165,7 @@ export class GatewayServer {
           this.getLogger().error('Failed to update security policy', {
             error: err instanceof Error ? err.message : String(err),
           });
-          return reply.code(500).send({ error: 'Failed to update security policy' });
+          return sendError(reply, 500, 'Failed to update security policy');
         }
       }
     );
@@ -1220,16 +1224,16 @@ export class GatewayServer {
         try {
           const { maxAgeDays, maxEntries } = request.body;
           if (maxAgeDays !== undefined && (maxAgeDays < 1 || maxAgeDays > 3650)) {
-            return reply.code(400).send({ error: 'maxAgeDays must be between 1 and 3650' });
+            return sendError(reply, 400, 'maxAgeDays must be between 1 and 3650');
           }
           if (maxEntries !== undefined && (maxEntries < 100 || maxEntries > 10_000_000)) {
-            return reply.code(400).send({ error: 'maxEntries must be between 100 and 10,000,000' });
+            return sendError(reply, 400, 'maxEntries must be between 100 and 10,000,000');
           }
           const deleted = this.secureYeoman.enforceAuditRetention({ maxAgeDays, maxEntries });
           const stats = await this.secureYeoman.getAuditStats();
           return { deleted, ...stats };
         } catch {
-          return reply.code(500).send({ error: 'Failed to enforce retention' });
+          return sendError(reply, 500, 'Failed to enforce retention');
         }
       }
     );
@@ -1262,7 +1266,7 @@ export class GatewayServer {
               )
             );
         } catch {
-          return reply.code(500).send({ error: 'Failed to export audit log' });
+          return sendError(reply, 500, 'Failed to export audit log');
         }
       }
     );
@@ -1278,7 +1282,7 @@ export class GatewayServer {
       // SPA fallback: non-API 404s → index.html
       this.app.setNotFoundHandler((_request, reply) => {
         if (_request.url.startsWith('/api/') || _request.url.startsWith('/ws/')) {
-          return reply.code(404).send({ error: 'Not found' });
+          return sendError(reply, 404, 'Not found');
         }
         return reply.sendFile('index.html', distPath);
       });

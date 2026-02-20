@@ -55,7 +55,7 @@ export class ProactiveManager {
     }
 
     // Load and wire up enabled triggers
-    const triggers = await this.storage.listTriggers({ enabled: true });
+    const { triggers } = await this.storage.listTriggers({ enabled: true });
     for (const trigger of triggers) {
       this.wireScheduleTrigger(trigger);
     }
@@ -79,7 +79,7 @@ export class ProactiveManager {
 
   // ── Trigger CRUD ────────────────────────────────────────────────
 
-  async listTriggers(filter?: { type?: string; enabled?: boolean }): Promise<ProactiveTrigger[]> {
+  async listTriggers(filter?: { type?: string; enabled?: boolean; limit?: number; offset?: number }): Promise<{ triggers: ProactiveTrigger[]; total: number }> {
     return this.storage.listTriggers(filter);
   }
 
@@ -88,7 +88,7 @@ export class ProactiveManager {
   }
 
   async createTrigger(data: ProactiveTriggerCreate): Promise<ProactiveTrigger> {
-    const count = (await this.storage.listTriggers()).length;
+    const { total: count } = await this.storage.listTriggers({ limit: 1 });
     if (count >= this.config.limits.maxTriggers) {
       throw new Error(`Maximum trigger limit (${this.config.limits.maxTriggers}) reached`);
     }
@@ -252,7 +252,7 @@ export class ProactiveManager {
   // ── Status ──────────────────────────────────────────────────────
 
   async getStatus() {
-    const triggers = await this.storage.listTriggers();
+    const { triggers, total: triggersTotal } = await this.storage.listTriggers({ limit: 1000 });
     const { total: pendingSuggestions } = await this.storage.listSuggestions({
       status: 'pending',
       limit: 0,
@@ -263,7 +263,7 @@ export class ProactiveManager {
       initialized: this.initialized,
       enabled: this.config.enabled,
       triggers: {
-        total: triggers.length,
+        total: triggersTotal,
         enabled: triggers.filter((t) => t.enabled).length,
         byType: {
           schedule: triggers.filter((t) => t.type === 'schedule').length,

@@ -9,6 +9,7 @@ import type { RateLimiterLike } from '../security/rate-limiter.js';
 import type { Role } from '@secureyeoman/shared';
 import { RoleDefinitionSchema } from '@secureyeoman/shared';
 import type { RBAC } from '../security/rbac.js';
+import { sendError } from '../utils/errors.js';
 
 /** Built-in role IDs that cannot be mutated or deleted via the API. */
 const BUILTIN_ROLE_IDS = new Set([
@@ -39,7 +40,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     ) => {
       const { password, rememberMe } = request.body ?? {};
       if (!password || typeof password !== 'string') {
-        return reply.code(400).send({ error: 'Password is required' });
+        return sendError(reply, 400, 'Password is required');
       }
 
       try {
@@ -47,9 +48,9 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         return result;
       } catch (err) {
         if (err instanceof AuthError) {
-          return reply.code(err.statusCode).send({ error: err.message });
+          return sendError(reply, err.statusCode, err.message);
         }
-        return reply.code(500).send({ error: 'Internal server error' });
+        return sendError(reply, 500, 'Internal server error');
       }
     }
   );
@@ -60,7 +61,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     async (request: FastifyRequest<{ Body: { refreshToken: string } }>, reply: FastifyReply) => {
       const { refreshToken } = request.body ?? {};
       if (!refreshToken || typeof refreshToken !== 'string') {
-        return reply.code(400).send({ error: 'Refresh token is required' });
+        return sendError(reply, 400, 'Refresh token is required');
       }
 
       try {
@@ -68,9 +69,9 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         return result;
       } catch (err) {
         if (err instanceof AuthError) {
-          return reply.code(err.statusCode).send({ error: err.message });
+          return sendError(reply, err.statusCode, err.message);
         }
-        return reply.code(500).send({ error: 'Internal server error' });
+        return sendError(reply, 500, 'Internal server error');
       }
     }
   );
@@ -79,7 +80,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
   app.post('/api/v1/auth/logout', async (request: FastifyRequest, reply: FastifyReply) => {
     const user = request.authUser;
     if (!user?.jti || !user.exp) {
-      return reply.code(400).send({ error: 'No active JWT session' });
+      return sendError(reply, 400, 'No active JWT session');
     }
 
     await authService.logout(user.jti, user.userId, user.exp);
@@ -95,10 +96,10 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     ) => {
       const { currentPassword, newPassword } = request.body ?? {};
       if (!currentPassword || typeof currentPassword !== 'string') {
-        return reply.code(400).send({ error: 'Current password is required' });
+        return sendError(reply, 400, 'Current password is required');
       }
       if (!newPassword || typeof newPassword !== 'string') {
-        return reply.code(400).send({ error: 'New password is required' });
+        return sendError(reply, 400, 'New password is required');
       }
 
       try {
@@ -106,9 +107,9 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         return { message: 'Password reset successfully. All sessions have been invalidated.' };
       } catch (err) {
         if (err instanceof AuthError) {
-          return reply.code(err.statusCode).send({ error: err.message });
+          return sendError(reply, err.statusCode, err.message);
         }
-        return reply.code(500).send({ error: 'Internal server error' });
+        return sendError(reply, 500, 'Internal server error');
       }
     }
   );
@@ -124,10 +125,10 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     ) => {
       const { name, role, expiresInDays } = request.body ?? {};
       if (!name || typeof name !== 'string') {
-        return reply.code(400).send({ error: 'Name is required' });
+        return sendError(reply, 400, 'Name is required');
       }
       if (!role || typeof role !== 'string') {
-        return reply.code(400).send({ error: 'Role is required' });
+        return sendError(reply, 400, 'Role is required');
       }
 
       try {
@@ -140,9 +141,9 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         return reply.code(201).send(result);
       } catch (err) {
         if (err instanceof AuthError) {
-          return reply.code(err.statusCode).send({ error: err.message });
+          return sendError(reply, err.statusCode, err.message);
         }
-        return reply.code(500).send({ error: 'Internal server error' });
+        return sendError(reply, 500, 'Internal server error');
       }
     }
   );
@@ -159,7 +160,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     async (request: FastifyRequest<{ Body: { token: string } }>, reply: FastifyReply) => {
       const { token } = request.body ?? {};
       if (!token || typeof token !== 'string') {
-        return reply.code(400).send({ error: 'Token is required' });
+        return sendError(reply, 400, 'Token is required');
       }
 
       try {
@@ -177,7 +178,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const ok = await authService.revokeApiKey(request.params.id, request.authUser!.userId);
       if (!ok) {
-        return reply.code(404).send({ error: 'API key not found or already revoked' });
+        return sendError(reply, 404, 'API key not found or already revoked');
       }
       return { message: 'API key revoked' };
     }
@@ -208,10 +209,10 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     ) => {
       const { name, description, permissions, inheritFrom } = request.body ?? {};
       if (!name || typeof name !== 'string') {
-        return reply.code(400).send({ error: 'Name is required' });
+        return sendError(reply, 400, 'Name is required');
       }
       if (!permissions || !Array.isArray(permissions)) {
-        return reply.code(400).send({ error: 'Permissions array is required' });
+        return sendError(reply, 400, 'Permissions array is required');
       }
 
       const id = `role_${name.toLowerCase().replace(/[^a-z0-9]+/g, '_')}`;
@@ -228,9 +229,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         await rbac.defineRole(parsed.data);
         return reply.code(201).send({ role: { ...parsed.data, isBuiltin: false } });
       } catch (err) {
-        return reply
-          .code(500)
-          .send({ error: err instanceof Error ? err.message : 'Failed to create role' });
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to create role');
       }
     }
   );
@@ -252,12 +251,12 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     ) => {
       const { id } = request.params;
       if (BUILTIN_ROLE_IDS.has(id)) {
-        return reply.code(403).send({ error: 'Cannot modify built-in roles' });
+        return sendError(reply, 403, 'Cannot modify built-in roles');
       }
 
       const existing = rbac.getRole(id);
       if (!existing) {
-        return reply.code(404).send({ error: 'Role not found' });
+        return sendError(reply, 404, 'Role not found');
       }
 
       const updated = {
@@ -277,9 +276,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         await rbac.defineRole(parsed.data);
         return { role: { ...parsed.data, isBuiltin: false } };
       } catch (err) {
-        return reply
-          .code(500)
-          .send({ error: err instanceof Error ? err.message : 'Failed to update role' });
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to update role');
       }
     }
   );
@@ -290,12 +287,12 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const { id } = request.params;
       if (BUILTIN_ROLE_IDS.has(id)) {
-        return reply.code(403).send({ error: 'Cannot delete built-in roles' });
+        return sendError(reply, 403, 'Cannot delete built-in roles');
       }
 
       const removed = await rbac.removeRole(id);
       if (!removed) {
-        return reply.code(404).send({ error: 'Role not found' });
+        return sendError(reply, 404, 'Role not found');
       }
       return { message: 'Role deleted' };
     }
@@ -318,15 +315,15 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     ) => {
       const { userId, roleId } = request.body ?? {};
       if (!userId || typeof userId !== 'string') {
-        return reply.code(400).send({ error: 'userId is required' });
+        return sendError(reply, 400, 'userId is required');
       }
       if (!roleId || typeof roleId !== 'string') {
-        return reply.code(400).send({ error: 'roleId is required' });
+        return sendError(reply, 400, 'roleId is required');
       }
 
       const role = rbac.getRole(roleId);
       if (!role) {
-        return reply.code(404).send({ error: `Role '${roleId}' not found` });
+        return sendError(reply, 404, `Role '${roleId}' not found`);
       }
 
       try {
@@ -334,9 +331,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
         await rbac.assignUserRole(userId, roleId, assignedBy);
         return reply.code(201).send({ assignment: { userId, roleId } });
       } catch (err) {
-        return reply
-          .code(500)
-          .send({ error: err instanceof Error ? err.message : 'Failed to assign role' });
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to assign role');
       }
     }
   );
@@ -347,7 +342,7 @@ export function registerAuthRoutes(app: FastifyInstance, opts: AuthRoutesOptions
     async (request: FastifyRequest<{ Params: { userId: string } }>, reply: FastifyReply) => {
       const revoked = await rbac.revokeUserRole(request.params.userId);
       if (!revoked) {
-        return reply.code(404).send({ error: 'No active assignment for this user' });
+        return sendError(reply, 404, 'No active assignment for this user');
       }
       return { message: 'Assignment revoked' };
     }

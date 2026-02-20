@@ -95,11 +95,23 @@ export class ExecutionStorage extends PgBaseStorage {
     return row ? sessionFromRow(row) : null;
   }
 
-  async listSessions(): Promise<ExecutionSession[]> {
-    const rows = await this.queryMany<SessionRow>(
-      `SELECT * FROM execution.sessions ORDER BY created_at DESC`
+  async listSessions(opts?: { limit?: number; offset?: number }): Promise<{ sessions: ExecutionSession[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM execution.sessions`
     );
-    return rows.map(sessionFromRow);
+
+    const rows = await this.queryMany<SessionRow>(
+      `SELECT * FROM execution.sessions ORDER BY created_at DESC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    return {
+      sessions: rows.map(sessionFromRow),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async updateSession(

@@ -6,6 +6,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { exec } from 'node:child_process';
 import { promisify } from 'node:util';
 import { getLogger, type SecureLogger } from '../logging/logger.js';
+import { sendError } from '../utils/errors.js';
 
 const execAsync = promisify(exec);
 
@@ -47,13 +48,13 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
       const { command, cwd } = request.body;
 
       if (!command || typeof command !== 'string') {
-        return reply.code(400).send({ error: 'Command is required' });
+        return sendError(reply, 400, 'Command is required');
       }
 
       // Security: Check for blocked commands
       if (isBlockedCommand(command)) {
         logger.warn('Blocked dangerous command', { command, ip: request.ip });
-        return reply.code(403).send({ error: 'Command is not allowed for security reasons' });
+        return sendError(reply, 403, 'Command is not allowed for security reasons');
       }
 
       // Validate working directory
@@ -72,10 +73,7 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
           cwd: workingDir,
           ip: request.ip,
         });
-        return reply.code(403).send({
-          error:
-            'Working directory is not allowed. Must be within project directory or standard system paths.',
-        });
+        return sendError(reply, 403, 'Working directory is not allowed. Must be within project directory or standard system paths.');
       }
 
       try {

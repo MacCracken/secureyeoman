@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import { CodeExecutionManager, ApprovalRequiredError } from './manager.js';
 import type { RuntimeType } from './types.js';
+import { sendError } from '../utils/errors.js';
 
 export function registerExecutionRoutes(
   app: FastifyInstance,
@@ -43,26 +44,28 @@ export function registerExecutionRoutes(
             status: 'pending_approval',
           });
         }
-        return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Execution failed',
-        });
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Execution failed');
       }
     }
   );
 
   // ── Session routes ────────────────────────────────────────────
 
-  app.get('/api/v1/execution/sessions', async () => {
-    const sessions = await executionManager.listSessions();
-    return { sessions };
-  });
+  app.get(
+    '/api/v1/execution/sessions',
+    async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
+      const limit = request.query.limit ? Number(request.query.limit) : undefined;
+      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      return executionManager.listSessions({ limit, offset });
+    }
+  );
 
   app.get(
     '/api/v1/execution/sessions/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const session = await executionManager.getSession(request.params.id);
       if (!session) {
-        return reply.code(404).send({ error: 'Session not found' });
+        return sendError(reply, 404, 'Session not found');
       }
       return session;
     }
@@ -73,7 +76,7 @@ export function registerExecutionRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const terminated = await executionManager.terminateSession(request.params.id);
       if (!terminated) {
-        return reply.code(404).send({ error: 'Session not found or not active' });
+        return sendError(reply, 404, 'Session not found or not active');
       }
       return reply.code(204).send();
     }
@@ -108,7 +111,7 @@ export function registerExecutionRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const approval = await executionManager.approve(request.params.id);
       if (!approval) {
-        return reply.code(404).send({ error: 'Pending approval not found' });
+        return sendError(reply, 404, 'Pending approval not found');
       }
       return { approval };
     }
@@ -119,7 +122,7 @@ export function registerExecutionRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const approval = await executionManager.reject(request.params.id);
       if (!approval) {
-        return reply.code(404).send({ error: 'Pending approval not found' });
+        return sendError(reply, 404, 'Pending approval not found');
       }
       return reply.code(204).send();
     }

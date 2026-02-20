@@ -12,7 +12,7 @@ import type {
   PainCreate,
   PainUpdate,
 } from './types.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface SpiritRoutesOptions {
   spiritManager: SpiritManager;
@@ -23,10 +23,14 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
 
   // ── Passions ──────────────────────────────────────────────────
 
-  app.get('/api/v1/spirit/passions', async () => {
-    const passions = await spiritManager.listPassions();
-    return { passions };
-  });
+  app.get(
+    '/api/v1/spirit/passions',
+    async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
+      const limit = request.query.limit ? Number(request.query.limit) : undefined;
+      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      return spiritManager.listPassions({ limit, offset });
+    }
+  );
 
   app.post(
     '/api/v1/spirit/passions',
@@ -35,7 +39,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const passion = await spiritManager.createPassion(request.body);
         return reply.code(201).send({ passion });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -45,7 +49,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const passion = await spiritManager.getPassion(request.params.id);
       if (!passion) {
-        return reply.code(404).send({ error: 'Passion not found' });
+        return sendError(reply, 404, 'Passion not found');
       }
       return { passion };
     }
@@ -61,7 +65,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const passion = await spiritManager.updatePassion(request.params.id, request.body);
         return { passion };
       } catch (err) {
-        return reply.code(404).send({ error: toErrorMessage(err) });
+        return sendError(reply, 404, toErrorMessage(err));
       }
     }
   );
@@ -71,7 +75,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const deleted = await spiritManager.deletePassion(request.params.id);
       if (!deleted) {
-        return reply.code(404).send({ error: 'Passion not found' });
+        return sendError(reply, 404, 'Passion not found');
       }
       return reply.code(204).send();
     }
@@ -79,10 +83,14 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
 
   // ── Inspirations ──────────────────────────────────────────────
 
-  app.get('/api/v1/spirit/inspirations', async () => {
-    const inspirations = await spiritManager.listInspirations();
-    return { inspirations };
-  });
+  app.get(
+    '/api/v1/spirit/inspirations',
+    async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
+      const limit = request.query.limit ? Number(request.query.limit) : undefined;
+      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      return spiritManager.listInspirations({ limit, offset });
+    }
+  );
 
   app.post(
     '/api/v1/spirit/inspirations',
@@ -91,7 +99,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const inspiration = await spiritManager.createInspiration(request.body);
         return reply.code(201).send({ inspiration });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -101,7 +109,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const inspiration = await spiritManager.getInspiration(request.params.id);
       if (!inspiration) {
-        return reply.code(404).send({ error: 'Inspiration not found' });
+        return sendError(reply, 404, 'Inspiration not found');
       }
       return { inspiration };
     }
@@ -117,7 +125,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const inspiration = await spiritManager.updateInspiration(request.params.id, request.body);
         return { inspiration };
       } catch (err) {
-        return reply.code(404).send({ error: toErrorMessage(err) });
+        return sendError(reply, 404, toErrorMessage(err));
       }
     }
   );
@@ -127,7 +135,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const deleted = await spiritManager.deleteInspiration(request.params.id);
       if (!deleted) {
-        return reply.code(404).send({ error: 'Inspiration not found' });
+        return sendError(reply, 404, 'Inspiration not found');
       }
       return reply.code(204).send();
     }
@@ -135,10 +143,14 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
 
   // ── Pains ─────────────────────────────────────────────────────
 
-  app.get('/api/v1/spirit/pains', async () => {
-    const pains = await spiritManager.listPains();
-    return { pains };
-  });
+  app.get(
+    '/api/v1/spirit/pains',
+    async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
+      const limit = request.query.limit ? Number(request.query.limit) : undefined;
+      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      return spiritManager.listPains({ limit, offset });
+    }
+  );
 
   app.post(
     '/api/v1/spirit/pains',
@@ -147,7 +159,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const pain = await spiritManager.createPain(request.body);
         return reply.code(201).send({ pain });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -157,7 +169,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const pain = await spiritManager.getPain(request.params.id);
       if (!pain) {
-        return reply.code(404).send({ error: 'Pain not found' });
+        return sendError(reply, 404, 'Pain not found');
       }
       return { pain };
     }
@@ -173,7 +185,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const pain = await spiritManager.updatePain(request.params.id, request.body);
         return { pain };
       } catch (err) {
-        return reply.code(404).send({ error: toErrorMessage(err) });
+        return sendError(reply, 404, toErrorMessage(err));
       }
     }
   );
@@ -183,7 +195,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const deleted = await spiritManager.deletePain(request.params.id);
       if (!deleted) {
-        return reply.code(404).send({ error: 'Pain not found' });
+        return sendError(reply, 404, 'Pain not found');
       }
       return reply.code(204).send();
     }

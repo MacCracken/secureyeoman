@@ -29,8 +29,8 @@ export class DashboardManager {
     return await this.storage.get(id);
   }
 
-  async list(): Promise<CustomDashboard[]> {
-    return await this.storage.list();
+  async list(opts?: { limit?: number; offset?: number }): Promise<{ dashboards: CustomDashboard[]; total: number }> {
+    return await this.storage.list(opts);
   }
 
   async update(id: string, data: Partial<CustomDashboardCreate>): Promise<CustomDashboard | null> {

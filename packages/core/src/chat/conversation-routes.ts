@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ConversationStorage } from './conversation-storage.js';
 import type { HistoryCompressor } from './compression/compressor.js';
+import { sendError } from '../utils/errors.js';
 
 export interface ConversationRoutesOptions {
   conversationStorage: ConversationStorage;
@@ -29,7 +30,7 @@ export function registerConversationRoutes(
       reply: FastifyReply
     ) => {
       if (!historyCompressor) {
-        return reply.code(503).send({ error: 'History compression not available' });
+        return sendError(reply, 503, 'History compression not available');
       }
       const entries = await historyCompressor.getHistory(request.params.id);
       const tier = request.query.tier;
@@ -42,7 +43,7 @@ export function registerConversationRoutes(
     '/api/v1/conversations/:id/seal-topic',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!historyCompressor) {
-        return reply.code(503).send({ error: 'History compression not available' });
+        return sendError(reply, 503, 'History compression not available');
       }
       await historyCompressor.sealCurrentTopic(request.params.id);
       return { message: 'Topic sealed' };
@@ -59,7 +60,7 @@ export function registerConversationRoutes(
       reply: FastifyReply
     ) => {
       if (!historyCompressor) {
-        return reply.code(503).send({ error: 'History compression not available' });
+        return sendError(reply, 503, 'History compression not available');
       }
       const maxTokens = request.query.maxTokens ? Number(request.query.maxTokens) : 4000;
       const context = await historyCompressor.getContext(request.params.id, maxTokens);
@@ -92,7 +93,7 @@ export function registerConversationRoutes(
     ) => {
       const { title, personalityId } = request.body;
       if (!title || typeof title !== 'string' || title.trim().length === 0) {
-        return reply.code(400).send({ error: 'Title is required' });
+        return sendError(reply, 400, 'Title is required');
       }
       const conversation = await conversationStorage.createConversation({
         title: title.trim(),
@@ -114,7 +115,7 @@ export function registerConversationRoutes(
     ) => {
       const conversation = await conversationStorage.getConversation(request.params.id);
       if (!conversation) {
-        return reply.code(404).send({ error: 'Conversation not found' });
+        return sendError(reply, 404, 'Conversation not found');
       }
       const limit = request.query.limit ? Number(request.query.limit) : 1000;
       const offset = request.query.offset ? Number(request.query.offset) : 0;
@@ -135,7 +136,7 @@ export function registerConversationRoutes(
     ) => {
       const { title } = request.body;
       if (!title || typeof title !== 'string' || title.trim().length === 0) {
-        return reply.code(400).send({ error: 'Title is required' });
+        return sendError(reply, 400, 'Title is required');
       }
       try {
         const conversation = await conversationStorage.updateConversation(request.params.id, {
@@ -143,7 +144,7 @@ export function registerConversationRoutes(
         });
         return conversation;
       } catch {
-        return reply.code(404).send({ error: 'Conversation not found' });
+        return sendError(reply, 404, 'Conversation not found');
       }
     }
   );
@@ -159,7 +160,7 @@ export function registerConversationRoutes(
     ) => {
       const deleted = await conversationStorage.deleteConversation(request.params.id);
       if (!deleted) {
-        return reply.code(404).send({ error: 'Conversation not found' });
+        return sendError(reply, 404, 'Conversation not found');
       }
       return reply.code(204).send();
     }

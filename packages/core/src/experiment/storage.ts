@@ -54,11 +54,23 @@ export class ExperimentStorage extends PgBaseStorage {
     return row ? this.rowToExperiment(row) : null;
   }
 
-  async list(): Promise<Experiment[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM experiment.experiments ORDER BY created_at DESC'
+  async list(opts?: { limit?: number; offset?: number }): Promise<{ experiments: Experiment[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM experiment.experiments'
     );
-    return rows.map((r) => this.rowToExperiment(r));
+
+    const rows = await this.queryMany<Record<string, unknown>>(
+      'SELECT * FROM experiment.experiments ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+
+    return {
+      experiments: rows.map((r) => this.rowToExperiment(r)),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async update(id: string, data: Partial<Experiment>): Promise<Experiment | null> {

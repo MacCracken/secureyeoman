@@ -55,10 +55,19 @@ export class WorkspaceStorage extends PgBaseStorage {
     };
   }
 
-  async list(): Promise<Workspace[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM workspace.workspaces ORDER BY created_at DESC'
+  async list(opts?: { limit?: number; offset?: number }): Promise<{ workspaces: Workspace[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM workspace.workspaces'
     );
+
+    const rows = await this.queryMany<Record<string, unknown>>(
+      'SELECT * FROM workspace.workspaces ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+
     const workspaces: Workspace[] = [];
     for (const r of rows) {
       const members = await this.getMembers(r.id as string);
@@ -72,7 +81,11 @@ export class WorkspaceStorage extends PgBaseStorage {
         updatedAt: r.updated_at as number,
       });
     }
-    return workspaces;
+
+    return {
+      workspaces,
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async update(id: string, data: WorkspaceUpdate): Promise<Workspace | null> {
@@ -131,8 +144,30 @@ export class WorkspaceStorage extends PgBaseStorage {
     return { userId, role: role as WorkspaceMember['role'], joinedAt: now };
   }
 
-  async listMembers(workspaceId: string): Promise<WorkspaceMember[]> {
-    return this.getMembers(workspaceId);
+  async listMembers(workspaceId: string, opts?: { limit?: number; offset?: number }): Promise<{ members: WorkspaceMember[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM workspace.members WHERE workspace_id = $1',
+      [workspaceId]
+    );
+
+    const rows = await this.queryMany<Record<string, unknown>>(
+      'SELECT * FROM workspace.members WHERE workspace_id = $1 LIMIT $2 OFFSET $3',
+      [workspaceId, limit, offset]
+    );
+
+    const members = rows.map((r) => ({
+      userId: r.user_id as string,
+      role: r.role as WorkspaceMember['role'],
+      joinedAt: r.joined_at as number,
+    }));
+
+    return {
+      members,
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async getMember(workspaceId: string, userId: string): Promise<WorkspaceMember | null> {

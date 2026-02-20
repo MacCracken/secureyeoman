@@ -141,7 +141,7 @@ export class ProactiveStorage extends PgBaseStorage {
 
   // ── Trigger CRUD ────────────────────────────────────────────────
 
-  async listTriggers(filter?: { type?: string; enabled?: boolean }): Promise<ProactiveTrigger[]> {
+  async listTriggers(filter?: { type?: string; enabled?: boolean; limit?: number; offset?: number }): Promise<{ triggers: ProactiveTrigger[]; total: number }> {
     const conditions: string[] = [];
     const values: unknown[] = [];
     let idx = 1;
@@ -156,11 +156,23 @@ export class ProactiveStorage extends PgBaseStorage {
     }
 
     const where = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
-    const rows = await this.queryMany<TriggerRow>(
-      `SELECT * FROM proactive.triggers ${where} ORDER BY created_at ASC`,
+    const limit = filter?.limit ?? 50;
+    const offset = filter?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM proactive.triggers ${where}`,
       values
     );
-    return rows.map(triggerFromRow);
+
+    const rows = await this.queryMany<TriggerRow>(
+      `SELECT * FROM proactive.triggers ${where} ORDER BY created_at ASC LIMIT $${idx++} OFFSET $${idx++}`,
+      [...values, limit, offset]
+    );
+
+    return {
+      triggers: rows.map(triggerFromRow),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async getTrigger(id: string): Promise<(ProactiveTrigger & { lastFiredAt?: number; fireCount: number }) | null> {

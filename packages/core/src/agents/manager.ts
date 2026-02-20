@@ -204,8 +204,8 @@ export class SubAgentManager {
     return this.storage.getProfile(id);
   }
 
-  async listProfiles(): Promise<AgentProfile[]> {
-    return this.storage.listProfiles();
+  async listProfiles(opts?: { limit?: number; offset?: number }): Promise<{ profiles: AgentProfile[]; total: number }> {
+    return this.storage.listProfiles(opts);
   }
 
   async createProfile(data: AgentProfileCreate): Promise<AgentProfile> {

@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { getAvailableModelsAsync } from './cost-calculator.js';
+import { sendError } from '../utils/errors.js';
 
 export interface ModelRoutesOptions {
   secureYeoman: SecureYeoman;
@@ -34,7 +35,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      return reply.code(500).send({ error: message });
+      return sendError(reply, 500, message);
     }
   });
 
@@ -44,7 +45,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       const { provider, model } = request.body;
 
       if (!provider || !model) {
-        return reply.code(400).send({ error: 'provider and model are required' });
+        return sendError(reply, 400, 'provider and model are required');
       }
 
       const validProviders = [
@@ -58,9 +59,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         'deepseek',
       ];
       if (!validProviders.includes(provider)) {
-        return reply.code(400).send({
-          error: `Invalid provider. Must be one of: ${validProviders.join(', ')}`,
-        });
+        return sendError(reply, 400, `Invalid provider. Must be one of: ${validProviders.join(', ')}`);
       }
 
       try {
@@ -68,7 +67,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         return { success: true, model: `${provider}/${model}` };
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
-        return reply.code(500).send({ error: `Failed to switch model: ${message}` });
+        return sendError(reply, 500, `Failed to switch model: ${message}`);
       }
     }
   );
@@ -81,7 +80,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       return { provider: def?.provider ?? null, model: def?.model ?? null };
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      return reply.code(500).send({ error: message });
+      return sendError(reply, 500, message);
     }
   });
 
@@ -91,7 +90,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       const { provider, model } = request.body;
 
       if (!provider || !model) {
-        return reply.code(400).send({ error: 'provider and model are required' });
+        return sendError(reply, 400, 'provider and model are required');
       }
 
       try {
@@ -100,9 +99,9 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
         if (message.startsWith('Invalid provider')) {
-          return reply.code(400).send({ error: message });
+          return sendError(reply, 400, message);
         }
-        return reply.code(500).send({ error: `Failed to set model default: ${message}` });
+        return sendError(reply, 500, `Failed to set model default: ${message}`);
       }
     }
   );
@@ -113,7 +112,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       return reply.code(204).send();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      return reply.code(500).send({ error: message });
+      return sendError(reply, 500, message);
     }
   });
 
@@ -122,14 +121,12 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
     try {
       const costOptimizer = secureYeoman.getCostOptimizer();
       if (!costOptimizer) {
-        return reply
-          .code(503)
-          .send({ error: 'Cost optimizer not available (AI client not initialized)' });
+        return sendError(reply, 503, 'Cost optimizer not available (AI client not initialized)');
       }
       return costOptimizer.analyze();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
-      return reply.code(500).send({ error: message });
+      return sendError(reply, 500, message);
     }
   });
 }

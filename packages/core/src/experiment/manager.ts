@@ -29,8 +29,8 @@ export class ExperimentManager {
     return await this.storage.get(id);
   }
 
-  async list(): Promise<Experiment[]> {
-    return await this.storage.list();
+  async list(opts?: { limit?: number; offset?: number }): Promise<{ experiments: Experiment[]; total: number }> {
+    return await this.storage.list(opts);
   }
 
   async delete(id: string): Promise<boolean> {

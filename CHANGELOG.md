@@ -4,6 +4,64 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 22 (complete): API Consistency (2026-02-20)
+
+### Changes
+
+- **Standardised error response shape** — All route handlers now return `{ error, message, statusCode }` via the new `sendError(reply, code, message)` helper in `packages/core/src/utils/errors.ts`. The global `setErrorHandler` in `GatewayServer` catches body-parse failures and uncaught throws with the same shape. Previous single-field `{ error: "..." }` responses are eliminated.
+- **`limit`/`offset` pagination on all list endpoints** — Every SQL-backed list method now accepts `opts?: { limit?: number; offset?: number }` and returns `{ <entity>, total: number }`. Affected storage classes: `SoulStorage` (personalities, skills, users), `SpiritStorage` (passions, inspirations, pains), `SubAgentStorage` (profiles), `McpStorage` (servers), `WorkspaceStorage` (workspaces, members), `A2AStorage` (peers), `ProactiveStorage` (triggers), `ExecutionStorage` (sessions), `ExperimentStorage` (experiments), `SwarmStorage` (templates), `DashboardStorage` (dashboards). In-memory list endpoints (reports, MCP tools/resources, builtin triggers, active delegations) are sliced at the route layer using `paginate()` from `packages/core/src/utils/pagination.ts`.
+- **Test database provisioning** — Added `scripts/init-test-db.sh` (mounted into `/docker-entrypoint-initdb.d/`) to create `secureyeoman_test` on first container init. Added root `db:create-test` npm script for existing containers whose data dir is already initialised.
+
+### Files Changed
+
+- `packages/core/src/utils/errors.ts` — `httpStatusName()`, `sendError()` helpers
+- `packages/core/src/utils/pagination.ts` — new `paginate()` utility
+- `packages/core/src/gateway/server.ts` — `setErrorHandler`; import `sendError`; inline sends → `sendError`
+- `packages/core/src/gateway/auth-routes.ts` — all error sends → `sendError`
+- `packages/core/src/gateway/auth-middleware.ts` — all error sends → `sendError`
+- `packages/core/src/gateway/oauth-routes.ts` — all error sends → `sendError`
+- `packages/core/src/gateway/sso-routes.ts` — all error sends → `sendError`
+- `packages/core/src/gateway/terminal-routes.ts` — all error sends → `sendError`
+- `packages/core/src/soul/soul-routes.ts` — all error sends → `sendError`
+- `packages/core/src/soul/storage.ts` — pagination on listPersonalities, listSkills, listUsers
+- `packages/core/src/soul/manager.ts` — passthrough opts
+- `packages/core/src/brain/brain-routes.ts` — all error sends → `sendError`
+- `packages/core/src/spirit/spirit-routes.ts` — all error sends → `sendError`
+- `packages/core/src/spirit/storage.ts` — pagination on listPassions, listInspirations, listPains
+- `packages/core/src/spirit/manager.ts` — passthrough opts
+- `packages/core/src/mcp/mcp-routes.ts` — all error sends → `sendError`; pagination
+- `packages/core/src/mcp/storage.ts` — pagination on listServers
+- `packages/core/src/integrations/integration-routes.ts` — all error sends → `sendError`
+- `packages/core/src/agents/agent-routes.ts` — all error sends → `sendError`; pagination on profiles
+- `packages/core/src/agents/storage.ts` — pagination on listProfiles
+- `packages/core/src/agents/swarm-routes.ts` — all error sends → `sendError`; pagination on templates
+- `packages/core/src/agents/swarm-storage.ts` — pagination on listTemplates
+- `packages/core/src/execution/execution-routes.ts` — all error sends → `sendError`; pagination on sessions
+- `packages/core/src/execution/storage.ts` — pagination on listSessions
+- `packages/core/src/a2a/a2a-routes.ts` — all error sends → `sendError`; pagination on peers
+- `packages/core/src/a2a/storage.ts` — pagination on listPeers
+- `packages/core/src/proactive/proactive-routes.ts` — all error sends → `sendError`; pagination on triggers
+- `packages/core/src/proactive/storage.ts` — pagination on listTriggers
+- `packages/core/src/reporting/report-routes.ts` — all error sends → `sendError`; in-memory paginate
+- `packages/core/src/dashboard/dashboard-routes.ts` — all error sends → `sendError`; pagination
+- `packages/core/src/dashboard/storage.ts` — pagination on list
+- `packages/core/src/workspace/workspace-routes.ts` — all error sends → `sendError`; pagination
+- `packages/core/src/workspace/storage.ts` — pagination on list, listMembers
+- `packages/core/src/experiment/experiment-routes.ts` — all error sends → `sendError`; pagination
+- `packages/core/src/experiment/storage.ts` — pagination on list
+- `packages/core/src/marketplace/marketplace-routes.ts` — all error sends → `sendError`
+- `packages/core/src/chat/conversation-routes.ts` — all error sends → `sendError`
+- `packages/core/src/multimodal/multimodal-routes.ts` — all error sends → `sendError`
+- `packages/core/src/browser/browser-routes.ts` — all error sends → `sendError`
+- `packages/core/src/extensions/extension-routes.ts` — all error sends → `sendError`
+- `packages/core/src/comms/comms-routes.ts` — all error sends → `sendError`
+- `scripts/init-test-db.sh` — new: creates secureyeoman_test DB
+- `docker-compose.yml` — mount init-test-db.sh into postgres initdb.d
+- `package.json` — add `db:create-test` script
+- `docs/development/roadmap.md` — mark error shape and pagination as complete
+
+---
+
 ## Phase 22 (complete): Secrets Hygiene (2026-02-19)
 
 ### Fixes

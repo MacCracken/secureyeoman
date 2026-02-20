@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ExperimentManager } from './manager.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface ExperimentRoutesOptions {
   experimentManager: ExperimentManager;
@@ -16,10 +16,14 @@ export function registerExperimentRoutes(
 ): void {
   const { experimentManager } = opts;
 
-  app.get('/api/v1/experiments', async () => {
-    const experiments = await experimentManager.list();
-    return { experiments, total: experiments.length };
-  });
+  app.get(
+    '/api/v1/experiments',
+    async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
+      const limit = request.query.limit ? Number(request.query.limit) : undefined;
+      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      return experimentManager.list({ limit, offset });
+    }
+  );
 
   app.post(
     '/api/v1/experiments',
@@ -33,7 +37,7 @@ export function registerExperimentRoutes(
         const exp = await experimentManager.create(request.body as any);
         return reply.code(201).send({ experiment: exp });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -42,7 +46,7 @@ export function registerExperimentRoutes(
     '/api/v1/experiments/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const exp = await experimentManager.get(request.params.id);
-      if (!exp) return reply.code(404).send({ error: 'Experiment not found' });
+      if (!exp) return sendError(reply, 404, 'Experiment not found');
       return { experiment: exp };
     }
   );
@@ -51,7 +55,7 @@ export function registerExperimentRoutes(
     '/api/v1/experiments/:id/start',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const exp = await experimentManager.start(request.params.id);
-      if (!exp) return reply.code(404).send({ error: 'Experiment not found' });
+      if (!exp) return sendError(reply, 404, 'Experiment not found');
       return { experiment: exp };
     }
   );
@@ -60,7 +64,7 @@ export function registerExperimentRoutes(
     '/api/v1/experiments/:id/stop',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const exp = await experimentManager.stop(request.params.id);
-      if (!exp) return reply.code(404).send({ error: 'Experiment not found' });
+      if (!exp) return sendError(reply, 404, 'Experiment not found');
       return { experiment: exp };
     }
   );
@@ -69,7 +73,7 @@ export function registerExperimentRoutes(
     '/api/v1/experiments/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!(await experimentManager.delete(request.params.id)))
-        return reply.code(404).send({ error: 'Experiment not found' });
+        return sendError(reply, 404, 'Experiment not found');
       return reply.code(204).send();
     }
   );

@@ -126,7 +126,7 @@ export class McpClientManager {
   }
 
   async refreshAll(): Promise<void> {
-    const servers = await this.storage.listServers();
+    const { servers } = await this.storage.listServers();
     for (const server of servers) {
       if (server.enabled) {
         await this.discoverTools(server.id);

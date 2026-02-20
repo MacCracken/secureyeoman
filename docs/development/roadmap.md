@@ -73,9 +73,9 @@
 
 ### API Consistency
 
-- [ ] **Error response shape** — All error responses use the same `{ error, message, statusCode }` shape; no raw `throw new Error(...)` escaping to the client
+- [x] **Error response shape** — All error responses use the same `{ error, message, statusCode }` shape; no raw `throw new Error(...)` escaping to the client
 - [x] **HTTP status codes** — All 26 DELETE endpoints → `204 No Content`; `POST /api/v1/execution/run` → `202 Accepted`; 2910 tests passing
-- [ ] **Pagination** — All list endpoints that can return large result sets support cursor or offset pagination
+- [x] **Pagination** — All list endpoints that can return large result sets support cursor or offset pagination
 
 ---
 
