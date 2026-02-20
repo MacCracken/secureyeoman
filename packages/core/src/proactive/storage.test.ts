@@ -125,17 +125,21 @@ describe('ProactiveStorage', () => {
   describe('listTriggers', () => {
     it('returns all triggers when no filter', async () => {
       const rows = [makeTriggerRow(), makeTriggerRow({ id: 'trigger-2', name: 'Second' })];
+      queryReturns([{ count: '2' }]);
       queryReturns(rows);
 
       const result = await storage.listTriggers();
-      expect(result).toHaveLength(2);
-      expect(result[0].id).toBe('trigger-1');
-      expect(result[1].id).toBe('trigger-2');
+      expect(result.triggers).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.triggers[0].id).toBe('trigger-1');
+      expect(result.triggers[1].id).toBe('trigger-2');
     });
 
     it('maps row fields to domain object correctly', async () => {
+      queryReturns([{ count: '1' }]);
       queryReturns([makeTriggerRow()]);
-      const [trigger] = await storage.listTriggers();
+      const { triggers } = await storage.listTriggers();
+      const [trigger] = triggers;
 
       expect(trigger.id).toBe('trigger-1');
       expect(trigger.name).toBe('Test Trigger');
@@ -153,13 +157,16 @@ describe('ProactiveStorage', () => {
     });
 
     it('parses lastFiredAt when present', async () => {
+      queryReturns([{ count: '1' }]);
       queryReturns([makeTriggerRow({ last_fired_at: '2026-02-16T08:00:00.000Z', fire_count: 3 })]);
-      const [trigger] = await storage.listTriggers();
+      const { triggers } = await storage.listTriggers();
+      const [trigger] = triggers;
       expect((trigger as any).lastFiredAt).toBeTypeOf('number');
       expect((trigger as any).fireCount).toBe(3);
     });
 
     it('filters by enabled=true', async () => {
+      queryReturns([{ count: '1' }]);
       queryReturns([makeTriggerRow({ enabled: true })]);
 
       await storage.listTriggers({ enabled: true });
@@ -169,6 +176,7 @@ describe('ProactiveStorage', () => {
     });
 
     it('filters by type', async () => {
+      queryReturns([{ count: '1' }]);
       queryReturns([makeTriggerRow({ type: 'event' })]);
 
       await storage.listTriggers({ type: 'event' });
@@ -178,6 +186,7 @@ describe('ProactiveStorage', () => {
     });
 
     it('filters by both type and enabled', async () => {
+      queryReturns([{ count: '0' }]);
       queryReturns([]);
 
       await storage.listTriggers({ type: 'schedule', enabled: false });
@@ -187,9 +196,11 @@ describe('ProactiveStorage', () => {
     });
 
     it('returns empty array when no triggers', async () => {
+      queryReturns([{ count: '0' }]);
       queryReturns([]);
       const result = await storage.listTriggers();
-      expect(result).toEqual([]);
+      expect(result.triggers).toEqual([]);
+      expect(result.total).toBe(0);
     });
   });
 

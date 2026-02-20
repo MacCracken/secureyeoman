@@ -33,6 +33,7 @@ import { LMStudioProvider } from './providers/lmstudio.js';
 import { LocalAIProvider } from './providers/localai.js';
 import { DeepSeekProvider } from './providers/deepseek.js';
 import { MistralProvider } from './providers/mistral.js';
+import { GrokProvider } from './providers/grok.js';
 import { CostCalculator } from './cost-calculator.js';
 import { UsageTracker, type UsageStats } from './usage-tracker.js';
 import type { UsageStorage } from './usage-storage.js';
@@ -506,6 +507,8 @@ export class AIClient {
         return new DeepSeekProvider(providerConfig, this.logger ?? undefined);
       case 'mistral':
         return new MistralProvider(providerConfig, this.logger ?? undefined);
+      case 'grok':
+        return new GrokProvider(providerConfig, this.logger ?? undefined);
       default:
         throw new Error(`Unknown AI provider: ${config.model.provider}`);
     }

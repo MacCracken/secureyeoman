@@ -9,7 +9,7 @@ import type { SecureLogger } from '../logging/logger.js';
 
 function createMockStorage(): McpStorage {
   return {
-    listServers: vi.fn().mockResolvedValue([]),
+    listServers: vi.fn().mockResolvedValue({ servers: [], total: 0 }),
     getServer: vi.fn().mockResolvedValue(null),
     getHealth: vi.fn().mockResolvedValue(null),
     saveHealth: vi.fn().mockResolvedValue(undefined),
@@ -201,10 +201,13 @@ describe('McpHealthMonitor', () => {
 
   describe('checkAll', () => {
     it('skips disabled servers', async () => {
-      (storage.listServers as ReturnType<typeof vi.fn>).mockResolvedValue([
-        { id: 'srv-enabled', name: 'Enabled', enabled: true, transport: 'stdio' },
-        { id: 'srv-disabled', name: 'Disabled', enabled: false, transport: 'stdio' },
-      ]);
+      (storage.listServers as ReturnType<typeof vi.fn>).mockResolvedValue({
+        servers: [
+          { id: 'srv-enabled', name: 'Enabled', enabled: true, transport: 'stdio' },
+          { id: 'srv-disabled', name: 'Disabled', enabled: false, transport: 'stdio' },
+        ],
+        total: 2,
+      });
       (storage.getServer as ReturnType<typeof vi.fn>).mockImplementation(async (id: string) => {
         if (id === 'srv-enabled') {
           return { id: 'srv-enabled', name: 'Enabled', transport: 'stdio', enabled: true };
@@ -224,7 +227,7 @@ describe('McpHealthMonitor', () => {
     });
 
     it('returns empty array when no servers exist', async () => {
-      (storage.listServers as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+      (storage.listServers as ReturnType<typeof vi.fn>).mockResolvedValue({ servers: [], total: 0 });
 
       const monitor = new McpHealthMonitor(storage, logger);
       const results = await monitor.checkAll();

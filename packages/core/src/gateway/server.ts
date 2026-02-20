@@ -485,7 +485,10 @@ export class GatewayServer {
     try {
       const marketplaceManager = this.secureYeoman.getMarketplaceManager();
       if (marketplaceManager) {
-        registerMarketplaceRoutes(this.app, { marketplaceManager });
+        registerMarketplaceRoutes(this.app, {
+          marketplaceManager,
+          getConfig: () => this.secureYeoman.getConfig(),
+        });
       }
     } catch {
       // Marketplace manager may not be available — skip routes
@@ -1066,6 +1069,8 @@ export class GatewayServer {
         allowAnomalyDetection: config.security.allowAnomalyDetection,
         sandboxGvisor: config.security.sandboxGvisor,
         sandboxWasm: config.security.sandboxWasm,
+        allowCommunityGitFetch: config.security.allowCommunityGitFetch,
+        communityGitUrl: config.security.communityGitUrl,
       };
     });
 
@@ -1089,6 +1094,8 @@ export class GatewayServer {
             allowAnomalyDetection?: boolean;
             sandboxGvisor?: boolean;
             sandboxWasm?: boolean;
+            allowCommunityGitFetch?: boolean;
+            communityGitUrl?: string;
           };
         }>,
         reply: FastifyReply
@@ -1109,6 +1116,8 @@ export class GatewayServer {
             allowAnomalyDetection,
             sandboxGvisor,
             sandboxWasm,
+            allowCommunityGitFetch,
+            communityGitUrl,
           } = request.body;
           if (
             allowSubAgents === undefined &&
@@ -1124,7 +1133,9 @@ export class GatewayServer {
             sandboxDynamicTools === undefined &&
             allowAnomalyDetection === undefined &&
             sandboxGvisor === undefined &&
-            sandboxWasm === undefined
+            sandboxWasm === undefined &&
+            allowCommunityGitFetch === undefined &&
+            communityGitUrl === undefined
           ) {
             return sendError(reply, 400, 'No valid fields provided');
           }
@@ -1143,6 +1154,8 @@ export class GatewayServer {
             allowAnomalyDetection,
             sandboxGvisor,
             sandboxWasm,
+            allowCommunityGitFetch,
+            communityGitUrl,
           });
           const config = this.secureYeoman.getConfig();
           return {
@@ -1160,6 +1173,8 @@ export class GatewayServer {
             allowAnomalyDetection: config.security.allowAnomalyDetection,
             sandboxGvisor: config.security.sandboxGvisor,
             sandboxWasm: config.security.sandboxWasm,
+            allowCommunityGitFetch: config.security.allowCommunityGitFetch,
+            communityGitUrl: config.security.communityGitUrl,
           };
         } catch (err) {
           this.getLogger().error('Failed to update security policy', {

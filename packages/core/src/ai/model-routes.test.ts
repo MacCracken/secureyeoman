@@ -187,7 +187,7 @@ describe('Model Routes', () => {
     });
 
     expect(res.statusCode).toBe(400);
-    expect(JSON.parse(res.payload).error).toContain('Invalid provider');
+    expect(JSON.parse(res.payload).message).toContain('Invalid provider');
   });
 
   it('POST /api/v1/model/switch returns 400 for missing fields', async () => {
@@ -214,6 +214,6 @@ describe('Model Routes', () => {
     });
 
     expect(res.statusCode).toBe(500);
-    expect(JSON.parse(res.payload).error).toContain('API key missing');
+    expect(JSON.parse(res.payload).message).toContain('API key missing');
   });
 });

@@ -3,11 +3,13 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
+import type { Config } from '@secureyeoman/shared';
 import type { MarketplaceManager } from './manager.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface MarketplaceRoutesOptions {
   marketplaceManager: MarketplaceManager;
+  getConfig?: () => Config;
 }
 
 export function registerMarketplaceRoutes(
@@ -86,16 +88,25 @@ export function registerMarketplaceRoutes(
     }
   );
 
-  // Community sync — uses the config-locked communityRepoPath; no path accepted
-  // from the request body to prevent path traversal attacks.
-  app.post('/api/v1/marketplace/community/sync', async (_request, reply: FastifyReply) => {
-    try {
-      const result = await marketplaceManager.syncFromCommunity();
-      return result;
-    } catch (err) {
-      return sendError(reply, 500, toErrorMessage(err));
+  // Community sync — accepts optional repoUrl when allowCommunityGitFetch policy is enabled.
+  app.post(
+    '/api/v1/marketplace/community/sync',
+    async (
+      request: FastifyRequest<{ Body?: { repoUrl?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const repoUrl = request.body?.repoUrl;
+      if (repoUrl && opts.getConfig && !opts.getConfig().security.allowCommunityGitFetch) {
+        return sendError(reply, 403, 'Community git fetch is disabled by security policy');
+      }
+      try {
+        const result = await marketplaceManager.syncFromCommunity(undefined, repoUrl);
+        return result;
+      } catch (err) {
+        return sendError(reply, 500, toErrorMessage(err));
+      }
     }
-  });
+  );
 
   app.get('/api/v1/marketplace/community/status', async (_request, reply: FastifyReply) => {
     try {

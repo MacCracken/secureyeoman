@@ -39,7 +39,7 @@ describe('McpStorage', () => {
     await storage.addServer({ name: 'Server 1' });
     await storage.addServer({ name: 'Server 2' });
     const servers = await storage.listServers();
-    expect(servers).toHaveLength(2);
+    expect(servers.servers).toHaveLength(2);
   });
 
   it('should delete a server', async () => {

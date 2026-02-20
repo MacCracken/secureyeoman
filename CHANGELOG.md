@@ -4,6 +4,113 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 23 (2026-02-20): Community Marketplace Improvements
+
+### Added
+
+- **Rich Author Metadata** — Community skill `author` field now supports a structured object
+  (`name`, `github`, `website`, `license`) in addition to the legacy string form. Both are
+  accepted; string form is backward-compatible. The `authorInfo` field is surfaced in API
+  responses, enabling rich attribution display in the dashboard.
+
+- **`AuthorInfoSchema`** — New exported Zod schema in `packages/shared/src/types/marketplace.ts`.
+  `MarketplaceSkillSchema` extended with optional `authorInfo` field.
+
+- **DB migration 027** — `ALTER TABLE marketplace.skills ADD COLUMN author_info JSONB NULL`.
+
+- **Git URL Fetch** — `POST /api/v1/marketplace/community/sync` accepts an optional `repoUrl`
+  body parameter. When `allowCommunityGitFetch` security policy is enabled, the server clones
+  (first sync) or pulls (subsequent syncs) the specified git repository before scanning for skill
+  files. Uses `execFile` (not `exec`) to prevent shell injection; only `https://` and `file://`
+  URLs are accepted.
+
+- **`allowCommunityGitFetch` policy toggle** — New boolean in `SecurityConfigSchema` (default
+  `false`). Toggleable via `PATCH /api/v1/security/policy`, `secureyeoman policy set
+  allowCommunityGitFetch true`, and live-updated on the `MarketplaceManager` instance without
+  restart.
+
+- **`communityGitUrl` policy field** — Default git URL for community skills repo when git fetch
+  is enabled. Overridable via `COMMUNITY_GIT_URL` env var.
+
+- **`COMMUNITY_GIT_URL` env var** — Documented in `.env.example`.
+
+- **`validateGitUrl()` / `gitCloneOrPull()`** — New `packages/core/src/marketplace/git-fetch.ts`
+  utility.
+
+- **CLI policy flag** — `allowCommunityGitFetch` added to `ALL_POLICY_FLAGS` in
+  `packages/core/src/cli/commands/policy.ts`.
+
+- **Community skill JSON Schema** — `community-skills/schema/skill.schema.json` (JSON Schema
+  draft-07) documents the full skill format including the new `author` object shape.
+
+- **ADR 076** — `docs/adr/076-community-git-url-fetch.md` (security rationale for policy gate,
+  execFile, and URL allowlist).
+
+- **ADR 077** — `docs/adr/077-community-skill-author-metadata.md` (backward-compat design for
+  rich author field).
+
+- **`COMMUNITY_IMPROVEMENTS.md`** — Root-level feature specification document.
+
+- **CONTRIBUTING.md** — New "Contributing Community Skills" section with JSON format reference,
+  quality bar, security review checklist, rejection criteria, and submission instructions.
+
+### Updated
+
+- All 11 bundled community skill JSON files updated to object `author` form (YEOMAN / MacCracken /
+  secureyeoman.ai).
+- `README.md` — Community Skills section updated with git fetch instructions and
+  `COMMUNITY_IMPROVEMENTS.md` link.
+
+### Files Changed
+
+- `packages/shared/src/types/marketplace.ts` — `AuthorInfoSchema`, `authorInfo` on skill schema
+- `packages/shared/src/types/config.ts` — `allowCommunityGitFetch`, `communityGitUrl`
+- `packages/core/src/storage/migrations/027_marketplace_author_info.sql` — new migration
+- `packages/core/src/storage/migrations/manifest.ts` — migration registered
+- `packages/core/src/marketplace/storage.ts` — `author_info` in CRUD + `rowToSkill()`
+- `packages/core/src/marketplace/git-fetch.ts` — new git utility
+- `packages/core/src/marketplace/manager.ts` — git fetch + author parsing + `updatePolicy()`
+- `packages/core/src/secureyeoman.ts` — new deps + `updateSecurityPolicy` extension
+- `packages/core/src/gateway/server.ts` — policy endpoints + `getConfig` route option
+- `packages/core/src/marketplace/marketplace-routes.ts` — `repoUrl` body + policy check
+- `packages/core/src/cli/commands/policy.ts` — `allowCommunityGitFetch` flag
+- `packages/core/src/marketplace/marketplace.test.ts` — author + git fetch + validateGitUrl tests
+- `community-skills/skills/**/*.json` — 11 files updated to object author
+- `community-skills/schema/skill.schema.json` — new JSON Schema
+- `CONTRIBUTING.md` — community skills section
+- `.env.example` — `COMMUNITY_GIT_URL` documentation
+- `docs/adr/076-community-git-url-fetch.md` — new ADR
+- `docs/adr/077-community-skill-author-metadata.md` — new ADR
+- `COMMUNITY_IMPROVEMENTS.md` — new spec document
+
+---
+
+## Unversioned (2026-02-20): x.ai Grok Provider
+
+### Added
+
+- **x.ai Grok as a 10th AI provider** — `GrokProvider` uses the OpenAI-compatible API at `https://api.x.ai/v1`. Set `XAI_API_KEY` to enable. Supported models: `grok-3`, `grok-3-mini`, `grok-2-1212`, `grok-2-vision-1212`. Full streaming, tool-calling, and fallback chain support.
+- **Grok dynamic model discovery** — `GET /api/v1/model/info` fetches live model list from `https://api.x.ai/v1/models` when `XAI_API_KEY` is set; falls back to known models list if the endpoint is unreachable.
+- **Grok pricing in cost calculator** — Input/output costs added for all four known Grok models.
+- **`XAI_API_KEY` added to `.env.example` and `.env.dev.example`** — Commented entry under the AI Provider section.
+- **Mistral and Grok added to `POST /api/v1/model/switch`** — `validProviders` list was missing `mistral` (bug fix) and did not yet include `grok`.
+- **Mistral dynamic model discovery** — `getAvailableModelsAsync()` now also fetches live Mistral models when `MISTRAL_API_KEY` is set, consistent with the DeepSeek pattern.
+
+### Files Changed
+
+- `packages/core/src/ai/providers/grok.ts` — new: `GrokProvider`
+- `packages/core/src/ai/providers/grok.test.ts` — new: 16 unit tests
+- `packages/shared/src/types/ai.ts` — `AIProviderNameSchema` enum extended with `'grok'`
+- `packages/shared/src/types/config.ts` — `FallbackModelConfigSchema` and `ModelConfigSchema` extended with `'grok'`
+- `packages/core/src/ai/client.ts` — import + factory `case 'grok'`
+- `packages/core/src/ai/index.ts` — export `GrokProvider`, `GrokModelInfo`
+- `packages/core/src/ai/model-routes.ts` — `validProviders` extended with `'mistral'` and `'grok'`
+- `packages/core/src/ai/chat-routes.ts` — `PROVIDER_KEY_ENV` extended with `grok: 'XAI_API_KEY'`
+- `packages/core/src/ai/cost-calculator.ts` — pricing, model map, `PROVIDER_KEY_ENV`, `FALLBACK_PRICING`, dynamic discovery for Mistral and Grok
+- `.env.example`, `.env.dev.example` — `# XAI_API_KEY=` added
+
+---
+
 ## Phase 22 (complete): OWASP Top 10 Security Review (2026-02-20)
 
 ### Security Fixes

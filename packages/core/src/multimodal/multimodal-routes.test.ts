@@ -47,7 +47,7 @@ describe('Multimodal Routes — validation', () => {
         payload: {},
       });
       expect(res.statusCode).toBe(400);
-      expect(JSON.parse(res.payload).error).toBe('Invalid request body');
+      expect(JSON.parse(res.payload).message).toBe('Invalid request body');
     });
 
     it('rejects missing imageBase64', async () => {

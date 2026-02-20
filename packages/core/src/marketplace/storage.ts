@@ -2,7 +2,7 @@
  * Marketplace Storage — PostgreSQL local skill registry
  */
 
-import type { MarketplaceSkill } from '@secureyeoman/shared';
+import type { MarketplaceSkill, AuthorInfo } from '@secureyeoman/shared';
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 import {
@@ -28,6 +28,7 @@ export class MarketplaceStorage extends PgBaseStorage {
       description: data.description ?? '',
       version: data.version ?? '1.0.0',
       author: data.author ?? '',
+      authorInfo: data.authorInfo,
       category: data.category ?? 'general',
       tags: data.tags ?? [],
       downloadCount: data.downloadCount ?? 0,
@@ -41,14 +42,15 @@ export class MarketplaceStorage extends PgBaseStorage {
     };
     await this.execute(
       `INSERT INTO marketplace.skills
-        (id, name, description, version, author, category, tags, download_count, rating, instructions, tools, installed, source, published_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+        (id, name, description, version, author, author_info, category, tags, download_count, rating, instructions, tools, installed, source, published_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
       [
         id,
         skill.name,
         skill.description,
         skill.version,
         skill.author,
+        skill.authorInfo != null ? JSON.stringify(skill.authorInfo) : null,
         skill.category,
         JSON.stringify(skill.tags),
         skill.downloadCount,
@@ -88,16 +90,18 @@ export class MarketplaceStorage extends PgBaseStorage {
         description = COALESCE($2, description),
         version = COALESCE($3, version),
         author = COALESCE($4, author),
-        category = COALESCE($5, category),
-        tags = COALESCE($6, tags),
-        instructions = COALESCE($7, instructions),
-        updated_at = $8
-       WHERE id = $9`,
+        author_info = COALESCE($5, author_info),
+        category = COALESCE($6, category),
+        tags = COALESCE($7, tags),
+        instructions = COALESCE($8, instructions),
+        updated_at = $9
+       WHERE id = $10`,
       [
         data.name ?? null,
         data.description ?? null,
         data.version ?? null,
         data.author ?? null,
+        data.authorInfo != null ? JSON.stringify(data.authorInfo) : null,
         data.category ?? null,
         data.tags ? JSON.stringify(data.tags) : null,
         data.instructions ?? null,
@@ -162,12 +166,20 @@ export class MarketplaceStorage extends PgBaseStorage {
   }
 
   private rowToSkill(row: Record<string, unknown>): MarketplaceSkill {
+    const rawAuthorInfo = row.author_info;
+    const authorInfo =
+      rawAuthorInfo != null && typeof rawAuthorInfo === 'object'
+        ? (rawAuthorInfo as MarketplaceSkill['authorInfo'])
+        : typeof rawAuthorInfo === 'string'
+          ? (JSON.parse(rawAuthorInfo) as MarketplaceSkill['authorInfo'])
+          : undefined;
     return {
       id: row.id as string,
       name: row.name as string,
       description: (row.description as string) ?? '',
       version: (row.version as string) ?? '1.0.0',
       author: (row.author as string) ?? '',
+      authorInfo,
       category: (row.category as string) ?? 'general',
       tags: row.tags as string[],
       downloadCount: (row.download_count as number) ?? 0,

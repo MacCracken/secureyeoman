@@ -398,7 +398,7 @@ When `cors.origins` contains `'*'` (wildcard), `Access-Control-Allow-Credentials
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `provider` | enum | `"anthropic"` | `anthropic`, `openai`, `gemini`, `ollama`, `opencode`, `lmstudio`, `localai`, `deepseek`, `mistral` |
+| `provider` | enum | `"anthropic"` | `anthropic`, `openai`, `gemini`, `ollama`, `opencode`, `lmstudio`, `localai`, `deepseek`, `mistral`, `grok` |
 | `model` | string | varies | Model identifier for the chosen provider |
 | `maxTokens` | number | `16384` | Max tokens per response |
 | `temperature` | number | `0.7` | Sampling temperature (0.0–2.0) |
@@ -412,7 +412,7 @@ Each entry in the `fallbacks` array configures an alternative model to try when 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `provider` | enum | Yes | `anthropic`, `openai`, `gemini`, `ollama`, `opencode` |
+| `provider` | enum | Yes | `anthropic`, `openai`, `gemini`, `ollama`, `opencode`, `deepseek`, `mistral`, `grok`, `lmstudio`, `localai` |
 | `model` | string | Yes | Model identifier for the provider |
 | `apiKeyEnv` | string | Yes | Environment variable holding the API key |
 | `baseUrl` | string | No | Provider base URL override |
@@ -437,7 +437,7 @@ secureyeoman model personality-fallbacks clear --personality-id <id>
 
 When a personality's `modelFallbacks` list is non-empty, it **overrides** the system-level `model.fallbacks` for requests using that personality. When the list is empty (the default), system-level fallbacks apply unchanged.
 
-Each entry requires only `provider` and `model`. The API key environment variable is resolved automatically from the provider name. Supported providers: `anthropic`, `openai`, `gemini`, `deepseek`, `mistral`, `opencode`.
+Each entry requires only `provider` and `model`. The API key environment variable is resolved automatically from the provider name. Supported providers: `anthropic`, `openai`, `gemini`, `deepseek`, `mistral`, `grok`, `opencode`.
 
 ### soul
 

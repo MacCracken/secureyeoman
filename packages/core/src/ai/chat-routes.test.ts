@@ -163,7 +163,7 @@ describe('Chat Routes', () => {
     });
 
     expect(res.statusCode).toBe(400);
-    expect(JSON.parse(res.payload).error).toBe('Message is required');
+    expect(JSON.parse(res.payload).message).toBe('Message is required');
   });
 
   it('POST /api/v1/chat returns 400 for missing message', async () => {
@@ -232,7 +232,7 @@ describe('Chat Routes', () => {
     });
 
     expect(res.statusCode).toBe(502);
-    expect(JSON.parse(res.payload).error).toContain('Provider down');
+    expect(JSON.parse(res.payload).message).toContain('Provider down');
   });
 
   // ── Brain integration tests ─────────────────────────────────

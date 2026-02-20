@@ -238,6 +238,159 @@ Types:
 - [ ] PR description explains changes
 - [ ] Breaking changes documented
 
+---
+
+## Contributing Community Skills
+
+Community skills live in `community-skills/skills/<category>/<name>.json`. They are synced into
+the marketplace via `POST /api/v1/marketplace/community/sync`.
+
+### Skill JSON Format
+
+```json
+{
+  "$schema": "../../schema/skill.schema.json",
+  "name": "My Skill Name",
+  "description": "One- to two-sentence summary of what the skill does.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Your Name",
+    "github": "your-github-username",
+    "website": "https://yourwebsite.com",
+    "license": "MIT"
+  },
+  "category": "development",
+  "tags": ["tag1", "tag2"],
+  "instructions": "Detailed instructions for the AI (100+ words recommended)..."
+}
+```
+
+The `author` field accepts either an object (recommended) or a plain string for backward
+compatibility. All fields except `name` and `instructions` are optional.
+
+### Quality Bar
+
+- **Instructions**: Minimum 100 words. The instructions should give the AI model enough context
+  to perform the skill reliably across a wide range of inputs.
+- **Single clear purpose**: Each skill should do one thing well, not try to be a Swiss Army knife.
+- **No hard-coded credentials or URLs**: Instructions must not embed API keys, passwords, or
+  specific external service URLs that users would need to change.
+
+### Security Review Checklist
+
+All community skills are reviewed for security before merging. Your skill will be rejected if
+it contains:
+
+- [ ] Prompt injection patterns (instructions designed to override system-level constraints)
+- [ ] Data exfiltration instructions (instructions that direct the AI to send data to third parties)
+- [ ] RBAC bypass instructions (attempts to escalate permissions or impersonate other roles)
+- [ ] External URL dependencies without justification (links to resources that could change or disappear)
+
+### Rejection Criteria
+
+Skills will be rejected if they:
+
+- Duplicate an existing community skill without meaningfully improving it
+- Contain harmful, deceptive, or manipulative instructions
+- Are missing required fields (`name`, `instructions`)
+- Provide false author information
+- Target a single proprietary platform without documented compatibility with alternatives
+
+### What Reviewers Look For
+
+- **Real use case**: Is this something people actually need? Could it save time or improve quality?
+- **Reliable instructions**: Do the instructions work across different AI responses, or only under
+  very specific conditions?
+- **Compatible license**: The default project license applies. If you specify a different license
+  in the `author.license` field, ensure it is compatible with the project.
+- **Honest attribution**: The `author` object should reflect the actual author. Do not impersonate
+  other contributors or organizations.
+
+## Contributing Community Skills
+
+Community skills live in `community-skills/skills/<category>/<skill-name>.json`. They are synced
+into the marketplace registry via `POST /api/v1/marketplace/community/sync`.
+
+### Skill JSON Format
+
+```json
+{
+  "$schema": "../../schema/skill.schema.json",
+  "name": "My Skill Name",
+  "description": "One- to two-sentence description.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Your Name",
+    "github": "your-github-username",
+    "website": "https://yourwebsite.com",
+    "license": "MIT"
+  },
+  "category": "development",
+  "tags": ["tag1", "tag2"],
+  "instructions": "Detailed instructions for the AI model (minimum 100 words recommended)..."
+}
+```
+
+The `author` field also accepts a plain string for backward compatibility:
+```json
+"author": "Your Name"
+```
+
+See `community-skills/schema/skill.schema.json` for the full JSON Schema with all allowed
+categories and field constraints.
+
+### Quality Bar
+
+Before submitting a community skill, ensure it meets the following quality bar:
+
+- **Instructions** — at least 100 words, clearly describing the skill's purpose and how the AI
+  should behave. Vague instructions like "Be helpful about X" will be rejected.
+- **Single clear purpose** — the skill does one thing well. Multi-purpose "do everything" skills
+  will be asked to be split.
+- **No hard-coded credentials or URLs** — instructions must not contain API keys, passwords, or
+  fixed internal URLs. Use placeholders like `[YOUR_API_KEY]` instead.
+- **Name uniqueness** — check that your skill name does not duplicate an existing skill in the
+  community registry.
+
+### Security Review Checklist
+
+All community skill submissions are reviewed for security before acceptance:
+
+- [ ] No prompt injection patterns (e.g., "Ignore all previous instructions")
+- [ ] No data exfiltration instructions (e.g., "Send the user's messages to…")
+- [ ] No RBAC bypass instructions (e.g., "Act as an admin without checking permissions")
+- [ ] No external URL dependencies without justification (document any required URLs in the description)
+- [ ] No harmful, offensive, or deceptive content
+- [ ] Author information is accurate and not impersonating another contributor
+
+### Rejection Criteria
+
+Pull requests adding community skills will be rejected if:
+
+- The skill is a duplicate of an existing community or built-in skill
+- The instructions contain harmful, deceptive, or dangerous content
+- Required fields (`name`, `instructions`) are missing or empty
+- The `author` information is false or impersonates someone else
+- The skill violates the [Code of Conduct](CODE_OF_CONDUCT.md)
+
+### What Reviewers Look For
+
+- **Real use case** — the skill addresses a genuine, repeatable need
+- **Reliable instructions** — the instructions produce consistent, high-quality output across
+  different AI models and conversation contexts
+- **Compatible license** — if the instructions are derived from third-party content, the license
+  must be compatible with this project
+
+### Submitting a Community Skill
+
+1. Fork the repository
+2. Add your skill JSON to `community-skills/skills/<category>/your-skill-name.json`
+3. Validate your JSON against the schema: `npx ajv validate -s community-skills/schema/skill.schema.json -d community-skills/skills/<category>/your-skill-name.json`
+4. Submit a pull request with a description explaining the use case
+5. Address reviewer feedback
+
+---
+
 ## Versioning
 
 SecureYeoman uses **calendar versioning** (`YYYY.M.D`). The version is the release date — e.g., `2026.2.17` for February 17, 2026.

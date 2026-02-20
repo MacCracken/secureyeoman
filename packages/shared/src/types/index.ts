@@ -330,8 +330,10 @@ export {
 
 // Marketplace types
 export {
+  AuthorInfoSchema,
   MarketplaceSkillSchema,
   MarketplaceSearchSchema,
+  type AuthorInfo,
   type MarketplaceSkill,
   type MarketplaceSearch,
 } from './marketplace.js';
