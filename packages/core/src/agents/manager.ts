@@ -313,9 +313,13 @@ export class SubAgentManager {
       const delegationTools = getDelegationTools(depth, maxDepth);
       // Fix: wire MCP tools to the LLM sub-agent (ADR 069)
       const mcpTools: Tool[] = this.deps.mcpClient
-        ? (await this.deps.mcpClient.listTools()).filter(
-            (t) => profile.allowedTools.length === 0 || profile.allowedTools.includes(t.name)
-          )
+        ? this.deps.mcpClient.getAllTools()
+            .filter((t) => profile.allowedTools.length === 0 || profile.allowedTools.includes(t.name))
+            .map((t) => ({
+              name: t.name,
+              description: t.description || undefined,
+              parameters: t.inputSchema as Tool['parameters'],
+            }))
         : [];
       const tools: Tool[] = [...delegationTools, ...mcpTools];
 
@@ -456,7 +460,9 @@ export class SubAgentManager {
               } else if (this.deps.mcpClient) {
                 // Attempt to dispatch to MCP tool
                 try {
+                  const mcpToolDef = this.deps.mcpClient.getAllTools().find(t => t.name === toolCall.name);
                   const mcpResult = await this.deps.mcpClient.callTool(
+                    mcpToolDef?.serverId ?? '',
                     toolCall.name,
                     toolCall.arguments ?? {}
                   );
@@ -668,8 +674,9 @@ export class SubAgentManager {
       toolInput = { task: params.task, context: params.context };
     }
 
+    const mcpBridgeToolDef = this.deps.mcpClient.getAllTools().find(t => t.name === mcpTool);
     const mcpResultRaw = await Promise.race([
-      this.deps.mcpClient.callTool(mcpTool, toolInput),
+      this.deps.mcpClient.callTool(mcpBridgeToolDef?.serverId ?? '', mcpTool, toolInput),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('MCP bridge timeout')), timeoutMs)
       ),

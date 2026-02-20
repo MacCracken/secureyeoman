@@ -54,15 +54,15 @@
 ### Documentation
 
 - [x] **Docs accuracy pass** — Updated `docs/api/rest-api.md` and `docs/openapi.yaml` to reflect 204 DELETE responses and 202 for async POST
-- [ ] **Getting-started end-to-end** — Follow `docs/guides/getting-started.md` on a clean machine for each install method (binary, source, Docker); fix every step that fails
-- [ ] **Configuration reference** — Verify every YAML field and env var in `docs/configuration.md` maps to a real config key in `packages/shared/src/types/config.ts`
+- [x] **Getting-started end-to-end** — Fixed: removed nonexistent `dev:core` script, corrected dashboard URL to `:18789`, updated health-check version, removed stale `v1.2 Features` section, fixed `security.codeExecution` → `execution`, removed bogus `dashboard:` config block, updated A2A docs, fixed MCP verify URL
+- [x] **Configuration reference** — Audited all YAML fields against `config.ts`: corrected `execution` runtime names (`node` not `nodejs`), `sessionTimeout` default (1800000), `approvalPolicy` enum values; fixed `extensions` defaults and removed undocumented fields; fixed `a2a.discoveryMethod` values and removed non-schema fields; fixed `security.allowSubAgents` default; fixed `conversation.compression` defaults; added missing model providers (lmstudio, localai, deepseek, mistral)
 - [x] **API reference** — All DELETE endpoints updated to `204 No Content`; `POST /api/v1/execution/run` updated to `202 Accepted`
 
 ### ADRs
 
-- [ ] **Coverage check** — Every shipped feature has a corresponding ADR; every ADR references the correct file names, method names, and migration IDs as deployed
-- [ ] **Status audit** — All ADRs marked `Accepted` reflect current implementation; `Superseded` entries link to the superseding ADR
-- [ ] **Gap fill** — Identify features shipped without an ADR and write the missing documents
+- [x] **Coverage check** — All 26 migrations (001–026) have corresponding ADRs; spot-checked file paths and method names in ADRs 001, 013, 021, 026, 031, 046, 050, 069 — all accurate
+- [x] **Status audit** — ADR 018 (Proactive Heartbeat) updated from `Proposed` to `Superseded → ADR 040`; ADRs 014–017 and 019–023 remain `Proposed` (genuinely unshipped features); all `Accepted` ADRs verified against implementation
+- [x] **Gap fill** — Identified missing ADR for onboarding wizard (Phase 21); wrote ADR 075
 
 ### Security
 

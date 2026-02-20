@@ -45,11 +45,11 @@ services:
       GMAIL_OAUTH_CLIENT_ID: ${GMAIL_OAUTH_CLIENT_ID:-}
       GMAIL_OAUTH_CLIENT_SECRET: ${GMAIL_OAUTH_CLIENT_SECRET:-}
     healthcheck:
-      test: ["CMD", "secureyeoman", "health", "--json"]
+      test: ["CMD", "node", "/app/packages/core/dist/cli.js", "health", "--url", "http://127.0.0.1:18789", "--json"]
       interval: 30s
       timeout: 5s
       retries: 3
-      start_period: 10s
+      start_period: 15s
     depends_on:
       postgres:
         condition: service_healthy
@@ -88,6 +88,7 @@ services:
     profiles:
       - mcp
       - full
+      - dev
     restart: unless-stopped
 
   # Dashboard is now served by the core gateway (SPA serving via @fastify/static).

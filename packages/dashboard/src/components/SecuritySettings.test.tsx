@@ -180,7 +180,7 @@ describe('SecuritySettings', () => {
     expect(screen.getByLabelText('Toggle Lifecycle Extensions')).toBeInTheDocument();
   });
 
-  it('renders Code Execution section enabled by default', async () => {
+  it('renders Code Execution toggle enabled by default', async () => {
     renderComponent();
     expect(await screen.findByText('Code Execution')).toBeInTheDocument();
     const toggle = screen.getByLabelText('Toggle Code Execution');
@@ -508,7 +508,7 @@ describe('SecuritySettings', () => {
     });
   });
 
-  // ── Sandbox Isolation ──────────────────────────────────────────────
+  // ── Sandbox Isolation (includes Code Execution) ────────────────────
 
   it('renders Sandbox Isolation section header', async () => {
     renderComponent();

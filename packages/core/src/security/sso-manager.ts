@@ -54,7 +54,7 @@ export class SsoManager {
     if (provider.type !== 'oidc') throw new Error('Only OIDC providers are supported currently');
 
     const oidc = await getOidcClient();
-    const issuer = await oidc.discovery(new URL(provider.issuerUrl!));
+    const issuer = await oidc.discovery(new URL(provider.issuerUrl!), provider.clientId!);
 
     const state = randomBytes(32).toString('hex');
     const codeVerifier = oidc.randomPKCECodeVerifier();
@@ -103,7 +103,7 @@ export class SsoManager {
     if (!provider) throw new Error(`Identity provider not found: ${providerId}`);
 
     const oidc = await getOidcClient();
-    const issuer = await oidc.discovery(new URL(provider.issuerUrl!));
+    const issuer = await oidc.discovery(new URL(provider.issuerUrl!), provider.clientId!);
 
     const tokens = await oidc.authorizationCodeGrant(issuer, callbackUrl, {
       pkceCodeVerifier: storedState.codeVerifier ?? undefined,
@@ -153,7 +153,7 @@ export class SsoManager {
       if (!provider.autoProvision) {
         throw new Error('User not found and auto-provisioning is disabled');
       }
-      user = await this.authService.createUser({ email, displayName });
+      user = await this.authService.createUser({ email, displayName, isAdmin: false });
     }
 
     // Create the IDP mapping

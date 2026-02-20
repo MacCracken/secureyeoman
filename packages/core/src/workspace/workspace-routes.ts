@@ -162,7 +162,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
       try {
         const user = await authService.createUser({
           email: request.body.email,
-          displayName: request.body.displayName,
+          displayName: request.body.displayName ?? '',
           isAdmin: request.body.isAdmin ?? false,
         });
         return reply.code(201).send({ user });

@@ -31,7 +31,7 @@ RUN npm run build
 # ---- runtime ----
 FROM node:20-alpine
 
-RUN addgroup -r secureyeoman && adduser -r -G secureyeoman -h /home/secureyeoman secureyeoman \
+RUN addgroup -S secureyeoman && adduser -S -G secureyeoman -h /home/secureyeoman secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
  && chown -R secureyeoman:secureyeoman /home/secureyeoman
 

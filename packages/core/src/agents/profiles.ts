@@ -11,6 +11,7 @@ import type { AgentProfile } from '@secureyeoman/shared';
 export const BUILTIN_PROFILES: Omit<AgentProfile, 'createdAt' | 'updatedAt'>[] = [
   {
     id: 'builtin-researcher',
+    type: 'llm',
     name: 'researcher',
     description:
       'Information gathering specialist. Excels at web search, documentation lookup, and synthesizing findings into concise reports.',
@@ -30,6 +31,7 @@ Guidelines:
   },
   {
     id: 'builtin-coder',
+    type: 'llm',
     name: 'coder',
     description:
       'Code generation and debugging specialist. Writes clean, tested code and identifies bugs with precision.',
@@ -49,6 +51,7 @@ Guidelines:
   },
   {
     id: 'builtin-analyst',
+    type: 'llm',
     name: 'analyst',
     description:
       'Data analysis and comparison specialist. Evaluates options, identifies patterns, and provides structured assessments.',
@@ -68,6 +71,7 @@ Guidelines:
   },
   {
     id: 'builtin-summarizer',
+    type: 'llm',
     name: 'summarizer',
     description:
       'Content compression specialist. Distills lengthy content into concise, actionable summaries.',
