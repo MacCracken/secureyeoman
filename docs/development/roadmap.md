@@ -69,7 +69,7 @@
 
 - [x] **Dependency audit** — `npm audit` reviewed; 2 accepted risks formally documented in [Dependency Watch](dependency-watch.md) (eslint/ajv ReDoS dev-only; MCP SDK SSE deprecation)
 - [ ] **OWASP Top 10 review** — Walk each category against the codebase; verify injection protection, broken access control, cryptographic failures, and security misconfiguration
-- [ ] **Secrets hygiene** — Confirm no secrets leak in logs, error responses, or audit records; verify `SECUREYEOMAN_ENCRYPTION_KEY` path for stored credentials
+- [x] **Secrets hygiene** — Confirmed no secrets leak in logs (pino redaction + `sanitizeForLogging`); fixed `console.error` in `skill-scheduler.ts`; masked integration credentials in API responses; wired `McpCredentialManager` for encrypted MCP credential storage; documented SSO token fragment and integration credentials at-rest as accepted risks in `security-model.md`
 
 ### API Consistency
 

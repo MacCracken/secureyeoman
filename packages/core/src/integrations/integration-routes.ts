@@ -19,6 +19,15 @@ import type {
   OutboundWebhookUpdate,
 } from './outbound-webhook-storage.js';
 import { toErrorMessage } from '../utils/errors.js';
+import { sanitizeForLogging } from '../utils/crypto.js';
+
+function maskIntegration<T extends { config?: Record<string, unknown> }>(integration: T): T {
+  if (!integration.config) return integration;
+  return {
+    ...integration,
+    config: sanitizeForLogging(integration.config) as Record<string, unknown>,
+  };
+}
 
 export interface IntegrationRoutesOptions {
   integrationManager: IntegrationManager;
@@ -58,7 +67,7 @@ export function registerIntegrationRoutes(
 
       const integrations = await integrationManager.listIntegrations(filter);
       return {
-        integrations,
+        integrations: integrations.map(maskIntegration),
         total: integrations.length,
         running: integrationManager.getRunningCount(),
       };
@@ -75,7 +84,7 @@ export function registerIntegrationRoutes(
         return reply.code(404).send({ error: 'Integration not found' });
       }
       return {
-        integration,
+        integration: maskIntegration(integration),
         running: integrationManager.isRunning(request.params.id),
         healthy: integrationManager.isHealthy(request.params.id),
       };
@@ -89,7 +98,7 @@ export function registerIntegrationRoutes(
     async (request: FastifyRequest<{ Body: IntegrationCreate }>, reply: FastifyReply) => {
       try {
         const integration = await integrationManager.createIntegration(request.body);
-        return reply.code(201).send({ integration });
+        return reply.code(201).send({ integration: maskIntegration(integration) });
       } catch (err) {
         return reply.code(400).send({ error: toErrorMessage(err) });
       }
@@ -111,7 +120,7 @@ export function registerIntegrationRoutes(
       if (!integration) {
         return reply.code(404).send({ error: 'Integration not found' });
       }
-      return { integration };
+      return { integration: maskIntegration(integration) };
     }
   );
 

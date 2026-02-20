@@ -6,6 +6,9 @@
  */
 
 import type { Skill, SkillAction } from '@secureyeoman/shared';
+import { getLogger } from '../logging/logger.js';
+
+const logger = getLogger('skill-scheduler');
 
 export interface ScheduledSkill {
   id: string;
@@ -400,7 +403,7 @@ export class SkillScheduler {
       try {
         handler(event);
       } catch (err) {
-        console.error('Schedule event handler error:', err);
+        logger.error({ err }, 'Schedule event handler error');
       }
     }
   }
