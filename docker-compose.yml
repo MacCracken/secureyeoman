@@ -31,7 +31,7 @@ services:
     volumes:
       - data:/home/secureyeoman/.secureyeoman
       - ./community-skills:/usr/share/secureyeoman/community-skills
-    env_file: .env
+    env_file: .env.dev
     environment:
       SECUREYEOMAN_HOST: "0.0.0.0"
       NODE_ENV: production
@@ -64,7 +64,7 @@ services:
     command: ["mcp-server"]
     ports:
       - "3001:3001"
-    env_file: .env
+    env_file: .env.dev
     environment:
       MCP_ENABLED: "${MCP_ENABLED:-true}"
       MCP_PORT: "3001"

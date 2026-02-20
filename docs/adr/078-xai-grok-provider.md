@@ -1,4 +1,4 @@
-# ADR 076: x.ai Grok Provider
+# ADR 078: x.ai Grok Provider
 
 **Status**: Accepted
 

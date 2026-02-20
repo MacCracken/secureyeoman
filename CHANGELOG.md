@@ -85,16 +85,17 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Unversioned (2026-02-20): x.ai Grok Provider
+## Phase 23 (2026-02-20): x.ai Grok Provider — [ADR 078](docs/adr/078-xai-grok-provider.md)
 
 ### Added
 
 - **x.ai Grok as a 10th AI provider** — `GrokProvider` uses the OpenAI-compatible API at `https://api.x.ai/v1`. Set `XAI_API_KEY` to enable. Supported models: `grok-3`, `grok-3-mini`, `grok-2-1212`, `grok-2-vision-1212`. Full streaming, tool-calling, and fallback chain support.
 - **Grok dynamic model discovery** — `GET /api/v1/model/info` fetches live model list from `https://api.x.ai/v1/models` when `XAI_API_KEY` is set; falls back to known models list if the endpoint is unreachable.
 - **Grok pricing in cost calculator** — Input/output costs added for all four known Grok models.
-- **`XAI_API_KEY` added to `.env.example` and `.env.dev.example`** — Commented entry under the AI Provider section.
+- **`XAI_API_KEY` / `XAI_BASE_URL` added to `.env.example` and `.env.dev.example`** — `XAI_BASE_URL` is optional (defaults to `https://api.x.ai/v1`) for custom endpoint overrides.
 - **Mistral and Grok added to `POST /api/v1/model/switch`** — `validProviders` list was missing `mistral` (bug fix) and did not yet include `grok`.
 - **Mistral dynamic model discovery** — `getAvailableModelsAsync()` now also fetches live Mistral models when `MISTRAL_API_KEY` is set, consistent with the DeepSeek pattern.
+- **Optional base URL overrides** — `DEEPSEEK_BASE_URL` and `MISTRAL_BASE_URL` env vars added alongside `XAI_BASE_URL` for custom/self-hosted endpoint support.
 
 ### Files Changed
 
@@ -107,7 +108,23 @@ All notable changes to SecureYeoman are documented in this file.
 - `packages/core/src/ai/model-routes.ts` — `validProviders` extended with `'mistral'` and `'grok'`
 - `packages/core/src/ai/chat-routes.ts` — `PROVIDER_KEY_ENV` extended with `grok: 'XAI_API_KEY'`
 - `packages/core/src/ai/cost-calculator.ts` — pricing, model map, `PROVIDER_KEY_ENV`, `FALLBACK_PRICING`, dynamic discovery for Mistral and Grok
-- `.env.example`, `.env.dev.example` — `# XAI_API_KEY=` added
+- `.env.example` — AI provider section reorganised: `XAI_API_KEY`, `XAI_BASE_URL`, `DEEPSEEK_BASE_URL`, `MISTRAL_BASE_URL`, `OLLAMA_HOST`, `GOOGLE_API_KEY`, `OPENCODE_API_KEY` added; entries sorted and annotated
+- `.env.dev.example` — `XAI_API_KEY` added
+- `docs/adr/078-xai-grok-provider.md` — new ADR
+
+---
+
+## Phase 23 (2026-02-20): Development Environment Fixes
+
+### Changed
+
+- **`docker-compose.yml` env file** — Default `env_file` for the `secureyeoman` and `mcp` services changed from `.env` to `.env.dev`, aligning compose with the development workflow (`.env` is for production deployments; `.env.dev` is the developer copy of `.env.dev.example`).
+- **`@vitest/coverage-v8` dependency** — Moved from dev-only transitive dependency to an explicit entry in `packages/core/package.json` to ensure `npm run test:coverage` is stable across clean installs.
+
+### Files Changed
+
+- `docker-compose.yml` — `env_file: .env` → `env_file: .env.dev` for `secureyeoman` and `mcp` services
+- `packages/core/package.json` — `@vitest/coverage-v8 ^4.0.18` added to dependencies; optional deps alphabetically sorted
 
 ---
 

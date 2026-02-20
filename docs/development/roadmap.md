@@ -36,24 +36,8 @@
 | 22 | Major Audit | 2026.2.19 | Complete |
 | | **Tag 2026.2.19** | **2026-02-19** | **Tagged** |
 | 23 | Community Marketplace Improvements | 2026.2.20 | Complete |
+| | **Tag 2026.2.20** | **2026-02-20** | **Tagged** |
 | 24 | Testing All the Things | — | Pending |
-
----
-
-## Phase 23: Community Marketplace Improvements
-
-**Status**: Complete (2026-02-20)
-
-### Delivered
-
-- [x] **Rich Author Metadata** — Structured `authorInfo` object (name/github/website/license) with full backward compat for string-only skill files. DB migration 027.
-- [x] **Git URL Fetch** — `POST /community/sync` accepts `repoUrl`; policy-gated `allowCommunityGitFetch` (default OFF); uses `execFile` for injection safety; `https://` and `file://` only.
-- [x] **`communityGitUrl` policy field** + `COMMUNITY_GIT_URL` env var.
-- [x] **CLI flag** — `secureyeoman policy set allowCommunityGitFetch true`.
-- [x] **JSON Schema** — `community-skills/schema/skill.schema.json` for editor validation.
-- [x] **11 bundled skill files** updated to object author form.
-- [x] **Tests** — author metadata round-trip, git fetch mocked, `validateGitUrl` unit tests.
-- [x] **ADR 076 + ADR 077**, `COMMUNITY_IMPROVEMENTS.md`, `CONTRIBUTING.md` community skills section.
 
 ---
 
