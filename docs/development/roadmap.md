@@ -64,8 +64,9 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 ### Bug Hunt
 - [ ] **Single binary smoke test** — Build all Tier 1 + Tier 2 targets; run `--version`, `health --json`, `config validate --json` against each
-- [ ] **Docker cold-start** — `docker compose up` with empty volumes; migrations run, default workspace created, healthcheck passes
-
+- [x] **Docker cold-start development** — `docker compose --profile up` with empty volumes; migrations run, default workspace created, healthcheck passes
+- [ ] **Docker cold-start production** — `docker compose up` with empty volumes; migrations run, default workspace created, healthcheck passes
+- [ ] **Helm Checks**
 
 ## Phase 26: Final Inspection
 
