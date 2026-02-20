@@ -1289,16 +1289,27 @@ export class GatewayServer {
     // SPA static serving (must be last — any non-API route falls through to index.html)
     const distPath = this.resolveDashboardDist();
     if (distPath) {
+      // decorateReply must remain true (the default) so reply.sendFile() is available
+      // inside the setNotFoundHandler below.
       void this.app.register(fastifyStatic, {
         root: distPath,
         prefix: '/',
-        decorateReply: false,
       });
-      // SPA fallback: non-API 404s → index.html
+      // SPA fallback: serve index.html for SPA routes; JSON 404 for everything else.
       this.app.setNotFoundHandler((_request, reply) => {
-        if (_request.url.startsWith('/api/') || _request.url.startsWith('/ws/')) {
+        // Strip query string before all prefix/extension checks
+        const pathname = _request.url.split('?')[0] ?? _request.url;
+        // API and WebSocket routes always return JSON 404
+        if (pathname.startsWith('/api/') || pathname.startsWith('/ws/')) {
           return sendError(reply, 404, 'Not found');
         }
+        // Static asset requests (URL contains a file extension in the last segment)
+        // return JSON 404 rather than the SPA shell — serving index.html as a .js
+        // or .css file causes parse errors in the browser.
+        if (/\.[^/]+$/.test(pathname)) {
+          return sendError(reply, 404, 'Not found');
+        }
+        // All other routes are SPA routes — serve the app shell
         return reply.sendFile('index.html', distPath);
       });
       this.getLogger().info('Dashboard SPA serving enabled', { distPath });

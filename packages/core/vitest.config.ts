@@ -21,7 +21,16 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'html', 'lcov'],
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/**/*.spec.ts', 'src/example.ts', 'src/index.ts'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.spec.ts',
+        'src/example.ts',
+        'src/index.ts',
+        // Barrel re-export files — no logic to test
+        'src/**/index.ts',
+        // Pure TypeScript type definitions — no runtime code
+        'src/**/types.ts',
+      ],
       thresholds: {
         lines: 80,
         functions: 80,
