@@ -38,12 +38,14 @@
 | 23 | Community Marketplace Improvements | 2026.2.20 | Complete |
 | | **Tag 2026.2.20** | **2026-02-20** | **Tagged** |
 | 24 | Testing All the Things | — | Pending |
+| 25 | Fix All the Bugs | — | Pending |
+| 26 | Final Inspection | — | Pending |
 
 ---
 
 ## Phase 24: Testing All the Things
 
-**Status**: Pending
+**Status**: In-Progress
 
 *Full-system quality pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.*
 
@@ -53,20 +55,29 @@
 - [ ] **Integration test gaps** — Audit `packages/core/src/__integration__/` for missing scenarios: multi-user auth flows, workspace member RBAC, SSO callback edge cases, binary sub-agent timeout/kill, mcp-bridge template errors
 - [ ] **Migration integrity** — Verify all 27 migrations apply cleanly on a fresh database and idempotently on an already-migrated one
 
-### Bug Hunt
 
-- [ ] **Heartbeat Task execution log** — Heartbeat check results (`ok`/`warning`/`error` + message + duration) are only emitted to the pino logger and are never persisted. There is no way to audit past runs, diagnose recurring failures, or see what a check returned on its last cycle. Fix requires: (1) new `proactive.heartbeat_log` migration — columns `id`, `check_name`, `personality_id`, `ran_at`, `status` (`ok`/`warning`/`error`), `message`, `duration_ms`, `error_detail`; (2) persist a row in `heartbeat.ts` after every `executeCheck()` call; (3) new `GET /api/v1/proactive/heartbeat/log` route with `?checkName=&status=&limit=&offset=` query params; (4) update `HeartbeatTaskRow` in `TaskHistory.tsx` to surface the last-result status badge (`ok` → green, `warning` → amber, `error` → red) in place of the current Active/Disabled-only display, and add an expandable execution history panel showing the N most recent runs per check. Reported by the 'friday' agent.
+## Phase 25: Fix All the Bugs
+
+**Status**: Pending
+
+### Bug Hunt
+- [ ] **Skills Community** - dashboard still states clone repo then sync - we made the user able to sync repo without having to clone it themselves.  Investigate
+- [ ] **Heartbeat Task execution log** — Heartbeat check results (`ok`/`warning`/`error` + message + duration) are only emitted to the pino logger and are never persisted. There is no way to audit past runs, diagnose recurring failures, or see what a check returned on its last cycle. Fix requires: (1) new `proactive.heartbeat_log` migration — columns `id`, `check_name`, `personality_id`, `ran_at`, `status` (`ok`/`warning`/`error`), `message`, `duration_ms`, `error_detail`; (2) persist a row in `heartbeat.ts` after every `executeCheck()` call; (3) new `GET /api/v1/proactive/heartbeat/log` route with `?checkName=&status=&limit=&offset=` query params; (4) update `HeartbeatTaskRow` in `TaskHistory.tsx` to surface the last-result status badge (`ok` → green, `warning` → amber, `error` → red) in place of the current Active/Disabled-only display, and add an expandable execution history panel showing the N most recent runs per check. Reported by the agent personalities.
 - [ ] **Auth & SSO** — Full OIDC flow end-to-end; `auto_provision: false` rejection; expired state tokens; malformed callback params
 - [ ] **Workspace RBAC** — Workspace-scoped role enforcement; member add/remove edge cases; default workspace bootstrap on fresh install
-- [ ] **Sub-agent execution** — `binary` timeout and kill path; `mcp-bridge` with missing tool, unreachable server, template missing `{{task}}`
 - [ ] **SPA serving** — `/api/v1/*` never intercepted by `setNotFoundHandler`; unknown assets return `index.html`, not 404 JSON
 - [ ] **Single binary smoke test** — Build all Tier 1 + Tier 2 targets; run `--version`, `health --json`, `config validate --json` against each
 - [ ] **Docker cold-start** — `docker compose up` with empty volumes; migrations run, default workspace created, healthcheck passes
 
+
+## Phase 26: Final Inspection
+
+**Status**: Pending
+
 ### Regression & Performance
 
-- [ ] **Regression suite** — All 2910+ tests pass; fix any failures introduced by Phase 20–23 changes
-- [ ] **Memory baseline** — Cold-start still <300 MB after Phase 20 additions
+- [ ] **Regression suite** — All 2910+ tests pass; fix any failures introduced
+- [ ] **Memory baseline** — Cold-start still <300 MB latest additions
 - [ ] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
 
 ---

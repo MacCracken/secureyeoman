@@ -10,6 +10,7 @@ import type { McpClientManager } from '../mcp/client.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
+import type { ExtensionManager } from '../extensions/manager.js';
 import { uuidv7 } from '../utils/crypto.js';
 import { spawn } from 'node:child_process';
 import { SubAgentStorage, type DelegationRecord } from './storage.js';
@@ -37,6 +38,8 @@ export interface SubAgentManagerDeps {
   brainManager?: BrainManager;
   /** Top-level security config; used to enforce allowSubAgents kill-switch */
   securityConfig?: SecurityConfig;
+  /** Optional extension manager for lifecycle hook emissions */
+  extensionManager?: ExtensionManager;
 }
 
 interface ActiveDelegation {
@@ -293,7 +296,7 @@ export class SubAgentManager {
       // Type dispatch: binary and mcp-bridge are zero-cost; llm is the default agentic loop
       const profileType = (profile as any).type ?? 'llm';
       if (profileType === 'binary') {
-        return await this.executeBinaryDelegation(delegationId, profile, params, startTime);
+        return await this.executeBinaryDelegation(delegationId, profile, params, startTime, timeoutMs, signal);
       }
       if (profileType === 'mcp-bridge') {
         return await this.executeMcpBridgeDelegation(delegationId, profile, params, startTime, timeoutMs, signal);
@@ -570,7 +573,9 @@ export class SubAgentManager {
     delegationId: string,
     profile: AgentProfile,
     params: DelegationParams,
-    startTime: number
+    startTime: number,
+    timeoutMs: number,
+    signal: AbortSignal
   ): Promise<DelegationResult> {
     if (!this.deps.securityConfig?.allowBinaryAgents) {
       const err = 'Binary sub-agents are disabled by security policy (allowBinaryAgents: false)';
@@ -594,46 +599,109 @@ export class SubAgentManager {
       tokenBudget: params.maxTokenBudget,
     });
 
-    const result = await new Promise<string>((resolve, reject) => {
-      const child = spawn(command, commandArgs, {
-        env: commandEnv,
-        stdio: ['pipe', 'pipe', 'pipe'],
-      });
-
-      let stdout = '';
-      let stderr = '';
-      child.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
-      child.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
-
-      child.on('error', reject);
-      child.on('close', (code) => {
-        if (code !== 0) {
-          reject(new Error(`Binary exited with code ${code}: ${stderr}`));
-          return;
-        }
-        try {
-          const parsed = JSON.parse(stdout.trim());
-          resolve(typeof parsed.result === 'string' ? parsed.result : JSON.stringify(parsed));
-        } catch {
-          resolve(stdout.trim());
-        }
-      });
-
-      child.stdin.write(payload + '\n');
-      child.stdin.end();
+    await this.deps.extensionManager?.emit('agent:binary-before-execute', {
+      event: 'agent:binary-before-execute',
+      data: { delegationId, profileName: profile.name, command, commandArgs, task: params.task },
+      timestamp: Date.now(),
     });
 
-    await this.storage.updateDelegation(delegationId, {
-      status: 'completed', result,
-      tokensUsedPrompt: 0, tokensUsedCompletion: 0,
-      completedAt: Date.now(),
-    });
+    try {
+      const result = await new Promise<string>((resolve, reject) => {
+        const child = spawn(command, commandArgs, {
+          env: commandEnv,
+          stdio: ['pipe', 'pipe', 'pipe'],
+        });
 
-    return {
-      delegationId, profile: profile.name, status: 'completed', result, error: null,
-      tokenUsage: { prompt: 0, completion: 0, total: 0 },
-      durationMs: Date.now() - startTime, subDelegations: [],
-    };
+        let stdout = '';
+        let stderr = '';
+        let settled = false;
+
+        const killChild = (reason: string) => {
+          if (settled) return;
+          settled = true;
+          child.kill('SIGTERM');
+          // Force-kill after 5 s grace if the process ignores SIGTERM
+          const forceKill = setTimeout(() => {
+            try { child.kill('SIGKILL'); } catch { /* already exited */ }
+          }, 5000);
+          if (forceKill.unref) forceKill.unref();
+          reject(new Error(reason));
+        };
+
+        // Timeout kill
+        const timeoutHandle = setTimeout(
+          () => killChild(`Binary agent timed out after ${timeoutMs}ms`),
+          timeoutMs
+        );
+
+        // Abort-signal kill
+        if (signal.aborted) {
+          clearTimeout(timeoutHandle);
+          killChild('Delegation aborted before binary execution');
+        } else {
+          signal.addEventListener('abort', () => {
+            clearTimeout(timeoutHandle);
+            killChild('Delegation aborted');
+          }, { once: true });
+        }
+
+        child.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
+        child.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+
+        child.on('error', (err) => {
+          clearTimeout(timeoutHandle);
+          settled = true;
+          reject(err);
+        });
+
+        child.on('close', (code) => {
+          clearTimeout(timeoutHandle);
+          if (settled) return;
+          settled = true;
+          if (code !== 0) {
+            reject(new Error(`Binary exited with code ${code}: ${stderr}`));
+            return;
+          }
+          try {
+            const parsed = JSON.parse(stdout.trim());
+            resolve(typeof parsed.result === 'string' ? parsed.result : JSON.stringify(parsed));
+          } catch {
+            resolve(stdout.trim());
+          }
+        });
+
+        child.stdin.write(payload + '\n');
+        child.stdin.end();
+      });
+
+      await this.deps.extensionManager?.emit('agent:binary-after-execute', {
+        event: 'agent:binary-after-execute',
+        data: { delegationId, profileName: profile.name, result, status: 'completed',
+                durationMs: Date.now() - startTime },
+        timestamp: Date.now(),
+      });
+
+      await this.storage.updateDelegation(delegationId, {
+        status: 'completed', result,
+        tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+        completedAt: Date.now(),
+      });
+
+      return {
+        delegationId, profile: profile.name, status: 'completed', result, error: null,
+        tokenUsage: { prompt: 0, completion: 0, total: 0 },
+        durationMs: Date.now() - startTime, subDelegations: [],
+      };
+    } catch (err) {
+      const errorMsg = err instanceof Error ? err.message : 'Binary execution failed';
+      await this.deps.extensionManager?.emit('agent:binary-after-execute', {
+        event: 'agent:binary-after-execute',
+        data: { delegationId, profileName: profile.name, result: null, status: 'failed',
+                durationMs: Date.now() - startTime, error: errorMsg },
+        timestamp: Date.now(),
+      });
+      throw err;
+    }
   }
 
   /**
@@ -670,13 +738,48 @@ export class SubAgentManager {
     let toolInput: Record<string, unknown>;
     try {
       toolInput = JSON.parse(interpolated);
-    } catch {
-      toolInput = { task: params.task, context: params.context };
+    } catch (parseErr) {
+      const err =
+        `mcp-bridge profile "${profile.name}" mcpToolInput produced invalid JSON after interpolation. ` +
+        `Check the template for unescaped characters. ` +
+        `Template: ${templateStr}`;
+      this.deps.logger.warn('MCP bridge template interpolation failed', {
+        mcpTool, template: templateStr, interpolated, error: String(parseErr),
+      });
+      await this.storage.updateDelegation(delegationId, {
+        status: 'failed', error: err, completedAt: Date.now(),
+        tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+      });
+      return {
+        delegationId, profile: profile.name, status: 'failed', result: null, error: err,
+        tokenUsage: { prompt: 0, completion: 0, total: 0 },
+        durationMs: Date.now() - startTime, subDelegations: [],
+      };
     }
 
     const mcpBridgeToolDef = this.deps.mcpClient.getAllTools().find(t => t.name === mcpTool);
+    if (!mcpBridgeToolDef) {
+      const err = `MCP tool "${mcpTool}" not found in any connected server — ` +
+        `ensure the MCP server is running and the tool name is correct`;
+      await this.storage.updateDelegation(delegationId, {
+        status: 'failed', error: err, completedAt: Date.now(),
+        tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+      });
+      return {
+        delegationId, profile: profile.name, status: 'failed', result: null, error: err,
+        tokenUsage: { prompt: 0, completion: 0, total: 0 },
+        durationMs: Date.now() - startTime, subDelegations: [],
+      };
+    }
+
+    await this.deps.extensionManager?.emit('agent:mcp-bridge-before-execute', {
+      event: 'agent:mcp-bridge-before-execute',
+      data: { delegationId, profileName: profile.name, mcpTool, toolInput, task: params.task },
+      timestamp: Date.now(),
+    });
+
     const mcpResultRaw = await Promise.race([
-      this.deps.mcpClient.callTool(mcpBridgeToolDef?.serverId ?? '', mcpTool, toolInput),
+      this.deps.mcpClient.callTool(mcpBridgeToolDef.serverId, mcpTool, toolInput),
       new Promise<never>((_, reject) =>
         setTimeout(() => reject(new Error('MCP bridge timeout')), timeoutMs)
       ),
@@ -687,6 +790,13 @@ export class SubAgentManager {
     ]);
 
     const result = typeof mcpResultRaw === 'string' ? mcpResultRaw : JSON.stringify(mcpResultRaw);
+
+    await this.deps.extensionManager?.emit('agent:mcp-bridge-after-execute', {
+      event: 'agent:mcp-bridge-after-execute',
+      data: { delegationId, profileName: profile.name, mcpTool, result, status: 'completed',
+              durationMs: Date.now() - startTime },
+      timestamp: Date.now(),
+    });
 
     await this.storage.updateDelegation(delegationId, {
       status: 'completed', result,
