@@ -40,7 +40,7 @@ export class A2AManager {
 
   async initialize(): Promise<void> {
     // Load known peers from storage and seed missed-heartbeat counters
-    const peers = await this.deps.storage.listPeers();
+    const { peers } = await this.deps.storage.listPeers();
     for (const peer of peers) {
       this.missedHeartbeats.set(peer.id, 0);
     }
@@ -132,8 +132,8 @@ export class A2AManager {
     return removed;
   }
 
-  async listPeers(): Promise<PeerAgent[]> {
-    return this.deps.storage.listPeers();
+  async listPeers(filter?: { status?: string; trustLevel?: string; limit?: number; offset?: number }): Promise<{ peers: PeerAgent[]; total: number }> {
+    return this.deps.storage.listPeers(filter);
   }
 
   async updateTrust(peerId: string, level: TrustLevel): Promise<PeerAgent | null> {
@@ -309,7 +309,7 @@ export class A2AManager {
   // ── Private helpers ────────────────────────────────────────────
 
   private async runHeartbeatCycle(): Promise<void> {
-    const peers = await this.deps.storage.listPeers();
+    const { peers } = await this.deps.storage.listPeers();
 
     for (const peer of peers) {
       if (peer.status === 'offline') continue;

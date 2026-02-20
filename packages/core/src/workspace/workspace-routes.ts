@@ -7,7 +7,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { WorkspaceManager } from './manager.js';
 import type { AuthService } from '../security/auth.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface WorkspaceRoutesOptions {
   workspaceManager: WorkspaceManager;
@@ -19,10 +19,14 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
 
   // ── Workspaces ───────────────────────────────────────────────────
 
-  app.get('/api/v1/workspaces', async () => {
-    const workspaces = await workspaceManager.list();
-    return { workspaces, total: workspaces.length };
-  });
+  app.get(
+    '/api/v1/workspaces',
+    async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
+      const limit = request.query.limit ? Number(request.query.limit) : undefined;
+      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      return workspaceManager.list({ limit, offset });
+    }
+  );
 
   app.post(
     '/api/v1/workspaces',
@@ -36,7 +40,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
         const workspace = await workspaceManager.create(request.body as any);
         return reply.code(201).send({ workspace });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -45,7 +49,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
     '/api/v1/workspaces/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const workspace = await workspaceManager.get(request.params.id);
-      if (!workspace) return reply.code(404).send({ error: 'Workspace not found' });
+      if (!workspace) return sendError(reply, 404, 'Workspace not found');
       return { workspace };
     }
   );
@@ -61,10 +65,10 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
     ) => {
       try {
         const workspace = await workspaceManager.update(request.params.id, request.body);
-        if (!workspace) return reply.code(404).send({ error: 'Workspace not found' });
+        if (!workspace) return sendError(reply, 404, 'Workspace not found');
         return { workspace };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -73,7 +77,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
     '/api/v1/workspaces/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!(await workspaceManager.delete(request.params.id)))
-        return reply.code(404).send({ error: 'Workspace not found' });
+        return sendError(reply, 404, 'Workspace not found');
       return reply.code(204).send();
     }
   );
@@ -82,11 +86,12 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
 
   app.get(
     '/api/v1/workspaces/:id/members',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+    async (request: FastifyRequest<{ Params: { id: string }; Querystring: { limit?: string; offset?: string } }>, reply: FastifyReply) => {
       const workspace = await workspaceManager.get(request.params.id);
-      if (!workspace) return reply.code(404).send({ error: 'Workspace not found' });
-      const members = await workspaceManager.listMembers(request.params.id);
-      return { members, total: members.length };
+      if (!workspace) return sendError(reply, 404, 'Workspace not found');
+      const limit = request.query.limit ? Number(request.query.limit) : undefined;
+      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      return workspaceManager.listMembers(request.params.id, { limit, offset });
     }
   );
 
@@ -104,7 +109,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
         );
         return reply.code(201).send({ member });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -124,10 +129,10 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
           request.params.userId,
           request.body.role
         );
-        if (!member) return reply.code(404).send({ error: 'Member not found' });
+        if (!member) return sendError(reply, 404, 'Member not found');
         return { member };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -139,7 +144,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
       reply: FastifyReply
     ) => {
       if (!(await workspaceManager.removeMember(request.params.id, request.params.userId)))
-        return reply.code(404).send({ error: 'Member not found' });
+        return sendError(reply, 404, 'Member not found');
       return reply.code(204).send();
     }
   );
@@ -167,7 +172,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
         });
         return reply.code(201).send({ user });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -176,9 +181,9 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
     '/api/v1/users/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (request.params.id === 'admin')
-        return reply.code(400).send({ error: 'Cannot delete built-in admin user' });
+        return sendError(reply, 400, 'Cannot delete built-in admin user');
       if (!(await authService.deleteUser(request.params.id)))
-        return reply.code(404).send({ error: 'User not found' });
+        return sendError(reply, 404, 'User not found');
       return reply.code(204).send();
     }
   );

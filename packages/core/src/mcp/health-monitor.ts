@@ -49,7 +49,7 @@ export class McpHealthMonitor {
   }
 
   async checkAll(): Promise<McpServerHealth[]> {
-    const servers = await this.storage.listServers();
+    const { servers } = await this.storage.listServers();
     const results: McpServerHealth[] = [];
 
     for (const server of servers) {

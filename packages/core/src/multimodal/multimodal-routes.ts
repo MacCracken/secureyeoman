@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { MultimodalManager } from './manager.js';
 import type { MultimodalJobType, MultimodalJobStatus } from '@secureyeoman/shared';
+import { sendError } from '../utils/errors.js';
 import {
   VisionRequestSchema,
   STTRequestSchema,
@@ -39,7 +40,7 @@ export function registerMultimodalRoutes(
     ) => {
       const parsed = VisionRequestSchema.safeParse(request.body);
       if (!parsed.success) {
-        return reply.code(400).send({ error: 'Invalid request body' });
+        return sendError(reply, 400, 'Invalid request body');
       }
 
       try {
@@ -66,7 +67,7 @@ export function registerMultimodalRoutes(
     ) => {
       const parsed = STTRequestSchema.safeParse(request.body);
       if (!parsed.success) {
-        return reply.code(400).send({ error: 'Invalid request body' });
+        return sendError(reply, 400, 'Invalid request body');
       }
 
       try {
@@ -92,7 +93,7 @@ export function registerMultimodalRoutes(
     ) => {
       const parsed = TTSRequestSchema.safeParse(request.body);
       if (!parsed.success) {
-        return reply.code(400).send({ error: 'Invalid request body' });
+        return sendError(reply, 400, 'Invalid request body');
       }
 
       try {
@@ -118,7 +119,7 @@ export function registerMultimodalRoutes(
     ) => {
       const parsed = ImageGenRequestSchema.safeParse(request.body);
       if (!parsed.success) {
-        return reply.code(400).send({ error: 'Invalid request body' });
+        return sendError(reply, 400, 'Invalid request body');
       }
 
       try {
@@ -144,7 +145,7 @@ export function registerMultimodalRoutes(
     ) => {
       const parsed = HapticRequestSchema.safeParse(request.body);
       if (!parsed.success) {
-        return reply.code(400).send({ error: 'Invalid request body' });
+        return sendError(reply, 400, 'Invalid request body');
       }
 
       try {

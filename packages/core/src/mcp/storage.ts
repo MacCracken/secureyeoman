@@ -97,11 +97,23 @@ export class McpStorage extends PgBaseStorage {
     return row ? this.rowToConfig(row) : null;
   }
 
-  async listServers(): Promise<McpServerConfig[]> {
-    const rows = await this.queryMany<Record<string, unknown>>(
-      'SELECT * FROM mcp.servers ORDER BY created_at DESC'
+  async listServers(opts?: { limit?: number; offset?: number }): Promise<{ servers: McpServerConfig[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM mcp.servers'
     );
-    return rows.map((r) => this.rowToConfig(r));
+
+    const rows = await this.queryMany<Record<string, unknown>>(
+      'SELECT * FROM mcp.servers ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+
+    return {
+      servers: rows.map((r) => this.rowToConfig(r)),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async updateServer(id: string, update: { enabled?: boolean }): Promise<boolean> {

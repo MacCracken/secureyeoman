@@ -10,7 +10,7 @@ import type { HeartbeatManager } from '../body/heartbeat.js';
 import type { ExternalBrainSync } from './external-sync.js';
 import type { SoulManager } from '../soul/manager.js';
 import type { MemoryType, MemoryQuery, KnowledgeQuery } from './types.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface BrainRoutesOptions {
   brainManager: BrainManager;
@@ -46,7 +46,7 @@ function capLimit(raw: string | undefined, fallback = 20): number {
 
 function validateContent(content: unknown, reply: FastifyReply): string | null {
   if (typeof content !== 'string' || content.trim().length === 0) {
-    void reply.code(400).send({ error: 'Content is required and must be a non-empty string' });
+    void sendError(reply, 400, 'Content is required and must be a non-empty string');
     return null;
   }
   return content;
@@ -99,7 +99,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     ) => {
       const clientIp = request.ip ?? 'unknown';
       if (!checkBrainRateLimit(`brain:memories:post:${clientIp}`, 60)) {
-        return reply.code(429).send({ error: 'Rate limit exceeded for memory creation' });
+        return sendError(reply, 429, 'Rate limit exceeded for memory creation');
       }
 
       try {
@@ -110,7 +110,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const memory = await brainManager.remember(type, validContent, source, context, importance);
         return await reply.code(201).send({ memory });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -122,7 +122,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         await brainManager.forget(request.params.id);
         return reply.code(204).send();
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -158,7 +158,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     ) => {
       const clientIp = request.ip ?? 'unknown';
       if (!checkBrainRateLimit(`brain:knowledge:post:${clientIp}`, 60)) {
-        return reply.code(429).send({ error: 'Rate limit exceeded for knowledge creation' });
+        return sendError(reply, 429, 'Rate limit exceeded for knowledge creation');
       }
 
       try {
@@ -169,7 +169,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const entry = await brainManager.learn(topic, validContent, source, confidence);
         return await reply.code(201).send({ knowledge: entry });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -191,7 +191,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         });
         return { knowledge };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -203,7 +203,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         await brainManager.deleteKnowledge(request.params.id);
         return reply.code(204).send();
       } catch (err) {
-        return reply.code(404).send({ error: toErrorMessage(err) });
+        return sendError(reply, 404, toErrorMessage(err));
       }
     }
   );
@@ -220,7 +220,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
   app.post('/api/v1/brain/maintenance', async (_request: FastifyRequest, reply: FastifyReply) => {
     const clientIp = _request.ip ?? 'unknown';
     if (!checkBrainRateLimit(`brain:maintenance:${clientIp}`, 5)) {
-      return reply.code(429).send({ error: 'Rate limit exceeded for maintenance' });
+      return sendError(reply, 429, 'Rate limit exceeded for maintenance');
     }
     const result = await brainManager.runMaintenance();
     return { result };
@@ -232,7 +232,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/heartbeat/status',
     async (_request: FastifyRequest, reply: FastifyReply) => {
       if (!heartbeatManager) {
-        return reply.code(503).send({ error: 'Heartbeat system not available' });
+        return sendError(reply, 503, 'Heartbeat system not available');
       }
       return heartbeatManager.getStatus();
     }
@@ -242,13 +242,13 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/heartbeat/beat',
     async (_request: FastifyRequest, reply: FastifyReply) => {
       if (!heartbeatManager) {
-        return reply.code(503).send({ error: 'Heartbeat system not available' });
+        return sendError(reply, 503, 'Heartbeat system not available');
       }
       try {
         const result = await heartbeatManager.beat();
         return { result };
       } catch (err) {
-        return reply.code(500).send({ error: toErrorMessage(err) });
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -257,7 +257,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/heartbeat/tasks',
     async (_request: FastifyRequest, reply: FastifyReply) => {
       if (!heartbeatManager) {
-        return reply.code(503).send({ error: 'Heartbeat system not available' });
+        return sendError(reply, 503, 'Heartbeat system not available');
       }
       const status = heartbeatManager.getStatus();
       const activePersonality = (await soulManager?.getActivePersonality()) ?? null;
@@ -280,7 +280,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       reply: FastifyReply
     ) => {
       if (!heartbeatManager) {
-        return reply.code(503).send({ error: 'Heartbeat system not available' });
+        return sendError(reply, 503, 'Heartbeat system not available');
       }
       try {
         const { intervalMs, enabled, config } = request.body;
@@ -289,7 +289,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const task = status.tasks.find((t) => t.name === request.params.name);
         return { task };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -298,7 +298,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/heartbeat/history',
     async (request: FastifyRequest<{ Querystring: { limit?: string } }>, reply: FastifyReply) => {
       if (!heartbeatManager) {
-        return reply.code(503).send({ error: 'Heartbeat system not available' });
+        return sendError(reply, 503, 'Heartbeat system not available');
       }
       const limit = capLimit(request.query.limit, 10);
       const memories = await brainManager.recall({ source: 'heartbeat', limit });
@@ -337,7 +337,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         });
         return result;
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -353,7 +353,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       try {
         const { q, limit, offset } = request.query;
         if (!q) {
-          return await reply.code(400).send({ error: 'Query parameter "q" is required' });
+          return sendError(reply, 400, 'Query parameter "q" is required');
         }
         const result = await brainManager.searchAuditLogs(q, {
           limit: limit ? Math.min(Number(limit), MAX_QUERY_LIMIT) : undefined,
@@ -361,7 +361,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         });
         return result;
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -384,7 +384,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       try {
         const { query, limit, threshold, type } = request.query;
         if (!query) {
-          return await reply.code(400).send({ error: 'Query parameter "query" is required' });
+          return sendError(reply, 400, 'Query parameter "query" is required');
         }
         const results = await brainManager.semanticSearch(query, {
           limit: limit ? Math.min(Number(limit), MAX_QUERY_LIMIT) : undefined,
@@ -393,7 +393,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         });
         return { results };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -401,7 +401,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
   app.post('/api/v1/brain/reindex', async (_request: FastifyRequest, reply: FastifyReply) => {
     const clientIp = _request.ip ?? 'unknown';
     if (!checkBrainRateLimit(`brain:reindex:${clientIp}`, 5)) {
-      return reply.code(429).send({ error: 'Rate limit exceeded for reindex' });
+      return sendError(reply, 429, 'Rate limit exceeded for reindex');
     }
 
     try {
@@ -418,7 +418,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         knowledgeCount: stats.knowledge.total,
       };
     } catch (err) {
-      return reply.code(400).send({ error: toErrorMessage(err) });
+      return sendError(reply, 400, toErrorMessage(err));
     }
   });
 
@@ -429,14 +429,14 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     async (_request: FastifyRequest, reply: FastifyReply) => {
       const clientIp = _request.ip ?? 'unknown';
       if (!checkBrainRateLimit(`brain:consolidation:run:${clientIp}`, 5)) {
-        return reply.code(429).send({ error: 'Rate limit exceeded for consolidation' });
+        return sendError(reply, 429, 'Rate limit exceeded for consolidation');
       }
 
       try {
         const report = await brainManager.runConsolidation();
         return { report };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -446,7 +446,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     async (_request: FastifyRequest, reply: FastifyReply) => {
       const schedule = brainManager.getConsolidationSchedule();
       if (schedule === null) {
-        return reply.code(503).send({ error: 'Consolidation not available' });
+        return sendError(reply, 503, 'Consolidation not available');
       }
       return { schedule };
     }
@@ -464,7 +464,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         brainManager.setConsolidationSchedule(request.body.schedule);
         return { schedule: request.body.schedule };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -477,7 +477,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const memories = await brainManager.recall({ source: 'consolidation', limit });
         return { history: memories };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -486,26 +486,26 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
 
   app.get('/api/v1/brain/sync/status', async (_request: FastifyRequest, reply: FastifyReply) => {
     if (!externalSync) {
-      return reply.code(503).send({ error: 'External brain sync not configured' });
+      return sendError(reply, 503, 'External brain sync not configured');
     }
     return externalSync.getStatus();
   });
 
   app.post('/api/v1/brain/sync', async (_request: FastifyRequest, reply: FastifyReply) => {
     if (!externalSync) {
-      return reply.code(503).send({ error: 'External brain sync not configured' });
+      return sendError(reply, 503, 'External brain sync not configured');
     }
 
     const clientIp = _request.ip ?? 'unknown';
     if (!checkBrainRateLimit(`brain:sync:${clientIp}`, 5)) {
-      return reply.code(429).send({ error: 'Rate limit exceeded for sync' });
+      return sendError(reply, 429, 'Rate limit exceeded for sync');
     }
 
     try {
       const result = await externalSync.sync();
       return { result };
     } catch (err) {
-      return reply.code(500).send({ error: toErrorMessage(err) });
+      return sendError(reply, 500, toErrorMessage(err));
     }
   });
 
@@ -538,12 +538,12 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       reply: FastifyReply
     ) => {
       if (!externalSync) {
-        return reply.code(503).send({ error: 'External brain sync not initialized' });
+        return sendError(reply, 503, 'External brain sync not initialized');
       }
 
       // Validate path if provided — reject path traversal
       if (request.body.path && /\.\.[\\/]/.test(request.body.path)) {
-        return reply.code(400).send({ error: 'Invalid path: path traversal detected' });
+        return sendError(reply, 400, 'Invalid path: path traversal detected');
       }
 
       try {
@@ -552,7 +552,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         );
         return { success: true };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );

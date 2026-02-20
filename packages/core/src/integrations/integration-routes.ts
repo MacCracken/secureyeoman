@@ -18,7 +18,7 @@ import type {
   OutboundWebhookCreate,
   OutboundWebhookUpdate,
 } from './outbound-webhook-storage.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 import { sanitizeForLogging } from '../utils/crypto.js';
 
 function maskIntegration<T extends { config?: Record<string, unknown> }>(integration: T): T {
@@ -81,7 +81,7 @@ export function registerIntegrationRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const integration = await integrationManager.getIntegration(request.params.id);
       if (!integration) {
-        return reply.code(404).send({ error: 'Integration not found' });
+        return sendError(reply, 404, 'Integration not found');
       }
       return {
         integration: maskIntegration(integration),
@@ -100,7 +100,7 @@ export function registerIntegrationRoutes(
         const integration = await integrationManager.createIntegration(request.body);
         return reply.code(201).send({ integration: maskIntegration(integration) });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -118,7 +118,7 @@ export function registerIntegrationRoutes(
         request.body
       );
       if (!integration) {
-        return reply.code(404).send({ error: 'Integration not found' });
+        return sendError(reply, 404, 'Integration not found');
       }
       return { integration: maskIntegration(integration) };
     }
@@ -131,7 +131,7 @@ export function registerIntegrationRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const deleted = await integrationManager.deleteIntegration(request.params.id);
       if (!deleted) {
-        return reply.code(404).send({ error: 'Integration not found' });
+        return sendError(reply, 404, 'Integration not found');
       }
       return reply.code(204).send();
     }
@@ -148,7 +148,7 @@ export function registerIntegrationRoutes(
           // Integration not running — try to instantiate a fresh adapter to test
           const config = await integrationManager.getIntegration(request.params.id);
           if (!config) {
-            return reply.code(404).send({ error: 'Integration not found' });
+            return sendError(reply, 404, 'Integration not found');
           }
           return reply.code(400).send({
             ok: false,
@@ -180,7 +180,7 @@ export function registerIntegrationRoutes(
         await integrationManager.reloadIntegration(request.params.id);
         return { message: 'Integration reloaded' };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -206,7 +206,7 @@ export function registerIntegrationRoutes(
       reply: FastifyReply
     ) => {
       if (!request.body?.path) {
-        return reply.code(400).send({ error: 'Missing path in request body' });
+        return sendError(reply, 400, 'Missing path in request body');
       }
       try {
         const plugin = await integrationManager.loadPlugin(request.body.path);
@@ -218,7 +218,7 @@ export function registerIntegrationRoutes(
           },
         });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -232,7 +232,7 @@ export function registerIntegrationRoutes(
         await integrationManager.startIntegration(request.params.id);
         return { message: 'Integration started' };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -244,7 +244,7 @@ export function registerIntegrationRoutes(
         await integrationManager.stopIntegration(request.params.id);
         return { message: 'Integration stopped' };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -280,7 +280,7 @@ export function registerIntegrationRoutes(
         );
         return reply.code(201).send({ platformMessageId });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -296,14 +296,14 @@ export function registerIntegrationRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const config = await integrationManager.getIntegration(request.params.id);
       if (config?.platform !== 'github') {
-        return reply.code(404).send({ error: 'GitHub integration not found' });
+        return sendError(reply, 404, 'GitHub integration not found');
       }
 
       const signature = request.headers['x-hub-signature-256'] as string;
       const event = request.headers['x-github-event'] as string;
 
       if (!signature || !event) {
-        return reply.code(400).send({ error: 'Missing webhook headers' });
+        return sendError(reply, 400, 'Missing webhook headers');
       }
 
       try {
@@ -315,7 +315,7 @@ export function registerIntegrationRoutes(
 
         return { received: true, event };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -330,28 +330,28 @@ export function registerIntegrationRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const config = await integrationManager.getIntegration(request.params.id);
       if (config?.platform !== 'gitlab') {
-        return reply.code(404).send({ error: 'GitLab integration not found' });
+        return sendError(reply, 404, 'GitLab integration not found');
       }
 
       const token = request.headers['x-gitlab-token'] as string;
       const event = request.headers['x-gitlab-event'] as string;
 
       if (!token || !event) {
-        return reply.code(400).send({ error: 'Missing GitLab webhook headers' });
+        return sendError(reply, 400, 'Missing GitLab webhook headers');
       }
 
       try {
         const { GitLabIntegration } = await import('./gitlab/adapter.js');
         const adapter = integrationManager.getAdapter(request.params.id);
         if (!adapter || !(adapter instanceof GitLabIntegration)) {
-          return reply.code(400).send({ error: 'GitLab integration is not running' });
+          return sendError(reply, 400, 'GitLab integration is not running');
         }
 
         const body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
         await adapter.handleWebhook(event, body, token);
         return { received: true, event };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -366,7 +366,7 @@ export function registerIntegrationRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const config = await integrationManager.getIntegration(request.params.id);
       if (config?.platform !== 'jira') {
-        return reply.code(404).send({ error: 'Jira integration not found' });
+        return sendError(reply, 404, 'Jira integration not found');
       }
 
       const event = request.headers['x-atlassian-webhook-identifier'] as string | undefined;
@@ -375,7 +375,7 @@ export function registerIntegrationRoutes(
         const { JiraIntegration } = await import('./jira/adapter.js');
         const adapter = integrationManager.getAdapter(request.params.id);
         if (!adapter || !(adapter instanceof JiraIntegration)) {
-          return reply.code(400).send({ error: 'Jira integration is not running' });
+          return sendError(reply, 400, 'Jira integration is not running');
         }
 
         const body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
@@ -383,7 +383,7 @@ export function registerIntegrationRoutes(
         await adapter.handleWebhook(event ?? 'unknown', body, token);
         return { received: true, event: event ?? 'jira' };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -398,14 +398,14 @@ export function registerIntegrationRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const config = await integrationManager.getIntegration(request.params.id);
       if (config?.platform !== 'azure') {
-        return reply.code(404).send({ error: 'Azure DevOps integration not found' });
+        return sendError(reply, 404, 'Azure DevOps integration not found');
       }
 
       try {
         const { AzureDevOpsIntegration } = await import('./azure/adapter.js');
         const adapter = integrationManager.getAdapter(request.params.id);
         if (!adapter || !(adapter instanceof AzureDevOpsIntegration)) {
-          return reply.code(400).send({ error: 'Azure DevOps integration is not running' });
+          return sendError(reply, 400, 'Azure DevOps integration is not running');
         }
 
         const body = typeof request.body === 'string' ? request.body : JSON.stringify(request.body);
@@ -415,7 +415,7 @@ export function registerIntegrationRoutes(
         await adapter.handleWebhook(eventType ?? 'unknown', body, token);
         return { received: true, event: eventType ?? 'azure' };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -428,7 +428,7 @@ export function registerIntegrationRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const config = await integrationManager.getIntegration(request.params.id);
       if (config?.platform !== 'webhook') {
-        return reply.code(404).send({ error: 'Webhook integration not found' });
+        return sendError(reply, 404, 'Webhook integration not found');
       }
 
       const signature = request.headers['x-webhook-signature'] as string | undefined;
@@ -438,11 +438,11 @@ export function registerIntegrationRoutes(
         const { GenericWebhookIntegration } = await import('./webhook/adapter.js');
         const adapter = integrationManager.getAdapter(request.params.id);
         if (!adapter || !(adapter instanceof GenericWebhookIntegration)) {
-          return reply.code(400).send({ error: 'Webhook integration is not running' });
+          return sendError(reply, 400, 'Webhook integration is not running');
         }
 
         if (!adapter.verifyWebhook(body, signature ?? '')) {
-          return reply.code(401).send({ error: 'Invalid webhook signature' });
+          return sendError(reply, 401, 'Invalid webhook signature');
         }
 
         let parsed: Record<string, unknown> =
@@ -460,7 +460,7 @@ export function registerIntegrationRoutes(
         await adapter.handleInbound(parsed);
         return { received: true };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -495,7 +495,7 @@ export function registerIntegrationRoutes(
         reply: FastifyReply
       ) => {
         const rule = await webhookTransformStorage.getRule(request.params.id);
-        if (!rule) return reply.code(404).send({ error: 'Transform rule not found' });
+        if (!rule) return sendError(reply, 404, 'Transform rule not found');
         return { rule };
       }
     );
@@ -510,7 +510,7 @@ export function registerIntegrationRoutes(
           const rule = await webhookTransformStorage.createRule(request.body);
           return reply.code(201).send({ rule });
         } catch (err) {
-          return reply.code(400).send({ error: toErrorMessage(err) });
+          return sendError(reply, 400, toErrorMessage(err));
         }
       }
     );
@@ -522,7 +522,7 @@ export function registerIntegrationRoutes(
         reply: FastifyReply
       ) => {
         const rule = await webhookTransformStorage.updateRule(request.params.id, request.body);
-        if (!rule) return reply.code(404).send({ error: 'Transform rule not found' });
+        if (!rule) return sendError(reply, 404, 'Transform rule not found');
         return { rule };
       }
     );
@@ -534,7 +534,7 @@ export function registerIntegrationRoutes(
         reply: FastifyReply
       ) => {
         const deleted = await webhookTransformStorage.deleteRule(request.params.id);
-        if (!deleted) return reply.code(404).send({ error: 'Transform rule not found' });
+        if (!deleted) return sendError(reply, 404, 'Transform rule not found');
         return reply.code(204).send();
       }
     );
@@ -565,7 +565,7 @@ export function registerIntegrationRoutes(
         reply: FastifyReply
       ) => {
         const webhook = await outboundWebhookStorage.getWebhook(request.params.id);
-        if (!webhook) return reply.code(404).send({ error: 'Outbound webhook not found' });
+        if (!webhook) return sendError(reply, 404, 'Outbound webhook not found');
         return { webhook };
       }
     );
@@ -580,7 +580,7 @@ export function registerIntegrationRoutes(
           const webhook = await outboundWebhookStorage.createWebhook(request.body);
           return reply.code(201).send({ webhook });
         } catch (err) {
-          return reply.code(400).send({ error: toErrorMessage(err) });
+          return sendError(reply, 400, toErrorMessage(err));
         }
       }
     );
@@ -595,7 +595,7 @@ export function registerIntegrationRoutes(
           request.params.id,
           request.body
         );
-        if (!webhook) return reply.code(404).send({ error: 'Outbound webhook not found' });
+        if (!webhook) return sendError(reply, 404, 'Outbound webhook not found');
         return { webhook };
       }
     );
@@ -607,7 +607,7 @@ export function registerIntegrationRoutes(
         reply: FastifyReply
       ) => {
         const deleted = await outboundWebhookStorage.deleteWebhook(request.params.id);
-        if (!deleted) return reply.code(404).send({ error: 'Outbound webhook not found' });
+        if (!deleted) return sendError(reply, 404, 'Outbound webhook not found');
         return reply.code(204).send();
       }
     );

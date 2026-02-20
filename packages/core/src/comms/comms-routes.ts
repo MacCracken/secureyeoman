@@ -5,7 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AgentComms } from './agent-comms.js';
 import type { AgentIdentity, EncryptedMessage, MessagePayload } from './types.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface CommsRoutesOptions {
   agentComms: AgentComms;
@@ -34,7 +34,7 @@ export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptio
         await agentComms.addPeer(request.body);
         return reply.code(201).send({ message: 'Peer added' });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -44,7 +44,7 @@ export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptio
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const removed = await agentComms.removePeer(request.params.id);
       if (!removed) {
-        return reply.code(404).send({ error: 'Peer not found' });
+        return sendError(reply, 404, 'Peer not found');
       }
       return reply.code(204).send();
     }
@@ -59,7 +59,7 @@ export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptio
         const payload = await agentComms.decryptMessage(request.body);
         return { acknowledged: true, type: payload.type };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -77,7 +77,7 @@ export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptio
         const encrypted = await agentComms.encryptMessage(toAgentId, payload);
         return reply.code(201).send({ message: encrypted });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );

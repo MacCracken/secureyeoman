@@ -206,11 +206,23 @@ export class SubAgentStorage extends PgBaseStorage {
     return row ? profileFromRow(row) : null;
   }
 
-  async listProfiles(): Promise<AgentProfile[]> {
-    const rows = await this.queryMany<ProfileRow>(
-      `SELECT * FROM agents.profiles ORDER BY is_builtin DESC, name ASC`
+  async listProfiles(opts?: { limit?: number; offset?: number }): Promise<{ profiles: AgentProfile[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      `SELECT COUNT(*) as count FROM agents.profiles`
     );
-    return rows.map(profileFromRow);
+
+    const rows = await this.queryMany<ProfileRow>(
+      `SELECT * FROM agents.profiles ORDER BY is_builtin DESC, name ASC LIMIT $1 OFFSET $2`,
+      [limit, offset]
+    );
+
+    return {
+      profiles: rows.map(profileFromRow),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async createProfile(data: AgentProfileCreate): Promise<AgentProfile> {

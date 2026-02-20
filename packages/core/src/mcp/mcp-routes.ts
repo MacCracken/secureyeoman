@@ -9,7 +9,7 @@ import type { McpServer } from './server.js';
 import type { McpToolManifest } from '@secureyeoman/shared';
 import type { McpHealthMonitor } from './health-monitor.js';
 import type { McpCredentialManager } from './credential-manager.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface McpRoutesOptions {
   mcpStorage: McpStorage;
@@ -32,10 +32,14 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
   const { mcpStorage, mcpClient, mcpServer, healthMonitor, credentialManager } = opts;
 
   // List configured MCP servers
-  app.get('/api/v1/mcp/servers', async () => {
-    const servers = await mcpStorage.listServers();
-    return { servers, total: servers.length };
-  });
+  app.get(
+    '/api/v1/mcp/servers',
+    async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
+      const limit = request.query.limit ? Number(request.query.limit) : undefined;
+      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      return mcpStorage.listServers({ limit, offset });
+    }
+  );
 
   // Add (or upsert) an MCP server with optional tool manifest.
   // If a server with the same name already exists, update its tools and
@@ -83,7 +87,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
 
         return reply.code(statusCode).send({ server });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -100,14 +104,14 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     ) => {
       const server = await mcpStorage.getServer(request.params.id);
       if (!server) {
-        return reply.code(404).send({ error: 'MCP server not found' });
+        return sendError(reply, 404, 'MCP server not found');
       }
 
       const updated = await mcpStorage.updateServer(request.params.id, {
         enabled: request.body.enabled,
       });
       if (!updated) {
-        return reply.code(500).send({ error: 'Failed to update server' });
+        return sendError(reply, 500, 'Failed to update server');
       }
 
       if (!request.body.enabled) {
@@ -137,7 +141,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     ) => {
       const deleted = await mcpStorage.deleteServer(request.params.id);
       if (!deleted) {
-        return reply.code(404).send({ error: 'MCP server not found' });
+        return sendError(reply, 404, 'MCP server not found');
       }
       await mcpClient.deleteTools(request.params.id);
       return reply.code(204).send();
@@ -184,7 +188,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
             : await mcpClient.callTool(serverId, toolName, args ?? {});
         return { result };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -193,7 +197,8 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
   app.get('/api/v1/mcp/resources', async () => {
     const external = mcpClient.getAllResources();
     const exposed = mcpServer.getExposedResources();
-    return { resources: [...external, ...exposed] };
+    const resources = [...external, ...exposed];
+    return { resources, total: resources.length };
   });
 
   // Get MCP feature config (persisted in SQLite)
@@ -240,7 +245,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const health = await mcpStorage.getHealth(request.params.id);
       if (!health) {
-        return reply.code(404).send({ error: 'No health data for this server' });
+        return sendError(reply, 404, 'No health data for this server');
       }
       return health;
     }
@@ -251,13 +256,13 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     '/api/v1/mcp/servers/:id/health/check',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!healthMonitor) {
-        return reply.code(503).send({ error: 'Health monitor not available' });
+        return sendError(reply, 503, 'Health monitor not available');
       }
       try {
         const health = await healthMonitor.checkServer(request.params.id);
         return health;
       } catch (err) {
-        return reply.code(500).send({ error: toErrorMessage(err) });
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -270,7 +275,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const server = await mcpStorage.getServer(request.params.id);
       if (!server) {
-        return reply.code(404).send({ error: 'MCP server not found' });
+        return sendError(reply, 404, 'MCP server not found');
       }
       const keys = await mcpStorage.listCredentialKeys(request.params.id);
       return { keys };
@@ -288,11 +293,11 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       reply: FastifyReply
     ) => {
       if (!credentialManager) {
-        return reply.code(503).send({ error: 'Credential manager not available' });
+        return sendError(reply, 503, 'Credential manager not available');
       }
       const server = await mcpStorage.getServer(request.params.id);
       if (!server) {
-        return reply.code(404).send({ error: 'MCP server not found' });
+        return sendError(reply, 404, 'MCP server not found');
       }
       try {
         await credentialManager.storeCredential(
@@ -302,7 +307,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         );
         return { message: 'Credential stored' };
       } catch (err) {
-        return reply.code(500).send({ error: toErrorMessage(err) });
+        return sendError(reply, 500, toErrorMessage(err));
       }
     }
   );
@@ -318,7 +323,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     ) => {
       const deleted = await mcpStorage.deleteCredential(request.params.id, request.params.key);
       if (!deleted) {
-        return reply.code(404).send({ error: 'Credential not found' });
+        return sendError(reply, 404, 'Credential not found');
       }
       return reply.code(204).send();
     }

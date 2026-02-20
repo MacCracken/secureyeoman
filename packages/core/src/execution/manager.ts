@@ -49,7 +49,7 @@ export class CodeExecutionManager {
 
   async initialize(): Promise<void> {
     // Expire any sessions that outlived their timeout from a previous run
-    const sessions = await this.deps.storage.listSessions();
+    const { sessions } = await this.deps.storage.listSessions();
     const now = Date.now();
     for (const session of sessions) {
       if (session.status === 'active' && now - session.lastActivity > this.config.sessionTimeout) {
@@ -106,7 +106,7 @@ export class CodeExecutionManager {
 
     if (this.config.approvalPolicy === 'first-time') {
       // Check if this runtime has been used in any session before
-      const sessions = await this.deps.storage.listSessions();
+      const { sessions } = await this.deps.storage.listSessions();
       const hasUsedRuntime = sessions.some(
         (s) => s.runtime === request.runtime && s.status !== 'terminated'
       );
@@ -139,9 +139,8 @@ export class CodeExecutionManager {
       session = existing;
     } else {
       // Check concurrent session limit
-      const activeSessions = (await this.deps.storage.listSessions()).filter(
-        (s) => s.status === 'active'
-      );
+      const { sessions: allSessions } = await this.deps.storage.listSessions();
+      const activeSessions = allSessions.filter((s) => s.status === 'active');
       if (activeSessions.length >= this.config.maxConcurrent) {
         throw new Error(`Maximum concurrent sessions (${this.config.maxConcurrent}) reached`);
       }
@@ -222,9 +221,8 @@ export class CodeExecutionManager {
       );
     }
 
-    const activeSessions = (await this.deps.storage.listSessions()).filter(
-      (s) => s.status === 'active'
-    );
+    const { sessions: allSessions } = await this.deps.storage.listSessions();
+    const activeSessions = allSessions.filter((s) => s.status === 'active');
     if (activeSessions.length >= this.config.maxConcurrent) {
       throw new Error(`Maximum concurrent sessions (${this.config.maxConcurrent}) reached`);
     }
@@ -243,8 +241,8 @@ export class CodeExecutionManager {
     return this.deps.storage.getSession(id);
   }
 
-  async listSessions(): Promise<ExecutionSession[]> {
-    return this.deps.storage.listSessions();
+  async listSessions(opts?: { limit?: number; offset?: number }): Promise<{ sessions: ExecutionSession[]; total: number }> {
+    return this.deps.storage.listSessions(opts);
   }
 
   async terminateSession(id: string): Promise<boolean> {
@@ -332,7 +330,7 @@ export class CodeExecutionManager {
 
   private async expireStaleSessions(): Promise<void> {
     try {
-      const sessions = await this.deps.storage.listSessions();
+      const { sessions } = await this.deps.storage.listSessions();
       const now = Date.now();
       for (const session of sessions) {
         if (

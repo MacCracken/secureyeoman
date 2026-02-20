@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { MarketplaceManager } from './manager.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface MarketplaceRoutesOptions {
   marketplaceManager: MarketplaceManager;
@@ -38,7 +38,7 @@ export function registerMarketplaceRoutes(
     '/api/v1/marketplace/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const skill = await marketplaceManager.getSkill(request.params.id);
-      if (!skill) return reply.code(404).send({ error: 'Skill not found' });
+      if (!skill) return sendError(reply, 404, 'Skill not found');
       return { skill };
     }
   );
@@ -51,7 +51,7 @@ export function registerMarketplaceRoutes(
     ) => {
       const personalityId = request.body?.personalityId || undefined;
       if (!(await marketplaceManager.install(request.params.id, personalityId)))
-        return reply.code(404).send({ error: 'Skill not found' });
+        return sendError(reply, 404, 'Skill not found');
       return { message: 'Skill installed' };
     }
   );
@@ -60,7 +60,7 @@ export function registerMarketplaceRoutes(
     '/api/v1/marketplace/:id/uninstall',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!(await marketplaceManager.uninstall(request.params.id)))
-        return reply.code(404).send({ error: 'Skill not found' });
+        return sendError(reply, 404, 'Skill not found');
       return { message: 'Skill uninstalled' };
     }
   );
@@ -72,7 +72,7 @@ export function registerMarketplaceRoutes(
         const skill = await marketplaceManager.publish(request.body as any);
         return reply.code(201).send({ skill });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -81,7 +81,7 @@ export function registerMarketplaceRoutes(
     '/api/v1/marketplace/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!(await marketplaceManager.delete(request.params.id)))
-        return reply.code(404).send({ error: 'Skill not found' });
+        return sendError(reply, 404, 'Skill not found');
       return reply.code(204).send();
     }
   );
@@ -93,7 +93,7 @@ export function registerMarketplaceRoutes(
       const result = await marketplaceManager.syncFromCommunity();
       return result;
     } catch (err) {
-      return reply.code(500).send({ error: toErrorMessage(err) });
+      return sendError(reply, 500, toErrorMessage(err));
     }
   });
 
@@ -102,7 +102,7 @@ export function registerMarketplaceRoutes(
       const status = await marketplaceManager.getCommunityStatus();
       return status;
     } catch (err) {
-      return reply.code(500).send({ error: toErrorMessage(err) });
+      return sendError(reply, 500, toErrorMessage(err));
     }
   });
 }

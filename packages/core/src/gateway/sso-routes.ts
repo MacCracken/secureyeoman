@@ -13,7 +13,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SsoManager } from '../security/sso-manager.js';
 import type { SsoStorage } from '../security/sso-storage.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface SsoRoutesOptions {
   ssoManager: SsoManager;
@@ -51,7 +51,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         );
         return reply.redirect(url);
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -114,7 +114,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         });
         return reply.code(201).send({ provider: { ...provider, clientSecret: undefined } });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -123,7 +123,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
     '/api/v1/auth/sso/providers/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const provider = await ssoStorage.getIdentityProvider(request.params.id);
-      if (!provider) return reply.code(404).send({ error: 'Provider not found' });
+      if (!provider) return sendError(reply, 404, 'Provider not found');
       return { provider: { ...provider, clientSecret: undefined } };
     }
   );
@@ -136,10 +136,10 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
     ) => {
       try {
         const provider = await ssoStorage.updateIdentityProvider(request.params.id, request.body as any);
-        if (!provider) return reply.code(404).send({ error: 'Provider not found' });
+        if (!provider) return sendError(reply, 404, 'Provider not found');
         return { provider: { ...provider, clientSecret: undefined } };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -148,7 +148,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
     '/api/v1/auth/sso/providers/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!(await ssoStorage.deleteIdentityProvider(request.params.id)))
-        return reply.code(404).send({ error: 'Provider not found' });
+        return sendError(reply, 404, 'Provider not found');
       return { message: 'Provider deleted' };
     }
   );

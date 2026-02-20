@@ -4,6 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ProactiveManager } from './manager.js';
+import { sendError } from '../utils/errors.js';
 
 export function registerProactiveRoutes(
   app: FastifyInstance,
@@ -17,28 +18,28 @@ export function registerProactiveRoutes(
     '/api/v1/proactive/triggers',
     async (
       request: FastifyRequest<{
-        Querystring: { type?: string; enabled?: string };
+        Querystring: { type?: string; enabled?: string; limit?: string; offset?: string };
       }>
     ) => {
-      const filter: { type?: string; enabled?: boolean } = {};
+      const filter: { type?: string; enabled?: boolean; limit?: number; offset?: number } = {};
       if (request.query.type) filter.type = request.query.type;
       if (request.query.enabled !== undefined) filter.enabled = request.query.enabled === 'true';
-
-      const triggers = await proactiveManager.listTriggers(filter);
-      return { triggers };
+      if (request.query.limit) filter.limit = Number(request.query.limit);
+      if (request.query.offset) filter.offset = Number(request.query.offset);
+      return proactiveManager.listTriggers(filter);
     }
   );
 
   app.get('/api/v1/proactive/triggers/builtin', async () => {
     const triggers = proactiveManager.getBuiltinTriggers();
-    return { triggers };
+    return { triggers, total: triggers.length };
   });
 
   app.get(
     '/api/v1/proactive/triggers/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const trigger = await proactiveManager.getTrigger(request.params.id);
-      if (!trigger) return reply.code(404).send({ error: 'Trigger not found' });
+      if (!trigger) return sendError(reply, 404, 'Trigger not found');
       return trigger;
     }
   );
@@ -65,9 +66,7 @@ export function registerProactiveRoutes(
         const trigger = await proactiveManager.createTrigger(request.body as any);
         return reply.code(201).send(trigger);
       } catch (err) {
-        return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Failed to create trigger',
-        });
+        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to create trigger');
       }
     }
   );
@@ -82,7 +81,7 @@ export function registerProactiveRoutes(
       reply: FastifyReply
     ) => {
       const trigger = await proactiveManager.updateTrigger(request.params.id, request.body as any);
-      if (!trigger) return reply.code(404).send({ error: 'Trigger not found' });
+      if (!trigger) return sendError(reply, 404, 'Trigger not found');
       return trigger;
     }
   );
@@ -91,7 +90,7 @@ export function registerProactiveRoutes(
     '/api/v1/proactive/triggers/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const deleted = await proactiveManager.deleteTrigger(request.params.id);
-      if (!deleted) return reply.code(404).send({ error: 'Trigger not found' });
+      if (!deleted) return sendError(reply, 404, 'Trigger not found');
       return reply.code(204).send();
     }
   );
@@ -100,7 +99,7 @@ export function registerProactiveRoutes(
     '/api/v1/proactive/triggers/:id/enable',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const trigger = await proactiveManager.enableTrigger(request.params.id);
-      if (!trigger) return reply.code(404).send({ error: 'Trigger not found' });
+      if (!trigger) return sendError(reply, 404, 'Trigger not found');
       return trigger;
     }
   );
@@ -109,7 +108,7 @@ export function registerProactiveRoutes(
     '/api/v1/proactive/triggers/:id/disable',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const trigger = await proactiveManager.disableTrigger(request.params.id);
-      if (!trigger) return reply.code(404).send({ error: 'Trigger not found' });
+      if (!trigger) return sendError(reply, 404, 'Trigger not found');
       return trigger;
     }
   );
@@ -125,7 +124,7 @@ export function registerProactiveRoutes(
     '/api/v1/proactive/triggers/builtin/:id/enable',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const trigger = await proactiveManager.enableBuiltinTrigger(request.params.id);
-      if (!trigger) return reply.code(404).send({ error: 'Built-in trigger not found' });
+      if (!trigger) return sendError(reply, 404, 'Built-in trigger not found');
       return trigger;
     }
   );
@@ -180,7 +179,7 @@ export function registerProactiveRoutes(
     '/api/v1/proactive/patterns/:id/convert',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const trigger = await proactiveManager.convertPatternToTrigger(request.params.id);
-      if (!trigger) return reply.code(404).send({ error: 'Pattern not found' });
+      if (!trigger) return sendError(reply, 404, 'Pattern not found');
       return trigger;
     }
   );

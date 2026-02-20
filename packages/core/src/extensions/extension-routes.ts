@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ExtensionManager } from './manager.js';
 import type { HookPoint, HookSemantics } from './types.js';
+import { sendError } from '../utils/errors.js';
 
 export function registerExtensionRoutes(
   app: FastifyInstance,
@@ -58,7 +59,7 @@ export function registerExtensionRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const removed = await extensionManager.removeExtension(request.params.id);
       if (!removed) {
-        return reply.code(404).send({ error: 'Extension not found' });
+        return sendError(reply, 404, 'Extension not found');
       }
       return reply.code(204).send();
     }
@@ -192,7 +193,7 @@ export function registerExtensionRoutes(
         request.body
       );
       if (!updated) {
-        return reply.code(404).send({ error: 'Webhook not found' });
+        return sendError(reply, 404, 'Webhook not found');
       }
       return { webhook: updated };
     }
@@ -203,7 +204,7 @@ export function registerExtensionRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const removed = await extensionManager.removeWebhook(request.params.id);
       if (!removed) {
-        return reply.code(404).send({ error: 'Webhook not found' });
+        return sendError(reply, 404, 'Webhook not found');
       }
       return reply.code(204).send();
     }

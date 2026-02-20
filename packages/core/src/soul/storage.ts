@@ -304,11 +304,23 @@ export class SoulStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listPersonalities(): Promise<Personality[]> {
-    const rows = await this.queryMany<PersonalityRow>(
-      'SELECT * FROM soul.personalities ORDER BY created_at DESC'
+  async listPersonalities(opts?: { limit?: number; offset?: number }): Promise<{ personalities: Personality[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM soul.personalities'
     );
-    return rows.map(rowToPersonality);
+
+    const rows = await this.queryMany<PersonalityRow>(
+      'SELECT * FROM soul.personalities ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+
+    return {
+      personalities: rows.map(rowToPersonality),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async getPersonalityCount(): Promise<number> {
@@ -396,7 +408,7 @@ export class SoulStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listSkills(filter?: SkillFilter): Promise<Skill[]> {
+  async listSkills(filter?: SkillFilter & { limit?: number; offset?: number }): Promise<{ skills: Skill[]; total: number }> {
     let sql = 'SELECT * FROM soul.skills WHERE 1=1';
     const params: unknown[] = [];
     let idx = 1;
@@ -414,10 +426,19 @@ export class SoulStorage extends PgBaseStorage {
       params.push(filter.enabled);
     }
 
-    sql += ' ORDER BY usage_count DESC, created_at DESC';
+    const countSql = sql.replace('SELECT * FROM', 'SELECT COUNT(*) as count FROM');
+    const countResult = await this.queryOne<{ count: string }>(countSql, params);
 
-    const rows = await this.queryMany<SkillRow>(sql, params);
-    return rows.map(rowToSkill);
+    const limit = filter?.limit ?? 50;
+    const offset = filter?.offset ?? 0;
+
+    sql += ` ORDER BY usage_count DESC, created_at DESC LIMIT $${idx++} OFFSET $${idx++}`;
+
+    const rows = await this.queryMany<SkillRow>(sql, [...params, limit, offset]);
+    return {
+      skills: rows.map(rowToSkill),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 
   async getEnabledSkills(): Promise<Skill[]> {
@@ -546,8 +567,22 @@ export class SoulStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listUsers(): Promise<UserProfile[]> {
-    const rows = await this.queryMany<UserRow>('SELECT * FROM soul.users ORDER BY created_at DESC');
-    return rows.map(rowToUser);
+  async listUsers(opts?: { limit?: number; offset?: number }): Promise<{ users: UserProfile[]; total: number }> {
+    const limit = opts?.limit ?? 50;
+    const offset = opts?.offset ?? 0;
+
+    const countResult = await this.queryOne<{ count: string }>(
+      'SELECT COUNT(*) as count FROM soul.users'
+    );
+
+    const rows = await this.queryMany<UserRow>(
+      'SELECT * FROM soul.users ORDER BY created_at DESC LIMIT $1 OFFSET $2',
+      [limit, offset]
+    );
+
+    return {
+      users: rows.map(rowToUser),
+      total: parseInt(countResult?.count ?? '0', 10),
+    };
   }
 }

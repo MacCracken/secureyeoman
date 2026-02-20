@@ -200,8 +200,8 @@ export class SoulManager {
     await this.storage.deletePersonality(id);
   }
 
-  async listPersonalities(): Promise<Personality[]> {
-    return this.storage.listPersonalities();
+  async listPersonalities(opts?: { limit?: number; offset?: number }): Promise<{ personalities: Personality[]; total: number }> {
+    return this.storage.listPersonalities(opts);
   }
 
   // ── Skills (delegated to Brain when available) ────────────
@@ -253,19 +253,31 @@ export class SoulManager {
     await this.storage.updateSkill(id, { enabled: false });
   }
 
-  async listSkills(filter?: SkillFilter): Promise<Skill[]> {
-    const skills = this.brain
-      ? await this.brain.listSkills(filter)
-      : await this.storage.listSkills(filter);
+  async listSkills(filter?: SkillFilter & { limit?: number; offset?: number }): Promise<{ skills: Skill[]; total: number }> {
+    let skills: Skill[];
+    let total: number;
+
+    if (this.brain) {
+      const brainSkills = await this.brain.listSkills(filter);
+      skills = brainSkills;
+      total = brainSkills.length;
+    } else {
+      const result = await this.storage.listSkills(filter);
+      skills = result.skills;
+      total = result.total;
+    }
 
     const withPersonality = skills.filter((s) => s.personalityId);
-    if (withPersonality.length === 0) return skills;
+    if (withPersonality.length === 0) return { skills, total };
 
-    const personalities = await this.storage.listPersonalities();
+    const { personalities } = await this.storage.listPersonalities();
     const pMap = new Map(personalities.map((p) => [p.id, p.name]));
-    return skills.map((s) =>
-      s.personalityId ? { ...s, personalityName: pMap.get(s.personalityId) ?? null } : s
-    );
+    return {
+      skills: skills.map((s) =>
+        s.personalityId ? { ...s, personalityName: pMap.get(s.personalityId) ?? null } : s
+      ),
+      total,
+    };
   }
 
   async getSkill(id: string): Promise<Skill | null> {
@@ -330,8 +342,8 @@ export class SoulManager {
     return this.storage.deleteUser(id);
   }
 
-  async listUsers(): Promise<UserProfile[]> {
-    return this.storage.listUsers();
+  async listUsers(opts?: { limit?: number; offset?: number }): Promise<{ users: UserProfile[]; total: number }> {
+    return this.storage.listUsers(opts);
   }
 
   // ── Learning ────────────────────────────────────────────────

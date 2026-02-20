@@ -4,6 +4,7 @@
 
 import type { FastifyInstance } from 'fastify';
 import type { BrowserSessionStorage } from './storage.js';
+import { sendError } from '../utils/errors.js';
 
 export function registerBrowserRoutes(
   app: FastifyInstance,
@@ -26,7 +27,7 @@ export function registerBrowserRoutes(
   app.get('/api/v1/browser/sessions/:id', async (request, reply) => {
     const { id } = request.params as { id: string };
     const session = await browserSessionStorage.getSession(id);
-    if (!session) return reply.code(404).send({ error: 'Session not found' });
+    if (!session) return sendError(reply, 404, 'Session not found');
     return session;
   });
 
@@ -34,7 +35,7 @@ export function registerBrowserRoutes(
   app.post('/api/v1/browser/sessions/:id/close', async (request, reply) => {
     const { id } = request.params as { id: string };
     const session = await browserSessionStorage.closeSession(id);
-    if (!session) return reply.code(404).send({ error: 'Session not found' });
+    if (!session) return sendError(reply, 404, 'Session not found');
     return session;
   });
 

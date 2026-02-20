@@ -8,6 +8,7 @@ import type { AuthService } from '../security/auth.js';
 import { AuthError } from '../security/auth.js';
 import { generateSecureToken, sha256 } from '../utils/crypto.js';
 import type { OAuthTokenService } from './oauth-token-service.js';
+import { sendError } from '../utils/errors.js';
 
 export interface OAuthProvider {
   id: string;
@@ -396,7 +397,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
 
       const provider = oauthService.getProvider(providerId);
       if (!provider) {
-        return reply.code(400).send({ error: 'Unknown OAuth provider' });
+        return sendError(reply, 400, 'Unknown OAuth provider');
       }
 
       const redirectUri = getRedirectUri(providerId);
@@ -534,7 +535,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const { provider } = request.body ?? {};
       if (!provider) {
-        return reply.code(400).send({ error: 'Provider is required' });
+        return sendError(reply, 400, 'Provider is required');
       }
 
       return { message: `Disconnected from ${provider}` };
@@ -562,17 +563,17 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       const { connectionToken, displayName, enableRead, enableSend, labelFilter, labelName } = body;
 
       if (!connectionToken) {
-        return reply.code(400).send({ error: 'connectionToken is required' });
+        return sendError(reply, 400, 'connectionToken is required');
       }
 
       const pending = PENDING_GMAIL_TOKENS.get(connectionToken);
       if (!pending) {
-        return reply.code(404).send({ error: 'Token expired or invalid. Please reconnect.' });
+        return sendError(reply, 404, 'Token expired or invalid. Please reconnect.');
       }
 
       if (Date.now() - pending.createdAt > PENDING_TOKEN_EXPIRY_MS) {
         PENDING_GMAIL_TOKENS.delete(connectionToken);
-        return reply.code(410).send({ error: 'Token expired. Please reconnect.' });
+        return sendError(reply, 410, 'Token expired. Please reconnect.');
       }
 
       PENDING_GMAIL_TOKENS.delete(connectionToken);
@@ -602,7 +603,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
 
   app.get('/api/v1/auth/oauth/tokens', async (_request: FastifyRequest, reply: FastifyReply) => {
     if (!oauthTokenService) {
-      return reply.code(503).send({ error: 'OAuth token service not configured' });
+      return sendError(reply, 503, 'OAuth token service not configured');
     }
     const tokens = await oauthTokenService.listTokens();
     return { tokens, total: tokens.length };
@@ -612,11 +613,11 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
     '/api/v1/auth/oauth/tokens/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!oauthTokenService) {
-        return reply.code(503).send({ error: 'OAuth token service not configured' });
+        return sendError(reply, 503, 'OAuth token service not configured');
       }
       const deleted = await oauthTokenService.revokeToken(request.params.id);
       if (!deleted) {
-        return reply.code(404).send({ error: 'Token not found' });
+        return sendError(reply, 404, 'Token not found');
       }
       return { message: 'Token revoked' };
     }

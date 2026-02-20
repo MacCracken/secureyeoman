@@ -4,7 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SubAgentManager } from './manager.js';
-import { toErrorMessage } from '../utils/errors.js';
+import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export function registerAgentRoutes(
   app: FastifyInstance,
@@ -14,17 +14,21 @@ export function registerAgentRoutes(
 
   // ── Profile routes ──────────────────────────────────────────
 
-  app.get('/api/v1/agents/profiles', async () => {
-    const profiles = await subAgentManager.listProfiles();
-    return { profiles };
-  });
+  app.get(
+    '/api/v1/agents/profiles',
+    async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
+      const limit = request.query.limit ? Number(request.query.limit) : undefined;
+      const offset = request.query.offset ? Number(request.query.offset) : undefined;
+      return subAgentManager.listProfiles({ limit, offset });
+    }
+  );
 
   app.get(
     '/api/v1/agents/profiles/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const profile = await subAgentManager.getProfile(request.params.id);
       if (!profile) {
-        return reply.code(404).send({ error: 'Profile not found' });
+        return sendError(reply, 404, 'Profile not found');
       }
       return profile;
     }
@@ -69,7 +73,7 @@ export function registerAgentRoutes(
         const profile = await subAgentManager.createProfile(data);
         return reply.code(201).send({ profile });
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -92,7 +96,7 @@ export function registerAgentRoutes(
     ) => {
       const profile = await subAgentManager.updateProfile(request.params.id, request.body);
       if (!profile) {
-        return reply.code(404).send({ error: 'Profile not found' });
+        return sendError(reply, 404, 'Profile not found');
       }
       return { profile };
     }
@@ -104,14 +108,14 @@ export function registerAgentRoutes(
       // Check if it's a built-in profile
       const existing = await subAgentManager.getProfile(request.params.id);
       if (!existing) {
-        return reply.code(404).send({ error: 'Profile not found' });
+        return sendError(reply, 404, 'Profile not found');
       }
       if (existing.isBuiltin) {
-        return reply.code(403).send({ error: 'Cannot delete built-in profiles' });
+        return sendError(reply, 403, 'Cannot delete built-in profiles');
       }
       const deleted = await subAgentManager.deleteProfile(request.params.id);
       if (!deleted) {
-        return reply.code(500).send({ error: 'Failed to delete profile' });
+        return sendError(reply, 500, 'Failed to delete profile');
       }
       return reply.code(204).send();
     }
@@ -138,7 +142,7 @@ export function registerAgentRoutes(
         const result = await subAgentManager.delegate(request.body);
         return reply.code(201).send(result);
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
@@ -167,7 +171,7 @@ export function registerAgentRoutes(
 
   app.get('/api/v1/agents/delegations/active', async () => {
     const active = await subAgentManager.listActive();
-    return { delegations: active };
+    return { delegations: active, total: active.length };
   });
 
   app.get(
@@ -175,7 +179,7 @@ export function registerAgentRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const delegation = await subAgentManager.getDelegation(request.params.id);
       if (!delegation) {
-        return reply.code(404).send({ error: 'Delegation not found' });
+        return sendError(reply, 404, 'Delegation not found');
       }
       // Include tree for detail view
       const tree = await subAgentManager.getDelegationTree(request.params.id);
@@ -190,7 +194,7 @@ export function registerAgentRoutes(
         await subAgentManager.cancel(request.params.id);
         return { success: true };
       } catch (err) {
-        return reply.code(400).send({ error: toErrorMessage(err) });
+        return sendError(reply, 400, toErrorMessage(err));
       }
     }
   );
