@@ -4,16 +4,44 @@
 
 ## Prerequisites
 
-- Node.js 20 LTS or later
-- npm (project uses npm workspaces)
-- Git
 - API key for at least one AI provider (Anthropic, OpenAI, Google Gemini, OpenCode Zen, or Ollama)
+- For Tier 1 binary or source installs: PostgreSQL 16+
+- For source installs: Node.js 20 LTS, npm, Git
 
 ---
 
 ## Installation
 
-### Option 1: From Source (Recommended)
+### Option 1: Single Binary (Recommended)
+
+No Node.js, npm, or runtime required:
+
+```bash
+curl -fsSL https://secureyeoman.ai/install | bash
+secureyeoman init
+```
+
+Or download directly from [GitHub Releases](https://github.com/MacCracken/secureyeoman/releases):
+
+| Binary | Requires | Platform |
+|--------|----------|----------|
+| `secureyeoman-linux-x64` | PostgreSQL | Linux x64 |
+| `secureyeoman-linux-arm64` | PostgreSQL | Linux arm64 |
+| `secureyeoman-darwin-arm64` | PostgreSQL | macOS Apple Silicon |
+| `secureyeoman-lite-linux-x64` | Nothing (SQLite) | Linux x64 edge/embedded |
+| `secureyeoman-lite-linux-arm64` | Nothing (SQLite) | Linux arm64 edge/embedded |
+
+```bash
+# Verify checksum
+sha256sum -c SHA256SUMS
+
+# Start
+secureyeoman start
+```
+
+The API and dashboard are both available at http://localhost:18789.
+
+### Option 2: From Source
 
 ```bash
 git clone https://github.com/MacCracken/secureyeoman.git
@@ -28,9 +56,9 @@ cp .env.example .env
 npm run dev
 ```
 
-The dashboard will be available at http://localhost:3000 and the API at http://localhost:18789.
+The API and dashboard will be available at http://localhost:18789.
 
-### Option 2: Docker
+### Option 3: Docker
 
 ```bash
 git clone https://github.com/MacCracken/secureyeoman.git
@@ -38,37 +66,35 @@ cd secureyeoman
 cp .env.example .env
 # Edit .env with your configuration
 
-# Run with Docker Compose (core + dashboard)
+# Run with Docker Compose (core + PostgreSQL)
 docker compose up
 
 # Run with MCP service included
 docker compose --profile mcp up
 
-# Run everything (core + dashboard + mcp)
-docker compose --profile full up
+# Dashboard dev server (hot-reload Vite, for frontend development only)
+docker compose --profile dev up
 ```
 
-Docker Compose starts these services:
+Docker Compose services:
 
 | Service | Port | Profile | Description |
 |---------|------|---------|-------------|
-| `core` | 18789 | *(default)* | Gateway API + agent engine |
-| `dashboard` | 3000 | *(default)* | Vite dev server for the React dashboard |
+| `postgres` | 5432 | *(default)* | PostgreSQL with pgvector |
+| `core` | 18789 | *(default)* | Gateway API + agent engine + embedded dashboard |
 | `mcp` | 3001 | `mcp` / `full` | MCP protocol server (tools, resources, prompts) |
+| `dashboard-dev` | 3000 | `dev` | Vite dev server for frontend development |
 
-The core service runs as a non-root `secureyeoman` user with a persistent volume (`secureyeoman-data`) for SQLite databases. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token setup needed.
+The core service serves the dashboard SPA at `/` and the REST API at `/api/v1/`. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token setup needed.
 
-#### Manual Docker build
+#### Production Docker image (binary-based)
+
+For a production image, build the binary first (requires [Bun](https://bun.sh)):
 
 ```bash
+npm run build:binary          # produces dist/secureyeoman-linux-x64
 docker build -t secureyeoman .
-docker run -p 18789:18789 \
-  -e SECUREYEOMAN_SIGNING_KEY="your-32-char-signing-key" \
-  -e SECUREYEOMAN_TOKEN_SECRET="your-32-char-token-secret" \
-  -e SECUREYEOMAN_ENCRYPTION_KEY="your-32-char-encryption-key" \
-  -e SECUREYEOMAN_ADMIN_PASSWORD="your-32-char-admin-password" \
-  -e ANTHROPIC_API_KEY="sk-ant-..." \
-  secureyeoman
+docker run --env-file .env -p 18789:18789 secureyeoman
 ```
 
 ---
@@ -113,11 +139,9 @@ OLLAMA_BASE_URL="http://localhost:11434"
 ### Optional Variables
 
 ```bash
-PORT=18789              # Gateway port
+PORT=18789              # Gateway port (dashboard + API)
 HOST=127.0.0.1          # Gateway bind address
 LOG_LEVEL=info          # trace|debug|info|warn|error
-DASHBOARD_PORT=3000     # Dashboard dev server port
-DASHBOARD_HOST=127.0.0.1
 NODE_ENV=development
 ```
 

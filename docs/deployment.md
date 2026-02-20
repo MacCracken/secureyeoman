@@ -2,11 +2,109 @@
 
 ## Requirements
 
-- Node.js 20+ (LTS recommended)
 - 512MB+ RAM
 - 1GB+ disk space
+- PostgreSQL 16+ (Tier 1 / source installs) or nothing (Tier 2 SQLite `lite` binary)
 
-## Bare Metal
+---
+
+## Single Binary (Recommended)
+
+The fastest deployment path. No Node.js, npm, or build toolchain required on the target machine.
+
+### Install
+
+```bash
+# Automatic (detects OS/arch, downloads latest release)
+curl -fsSL https://secureyeoman.ai/install | bash
+
+# Or download manually from GitHub Releases and verify
+sha256sum -c SHA256SUMS
+chmod +x secureyeoman-linux-x64
+sudo mv secureyeoman-linux-x64 /usr/local/bin/secureyeoman
+```
+
+### Configure
+
+```bash
+export SECUREYEOMAN_TOKEN_SECRET="$(openssl rand -base64 32)"
+export SECUREYEOMAN_ADMIN_PASSWORD="your-strong-password-here"
+export SECUREYEOMAN_SIGNING_KEY="$(openssl rand -base64 32)"
+export SECUREYEOMAN_ENCRYPTION_KEY="$(openssl rand -base64 32)"
+
+# AI provider (at least one)
+export ANTHROPIC_API_KEY="sk-ant-..."
+
+# PostgreSQL (Tier 1 binaries; omit for Tier 2 lite to use auto SQLite)
+export DATABASE_URL="postgresql://secureyeoman:password@localhost:5432/secureyeoman"
+```
+
+### Run
+
+```bash
+secureyeoman start
+
+# MCP server (optional, separate process)
+secureyeoman mcp-server --transport streamable-http
+```
+
+### systemd Service
+
+```ini
+# /etc/systemd/system/secureyeoman.service
+[Unit]
+Description=SecureYeoman Agent
+After=network.target postgresql.service
+
+[Service]
+Type=simple
+User=secureyeoman
+Group=secureyeoman
+ExecStart=/usr/local/bin/secureyeoman start
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/etc/secureyeoman/env
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/home/secureyeoman/.secureyeoman
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```ini
+# /etc/systemd/system/secureyeoman-mcp.service (optional)
+[Unit]
+Description=SecureYeoman MCP Service
+After=secureyeoman.service
+Requires=secureyeoman.service
+
+[Service]
+Type=simple
+User=secureyeoman
+Group=secureyeoman
+ExecStart=/usr/local/bin/secureyeoman mcp-server
+Restart=on-failure
+RestartSec=5
+EnvironmentFile=/etc/secureyeoman/env
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable secureyeoman
+sudo systemctl start secureyeoman
+```
+
+---
+
+## From Source
 
 ### Install
 
@@ -20,162 +118,77 @@ npm run build
 ### Configure
 
 ```bash
-# Required environment variables
 export SECUREYEOMAN_TOKEN_SECRET="$(openssl rand -base64 32)"
 export SECUREYEOMAN_ADMIN_PASSWORD="your-strong-password-here"
 export SECUREYEOMAN_SIGNING_KEY="$(openssl rand -base64 32)"
 export SECUREYEOMAN_ENCRYPTION_KEY="$(openssl rand -base64 32)"
-
-# Optional: AI provider
 export ANTHROPIC_API_KEY="sk-ant-..."
-# Or: OPENAI_API_KEY, GOOGLE_API_KEY, OPENCODE_API_KEY
-
-# Optional: Customization
-export SECUREYEOMAN_GATEWAY_PORT=18789
-export SECUREYEOMAN_ENVIRONMENT=production
-export SECUREYEOMAN_LOG_LEVEL=info
 ```
 
 ### Run
 
 ```bash
 # Direct
-node packages/core/dist/cli.js
+node packages/core/dist/cli.js start
 
-# With systemd (see below)
-sudo systemctl start secureyeoman
-```
-
-### systemd Service
-
-```ini
-# /etc/systemd/system/secureyeoman.service
-[Unit]
-Description=SecureYeoman Agent
-After=network.target
-
-[Service]
-Type=simple
-User=secureyeoman
-Group=secureyeoman
-WorkingDirectory=/opt/secureyeoman
-ExecStart=/usr/bin/node packages/core/dist/cli.js
-Restart=on-failure
-RestartSec=5
-EnvironmentFile=/etc/secureyeoman/env
-
-# Security hardening
-NoNewPrivileges=yes
-ProtectSystem=strict
-ProtectHome=yes
-ReadWritePaths=/opt/secureyeoman/data /var/log/secureyeoman
-PrivateTmp=yes
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl enable secureyeoman
+# With systemd (update ExecStart to: node /opt/secureyeoman/packages/core/dist/cli.js start)
 sudo systemctl start secureyeoman
 ```
 
 ## Docker
 
-### Build
+Two Dockerfiles are provided:
+
+| File | Use | Build process |
+|------|-----|---------------|
+| `Dockerfile.dev` | Local development (`docker compose up`) | Self-contained Node.js multi-stage build |
+| `Dockerfile` | Production image | Requires pre-built binary (`npm run build:binary`) |
+
+### Development (docker compose up)
+
+`docker-compose.yml` uses `Dockerfile.dev` by default — no binary pre-build required:
 
 ```bash
-docker build -t secureyeoman:latest .
-```
-
-### Run
-
-```bash
-docker run -d \
-  --name secureyeoman \
-  -p 18789:18789 \
-  -v secureyeoman-data:/app/data \
-  -e SECUREYEOMAN_TOKEN_SECRET="$(openssl rand -base64 32)" \
-  -e SECUREYEOMAN_ADMIN_PASSWORD="your-password" \
-  -e SECUREYEOMAN_SIGNING_KEY="$(openssl rand -base64 32)" \
-  -e SECUREYEOMAN_ENCRYPTION_KEY="$(openssl rand -base64 32)" \
-  secureyeoman:latest
-```
-
-### Docker Compose
-
-```bash
-# Core + dashboard (default)
+# Core + PostgreSQL (dashboard served by core on port 18789)
 docker compose up -d
 
 # Include MCP service
 docker compose --profile mcp up -d
 
-# All services
-docker compose --profile full up -d
+# Dashboard hot-reload dev server (frontend development)
+docker compose --profile dev up -d
 ```
 
-The `docker-compose.yml` defines three services:
+Services:
 
 | Service | Port | Profile | Description |
 |---------|------|---------|-------------|
-| `core` | 18789 | *(default)* | Agent engine + REST API |
-| `dashboard` | 3000 | *(default)* | React dashboard (dev server) |
+| `postgres` | 5432 | *(default)* | PostgreSQL with pgvector |
+| `core` | 18789 | *(default)* | Agent engine + REST API + embedded dashboard |
 | `mcp` | 3001 | `mcp` / `full` | MCP protocol server |
+| `dashboard-dev` | 3000 | `dev` | Vite dev server for frontend development |
 
-The MCP service is opt-in via Docker Compose profiles. Set `MCP_ENABLED=true` in `.env` before starting it. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token configuration needed.
+### Production image (binary-based, ~80 MB)
 
-```yaml
-# Minimal docker-compose.yml (for reference)
-services:
-  secureyeoman:
-    build: .
-    ports:
-      - "18789:18789"
-    volumes:
-      - secureyeoman-data:/app/data
-    env_file: .env
-    restart: unless-stopped
+```bash
+# Requires Bun (https://bun.sh)
+npm run build:binary
 
-  mcp:
-    build: .
-    command: ["node", "packages/mcp/dist/cli.js"]
-    ports:
-      - "3001:3001"
-    env_file: .env
-    environment:
-      MCP_CORE_URL: "http://secureyeoman:18789"
-    depends_on:
-      secureyeoman:
-        condition: service_healthy
-    profiles: [mcp]
-    restart: unless-stopped
+docker build -t secureyeoman:latest .
 
-volumes:
-  secureyeoman-data:
+docker run -d \
+  --name secureyeoman \
+  -p 18789:18789 \
+  -v secureyeoman-data:/home/secureyeoman/.secureyeoman \
+  -e SECUREYEOMAN_TOKEN_SECRET="$(openssl rand -base64 32)" \
+  -e SECUREYEOMAN_ADMIN_PASSWORD="your-password" \
+  -e SECUREYEOMAN_SIGNING_KEY="$(openssl rand -base64 32)" \
+  -e SECUREYEOMAN_ENCRYPTION_KEY="$(openssl rand -base64 32)" \
+  -e DATABASE_URL="postgresql://..." \
+  secureyeoman:latest
 ```
 
-### systemd (MCP Service)
-
-If running the MCP service as a standalone systemd unit alongside core:
-
-```ini
-# /etc/systemd/system/secureyeoman-mcp.service
-[Unit]
-Description=SecureYeoman MCP Service
-After=secureyeoman.service
-Requires=secureyeoman.service
-
-[Service]
-Type=simple
-User=secureyeoman
-Group=secureyeoman
-WorkingDirectory=/opt/secureyeoman
-ExecStart=/usr/bin/node packages/mcp/dist/cli.js
-Restart=on-failure
-RestartSec=5
-EnvironmentFile=/etc/secureyeoman/env
+The MCP service is opt-in via Docker Compose profiles. Set `MCP_ENABLED=true` in `.env` before starting it. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token configuration needed.
 
 NoNewPrivileges=yes
 ProtectSystem=strict

@@ -2,6 +2,7 @@ node_modules
 .git
 .github
 dist
+!dist/secureyeoman-linux-x64
 *.db
 .env
 .env.*

@@ -34,7 +34,7 @@
 | 20 | SaaS ready | 2026.2.19 | Complete |
 | | **Release 2026.2.19** | **2026-02-19** | **Released** |
 | 21 | Onboarding & First Run | — | Pending |
-| 22 | Future Implementations | — | Pending |
+| 22 | Testing All the Things | — | Pending |
 
 ---
 
@@ -56,11 +56,44 @@
 
 ---
 
-## Phase 22: Future Implementations
+## Phase 22: Testing All the Things
 
 **Status**: Pending
 
-*Items in this phase are demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
+*Full-system quality pass. The goal is ruthless: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.*
+
+### Test Coverage Audit
+
+- [ ] **Coverage baseline** — Run `npm run test:coverage` across all packages; identify files below 80% coverage and add targeted tests
+- [ ] **Integration test gaps** — Audit `packages/core/src/__integration__/` for missing scenarios: multi-user auth flows, workspace member RBAC, SSO callback edge cases, binary sub-agent timeout/kill, mcp-bridge template errors
+- [ ] **Migration integrity** — Verify all 26 migrations apply cleanly on a fresh database and on a database upgraded from migration 001
+
+### Bug Hunt
+
+- [ ] **Auth & SSO** — Exercise the full OIDC flow end-to-end; test `auto_provision: false` rejection, expired state tokens, malformed callback params
+- [ ] **Workspace RBAC** — Verify workspace-scoped role enforcement; test member add/remove edge cases, default workspace bootstrap on fresh install
+- [ ] **Sub-agent execution** — Test `binary` agent timeout and kill path; test `mcp-bridge` with missing tool name, unreachable MCP server, template with no `{{task}}` variable
+- [ ] **Migration runner** — Confirm manifest fast-path correctly skips already-applied migrations; confirm re-run is idempotent
+- [ ] **SPA serving** — Confirm `/api/v1/*` routes are never intercepted by `setNotFoundHandler`; confirm non-existent assets return `index.html` not a 404 JSON
+- [ ] **Single binary smoke test** — Build all tier 1 + tier 2 targets; run `--version`, `health --json`, `config validate --json` against each binary
+- [ ] **Docker** — `docker compose up` cold-start with empty volumes; verify migrations run, default workspace created, healthcheck passes
+
+### Regression & Performance
+
+- [ ] **Regression suite** — Run existing 2100+ tests; fix any failures introduced by Phase 20–22 changes
+- [ ] **Memory baseline** — Confirm cold-start memory is still <300 MB after Phase 20 additions (SsoStorage, WorkspaceManager expansion, new routes)
+- [ ] **Startup time** — Confirm `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
+
+### Documentation QA
+
+- [ ] **ADR completeness** — Verify ADRs 070–073 are internally consistent with the shipped code (file names, method names, migration IDs)
+- [ ] **Getting-started walkthrough** — Follow `docs/guides/getting-started.md` on a clean machine; fix any step that fails or is out of date
+
+---
+
+## Future Features
+
+*Demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
 
 ### Encryption
 
@@ -70,15 +103,13 @@
 
 *Revisit once delegation trees and peer networks grow beyond a few dozen nodes and Dagre's static layout proves limiting.*
 
-- [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based layouts (layered, force, tree, orthogonal routing). ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre. Deferred from Phase 20.
+- [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based layouts (layered, force, tree, orthogonal routing). ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
 
 ### Marketplace Evolution
 
 *Revisit after community responds to the Phase 18 local-path-sync approach — see [ADR 063](../adr/063-community-skills-registry.md).*
 
-The current sync model (clone locally → sync on demand) is intentionally minimal. Once real-world usage patterns emerge, evolve the marketplace based on what the community actually needs:
-
-- [ ] **Git URL Fetch** — `POST /api/v1/marketplace/community/sync` accepts an optional `repoUrl` param; app clones or pulls from a git URL directly without the user managing a local clone. No manual `git pull` needed.
+- [ ] **Git URL Fetch** — `POST /api/v1/marketplace/community/sync` accepts an optional `repoUrl` param; clones or pulls from a git URL directly without the user managing a local clone.
 - [ ] **Scheduled Auto-Sync** — Optional cron-style background sync from the configured community repo (configurable interval, off by default)
 - [ ] **Hosted Discovery API** — A lightweight read-only API for browsing available community skills without cloning. Community repo publishes a generated `index.json` via CI.
 - [ ] **Cryptographic Skill Signing** — Authors sign skills with a keypair; SecureYeoman verifies signatures before installing. Reject unsigned skills in strict mode.
@@ -86,29 +117,22 @@ The current sync model (clone locally → sync on demand) is intentionally minim
 
 ### Real-time Collaboration
 
-*Revisit once Phase 20 multi-workspace/multi-user is live and usage data shows concurrent editing is a real pain point. Do not build until users ask for it.*
+*Revisit once multi-workspace/multi-user usage data shows concurrent editing is a real pain point.*
 
-- [ ] **Optimistic Locking (Phase 20 prerequisite)** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner. Build this in Phase 20 as the lightweight foundation.
+- [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
 - [ ] **Presence Indicators** — Show "Alice is editing this personality" to prevent concurrent edits at the UX level before investing in true merge semantics.
-- [ ] **CRDT Implementation** — Conflict-free Replicated Data Types (e.g. Yjs or Automerge) for concurrent editing of personality system prompts and skill instructions without conflicts. Only justified if presence indicators prove insufficient for observed usage patterns.
+- [ ] **CRDT Implementation** — Conflict-free Replicated Data Types (e.g. Yjs or Automerge) for concurrent editing of personality system prompts and skill instructions.
+
+### Platform
+
+- [ ] **Mobile app** — Native iOS/Android
+- [ ] **Cloud Managed Offering** — Hosted SaaS deployment
 
 ---
 
 ## Dependency Watch
 
-Tracked third-party dependencies with known issues that require upstream resolution before action can be taken. Check these whenever running `npm update` or when the relevant packages release a new version.
-
-| Dependency | Issue | Blocked By | Check When | ADR |
-|---|---|---|---|---|
-| `eslint` / `typescript-eslint` | `ajv@6.x` inside ESLint triggers GHSA-2g4f-4pwh-qvx6 (ReDoS, moderate). Dev-only, zero production exposure. Fix requires ESLint to internally upgrade to `ajv >= 8.18.0`. | ESLint 9.x hard-codes ajv 6 API — npm `overrides` breaks ESLint; `--force` downgrades typescript-eslint. | Any `eslint` or `typescript-eslint` release | [ADR 048](../adr/048-eslint-ajv-vulnerability-accepted-risk.md) |
-| MCP SDK — `SSEServerTransport` | `SSEServerTransport` deprecated in favour of `StreamableHTTPServerTransport`. Retained in `packages/mcp/src/transport/sse.ts` for legacy client compatibility; deprecation warnings suppressed. | Migration requires client-side transport compatibility verification. | MCP SDK releases | [ADR 026](../adr/026-mcp-service-package.md) |
-
----
-
-## Future Enhancements
-
-- Mobile app (native iOS/Android)
-- Cloud Managed Offering
+See [dependency-watch.md](dependency-watch.md) for tracked third-party dependencies with known issues requiring upstream resolution.
 
 ---
 
@@ -119,8 +143,9 @@ Tracked third-party dependencies with known issues that require upstream resolut
 - [Security Model](../security/security-model.md)
 - [Configuration Reference](../configuration.md)
 - [Getting Started Guide](../guides/getting-started.md)
+- [Dependency Watch](dependency-watch.md)
 - [Changelog](../../CHANGELOG.md)
 
 ---
 
-*Last updated: 2026-02-19 — Phase 20 complete (Workspace Management, SSO/OIDC, Sub-Agent Types, Single Binary)*
+*Last updated: 2026-02-19 — Phase 20 complete; Phase 22 renamed to Testing All the Things*
