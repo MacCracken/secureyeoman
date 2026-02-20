@@ -77,6 +77,32 @@ PostgreSQL runs outside Kubernetes (RDS, Cloud SQL, Azure Database) because:
 - Chart must be kept in sync with application changes
 - Network policies may need tuning for specific cloud providers
 
+## Phase 25 Corrections (2026-02-20)
+
+### Migration Race Condition — `replicaCount: 3`, No Init Container
+
+Discovered during the Phase 24/25 cold-start audit: `values-production.yaml` sets
+`core.replicaCount: 3` (and HPA `minReplicas: 3`), but the Helm chart has no migration
+init container or Postgres advisory lock. On a first deploy — or any deploy that introduces
+new migrations — all three core pods start simultaneously and each calls `runMigrations()`.
+
+The runner's fast-path returns immediately if the latest manifest ID is already in
+`schema_migrations`. But on first boot all three pods race through the per-entry loop in
+parallel. Each migration is `CREATE TABLE IF NOT EXISTS` / `CREATE INDEX IF NOT EXISTS`, so
+the DDL itself is safe, but the `INSERT INTO schema_migrations` record step is not — two pods
+can both pass the `SELECT id ... WHERE id = $1` check before either inserts, then both attempt
+the `INSERT`, and the second one fails with a unique-constraint violation on the primary key.
+
+**Status**: Open — tracked in roadmap Phase 25 "Helm Checks". Fix candidates:
+1. **Kubernetes Job pre-migration** — a `helm hook: pre-upgrade,pre-install` Job that runs
+   `secureyeoman migrate` before the Deployment rolls out. Simplest and recommended.
+2. **Postgres advisory lock** — wrap the per-entry loop in
+   `SELECT pg_try_advisory_lock(hashtext('schema_migrations'))` so only one pod runs migrations
+   at a time; others proceed once the lock is released.
+
+Until resolved, first-deploy to a multi-replica cluster should set `core.replicaCount: 1`,
+run the deploy, then scale back up.
+
 ## References
 
 - Helm chart: `deploy/helm/secureyeoman/`

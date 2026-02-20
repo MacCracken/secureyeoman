@@ -161,6 +161,14 @@ function loadEnvConfig(): PartialConfig {
     config.core = core as PartialConfig['core'];
   }
 
+  // Build logging settings
+  const logFormat = process.env.SECUREYEOMAN_LOG_FORMAT;
+  if (logFormat === 'json' || logFormat === 'pretty') {
+    config.logging = {
+      output: [{ type: 'stdout' as const, format: logFormat }],
+    } as PartialConfig['logging'];
+  }
+
   // Build gateway settings
   const gateway: Record<string, unknown> = {};
   if (process.env.SECUREYEOMAN_HOST) {

@@ -89,7 +89,18 @@ function createPinoOptions(config: LoggingConfig): LoggerOptions {
 }
 
 /**
- * Create transport configuration based on output settings
+ * Create transport configuration based on output settings.
+ *
+ * JSON stdout is intentionally NOT handled via a pino transport: pino's
+ * transport API spawns a worker thread (thread-stream) that dynamically
+ * requires modules at runtime.  In a Bun compiled standalone binary there
+ * are no node_modules, so any worker-based transport will throw
+ * "ModuleNotFound".  pino(options) without a transport writes JSON to stdout
+ * synchronously with no worker threads — that path is used when the only
+ * configured output is json-stdout.
+ *
+ * pretty-stdout still uses pino-pretty (requires the package at runtime).
+ * file outputs still use the pino/file transport.
  */
 function createTransport(
   config: LoggingConfig
@@ -108,13 +119,8 @@ function createTransport(
           },
           level: config.level,
         });
-      } else {
-        targets.push({
-          target: 'pino/file',
-          options: { destination: 1 }, // stdout
-          level: config.level,
-        });
       }
+      // json stdout: pino(options) writes JSON to fd 1 natively — no transport needed.
     } else if (output.type === 'file') {
       targets.push({
         target: 'pino/file',

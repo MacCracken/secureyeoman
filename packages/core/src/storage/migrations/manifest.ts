@@ -14,7 +14,21 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const __dirname = dirname(fileURLToPath(import.meta.url));
+// In a Bun compiled standalone binary, import.meta.url is set to the virtual
+// filesystem path of the binary itself (e.g. "file:///$bunfs/root/<binary-name>"),
+// not the source file's path. fileURLToPath would either throw or return the
+// wrong directory, so readFileSync would look in the virtual FS root instead
+// of the migrations source directory.
+//
+// When compiled, SQL files are shipped in a "migrations/" subdirectory
+// co-located with the binary (e.g. /usr/local/bin/migrations/ in Docker).
+// We detect the compiled context via the "/$bunfs/" substring (present in both
+// the raw virtual-FS form and the file:// URL form) and resolve from
+// the binary's real directory instead.
+const isBunBinary = import.meta.url.includes('/$bunfs/');
+const __dirname = isBunBinary
+  ? join(dirname(process.execPath), 'migrations')
+  : dirname(fileURLToPath(import.meta.url));
 
 function readSql(filename: string): string {
   return readFileSync(join(__dirname, filename), 'utf-8');

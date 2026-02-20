@@ -4,6 +4,92 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 24 (2026-02-20): Migration Integrity — Binary & Docker Production (Binary-Based)
+
+### Verified
+
+- **Binary — all 30 migrations apply on fresh Postgres** — Bun 1.3.9 compiled binary
+  (`npm run build:binary`) runs `secureyeoman start` against a fresh Postgres instance;
+  all 30 manifest entries applied without error; `health --json` returned
+  `{"status":"ok","database":true,"auditChain":true}`.
+
+- **Binary — fast-path on restart** — Second `secureyeoman start` against the already-migrated
+  database triggers the fast-path in `runner.ts` (latest manifest ID matches latest DB row →
+  immediate return); migration count remains 30; no duplicate inserts.
+
+- **Docker production (binary image) — all 30 migrations apply on fresh Postgres** —
+  `docker build` from `Dockerfile` (binary-based `debian:bookworm-slim` image); container
+  run against fresh Postgres applies all 30 migrations, creates default workspace, emits
+  JSON logs cleanly.
+
+- **Docker production (binary image) — idempotency on restart** — Second container run
+  against already-migrated database leaves `schema_migrations` count unchanged at 30 and
+  workspace count unchanged at 1.
+
+### Bugs Fixed
+
+- **`manifest.ts` — Bun binary detection used `.startsWith` instead of `.includes`** —
+  In Bun 1.3.9, `import.meta.url` inside a compiled standalone binary is a `file://` URL
+  (`file:///$bunfs/root/<binary-name>`), not a bare `/$bunfs/` path. The check
+  `import.meta.url.startsWith('/$bunfs/')` was always `false`; `fileURLToPath` then resolved
+  the virtual FS URL to `/$bunfs/root/` as `__dirname`; every `readFileSync` call threw
+  `ENOENT: /$bunfs/root/001_initial_schema.sql`. Fixed by changing to
+  `import.meta.url.includes('/$bunfs/')`.
+
+- **`.dockerignore` missing `!dist/migrations/` exception** — `dist/` was globally excluded;
+  only `!dist/secureyeoman-linux-x64` was whitelisted. `docker build` failed with
+  `"/dist/migrations": not found`. Fixed by adding `!dist/migrations/` to `.dockerignore`.
+
+- **pino transport worker threads crash in lean binary Docker image** — `pino`'s transport API
+  (`pino/file`, `pino-pretty`) spawns a `thread-stream` worker that dynamically `require()`s
+  modules at runtime. In the `debian:bookworm-slim` image there are no `node_modules`; the
+  worker threw `ModuleNotFound resolving "node_modules/thread-stream/lib/worker.js"`. Fixed by
+  having `createTransport()` return `undefined` for `json` stdout — `pino(options)` writes JSON
+  to fd 1 synchronously, no worker thread needed.
+
+- **No env-var override for log format** — There was no way to select JSON logging without a
+  YAML config file. Added `SECUREYEOMAN_LOG_FORMAT` env var to `config/loader.ts`
+  (`json` | `pretty`). The `Dockerfile` now sets `ENV SECUREYEOMAN_LOG_FORMAT=json`.
+
+### Files Changed
+
+- `packages/core/src/storage/migrations/manifest.ts` — `.startsWith` → `.includes` for Bun binary detection; updated comment explaining `file:///$bunfs/` URL format
+- `.dockerignore` — added `!dist/migrations/` exception
+- `.gitignore` — clarified `dist/` comment to mention `dist/migrations/`
+- `packages/core/src/logging/logger.ts` — JSON stdout bypasses worker-thread pino transport; added comment explaining why
+- `packages/core/src/config/loader.ts` — `SECUREYEOMAN_LOG_FORMAT` env-var support
+- `Dockerfile` — `ENV SECUREYEOMAN_LOG_FORMAT=json`; `COPY dist/migrations/ /usr/local/bin/migrations/`; updated dashboard comment
+- `scripts/build-binary.sh` — `mkdir dist/migrations && cp *.sql`; `--external` flags for playwright deps; `--assets` flag commented out with Bun version note
+
+---
+
+## Phase 25 (2026-02-20): Bug Fixes — Docker Cold-Start (production)
+
+### Verified
+
+- **All 30 migrations apply cleanly on a fresh database** — Cold-start (`docker compose down -v
+  && docker compose up`) against postgres + core (no profile) applied all 30 manifest entries
+  without error.
+
+- **Default workspace created** — `WorkspaceManager` logged `Default workspace created` with
+  a valid UUID on first boot against an empty database.
+
+- **Healthcheck passes** — `health --json` returned `{"status":"ok","version":"2026.2.19",
+  "checks":{"database":true,"auditChain":true}}`. Both containers reached Docker `healthy`
+  status within the configured `start_period`.
+
+- **No MCP or dashboard-dev services start** — Production profile (no `--profile` flag) starts
+  only `postgres` + `core`, confirming profile gating is correct.
+
+### Notes
+
+- The `core` service in `docker-compose.yml` uses `Dockerfile.dev` (Node.js multi-stage build)
+  for local docker compose in both dev and production profiles. The binary-based `Dockerfile`
+  (Bun-compiled single binary) is for GitHub release artifacts and is covered separately by
+  the "Single binary smoke test" item in Phase 25.
+
+---
+
 ## Phase 24 (2026-02-20): Migration Integrity — Docker Dev
 
 ### Verified
