@@ -4,6 +4,36 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 22 (complete): OWASP Top 10 Security Review (2026-02-20)
+
+### Security Fixes
+
+- **A01 — Broken Access Control (WebSocket fail-secure)** — WebSocket channel subscription handler now denies channel access when a client has no `role` set, rather than silently skipping the permission check. Prevents unauthenticated clients from subscribing to role-gated channels.
+- **A03 — Injection (terminal command hardening)** — Replaced the weak string-based blocklist in `terminal-routes.ts` with regex patterns that handle whitespace variation. Added a shell-metacharacter + sensitive-path layer that blocks injection sequences (`;`, `|`, `` ` ``, `$()`, `${}`) combined with paths under `/etc`, `/root`, `/boot`, `/proc`, `/sys`, `/dev`. Added a working-directory guard that rejects `exec` requests whose `cwd` points into sensitive system directories.
+- **A05 — Security Misconfiguration (error handler type safety)** — Fixed TypeScript strict error in the global `setErrorHandler`: `err` is typed as `unknown`, so accessing `.message` required a cast. Replaced with `(err as Error).message` to eliminate the compile error and retain the correct 5xx suppression.
+- **A10 — SSRF (server-side request forgery)** — Introduced `packages/core/src/utils/ssrf-guard.ts` with `isPrivateUrl()` / `assertPublicUrl()`. Blocks loopback (127/8, ::1), RFC 1918 (10/8, 172.16/12, 192.168/16), link-local / cloud metadata (169.254/16, fe80::/10), CGN (100.64/10), non-HTTP(S) schemes, and known localhost aliases. Applied at three SSRF-vulnerable call sites:
+  - `OutboundWebhookDispatcher.deliverWithRetry` — blocks delivery to private URLs even for already-stored webhooks
+  - `POST /api/v1/integrations/outbound-webhooks` — rejects webhook creation targeting private addresses
+  - `A2AManager.addPeer` — rejects peer registration targeting private addresses
+
+### Deferred to Phase 23 Backlog
+
+- **A04** — Proactive trigger approval gate for new action types (requires config schema changes)
+- **A07** — 10-minute expiry on pending 2FA secrets (currently stored indefinitely until consumed or user re-requests)
+- **A08** — Marketplace skill cryptographic signing/verification (requires author keypair infrastructure)
+- **A10 (partial)** — SSO redirect URI constructed from `x-forwarded-proto`/`host` headers; full fix requires per-provider redirect URI whitelist in config
+
+### Files Changed
+
+- `packages/core/src/gateway/server.ts` — WebSocket fail-secure; `(err as Error).message` cast
+- `packages/core/src/gateway/terminal-routes.ts` — regex blocklist, shell injection layer, cwd guard
+- `packages/core/src/utils/ssrf-guard.ts` — new: `isPrivateUrl()`, `assertPublicUrl()`
+- `packages/core/src/integrations/outbound-webhook-dispatcher.ts` — SSRF guard on delivery
+- `packages/core/src/integrations/integration-routes.ts` — SSRF guard on webhook creation
+- `packages/core/src/a2a/manager.ts` — SSRF guard on peer registration
+
+---
+
 ## Phase 22 (complete): API Consistency (2026-02-20)
 
 ### Changes
