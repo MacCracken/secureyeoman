@@ -4,13 +4,14 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ProactiveManager } from './manager.js';
+import type { HeartbeatLogStorage } from '../body/heartbeat-log-storage.js';
 import { sendError } from '../utils/errors.js';
 
 export function registerProactiveRoutes(
   app: FastifyInstance,
-  opts: { proactiveManager: ProactiveManager }
+  opts: { proactiveManager: ProactiveManager; logStorage?: HeartbeatLogStorage }
 ): void {
-  const { proactiveManager } = opts;
+  const { proactiveManager, logStorage } = opts;
 
   // ── Trigger routes ──────────────────────────────────────────────
 
@@ -189,4 +190,30 @@ export function registerProactiveRoutes(
   app.get('/api/v1/proactive/status', async () => {
     return proactiveManager.getStatus();
   });
+
+  // ── Heartbeat log route ─────────────────────────────────────────
+
+  app.get(
+    '/api/v1/proactive/heartbeat/log',
+    async (
+      request: FastifyRequest<{
+        Querystring: {
+          checkName?: string;
+          status?: string;
+          limit?: string;
+          offset?: string;
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      if (!logStorage) return sendError(reply, 503, 'Heartbeat log storage not available');
+      const { checkName, status, limit, offset } = request.query;
+      return logStorage.list({
+        checkName,
+        status: status as 'ok' | 'warning' | 'error' | undefined,
+        limit: limit ? Number(limit) : 20,
+        offset: offset ? Number(offset) : 0,
+      });
+    }
+  );
 }

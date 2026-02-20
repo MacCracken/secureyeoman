@@ -347,6 +347,17 @@ export interface HeartbeatTask {
   personalityName?: string | null;
 }
 
+export interface HeartbeatLogEntry {
+  id: string;
+  checkName: string;
+  personalityId: string | null;
+  ranAt: number;
+  status: 'ok' | 'warning' | 'error';
+  message: string;
+  durationMs: number;
+  errorDetail: string | null;
+}
+
 export interface HeartbeatStatus {
   running: boolean;
   enabled: boolean;

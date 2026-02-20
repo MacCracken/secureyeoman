@@ -924,4 +924,83 @@ describe('HeartbeatManager', () => {
       fetchSpy.mockRestore();
     });
   });
+
+  // ── Heartbeat log storage integration ────────────────────────────────────────
+  describe('heartbeat log storage', () => {
+    function mockLogStorage() {
+      return {
+        persist: vi.fn().mockResolvedValue({ id: 'log-id-1' }),
+        list: vi.fn().mockResolvedValue({ entries: [], total: 0 }),
+      };
+    }
+
+    it('persists a log entry for each check that runs', async () => {
+      const logStorage = mockLogStorage();
+      const config = defaultConfig({
+        checks: [
+          { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+          { name: 'memory_status', type: 'memory_status', enabled: true, intervalMs: 0, config: {} },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      await hb.beat();
+
+      expect(logStorage.persist).toHaveBeenCalledTimes(2);
+      expect(logStorage.persist).toHaveBeenCalledWith(
+        expect.objectContaining({
+          checkName: 'system_health',
+          status: expect.stringMatching(/^(ok|warning|error)$/),
+          durationMs: expect.any(Number),
+        })
+      );
+    });
+
+    it('persists error status and errorDetail when a check throws', async () => {
+      const logStorage = mockLogStorage();
+      const config = defaultConfig({
+        checks: [
+          { name: 'broken_check', type: 'custom', enabled: true, intervalMs: 0, config: {} },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      // Override runCheck to throw
+      (hb as any).runCheck = vi.fn().mockRejectedValue(new Error('Simulated failure'));
+
+      await hb.beat();
+
+      expect(logStorage.persist).toHaveBeenCalledTimes(1);
+      expect(logStorage.persist).toHaveBeenCalledWith(
+        expect.objectContaining({
+          checkName: 'broken_check',
+          status: 'error',
+          message: 'Simulated failure',
+          errorDetail: expect.stringContaining('Simulated failure'),
+        })
+      );
+    });
+
+    it('does not throw when logStorage.persist fails', async () => {
+      const logStorage = mockLogStorage();
+      logStorage.persist.mockRejectedValue(new Error('DB unavailable'));
+      const config = defaultConfig({
+        checks: [
+          { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+
+      // Should not throw — warns and continues
+      await expect(hb.beat()).resolves.toBeDefined();
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Failed to persist heartbeat log entry',
+        expect.objectContaining({ check: 'system_health' })
+      );
+    });
+
+    it('works normally without a logStorage (backward compat)', async () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      const result = await hb.beat();
+      expect(result.checks).toHaveLength(3);
+    });
+  });
 });

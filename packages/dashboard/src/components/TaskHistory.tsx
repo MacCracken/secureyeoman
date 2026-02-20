@@ -15,6 +15,8 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Filter,
   Download,
   Calendar,
@@ -23,9 +25,9 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
-import { fetchTasks, createTask, deleteTask, updateTask, fetchHeartbeatTasks } from '../api/client';
+import { fetchTasks, createTask, deleteTask, updateTask, fetchHeartbeatTasks, fetchHeartbeatLog } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
-import type { Task, HeartbeatTask } from '../types';
+import type { Task, HeartbeatTask, HeartbeatLogEntry } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
@@ -807,7 +809,28 @@ function TaskRow({
   );
 }
 
+const HEARTBEAT_STATUS_ICON: Record<'ok' | 'warning' | 'error', React.ReactNode> = {
+  ok: <CheckCircle className="w-4 h-4 text-success" />,
+  warning: <AlertTriangle className="w-4 h-4 text-warning" />,
+  error: <XCircle className="w-4 h-4 text-destructive" />,
+};
+
+const HEARTBEAT_STATUS_COLOR: Record<'ok' | 'warning' | 'error', string> = {
+  ok: 'text-success',
+  warning: 'text-warning',
+  error: 'text-destructive',
+};
+
 function HeartbeatTaskRow({ task }: { task: HeartbeatTask }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const { data: logData } = useQuery({
+    queryKey: ['heartbeat-log', task.name],
+    queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 10 }),
+    enabled: expanded,
+    staleTime: 30_000,
+  });
+
   const formatTime = (timestamp: number | null) => {
     if (!timestamp) return 'Never';
     const date = new Date(timestamp);
@@ -826,48 +849,139 @@ function HeartbeatTaskRow({ task }: { task: HeartbeatTask }) {
     return `${Math.floor(ms / 3600000)}h`;
   };
 
+  const formatDurationMs = (ms: number) => {
+    if (ms < 1000) return `${ms}ms`;
+    return `${(ms / 1000).toFixed(1)}s`;
+  };
+
+  // Use the most recent log entry's status as the last-result badge.
+  // Fall back to enabled/disabled when no log data is available yet.
+  const lastEntry: HeartbeatLogEntry | null = logData?.entries[0] ?? null;
+
   return (
-    <tr className="hover:bg-muted/30 transition-colors bg-muted/20">
-      <td className="px-2 py-3 font-mono text-xs hidden sm:table-cell text-muted-foreground">
-        heartbeat
-      </td>
-      <td className="px-2 py-3">
-        <div className="font-medium text-sm flex items-center gap-2">
-          {task.name}
-          <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-            Heartbeat
+    <>
+      <tr className="hover:bg-muted/30 transition-colors bg-muted/20">
+        <td className="px-2 py-3 font-mono text-xs hidden sm:table-cell text-muted-foreground">
+          heartbeat
+        </td>
+        <td className="px-2 py-3">
+          <div className="font-medium text-sm flex items-center gap-2">
+            {task.name}
+            <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
+              Heartbeat
+            </span>
+          </div>
+          <div className="text-xs text-muted-foreground">
+            Every {formatInterval(task.intervalMs || 60000)}
+          </div>
+        </td>
+        <td className="px-2 py-3 hidden md:table-cell">
+          <span className="px-1.5 py-0.5 text-xs bg-muted rounded">{task.type}</span>
+        </td>
+        <td className="px-2 py-3">
+          <button
+            onClick={() => setExpanded((e) => !e)}
+            className="flex items-center gap-1 hover:opacity-80 transition-opacity"
+            title="Toggle execution history"
+          >
+            <div className="flex items-center gap-1.5">
+              {lastEntry ? (
+                <>
+                  {HEARTBEAT_STATUS_ICON[lastEntry.status]}
+                  <span className={`text-xs ${HEARTBEAT_STATUS_COLOR[lastEntry.status]}`}>
+                    {lastEntry.status}
+                  </span>
+                </>
+              ) : (
+                <>
+                  {task.enabled ? (
+                    <CheckCircle className="w-4 h-4 text-success" />
+                  ) : (
+                    <XCircle className="w-4 h-4 text-muted-foreground" />
+                  )}
+                  <span
+                    className={`text-xs ${task.enabled ? 'text-success' : 'text-muted-foreground'}`}
+                  >
+                    {task.enabled ? 'Active' : 'Disabled'}
+                  </span>
+                </>
+              )}
+            </div>
+            {expanded ? (
+              <ChevronUp className="w-3 h-3 text-muted-foreground ml-1" />
+            ) : (
+              <ChevronDown className="w-3 h-3 text-muted-foreground ml-1" />
+            )}
+          </button>
+        </td>
+        <td className="px-2 py-3 font-mono text-xs hidden lg:table-cell text-muted-foreground">
+          {formatInterval(task.intervalMs || 60000)}
+        </td>
+        <td className="px-2 py-3 text-muted-foreground text-xs hidden sm:table-cell">
+          {formatTime(task.lastRunAt)}
+        </td>
+        <td className="px-2 py-3">
+          <span className="text-xs text-muted-foreground italic">
+            {task.personalityName ? `Managed by ${task.personalityName}` : 'Managed by Personality'}
           </span>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          Every {formatInterval(task.intervalMs || 60000)}
-        </div>
-      </td>
-      <td className="px-2 py-3 hidden md:table-cell">
-        <span className="px-1.5 py-0.5 text-xs bg-muted rounded">{task.type}</span>
-      </td>
-      <td className="px-2 py-3">
-        <div className="flex items-center gap-1.5">
-          {task.enabled ? (
-            <CheckCircle className="w-4 h-4 text-success" />
-          ) : (
-            <XCircle className="w-4 h-4 text-muted-foreground" />
-          )}
-          <span className={`text-xs ${task.enabled ? 'text-success' : 'text-muted-foreground'}`}>
-            {task.enabled ? 'Active' : 'Disabled'}
-          </span>
-        </div>
-      </td>
-      <td className="px-2 py-3 font-mono text-xs hidden lg:table-cell text-muted-foreground">
-        {formatInterval(task.intervalMs || 60000)}
-      </td>
-      <td className="px-2 py-3 text-muted-foreground text-xs hidden sm:table-cell">
-        {formatTime(task.lastRunAt)}
-      </td>
-      <td className="px-2 py-3">
-        <span className="text-xs text-muted-foreground italic">
-          {task.personalityName ? `Managed by ${task.personalityName}` : 'Managed by Personality'}
-        </span>
-      </td>
-    </tr>
+        </td>
+      </tr>
+      {expanded && (
+        <tr className="bg-muted/10">
+          <td colSpan={7} className="px-4 pb-3 pt-1">
+            <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
+              Recent Executions
+            </div>
+            {!logData ? (
+              <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Loading history…
+              </div>
+            ) : logData.entries.length === 0 ? (
+              <div className="text-xs text-muted-foreground py-1">No executions recorded yet.</div>
+            ) : (
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-muted-foreground">
+                    <th className="text-left pb-1 pr-4 font-normal">Status</th>
+                    <th className="text-left pb-1 pr-4 font-normal hidden sm:table-cell">Ran at</th>
+                    <th className="text-left pb-1 pr-4 font-normal hidden lg:table-cell">
+                      Duration
+                    </th>
+                    <th className="text-left pb-1 font-normal">Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logData.entries.map((entry) => (
+                    <tr key={entry.id} className="border-t border-border/30">
+                      <td className="py-1 pr-4">
+                        <div className="flex items-center gap-1">
+                          {HEARTBEAT_STATUS_ICON[entry.status]}
+                          <span className={HEARTBEAT_STATUS_COLOR[entry.status]}>
+                            {entry.status}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-1 pr-4 text-muted-foreground hidden sm:table-cell">
+                        {formatTime(entry.ranAt)}
+                      </td>
+                      <td className="py-1 pr-4 font-mono text-muted-foreground hidden lg:table-cell">
+                        {formatDurationMs(entry.durationMs)}
+                      </td>
+                      <td className="py-1 text-muted-foreground max-w-xs truncate">
+                        {entry.message}
+                        {entry.errorDetail && (
+                          <span className="text-destructive ml-1">({entry.errorDetail.split('\n')[0]})</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }

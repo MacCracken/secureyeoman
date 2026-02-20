@@ -14,6 +14,7 @@ vi.mock('../api/client', () => ({
   deleteTask: vi.fn(),
   updateTask: vi.fn(),
   fetchHeartbeatTasks: vi.fn(),
+  fetchHeartbeatLog: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -23,6 +24,7 @@ const mockCreateTask = vi.mocked(api.createTask);
 const mockUpdateTask = vi.mocked(api.updateTask);
 const mockDeleteTask = vi.mocked(api.deleteTask);
 const mockFetchHeartbeatTasks = vi.mocked(api.fetchHeartbeatTasks);
+const mockFetchHeartbeatLog = vi.mocked(api.fetchHeartbeatLog);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -52,6 +54,7 @@ describe('TaskHistory', () => {
     vi.resetAllMocks();
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
     mockFetchHeartbeatTasks.mockResolvedValue({ tasks: [] });
+    mockFetchHeartbeatLog.mockResolvedValue({ entries: [], total: 0 });
   });
 
   it('renders the Task History heading', async () => {
@@ -478,5 +481,128 @@ describe('TaskHistory', () => {
     await user.click(cancelButtons[cancelButtons.length - 1]);
 
     expect(screen.queryByText(/Are you sure you want to delete/)).not.toBeInTheDocument();
+  });
+
+  // ── Heartbeat status badge from log data ───────────────────────────────────
+
+  it('shows Active/Disabled when no log data is available yet', async () => {
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchHeartbeatTasks.mockResolvedValue({
+      tasks: [
+        {
+          name: 'system_health',
+          type: 'system_health',
+          enabled: true,
+          intervalMs: 300000,
+          lastRunAt: null,
+          config: {},
+        },
+      ],
+    });
+    // log not fetched until row is expanded — mock returns empty
+    mockFetchHeartbeatLog.mockResolvedValue({ entries: [], total: 0 });
+
+    renderComponent();
+
+    expect(await screen.findAllByText('system_health')).toBeTruthy();
+    // Before expanding, fall back to enabled/disabled badge
+    expect(screen.getByText('Active')).toBeInTheDocument();
+  });
+
+  it('shows last-result status badge after expanding the row and log loads', async () => {
+    const user = userEvent.setup();
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchHeartbeatTasks.mockResolvedValue({
+      tasks: [
+        {
+          name: 'system_health',
+          type: 'system_health',
+          enabled: true,
+          intervalMs: 300000,
+          lastRunAt: Date.now() - 5000,
+          config: {},
+        },
+      ],
+    });
+    mockFetchHeartbeatLog.mockResolvedValue({
+      entries: [
+        {
+          id: 'log-1',
+          checkName: 'system_health',
+          personalityId: null,
+          ranAt: Date.now() - 5000,
+          status: 'warning',
+          message: 'High memory usage: 850/900MB',
+          durationMs: 23,
+          errorDetail: null,
+        },
+      ],
+      total: 1,
+    });
+
+    renderComponent();
+    expect(await screen.findAllByText('system_health')).toBeTruthy();
+
+    // Click the status button to expand
+    const expandButton = screen.getByTitle('Toggle execution history');
+    await user.click(expandButton);
+
+    // Log entry should now be visible
+    expect(await screen.findByText('High memory usage: 850/900MB')).toBeInTheDocument();
+    expect(screen.getByText('Recent Executions')).toBeInTheDocument();
+    // warning status should appear (in the log table row)
+    expect(screen.getAllByText('warning').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('shows "No executions recorded yet" when log is empty after expanding', async () => {
+    const user = userEvent.setup();
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchHeartbeatTasks.mockResolvedValue({
+      tasks: [
+        {
+          name: 'memory_status',
+          type: 'memory_status',
+          enabled: false,
+          intervalMs: 600000,
+          lastRunAt: null,
+          config: {},
+        },
+      ],
+    });
+    mockFetchHeartbeatLog.mockResolvedValue({ entries: [], total: 0 });
+
+    renderComponent();
+    expect(await screen.findAllByText('memory_status')).toBeTruthy();
+
+    await user.click(screen.getByTitle('Toggle execution history'));
+
+    expect(await screen.findByText('No executions recorded yet.')).toBeInTheDocument();
+  });
+
+  it('calls fetchHeartbeatLog with the correct checkName when expanded', async () => {
+    const user = userEvent.setup();
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchHeartbeatTasks.mockResolvedValue({
+      tasks: [
+        {
+          name: 'log_anomalies',
+          type: 'log_anomalies',
+          enabled: true,
+          intervalMs: 300000,
+          lastRunAt: null,
+          config: {},
+        },
+      ],
+    });
+    mockFetchHeartbeatLog.mockResolvedValue({ entries: [], total: 0 });
+
+    renderComponent();
+    expect(await screen.findAllByText('log_anomalies')).toBeTruthy();
+
+    await user.click(screen.getByTitle('Toggle execution history'));
+
+    expect(mockFetchHeartbeatLog).toHaveBeenCalledWith(
+      expect.objectContaining({ checkName: 'log_anomalies', limit: 10 })
+    );
   });
 });
