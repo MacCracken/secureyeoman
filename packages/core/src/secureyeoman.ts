@@ -764,6 +764,9 @@ export class SecureYeoman {
         brainManager: this.brainManager ?? undefined,
         communityRepoPath:
           process.env['COMMUNITY_REPO_PATH'] ?? './community-skills',
+        allowCommunityGitFetch: this.config.security.allowCommunityGitFetch,
+        communityGitUrl:
+          this.config.security.communityGitUrl ?? process.env['COMMUNITY_GIT_URL'],
       });
       await this.marketplaceManager.seedBuiltinSkills();
       // Wire marketplace into soul so skill deletion keeps installed state in sync
@@ -1759,6 +1762,8 @@ export class SecureYeoman {
     allowAnomalyDetection?: boolean;
     sandboxGvisor?: boolean;
     sandboxWasm?: boolean;
+    allowCommunityGitFetch?: boolean;
+    communityGitUrl?: string;
   }): void {
     this.ensureInitialized();
 
@@ -1804,11 +1809,22 @@ export class SecureYeoman {
     if (updates.sandboxWasm !== undefined) {
       this.config!.security.sandboxWasm = updates.sandboxWasm;
     }
+    if (updates.allowCommunityGitFetch !== undefined) {
+      this.config!.security.allowCommunityGitFetch = updates.allowCommunityGitFetch;
+      this.marketplaceManager?.updatePolicy({
+        allowCommunityGitFetch: updates.allowCommunityGitFetch,
+      });
+    }
+    if (updates.communityGitUrl !== undefined) {
+      this.config!.security.communityGitUrl = updates.communityGitUrl;
+      this.marketplaceManager?.updatePolicy({ communityGitUrl: updates.communityGitUrl });
+    }
 
     this.logger?.info('Security policy updated', updates);
 
-    // Persist to database
-    void this.persistSecurityPolicyToDb(updates);
+    // Persist boolean toggles to database (string fields like communityGitUrl are excluded)
+    const { communityGitUrl: _url, ...booleanUpdates } = updates;
+    void this.persistSecurityPolicyToDb(booleanUpdates);
 
     void this.auditChain?.record({
       event: 'security_policy_changed',

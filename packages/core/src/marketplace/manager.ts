@@ -9,11 +9,14 @@ import { SkillCreateSchema } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
 import { MarketplaceStorage } from './storage.js';
+import { gitCloneOrPull } from './git-fetch.js';
 
 export interface MarketplaceManagerDeps {
   logger: SecureLogger;
   brainManager?: BrainManager;
   communityRepoPath?: string;
+  allowCommunityGitFetch?: boolean;
+  communityGitUrl?: string;
 }
 
 export interface CommunitySyncResult {
@@ -28,6 +31,8 @@ export class MarketplaceManager {
   private logger: SecureLogger;
   private brainManager?: BrainManager;
   private communityRepoPath?: string;
+  private allowCommunityGitFetch: boolean;
+  private communityGitUrl?: string;
   private lastSyncedAt?: number;
 
   constructor(storage: MarketplaceStorage, deps: MarketplaceManagerDeps) {
@@ -35,6 +40,17 @@ export class MarketplaceManager {
     this.logger = deps.logger;
     this.brainManager = deps.brainManager;
     this.communityRepoPath = deps.communityRepoPath;
+    this.allowCommunityGitFetch = deps.allowCommunityGitFetch ?? false;
+    this.communityGitUrl = deps.communityGitUrl;
+  }
+
+  updatePolicy(p: { allowCommunityGitFetch?: boolean; communityGitUrl?: string }): void {
+    if (p.allowCommunityGitFetch !== undefined) {
+      this.allowCommunityGitFetch = p.allowCommunityGitFetch;
+    }
+    if (p.communityGitUrl !== undefined) {
+      this.communityGitUrl = p.communityGitUrl;
+    }
   }
 
   async search(query?: string, category?: string, limit?: number, offset?: number, source?: string) {
@@ -161,12 +177,26 @@ export class MarketplaceManager {
   /**
    * Sync community skills from a local directory.
    * The directory should follow the structure: skills/<category>/<name>.json
-   * No network calls are made — the user is responsible for keeping the local
-   * path up to date (e.g. via git pull on a cloned community repo).
+   *
+   * When allowCommunityGitFetch is enabled and a repoUrl is provided (or communityGitUrl
+   * is configured), the repo is cloned or pulled before the local scan.
    */
-  async syncFromCommunity(localPath?: string): Promise<CommunitySyncResult> {
+  async syncFromCommunity(localPath?: string, repoUrl?: string): Promise<CommunitySyncResult> {
     const repoPath = localPath ?? this.communityRepoPath;
     const result: CommunitySyncResult = { added: 0, updated: 0, skipped: 0, errors: [] };
+
+    // Git fetch — only when policy allows and a git URL is available
+    const effectiveGitUrl = repoUrl ?? this.communityGitUrl;
+    if (this.allowCommunityGitFetch && effectiveGitUrl && repoPath) {
+      try {
+        await gitCloneOrPull(effectiveGitUrl, repoPath, this.logger);
+      } catch (err) {
+        result.errors.push(
+          `Git fetch failed: ${err instanceof Error ? err.message : String(err)}`
+        );
+        return result;
+      }
+    }
 
     if (!repoPath) {
       result.errors.push('No community repo path configured');
@@ -197,11 +227,29 @@ export class MarketplaceManager {
           continue;
         }
 
+        // Parse author: string or object (backward compat)
+        const rawAuthor = data.author;
+        let authorDisplay = 'community';
+        let authorInfo: MarketplaceSkill['authorInfo'];
+        if (typeof rawAuthor === 'string') {
+          authorDisplay = rawAuthor;
+        } else if (rawAuthor && typeof rawAuthor === 'object') {
+          const a = rawAuthor as Record<string, unknown>;
+          authorDisplay = typeof a['name'] === 'string' ? a['name'] : 'community';
+          authorInfo = {
+            name: authorDisplay,
+            github: typeof a['github'] === 'string' ? a['github'] : undefined,
+            website: typeof a['website'] === 'string' ? a['website'] : undefined,
+            license: typeof a['license'] === 'string' ? a['license'] : undefined,
+          };
+        }
+
         const skillData: Partial<MarketplaceSkill> = {
           name: data.name as string,
           description: typeof data.description === 'string' ? data.description : '',
           version: typeof data.version === 'string' ? data.version : '1.0.0',
-          author: typeof data.author === 'string' ? data.author : 'community',
+          author: authorDisplay,
+          authorInfo,
           category: typeof data.category === 'string' ? data.category : 'general',
           tags: Array.isArray(data.tags) ? (data.tags as string[]) : [],
           instructions: typeof data.instructions === 'string' ? data.instructions : '',

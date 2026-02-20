@@ -227,6 +227,10 @@ export const SecurityConfigSchema = z.object({
   sandboxGvisor: z.boolean().default(false),
   /** Enable WebAssembly-based isolation for code execution. Off by default. */
   sandboxWasm: z.boolean().default(false),
+  /** Allow git clone/pull from a URL during community skill sync. Off by default. */
+  allowCommunityGitFetch: z.boolean().default(false),
+  /** Default git URL for community skills repo when git fetch is enabled. */
+  communityGitUrl: z.string().optional(),
   secretBackend: z.enum(['auto', 'keyring', 'env', 'file']).default('auto'),
   rotation: z
     .object({
@@ -377,6 +381,7 @@ export const FallbackModelConfigSchema = z.object({
     'localai',
     'deepseek',
     'mistral',
+    'grok',
   ]),
   model: z.string(),
   apiKeyEnv: EnvVarRefSchema,
@@ -401,6 +406,7 @@ export const ModelConfigSchema = z.object({
       'localai',
       'deepseek',
       'mistral',
+      'grok',
     ])
     .default('anthropic'),
   model: z.string().default('claude-sonnet-4-20250514'),

@@ -169,7 +169,7 @@ describe('SoulStorage', () => {
       await storage.createPersonality(TEST_PERSONALITY);
       await storage.createPersonality({ ...TEST_PERSONALITY, name: 'Bot2' });
       const list = await storage.listPersonalities();
-      expect(list).toHaveLength(2);
+      expect(list.personalities).toHaveLength(2);
     });
 
     it('should count personalities', async () => {
@@ -305,9 +305,9 @@ describe('SoulStorage', () => {
         status: 'pending_approval',
       });
 
-      expect(await storage.listSkills()).toHaveLength(2);
-      expect(await storage.listSkills({ source: 'user' })).toHaveLength(1);
-      expect(await storage.listSkills({ status: 'pending_approval' })).toHaveLength(1);
+      expect((await storage.listSkills()).skills).toHaveLength(2);
+      expect((await storage.listSkills({ source: 'user' })).skills).toHaveLength(1);
+      expect((await storage.listSkills({ status: 'pending_approval' })).skills).toHaveLength(1);
     });
 
     it('should get enabled skills only', async () => {
@@ -448,9 +448,9 @@ describe('SoulManager', () => {
   describe('personality management', () => {
     it('should create, list, and delete personalities', async () => {
       const p = await manager.createPersonality(TEST_PERSONALITY);
-      expect(await manager.listPersonalities()).toHaveLength(1);
+      expect((await manager.listPersonalities()).personalities).toHaveLength(1);
       await manager.deletePersonality(p.id);
-      expect(await manager.listPersonalities()).toHaveLength(0);
+      expect((await manager.listPersonalities()).personalities).toHaveLength(0);
     });
 
     it('should prevent deleting the active personality', async () => {
@@ -471,7 +471,7 @@ describe('SoulManager', () => {
   describe('skill management', () => {
     it('should create and list skills', async () => {
       await manager.createSkill(TEST_SKILL);
-      expect(await manager.listSkills()).toHaveLength(1);
+      expect((await manager.listSkills()).skills).toHaveLength(1);
     });
 
     it('should enforce max skills limit', async () => {
@@ -494,7 +494,7 @@ describe('SoulManager', () => {
     it('should delete skills', async () => {
       const s = await manager.createSkill(TEST_SKILL);
       await manager.deleteSkill(s.id);
-      expect(await manager.listSkills()).toHaveLength(0);
+      expect((await manager.listSkills()).skills).toHaveLength(0);
     });
   });
 

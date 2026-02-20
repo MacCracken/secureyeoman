@@ -29,7 +29,7 @@ describe('DashboardStorage', () => {
   it('should list dashboards', async () => {
     await storage.create({ name: 'D1' });
     await storage.create({ name: 'D2' });
-    expect(await storage.list()).toHaveLength(2);
+    expect((await storage.list()).dashboards).toHaveLength(2);
   });
 
   it('should update a dashboard', async () => {
@@ -58,9 +58,9 @@ describe('DashboardManager', () => {
   it('should CRUD dashboards', async () => {
     const d = await manager.create({ name: 'Test' });
     expect(await manager.get(d.id)).toBeTruthy();
-    expect(await manager.list()).toHaveLength(1);
+    expect((await manager.list()).dashboards).toHaveLength(1);
     expect((await manager.update(d.id, { name: 'New' }))!.name).toBe('New');
     expect(await manager.delete(d.id)).toBe(true);
-    expect(await manager.list()).toHaveLength(0);
+    expect((await manager.list()).dashboards).toHaveLength(0);
   });
 });

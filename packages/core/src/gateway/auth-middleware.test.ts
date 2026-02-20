@@ -146,7 +146,7 @@ describe('Auth Middleware', () => {
     it('should return 401 for protected route without auth', async () => {
       const res = await app.inject({ method: 'GET', url: '/api/v1/metrics' });
       expect(res.statusCode).toBe(401);
-      expect(res.json().error).toMatch(/Missing authentication/i);
+      expect(res.json().message).toMatch(/Missing authentication/i);
     });
   });
 

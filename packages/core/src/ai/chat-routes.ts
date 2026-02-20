@@ -20,6 +20,7 @@ const PROVIDER_KEY_ENV: Record<string, string> = {
   deepseek: 'DEEPSEEK_API_KEY',
   mistral: 'MISTRAL_API_KEY',
   opencode: 'OPENCODE_API_KEY',
+  grok: 'XAI_API_KEY',
 };
 
 function resolvePersonalityFallbacks(

@@ -12,7 +12,7 @@ import type {
 
 const mockStorage = {
   ensureTables: vi.fn().mockResolvedValue(undefined),
-  listTriggers: vi.fn().mockResolvedValue([]),
+  listTriggers: vi.fn().mockResolvedValue({ triggers: [], total: 0 }),
   getTrigger: vi.fn().mockResolvedValue(null),
   createTrigger: vi.fn(),
   updateTrigger: vi.fn(),
@@ -116,7 +116,7 @@ describe('ProactiveManager', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStorage.listTriggers.mockResolvedValue([]);
+    mockStorage.listTriggers.mockResolvedValue({ triggers: [], total: 0 });
     mockStorage.listSuggestions.mockResolvedValue({ suggestions: [], total: 0 });
     mockPatternLearner.detectPatterns.mockResolvedValue([]);
     manager = new ProactiveManager(
@@ -142,7 +142,7 @@ describe('ProactiveManager', () => {
 
     it('wires up enabled schedule triggers returned from storage', async () => {
       const scheduleTrigger = makeTrigger({ type: 'schedule', enabled: true });
-      mockStorage.listTriggers.mockResolvedValueOnce([scheduleTrigger]);
+      mockStorage.listTriggers.mockResolvedValueOnce({ triggers: [scheduleTrigger], total: 1 });
       await manager.initialize();
       // No error = timer was set up correctly
     });
@@ -167,14 +167,15 @@ describe('ProactiveManager', () => {
   describe('listTriggers', () => {
     it('returns triggers from storage', async () => {
       const triggers = [makeTrigger()];
-      mockStorage.listTriggers.mockResolvedValue(triggers);
+      mockStorage.listTriggers.mockResolvedValue({ triggers, total: 1 });
 
       const result = await manager.listTriggers();
-      expect(result).toEqual(triggers);
+      expect(result.triggers).toEqual(triggers);
+      expect(result.total).toBe(1);
     });
 
     it('passes filter to storage', async () => {
-      mockStorage.listTriggers.mockResolvedValue([]);
+      mockStorage.listTriggers.mockResolvedValue({ triggers: [], total: 0 });
       await manager.listTriggers({ enabled: true, type: 'schedule' });
       expect(mockStorage.listTriggers).toHaveBeenCalledWith({ enabled: true, type: 'schedule' });
     });
@@ -220,7 +221,7 @@ describe('ProactiveManager', () => {
 
     it('throws when max trigger limit is reached', async () => {
       const triggers = Array.from({ length: 100 }, (_, i) => makeTrigger({ id: `t-${i}` }));
-      mockStorage.listTriggers.mockResolvedValue(triggers);
+      mockStorage.listTriggers.mockResolvedValue({ triggers, total: 100 });
 
       const triggerData: ProactiveTriggerCreate = {
         name: 'Over Limit',
@@ -240,7 +241,7 @@ describe('ProactiveManager', () => {
 
     it('wires schedule timer when trigger is enabled and type is schedule', async () => {
       const created = makeTrigger({ type: 'schedule', enabled: true });
-      mockStorage.listTriggers.mockResolvedValue([]);
+      mockStorage.listTriggers.mockResolvedValue({ triggers: [], total: 0 });
       mockStorage.createTrigger.mockResolvedValue(created);
 
       const triggerData: ProactiveTriggerCreate = {
@@ -300,7 +301,7 @@ describe('ProactiveManager', () => {
     it('unwires schedule timer before deleting', async () => {
       // Create a trigger with a schedule timer first
       const created = makeTrigger({ type: 'schedule', enabled: true });
-      mockStorage.listTriggers.mockResolvedValue([]);
+      mockStorage.listTriggers.mockResolvedValue({ triggers: [], total: 0 });
       mockStorage.createTrigger.mockResolvedValue(created);
 
       const triggerData: ProactiveTriggerCreate = {
@@ -688,7 +689,7 @@ describe('ProactiveManager', () => {
         limitPerDay: 1,
       };
       mockPatternLearner.convertToTrigger.mockReturnValue(triggerData);
-      mockStorage.listTriggers.mockResolvedValue([]);
+      mockStorage.listTriggers.mockResolvedValue({ triggers: [], total: 0 });
       const created = makeTrigger({ name: 'Pattern: Morning check-in' });
       mockStorage.createTrigger.mockResolvedValue(created);
 
@@ -703,10 +704,13 @@ describe('ProactiveManager', () => {
 
   describe('getStatus', () => {
     it('returns status with correct shape', async () => {
-      mockStorage.listTriggers.mockResolvedValue([
-        makeTrigger({ type: 'schedule', enabled: true }),
-        makeTrigger({ id: 'trigger-2', type: 'event', enabled: false }),
-      ]);
+      mockStorage.listTriggers.mockResolvedValue({
+        triggers: [
+          makeTrigger({ type: 'schedule', enabled: true }),
+          makeTrigger({ id: 'trigger-2', type: 'event', enabled: false }),
+        ],
+        total: 2,
+      });
       mockStorage.listSuggestions.mockResolvedValue({ suggestions: [], total: 3 });
       mockPatternLearner.detectPatterns.mockResolvedValue([{ id: 'p1' }, { id: 'p2' }]);
 
@@ -734,7 +738,7 @@ describe('ProactiveManager', () => {
   describe('schedule trigger firing', () => {
     it('only wires schedule type triggers (not event type)', async () => {
       const eventTrigger = makeTrigger({ type: 'event', enabled: true });
-      mockStorage.listTriggers.mockResolvedValueOnce([eventTrigger]);
+      mockStorage.listTriggers.mockResolvedValueOnce({ triggers: [eventTrigger], total: 1 });
       await manager.initialize();
 
       // An event trigger should not create schedule timers
@@ -778,7 +782,7 @@ describe('ProactiveManager', () => {
   describe('close', () => {
     it('clears schedule timers and sets initialized to false', async () => {
       const scheduleTrigger = makeTrigger({ type: 'schedule', enabled: true });
-      mockStorage.listTriggers.mockResolvedValueOnce([scheduleTrigger]);
+      mockStorage.listTriggers.mockResolvedValueOnce({ triggers: [scheduleTrigger], total: 1 });
       await manager.initialize();
 
       manager.close();

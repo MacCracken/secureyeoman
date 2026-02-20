@@ -56,7 +56,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 - **Prioritizes Security**: Enterprise-grade RBAC, encryption, sandboxing, and audit trails
 - **Respects Privacy**: Local-first architecture with data that never leaves your system
 - **Provides Observability**: Every action is logged with cryptographic integrity verification
-- **Offers Flexibility**: Multi-provider AI support (Anthropic, OpenAI, Gemini, Ollama, DeepSeek, OpenCode Zen)
+- **Offers Flexibility**: Multi-provider AI support (Anthropic, OpenAI, Gemini, Ollama, DeepSeek, OpenCode Zen, Mistral, x.ai Grok)
 - **Learns and Adapts**: Editable personality, learnable skills, and a marketplace for sharing them
 
 ---
@@ -67,7 +67,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 |----------|----------|
 | **Security** | RBAC (Admin/Operator/Auditor/Viewer), JWT + API key auth, mTLS, AES-256-GCM encryption at rest, sandboxed execution (Landlock/macOS sandbox), rate limiting (per-user, per-IP, global), HTTP security headers (HSTS, CSP, X-Frame-Options), CORS policy enforcement |
 | **Observability** | Cryptographic audit trails (HMAC-SHA256 chain), Prometheus metrics, Grafana dashboards, structured JSONL log rotation, audit retention enforcement, audit export |
-| **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama, LM Studio, LocalAI (local), OpenCode Zen, DeepSeek, Mistral; automatic fallback chains on rate limits/outages; dynamic model discovery |
+| **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama, LM Studio, LocalAI (local), OpenCode Zen, DeepSeek, Mistral, x.ai Grok; automatic fallback chains on rate limits/outages; dynamic model discovery |
 | **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); overview with stat cards (tasks, heartbeat, audit, memory) and services status panel (core, Postgres, audit chain, MCP); system flow graph (ReactFlow) with live connection edges; task history, security events, resource monitor, personality editor (Brain section shows associated skills with direct edit navigation), skills manager, code editor (Monaco), notification & retention settings; **WebGL graph visualization** (Sigma.js + graphology) with pluggable layout algorithms — ForceAtlas2 for hub-and-spoke peer networks, Dagre hierarchical layout for delegation trees and DAGs; **rich chat rendering** — assistant messages rendered as full Markdown with syntax-highlighted code (Prism, dark/light theme-aware), interactive Mermaid diagrams, KaTeX math expressions, GitHub-style alert callouts, task list checkboxes, and styled tables |
 | **Agent Architecture** | Soul (identity/archetypes/personality), Spirit (passions/inspirations/pains), Brain (memory/knowledge/skills with decay & pruning, vector semantic search via FAISS/Qdrant/ChromaDB, LLM-powered memory consolidation), Body (heartbeat/vital signs/screen capture, per-personality capabilities: vision, auditory, vocalization, limb movement, haptic) |
 | **Cognitive Architecture** | Vector semantic memory (local SentenceTransformers + OpenAI/Gemini API embeddings), FAISS, Qdrant, and ChromaDB vector backends, LLM-powered memory consolidation with on-save dedup and scheduled deep analysis, 3-tier progressive history compression (message → topic → bulk) with AI summarization |
@@ -422,7 +422,30 @@ curl "http://localhost:18789/api/v1/marketplace?source=community" \
 
 Or use the Dashboard → Skills → **Community** tab — includes a Sync button, per-personality install, and live sync results.
 
-**To use the full community repo** (more skills, community contributions):
+**Git URL Fetch (optional)** — The sync endpoint can clone or pull a git repository directly,
+eliminating the need to manage a local clone manually. Enable the security policy toggle first:
+
+```bash
+# Enable git fetch (admin only)
+secureyeoman policy set allowCommunityGitFetch true
+
+# Sync directly from the official community repo (no manual clone needed)
+curl -X POST http://localhost:18789/api/v1/marketplace/community/sync \
+  -H "Authorization: Bearer $TOKEN"
+
+# Or sync from a custom repo URL
+curl -X POST http://localhost:18789/api/v1/marketplace/community/sync \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"repoUrl": "https://github.com/MyOrg/my-skills-repo"}'
+```
+
+Only `https://` and `file://` URLs are accepted. The policy is **OFF by default** for security.
+Set `COMMUNITY_GIT_URL` in `.env` (or via policy) to configure the default URL. See
+[COMMUNITY_IMPROVEMENTS.md](COMMUNITY_IMPROVEMENTS.md) for the full security model and developer
+workflow.
+
+**To use a pre-cloned local path** (original method, still supported):
 
 ```bash
 git clone https://github.com/MacCracken/secureyeoman-community-skills.git
@@ -431,6 +454,34 @@ COMMUNITY_REPO_PATH=/path/to/secureyeoman-community-skills
 ```
 
 Community skills always install **per-personality** — select which personality gets the skill before installing.
+
+---
+
+## Usage Nuances
+
+### AI Provider Authentication — Use API Keys, Not OAuth
+
+> [!WARNING]
+> **Never use OAuth tokens, session cookies, or credentials from Claude.ai, ChatGPT, or any other
+> AI provider's consumer product.** This violates every major provider's Terms of Service and can
+> result in account suspension or permanent bans.
+
+**Anthropic enforcement (effective January 9, 2026):** OAuth tokens from Free, Pro, and Max Claude
+accounts are blocked server-side from use in third-party applications. Anthropic documented this
+policy formally on February 19, 2026. Real-world account suspensions have been reported — including
+a case from the OpenCode project where a user's Max account was banned after the tool used an OAuth
+token to call the API.
+
+**Always connect AI providers using official API keys:**
+
+```bash
+# .env — correct approach
+ANTHROPIC_API_KEY=sk-ant-api03-...   # from console.anthropic.com
+OPENAI_API_KEY=sk-...               # from platform.openai.com/api-keys
+GEMINI_API_KEY=AIzaSy...            # from aistudio.google.com/app/apikey
+```
+
+See the full guide: [AI Provider API Keys](docs/guides/ai-provider-api-keys.md)
 
 ---
 
@@ -542,6 +593,7 @@ This updates all `package.json` files in the monorepo. The core server reads its
 | **Deployment** | [Deployment Guide](docs/deployment.md) |
 | **Kubernetes** | [Kubernetes Deployment Guide](docs/guides/kubernetes-deployment.md) |
 | **Integrations** | [Integration Setup](docs/guides/integrations.md) |
+| **AI Provider Keys** | [AI Provider API Keys](docs/guides/ai-provider-api-keys.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
 | **Architecture Decisions** | [ADRs](docs/adr/) (75 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |

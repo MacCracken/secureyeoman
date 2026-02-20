@@ -35,11 +35,29 @@
 | 21 | Onboarding | 2026.2.19 | Complete |
 | 22 | Major Audit | 2026.2.19 | Complete |
 | | **Release 2026.2.19** | **2026-02-19** | **Released** |
-| 23 | Testing All the Things | — | Pending |
+| 23 | Community Marketplace Improvements | 2026.2.20 | Complete |
+| 24 | Testing All the Things | — | Pending |
 
 ---
 
-## Phase 23: Testing All the Things
+## Phase 23: Community Marketplace Improvements
+
+**Status**: Complete (2026-02-20)
+
+### Delivered
+
+- [x] **Rich Author Metadata** — Structured `authorInfo` object (name/github/website/license) with full backward compat for string-only skill files. DB migration 027.
+- [x] **Git URL Fetch** — `POST /community/sync` accepts `repoUrl`; policy-gated `allowCommunityGitFetch` (default OFF); uses `execFile` for injection safety; `https://` and `file://` only.
+- [x] **`communityGitUrl` policy field** + `COMMUNITY_GIT_URL` env var.
+- [x] **CLI flag** — `secureyeoman policy set allowCommunityGitFetch true`.
+- [x] **JSON Schema** — `community-skills/schema/skill.schema.json` for editor validation.
+- [x] **11 bundled skill files** updated to object author form.
+- [x] **Tests** — author metadata round-trip, git fetch mocked, `validateGitUrl` unit tests.
+- [x] **ADR 076 + ADR 077**, `COMMUNITY_IMPROVEMENTS.md`, `CONTRIBUTING.md` community skills section.
+
+---
+
+## Phase 24: Testing All the Things
 
 **Status**: Pending
 
@@ -49,7 +67,7 @@
 
 - [ ] **Coverage baseline** — Run `npm run test:coverage` across all packages; add targeted tests for any file below 80%
 - [ ] **Integration test gaps** — Audit `packages/core/src/__integration__/` for missing scenarios: multi-user auth flows, workspace member RBAC, SSO callback edge cases, binary sub-agent timeout/kill, mcp-bridge template errors
-- [ ] **Migration integrity** — Verify all 26 migrations apply cleanly on a fresh database and idempotently on an already-migrated one
+- [ ] **Migration integrity** — Verify all 27 migrations apply cleanly on a fresh database and idempotently on an already-migrated one
 
 ### Bug Hunt
 
@@ -126,4 +144,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-20 — Phase 22 fully complete (OWASP Top 10 review + API consistency); Phase 23 → Testing All the Things*
+*Last updated: 2026-02-20 — Phase 22 fully complete (OWASP Top 10 review + API consistency); Phase 23 → Testing All the Things. x.ai Grok added as 10th AI provider (ADR 076).*

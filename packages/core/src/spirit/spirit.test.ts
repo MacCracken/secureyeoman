@@ -135,8 +135,8 @@ describe('SpiritStorage', () => {
       await storage.createPassion({ ...TEST_PASSION, name: 'Low', intensity: 0.1 });
       await storage.createPassion({ ...TEST_PASSION, name: 'High', intensity: 0.9 });
       const list = await storage.listPassions();
-      expect(list).toHaveLength(2);
-      expect(list[0].name).toBe('High');
+      expect(list.passions).toHaveLength(2);
+      expect(list.passions[0].name).toBe('High');
     });
 
     it('should get active passions only', async () => {
@@ -202,8 +202,8 @@ describe('SpiritStorage', () => {
       await storage.createInspiration({ ...TEST_INSPIRATION, source: 'Low', impact: 0.1 });
       await storage.createInspiration({ ...TEST_INSPIRATION, source: 'High', impact: 0.9 });
       const list = await storage.listInspirations();
-      expect(list).toHaveLength(2);
-      expect(list[0].source).toBe('High');
+      expect(list.inspirations).toHaveLength(2);
+      expect(list.inspirations[0].source).toBe('High');
     });
 
     it('should get active inspirations only', async () => {
@@ -266,8 +266,8 @@ describe('SpiritStorage', () => {
       await storage.createPain({ ...TEST_PAIN, trigger: 'Low', severity: 0.1 });
       await storage.createPain({ ...TEST_PAIN, trigger: 'High', severity: 0.9 });
       const list = await storage.listPains();
-      expect(list).toHaveLength(2);
-      expect(list[0].trigger).toBe('High');
+      expect(list.pains).toHaveLength(2);
+      expect(list.pains[0].trigger).toBe('High');
     });
 
     it('should get active pains only', async () => {
@@ -328,7 +328,7 @@ describe('SpiritManager', () => {
   describe('passion management', () => {
     it('should create and list passions', async () => {
       await manager.createPassion(TEST_PASSION);
-      expect(await manager.listPassions()).toHaveLength(1);
+      expect((await manager.listPassions()).passions).toHaveLength(1);
     });
 
     it('should enforce max passions limit', async () => {
@@ -351,14 +351,14 @@ describe('SpiritManager', () => {
       const updated = await manager.updatePassion(p.id, { name: 'Updated' });
       expect(updated.name).toBe('Updated');
       expect(await manager.deletePassion(p.id)).toBe(true);
-      expect(await manager.listPassions()).toHaveLength(0);
+      expect((await manager.listPassions()).passions).toHaveLength(0);
     });
   });
 
   describe('inspiration management', () => {
     it('should create and list inspirations', async () => {
       await manager.createInspiration(TEST_INSPIRATION);
-      expect(await manager.listInspirations()).toHaveLength(1);
+      expect((await manager.listInspirations()).inspirations).toHaveLength(1);
     });
 
     it('should enforce max inspirations limit', async () => {
@@ -381,14 +381,14 @@ describe('SpiritManager', () => {
       const updated = await manager.updateInspiration(i.id, { source: 'Updated' });
       expect(updated.source).toBe('Updated');
       expect(await manager.deleteInspiration(i.id)).toBe(true);
-      expect(await manager.listInspirations()).toHaveLength(0);
+      expect((await manager.listInspirations()).inspirations).toHaveLength(0);
     });
   });
 
   describe('pain management', () => {
     it('should create and list pains', async () => {
       await manager.createPain(TEST_PAIN);
-      expect(await manager.listPains()).toHaveLength(1);
+      expect((await manager.listPains()).pains).toHaveLength(1);
     });
 
     it('should enforce max pains limit', async () => {
@@ -411,7 +411,7 @@ describe('SpiritManager', () => {
       const updated = await manager.updatePain(p.id, { trigger: 'Updated' });
       expect(updated.trigger).toBe('Updated');
       expect(await manager.deletePain(p.id)).toBe(true);
-      expect(await manager.listPains()).toHaveLength(0);
+      expect((await manager.listPains()).pains).toHaveLength(0);
     });
   });
 

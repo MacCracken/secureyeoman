@@ -39,11 +39,11 @@ describe('WorkspaceStorage', () => {
   it('should list and delete workspaces', async () => {
     await storage.create({ name: 'W1' });
     await storage.create({ name: 'W2' });
-    expect(await storage.list()).toHaveLength(2);
+    expect((await storage.list()).workspaces).toHaveLength(2);
     const list = await storage.list();
-    const ws = list[0];
+    const ws = list.workspaces[0];
     expect(await storage.delete(ws.id)).toBe(true);
-    expect(await storage.list()).toHaveLength(1);
+    expect((await storage.list()).workspaces).toHaveLength(1);
   });
 });
 
@@ -60,7 +60,7 @@ describe('WorkspaceManager', () => {
   it('should CRUD workspaces', async () => {
     const ws = await manager.create({ name: 'Test WS' });
     expect(await manager.get(ws.id)).toBeTruthy();
-    expect(await manager.list()).toHaveLength(1);
+    expect((await manager.list()).workspaces).toHaveLength(1);
     await manager.addMember(ws.id, 'u1');
     expect((await manager.get(ws.id))!.members).toHaveLength(1);
     expect(await manager.delete(ws.id)).toBe(true);

@@ -41,10 +41,10 @@ describe('ExperimentStorage', () => {
         { id: 'b', name: 'B', trafficPercent: 50 },
       ],
     });
-    expect(await storage.list()).toHaveLength(1);
+    expect((await storage.list()).experiments).toHaveLength(1);
     const list = await storage.list();
-    expect(await storage.delete(list[0].id)).toBe(true);
-    expect(await storage.list()).toHaveLength(0);
+    expect(await storage.delete(list.experiments[0].id)).toBe(true);
+    expect((await storage.list()).experiments).toHaveLength(0);
   });
 });
 

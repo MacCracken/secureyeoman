@@ -22,6 +22,7 @@ const ALL_POLICY_FLAGS = [
   'allowExperiments',
   'allowStorybook',
   'allowMultimodal',
+  'allowCommunityGitFetch',
 ] as const;
 
 type PolicyFlag = (typeof ALL_POLICY_FLAGS)[number];

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
-import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach, afterAll, afterEach, vi } from 'vitest';
 import { MarketplaceStorage } from './storage.js';
 import { MarketplaceManager } from './manager.js';
 import { BrainStorage } from '../brain/storage.js';
@@ -10,6 +10,7 @@ import { AuditChain, InMemoryAuditStorage } from '../logging/audit-chain.js';
 import { createNoopLogger } from '../logging/logger.js';
 import type { SecureLogger } from '../logging/logger.js';
 import { setupTestDb, teardownTestDb, truncateAllTables } from '../test-setup.js';
+import { validateGitUrl } from './git-fetch.js';
 
 function noopLogger(): SecureLogger {
   const noop = () => {};
@@ -417,5 +418,232 @@ describe('Community Skill Sync', () => {
     const status = await manager.getCommunityStatus();
     expect(status.skillCount).toBe(1);
     expect(status.lastSyncedAt).toBeGreaterThan(0);
+  });
+
+  // ── Author metadata tests ──────────────────────────────────────────
+
+  it('should parse object author into authorInfo and set author to name string', async () => {
+    writeSkill('skills/development/authored-skill.json', {
+      name: 'Authored Skill',
+      instructions: 'Has rich author metadata',
+      author: { name: 'Alice', github: 'alice', website: 'https://alice.dev', license: 'MIT' },
+    });
+
+    await manager.syncFromCommunity();
+    const { skills } = await manager.search(undefined, undefined, 20, 0, 'community');
+    expect(skills).toHaveLength(1);
+    const skill = skills[0];
+    expect(skill.author).toBe('Alice');
+    expect(skill.authorInfo).toBeDefined();
+    expect(skill.authorInfo!.github).toBe('alice');
+    expect(skill.authorInfo!.website).toBe('https://alice.dev');
+    expect(skill.authorInfo!.license).toBe('MIT');
+  });
+
+  it('should leave authorInfo undefined when author is a plain string (backward compat)', async () => {
+    writeSkill('skills/development/string-author-skill.json', {
+      name: 'String Author Skill',
+      instructions: 'Uses legacy string author',
+      author: 'legacy-author',
+    });
+
+    await manager.syncFromCommunity();
+    const { skills } = await manager.search(undefined, undefined, 20, 0, 'community');
+    expect(skills).toHaveLength(1);
+    const skill = skills[0];
+    expect(skill.author).toBe('legacy-author');
+    expect(skill.authorInfo).toBeUndefined();
+  });
+
+  it('should round-trip authorInfo through storage', async () => {
+    writeSkill('skills/development/roundtrip-skill.json', {
+      name: 'Roundtrip Skill',
+      instructions: 'Tests storage round-trip',
+      author: { name: 'Bob', github: 'bobdev', website: 'https://bob.io' },
+    });
+
+    await manager.syncFromCommunity();
+
+    // Retrieve directly from storage
+    const found = await storage.findByNameAndSource('Roundtrip Skill', 'community');
+    expect(found).not.toBeNull();
+    expect(found!.authorInfo).toBeDefined();
+    expect(found!.authorInfo!.github).toBe('bobdev');
+    expect(found!.authorInfo!.website).toBe('https://bob.io');
+    expect(found!.authorInfo!.license).toBeUndefined();
+  });
+});
+
+// ── Git URL validation unit tests ──────────────────────────────────────────
+
+describe('validateGitUrl', () => {
+  it('should accept https:// URLs', () => {
+    expect(() => validateGitUrl('https://github.com/org/repo')).not.toThrow();
+  });
+
+  it('should accept file:// URLs', () => {
+    expect(() => validateGitUrl('file:///tmp/local-repo')).not.toThrow();
+  });
+
+  it('should reject git:// URLs', () => {
+    expect(() => validateGitUrl('git://github.com/org/repo')).toThrow(/not allowed/);
+  });
+
+  it('should reject ssh:// URLs', () => {
+    expect(() => validateGitUrl('ssh://git@github.com/org/repo')).toThrow(/not allowed/);
+  });
+
+  it('should reject http:// URLs (downgrade risk)', () => {
+    expect(() => validateGitUrl('http://github.com/org/repo')).toThrow(/not allowed/);
+  });
+
+  it('should throw on malformed URLs', () => {
+    expect(() => validateGitUrl('not-a-url')).toThrow();
+  });
+});
+
+// ── Git fetch integration tests (mocked) ──────────────────────────────────
+
+describe('Community Skill Sync — git fetch', () => {
+  let storage: MarketplaceStorage;
+  let tmpDir: string;
+
+  beforeAll(async () => {
+    await setupTestDb();
+  });
+
+  afterAll(async () => {
+    await teardownTestDb();
+  });
+
+  beforeEach(async () => {
+    await truncateAllTables();
+    storage = new MarketplaceStorage();
+    tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'sy-gitfetch-test-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  function writeSkill(relPath: string, content: object) {
+    const fullPath = path.join(tmpDir, relPath);
+    fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+    fs.writeFileSync(fullPath, JSON.stringify(content));
+  }
+
+  it('should call gitCloneOrPull when allowCommunityGitFetch is true and repoUrl provided', async () => {
+    // Pre-create the skills dir so the sync can proceed after the "clone"
+    writeSkill('skills/dev/mocked-skill.json', {
+      name: 'Mocked Git Skill',
+      instructions: 'Synced after git clone',
+    });
+
+    const gitFetch = await import('./git-fetch.js');
+    const spy = vi.spyOn(gitFetch, 'gitCloneOrPull').mockResolvedValue(undefined);
+
+    const manager = new MarketplaceManager(storage, {
+      logger: createNoopLogger(),
+      communityRepoPath: tmpDir,
+      allowCommunityGitFetch: true,
+      communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
+    });
+
+    const result = await manager.syncFromCommunity(undefined, 'https://github.com/MacCracken/secureyeoman-community-skills');
+    expect(spy).toHaveBeenCalledWith(
+      'https://github.com/MacCracken/secureyeoman-community-skills',
+      tmpDir,
+      expect.anything()
+    );
+    expect(result.errors).toHaveLength(0);
+    expect(result.added).toBe(1);
+  });
+
+  it('should NOT call gitCloneOrPull when allowCommunityGitFetch is false', async () => {
+    writeSkill('skills/dev/local-skill.json', {
+      name: 'Local Only Skill',
+      instructions: 'No git fetch',
+    });
+
+    const gitFetch = await import('./git-fetch.js');
+    const spy = vi.spyOn(gitFetch, 'gitCloneOrPull').mockResolvedValue(undefined);
+
+    const manager = new MarketplaceManager(storage, {
+      logger: createNoopLogger(),
+      communityRepoPath: tmpDir,
+      allowCommunityGitFetch: false,
+    });
+
+    const result = await manager.syncFromCommunity(undefined, 'https://github.com/MacCracken/secureyeoman-community-skills');
+    expect(spy).not.toHaveBeenCalled();
+    expect(result.added).toBe(1);
+  });
+
+  it('should push git error to result.errors and return early on git failure', async () => {
+    const gitFetch = await import('./git-fetch.js');
+    vi.spyOn(gitFetch, 'gitCloneOrPull').mockRejectedValue(new Error('git clone failed: timeout'));
+
+    const manager = new MarketplaceManager(storage, {
+      logger: createNoopLogger(),
+      communityRepoPath: tmpDir,
+      allowCommunityGitFetch: true,
+      communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
+    });
+
+    const result = await manager.syncFromCommunity(undefined, 'https://github.com/MacCracken/secureyeoman-community-skills');
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]).toMatch(/git clone failed/i);
+    expect(result.added).toBe(0);
+  });
+
+  it('should use communityGitUrl from manager config when no repoUrl in request', async () => {
+    writeSkill('skills/dev/configured-skill.json', {
+      name: 'Configured Git Skill',
+      instructions: 'Uses configured communityGitUrl',
+    });
+
+    const gitFetch = await import('./git-fetch.js');
+    const spy = vi.spyOn(gitFetch, 'gitCloneOrPull').mockResolvedValue(undefined);
+
+    const manager = new MarketplaceManager(storage, {
+      logger: createNoopLogger(),
+      communityRepoPath: tmpDir,
+      allowCommunityGitFetch: true,
+      communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
+    });
+
+    // No repoUrl argument — falls back to communityGitUrl from config
+    await manager.syncFromCommunity();
+    expect(spy).toHaveBeenCalledWith(
+      'https://github.com/MacCracken/secureyeoman-community-skills',
+      tmpDir,
+      expect.anything()
+    );
+  });
+
+  it('updatePolicy should toggle allowCommunityGitFetch at runtime', async () => {
+    writeSkill('skills/dev/policy-skill.json', {
+      name: 'Policy Toggle Skill',
+      instructions: 'Tests updatePolicy',
+    });
+
+    const gitFetch = await import('./git-fetch.js');
+    const spy = vi.spyOn(gitFetch, 'gitCloneOrPull').mockResolvedValue(undefined);
+
+    const manager = new MarketplaceManager(storage, {
+      logger: createNoopLogger(),
+      communityRepoPath: tmpDir,
+      allowCommunityGitFetch: false,
+    });
+
+    // Git fetch disabled — spy not called
+    await manager.syncFromCommunity(undefined, 'https://github.com/MacCracken/secureyeoman-community-skills');
+    expect(spy).not.toHaveBeenCalled();
+
+    // Enable via updatePolicy
+    manager.updatePolicy({ allowCommunityGitFetch: true });
+    await manager.syncFromCommunity(undefined, 'https://github.com/MacCracken/secureyeoman-community-skills');
+    expect(spy).toHaveBeenCalledTimes(1);
   });
 });
