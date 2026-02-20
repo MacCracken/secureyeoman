@@ -23,6 +23,7 @@ bun-windows-x64/
 .env
 .env.*
 !.env.example
+!.env.dev.example
 
 # SQLite databases
 *.db
