@@ -10,6 +10,7 @@ import type { HeartbeatManager } from '../body/heartbeat.js';
 import type { ExternalBrainSync } from './external-sync.js';
 import type { SoulManager } from '../soul/manager.js';
 import type { MemoryType, MemoryQuery, KnowledgeQuery } from './types.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface BrainRoutesOptions {
   brainManager: BrainManager;
@@ -41,10 +42,6 @@ function checkBrainRateLimit(key: string, maxPerMinute: number): boolean {
 function capLimit(raw: string | undefined, fallback = 20): number {
   const n = raw ? Number(raw) : fallback;
   return Math.min(Math.max(1, isNaN(n) ? fallback : n), MAX_QUERY_LIMIT);
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 function validateContent(content: unknown, reply: FastifyReply): string | null {
@@ -113,7 +110,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const memory = await brainManager.remember(type, validContent, source, context, importance);
         return await reply.code(201).send({ memory });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -125,7 +122,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         await brainManager.forget(request.params.id);
         return reply.code(204).send();
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -172,7 +169,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const entry = await brainManager.learn(topic, validContent, source, confidence);
         return await reply.code(201).send({ knowledge: entry });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -194,7 +191,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         });
         return { knowledge };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -206,7 +203,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         await brainManager.deleteKnowledge(request.params.id);
         return reply.code(204).send();
       } catch (err) {
-        return reply.code(404).send({ error: errorMessage(err) });
+        return reply.code(404).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -251,7 +248,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const result = await heartbeatManager.beat();
         return { result };
       } catch (err) {
-        return reply.code(500).send({ error: errorMessage(err) });
+        return reply.code(500).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -292,7 +289,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const task = status.tasks.find((t) => t.name === request.params.name);
         return { task };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -340,7 +337,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         });
         return result;
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -364,7 +361,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         });
         return result;
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -396,7 +393,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         });
         return { results };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -421,7 +418,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         knowledgeCount: stats.knowledge.total,
       };
     } catch (err) {
-      return reply.code(400).send({ error: errorMessage(err) });
+      return reply.code(400).send({ error: toErrorMessage(err) });
     }
   });
 
@@ -439,7 +436,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const report = await brainManager.runConsolidation();
         return { report };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -467,7 +464,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         brainManager.setConsolidationSchedule(request.body.schedule);
         return { schedule: request.body.schedule };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -480,7 +477,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         const memories = await brainManager.recall({ source: 'consolidation', limit });
         return { history: memories };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -508,7 +505,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       const result = await externalSync.sync();
       return { result };
     } catch (err) {
-      return reply.code(500).send({ error: errorMessage(err) });
+      return reply.code(500).send({ error: toErrorMessage(err) });
     }
   });
 
@@ -555,7 +552,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         );
         return { success: true };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );

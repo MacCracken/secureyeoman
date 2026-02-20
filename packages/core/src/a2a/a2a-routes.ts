@@ -6,8 +6,8 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { A2AManager } from './manager.js';
 import type { TrustLevel } from './types.js';
 
-export function registerA2ARoutes(app: FastifyInstance, deps: { a2aManager: A2AManager }): void {
-  const { a2aManager } = deps;
+export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AManager }): void {
+  const { a2aManager } = opts;
 
   // ── Peer routes ────────────────────────────────────────────
 

@@ -7,9 +7,9 @@ import type { ProactiveManager } from './manager.js';
 
 export function registerProactiveRoutes(
   app: FastifyInstance,
-  deps: { proactiveManager: ProactiveManager }
+  opts: { proactiveManager: ProactiveManager }
 ): void {
-  const { proactiveManager } = deps;
+  const { proactiveManager } = opts;
 
   // ── Trigger routes ──────────────────────────────────────────────
 

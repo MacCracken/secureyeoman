@@ -49,7 +49,7 @@
 
 - [x] **Dead code sweep** — Removed 6 stale `TODO` comments from `heartbeat.ts`; replaced `console.log`/`console.error` calls with structured logger in `heartbeat.ts` and `pg-pool.ts`
 - [x] **TypeScript strict compliance** — Removed 8 `as any` casts from `agents/storage.ts` and `proactive/manager.ts`; fixed `ZodEffects` composition issue in `delegation.ts`; corrected `getTrigger` return type in `proactive/storage.ts`
-- [ ] **Naming & consistency** — Audit method and variable naming for consistency across `auth`, `workspace`, `agents`, `soul`, `brain`, and `mcp` packages; align with established conventions
+- [x] **Naming & consistency** — Audit method and variable naming for consistency across `auth`, `workspace`, `agents`, `soul`, `brain`, and `mcp` packages; align with established conventions
 
 ### Documentation
 

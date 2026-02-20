@@ -4,12 +4,13 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SubAgentManager } from './manager.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export function registerAgentRoutes(
   app: FastifyInstance,
-  deps: { subAgentManager: SubAgentManager }
+  opts: { subAgentManager: SubAgentManager }
 ): void {
-  const { subAgentManager } = deps;
+  const { subAgentManager } = opts;
 
   // ── Profile routes ──────────────────────────────────────────
 
@@ -56,9 +57,7 @@ export function registerAgentRoutes(
         const profile = await subAgentManager.createProfile(data);
         return reply.code(201).send({ profile });
       } catch (err) {
-        return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Failed to create profile',
-        });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -127,9 +126,7 @@ export function registerAgentRoutes(
         const result = await subAgentManager.delegate(request.body);
         return reply.code(201).send(result);
       } catch (err) {
-        return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Delegation failed',
-        });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -181,9 +178,7 @@ export function registerAgentRoutes(
         await subAgentManager.cancel(request.params.id);
         return { success: true };
       } catch (err) {
-        return reply.code(400).send({
-          error: err instanceof Error ? err.message : 'Cancel failed',
-        });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );

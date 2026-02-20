@@ -13,15 +13,12 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SsoManager } from '../security/sso-manager.js';
 import type { SsoStorage } from '../security/sso-storage.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface SsoRoutesOptions {
   ssoManager: SsoManager;
   ssoStorage: SsoStorage;
   dashboardUrl: string;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions): void {
@@ -54,7 +51,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         );
         return reply.redirect(url);
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -78,7 +75,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         return reply.redirect(target.toString());
       } catch (err) {
         const errUrl = new URL(dashboardUrl);
-        errUrl.searchParams.set('sso_error', errorMessage(err));
+        errUrl.searchParams.set('sso_error', toErrorMessage(err));
         return reply.redirect(errUrl.toString());
       }
     }
@@ -117,7 +114,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         });
         return reply.code(201).send({ provider: { ...provider, clientSecret: undefined } });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -142,7 +139,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
         if (!provider) return reply.code(404).send({ error: 'Provider not found' });
         return { provider: { ...provider, clientSecret: undefined } };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );

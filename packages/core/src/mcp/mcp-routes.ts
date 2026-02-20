@@ -9,6 +9,7 @@ import type { McpServer } from './server.js';
 import type { McpToolManifest } from '@secureyeoman/shared';
 import type { McpHealthMonitor } from './health-monitor.js';
 import type { McpCredentialManager } from './credential-manager.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface McpRoutesOptions {
   mcpStorage: McpStorage;
@@ -26,10 +27,6 @@ const WEB_TOOL_PREFIXES = ['web_'];
 const WEB_SCRAPING_TOOLS = ['web_scrape_markdown', 'web_scrape_html', 'web_scrape_batch', 'web_extract_structured'];
 const WEB_SEARCH_TOOLS = ['web_search', 'web_search_batch'];
 const BROWSER_TOOL_PREFIXES = ['browser_'];
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
-}
 
 export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions): void {
   const { mcpStorage, mcpClient, mcpServer, healthMonitor, credentialManager } = opts;
@@ -86,7 +83,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
 
         return reply.code(statusCode).send({ server });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -187,7 +184,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
             : await mcpClient.callTool(serverId, toolName, args ?? {});
         return { result };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -260,7 +257,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         const health = await healthMonitor.checkServer(request.params.id);
         return health;
       } catch (err) {
-        return reply.code(500).send({ error: errorMessage(err) });
+        return reply.code(500).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -305,7 +302,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         );
         return { message: 'Credential stored' };
       } catch (err) {
-        return reply.code(500).send({ error: errorMessage(err) });
+        return reply.code(500).send({ error: toErrorMessage(err) });
       }
     }
   );

@@ -7,14 +7,11 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { WorkspaceManager } from './manager.js';
 import type { AuthService } from '../security/auth.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface WorkspaceRoutesOptions {
   workspaceManager: WorkspaceManager;
   authService: AuthService;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRoutesOptions): void {
@@ -36,10 +33,10 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
       reply: FastifyReply
     ) => {
       try {
-        const ws = await workspaceManager.create(request.body as any);
-        return reply.code(201).send({ workspace: ws });
+        const workspace = await workspaceManager.create(request.body as any);
+        return reply.code(201).send({ workspace });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -47,9 +44,9 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
   app.get(
     '/api/v1/workspaces/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-      const ws = await workspaceManager.get(request.params.id);
-      if (!ws) return reply.code(404).send({ error: 'Workspace not found' });
-      return { workspace: ws };
+      const workspace = await workspaceManager.get(request.params.id);
+      if (!workspace) return reply.code(404).send({ error: 'Workspace not found' });
+      return { workspace };
     }
   );
 
@@ -63,11 +60,11 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
       reply: FastifyReply
     ) => {
       try {
-        const ws = await workspaceManager.update(request.params.id, request.body);
-        if (!ws) return reply.code(404).send({ error: 'Workspace not found' });
-        return { workspace: ws };
+        const workspace = await workspaceManager.update(request.params.id, request.body);
+        if (!workspace) return reply.code(404).send({ error: 'Workspace not found' });
+        return { workspace };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -86,8 +83,8 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
   app.get(
     '/api/v1/workspaces/:id/members',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-      const ws = await workspaceManager.get(request.params.id);
-      if (!ws) return reply.code(404).send({ error: 'Workspace not found' });
+      const workspace = await workspaceManager.get(request.params.id);
+      if (!workspace) return reply.code(404).send({ error: 'Workspace not found' });
       const members = await workspaceManager.listMembers(request.params.id);
       return { members, total: members.length };
     }
@@ -107,7 +104,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
         );
         return reply.code(201).send({ member });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -130,7 +127,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
         if (!member) return reply.code(404).send({ error: 'Member not found' });
         return { member };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -170,7 +167,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
         });
         return reply.code(201).send({ user });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );

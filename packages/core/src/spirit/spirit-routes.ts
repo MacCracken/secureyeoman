@@ -12,13 +12,10 @@ import type {
   PainCreate,
   PainUpdate,
 } from './types.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface SpiritRoutesOptions {
   spiritManager: SpiritManager;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOptions): void {
@@ -38,7 +35,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const passion = await spiritManager.createPassion(request.body);
         return reply.code(201).send({ passion });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -64,7 +61,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const passion = await spiritManager.updatePassion(request.params.id, request.body);
         return { passion };
       } catch (err) {
-        return reply.code(404).send({ error: errorMessage(err) });
+        return reply.code(404).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -94,7 +91,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const inspiration = await spiritManager.createInspiration(request.body);
         return reply.code(201).send({ inspiration });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -120,7 +117,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const inspiration = await spiritManager.updateInspiration(request.params.id, request.body);
         return { inspiration };
       } catch (err) {
-        return reply.code(404).send({ error: errorMessage(err) });
+        return reply.code(404).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -150,7 +147,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const pain = await spiritManager.createPain(request.body);
         return reply.code(201).send({ pain });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -176,7 +173,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
         const pain = await spiritManager.updatePain(request.params.id, request.body);
         return { pain };
       } catch (err) {
-        return reply.code(404).send({ error: errorMessage(err) });
+        return reply.code(404).send({ error: toErrorMessage(err) });
       }
     }
   );

@@ -22,9 +22,9 @@ function sanitizeError(error: unknown): string {
 
 export function registerMultimodalRoutes(
   app: FastifyInstance,
-  deps: { multimodalManager: MultimodalManager }
+  opts: { multimodalManager: MultimodalManager }
 ): void {
-  const { multimodalManager } = deps;
+  const { multimodalManager } = opts;
 
   // ── Vision ────────────────────────────────────────────────────────
 

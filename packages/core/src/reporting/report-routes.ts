@@ -4,13 +4,10 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AuditReportGenerator } from './audit-report.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface ReportRoutesOptions {
   reportGenerator: AuditReportGenerator;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 export function registerReportRoutes(app: FastifyInstance, opts: ReportRoutesOptions): void {
@@ -46,7 +43,7 @@ export function registerReportRoutes(app: FastifyInstance, opts: ReportRoutesOpt
           },
         });
       } catch (err) {
-        return reply.code(500).send({ error: errorMessage(err) });
+        return reply.code(500).send({ error: toErrorMessage(err) });
       }
     }
   );

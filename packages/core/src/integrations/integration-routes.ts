@@ -18,16 +18,13 @@ import type {
   OutboundWebhookCreate,
   OutboundWebhookUpdate,
 } from './outbound-webhook-storage.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface IntegrationRoutesOptions {
   integrationManager: IntegrationManager;
   integrationStorage: IntegrationStorage;
   webhookTransformStorage?: WebhookTransformStorage;
   outboundWebhookStorage?: OutboundWebhookStorage;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 export function registerIntegrationRoutes(
@@ -94,7 +91,7 @@ export function registerIntegrationRoutes(
         const integration = await integrationManager.createIntegration(request.body);
         return reply.code(201).send({ integration });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -160,7 +157,7 @@ export function registerIntegrationRoutes(
         const result = await adapter.testConnection();
         return reply.send(result);
       } catch (err) {
-        return reply.send({ ok: false, message: errorMessage(err) });
+        return reply.send({ ok: false, message: toErrorMessage(err) });
       }
     }
   );
@@ -174,7 +171,7 @@ export function registerIntegrationRoutes(
         await integrationManager.reloadIntegration(request.params.id);
         return { message: 'Integration reloaded' };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -212,7 +209,7 @@ export function registerIntegrationRoutes(
           },
         });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -226,7 +223,7 @@ export function registerIntegrationRoutes(
         await integrationManager.startIntegration(request.params.id);
         return { message: 'Integration started' };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -238,7 +235,7 @@ export function registerIntegrationRoutes(
         await integrationManager.stopIntegration(request.params.id);
         return { message: 'Integration stopped' };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -274,7 +271,7 @@ export function registerIntegrationRoutes(
         );
         return reply.code(201).send({ platformMessageId });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -309,7 +306,7 @@ export function registerIntegrationRoutes(
 
         return { received: true, event };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -345,7 +342,7 @@ export function registerIntegrationRoutes(
         await adapter.handleWebhook(event, body, token);
         return { received: true, event };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -377,7 +374,7 @@ export function registerIntegrationRoutes(
         await adapter.handleWebhook(event ?? 'unknown', body, token);
         return { received: true, event: event ?? 'jira' };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -409,7 +406,7 @@ export function registerIntegrationRoutes(
         await adapter.handleWebhook(eventType ?? 'unknown', body, token);
         return { received: true, event: eventType ?? 'azure' };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -454,7 +451,7 @@ export function registerIntegrationRoutes(
         await adapter.handleInbound(parsed);
         return { received: true };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -504,7 +501,7 @@ export function registerIntegrationRoutes(
           const rule = await webhookTransformStorage.createRule(request.body);
           return reply.code(201).send({ rule });
         } catch (err) {
-          return reply.code(400).send({ error: errorMessage(err) });
+          return reply.code(400).send({ error: toErrorMessage(err) });
         }
       }
     );
@@ -574,7 +571,7 @@ export function registerIntegrationRoutes(
           const webhook = await outboundWebhookStorage.createWebhook(request.body);
           return reply.code(201).send({ webhook });
         } catch (err) {
-          return reply.code(400).send({ error: errorMessage(err) });
+          return reply.code(400).send({ error: toErrorMessage(err) });
         }
       }
     );

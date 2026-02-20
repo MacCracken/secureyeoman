@@ -5,13 +5,10 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { AgentComms } from './agent-comms.js';
 import type { AgentIdentity, EncryptedMessage, MessagePayload } from './types.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface CommsRoutesOptions {
   agentComms: AgentComms;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptions): void {
@@ -37,7 +34,7 @@ export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptio
         await agentComms.addPeer(request.body);
         return reply.code(201).send({ message: 'Peer added' });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -62,7 +59,7 @@ export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptio
         const payload = await agentComms.decryptMessage(request.body);
         return { acknowledged: true, type: payload.type };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -80,7 +77,7 @@ export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptio
         const encrypted = await agentComms.encryptMessage(toAgentId, payload);
         return reply.code(201).send({ message: encrypted });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );

@@ -4,13 +4,10 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { MarketplaceManager } from './manager.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface MarketplaceRoutesOptions {
   marketplaceManager: MarketplaceManager;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 export function registerMarketplaceRoutes(
@@ -75,7 +72,7 @@ export function registerMarketplaceRoutes(
         const skill = await marketplaceManager.publish(request.body as any);
         return reply.code(201).send({ skill });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -96,7 +93,7 @@ export function registerMarketplaceRoutes(
       const result = await marketplaceManager.syncFromCommunity();
       return result;
     } catch (err) {
-      return reply.code(500).send({ error: errorMessage(err) });
+      return reply.code(500).send({ error: toErrorMessage(err) });
     }
   });
 
@@ -105,7 +102,7 @@ export function registerMarketplaceRoutes(
       const status = await marketplaceManager.getCommunityStatus();
       return status;
     } catch (err) {
-      return reply.code(500).send({ error: errorMessage(err) });
+      return reply.code(500).send({ error: toErrorMessage(err) });
     }
   });
 }

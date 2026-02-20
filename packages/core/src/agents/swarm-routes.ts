@@ -7,9 +7,9 @@ import type { SwarmManager } from './swarm-manager.js';
 
 export function registerSwarmRoutes(
   app: FastifyInstance,
-  deps: { swarmManager: SwarmManager }
+  opts: { swarmManager: SwarmManager }
 ): void {
-  const { swarmManager } = deps;
+  const { swarmManager } = opts;
 
   // ── Template routes ──────────────────────────────────────────
 

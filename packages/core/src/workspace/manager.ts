@@ -20,9 +20,9 @@ export class WorkspaceManager {
   }
 
   async create(data: WorkspaceCreate): Promise<Workspace> {
-    const ws = await this.storage.create(data);
-    this.logger.info('Workspace created', { id: ws.id });
-    return ws;
+    const workspace = await this.storage.create(data);
+    this.logger.info('Workspace created', { id: workspace.id });
+    return workspace;
   }
 
   async get(id: string): Promise<Workspace | null> {
@@ -34,33 +34,33 @@ export class WorkspaceManager {
   }
 
   async delete(id: string): Promise<boolean> {
-    const ok = await this.storage.delete(id);
-    if (ok) this.logger.info('Workspace deleted', { id });
-    return ok;
+    const removed = await this.storage.delete(id);
+    if (removed) this.logger.info('Workspace deleted', { id });
+    return removed;
   }
 
   async addMember(workspaceId: string, userId: string, role?: string): Promise<WorkspaceMember> {
-    const m = await this.storage.addMember(workspaceId, userId, role);
+    const member = await this.storage.addMember(workspaceId, userId, role);
     this.logger.info('Member added to workspace', { workspaceId, userId });
-    return m;
+    return member;
   }
 
   async update(id: string, data: WorkspaceUpdate): Promise<Workspace | null> {
-    const ws = await this.storage.update(id, data);
-    if (ws) this.logger.info('Workspace updated', { id });
-    return ws;
+    const workspace = await this.storage.update(id, data);
+    if (workspace) this.logger.info('Workspace updated', { id });
+    return workspace;
   }
 
   async removeMember(workspaceId: string, userId: string): Promise<boolean> {
-    const ok = await this.storage.removeMember(workspaceId, userId);
-    if (ok) this.logger.info('Member removed from workspace', { workspaceId, userId });
-    return ok;
+    const removed = await this.storage.removeMember(workspaceId, userId);
+    if (removed) this.logger.info('Member removed from workspace', { workspaceId, userId });
+    return removed;
   }
 
   async updateMemberRole(workspaceId: string, userId: string, role: string): Promise<WorkspaceMember | null> {
-    const m = await this.storage.updateMemberRole(workspaceId, userId, role);
-    if (m) this.logger.info('Member role updated', { workspaceId, userId, role });
-    return m;
+    const member = await this.storage.updateMemberRole(workspaceId, userId, role);
+    if (member) this.logger.info('Member role updated', { workspaceId, userId, role });
+    return member;
   }
 
   async listMembers(workspaceId: string): Promise<WorkspaceMember[]> {
@@ -79,12 +79,12 @@ export class WorkspaceManager {
     const existing = await this.storage.list();
     if (existing.length > 0) return;
 
-    const ws = await this.storage.create({
+    const workspace = await this.storage.create({
       name: 'Default',
       description: 'Default workspace',
       settings: {},
     });
-    await this.storage.addMember(ws.id, 'admin', 'admin');
-    this.logger.info('Default workspace created', { id: ws.id });
+    await this.storage.addMember(workspace.id, 'admin', 'admin');
+    this.logger.info('Default workspace created', { id: workspace.id });
   }
 }

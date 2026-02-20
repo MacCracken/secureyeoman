@@ -4,13 +4,10 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { DashboardManager } from './manager.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface DashboardRoutesOptions {
   dashboardManager: DashboardManager;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 export function registerDashboardRoutes(app: FastifyInstance, opts: DashboardRoutesOptions): void {
@@ -33,7 +30,7 @@ export function registerDashboardRoutes(app: FastifyInstance, opts: DashboardRou
         const dashboard = await dashboardManager.create(request.body as any);
         return reply.code(201).send({ dashboard });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );

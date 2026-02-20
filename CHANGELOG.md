@@ -4,6 +4,18 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 22 (complete): Naming & Consistency (2026-02-19)
+
+### Changes
+
+- **Shared error helper** — Extracted the duplicate `errorMessage()` function (present in 12 route files) into `packages/core/src/utils/errors.ts` as the exported `toErrorMessage(err: unknown): string`. All route files now import from this single location.
+- **Route parameter standardised to `opts`** — Eight route registrars that used `deps` as the parameter name (`agent-routes.ts`, `swarm-routes.ts`, `extension-routes.ts`, `execution-routes.ts`, `a2a-routes.ts`, `proactive-routes.ts`, `multimodal-routes.ts`, `browser-routes.ts`) are now consistent with the rest of the codebase.
+- **Descriptive local variable names** — Single-letter variables `ws`, `m`, and `ok` replaced with `workspace`, `member`, and `removed` in `workspace-routes.ts` and `workspace/manager.ts`.
+- **Void response shape** — `POST /api/v1/soul/skills/:id/enable` and `POST /api/v1/soul/skills/:id/disable` now return `{ success: true }` instead of `{ message: 'Skill enabled/disabled' }`, consistent with other void-operation endpoints.
+- **ADR 074** — Documents the agreed naming conventions for route parameters, error extraction, void responses, and local variable names.
+
+---
+
 ## Phase 22 (complete): Major Audit (2026-02-19)
 
 ### Fixes
