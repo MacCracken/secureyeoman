@@ -77,3 +77,24 @@ Password reset is token-authenticated (the reset link carries a token) and does 
 - **Positive**: The audit surface is fully documented and testable.
 - **Neutral**: `auth:write` is admin-only (only `role_admin` has `*:*`). Operators can read/list API keys but cannot create or delete them (except their own through the normal UI flow which uses the admin token).
 - **Risk mitigated**: mTLS clients can no longer escalate to operator by default — they are bound to their assigned role.
+
+---
+
+## Phase 25 Corrections (2026-02-20)
+
+Phase 22 left six workspace-related route entries missing from `ROUTE_PERMISSIONS`, discovered
+during the Phase 25 workspace RBAC audit:
+
+| Route | Method | Was | Now |
+|-------|--------|-----|-----|
+| `/api/v1/workspaces/:id` | PUT | admin-only (unmapped) | `workspaces:write` |
+| `/api/v1/workspaces/:id/members` | GET | admin-only (unmapped) | `workspaces:read` |
+| `/api/v1/workspaces/:id/members/:userId` | PUT | admin-only (unmapped) | `workspaces:write` |
+| `/api/v1/users` | GET | admin-only (unmapped) | `auth:read` |
+| `/api/v1/users` | POST | admin-only (unmapped) | `auth:write` |
+| `/api/v1/users/:id` | DELETE | admin-only (unmapped) | `auth:write` |
+
+These were omitted when the Phase 22 audit added the workspace group — likely because the routes
+existed in `workspace-routes.ts` but were not enumerated in the checklist used during that audit.
+All six are now covered, along with workspace-scoped admin enforcement and member edge-case
+hardening (see ADR 005 Phase 25 Corrections for full details).

@@ -135,13 +135,13 @@ export class WorkspaceStorage extends PgBaseStorage {
   }
 
   async updateMemberRole(workspaceId: string, userId: string, role: string): Promise<WorkspaceMember | null> {
-    const now = Date.now();
     const count = await this.execute(
       'UPDATE workspace.members SET role = $1 WHERE workspace_id = $2 AND user_id = $3',
       [role, workspaceId, userId]
     );
     if (count === 0) return null;
-    return { userId, role: role as WorkspaceMember['role'], joinedAt: now };
+    // Re-fetch to return the actual joined_at rather than the mutation timestamp
+    return this.getMember(workspaceId, userId);
   }
 
   async listMembers(workspaceId: string, opts?: { limit?: number; offset?: number }): Promise<{ members: WorkspaceMember[]; total: number }> {

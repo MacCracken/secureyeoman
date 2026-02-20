@@ -102,6 +102,18 @@ describe('Auth Middleware', () => {
     app.get('/api/v1/integrations', async (req) => ({ user: req.authUser?.userId }));
     app.get('/api/v1/brain/memories', async (req) => ({ user: req.authUser?.userId }));
     app.get('/api/v1/soul/users', async (req) => ({ user: req.authUser?.userId }));
+    // workspace routes (previously missing from ROUTE_PERMISSIONS)
+    app.get('/api/v1/workspaces', async (req) => ({ user: req.authUser?.userId }));
+    app.get('/api/v1/workspaces/:id', async (req) => ({ user: req.authUser?.userId }));
+    app.put('/api/v1/workspaces/:id', async (req) => ({ user: req.authUser?.userId }));
+    app.get('/api/v1/workspaces/:id/members', async (req) => ({ user: req.authUser?.userId }));
+    app.post('/api/v1/workspaces/:id/members', async (req) => ({ user: req.authUser?.userId }));
+    app.put('/api/v1/workspaces/:id/members/:userId', async (req) => ({ user: req.authUser?.userId }));
+    app.delete('/api/v1/workspaces/:id/members/:userId', async (req) => ({ user: req.authUser?.userId }));
+    // user management routes (previously missing from ROUTE_PERMISSIONS)
+    app.get('/api/v1/users', async (req) => ({ user: req.authUser?.userId }));
+    app.post('/api/v1/users', async (req) => ({ user: req.authUser?.userId }));
+    app.delete('/api/v1/users/:id', async (req) => ({ user: req.authUser?.userId }));
 
     await app.ready();
   });
@@ -418,6 +430,117 @@ describe('Auth Middleware', () => {
         headers: { 'x-api-key': key },
         payload: {},
       });
+      expect(res.statusCode).toBe(403);
+    });
+  });
+
+  // ── Workspace RBAC routes (Phase 25 fixes) ───────────────────────
+
+  describe('workspace RBAC routes', () => {
+    async function createOperatorKey(): Promise<string> {
+      const { key } = await authService.createApiKey({ name: 'op-ws', role: 'operator', userId: 'admin' });
+      return key;
+    }
+
+    it('admin can GET /api/v1/workspaces', async () => {
+      const token = await loginAndGetToken();
+      const res = await app.inject({ method: 'GET', url: '/api/v1/workspaces', headers: { authorization: `Bearer ${token}` } });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('viewer can GET /api/v1/workspaces (workspaces:read)', async () => {
+      const key = await createViewerApiKey();
+      const res = await app.inject({ method: 'GET', url: '/api/v1/workspaces', headers: { 'x-api-key': key } });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('viewer can GET /api/v1/workspaces/:id', async () => {
+      const key = await createViewerApiKey();
+      const res = await app.inject({ method: 'GET', url: '/api/v1/workspaces/ws-1', headers: { 'x-api-key': key } });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('viewer can GET /api/v1/workspaces/:id/members (was unmapped — now workspaces:read)', async () => {
+      const key = await createViewerApiKey();
+      const res = await app.inject({ method: 'GET', url: '/api/v1/workspaces/ws-1/members', headers: { 'x-api-key': key } });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('operator can PUT /api/v1/workspaces/:id (was unmapped — now workspaces:write)', async () => {
+      const key = await createOperatorKey();
+      const res = await app.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1', headers: { 'x-api-key': key }, payload: {} });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('viewer cannot PUT /api/v1/workspaces/:id (no workspaces:write)', async () => {
+      const key = await createViewerApiKey();
+      const res = await app.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1', headers: { 'x-api-key': key }, payload: {} });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('operator can POST /api/v1/workspaces/:id/members (workspaces:write)', async () => {
+      const key = await createOperatorKey();
+      const res = await app.inject({ method: 'POST', url: '/api/v1/workspaces/ws-1/members', headers: { 'x-api-key': key }, payload: {} });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('viewer cannot POST /api/v1/workspaces/:id/members (no workspaces:write)', async () => {
+      const key = await createViewerApiKey();
+      const res = await app.inject({ method: 'POST', url: '/api/v1/workspaces/ws-1/members', headers: { 'x-api-key': key }, payload: {} });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('operator can PUT /api/v1/workspaces/:id/members/:userId (was unmapped — now workspaces:write)', async () => {
+      const key = await createOperatorKey();
+      const res = await app.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1/members/u1', headers: { 'x-api-key': key }, payload: {} });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('viewer cannot PUT /api/v1/workspaces/:id/members/:userId', async () => {
+      const key = await createViewerApiKey();
+      const res = await app.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1/members/u1', headers: { 'x-api-key': key }, payload: {} });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('admin can GET /api/v1/users (auth:read — was unmapped)', async () => {
+      const token = await loginAndGetToken();
+      const res = await app.inject({ method: 'GET', url: '/api/v1/users', headers: { authorization: `Bearer ${token}` } });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('operator can GET /api/v1/users (auth:read)', async () => {
+      const key = await createOperatorKey();
+      const res = await app.inject({ method: 'GET', url: '/api/v1/users', headers: { 'x-api-key': key } });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('viewer cannot GET /api/v1/users (no auth:read)', async () => {
+      const key = await createViewerApiKey();
+      const res = await app.inject({ method: 'GET', url: '/api/v1/users', headers: { 'x-api-key': key } });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('admin can POST /api/v1/users (auth:write — was unmapped)', async () => {
+      const token = await loginAndGetToken();
+      const res = await app.inject({ method: 'POST', url: '/api/v1/users', headers: { authorization: `Bearer ${token}` }, payload: {} });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('operator cannot POST /api/v1/users (no auth:write)', async () => {
+      const key = await createOperatorKey();
+      const res = await app.inject({ method: 'POST', url: '/api/v1/users', headers: { 'x-api-key': key }, payload: {} });
+      expect(res.statusCode).toBe(403);
+    });
+
+    it('admin can DELETE /api/v1/users/:id (auth:write — was unmapped)', async () => {
+      const token = await loginAndGetToken();
+      const res = await app.inject({ method: 'DELETE', url: '/api/v1/users/u1', headers: { authorization: `Bearer ${token}` } });
+      expect(res.statusCode).toBe(200);
+    });
+
+    it('operator cannot DELETE /api/v1/users/:id (no auth:write)', async () => {
+      const key = await createOperatorKey();
+      const res = await app.inject({ method: 'DELETE', url: '/api/v1/users/u1', headers: { 'x-api-key': key } });
       expect(res.statusCode).toBe(403);
     });
   });

@@ -84,7 +84,7 @@ export class WorkspaceManager {
       description: 'Default workspace',
       settings: {},
     });
-    await this.storage.addMember(workspace.id, 'admin', 'admin');
+    await this.storage.addMember(workspace.id, 'admin', 'owner');
     this.logger.info('Default workspace created', { id: workspace.id });
   }
 }
