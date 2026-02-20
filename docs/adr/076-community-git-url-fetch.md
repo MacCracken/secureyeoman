@@ -97,3 +97,23 @@ Rejected because operators may host community skill repos on self-hosted Gitea/G
 
 **Always-on** — Enable by default when `COMMUNITY_GIT_URL` is set. Rejected to preserve the
 security principle of explicit opt-in for all network-touching features.
+
+---
+
+## Phase 25 Corrections (2026-02-20)
+
+The Community tab empty state in `SkillsPage.tsx` still displayed the pre-ADR-076 instruction:
+
+> *"Clone `secureyeoman-community-skills` alongside this project, then click **Sync** to import skills."*
+
+This text predated the git URL fetch feature and incorrectly implied that users must manually
+clone the repo before syncing. Since `gitCloneOrPull()` handles cloning automatically when
+`COMMUNITY_GIT_URL` is configured, the instruction was misleading for any deployment with git
+fetch enabled.
+
+**Fix**: The empty-state copy was updated to:
+
+> *"Click **Sync** to import skills from the community repo — the repo is fetched automatically
+> when `COMMUNITY_GIT_URL` is configured."*
+
+No backend changes were required. The sync flow, policy gate, and URL validation are unchanged.
