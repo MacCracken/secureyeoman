@@ -167,6 +167,38 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 22 (complete): Documentation & ADR Audit (2026-02-19)
+
+### Documentation Fixes
+
+- **Getting-started guide** — Removed nonexistent `dev:core` script reference; corrected dashboard URL to `:18789`; updated health-check version field; removed stale `v1.2 Features` section; fixed `security.codeExecution` → `execution` config key; removed bogus `dashboard:` config block; updated A2A peer docs; fixed MCP verify URL; corrected optional env var names (`PORT`/`HOST`/`LOG_LEVEL` → `SECUREYEOMAN_PORT`/`SECUREYEOMAN_HOST`/`SECUREYEOMAN_LOG_LEVEL`)
+- **Configuration reference** — Audited all YAML fields against `config.ts` schema: corrected `execution` runtime values (`node` not `nodejs`), `sessionTimeout` default (1800000 ms), `approvalPolicy` enum values; fixed `extensions` defaults; removed undocumented fields; fixed `a2a.discoveryMethod` valid values; removed non-schema A2A fields; corrected `security.allowSubAgents` default; fixed `conversation.compression` defaults; added missing model providers (lmstudio, localai, deepseek, mistral) to provider list; corrected env var names throughout the Environment Variables table
+- **API reference** — `docs/api/rest-api.md` and `docs/openapi.yaml` updated to reflect `204 No Content` on all DELETE endpoints and `202 Accepted` on `POST /api/v1/execution/run`
+- **README audit** — Corrected admin login curl (removed spurious `username` field); fixed MCP stdio path (`dist/index.js` → `dist/cli.js`); updated ADR count (43 → 75); added `Authorization` headers to community sync curl examples; replaced unrecognised `REDIS_URL` env var with a comment pointing to the YAML `security.rateLimiting.redisUrl` field
+
+### ADR Audit
+
+- **Coverage check** — Confirmed all 26 migrations (001–026) have corresponding ADRs; spot-checked implementation accuracy in ADRs 001, 013, 021, 026, 031, 046, 050, 069 — all accurate
+- **Status corrections** — ADR 018 (Proactive Heartbeat) updated from `Proposed` to `Superseded → ADR 040`; ADRs 014–017 and 019–023 confirmed as `Proposed` for genuinely unshipped features; all `Accepted` ADRs verified against implementation
+- **Gap fill** — Identified and wrote ADR 075 for the onboarding wizard (Phase 21 feature had no ADR)
+
+### Dependency Audit
+
+- `npm audit` reviewed; 2 risks accepted and formally documented in [Dependency Watch](docs/development/dependency-watch.md): eslint/ajv ReDoS (dev-only, not reachable at runtime) and MCP SDK SSE deprecation (upstream migration pending)
+
+### Files Changed
+
+- `docs/guides/getting-started.md` — multiple accuracy fixes
+- `docs/configuration.md` — full YAML field audit and corrections
+- `docs/api/rest-api.md` — 204/202 status code updates
+- `docs/openapi.yaml` — 204/202 status code updates
+- `README.md` — curl fixes, path fixes, ADR count update
+- `docs/adr/018-proactive-heartbeat.md` — status updated to Superseded
+- `docs/adr/075-onboarding-wizard.md` — NEW
+- `docs/development/dependency-watch.md` — 2 new accepted-risk entries
+
+---
+
 ## Phase 21 (complete): Onboarding (2026-02-19)
 
 ### Feature
