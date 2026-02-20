@@ -4,6 +4,7 @@
 
 import pg from 'pg';
 import type { DatabaseConfig } from '@secureyeoman/shared';
+import { getLogger } from '../logging/logger.js';
 
 const { Pool, types } = pg;
 
@@ -41,7 +42,7 @@ export function initPool(config: PgPoolConfig): pg.Pool {
   });
 
   pool.on('error', (err: Error) => {
-    console.error('Unexpected PostgreSQL pool error', err);
+    getLogger().error('Unexpected PostgreSQL pool error', { error: err.message });
   });
 
   return pool;

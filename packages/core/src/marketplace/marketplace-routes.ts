@@ -85,7 +85,7 @@ export function registerMarketplaceRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!(await marketplaceManager.delete(request.params.id)))
         return reply.code(404).send({ error: 'Skill not found' });
-      return { message: 'Skill removed' };
+      return reply.code(204).send();
     }
   );
 

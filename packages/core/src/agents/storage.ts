@@ -229,12 +229,12 @@ export class SubAgentStorage extends PgBaseStorage {
         data.maxTokenBudget ?? 50000,
         JSON.stringify(data.allowedTools ?? []),
         data.defaultModel ?? null,
-        (data as any).type ?? 'llm',
-        (data as any).command ?? null,
-        (data as any).commandArgs ? JSON.stringify((data as any).commandArgs) : null,
-        (data as any).commandEnv ? JSON.stringify((data as any).commandEnv) : null,
-        (data as any).mcpTool ?? null,
-        (data as any).mcpToolInput ?? null,
+        data.type ?? 'llm',
+        data.command ?? null,
+        data.commandArgs ? JSON.stringify(data.commandArgs) : null,
+        data.commandEnv ? JSON.stringify(data.commandEnv) : null,
+        data.mcpTool ?? null,
+        data.mcpToolInput ?? null,
       ]
     );
     return profileFromRow(row!);

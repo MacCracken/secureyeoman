@@ -33,23 +33,9 @@
 | 19 | Per-Personality Access | 2026.2.19 | Complete |
 | 20 | SaaS ready | 2026.2.19 | Complete |
 | | **Release 2026.2.19** | **2026-02-19** | **Released** |
-| 21 | Onboarding | — | Pending |
+| 21 | Onboarding | 2026.2.19 | Complete |
 | 22 | Major Audit | — | Pending |
 | 23 | Testing All the Things | — | Pending |
-
----
-
-## Phase 21: Onboarding
-
-**Status**: Pending
-
-### Onboarding
-- [ ] **First Install Onboarding** — CLI and Dashboard guided setup experience for new installations; builds on Phase 18 CLI Improvements (`secureyeoman init` wizard, rich output) for maximum effectiveness
-
-### Guided Setup CLI
-
-- [ ] **Interactive Init Command** — `secureyeoman init` with interactive wizard for first-time setup (generate keys, configure AI providers, set up integrations)
-- [ ] **Configuration Wizard** — Guided config file generation with prompts for required settings
 
 ---
 
@@ -144,6 +130,7 @@
 - [ ] **Hosted Discovery API** — A lightweight read-only API for browsing available community skills without cloning. Community repo publishes a generated `index.json` via CI.
 - [ ] **Cryptographic Skill Signing** — Authors sign skills with a keypair; SecureYeoman verifies signatures before installing. Reject unsigned skills in strict mode.
 - [ ] **Skill Ratings & Downloads** — Community feedback mechanism (stars, download counts) surfaced in the marketplace UI
+- [ ] **Community Repo: Rich Author Metadata & Contribution Guidelines** — Extend the community skill JSON schema to support structured author data (e.g. `author` becomes an object with `name`, `github`, `website`; optional `license` override per skill). Pair with a formal approval checklist in `CONTRIBUTING.md` covering: quality bar, security review criteria, rejection criteria, and what reviewers look for in a PR. Closes the gap for contributors migrating skills from other platforms who expect proper attribution fields and a clear path to getting their work accepted.
 
 ### Real-time Collaboration
 
@@ -178,4 +165,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-19 — Phase 20 complete; Phase 21 → Onboarding; Phase 22 → Major Audit (new); Phase 23 → Testing All the Things*
+*Last updated: 2026-02-19 — Phase 21 complete (Onboarding); Phase 22 → Major Audit; Phase 23 → Testing All the Things*

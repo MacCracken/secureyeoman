@@ -1,8 +1,9 @@
 /**
  * Init Command — Interactive onboarding for SecureYeoman.
  *
- * Prompts for agent name, personality traits, and optionally generates
- * security keys and a .env file.  Zero external dependencies — uses
+ * Prompts for agent name, personality traits, AI provider, model, database
+ * backend, and gateway port.  Generates security keys and writes a .env file
+ * and a secureyeoman.yaml config file.  Zero external dependencies — uses
  * Node.js readline for prompts.
  */
 
@@ -17,6 +18,22 @@ import {
   promptChoice,
   apiCall,
 } from '../utils.js';
+
+// ─── Provider defaults ────────────────────────────────────────────────────────
+
+const PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'deepseek', 'mistral'] as const;
+type Provider = (typeof PROVIDERS)[number];
+
+const PROVIDER_DEFAULTS: Record<Provider, { model: string; apiKeyEnv: string; needsBaseUrl: boolean }> = {
+  anthropic: { model: 'claude-sonnet-4-20250514', apiKeyEnv: 'ANTHROPIC_API_KEY', needsBaseUrl: false },
+  openai:    { model: 'gpt-4o',                   apiKeyEnv: 'OPENAI_API_KEY',     needsBaseUrl: false },
+  gemini:    { model: 'gemini-1.5-pro',            apiKeyEnv: 'GEMINI_API_KEY',     needsBaseUrl: false },
+  ollama:    { model: 'llama3.2',                  apiKeyEnv: '',                   needsBaseUrl: true  },
+  deepseek:  { model: 'deepseek-chat',             apiKeyEnv: 'DEEPSEEK_API_KEY',   needsBaseUrl: false },
+  mistral:   { model: 'mistral-large-latest',      apiKeyEnv: 'MISTRAL_API_KEY',    needsBaseUrl: false },
+};
+
+// ─── Command ──────────────────────────────────────────────────────────────────
 
 export const initCommand: Command = {
   name: 'init',
@@ -37,7 +54,7 @@ Set up a new SecureYeoman instance interactively.
 Options:
       --url <url>         Server URL for API calls (default: http://127.0.0.1:3000)
       --non-interactive   Use all defaults without prompting
-      --env-only          Only generate .env file (skip personality setup)
+      --env-only          Only generate .env file (skip personality setup and YAML)
   -h, --help              Show this help
 \n`);
       return 0;
@@ -58,12 +75,20 @@ Options:
   ╚═══════════════════════════════════════════╝
 \n`);
 
-    // Defaults
+    // ── Defaults ─────────────────────────────────────────────────────────────
+
     let agentName = 'FRIDAY';
     let description = 'Friendly, Reliable, Intelligent Digital Assistant Yielding results';
     let formality: 'casual' | 'balanced' | 'formal' = 'balanced';
     let humor: 'none' | 'subtle' | 'witty' = 'subtle';
     let verbosity: 'concise' | 'balanced' | 'detailed' = 'balanced';
+    let provider: Provider = 'anthropic';
+    let modelName = PROVIDER_DEFAULTS.anthropic.model;
+    let apiKey = '';
+    let ollamaBaseUrl = 'http://localhost:11434';
+    let gatewayPort = 3000;
+    let dbBackend: 'sqlite' | 'postgresql' = 'sqlite';
+    let databaseUrl = '';
     let generateKeys = true;
     let writeEnvFile = true;
 
@@ -74,15 +99,14 @@ Options:
       });
 
       try {
-        // 1. Agent name
+        // ── 1. Agent name ─────────────────────────────────────────────────────
         const nameInput = await prompt(rl, '  Agent name', 'FRIDAY');
         agentName = nameInput.slice(0, 50);
 
         if (!envOnly.value) {
-          // 2. Description
+          // ── 2. Personality ──────────────────────────────────────────────────
           description = await prompt(rl, '  Description', description);
 
-          // 3. Traits
           const formalityChoices = ['casual', 'balanced', 'formal'];
           formality = (await promptChoice(
             rl,
@@ -103,11 +127,55 @@ Options:
           )) as typeof verbosity;
         }
 
-        // 4. Generate security keys?
+        // ── 3. AI Provider ────────────────────────────────────────────────────
+        ctx.stdout.write('\n');
+        provider = (await promptChoice(
+          rl,
+          '  AI provider?',
+          [...PROVIDERS],
+          0
+        )) as Provider;
+
+        const pDef = PROVIDER_DEFAULTS[provider];
+
+        // ── 4. Model name ─────────────────────────────────────────────────────
+        const modelInput = await prompt(rl, '  Model name', pDef.model);
+        modelName = modelInput || pDef.model;
+
+        // ── 5. API key / base URL ─────────────────────────────────────────────
+        if (pDef.needsBaseUrl) {
+          ollamaBaseUrl = await prompt(rl, '  Ollama base URL', ollamaBaseUrl);
+        } else if (pDef.apiKeyEnv) {
+          apiKey = await prompt(rl, `  ${pDef.apiKeyEnv} (leave blank to skip)`, '');
+        }
+
+        // ── 6. Gateway port ───────────────────────────────────────────────────
+        ctx.stdout.write('\n');
+        const portInput = await prompt(rl, '  Gateway port', '3000');
+        gatewayPort = Math.max(1024, Math.min(65535, parseInt(portInput, 10) || 3000));
+
+        // ── 7. Database backend ───────────────────────────────────────────────
+        const dbChoices = ['sqlite', 'postgresql'];
+        dbBackend = (await promptChoice(
+          rl,
+          '  Database backend?',
+          dbChoices,
+          0
+        )) as 'sqlite' | 'postgresql';
+
+        if (dbBackend === 'postgresql') {
+          databaseUrl = await prompt(
+            rl,
+            '  DATABASE_URL',
+            'postgresql://user:pass@localhost/secureyeoman'
+          );
+        }
+
+        // ── 8. Security keys ──────────────────────────────────────────────────
+        ctx.stdout.write('\n');
         const keysAnswer = await prompt(rl, '  Generate security keys? (y/n)', 'y');
         generateKeys = keysAnswer.toLowerCase() !== 'n';
 
-        // 5. Write .env file?
         if (generateKeys) {
           const envAnswer = await prompt(rl, '  Write .env file? (y/n)', 'y');
           writeEnvFile = envAnswer.toLowerCase() !== 'n';
@@ -117,7 +185,8 @@ Options:
       }
     }
 
-    // Generate keys
+    // ── Generate keys ─────────────────────────────────────────────────────────
+
     const keys: Record<string, string> = {};
     if (generateKeys) {
       keys.SECUREYEOMAN_SIGNING_KEY = generateSecretKey(32);
@@ -131,7 +200,8 @@ Options:
       }
     }
 
-    // Write .env file
+    // ── Write .env file ───────────────────────────────────────────────────────
+
     if (generateKeys && writeEnvFile) {
       const envPath = '.env';
       const existingEnv: Record<string, string> = {};
@@ -149,7 +219,18 @@ Options:
         }
       }
 
-      const merged = { ...existingEnv, ...keys };
+      // Merge: security keys + optional API key + optional DATABASE_URL
+      const envAdditions: Record<string, string> = { ...keys };
+
+      const pDef = PROVIDER_DEFAULTS[provider];
+      if (!pDef.needsBaseUrl && pDef.apiKeyEnv && apiKey) {
+        envAdditions[pDef.apiKeyEnv] = apiKey;
+      }
+      if (dbBackend === 'postgresql' && databaseUrl) {
+        envAdditions.DATABASE_URL = databaseUrl;
+      }
+
+      const merged = { ...existingEnv, ...envAdditions };
       const envContent =
         Object.entries(merged)
           .map(([k, v]) => `${k}=${v}`)
@@ -159,7 +240,8 @@ Options:
       ctx.stdout.write(`\n  .env file written to ${envPath}\n`);
     }
 
-    // Try to call the onboarding API if the server is running
+    // ── Try to call the onboarding API if the server is running ──────────────
+
     if (!envOnly.value) {
       try {
         const healthResult = await apiCall(baseUrl, '/health');
@@ -186,10 +268,28 @@ Options:
         // Server not running — fall through to config file
       }
 
-      // Write secureyeoman.yaml config file for next boot
+      // ── Write secureyeoman.yaml ───────────────────────────────────────────
+
+      const pDef = PROVIDER_DEFAULTS[provider];
       const yamlLines = [
-        '# SecureYeoman Configuration (generated by init)',
+        '# SecureYeoman Configuration — generated by `secureyeoman init`',
         `# Generated: ${new Date().toISOString()}`,
+        '',
+        'core:',
+        `  name: "${agentName}"`,
+        '',
+        'model:',
+        `  provider: "${provider}"`,
+        `  model: "${modelName}"`,
+        pDef.needsBaseUrl
+          ? `  baseUrl: "${ollamaBaseUrl}"`
+          : `  apiKeyEnv: "${pDef.apiKeyEnv || 'ANTHROPIC_API_KEY'}"`,
+        '',
+        'gateway:',
+        `  port: ${String(gatewayPort)}`,
+        '',
+        'storage:',
+        `  backend: "${dbBackend}"`,
         '',
         'soul:',
         `  agentName: "${agentName}"`,

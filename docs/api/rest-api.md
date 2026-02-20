@@ -277,10 +277,7 @@ Revoke a stored OAuth token by ID.
 
 **Required Permissions**: `admin`
 
-**Response**
-```json
-{ "message": "Token revoked" }
-```
+**Response** `204 No Content`
 
 ---
 
@@ -350,10 +347,7 @@ Update a custom role. Built-in roles (`role_admin`, `role_operator`, `role_audit
 
 Delete a custom role. Built-in roles cannot be deleted (returns 403).
 
-**Response**
-```json
-{ "message": "Role deleted" }
-```
+**Response** `204 No Content`
 
 #### GET /api/v1/auth/assignments
 
@@ -387,10 +381,7 @@ Assign a role to a user.
 
 Revoke a user's active role assignment.
 
-**Response**
-```json
-{ "message": "Assignment revoked" }
-```
+**Response** `204 No Content`
 
 ---
 
@@ -498,12 +489,7 @@ Cancel task.
 
 **Required Permissions**: `tasks.write`
 
-**Response**
-```json
-{
-  "message": "Task cancelled successfully"
-}
-```
+**Response** `204 No Content`
 
 ---
 
@@ -1023,6 +1009,8 @@ Update an existing user.
 
 Delete a user.
 
+**Response** `204 No Content`
+
 ---
 
 ### Spirit System
@@ -1078,6 +1066,8 @@ Delete a passion.
 
 **Required Permissions**: `spirit.write`
 
+**Response** `204 No Content`
+
 #### GET /api/v1/spirit/inspirations
 
 List all inspirations.
@@ -1112,6 +1102,8 @@ Delete an inspiration.
 
 **Required Permissions**: `spirit.write`
 
+**Response** `204 No Content`
+
 #### GET /api/v1/spirit/pains
 
 List all pain points.
@@ -1145,6 +1137,8 @@ Update a pain point.
 Delete a pain point.
 
 **Required Permissions**: `spirit.write`
+
+**Response** `204 No Content`
 
 #### GET /api/v1/spirit/stats
 
@@ -1218,6 +1212,8 @@ Create a new memory.
 Delete a memory.
 
 **Required Permissions**: `brain.write`
+
+**Response** `204 No Content`
 
 #### GET /api/v1/brain/knowledge
 
@@ -1676,6 +1672,8 @@ Remove a peer agent.
 
 **Required Permissions**: `comms.write`
 
+**Response** `204 No Content`
+
 #### POST /api/v1/comms/receive
 
 Receive an encrypted message from a peer. Messages are E2E encrypted using ephemeral X25519 key exchange with AES-256-GCM.
@@ -1903,12 +1901,7 @@ Clear the persistent model default. The model will revert to the config file def
 
 **Required Permissions**: Authenticated
 
-**Response**
-```json
-{
-  "success": true
-}
-```
+**Response** `204 No Content`
 
 ---
 
@@ -2307,10 +2300,7 @@ Delete a webhook transform rule.
 
 **Required Permissions**: Authenticated
 
-**Response**
-```json
-{ "message": "Transform rule deleted" }
-```
+**Response** `204 No Content`
 
 ---
 
@@ -2442,10 +2432,7 @@ Delete an outbound webhook subscription.
 
 **Required Permissions**: Authenticated
 
-**Response**
-```json
-{ "message": "Outbound webhook deleted" }
-```
+**Response** `204 No Content`
 
 ---
 
@@ -2543,12 +2530,7 @@ Remove an MCP server and clear its discovered tools.
 
 **Required Permissions**: Authenticated
 
-**Response**
-```json
-{
-  "message": "Server removed"
-}
-```
+**Response** `204 No Content`
 
 #### GET /api/v1/mcp/tools
 
@@ -2735,12 +2717,7 @@ Delete a credential.
 
 **Required Permissions**: Authenticated
 
-**Response**
-```json
-{
-  "message": "Credential deleted"
-}
-```
+**Response** `204 No Content`
 
 ---
 
@@ -2804,6 +2781,8 @@ Update a custom agent profile. Refuses built-in profiles.
 Delete a custom agent profile. Refuses built-in profiles.
 
 **Required Permissions**: Authenticated
+
+**Response** `204 No Content`
 
 #### POST /api/v1/agents/delegate
 
@@ -2981,12 +2960,7 @@ Unload a specific extension by name.
 
 **Required Permissions**: `admin`
 
-**Response**
-```json
-{
-  "message": "Extension unloaded"
-}
-```
+**Response** `204 No Content`
 
 #### GET /api/v1/extensions/hooks
 
@@ -3056,6 +3030,8 @@ Remove a webhook registration.
 }
 ```
 
+**Response** `204 No Content`
+
 #### POST /api/v1/extensions/discover
 
 Discover extensions from the filesystem without loading them.
@@ -3100,7 +3076,7 @@ Execute code in a sandboxed runtime.
 | `code` | string | Yes | Code to execute |
 | `sessionId` | string | No | Reuse an existing session |
 
-**Response**
+**Response** `202 Accepted`
 ```json
 {
   "sessionId": "session_abc123",
@@ -3146,12 +3122,7 @@ Kill an active execution session.
 
 **Required Permissions**: Authenticated
 
-**Response**
-```json
-{
-  "message": "Session terminated"
-}
-```
+**Response** `204 No Content`
 
 #### GET /api/v1/execution/history
 
@@ -3253,6 +3224,8 @@ Register a new A2A peer.
 Remove an A2A peer.
 
 **Required Permissions**: `comms.write`
+
+**Response** `204 No Content`
 
 #### POST /api/v1/a2a/discover
 
@@ -3475,12 +3448,7 @@ Delete a trigger. Built-in triggers cannot be deleted (returns 403); use the dis
 
 **Required Permissions**: Authenticated
 
-**Response**
-```json
-{
-  "message": "Trigger deleted"
-}
-```
+**Response** `204 No Content`
 
 #### POST /api/v1/proactive/triggers/:id/enable
 
@@ -3656,12 +3624,7 @@ Clear all expired suggestions from the queue.
 
 **Required Permissions**: Authenticated
 
-**Response**
-```json
-{
-  "deleted": 8
-}
-```
+**Response** `204 No Content`
 
 ---
 

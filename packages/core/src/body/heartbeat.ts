@@ -338,7 +338,7 @@ export class HeartbeatManager {
 
     // Console notification (always available)
     if (channel === 'console') {
-      console.log(`[HEARTBEAT ALERT] ${message}`);
+      this.logger.info('[HEARTBEAT ALERT]', { message, check: check.name, result: result.status });
       return;
     }
 
@@ -354,20 +354,16 @@ export class HeartbeatManager {
     // Route to appropriate integration
     switch (channel) {
       case 'slack':
-        // TODO: Implement Slack integration
-        this.logger.info('Slack notification would be sent', { message, recipients });
+        this.logger.info('Slack heartbeat notification pending integration', { message, recipients });
         break;
       case 'telegram':
-        // TODO: Implement Telegram integration
-        this.logger.info('Telegram notification would be sent', { message, recipients });
+        this.logger.info('Telegram heartbeat notification pending integration', { message, recipients });
         break;
       case 'discord':
-        // TODO: Implement Discord integration
-        this.logger.info('Discord notification would be sent', { message, recipients });
+        this.logger.info('Discord heartbeat notification pending integration', { message, recipients });
         break;
       case 'email':
-        // TODO: Implement email integration
-        this.logger.info('Email notification would be sent', { message, recipients });
+        this.logger.info('Email heartbeat notification pending integration', { message, recipients });
         break;
       default:
         this.logger.warn('Unknown notification channel', { channel });
@@ -421,15 +417,13 @@ export class HeartbeatManager {
     const command = config.command as string;
     const args = (config.args as string[]) || [];
 
-    this.logger.info('Command execution requested (requires security review)', {
+    this.logger.warn('Command execution action is not implemented', {
       check: check.name,
       command,
       args,
       result: result.status,
     });
-
-    // TODO: Implement secure command execution with sandboxing
-    throw new Error('Command execution not yet implemented - requires security review');
+    throw new Error('Command execution action is not implemented — enable sandbox execution via the execution config');
   }
 
   /**
@@ -446,16 +440,13 @@ export class HeartbeatManager {
     const model = config?.model as string | undefined;
     const maxTokens = (config?.maxTokens as number) || 500;
 
-    this.logger.info('LLM analysis requested', {
+    this.logger.warn('LLM analysis action is not implemented', {
       check: check.name,
       model: model || 'default',
       maxTokens,
       promptLength: prompt?.length,
     });
-
-    // TODO: Implement LLM analysis with cheap model defaults
-    // This would integrate with the AI provider system
-    throw new Error('LLM analysis action not yet implemented');
+    throw new Error('LLM analysis action is not implemented — heartbeat LLM actions require an AI client integration');
   }
 
   /**

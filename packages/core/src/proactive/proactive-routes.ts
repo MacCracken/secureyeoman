@@ -92,7 +92,7 @@ export function registerProactiveRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const deleted = await proactiveManager.deleteTrigger(request.params.id);
       if (!deleted) return reply.code(404).send({ error: 'Trigger not found' });
-      return { success: true };
+      return reply.code(204).send();
     }
   );
 
@@ -164,9 +164,9 @@ export function registerProactiveRoutes(
     }
   );
 
-  app.delete('/api/v1/proactive/suggestions/expired', async () => {
-    const deleted = await proactiveManager.clearExpiredSuggestions();
-    return { deleted };
+  app.delete('/api/v1/proactive/suggestions/expired', async (_request, reply: FastifyReply) => {
+    await proactiveManager.clearExpiredSuggestions();
+    return reply.code(204).send();
   });
 
   // ── Pattern routes ──────────────────────────────────────────────

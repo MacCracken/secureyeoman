@@ -123,7 +123,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         await brainManager.forget(request.params.id);
-        return { message: 'Memory deleted' };
+        return reply.code(204).send();
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
       }
@@ -204,7 +204,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         await brainManager.deleteKnowledge(request.params.id);
-        return { message: 'Knowledge entry deleted' };
+        return reply.code(204).send();
       } catch (err) {
         return reply.code(404).send({ error: errorMessage(err) });
       }

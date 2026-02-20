@@ -34,7 +34,7 @@ export function registerExecutionRoutes(
           sessionId: request.body.sessionId,
           timeout: request.body.timeout,
         });
-        return reply.code(200).send(result);
+        return reply.code(202).send(result);
       } catch (err) {
         if (err instanceof ApprovalRequiredError) {
           return reply.code(202).send({
@@ -75,7 +75,7 @@ export function registerExecutionRoutes(
       if (!terminated) {
         return reply.code(404).send({ error: 'Session not found or not active' });
       }
-      return { success: true };
+      return reply.code(204).send();
     }
   );
 
@@ -121,7 +121,7 @@ export function registerExecutionRoutes(
       if (!approval) {
         return reply.code(404).send({ error: 'Pending approval not found' });
       }
-      return { approval };
+      return reply.code(204).send();
     }
   );
 

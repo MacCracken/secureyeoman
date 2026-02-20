@@ -10,7 +10,9 @@ import { z } from 'zod';
 
 // ─── Agent Profile ─────────────────────────────────────────────────
 
-export const AgentProfileSchema = z.object({
+// Base object — shared by both the full schema and the create/update variants.
+// Refinements are added separately on the full schema so that .omit() works on the base.
+const AgentProfileBaseSchema = z.object({
   id: z.string(),
   name: z.string().min(1).max(64),
   description: z.string().max(500).default(''),
@@ -21,7 +23,7 @@ export const AgentProfileSchema = z.object({
   isBuiltin: z.boolean().default(false),
   createdAt: z.number().optional(),
   updatedAt: z.number().optional(),
-  // ── Phase 21: Extensible sub-agent types ──────────────────────────
+  // ── Extensible sub-agent types ──────────────────────────────────────
   /** Execution backend for this profile. Default 'llm' = existing agentic loop. */
   type: z.enum(['llm', 'binary', 'mcp-bridge']).default('llm'),
   /** For type='binary': path or name of executable on PATH. */
@@ -34,7 +36,9 @@ export const AgentProfileSchema = z.object({
   mcpTool: z.string().max(200).optional(),
   /** Mustache template for the MCP tool's input JSON. Supports {{task}} and {{context}}. */
   mcpToolInput: z.string().max(5000).optional(),
-}).refine(
+});
+
+export const AgentProfileSchema = AgentProfileBaseSchema.refine(
   (p) => p.type !== 'binary' || !!p.command,
   { message: "'binary' profile type requires 'command' to be set", path: ['command'] }
 ).refine(
@@ -44,16 +48,27 @@ export const AgentProfileSchema = z.object({
 
 export type AgentProfile = z.infer<typeof AgentProfileSchema>;
 
-export const AgentProfileCreateSchema = AgentProfileSchema.omit({
+export const AgentProfileCreateSchema = AgentProfileBaseSchema.omit({
   id: true,
   isBuiltin: true,
   createdAt: true,
   updatedAt: true,
-});
+}).refine(
+  (p) => p.type !== 'binary' || !!p.command,
+  { message: "'binary' profile type requires 'command' to be set", path: ['command'] }
+).refine(
+  (p) => p.type !== 'mcp-bridge' || !!p.mcpTool,
+  { message: "'mcp-bridge' profile type requires 'mcpTool' to be set", path: ['mcpTool'] }
+);
 
 export type AgentProfileCreate = z.infer<typeof AgentProfileCreateSchema>;
 
-export const AgentProfileUpdateSchema = AgentProfileCreateSchema.partial();
+export const AgentProfileUpdateSchema = AgentProfileBaseSchema.omit({
+  id: true,
+  isBuiltin: true,
+  createdAt: true,
+  updatedAt: true,
+}).partial();
 
 export type AgentProfileUpdate = z.infer<typeof AgentProfileUpdateSchema>;
 

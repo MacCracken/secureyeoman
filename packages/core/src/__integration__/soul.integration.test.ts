@@ -177,7 +177,7 @@ describe('Soul Integration', () => {
       url: `/api/v1/soul/personalities/${personality.id}`,
       headers,
     });
-    expect(deleteRes.statusCode).toBe(200);
+    expect(deleteRes.statusCode).toBe(204);
   });
 
   // ── Skill CRUD ─────────────────────────────────────────────
@@ -233,7 +233,7 @@ describe('Soul Integration', () => {
       url: `/api/v1/soul/skills/${skill.id}`,
       headers,
     });
-    expect(deleteRes.statusCode).toBe(200);
+    expect(deleteRes.statusCode).toBe(204);
   });
 
   // ── Skill approval workflow ────────────────────────────────

@@ -48,6 +48,7 @@ describe('UsageStorage.queryHistory()', () => {
   beforeAll(async () => {
     await setupTestDb();
     storage = new UsageStorage();
+    await storage.init();
   });
 
   beforeEach(async () => {

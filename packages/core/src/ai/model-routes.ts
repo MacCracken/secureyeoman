@@ -110,7 +110,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
   app.delete('/api/v1/model/default', async (_request, reply: FastifyReply) => {
     try {
       await secureYeoman.clearModelDefault();
-      return { success: true };
+      return reply.code(204).send();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Unknown error';
       return reply.code(500).send({ error: message });

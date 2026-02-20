@@ -508,8 +508,6 @@ describe('HeartbeatManager', () => {
 
   describe('action triggers', () => {
     it('should trigger action on_error condition', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       const config = defaultConfig({
         checks: [
           {
@@ -544,13 +542,13 @@ describe('HeartbeatManager', () => {
 
       await hb.beat();
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Error: failing_check'));
-      consoleSpy.mockRestore();
+      expect(logger.info).toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('Error: failing_check') })
+      );
     });
 
     it('should not trigger action when condition does not match', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       const config = defaultConfig({
         checks: [
           {
@@ -576,13 +574,13 @@ describe('HeartbeatManager', () => {
       const hb = new HeartbeatManager(brain, audit, logger, config);
       await hb.beat();
 
-      expect(consoleSpy).not.toHaveBeenCalledWith(expect.stringContaining('Should not see this'));
-      consoleSpy.mockRestore();
+      expect(logger.info).not.toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('Should not see this') })
+      );
     });
 
     it('should trigger always condition regardless of status', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       const config = defaultConfig({
         checks: [
           {
@@ -608,8 +606,10 @@ describe('HeartbeatManager', () => {
       const hb = new HeartbeatManager(brain, audit, logger, config);
       await hb.beat();
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Always triggered'));
-      consoleSpy.mockRestore();
+      expect(logger.info).toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('Always triggered') })
+      );
     });
   });
 
@@ -656,8 +656,6 @@ describe('HeartbeatManager', () => {
 
   describe('default actions', () => {
     it('should run default actions for all checks', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       const config = defaultConfig({
         defaultActions: [
           {
@@ -678,14 +676,17 @@ describe('HeartbeatManager', () => {
       const hb = new HeartbeatManager(brain, audit, logger, config);
       await hb.beat();
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Default action: check1'));
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Default action: check2'));
-      consoleSpy.mockRestore();
+      expect(logger.info).toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('Default action: check1') })
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('Default action: check2') })
+      );
     });
 
     it('should merge default and check-specific actions', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
       const config = defaultConfig({
         defaultActions: [
           {
@@ -721,9 +722,14 @@ describe('HeartbeatManager', () => {
       const hb = new HeartbeatManager(brain, audit, logger, config);
       await hb.beat();
 
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Default'));
-      expect(consoleSpy).toHaveBeenCalledWith(expect.stringContaining('Specific'));
-      consoleSpy.mockRestore();
+      expect(logger.info).toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('Default') })
+      );
+      expect(logger.info).toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('Specific') })
+      );
     });
   });
 
@@ -869,7 +875,6 @@ describe('HeartbeatManager', () => {
 
   describe('action execution error handling', () => {
     it('should continue other actions if one fails', async () => {
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
       const errorSpy = vi.spyOn(logger, 'error').mockImplementation(() => {});
 
       // Mock fetch to fail immediately
@@ -910,11 +915,11 @@ describe('HeartbeatManager', () => {
       await hb.beat();
 
       // Second action should still have been called
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Second action should still run')
+      expect(logger.info).toHaveBeenCalledWith(
+        '[HEARTBEAT ALERT]',
+        expect.objectContaining({ message: expect.stringContaining('Second action should still run') })
       );
 
-      consoleSpy.mockRestore();
       errorSpy.mockRestore();
       fetchSpy.mockRestore();
     });

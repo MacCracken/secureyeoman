@@ -77,7 +77,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!(await workspaceManager.delete(request.params.id)))
         return reply.code(404).send({ error: 'Workspace not found' });
-      return { message: 'Workspace deleted' };
+      return reply.code(204).send();
     }
   );
 
@@ -143,7 +143,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
     ) => {
       if (!(await workspaceManager.removeMember(request.params.id, request.params.userId)))
         return reply.code(404).send({ error: 'Member not found' });
-      return { message: 'Member removed' };
+      return reply.code(204).send();
     }
   );
 
@@ -182,7 +182,7 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
         return reply.code(400).send({ error: 'Cannot delete built-in admin user' });
       if (!(await authService.deleteUser(request.params.id)))
         return reply.code(404).send({ error: 'User not found' });
-      return { message: 'User deleted' };
+      return reply.code(204).send();
     }
   );
 }

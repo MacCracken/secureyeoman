@@ -49,7 +49,7 @@ export function registerCommsRoutes(app: FastifyInstance, opts: CommsRoutesOptio
       if (!removed) {
         return reply.code(404).send({ error: 'Peer not found' });
       }
-      return { message: 'Peer removed' };
+      return reply.code(204).send();
     }
   );
 
