@@ -243,8 +243,8 @@ MCP_PORT=3001              # MCP port (default: 3001)
 MCP_TRANSPORT="streamable-http"  # streamable-http|sse|stdio
 MCP_EXPOSE_FILESYSTEM=false      # Opt-in sandboxed file operations
 
-# Redis (enables distributed rate limiting)
-REDIS_URL="redis://localhost:6379"
+# Redis (distributed rate limiting — set via YAML config, not env var)
+# security.rateLimiting.redisUrl: "redis://localhost:6379"
 ```
 
 See [.env.example](.env.example) for all options.
@@ -275,7 +275,7 @@ curl http://localhost:18789/health
 # Authenticate
 TOKEN=$(curl -s -X POST http://localhost:18789/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"username":"admin","password":"your-admin-password"}' | jq -r '.accessToken')
+  -d '{"password":"your-admin-password"}' | jq -r '.accessToken')
 
 # Get metrics
 curl http://localhost:18789/api/v1/metrics \
@@ -393,7 +393,7 @@ Connect SecureYeoman to any MCP-compatible client (Claude Desktop, etc.):
   "mcpServers": {
     "secureyeoman": {
       "command": "node",
-      "args": ["packages/mcp/dist/index.js"],
+      "args": ["packages/mcp/dist/cli.js"],
       "env": {
         "MCP_TRANSPORT": "stdio",
         "MCP_CORE_URL": "http://127.0.0.1:18789",
@@ -412,10 +412,12 @@ A `community-skills/` directory is bundled inside the project and available in D
 
 ```bash
 # Sync bundled skills (default — works in Docker and local dev)
-curl -X POST http://localhost:18789/api/v1/marketplace/community/sync
+curl -X POST http://localhost:18789/api/v1/marketplace/community/sync \
+  -H "Authorization: Bearer $TOKEN"
 
 # Browse community skills
-curl "http://localhost:18789/api/v1/marketplace?source=community"
+curl "http://localhost:18789/api/v1/marketplace?source=community" \
+  -H "Authorization: Bearer $TOKEN"
 ```
 
 Or use the Dashboard → Skills → **Community** tab — includes a Sync button, per-personality install, and live sync results.
@@ -460,7 +462,7 @@ secureyeoman/
 │   └── mcp/             # Standalone MCP service (34+ tools, 7 resources, 4 prompts)
 ├── tests/               # Security, load (k6), and chaos tests
 ├── deploy/              # Docker, Helm chart, Prometheus, Grafana, Loki configs
-├── docs/                # Documentation + ADRs (43 decision records)
+├── docs/                # Documentation + ADRs (75 decision records)
 │   ├── api/             # REST API + WebSocket API + OpenAPI 3.1 spec
 │   ├── adr/             # Architecture Decision Records
 │   ├── guides/          # Getting started, integrations
@@ -541,7 +543,7 @@ This updates all `package.json` files in the monorepo. The core server reads its
 | **Kubernetes** | [Kubernetes Deployment Guide](docs/guides/kubernetes-deployment.md) |
 | **Integrations** | [Integration Setup](docs/guides/integrations.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (43 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (75 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |

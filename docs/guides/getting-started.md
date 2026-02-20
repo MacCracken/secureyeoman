@@ -139,9 +139,9 @@ OLLAMA_BASE_URL="http://localhost:11434"
 ### Optional Variables
 
 ```bash
-PORT=18789              # Gateway port (dashboard + API)
-HOST=127.0.0.1          # Gateway bind address
-LOG_LEVEL=info          # trace|debug|info|warn|error
+SECUREYEOMAN_PORT=18789              # Gateway port (dashboard + API)
+SECUREYEOMAN_HOST=127.0.0.1          # Gateway bind address
+SECUREYEOMAN_LOG_LEVEL=info          # trace|debug|info|warn|error
 NODE_ENV=development
 ```
 
