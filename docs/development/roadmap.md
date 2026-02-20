@@ -33,12 +33,13 @@
 | 19 | Per-Personality Access | 2026.2.19 | Complete |
 | 20 | SaaS ready | 2026.2.19 | Complete |
 | | **Release 2026.2.19** | **2026-02-19** | **Released** |
-| 21 | Onboarding & First Run | — | Pending |
-| 22 | Testing All the Things | — | Pending |
+| 21 | Onboarding | — | Pending |
+| 22 | Major Audit | — | Pending |
+| 23 | Testing All the Things | — | Pending |
 
 ---
 
-## Phase 21: Onboarding & First Run
+## Phase 21: Onboarding
 
 **Status**: Pending
 
@@ -50,44 +51,73 @@
 - [ ] **Interactive Init Command** — `secureyeoman init` with interactive wizard for first-time setup (generate keys, configure AI providers, set up integrations)
 - [ ] **Configuration Wizard** — Guided config file generation with prompts for required settings
 
-### Major Audit
-
-- [ ] **Audit all the things** — Code, Documentation, ADR, & Tests
-
 ---
 
-## Phase 22: Testing All the Things
+## Phase 22: Major Audit
 
 **Status**: Pending
 
-*Full-system quality pass. The goal is ruthless: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.*
+*A full top-to-bottom review of every layer of the system — code, documentation, ADRs, tests, security, and API consistency. Nothing ships in Phase 23 until this is clean.*
 
-### Test Coverage Audit
+### Code Quality
 
-- [ ] **Coverage baseline** — Run `npm run test:coverage` across all packages; identify files below 80% coverage and add targeted tests
+- [ ] **Dead code sweep** — Remove unused imports, unreachable branches, commented-out blocks, and stale `TODO`/`FIXME` comments across all packages
+- [ ] **TypeScript strict compliance** — Resolve all `any` casts, implicit type widening, and suppressed type errors; confirm `tsc --noEmit` passes with zero warnings
+- [ ] **Naming & consistency** — Audit method and variable naming for consistency across `auth`, `workspace`, `agents`, `soul`, `brain`, and `mcp` packages; align with established conventions
+
+### Documentation
+
+- [ ] **Docs accuracy pass** — Walk through every file in `docs/` and verify it matches the current code; update or remove anything stale, wrong, or misleading
+- [ ] **Getting-started end-to-end** — Follow `docs/guides/getting-started.md` on a clean machine for each install method (binary, source, Docker); fix every step that fails
+- [ ] **Configuration reference** — Verify every YAML field and env var in `docs/configuration.md` maps to a real config key in `packages/shared/src/types/config.ts`
+- [ ] **API reference** — Audit `docs/api/rest-api.md` against actual registered routes; remove phantom endpoints, document missing ones
+
+### ADRs
+
+- [ ] **Coverage check** — Every shipped feature has a corresponding ADR; every ADR references the correct file names, method names, and migration IDs as deployed
+- [ ] **Status audit** — All ADRs marked `Accepted` reflect current implementation; `Superseded` entries link to the superseding ADR
+- [ ] **Gap fill** — Identify features shipped without an ADR and write the missing documents
+
+### Security
+
+- [ ] **Dependency audit** — `npm audit --audit-level=moderate`; resolve or formally accept every finding (add to [Dependency Watch](dependency-watch.md) for accepted risks)
+- [ ] **OWASP Top 10 review** — Walk each category against the codebase; verify injection protection, broken access control, cryptographic failures, and security misconfiguration
+- [ ] **Secrets hygiene** — Confirm no secrets leak in logs, error responses, or audit records; verify `SECUREYEOMAN_ENCRYPTION_KEY` path for stored credentials
+
+### API Consistency
+
+- [ ] **Error response shape** — All error responses use the same `{ error, message, statusCode }` shape; no raw `throw new Error(...)` escaping to the client
+- [ ] **HTTP status codes** — Audit all routes for correct status codes (201 on create, 204 on delete, 409 on conflict, 422 on validation failure)
+- [ ] **Pagination** — All list endpoints that can return large result sets support cursor or offset pagination
+
+---
+
+## Phase 23: Testing All the Things
+
+**Status**: Pending
+
+*Full-system quality pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.*
+
+### Test Coverage
+
+- [ ] **Coverage baseline** — Run `npm run test:coverage` across all packages; add targeted tests for any file below 80%
 - [ ] **Integration test gaps** — Audit `packages/core/src/__integration__/` for missing scenarios: multi-user auth flows, workspace member RBAC, SSO callback edge cases, binary sub-agent timeout/kill, mcp-bridge template errors
-- [ ] **Migration integrity** — Verify all 26 migrations apply cleanly on a fresh database and on a database upgraded from migration 001
+- [ ] **Migration integrity** — Verify all 26 migrations apply cleanly on a fresh database and idempotently on an already-migrated one
 
 ### Bug Hunt
 
-- [ ] **Auth & SSO** — Exercise the full OIDC flow end-to-end; test `auto_provision: false` rejection, expired state tokens, malformed callback params
-- [ ] **Workspace RBAC** — Verify workspace-scoped role enforcement; test member add/remove edge cases, default workspace bootstrap on fresh install
-- [ ] **Sub-agent execution** — Test `binary` agent timeout and kill path; test `mcp-bridge` with missing tool name, unreachable MCP server, template with no `{{task}}` variable
-- [ ] **Migration runner** — Confirm manifest fast-path correctly skips already-applied migrations; confirm re-run is idempotent
-- [ ] **SPA serving** — Confirm `/api/v1/*` routes are never intercepted by `setNotFoundHandler`; confirm non-existent assets return `index.html` not a 404 JSON
-- [ ] **Single binary smoke test** — Build all tier 1 + tier 2 targets; run `--version`, `health --json`, `config validate --json` against each binary
-- [ ] **Docker** — `docker compose up` cold-start with empty volumes; verify migrations run, default workspace created, healthcheck passes
+- [ ] **Auth & SSO** — Full OIDC flow end-to-end; `auto_provision: false` rejection; expired state tokens; malformed callback params
+- [ ] **Workspace RBAC** — Workspace-scoped role enforcement; member add/remove edge cases; default workspace bootstrap on fresh install
+- [ ] **Sub-agent execution** — `binary` timeout and kill path; `mcp-bridge` with missing tool, unreachable server, template missing `{{task}}`
+- [ ] **SPA serving** — `/api/v1/*` never intercepted by `setNotFoundHandler`; unknown assets return `index.html`, not 404 JSON
+- [ ] **Single binary smoke test** — Build all Tier 1 + Tier 2 targets; run `--version`, `health --json`, `config validate --json` against each
+- [ ] **Docker cold-start** — `docker compose up` with empty volumes; migrations run, default workspace created, healthcheck passes
 
 ### Regression & Performance
 
-- [ ] **Regression suite** — Run existing 2100+ tests; fix any failures introduced by Phase 20–22 changes
-- [ ] **Memory baseline** — Confirm cold-start memory is still <300 MB after Phase 20 additions (SsoStorage, WorkspaceManager expansion, new routes)
-- [ ] **Startup time** — Confirm `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
-
-### Documentation QA
-
-- [ ] **ADR completeness** — Verify ADRs 070–073 are internally consistent with the shipped code (file names, method names, migration IDs)
-- [ ] **Getting-started walkthrough** — Follow `docs/guides/getting-started.md` on a clean machine; fix any step that fails or is out of date
+- [ ] **Regression suite** — All 2100+ tests pass; fix any failures introduced by Phase 20–23 changes
+- [ ] **Memory baseline** — Cold-start still <300 MB after Phase 20 additions
+- [ ] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
 
 ---
 
@@ -148,4 +178,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-19 — Phase 20 complete; Phase 22 renamed to Testing All the Things*
+*Last updated: 2026-02-19 — Phase 20 complete; Phase 21 → Onboarding; Phase 22 → Major Audit (new); Phase 23 → Testing All the Things*
