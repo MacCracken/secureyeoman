@@ -104,12 +104,10 @@
 
 *Revisit after community responds to the Phase 18 local-path-sync approach — see [ADR 063](../adr/063-community-skills-registry.md).*
 
-- [ ] **Git URL Fetch** — `POST /api/v1/marketplace/community/sync` accepts an optional `repoUrl` param; clones or pulls from a git URL directly without the user managing a local clone.
 - [ ] **Scheduled Auto-Sync** — Optional cron-style background sync from the configured community repo (configurable interval, off by default)
 - [ ] **Hosted Discovery API** — A lightweight read-only API for browsing available community skills without cloning. Community repo publishes a generated `index.json` via CI.
 - [ ] **Cryptographic Skill Signing** — Authors sign skills with a keypair; SecureYeoman verifies signatures before installing. Reject unsigned skills in strict mode.
 - [ ] **Skill Ratings & Downloads** — Community feedback mechanism (stars, download counts) surfaced in the marketplace UI
-- [ ] **Community Repo: Rich Author Metadata & Contribution Guidelines** — Extend the community skill JSON schema to support structured author data (e.g. `author` becomes an object with `name`, `github`, `website`; optional `license` override per skill). Pair with a formal approval checklist in `CONTRIBUTING.md` covering: quality bar, security review criteria, rejection criteria, and what reviewers look for in a PR. Closes the gap for contributors migrating skills from other platforms who expect proper attribution fields and a clear path to getting their work accepted.
 
 ### Real-time Collaboration
 
@@ -122,7 +120,6 @@
 ### Platform
 
 - [ ] **Mobile app** — Native iOS/Android
-- [ ] **Cloud Managed Offering** — Hosted SaaS deployment
 
 ---
 
@@ -144,4 +141,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-20 — Phase 22 fully complete (OWASP Top 10 review + API consistency); Phase 23 → Testing All the Things. x.ai Grok added as 10th AI provider (ADR 076).*
+*Last updated: 2026-02-20
