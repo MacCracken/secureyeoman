@@ -576,7 +576,8 @@ export class GatewayServer {
     try {
       const proactiveManager = this.secureYeoman.getProactiveManager();
       if (proactiveManager) {
-        registerProactiveRoutes(this.app, { proactiveManager });
+        const logStorage = this.secureYeoman.getHeartbeatLogStorage() ?? undefined;
+        registerProactiveRoutes(this.app, { proactiveManager, logStorage });
         this.getLogger().info('Proactive routes registered');
       }
     } catch (err) {

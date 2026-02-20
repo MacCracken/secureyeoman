@@ -76,7 +76,60 @@ All notable changes to SecureYeoman are documented in this file.
   Bonus fix: `ensureDefaultWorkspace` now adds the bootstrap admin user as `owner` (the highest
   workspace role) instead of `admin`, correctly reflecting their status as workspace creator.
 
+- **Heartbeat Task execution log** — Heartbeat check results were only emitted to the pino
+  logger and the audit chain; there was no way to audit past runs, see the last-result status
+  per check, or diagnose recurring failures. Fixed with end-to-end persistence:
+
+  1. **Migration 028** — New `proactive.heartbeat_log` table with columns `id`, `check_name`,
+     `personality_id`, `ran_at`, `status` (`ok`/`warning`/`error`), `message`, `duration_ms`,
+     `error_detail`. Indexed on `check_name`, `ran_at DESC`, and `status`.
+
+  2. **HeartbeatLogStorage** — New `packages/core/src/body/heartbeat-log-storage.ts` class
+     extending `PgBaseStorage`. Provides `persist(entry)` and `list(filter)` with `checkName`,
+     `status`, `limit`, and `offset` filter support.
+
+  3. **HeartbeatManager persistence** — `HeartbeatManager` now accepts an optional
+     `logStorage?: HeartbeatLogStorage` parameter (added as the 6th constructor arg, fully
+     backward-compatible). The `beat()` loop times each check individually (`checkStart`
+     timestamp) and calls `logStorage.persist()` after every `runCheck()` call — including
+     failed checks, where `errorDetail` captures the error stack. Failures to persist are
+     logged as warnings and never propagate.
+
+  4. **`GET /api/v1/proactive/heartbeat/log`** — New route in `proactive-routes.ts` backed
+     by `HeartbeatLogStorage.list()`. Query params: `?checkName=&status=&limit=&offset=`.
+     Returns `{ entries: HeartbeatLogEntry[], total: number }`. Mapped to
+     `proactive:read` in `ROUTE_PERMISSIONS` (accessible to operators, viewers, and admins).
+     Returns 503 if the log storage is not available (heartbeat disabled).
+
+  5. **Dashboard: `HeartbeatTaskRow` status badge and history panel** — The enabled/disabled
+     badge in the heartbeat task row is replaced by a clickable status toggle. Clicking it
+     expands an inline history panel that lazy-fetches the 10 most recent log entries for that
+     check via `fetchHeartbeatLog({ checkName, limit: 10 })`. The status badge shows the
+     last-result status (`ok` → green, `warning` → amber, `error` → red) once log data is
+     loaded; falls back to Active/Disabled when no log data exists yet.
+
 ### Files Changed
+
+- `packages/core/src/storage/migrations/028_heartbeat_log.sql` — new migration
+- `packages/core/src/body/heartbeat-log-storage.ts` — HeartbeatLogStorage class (new file)
+- `packages/core/src/body/heartbeat.ts` — optional logStorage param; per-check timing;
+  persist after every runCheck()
+- `packages/core/src/body/index.ts` — exports HeartbeatLogStorage, HeartbeatLogEntry,
+  HeartbeatLogFilter
+- `packages/core/src/secureyeoman.ts` — creates HeartbeatLogStorage, threads it into
+  HeartbeatManager, exposes getHeartbeatLogStorage()
+- `packages/core/src/proactive/proactive-routes.ts` — GET /api/v1/proactive/heartbeat/log
+  route; logStorage added to opts
+- `packages/core/src/gateway/server.ts` — passes logStorage to registerProactiveRoutes
+- `packages/core/src/gateway/auth-middleware.ts` — ROUTE_PERMISSIONS entry for heartbeat log
+- `packages/dashboard/src/types.ts` — HeartbeatLogEntry interface
+- `packages/dashboard/src/api/client.ts` — fetchHeartbeatLog() function
+- `packages/dashboard/src/components/TaskHistory.tsx` — HeartbeatTaskRow rewritten with
+  last-result status badge and expandable execution history panel
+- `packages/core/src/body/heartbeat-log-storage.test.ts` — 8 unit tests (new file)
+- `packages/core/src/body/heartbeat.test.ts` — 4 logStorage integration tests added
+- `packages/dashboard/src/components/TaskHistory.test.tsx` — 4 new heartbeat log tests;
+  fetchHeartbeatLog added to mock
 
 - `packages/core/src/security/sso-manager.ts` — state consumed before provider mismatch check
 - `packages/core/src/gateway/sso-routes.ts` — operator-precedence fix in authorize scheme calculation

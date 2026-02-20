@@ -31,6 +31,7 @@ import type {
   KnowledgeEntry,
   HeartbeatTask,
   HeartbeatStatus,
+  HeartbeatLogEntry,
   Memory,
 } from '../types.js';
 
@@ -1079,6 +1080,25 @@ export async function updateHeartbeatTask(
     method: 'PUT',
     body: JSON.stringify(data),
   });
+}
+
+export async function fetchHeartbeatLog(params?: {
+  checkName?: string;
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ entries: HeartbeatLogEntry[]; total: number }> {
+  const q = new URLSearchParams();
+  if (params?.checkName) q.set('checkName', params.checkName);
+  if (params?.status) q.set('status', params.status);
+  if (params?.limit !== undefined) q.set('limit', String(params.limit));
+  if (params?.offset !== undefined) q.set('offset', String(params.offset));
+  const qs = q.toString();
+  try {
+    return await request(`/proactive/heartbeat/log${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { entries: [], total: 0 };
+  }
 }
 
 export async function fetchExternalSyncStatus(): Promise<{

@@ -18,6 +18,7 @@ import type { BrainManager } from '../brain/manager.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { IntegrationManager } from '../integrations/manager.js';
 import type { SecureLogger } from '../logging/logger.js';
+import type { HeartbeatLogStorage } from './heartbeat-log-storage.js';
 // Type definitions for proactive heartbeat features
 // These extend the shared types with action and scheduling capabilities
 
@@ -84,6 +85,7 @@ export class HeartbeatManager {
   private readonly integrationManager: IntegrationManager | null;
   private readonly logger: SecureLogger;
   private readonly config: HeartbeatConfig;
+  private readonly logStorage: HeartbeatLogStorage | null;
   private interval: ReturnType<typeof setInterval> | null = null;
   private lastBeat: HeartbeatResult | null = null;
   private beatCount = 0;
@@ -96,13 +98,15 @@ export class HeartbeatManager {
     auditChain: AuditChain,
     logger: SecureLogger,
     config: HeartbeatConfig,
-    integrationManager?: IntegrationManager
+    integrationManager?: IntegrationManager,
+    logStorage?: HeartbeatLogStorage
   ) {
     this.brain = brain;
     this.auditChain = auditChain;
     this.logger = logger;
     this.config = config;
     this.integrationManager = integrationManager ?? null;
+    this.logStorage = logStorage ?? null;
   }
 
   /**
@@ -498,12 +502,15 @@ export class HeartbeatManager {
     });
 
     for (const check of dueChecks) {
+      const checkStart = Date.now();
       let result: HeartbeatCheckResult;
+      let errorDetail: string | null = null;
       try {
         result = await this.runCheck(check);
         checks.push(result);
         this.taskLastRun.set(check.name, start);
       } catch (err) {
+        errorDetail = err instanceof Error ? (err.stack ?? err.message) : String(err);
         result = {
           name: check.name,
           type: check.type,
@@ -512,6 +519,28 @@ export class HeartbeatManager {
         };
         checks.push(result);
         this.taskLastRun.set(check.name, start);
+      }
+
+      const checkDurationMs = Date.now() - checkStart;
+
+      // Persist execution result to heartbeat log
+      if (this.logStorage) {
+        try {
+          await this.logStorage.persist({
+            checkName: check.name,
+            personalityId: null,
+            ranAt: checkStart,
+            status: result.status,
+            message: result.message,
+            durationMs: checkDurationMs,
+            errorDetail,
+          });
+        } catch (logErr) {
+          this.logger.warn('Failed to persist heartbeat log entry', {
+            check: check.name,
+            error: logErr instanceof Error ? logErr.message : 'Unknown error',
+          });
+        }
       }
 
       // Execute any configured actions based on result

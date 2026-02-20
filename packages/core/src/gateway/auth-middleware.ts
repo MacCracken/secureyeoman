@@ -405,6 +405,7 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   '/api/v1/proactive/patterns':                       { GET: { resource: 'proactive', action: 'read' } },
   '/api/v1/proactive/patterns/:id/convert':           { POST: { resource: 'proactive', action: 'write' } },
   '/api/v1/proactive/status':                         { GET: { resource: 'proactive', action: 'read' } },
+  '/api/v1/proactive/heartbeat/log':                  { GET: { resource: 'proactive', action: 'read' } },
   // A2A (Agent-to-Agent) — mapped to 'agents' resource
   '/api/v1/a2a/peers':           { GET: { resource: 'agents', action: 'read' }, POST: { resource: 'agents', action: 'write' } },
   '/api/v1/a2a/peers/:id':       { DELETE: { resource: 'agents', action: 'write' } },

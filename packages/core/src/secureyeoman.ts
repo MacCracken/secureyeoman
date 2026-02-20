@@ -91,6 +91,7 @@ import { TodoistIntegration } from './integrations/todoist/index.js';
 import { SpotifyIntegration } from './integrations/spotify/index.js';
 import { YouTubeIntegration } from './integrations/youtube/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
+import { HeartbeatLogStorage } from './body/heartbeat-log-storage.js';
 import { HeartManager } from './body/heart.js';
 import { ExternalBrainSync } from './brain/external-sync.js';
 import { McpStorage } from './mcp/storage.js';
@@ -170,6 +171,7 @@ export class SecureYeoman {
   private brainStorage: BrainStorage | null = null;
   private brainManager: BrainManager | null = null;
   private heartbeatManager: HeartbeatManager | null = null;
+  private heartbeatLogStorage: HeartbeatLogStorage | null = null;
   private heartManager: HeartManager | null = null;
   private externalBrainSync: ExternalBrainSync | null = null;
   private spiritStorage: SpiritStorage | null = null;
@@ -676,12 +678,14 @@ export class SecureYeoman {
 
       // Step 6.6: Initialize heartbeat + heart system
       if (this.config.heartbeat?.enabled) {
+        this.heartbeatLogStorage = new HeartbeatLogStorage();
         this.heartbeatManager = new HeartbeatManager(
           this.brainManager,
           this.auditChain,
           this.logger.child({ component: 'HeartbeatManager' }),
           this.config.heartbeat,
-          this.integrationManager
+          this.integrationManager,
+          this.heartbeatLogStorage
         );
         this.heartManager = new HeartManager(this.heartbeatManager);
         this.soulManager.setHeart(this.heartManager);
@@ -1436,6 +1440,14 @@ export class SecureYeoman {
   getHeartbeatManager(): HeartbeatManager | null {
     this.ensureInitialized();
     return this.heartbeatManager;
+  }
+
+  /**
+   * Get the heartbeat log storage instance (may be null if heartbeat is disabled)
+   */
+  getHeartbeatLogStorage(): HeartbeatLogStorage | null {
+    this.ensureInitialized();
+    return this.heartbeatLogStorage;
   }
 
   /**

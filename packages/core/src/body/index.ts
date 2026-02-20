@@ -8,6 +8,7 @@
  */
 
 export { HeartbeatManager, type HeartbeatResult, type HeartbeatCheckResult } from './heartbeat.js';
+export { HeartbeatLogStorage, type HeartbeatLogEntry, type HeartbeatLogFilter } from './heartbeat-log-storage.js';
 export { HeartManager } from './heart.js';
 export type { BodyConfig } from './types.js';
 
