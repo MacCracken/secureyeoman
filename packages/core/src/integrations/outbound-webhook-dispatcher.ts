@@ -17,6 +17,7 @@ import type {
   OutboundWebhook,
 } from './outbound-webhook-storage.js';
 import type { SecureLogger } from '../logging/logger.js';
+import { isPrivateUrl } from '../utils/ssrf-guard.js';
 
 // ─── Payload shape ────────────────────────────────────────────
 
@@ -89,6 +90,12 @@ export class OutboundWebhookDispatcher {
     wh: OutboundWebhook,
     payload: OutboundWebhookPayload
   ): Promise<void> {
+    // SSRF guard: block delivery to private/internal network addresses
+    if (isPrivateUrl(wh.url)) {
+      this.logger.warn('OutboundWebhookDispatcher: blocked SSRF attempt', { webhookId: wh.id, url: wh.url });
+      return;
+    }
+
     const body = JSON.stringify(payload);
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',

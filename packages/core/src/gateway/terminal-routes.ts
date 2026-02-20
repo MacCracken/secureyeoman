@@ -22,21 +22,34 @@ interface ExecuteCommandResponse {
   cwd: string;
 }
 
-// Command blacklist for security
-const BLOCKED_COMMANDS = [
-  'rm -rf /',
-  'rm -rf /*',
-  '> /dev/sda',
-  'mkfs',
-  'dd if=/dev/zero',
-  ':(){ :|:& };:', // fork bomb
-  'chmod -R 777 /',
+// Commands that destroy data or the system — checked case-insensitively
+const BLOCKED_PATTERNS = [
+  /rm\s+-[a-z]*r[a-z]*f?\s+[/~*]/, // rm -rf / or rm -r ~
+  />\s*\/dev\/(sda|sdb|sdc|null|zero|random)/, // clobber devices
+  /mkfs(\.[a-z0-9]+)?\s+\//, // format root
+  /dd\s+if=\/dev\/(zero|urandom|random)/, // zero-fill
+  /:\s*\(\s*\)\s*\{/, // fork bomb preamble :(){
+  /chmod\s+-[a-z]*R[a-z]*\s+777\s+\//, // chmod -R 777 /
+  /shutdown|reboot|halt|poweroff|init\s+0/, // system control
+  /\bkill\s+-9\s+-1\b/, // kill all processes
+  /chown\s+-[a-z]*R[a-z]*\s+.*\//, // recursive chown on root paths
+  /passwd\s*$/, // interactive passwd change
+  />\s*\/etc\//, // clobber system configs
 ];
+
+// Shell metacharacter injection — block command chaining/substitution against sensitive targets
+const SHELL_INJECTION_PATTERN = /[;&|`]|(\$\()|(\${)/;
+
+// Sensitive absolute paths that must not be the cwd
+const SENSITIVE_PATH_PREFIXES = ['/etc', '/root', '/boot', '/proc', '/sys', '/dev'];
 
 // Check if command is potentially dangerous
 function isBlockedCommand(command: string): boolean {
-  const normalized = command.toLowerCase().trim();
-  return BLOCKED_COMMANDS.some((blocked) => normalized.includes(blocked.toLowerCase()));
+  const lower = command.toLowerCase();
+  if (BLOCKED_PATTERNS.some((re) => re.test(lower))) return true;
+  // Block commands containing shell injection operators targeting sensitive paths
+  if (SHELL_INJECTION_PATTERN.test(command) && SENSITIVE_PATH_PREFIXES.some((p) => command.includes(p))) return true;
+  return false;
 }
 
 export function registerTerminalRoutes(app: FastifyInstance): void {
@@ -60,14 +73,20 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
       // Validate working directory
       const workingDir = cwd && typeof cwd === 'string' ? cwd : process.cwd();
 
+      // Reject sensitive system path prefixes first (fast path, before allowlist check)
+      if (SENSITIVE_PATH_PREFIXES.some((p) => workingDir === p || workingDir.startsWith(p + '/'))) {
+        logger.warn('Blocked command with sensitive working directory', { command, cwd: workingDir, ip: request.ip });
+        return sendError(reply, 403, 'Working directory is not allowed.');
+      }
+
       // Ensure working directory is within allowed paths (prevent directory traversal)
       const allowedPrefixes = [process.cwd(), '/home', '/tmp', '/var/tmp'];
 
-      const isAllowedPath = allowedPrefixes.some(
-        (prefix) => workingDir.startsWith(prefix) || workingDir === prefix
-      );
+      const isAllowedPath =
+        allowedPrefixes.some((prefix) => workingDir === prefix || workingDir.startsWith(prefix + '/'))
+        || workingDir.startsWith(process.cwd() + '/');
 
-      if (!isAllowedPath && !workingDir.startsWith(process.cwd())) {
+      if (!isAllowedPath) {
         logger.warn('Blocked command with disallowed working directory', {
           command,
           cwd: workingDir,
