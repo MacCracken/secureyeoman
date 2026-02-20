@@ -35,6 +35,47 @@ All notable changes to SecureYeoman are documented in this file.
   extension check: URLs whose last path segment contains a `.` now return JSON 404
   instead of the SPA shell. Query strings are stripped before all URL checks.
 
+- **Workspace RBAC: six defects fixed** — A full audit of workspace-scoped role enforcement
+  identified and fixed the following:
+
+  1. **Missing ROUTE_PERMISSIONS entries** — Six workspace and user-management routes were absent
+     from the `ROUTE_PERMISSIONS` map in `auth-middleware.ts`, causing them to fall through to the
+     admin-only default-deny path:
+     - `PUT /api/v1/workspaces/:id` → `workspaces:write` (operators can update workspaces)
+     - `GET /api/v1/workspaces/:id/members` → `workspaces:read` (viewers can list members)
+     - `PUT /api/v1/workspaces/:id/members/:userId` → `workspaces:write`
+     - `GET /api/v1/users` → `auth:read`
+     - `POST /api/v1/users` → `auth:write`
+     - `DELETE /api/v1/users/:id` → `auth:write`
+
+  2. **No workspace existence check before addMember** — `POST /api/v1/workspaces/:id/members`
+     did not verify the workspace existed before calling `addMember`, potentially inserting orphaned
+     member rows. Added a `get()` guard that returns 404 on missing workspace.
+
+  3. **No role validation** — The `role` body parameter was accepted as a free-form string in
+     both `POST members` and `PUT members/:userId`. Invalid values (e.g. `"superadmin"`) were
+     silently stored. Both routes now validate against `WorkspaceRoleSchema` and return 400
+     with a clear message on invalid input.
+
+  4. **No workspace-scoped admin enforcement** — Mutating workspace operations (PUT workspace,
+     POST/PUT/DELETE members) only checked the global RBAC role, not whether the requester held
+     `owner` or `admin` rank within the specific workspace. Added a `requireWorkspaceAdmin()`
+     helper that reads the requester's workspace membership and returns 403 if they are only a
+     `member` or `viewer`; global `admin` users always bypass the check.
+
+  5. **Last-admin protection missing** — `DELETE /api/v1/workspaces/:id/members/:userId` allowed
+     removing the last `owner`/`admin` from a workspace, orphaning it with no privileged member.
+     The handler now fetches the member list, counts admins, and returns 400 if removal would leave
+     zero admins.
+
+  6. **`updateMemberRole` returned wrong `joinedAt`** — `WorkspaceStorage.updateMemberRole()` set
+     `joinedAt: Date.now()` (the mutation timestamp) on the returned member object instead of
+     the member's original `joined_at` value. Fixed by re-fetching the updated row via
+     `getMember()` after the UPDATE.
+
+  Bonus fix: `ensureDefaultWorkspace` now adds the bootstrap admin user as `owner` (the highest
+  workspace role) instead of `admin`, correctly reflecting their status as workspace creator.
+
 ### Files Changed
 
 - `packages/core/src/security/sso-manager.ts` — state consumed before provider mismatch check
@@ -45,6 +86,21 @@ All notable changes to SecureYeoman are documented in this file.
 - `packages/core/src/gateway/server.ts` — removed `decorateReply: false`, added asset
   extension guard in `setNotFoundHandler`, stripped query string before URL checks
 - `docs/adr/071-sso-oidc-implementation.md` — Phase 25 Corrections section added
+- `packages/core/src/gateway/auth-middleware.ts` — 6 missing ROUTE_PERMISSIONS entries added
+  for workspace/user management routes
+- `packages/core/src/workspace/workspace-routes.ts` — workspace-scoped admin check,
+  role validation, workspace existence guard, last-admin protection
+- `packages/core/src/workspace/storage.ts` — `updateMemberRole` now returns actual `joinedAt`
+  via post-UPDATE `getMember()` re-fetch
+- `packages/core/src/workspace/manager.ts` — `ensureDefaultWorkspace` uses `owner` role
+- `packages/core/src/workspace/workspace.test.ts` — extended coverage: pagination,
+  upsert, joinedAt fix, updateMemberRole null, ensureDefaultWorkspace idempotency
+- `packages/core/src/workspace/workspace-routes.test.ts` — workspace-scoped admin checks,
+  role validation, existence guard, last-admin protection, full CRUD coverage
+- `packages/core/src/gateway/auth-middleware.test.ts` — 18 new workspace/user RBAC enforcement
+  tests; workspace route stubs registered
+- `docs/adr/005-team-workspaces.md` — Phase 25 Corrections section added
+- `docs/adr/068-rbac-audit-phase-22.md` — Phase 25 Corrections section added
 
 ---
 
