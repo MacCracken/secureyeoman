@@ -4,6 +4,27 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 22 (complete): Secrets Hygiene (2026-02-19)
+
+### Fixes
+
+- **`skill-scheduler.ts` logging** — Replaced `console.error` in `SkillScheduler.emitEvent` with a pino logger (`getLogger('skill-scheduler')`), ensuring handler errors flow through standard log redaction instead of bypassing it.
+- **Integration API credential masking** — `GET /api/v1/integrations`, `GET /api/v1/integrations/:id`, `POST /api/v1/integrations`, and `PUT /api/v1/integrations/:id` now apply `sanitizeForLogging` to `integration.config` before serialising the response. Platform credentials (bot tokens, PATs, webhook secrets) are returned as `[REDACTED]`. Internal operations continue to use unmasked values.
+- **`McpCredentialManager` wired** — `McpCredentialManager` is now instantiated in `GatewayServer` using `requireSecret(this.config.auth.tokenSecret)` and passed to `registerMcpRoutes`. MCP credential write endpoints now encrypt values at rest with AES-256-GCM before storage.
+
+### Documentation
+
+- **`docs/security/security-model.md`** — Added **Secrets Hygiene** section documenting confirmed-secure items, Phase 22 fixes, and two accepted risks: SSO token fragment delivery and integration credentials at-rest.
+
+### Files Changed
+
+- `packages/core/src/soul/skill-scheduler.ts` — import `getLogger`; module-level `logger`; replace `console.error`
+- `packages/core/src/integrations/integration-routes.ts` — import `sanitizeForLogging`; add `maskIntegration` helper; apply to 4 response sites
+- `packages/core/src/gateway/server.ts` — import `McpCredentialManager` and `requireSecret`; instantiate and wire credential manager
+- `docs/security/security-model.md` — new Secrets Hygiene section
+
+---
+
 ## Phase 22 (complete): Naming & Consistency (2026-02-19)
 
 ### Changes

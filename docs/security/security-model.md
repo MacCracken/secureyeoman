@@ -812,6 +812,42 @@ When enabled, strict ingress/egress rules apply:
 
 ---
 
+## Secrets Hygiene
+
+This section documents the Phase 22 secrets hygiene audit findings — what is confirmed secure, what was fixed, and what is accepted as a known risk.
+
+### Confirmed Secure
+
+- **`SECUREYEOMAN_ENCRYPTION_KEY`** — never logged; registered as a required secret; memory-cleared after use in `secrets.ts`.
+- **Pino logger redaction** — covers `password`, `secret`, `token`, `apiKey`, `authorization`, `cookie`, and related keys on all structured log output.
+- **SSO provider endpoints** — `clientSecret` stripped from GET responses before they leave the server.
+- **MCP credential list endpoint** — returns only key names, never decrypted values.
+- **OAuth token logging** — sensitive values explicitly excluded from all log call sites.
+
+### Fixes Applied (Phase 22)
+
+- **`skill-scheduler.ts`** — `console.error` in `emitEvent` replaced with pino `logger.error`; errors now flow through the standard redaction pipeline.
+- **Integration API responses** — `GET /api/v1/integrations`, `GET /api/v1/integrations/:id`, `POST /api/v1/integrations`, `PUT /api/v1/integrations/:id` now apply `sanitizeForLogging` to `integration.config` before serialising the response. Platform credentials (bot tokens, PATs, webhook secrets) appear as `[REDACTED]` in API responses. Internal operations (start/stop, adapter access) continue to use the unmasked values from storage.
+- **`McpCredentialManager` wiring** — `McpCredentialManager` is now instantiated in `server.ts` and passed to `registerMcpRoutes`. MCP credential write endpoints (`PUT /api/v1/mcp/servers/:id/credentials/:key`) now encrypt values at rest with AES-256-GCM before storage.
+
+### Accepted Risks
+
+#### SSO Token Fragment Delivery
+
+Access and refresh tokens are placed in the URL hash fragment (`#access_token=…&refresh_token=…`) on the SSO callback redirect. This is the standard SPA pattern: hash fragments are not sent to servers in HTTP requests and therefore do not appear in server-side access logs or referrer headers sent to third parties.
+
+**Residual risk**: Browser history and the Referrer header may expose the fragment if the user navigates to a third-party page immediately after SSO. Tokens are short-lived (1 h default for access tokens).
+
+**Future mitigation**: Replace with a post-message or BFF (Backend For Frontend) pattern that delivers tokens via a one-time server-side exchange instead of a URL fragment.
+
+#### Integration Credentials At-Rest
+
+Platform credentials (Telegram bot tokens, Discord tokens, GitHub PATs, Jira API tokens, etc.) are stored as plaintext in the `config` JSONB column of the `integrations` table. API responses are now masked (see above), but the underlying database column is unencrypted.
+
+**Future mitigation**: Encrypt the `integrations.config` column at rest using a key derived from `SECUREYEOMAN_ENCRYPTION_KEY`. Requires a database migration and key-management strategy for the integration config column. Tracked as a future roadmap item.
+
+---
+
 ## Accepted-Risk Dev Dependency Vulnerabilities
 
 Some `npm audit` findings are accepted risks because they exist exclusively in dev tooling and have no production exposure. These are formally documented in ADRs rather than silently suppressed.

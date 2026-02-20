@@ -40,6 +40,8 @@ import { registerModelRoutes } from '../ai/model-routes.js';
 import { uuidv7, sha256 } from '../utils/crypto.js';
 import { Task, TaskType, TaskStatus } from '@secureyeoman/shared';
 import { registerMcpRoutes } from '../mcp/mcp-routes.js';
+import { McpCredentialManager } from '../mcp/credential-manager.js';
+import { requireSecret } from '../config/loader.js';
 import { registerReportRoutes } from '../reporting/report-routes.js';
 import { registerDashboardRoutes } from '../dashboard/dashboard-routes.js';
 import { registerWorkspaceRoutes } from '../workspace/workspace-routes.js';
@@ -418,7 +420,9 @@ export class GatewayServer {
       const mcpClient = this.secureYeoman.getMcpClientManager();
       const mcpServer = this.secureYeoman.getMcpServer();
       if (mcpStorage && mcpClient && mcpServer) {
-        registerMcpRoutes(this.app, { mcpStorage, mcpClient, mcpServer });
+        const tokenSecret = requireSecret(this.config.auth.tokenSecret);
+        const credentialManager = new McpCredentialManager(mcpStorage, this.getLogger(), tokenSecret);
+        registerMcpRoutes(this.app, { mcpStorage, mcpClient, mcpServer, credentialManager });
         this.getLogger().info('MCP routes registered');
       } else {
         this.getLogger().warn('MCP routes skipped — MCP system not initialized');
