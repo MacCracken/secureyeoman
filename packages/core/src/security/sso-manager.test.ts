@@ -226,5 +226,53 @@ describe('SsoManager', () => {
       const url = new URL('https://app/callback?state=abc123&code=xyz');
       await expect(manager.handleCallback('idp-1', url)).rejects.toThrow('No claims');
     });
+
+    // ── Consume-state-on-failure coverage ─────────────────────────
+
+    it('consumes state (deleteSsoState) even when provider ID mismatches', async () => {
+      const storageMock = makeMockStorage({
+        getSsoState: vi.fn().mockResolvedValue({
+          state: 's', providerId: 'other-idp', redirectUri: 'r',
+          codeVerifier: null, workspaceId: null, createdAt: 0, expiresAt: Date.now() + 60000,
+        }),
+      });
+      const manager = new SsoManager({ ...makeDeps(), storage: storageMock });
+      const url = new URL('https://app/callback?state=s&code=xyz');
+      await expect(manager.handleCallback('idp-1', url)).rejects.toThrow('mismatch');
+      expect(storageMock.deleteSsoState).toHaveBeenCalledWith('s');
+    });
+
+    it('propagates IDP error response (e.g. access_denied) and state is consumed', async () => {
+      vi.mocked(oidc.authorizationCodeGrant).mockRejectedValue(
+        Object.assign(new Error('access_denied'), { error: 'access_denied' })
+      );
+      const storageMock = makeMockStorage();
+      const manager = new SsoManager({ ...makeDeps(), storage: storageMock });
+      const url = new URL('https://app/callback?error=access_denied&error_description=User+denied&state=abc123');
+      await expect(manager.handleCallback('idp-1', url)).rejects.toThrow('access_denied');
+      expect(storageMock.deleteSsoState).toHaveBeenCalledWith('abc123');
+    });
+
+    it('propagates error for malformed callback (invalid code) and state is consumed', async () => {
+      vi.mocked(oidc.authorizationCodeGrant).mockRejectedValue(
+        new Error('invalid_grant: authorization code not found')
+      );
+      const storageMock = makeMockStorage();
+      const manager = new SsoManager({ ...makeDeps(), storage: storageMock });
+      const url = new URL('https://app/callback?state=abc123&code=bad-code');
+      await expect(manager.handleCallback('idp-1', url)).rejects.toThrow('invalid_grant');
+      expect(storageMock.deleteSsoState).toHaveBeenCalledWith('abc123');
+    });
+
+    it('throws for malformed callback missing both code and error params', async () => {
+      vi.mocked(oidc.authorizationCodeGrant).mockRejectedValue(
+        new Error('missing code parameter')
+      );
+      const storageMock = makeMockStorage();
+      const manager = new SsoManager({ ...makeDeps(), storage: storageMock });
+      const url = new URL('https://app/callback?state=abc123');
+      await expect(manager.handleCallback('idp-1', url)).rejects.toThrow('missing code parameter');
+      expect(storageMock.deleteSsoState).toHaveBeenCalledWith('abc123');
+    });
   });
 });

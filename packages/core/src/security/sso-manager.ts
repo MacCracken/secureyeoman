@@ -94,10 +94,13 @@ export class SsoManager {
 
     const storedState = await this.storage.getSsoState(state);
     if (!storedState) throw new Error('Invalid or expired SSO state');
-    if (storedState.providerId !== providerId) throw new Error('Provider mismatch');
 
-    // Consume state immediately
+    // Consume state immediately — must happen before any further checks so the
+    // one-time token is invalidated even if subsequent validation fails (e.g.
+    // provider mismatch), preventing replay attempts with different provider IDs.
     await this.storage.deleteSsoState(state);
+
+    if (storedState.providerId !== providerId) throw new Error('Provider mismatch');
 
     const provider = await this.storage.getIdentityProvider(providerId);
     if (!provider) throw new Error(`Identity provider not found: ${providerId}`);

@@ -41,7 +41,7 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
     '/api/v1/auth/sso/authorize/:providerId',
     async (request: FastifyRequest<{ Params: { providerId: string }; Querystring: { workspace?: string } }>, reply: FastifyReply) => {
       try {
-        const scheme = (request.headers['x-forwarded-proto'] as string) ?? (app.server as any).encrypted ? 'https' : 'http';
+        const scheme = (request.headers['x-forwarded-proto'] as string) ?? ((app.server as any).encrypted ? 'https' : 'http');
         const host = request.headers.host ?? 'localhost';
         const redirectUri = `${scheme}://${host}/api/v1/auth/sso/callback/${request.params.providerId}`;
         const url = await ssoManager.getAuthorizationUrl(

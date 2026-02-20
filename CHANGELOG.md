@@ -8,6 +8,19 @@ All notable changes to SecureYeoman are documented in this file.
 
 ### Bug Fixes
 
+- **Auth & SSO: authorize scheme calculation** — The `x-forwarded-proto` header check in
+  `sso-routes.ts` had an operator precedence bug: `header ?? encrypted ? 'https' : 'http'`
+  was parsed as `(header ?? encrypted) ? 'https' : 'http'`. When a reverse proxy set
+  `x-forwarded-proto: http`, the truthy string `'http'` caused the ternary to evaluate to
+  `'https'`, producing an `https://` redirect URI for plain-HTTP deployments and causing
+  OIDC redirect URI mismatch errors. Fixed with explicit parentheses.
+
+- **Auth & SSO: PKCE state not consumed on provider mismatch** — In `sso-manager.ts`,
+  `deleteSsoState()` was called *after* the provider ID mismatch check. A mismatched
+  callback would throw before consuming the state, leaving it valid for up to 10 minutes.
+  Fixed by moving `deleteSsoState()` immediately after the null check so the one-time token
+  is always invalidated before any subsequent validation.
+
 - **SPA serving: `decorateReply` + asset 404s** — Two defects in the dashboard SPA serving
   path in `gateway/server.ts`:
   1. `@fastify/static` was registered with `decorateReply: false`, which removes
@@ -24,8 +37,14 @@ All notable changes to SecureYeoman are documented in this file.
 
 ### Files Changed
 
+- `packages/core/src/security/sso-manager.ts` — state consumed before provider mismatch check
+- `packages/core/src/gateway/sso-routes.ts` — operator-precedence fix in authorize scheme calculation
+- `packages/core/src/security/sso-manager.test.ts` — state-consumed-on-mismatch, IDP error,
+  malformed callback tests
+- `packages/core/src/gateway/sso-routes.test.ts` — scheme-calculation, callback error tests
 - `packages/core/src/gateway/server.ts` — removed `decorateReply: false`, added asset
   extension guard in `setNotFoundHandler`, stripped query string before URL checks
+- `docs/adr/071-sso-oidc-implementation.md` — Phase 25 Corrections section added
 
 ---
 
