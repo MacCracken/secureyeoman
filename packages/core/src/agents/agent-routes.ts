@@ -41,19 +41,31 @@ export function registerAgentRoutes(
           maxTokenBudget?: number;
           allowedTools?: string[];
           defaultModel?: string | null;
+          type?: 'llm' | 'binary' | 'mcp-bridge';
+          command?: string;
+          commandArgs?: string[];
+          commandEnv?: Record<string, string>;
+          mcpTool?: string;
+          mcpToolInput?: string;
         };
       }>,
       reply: FastifyReply
     ) => {
       try {
         const data = {
+          type: request.body.type ?? 'llm',
           name: request.body.name,
           description: request.body.description ?? '',
           systemPrompt: request.body.systemPrompt,
           maxTokenBudget: request.body.maxTokenBudget ?? 50000,
           allowedTools: request.body.allowedTools ?? [],
           defaultModel: request.body.defaultModel ?? null,
-        };
+          ...(request.body.command !== undefined && { command: request.body.command }),
+          ...(request.body.commandArgs !== undefined && { commandArgs: request.body.commandArgs }),
+          ...(request.body.commandEnv !== undefined && { commandEnv: request.body.commandEnv }),
+          ...(request.body.mcpTool !== undefined && { mcpTool: request.body.mcpTool }),
+          ...(request.body.mcpToolInput !== undefined && { mcpToolInput: request.body.mcpToolInput }),
+        } as const;
         const profile = await subAgentManager.createProfile(data);
         return reply.code(201).send({ profile });
       } catch (err) {

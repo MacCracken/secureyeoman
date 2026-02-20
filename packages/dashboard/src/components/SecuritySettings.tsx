@@ -702,15 +702,16 @@ export function SecuritySettings() {
         </div>
       </div>
 
-      {/* Sandbox Execution Policy */}
+      {/* Sandbox Isolation */}
       <div className="card">
         <div className="p-4 border-b flex items-center gap-2">
-          <Terminal className="w-5 h-5 text-primary" />
-          <h3 className="font-medium">Code Execution</h3>
+          <Cpu className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Sandbox Isolation</h3>
         </div>
-        <div className="p-4">
+        <div className="p-4 space-y-4">
           <PolicyToggle
             label="Code Execution"
+            icon={<Terminal className="w-4 h-4 text-muted-foreground" />}
             enabled={executionAllowed}
             isPending={policyMutation.isPending}
             onToggle={() => {
@@ -722,16 +723,6 @@ export function SecuritySettings() {
                 : 'Sandboxed code execution is disabled. No code can be executed through the execution engine.'
             }
           />
-        </div>
-      </div>
-
-      {/* Sandbox Isolation */}
-      <div className="card">
-        <div className="p-4 border-b flex items-center gap-2">
-          <Cpu className="w-5 h-5 text-primary" />
-          <h3 className="font-medium">Sandbox Isolation</h3>
-        </div>
-        <div className="p-4 space-y-4">
           <PolicyToggle
             label="gVisor Isolation"
             icon={<Shield className="w-4 h-4 text-muted-foreground" />}

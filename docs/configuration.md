@@ -59,7 +59,7 @@ secureyeoman --log-level debug         # Verbose logging
 ### Complete Example
 
 ```yaml
-version: "1.4"
+version: "1.0"
 
 core:
   name: "SecureYeoman"
@@ -257,10 +257,10 @@ conversation:
         messagePct: 50             # % of token budget for recent messages
         topicPct: 30               # % for topic summaries
         bulkPct: 20                # % for bulk summaries
-      maxMessageChars: 8000        # Max chars before compression triggers
+      maxMessageChars: 100000      # Max chars before compression triggers
       topicSummaryTokens: 200      # Target tokens per topic summary
       bulkSummaryTokens: 300       # Target tokens per bulk summary
-      bulkMergeSize: 3             # Topics to merge into one bulk
+      bulkMergeSize: 5             # Topics to merge into one bulk
       topicBoundary:
         keywords:                  # Keywords that trigger topic boundary
           - new topic
@@ -273,35 +273,28 @@ conversation:
 
 extensions:
   enabled: false                   # Enable lifecycle extension hooks
-  directory: ~/.secureyeoman/extensions  # User extension directory
-  allowWebhooks: true              # Allow outbound webhook dispatch
+  directory: ./extensions          # User extension directory
+  allowWebhooks: false             # Allow outbound webhook dispatch
   webhookTimeout: 5000             # Webhook request timeout in ms
-  maxHooksPerPoint: 20             # Max registered handlers per hook point
-  hotReload: true                  # Watch directories for changes
-  failOpen: true                   # On extension error, continue pipeline
-  maxExecutionTime: 5000           # Max ms per extension per hook
+  maxHooksPerPoint: 10             # Max registered handlers per hook point (max 50)
 
 execution:
   enabled: false                   # Enable sandboxed code execution
   allowedRuntimes:
     - python
-    - nodejs
+    - node
     - shell
-  sessionTimeout: 300000           # Session idle timeout in ms (5 minutes)
+  sessionTimeout: 1800000          # Session idle timeout in ms (30 minutes)
   maxConcurrent: 5                 # Max concurrent execution sessions
-  approvalPolicy: manual           # manual | auto | session-trust
-  maxExecutionTime: 180000         # Max execution time per run in ms
-  maxOutputSize: 1048576           # Max output size in bytes (1 MB)
+  approvalPolicy: first-time       # none | first-time | always
   secretPatterns: []               # Additional secret patterns for output filtering
 
 a2a:
   enabled: false                   # Enable Agent-to-Agent protocol
-  discoveryMethod: static          # static | mdns | dns-sd
+  discoveryMethod: manual          # manual | mdns | hybrid
   trustedPeers: []                 # Pre-trusted peer agent IDs
   port: 18790                      # A2A protocol listener port
   maxPeers: 20                     # Maximum number of connected peers
-  rateLimitPerPeer: 10             # Max delegation requests per minute per peer
-  delegationTimeout: 300000        # Default timeout for remote delegations
 
 externalBrain:
   enabled: false
@@ -346,7 +339,7 @@ storage:
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `allowSubAgents` | boolean | `true` | Allow sub-agent delegation |
+| `allowSubAgents` | boolean | `false` | Allow sub-agent delegation |
 | `allowA2A` | boolean | `false` | Allow A2A networking (requires sub-agents enabled) |
 | `allowBinaryAgents` | boolean | `false` | Allow `binary` sub-agent profile type (spawns external processes via JSON stdin/stdout) |
 | `allowSwarms` | boolean | `false` | Allow agent swarms / multi-agent orchestration (requires sub-agents enabled) |
@@ -405,7 +398,7 @@ When `cors.origins` contains `'*'` (wildcard), `Access-Control-Allow-Credentials
 
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
-| `provider` | enum | `"anthropic"` | `anthropic`, `openai`, `gemini`, `ollama`, `opencode` |
+| `provider` | enum | `"anthropic"` | `anthropic`, `openai`, `gemini`, `ollama`, `opencode`, `lmstudio`, `localai`, `deepseek`, `mistral` |
 | `model` | string | varies | Model identifier for the chosen provider |
 | `maxTokens` | number | `16384` | Max tokens per response |
 | `temperature` | number | `0.7` | Sampling temperature (0.0–2.0) |
@@ -760,22 +753,19 @@ Lifecycle extension hooks for injecting custom logic at key stages without modif
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `enabled` | boolean | `false` | Enable the extension system |
-| `directory` | string | `~/.secureyeoman/extensions` | User extension directory path |
-| `allowWebhooks` | boolean | `true` | Allow outbound webhook dispatch on hook events |
+| `directory` | string | `./extensions` | User extension directory path |
+| `allowWebhooks` | boolean | `false` | Allow outbound webhook dispatch on hook events |
 | `webhookTimeout` | number | `5000` | Webhook request timeout in ms (1000-30000) |
-| `maxHooksPerPoint` | number | `20` | Max registered handlers per hook point (1-100) |
-| `hotReload` | boolean | `true` | Watch extension directories for file changes |
-| `failOpen` | boolean | `true` | On extension error, continue pipeline (false = fail-closed) |
-| `maxExecutionTime` | number | `5000` | Max ms per extension per hook invocation |
+| `maxHooksPerPoint` | number | `10` | Max registered handlers per hook point (1-50) |
 
 Example:
 ```yaml
 extensions:
   enabled: true
   directory: ~/.secureyeoman/extensions
-  allowWebhooks: true
+  allowWebhooks: false
   webhookTimeout: 5000
-  maxHooksPerPoint: 20
+  maxHooksPerPoint: 10
 ```
 
 ### execution
@@ -785,21 +775,19 @@ Sandboxed code execution tool allowing the agent to write and execute Python, No
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `enabled` | boolean | `false` | Enable code execution tool |
-| `allowedRuntimes` | string[] | `["python", "nodejs", "shell"]` | Permitted runtimes |
-| `sessionTimeout` | number | `300000` | Session idle timeout in ms (60000-3600000) |
+| `allowedRuntimes` | string[] | `["node", "python", "shell"]` | Permitted runtimes |
+| `sessionTimeout` | number | `1800000` | Session idle timeout in ms (60000-3600000) |
 | `maxConcurrent` | number | `5` | Max concurrent execution sessions (1-20) |
-| `approvalPolicy` | enum | `"manual"` | `manual` (per-execution approval), `auto` (no approval), `session-trust` (approve once per session) |
-| `maxExecutionTime` | number | `180000` | Max execution time per run in ms (1000-600000) |
-| `maxOutputSize` | number | `1048576` | Max output size in bytes (max 10485760) |
+| `approvalPolicy` | enum | `"first-time"` | `none` (no approval), `first-time` (approve once per session), `always` (per-execution approval) |
 | `secretPatterns` | string[] | `[]` | Additional regex patterns for output secret filtering |
 
 Example:
 ```yaml
 execution:
   enabled: true
-  allowedRuntimes: [python, nodejs]
-  approvalPolicy: manual
-  sessionTimeout: 300000
+  allowedRuntimes: [python, node]
+  approvalPolicy: first-time
+  sessionTimeout: 1800000
   maxConcurrent: 3
 ```
 
@@ -810,12 +798,10 @@ Agent-to-Agent protocol for cross-instance discovery and delegation.
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `enabled` | boolean | `false` | Enable A2A protocol |
-| `discoveryMethod` | enum | `"static"` | `static` (manual peer list), `mdns` (LAN auto-discovery), `dns-sd` (WAN via DNS SRV/TXT) |
+| `discoveryMethod` | enum | `"manual"` | `manual` (static peer list), `mdns` (LAN auto-discovery), `hybrid` (both) |
 | `trustedPeers` | string[] | `[]` | Pre-trusted peer agent IDs (skip trust progression) |
 | `port` | number | `18790` | A2A protocol listener port (1024-65535) |
 | `maxPeers` | number | `20` | Maximum number of connected peers (1-100) |
-| `rateLimitPerPeer` | number | `10` | Max delegation requests per minute per peer |
-| `delegationTimeout` | number | `300000` | Default timeout for remote delegations in ms |
 
 Example:
 ```yaml

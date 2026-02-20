@@ -1,7 +1,7 @@
 # ADR 018: Proactive Heartbeat Enhancements
 
 ## Status
-Proposed
+Superseded by [ADR 040: Proactive Assistance](040-proactive-assistance.md)
 
 ## Context
 

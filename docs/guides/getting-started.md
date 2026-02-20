@@ -82,7 +82,7 @@ Docker Compose services:
 |---------|------|---------|-------------|
 | `postgres` | 5432 | *(default)* | PostgreSQL with pgvector |
 | `core` | 18789 | *(default)* | Gateway API + agent engine + embedded dashboard |
-| `mcp` | 3001 | `mcp` / `full` | MCP protocol server (tools, resources, prompts) |
+| `mcp` | 3001 | `mcp` / `full` / `dev` | MCP protocol server (tools, resources, prompts) |
 | `dashboard-dev` | 3000 | `dev` | Vite dev server for frontend development |
 
 The core service serves the dashboard SPA at `/` and the REST API at `/api/v1/`. The MCP service self-mints a service JWT using the shared `SECUREYEOMAN_TOKEN_SECRET` — no manual token setup needed.
@@ -150,30 +150,30 @@ NODE_ENV=development
 For advanced configuration, create `~/.secureyeoman/config.yaml`:
 
 ```yaml
-version: "1.4"
+version: "1.0"
 core:
   name: "F.R.I.D.A.Y."
   environment: development
-  log_level: info
+  logLevel: info
   workspace: ~/.secureyeoman/workspace
 
 security:
   rbac:
     enabled: true
-    default_role: viewer
+    defaultRole: viewer
   encryption:
     enabled: true
     algorithm: aes-256-gcm
   sandbox:
     enabled: true
     technology: auto
-  rate_limiting:
+  rateLimiting:
     enabled: true
 
 model:
   provider: anthropic
   model: claude-sonnet-4-20250514
-  max_tokens: 16384
+  maxTokens: 16384
   temperature: 0.7
 
 soul:
@@ -181,11 +181,6 @@ soul:
   learningMode: [user_authored]
   maxSkills: 50
   maxPromptTokens: 4096
-
-dashboard:
-  enabled: true
-  port: 3000
-  host: 127.0.0.1
 ```
 
 See [Configuration Reference](../configuration.md) for all available fields.
@@ -226,13 +221,10 @@ Then set `backend: chroma` and optionally configure `chroma.url` / `chroma.colle
 ### 1. Start the System
 
 ```bash
-# Start core system and dashboard
+# Start core system (serves dashboard + API at :18789)
 npm run dev
 
-# Or start core only
-npm run dev:core
-
-# Or start dashboard only (requires core running)
+# Or start dashboard Vite dev server (hot-reload, requires core running)
 npm run dev:dashboard
 
 # Or start MCP service only (requires core running)
@@ -242,12 +234,14 @@ npm run dev:mcp
 ### 2. Access the Dashboard
 
 Open your browser and navigate to:
-- **Dashboard**: http://localhost:3000
+- **Dashboard**: http://localhost:18789
 - **API Health**: http://localhost:18789/health
+
+> **Note:** `npm run dev:dashboard` starts a hot-reload Vite server on port 3000 for frontend development. For normal use, the dashboard is served by the core gateway at port 18789.
 
 ### 3. First Login
 
-1. Open the dashboard at http://localhost:3000
+1. Open the dashboard at http://localhost:18789
 2. Use the admin password you set in `SECUREYEOMAN_ADMIN_PASSWORD`
 3. Complete the onboarding wizard to set up your agent personality
 
@@ -290,8 +284,8 @@ Expected response:
 ```json
 {
   "status": "healthy",
-  "timestamp": "2026-02-11T00:00:00.000Z",
-  "version": "1.4.1",
+  "timestamp": "2026-02-19T00:00:00.000Z",
+  "version": "2026.2.19",
   "uptime": 3600
 }
 ```
@@ -328,7 +322,7 @@ ws.onopen = () => {
 ## Running Tests
 
 ```bash
-npm test              # All 963 tests across 59 files
+npm test              # All tests across all packages
 npm test -- --run     # Non-watch mode
 npm test -- --coverage
 
@@ -372,7 +366,7 @@ docker compose --profile mcp up
 
 ```bash
 # Health check
-curl http://localhost:3001/dashboard
+curl http://localhost:3001/health
 
 # Should return server status with tool/resource/prompt counts
 ```
@@ -434,55 +428,6 @@ Edit personality and skills in the dashboard Soul Manager page.
 - **Chat**: Conversational AI interface with rich content rendering — assistant responses are displayed as full Markdown including syntax-highlighted code blocks (with language label and dark/light theme), interactive Mermaid diagrams (flowcharts, sequence diagrams, etc.), typeset math expressions via KaTeX (`$inline$` and `$$block$$`), GitHub-style alert callouts (`[!NOTE]`, `[!TIP]`, `[!WARNING]`, `[!CAUTION]`, `[!IMPORTANT]`), task list checkboxes, and styled tables
 - **Code Editor**: Monaco-based editor with an AI chat sidebar that also uses the same rich Markdown rendering for assistant responses
 
----
-
-## v1.2 Features
-
-SecureYeoman v1.2 adds powerful new capabilities for teams and advanced workflows:
-
-### MCP Protocol Support
-Connect to external tools via the Model Context Protocol (MCP). SecureYeoman can:
-- **Use external tools** from MCP servers (search engines, code interpreters, databases)
-- **Expose its own skills** as MCP tools for other systems to invoke
-- **Web scraping & search** — Built-in tools for scraping webpages (markdown, HTML, batch) and web search (DuckDuckGo, SerpAPI, Tavily) with SSRF protection
-- **Browser automation** — Placeholder tools for Playwright/Puppeteer integration (coming soon)
-- **Health monitoring** — Automatic periodic health checks for external MCP servers with auto-disable on failure
-- **Credential management** — Encrypted storage (AES-256-GCM) for API keys and tokens per external MCP server
-
-Configure MCP servers in the dashboard or via the `/api/v1/mcp/` API. Enable web tools with `MCP_EXPOSE_WEB=true`.
-
-### Audit Reports
-Generate comprehensive audit reports with filtering by time range, event type, user, or severity. Export to JSON, HTML, or CSV for compliance and analysis.
-
-### Team Workspaces
-Multi-team support with workspace isolation. Each workspace has its own personality, skills, and access control. Perfect for shared SecureYeoman deployments across departments.
-
-### A/B Testing
-Compare model performance, prompt templates, or configuration changes. Create experiments with traffic allocation and automatic metric collection (latency, cost, success rate).
-
-### Role Management
-Full RBAC management from the Dashboard (Settings > Security) and CLI. Create custom roles with granular permissions, assign roles to users, and revoke assignments. Built-in roles are protected from modification.
-
-```bash
-# List all roles
-secureyeoman role list
-
-# Create a custom role
-secureyeoman role create --name "Custom Ops" --permissions "tasks:read,metrics:read"
-
-# Assign a role to a user
-secureyeoman role assign --user ops-user --role role_custom_ops
-
-# Revoke an assignment
-secureyeoman role revoke --user ops-user
-```
-
-### Skill Marketplace
-Discover and share skills with the community. Search, install, and publish skills with cryptographic signature verification.
-
-### Cost Optimization
-Get AI-powered recommendations to reduce costs based on your usage patterns. Suggests model changes, caching strategies, and configuration tweaks.
-
 ### Configure Extensions
 
 To add lifecycle hooks for custom behavior, create extension files in `~/.secureyeoman/extensions/`:
@@ -511,19 +456,18 @@ See [Configuration Reference](../configuration.md) for all extension options.
 To enable the agent to write and execute code (Python, Node.js, shell) within the sandbox:
 
 ```yaml
-security:
-  codeExecution:
-    enabled: true
-    autoApprove: false          # require manual approval per execution
-    allowedRuntimes:
-      - python
-      - nodejs
-      - shell
-    sessionTimeout: 300000      # 5 minutes
-    maxConcurrent: 5
+execution:
+  enabled: true
+  approvalPolicy: first-time    # none | first-time | always
+  allowedRuntimes:
+    - python
+    - node
+    - shell
+  sessionTimeout: 1800000       # 30 minutes
+  maxConcurrent: 5
 ```
 
-When `autoApprove` is `false` (default), each code execution request triggers a dashboard approval prompt. Set `autoApprove: true` only in trusted/automated environments.
+When `approvalPolicy` is `first-time` (default), each new session requires one approval before execution proceeds. Set `approvalPolicy: none` only in trusted/automated environments.
 
 ### Configure A2A Protocol
 
@@ -532,13 +476,13 @@ To enable cross-instance agent delegation via the Agent-to-Agent protocol:
 ```yaml
 a2a:
   enabled: true
-  discoveryMethod: mdns         # mdns (LAN), dns-sd (WAN), or static
+  discoveryMethod: mdns         # manual (static peer list), mdns (LAN), or hybrid
   port: 18790
   maxPeers: 10
   trustedPeers: []              # pre-trusted peer agent IDs
 ```
 
-For LAN deployments, mDNS auto-discovers other SecureYeoman instances. For WAN, configure DNS-SD SRV/TXT records. Peers start as untrusted and can be promoted to verified or trusted via the dashboard or API.
+For LAN deployments, `mdns` auto-discovers other SecureYeoman instances. For manual or mixed setups, use `manual` or `hybrid`. Peers start as untrusted and can be promoted to verified or trusted via the dashboard or API.
 
 ---
 

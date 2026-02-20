@@ -8,7 +8,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w @secureyeoman/shared && npm run build -w @secureyeoman/core -w @secureyeoman/mcp -w @secureyeoman/dashboard",
+    "build": "npm run build -w @secureyeoman/shared && npm run build -w @secureyeoman/mcp && npm run build -w @secureyeoman/core -w @secureyeoman/dashboard",
     "dev": "npm run dev --workspace=@secureyeoman/core",
     "dev:dashboard": "npm run dev --workspace=@secureyeoman/dashboard",
     "dev:mcp": "npm run dev --workspace=@secureyeoman/mcp",
