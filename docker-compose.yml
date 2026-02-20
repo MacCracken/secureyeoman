@@ -20,7 +20,9 @@ services:
     restart: unless-stopped
 
   core:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     extra_hosts:
       - "host.docker.internal:host-gateway"
     ports:
@@ -53,9 +55,11 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  # MCP service uses the 'mcp-server' subcommand of the main binary
+  # MCP service uses the 'mcp-server' subcommand of the core binary/node process
   mcp:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     command: ["mcp-server"]
     ports:
       - "3001:3001"

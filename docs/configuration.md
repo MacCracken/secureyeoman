@@ -31,13 +31,16 @@ If no `--config` flag is given, the system searches these paths in order:
 secureyeoman [options]
 
 Options:
-  -p, --port <number>      Gateway port (default: 18789)
-  -H, --host <string>      Gateway bind address (default: 127.0.0.1)
-  -c, --config <path>      Path to YAML config file
-  -l, --log-level <level>  Log level: trace|debug|info|warn|error|fatal
-      --tls                Enable TLS (auto-generates dev certs if needed)
-  -v, --version            Show version number
-  -h, --help               Show help
+  -p, --port <number>           Gateway port (default: 18789)
+  -H, --host <string>           Gateway bind address (default: 127.0.0.1)
+  -c, --config <path>           Path to YAML config file
+  -l, --log-level <level>       Log level: trace|debug|info|warn|error|fatal
+      --tls                     Enable TLS (auto-generates dev certs if needed)
+      --dashboard-dist <path>   Path to pre-built dashboard SPA dist directory
+                                (overrides env SECUREYEOMAN_DASHBOARD_DIST and
+                                 the built-in path resolution order)
+  -v, --version                 Show version number
+  -h, --help                    Show help
 ```
 
 Examples:
@@ -98,6 +101,9 @@ security:
     enableInjectionDetection: true
 
   secretBackend: auto            # auto | keyring | env | file
+
+  # Sub-agent security policy
+  allowBinaryAgents: false       # allow 'binary' profile type (spawn external processes)
 
   rotation:
     enabled: false
@@ -307,6 +313,12 @@ externalBrain:
   syncKnowledge: true
   includeFrontmatter: true
   tagPrefix: "secureyeoman/"
+
+storage:
+  backend: auto                  # auto | pg | sqlite
+                                 # auto: uses pg when DATABASE_URL is set, sqlite otherwise
+  sqlite:
+    path: ~/.secureyeoman/data.db   # SQLite database path (Tier 2 lite binary / auto fallback)
 ```
 
 ---
@@ -336,6 +348,7 @@ externalBrain:
 |-------|------|---------|-------------|
 | `allowSubAgents` | boolean | `true` | Allow sub-agent delegation |
 | `allowA2A` | boolean | `false` | Allow A2A networking (requires sub-agents enabled) |
+| `allowBinaryAgents` | boolean | `false` | Allow `binary` sub-agent profile type (spawns external processes via JSON stdin/stdout) |
 | `allowSwarms` | boolean | `false` | Allow agent swarms / multi-agent orchestration (requires sub-agents enabled) |
 | `allowExtensions` | boolean | `false` | Allow lifecycle extension hooks |
 | `allowExecution` | boolean | `true` | Allow sandboxed code execution |
@@ -843,6 +856,56 @@ externalBrain:
 
 ---
 
+### storage
+
+Controls the database backend. The `auto` mode selects PostgreSQL when `DATABASE_URL` is set and SQLite otherwise (useful for Tier 2 `lite` binaries and edge deployments).
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `backend` | enum | `"auto"` | `auto`, `pg`, or `sqlite` |
+| `sqlite.path` | string | `~/.secureyeoman/data.db` | SQLite database file path (used when backend resolves to `sqlite`) |
+
+```yaml
+storage:
+  backend: auto       # pg when DATABASE_URL is set, otherwise sqlite
+  sqlite:
+    path: ~/.secureyeoman/data.db
+```
+
+---
+
+### SSO / OIDC
+
+Identity providers are configured at runtime via the admin API or dashboard, not in the YAML config file. The `auth.identity_providers` table stores all provider config.
+
+```bash
+# Create an OIDC provider via API
+curl -X POST http://localhost:18789/api/v1/auth/sso/providers \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Okta",
+    "type": "oidc",
+    "issuerUrl": "https://your-org.okta.com",
+    "clientId": "0oa...",
+    "clientSecret": "...",
+    "scopes": "openid email profile",
+    "autoProvision": true,
+    "defaultRole": "viewer"
+  }'
+
+# List providers (public endpoint — shows enabled providers for the login page)
+curl http://localhost:18789/api/v1/auth/sso/providers
+
+# Initiate SSO login
+# Redirect the browser to:
+GET http://localhost:18789/api/v1/auth/sso/authorize/<providerId>
+```
+
+Supported provider types: `oidc` (Okta, Azure AD, Auth0, Google Workspace, and any standards-compliant OIDC issuer). `saml` is reserved for future use.
+
+---
+
 ### logging
 
 | Field | Type | Default | Description |
@@ -952,3 +1015,8 @@ All security-sensitive values are referenced by environment variable name in the
 | `MCP_BROWSER_TIMEOUT_MS` | No | Browser timeout in ms (default: `30000`) |
 | `MCP_RATE_LIMIT_PER_TOOL` | No | MCP tool rate limit per second (default: `30`) |
 | `MCP_LOG_LEVEL` | No | MCP service log level (default: `info`) |
+| `DATABASE_URL` | No | Full PostgreSQL connection string (overrides individual `DATABASE_*` vars) |
+| `DATABASE_HOST` | No | PostgreSQL host (default: `localhost`) |
+| `DATABASE_USER` | No | PostgreSQL user |
+| `DATABASE_NAME` | No | PostgreSQL database name |
+| `SECUREYEOMAN_DASHBOARD_DIST` | No | Path to pre-built dashboard SPA dist (overridden by `--dashboard-dist` CLI flag) |

@@ -1,0 +1,72 @@
+# Dockerfile.dev — Node.js multi-stage build for local development
+#
+# Self-contained: no pre-built binary or Bun required.
+# Used by docker-compose.yml for local docker compose up.
+#
+# For production deployments use the binary-based Dockerfile instead:
+#   npm run build:binary        # requires Bun
+#   docker build -t secureyeoman .
+
+# ---- builder ----
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Copy workspace manifests for layer caching
+COPY package.json package-lock.json ./
+COPY packages/shared/package.json packages/shared/
+COPY packages/core/package.json packages/core/
+COPY packages/mcp/package.json packages/mcp/
+COPY packages/dashboard/package.json packages/dashboard/
+
+RUN npm ci
+
+# Copy source
+COPY tsconfig.json ./
+COPY packages/ packages/
+
+# Build: shared → core + mcp + dashboard
+RUN npm run build
+
+# ---- runtime ----
+FROM node:20-alpine
+
+RUN addgroup -r secureyeoman && adduser -r -G secureyeoman -h /home/secureyeoman secureyeoman \
+ && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
+ && chown -R secureyeoman:secureyeoman /home/secureyeoman
+
+WORKDIR /app
+
+# Workspace root (for package resolution)
+COPY --from=builder /app/package.json /app/package-lock.json ./
+COPY --from=builder /app/node_modules ./node_modules/
+
+# shared
+COPY --from=builder /app/packages/shared/package.json packages/shared/
+COPY --from=builder /app/packages/shared/dist packages/shared/dist/
+
+# core
+COPY --from=builder /app/packages/core/package.json packages/core/
+COPY --from=builder /app/packages/core/dist packages/core/dist/
+COPY --from=builder /app/packages/core/node_modules packages/core/node_modules/
+
+# mcp (used by the mcp-server subcommand)
+COPY --from=builder /app/packages/mcp/package.json packages/mcp/
+COPY --from=builder /app/packages/mcp/dist packages/mcp/dist/
+COPY --from=builder /app/packages/mcp/node_modules packages/mcp/node_modules/
+
+# dashboard (served by core gateway via @fastify/static)
+COPY --from=builder /app/packages/dashboard/dist packages/dashboard/dist/
+
+# Optional: bundled community skills
+COPY community-skills/ /usr/share/secureyeoman/community-skills/
+
+EXPOSE 18789
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD node /app/packages/core/dist/cli.js health --json || exit 1
+
+USER secureyeoman
+
+ENTRYPOINT ["node", "/app/packages/core/dist/cli.js"]
+CMD ["start"]

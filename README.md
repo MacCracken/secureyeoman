@@ -23,14 +23,29 @@
 
 ## Quick Start
 
+**Option A — Single binary (fastest):**
+```bash
+curl -fsSL https://secureyeoman.ai/install | bash
+secureyeoman init
+```
+
+**Option B — Docker Compose:**
 ```bash
 git clone https://github.com/MacCracken/secureyeoman.git
 cd secureyeoman
 cp .env.example .env   # edit with your API key + security keys
+docker compose up -d
+```
+
+**Option C — From source:**
+```bash
+git clone https://github.com/MacCracken/secureyeoman.git
+cd secureyeoman
+cp .env.example .env
 npm install && npm run dev
 ```
 
-Then open http://localhost:3000 and complete the onboarding wizard.
+Then open http://localhost:18789 and complete the onboarding wizard.
 
 ---
 
@@ -59,14 +74,14 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Extensions** | 38 lifecycle hook points (observe/transform/veto semantics), TypeScript plugin modules with filesystem discovery, EventEmitter integration, outbound webhook dispatch with HMAC signing, hot-reload support |
 | **Code Execution** | Sandboxed code execution (Python, Node.js, shell) within Landlock/seccomp sandbox, persistent sessions, streaming output via WebSocket, approval policies (manual/auto/session-trust), streaming secrets filter, full audit trail |
 | **A2A Protocol** | Agent-to-Agent cross-instance delegation via E2E encrypted messaging, peer discovery (mDNS/DNS-SD/static), capability negotiation, trust progression (untrusted/verified/trusted), remote delegation in unified delegation tree |
-| **Multi-Agent Architecture** | Sub-agent delegation system with role-based profiles (researcher, coder, analyst, reviewer, summarizer); Agent Swarms with named templates and three strategies — `sequential` (context-chaining pipeline), `parallel` (`Promise.all` + optional coordinator synthesis), `dynamic` (coordinator-driven, uses `delegate_task` internally); `create_swarm` MCP tool; 4 built-in templates; dashboard Swarms tab; **Dynamic Tool Creation** — agents can generate and register new tools at runtime (Agent Zero-style), gated by `allowDynamicTools` security policy with `sandboxDynamicTools` isolation |
+| **Multi-Agent Architecture** | Sub-agent delegation system with role-based profiles (researcher, coder, analyst, reviewer, summarizer); Agent Swarms with named templates and three strategies — `sequential` (context-chaining pipeline), `parallel` (`Promise.all` + optional coordinator synthesis), `dynamic` (coordinator-driven, uses `delegate_task` internally); `create_swarm` MCP tool; 4 built-in templates; dashboard Swarms tab; **Dynamic Tool Creation** — agents can generate and register new tools at runtime (Agent Zero-style), gated by `allowDynamicTools` security policy with `sandboxDynamicTools` isolation; **Extensible sub-agent types** — `llm` (agentic loop), `binary` (spawn external process via JSON stdin/stdout, zero token cost, gated by `allowBinaryAgents`), `mcp-bridge` (call MCP tool directly with Mustache template, zero token cost) |
 | **Integrations** | Telegram (inline keyboards, document attachments), Discord (threads, modals, slash command registration via REST), Slack (Block Kit actions, modal dialogs, Workflow Builder steps), GitHub (PR review automation, issue auto-labeling, code search triggers), GitLab, Google Chat, Gmail, Email (IMAP/SMTP), Google Calendar, Notion, Jira, AWS, Azure DevOps, CLI, Generic Webhook — plugin architecture with unified message routing |
 | **MCP Protocol** | Standalone `@secureyeoman/mcp` service (34+ tools including web scraping, search, browser automation placeholders; 7 resources, 4 prompts); SSRF-protected web tools; health monitoring for external servers; AES-256-GCM encrypted credential storage; streamable HTTP, SSE, and stdio transports; feature toggles with dashboard UI; one-click pre-built integrations for Bright Data, Exa, E2B, and Supabase |
 | **Marketplace** | Skill discovery, search, install/uninstall (syncs with Brain skills), publish; **Community Skills** — local-path sync from [`secureyeoman-community-skills`](https://github.com/MacCracken/secureyeoman-community-skills) or any compatible repo; source tracking (`builtin` / `community` / `published`) |
-| **Team Collaboration** | Workspaces with isolation, member management, workspace-scoped RBAC |
+| **Team Collaboration** | Multi-user foundation (`auth.users`); workspaces with isolation, member management, workspace-scoped RBAC; **SSO/OIDC** — Okta, Azure AD, Auth0 and any standards-compliant OIDC issuer via `openid-client` v6; PKCE flow; JIT user provisioning; per-workspace IDP binding |
 | **Reports & Analytics** | Audit report generator (JSON/HTML/CSV), cost optimization recommendations, A/B testing framework |
 | **Voice** | Push-to-talk (Ctrl+Shift+V), browser-native speech recognition & synthesis, voice overlay |
-| **Deployment** | Docker multi-stage builds, Kubernetes Helm chart (EKS/GKE/AKS), GHCR image registry, HPA autoscaling, PodDisruptionBudgets, NetworkPolicies, ExternalSecret CRD support |
+| **Deployment** | **Single binary** (Bun compile, ~80 MB, no runtime deps) for Linux x64/arm64 and macOS arm64; Tier 2 SQLite `lite` binary for edge/embedded; Docker image ~80 MB (binary-based, vs ~600 MB Node.js); Kubernetes Helm chart (EKS/GKE/AKS), GHCR image registry, HPA autoscaling, PodDisruptionBudgets, NetworkPolicies, ExternalSecret CRD support |
 | **CLI** | 21 commands covering server management, health, config validation, integration management, role/extension management, browser automation, vector memory, web scraping, multimodal I/O, AI model switching, security policy, plugin management; shell completions (bash/zsh/fish); `--json` output on all commands for scripting; colored output (green/red status indicators, TTY-aware); progress spinners for long-running operations |
 | **Development** | TypeScript strict mode, 2100+ tests across 134+ files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint); **Storybook** component development environment integrated into the Developers section (gated by `allowStorybook` security policy), with quick-start instructions, component story gallery, and iframe to localhost:6006 |
 
@@ -113,6 +128,27 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 
 ## Installation
 
+### Single Binary
+
+Download from [Releases](https://github.com/MacCracken/secureyeoman/releases) or use the install script:
+
+```bash
+curl -fsSL https://secureyeoman.ai/install | bash
+```
+
+Two tiers:
+
+| Binary | Requires | Platforms |
+|--------|----------|-----------|
+| `secureyeoman-linux-x64` / `linux-arm64` / `darwin-arm64` | PostgreSQL | Tier 1 |
+| `secureyeoman-lite-linux-x64` / `lite-linux-arm64` | Nothing (SQLite built-in) | Tier 2 |
+
+```bash
+secureyeoman init          # first-time setup wizard
+secureyeoman start         # start the server (dashboard + API on port 18789)
+secureyeoman mcp-server    # start the MCP server separately
+```
+
 ### From Source
 
 ```bash
@@ -124,18 +160,21 @@ npm install
 cp .env.example .env
 # Edit .env with your API key and security keys (minimum 32 characters each)
 
-# Start (core + dashboard)
+# Start (core serves dashboard + API)
 npm run dev
 ```
 
 ### Docker
 
 ```bash
-# Core + Dashboard
+# Core + PostgreSQL (dashboard served by core on port 18789)
 docker compose up -d
 
 # With MCP service
 docker compose --profile mcp up -d
+
+# Dashboard dev server (hot-reload Vite, for frontend development)
+docker compose --profile dev up -d
 
 # Fresh start (wipe database and data volumes)
 docker compose down -v
@@ -146,7 +185,7 @@ docker compose exec postgres pg_dump -U secureyeoman secureyeoman > backup.sql
 # Restore database
 docker compose exec -T postgres psql -U secureyeoman secureyeoman < backup.sql
 
-# Or manual build
+# Production image (requires pre-built binary: npm run build:binary)
 docker build -t secureyeoman .
 docker run --env-file .env -p 18789:18789 secureyeoman
 ```
@@ -216,7 +255,7 @@ See [.env.example](.env.example) for all options.
 
 ### Dashboard
 
-Access http://localhost:3000 after starting the system. The dashboard provides:
+Access http://localhost:18789 after starting the system. The dashboard provides:
 
 - **Overview**: Stat cards (tasks, heartbeat beats, audit entries, memory), services status (core, Postgres, audit chain, MCP servers, uptime, version), and system flow graph with live connection edges
 - **Tasks**: Task history with create/edit/delete, filtering, and live updates
