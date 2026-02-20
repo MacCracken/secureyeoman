@@ -286,7 +286,7 @@ export class GatewayServer {
     // Global error handler — catches body-parse failures, unhandled throws, etc.
     this.app.setErrorHandler((err, _request, reply) => {
       const statusCode = (err as any).statusCode ?? 500;
-      const message = statusCode < 500 ? err.message : 'An unexpected error occurred';
+      const message = statusCode < 500 ? (err as Error).message : 'An unexpected error occurred';
       reply.code(statusCode).send({ error: httpStatusName(statusCode), message, statusCode });
     });
 
@@ -1360,7 +1360,9 @@ export class GatewayServer {
             const subscribed: string[] = [];
             for (const channel of data.payload.channels) {
               const perm = CHANNEL_PERMISSIONS[channel];
-              if (perm && client.role) {
+              if (perm) {
+                // Fail-secure: if channel requires a permission and client has no role, deny
+                if (!client.role) continue;
                 const result = this.secureYeoman.getRBAC().checkPermission(client.role, perm);
                 if (!result.granted) continue;
               }

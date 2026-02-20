@@ -13,6 +13,7 @@ import { RemoteDelegationTransport } from './transport.js';
 import { manualDiscover, mdnsDiscover } from './discovery.js';
 import type { PeerAgent, Capability, A2AMessage, TrustLevel } from './types.js';
 import { uuidv7 } from '../utils/crypto.js';
+import { assertPublicUrl } from '../utils/ssrf-guard.js';
 
 export interface A2AManagerDeps {
   storage: A2AStorage;
@@ -75,6 +76,8 @@ export class A2AManager {
   // ── Peer management ────────────────────────────────────────────
 
   async addPeer(url: string, name?: string): Promise<PeerAgent> {
+    // SSRF guard: only allow public, non-private peer URLs
+    assertPublicUrl(url, 'Peer URL');
     // Attempt to discover peer info from the URL
     const discovered = await manualDiscover([url]);
     if (discovered.length > 0) {

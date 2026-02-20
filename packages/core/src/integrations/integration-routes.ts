@@ -20,6 +20,7 @@ import type {
 } from './outbound-webhook-storage.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import { sanitizeForLogging } from '../utils/crypto.js';
+import { assertPublicUrl } from '../utils/ssrf-guard.js';
 
 function maskIntegration<T extends { config?: Record<string, unknown> }>(integration: T): T {
   if (!integration.config) return integration;
@@ -577,6 +578,7 @@ export function registerIntegrationRoutes(
         reply: FastifyReply
       ) => {
         try {
+          assertPublicUrl(request.body.url, 'Webhook URL');
           const webhook = await outboundWebhookStorage.createWebhook(request.body);
           return reply.code(201).send({ webhook });
         } catch (err) {
