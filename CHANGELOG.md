@@ -4,6 +4,42 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 24 (2026-02-20): Migration Integrity — Docker Dev
+
+### Verified
+
+- **All 30 migrations apply cleanly on a fresh database** — Cold-start (`docker compose
+  --profile dev down -v && up --build`) applied all 30 manifest entries (001–028, with two
+  `006_*` and two `007_*` pairs) without error. All entries recorded in `schema_migrations`.
+
+- **Idempotency confirmed** — Restarting `core` against an already-migrated database triggers
+  the fast-path in `runner.ts` (latest manifest ID matches latest DB row → immediate return)
+  with no migration SQL executed and no duplicate-key errors.
+
+### Bugs Fixed
+
+- **`proactive` schema missing from `truncateAllTables`** — `test-setup.ts` listed 16 schemas
+  to truncate between tests but omitted `proactive` (added by migration 028). Any test writing
+  to `proactive.heartbeat_log` would leave rows that leaked into subsequent tests. Fixed by
+  adding `'proactive'` to the schema list.
+
+### Tests Added
+
+- **`packages/core/src/storage/migrations/runner.test.ts`** — Four integration tests for the
+  migration runner against the test Postgres instance:
+  1. Fresh apply — wipes `schema_migrations`, re-runs, confirms all 30 IDs present in order
+  2. Idempotent second call — re-runs on a fully-migrated DB, confirms row count unchanged
+  3. Partial-state recovery — deletes last entry, re-runs, confirms it is re-applied without
+     re-running already-applied migrations (fast-path bypassed; per-entry skip engaged)
+  4. Timestamp validation — every row carries a positive numeric `applied_at` value
+
+### Files Changed
+
+- `packages/core/src/storage/migrations/runner.test.ts` — new file (4 integration tests)
+- `packages/core/src/test-setup.ts` — `proactive` schema added to `truncateAllTables`
+
+---
+
 ## Phase 25 (2026-02-20): Bug Fixes — Docker Cold-Start (dev)
 
 ### Bug Fixes

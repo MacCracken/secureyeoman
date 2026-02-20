@@ -61,6 +61,7 @@ export async function truncateAllTables(): Promise<void> {
     'comms',
     'rotation',
     'rbac',
+    'proactive',
   ];
 
   for (const schema of schemas) {

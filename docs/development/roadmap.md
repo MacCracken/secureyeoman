@@ -53,7 +53,10 @@
 
 - [ ] **Coverage baseline** — Run `npm run test:coverage` across all packages; add targeted tests for any file below 80%
 - [ ] **Integration test gaps** — Audit `packages/core/src/__integration__/` for missing scenarios: multi-user auth flows, workspace member RBAC, SSO callback edge cases, binary sub-agent timeout/kill, mcp-bridge template errors
-- [ ] **Migration integrity** — Verify all 28 migrations apply cleanly on a fresh database and idempotently on an already-migrated one
+- [x] **Migration integrity — Docker dev** — All 30 manifest entries (001–028, with two 006_* and two 007_* pairs) apply cleanly on a fresh database (`docker compose --profile dev down -v && up --build`) and idempotently on an already-migrated one (restart triggers fast-path, no errors, no duplicate inserts). `runner.test.ts` added with four coverage cases: fresh apply, idempotent second call, partial-state recovery, and timestamp validation. `truncateAllTables` updated to include `proactive` schema.
+- [ ] **Migration integrity — Docker production** — Same fresh + idempotency verification against the binary-based `Dockerfile` + `docker compose up` (no profile); requires binary built first (`npm run build:binary`)
+- [ ] **Migration integrity — Binary** — Build Bun binary; verify SQL files are correctly embedded via manifest; run `secureyeoman start` against fresh Postgres; confirm all 30 migrations applied and fast-path triggers on restart
+- [ ] **Migration integrity — Helm / Kubernetes** — `helm lint`; `helm template` renders cleanly; deploy to kind cluster against fresh Postgres, verify all 30 apply; rolling restart confirms fast-path; **note**: production values set `replicaCount: 3` with no migration init container or advisory lock — concurrent pods can race on startup
 
 
 ## Phase 25: Fix All the Bugs
