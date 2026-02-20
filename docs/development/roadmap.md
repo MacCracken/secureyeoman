@@ -14,27 +14,27 @@
 | 4 | Dashboard | 2026.2.15 | Complete |
 | 5 | Integrations & Platforms | 2026.2.15 | Complete |
 | 6 | Production Hardening | 2026.2.15 | Complete |
-| | **Release 2026.2.15** | **2026-02-15** | **Released** |
+| | **Tag 2026.2.15** | **2026-02-15** | **Tagged** |
 | 7 | Cognitive & Memory | 2026.2.16 | Complete |
 | 8 | Extensions & Intelligence | 2026.2.16 | Complete |
-| | **Release 2026.2.16** | **2026-02-16** | **Released** |
+| | **Tag 2026.2.16** | **2026-02-16** | **Tagged** |
 | 9 | WebMCP & Browser Tools | 2026.2.17 | Complete |
 | 10 | Kubernetes Deployment | 2026.2.17 | Complete |
 | 11 | Dashboard UX | 2026.2.17 | Complete |
 | 12 | Expanded Integrations | 2026.2.17 | Complete |
 | 13 | Dashboard & Tooling | 2026.2.17 | Complete |
 | 14 | Dashboard Chat Enhancements | 2026.2.17 | Complete |
-| | **Release 2026.2.17** | **2026-02-17** | **Released** |
+| | **Tag 2026.2.17** | **2026-02-17** | **Tagged** |
 | 15 | Integration Expansion | 2026.2.18 | Complete |
 | 16 | Integration Enhancements | 2026.2.18 | Complete |
 | 17 | Advanced Capabilities | 2026.2.18 | Complete |
 | 18 | Skills Marketplace & Community | 2026.2.18 | Complete |
-| | **Release 2026.2.18** | **2026-02-18** | **Released** |
+| | **Tag 2026.2.18** | **2026-02-18** | **Tagged** |
 | 19 | Per-Personality Access | 2026.2.19 | Complete |
 | 20 | SaaS ready | 2026.2.19 | Complete |
 | 21 | Onboarding | 2026.2.19 | Complete |
 | 22 | Major Audit | 2026.2.19 | Complete |
-| | **Release 2026.2.19** | **2026-02-19** | **Released** |
+| | **Tag 2026.2.19** | **2026-02-19** | **Tagged** |
 | 23 | Community Marketplace Improvements | 2026.2.20 | Complete |
 | 24 | Testing All the Things | — | Pending |
 
