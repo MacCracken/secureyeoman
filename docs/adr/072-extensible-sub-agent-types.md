@@ -71,3 +71,35 @@ Type dispatch at the top of `executeDelegation()`:
 - `packages/core/package.json` — add @fastify/static ^8.0.0
 - `packages/core/src/gateway/server.ts` — SPA serving, dashboardDist option
 - `packages/core/src/cli/commands/start.ts` — --dashboard-dist flag
+
+---
+
+## Phase 24 Corrections (2026-02-20)
+
+Four defects discovered during the Phase 24 bug hunt:
+
+1. **Binary timeout/kill** — `executeBinaryDelegation` was not receiving `timeoutMs` or
+   `signal`; the spawned child process ran indefinitely on delegation timeout or abort.
+   Fixed by adding these parameters and installing a `killChild()` helper that sends
+   SIGTERM (then SIGKILL after 5 s) when either the timeout fires or the abort signal
+   triggers.
+
+2. **MCP tool not found — silent failure** — When `mcpTool` didn't match any connected
+   server, `mcpBridgeToolDef` was `undefined` and `serverId` was silently coerced to `''`,
+   producing an opaque error inside `callTool`. Fixed with an explicit early-return guard
+   that fails the delegation with a clear "tool not found" message before the `Promise.race`.
+
+3. **Template malformation — silent fallback** — A `mcpToolInput` template that produced
+   invalid JSON after `{{task}}`/`{{context}}` interpolation was silently replaced by
+   `{ task, context }`. The original template intent was lost with no signal to the caller.
+   Fixed to fail the delegation with a descriptive error and a `logger.warn` entry.
+
+4. **Extension hooks not wired** — The four hook points (`agent:binary-before-execute`,
+   `agent:binary-after-execute`, `agent:mcp-bridge-before-execute`,
+   `agent:mcp-bridge-after-execute`) were declared in `extensions/types.ts` but
+   `SubAgentManagerDeps` had no `extensionManager` field and no `emit()` calls existed
+   in either execution method. Fixed by adding the optional dep and emitting all four
+   points at the correct lifecycle positions.
+
+### Files Changed (Phase 24)
+- `packages/core/src/agents/manager.ts` — all four fixes

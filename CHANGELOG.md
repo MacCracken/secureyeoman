@@ -4,6 +4,39 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 24 (2026-02-20): Sub-Agent Execution Bug Fixes — [ADR 072](docs/adr/072-extensible-sub-agent-types.md)
+
+### Bug Fixes
+
+- **Binary timeout + kill path** — `executeBinaryDelegation` now accepts `timeoutMs` and
+  `signal`. A `killChild()` helper sends SIGTERM when the timeout fires or the AbortSignal
+  triggers; a 5-second follow-up SIGKILL ensures the process is reaped even if it ignores
+  SIGTERM. Previously the spawned process ran indefinitely, leaking resources.
+
+- **MCP-bridge: tool not found** — Added an explicit guard before `Promise.race`: if
+  `mcpTool` does not match any tool in the connected MCP servers, the delegation fails
+  immediately with `status: 'failed'` and a clear message
+  (`MCP tool "X" not found in any connected server`). Previously `serverId` silently
+  became `''`, producing an opaque error inside `callTool`.
+
+- **MCP-bridge: template malformation** — Interpolated `mcpToolInput` that produces invalid
+  JSON now fails the delegation with a descriptive error and a `logger.warn` entry showing
+  both the raw template and the interpolated string. Previously the code silently fell back
+  to `{ task, context }`, discarding the template intent.
+
+- **Extension hooks wired** — `SubAgentManagerDeps` gains an optional `extensionManager`
+  field. All four hook points declared in Phase 21 are now emitted:
+  `agent:binary-before-execute`, `agent:binary-after-execute`,
+  `agent:mcp-bridge-before-execute`, `agent:mcp-bridge-after-execute`.
+
+### Files Changed
+
+- `packages/core/src/agents/manager.ts` — binary timeout/kill, MCP guard, template error,
+  hook emissions, `extensionManager` dep wired
+- `docs/adr/072-extensible-sub-agent-types.md` — Phase 24 Corrections section added
+
+---
+
 ## Phase 23 (2026-02-20): Community Marketplace Improvements
 
 ### Added
