@@ -7,9 +7,9 @@ import type { BrowserSessionStorage } from './storage.js';
 
 export function registerBrowserRoutes(
   app: FastifyInstance,
-  deps: { browserSessionStorage: BrowserSessionStorage; browserConfig: Record<string, unknown> }
+  opts: { browserSessionStorage: BrowserSessionStorage; browserConfig: Record<string, unknown> }
 ): void {
-  const { browserSessionStorage, browserConfig } = deps;
+  const { browserSessionStorage, browserConfig } = opts;
 
   // List sessions
   app.get('/api/v1/browser/sessions', async (request) => {

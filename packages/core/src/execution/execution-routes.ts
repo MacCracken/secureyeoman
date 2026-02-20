@@ -8,9 +8,9 @@ import type { RuntimeType } from './types.js';
 
 export function registerExecutionRoutes(
   app: FastifyInstance,
-  deps: { executionManager: CodeExecutionManager }
+  opts: { executionManager: CodeExecutionManager }
 ): void {
-  const { executionManager } = deps;
+  const { executionManager } = opts;
 
   // ── Execute code ──────────────────────────────────────────────
 

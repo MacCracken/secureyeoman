@@ -4,13 +4,10 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { ExperimentManager } from './manager.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface ExperimentRoutesOptions {
   experimentManager: ExperimentManager;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 export function registerExperimentRoutes(
@@ -36,7 +33,7 @@ export function registerExperimentRoutes(
         const exp = await experimentManager.create(request.body as any);
         return reply.code(201).send({ experiment: exp });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );

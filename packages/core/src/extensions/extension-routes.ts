@@ -8,9 +8,9 @@ import type { HookPoint, HookSemantics } from './types.js';
 
 export function registerExtensionRoutes(
   app: FastifyInstance,
-  deps: { extensionManager: ExtensionManager }
+  opts: { extensionManager: ExtensionManager }
 ): void {
-  const { extensionManager } = deps;
+  const { extensionManager } = opts;
 
   // ── Extension routes ─────────────────────────────────────────
 

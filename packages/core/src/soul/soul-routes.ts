@@ -12,13 +12,10 @@ import type {
   UserProfileCreate,
   UserProfileUpdate,
 } from './types.js';
+import { toErrorMessage } from '../utils/errors.js';
 
 export interface SoulRoutesOptions {
   soulManager: SoulManager;
-}
-
-function errorMessage(err: unknown): string {
-  return err instanceof Error ? err.message : 'Unknown error';
 }
 
 export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions): void {
@@ -43,7 +40,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const personality = await soulManager.createPersonality(request.body);
         return await reply.code(201).send({ personality });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -58,7 +55,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const personality = await soulManager.updatePersonality(request.params.id, request.body);
         return { personality };
       } catch (err) {
-        return reply.code(404).send({ error: errorMessage(err) });
+        return reply.code(404).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -70,7 +67,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         await soulManager.deletePersonality(request.params.id);
         return reply.code(204).send();
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -83,7 +80,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const personality = await soulManager.getActivePersonality();
         return { personality };
       } catch (err) {
-        return reply.code(404).send({ error: errorMessage(err) });
+        return reply.code(404).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -113,7 +110,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const skill = await soulManager.createSkill(request.body);
         return await reply.code(201).send({ skill });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -128,7 +125,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const skill = await soulManager.updateSkill(request.params.id, request.body);
         return { skill };
       } catch (err) {
-        return reply.code(404).send({ error: errorMessage(err) });
+        return reply.code(404).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -140,7 +137,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         await soulManager.deleteSkill(request.params.id);
         return reply.code(204).send();
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -150,9 +147,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         await soulManager.enableSkill(request.params.id);
-        return { message: 'Skill enabled' };
+        return { success: true };
       } catch (err) {
-        return reply.code(404).send({ error: errorMessage(err) });
+        return reply.code(404).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -162,9 +159,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         await soulManager.disableSkill(request.params.id);
-        return { message: 'Skill disabled' };
+        return { success: true };
       } catch (err) {
-        return reply.code(404).send({ error: errorMessage(err) });
+        return reply.code(404).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -176,7 +173,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const skill = await soulManager.approveSkill(request.params.id);
         return { skill };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -188,7 +185,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         await soulManager.rejectSkill(request.params.id);
         return { message: 'Skill rejected' };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -223,7 +220,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const user = await soulManager.createUser(request.body);
         return await reply.code(201).send({ user });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -238,7 +235,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const user = await soulManager.updateUser(request.params.id, request.body);
         return { user };
       } catch (err) {
-        return reply.code(404).send({ error: errorMessage(err) });
+        return reply.code(404).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -253,7 +250,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         }
         return reply.code(204).send();
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -296,7 +293,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         await soulManager.setAgentName(request.body.agentName);
         return { agentName: await soulManager.getAgentName() };
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
@@ -391,7 +388,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
           personality: await soulManager.getActivePersonality(),
         });
       } catch (err) {
-        return reply.code(400).send({ error: errorMessage(err) });
+        return reply.code(400).send({ error: toErrorMessage(err) });
       }
     }
   );
