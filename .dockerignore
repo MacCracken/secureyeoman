@@ -3,6 +3,7 @@ node_modules
 .github
 dist
 !dist/secureyeoman-linux-x64
+!dist/migrations/
 *.db
 .env
 .env.*

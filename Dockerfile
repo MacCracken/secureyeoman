@@ -21,12 +21,22 @@ RUN groupadd -r secureyeoman && useradd -r -g secureyeoman -d /home/secureyeoman
 COPY dist/secureyeoman-linux-x64 /usr/local/bin/secureyeoman
 RUN chmod +x /usr/local/bin/secureyeoman
 
+# SQL migration files — co-located with the binary so the compiled binary can
+# find them via dirname(process.execPath)/migrations/ at runtime.
+# (Bun's --assets flag for embedding into the virtual FS requires Bun >= 1.2.)
+COPY dist/migrations/ /usr/local/bin/migrations/
+
 # Optional: bundled community skills
 COPY community-skills/ /usr/share/secureyeoman/community-skills/
 
-# Dashboard dist is embedded inside the binary as assets (via --assets flag in build-binary.sh)
-# If a separate dist is preferred, mount it at /usr/share/secureyeoman/dashboard or
-# pass --dashboard-dist <path> on startup.
+# Dashboard dist — served via @fastify/static from /usr/share/secureyeoman/dashboard.
+# Mount or COPY the dashboard build here, or set SECUREYEOMAN_DASHBOARD_DIST at runtime.
+# (Will be embeddable into the binary via --assets once Bun >= 1.2 is in use.)
+
+# Use JSON log format in the binary image: pino-pretty is not bundled in the
+# standalone binary and is not installed in this lean image.
+# Set SECUREYEOMAN_LOG_FORMAT=pretty (with pino-pretty available) to override.
+ENV SECUREYEOMAN_LOG_FORMAT=json
 
 EXPOSE 18789
 
