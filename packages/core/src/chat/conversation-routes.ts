@@ -161,7 +161,7 @@ export function registerConversationRoutes(
       if (!deleted) {
         return reply.code(404).send({ error: 'Conversation not found' });
       }
-      return { success: true };
+      return reply.code(204).send();
     }
   );
 }

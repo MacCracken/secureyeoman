@@ -45,7 +45,7 @@ export function registerA2ARoutes(app: FastifyInstance, deps: { a2aManager: A2AM
       if (!removed) {
         return reply.code(404).send({ error: 'Peer not found' });
       }
-      return { success: true };
+      return reply.code(204).send();
     }
   );
 

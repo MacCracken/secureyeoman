@@ -76,7 +76,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
       if (!deleted) {
         return reply.code(404).send({ error: 'Passion not found' });
       }
-      return { message: 'Passion deleted' };
+      return reply.code(204).send();
     }
   );
 
@@ -132,7 +132,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
       if (!deleted) {
         return reply.code(404).send({ error: 'Inspiration not found' });
       }
-      return { message: 'Inspiration deleted' };
+      return reply.code(204).send();
     }
   );
 
@@ -188,7 +188,7 @@ export function registerSpiritRoutes(app: FastifyInstance, opts: SpiritRoutesOpt
       if (!deleted) {
         return reply.code(404).send({ error: 'Pain not found' });
       }
-      return { message: 'Pain deleted' };
+      return reply.code(204).send();
     }
   );
 

@@ -232,7 +232,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        "200": { description: Deleted }
+        "204": { description: Deleted }
 
   /api/v1/integrations/{id}/start:
     post:

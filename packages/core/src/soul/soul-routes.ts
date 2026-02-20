@@ -68,7 +68,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         await soulManager.deletePersonality(request.params.id);
-        return { message: 'Personality deleted' };
+        return reply.code(204).send();
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
       }
@@ -138,7 +138,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       try {
         await soulManager.deleteSkill(request.params.id);
-        return { message: 'Skill deleted' };
+        return reply.code(204).send();
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
       }
@@ -251,7 +251,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         if (!deleted) {
           return await reply.code(404).send({ error: 'User not found' });
         }
-        return { message: 'User deleted' };
+        return reply.code(204).send();
       } catch (err) {
         return reply.code(400).send({ error: errorMessage(err) });
       }

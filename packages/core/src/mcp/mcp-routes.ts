@@ -143,7 +143,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         return reply.code(404).send({ error: 'MCP server not found' });
       }
       await mcpClient.deleteTools(request.params.id);
-      return { message: 'Server removed' };
+      return reply.code(204).send();
     }
   );
 
@@ -323,7 +323,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       if (!deleted) {
         return reply.code(404).send({ error: 'Credential not found' });
       }
-      return { message: 'Credential deleted' };
+      return reply.code(204).send();
     }
   );
 }

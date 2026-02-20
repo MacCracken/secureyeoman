@@ -50,9 +50,11 @@ interface ToolHandler {
 function createMockServer() {
   const tools = new Map<string, ToolHandler>();
   return {
-    tool: vi.fn((name: string, _desc: string, _schema: unknown, handler: ToolHandler) => {
-      tools.set(name, handler);
-    }),
+    registerTool: vi.fn(
+      (name: string, _opts: { description: string; inputSchema: unknown }, handler: ToolHandler) => {
+        tools.set(name, handler);
+      }
+    ),
     getHandler(name: string): ToolHandler | undefined {
       return tools.get(name);
     },
@@ -84,8 +86,8 @@ describe('registerBrowserTools', () => {
     const config = createConfig(false);
     registerBrowserTools(server as any, config, mockMiddleware as any);
 
-    expect(server.tool).toHaveBeenCalledTimes(6);
-    const toolNames = server.tool.mock.calls.map((c: unknown[]) => c[0]);
+    expect(server.registerTool).toHaveBeenCalledTimes(6);
+    const toolNames = server.registerTool.mock.calls.map((c: unknown[]) => c[0]);
     expect(toolNames).toContain('browser_navigate');
     expect(toolNames).toContain('browser_screenshot');
     expect(toolNames).toContain('browser_click');

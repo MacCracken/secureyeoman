@@ -1,19 +1,31 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { Sparkles, ArrowRight, ArrowLeft, Check } from 'lucide-react';
+import { Sparkles, ArrowRight, ArrowLeft, Check, Cpu } from 'lucide-react';
 import { completeOnboarding } from '../api/client';
-import type { PersonalityCreate } from '../types';
+import type { PersonalityCreate, DefaultModel } from '../types';
 
 interface OnboardingWizardProps {
   onComplete: () => void;
 }
 
-type Step = 'name' | 'personality' | 'confirm';
+type Step = 'name' | 'personality' | 'model' | 'confirm';
 
 const TRAIT_OPTIONS: Record<string, string[]> = {
   formality: ['casual', 'balanced', 'formal'],
   humor: ['none', 'subtle', 'witty'],
   verbosity: ['concise', 'balanced', 'detailed'],
+};
+
+const PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'deepseek', 'mistral'] as const;
+type Provider = (typeof PROVIDERS)[number];
+
+const PROVIDER_DEFAULTS: Record<Provider, string> = {
+  anthropic: 'claude-sonnet-4-20250514',
+  openai: 'gpt-4o',
+  gemini: 'gemini-1.5-pro',
+  ollama: 'llama3.2',
+  deepseek: 'deepseek-chat',
+  mistral: 'mistral-large-latest',
 };
 
 export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
@@ -30,10 +42,21 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     preferredLanguage: '',
     includeArchetypes: true,
   });
+  const [selectedProvider, setSelectedProvider] = useState<Provider>('anthropic');
+  const [modelName, setModelName] = useState(PROVIDER_DEFAULTS.anthropic);
   const [error, setError] = useState<string | null>(null);
 
+  const resolvedDefaultModel: DefaultModel | null = modelName
+    ? { provider: selectedProvider, model: modelName }
+    : null;
+
   const mutation = useMutation({
-    mutationFn: () => completeOnboarding({ ...personality, agentName }),
+    mutationFn: () =>
+      completeOnboarding({
+        ...personality,
+        agentName,
+        defaultModel: resolvedDefaultModel,
+      }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['onboarding'] });
       void queryClient.invalidateQueries({ queryKey: ['personalities'] });
@@ -57,7 +80,12 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     }));
   };
 
-  const steps: Step[] = ['name', 'personality', 'confirm'];
+  const handleProviderChange = (p: Provider) => {
+    setSelectedProvider(p);
+    setModelName(PROVIDER_DEFAULTS[p]);
+  };
+
+  const steps: Step[] = ['name', 'personality', 'model', 'confirm'];
   const stepIndex = steps.indexOf(step);
 
   return (
@@ -207,7 +235,69 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             </div>
           )}
 
-          {/* Step 3: Confirm */}
+          {/* Step 3: AI Model */}
+          {step === 'model' && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Cpu className="w-4 h-4 text-muted-foreground" />
+                <span className="text-sm font-medium">AI Provider &amp; Model</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Choose the AI provider and model for this personality. The provider's API key must
+                be set in your <code className="font-mono">.env</code> file before starting the
+                server. You can skip this step to use the server default.
+              </p>
+
+              <div>
+                <label className="block text-xs text-muted-foreground mb-2">Provider</label>
+                <div className="flex flex-wrap gap-2">
+                  {PROVIDERS.map((p) => (
+                    <button
+                      key={p}
+                      onClick={() => {
+                        handleProviderChange(p);
+                      }}
+                      className={`px-3 py-1 text-xs rounded border transition-colors ${
+                        selectedProvider === p
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-background hover:bg-muted'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-muted-foreground mb-1">Model name</label>
+                <input
+                  type="text"
+                  value={modelName}
+                  onChange={(e) => {
+                    setModelName(e.target.value);
+                  }}
+                  className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary font-mono text-sm"
+                  placeholder={PROVIDER_DEFAULTS[selectedProvider]}
+                  maxLength={100}
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Default for {selectedProvider}: <code className="font-mono">{PROVIDER_DEFAULTS[selectedProvider]}</code>
+                </p>
+              </div>
+
+              <button
+                onClick={() => {
+                  setModelName('');
+                }}
+                className="text-xs text-muted-foreground underline hover:text-foreground"
+              >
+                Clear — use server default
+              </button>
+            </div>
+          )}
+
+          {/* Step 4: Confirm */}
           {step === 'confirm' && (
             <div className="space-y-4">
               <div className="p-4 rounded bg-muted">
@@ -225,6 +315,14 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                           {k}: {v}
                         </span>
                       ))}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-muted-foreground">AI Model</dt>
+                    <dd className="font-mono text-xs">
+                      {resolvedDefaultModel
+                        ? `${resolvedDefaultModel.provider} / ${resolvedDefaultModel.model}`
+                        : 'Server default'}
                     </dd>
                   </div>
                   {personality.voice && (

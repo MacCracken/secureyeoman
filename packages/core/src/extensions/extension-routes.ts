@@ -60,7 +60,7 @@ export function registerExtensionRoutes(
       if (!removed) {
         return reply.code(404).send({ error: 'Extension not found' });
       }
-      return { success: true };
+      return reply.code(204).send();
     }
   );
 
@@ -131,9 +131,9 @@ export function registerExtensionRoutes(
 
   app.delete(
     '/api/v1/extensions/hooks/:id',
-    async (request: FastifyRequest<{ Params: { id: string } }>) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       extensionManager.unregisterHook(request.params.id);
-      return { success: true };
+      return reply.code(204).send();
     }
   );
 
@@ -205,7 +205,7 @@ export function registerExtensionRoutes(
       if (!removed) {
         return reply.code(404).send({ error: 'Webhook not found' });
       }
-      return { success: true };
+      return reply.code(204).send();
     }
   );
 

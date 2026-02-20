@@ -127,7 +127,7 @@ export function registerIntegrationRoutes(
       if (!deleted) {
         return reply.code(404).send({ error: 'Integration not found' });
       }
-      return { message: 'Integration deleted' };
+      return reply.code(204).send();
     }
   );
 
@@ -529,7 +529,7 @@ export function registerIntegrationRoutes(
       ) => {
         const deleted = await webhookTransformStorage.deleteRule(request.params.id);
         if (!deleted) return reply.code(404).send({ error: 'Transform rule not found' });
-        return { message: 'Transform rule deleted' };
+        return reply.code(204).send();
       }
     );
   }
@@ -602,7 +602,7 @@ export function registerIntegrationRoutes(
       ) => {
         const deleted = await outboundWebhookStorage.deleteWebhook(request.params.id);
         if (!deleted) return reply.code(404).send({ error: 'Outbound webhook not found' });
-        return { message: 'Outbound webhook deleted' };
+        return reply.code(204).send();
       }
     );
   }

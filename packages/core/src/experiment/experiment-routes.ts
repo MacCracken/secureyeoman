@@ -73,7 +73,7 @@ export function registerExperimentRoutes(
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       if (!(await experimentManager.delete(request.params.id)))
         return reply.code(404).send({ error: 'Experiment not found' });
-      return { message: 'Experiment deleted' };
+      return reply.code(204).send();
     }
   );
 }

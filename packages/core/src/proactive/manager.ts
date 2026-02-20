@@ -152,8 +152,8 @@ export class ProactiveManager {
     }
 
     // Cooldown check
-    if (trigger.cooldownMs > 0 && (trigger as any).lastFiredAt) {
-      const elapsed = Date.now() - (trigger as any).lastFiredAt;
+    if (trigger.cooldownMs > 0 && trigger.lastFiredAt) {
+      const elapsed = Date.now() - trigger.lastFiredAt;
       if (elapsed < trigger.cooldownMs) {
         this.deps.logger.debug('Trigger skipped (cooldown)', {
           triggerId,

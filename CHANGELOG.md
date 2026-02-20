@@ -4,6 +4,63 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 22 (complete): Major Audit (2026-02-19)
+
+### Fixes
+
+- **HTTP 204 on DELETE** — All 26 DELETE endpoints across the API now correctly return `204 No Content` with an empty body, replacing the previous `200 OK` with `{ "message": "..." }` JSON. Affected routes: soul, workspace, brain, spirit, comms, integrations, MCP, execution, agents, swarms, experiments, dashboard, extensions, conversations, proactive, model, A2A, marketplace.
+- **HTTP 202 on async POST** — `POST /api/v1/execution/run` now returns `202 Accepted` instead of `200 OK` to correctly signal that execution is asynchronous.
+- **Structured logging** — Replaced `console.log` / `console.error` calls in `heartbeat.ts` and `pg-pool.ts` with `this.logger.info` / `getLogger().error` structured logger calls.
+- **TypeScript `as any` elimination** — Removed 8 unsafe `as any` casts from `packages/core/src/agents/storage.ts` and `packages/core/src/proactive/manager.ts`; corrected `getTrigger` return type in `proactive/storage.ts` to include `lastFiredAt?: number`.
+- **Zod schema fix** — Split `AgentProfileSchema` in `packages/shared/src/types/delegation.ts` into a base `ZodObject` and separate refinements so that `AgentProfileCreateSchema` and `AgentProfileUpdateSchema` can use `.omit()` without hitting the `ZodEffects` limitation.
+- **Stale TODO cleanup** — Removed 6 outdated TODO comments from `heartbeat.ts` switch cases (slack, telegram, discord, email, command, llm).
+
+### Files Changed
+
+- `packages/core/src/soul/soul-routes.ts` — 3 DELETE handlers → 204
+- `packages/core/src/workspace/workspace-routes.ts` — 3 DELETE handlers → 204
+- `packages/core/src/brain/brain-routes.ts` — 2 DELETE handlers → 204
+- `packages/core/src/spirit/spirit-routes.ts` — 3 DELETE handlers → 204
+- `packages/core/src/comms/comms-routes.ts` — 1 DELETE handler → 204
+- `packages/core/src/integrations/integration-routes.ts` — 3 DELETE handlers → 204
+- `packages/core/src/mcp/mcp-routes.ts` — 2 DELETE handlers → 204
+- `packages/core/src/execution/execution-routes.ts` — 2 DELETE handlers → 204; POST /run → 202
+- `packages/core/src/agents/agent-routes.ts` — 1 DELETE handler → 204
+- `packages/core/src/agents/swarm-routes.ts` — 1 DELETE handler → 204
+- `packages/core/src/experiment/experiment-routes.ts` — 1 DELETE handler → 204
+- `packages/core/src/dashboard/dashboard-routes.ts` — 1 DELETE handler → 204
+- `packages/core/src/extensions/extension-routes.ts` — 3 DELETE handlers → 204
+- `packages/core/src/chat/conversation-routes.ts` — 1 DELETE handler → 204
+- `packages/core/src/proactive/proactive-routes.ts` — 2 DELETE handlers → 204
+- `packages/core/src/ai/model-routes.ts` — 1 DELETE handler → 204
+- `packages/core/src/a2a/a2a-routes.ts` — 1 DELETE handler → 204
+- `packages/core/src/marketplace/marketplace-routes.ts` — 1 DELETE handler → 204
+- `packages/core/src/body/heartbeat.ts` — console.log → logger.info; 6 TODO comments removed
+- `packages/core/src/storage/pg-pool.ts` — console.error → getLogger().error
+- `packages/core/src/agents/storage.ts` — 6 `as any` casts removed
+- `packages/core/src/proactive/storage.ts` — getTrigger return type corrected
+- `packages/core/src/proactive/manager.ts` — 2 `as any` casts removed
+- `packages/shared/src/types/delegation.ts` — AgentProfileBaseSchema split from ZodEffects
+- `packages/core/src/__integration__/soul.integration.test.ts` — DELETE assertions updated to 204
+- `packages/core/src/body/heartbeat.test.ts` — consoleSpy tests updated to assert on logger.info
+
+---
+
+## Phase 21 (complete): Onboarding (2026-02-19)
+
+### Feature
+
+- **First-install CLI wizard** — `secureyeoman init` now walks new users through AI provider selection (anthropic / openai / gemini / ollama / deepseek / mistral), model name, API key entry (written to `.env`), gateway port, and database backend choice (SQLite or PostgreSQL). Answers populate both `.env` and a complete `secureyeoman.yaml` covering `core`, `model`, `gateway`, `storage`, and `soul` sections.
+- **Dashboard onboarding wizard — model step** — `OnboardingWizard.tsx` gains a fourth step between *Personality* and *Confirm*: provider picker + model name field with per-provider defaults. Sets `personality.defaultModel`; "Clear" button falls back to the server default.
+- **Config file generation** — `secureyeoman init` produces a fully populated `secureyeoman.yaml` on first run; skipped if the file already exists.
+
+### Files Changed
+
+- `packages/core/src/cli/commands/init.ts` — provider/model/key/port/DB prompts; extended YAML output; extended `.env` output (API key + DATABASE_URL)
+- `packages/dashboard/src/components/OnboardingWizard.tsx` — 4-step wizard (`name → personality → model → confirm`); provider buttons + model input; `Cpu` icon; `defaultModel` wired to mutation payload
+
+---
+
 ## Phase 22 (complete): Single Binary Distribution (2026-02-19) — [ADR 073](docs/adr/073-single-binary-distribution.md)
 
 ### Feature

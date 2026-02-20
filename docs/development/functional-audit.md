@@ -188,10 +188,10 @@
 ### ❌ Missing vs Market
 1. **Mobile App** - Native iOS/Android
 
-### ⚠️ Areas for Future Enhancement
-1. **gVisor Kernel Isolation** - Optional gVisor sandbox (feature flag available)
-2. **WASM Execution Isolation** - Optional WASM sandbox (feature flag available)
-3. **ML Anomaly Detection** - Feature flag available
+### ✅ Implemented (Feature Flags, Off by Default)
+1. **gVisor Kernel Isolation** - Optional gVisor sandbox (`sandboxGvisor` policy flag, default off)
+2. **WASM Execution Isolation** - Optional WASM sandbox (`sandboxWasm` policy flag, default off)
+3. **ML Anomaly Detection** - ML-based anomaly detection engine (`allowAnomalyDetection` policy flag, default off)
 
 ---
 

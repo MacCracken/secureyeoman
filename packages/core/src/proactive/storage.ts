@@ -163,7 +163,7 @@ export class ProactiveStorage extends PgBaseStorage {
     return rows.map(triggerFromRow);
   }
 
-  async getTrigger(id: string): Promise<(ProactiveTrigger & { fireCount: number }) | null> {
+  async getTrigger(id: string): Promise<(ProactiveTrigger & { lastFiredAt?: number; fireCount: number }) | null> {
     const row = await this.queryOne<TriggerRow>(`SELECT * FROM proactive.triggers WHERE id = $1`, [
       id,
     ]);

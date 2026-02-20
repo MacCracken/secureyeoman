@@ -102,7 +102,7 @@ export function registerAgentRoutes(
       if (!deleted) {
         return reply.code(500).send({ error: 'Failed to delete profile' });
       }
-      return { success: true };
+      return reply.code(204).send();
     }
   );
 

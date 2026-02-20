@@ -68,7 +68,7 @@ export function registerDashboardRoutes(app: FastifyInstance, opts: DashboardRou
       if (!dashboardManager.delete(request.params.id)) {
         return reply.code(404).send({ error: 'Dashboard not found' });
       }
-      return { message: 'Dashboard deleted' };
+      return reply.code(204).send();
     }
   );
 }

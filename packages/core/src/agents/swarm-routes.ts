@@ -78,7 +78,7 @@ export function registerSwarmRoutes(
       if (!deleted) {
         return reply.code(500).send({ error: 'Failed to delete template' });
       }
-      return { success: true };
+      return reply.code(204).send();
     }
   );
 
