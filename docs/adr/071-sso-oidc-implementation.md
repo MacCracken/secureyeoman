@@ -46,3 +46,43 @@ SAML is left as a future extension — the schema supports it via `type IN ('oid
 - `packages/core/src/gateway/server.ts` — register SSO routes
 - `packages/core/src/secureyeoman.ts` — initialize SsoManager
 - `packages/core/package.json` — add openid-client ^6.0.0
+
+---
+
+## Phase 25 Corrections (2026-02-20)
+
+Two defects discovered during the Phase 25 bug hunt:
+
+1. **Operator precedence in authorize route scheme calculation** — In
+   `sso-routes.ts`, the expression
+   `header ?? (app.server as any).encrypted ? 'https' : 'http'`
+   was parsed by JavaScript as `(header ?? encrypted) ? 'https' : 'http'` because
+   `??` has higher precedence than the ternary operator. When a reverse proxy sets
+   `x-forwarded-proto: http`, the header value (`'http'`) was truthy, so the
+   ternary always evaluated to `'https'` — the redirect URI sent to the IDP used
+   `https://` even for plain-HTTP deployments, causing a redirect URI mismatch.
+   Fixed by adding explicit parentheses:
+   `header ?? ((app.server as any).encrypted ? 'https' : 'http')`.
+
+2. **PKCE state not consumed on provider mismatch** — In `sso-manager.ts`,
+   `deleteSsoState()` was called *after* the provider ID mismatch check. When the
+   provider IDs didn't match, the exception was thrown before the state was deleted,
+   leaving it valid in the DB until its 10-minute TTL. An attacker who intercepted
+   a state value could try it against different provider IDs without the state being
+   invalidated. Fixed by moving `deleteSsoState()` to immediately after the null
+   check, before any other validation — ensuring the one-time token is consumed
+   regardless of what happens next.
+
+### New Tests (Phase 25)
+- `sso-manager.test.ts` — state consumed on provider mismatch; IDP error response
+  (`access_denied`); malformed callback (bad/missing code); missing code param
+- `sso-routes.test.ts` — `x-forwarded-proto: http` → `http://` redirect URI;
+  `x-forwarded-proto: https` → `https://` redirect URI; absent header → fallback;
+  workspace param forwarded; missing state param; IDP error in callback; expired
+  state redirect
+
+### Files Changed (Phase 25)
+- `packages/core/src/security/sso-manager.ts` — state consumed before mismatch check
+- `packages/core/src/gateway/sso-routes.ts` — operator-precedence fix in authorize route
+- `packages/core/src/security/sso-manager.test.ts` — new edge-case tests
+- `packages/core/src/gateway/sso-routes.test.ts` — new scheme + callback error tests

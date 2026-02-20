@@ -91,6 +91,66 @@ describe('SSO Routes — authorization flow', () => {
     expect(res.statusCode).toBe(400);
   });
 
+  // ── Scheme calculation (operator-precedence bug regression) ──────
+
+  it('authorize: passes http:// redirect URI when x-forwarded-proto is http', async () => {
+    const getAuthorizationUrl = vi.fn().mockResolvedValue('https://idp.example.com/authorize?state=xyz');
+    const app = buildApp(undefined, { getAuthorizationUrl });
+    await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/sso/authorize/idp-1',
+      headers: { 'x-forwarded-proto': 'http', host: 'proxy.example.com' },
+    });
+    expect(getAuthorizationUrl).toHaveBeenCalledWith(
+      'idp-1',
+      'http://proxy.example.com/api/v1/auth/sso/callback/idp-1',
+      undefined
+    );
+  });
+
+  it('authorize: passes https:// redirect URI when x-forwarded-proto is https', async () => {
+    const getAuthorizationUrl = vi.fn().mockResolvedValue('https://idp.example.com/authorize?state=xyz');
+    const app = buildApp(undefined, { getAuthorizationUrl });
+    await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/sso/authorize/idp-1',
+      headers: { 'x-forwarded-proto': 'https', host: 'secure.example.com' },
+    });
+    expect(getAuthorizationUrl).toHaveBeenCalledWith(
+      'idp-1',
+      'https://secure.example.com/api/v1/auth/sso/callback/idp-1',
+      undefined
+    );
+  });
+
+  it('authorize: falls back to http:// when x-forwarded-proto header is absent', async () => {
+    const getAuthorizationUrl = vi.fn().mockResolvedValue('https://idp.example.com/authorize?state=xyz');
+    const app = buildApp(undefined, { getAuthorizationUrl });
+    await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/sso/authorize/idp-1',
+      headers: { host: 'localhost:3000' },
+    });
+    expect(getAuthorizationUrl).toHaveBeenCalledWith(
+      'idp-1',
+      expect.stringMatching(/^http:\/\//),
+      undefined
+    );
+  });
+
+  it('authorize: passes workspace query param to manager', async () => {
+    const getAuthorizationUrl = vi.fn().mockResolvedValue('https://idp.example.com/authorize?state=xyz');
+    const app = buildApp(undefined, { getAuthorizationUrl });
+    await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/sso/authorize/idp-1?workspace=ws-42',
+      headers: { host: 'localhost' },
+    });
+    expect(getAuthorizationUrl).toHaveBeenCalledWith('idp-1', expect.any(String), 'ws-42');
+  });
+
+  // ── Callback route ───────────────────────────────────────────────
+
   it('GET /api/v1/auth/sso/callback/:id redirects to dashboard with tokens', async () => {
     const app = buildApp();
     const res = await app.inject({ method: 'GET', url: '/api/v1/auth/sso/callback/idp-1?state=xyz&code=abc', headers: { host: 'localhost' } });
@@ -103,6 +163,50 @@ describe('SSO Routes — authorization flow', () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/auth/sso/callback/idp-1?state=bad', headers: { host: 'localhost' } });
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toContain('sso_error');
+  });
+
+  it('callback: missing state param redirects to dashboard with sso_error', async () => {
+    // Manager throws 'Missing state parameter' — route should redirect with error
+    const app = buildApp(undefined, {
+      handleCallback: vi.fn().mockRejectedValue(new Error('Missing state parameter in callback')),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/auth/sso/callback/idp-1', headers: { host: 'localhost' } });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toContain('sso_error');
+    // Parse the sso_error query param (handles + encoding in query strings)
+    const errParam = new URL(res.headers.location as string).searchParams.get('sso_error');
+    expect(errParam).toContain('Missing state parameter');
+  });
+
+  it('callback: IDP error response (access_denied) redirects with sso_error', async () => {
+    const app = buildApp(undefined, {
+      handleCallback: vi.fn().mockRejectedValue(
+        Object.assign(new Error('access_denied'), { error: 'access_denied' })
+      ),
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/sso/callback/idp-1?error=access_denied&state=abc',
+      headers: { host: 'localhost' },
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toContain('sso_error');
+    const errParam = new URL(res.headers.location as string).searchParams.get('sso_error');
+    expect(errParam).toContain('access_denied');
+  });
+
+  it('callback: expired state redirects with sso_error', async () => {
+    const app = buildApp(undefined, {
+      handleCallback: vi.fn().mockRejectedValue(new Error('Invalid or expired SSO state')),
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/sso/callback/idp-1?state=old-state&code=xyz',
+      headers: { host: 'localhost' },
+    });
+    expect(res.statusCode).toBe(302);
+    const errParam = new URL(res.headers.location as string).searchParams.get('sso_error');
+    expect(errParam).toContain('expired');
   });
 });
 
