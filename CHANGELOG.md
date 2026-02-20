@@ -4,6 +4,31 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 25 (2026-02-20): Bug Fixes
+
+### Bug Fixes
+
+- **SPA serving: `decorateReply` + asset 404s** — Two defects in the dashboard SPA serving
+  path in `gateway/server.ts`:
+  1. `@fastify/static` was registered with `decorateReply: false`, which removes
+     `reply.sendFile()` from the reply prototype. The `setNotFoundHandler` called
+     `reply.sendFile('index.html', distPath)` for every non-API 404, so all SPA routes
+     (e.g. `/dashboard/settings`) failed with a TypeError caught as a 500 instead of
+     serving the app shell.
+  2. The handler had no guard for URLs with file extensions, so missing static assets
+     (e.g. `/assets/app.abc123.js`) would have served `index.html` as JavaScript —
+     causing browser parse errors — once the `decorateReply` bug was fixed.
+  Fixed by removing `decorateReply: false` (restoring the default `true`) and adding an
+  extension check: URLs whose last path segment contains a `.` now return JSON 404
+  instead of the SPA shell. Query strings are stripped before all URL checks.
+
+### Files Changed
+
+- `packages/core/src/gateway/server.ts` — removed `decorateReply: false`, added asset
+  extension guard in `setNotFoundHandler`, stripped query string before URL checks
+
+---
+
 ## Phase 24 (2026-02-20): Sub-Agent Execution Bug Fixes — [ADR 072](docs/adr/072-extensible-sub-agent-types.md)
 
 ### Bug Fixes

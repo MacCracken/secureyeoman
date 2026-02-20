@@ -47,7 +47,7 @@
 
 **Status**: In-Progress
 
-*Full-system quality pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.*
+*Full-system testing pass: Get Test coverages up over 80%, mark real bugs in shipped code and fix them in phase 25. Every package, every integration path, every edge case.*
 
 ### Test Coverage
 
@@ -60,12 +60,13 @@
 
 **Status**: Pending
 
+Full-system quality pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.
+
 ### Bug Hunt
 - [ ] **Skills Community** - dashboard still states clone repo then sync - we made the user able to sync repo without having to clone it themselves.  Investigate
 - [ ] **Heartbeat Task execution log** — Heartbeat check results (`ok`/`warning`/`error` + message + duration) are only emitted to the pino logger and are never persisted. There is no way to audit past runs, diagnose recurring failures, or see what a check returned on its last cycle. Fix requires: (1) new `proactive.heartbeat_log` migration — columns `id`, `check_name`, `personality_id`, `ran_at`, `status` (`ok`/`warning`/`error`), `message`, `duration_ms`, `error_detail`; (2) persist a row in `heartbeat.ts` after every `executeCheck()` call; (3) new `GET /api/v1/proactive/heartbeat/log` route with `?checkName=&status=&limit=&offset=` query params; (4) update `HeartbeatTaskRow` in `TaskHistory.tsx` to surface the last-result status badge (`ok` → green, `warning` → amber, `error` → red) in place of the current Active/Disabled-only display, and add an expandable execution history panel showing the N most recent runs per check. Reported by the agent personalities.
 - [ ] **Auth & SSO** — Full OIDC flow end-to-end; `auto_provision: false` rejection; expired state tokens; malformed callback params
 - [ ] **Workspace RBAC** — Workspace-scoped role enforcement; member add/remove edge cases; default workspace bootstrap on fresh install
-- [ ] **SPA serving** — `/api/v1/*` never intercepted by `setNotFoundHandler`; unknown assets return `index.html`, not 404 JSON
 - [ ] **Single binary smoke test** — Build all Tier 1 + Tier 2 targets; run `--version`, `health --json`, `config validate --json` against each
 - [ ] **Docker cold-start** — `docker compose up` with empty volumes; migrations run, default workspace created, healthcheck passes
 
@@ -73,6 +74,8 @@
 ## Phase 26: Final Inspection
 
 **Status**: Pending
+
+Full-system final sweep before public beta Release; Confirm tests didn't regress, basslines and startup time still hold.
 
 ### Regression & Performance
 
