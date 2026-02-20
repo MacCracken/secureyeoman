@@ -54,9 +54,10 @@
 ### Documentation
 
 - [x] **Docs accuracy pass** — Updated `docs/api/rest-api.md` and `docs/openapi.yaml` to reflect 204 DELETE responses and 202 for async POST
-- [x] **Getting-started end-to-end** — Fixed: removed nonexistent `dev:core` script, corrected dashboard URL to `:18789`, updated health-check version, removed stale `v1.2 Features` section, fixed `security.codeExecution` → `execution`, removed bogus `dashboard:` config block, updated A2A docs, fixed MCP verify URL
-- [x] **Configuration reference** — Audited all YAML fields against `config.ts`: corrected `execution` runtime names (`node` not `nodejs`), `sessionTimeout` default (1800000), `approvalPolicy` enum values; fixed `extensions` defaults and removed undocumented fields; fixed `a2a.discoveryMethod` values and removed non-schema fields; fixed `security.allowSubAgents` default; fixed `conversation.compression` defaults; added missing model providers (lmstudio, localai, deepseek, mistral)
+- [x] **Getting-started end-to-end** — Fixed: removed nonexistent `dev:core` script, corrected dashboard URL to `:18789`, updated health-check version, removed stale `v1.2 Features` section, fixed `security.codeExecution` → `execution`, removed bogus `dashboard:` config block, updated A2A docs, fixed MCP verify URL; corrected optional env var names (`PORT`/`HOST`/`LOG_LEVEL` → `SECUREYEOMAN_PORT`/`SECUREYEOMAN_HOST`/`SECUREYEOMAN_LOG_LEVEL`)
+- [x] **Configuration reference** — Audited all YAML fields against `config.ts`: corrected `execution` runtime names (`node` not `nodejs`), `sessionTimeout` default (1800000), `approvalPolicy` enum values; fixed `extensions` defaults and removed undocumented fields; fixed `a2a.discoveryMethod` values and removed non-schema fields; fixed `security.allowSubAgents` default; fixed `conversation.compression` defaults; added missing model providers (lmstudio, localai, deepseek, mistral); corrected env var names in the Environment Variables table (`PORT`/`HOST`/`LOG_LEVEL` → `SECUREYEOMAN_PORT`/`SECUREYEOMAN_HOST`/`SECUREYEOMAN_LOG_LEVEL`)
 - [x] **API reference** — All DELETE endpoints updated to `204 No Content`; `POST /api/v1/execution/run` updated to `202 Accepted`
+- [x] **README best-practices audit** — Corrected admin login curl (removed spurious `username` field); fixed MCP stdio path (`dist/index.js` → `dist/cli.js`); updated ADR count (43 → 75); added auth headers to community sync curl examples; replaced `REDIS_URL` env var (not recognized by loader) with a comment pointing to the YAML `security.rateLimiting.redisUrl` field
 
 ### ADRs
 
@@ -165,4 +166,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-19 — Phase 22 complete (Major Audit); Phase 23 → Testing All the Things*
+*Last updated: 2026-02-19 — Phase 22 complete (Major Audit + README audit); Phase 23 → Testing All the Things*

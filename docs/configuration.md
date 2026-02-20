@@ -975,9 +975,9 @@ All security-sensitive values are referenced by environment variable name in the
 | `GOOGLE_GENERATIVE_AI_API_KEY` | One AI key required | Google Gemini API key |
 | `OLLAMA_BASE_URL` | Optional | Ollama server URL (default: `http://localhost:11434`) |
 | `OPENCODE_API_KEY` | One AI key required | OpenCode Zen API key |
-| `PORT` | No | Gateway port override |
-| `HOST` | No | Gateway host override |
-| `LOG_LEVEL` | No | Log level override |
+| `SECUREYEOMAN_PORT` | No | Gateway port override |
+| `SECUREYEOMAN_HOST` | No | Gateway host override |
+| `SECUREYEOMAN_LOG_LEVEL` | No | Log level override |
 | `NODE_ENV` | No | Node environment (`development`, `production`) |
 | `MCP_ENABLED` | No | Enable the MCP service (default: `true`) |
 | `MCP_PORT` | No | MCP service port (default: `3001`) |
