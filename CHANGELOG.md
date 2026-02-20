@@ -8,6 +8,13 @@ All notable changes to SecureYeoman are documented in this file.
 
 ### Bug Fixes
 
+- **Skills Community: stale "clone repo" instruction removed** — The Community tab empty
+  state in `SkillsPage.tsx` still showed "Clone `secureyeoman-community-skills` alongside
+  this project, then click Sync to import skills." This instruction predates the git URL
+  fetch feature (ADR 076) which made manual cloning unnecessary. The empty state now reads
+  "Click Sync to import skills from the community repo — the repo is fetched automatically
+  when `COMMUNITY_GIT_URL` is configured." No backend changes required.
+
 - **Auth & SSO: authorize scheme calculation** — The `x-forwarded-proto` header check in
   `sso-routes.ts` had an operator precedence bug: `header ?? encrypted ? 'https' : 'http'`
   was parsed as `(header ?? encrypted) ? 'https' : 'http'`. When a reverse proxy set
@@ -110,6 +117,8 @@ All notable changes to SecureYeoman are documented in this file.
 
 ### Files Changed
 
+- `packages/dashboard/src/components/SkillsPage.tsx` — community tab empty-state copy updated;
+  removed stale "clone repo" instruction
 - `packages/core/src/storage/migrations/028_heartbeat_log.sql` — new migration
 - `packages/core/src/body/heartbeat-log-storage.ts` — HeartbeatLogStorage class (new file)
 - `packages/core/src/body/heartbeat.ts` — optional logStorage param; per-check timing;
@@ -120,8 +129,11 @@ All notable changes to SecureYeoman are documented in this file.
   HeartbeatManager, exposes getHeartbeatLogStorage()
 - `packages/core/src/proactive/proactive-routes.ts` — GET /api/v1/proactive/heartbeat/log
   route; logStorage added to opts
-- `packages/core/src/gateway/server.ts` — passes logStorage to registerProactiveRoutes
-- `packages/core/src/gateway/auth-middleware.ts` — ROUTE_PERMISSIONS entry for heartbeat log
+- `packages/core/src/gateway/server.ts` — passes logStorage to registerProactiveRoutes;
+  removed `decorateReply: false`, added asset extension guard in `setNotFoundHandler`,
+  stripped query string before URL checks
+- `packages/core/src/gateway/auth-middleware.ts` — ROUTE_PERMISSIONS entry for heartbeat log;
+  6 missing workspace/user management entries added
 - `packages/dashboard/src/types.ts` — HeartbeatLogEntry interface
 - `packages/dashboard/src/api/client.ts` — fetchHeartbeatLog() function
 - `packages/dashboard/src/components/TaskHistory.tsx` — HeartbeatTaskRow rewritten with
@@ -130,17 +142,12 @@ All notable changes to SecureYeoman are documented in this file.
 - `packages/core/src/body/heartbeat.test.ts` — 4 logStorage integration tests added
 - `packages/dashboard/src/components/TaskHistory.test.tsx` — 4 new heartbeat log tests;
   fetchHeartbeatLog added to mock
-
 - `packages/core/src/security/sso-manager.ts` — state consumed before provider mismatch check
-- `packages/core/src/gateway/sso-routes.ts` — operator-precedence fix in authorize scheme calculation
+- `packages/core/src/gateway/sso-routes.ts` — operator-precedence fix in authorize scheme
+  calculation
 - `packages/core/src/security/sso-manager.test.ts` — state-consumed-on-mismatch, IDP error,
   malformed callback tests
 - `packages/core/src/gateway/sso-routes.test.ts` — scheme-calculation, callback error tests
-- `packages/core/src/gateway/server.ts` — removed `decorateReply: false`, added asset
-  extension guard in `setNotFoundHandler`, stripped query string before URL checks
-- `docs/adr/071-sso-oidc-implementation.md` — Phase 25 Corrections section added
-- `packages/core/src/gateway/auth-middleware.ts` — 6 missing ROUTE_PERMISSIONS entries added
-  for workspace/user management routes
 - `packages/core/src/workspace/workspace-routes.ts` — workspace-scoped admin check,
   role validation, workspace existence guard, last-admin protection
 - `packages/core/src/workspace/storage.ts` — `updateMemberRole` now returns actual `joinedAt`
@@ -154,6 +161,9 @@ All notable changes to SecureYeoman are documented in this file.
   tests; workspace route stubs registered
 - `docs/adr/005-team-workspaces.md` — Phase 25 Corrections section added
 - `docs/adr/068-rbac-audit-phase-22.md` — Phase 25 Corrections section added
+- `docs/adr/071-sso-oidc-implementation.md` — Phase 25 Corrections section added
+- `docs/adr/076-community-git-url-fetch.md` — Phase 25 Corrections section added
+- `docs/adr/079-heartbeat-execution-log.md` — new ADR
 
 ---
 

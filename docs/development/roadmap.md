@@ -53,7 +53,7 @@
 
 - [ ] **Coverage baseline** — Run `npm run test:coverage` across all packages; add targeted tests for any file below 80%
 - [ ] **Integration test gaps** — Audit `packages/core/src/__integration__/` for missing scenarios: multi-user auth flows, workspace member RBAC, SSO callback edge cases, binary sub-agent timeout/kill, mcp-bridge template errors
-- [ ] **Migration integrity** — Verify all 27 migrations apply cleanly on a fresh database and idempotently on an already-migrated one
+- [ ] **Migration integrity** — Verify all 28 migrations apply cleanly on a fresh database and idempotently on an already-migrated one
 
 
 ## Phase 25: Fix All the Bugs
@@ -63,7 +63,6 @@
 Full-system quality pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.
 
 ### Bug Hunt
-- [ ] **Skills Community** - dashboard still states clone repo then sync - we made the user able to sync repo without having to clone it themselves.  Investigate
 - [ ] **Single binary smoke test** — Build all Tier 1 + Tier 2 targets; run `--version`, `health --json`, `config validate --json` against each
 - [ ] **Docker cold-start** — `docker compose up` with empty volumes; migrations run, default workspace created, healthcheck passes
 

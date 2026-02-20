@@ -1149,9 +1149,9 @@ function CommunityTab() {
           <Users className="w-12 h-12 mx-auto text-muted-foreground" />
           <p className="text-muted-foreground font-medium">No community skills found</p>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Clone{' '}
-            <span className="font-mono">secureyeoman-community-skills</span> alongside this project,
-            then click <strong>Sync</strong> to import skills.
+            Click <strong>Sync</strong> to import skills from the community repo — the
+            repo is fetched automatically when{' '}
+            <span className="font-mono">COMMUNITY_GIT_URL</span> is configured.
           </p>
           {statusData?.communityRepoPath && (
             <p className="text-xs text-muted-foreground font-mono">{statusData.communityRepoPath}</p>
