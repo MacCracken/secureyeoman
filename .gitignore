@@ -7,6 +7,14 @@ dist/
 **/dist/
 *.tsbuildinfo
 
+# Bun compile target toolchain caches — bun build --compile --target bun-<os>-<arch>
+# downloads the target Bun binary into <target-name>/ in the CWD
+bun-linux-x64/
+bun-linux-arm64/
+bun-darwin-arm64/
+bun-darwin-x64/
+bun-windows-x64/
+
 # Vite / Vitest cache
 .vite/
 **/.vite/
@@ -41,6 +49,9 @@ coverage/
 # Logs
 *.log
 pino-*.log
+
+# Email data
+.emails/
 
 # Community skills — managed via bind mount in Docker; lives in secureyeoman-community-skills repo
 community-skills/
