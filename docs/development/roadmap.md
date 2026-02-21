@@ -49,7 +49,7 @@
 
 Full-system quality pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.
 
-### Manual Testing
+### Manual Review & Testing
 
 *Add observed bugs here as they are found during manual testing; mark fixed when resolved.*
 
@@ -61,9 +61,6 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 Full-system final sweep before public beta Release; Confirm tests didn't regress, basslines and startup time still hold.
 
-### Version
-
-- [ ] **Update Version** - ensure all project components are marked 2026.2.20
 
 ### Test Coverage
 
