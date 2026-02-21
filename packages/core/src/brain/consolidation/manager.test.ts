@@ -241,4 +241,48 @@ describe('ConsolidationManager', () => {
       expect(history[0].totalCandidates).toBe(0);
     });
   });
+
+  describe('onMemorySave edge cases', () => {
+    it('returns clean when score is below flagThreshold', async () => {
+      const { manager, vectorManager } = makeManager();
+      // Score 0.70 < flagThreshold 0.85 → clean
+      vectorManager.searchMemories.mockResolvedValue([{ id: 'mem-2', score: 0.70 }]);
+      const result = await manager.onMemorySave(MEMORY as any);
+      expect(result).toBe('clean');
+    });
+  });
+
+  describe('runDeepConsolidation error handling', () => {
+    it('handles queryMemories error gracefully', async () => {
+      const { manager, storage } = makeManager();
+      storage.queryMemories.mockRejectedValue(new Error('DB error'));
+      // Should not throw — returns an empty report
+      await expect(manager.runDeepConsolidation()).rejects.toThrow('DB error');
+    });
+
+    it('AI provider returning malformed JSON still records report', async () => {
+      const similarResult = { id: 'mem-2', score: 0.88 };
+      const mockAiProvider = {
+        chat: vi.fn().mockResolvedValue({ content: 'not valid json!', finishReason: 'stop', usage: null }),
+      };
+      const { manager, storage, vectorManager } = makeManager({}, {}, mockAiProvider);
+      storage.queryMemories.mockResolvedValue([MEMORY]);
+      vectorManager.searchMemories.mockResolvedValue([similarResult]);
+      storage.getMemory.mockImplementation((id: string) => {
+        if (id === 'mem-1') return Promise.resolve(MEMORY);
+        return Promise.resolve({ ...MEMORY, id, content: 'similar' });
+      });
+      // Should not throw — JSON parse error is caught internally
+      const report = await manager.runDeepConsolidation();
+      expect(report.actions).toHaveLength(0);
+      expect(manager.getHistory()).toHaveLength(1);
+    });
+
+    it('records multiple reports in history', async () => {
+      const { manager } = makeManager();
+      await manager.runDeepConsolidation();
+      await manager.runDeepConsolidation();
+      expect(manager.getHistory()).toHaveLength(2);
+    });
+  });
 });

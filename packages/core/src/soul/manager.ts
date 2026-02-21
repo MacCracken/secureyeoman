@@ -13,6 +13,11 @@
  */
 
 import { composeArchetypesPreamble } from './archetypes.js';
+import {
+  PERSONALITY_PRESETS,
+  getPersonalityPreset,
+  type PersonalityPreset,
+} from './presets.js';
 import type { SoulStorage } from './storage.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { MarketplaceManager } from '../marketplace/manager.js';
@@ -216,6 +221,23 @@ export class SoulManager {
     offset?: number;
   }): Promise<{ personalities: Personality[]; total: number }> {
     return this.storage.listPersonalities(opts);
+  }
+
+  // ── Personality Presets ─────────────────────────────────────
+
+  listPersonalityPresets(): PersonalityPreset[] {
+    return PERSONALITY_PRESETS;
+  }
+
+  async createPersonalityFromPreset(
+    presetId: string,
+    overrides?: Partial<PersonalityCreate>
+  ): Promise<Personality> {
+    const preset = getPersonalityPreset(presetId);
+    if (!preset) {
+      throw new Error(`Unknown personality preset: ${presetId}`);
+    }
+    return this.storage.createPersonality({ ...preset.data, ...overrides });
   }
 
   // ── Skills (delegated to Brain when available) ────────────

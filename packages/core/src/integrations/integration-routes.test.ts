@@ -236,7 +236,7 @@ describe('POST /api/v1/integrations additional paths', () => {
       payload: { platform: 'bad', displayName: 'X', enabled: true, config: {} },
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Invalid platform');
+    expect(res.json().message).toContain('Invalid platform');
   });
 });
 
@@ -306,7 +306,7 @@ describe('POST /api/v1/integrations/:id/reload', () => {
     const { app } = await buildApp(manager);
     const res = await app.inject({ method: 'POST', url: '/api/v1/integrations/intg-1/reload' });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Cannot reload');
+    expect(res.json().message).toContain('Cannot reload');
   });
 });
 
@@ -352,7 +352,7 @@ describe('plugin endpoints', () => {
       payload: {},
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Missing path');
+    expect(res.json().message).toContain('Missing path');
   });
 
   it('POST /api/v1/integrations/plugins/load returns 400 when loadPlugin throws', async () => {
@@ -365,7 +365,7 @@ describe('plugin endpoints', () => {
       payload: { path: '/bad/path.js' },
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('File not found');
+    expect(res.json().message).toContain('File not found');
   });
 });
 
@@ -385,7 +385,7 @@ describe('start/stop endpoints', () => {
     const { app } = await buildApp(manager);
     const res = await app.inject({ method: 'POST', url: '/api/v1/integrations/intg-1/start' });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Already running');
+    expect(res.json().message).toContain('Already running');
   });
 
   it('POST /api/v1/integrations/:id/stop returns success', async () => {
@@ -401,7 +401,7 @@ describe('start/stop endpoints', () => {
     const { app } = await buildApp(manager);
     const res = await app.inject({ method: 'POST', url: '/api/v1/integrations/intg-1/stop' });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Not running');
+    expect(res.json().message).toContain('Not running');
   });
 });
 
@@ -453,7 +453,7 @@ describe('message endpoints', () => {
       payload: { chatId: 'chat-123', text: 'Hello!' },
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Send failed');
+    expect(res.json().message).toContain('Send failed');
   });
 });
 
@@ -468,7 +468,7 @@ describe('webhook endpoints', () => {
       payload: {},
     });
     expect(res.statusCode).toBe(404);
-    expect(res.json().error).toContain('GitHub integration not found');
+    expect(res.json().message).toContain('GitHub integration not found');
   });
 
   it('POST /api/v1/webhooks/github/:id returns 400 when headers missing', async () => {
@@ -484,7 +484,7 @@ describe('webhook endpoints', () => {
       payload: {},
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Missing webhook headers');
+    expect(res.json().message).toContain('Missing webhook headers');
   });
 
   it('POST /api/v1/webhooks/github/:id succeeds with correct headers', async () => {
@@ -511,7 +511,7 @@ describe('webhook endpoints', () => {
     const { app } = await buildApp();
     const res = await app.inject({ method: 'POST', url: '/api/v1/webhooks/gitlab/intg-1' });
     expect(res.statusCode).toBe(404);
-    expect(res.json().error).toContain('GitLab integration not found');
+    expect(res.json().message).toContain('GitLab integration not found');
   });
 
   it('POST /api/v1/webhooks/gitlab/:id returns 400 when headers missing', async () => {
@@ -524,7 +524,7 @@ describe('webhook endpoints', () => {
       payload: {},
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Missing GitLab webhook headers');
+    expect(res.json().message).toContain('Missing GitLab webhook headers');
   });
 
   it('POST /api/v1/webhooks/gitlab/:id returns 400 when adapter not running', async () => {
@@ -539,14 +539,14 @@ describe('webhook endpoints', () => {
       payload: {},
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('GitLab integration is not running');
+    expect(res.json().message).toContain('GitLab integration is not running');
   });
 
   it('POST /api/v1/webhooks/jira/:id returns 404 for wrong platform', async () => {
     const { app } = await buildApp();
     const res = await app.inject({ method: 'POST', url: '/api/v1/webhooks/jira/intg-1' });
     expect(res.statusCode).toBe(404);
-    expect(res.json().error).toContain('Jira integration not found');
+    expect(res.json().message).toContain('Jira integration not found');
   });
 
   it('POST /api/v1/webhooks/jira/:id returns 400 when adapter not running', async () => {
@@ -560,14 +560,14 @@ describe('webhook endpoints', () => {
       payload: {},
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Jira integration is not running');
+    expect(res.json().message).toContain('Jira integration is not running');
   });
 
   it('POST /api/v1/webhooks/azure/:id returns 404 for wrong platform', async () => {
     const { app } = await buildApp();
     const res = await app.inject({ method: 'POST', url: '/api/v1/webhooks/azure/intg-1' });
     expect(res.statusCode).toBe(404);
-    expect(res.json().error).toContain('Azure DevOps integration not found');
+    expect(res.json().message).toContain('Azure DevOps integration not found');
   });
 
   it('POST /api/v1/webhooks/azure/:id returns 400 when adapter not running', async () => {
@@ -581,14 +581,14 @@ describe('webhook endpoints', () => {
       payload: { eventType: 'git.push' },
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Azure DevOps integration is not running');
+    expect(res.json().message).toContain('Azure DevOps integration is not running');
   });
 
   it('POST /api/v1/webhooks/custom/:id returns 404 for wrong platform', async () => {
     const { app } = await buildApp();
     const res = await app.inject({ method: 'POST', url: '/api/v1/webhooks/custom/intg-1' });
     expect(res.statusCode).toBe(404);
-    expect(res.json().error).toContain('Webhook integration not found');
+    expect(res.json().message).toContain('Webhook integration not found');
   });
 
   it('POST /api/v1/webhooks/custom/:id returns 400 when adapter not running', async () => {
@@ -604,6 +604,6 @@ describe('webhook endpoints', () => {
       payload: { data: 'test' },
     });
     expect(res.statusCode).toBe(400);
-    expect(res.json().error).toContain('Webhook integration is not running');
+    expect(res.json().message).toContain('Webhook integration is not running');
   });
 });

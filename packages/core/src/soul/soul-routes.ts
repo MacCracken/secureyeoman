@@ -102,6 +102,31 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     }
   );
 
+  // ── Personality Presets ─────────────────────────────────────
+
+  app.get('/api/v1/soul/personalities/presets', async () => {
+    const presets = soulManager.listPersonalityPresets();
+    return { presets };
+  });
+
+  app.post(
+    '/api/v1/soul/personalities/presets/:id/instantiate',
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: Partial<PersonalityCreate> }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const personality = await soulManager.createPersonalityFromPreset(
+          request.params.id,
+          request.body
+        );
+        return await reply.code(201).send({ personality });
+      } catch (err) {
+        return sendError(reply, 400, toErrorMessage(err));
+      }
+    }
+  );
+
   // ── Skills ──────────────────────────────────────────────────
 
   app.get(

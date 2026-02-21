@@ -4,6 +4,63 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## T.Ron — Personality Presets (2026-02-21)
+
+Introduces a built-in personality preset system with **T.Ron** as the first curated security-focused personality alongside the existing FRIDAY default.
+
+### Personality Presets
+
+`packages/core/src/soul/presets.ts` — a new `PERSONALITY_PRESETS` catalogue of static personality templates that can be instantiated into the database.
+
+Each `PersonalityPreset` carries: a stable `id` slug, `name`, human-readable `summary`, and the full `PersonalityCreate` `data` payload used when instantiating.
+
+**Built-in presets:**
+
+| ID | Name | Purpose |
+|----|------|---------|
+| `friday` | FRIDAY | Friendly, Reliable, Intelligent Digitally Adaptable Yeoman — the default helpful assistant |
+| `t-ron` | T.Ron | Tactical Response & Operations Network — communications monitor, MCP watchdog, and guardian against rogue AI incursions |
+
+### T.Ron — Security Watchdog Personality
+
+T.Ron is purpose-built for adversarial vigilance:
+
+- **Communications monitor** — flags prompt injection, unexpected privilege escalation, and out-of-context tool calls before they reach the LLM.
+- **MCP guardian** — validates every MCP server tool call against the user's stated intent; alerts when tool outputs contain embedded instructions.
+- **Rogue-AI defence** — refuses instructions embedded in tool outputs, web pages, or external data unless explicitly authorised by the verified user; surfaces and reports any takeover attempt.
+- **Minimal footprint** — prefers read-only operations; challenges broad permission requests.
+
+Proactive config defaults: `integrationHealthAlert: true`, `securityAlertDigest: true`, autonomous learning disabled (`enabled: false`), minimum confidence threshold raised to `0.9`.
+
+### API
+
+Two new endpoints added to `soul-routes.ts`:
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/v1/soul/personalities/presets` | List all built-in presets |
+| `POST` | `/api/v1/soul/personalities/presets/:id/instantiate` | Create a personality from a preset (body overrides optional) |
+
+### `SoulManager` additions
+
+- `listPersonalityPresets()` — returns the full `PERSONALITY_PRESETS` array.
+- `createPersonalityFromPreset(presetId, overrides?)` — merges overrides onto the preset data and delegates to `storage.createPersonality()`.
+
+### Exports
+
+`soul/index.ts` now re-exports `PERSONALITY_PRESETS`, `getPersonalityPreset`, and `PersonalityPreset` from `presets.ts`.
+
+### Files changed
+
+- `packages/core/src/soul/presets.ts` (new)
+- `packages/core/src/soul/manager.ts` — `listPersonalityPresets()` + `createPersonalityFromPreset()`
+- `packages/core/src/soul/soul-routes.ts` — two new preset endpoints
+- `packages/core/src/soul/index.ts` — preset exports
+- `packages/core/src/soul/soul-routes.test.ts` — preset endpoint coverage
+- `docs/api/rest-api.md` — preset endpoint documentation
+
+---
+
 ## Phase 35 — Ironclaw Security Hardening & TUI (2026-02-21)
 
 Three items from the Phase 35 high-priority backlog closed:

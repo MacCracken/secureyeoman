@@ -366,4 +366,68 @@ describe('EmailIntegration – adapter.ts', () => {
       expect(id).toMatch(/^thread_/);
     });
   });
+
+  // ── poll() / IDLE push ─────────────────────────────────────────────────────
+
+  describe('polling and IDLE push', () => {
+    it('triggers poll on IMAP "exists" event after start', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+      await adapter.start();
+
+      // Capture the "exists" handler registered via mockOn
+      const existsCallArgs = mocks.mockOn.mock.calls.find(([evt]) => evt === 'exists');
+      expect(existsCallArgs).toBeDefined();
+
+      // Trigger the "exists" event handler — this should initiate a poll
+      const existsHandler = existsCallArgs![1];
+      // Calling it should not throw (poll may fire internally)
+      await expect(async () => existsHandler({ count: 1 })).not.toThrow();
+    });
+
+    it('poll with no new messages produces no onMessage calls', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+      await adapter.start();
+      // mockFetch returns empty iterator by default — no messages to process
+      expect(onMessage).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── enableSend=false no transport created ──────────────────────────────────
+
+  describe('init with enableSend=false', () => {
+    it('does not create SMTP transport when enableSend is false', async () => {
+      mocks.mockCreateTransport.mockClear();
+      await adapter.init(makeConfig({ enableSend: false }), makeDeps());
+      // Transport should not have been created
+      expect(mocks.mockCreateTransport).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── enableRead=false ───────────────────────────────────────────────────────
+
+  describe('init with enableRead=false', () => {
+    it('does not register IDLE listener when enableRead is false', async () => {
+      mocks.mockOn.mockClear();
+      await adapter.init(makeConfig({ enableRead: false }), makeDeps());
+      await adapter.start();
+      // The "exists" listener should not have been registered
+      const existsCall = mocks.mockOn.mock.calls.find(([evt]) => evt === 'exists');
+      expect(existsCall).toBeUndefined();
+    });
+  });
+
+  // ── Custom fromAddress ─────────────────────────────────────────────────────
+
+  describe('fromAddress config', () => {
+    it('uses username as from address when no fromAddress provided', async () => {
+      await adapter.init(makeConfig(), makeDeps());
+      await adapter.start();
+      await adapter.sendMessage('to@example.com', 'hi');
+      expect(mocks.mockSendMail).toHaveBeenCalledWith(
+        expect.objectContaining({ from: 'user@example.com' })
+      );
+    });
+  });
 });

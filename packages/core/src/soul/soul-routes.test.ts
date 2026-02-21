@@ -8,6 +8,11 @@ const PERSONALITY = { id: 'pers-1', name: 'FRIDAY', systemPrompt: 'You are helpf
 const SKILL = { id: 'skill-1', name: 'Search', status: 'enabled', source: 'builtin' };
 const USER = { id: 'user-1', name: 'Alice', email: 'alice@example.com' };
 
+const PRESETS = [
+  { id: 'friday', name: 'FRIDAY', summary: 'The default assistant.', data: {} },
+  { id: 't-ron', name: 'T.Ron', summary: 'MCP watchdog and rogue-AI guardian.', data: {} },
+];
+
 function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
   return {
     getActivePersonality: vi.fn().mockResolvedValue(PERSONALITY),
@@ -16,6 +21,8 @@ function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
     updatePersonality: vi.fn().mockResolvedValue(PERSONALITY),
     deletePersonality: vi.fn().mockResolvedValue(undefined),
     setPersonality: vi.fn().mockResolvedValue(undefined),
+    listPersonalityPresets: vi.fn().mockReturnValue(PRESETS),
+    createPersonalityFromPreset: vi.fn().mockResolvedValue(PERSONALITY),
     listSkills: vi.fn().mockResolvedValue({ skills: [SKILL], total: 1 }),
     createSkill: vi.fn().mockResolvedValue(SKILL),
     updateSkill: vi.fn().mockResolvedValue(SKILL),
@@ -432,6 +439,53 @@ describe('POST /api/v1/soul/onboarding/complete', () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/soul/onboarding/complete',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('GET /api/v1/soul/personalities/presets', () => {
+  it('returns all presets', async () => {
+    const app = buildApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/soul/personalities/presets' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().presets).toHaveLength(2);
+    expect(res.json().presets[0].id).toBe('friday');
+    expect(res.json().presets[1].id).toBe('t-ron');
+  });
+});
+
+describe('POST /api/v1/soul/personalities/presets/:id/instantiate', () => {
+  it('instantiates a preset and returns 201', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/presets/t-ron/instantiate',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(201);
+    expect(res.json().personality.id).toBe('pers-1');
+  });
+
+  it('passes override body to createPersonalityFromPreset', async () => {
+    const mock = vi.fn().mockResolvedValue(PERSONALITY);
+    const app = buildApp({ createPersonalityFromPreset: mock });
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/presets/t-ron/instantiate',
+      payload: { name: 'My T.Ron' },
+    });
+    expect(mock).toHaveBeenCalledWith('t-ron', { name: 'My T.Ron' });
+  });
+
+  it('returns 400 when preset is unknown', async () => {
+    const app = buildApp({
+      createPersonalityFromPreset: vi.fn().mockRejectedValue(new Error('Unknown personality preset: nope')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/presets/nope/instantiate',
       payload: {},
     });
     expect(res.statusCode).toBe(400);
