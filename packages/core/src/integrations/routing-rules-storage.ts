@@ -6,11 +6,7 @@
 
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
-import type {
-  RoutingRule,
-  RoutingRuleCreate,
-  RoutingRuleUpdate,
-} from '@secureyeoman/shared';
+import type { RoutingRule, RoutingRuleCreate, RoutingRuleUpdate } from '@secureyeoman/shared';
 
 type DbRow = {
   id: string;
@@ -95,10 +91,7 @@ export class RoutingRulesStorage extends PgBaseStorage {
   }
 
   async get(id: string): Promise<RoutingRule | null> {
-    const row = await this.queryOne<DbRow>(
-      'SELECT * FROM routing_rules WHERE id = $1',
-      [id]
-    );
+    const row = await this.queryOne<DbRow>('SELECT * FROM routing_rules WHERE id = $1', [id]);
     return row ? rowToRule(row) : null;
   }
 
@@ -191,10 +184,7 @@ export class RoutingRulesStorage extends PgBaseStorage {
   }
 
   async delete(id: string): Promise<boolean> {
-    const count = await this.execute(
-      'DELETE FROM routing_rules WHERE id = $1',
-      [id]
-    );
+    const count = await this.execute('DELETE FROM routing_rules WHERE id = $1', [id]);
     return count > 0;
   }
 

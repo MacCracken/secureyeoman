@@ -241,7 +241,10 @@ export class CodeExecutionManager {
     return this.deps.storage.getSession(id);
   }
 
-  async listSessions(opts?: { limit?: number; offset?: number }): Promise<{ sessions: ExecutionSession[]; total: number }> {
+  async listSessions(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ sessions: ExecutionSession[]; total: number }> {
     return this.deps.storage.listSessions(opts);
   }
 

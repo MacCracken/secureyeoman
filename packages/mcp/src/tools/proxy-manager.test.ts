@@ -3,12 +3,7 @@
  */
 
 import { describe, it, expect, vi } from 'vitest';
-import {
-  ProxyManager,
-  detectCaptcha,
-  fetchWithRetry,
-  RetryableError,
-} from './proxy-manager.js';
+import { ProxyManager, detectCaptcha, fetchWithRetry, RetryableError } from './proxy-manager.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 
 function makeConfig(overrides: Partial<McpServiceConfig> = {}): McpServiceConfig {
@@ -193,9 +188,7 @@ describe('Provider URL formatting', () => {
         })
       );
       const result = pm.buildFetchOptions('https://example.com');
-      expect(result!.headers['X-Proxy-Server']).toBe(
-        'http://user:pass@brd.superproxy.io:22225'
-      );
+      expect(result!.headers['X-Proxy-Server']).toBe('http://user:pass@brd.superproxy.io:22225');
     });
 
     it('formats proxy URL with country', () => {
@@ -321,9 +314,7 @@ describe('detectCaptcha', () => {
 
 describe('fetchWithRetry', () => {
   it('returns immediately on success', async () => {
-    const fn = vi.fn().mockResolvedValue(
-      new Response('ok', { status: 200 })
-    );
+    const fn = vi.fn().mockResolvedValue(new Response('ok', { status: 200 }));
     const result = await fetchWithRetry(fn, { maxRetries: 3, baseDelayMs: 10 });
     expect(fn).toHaveBeenCalledTimes(1);
     expect(result.status).toBe(200);
@@ -361,17 +352,17 @@ describe('fetchWithRetry', () => {
 
   it('throws after max retries exhausted on 429', async () => {
     const fn = vi.fn().mockResolvedValue(new Response('rate limited', { status: 429 }));
-    await expect(
-      fetchWithRetry(fn, { maxRetries: 2, baseDelayMs: 10 })
-    ).rejects.toThrow('HTTP 429 after 3 attempts');
+    await expect(fetchWithRetry(fn, { maxRetries: 2, baseDelayMs: 10 })).rejects.toThrow(
+      'HTTP 429 after 3 attempts'
+    );
     expect(fn).toHaveBeenCalledTimes(3);
   });
 
   it('throws after max retries exhausted on network error', async () => {
     const fn = vi.fn().mockRejectedValue(new TypeError('fetch failed'));
-    await expect(
-      fetchWithRetry(fn, { maxRetries: 1, baseDelayMs: 10 })
-    ).rejects.toThrow('fetch failed');
+    await expect(fetchWithRetry(fn, { maxRetries: 1, baseDelayMs: 10 })).rejects.toThrow(
+      'fetch failed'
+    );
     expect(fn).toHaveBeenCalledTimes(2);
   });
 
@@ -400,28 +391,28 @@ describe('fetchWithRetry', () => {
   });
 
   it('retries on CAPTCHA detection and eventually throws', async () => {
-    const fn = vi.fn().mockResolvedValue(
-      new Response('<html>recaptcha challenge</html>', { status: 403 })
+    const fn = vi
+      .fn()
+      .mockResolvedValue(new Response('<html>recaptcha challenge</html>', { status: 403 }));
+    await expect(fetchWithRetry(fn, { maxRetries: 1, baseDelayMs: 10 })).rejects.toThrow(
+      'CAPTCHA detected after 2 attempts'
     );
-    await expect(
-      fetchWithRetry(fn, { maxRetries: 1, baseDelayMs: 10 })
-    ).rejects.toThrow('CAPTCHA detected after 2 attempts');
     expect(fn).toHaveBeenCalledTimes(2);
   });
 
   it('does not retry non-retryable errors', async () => {
     const fn = vi.fn().mockRejectedValue(new Error('some other error'));
-    await expect(
-      fetchWithRetry(fn, { maxRetries: 3, baseDelayMs: 10 })
-    ).rejects.toThrow('some other error');
+    await expect(fetchWithRetry(fn, { maxRetries: 3, baseDelayMs: 10 })).rejects.toThrow(
+      'some other error'
+    );
     expect(fn).toHaveBeenCalledTimes(1);
   });
 
   it('respects maxRetries=0 (no retries)', async () => {
     const fn = vi.fn().mockResolvedValue(new Response('rate limited', { status: 429 }));
-    await expect(
-      fetchWithRetry(fn, { maxRetries: 0, baseDelayMs: 10 })
-    ).rejects.toThrow('HTTP 429 after 1 attempts');
+    await expect(fetchWithRetry(fn, { maxRetries: 0, baseDelayMs: 10 })).rejects.toThrow(
+      'HTTP 429 after 1 attempts'
+    );
     expect(fn).toHaveBeenCalledTimes(1);
   });
 });

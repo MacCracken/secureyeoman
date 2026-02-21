@@ -214,10 +214,9 @@ export class OutboundWebhookStorage extends PgBaseStorage {
   /** Delete a webhook. Returns true if a row was removed. */
   async deleteWebhook(id: string): Promise<boolean> {
     const pool = this.getPool();
-    const result = await pool.query(
-      'DELETE FROM outbound_webhooks WHERE id = $1 RETURNING id',
-      [id]
-    );
+    const result = await pool.query('DELETE FROM outbound_webhooks WHERE id = $1 RETURNING id', [
+      id,
+    ]);
     return result.rowCount !== null && result.rowCount > 0;
   }
 

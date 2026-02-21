@@ -97,7 +97,11 @@ describe('SpotifyIntegration – adapter.ts', () => {
 
   afterEach(async () => {
     vi.unstubAllGlobals();
-    try { await adapter.stop(); } catch { /* ignore */ }
+    try {
+      await adapter.stop();
+    } catch {
+      /* ignore */
+    }
     vi.useRealTimers();
   });
 
@@ -123,21 +127,21 @@ describe('SpotifyIntegration – adapter.ts', () => {
     });
 
     it('throws when clientId is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ clientId: '' }), makeDeps())
-      ).rejects.toThrow('Spotify integration requires clientId, clientSecret, and refreshToken');
+      await expect(adapter.init(makeConfig({ clientId: '' }), makeDeps())).rejects.toThrow(
+        'Spotify integration requires clientId, clientSecret, and refreshToken'
+      );
     });
 
     it('throws when clientSecret is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ clientSecret: '' }), makeDeps())
-      ).rejects.toThrow('Spotify integration requires clientId, clientSecret, and refreshToken');
+      await expect(adapter.init(makeConfig({ clientSecret: '' }), makeDeps())).rejects.toThrow(
+        'Spotify integration requires clientId, clientSecret, and refreshToken'
+      );
     });
 
     it('throws when refreshToken is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ refreshToken: '' }), makeDeps())
-      ).rejects.toThrow('Spotify integration requires clientId, clientSecret, and refreshToken');
+      await expect(adapter.init(makeConfig({ refreshToken: '' }), makeDeps())).rejects.toThrow(
+        'Spotify integration requires clientId, clientSecret, and refreshToken'
+      );
     });
   });
 
@@ -218,9 +222,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
       await adapter.start();
       const result = await adapter.sendMessage('ignored', 'spotify:track:abc123');
       expect(result).toBe('spotify:track:abc123');
-      const queueCall = mockFetch.mock.calls.find((c) =>
-        String(c[0]).includes('/me/player/queue')
-      );
+      const queueCall = mockFetch.mock.calls.find((c) => String(c[0]).includes('/me/player/queue'));
       expect(queueCall).toBeDefined();
       expect(String(queueCall![0])).toContain(encodeURIComponent('spotify:track:abc123'));
     });
@@ -236,9 +238,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
       await adapter.init(makeConfig(), makeDeps());
       await adapter.start();
       await adapter.sendMessage('_', 'spotify:track:xyz');
-      const queueCall = mockFetch.mock.calls.find((c) =>
-        String(c[0]).includes('/me/player/queue')
-      );
+      const queueCall = mockFetch.mock.calls.find((c) => String(c[0]).includes('/me/player/queue'));
       expect((queueCall![1] as RequestInit).method).toBe('POST');
     });
 
@@ -272,9 +272,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
       await adapter.start();
       const result = await adapter.sendMessage('_', '  spotify:track:abc  ');
       expect(result).toBe('  spotify:track:abc  '); // returns original text arg
-      const queueCall = mockFetch.mock.calls.find((c) =>
-        String(c[0]).includes('/me/player/queue')
-      );
+      const queueCall = mockFetch.mock.calls.find((c) => String(c[0]).includes('/me/player/queue'));
       expect(String(queueCall![0])).toContain(encodeURIComponent('spotify:track:abc'));
     });
   });

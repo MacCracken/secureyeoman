@@ -4,31 +4,53 @@ import { KeyringManager } from './manager.js';
 // Mock the platform-specific providers
 vi.mock('./linux-secret-service.js', () => ({
   LinuxSecretServiceProvider: class {
-    isAvailable() { return false; }
-    get() { return undefined; }
+    isAvailable() {
+      return false;
+    }
+    get() {
+      return undefined;
+    }
     set() {}
     delete() {}
-    list() { return []; }
+    list() {
+      return [];
+    }
   },
 }));
 
 vi.mock('./macos-keychain.js', () => ({
   MacOSKeychainProvider: class {
-    isAvailable() { return false; }
-    get() { return undefined; }
+    isAvailable() {
+      return false;
+    }
+    get() {
+      return undefined;
+    }
     set() {}
     delete() {}
-    list() { return []; }
+    list() {
+      return [];
+    }
   },
 }));
 
 vi.mock('./environment-provider.js', () => ({
   EnvironmentProvider: class {
-    isAvailable() { return true; }
-    get(_service: string, key: string) { return process.env[key]; }
-    set(_service: string, key: string, value: string) { process.env[key] = value; }
-    delete(_service: string, key: string) { delete process.env[key]; }
-    list() { return []; }
+    isAvailable() {
+      return true;
+    }
+    get(_service: string, key: string) {
+      return process.env[key];
+    }
+    set(_service: string, key: string, value: string) {
+      process.env[key] = value;
+    }
+    delete(_service: string, key: string) {
+      delete process.env[key];
+    }
+    list() {
+      return [];
+    }
   },
 }));
 

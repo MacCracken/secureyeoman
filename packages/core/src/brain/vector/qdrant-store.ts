@@ -17,7 +17,10 @@ interface QdrantClientLike {
   getCollection(name: string): Promise<{ points_count?: number }>;
   createCollection(name: string, opts: unknown): Promise<unknown>;
   upsert(collection: string, opts: unknown): Promise<unknown>;
-  search(collection: string, opts: unknown): Promise<{ id: string | number; score: number; payload?: Record<string, unknown> }[]>;
+  search(
+    collection: string,
+    opts: unknown
+  ): Promise<{ id: string | number; score: number; payload?: Record<string, unknown> }[]>;
   delete(collection: string, opts: unknown): Promise<unknown>;
 }
 
@@ -151,9 +154,7 @@ export class QdrantVectorStore implements VectorStore {
   async count(): Promise<number> {
     await this.ensureInitialized();
 
-    const info = await this.withReconnect(() =>
-      this.client!.getCollection(this.collection)
-    );
+    const info = await this.withReconnect(() => this.client!.getCollection(this.collection));
     return info.points_count ?? 0;
   }
 

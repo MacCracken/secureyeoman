@@ -95,8 +95,12 @@ Options:
           ctx.stdout.write(JSON.stringify(result.data, null, 2) + '\n');
           return 0;
         }
-        const data = result.data as { servers?: Array<{ id: string; name: string; status: string; enabled: boolean }> };
-        const servers = data.servers ?? (result.data as Array<{ id: string; name: string; status: string; enabled: boolean }>);
+        const data = result.data as {
+          servers?: Array<{ id: string; name: string; status: string; enabled: boolean }>;
+        };
+        const servers =
+          data.servers ??
+          (result.data as Array<{ id: string; name: string; status: string; enabled: boolean }>);
         if (!servers || servers.length === 0) {
           ctx.stdout.write('No MCP servers registered.\n');
           return 0;

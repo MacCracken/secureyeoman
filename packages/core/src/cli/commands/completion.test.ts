@@ -83,7 +83,17 @@ describe('completion command', () => {
     const { stdout, stderr, getStdout } = createStreams();
     await completionCommand.run({ argv: ['bash'], stdout, stderr });
     const out = getStdout();
-    for (const cmd of ['start', 'health', 'config', 'integration', 'role', 'model', 'policy', 'plugin', 'completion']) {
+    for (const cmd of [
+      'start',
+      'health',
+      'config',
+      'integration',
+      'role',
+      'model',
+      'policy',
+      'plugin',
+      'completion',
+    ]) {
       expect(out).toContain(cmd);
     }
   });

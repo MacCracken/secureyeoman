@@ -354,8 +354,10 @@ export class AIClient {
 
     const provider = this.createProvider({ model: fullModelConfig, retryConfig: this.retryConfig });
     // Only cache system-level fallbacks (when they match the configured index)
-    if (this.fallbackConfigs[index]?.provider === fbConfig.provider &&
-        this.fallbackConfigs[index]?.model === fbConfig.model) {
+    if (
+      this.fallbackConfigs[index]?.provider === fbConfig.provider &&
+      this.fallbackConfigs[index]?.model === fbConfig.model
+    ) {
       this.fallbackProviders.set(cacheKey, provider);
     }
     return provider;

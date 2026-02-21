@@ -29,7 +29,10 @@ export class WorkspaceManager {
     return await this.storage.get(id);
   }
 
-  async list(opts?: { limit?: number; offset?: number }): Promise<{ workspaces: Workspace[]; total: number }> {
+  async list(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ workspaces: Workspace[]; total: number }> {
     return await this.storage.list(opts);
   }
 
@@ -57,13 +60,20 @@ export class WorkspaceManager {
     return removed;
   }
 
-  async updateMemberRole(workspaceId: string, userId: string, role: string): Promise<WorkspaceMember | null> {
+  async updateMemberRole(
+    workspaceId: string,
+    userId: string,
+    role: string
+  ): Promise<WorkspaceMember | null> {
     const member = await this.storage.updateMemberRole(workspaceId, userId, role);
     if (member) this.logger.info('Member role updated', { workspaceId, userId, role });
     return member;
   }
 
-  async listMembers(workspaceId: string, opts?: { limit?: number; offset?: number }): Promise<{ members: WorkspaceMember[]; total: number }> {
+  async listMembers(
+    workspaceId: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<{ members: WorkspaceMember[]; total: number }> {
     return this.storage.listMembers(workspaceId, opts);
   }
 

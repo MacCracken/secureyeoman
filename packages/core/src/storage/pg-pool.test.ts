@@ -9,7 +9,9 @@ const { mockPoolInstance, MockPool, mockTypesSetTypeParser } = vi.hoisted(() => 
     query: vi.fn(),
     connect: vi.fn(),
   };
-  const MockPool = vi.fn().mockImplementation(function() { return mockPoolInstance; });
+  const MockPool = vi.fn().mockImplementation(function () {
+    return mockPoolInstance;
+  });
   const mockTypesSetTypeParser = vi.fn();
   return { mockPoolInstance, MockPool, mockTypesSetTypeParser };
 });
@@ -46,7 +48,9 @@ describe('pg-pool', () => {
     mockPoolInstance.end.mockClear().mockResolvedValue(undefined);
     MockPool.mockClear();
     // Re-set implementation each time to survive test isolation
-    MockPool.mockImplementation(function() { return mockPoolInstance; });
+    MockPool.mockImplementation(function () {
+      return mockPoolInstance;
+    });
   });
 
   afterEach(() => {
@@ -99,9 +103,7 @@ describe('pg-pool', () => {
 
     it('passes ssl: false when ssl option is false', () => {
       initPool(baseConfig);
-      expect(MockPool).toHaveBeenCalledWith(
-        expect.objectContaining({ ssl: false })
-      );
+      expect(MockPool).toHaveBeenCalledWith(expect.objectContaining({ ssl: false }));
     });
 
     it('passes ssl object when ssl option is true', () => {

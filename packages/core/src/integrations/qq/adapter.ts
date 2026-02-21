@@ -69,29 +69,43 @@ export class QQIntegration implements Integration {
 
   async stop(): Promise<void> {
     this.running = false;
-    if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
     this.logger?.info('QQ integration stopped');
   }
 
-  async sendMessage(chatId: string, text: string, metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
     const isGroup = metadata?.['group'] === true || chatId.startsWith('group_');
     const id = chatId.replace(/^group_/, '');
     const endpoint = isGroup ? '/send_group_msg' : '/send_private_msg';
-    const body = isGroup ? { group_id: parseInt(id), message: text } : { user_id: parseInt(id), message: text };
+    const body = isGroup
+      ? { group_id: parseInt(id), message: text }
+      : { user_id: parseInt(id), message: text };
     const resp = await this.oneBotFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
     if (!resp.ok) throw new Error(`QQ send failed: ${resp.status}`);
     const result = (await resp.json()) as OneBotResponse<{ message_id: number }>;
     return String(result.data?.message_id ?? Date.now());
   }
 
-  isHealthy(): boolean { return this.running; }
+  isHealthy(): boolean {
+    return this.running;
+  }
 
   async testConnection(): Promise<{ ok: boolean; message: string }> {
     try {
       const resp = await this.oneBotFetch('/get_login_info');
       if (!resp.ok) return { ok: false, message: `CQ-HTTP error: ${resp.status}` };
       const result = (await resp.json()) as OneBotResponse<{ user_id: number; nickname: string }>;
-      return { ok: result.status === 'ok', message: `Connected as ${result.data?.nickname} (${result.data?.user_id})` };
+      return {
+        ok: result.status === 'ok',
+        message: `Connected as ${result.data?.nickname} (${result.data?.user_id})`,
+      };
     } catch (err) {
       return { ok: false, message: err instanceof Error ? err.message : String(err) };
     }
@@ -109,13 +123,16 @@ export class QQIntegration implements Integration {
       // OneBot HTTP event push configured to point at our webhook endpoint.
       // This poll keeps the connection alive and logs health.
     } catch (err) {
-      this.logger?.warn('QQ poll error', { error: err instanceof Error ? err.message : String(err) });
+      this.logger?.warn('QQ poll error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
   handleInboundEvent(event: OneBotMessage): void {
     if (!this.deps) return;
-    const chatId = event.message_type === 'group' ? `group_${event.group_id}` : String(event.user_id);
+    const chatId =
+      event.message_type === 'group' ? `group_${event.group_id}` : String(event.user_id);
     const unified: UnifiedMessage = {
       id: `qq_${event.message_id}`,
       integrationId: this.config!.id,
@@ -139,7 +156,11 @@ export class QQIntegration implements Integration {
 
   private async oneBotFetch(path: string, init?: RequestInit): Promise<Response> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (this.qqConfig?.accessToken) headers['Authorization'] = `Bearer ${this.qqConfig.accessToken}`;
-    return fetch(`${this.qqConfig!.httpUrl}${path}`, { ...init, headers: { ...headers, ...((init?.headers ?? {}) as Record<string, string>) } });
+    if (this.qqConfig?.accessToken)
+      headers['Authorization'] = `Bearer ${this.qqConfig.accessToken}`;
+    return fetch(`${this.qqConfig!.httpUrl}${path}`, {
+      ...init,
+      headers: { ...headers, ...((init?.headers ?? {}) as Record<string, string>) },
+    });
   }
 }

@@ -7,16 +7,31 @@ import type { Passion, Inspiration, Pain } from './types.js';
 // ── Mock SpiritManager ────────────────────────────────────────────
 
 const PASSION: Passion = {
-  id: 'p1', name: 'Open Source', description: 'desc', intensity: 0.9, isActive: true,
-  createdAt: 1000, updatedAt: 1000,
+  id: 'p1',
+  name: 'Open Source',
+  description: 'desc',
+  intensity: 0.9,
+  isActive: true,
+  createdAt: 1000,
+  updatedAt: 1000,
 };
 const INSPIRATION: Inspiration = {
-  id: 'i1', source: 'Alan Turing', description: 'pioneer', impact: 0.95, isActive: true,
-  createdAt: 1000, updatedAt: 1000,
+  id: 'i1',
+  source: 'Alan Turing',
+  description: 'pioneer',
+  impact: 0.95,
+  isActive: true,
+  createdAt: 1000,
+  updatedAt: 1000,
 };
 const PAIN: Pain = {
-  id: 'pa1', trigger: 'Data Loss', description: 'ouch', severity: 0.8, isActive: true,
-  createdAt: 1000, updatedAt: 1000,
+  id: 'pa1',
+  trigger: 'Data Loss',
+  description: 'ouch',
+  severity: 0.8,
+  isActive: true,
+  createdAt: 1000,
+  updatedAt: 1000,
 };
 
 function makeMockManager(overrides?: Partial<SpiritManager>): SpiritManager {
@@ -39,8 +54,14 @@ function makeMockManager(overrides?: Partial<SpiritManager>): SpiritManager {
     updatePain: vi.fn().mockResolvedValue(PAIN),
     deletePain: vi.fn().mockResolvedValue(true),
 
-    getConfig: vi.fn().mockReturnValue({ enabled: true, maxPassions: 20, maxInspirations: 20, maxPains: 20 }),
-    getStats: vi.fn().mockResolvedValue({ passions: { total: 1, active: 1 }, inspirations: { total: 1, active: 1 }, pains: { total: 1, active: 1 } }),
+    getConfig: vi
+      .fn()
+      .mockReturnValue({ enabled: true, maxPassions: 20, maxInspirations: 20, maxPains: 20 }),
+    getStats: vi.fn().mockResolvedValue({
+      passions: { total: 1, active: 1 },
+      inspirations: { total: 1, active: 1 },
+      pains: { total: 1, active: 1 },
+    }),
     composeSpiritPrompt: vi.fn().mockResolvedValue('## Spirit\nContent here'),
     ...overrides,
   } as unknown as SpiritManager;
@@ -57,7 +78,9 @@ function buildApp(manager?: SpiritManager) {
 describe('Spirit Routes — passions', () => {
   let app: ReturnType<typeof Fastify>;
 
-  beforeEach(() => { app = buildApp(); });
+  beforeEach(() => {
+    app = buildApp();
+  });
 
   it('GET /api/v1/spirit/passions returns list', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/spirit/passions' });
@@ -66,13 +89,19 @@ describe('Spirit Routes — passions', () => {
   });
 
   it('POST /api/v1/spirit/passions creates passion', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/spirit/passions', payload: { name: 'Open Source', intensity: 0.9 } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/spirit/passions',
+      payload: { name: 'Open Source', intensity: 0.9 },
+    });
     expect(res.statusCode).toBe(201);
     expect(res.json().passion.id).toBe('p1');
   });
 
   it('POST /api/v1/spirit/passions returns 400 on manager error', async () => {
-    const mgr = makeMockManager({ createPassion: vi.fn().mockRejectedValue(new Error('limit exceeded')) });
+    const mgr = makeMockManager({
+      createPassion: vi.fn().mockRejectedValue(new Error('limit exceeded')),
+    });
     const a = buildApp(mgr);
     const res = await a.inject({ method: 'POST', url: '/api/v1/spirit/passions', payload: {} });
     expect(res.statusCode).toBe(400);
@@ -92,15 +121,25 @@ describe('Spirit Routes — passions', () => {
   });
 
   it('PUT /api/v1/spirit/passions/:id updates passion', async () => {
-    const res = await app.inject({ method: 'PUT', url: '/api/v1/spirit/passions/p1', payload: { name: 'Updated' } });
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/spirit/passions/p1',
+      payload: { name: 'Updated' },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().passion.id).toBe('p1');
   });
 
   it('PUT /api/v1/spirit/passions/:id returns 404 on manager error', async () => {
-    const mgr = makeMockManager({ updatePassion: vi.fn().mockRejectedValue(new Error('Passion not found')) });
+    const mgr = makeMockManager({
+      updatePassion: vi.fn().mockRejectedValue(new Error('Passion not found')),
+    });
     const a = buildApp(mgr);
-    const res = await a.inject({ method: 'PUT', url: '/api/v1/spirit/passions/missing', payload: {} });
+    const res = await a.inject({
+      method: 'PUT',
+      url: '/api/v1/spirit/passions/missing',
+      payload: {},
+    });
     expect(res.statusCode).toBe(404);
   });
 
@@ -120,7 +159,9 @@ describe('Spirit Routes — passions', () => {
 describe('Spirit Routes — inspirations', () => {
   let app: ReturnType<typeof Fastify>;
 
-  beforeEach(() => { app = buildApp(); });
+  beforeEach(() => {
+    app = buildApp();
+  });
 
   it('GET /api/v1/spirit/inspirations returns list', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/spirit/inspirations' });
@@ -129,13 +170,19 @@ describe('Spirit Routes — inspirations', () => {
   });
 
   it('POST /api/v1/spirit/inspirations creates inspiration', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/spirit/inspirations', payload: { source: 'Turing', impact: 0.95 } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/spirit/inspirations',
+      payload: { source: 'Turing', impact: 0.95 },
+    });
     expect(res.statusCode).toBe(201);
     expect(res.json().inspiration.id).toBe('i1');
   });
 
   it('POST /api/v1/spirit/inspirations returns 400 on error', async () => {
-    const mgr = makeMockManager({ createInspiration: vi.fn().mockRejectedValue(new Error('limit')) });
+    const mgr = makeMockManager({
+      createInspiration: vi.fn().mockRejectedValue(new Error('limit')),
+    });
     const a = buildApp(mgr);
     const res = await a.inject({ method: 'POST', url: '/api/v1/spirit/inspirations', payload: {} });
     expect(res.statusCode).toBe(400);
@@ -149,9 +196,15 @@ describe('Spirit Routes — inspirations', () => {
   });
 
   it('PUT /api/v1/spirit/inspirations/:id returns 404 on error', async () => {
-    const mgr = makeMockManager({ updateInspiration: vi.fn().mockRejectedValue(new Error('Inspiration not found')) });
+    const mgr = makeMockManager({
+      updateInspiration: vi.fn().mockRejectedValue(new Error('Inspiration not found')),
+    });
     const a = buildApp(mgr);
-    const res = await a.inject({ method: 'PUT', url: '/api/v1/spirit/inspirations/missing', payload: {} });
+    const res = await a.inject({
+      method: 'PUT',
+      url: '/api/v1/spirit/inspirations/missing',
+      payload: {},
+    });
     expect(res.statusCode).toBe(404);
   });
 
@@ -171,7 +224,9 @@ describe('Spirit Routes — inspirations', () => {
 describe('Spirit Routes — pains', () => {
   let app: ReturnType<typeof Fastify>;
 
-  beforeEach(() => { app = buildApp(); });
+  beforeEach(() => {
+    app = buildApp();
+  });
 
   it('GET /api/v1/spirit/pains returns list', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/spirit/pains' });
@@ -180,7 +235,11 @@ describe('Spirit Routes — pains', () => {
   });
 
   it('POST /api/v1/spirit/pains creates pain', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/spirit/pains', payload: { trigger: 'Data Loss', severity: 0.8 } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/spirit/pains',
+      payload: { trigger: 'Data Loss', severity: 0.8 },
+    });
     expect(res.statusCode).toBe(201);
     expect(res.json().pain.id).toBe('pa1');
   });
@@ -200,7 +259,9 @@ describe('Spirit Routes — pains', () => {
   });
 
   it('PUT /api/v1/spirit/pains/:id returns 404 on error', async () => {
-    const mgr = makeMockManager({ updatePain: vi.fn().mockRejectedValue(new Error('Pain not found')) });
+    const mgr = makeMockManager({
+      updatePain: vi.fn().mockRejectedValue(new Error('Pain not found')),
+    });
     const a = buildApp(mgr);
     const res = await a.inject({ method: 'PUT', url: '/api/v1/spirit/pains/missing', payload: {} });
     expect(res.statusCode).toBe(404);
@@ -222,7 +283,9 @@ describe('Spirit Routes — pains', () => {
 describe('Spirit Routes — config, stats, prompt', () => {
   let app: ReturnType<typeof Fastify>;
 
-  beforeEach(() => { app = buildApp(); });
+  beforeEach(() => {
+    app = buildApp();
+  });
 
   it('GET /api/v1/spirit/config returns config', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/spirit/config' });

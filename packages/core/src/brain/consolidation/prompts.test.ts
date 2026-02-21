@@ -60,7 +60,10 @@ describe('buildConsolidationPrompt', () => {
   });
 
   it('numbers groups correctly', () => {
-    const prompt = buildConsolidationPrompt([candidate, { ...candidate, memoryId: 'mem-4', similarMemories: [] }]);
+    const prompt = buildConsolidationPrompt([
+      candidate,
+      { ...candidate, memoryId: 'mem-4', similarMemories: [] },
+    ]);
     expect(prompt).toContain('Group 1:');
     expect(prompt).toContain('Group 2:');
   });
@@ -80,7 +83,12 @@ describe('buildConsolidationPrompt', () => {
 describe('parseConsolidationResponse', () => {
   it('parses valid JSON array', () => {
     const response = JSON.stringify([
-      { type: 'MERGE', sourceIds: ['mem-1', 'mem-2'], mergedContent: 'merged', reason: 'duplicates' },
+      {
+        type: 'MERGE',
+        sourceIds: ['mem-1', 'mem-2'],
+        mergedContent: 'merged',
+        reason: 'duplicates',
+      },
     ]);
     const result = parseConsolidationResponse(response);
     expect(result).toHaveLength(1);
@@ -123,7 +131,7 @@ describe('parseConsolidationResponse', () => {
       { type: 'MERGE', sourceIds: ['a'], reason: 'valid' },
       { sourceIds: ['b'], reason: 'missing type' },
       { type: 'SKIP', reason: 'missing sourceIds' },
-      { type: 'REPLACE', sourceIds: ['c'] },  // missing reason
+      { type: 'REPLACE', sourceIds: ['c'] }, // missing reason
       null,
     ]);
     const result = parseConsolidationResponse(response);

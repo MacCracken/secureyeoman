@@ -912,7 +912,9 @@ function AuditLogTab({
         </div>
         {(filters.level || filters.event || filters.from || filters.to) && (
           <button
-            onClick={() => { setFilters({ level: '', event: '', from: '', to: '', offset: 0 }); }}
+            onClick={() => {
+              setFilters({ level: '', event: '', from: '', to: '', offset: 0 });
+            }}
             className="text-xs text-primary hover:underline py-2"
           >
             Clear all
@@ -925,15 +927,15 @@ function AuditLogTab({
         {presets.map((preset, i) => (
           <div key={i} className="flex items-center gap-0.5">
             <button
-              onClick={() =>
-                { setFilters({
+              onClick={() => {
+                setFilters({
                   level: preset.level,
                   event: preset.event,
                   from: preset.from ?? '',
                   to: preset.to ?? '',
                   offset: 0,
-                }); }
-              }
+                });
+              }}
               className="px-2.5 py-1 text-xs rounded-full border border-border hover:border-primary/50 hover:bg-primary/5 transition-colors"
             >
               {preset.name}
@@ -953,7 +955,9 @@ function AuditLogTab({
         ))}
         {!showSavePreset ? (
           <button
-            onClick={() => { setShowSavePreset(true); }}
+            onClick={() => {
+              setShowSavePreset(true);
+            }}
             className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
             title="Save current filters as preset"
           >
@@ -964,7 +968,9 @@ function AuditLogTab({
             <input
               type="text"
               value={presetName}
-              onChange={(e) => { setPresetName(e.target.value); }}
+              onChange={(e) => {
+                setPresetName(e.target.value);
+              }}
               placeholder="Preset name"
               className="bg-card border border-border rounded px-2 py-1 text-xs w-28"
               autoFocus
@@ -1703,9 +1709,7 @@ function NodeDetailsTab() {
     <div className="space-y-6">
       <div>
         <h3 className="font-semibold">System</h3>
-        <p className="text-xs text-muted-foreground mt-1">
-          Status for each system component
-        </p>
+        <p className="text-xs text-muted-foreground mt-1">Status for each system component</p>
       </div>
       <div className="space-y-3">
         {NODE_DEFS.map((def) => (

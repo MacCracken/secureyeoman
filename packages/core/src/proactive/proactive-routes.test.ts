@@ -355,6 +355,11 @@ describe('GET /api/v1/proactive/heartbeat/log', () => {
       method: 'GET',
       url: '/api/v1/proactive/heartbeat/log?checkName=memory&status=ok&limit=5&offset=2',
     });
-    expect(listMock).toHaveBeenCalledWith({ checkName: 'memory', status: 'ok', limit: 5, offset: 2 });
+    expect(listMock).toHaveBeenCalledWith({
+      checkName: 'memory',
+      status: 'ok',
+      limit: 5,
+      offset: 2,
+    });
   });
 });

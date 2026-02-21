@@ -125,7 +125,15 @@ export class AuthStorage extends PgBaseStorage {
       `INSERT INTO auth.users (id, email, display_name, hashed_password, is_admin, created_at, updated_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
        ON CONFLICT (id) DO NOTHING`,
-      [id, data.email, data.displayName ?? '', data.hashedPassword ?? null, data.isAdmin ?? false, now, now]
+      [
+        id,
+        data.email,
+        data.displayName ?? '',
+        data.hashedPassword ?? null,
+        data.isAdmin ?? false,
+        now,
+        now,
+      ]
     );
     return {
       id,
@@ -139,9 +147,16 @@ export class AuthStorage extends PgBaseStorage {
 
   async getUserById(id: string): Promise<User | null> {
     const row = await this.queryOne<{
-      id: string; email: string; display_name: string; is_admin: boolean;
-      created_at: number; updated_at: number;
-    }>('SELECT id, email, display_name, is_admin, created_at, updated_at FROM auth.users WHERE id = $1', [id]);
+      id: string;
+      email: string;
+      display_name: string;
+      is_admin: boolean;
+      created_at: number;
+      updated_at: number;
+    }>(
+      'SELECT id, email, display_name, is_admin, created_at, updated_at FROM auth.users WHERE id = $1',
+      [id]
+    );
     if (!row) return null;
     return {
       id: row.id,
@@ -155,9 +170,16 @@ export class AuthStorage extends PgBaseStorage {
 
   async getUserByEmail(email: string): Promise<User | null> {
     const row = await this.queryOne<{
-      id: string; email: string; display_name: string; is_admin: boolean;
-      created_at: number; updated_at: number;
-    }>('SELECT id, email, display_name, is_admin, created_at, updated_at FROM auth.users WHERE email = $1', [email]);
+      id: string;
+      email: string;
+      display_name: string;
+      is_admin: boolean;
+      created_at: number;
+      updated_at: number;
+    }>(
+      'SELECT id, email, display_name, is_admin, created_at, updated_at FROM auth.users WHERE email = $1',
+      [email]
+    );
     if (!row) return null;
     return {
       id: row.id,
@@ -171,9 +193,15 @@ export class AuthStorage extends PgBaseStorage {
 
   async listUsers(): Promise<User[]> {
     const rows = await this.queryMany<{
-      id: string; email: string; display_name: string; is_admin: boolean;
-      created_at: number; updated_at: number;
-    }>('SELECT id, email, display_name, is_admin, created_at, updated_at FROM auth.users ORDER BY created_at ASC');
+      id: string;
+      email: string;
+      display_name: string;
+      is_admin: boolean;
+      created_at: number;
+      updated_at: number;
+    }>(
+      'SELECT id, email, display_name, is_admin, created_at, updated_at FROM auth.users ORDER BY created_at ASC'
+    );
     return rows.map((r) => ({
       id: r.id,
       email: r.email,
@@ -189,10 +217,22 @@ export class AuthStorage extends PgBaseStorage {
     const values: unknown[] = [];
     let idx = 1;
 
-    if (data.email !== undefined) { updates.push(`email = $${idx++}`); values.push(data.email); }
-    if (data.displayName !== undefined) { updates.push(`display_name = $${idx++}`); values.push(data.displayName); }
-    if (data.hashedPassword !== undefined) { updates.push(`hashed_password = $${idx++}`); values.push(data.hashedPassword); }
-    if (data.isAdmin !== undefined) { updates.push(`is_admin = $${idx++}`); values.push(data.isAdmin); }
+    if (data.email !== undefined) {
+      updates.push(`email = $${idx++}`);
+      values.push(data.email);
+    }
+    if (data.displayName !== undefined) {
+      updates.push(`display_name = $${idx++}`);
+      values.push(data.displayName);
+    }
+    if (data.hashedPassword !== undefined) {
+      updates.push(`hashed_password = $${idx++}`);
+      values.push(data.hashedPassword);
+    }
+    if (data.isAdmin !== undefined) {
+      updates.push(`is_admin = $${idx++}`);
+      values.push(data.isAdmin);
+    }
 
     if (updates.length === 0) return this.getUserById(id);
 
@@ -200,15 +240,15 @@ export class AuthStorage extends PgBaseStorage {
     values.push(Date.now());
     values.push(id);
 
-    await this.execute(
-      `UPDATE auth.users SET ${updates.join(', ')} WHERE id = $${idx}`,
-      values
-    );
+    await this.execute(`UPDATE auth.users SET ${updates.join(', ')} WHERE id = $${idx}`, values);
     return this.getUserById(id);
   }
 
   async deleteUser(id: string): Promise<boolean> {
-    const count = await this.execute('DELETE FROM auth.users WHERE id = $1 AND id != $2', [id, 'admin']);
+    const count = await this.execute('DELETE FROM auth.users WHERE id = $1 AND id != $2', [
+      id,
+      'admin',
+    ]);
     return count > 0;
   }
 }

@@ -261,7 +261,7 @@ describe('ExecutionStorage', () => {
       await storage.listExecutions();
       const selectParams = mockQuery.mock.calls[1][1] as unknown[];
       expect(selectParams).toContain(50); // default limit
-      expect(selectParams).toContain(0);  // default offset
+      expect(selectParams).toContain(0); // default offset
     });
 
     it('uses custom limit and offset', async () => {
@@ -312,7 +312,11 @@ describe('ExecutionStorage', () => {
     });
 
     it('maps resolvedAt when present', async () => {
-      const resolved = { ...approvalRow, status: 'approved' as const, resolved_at: '2024-01-01T02:00:00.000Z' };
+      const resolved = {
+        ...approvalRow,
+        status: 'approved' as const,
+        resolved_at: '2024-01-01T02:00:00.000Z',
+      };
       mockQuery.mockResolvedValueOnce({ rows: [resolved], rowCount: 1 });
       const result = await storage.getApproval('appr-1');
       expect(result!.resolvedAt).toBe(new Date('2024-01-01T02:00:00.000Z').getTime());
@@ -321,7 +325,11 @@ describe('ExecutionStorage', () => {
 
   describe('updateApproval', () => {
     it('returns updated approval when found and pending', async () => {
-      const updated = { ...approvalRow, status: 'approved' as const, resolved_at: '2024-01-01T02:00:00.000Z' };
+      const updated = {
+        ...approvalRow,
+        status: 'approved' as const,
+        resolved_at: '2024-01-01T02:00:00.000Z',
+      };
       mockQuery.mockResolvedValueOnce({ rows: [updated], rowCount: 1 });
 
       const result = await storage.updateApproval('appr-1', 'approved');

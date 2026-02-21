@@ -2,8 +2,14 @@ import { describe, it, expect, vi } from 'vitest';
 import { SandboxManager } from './manager.js';
 
 const makeLogger = () => ({
-  info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  trace: vi.fn(), fatal: vi.fn(), child: vi.fn().mockReturnThis(), level: 'info',
+  info: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info',
 });
 
 function makeConfig(overrides: any = {}) {
@@ -59,7 +65,9 @@ describe('SandboxManager', () => {
     });
 
     it('falls back to NoopSandbox when auto and not on linux/darwin', () => {
-      const manager = new SandboxManager(makeConfig({ enabled: true, technology: 'auto' }), { logger: makeLogger() as any });
+      const manager = new SandboxManager(makeConfig({ enabled: true, technology: 'auto' }), {
+        logger: makeLogger() as any,
+      });
       // On any platform that's not linux or darwin, falls back to Noop
       // We can't mock process.platform easily, but we test the behavior on current platform
       const sandbox = manager.createSandbox();

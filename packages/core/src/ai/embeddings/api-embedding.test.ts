@@ -6,7 +6,9 @@ import { BaseEmbeddingProvider } from './base.js';
 
 class TestEmbeddingProvider extends BaseEmbeddingProvider {
   readonly name = 'test';
-  dimensions() { return 128; }
+  dimensions() {
+    return 128;
+  }
   protected async doEmbed(texts: string[]): Promise<number[][]> {
     return texts.map(() => Array(128).fill(0.5));
   }
@@ -29,7 +31,9 @@ describe('BaseEmbeddingProvider', () => {
   it('embed() propagates doEmbed errors', async () => {
     class FailingProvider extends BaseEmbeddingProvider {
       readonly name = 'failing';
-      dimensions() { return 128; }
+      dimensions() {
+        return 128;
+      }
       protected async doEmbed(): Promise<number[][]> {
         throw new Error('embed failed');
       }
@@ -49,10 +53,7 @@ const OPENAI_RESPONSE = {
 };
 
 const GEMINI_RESPONSE = {
-  embeddings: [
-    { values: Array(768).fill(0.1) },
-    { values: Array(768).fill(0.2) },
-  ],
+  embeddings: [{ values: Array(768).fill(0.1) }, { values: Array(768).fill(0.2) }],
 };
 
 function mockFetch(response: object, ok = true, status = 200) {
@@ -84,17 +85,26 @@ describe('ApiEmbeddingProvider — OpenAI', () => {
   });
 
   it('returns correct dimensions for text-embedding-3-small', () => {
-    const provider = new ApiEmbeddingProvider({ apiKey: 'sk-test', model: 'text-embedding-3-small' });
+    const provider = new ApiEmbeddingProvider({
+      apiKey: 'sk-test',
+      model: 'text-embedding-3-small',
+    });
     expect(provider.dimensions()).toBe(1536);
   });
 
   it('returns correct dimensions for text-embedding-3-large', () => {
-    const provider = new ApiEmbeddingProvider({ apiKey: 'sk-test', model: 'text-embedding-3-large' });
+    const provider = new ApiEmbeddingProvider({
+      apiKey: 'sk-test',
+      model: 'text-embedding-3-large',
+    });
     expect(provider.dimensions()).toBe(3072);
   });
 
   it('returns correct dimensions for text-embedding-ada-002', () => {
-    const provider = new ApiEmbeddingProvider({ apiKey: 'sk-test', model: 'text-embedding-ada-002' });
+    const provider = new ApiEmbeddingProvider({
+      apiKey: 'sk-test',
+      model: 'text-embedding-ada-002',
+    });
     expect(provider.dimensions()).toBe(1536);
   });
 
@@ -126,14 +136,21 @@ describe('ApiEmbeddingProvider — OpenAI', () => {
 
   it('throws on non-ok OpenAI response', async () => {
     vi.stubGlobal('fetch', mockFetch({ error: 'unauthorized' }, false, 401));
-    const provider = new ApiEmbeddingProvider({ apiKey: 'bad-key', provider: 'openai', retryConfig: { maxRetries: 0 } });
+    const provider = new ApiEmbeddingProvider({
+      apiKey: 'bad-key',
+      provider: 'openai',
+      retryConfig: { maxRetries: 0 },
+    });
     await expect(provider.embed(['text'])).rejects.toThrow('OpenAI embedding API error 401');
   });
 
   it('uses custom baseUrl when provided', async () => {
     const fetchMock = mockFetch(OPENAI_RESPONSE);
     vi.stubGlobal('fetch', fetchMock);
-    const provider = new ApiEmbeddingProvider({ apiKey: 'sk-test', baseUrl: 'https://custom.api.com/v1' });
+    const provider = new ApiEmbeddingProvider({
+      apiKey: 'sk-test',
+      baseUrl: 'https://custom.api.com/v1',
+    });
     await provider.embed(['text']);
     expect(fetchMock).toHaveBeenCalledWith(
       'https://custom.api.com/v1/embeddings',
@@ -174,7 +191,11 @@ describe('ApiEmbeddingProvider — Gemini', () => {
 
   it('throws on non-ok Gemini response', async () => {
     vi.stubGlobal('fetch', mockFetch({ error: 'quota exceeded' }, false, 429));
-    const provider = new ApiEmbeddingProvider({ apiKey: 'gk-test', provider: 'gemini', retryConfig: { maxRetries: 0 } });
+    const provider = new ApiEmbeddingProvider({
+      apiKey: 'gk-test',
+      provider: 'gemini',
+      retryConfig: { maxRetries: 0 },
+    });
     await expect(provider.embed(['text'])).rejects.toThrow('Gemini embedding API error 429');
   });
 });

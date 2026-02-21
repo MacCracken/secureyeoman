@@ -53,7 +53,10 @@ export class SwarmManager {
     task: string,
     tokenBudget = 500000,
     context?: string
-  ): { estimatedCostUsd: number; roleDecisions: { role: string; model: string | null; costUsd: number }[] } {
+  ): {
+    estimatedCostUsd: number;
+    roleDecisions: { role: string; model: string | null; costUsd: number }[];
+  } {
     if (!this.modelRouter) {
       return { estimatedCostUsd: 0, roleDecisions: [] };
     }
@@ -103,7 +106,10 @@ export class SwarmManager {
 
   // ── Templates ─────────────────────────────────────────────────
 
-  async listTemplates(opts?: { limit?: number; offset?: number }): Promise<{ templates: SwarmTemplate[]; total: number }> {
+  async listTemplates(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ templates: SwarmTemplate[]; total: number }> {
     return this.storage.listTemplates(opts);
   }
 
@@ -223,9 +229,7 @@ export class SwarmManager {
         const priorResults = completedMembers
           .map((m) => `[${m.role} result]:\n${m.result ?? ''}`)
           .join('\n\n');
-        context = context
-          ? `${context}\n\n${priorResults}`
-          : priorResults;
+        context = context ? `${context}\n\n${priorResults}` : priorResults;
       }
 
       try {
@@ -234,8 +238,11 @@ export class SwarmManager {
         const modelOverride = this.selectModelForRole(params.task, perBudget, context || undefined);
         if (modelOverride) {
           this.logger.debug('Cost-aware swarm: selected model for role', {
-            runId: run.id, role: roleConfig.role, model: modelOverride,
-            taskType: roleTaskProfile.taskType, complexity: roleTaskProfile.complexity,
+            runId: run.id,
+            role: roleConfig.role,
+            model: modelOverride,
+            taskType: roleTaskProfile.taskType,
+            complexity: roleTaskProfile.complexity,
           });
         }
         const delegation = await this.subAgentManager.delegate({
@@ -291,7 +298,8 @@ export class SwarmManager {
 
     // Execute all roles in parallel
     const perBudget = Math.floor(
-      (params.tokenBudget ?? 500000) / (template.roles.length + (template.coordinatorProfile ? 1 : 0))
+      (params.tokenBudget ?? 500000) /
+        (template.roles.length + (template.coordinatorProfile ? 1 : 0))
     );
 
     const results = await Promise.all(
@@ -332,9 +340,7 @@ export class SwarmManager {
 
     // If coordinator profile is set, synthesize results
     if (template.coordinatorProfile) {
-      const synthContext = results
-        .map((r) => `[${r.role} result]:\n${r.result}`)
-        .join('\n\n');
+      const synthContext = results.map((r) => `[${r.role} result]:\n${r.result}`).join('\n\n');
 
       const coordMember = await this.storage.createMember({
         swarmRunId: run.id,
@@ -422,9 +428,7 @@ export class SwarmManager {
 
   // ── Helpers ───────────────────────────────────────────────────
 
-  private async collectTokenTotals(
-    runId: string
-  ): Promise<{ prompt: number; completion: number }> {
+  private async collectTokenTotals(runId: string): Promise<{ prompt: number; completion: number }> {
     // Token totals are tracked per delegation; for now we keep it simple
     // and return zero (delegations track their own usage separately).
     void runId;

@@ -59,7 +59,11 @@ export class LinearIntegration implements WebhookIntegration {
     this.logger?.info('Linear integration stopped');
   }
 
-  async sendMessage(_chatId: string, text: string, metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    _chatId: string,
+    text: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
     if (!this.linearConfig?.apiKey) return 'linear_noop';
     const teamId = (metadata?.['teamId'] as string | undefined) ?? this.linearConfig.teamId ?? '';
     if (!teamId) return 'linear_noop_no_team';
@@ -80,18 +84,26 @@ export class LinearIntegration implements WebhookIntegration {
         },
         body: JSON.stringify({ query: mutation, variables: { teamId, title: text } }),
       });
-      const body = await resp.json() as { data?: { issueCreate?: { issue?: { identifier?: string; id?: string } } } };
+      const body = (await resp.json()) as {
+        data?: { issueCreate?: { issue?: { identifier?: string; id?: string } } };
+      };
       const issue = body.data?.issueCreate?.issue;
       return issue?.identifier ?? issue?.id ?? `linear_${Date.now()}`;
     } catch (err) {
-      this.logger?.warn('Linear sendMessage error', { error: err instanceof Error ? err.message : String(err) });
+      this.logger?.warn('Linear sendMessage error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
       return 'linear_error';
     }
   }
 
-  isHealthy(): boolean { return this.running; }
+  isHealthy(): boolean {
+    return this.running;
+  }
 
-  getWebhookPath(): string { return '/webhooks/linear'; }
+  getWebhookPath(): string {
+    return '/webhooks/linear';
+  }
 
   verifyWebhook(payload: string, signature: string): boolean {
     if (!this.linearConfig?.webhookSecret) return true; // no secret configured — allow
@@ -113,10 +125,14 @@ export class LinearIntegration implements WebhookIntegration {
       const id = (data['id'] as string | undefined) ?? `linear_${Date.now()}`;
       const title = (data['title'] as string | undefined) ?? '';
       const identifier = (data['identifier'] as string | undefined) ?? '';
-      const state = (data['state'] as Record<string, unknown> | undefined)?.['name'] as string | undefined;
-      const assignee = (data['assignee'] as Record<string, unknown> | undefined)?.['name'] as string | undefined;
+      const state = (data['state'] as Record<string, unknown> | undefined)?.['name'] as
+        | string
+        | undefined;
+      const assignee = (data['assignee'] as Record<string, unknown> | undefined)?.['name'] as
+        | string
+        | undefined;
       const commentBody = (data['body'] as string | undefined) ?? '';
-      const userId = (data['userId'] as string | undefined) ?? (event.organizationId ?? 'linear');
+      const userId = (data['userId'] as string | undefined) ?? event.organizationId ?? 'linear';
 
       let text: string;
       switch (event.type) {
@@ -162,7 +178,9 @@ export class LinearIntegration implements WebhookIntegration {
       };
       await this.deps.onMessage(unified);
     } catch (err) {
-      this.logger?.warn('Linear webhook parse error', { error: err instanceof Error ? err.message : String(err) });
+      this.logger?.warn('Linear webhook parse error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -178,7 +196,10 @@ export class LinearIntegration implements WebhookIntegration {
         body: JSON.stringify({ query }),
       });
       if (!resp.ok) return { ok: false, message: `Linear API error: ${resp.status}` };
-      const body = await resp.json() as { data?: { viewer?: { name?: string; organization?: { name?: string } } }; errors?: unknown[] };
+      const body = (await resp.json()) as {
+        data?: { viewer?: { name?: string; organization?: { name?: string } } };
+        errors?: unknown[];
+      };
       if (body.errors) return { ok: false, message: 'Linear API returned errors' };
       const viewer = body.data?.viewer;
       return {

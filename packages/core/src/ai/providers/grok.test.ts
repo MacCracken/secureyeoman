@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { GrokProvider } from './grok.js';
 import type { AIRequest, ModelConfig } from '@secureyeoman/shared';
-import { RateLimitError, TokenLimitError, ProviderUnavailableError, InvalidResponseError } from '../errors.js';
+import {
+  RateLimitError,
+  TokenLimitError,
+  ProviderUnavailableError,
+  InvalidResponseError,
+} from '../errors.js';
 
 const mockCreate = vi.fn();
 const mockFetch = vi.fn();
@@ -205,7 +210,9 @@ describe('GrokProvider', () => {
       }
 
       expect(results.find((r) => r.type === 'content_delta' && r.content === 'Hello')).toBeTruthy();
-      expect(results.find((r) => r.type === 'content_delta' && r.content === ' world')).toBeTruthy();
+      expect(
+        results.find((r) => r.type === 'content_delta' && r.content === ' world')
+      ).toBeTruthy();
       expect(results.find((r) => r.type === 'done')).toBeTruthy();
     });
 

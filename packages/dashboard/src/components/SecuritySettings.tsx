@@ -462,7 +462,8 @@ export function SecuritySettings() {
           <span className="text-muted-foreground">Current default:</span>
           {modelDefault?.provider && modelDefault?.model ? (
             <span className="badge badge-success">
-              {MODEL_PROVIDER_LABELS[modelDefault.provider] ?? modelDefault.provider} / {modelDefault.model}
+              {MODEL_PROVIDER_LABELS[modelDefault.provider] ?? modelDefault.provider} /{' '}
+              {modelDefault.model}
             </span>
           ) : (
             <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
@@ -503,7 +504,11 @@ export function SecuritySettings() {
               }
             }}
           >
-            {setDefaultMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Set Default'}
+            {setDefaultMutation.isPending ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              'Set Default'
+            )}
           </button>
           {modelDefault?.provider && modelDefault?.model && (
             <button
@@ -696,7 +701,9 @@ export function SecuritySettings() {
             icon={<Brain className="w-4 h-4 text-muted-foreground" />}
             enabled={anomalyDetectionAllowed}
             isPending={policyMutation.isPending}
-            onToggle={() => policyMutation.mutate({ allowAnomalyDetection: !anomalyDetectionAllowed })}
+            onToggle={() =>
+              policyMutation.mutate({ allowAnomalyDetection: !anomalyDetectionAllowed })
+            }
             description="Use machine learning to detect unusual patterns in agent behavior, API calls, and security events. Disabled by default."
           />
         </div>

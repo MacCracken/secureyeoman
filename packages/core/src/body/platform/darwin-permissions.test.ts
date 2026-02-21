@@ -109,13 +109,19 @@ describe('DarwinPermissionManager', () => {
   describe('requestPermission', () => {
     it('triggers screen capture prompt and then checks permission', async () => {
       // Skip the 1000ms delay
-      vi.spyOn(global, 'setTimeout').mockImplementation((fn: any) => { fn(); return 0 as any; });
+      vi.spyOn(global, 'setTimeout').mockImplementation((fn: any) => {
+        fn();
+        return 0 as any;
+      });
       const result = await manager.requestPermission('screen');
       expect(result).toBeDefined();
     });
 
     it('for non-screen types, just checks permission', async () => {
-      vi.spyOn(global, 'setTimeout').mockImplementation((fn: any) => { fn(); return 0 as any; });
+      vi.spyOn(global, 'setTimeout').mockImplementation((fn: any) => {
+        fn();
+        return 0 as any;
+      });
       const result = await manager.requestPermission('camera');
       expect(result).toBeDefined();
     });

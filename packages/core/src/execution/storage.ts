@@ -95,7 +95,10 @@ export class ExecutionStorage extends PgBaseStorage {
     return row ? sessionFromRow(row) : null;
   }
 
-  async listSessions(opts?: { limit?: number; offset?: number }): Promise<{ sessions: ExecutionSession[]; total: number }> {
+  async listSessions(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ sessions: ExecutionSession[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 

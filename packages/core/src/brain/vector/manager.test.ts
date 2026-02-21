@@ -96,8 +96,8 @@ describe('VectorMemoryManager', () => {
     it('embeds query, searches, filters memory: results', async () => {
       mockVectorStore.search.mockResolvedValue([
         { id: 'memory:mem-1', score: 0.95 },
-        { id: 'knowledge:know-1', score: 0.90 }, // should be filtered out
-        { id: 'memory:mem-2', score: 0.80 },
+        { id: 'knowledge:know-1', score: 0.9 }, // should be filtered out
+        { id: 'memory:mem-2', score: 0.8 },
       ]);
 
       const results = await manager.searchMemories('test query', 5);
@@ -137,7 +137,7 @@ describe('VectorMemoryManager', () => {
     it('filters knowledge: results and strips prefix', async () => {
       mockVectorStore.search.mockResolvedValue([
         { id: 'knowledge:know-1', score: 0.95 },
-        { id: 'memory:mem-1', score: 0.90 }, // filtered out
+        { id: 'memory:mem-1', score: 0.9 }, // filtered out
       ]);
 
       const results = await manager.searchKnowledge('query', 5);

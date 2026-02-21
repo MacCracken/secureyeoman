@@ -64,7 +64,12 @@ describe('model command', () => {
 
   it('info prints provider, model, maxTokens, temperature', async () => {
     mockFetch({
-      current: { provider: 'anthropic', model: 'claude-sonnet-4-6', maxTokens: 8192, temperature: 0.7 },
+      current: {
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-6',
+        maxTokens: 8192,
+        temperature: 0.7,
+      },
       available: {},
     });
     const { stdout, stderr, getStdout } = createStreams();
@@ -101,7 +106,12 @@ describe('model command', () => {
 
   it('list prints available models', async () => {
     mockFetch({
-      current: { provider: 'anthropic', model: 'claude-sonnet-4-6', maxTokens: 8192, temperature: 0.7 },
+      current: {
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-6',
+        maxTokens: 8192,
+        temperature: 0.7,
+      },
       available: {
         anthropic: {
           models: {
@@ -119,14 +129,23 @@ describe('model command', () => {
 
   it('list --provider filters to a single provider', async () => {
     mockFetch({
-      current: { provider: 'anthropic', model: 'claude-sonnet-4-6', maxTokens: 8192, temperature: 0.7 },
+      current: {
+        provider: 'anthropic',
+        model: 'claude-sonnet-4-6',
+        maxTokens: 8192,
+        temperature: 0.7,
+      },
       available: {
         anthropic: { models: { 'claude-sonnet-4-6': {} } },
         openai: { models: { 'gpt-4o': {} } },
       },
     });
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await modelCommand.run({ argv: ['list', '--provider', 'anthropic'], stdout, stderr });
+    const code = await modelCommand.run({
+      argv: ['list', '--provider', 'anthropic'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     expect(getStdout()).toContain('anthropic');
     expect(getStdout()).not.toContain('openai');
@@ -335,7 +354,10 @@ describe('model command', () => {
         ok: true,
         status: 200,
         headers: { get: () => 'application/json' },
-        json: async () => ({ id: 'my-id', modelFallbacks: [{ provider: 'openai', model: 'gpt-4o' }] }),
+        json: async () => ({
+          id: 'my-id',
+          modelFallbacks: [{ provider: 'openai', model: 'gpt-4o' }],
+        }),
       });
     vi.stubGlobal('fetch', fetchMock);
 
@@ -381,7 +403,11 @@ describe('model command', () => {
     vi.stubGlobal('fetch', fetchMock);
 
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await modelCommand.run({ argv: ['personality-fallbacks', 'clear'], stdout, stderr });
+    const code = await modelCommand.run({
+      argv: ['personality-fallbacks', 'clear'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     expect(getStdout()).toContain('cleared');
 

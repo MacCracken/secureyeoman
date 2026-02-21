@@ -105,7 +105,7 @@ describe('McpServer', () => {
   describe('handleToolCall', () => {
     it('logs the tool call and returns status ok', async () => {
       server = new McpServer({ logger: mockLogger as any });
-      const result = await server.handleToolCall('my_tool', { foo: 'bar' }) as any;
+      const result = (await server.handleToolCall('my_tool', { foo: 'bar' })) as any;
 
       expect(mockLogger.info).toHaveBeenCalledWith(
         'MCP tool call received',

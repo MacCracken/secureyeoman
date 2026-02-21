@@ -3,8 +3,14 @@ import { ExperimentManager } from './manager.js';
 import type { Experiment } from '@secureyeoman/shared';
 
 const makeLogger = () => ({
-  info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  trace: vi.fn(), fatal: vi.fn(), child: vi.fn().mockReturnThis(), level: 'info',
+  info: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info',
 });
 
 const EXPERIMENT: Experiment = {
@@ -92,7 +98,10 @@ describe('ExperimentManager', () => {
     it('starts pending experiment', async () => {
       const { manager, storage } = makeManager();
       await manager.start('exp-1');
-      expect(storage.update).toHaveBeenCalledWith('exp-1', expect.objectContaining({ status: 'running' }));
+      expect(storage.update).toHaveBeenCalledWith(
+        'exp-1',
+        expect.objectContaining({ status: 'running' })
+      );
     });
 
     it('returns running experiment unchanged', async () => {
@@ -115,7 +124,10 @@ describe('ExperimentManager', () => {
       const runningExp = { ...EXPERIMENT, status: 'running' };
       const { manager, storage } = makeManager({ get: vi.fn().mockResolvedValue(runningExp) });
       await manager.stop('exp-1');
-      expect(storage.update).toHaveBeenCalledWith('exp-1', expect.objectContaining({ status: 'completed' }));
+      expect(storage.update).toHaveBeenCalledWith(
+        'exp-1',
+        expect.objectContaining({ status: 'completed' })
+      );
     });
 
     it('returns non-running experiment unchanged', async () => {

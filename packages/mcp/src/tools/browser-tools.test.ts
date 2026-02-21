@@ -51,7 +51,11 @@ function createMockServer() {
   const tools = new Map<string, ToolHandler>();
   return {
     registerTool: vi.fn(
-      (name: string, _opts: { description: string; inputSchema: unknown }, handler: ToolHandler) => {
+      (
+        name: string,
+        _opts: { description: string; inputSchema: unknown },
+        handler: ToolHandler
+      ) => {
         tools.set(name, handler);
       }
     ),

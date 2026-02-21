@@ -213,7 +213,10 @@ export class SubAgentManager {
     return this.storage.getProfile(id);
   }
 
-  async listProfiles(opts?: { limit?: number; offset?: number }): Promise<{ profiles: AgentProfile[]; total: number }> {
+  async listProfiles(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ profiles: AgentProfile[]; total: number }> {
     return this.storage.listProfiles(opts);
   }
 
@@ -302,10 +305,24 @@ export class SubAgentManager {
       // Type dispatch: binary and mcp-bridge are zero-cost; llm is the default agentic loop
       const profileType = (profile as any).type ?? 'llm';
       if (profileType === 'binary') {
-        return await this.executeBinaryDelegation(delegationId, profile, params, startTime, timeoutMs, signal);
+        return await this.executeBinaryDelegation(
+          delegationId,
+          profile,
+          params,
+          startTime,
+          timeoutMs,
+          signal
+        );
       }
       if (profileType === 'mcp-bridge') {
-        return await this.executeMcpBridgeDelegation(delegationId, profile, params, startTime, timeoutMs, signal);
+        return await this.executeMcpBridgeDelegation(
+          delegationId,
+          profile,
+          params,
+          startTime,
+          timeoutMs,
+          signal
+        );
       }
 
       // Resolve model: explicit override > intelligent router > profile default > system default
@@ -352,8 +369,11 @@ export class SubAgentManager {
       const delegationTools = getDelegationTools(depth, maxDepth);
       // Fix: wire MCP tools to the LLM sub-agent (ADR 069)
       const mcpTools: Tool[] = this.deps.mcpClient
-        ? this.deps.mcpClient.getAllTools()
-            .filter((t) => profile.allowedTools.length === 0 || profile.allowedTools.includes(t.name))
+        ? this.deps.mcpClient
+            .getAllTools()
+            .filter(
+              (t) => profile.allowedTools.length === 0 || profile.allowedTools.includes(t.name)
+            )
             .map((t) => ({
               name: t.name,
               description: t.description || undefined,
@@ -499,17 +519,20 @@ export class SubAgentManager {
               } else if (this.deps.mcpClient) {
                 // Attempt to dispatch to MCP tool
                 try {
-                  const mcpToolDef = this.deps.mcpClient.getAllTools().find(t => t.name === toolCall.name);
+                  const mcpToolDef = this.deps.mcpClient
+                    .getAllTools()
+                    .find((t) => t.name === toolCall.name);
                   const mcpResult = await this.deps.mcpClient.callTool(
                     mcpToolDef?.serverId ?? '',
                     toolCall.name,
                     toolCall.arguments ?? {}
                   );
-                  toolContent = typeof mcpResult === 'string'
-                    ? mcpResult
-                    : JSON.stringify(mcpResult);
+                  toolContent =
+                    typeof mcpResult === 'string' ? mcpResult : JSON.stringify(mcpResult);
                 } catch (mcpErr) {
-                  toolContent = JSON.stringify({ error: `MCP tool error: ${mcpErr instanceof Error ? mcpErr.message : String(mcpErr)}` });
+                  toolContent = JSON.stringify({
+                    error: `MCP tool error: ${mcpErr instanceof Error ? mcpErr.message : String(mcpErr)}`,
+                  });
                   isError = true;
                 }
               } else {
@@ -616,17 +639,28 @@ export class SubAgentManager {
     if (!this.deps.securityConfig?.allowBinaryAgents) {
       const err = 'Binary sub-agents are disabled by security policy (allowBinaryAgents: false)';
       await this.storage.updateDelegation(delegationId, {
-        status: 'failed', error: err, completedAt: Date.now(),
-        tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+        status: 'failed',
+        error: err,
+        completedAt: Date.now(),
+        tokensUsedPrompt: 0,
+        tokensUsedCompletion: 0,
       });
-      return { delegationId, profile: profile.name, status: 'failed', result: null, error: err,
-        tokenUsage: { prompt: 0, completion: 0, total: 0 }, durationMs: Date.now() - startTime, subDelegations: [] };
+      return {
+        delegationId,
+        profile: profile.name,
+        status: 'failed',
+        result: null,
+        error: err,
+        tokenUsage: { prompt: 0, completion: 0, total: 0 },
+        durationMs: Date.now() - startTime,
+        subDelegations: [],
+      };
     }
 
     const p = profile as any;
     const command: string = p.command;
     const commandArgs: string[] = p.commandArgs ?? [];
-    const commandEnv: Record<string, string> = { ...process.env as any, ...(p.commandEnv ?? {}) };
+    const commandEnv: Record<string, string> = { ...(process.env as any), ...(p.commandEnv ?? {}) };
 
     const payload = JSON.stringify({
       delegationId,
@@ -658,7 +692,11 @@ export class SubAgentManager {
           child.kill('SIGTERM');
           // Force-kill after 5 s grace if the process ignores SIGTERM
           const forceKill = setTimeout(() => {
-            try { child.kill('SIGKILL'); } catch { /* already exited */ }
+            try {
+              child.kill('SIGKILL');
+            } catch {
+              /* already exited */
+            }
           }, 5000);
           if (forceKill.unref) forceKill.unref();
           reject(new Error(reason));
@@ -675,14 +713,22 @@ export class SubAgentManager {
           clearTimeout(timeoutHandle);
           killChild('Delegation aborted before binary execution');
         } else {
-          signal.addEventListener('abort', () => {
-            clearTimeout(timeoutHandle);
-            killChild('Delegation aborted');
-          }, { once: true });
+          signal.addEventListener(
+            'abort',
+            () => {
+              clearTimeout(timeoutHandle);
+              killChild('Delegation aborted');
+            },
+            { once: true }
+          );
         }
 
-        child.stdout.on('data', (d: Buffer) => { stdout += d.toString(); });
-        child.stderr.on('data', (d: Buffer) => { stderr += d.toString(); });
+        child.stdout.on('data', (d: Buffer) => {
+          stdout += d.toString();
+        });
+        child.stderr.on('data', (d: Buffer) => {
+          stderr += d.toString();
+        });
 
         child.on('error', (err) => {
           clearTimeout(timeoutHandle);
@@ -712,28 +758,46 @@ export class SubAgentManager {
 
       await this.deps.extensionManager?.emit('agent:binary-after-execute', {
         event: 'agent:binary-after-execute',
-        data: { delegationId, profileName: profile.name, result, status: 'completed',
-                durationMs: Date.now() - startTime },
+        data: {
+          delegationId,
+          profileName: profile.name,
+          result,
+          status: 'completed',
+          durationMs: Date.now() - startTime,
+        },
         timestamp: Date.now(),
       });
 
       await this.storage.updateDelegation(delegationId, {
-        status: 'completed', result,
-        tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+        status: 'completed',
+        result,
+        tokensUsedPrompt: 0,
+        tokensUsedCompletion: 0,
         completedAt: Date.now(),
       });
 
       return {
-        delegationId, profile: profile.name, status: 'completed', result, error: null,
+        delegationId,
+        profile: profile.name,
+        status: 'completed',
+        result,
+        error: null,
         tokenUsage: { prompt: 0, completion: 0, total: 0 },
-        durationMs: Date.now() - startTime, subDelegations: [],
+        durationMs: Date.now() - startTime,
+        subDelegations: [],
       };
     } catch (err) {
       const errorMsg = err instanceof Error ? err.message : 'Binary execution failed';
       await this.deps.extensionManager?.emit('agent:binary-after-execute', {
         event: 'agent:binary-after-execute',
-        data: { delegationId, profileName: profile.name, result: null, status: 'failed',
-                durationMs: Date.now() - startTime, error: errorMsg },
+        data: {
+          delegationId,
+          profileName: profile.name,
+          result: null,
+          status: 'failed',
+          durationMs: Date.now() - startTime,
+          error: errorMsg,
+        },
         timestamp: Date.now(),
       });
       throw err;
@@ -755,11 +819,22 @@ export class SubAgentManager {
     if (!this.deps.mcpClient) {
       const err = 'MCP client not available — cannot execute mcp-bridge delegation';
       await this.storage.updateDelegation(delegationId, {
-        status: 'failed', error: err, completedAt: Date.now(),
-        tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+        status: 'failed',
+        error: err,
+        completedAt: Date.now(),
+        tokensUsedPrompt: 0,
+        tokensUsedCompletion: 0,
       });
-      return { delegationId, profile: profile.name, status: 'failed', result: null, error: err,
-        tokenUsage: { prompt: 0, completion: 0, total: 0 }, durationMs: Date.now() - startTime, subDelegations: [] };
+      return {
+        delegationId,
+        profile: profile.name,
+        status: 'failed',
+        result: null,
+        error: err,
+        tokenUsage: { prompt: 0, completion: 0, total: 0 },
+        durationMs: Date.now() - startTime,
+        subDelegations: [],
+      };
     }
 
     const p = profile as any;
@@ -780,31 +855,51 @@ export class SubAgentManager {
         `Check the template for unescaped characters. ` +
         `Template: ${templateStr}`;
       this.deps.logger.warn('MCP bridge template interpolation failed', {
-        mcpTool, template: templateStr, interpolated, error: String(parseErr),
+        mcpTool,
+        template: templateStr,
+        interpolated,
+        error: String(parseErr),
       });
       await this.storage.updateDelegation(delegationId, {
-        status: 'failed', error: err, completedAt: Date.now(),
-        tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+        status: 'failed',
+        error: err,
+        completedAt: Date.now(),
+        tokensUsedPrompt: 0,
+        tokensUsedCompletion: 0,
       });
       return {
-        delegationId, profile: profile.name, status: 'failed', result: null, error: err,
+        delegationId,
+        profile: profile.name,
+        status: 'failed',
+        result: null,
+        error: err,
         tokenUsage: { prompt: 0, completion: 0, total: 0 },
-        durationMs: Date.now() - startTime, subDelegations: [],
+        durationMs: Date.now() - startTime,
+        subDelegations: [],
       };
     }
 
-    const mcpBridgeToolDef = this.deps.mcpClient.getAllTools().find(t => t.name === mcpTool);
+    const mcpBridgeToolDef = this.deps.mcpClient.getAllTools().find((t) => t.name === mcpTool);
     if (!mcpBridgeToolDef) {
-      const err = `MCP tool "${mcpTool}" not found in any connected server — ` +
+      const err =
+        `MCP tool "${mcpTool}" not found in any connected server — ` +
         `ensure the MCP server is running and the tool name is correct`;
       await this.storage.updateDelegation(delegationId, {
-        status: 'failed', error: err, completedAt: Date.now(),
-        tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+        status: 'failed',
+        error: err,
+        completedAt: Date.now(),
+        tokensUsedPrompt: 0,
+        tokensUsedCompletion: 0,
       });
       return {
-        delegationId, profile: profile.name, status: 'failed', result: null, error: err,
+        delegationId,
+        profile: profile.name,
+        status: 'failed',
+        result: null,
+        error: err,
         tokenUsage: { prompt: 0, completion: 0, total: 0 },
-        durationMs: Date.now() - startTime, subDelegations: [],
+        durationMs: Date.now() - startTime,
+        subDelegations: [],
       };
     }
 
@@ -829,21 +924,34 @@ export class SubAgentManager {
 
     await this.deps.extensionManager?.emit('agent:mcp-bridge-after-execute', {
       event: 'agent:mcp-bridge-after-execute',
-      data: { delegationId, profileName: profile.name, mcpTool, result, status: 'completed',
-              durationMs: Date.now() - startTime },
+      data: {
+        delegationId,
+        profileName: profile.name,
+        mcpTool,
+        result,
+        status: 'completed',
+        durationMs: Date.now() - startTime,
+      },
       timestamp: Date.now(),
     });
 
     await this.storage.updateDelegation(delegationId, {
-      status: 'completed', result,
-      tokensUsedPrompt: 0, tokensUsedCompletion: 0,
+      status: 'completed',
+      result,
+      tokensUsedPrompt: 0,
+      tokensUsedCompletion: 0,
       completedAt: Date.now(),
     });
 
     return {
-      delegationId, profile: profile.name, status: 'completed', result, error: null,
+      delegationId,
+      profile: profile.name,
+      status: 'completed',
+      result,
+      error: null,
       tokenUsage: { prompt: 0, completion: 0, total: 0 },
-      durationMs: Date.now() - startTime, subDelegations: [],
+      durationMs: Date.now() - startTime,
+      subDelegations: [],
     };
   }
 

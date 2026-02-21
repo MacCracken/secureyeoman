@@ -8,7 +8,10 @@ const EXPERIMENT = {
   name: 'Button Color Test',
   description: 'Test button color',
   status: 'pending',
-  variants: [{ id: 'v1', name: 'control' }, { id: 'v2', name: 'variant' }],
+  variants: [
+    { id: 'v1', name: 'control' },
+    { id: 'v2', name: 'variant' },
+  ],
 };
 
 function makeMockManager(overrides?: Partial<ExperimentManager>): ExperimentManager {

@@ -7,16 +7,25 @@ import { createHmac } from 'crypto';
 // ─── Helpers ──────────────────────────────────────────────────
 
 const mockLogger = {
-  info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
   child: vi.fn().mockReturnThis(),
 };
 
 function makeConfig(overrides: Record<string, unknown> = {}): IntegrationConfig {
   return {
-    id: 'line-test-1', platform: 'line', displayName: 'Line Test',
-    enabled: true, status: 'disconnected', messageCount: 0,
-    createdAt: Date.now(), updatedAt: Date.now(),
+    id: 'line-test-1',
+    platform: 'line',
+    displayName: 'Line Test',
+    enabled: true,
+    status: 'disconnected',
+    messageCount: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     config: { channelSecret: 'secret123', channelAccessToken: 'token456', ...overrides },
   } as IntegrationConfig;
 }
@@ -46,7 +55,8 @@ describe('LineIntegration', () => {
     vi.clearAllMocks();
     adapter = new LineIntegration();
     mockFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       text: vi.fn().mockResolvedValue(''),
       json: vi.fn().mockResolvedValue({ userId: 'bot-123', displayName: 'MyBot' }),
     });
@@ -196,7 +206,11 @@ describe('LineIntegration', () => {
 
       const payload = JSON.stringify({
         destination: 'bot-1',
-        events: [makeWebhookEvent('message', { message: { id: 'm1', type: 'sticker', packageId: 'p1', stickerId: 's1' } })],
+        events: [
+          makeWebhookEvent('message', {
+            message: { id: 'm1', type: 'sticker', packageId: 'p1', stickerId: 's1' },
+          }),
+        ],
       });
       await adapter.handleWebhook(payload, '');
 
@@ -251,9 +265,11 @@ describe('LineIntegration', () => {
 
       const payload = JSON.stringify({
         destination: 'bot-1',
-        events: [makeWebhookEvent('message', {
-          source: { type: 'group', userId: 'U123', groupId: 'G456' },
-        })],
+        events: [
+          makeWebhookEvent('message', {
+            source: { type: 'group', userId: 'U123', groupId: 'G456' },
+          }),
+        ],
       });
       await adapter.handleWebhook(payload, '');
 

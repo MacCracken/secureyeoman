@@ -92,7 +92,9 @@ export class SlackIntegration implements Integration {
                 mimeType: att.mimeType,
               });
               unified.text = `[Image: ${result.description}]\n${unified.text}`;
-            } catch { /* non-fatal */ }
+            } catch {
+              /* non-fatal */
+            }
           }
         }
       }
@@ -220,8 +222,7 @@ export class SlackIntegration implements Integration {
     this.app.view('friday_modal', async ({ ack, view, body }) => {
       await ack();
 
-      const taskText =
-        (view.state.values as any)?.task_block?.task_input?.value ?? '';
+      const taskText = (view.state.values as any)?.task_block?.task_input?.value ?? '';
       const user = (body as any).user as Record<string, any>;
 
       const unified: UnifiedMessage = {

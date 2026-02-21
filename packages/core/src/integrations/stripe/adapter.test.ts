@@ -386,8 +386,7 @@ describe('StripeIntegration', () => {
     it('should return ok=true with account name when API responds successfully', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () =>
-          Promise.resolve({ id: 'acct_1', business_profile: { name: 'My Business' } }),
+        json: () => Promise.resolve({ id: 'acct_1', business_profile: { name: 'My Business' } }),
       });
       vi.stubGlobal('fetch', mockFetch);
 

@@ -88,12 +88,12 @@ export class IntegrationManager {
 
   /** Inject multimodalManager after construction (avoids init-order issues). */
   setMultimodalManager(mm: IntegrationDeps['multimodalManager']): void {
-    (this.deps).multimodalManager = mm;
+    this.deps.multimodalManager = mm;
   }
 
   /** Inject oauthTokenService after construction (avoids init-order issues). */
   setOAuthTokenService(svc: IntegrationDeps['oauthTokenService']): void {
-    (this.deps).oauthTokenService = svc;
+    this.deps.oauthTokenService = svc;
   }
 
   /** Inject outbound webhook dispatcher after construction (avoids init-order issues). */

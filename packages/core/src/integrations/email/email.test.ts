@@ -37,7 +37,6 @@ vi.mock('nodemailer', () => {
   };
 });
 
- 
 const { __mockSendMail: mockSendMail } = (await import('nodemailer')) as any;
 
 // ── Helpers ───────────────────────────────────────────────────

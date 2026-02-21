@@ -206,7 +206,10 @@ export class SubAgentStorage extends PgBaseStorage {
     return row ? profileFromRow(row) : null;
   }
 
-  async listProfiles(opts?: { limit?: number; offset?: number }): Promise<{ profiles: AgentProfile[]; total: number }> {
+  async listProfiles(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ profiles: AgentProfile[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 
@@ -285,12 +288,30 @@ export class SubAgentStorage extends PgBaseStorage {
       values.push(data.defaultModel);
     }
     const d = data as any;
-    if (d.type !== undefined) { updates.push(`type = $${paramIdx++}`); values.push(d.type); }
-    if (d.command !== undefined) { updates.push(`command = $${paramIdx++}`); values.push(d.command); }
-    if (d.commandArgs !== undefined) { updates.push(`command_args = $${paramIdx++}::jsonb`); values.push(JSON.stringify(d.commandArgs)); }
-    if (d.commandEnv !== undefined) { updates.push(`command_env = $${paramIdx++}::jsonb`); values.push(JSON.stringify(d.commandEnv)); }
-    if (d.mcpTool !== undefined) { updates.push(`mcp_tool = $${paramIdx++}`); values.push(d.mcpTool); }
-    if (d.mcpToolInput !== undefined) { updates.push(`mcp_tool_input = $${paramIdx++}`); values.push(d.mcpToolInput); }
+    if (d.type !== undefined) {
+      updates.push(`type = $${paramIdx++}`);
+      values.push(d.type);
+    }
+    if (d.command !== undefined) {
+      updates.push(`command = $${paramIdx++}`);
+      values.push(d.command);
+    }
+    if (d.commandArgs !== undefined) {
+      updates.push(`command_args = $${paramIdx++}::jsonb`);
+      values.push(JSON.stringify(d.commandArgs));
+    }
+    if (d.commandEnv !== undefined) {
+      updates.push(`command_env = $${paramIdx++}::jsonb`);
+      values.push(JSON.stringify(d.commandEnv));
+    }
+    if (d.mcpTool !== undefined) {
+      updates.push(`mcp_tool = $${paramIdx++}`);
+      values.push(d.mcpTool);
+    }
+    if (d.mcpToolInput !== undefined) {
+      updates.push(`mcp_tool_input = $${paramIdx++}`);
+      values.push(d.mcpToolInput);
+    }
 
     if (updates.length === 0) return existing;
 

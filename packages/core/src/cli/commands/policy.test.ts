@@ -87,7 +87,11 @@ describe('policy command', () => {
     });
     vi.stubGlobal('fetch', fetchSpy);
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await policyCommand.run({ argv: ['set', 'allowDynamicTools', 'true'], stdout, stderr });
+    const code = await policyCommand.run({
+      argv: ['set', 'allowDynamicTools', 'true'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const call = fetchSpy.mock.calls[0] as [string, RequestInit];
     expect(call[1].body).toBe(JSON.stringify({ allowDynamicTools: true }));
@@ -135,9 +139,11 @@ describe('policy command', () => {
     });
     vi.stubGlobal('fetch', fetchSpy);
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await policyCommand.run(
-      { argv: ['dynamic-tools', 'sandbox', 'enable'], stdout, stderr }
-    );
+    const code = await policyCommand.run({
+      argv: ['dynamic-tools', 'sandbox', 'enable'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const call = fetchSpy.mock.calls[0] as [string, RequestInit];
     expect(call[1].body).toBe(JSON.stringify({ sandboxDynamicTools: true }));
@@ -145,7 +151,8 @@ describe('policy command', () => {
   });
 
   it('dynamic-tools personality enable calls PATCH personality endpoint with allowDynamicTools:true', async () => {
-    const fetchSpy = vi.fn()
+    const fetchSpy = vi
+      .fn()
       // First call: GET personality
       .mockResolvedValueOnce({
         ok: true,
@@ -172,9 +179,11 @@ describe('policy command', () => {
       });
     vi.stubGlobal('fetch', fetchSpy);
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await policyCommand.run(
-      { argv: ['dynamic-tools', 'personality', 'enable', '--personality-id', 'p1'], stdout, stderr }
-    );
+    const code = await policyCommand.run({
+      argv: ['dynamic-tools', 'personality', 'enable', '--personality-id', 'p1'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     expect(fetchSpy).toHaveBeenCalledTimes(2);
     const putCall = fetchSpy.mock.calls[1] as [string, RequestInit];

@@ -88,7 +88,10 @@ describe('SwarmStorage', () => {
     it('returns templates with total', async () => {
       mockQuery
         .mockResolvedValueOnce({ rows: [{ count: '2' }], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [templateRow, { ...templateRow, id: 'tmpl-2' }], rowCount: 2 });
+        .mockResolvedValueOnce({
+          rows: [templateRow, { ...templateRow, id: 'tmpl-2' }],
+          rowCount: 2,
+        });
       const result = await storage.listTemplates();
       expect(result.total).toBe(2);
       expect(result.templates).toHaveLength(2);
@@ -145,7 +148,16 @@ describe('SwarmStorage', () => {
       mockQuery.mockResolvedValueOnce({ rows: [runRow], rowCount: 1 });
       const result = await storage.createRun(
         { task: 'Analyze the market' },
-        { id: 'tmpl-1', name: 'Research Team', description: '', strategy: 'parallel', roles: [], coordinatorProfile: null, isBuiltin: false, createdAt: Date.now() }
+        {
+          id: 'tmpl-1',
+          name: 'Research Team',
+          description: '',
+          strategy: 'parallel',
+          roles: [],
+          coordinatorProfile: null,
+          isBuiltin: false,
+          createdAt: Date.now(),
+        }
       );
       expect(result.id).toBe('run-1');
       expect(result.status).toBe('pending');
@@ -155,7 +167,16 @@ describe('SwarmStorage', () => {
       mockQuery.mockResolvedValueOnce({ rows: [runRow], rowCount: 1 });
       await storage.createRun(
         { task: 'Task', tokenBudget: 100000, initiatedBy: 'user1', context: 'ctx' },
-        { id: 'tmpl-1', name: 'Team', description: '', strategy: 'sequential', roles: [], coordinatorProfile: null, isBuiltin: false, createdAt: Date.now() }
+        {
+          id: 'tmpl-1',
+          name: 'Team',
+          description: '',
+          strategy: 'sequential',
+          roles: [],
+          coordinatorProfile: null,
+          isBuiltin: false,
+          createdAt: Date.now(),
+        }
       );
       expect(mockQuery).toHaveBeenCalledOnce();
     });

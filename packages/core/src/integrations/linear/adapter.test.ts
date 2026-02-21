@@ -7,16 +7,25 @@ import { createHmac } from 'crypto';
 // ─── Helpers ──────────────────────────────────────────────────
 
 const mockLogger = {
-  info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
   child: vi.fn().mockReturnThis(),
 };
 
 function makeConfig(configOverrides: Record<string, unknown> = {}): IntegrationConfig {
   return {
-    id: 'linear-test-1', platform: 'linear', displayName: 'Linear Test',
-    enabled: true, status: 'disconnected', messageCount: 0,
-    createdAt: Date.now(), updatedAt: Date.now(),
+    id: 'linear-test-1',
+    platform: 'linear',
+    displayName: 'Linear Test',
+    enabled: true,
+    status: 'disconnected',
+    messageCount: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     config: { apiKey: 'lin_api_key_abc', teamId: 'team-123', ...configOverrides },
   } as IntegrationConfig;
 }
@@ -30,8 +39,11 @@ function makeWebhookPayload(overrides: Record<string, unknown> = {}): string {
     action: 'create',
     type: 'Issue',
     data: {
-      id: 'issue-abc', title: 'Test Issue', identifier: 'ENG-42',
-      state: { name: 'In Progress' }, assignee: { name: 'Alice' },
+      id: 'issue-abc',
+      title: 'Test Issue',
+      identifier: 'ENG-42',
+      state: { name: 'In Progress' },
+      assignee: { name: 'Alice' },
     },
     createdAt: '2024-01-01T12:00:00Z',
     organizationId: 'org-1',
@@ -50,7 +62,9 @@ describe('LinearIntegration', () => {
     adapter = new LinearIntegration();
     mockFetch = vi.fn().mockResolvedValue({
       ok: true,
-      json: vi.fn().mockResolvedValue({ data: { issueCreate: { issue: { identifier: 'ENG-99', id: 'abc' } } } }),
+      json: vi.fn().mockResolvedValue({
+        data: { issueCreate: { issue: { identifier: 'ENG-99', id: 'abc' } } },
+      }),
     });
     vi.stubGlobal('fetch', mockFetch);
   });

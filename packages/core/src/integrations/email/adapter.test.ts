@@ -119,7 +119,11 @@ describe('EmailIntegration – adapter.ts', () => {
 
   afterEach(async () => {
     // Ensure timer is cleared
-    try { await adapter.stop(); } catch { /* ignore */ }
+    try {
+      await adapter.stop();
+    } catch {
+      /* ignore */
+    }
     vi.useRealTimers();
   });
 
@@ -145,27 +149,27 @@ describe('EmailIntegration – adapter.ts', () => {
     });
 
     it('throws when imapHost is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ imapHost: '' }), makeDeps())
-      ).rejects.toThrow('Email integration requires imapHost, smtpHost, username, and password');
+      await expect(adapter.init(makeConfig({ imapHost: '' }), makeDeps())).rejects.toThrow(
+        'Email integration requires imapHost, smtpHost, username, and password'
+      );
     });
 
     it('throws when smtpHost is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ smtpHost: '' }), makeDeps())
-      ).rejects.toThrow('Email integration requires imapHost, smtpHost, username, and password');
+      await expect(adapter.init(makeConfig({ smtpHost: '' }), makeDeps())).rejects.toThrow(
+        'Email integration requires imapHost, smtpHost, username, and password'
+      );
     });
 
     it('throws when username is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ username: '' }), makeDeps())
-      ).rejects.toThrow('Email integration requires imapHost, smtpHost, username, and password');
+      await expect(adapter.init(makeConfig({ username: '' }), makeDeps())).rejects.toThrow(
+        'Email integration requires imapHost, smtpHost, username, and password'
+      );
     });
 
     it('throws when password is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ password: '' }), makeDeps())
-      ).rejects.toThrow('Email integration requires imapHost, smtpHost, username, and password');
+      await expect(adapter.init(makeConfig({ password: '' }), makeDeps())).rejects.toThrow(
+        'Email integration requires imapHost, smtpHost, username, and password'
+      );
     });
 
     it('creates ImapFlow with correct auth options', async () => {

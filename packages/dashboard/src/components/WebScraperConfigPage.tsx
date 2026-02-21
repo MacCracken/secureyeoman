@@ -1,14 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Globe,
-  Plus,
-  Trash2,
-  Loader2,
-  Shield,
-  Gauge,
-  Save,
-} from 'lucide-react';
+import { Globe, Plus, Trash2, Loader2, Shield, Gauge, Save } from 'lucide-react';
 import { fetchMcpConfig, updateMcpConfig } from '../api/client';
 
 export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) {
@@ -103,9 +95,21 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
 
       {/* Feature Toggles */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-4">
-        <StatCard label="Web Scraping" value={mcpConfig?.exposeWebScraping ? 'Enabled' : 'Disabled'} color={mcpConfig?.exposeWebScraping ? 'text-green-500' : 'text-muted-foreground'} />
-        <StatCard label="Web Search" value={mcpConfig?.exposeWebSearch ? 'Enabled' : 'Disabled'} color={mcpConfig?.exposeWebSearch ? 'text-green-500' : 'text-muted-foreground'} />
-        <StatCard label="Proxy" value={proxyEnabled ? 'Enabled' : 'Disabled'} color={proxyEnabled ? 'text-green-500' : 'text-muted-foreground'} />
+        <StatCard
+          label="Web Scraping"
+          value={mcpConfig?.exposeWebScraping ? 'Enabled' : 'Disabled'}
+          color={mcpConfig?.exposeWebScraping ? 'text-green-500' : 'text-muted-foreground'}
+        />
+        <StatCard
+          label="Web Search"
+          value={mcpConfig?.exposeWebSearch ? 'Enabled' : 'Disabled'}
+          color={mcpConfig?.exposeWebSearch ? 'text-green-500' : 'text-muted-foreground'}
+        />
+        <StatCard
+          label="Proxy"
+          value={proxyEnabled ? 'Enabled' : 'Disabled'}
+          color={proxyEnabled ? 'text-green-500' : 'text-muted-foreground'}
+        />
       </div>
 
       {/* URL Allowlist */}
@@ -122,10 +126,14 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
             <input
               type="text"
               value={newUrl}
-              onChange={(e) => { setNewUrl(e.target.value); }}
+              onChange={(e) => {
+                setNewUrl(e.target.value);
+              }}
               placeholder="https://example.com/*"
               className="flex-1 bg-card border border-border rounded-lg text-sm py-1.5 px-3"
-              onKeyDown={(e) => { if (e.key === 'Enter') handleAddUrl(); }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleAddUrl();
+              }}
             />
             <button
               className="btn-ghost text-xs px-3 py-1.5 flex items-center gap-1 w-full sm:w-auto"
@@ -142,11 +150,16 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
           ) : (
             <div className="space-y-1">
               {allowedUrls.map((url) => (
-                <div key={url} className="flex items-center justify-between bg-muted/30 rounded px-3 py-1.5 text-sm">
+                <div
+                  key={url}
+                  className="flex items-center justify-between bg-muted/30 rounded px-3 py-1.5 text-sm"
+                >
                   <span className="font-mono text-xs truncate">{url}</span>
                   <button
                     className="btn-ghost text-xs p-1 text-destructive hover:bg-destructive/10"
-                    onClick={() => { handleRemoveUrl(url); }}
+                    onClick={() => {
+                      handleRemoveUrl(url);
+                    }}
                     disabled={saveMutation.isPending}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -168,7 +181,9 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
           </div>
           <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Requests per minute</label>
+              <label className="text-xs text-muted-foreground block mb-1">
+                Requests per minute
+              </label>
               <input
                 type="number"
                 min={1}
@@ -207,7 +222,9 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
               </select>
             </div>
             <div>
-              <label className="text-xs text-muted-foreground block mb-1">Default Country (ISO)</label>
+              <label className="text-xs text-muted-foreground block mb-1">
+                Default Country (ISO)
+              </label>
               <input
                 type="text"
                 maxLength={2}
@@ -226,7 +243,10 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
                 <label className="text-xs text-muted-foreground block mb-1">Active Providers</label>
                 <div className="flex flex-wrap gap-1">
                   {proxyProviders.map((p) => (
-                    <span key={p} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
+                    <span
+                      key={p}
+                      className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded"
+                    >
                       {p}
                     </span>
                   ))}
@@ -254,7 +274,15 @@ export function WebScraperConfigPage({ embedded }: { embedded?: boolean } = {}) 
   );
 }
 
-function StatCard({ label, value, color }: { label: string; value: string | number; color?: string }) {
+function StatCard({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string | number;
+  color?: string;
+}) {
   return (
     <div className="card p-3 sm:p-4">
       <p className="text-xs text-muted-foreground">{label}</p>

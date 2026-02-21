@@ -297,8 +297,6 @@ describe('SecurityPage — System Details tab', () => {
 
     fireEvent.click(screen.getByText('System'));
 
-    expect(
-      await screen.findByText('Status for each system component')
-    ).toBeInTheDocument();
+    expect(await screen.findByText('Status for each system component')).toBeInTheDocument();
   });
 });

@@ -36,7 +36,9 @@ describe('cert-gen', () => {
     });
 
     it('returns false when openssl CLI is not found', () => {
-      mockExecFileSync.mockImplementationOnce(() => { throw new Error('not found'); });
+      mockExecFileSync.mockImplementationOnce(() => {
+        throw new Error('not found');
+      });
       expect(isOpenSSLAvailable()).toBe(false);
     });
   });

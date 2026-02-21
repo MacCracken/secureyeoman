@@ -254,7 +254,9 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
                     run={run}
                     onCancel={
                       run.status === 'running' || run.status === 'pending'
-                        ? () => { cancelMut.mutate(run.id); }
+                        ? () => {
+                            cancelMut.mutate(run.id);
+                          }
                         : undefined
                     }
                   />
@@ -280,9 +282,7 @@ function TemplateCard({
   onLaunch: () => void;
 }) {
   return (
-    <div
-      className={`card p-4 transition-colors ${isSelected ? 'ring-2 ring-primary' : ''}`}
-    >
+    <div className={`card p-4 transition-colors ${isSelected ? 'ring-2 ring-primary' : ''}`}>
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
           <span className="text-sm font-semibold">{template.name}</span>
@@ -307,9 +307,7 @@ function TemplateCard({
       <div className="flex items-center gap-1 flex-wrap">
         {template.roles.map((role, i) => (
           <span key={`${role.role}-${i}`} className="flex items-center gap-1">
-            <span className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">
-              {role.role}
-            </span>
+            <span className="text-xs bg-muted px-1.5 py-0.5 rounded font-mono">{role.role}</span>
             {i < template.roles.length - 1 && (
               <ChevronRight className="w-3 h-3 text-muted-foreground" />
             )}
@@ -380,10 +378,7 @@ function RunDetail({ run, onCancel }: { run: SwarmRun; onCancel?: () => void }) 
       )}
 
       {onCancel && (
-        <button
-          onClick={onCancel}
-          className="text-xs text-destructive hover:underline"
-        >
+        <button onClick={onCancel} className="text-xs text-destructive hover:underline">
           Cancel run
         </button>
       )}

@@ -56,20 +56,17 @@ export async function runMigrations(): Promise<void> {
       }
 
       for (const { id, sql } of migrations) {
-        const existing = await client.query(
-          'SELECT id FROM schema_migrations WHERE id = $1',
-          [id]
-        );
+        const existing = await client.query('SELECT id FROM schema_migrations WHERE id = $1', [id]);
         if (existing.rows.length > 0) {
           continue;
         }
 
         await client.query(sql);
 
-        await client.query(
-          'INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)',
-          [id, Date.now()]
-        );
+        await client.query('INSERT INTO schema_migrations (id, applied_at) VALUES ($1, $2)', [
+          id,
+          Date.now(),
+        ]);
       }
     } finally {
       await client.query(`SELECT pg_advisory_unlock(hashtext('secureyeoman_migrations'))`);

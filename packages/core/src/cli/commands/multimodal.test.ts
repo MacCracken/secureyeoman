@@ -153,7 +153,9 @@ describe('multimodal command', () => {
         ok: true,
         status: 200,
         headers: { get: () => 'application/json' },
-        json: async () => [{ id: 'job-1', type: 'tts', status: 'completed', created_at: '2026-02-18T10:00:00Z' }],
+        json: async () => [
+          { id: 'job-1', type: 'tts', status: 'completed', created_at: '2026-02-18T10:00:00Z' },
+        ],
       })
     );
 

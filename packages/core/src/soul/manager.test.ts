@@ -2,20 +2,76 @@ import { describe, it, expect, vi } from 'vitest';
 import { SoulManager } from './manager.js';
 
 const makeLogger = () => ({
-  info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  trace: vi.fn(), fatal: vi.fn(), child: vi.fn().mockReturnThis(), level: 'info',
+  info: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info',
 });
 
 const PERSONALITY = {
-  id: 'p-1', name: 'FRIDAY', description: 'Test personality', systemPrompt: 'You are FRIDAY.',
-  traits: { formality: 'balanced' }, sex: 'unspecified', voice: '', preferredLanguage: '',
-  isActive: false, includeArchetypes: true, defaultModel: null, modelFallbacks: [],
-  body: { enabled: false, capabilities: [], heartEnabled: true, creationConfig: {}, selectedServers: [], selectedIntegrations: [], mcpFeatures: { exposeGit: false, exposeFilesystem: false, exposeWeb: false, exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false }, proactiveConfig: { enabled: false, approvalMode: 'suggest', builtins: {}, learning: { enabled: true, minConfidence: 0.7 } } },
-  createdAt: 1000, updatedAt: 1000,
+  id: 'p-1',
+  name: 'FRIDAY',
+  description: 'Test personality',
+  systemPrompt: 'You are FRIDAY.',
+  traits: { formality: 'balanced' },
+  sex: 'unspecified',
+  voice: '',
+  preferredLanguage: '',
+  isActive: false,
+  includeArchetypes: true,
+  defaultModel: null,
+  modelFallbacks: [],
+  body: {
+    enabled: false,
+    capabilities: [],
+    heartEnabled: true,
+    creationConfig: {},
+    selectedServers: [],
+    selectedIntegrations: [],
+    mcpFeatures: {
+      exposeGit: false,
+      exposeFilesystem: false,
+      exposeWeb: false,
+      exposeWebScraping: false,
+      exposeWebSearch: false,
+      exposeBrowser: false,
+    },
+    proactiveConfig: {
+      enabled: false,
+      approvalMode: 'suggest',
+      builtins: {},
+      learning: { enabled: true, minConfidence: 0.7 },
+    },
+  },
+  createdAt: 1000,
+  updatedAt: 1000,
 };
 
-const SKILL = { id: 'skill-1', name: 'Test Skill', description: 'A test', status: 'active', enabled: true, source: 'user', triggerPatterns: [], tools: [], personalityId: null, createdAt: 1000, updatedAt: 1000 };
-const USER = { id: 'user-1', name: 'Alice', isOwner: false, preferences: {}, createdAt: 1000, updatedAt: 1000 };
+const SKILL = {
+  id: 'skill-1',
+  name: 'Test Skill',
+  description: 'A test',
+  status: 'active',
+  enabled: true,
+  source: 'user',
+  triggerPatterns: [],
+  tools: [],
+  personalityId: null,
+  createdAt: 1000,
+  updatedAt: 1000,
+};
+const USER = {
+  id: 'user-1',
+  name: 'Alice',
+  isOwner: false,
+  preferences: {},
+  createdAt: 1000,
+  updatedAt: 1000,
+};
 
 function makeStorage(overrides: any = {}) {
   return {
@@ -60,7 +116,12 @@ function makeConfig(overrides: any = {}) {
   };
 }
 
-function makeManager(storageOverrides: any = {}, configOverrides: any = {}, brain?: any, spirit?: any) {
+function makeManager(
+  storageOverrides: any = {},
+  configOverrides: any = {},
+  brain?: any,
+  spirit?: any
+) {
   const storage = makeStorage(storageOverrides);
   const logger = makeLogger();
   const config = makeConfig(configOverrides);
@@ -159,14 +220,20 @@ describe('SoulManager', () => {
     });
 
     it('deletePersonality deletes non-active personality', async () => {
-      const { manager, storage } = makeManager({ getPersonality: vi.fn().mockResolvedValue({ ...PERSONALITY, isActive: false }) });
+      const { manager, storage } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue({ ...PERSONALITY, isActive: false }),
+      });
       await manager.deletePersonality('p-1');
       expect(storage.deletePersonality).toHaveBeenCalledWith('p-1');
     });
 
     it('deletePersonality throws when personality is active', async () => {
-      const { manager } = makeManager({ getPersonality: vi.fn().mockResolvedValue({ ...PERSONALITY, isActive: true }) });
-      await expect(manager.deletePersonality('p-1')).rejects.toThrow('Cannot delete the active personality');
+      const { manager } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue({ ...PERSONALITY, isActive: true }),
+      });
+      await expect(manager.deletePersonality('p-1')).rejects.toThrow(
+        'Cannot delete the active personality'
+      );
     });
 
     it('listPersonalities delegates to storage', async () => {
@@ -178,8 +245,13 @@ describe('SoulManager', () => {
 
   describe('skill operations (without brain)', () => {
     it('createSkill throws when max limit reached', async () => {
-      const { manager } = makeManager({ getSkillCount: vi.fn().mockResolvedValue(100) }, { maxSkills: 100 });
-      await expect(manager.createSkill({ name: 'New' } as any)).rejects.toThrow('Maximum skill limit reached');
+      const { manager } = makeManager(
+        { getSkillCount: vi.fn().mockResolvedValue(100) },
+        { maxSkills: 100 }
+      );
+      await expect(manager.createSkill({ name: 'New' } as any)).rejects.toThrow(
+        'Maximum skill limit reached'
+      );
     });
 
     it('createSkill creates skill when under limit', async () => {
@@ -224,12 +296,16 @@ describe('SoulManager', () => {
     });
 
     it('approveSkill throws when not pending', async () => {
-      const { manager } = makeManager({ getSkill: vi.fn().mockResolvedValue({ ...SKILL, status: 'active' }) });
+      const { manager } = makeManager({
+        getSkill: vi.fn().mockResolvedValue({ ...SKILL, status: 'active' }),
+      });
       await expect(manager.approveSkill('skill-1')).rejects.toThrow('not pending approval');
     });
 
     it('approveSkill sets status to active', async () => {
-      const { manager, storage } = makeManager({ getSkill: vi.fn().mockResolvedValue({ ...SKILL, status: 'pending_approval' }) });
+      const { manager, storage } = makeManager({
+        getSkill: vi.fn().mockResolvedValue({ ...SKILL, status: 'pending_approval' }),
+      });
       await manager.approveSkill('skill-1');
       expect(storage.updateSkill).toHaveBeenCalledWith('skill-1', { status: 'active' });
     });
@@ -240,14 +316,18 @@ describe('SoulManager', () => {
     });
 
     it('rejectSkill deletes pending skill', async () => {
-      const { manager, storage } = makeManager({ getSkill: vi.fn().mockResolvedValue({ ...SKILL, status: 'pending_approval' }) });
+      const { manager, storage } = makeManager({
+        getSkill: vi.fn().mockResolvedValue({ ...SKILL, status: 'pending_approval' }),
+      });
       await manager.rejectSkill('skill-1');
       expect(storage.deleteSkill).toHaveBeenCalledWith('skill-1');
     });
 
     it('listSkills includes personality name when personalityId set', async () => {
       const skillWithPersonality = { ...SKILL, personalityId: 'p-1' };
-      const { manager } = makeManager({ listSkills: vi.fn().mockResolvedValue({ skills: [skillWithPersonality], total: 1 }) });
+      const { manager } = makeManager({
+        listSkills: vi.fn().mockResolvedValue({ skills: [skillWithPersonality], total: 1 }),
+      });
       const result = await manager.listSkills();
       expect(result.skills[0].personalityName).toBe('FRIDAY');
     });
@@ -354,7 +434,9 @@ describe('SoulManager', () => {
   describe('learning', () => {
     it('proposeSkill throws when ai_proposed not in learningMode', async () => {
       const { manager } = makeManager({}, { learningMode: [] });
-      await expect(manager.proposeSkill({ name: 'New' } as any)).rejects.toThrow('AI-proposed learning mode is not enabled');
+      await expect(manager.proposeSkill({ name: 'New' } as any)).rejects.toThrow(
+        'AI-proposed learning mode is not enabled'
+      );
     });
 
     it('proposeSkill creates skill with pending_approval', async () => {
@@ -367,7 +449,9 @@ describe('SoulManager', () => {
 
     it('learnSkill throws when autonomous not in learningMode', async () => {
       const { manager } = makeManager({}, { learningMode: [] });
-      await expect(manager.learnSkill({ name: 'New' } as any)).rejects.toThrow('Autonomous learning mode is not enabled');
+      await expect(manager.learnSkill({ name: 'New' } as any)).rejects.toThrow(
+        'Autonomous learning mode is not enabled'
+      );
     });
 
     it('learnSkill creates active skill', async () => {
@@ -406,14 +490,23 @@ describe('SoulManager', () => {
 
     it('excludes archetypes when includeArchetypes=false', async () => {
       const noArchetypePersonality = { ...PERSONALITY, includeArchetypes: false };
-      const { manager } = makeManager({ getActivePersonality: vi.fn().mockResolvedValue(noArchetypePersonality) });
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(noArchetypePersonality),
+      });
       const prompt = await manager.composeSoulPrompt();
       // Should still contain soul section but not archetypes
       expect(prompt).toContain('FRIDAY');
     });
 
     it('includes user context when owner exists', async () => {
-      const owner = { ...USER, isOwner: true, name: 'Alice', nickname: 'Ali', notes: 'VIP', preferences: { theme: 'dark' } };
+      const owner = {
+        ...USER,
+        isOwner: true,
+        name: 'Alice',
+        nickname: 'Ali',
+        notes: 'VIP',
+        preferences: { theme: 'dark' },
+      };
       const { manager } = makeManager({ getOwner: vi.fn().mockResolvedValue(owner) });
       const prompt = await manager.composeSoulPrompt();
       expect(prompt).toContain('Alice');
@@ -422,28 +515,47 @@ describe('SoulManager', () => {
     });
 
     it('injects brain context when brain available and input provided', async () => {
-      const brain = { getRelevantContext: vi.fn().mockResolvedValue('## Brain\nsome memory'), getActiveSkills: vi.fn().mockResolvedValue([]) };
+      const brain = {
+        getRelevantContext: vi.fn().mockResolvedValue('## Brain\nsome memory'),
+        getActiveSkills: vi.fn().mockResolvedValue([]),
+      };
       const { manager } = makeManager({}, {}, brain);
       const prompt = await manager.composeSoulPrompt('hello world');
       expect(prompt).toContain('some memory');
     });
 
     it('expands skills that match trigger patterns', async () => {
-      const triggerSkill = { ...SKILL, name: 'Code Review', triggerPatterns: ['code'], instructions: 'Review the code carefully.' };
-      const { manager } = makeManager({ getEnabledSkills: vi.fn().mockResolvedValue([triggerSkill]) });
+      const triggerSkill = {
+        ...SKILL,
+        name: 'Code Review',
+        triggerPatterns: ['code'],
+        instructions: 'Review the code carefully.',
+      };
+      const { manager } = makeManager({
+        getEnabledSkills: vi.fn().mockResolvedValue([triggerSkill]),
+      });
       const prompt = await manager.composeSoulPrompt('please code review this');
       expect(prompt).toContain('Review the code carefully');
     });
 
     it('does not expand skills that do not match trigger patterns', async () => {
-      const triggerSkill = { ...SKILL, name: 'Code Review', triggerPatterns: ['code'], instructions: 'Review the code carefully.' };
-      const { manager } = makeManager({ getEnabledSkills: vi.fn().mockResolvedValue([triggerSkill]) });
+      const triggerSkill = {
+        ...SKILL,
+        name: 'Code Review',
+        triggerPatterns: ['code'],
+        instructions: 'Review the code carefully.',
+      };
+      const { manager } = makeManager({
+        getEnabledSkills: vi.fn().mockResolvedValue([triggerSkill]),
+      });
       const prompt = await manager.composeSoulPrompt('tell me a joke');
       expect(prompt).not.toContain('Review the code carefully');
     });
 
     it('includes spirit prompt when spirit available', async () => {
-      const spirit = { composeSpiritPrompt: vi.fn().mockResolvedValue('## Spirit\nPassion: music') };
+      const spirit = {
+        composeSpiritPrompt: vi.fn().mockResolvedValue('## Spirit\nPassion: music'),
+      };
       const { manager } = makeManager({}, {}, undefined, spirit);
       const prompt = await manager.composeSoulPrompt();
       expect(prompt).toContain('music');
@@ -457,7 +569,10 @@ describe('SoulManager', () => {
     });
 
     it('extracts tools from enabled skills', async () => {
-      const toolSkill = { ...SKILL, tools: [{ name: 'search', description: 'search', parameters: {} }] };
+      const toolSkill = {
+        ...SKILL,
+        tools: [{ name: 'search', description: 'search', parameters: {} }],
+      };
       const { manager } = makeManager({ getEnabledSkills: vi.fn().mockResolvedValue([toolSkill]) });
       const tools = await manager.getActiveTools();
       expect(tools).toHaveLength(1);

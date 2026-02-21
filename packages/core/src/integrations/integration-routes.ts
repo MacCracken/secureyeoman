@@ -202,10 +202,7 @@ export function registerIntegrationRoutes(
 
   app.post(
     '/api/v1/integrations/plugins/load',
-    async (
-      request: FastifyRequest<{ Body: { path: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: { path: string } }>, reply: FastifyReply) => {
       if (!request.body?.path) {
         return sendError(reply, 400, 'Missing path in request body');
       }
@@ -491,10 +488,7 @@ export function registerIntegrationRoutes(
 
     app.get(
       '/api/v1/webhook-transforms/:id',
-      async (
-        request: FastifyRequest<{ Params: { id: string } }>,
-        reply: FastifyReply
-      ) => {
+      async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
         const rule = await webhookTransformStorage.getRule(request.params.id);
         if (!rule) return sendError(reply, 404, 'Transform rule not found');
         return { rule };
@@ -503,10 +497,7 @@ export function registerIntegrationRoutes(
 
     app.post(
       '/api/v1/webhook-transforms',
-      async (
-        request: FastifyRequest<{ Body: WebhookTransformCreate }>,
-        reply: FastifyReply
-      ) => {
+      async (request: FastifyRequest<{ Body: WebhookTransformCreate }>, reply: FastifyReply) => {
         try {
           const rule = await webhookTransformStorage.createRule(request.body);
           return reply.code(201).send({ rule });
@@ -530,10 +521,7 @@ export function registerIntegrationRoutes(
 
     app.delete(
       '/api/v1/webhook-transforms/:id',
-      async (
-        request: FastifyRequest<{ Params: { id: string } }>,
-        reply: FastifyReply
-      ) => {
+      async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
         const deleted = await webhookTransformStorage.deleteRule(request.params.id);
         if (!deleted) return sendError(reply, 404, 'Transform rule not found');
         return reply.code(204).send();
@@ -547,9 +535,7 @@ export function registerIntegrationRoutes(
   if (outboundWebhookStorage) {
     app.get(
       '/api/v1/outbound-webhooks',
-      async (
-        request: FastifyRequest<{ Querystring: { enabled?: string } }>
-      ) => {
+      async (request: FastifyRequest<{ Querystring: { enabled?: string } }>) => {
         const filter: { enabled?: boolean } = {};
         if (request.query.enabled !== undefined) {
           filter.enabled = request.query.enabled === 'true';
@@ -561,10 +547,7 @@ export function registerIntegrationRoutes(
 
     app.get(
       '/api/v1/outbound-webhooks/:id',
-      async (
-        request: FastifyRequest<{ Params: { id: string } }>,
-        reply: FastifyReply
-      ) => {
+      async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
         const webhook = await outboundWebhookStorage.getWebhook(request.params.id);
         if (!webhook) return sendError(reply, 404, 'Outbound webhook not found');
         return { webhook };
@@ -573,10 +556,7 @@ export function registerIntegrationRoutes(
 
     app.post(
       '/api/v1/outbound-webhooks',
-      async (
-        request: FastifyRequest<{ Body: OutboundWebhookCreate }>,
-        reply: FastifyReply
-      ) => {
+      async (request: FastifyRequest<{ Body: OutboundWebhookCreate }>, reply: FastifyReply) => {
         try {
           assertPublicUrl(request.body.url, 'Webhook URL');
           const webhook = await outboundWebhookStorage.createWebhook(request.body);
@@ -593,10 +573,7 @@ export function registerIntegrationRoutes(
         request: FastifyRequest<{ Params: { id: string }; Body: OutboundWebhookUpdate }>,
         reply: FastifyReply
       ) => {
-        const webhook = await outboundWebhookStorage.updateWebhook(
-          request.params.id,
-          request.body
-        );
+        const webhook = await outboundWebhookStorage.updateWebhook(request.params.id, request.body);
         if (!webhook) return sendError(reply, 404, 'Outbound webhook not found');
         return { webhook };
       }
@@ -604,10 +581,7 @@ export function registerIntegrationRoutes(
 
     app.delete(
       '/api/v1/outbound-webhooks/:id',
-      async (
-        request: FastifyRequest<{ Params: { id: string } }>,
-        reply: FastifyReply
-      ) => {
+      async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
         const deleted = await outboundWebhookStorage.deleteWebhook(request.params.id);
         if (!deleted) return sendError(reply, 404, 'Outbound webhook not found');
         return reply.code(204).send();

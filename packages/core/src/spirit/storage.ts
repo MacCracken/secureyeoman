@@ -156,7 +156,10 @@ export class SpiritStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listPassions(personalityId?: string, opts?: { limit?: number; offset?: number }): Promise<{ passions: Passion[]; total: number }> {
+  async listPassions(
+    personalityId?: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<{ passions: Passion[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 
@@ -278,7 +281,10 @@ export class SpiritStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listInspirations(personalityId?: string, opts?: { limit?: number; offset?: number }): Promise<{ inspirations: Inspiration[]; total: number }> {
+  async listInspirations(
+    personalityId?: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<{ inspirations: Inspiration[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 
@@ -397,7 +403,10 @@ export class SpiritStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listPains(personalityId?: string, opts?: { limit?: number; offset?: number }): Promise<{ pains: Pain[]; total: number }> {
+  async listPains(
+    personalityId?: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<{ pains: Pain[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 

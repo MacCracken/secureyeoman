@@ -101,12 +101,14 @@ describe('IntegrationStorage', () => {
 
     it('maps optional fields to undefined when null', async () => {
       mockQuery.mockResolvedValueOnce({
-        rows: [{
-          ...integrationRow,
-          connected_at: null,
-          last_message_at: null,
-          error_message: null,
-        }],
+        rows: [
+          {
+            ...integrationRow,
+            connected_at: null,
+            last_message_at: null,
+            error_message: null,
+          },
+        ],
         rowCount: 1,
       });
       const result = await storage.getIntegration('int-1');
@@ -165,7 +167,10 @@ describe('IntegrationStorage', () => {
       mockQuery
         .mockResolvedValueOnce({ rows: [integrationRow], rowCount: 1 })
         .mockResolvedValueOnce({ rows: [], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [{ ...integrationRow, display_name: 'New Name' }], rowCount: 1 });
+        .mockResolvedValueOnce({
+          rows: [{ ...integrationRow, display_name: 'New Name' }],
+          rowCount: 1,
+        });
       const result = await storage.updateIntegration('int-1', { displayName: 'New Name' });
       expect(result!.displayName).toBe('New Name');
     });
@@ -303,7 +308,7 @@ describe('IntegrationStorage', () => {
       await storage.listMessages('int-1');
       const params = mockQuery.mock.calls[0][1] as unknown[];
       expect(params[1]).toBe(50); // default limit
-      expect(params[2]).toBe(0);  // default offset
+      expect(params[2]).toBe(0); // default offset
     });
 
     it('uses custom limit and offset', async () => {

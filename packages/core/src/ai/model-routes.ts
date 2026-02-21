@@ -63,7 +63,11 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         'letta',
       ];
       if (!validProviders.includes(provider)) {
-        return sendError(reply, 400, `Invalid provider. Must be one of: ${validProviders.join(', ')}`);
+        return sendError(
+          reply,
+          400,
+          `Invalid provider. Must be one of: ${validProviders.join(', ')}`
+        );
       }
 
       try {
@@ -150,7 +154,13 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       }>,
       reply: FastifyReply
     ) => {
-      const { task, context, tokenBudget = 50000, roleCount = 1, allowedModels = [] } = request.body;
+      const {
+        task,
+        context,
+        tokenBudget = 50000,
+        roleCount = 1,
+        allowedModels = [],
+      } = request.body;
 
       if (!task || typeof task !== 'string') {
         return sendError(reply, 400, 'task is required and must be a string');

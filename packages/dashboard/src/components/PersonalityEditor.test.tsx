@@ -53,17 +53,22 @@ vi.mock('../api/client', () => ({
 }));
 
 // Stub WebSocket so useCollabEditor doesn't try to open real sockets in tests
-vi.stubGlobal('WebSocket', class {
-  static OPEN = 1;
-  static CLOSED = 3;
-  binaryType = 'arraybuffer';
-  onopen: (() => void) | null = null;
-  onclose: (() => void) | null = null;
-  onerror: (() => void) | null = null;
-  onmessage: (() => void) | null = null;
-  send() {}
-  close() { this.onclose?.(); }
-});
+vi.stubGlobal(
+  'WebSocket',
+  class {
+    static OPEN = 1;
+    static CLOSED = 3;
+    binaryType = 'arraybuffer';
+    onopen: (() => void) | null = null;
+    onclose: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    onmessage: (() => void) | null = null;
+    send() {}
+    close() {
+      this.onclose?.();
+    }
+  }
+);
 
 import * as api from '../api/client';
 

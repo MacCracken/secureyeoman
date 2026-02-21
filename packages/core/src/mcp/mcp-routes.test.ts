@@ -82,7 +82,9 @@ function makeMockHealthMonitor(overrides?: Partial<McpHealthMonitor>): McpHealth
   } as unknown as McpHealthMonitor;
 }
 
-function makeMockCredentialManager(overrides?: Partial<McpCredentialManager>): McpCredentialManager {
+function makeMockCredentialManager(
+  overrides?: Partial<McpCredentialManager>
+): McpCredentialManager {
   return {
     storeCredential: vi.fn().mockResolvedValue(undefined),
     ...overrides,
@@ -254,7 +256,9 @@ describe('POST /api/v1/mcp/tools/call', () => {
   });
 
   it('returns 400 on error', async () => {
-    const app = buildApp(undefined, { callTool: vi.fn().mockRejectedValue(new Error('not found')) });
+    const app = buildApp(undefined, {
+      callTool: vi.fn().mockRejectedValue(new Error('not found')),
+    });
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/mcp/tools/call',

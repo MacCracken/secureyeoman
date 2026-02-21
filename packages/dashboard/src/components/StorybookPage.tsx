@@ -29,9 +29,8 @@ export function StorybookPage() {
           <ShieldAlert className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
           <h2 className="text-lg font-semibold mb-2">Storybook is Disabled</h2>
           <p className="text-muted-foreground mb-4">
-            Enable{' '}
-            <code className="text-sm bg-muted px-1.5 py-0.5 rounded">allowStorybook</code>{' '}
-            in Settings &gt; Security to access the component development environment.
+            Enable <code className="text-sm bg-muted px-1.5 py-0.5 rounded">allowStorybook</code> in
+            Settings &gt; Security to access the component development environment.
           </p>
         </div>
       </div>
@@ -49,7 +48,8 @@ export function StorybookPage() {
       <div className="card p-6 space-y-4">
         <h2 className="text-base font-semibold">Quick Start</h2>
         <p className="text-sm text-muted-foreground">
-          Run the Storybook development server to browse and interact with UI components in isolation.
+          Run the Storybook development server to browse and interact with UI components in
+          isolation.
         </p>
         <div className="flex items-center gap-3 bg-muted rounded-md px-4 py-3 font-mono text-sm">
           <span className="select-all">npm run storybook</span>

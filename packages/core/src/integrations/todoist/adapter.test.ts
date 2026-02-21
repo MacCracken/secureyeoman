@@ -162,7 +162,8 @@ describe('TodoistIntegration', () => {
   describe('sendMessage()', () => {
     it('should POST a new task and return its ID', async () => {
       const createdTask = { id: 'task_abc', content: 'Buy milk' };
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         // First call: seedSeenTasks during start()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         // Second call: create task
@@ -185,7 +186,8 @@ describe('TodoistIntegration', () => {
 
     it('should use the configured projectId when chatId is empty', async () => {
       const createdTask = { id: 'task_xyz', content: 'Test' };
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(createdTask) });
       vi.stubGlobal('fetch', mockFetch);
@@ -199,7 +201,8 @@ describe('TodoistIntegration', () => {
     });
 
     it('should throw when task creation fails', async () => {
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         .mockResolvedValueOnce({
           ok: false,
@@ -217,7 +220,10 @@ describe('TodoistIntegration', () => {
 
   describe('testConnection()', () => {
     it('should return ok=true when projects are accessible', async () => {
-      const projects = [{ id: 'proj_1', name: 'Inbox' }, { id: 'proj_2', name: 'Work' }];
+      const projects = [
+        { id: 'proj_1', name: 'Inbox' },
+        { id: 'proj_2', name: 'Work' },
+      ];
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () => Promise.resolve(projects),

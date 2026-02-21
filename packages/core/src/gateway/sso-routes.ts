@@ -39,9 +39,17 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
 
   app.get(
     '/api/v1/auth/sso/authorize/:providerId',
-    async (request: FastifyRequest<{ Params: { providerId: string }; Querystring: { workspace?: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Params: { providerId: string };
+        Querystring: { workspace?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
       try {
-        const scheme = (request.headers['x-forwarded-proto'] as string) ?? ((app.server as any).encrypted ? 'https' : 'http');
+        const scheme =
+          (request.headers['x-forwarded-proto'] as string) ??
+          ((app.server as any).encrypted ? 'https' : 'http');
         const host = request.headers.host ?? 'localhost';
         const redirectUri = `${scheme}://${host}/api/v1/auth/sso/callback/${request.params.providerId}`;
         const url = await ssoManager.getAuthorizationUrl(
@@ -88,9 +96,15 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
     async (
       request: FastifyRequest<{
         Body: {
-          name: string; type: 'oidc' | 'saml';
-          issuerUrl?: string; clientId?: string; clientSecret?: string; scopes?: string;
-          autoProvision?: boolean; defaultRole?: string; enabled?: boolean;
+          name: string;
+          type: 'oidc' | 'saml';
+          issuerUrl?: string;
+          clientId?: string;
+          clientSecret?: string;
+          scopes?: string;
+          autoProvision?: boolean;
+          defaultRole?: string;
+          enabled?: boolean;
           config?: Record<string, unknown>;
         };
       }>,
@@ -135,7 +149,10 @@ export function registerSsoRoutes(app: FastifyInstance, opts: SsoRoutesOptions):
       reply: FastifyReply
     ) => {
       try {
-        const provider = await ssoStorage.updateIdentityProvider(request.params.id, request.body as any);
+        const provider = await ssoStorage.updateIdentityProvider(
+          request.params.id,
+          request.body as any
+        );
         if (!provider) return sendError(reply, 404, 'Provider not found');
         return { provider: { ...provider, clientSecret: undefined } };
       } catch (err) {

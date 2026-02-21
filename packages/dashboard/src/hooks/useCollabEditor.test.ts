@@ -43,7 +43,10 @@ class MockWebSocket {
   /** Simulate receiving a binary message from the server */
   simulateMessage(data: Uint8Array): void {
     // Copy into a plain ArrayBuffer to satisfy the type
-    const buf = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
+    const buf = data.buffer.slice(
+      data.byteOffset,
+      data.byteOffset + data.byteLength
+    ) as ArrayBuffer;
     this.onmessage?.({ data: buf });
   }
 }
@@ -70,7 +73,9 @@ function makeSyncStep2(doc: Y.Doc): Uint8Array {
   return msg;
 }
 
-function makeAwarenessMsg(users: Array<{ clientId: string; name: string; color: string }>): Uint8Array {
+function makeAwarenessMsg(
+  users: Array<{ clientId: string; name: string; color: string }>
+): Uint8Array {
   const json = JSON.stringify({ type: 'awareness', users });
   const bytes = new TextEncoder().encode(json);
   const msg = new Uint8Array(1 + bytes.length);
@@ -187,9 +192,7 @@ describe('useCollabEditor', () => {
     });
 
     const ws = MockWebSocket.instances[0]!;
-    const awarenessMsg = makeAwarenessMsg([
-      { clientId: 'c1', name: 'Alice', color: '#ff0000' },
-    ]);
+    const awarenessMsg = makeAwarenessMsg([{ clientId: 'c1', name: 'Alice', color: '#ff0000' }]);
 
     act(() => {
       ws.simulateMessage(awarenessMsg);

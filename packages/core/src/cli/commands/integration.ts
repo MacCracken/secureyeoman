@@ -72,7 +72,6 @@ export const integrationCommand: Command = {
         case 'stop':
           return await stopIntegration(ctx, baseUrl, token, actionArgs);
         default:
-           
           ctx.stderr.write(`Unknown action: ${action}\n`);
           ctx.stderr.write(USAGE + '\n');
           return 1;

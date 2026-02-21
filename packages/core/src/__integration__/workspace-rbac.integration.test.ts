@@ -25,7 +25,10 @@ async function createWorkspaceGateway(stack: TestStack): Promise<FastifyInstance
   const app = Fastify({ logger: false });
   const logger = stack.logger;
 
-  app.addHook('onRequest', createAuthHook({ authService: stack.authService, logger, rbac: stack.rbac }));
+  app.addHook(
+    'onRequest',
+    createAuthHook({ authService: stack.authService, logger, rbac: stack.rbac })
+  );
   app.addHook(
     'onRequest',
     createRbacHook({ rbac: stack.rbac, auditChain: stack.auditChain, logger })
@@ -212,7 +215,11 @@ describe('Workspace Member RBAC Integration', () => {
     const viewerHeaders = { 'x-api-key': viewerKey };
 
     // Viewer can list workspaces
-    const listRes = await app.inject({ method: 'GET', url: '/api/v1/workspaces', headers: viewerHeaders });
+    const listRes = await app.inject({
+      method: 'GET',
+      url: '/api/v1/workspaces',
+      headers: viewerHeaders,
+    });
     expect(listRes.statusCode).toBe(200);
 
     // Viewer cannot create workspace

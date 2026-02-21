@@ -6,16 +6,25 @@ import type { IntegrationDeps } from '../types.js';
 // ─── Helpers ──────────────────────────────────────────────────
 
 const mockLogger = {
-  info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
   child: vi.fn().mockReturnThis(),
 };
 
 function makeConfig(overrides: Partial<Record<string, unknown>> = {}): IntegrationConfig {
   return {
-    id: 'qq-test-1', platform: 'qq', displayName: 'QQ Test',
-    enabled: true, status: 'disconnected', messageCount: 0,
-    createdAt: Date.now(), updatedAt: Date.now(),
+    id: 'qq-test-1',
+    platform: 'qq',
+    displayName: 'QQ Test',
+    enabled: true,
+    status: 'disconnected',
+    messageCount: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     config: { httpUrl: 'http://localhost:5700', ...overrides },
   } as IntegrationConfig;
 }
@@ -72,7 +81,9 @@ describe('QQIntegration', () => {
 
     it('throws when httpUrl is undefined', async () => {
       const cfg = { ...makeConfig(), config: {} };
-      await expect(adapter.init(cfg, makeDeps())).rejects.toThrow('QQ integration requires httpUrl');
+      await expect(adapter.init(cfg, makeDeps())).rejects.toThrow(
+        'QQ integration requires httpUrl'
+      );
     });
   });
 
@@ -194,9 +205,13 @@ describe('QQIntegration', () => {
       await adapter.init(makeConfig(), { logger: mockLogger as any, onMessage });
 
       adapter.handleInboundEvent({
-        message_id: 42, user_id: 111, message: 'hello', raw_message: 'hello',
+        message_id: 42,
+        user_id: 111,
+        message: 'hello',
+        raw_message: 'hello',
         sender: { user_id: 111, nickname: 'Alice', card: 'Al' },
-        time: 1700000000, message_type: 'private',
+        time: 1700000000,
+        message_type: 'private',
       });
 
       expect(onMessage).toHaveBeenCalledOnce();
@@ -213,9 +228,14 @@ describe('QQIntegration', () => {
       await adapter.init(makeConfig(), { logger: mockLogger as any, onMessage });
 
       adapter.handleInboundEvent({
-        message_id: 5, user_id: 222, group_id: 333, message: 'hi', raw_message: 'hi',
+        message_id: 5,
+        user_id: 222,
+        group_id: 333,
+        message: 'hi',
+        raw_message: 'hi',
         sender: { user_id: 222, nickname: 'Bob' },
-        time: 1700000001, message_type: 'group',
+        time: 1700000001,
+        message_type: 'group',
       });
 
       const msg = onMessage.mock.calls[0][0];
@@ -225,9 +245,13 @@ describe('QQIntegration', () => {
     it('does nothing when deps are not set (before init)', () => {
       expect(() =>
         adapter.handleInboundEvent({
-          message_id: 1, user_id: 1, message: 'hi', raw_message: 'hi',
+          message_id: 1,
+          user_id: 1,
+          message: 'hi',
+          raw_message: 'hi',
           sender: { user_id: 1, nickname: 'X' },
-          time: 0, message_type: 'private',
+          time: 0,
+          message_type: 'private',
         })
       ).not.toThrow();
     });
@@ -238,7 +262,8 @@ describe('QQIntegration', () => {
       mockFetch.mockResolvedValue({
         ok: true,
         json: vi.fn().mockResolvedValue({
-          status: 'ok', retcode: 0,
+          status: 'ok',
+          retcode: 0,
           data: { user_id: 123456, nickname: 'TestBot' },
         }),
       });

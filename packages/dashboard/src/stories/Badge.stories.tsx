@@ -7,7 +7,9 @@ function Badge({ label, status }: { label: string; status: 'running' | 'stopped'
     draft: 'bg-blue-500/10 text-blue-500 border border-blue-500/20',
   };
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${variants[status]}`}>
+    <span
+      className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${variants[status]}`}
+    >
       {label}
     </span>
   );

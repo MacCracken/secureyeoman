@@ -96,7 +96,11 @@ describe('plugin command', () => {
 
   it('list: should output JSON with --json', async () => {
     const { stdout, stderr, getStdout } = createStreams();
-    const code = await pluginCommand.run({ argv: ['list', '--dir', tmpDir, '--json'], stdout, stderr });
+    const code = await pluginCommand.run({
+      argv: ['list', '--dir', tmpDir, '--json'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(0);
     const parsed = JSON.parse(getStdout()) as { dir: string; plugins: unknown[]; total: number };
     expect(parsed.total).toBe(0);

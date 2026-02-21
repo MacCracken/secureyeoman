@@ -2,30 +2,26 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ─── Hoisted Mocks ────────────────────────────────────────────
 
-const {
-  mockCreateSecureYeoman,
-  mockIsOpenSSLAvailable,
-  mockGenerateDevCerts,
-  mockInstance,
-} = vi.hoisted(() => {
-  const mockInstance = {
-    getConfig: vi.fn().mockReturnValue({
-      gateway: { host: '127.0.0.1', port: 3000 },
-    }),
-    shutdown: vi.fn().mockResolvedValue(undefined),
-  };
+const { mockCreateSecureYeoman, mockIsOpenSSLAvailable, mockGenerateDevCerts, mockInstance } =
+  vi.hoisted(() => {
+    const mockInstance = {
+      getConfig: vi.fn().mockReturnValue({
+        gateway: { host: '127.0.0.1', port: 3000 },
+      }),
+      shutdown: vi.fn().mockResolvedValue(undefined),
+    };
 
-  return {
-    mockCreateSecureYeoman: vi.fn().mockResolvedValue(mockInstance),
-    mockIsOpenSSLAvailable: vi.fn().mockReturnValue(true),
-    mockGenerateDevCerts: vi.fn().mockReturnValue({
-      serverCert: '/certs/server.crt',
-      serverKey: '/certs/server.key',
-      caCert: '/certs/ca.crt',
-    }),
-    mockInstance,
-  };
-});
+    return {
+      mockCreateSecureYeoman: vi.fn().mockResolvedValue(mockInstance),
+      mockIsOpenSSLAvailable: vi.fn().mockReturnValue(true),
+      mockGenerateDevCerts: vi.fn().mockReturnValue({
+        serverCert: '/certs/server.crt',
+        serverKey: '/certs/server.key',
+        caCert: '/certs/ca.crt',
+      }),
+      mockInstance,
+    };
+  });
 
 vi.mock('../../secureyeoman.js', () => ({
   createSecureYeoman: mockCreateSecureYeoman,

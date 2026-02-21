@@ -117,9 +117,9 @@ describe('TwitterIntegration', () => {
     });
 
     it('should throw when bearerToken is missing', async () => {
-      await expect(
-        integration.init(makeConfig({ config: {} }), makeDeps())
-      ).rejects.toThrow('bearerToken');
+      await expect(integration.init(makeConfig({ config: {} }), makeDeps())).rejects.toThrow(
+        'bearerToken'
+      );
     });
 
     it('should not be healthy after init but before start', async () => {
@@ -159,7 +159,7 @@ describe('TwitterIntegration', () => {
       const deps = makeDeps();
       await integration.init(makeConfig(), deps);
       await expect(integration.start()).resolves.not.toThrow();
-      expect((deps.logger.warn as ReturnType<typeof vi.fn>)).toHaveBeenCalled();
+      expect(deps.logger.warn as ReturnType<typeof vi.fn>).toHaveBeenCalled();
     });
   });
 
@@ -276,7 +276,9 @@ describe('TwitterIntegration', () => {
       mockUserMentionTimeline
         .mockResolvedValueOnce({
           data: {
-            data: [{ id: '1000', text: 'first', author_id: 'u1', created_at: new Date().toISOString() }],
+            data: [
+              { id: '1000', text: 'first', author_id: 'u1', created_at: new Date().toISOString() },
+            ],
           },
         })
         // Second poll returns same tweet (older ID should be filtered by sinceId param)
@@ -326,7 +328,7 @@ describe('TwitterIntegration', () => {
       await integration.start();
       await vi.advanceTimersByTimeAsync(101);
 
-      expect((deps.logger.warn as ReturnType<typeof vi.fn>)).toHaveBeenCalled();
+      expect(deps.logger.warn as ReturnType<typeof vi.fn>).toHaveBeenCalled();
       expect(integration.isHealthy()).toBe(true);
     });
   });
@@ -355,10 +357,7 @@ describe('TwitterIntegration', () => {
     });
 
     it('should throw in read-only mode (no OAuth credentials)', async () => {
-      await integration.init(
-        makeConfig({ config: { bearerToken: 'AAAA-only' } }),
-        makeDeps()
-      );
+      await integration.init(makeConfig({ config: { bearerToken: 'AAAA-only' } }), makeDeps());
       await expect(integration.sendMessage('123', 'test')).rejects.toThrow(/OAuth/);
     });
   });

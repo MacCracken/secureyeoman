@@ -219,7 +219,6 @@ export function ChatPage() {
     }
   }, [effectivePersonalityId, queryClient]);
 
-
   // Feed voice transcript into input
   useEffect(() => {
     if (voice.transcript) {

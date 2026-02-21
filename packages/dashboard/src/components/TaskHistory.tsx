@@ -25,7 +25,14 @@ import {
   Edit2,
   Trash2,
 } from 'lucide-react';
-import { fetchTasks, createTask, deleteTask, updateTask, fetchHeartbeatTasks, fetchHeartbeatLog } from '../api/client';
+import {
+  fetchTasks,
+  createTask,
+  deleteTask,
+  updateTask,
+  fetchHeartbeatTasks,
+  fetchHeartbeatLog,
+} from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { Task, HeartbeatTask, HeartbeatLogEntry } from '../types';
 import { sanitizeText } from '../utils/sanitize';
@@ -971,7 +978,9 @@ function HeartbeatTaskRow({ task }: { task: HeartbeatTask }) {
                       <td className="py-1 text-muted-foreground max-w-xs truncate">
                         {entry.message}
                         {entry.errorDetail && (
-                          <span className="text-destructive ml-1">({entry.errorDetail.split('\n')[0]})</span>
+                          <span className="text-destructive ml-1">
+                            ({entry.errorDetail.split('\n')[0]})
+                          </span>
                         )}
                       </td>
                     </tr>

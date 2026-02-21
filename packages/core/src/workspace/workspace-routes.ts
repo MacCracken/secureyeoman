@@ -96,7 +96,12 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
       reply: FastifyReply
     ) => {
       try {
-        const denied = await requireWorkspaceAdmin(workspaceManager, request.params.id, request, reply);
+        const denied = await requireWorkspaceAdmin(
+          workspaceManager,
+          request.params.id,
+          request,
+          reply
+        );
         if (denied) return;
         const workspace = await workspaceManager.update(request.params.id, request.body);
         if (!workspace) return sendError(reply, 404, 'Workspace not found');
@@ -120,7 +125,13 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
 
   app.get(
     '/api/v1/workspaces/:id/members',
-    async (request: FastifyRequest<{ Params: { id: string }; Querystring: { limit?: string; offset?: string } }>, reply: FastifyReply) => {
+    async (
+      request: FastifyRequest<{
+        Params: { id: string };
+        Querystring: { limit?: string; offset?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
       const workspace = await workspaceManager.get(request.params.id);
       if (!workspace) return sendError(reply, 404, 'Workspace not found');
       const limit = request.query.limit ? Number(request.query.limit) : undefined;
@@ -139,13 +150,22 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
         const workspace = await workspaceManager.get(request.params.id);
         if (!workspace) return sendError(reply, 404, 'Workspace not found');
 
-        const denied = await requireWorkspaceAdmin(workspaceManager, request.params.id, request, reply);
+        const denied = await requireWorkspaceAdmin(
+          workspaceManager,
+          request.params.id,
+          request,
+          reply
+        );
         if (denied) return;
 
         const role = request.body.role ?? 'member';
         const roleResult = WorkspaceRoleSchema.safeParse(role);
         if (!roleResult.success) {
-          return sendError(reply, 400, `Invalid role. Must be one of: owner, admin, member, viewer`);
+          return sendError(
+            reply,
+            400,
+            `Invalid role. Must be one of: owner, admin, member, viewer`
+          );
         }
 
         const member = await workspaceManager.addMember(
@@ -170,12 +190,21 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
       reply: FastifyReply
     ) => {
       try {
-        const denied = await requireWorkspaceAdmin(workspaceManager, request.params.id, request, reply);
+        const denied = await requireWorkspaceAdmin(
+          workspaceManager,
+          request.params.id,
+          request,
+          reply
+        );
         if (denied) return;
 
         const roleResult = WorkspaceRoleSchema.safeParse(request.body.role);
         if (!roleResult.success) {
-          return sendError(reply, 400, `Invalid role. Must be one of: owner, admin, member, viewer`);
+          return sendError(
+            reply,
+            400,
+            `Invalid role. Must be one of: owner, admin, member, viewer`
+          );
         }
 
         const member = await workspaceManager.updateMemberRole(
@@ -198,7 +227,12 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
       reply: FastifyReply
     ) => {
       try {
-        const denied = await requireWorkspaceAdmin(workspaceManager, request.params.id, request, reply);
+        const denied = await requireWorkspaceAdmin(
+          workspaceManager,
+          request.params.id,
+          request,
+          reply
+        );
         if (denied) return;
 
         const { members } = await workspaceManager.listMembers(request.params.id);
@@ -206,7 +240,8 @@ export function registerWorkspaceRoutes(app: FastifyInstance, opts: WorkspaceRou
         const target = members.find((m) => m.userId === request.params.userId);
         if (!target) return sendError(reply, 404, 'Member not found');
 
-        const isLastAdmin = (target.role === 'owner' || target.role === 'admin') && admins.length <= 1;
+        const isLastAdmin =
+          (target.role === 'owner' || target.role === 'admin') && admins.length <= 1;
         if (isLastAdmin) {
           return sendError(reply, 400, 'Cannot remove the last admin/owner from a workspace');
         }

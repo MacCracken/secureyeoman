@@ -8,7 +8,9 @@ function Toggle({ defaultChecked = false, label }: { defaultChecked?: boolean; l
       <button
         role="switch"
         aria-checked={on}
-        onClick={() => { setOn((v) => !v); }}
+        onClick={() => {
+          setOn((v) => !v);
+        }}
         className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none ${
           on ? 'bg-primary' : 'bg-muted'
         }`}

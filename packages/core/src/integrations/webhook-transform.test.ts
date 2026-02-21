@@ -229,7 +229,11 @@ describe('WebhookTransformer', () => {
     });
 
     // Event is 'pull_request', rule only applies to 'push'
-    const patch = await transformer.applyRules({ message: 'should skip' }, 'intg_abc', 'pull_request');
+    const patch = await transformer.applyRules(
+      { message: 'should skip' },
+      'intg_abc',
+      'pull_request'
+    );
     expect(patch.text).toBeUndefined();
   });
 

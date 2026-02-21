@@ -55,7 +55,10 @@ export class WorkspaceStorage extends PgBaseStorage {
     };
   }
 
-  async list(opts?: { limit?: number; offset?: number }): Promise<{ workspaces: Workspace[]; total: number }> {
+  async list(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ workspaces: Workspace[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 
@@ -93,9 +96,18 @@ export class WorkspaceStorage extends PgBaseStorage {
     const values: unknown[] = [];
     let idx = 1;
 
-    if (data.name !== undefined) { updates.push(`name = $${idx++}`); values.push(data.name); }
-    if (data.description !== undefined) { updates.push(`description = $${idx++}`); values.push(data.description); }
-    if (data.settings !== undefined) { updates.push(`settings = $${idx++}`); values.push(JSON.stringify(data.settings)); }
+    if (data.name !== undefined) {
+      updates.push(`name = $${idx++}`);
+      values.push(data.name);
+    }
+    if (data.description !== undefined) {
+      updates.push(`description = $${idx++}`);
+      values.push(data.description);
+    }
+    if (data.settings !== undefined) {
+      updates.push(`settings = $${idx++}`);
+      values.push(JSON.stringify(data.settings));
+    }
 
     if (updates.length === 0) return this.get(id);
 
@@ -134,7 +146,11 @@ export class WorkspaceStorage extends PgBaseStorage {
     return changes > 0;
   }
 
-  async updateMemberRole(workspaceId: string, userId: string, role: string): Promise<WorkspaceMember | null> {
+  async updateMemberRole(
+    workspaceId: string,
+    userId: string,
+    role: string
+  ): Promise<WorkspaceMember | null> {
     const count = await this.execute(
       'UPDATE workspace.members SET role = $1 WHERE workspace_id = $2 AND user_id = $3',
       [role, workspaceId, userId]
@@ -144,7 +160,10 @@ export class WorkspaceStorage extends PgBaseStorage {
     return this.getMember(workspaceId, userId);
   }
 
-  async listMembers(workspaceId: string, opts?: { limit?: number; offset?: number }): Promise<{ members: WorkspaceMember[]; total: number }> {
+  async listMembers(
+    workspaceId: string,
+    opts?: { limit?: number; offset?: number }
+  ): Promise<{ members: WorkspaceMember[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 

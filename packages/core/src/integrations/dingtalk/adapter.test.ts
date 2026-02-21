@@ -113,15 +113,13 @@ describe('DingTalkIntegration', () => {
     });
 
     it('should initialize with empty config (no required fields)', async () => {
-      await expect(
-        integration.init(makeConfig({ config: {} }), makeDeps())
-      ).resolves.not.toThrow();
+      await expect(integration.init(makeConfig({ config: {} }), makeDeps())).resolves.not.toThrow();
     });
 
     it('should log initialization message', async () => {
       const deps = makeDeps();
       await integration.init(makeConfig(), deps);
-      expect((deps.logger.info as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+      expect(deps.logger.info as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(
         expect.stringContaining('DingTalk')
       );
     });
@@ -151,7 +149,9 @@ describe('DingTalkIntegration', () => {
       const callsAfterFirst = (deps.logger.info as ReturnType<typeof vi.fn>).mock.calls.length;
       await integration.start();
       // No additional log on the second call (already running guard)
-      expect((deps.logger.info as ReturnType<typeof vi.fn>).mock.calls.length).toBe(callsAfterFirst);
+      expect((deps.logger.info as ReturnType<typeof vi.fn>).mock.calls.length).toBe(
+        callsAfterFirst
+      );
     });
   });
 
@@ -237,9 +237,7 @@ describe('DingTalkIntegration', () => {
       const longText = '## A very long headline that exceeds twenty chars';
       await integration.sendMessage(WEBHOOK_URL, longText, { markdown: true });
 
-      const callBody = JSON.parse(
-        (mockFetch.mock.calls[0][1] as RequestInit).body as string
-      );
+      const callBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
       expect(callBody.msgtype).toBe('markdown');
       expect(callBody.markdown.text).toBe(longText);
       // title = text.slice(0, 20)
@@ -251,9 +249,7 @@ describe('DingTalkIntegration', () => {
 
       await integration.sendMessage(WEBHOOK_URL, 'Plain text', { markdown: false });
 
-      const callBody = JSON.parse(
-        (mockFetch.mock.calls[0][1] as RequestInit).body as string
-      );
+      const callBody = JSON.parse((mockFetch.mock.calls[0][1] as RequestInit).body as string);
       expect(callBody.msgtype).toBe('text');
     });
 
@@ -266,9 +262,9 @@ describe('DingTalkIntegration', () => {
     it('should throw when no webhook URL is configured and chatId is not an HTTP URL', async () => {
       await integration.init(makeConfig({ config: {} }), makeDeps());
 
-      await expect(
-        integration.sendMessage('not-a-url', 'Hello')
-      ).rejects.toThrow('No DingTalk outbound webhook URL configured');
+      await expect(integration.sendMessage('not-a-url', 'Hello')).rejects.toThrow(
+        'No DingTalk outbound webhook URL configured'
+      );
     });
 
     it('should use chatId directly when it is a valid HTTP URL', async () => {
@@ -283,9 +279,9 @@ describe('DingTalkIntegration', () => {
       mockFetch.mockResolvedValueOnce({ ok: false, status: 429 });
       await integration.init(makeConfig(), makeDeps());
 
-      await expect(
-        integration.sendMessage(WEBHOOK_URL, 'Hello')
-      ).rejects.toThrow('DingTalk send failed: 429');
+      await expect(integration.sendMessage(WEBHOOK_URL, 'Hello')).rejects.toThrow(
+        'DingTalk send failed: 429'
+      );
     });
   });
 
@@ -303,10 +299,7 @@ describe('DingTalkIntegration', () => {
       const payload = 'test-payload';
       const computed = createHmac('sha256', webhookToken).update(payload).digest('hex');
 
-      await integration.init(
-        makeConfig({ config: { webhookToken } }),
-        makeDeps()
-      );
+      await integration.init(makeConfig({ config: { webhookToken } }), makeDeps());
 
       expect(integration.verifyWebhook(payload, computed)).toBe(true);
     });
@@ -317,31 +310,20 @@ describe('DingTalkIntegration', () => {
       const payload = 'test-payload';
       const computed = createHmac('sha256', webhookToken).update(payload).digest('hex');
 
-      await integration.init(
-        makeConfig({ config: { webhookToken } }),
-        makeDeps()
-      );
+      await integration.init(makeConfig({ config: { webhookToken } }), makeDeps());
 
       expect(integration.verifyWebhook(payload, `sha256=${computed}`)).toBe(true);
     });
 
     it('should return false for an invalid signature', async () => {
-      await integration.init(
-        makeConfig({ config: { webhookToken: 'secret' } }),
-        makeDeps()
-      );
+      await integration.init(makeConfig({ config: { webhookToken: 'secret' } }), makeDeps());
 
       // Length matches SHA-256 hex but value is wrong
-      expect(
-        integration.verifyWebhook('payload', 'a'.repeat(64))
-      ).toBe(false);
+      expect(integration.verifyWebhook('payload', 'a'.repeat(64))).toBe(false);
     });
 
     it('should return false when signature has mismatched length (timingSafeEqual throws)', async () => {
-      await integration.init(
-        makeConfig({ config: { webhookToken: 'secret' } }),
-        makeDeps()
-      );
+      await integration.init(makeConfig({ config: { webhookToken: 'secret' } }), makeDeps());
 
       // timingSafeEqual will throw if buffer lengths differ, caught and returns false
       expect(integration.verifyWebhook('payload', 'short')).toBe(false);
@@ -425,18 +407,14 @@ describe('DingTalkIntegration', () => {
       const deps = makeDeps();
       await integration.init(makeConfig(), deps);
 
-      await expect(
-        integration.handleWebhook('not-valid-json', '')
-      ).resolves.not.toThrow();
-      expect((deps.logger.warn as ReturnType<typeof vi.fn>)).toHaveBeenCalled();
+      await expect(integration.handleWebhook('not-valid-json', '')).resolves.not.toThrow();
+      expect(deps.logger.warn as ReturnType<typeof vi.fn>).toHaveBeenCalled();
     });
 
     it('should not call onMessage when deps is null (before init)', async () => {
       // Do not call init — deps remains null internally
       const onMessage = vi.fn().mockResolvedValue(undefined);
-      await expect(
-        integration.handleWebhook(makeWebhookPayload(), '')
-      ).resolves.not.toThrow();
+      await expect(integration.handleWebhook(makeWebhookPayload(), '')).resolves.not.toThrow();
       expect(onMessage).not.toHaveBeenCalled();
     });
 
@@ -482,10 +460,7 @@ describe('DingTalkIntegration', () => {
 
     it('should check appKey via fetch when configured', async () => {
       mockFetch.mockResolvedValueOnce({ status: 200 });
-      await integration.init(
-        makeConfig({ config: { appKey: 'my-app-key' } }),
-        makeDeps()
-      );
+      await integration.init(makeConfig({ config: { appKey: 'my-app-key' } }), makeDeps());
 
       const result = await integration.testConnection();
       expect(mockFetch).toHaveBeenCalledWith(
@@ -497,10 +472,7 @@ describe('DingTalkIntegration', () => {
 
     it('should return ok=false and "Invalid app credentials" for 401 response', async () => {
       mockFetch.mockResolvedValueOnce({ status: 401 });
-      await integration.init(
-        makeConfig({ config: { appKey: 'bad-key' } }),
-        makeDeps()
-      );
+      await integration.init(makeConfig({ config: { appKey: 'bad-key' } }), makeDeps());
 
       const result = await integration.testConnection();
       expect(result.ok).toBe(false);
@@ -509,10 +481,7 @@ describe('DingTalkIntegration', () => {
 
     it('should return ok=false when fetch throws an error', async () => {
       mockFetch.mockRejectedValueOnce(new Error('Network failure'));
-      await integration.init(
-        makeConfig({ config: { appKey: 'key' } }),
-        makeDeps()
-      );
+      await integration.init(makeConfig({ config: { appKey: 'key' } }), makeDeps());
 
       const result = await integration.testConnection();
       expect(result.ok).toBe(false);

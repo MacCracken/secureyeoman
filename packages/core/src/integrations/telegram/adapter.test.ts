@@ -40,7 +40,10 @@ vi.mock('grammy', () => {
   });
 
   class MockInputFile {
-    constructor(public buf: unknown, public name: string) {}
+    constructor(
+      public buf: unknown,
+      public name: string
+    ) {}
   }
 
   return { Bot: MockBot, InputFile: MockInputFile };
@@ -112,9 +115,9 @@ describe('TelegramIntegration', () => {
     });
 
     it('should throw when botToken is missing', async () => {
-      await expect(
-        integration.init(makeConfig({ config: {} }), makeDeps())
-      ).rejects.toThrow('botToken');
+      await expect(integration.init(makeConfig({ config: {} }), makeDeps())).rejects.toThrow(
+        'botToken'
+      );
     });
 
     it('should register /start command handler', async () => {
@@ -271,10 +274,9 @@ describe('TelegramIntegration', () => {
       await integration.sendMessage('12345', 'Plain text');
       const callArg = mockSendMessage.mock.calls[0][1];
       // reply_markup key should be absent entirely
-      expect(Object.prototype.hasOwnProperty.call(
-        mockSendMessage.mock.calls[0][2],
-        'reply_markup'
-      )).toBe(false);
+      expect(
+        Object.prototype.hasOwnProperty.call(mockSendMessage.mock.calls[0][2], 'reply_markup')
+      ).toBe(false);
     });
 
     it('should send voice message when audioBase64 metadata is provided', async () => {
@@ -293,7 +295,7 @@ describe('TelegramIntegration', () => {
       await integration.sendMessage('12345', 'Text after voice fail', { audioBase64 });
 
       expect(mockSendMessage).toHaveBeenCalledOnce();
-      expect((deps.logger.warn as ReturnType<typeof vi.fn>)).toHaveBeenCalled();
+      expect(deps.logger.warn as ReturnType<typeof vi.fn>).toHaveBeenCalled();
     });
 
     it('should throw when called before init', async () => {

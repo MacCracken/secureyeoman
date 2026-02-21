@@ -253,7 +253,10 @@ export class GatewayServer {
     // Auth + RBAC hooks (after CORS, before routes)
     if (this.authService) {
       const logger = this.getLogger();
-      this.app.addHook('onRequest', createAuthHook({ authService: this.authService, logger, rbac: this.secureYeoman.getRBAC() }));
+      this.app.addHook(
+        'onRequest',
+        createAuthHook({ authService: this.authService, logger, rbac: this.secureYeoman.getRBAC() })
+      );
       this.app.addHook(
         'onRequest',
         createRbacHook({
@@ -425,7 +428,11 @@ export class GatewayServer {
       const mcpServer = this.secureYeoman.getMcpServer();
       if (mcpStorage && mcpClient && mcpServer) {
         const tokenSecret = requireSecret(this.config.auth.tokenSecret);
-        const credentialManager = new McpCredentialManager(mcpStorage, this.getLogger(), tokenSecret);
+        const credentialManager = new McpCredentialManager(
+          mcpStorage,
+          this.getLogger(),
+          tokenSecret
+        );
         registerMcpRoutes(this.app, { mcpStorage, mcpClient, mcpServer, credentialManager });
         this.getLogger().info('MCP routes registered');
       } else {
@@ -591,7 +598,11 @@ export class GatewayServer {
           if (request.url.startsWith('/api/v1/multimodal/')) {
             const config = this.secureYeoman.getConfig();
             if (!config.security.allowMultimodal) {
-              return sendError(reply, 403, 'Forbidden: Multimodal I/O is disabled by security policy');
+              return sendError(
+                reply,
+                403,
+                'Forbidden: Multimodal I/O is disabled by security policy'
+              );
             }
           }
         });
@@ -635,7 +646,11 @@ export class GatewayServer {
     try {
       const groupChatStorage = this.secureYeoman.getGroupChatStorage();
       const integrationManager = (() => {
-        try { return this.secureYeoman.getIntegrationManager(); } catch { return null; }
+        try {
+          return this.secureYeoman.getIntegrationManager();
+        } catch {
+          return null;
+        }
       })();
       if (groupChatStorage && integrationManager) {
         registerGroupChatRoutes(this.app, { groupChatStorage, integrationManager });
@@ -756,10 +771,7 @@ export class GatewayServer {
     // Reset a usage stat counter (errors or latency) to zero
     this.app.post(
       '/api/v1/costs/reset',
-      async (
-        request: FastifyRequest<{ Body: { stat: string } }>,
-        reply: FastifyReply
-      ) => {
+      async (request: FastifyRequest<{ Body: { stat: string } }>, reply: FastifyReply) => {
         const { stat } = request.body ?? {};
         if (stat !== 'errors' && stat !== 'latency') {
           return sendError(reply, 400, 'stat must be "errors" or "latency"');
@@ -1465,101 +1477,95 @@ export class GatewayServer {
     // ── Collaborative editing endpoint (Yjs binary protocol) ────────────
     // Path: /ws/collab/:docId?token=<jwt>
     // docId format: "personality:<uuid>" | "skill:<uuid>"
-    this.app.get(
-      '/ws/collab/:docId',
-      { websocket: true },
-      async (socket, request) => {
-        const params = request.params as { docId: string };
-        const docId = params.docId;
+    this.app.get('/ws/collab/:docId', { websocket: true }, async (socket, request) => {
+      const params = request.params as { docId: string };
+      const docId = params.docId;
 
-        // Auth — same token-in-query-param pattern as /ws/metrics
-        let authUser: { userId: string; role: string; displayName: string } | undefined;
-        if (this.authService) {
-          const url = new URL(request.url, `http://${request.hostname}`);
-          const token = url.searchParams.get('token');
-          if (!token) {
-            socket.close(4401, 'Missing authentication token');
-            return;
-          }
-          try {
-            const user = await this.authService.validateToken(token);
-            // Resolve display name: try soul users, fall back to role label
-            let displayName = user.role === 'admin' ? 'Admin' : 'User';
-            try {
-              const soulManager = this.secureYeoman.getSoulManager();
-              const soulUser = await soulManager.getUser(user.userId);
-              if (soulUser?.name) displayName = soulUser.name;
-            } catch {
-              // Non-fatal: user may not have a soul profile
-            }
-            authUser = { userId: user.userId, role: user.role, displayName };
-          } catch {
-            socket.close(4401, 'Invalid authentication token');
-            return;
-          }
-        } else {
-          // No auth service configured (dev mode) — allow with placeholder identity
-          authUser = { userId: 'dev', role: 'admin', displayName: 'Dev' };
-        }
-
-        // Validate docId format
-        if (!/^(personality|skill):[0-9a-f-]{36}$/.test(docId)) {
-          socket.close(4400, 'Invalid docId format');
+      // Auth — same token-in-query-param pattern as /ws/metrics
+      let authUser: { userId: string; role: string; displayName: string } | undefined;
+      if (this.authService) {
+        const url = new URL(request.url, `http://${request.hostname}`);
+        const token = url.searchParams.get('token');
+        if (!token) {
+          socket.close(4401, 'Missing authentication token');
           return;
         }
-
-        socket.binaryType = 'arraybuffer';
-
-        const clientId = `collab_${String(++this.clientIdCounter)}`;
-
-        // Resolve initial content from the soul manager so new rooms converge
-        // immediately to the current REST-persisted value.
-        let initialContent: string | undefined;
         try {
-          const soulManager = this.secureYeoman.getSoulManager();
-          if (docId.startsWith('personality:')) {
-            const id = docId.slice('personality:'.length);
-            const p = await soulManager.getPersonality(id);
-            initialContent = p?.systemPrompt;
-          } else if (docId.startsWith('skill:')) {
-            const id = docId.slice('skill:'.length);
-            const s = await soulManager.getSkill(id);
-            initialContent = s?.instructions;
+          const user = await this.authService.validateToken(token);
+          // Resolve display name: try soul users, fall back to role label
+          let displayName = user.role === 'admin' ? 'Admin' : 'User';
+          try {
+            const soulManager = this.secureYeoman.getSoulManager();
+            const soulUser = await soulManager.getUser(user.userId);
+            if (soulUser?.name) displayName = soulUser.name;
+          } catch {
+            // Non-fatal: user may not have a soul profile
           }
+          authUser = { userId: user.userId, role: user.role, displayName };
         } catch {
-          // Non-fatal
+          socket.close(4401, 'Invalid authentication token');
+          return;
         }
-
-        await this.collabManager.join(
-          docId,
-          clientId,
-          socket,
-          authUser.userId,
-          authUser.displayName,
-          initialContent
-        );
-
-        socket.on('message', (message: Buffer) => {
-          const data = new Uint8Array(
-            message instanceof ArrayBuffer ? message : message.buffer
-          );
-          this.collabManager.handleMessage(docId, clientId, data);
-        });
-
-        socket.on('close', () => {
-          this.collabManager.leave(docId, clientId);
-          this.getLogger().debug('Collab client disconnected', { clientId, docId });
-        });
-
-        socket.on('error', (error: Error) => {
-          this.getLogger().error('Collab WebSocket error', {
-            clientId,
-            docId,
-            error: error.message,
-          });
-        });
+      } else {
+        // No auth service configured (dev mode) — allow with placeholder identity
+        authUser = { userId: 'dev', role: 'admin', displayName: 'Dev' };
       }
-    );
+
+      // Validate docId format
+      if (!/^(personality|skill):[0-9a-f-]{36}$/.test(docId)) {
+        socket.close(4400, 'Invalid docId format');
+        return;
+      }
+
+      socket.binaryType = 'arraybuffer';
+
+      const clientId = `collab_${String(++this.clientIdCounter)}`;
+
+      // Resolve initial content from the soul manager so new rooms converge
+      // immediately to the current REST-persisted value.
+      let initialContent: string | undefined;
+      try {
+        const soulManager = this.secureYeoman.getSoulManager();
+        if (docId.startsWith('personality:')) {
+          const id = docId.slice('personality:'.length);
+          const p = await soulManager.getPersonality(id);
+          initialContent = p?.systemPrompt;
+        } else if (docId.startsWith('skill:')) {
+          const id = docId.slice('skill:'.length);
+          const s = await soulManager.getSkill(id);
+          initialContent = s?.instructions;
+        }
+      } catch {
+        // Non-fatal
+      }
+
+      await this.collabManager.join(
+        docId,
+        clientId,
+        socket,
+        authUser.userId,
+        authUser.displayName,
+        initialContent
+      );
+
+      socket.on('message', (message: Buffer) => {
+        const data = new Uint8Array(message instanceof ArrayBuffer ? message : message.buffer);
+        this.collabManager.handleMessage(docId, clientId, data);
+      });
+
+      socket.on('close', () => {
+        this.collabManager.leave(docId, clientId);
+        this.getLogger().debug('Collab client disconnected', { clientId, docId });
+      });
+
+      socket.on('error', (error: Error) => {
+        this.getLogger().error('Collab WebSocket error', {
+          clientId,
+          docId,
+          error: error.message,
+        });
+      });
+    });
   }
 
   /**

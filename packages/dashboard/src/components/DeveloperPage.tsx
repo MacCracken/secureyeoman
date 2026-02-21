@@ -18,7 +18,9 @@ export function DeveloperPage() {
 
       <div className="flex gap-1 p-1 bg-muted/50 rounded-lg w-fit">
         <button
-          onClick={() => { setActiveTab('extensions'); }}
+          onClick={() => {
+            setActiveTab('extensions');
+          }}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
             activeTab === 'extensions'
               ? 'bg-background shadow-sm text-foreground'
@@ -29,7 +31,9 @@ export function DeveloperPage() {
           Extensions
         </button>
         <button
-          onClick={() => { setActiveTab('experiments'); }}
+          onClick={() => {
+            setActiveTab('experiments');
+          }}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
             activeTab === 'experiments'
               ? 'bg-background shadow-sm text-foreground'
@@ -40,7 +44,9 @@ export function DeveloperPage() {
           Experiments
         </button>
         <button
-          onClick={() => { setActiveTab('storybook'); }}
+          onClick={() => {
+            setActiveTab('storybook');
+          }}
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-all ${
             activeTab === 'storybook'
               ? 'bg-background shadow-sm text-foreground'
@@ -52,7 +58,13 @@ export function DeveloperPage() {
         </button>
       </div>
 
-      {activeTab === 'extensions' ? <ExtensionsPage /> : activeTab === 'experiments' ? <ExperimentsPage /> : <StorybookPage />}
+      {activeTab === 'extensions' ? (
+        <ExtensionsPage />
+      ) : activeTab === 'experiments' ? (
+        <ExperimentsPage />
+      ) : (
+        <StorybookPage />
+      )}
     </div>
   );
 }

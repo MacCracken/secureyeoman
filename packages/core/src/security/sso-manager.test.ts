@@ -5,7 +5,9 @@ vi.mock('openid-client', () => ({
   discovery: vi.fn(),
   randomPKCECodeVerifier: vi.fn().mockReturnValue('test-verifier'),
   calculatePKCECodeChallenge: vi.fn().mockResolvedValue('test-challenge'),
-  buildAuthorizationUrl: vi.fn().mockReturnValue(new URL('https://idp.example.com/authorize?state=abc')),
+  buildAuthorizationUrl: vi
+    .fn()
+    .mockReturnValue(new URL('https://idp.example.com/authorize?state=abc')),
   authorizationCodeGrant: vi.fn(),
 }));
 
@@ -50,7 +52,15 @@ function makeMockStorage(overrides?: Partial<SsoStorage>): SsoStorage {
     }),
     deleteSsoState: vi.fn().mockResolvedValue(undefined),
     getMappingByExternalSubject: vi.fn().mockResolvedValue(null),
-    createIdentityMapping: vi.fn().mockResolvedValue({ id: 'map-1', idpId: 'idp-1', localUserId: 'u1', externalSubject: 'sub1', attributes: {}, createdAt: 0, lastLoginAt: null }),
+    createIdentityMapping: vi.fn().mockResolvedValue({
+      id: 'map-1',
+      idpId: 'idp-1',
+      localUserId: 'u1',
+      externalSubject: 'sub1',
+      attributes: {},
+      createdAt: 0,
+      lastLoginAt: null,
+    }),
     updateMappingLastLogin: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   } as unknown as SsoStorage;
@@ -58,19 +68,44 @@ function makeMockStorage(overrides?: Partial<SsoStorage>): SsoStorage {
 
 function makeMockAuth(overrides?: Partial<AuthService>): AuthService {
   return {
-    getUserByEmail: vi.fn().mockResolvedValue({ id: 'u1', email: 'user@example.com', displayName: 'Test', isAdmin: false, createdAt: 0 }),
-    createUser: vi.fn().mockResolvedValue({ id: 'u-new', email: 'new@example.com', displayName: 'New', isAdmin: false, createdAt: 0 }),
-    createUserSession: vi.fn().mockResolvedValue({ accessToken: 'tok-a', refreshToken: 'tok-r', expiresIn: 3600 }),
+    getUserByEmail: vi.fn().mockResolvedValue({
+      id: 'u1',
+      email: 'user@example.com',
+      displayName: 'Test',
+      isAdmin: false,
+      createdAt: 0,
+    }),
+    createUser: vi.fn().mockResolvedValue({
+      id: 'u-new',
+      email: 'new@example.com',
+      displayName: 'New',
+      isAdmin: false,
+      createdAt: 0,
+    }),
+    createUserSession: vi
+      .fn()
+      .mockResolvedValue({ accessToken: 'tok-a', refreshToken: 'tok-r', expiresIn: 3600 }),
     ...overrides,
   } as unknown as AuthService;
 }
 
-function makeDeps(storageOverrides?: Partial<SsoStorage>, authOverrides?: Partial<AuthService>): SsoManagerDeps {
+function makeDeps(
+  storageOverrides?: Partial<SsoStorage>,
+  authOverrides?: Partial<AuthService>
+): SsoManagerDeps {
   const noop = () => {};
   return {
     storage: makeMockStorage(storageOverrides),
     authService: makeMockAuth(authOverrides),
-    logger: { trace: noop, debug: noop, info: noop, warn: noop, error: noop, fatal: noop, child: () => ({}) } as never,
+    logger: {
+      trace: noop,
+      debug: noop,
+      info: noop,
+      warn: noop,
+      error: noop,
+      fatal: noop,
+      child: () => ({}),
+    } as never,
   };
 }
 
@@ -82,7 +117,9 @@ describe('SsoManager', () => {
   beforeEach(async () => {
     oidc = await import('openid-client');
     vi.mocked(oidc.discovery).mockResolvedValue({ issuer: 'https://idp.example.com' } as never);
-    vi.mocked(oidc.buildAuthorizationUrl).mockReturnValue(new URL('https://idp.example.com/authorize?state=abc'));
+    vi.mocked(oidc.buildAuthorizationUrl).mockReturnValue(
+      new URL('https://idp.example.com/authorize?state=abc')
+    );
   });
 
   describe('getAuthorizationUrl', () => {
@@ -95,19 +132,29 @@ describe('SsoManager', () => {
     it('throws when provider not found', async () => {
       const deps = makeDeps({ getIdentityProvider: vi.fn().mockResolvedValue(null) });
       const manager = new SsoManager(deps);
-      await expect(manager.getAuthorizationUrl('missing', 'https://app/callback')).rejects.toThrow('not found');
+      await expect(manager.getAuthorizationUrl('missing', 'https://app/callback')).rejects.toThrow(
+        'not found'
+      );
     });
 
     it('throws when provider is disabled', async () => {
-      const deps = makeDeps({ getIdentityProvider: vi.fn().mockResolvedValue({ ...PROVIDER, enabled: false }) });
+      const deps = makeDeps({
+        getIdentityProvider: vi.fn().mockResolvedValue({ ...PROVIDER, enabled: false }),
+      });
       const manager = new SsoManager(deps);
-      await expect(manager.getAuthorizationUrl('idp-1', 'https://app/callback')).rejects.toThrow('disabled');
+      await expect(manager.getAuthorizationUrl('idp-1', 'https://app/callback')).rejects.toThrow(
+        'disabled'
+      );
     });
 
     it('throws when provider is not OIDC', async () => {
-      const deps = makeDeps({ getIdentityProvider: vi.fn().mockResolvedValue({ ...PROVIDER, type: 'saml' }) });
+      const deps = makeDeps({
+        getIdentityProvider: vi.fn().mockResolvedValue({ ...PROVIDER, type: 'saml' }),
+      });
       const manager = new SsoManager(deps);
-      await expect(manager.getAuthorizationUrl('idp-1', 'https://app/callback')).rejects.toThrow('OIDC');
+      await expect(manager.getAuthorizationUrl('idp-1', 'https://app/callback')).rejects.toThrow(
+        'OIDC'
+      );
     });
 
     it('saves state and code_verifier to storage', async () => {
@@ -115,7 +162,11 @@ describe('SsoManager', () => {
       const manager = new SsoManager({ ...makeDeps(), storage: storageMock });
       await manager.getAuthorizationUrl('idp-1', 'https://app/callback', 'ws-1');
       expect(storageMock.createSsoState).toHaveBeenCalledWith(
-        expect.objectContaining({ providerId: 'idp-1', redirectUri: 'https://app/callback', workspaceId: 'ws-1' })
+        expect.objectContaining({
+          providerId: 'idp-1',
+          redirectUri: 'https://app/callback',
+          workspaceId: 'ws-1',
+        })
       );
     });
   });
@@ -136,7 +187,15 @@ describe('SsoManager', () => {
 
     it('throws when provider id mismatches stored state', async () => {
       const deps = makeDeps({
-        getSsoState: vi.fn().mockResolvedValue({ state: 's', providerId: 'other-idp', redirectUri: 'r', codeVerifier: null, workspaceId: null, createdAt: 0, expiresAt: Date.now() + 60000 }),
+        getSsoState: vi.fn().mockResolvedValue({
+          state: 's',
+          providerId: 'other-idp',
+          redirectUri: 'r',
+          codeVerifier: null,
+          workspaceId: null,
+          createdAt: 0,
+          expiresAt: Date.now() + 60000,
+        }),
       });
       const manager = new SsoManager(deps);
       const url = new URL('https://app/callback?state=s');
@@ -145,7 +204,15 @@ describe('SsoManager', () => {
 
     it('throws when provider not found during callback (second lookup fails)', async () => {
       const storage = makeMockStorage({
-        getSsoState: vi.fn().mockResolvedValue({ state: 's', providerId: 'idp-1', redirectUri: 'r', codeVerifier: null, workspaceId: null, createdAt: 0, expiresAt: Date.now() + 60000 }),
+        getSsoState: vi.fn().mockResolvedValue({
+          state: 's',
+          providerId: 'idp-1',
+          redirectUri: 'r',
+          codeVerifier: null,
+          workspaceId: null,
+          createdAt: 0,
+          expiresAt: Date.now() + 60000,
+        }),
         // First call (state lookup validation doesn't call getIdentityProvider) — callback checks it
         getIdentityProvider: vi.fn().mockResolvedValueOnce(null),
       });
@@ -175,10 +242,22 @@ describe('SsoManager', () => {
       } as never);
 
       const storageMock = makeMockStorage({
-        getMappingByExternalSubject: vi.fn().mockResolvedValue({ id: 'map-1', idpId: 'idp-1', localUserId: 'existing-user', externalSubject: 'sub1', attributes: {}, createdAt: 0, lastLoginAt: null }),
+        getMappingByExternalSubject: vi.fn().mockResolvedValue({
+          id: 'map-1',
+          idpId: 'idp-1',
+          localUserId: 'existing-user',
+          externalSubject: 'sub1',
+          attributes: {},
+          createdAt: 0,
+          lastLoginAt: null,
+        }),
       });
       const authMock = makeMockAuth();
-      const manager = new SsoManager({ ...makeDeps(), storage: storageMock, authService: authMock });
+      const manager = new SsoManager({
+        ...makeDeps(),
+        storage: storageMock,
+        authService: authMock,
+      });
       const url = new URL('https://app/callback?state=abc123&code=xyz');
       await manager.handleCallback('idp-1', url);
 
@@ -193,7 +272,13 @@ describe('SsoManager', () => {
 
       const authMock = makeMockAuth({
         getUserByEmail: vi.fn().mockResolvedValue(null), // user doesn't exist
-        createUser: vi.fn().mockResolvedValue({ id: 'u-new', email: 'new@example.com', displayName: 'New User', isAdmin: false, createdAt: 0 }),
+        createUser: vi.fn().mockResolvedValue({
+          id: 'u-new',
+          email: 'new@example.com',
+          displayName: 'New User',
+          isAdmin: false,
+          createdAt: 0,
+        }),
       });
       const manager = new SsoManager({ ...makeDeps(), authService: authMock });
       const url = new URL('https://app/callback?state=abc123&code=xyz');
@@ -213,9 +298,15 @@ describe('SsoManager', () => {
         getIdentityProvider: vi.fn().mockResolvedValue({ ...PROVIDER, autoProvision: false }),
       });
       const authMock = makeMockAuth({ getUserByEmail: vi.fn().mockResolvedValue(null) });
-      const manager = new SsoManager({ ...makeDeps(), storage: storageMock, authService: authMock });
+      const manager = new SsoManager({
+        ...makeDeps(),
+        storage: storageMock,
+        authService: authMock,
+      });
       const url = new URL('https://app/callback?state=abc123&code=xyz');
-      await expect(manager.handleCallback('idp-1', url)).rejects.toThrow('auto-provisioning is disabled');
+      await expect(manager.handleCallback('idp-1', url)).rejects.toThrow(
+        'auto-provisioning is disabled'
+      );
     });
 
     it('throws when ID token has no claims', async () => {
@@ -232,8 +323,13 @@ describe('SsoManager', () => {
     it('consumes state (deleteSsoState) even when provider ID mismatches', async () => {
       const storageMock = makeMockStorage({
         getSsoState: vi.fn().mockResolvedValue({
-          state: 's', providerId: 'other-idp', redirectUri: 'r',
-          codeVerifier: null, workspaceId: null, createdAt: 0, expiresAt: Date.now() + 60000,
+          state: 's',
+          providerId: 'other-idp',
+          redirectUri: 'r',
+          codeVerifier: null,
+          workspaceId: null,
+          createdAt: 0,
+          expiresAt: Date.now() + 60000,
         }),
       });
       const manager = new SsoManager({ ...makeDeps(), storage: storageMock });
@@ -248,7 +344,9 @@ describe('SsoManager', () => {
       );
       const storageMock = makeMockStorage();
       const manager = new SsoManager({ ...makeDeps(), storage: storageMock });
-      const url = new URL('https://app/callback?error=access_denied&error_description=User+denied&state=abc123');
+      const url = new URL(
+        'https://app/callback?error=access_denied&error_description=User+denied&state=abc123'
+      );
       await expect(manager.handleCallback('idp-1', url)).rejects.toThrow('access_denied');
       expect(storageMock.deleteSsoState).toHaveBeenCalledWith('abc123');
     });
@@ -265,9 +363,7 @@ describe('SsoManager', () => {
     });
 
     it('throws for malformed callback missing both code and error params', async () => {
-      vi.mocked(oidc.authorizationCodeGrant).mockRejectedValue(
-        new Error('missing code parameter')
-      );
+      vi.mocked(oidc.authorizationCodeGrant).mockRejectedValue(new Error('missing code parameter'));
       const storageMock = makeMockStorage();
       const manager = new SsoManager({ ...makeDeps(), storage: storageMock });
       const url = new URL('https://app/callback?state=abc123');

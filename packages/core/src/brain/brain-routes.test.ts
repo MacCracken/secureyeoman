@@ -90,10 +90,7 @@ function makeMockSoul(overrides?: Partial<SoulManager>): SoulManager {
   } as unknown as SoulManager;
 }
 
-function buildApp(
-  brainOverrides?: Partial<BrainManager>,
-  withOptional = true
-) {
+function buildApp(brainOverrides?: Partial<BrainManager>, withOptional = true) {
   const app = Fastify();
   registerBrainRoutes(app, {
     brainManager: makeMockBrain(brainOverrides),

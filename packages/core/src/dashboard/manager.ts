@@ -29,7 +29,10 @@ export class DashboardManager {
     return await this.storage.get(id);
   }
 
-  async list(opts?: { limit?: number; offset?: number }): Promise<{ dashboards: CustomDashboard[]; total: number }> {
+  async list(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ dashboards: CustomDashboard[]; total: number }> {
     return await this.storage.list(opts);
   }
 

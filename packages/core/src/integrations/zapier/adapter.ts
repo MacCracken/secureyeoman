@@ -45,8 +45,13 @@ export class ZapierIntegration implements WebhookIntegration {
     this.logger?.info('Zapier integration stopped');
   }
 
-  async sendMessage(_chatId: string, text: string, metadata?: Record<string, unknown>): Promise<string> {
-    const outboundUrl = (metadata?.['outboundUrl'] as string | undefined) ?? this.zapierConfig?.outboundUrl;
+  async sendMessage(
+    _chatId: string,
+    text: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
+    const outboundUrl =
+      (metadata?.['outboundUrl'] as string | undefined) ?? this.zapierConfig?.outboundUrl;
     if (!outboundUrl) throw new Error('No Zapier outbound webhook URL configured');
     const payload = { message: text, ...metadata };
     const resp = await fetch(outboundUrl, {
@@ -58,9 +63,13 @@ export class ZapierIntegration implements WebhookIntegration {
     return `zapier_out_${Date.now()}`;
   }
 
-  isHealthy(): boolean { return this.running; }
+  isHealthy(): boolean {
+    return this.running;
+  }
 
-  getWebhookPath(): string { return '/webhooks/zapier'; }
+  getWebhookPath(): string {
+    return '/webhooks/zapier';
+  }
 
   verifyWebhook(payload: string, signature: string): boolean {
     if (!this.zapierConfig?.webhookSecret) return true; // no secret = accept all
@@ -79,13 +88,13 @@ export class ZapierIntegration implements WebhookIntegration {
     if (!this.deps) return;
     try {
       const data = JSON.parse(payload) as Record<string, unknown>;
-      const text = (data['message'] as string | undefined)
-        ?? (data['text'] as string | undefined)
-        ?? (data['content'] as string | undefined)
-        ?? `Zap triggered: ${JSON.stringify(data).slice(0, 200)}`;
-      const senderId = (data['sender'] as string | undefined)
-        ?? (data['from'] as string | undefined)
-        ?? 'zapier';
+      const text =
+        (data['message'] as string | undefined) ??
+        (data['text'] as string | undefined) ??
+        (data['content'] as string | undefined) ??
+        `Zap triggered: ${JSON.stringify(data).slice(0, 200)}`;
+      const senderId =
+        (data['sender'] as string | undefined) ?? (data['from'] as string | undefined) ?? 'zapier';
 
       const unified: UnifiedMessage = {
         id: `zapier_${Date.now()}`,
@@ -103,7 +112,9 @@ export class ZapierIntegration implements WebhookIntegration {
       };
       await this.deps.onMessage(unified);
     } catch (err) {
-      this.logger?.warn('Zapier webhook parse error', { error: err instanceof Error ? err.message : String(err) });
+      this.logger?.warn('Zapier webhook parse error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 

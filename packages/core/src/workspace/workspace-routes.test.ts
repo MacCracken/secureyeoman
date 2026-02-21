@@ -6,10 +6,24 @@ import type { AuthService } from '../security/auth.js';
 
 // ── Mock data ──────────────────────────────────────────────────────
 
-const WS = { id: 'ws-1', name: 'Team A', description: '', settings: {}, members: [], createdAt: 1000, updatedAt: 1000 };
+const WS = {
+  id: 'ws-1',
+  name: 'Team A',
+  description: '',
+  settings: {},
+  members: [],
+  createdAt: 1000,
+  updatedAt: 1000,
+};
 const MEMBER = { workspaceId: 'ws-1', userId: 'u1', role: 'member', joinedAt: 1000 };
 const ADMIN_MEMBER = { workspaceId: 'ws-1', userId: 'admin', role: 'owner', joinedAt: 1000 };
-const USER = { id: 'u1', email: 'test@example.com', displayName: 'Test User', isAdmin: false, createdAt: 1000 };
+const USER = {
+  id: 'u1',
+  email: 'test@example.com',
+  displayName: 'Test User',
+  isAdmin: false,
+  createdAt: 1000,
+};
 
 function makeMockWorkspaceManager(overrides?: Partial<WorkspaceManager>): WorkspaceManager {
   return {
@@ -61,7 +75,9 @@ function buildApp(wm?: WorkspaceManager, auth?: AuthService, authUser?: Record<s
 describe('Workspace Routes — workspaces', () => {
   let app: ReturnType<typeof Fastify>;
 
-  beforeEach(() => { app = buildApp(); });
+  beforeEach(() => {
+    app = buildApp();
+  });
 
   it('GET /api/v1/workspaces returns list', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/workspaces' });
@@ -77,15 +93,25 @@ describe('Workspace Routes — workspaces', () => {
   });
 
   it('POST /api/v1/workspaces creates workspace', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/workspaces', payload: { name: 'Team A' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/workspaces',
+      payload: { name: 'Team A' },
+    });
     expect(res.statusCode).toBe(201);
     expect(res.json().workspace.id).toBe('ws-1');
   });
 
   it('POST /api/v1/workspaces returns 400 on manager error', async () => {
-    const wm = makeMockWorkspaceManager({ create: vi.fn().mockRejectedValue(new Error('duplicate')) });
+    const wm = makeMockWorkspaceManager({
+      create: vi.fn().mockRejectedValue(new Error('duplicate')),
+    });
     const a = buildApp(wm);
-    const res = await a.inject({ method: 'POST', url: '/api/v1/workspaces', payload: { name: '' } });
+    const res = await a.inject({
+      method: 'POST',
+      url: '/api/v1/workspaces',
+      payload: { name: '' },
+    });
     expect(res.statusCode).toBe(400);
   });
 
@@ -104,22 +130,38 @@ describe('Workspace Routes — workspaces', () => {
 
   it('PUT /api/v1/workspaces/:id updates workspace as global admin', async () => {
     const a = buildApp(undefined, undefined, { userId: 'admin', role: 'admin' });
-    const res = await a.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1', payload: { name: 'Updated' } });
+    const res = await a.inject({
+      method: 'PUT',
+      url: '/api/v1/workspaces/ws-1',
+      payload: { name: 'Updated' },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().workspace.id).toBe('ws-1');
   });
 
   it('PUT /api/v1/workspaces/:id updates workspace as workspace owner', async () => {
-    const wm = makeMockWorkspaceManager({ getMember: vi.fn().mockResolvedValue({ userId: 'u1', role: 'owner', joinedAt: 1000 }) });
+    const wm = makeMockWorkspaceManager({
+      getMember: vi.fn().mockResolvedValue({ userId: 'u1', role: 'owner', joinedAt: 1000 }),
+    });
     const a = buildApp(wm, undefined, { userId: 'u1', role: 'operator' });
-    const res = await a.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1', payload: { name: 'Updated' } });
+    const res = await a.inject({
+      method: 'PUT',
+      url: '/api/v1/workspaces/ws-1',
+      payload: { name: 'Updated' },
+    });
     expect(res.statusCode).toBe(200);
   });
 
   it('PUT /api/v1/workspaces/:id returns 403 for non-admin member', async () => {
-    const wm = makeMockWorkspaceManager({ getMember: vi.fn().mockResolvedValue({ userId: 'u2', role: 'member', joinedAt: 1000 }) });
+    const wm = makeMockWorkspaceManager({
+      getMember: vi.fn().mockResolvedValue({ userId: 'u2', role: 'member', joinedAt: 1000 }),
+    });
     const a = buildApp(wm, undefined, { userId: 'u2', role: 'operator' });
-    const res = await a.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1', payload: { name: 'Hack' } });
+    const res = await a.inject({
+      method: 'PUT',
+      url: '/api/v1/workspaces/ws-1',
+      payload: { name: 'Hack' },
+    });
     expect(res.statusCode).toBe(403);
   });
 
@@ -131,7 +173,9 @@ describe('Workspace Routes — workspaces', () => {
   });
 
   it('PUT /api/v1/workspaces/:id returns 400 on manager error', async () => {
-    const wm = makeMockWorkspaceManager({ update: vi.fn().mockRejectedValue(new Error('validation')) });
+    const wm = makeMockWorkspaceManager({
+      update: vi.fn().mockRejectedValue(new Error('validation')),
+    });
     const a = buildApp(wm, undefined, { userId: 'admin', role: 'admin' });
     const res = await a.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1', payload: {} });
     expect(res.statusCode).toBe(400);
@@ -174,7 +218,11 @@ describe('Workspace Routes — members', () => {
   });
 
   it('POST /api/v1/workspaces/:id/members adds member', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/workspaces/ws-1/members', payload: { userId: 'u1', role: 'admin' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/workspaces/ws-1/members',
+      payload: { userId: 'u1', role: 'admin' },
+    });
     expect(res.statusCode).toBe(201);
     expect(res.json().member.userId).toBe('u1');
   });
@@ -182,7 +230,11 @@ describe('Workspace Routes — members', () => {
   it('POST /api/v1/workspaces/:id/members defaults role to member', async () => {
     const wm = makeMockWorkspaceManager();
     const a = buildApp(wm, undefined, { userId: 'admin', role: 'admin' });
-    await a.inject({ method: 'POST', url: '/api/v1/workspaces/ws-1/members', payload: { userId: 'u2' } });
+    await a.inject({
+      method: 'POST',
+      url: '/api/v1/workspaces/ws-1/members',
+      payload: { userId: 'u2' },
+    });
     expect(wm.addMember).toHaveBeenCalledWith('ws-1', 'u2', 'member');
   });
 
@@ -208,7 +260,9 @@ describe('Workspace Routes — members', () => {
   });
 
   it('POST /api/v1/workspaces/:id/members returns 403 for non-admin member', async () => {
-    const wm = makeMockWorkspaceManager({ getMember: vi.fn().mockResolvedValue({ userId: 'u2', role: 'member', joinedAt: 1000 }) });
+    const wm = makeMockWorkspaceManager({
+      getMember: vi.fn().mockResolvedValue({ userId: 'u2', role: 'member', joinedAt: 1000 }),
+    });
     const a = buildApp(wm, undefined, { userId: 'u2', role: 'operator' });
     const res = await a.inject({
       method: 'POST',
@@ -219,14 +273,24 @@ describe('Workspace Routes — members', () => {
   });
 
   it('POST /api/v1/workspaces/:id/members returns 400 on manager error', async () => {
-    const wm = makeMockWorkspaceManager({ addMember: vi.fn().mockRejectedValue(new Error('already exists')) });
+    const wm = makeMockWorkspaceManager({
+      addMember: vi.fn().mockRejectedValue(new Error('already exists')),
+    });
     const a = buildApp(wm, undefined, { userId: 'admin', role: 'admin' });
-    const res = await a.inject({ method: 'POST', url: '/api/v1/workspaces/ws-1/members', payload: { userId: 'u1' } });
+    const res = await a.inject({
+      method: 'POST',
+      url: '/api/v1/workspaces/ws-1/members',
+      payload: { userId: 'u1' },
+    });
     expect(res.statusCode).toBe(400);
   });
 
   it('PUT /api/v1/workspaces/:id/members/:userId updates role', async () => {
-    const res = await app.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1/members/u1', payload: { role: 'admin' } });
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/workspaces/ws-1/members/u1',
+      payload: { role: 'admin' },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().member.userId).toBe('u1');
   });
@@ -244,21 +308,37 @@ describe('Workspace Routes — members', () => {
   it('PUT /api/v1/workspaces/:id/members/:userId returns 404 when not found', async () => {
     const wm = makeMockWorkspaceManager({ updateMemberRole: vi.fn().mockResolvedValue(null) });
     const a = buildApp(wm, undefined, { userId: 'admin', role: 'admin' });
-    const res = await a.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1/members/missing', payload: { role: 'member' } });
+    const res = await a.inject({
+      method: 'PUT',
+      url: '/api/v1/workspaces/ws-1/members/missing',
+      payload: { role: 'member' },
+    });
     expect(res.statusCode).toBe(404);
   });
 
   it('PUT /api/v1/workspaces/:id/members/:userId returns 400 on error', async () => {
-    const wm = makeMockWorkspaceManager({ updateMemberRole: vi.fn().mockRejectedValue(new Error('invalid role')) });
+    const wm = makeMockWorkspaceManager({
+      updateMemberRole: vi.fn().mockRejectedValue(new Error('invalid role')),
+    });
     const a = buildApp(wm, undefined, { userId: 'admin', role: 'admin' });
-    const res = await a.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1/members/u1', payload: { role: 'owner' } });
+    const res = await a.inject({
+      method: 'PUT',
+      url: '/api/v1/workspaces/ws-1/members/u1',
+      payload: { role: 'owner' },
+    });
     expect(res.statusCode).toBe(400);
   });
 
   it('PUT /api/v1/workspaces/:id/members/:userId returns 403 for non-admin member', async () => {
-    const wm = makeMockWorkspaceManager({ getMember: vi.fn().mockResolvedValue({ userId: 'viewer', role: 'viewer', joinedAt: 1000 }) });
+    const wm = makeMockWorkspaceManager({
+      getMember: vi.fn().mockResolvedValue({ userId: 'viewer', role: 'viewer', joinedAt: 1000 }),
+    });
     const a = buildApp(wm, undefined, { userId: 'viewer', role: 'operator' });
-    const res = await a.inject({ method: 'PUT', url: '/api/v1/workspaces/ws-1/members/u1', payload: { role: 'admin' } });
+    const res = await a.inject({
+      method: 'PUT',
+      url: '/api/v1/workspaces/ws-1/members/u1',
+      payload: { role: 'admin' },
+    });
     expect(res.statusCode).toBe(403);
   });
 
@@ -283,7 +363,10 @@ describe('Workspace Routes — members', () => {
       listMembers: vi.fn().mockResolvedValue({ members: [], total: 0 }),
     });
     const a = buildApp(wm, undefined, { userId: 'admin', role: 'admin' });
-    const res = await a.inject({ method: 'DELETE', url: '/api/v1/workspaces/ws-1/members/missing' });
+    const res = await a.inject({
+      method: 'DELETE',
+      url: '/api/v1/workspaces/ws-1/members/missing',
+    });
     expect(res.statusCode).toBe(404);
   });
 
@@ -318,7 +401,9 @@ describe('Workspace Routes — members', () => {
   });
 
   it('DELETE /api/v1/workspaces/:id/members/:userId returns 403 for non-admin member', async () => {
-    const wm = makeMockWorkspaceManager({ getMember: vi.fn().mockResolvedValue({ userId: 'u2', role: 'member', joinedAt: 1000 }) });
+    const wm = makeMockWorkspaceManager({
+      getMember: vi.fn().mockResolvedValue({ userId: 'u2', role: 'member', joinedAt: 1000 }),
+    });
     const a = buildApp(wm, undefined, { userId: 'u2', role: 'operator' });
     const res = await a.inject({ method: 'DELETE', url: '/api/v1/workspaces/ws-1/members/u3' });
     expect(res.statusCode).toBe(403);
@@ -330,7 +415,9 @@ describe('Workspace Routes — members', () => {
 describe('Workspace Routes — users', () => {
   let app: ReturnType<typeof Fastify>;
 
-  beforeEach(() => { app = buildApp(); });
+  beforeEach(() => {
+    app = buildApp();
+  });
 
   it('GET /api/v1/users returns users', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/users' });
@@ -340,15 +427,25 @@ describe('Workspace Routes — users', () => {
   });
 
   it('POST /api/v1/users creates user', async () => {
-    const res = await app.inject({ method: 'POST', url: '/api/v1/users', payload: { email: 'test@example.com' } });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/users',
+      payload: { email: 'test@example.com' },
+    });
     expect(res.statusCode).toBe(201);
     expect(res.json().user.id).toBe('u1');
   });
 
   it('POST /api/v1/users returns 400 on error', async () => {
-    const auth = makeMockAuthService({ createUser: vi.fn().mockRejectedValue(new Error('email taken')) });
+    const auth = makeMockAuthService({
+      createUser: vi.fn().mockRejectedValue(new Error('email taken')),
+    });
     const a = buildApp(undefined, auth);
-    const res = await a.inject({ method: 'POST', url: '/api/v1/users', payload: { email: 'dup@example.com' } });
+    const res = await a.inject({
+      method: 'POST',
+      url: '/api/v1/users',
+      payload: { email: 'dup@example.com' },
+    });
     expect(res.statusCode).toBe(400);
   });
 

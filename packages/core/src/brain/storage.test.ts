@@ -184,9 +184,9 @@ describe('BrainStorage', () => {
     });
 
     it('throws on invalid context key', async () => {
-      await expect(
-        storage.queryMemories({ context: { 'bad key!': 'val' } })
-      ).rejects.toThrow('Invalid context key');
+      await expect(storage.queryMemories({ context: { 'bad key!': 'val' } })).rejects.toThrow(
+        'Invalid context key'
+      );
     });
 
     it('adds LIMIT and OFFSET', async () => {
@@ -325,7 +325,7 @@ describe('BrainStorage', () => {
     it('updates content and returns updated entry', async () => {
       mockQuery
         .mockResolvedValueOnce({ rows: [knowledgeRow], rowCount: 1 }) // getKnowledge
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 })              // UPDATE
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // UPDATE
         .mockResolvedValueOnce({ rows: [{ ...knowledgeRow, content: 'updated' }], rowCount: 1 }); // re-select
 
       const result = await storage.updateKnowledge('know-1', { content: 'updated' });
@@ -380,13 +380,15 @@ describe('BrainStorage', () => {
   describe('updateSkill', () => {
     it('throws if skill not found', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-      await expect(storage.updateSkill('missing', { name: 'x' })).rejects.toThrow('Skill not found');
+      await expect(storage.updateSkill('missing', { name: 'x' })).rejects.toThrow(
+        'Skill not found'
+      );
     });
 
     it('updates and returns the updated skill', async () => {
       mockQuery
         .mockResolvedValueOnce({ rows: [skillRow], rowCount: 1 }) // getSkill
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 })          // UPDATE
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // UPDATE
         .mockResolvedValueOnce({ rows: [{ ...skillRow, name: 'Updated' }], rowCount: 1 }); // re-select
 
       const skill = await storage.updateSkill('skill-1', { name: 'Updated' });

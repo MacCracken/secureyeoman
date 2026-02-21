@@ -31,8 +31,20 @@ const toolManifests = [
 ];
 
 const toolDefs = [
-  { name: 'tool_a', description: 'Tool A', inputSchema: { type: 'object', properties: {} }, serverId: 'srv-1', serverName: 'Test Server' },
-  { name: 'tool_b', description: 'Tool B', inputSchema: {}, serverId: 'srv-1', serverName: 'Test Server' },
+  {
+    name: 'tool_a',
+    description: 'Tool A',
+    inputSchema: { type: 'object', properties: {} },
+    serverId: 'srv-1',
+    serverName: 'Test Server',
+  },
+  {
+    name: 'tool_b',
+    description: 'Tool B',
+    inputSchema: {},
+    serverId: 'srv-1',
+    serverName: 'Test Server',
+  },
 ];
 
 // ─── Tests ────────────────────────────────────────────────────

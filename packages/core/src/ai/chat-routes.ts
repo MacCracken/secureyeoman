@@ -87,7 +87,11 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       try {
         aiClient = secureYeoman.getAIClient();
       } catch {
-        return sendError(reply, 503, 'AI client is not available. Check provider configuration and API keys.');
+        return sendError(
+          reply,
+          503,
+          'AI client is not available. Check provider configuration and API keys.'
+        );
       }
 
       // Gather Brain context metadata (best-effort — Brain may not be available)
@@ -216,12 +220,15 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       };
 
       try {
-        const personalityFallbacks =
-          personality?.modelFallbacks?.length
-            ? resolvePersonalityFallbacks(personality.modelFallbacks)
-            : undefined;
+        const personalityFallbacks = personality?.modelFallbacks?.length
+          ? resolvePersonalityFallbacks(personality.modelFallbacks)
+          : undefined;
 
-        const response = await aiClient.chat(aiRequest, { source: 'dashboard_chat' }, personalityFallbacks);
+        const response = await aiClient.chat(
+          aiRequest,
+          { source: 'dashboard_chat' },
+          personalityFallbacks
+        );
 
         // Persist messages to conversation storage when conversationId is provided
         if (conversationId) {

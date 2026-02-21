@@ -24,7 +24,11 @@ export class RedisRateLimiter {
   private totalHits = 0;
   private totalChecks = 0;
 
-  constructor(config: SecurityConfig['rateLimiting'], redisUrl: string, redisPrefix = 'secureyeoman:rl') {
+  constructor(
+    config: SecurityConfig['rateLimiting'],
+    redisUrl: string,
+    redisPrefix = 'secureyeoman:rl'
+  ) {
     this.redis = new RedisClient(redisUrl, {
       maxRetriesPerRequest: 3,
       lazyConnect: true,

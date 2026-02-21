@@ -9,16 +9,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  MessageSquare,
-  Send,
-  RefreshCw,
-  ChevronLeft,
-  Hash,
-  Clock,
-  User,
-  Bot,
-} from 'lucide-react';
+import { MessageSquare, Send, RefreshCw, ChevronLeft, Hash, Clock, User, Bot } from 'lucide-react';
 import {
   fetchGroupChatChannels,
   fetchGroupChatMessages,
@@ -66,7 +57,11 @@ export function GroupChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // ── Channel list ─────────────────────────────────────────────────────────
-  const { data: channelsData, isLoading: channelsLoading, refetch: refetchChannels } = useQuery({
+  const {
+    data: channelsData,
+    isLoading: channelsLoading,
+    refetch: refetchChannels,
+  } = useQuery({
     queryKey: ['group-chat-channels'],
     queryFn: () => fetchGroupChatChannels({ limit: 100 }),
     refetchInterval: 15_000,
@@ -171,9 +166,7 @@ export function GroupChatPage() {
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="text-base">{platformIcon(ch.platform)}</span>
-                  <span className="font-medium text-sm truncate flex-1">
-                    {ch.integrationName}
-                  </span>
+                  <span className="font-medium text-sm truncate flex-1">{ch.integrationName}</span>
                   {ch.unrepliedCount > 0 && (
                     <span className="text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5">
                       {ch.unrepliedCount}
@@ -192,9 +185,7 @@ export function GroupChatPage() {
                   </p>
                 )}
                 {ch.personalityName && (
-                  <p className="text-xs text-primary truncate mt-0.5">
-                    🤖 {ch.personalityName}
-                  </p>
+                  <p className="text-xs text-primary truncate mt-0.5">🤖 {ch.personalityName}</p>
                 )}
               </button>
             );
@@ -258,7 +249,9 @@ export function GroupChatPage() {
                 <Bot className="w-3.5 h-3.5" />
                 <span>Replying as: </span>
                 <span className="text-primary font-medium">
-                  {personalities.find((p) => p.enabled)?.name ?? personalities[0]?.name ?? 'Default'}
+                  {personalities.find((p) => p.isActive)?.name ??
+                    personalities[0]?.name ??
+                    'Default'}
                 </span>
               </div>
             )}
@@ -283,9 +276,7 @@ export function GroupChatPage() {
             {sendMutation.isError && (
               <p className="mt-1 text-xs text-destructive">
                 Failed to send:{' '}
-                {sendMutation.error instanceof Error
-                  ? sendMutation.error.message
-                  : 'Unknown error'}
+                {sendMutation.error instanceof Error ? sendMutation.error.message : 'Unknown error'}
               </p>
             )}
           </div>

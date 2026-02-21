@@ -49,27 +49,51 @@ vi.mock('discord.js', () => {
   });
 
   class MockEmbedBuilder {
-    setTitle() { return this; }
-    setDescription() { return this; }
-    setColor() { return this; }
-    setTimestamp() { return this; }
-    addFields() { return this; }
+    setTitle() {
+      return this;
+    }
+    setDescription() {
+      return this;
+    }
+    setColor() {
+      return this;
+    }
+    setTimestamp() {
+      return this;
+    }
+    addFields() {
+      return this;
+    }
   }
 
   class MockModalBuilder {
-    setCustomId() { return this; }
-    setTitle() { return this; }
-    addComponents() { return this; }
+    setCustomId() {
+      return this;
+    }
+    setTitle() {
+      return this;
+    }
+    addComponents() {
+      return this;
+    }
   }
 
   class MockTextInputBuilder {
-    setCustomId() { return this; }
-    setLabel() { return this; }
-    setStyle() { return this; }
+    setCustomId() {
+      return this;
+    }
+    setLabel() {
+      return this;
+    }
+    setStyle() {
+      return this;
+    }
   }
 
   class MockActionRowBuilder {
-    addComponents() { return this; }
+    addComponents() {
+      return this;
+    }
   }
 
   return {
@@ -93,9 +117,7 @@ vi.mock('discord.js', () => {
       applicationGuildCommands: vi.fn(
         (clientId: string, guildId: string) => `/guilds/${guildId}/commands`
       ),
-      applicationCommands: vi.fn(
-        (clientId: string) => `/applications/${clientId}/commands`
-      ),
+      applicationCommands: vi.fn((clientId: string) => `/applications/${clientId}/commands`),
     },
     EmbedBuilder: MockEmbedBuilder,
     ModalBuilder: MockModalBuilder,
@@ -186,9 +208,9 @@ describe('DiscordIntegration', () => {
     });
 
     it('should throw when botToken is missing', async () => {
-      await expect(
-        integration.init(makeConfig({ config: {} }), makeDeps())
-      ).rejects.toThrow('botToken');
+      await expect(integration.init(makeConfig({ config: {} }), makeDeps())).rejects.toThrow(
+        'botToken'
+      );
     });
 
     it('should register messageCreate event handler', async () => {
@@ -411,10 +433,7 @@ describe('DiscordIntegration', () => {
     });
 
     it('should skip registration when no clientId is configured', async () => {
-      await integration.init(
-        makeConfig({ config: { botToken: 'token' } }),
-        makeDeps()
-      );
+      await integration.init(makeConfig({ config: { botToken: 'token' } }), makeDeps());
       await integration.start();
       await fireReadyHandlers();
       expect(mockRestPut).not.toHaveBeenCalled();
@@ -430,7 +449,7 @@ describe('DiscordIntegration', () => {
       await integration.start();
       // Should not throw
       await expect(fireReadyHandlers()).resolves.not.toThrow();
-      expect((deps.logger.warn as ReturnType<typeof vi.fn>)).toHaveBeenCalled();
+      expect(deps.logger.warn as ReturnType<typeof vi.fn>).toHaveBeenCalled();
     });
   });
 
@@ -559,7 +578,12 @@ describe('DiscordIntegration', () => {
         attachments: {
           size: 1,
           map: () => [
-            { url: 'https://cdn.discord.com/img.png', name: 'img.png', contentType: 'image/png', size: 1000 },
+            {
+              url: 'https://cdn.discord.com/img.png',
+              name: 'img.png',
+              contentType: 'image/png',
+              size: 1000,
+            },
           ],
         },
         reference: null,
@@ -624,7 +648,10 @@ describe('DiscordIntegration', () => {
       handler(fakeModal);
       await new Promise((r) => setTimeout(r, 0));
 
-      expect(reply).toHaveBeenCalledWith({ content: 'Thank you for your feedback!', ephemeral: true });
+      expect(reply).toHaveBeenCalledWith({
+        content: 'Thank you for your feedback!',
+        ephemeral: true,
+      });
       expect(onMessage).toHaveBeenCalledOnce();
       const unified: UnifiedMessage = onMessage.mock.calls[0][0];
       expect(unified.text).toBe('Great product!');

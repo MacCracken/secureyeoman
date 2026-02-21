@@ -119,7 +119,10 @@ describe('SoulStorage', () => {
 
   describe('getActivePersonality', () => {
     it('returns the active personality', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ ...personalityRow, is_active: true }], rowCount: 1 });
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...personalityRow, is_active: true }],
+        rowCount: 1,
+      });
       const p = await storage.getActivePersonality();
       expect(p?.isActive).toBe(true);
     });
@@ -139,9 +142,7 @@ describe('SoulStorage', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // COMMIT
 
       await storage.setActivePersonality('per-1');
-      const commitCall = mockClient.query.mock.calls.find(
-        (c: any[]) => c[0] === 'COMMIT'
-      );
+      const commitCall = mockClient.query.mock.calls.find((c: any[]) => c[0] === 'COMMIT');
       expect(commitCall).toBeDefined();
     });
 
@@ -152,7 +153,9 @@ describe('SoulStorage', () => {
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // activate: not found → throws
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // ROLLBACK
 
-      await expect(storage.setActivePersonality('missing')).rejects.toThrow('Personality not found');
+      await expect(storage.setActivePersonality('missing')).rejects.toThrow(
+        'Personality not found'
+      );
     });
   });
 
@@ -167,7 +170,7 @@ describe('SoulStorage', () => {
     it('updates and returns updated personality', async () => {
       mockQuery
         .mockResolvedValueOnce({ rows: [personalityRow], rowCount: 1 }) // getPersonality
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 })                // UPDATE
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // UPDATE
         .mockResolvedValueOnce({ rows: [{ ...personalityRow, name: 'Updated' }], rowCount: 1 });
 
       const p = await storage.updatePersonality('per-1', { name: 'Updated' });

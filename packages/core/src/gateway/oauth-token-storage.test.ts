@@ -66,7 +66,10 @@ describe('OAuthTokenStorage', () => {
     });
 
     it('uses null defaults for optional fields', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ ...tokenRow, refresh_token: null, expires_at: null }], rowCount: 1 });
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...tokenRow, refresh_token: null, expires_at: null }],
+        rowCount: 1,
+      });
 
       const result = await storage.upsertToken({
         provider: 'github',
@@ -77,7 +80,7 @@ describe('OAuthTokenStorage', () => {
 
       const params = mockQuery.mock.calls[0][1] as unknown[];
       expect(params[5]).toBeNull(); // refreshToken
-      expect(params[6]).toBe('');   // scopes default
+      expect(params[6]).toBe(''); // scopes default
       expect(params[7]).toBeNull(); // expiresAt
       expect(result.refreshToken).toBeNull();
       expect(result.expiresAt).toBeNull();

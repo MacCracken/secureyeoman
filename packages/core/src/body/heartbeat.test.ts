@@ -917,7 +917,9 @@ describe('HeartbeatManager', () => {
       // Second action should still have been called
       expect(logger.info).toHaveBeenCalledWith(
         '[HEARTBEAT ALERT]',
-        expect.objectContaining({ message: expect.stringContaining('Second action should still run') })
+        expect.objectContaining({
+          message: expect.stringContaining('Second action should still run'),
+        })
       );
 
       errorSpy.mockRestore();
@@ -938,11 +940,30 @@ describe('HeartbeatManager', () => {
       const logStorage = mockLogStorage();
       const config = defaultConfig({
         checks: [
-          { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
-          { name: 'memory_status', type: 'memory_status', enabled: true, intervalMs: 0, config: {} },
+          {
+            name: 'system_health',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+          },
+          {
+            name: 'memory_status',
+            type: 'memory_status',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+          },
         ],
       });
-      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
       await hb.beat();
 
       expect(logStorage.persist).toHaveBeenCalledTimes(2);
@@ -962,7 +983,14 @@ describe('HeartbeatManager', () => {
           { name: 'broken_check', type: 'custom', enabled: true, intervalMs: 0, config: {} },
         ],
       });
-      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
       // Override runCheck to throw
       (hb as any).runCheck = vi.fn().mockRejectedValue(new Error('Simulated failure'));
 
@@ -984,10 +1012,23 @@ describe('HeartbeatManager', () => {
       logStorage.persist.mockRejectedValue(new Error('DB unavailable'));
       const config = defaultConfig({
         checks: [
-          { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+          {
+            name: 'system_health',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+          },
         ],
       });
-      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        config as any,
+        undefined,
+        logStorage as any
+      );
 
       // Should not throw — warns and continues
       await expect(hb.beat()).resolves.toBeDefined();

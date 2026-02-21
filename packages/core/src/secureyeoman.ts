@@ -457,9 +457,9 @@ export class SecureYeoman {
         // Fire usage history init in the background — non-blocking so startup
         // stays fast, but ensures the tracker is seeded well before the first
         // metrics poll (dashboard refetches every 30 s).
-        void this.aiClient.init().catch((err: unknown) =>
-          this.logger?.warn('AI usage history init failed', { err })
-        );
+        void this.aiClient
+          .init()
+          .catch((err: unknown) => this.logger?.warn('AI usage history init failed', { err }));
         this.logger.debug('AI client initialized', { provider: this.config.model.provider });
 
         // Apply persisted model default if one exists.
@@ -673,8 +673,11 @@ export class SecureYeoman {
           logger: this.logger.child({ component: 'RoutingRulesManager' }),
         });
         // Inject routing rule processing into the message router
-        (this.messageRouter as MessageRouter & { setRoutingRulesManager?: (m: RoutingRulesManager) => void })
-          .setRoutingRulesManager?.(this.routingRulesManager);
+        (
+          this.messageRouter as MessageRouter & {
+            setRoutingRulesManager?: (m: RoutingRulesManager) => void;
+          }
+        ).setRoutingRulesManager?.(this.routingRulesManager);
         this.logger.debug('Routing rules manager initialized and wired to message router');
       }
 
@@ -792,11 +795,9 @@ export class SecureYeoman {
       this.marketplaceManager = new MarketplaceManager(this.marketplaceStorage, {
         logger: this.logger.child({ component: 'MarketplaceManager' }),
         brainManager: this.brainManager ?? undefined,
-        communityRepoPath:
-          process.env['COMMUNITY_REPO_PATH'] ?? './community-skills',
+        communityRepoPath: process.env['COMMUNITY_REPO_PATH'] ?? './community-skills',
         allowCommunityGitFetch: this.config.security.allowCommunityGitFetch,
-        communityGitUrl:
-          this.config.security.communityGitUrl ?? process.env['COMMUNITY_GIT_URL'],
+        communityGitUrl: this.config.security.communityGitUrl ?? process.env['COMMUNITY_GIT_URL'],
       });
       await this.marketplaceManager.seedBuiltinSkills();
       // Wire marketplace into soul so skill deletion keeps installed state in sync
@@ -968,9 +969,12 @@ export class SecureYeoman {
           if (this.integrationManager) {
             const mmRef = this.multimodalManager;
             this.integrationManager.setMultimodalManager({
-              analyzeImage: (req) => mmRef.analyzeImage(req as Parameters<typeof mmRef.analyzeImage>[0]),
-              transcribeAudio: (req) => mmRef.transcribeAudio(req as Parameters<typeof mmRef.transcribeAudio>[0]),
-              synthesizeSpeech: (req) => mmRef.synthesizeSpeech(req as Parameters<typeof mmRef.synthesizeSpeech>[0]),
+              analyzeImage: (req) =>
+                mmRef.analyzeImage(req as Parameters<typeof mmRef.analyzeImage>[0]),
+              transcribeAudio: (req) =>
+                mmRef.transcribeAudio(req as Parameters<typeof mmRef.transcribeAudio>[0]),
+              synthesizeSpeech: (req) =>
+                mmRef.synthesizeSpeech(req as Parameters<typeof mmRef.synthesizeSpeech>[0]),
             });
           }
           // Wire multimodal + personality into MessageRouter for TTS on outbound
@@ -979,7 +983,8 @@ export class SecureYeoman {
             const soul = this.soulManager;
             this.messageRouter.setMultimodalDeps({
               multimodalManager: {
-                synthesizeSpeech: (req) => mmRef.synthesizeSpeech(req as Parameters<typeof mmRef.synthesizeSpeech>[0]),
+                synthesizeSpeech: (req) =>
+                  mmRef.synthesizeSpeech(req as Parameters<typeof mmRef.synthesizeSpeech>[0]),
               },
               getActivePersonality: soul
                 ? async () => {
@@ -1288,9 +1293,7 @@ export class SecureYeoman {
     try {
       const pool = getPool();
       const [sizeResult, oldestResult] = await Promise.all([
-        pool.query<{ size: string }>(
-          'SELECT pg_database_size(current_database()) AS size'
-        ),
+        pool.query<{ size: string }>('SELECT pg_database_size(current_database()) AS size'),
         pool.query<{ timestamp: number }>(
           'SELECT timestamp FROM audit.entries ORDER BY timestamp ASC LIMIT 1'
         ),

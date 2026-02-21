@@ -3,7 +3,12 @@ import Fastify from 'fastify';
 import { registerBrowserRoutes } from './browser-routes.js';
 import type { BrowserSessionStorage } from './storage.js';
 
-const SESSION = { id: 'sess-1', status: 'active', toolName: 'playwright', url: 'https://example.com' };
+const SESSION = {
+  id: 'sess-1',
+  status: 'active',
+  toolName: 'playwright',
+  url: 'https://example.com',
+};
 const STATS = { total: 5, active: 2, closed: 3 };
 const BROWSER_CONFIG = { headless: true, timeout: 30000, maxSessions: 10 };
 

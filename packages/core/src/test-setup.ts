@@ -22,7 +22,8 @@ export async function setupTestDb(): Promise<void> {
   const port = Number(process.env.TEST_DB_PORT ?? '5432');
   const database = process.env.TEST_DB_NAME ?? 'secureyeoman_test';
   const user = process.env.TEST_DB_USER ?? 'secureyeoman';
-  const password = process.env.TEST_DB_PASSWORD ?? process.env.POSTGRES_PASSWORD ?? 'secureyeoman_dev';
+  const password =
+    process.env.TEST_DB_PASSWORD ?? process.env.POSTGRES_PASSWORD ?? 'secureyeoman_dev';
 
   initPool({
     host,

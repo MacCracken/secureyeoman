@@ -13,12 +13,14 @@ export class GroupChatStorage extends PgBaseStorage {
    * List all known channels (integrationId × chatId pairs) with metadata.
    * A channel appears once an integration has received or sent at least one message.
    */
-  async listChannels(opts: {
-    limit?: number;
-    offset?: number;
-    platform?: string;
-    integrationId?: string;
-  } = {}): Promise<{ channels: GroupChatChannel[]; total: number }> {
+  async listChannels(
+    opts: {
+      limit?: number;
+      offset?: number;
+      platform?: string;
+      integrationId?: string;
+    } = {}
+  ): Promise<{ channels: GroupChatChannel[]; total: number }> {
     const { limit = 50, offset = 0, platform, integrationId } = opts;
 
     const conditions: string[] = [];
@@ -85,7 +87,9 @@ export class GroupChatStorage extends PgBaseStorage {
     );
 
     // Resolve personality names for channels that have a personality_id
-    const personalityIds = [...new Set(rows.map((r) => r.personality_id).filter(Boolean))] as string[];
+    const personalityIds = [
+      ...new Set(rows.map((r) => r.personality_id).filter(Boolean)),
+    ] as string[];
     const personalityNames = new Map<string, string>();
 
     if (personalityIds.length > 0) {

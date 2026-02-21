@@ -190,8 +190,7 @@ export class OAuthService {
     }
 
     // Google Calendar OAuth — reuses Google OAuth creds by default
-    const calendarClientId =
-      env.GOOGLE_CALENDAR_OAUTH_CLIENT_ID || env.GOOGLE_OAUTH_CLIENT_ID;
+    const calendarClientId = env.GOOGLE_CALENDAR_OAUTH_CLIENT_ID || env.GOOGLE_OAUTH_CLIENT_ID;
     const calendarClientSecret =
       env.GOOGLE_CALENDAR_OAUTH_CLIENT_SECRET || env.GOOGLE_OAUTH_CLIENT_SECRET;
     if (calendarClientId && calendarClientSecret) {
@@ -412,7 +411,11 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
       });
 
       // Google services need offline access for refresh tokens
-      if (providerId === 'gmail' || providerId === 'googlecalendar' || providerId === 'googledrive') {
+      if (
+        providerId === 'gmail' ||
+        providerId === 'googlecalendar' ||
+        providerId === 'googledrive'
+      ) {
         params.set('access_type', 'offline');
         params.set('prompt', 'consent');
       }
@@ -498,8 +501,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
             expiresIn: 3600,
           });
 
-          const redirectPage =
-            providerId === 'googlecalendar' ? 'calendar' : 'drive';
+          const redirectPage = providerId === 'googlecalendar' ? 'calendar' : 'drive';
           return await reply.redirect(
             `/connections/${redirectPage}?connected=true&provider=${providerId}&email=${encodeURIComponent(userInfo.email)}&token=${connectionToken}`
           );

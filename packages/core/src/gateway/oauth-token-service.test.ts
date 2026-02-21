@@ -3,11 +3,17 @@ import { OAuthTokenService } from './oauth-token-service.js';
 import type { OAuthTokenStorage, OAuthToken } from './oauth-token-storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 
-const makeLogger = (): SecureLogger => ({
-  trace: vi.fn(), debug: vi.fn(), info: vi.fn(),
-  warn: vi.fn(), error: vi.fn(), fatal: vi.fn(),
-  child: vi.fn().mockReturnThis(), level: 'debug',
-} as unknown as SecureLogger);
+const makeLogger = (): SecureLogger =>
+  ({
+    trace: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+    child: vi.fn().mockReturnThis(),
+    level: 'debug',
+  }) as unknown as SecureLogger;
 
 function makeToken(overrides: Partial<OAuthToken> = {}): OAuthToken {
   return {
@@ -77,7 +83,12 @@ describe('OAuthTokenService', () => {
       const storage = makeStorage();
       const svc = new OAuthTokenService({ storage, logger });
 
-      await svc.storeToken({ provider: 'github', email: 'u@e.com', userId: 'u1', accessToken: 'tok' });
+      await svc.storeToken({
+        provider: 'github',
+        email: 'u@e.com',
+        userId: 'u1',
+        accessToken: 'tok',
+      });
 
       const call = (storage.upsertToken as ReturnType<typeof vi.fn>).mock.calls[0][0];
       expect(call.expiresAt).toBeUndefined();
@@ -148,7 +159,11 @@ describe('OAuthTokenService', () => {
 
       const result = await svc.getValidToken('gmail', 'user@example.com');
       expect(result).toBe('new-access-tok');
-      expect(storage.updateAccessToken).toHaveBeenCalledWith('tok-1', 'new-access-tok', expect.any(Number));
+      expect(storage.updateAccessToken).toHaveBeenCalledWith(
+        'tok-1',
+        'new-access-tok',
+        expect.any(Number)
+      );
     });
 
     it('returns stale token when refresh fails (HTTP error)', async () => {

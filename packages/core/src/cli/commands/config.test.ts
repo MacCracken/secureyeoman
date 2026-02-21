@@ -111,7 +111,10 @@ describe('config validate subcommand', () => {
     const { stdout, stderr, getStdout } = createStreams();
     const code = await configCommand.run({ argv: ['validate', '--json'], stdout, stderr });
     expect([0, 1]).toContain(code);
-    const parsed = JSON.parse(getStdout()) as { valid: boolean; checks: { name: string; passed: boolean }[] };
+    const parsed = JSON.parse(getStdout()) as {
+      valid: boolean;
+      checks: { name: string; passed: boolean }[];
+    };
     expect(typeof parsed.valid).toBe('boolean');
     expect(Array.isArray(parsed.checks)).toBe(true);
     const names = parsed.checks.map((c) => c.name);

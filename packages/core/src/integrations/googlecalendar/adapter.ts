@@ -80,7 +80,7 @@ export class GoogleCalendarIntegration implements Integration {
       if (!token) {
         throw new Error(
           `No OAuth token found for Google Calendar (${gc.email}). ` +
-          'Authenticate via /api/v1/auth/oauth/googlecalendar first.'
+            'Authenticate via /api/v1/auth/oauth/googlecalendar first.'
         );
       }
       this.accessToken = token;
@@ -266,7 +266,8 @@ export class GoogleCalendarIntegration implements Integration {
     const clientId =
       process.env['GOOGLE_CALENDAR_OAUTH_CLIENT_ID'] || process.env['GOOGLE_OAUTH_CLIENT_ID'];
     const clientSecret =
-      process.env['GOOGLE_CALENDAR_OAUTH_CLIENT_SECRET'] || process.env['GOOGLE_OAUTH_CLIENT_SECRET'];
+      process.env['GOOGLE_CALENDAR_OAUTH_CLIENT_SECRET'] ||
+      process.env['GOOGLE_OAUTH_CLIENT_SECRET'];
 
     if (!clientId || !clientSecret) {
       this.logger?.warn('Cannot refresh Google Calendar token: missing OAuth credentials');

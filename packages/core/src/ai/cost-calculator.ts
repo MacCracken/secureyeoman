@@ -58,7 +58,7 @@ const PRICING: Record<string, ModelPricing> = {
 
   // x.ai Grok
   'grok-3': { inputPer1M: 3, outputPer1M: 15 },
-  'grok-3-mini': { inputPer1M: 0.30, outputPer1M: 0.50 },
+  'grok-3-mini': { inputPer1M: 0.3, outputPer1M: 0.5 },
   'grok-2-1212': { inputPer1M: 2, outputPer1M: 10 },
   'grok-2-vision-1212': { inputPer1M: 2, outputPer1M: 10 },
 

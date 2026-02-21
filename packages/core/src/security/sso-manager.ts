@@ -129,7 +129,11 @@ export class SsoManager {
       localUser.role as import('@secureyeoman/shared').Role
     );
 
-    this.logger.info('SSO login successful', { providerId, externalSubject, userId: localUser.userId });
+    this.logger.info('SSO login successful', {
+      providerId,
+      externalSubject,
+      userId: localUser.userId,
+    });
 
     return { result, redirectUri: storedState.redirectUri };
   }

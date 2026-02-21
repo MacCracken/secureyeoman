@@ -119,7 +119,12 @@ export class A2AStorage extends PgBaseStorage {
     return peerFromRow(row, caps);
   }
 
-  async listPeers(filter?: { status?: string; trustLevel?: string; limit?: number; offset?: number }): Promise<{ peers: PeerAgent[]; total: number }> {
+  async listPeers(filter?: {
+    status?: string;
+    trustLevel?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ peers: PeerAgent[]; total: number }> {
     const conditions: string[] = [];
     const values: unknown[] = [];
     let paramIdx = 1;

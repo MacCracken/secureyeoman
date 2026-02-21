@@ -29,7 +29,10 @@ export class ExperimentManager {
     return await this.storage.get(id);
   }
 
-  async list(opts?: { limit?: number; offset?: number }): Promise<{ experiments: Experiment[]; total: number }> {
+  async list(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ experiments: Experiment[]; total: number }> {
     return await this.storage.list(opts);
   }
 

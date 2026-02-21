@@ -6,16 +6,25 @@ import type { IntegrationDeps } from '../types.js';
 // ─── Helpers ──────────────────────────────────────────────────
 
 const mockLogger = {
-  info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
   child: vi.fn().mockReturnThis(),
 };
 
 function makeConfig(overrides: Record<string, unknown> = {}): IntegrationConfig {
   return {
-    id: 'notion-test-1', platform: 'notion', displayName: 'Notion Test',
-    enabled: true, status: 'disconnected', messageCount: 0,
-    createdAt: Date.now(), updatedAt: Date.now(),
+    id: 'notion-test-1',
+    platform: 'notion',
+    displayName: 'Notion Test',
+    enabled: true,
+    status: 'disconnected',
+    messageCount: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     config: { apiKey: 'secret_abc123', databaseId: 'db-xyz', ...overrides },
   } as IntegrationConfig;
 }
@@ -26,9 +35,15 @@ function makeDeps(onMessage = vi.fn().mockResolvedValue(undefined)): Integration
 
 function makePageResponse(id = 'page-1') {
   return {
-    ok: true, status: 200,
+    ok: true,
+    status: 200,
     text: vi.fn().mockResolvedValue(''),
-    json: vi.fn().mockResolvedValue({ id, object: 'page', created_time: '2024-01-01T00:00:00Z', last_edited_time: '2024-01-01T00:00:00Z' }),
+    json: vi.fn().mockResolvedValue({
+      id,
+      object: 'page',
+      created_time: '2024-01-01T00:00:00Z',
+      last_edited_time: '2024-01-01T00:00:00Z',
+    }),
   };
 }
 
@@ -75,9 +90,9 @@ describe('NotionIntegration', () => {
     });
 
     it('throws when apiKey is undefined', async () => {
-      await expect(adapter.init({ ...makeConfig(), config: {} } as any, makeDeps())).rejects.toThrow(
-        'apiKey'
-      );
+      await expect(
+        adapter.init({ ...makeConfig(), config: {} } as any, makeDeps())
+      ).rejects.toThrow('apiKey');
     });
   });
 
@@ -160,7 +175,9 @@ describe('NotionIntegration', () => {
         text: vi.fn().mockResolvedValue('Unauthorized'),
       });
       await adapter.init(makeConfig(), makeDeps());
-      await expect(adapter.sendMessage('', 'Content')).rejects.toThrow('Failed to create Notion page');
+      await expect(adapter.sendMessage('', 'Content')).rejects.toThrow(
+        'Failed to create Notion page'
+      );
     });
 
     it('includes Notion-Version header', async () => {

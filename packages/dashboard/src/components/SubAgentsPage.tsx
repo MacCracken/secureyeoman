@@ -102,7 +102,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
   });
 
   const enabled =
-    (configData?.config)?.enabled === true ||
+    configData?.config?.enabled === true ||
     configData?.allowedBySecurityPolicy === true ||
     securityPolicy?.allowSubAgents === true;
 
@@ -262,9 +262,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
           }}
         />
       )}
-      {activeTab === 'swarms' && (
-        <SwarmsPage allowSubAgents={enabled} />
-      )}
+      {activeTab === 'swarms' && <SwarmsPage allowSubAgents={enabled} />}
     </div>
   );
 }
@@ -488,7 +486,9 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
       {/* Execution Tree Toggle */}
       <div className="flex items-center justify-between gap-2">
         <button
-          onClick={() => { setShowTree(!showTree); }}
+          onClick={() => {
+            setShowTree(!showTree);
+          }}
           className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors"
         >
           <GitBranch className="w-3.5 h-3.5" />
@@ -497,14 +497,18 @@ function DelegationDetail({ delegation }: { delegation: DelegationInfo }) {
         {showTree && tree.length > 0 && (
           <div className="flex items-center gap-0.5">
             <button
-              onClick={() => { setHistoryView('list'); }}
+              onClick={() => {
+                setHistoryView('list');
+              }}
               className={`p-1 rounded transition-colors ${historyView === 'list' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
               title="List view"
             >
               <List className="w-3.5 h-3.5" />
             </button>
             <button
-              onClick={() => { setHistoryView('graph'); }}
+              onClick={() => {
+                setHistoryView('graph');
+              }}
               className={`p-1 rounded transition-colors ${historyView === 'graph' ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground'}`}
               title="Graph view"
             >
@@ -601,7 +605,9 @@ function buildTree(nodes: DelegationInfo[], rootId: string): TreeNode[] {
 function ExecutionTree({ nodes, rootId }: { nodes: DelegationInfo[]; rootId: string }) {
   const tree = buildTree(nodes, rootId);
   if (tree.length === 0) {
-    return <p className="text-xs text-muted-foreground">Single delegation (no sub-agents spawned).</p>;
+    return (
+      <p className="text-xs text-muted-foreground">Single delegation (no sub-agents spawned).</p>
+    );
   }
   return (
     <div className="space-y-0.5">
@@ -622,19 +628,17 @@ function TreeNodeRow({ node, depth }: { node: TreeNode; depth: number }) {
         className="flex items-center gap-2 py-1.5 px-2 rounded hover:bg-muted/30 transition-colors"
         style={{ paddingLeft: `${depth * 20 + 8}px` }}
       >
-        {depth > 0 && (
-          <span className="text-muted-foreground/40 text-xs">{'└'}</span>
-        )}
+        {depth > 0 && <span className="text-muted-foreground/40 text-xs">{'└'}</span>}
         <span className="shrink-0">{STATUS_ICONS[node.status]}</span>
         <span className="text-xs font-medium truncate flex-1" title={node.task}>
           {node.task.length > 60 ? node.task.slice(0, 60) + '...' : node.task}
         </span>
-        <span className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[node.status] ?? ''}`}>
+        <span
+          className={`text-xs px-1.5 py-0.5 rounded border ${STATUS_COLORS[node.status] ?? ''}`}
+        >
           {node.status}
         </span>
-        <span className="text-xs text-muted-foreground whitespace-nowrap">
-          d:{node.depth}
-        </span>
+        <span className="text-xs text-muted-foreground whitespace-nowrap">d:{node.depth}</span>
         <span className="text-xs text-muted-foreground font-mono whitespace-nowrap">
           {totalTokens.toLocaleString()}/{node.tokenBudget.toLocaleString()}
         </span>

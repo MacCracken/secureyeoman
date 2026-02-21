@@ -132,4 +132,3 @@ describe('POST /api/v1/terminal/execute — validation', () => {
     expect(res.statusCode).toBe(400);
   });
 });
-

@@ -106,7 +106,11 @@ function buildManager(
   const storage = makeMockStorage(storageOverrides);
   const subAgentManager = makeMockSubAgentManager(agentOverrides);
   const logger = makeMockLogger();
-  const manager = new SwarmManager({ storage: storage as any, subAgentManager: subAgentManager as any, logger: logger as any });
+  const manager = new SwarmManager({
+    storage: storage as any,
+    subAgentManager: subAgentManager as any,
+    logger: logger as any,
+  });
   return { manager, storage, subAgentManager, logger };
 }
 
@@ -192,15 +196,25 @@ describe('SwarmManager.listSwarmRuns', () => {
 
 describe('SwarmManager.cancelSwarm', () => {
   it('cancels a pending run', async () => {
-    const { manager, storage } = buildManager({ getRun: vi.fn().mockResolvedValue({ ...RUN, status: 'pending' }) });
+    const { manager, storage } = buildManager({
+      getRun: vi.fn().mockResolvedValue({ ...RUN, status: 'pending' }),
+    });
     await manager.cancelSwarm('run-1');
-    expect(storage.updateRun).toHaveBeenCalledWith('run-1', expect.objectContaining({ status: 'cancelled' }));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'cancelled' })
+    );
   });
 
   it('cancels a running run', async () => {
-    const { manager, storage } = buildManager({ getRun: vi.fn().mockResolvedValue({ ...RUN, status: 'running' }) });
+    const { manager, storage } = buildManager({
+      getRun: vi.fn().mockResolvedValue({ ...RUN, status: 'running' }),
+    });
     await manager.cancelSwarm('run-1');
-    expect(storage.updateRun).toHaveBeenCalledWith('run-1', expect.objectContaining({ status: 'cancelled' }));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'cancelled' })
+    );
   });
 
   it('throws when run not found', async () => {
@@ -209,12 +223,16 @@ describe('SwarmManager.cancelSwarm', () => {
   });
 
   it('throws when run is already completed', async () => {
-    const { manager } = buildManager({ getRun: vi.fn().mockResolvedValue({ ...RUN, status: 'completed' }) });
+    const { manager } = buildManager({
+      getRun: vi.fn().mockResolvedValue({ ...RUN, status: 'completed' }),
+    });
     await expect(manager.cancelSwarm('run-1')).rejects.toThrow('Cannot cancel');
   });
 
   it('throws when run is failed', async () => {
-    const { manager } = buildManager({ getRun: vi.fn().mockResolvedValue({ ...RUN, status: 'failed' }) });
+    const { manager } = buildManager({
+      getRun: vi.fn().mockResolvedValue({ ...RUN, status: 'failed' }),
+    });
     await expect(manager.cancelSwarm('run-1')).rejects.toThrow('Cannot cancel');
   });
 });
@@ -222,18 +240,27 @@ describe('SwarmManager.cancelSwarm', () => {
 describe('SwarmManager.executeSwarm — sequential strategy', () => {
   it('runs sequential strategy and returns completed run', async () => {
     const coderMember = { ...MEMBER, id: 'mem-2', role: 'coder', seqOrder: 1 };
-    const createMemberMock = vi.fn()
+    const createMemberMock = vi
+      .fn()
       .mockResolvedValueOnce(MEMBER)
       .mockResolvedValueOnce(coderMember);
 
-    const finalRun = { ...RUN, status: 'completed', result: 'Done', members: [MEMBER, coderMember] };
-    const getRun = vi.fn()
-      .mockResolvedValueOnce(RUN)  // initial getRun in executeSwarm
-      .mockResolvedValueOnce(finalRun);  // final getSwarmRun
+    const finalRun = {
+      ...RUN,
+      status: 'completed',
+      result: 'Done',
+      members: [MEMBER, coderMember],
+    };
+    const getRun = vi
+      .fn()
+      .mockResolvedValueOnce(RUN) // initial getRun in executeSwarm
+      .mockResolvedValueOnce(finalRun); // final getSwarmRun
 
-    const { manager, subAgentManager } = buildManager(
-      { createMember: createMemberMock, getRun, getMembersForRun: vi.fn().mockResolvedValue([MEMBER, coderMember]) },
-    );
+    const { manager, subAgentManager } = buildManager({
+      createMember: createMemberMock,
+      getRun,
+      getMembersForRun: vi.fn().mockResolvedValue([MEMBER, coderMember]),
+    });
 
     const result = await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build feature' });
     expect(result.id).toBe('run-1');
@@ -242,7 +269,9 @@ describe('SwarmManager.executeSwarm — sequential strategy', () => {
 
   it('throws when template not found', async () => {
     const { manager } = buildManager({ getTemplate: vi.fn().mockResolvedValue(null) });
-    await expect(manager.executeSwarm({ templateId: 'missing', task: 'task' })).rejects.toThrow('not found');
+    await expect(manager.executeSwarm({ templateId: 'missing', task: 'task' })).rejects.toThrow(
+      'not found'
+    );
   });
 
   it('marks member as failed but run as completed when delegate throws in sequential mode', async () => {
@@ -252,9 +281,15 @@ describe('SwarmManager.executeSwarm — sequential strategy', () => {
     );
     await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build feature' });
     // Member is marked failed
-    expect(storage.updateMember).toHaveBeenCalledWith(MEMBER.id, expect.objectContaining({ status: 'failed' }));
+    expect(storage.updateMember).toHaveBeenCalledWith(
+      MEMBER.id,
+      expect.objectContaining({ status: 'failed' })
+    );
     // Run still completes (error captured in result string)
-    expect(storage.updateRun).toHaveBeenCalledWith('run-1', expect.objectContaining({ status: 'completed' }));
+    expect(storage.updateRun).toHaveBeenCalledWith(
+      'run-1',
+      expect.objectContaining({ status: 'completed' })
+    );
   });
 });
 
@@ -267,16 +302,12 @@ describe('SwarmManager.executeSwarm — parallel strategy', () => {
 
   it('runs parallel strategy and combines results', async () => {
     const mem2 = { ...MEMBER, id: 'mem-2', role: 'coder', seqOrder: 1 };
-    const createMemberMock = vi.fn()
-      .mockResolvedValueOnce(MEMBER)
-      .mockResolvedValueOnce(mem2);
+    const createMemberMock = vi.fn().mockResolvedValueOnce(MEMBER).mockResolvedValueOnce(mem2);
 
-    const { manager, subAgentManager } = buildManager(
-      {
-        getTemplate: vi.fn().mockResolvedValue(PARALLEL_TEMPLATE),
-        createMember: createMemberMock,
-      },
-    );
+    const { manager, subAgentManager } = buildManager({
+      getTemplate: vi.fn().mockResolvedValue(PARALLEL_TEMPLATE),
+      createMember: createMemberMock,
+    });
 
     await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build feature' });
     expect(subAgentManager.delegate).toHaveBeenCalledTimes(2);
@@ -288,17 +319,16 @@ describe('SwarmManager.executeSwarm — parallel strategy', () => {
       coordinatorProfile: 'coordinator',
     };
     const coordMember = { ...MEMBER, id: 'mem-coord', role: 'coordinator', seqOrder: 2 };
-    const createMemberMock = vi.fn()
+    const createMemberMock = vi
+      .fn()
       .mockResolvedValueOnce(MEMBER)
       .mockResolvedValueOnce({ ...MEMBER, id: 'mem-2', role: 'coder', seqOrder: 1 })
       .mockResolvedValueOnce(coordMember);
 
-    const { manager, subAgentManager } = buildManager(
-      {
-        getTemplate: vi.fn().mockResolvedValue(parallelWithCoordinator),
-        createMember: createMemberMock,
-      },
-    );
+    const { manager, subAgentManager } = buildManager({
+      getTemplate: vi.fn().mockResolvedValue(parallelWithCoordinator),
+      createMember: createMemberMock,
+    });
 
     await manager.executeSwarm({ templateId: 'tmpl-1', task: 'Build feature' });
     // Called for researcher + coder + coordinator

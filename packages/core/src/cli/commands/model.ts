@@ -77,7 +77,14 @@ export const modelCommand: Command = {
         case 'default':
           return await modelDefault(ctx, baseUrl, token, jsonOutput, actionArgs);
         case 'personality-fallbacks':
-          return await personalityFallbacks(ctx, baseUrl, token, jsonOutput, personalityId, actionArgs);
+          return await personalityFallbacks(
+            ctx,
+            baseUrl,
+            token,
+            jsonOutput,
+            personalityId,
+            actionArgs
+          );
         default:
           ctx.stderr.write(`Unknown action: ${String(action)}\n`);
           ctx.stderr.write(USAGE + '\n');
@@ -145,9 +152,7 @@ async function modelList(
 
   const available = data.available ?? {};
   const providers = filterProvider
-    ? Object.fromEntries(
-        Object.entries(available).filter(([p]) => p === filterProvider)
-      )
+    ? Object.fromEntries(Object.entries(available).filter(([p]) => p === filterProvider))
     : available;
 
   if (json) {
@@ -159,15 +164,24 @@ async function modelList(
     ctx.stdout.write(`\n${provider}:\n`);
     const models =
       typeof info === 'object' && info !== null && 'models' in info
-        ? (info as { models: Record<string, { inputPricePerMToken?: number; outputPricePerMToken?: number }> }).models
+        ? (
+            info as {
+              models: Record<
+                string,
+                { inputPricePerMToken?: number; outputPricePerMToken?: number }
+              >;
+            }
+          ).models
         : {};
     for (const [modelName, pricing] of Object.entries(models)) {
-      const inp = typeof pricing?.inputPricePerMToken === 'number'
-        ? `$${pricing.inputPricePerMToken.toFixed(4)}/MTok in`
-        : '';
-      const out = typeof pricing?.outputPricePerMToken === 'number'
-        ? `$${pricing.outputPricePerMToken.toFixed(4)}/MTok out`
-        : '';
+      const inp =
+        typeof pricing?.inputPricePerMToken === 'number'
+          ? `$${pricing.inputPricePerMToken.toFixed(4)}/MTok in`
+          : '';
+      const out =
+        typeof pricing?.outputPricePerMToken === 'number'
+          ? `$${pricing.outputPricePerMToken.toFixed(4)}/MTok out`
+          : '';
       const pricingStr = inp || out ? `  (${[inp, out].filter(Boolean).join(', ')})` : '';
       ctx.stdout.write(`  ${modelName}${pricingStr}\n`);
     }
@@ -360,7 +374,10 @@ async function resolvePersonality(
   if (personalityId) {
     const result = await apiCall(baseUrl, `/api/v1/soul/personalities/${personalityId}`, { token });
     if (!result.ok) return null;
-    return result.data as { id: string; modelFallbacks: Array<{ provider: string; model: string }> };
+    return result.data as {
+      id: string;
+      modelFallbacks: Array<{ provider: string; model: string }>;
+    };
   }
 
   const result = await apiCall(baseUrl, '/api/v1/soul/personality', { token });
@@ -444,7 +461,13 @@ async function pfSet(
   }
 
   if (json) {
-    ctx.stdout.write(JSON.stringify((result.data as Record<string, unknown>)?.modelFallbacks ?? modelFallbacks, null, 2) + '\n');
+    ctx.stdout.write(
+      JSON.stringify(
+        (result.data as Record<string, unknown>)?.modelFallbacks ?? modelFallbacks,
+        null,
+        2
+      ) + '\n'
+    );
     return 0;
   }
 

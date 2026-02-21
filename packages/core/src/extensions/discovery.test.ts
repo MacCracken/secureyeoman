@@ -123,8 +123,12 @@ describe('discoverPlugins', () => {
       .mockResolvedValueOnce({ isDirectory: () => true } as any)
       .mockResolvedValueOnce({ isDirectory: () => false } as any);
     vi.mocked(readFile)
-      .mockResolvedValueOnce(JSON.stringify({ id: 'ext-a', name: 'Ext A', version: '1.0', hooks: [] }) as any)
-      .mockResolvedValueOnce(JSON.stringify({ id: 'ext-b', name: 'Ext B', version: '2.0', hooks: [] }) as any);
+      .mockResolvedValueOnce(
+        JSON.stringify({ id: 'ext-a', name: 'Ext A', version: '1.0', hooks: [] }) as any
+      )
+      .mockResolvedValueOnce(
+        JSON.stringify({ id: 'ext-b', name: 'Ext B', version: '2.0', hooks: [] }) as any
+      );
     const result = await discoverPlugins('/plugins');
     expect(result).toHaveLength(2);
     expect(result.map((r) => r.id)).toEqual(['ext-a', 'ext-b']);

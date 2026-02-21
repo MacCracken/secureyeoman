@@ -150,19 +150,13 @@ describe('GitHubIntegration', () => {
 
     it('should throw when personalAccessToken is missing', async () => {
       await expect(
-        integration.init(
-          makeConfig({ config: { webhookSecret: 'secret' } }),
-          makeDeps()
-        )
+        integration.init(makeConfig({ config: { webhookSecret: 'secret' } }), makeDeps())
       ).rejects.toThrow('personalAccessToken');
     });
 
     it('should throw when webhookSecret is missing', async () => {
       await expect(
-        integration.init(
-          makeConfig({ config: { personalAccessToken: 'ghp_token' } }),
-          makeDeps()
-        )
+        integration.init(makeConfig({ config: { personalAccessToken: 'ghp_token' } }), makeDeps())
       ).rejects.toThrow('webhookSecret');
     });
 
@@ -300,9 +294,9 @@ describe('GitHubIntegration', () => {
     });
 
     it('throws when called before init', async () => {
-      await expect(
-        integration.handleWebhook('push', '{}', 'sig')
-      ).rejects.toThrow('not initialized');
+      await expect(integration.handleWebhook('push', '{}', 'sig')).rejects.toThrow(
+        'not initialized'
+      );
     });
   });
 
@@ -325,11 +319,9 @@ describe('GitHubIntegration', () => {
     });
 
     it('posts a PR review when metadata.reviewEvent is set and type is "pulls"', async () => {
-      const id = await integration.sendMessage(
-        'owner/repo/pulls/7',
-        'Looks good!',
-        { reviewEvent: 'APPROVE' }
-      );
+      const id = await integration.sendMessage('owner/repo/pulls/7', 'Looks good!', {
+        reviewEvent: 'APPROVE',
+      });
       expect(mocks.octokitPullsCreateReview).toHaveBeenCalledWith(
         expect.objectContaining({
           owner: 'owner',
@@ -349,9 +341,9 @@ describe('GitHubIntegration', () => {
     });
 
     it('throws on chatId with fewer than 4 parts', async () => {
-      await expect(
-        integration.sendMessage('owner/repo/issues', 'bad chatId')
-      ).rejects.toThrow('Invalid chatId format');
+      await expect(integration.sendMessage('owner/repo/issues', 'bad chatId')).rejects.toThrow(
+        'Invalid chatId format'
+      );
     });
 
     it('throws on invalid (NaN) issue number in chatId', async () => {

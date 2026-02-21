@@ -169,14 +169,12 @@ describe('ExternalBrainSync', () => {
   describe('sync', () => {
     it('creates directory structure', async () => {
       await sync.sync();
-      expect(mockMkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining('memories'),
-        { recursive: true }
-      );
-      expect(mockMkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining('knowledge'),
-        { recursive: true }
-      );
+      expect(mockMkdirSync).toHaveBeenCalledWith(expect.stringContaining('memories'), {
+        recursive: true,
+      });
+      expect(mockMkdirSync).toHaveBeenCalledWith(expect.stringContaining('knowledge'), {
+        recursive: true,
+      });
     });
 
     it('writes memory files and returns memoriesWritten count', async () => {
@@ -229,10 +227,9 @@ describe('ExternalBrainSync', () => {
         mockLogger as any
       );
       await subdirSync.sync();
-      expect(mockMkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining('friday-brain'),
-        { recursive: true }
-      );
+      expect(mockMkdirSync).toHaveBeenCalledWith(expect.stringContaining('friday-brain'), {
+        recursive: true,
+      });
     });
 
     it('skips memories when syncMemories is false', async () => {

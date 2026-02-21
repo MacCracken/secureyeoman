@@ -300,9 +300,7 @@ export class GitHubIntegration implements WebhookIntegration {
         body: text,
         event: metadata.reviewEvent as 'COMMENT' | 'APPROVE' | 'REQUEST_CHANGES',
         ...(metadata.commitId ? { commit_id: metadata.commitId as string } : {}),
-        ...(metadata.reviewComments
-          ? { comments: metadata.reviewComments as any[] }
-          : {}),
+        ...(metadata.reviewComments ? { comments: metadata.reviewComments as any[] } : {}),
       });
       return String(result.data.id);
     }

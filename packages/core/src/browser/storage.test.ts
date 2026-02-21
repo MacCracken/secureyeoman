@@ -42,7 +42,9 @@ describe('BrowserSessionStorage', () => {
       await storage.ensureTables();
       const calls = mockQuery.mock.calls.map((c: any[]) => c[0] as string);
       expect(calls.some((sql) => sql.includes('CREATE SCHEMA IF NOT EXISTS browser'))).toBe(true);
-      expect(calls.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS browser.sessions'))).toBe(true);
+      expect(calls.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS browser.sessions'))).toBe(
+        true
+      );
       expect(calls.some((sql) => sql.includes('CREATE INDEX'))).toBe(true);
     });
   });
@@ -51,7 +53,10 @@ describe('BrowserSessionStorage', () => {
     it('inserts and returns a session from RETURNING row', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [browserSessionRow], rowCount: 1 });
 
-      const result = await storage.createSession({ toolName: 'screenshot', url: 'https://example.com' });
+      const result = await storage.createSession({
+        toolName: 'screenshot',
+        url: 'https://example.com',
+      });
 
       expect(result.id).toBe('bsess-1');
       expect(result.status).toBe('active');
@@ -64,7 +69,12 @@ describe('BrowserSessionStorage', () => {
 
     it('passes url, viewport, and toolName to query', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [browserSessionRow], rowCount: 1 });
-      await storage.createSession({ toolName: 'browser', url: 'https://test.com', viewportW: 1024, viewportH: 768 });
+      await storage.createSession({
+        toolName: 'browser',
+        url: 'https://test.com',
+        viewportW: 1024,
+        viewportH: 768,
+      });
       const params = mockQuery.mock.calls[0][1] as unknown[];
       expect(params[1]).toBe('https://test.com');
       expect(params[2]).toBe(1024);
@@ -156,7 +166,12 @@ describe('BrowserSessionStorage', () => {
     });
 
     it('adds closed_at when status is failed', async () => {
-      const failedRow = { ...browserSessionRow, status: 'failed', closed_at: new Date(), error: 'timeout' };
+      const failedRow = {
+        ...browserSessionRow,
+        status: 'failed',
+        closed_at: new Date(),
+        error: 'timeout',
+      };
       mockQuery.mockResolvedValueOnce({ rows: [failedRow], rowCount: 1 });
 
       await storage.updateSession('bsess-1', { status: 'failed', error: 'timeout' });
@@ -171,7 +186,12 @@ describe('BrowserSessionStorage', () => {
     });
 
     it('updates multiple fields', async () => {
-      const updatedRow = { ...browserSessionRow, url: 'https://new.com', title: 'New', screenshot: 'data:' };
+      const updatedRow = {
+        ...browserSessionRow,
+        url: 'https://new.com',
+        title: 'New',
+        screenshot: 'data:',
+      };
       mockQuery.mockResolvedValueOnce({ rows: [updatedRow], rowCount: 1 });
 
       await storage.updateSession('bsess-1', {
@@ -196,7 +216,7 @@ describe('BrowserSessionStorage', () => {
       const result = await storage.closeSession('bsess-1');
       expect(result!.status).toBe('closed');
       const sql = mockQuery.mock.calls[0][0] as string;
-      expect(sql).toContain("closed_at = NOW()");
+      expect(sql).toContain('closed_at = NOW()');
     });
   });
 
@@ -239,7 +259,7 @@ describe('BrowserSessionStorage', () => {
       await storage.listSessions();
       const selectParams = mockQuery.mock.calls[1][1] as unknown[];
       expect(selectParams).toContain(20); // default limit
-      expect(selectParams).toContain(0);  // default offset
+      expect(selectParams).toContain(0); // default offset
     });
 
     it('uses custom limit and offset', async () => {

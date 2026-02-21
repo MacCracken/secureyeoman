@@ -13,7 +13,12 @@ import { resolve } from 'node:path';
 import { homedir } from 'node:os';
 import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import { z } from 'zod';
-import { ConfigSchema, PartialConfigSchema, type Config, type PartialConfig } from '@secureyeoman/shared';
+import {
+  ConfigSchema,
+  PartialConfigSchema,
+  type Config,
+  type PartialConfig,
+} from '@secureyeoman/shared';
 import { KeyringManager } from '../security/keyring/manager.js';
 import { encrypt, decrypt, serializeEncrypted, deserializeEncrypted } from '../security/secrets.js';
 

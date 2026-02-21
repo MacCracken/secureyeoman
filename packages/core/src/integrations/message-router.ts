@@ -54,15 +54,15 @@ export class MessageRouter {
     multimodalManager: MessageRouterDeps['multimodalManager'];
     getActivePersonality?: MessageRouterDeps['getActivePersonality'];
   }): void {
-    (this.deps).multimodalManager = deps.multimodalManager;
+    this.deps.multimodalManager = deps.multimodalManager;
     if (deps.getActivePersonality) {
-      (this.deps).getActivePersonality = deps.getActivePersonality;
+      this.deps.getActivePersonality = deps.getActivePersonality;
     }
   }
 
   /** Inject outbound webhook dispatcher after construction (avoids init-order issues). */
   setOutboundWebhookDispatcher(dispatcher: OutboundWebhookDispatcher | null): void {
-    (this.deps).outboundWebhookDispatcher = dispatcher;
+    this.deps.outboundWebhookDispatcher = dispatcher;
   }
 
   /**
@@ -186,7 +186,9 @@ export class MessageRouter {
             metadata.audioBase64 = ttsResult.audioBase64;
             metadata.audioFormat = ttsResult.format;
           } catch (err) {
-            logger.warn(`TTS synthesis failed: ${err instanceof Error ? err.message : String(err)}`);
+            logger.warn(
+              `TTS synthesis failed: ${err instanceof Error ? err.message : String(err)}`
+            );
           }
         }
 

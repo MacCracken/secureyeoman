@@ -16,7 +16,11 @@ vi.mock('./skills/index.js', () => ({
   veteranFinancialManagerSkill: { name: 'Veteran FM', author: 'system', version: '1.0.0' },
   seniorWebDesignerSkill: { name: 'Web Designer', author: 'system', version: '1.0.0' },
   seniorSoftwareEngineerSkill: { name: 'SW Engineer', author: 'system', version: '1.0.0' },
-  seniorSoftwareEngineerAuditSkill: { name: 'SW Engineer Audit', author: 'system', version: '1.0.0' },
+  seniorSoftwareEngineerAuditSkill: {
+    name: 'SW Engineer Audit',
+    author: 'system',
+    version: '1.0.0',
+  },
   devopsSreSkill: { name: 'DevOps SRE', author: 'system', version: '1.0.0' },
 }));
 
@@ -78,7 +82,7 @@ describe('MarketplaceStorage', () => {
       const params = mockQuery.mock.calls[0][1] as unknown[];
       expect(params[1]).toBe('Test');
       expect(params[7]).toBe(JSON.stringify(['a', 'b'])); // tags
-      expect(params[11]).toBe(JSON.stringify(['x']));     // tools
+      expect(params[11]).toBe(JSON.stringify(['x'])); // tools
     });
 
     it('serializes authorInfo as JSON when provided', async () => {

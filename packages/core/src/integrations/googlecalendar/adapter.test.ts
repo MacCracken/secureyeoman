@@ -6,16 +6,25 @@ import type { IntegrationDeps } from '../types.js';
 // ─── Helpers ──────────────────────────────────────────────────
 
 const mockLogger = {
-  info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
   child: vi.fn().mockReturnThis(),
 };
 
 function makeConfig(overrides: Record<string, unknown> = {}): IntegrationConfig {
   return {
-    id: 'gcal-test-1', platform: 'googlecalendar', displayName: 'Google Calendar Test',
-    enabled: true, status: 'disconnected', messageCount: 0,
-    createdAt: Date.now(), updatedAt: Date.now(),
+    id: 'gcal-test-1',
+    platform: 'googlecalendar',
+    displayName: 'Google Calendar Test',
+    enabled: true,
+    status: 'disconnected',
+    messageCount: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     config: {
       accessToken: 'ya29.access_token',
       refreshToken: 'refresh_token_abc',
@@ -59,7 +68,8 @@ describe('GoogleCalendarIntegration', () => {
     vi.useFakeTimers();
     adapter = new GoogleCalendarIntegration();
     mockFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       text: vi.fn().mockResolvedValue(''),
       json: vi.fn().mockResolvedValue({ items: [] }),
     });
@@ -110,7 +120,10 @@ describe('GoogleCalendarIntegration', () => {
           makeDeps(vi.fn(), oauthTokenService)
         )
       ).resolves.not.toThrow();
-      expect(oauthTokenService.getValidToken).toHaveBeenCalledWith('googlecalendar', 'user@example.com');
+      expect(oauthTokenService.getValidToken).toHaveBeenCalledWith(
+        'googlecalendar',
+        'user@example.com'
+      );
     });
 
     it('throws when oauthTokenService returns null token', async () => {
@@ -204,7 +217,9 @@ describe('GoogleCalendarIntegration', () => {
         text: vi.fn().mockResolvedValue('Quota exceeded'),
       });
       await adapter.init(makeConfig(), makeDeps());
-      await expect(adapter.sendMessage('primary', 'Event')).rejects.toThrow('Failed to create calendar event');
+      await expect(adapter.sendMessage('primary', 'Event')).rejects.toThrow(
+        'Failed to create calendar event'
+      );
     });
   });
 

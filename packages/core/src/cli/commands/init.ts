@@ -24,13 +24,20 @@ import {
 const PROVIDERS = ['anthropic', 'openai', 'gemini', 'ollama', 'deepseek', 'mistral'] as const;
 type Provider = (typeof PROVIDERS)[number];
 
-const PROVIDER_DEFAULTS: Record<Provider, { model: string; apiKeyEnv: string; needsBaseUrl: boolean }> = {
-  anthropic: { model: 'claude-sonnet-4-20250514', apiKeyEnv: 'ANTHROPIC_API_KEY', needsBaseUrl: false },
-  openai:    { model: 'gpt-4o',                   apiKeyEnv: 'OPENAI_API_KEY',     needsBaseUrl: false },
-  gemini:    { model: 'gemini-1.5-pro',            apiKeyEnv: 'GEMINI_API_KEY',     needsBaseUrl: false },
-  ollama:    { model: 'llama3.2',                  apiKeyEnv: '',                   needsBaseUrl: true  },
-  deepseek:  { model: 'deepseek-chat',             apiKeyEnv: 'DEEPSEEK_API_KEY',   needsBaseUrl: false },
-  mistral:   { model: 'mistral-large-latest',      apiKeyEnv: 'MISTRAL_API_KEY',    needsBaseUrl: false },
+const PROVIDER_DEFAULTS: Record<
+  Provider,
+  { model: string; apiKeyEnv: string; needsBaseUrl: boolean }
+> = {
+  anthropic: {
+    model: 'claude-sonnet-4-20250514',
+    apiKeyEnv: 'ANTHROPIC_API_KEY',
+    needsBaseUrl: false,
+  },
+  openai: { model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY', needsBaseUrl: false },
+  gemini: { model: 'gemini-1.5-pro', apiKeyEnv: 'GEMINI_API_KEY', needsBaseUrl: false },
+  ollama: { model: 'llama3.2', apiKeyEnv: '', needsBaseUrl: true },
+  deepseek: { model: 'deepseek-chat', apiKeyEnv: 'DEEPSEEK_API_KEY', needsBaseUrl: false },
+  mistral: { model: 'mistral-large-latest', apiKeyEnv: 'MISTRAL_API_KEY', needsBaseUrl: false },
 };
 
 // ─── Command ──────────────────────────────────────────────────────────────────
@@ -129,12 +136,7 @@ Options:
 
         // ── 3. AI Provider ────────────────────────────────────────────────────
         ctx.stdout.write('\n');
-        provider = (await promptChoice(
-          rl,
-          '  AI provider?',
-          [...PROVIDERS],
-          0
-        )) as Provider;
+        provider = (await promptChoice(rl, '  AI provider?', [...PROVIDERS], 0)) as Provider;
 
         const pDef = PROVIDER_DEFAULTS[provider];
 
@@ -156,12 +158,9 @@ Options:
 
         // ── 7. Database backend ───────────────────────────────────────────────
         const dbChoices = ['sqlite', 'postgresql'];
-        dbBackend = (await promptChoice(
-          rl,
-          '  Database backend?',
-          dbChoices,
-          0
-        )) as 'sqlite' | 'postgresql';
+        dbBackend = (await promptChoice(rl, '  Database backend?', dbChoices, 0)) as
+          | 'sqlite'
+          | 'postgresql';
 
         if (dbBackend === 'postgresql') {
           databaseUrl = await prompt(

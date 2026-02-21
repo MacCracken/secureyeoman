@@ -14,15 +14,31 @@ vi.mock('./git-fetch.js', () => ({
 }));
 
 const makeLogger = () => ({
-  info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  trace: vi.fn(), fatal: vi.fn(), child: vi.fn().mockReturnThis(), level: 'info',
+  info: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info',
 });
 
 const SKILL = {
-  id: 'skill-1', name: 'Test Skill', description: 'A test skill', version: '1.0.0',
-  author: 'test', category: 'general', tags: [], instructions: 'Do things.',
-  source: 'builtin', installed: false, createdAt: 1000, updatedAt: 1000,
-  tools: [], triggerPatterns: [],
+  id: 'skill-1',
+  name: 'Test Skill',
+  description: 'A test skill',
+  version: '1.0.0',
+  author: 'test',
+  category: 'general',
+  tags: [],
+  instructions: 'Do things.',
+  source: 'builtin',
+  installed: false,
+  createdAt: 1000,
+  updatedAt: 1000,
+  tools: [],
+  triggerPatterns: [],
 };
 
 function makeStorage(overrides: any = {}) {
@@ -77,7 +93,9 @@ describe('MarketplaceManager', () => {
     });
 
     it('returns true immediately when already installed', async () => {
-      const { manager, storage } = makeManager({ getSkill: vi.fn().mockResolvedValue({ ...SKILL, installed: true }) });
+      const { manager, storage } = makeManager({
+        getSkill: vi.fn().mockResolvedValue({ ...SKILL, installed: true }),
+      });
       expect(await manager.install('skill-1')).toBe(true);
       expect(storage.setInstalled).not.toHaveBeenCalled();
     });
@@ -103,13 +121,18 @@ describe('MarketplaceManager', () => {
       const { manager, logger } = makeManager({}, { brainManager });
       const ok = await manager.install('skill-1');
       expect(ok).toBe(true); // install still succeeds
-      expect(logger.error).toHaveBeenCalledWith('Failed to create brain skill from marketplace', expect.any(Object));
+      expect(logger.error).toHaveBeenCalledWith(
+        'Failed to create brain skill from marketplace',
+        expect.any(Object)
+      );
     });
   });
 
   describe('uninstall', () => {
     it('uninstalls skill and logs', async () => {
-      const { manager, storage, logger } = makeManager({ getSkill: vi.fn().mockResolvedValue({ ...SKILL, installed: true }) });
+      const { manager, storage, logger } = makeManager({
+        getSkill: vi.fn().mockResolvedValue({ ...SKILL, installed: true }),
+      });
       const ok = await manager.uninstall('skill-1');
       expect(ok).toBe(true);
       expect(storage.setInstalled).toHaveBeenCalledWith('skill-1', false);
@@ -119,10 +142,15 @@ describe('MarketplaceManager', () => {
     it('removes matching brain skills when brainManager provided', async () => {
       const deleteSkill = vi.fn().mockResolvedValue(undefined);
       const brainManager = {
-        listSkills: vi.fn().mockResolvedValue([{ id: 'bs-1', name: 'Test Skill', source: 'marketplace' }]),
+        listSkills: vi
+          .fn()
+          .mockResolvedValue([{ id: 'bs-1', name: 'Test Skill', source: 'marketplace' }]),
         deleteSkill,
       };
-      const { manager } = makeManager({ getSkill: vi.fn().mockResolvedValue({ ...SKILL, installed: true }) }, { brainManager });
+      const { manager } = makeManager(
+        { getSkill: vi.fn().mockResolvedValue({ ...SKILL, installed: true }) },
+        { brainManager }
+      );
       await manager.uninstall('skill-1');
       expect(deleteSkill).toHaveBeenCalledWith('bs-1');
     });
@@ -137,13 +165,18 @@ describe('MarketplaceManager', () => {
 
     it('resets installed flag when no brain skills remain', async () => {
       const brainManager = { listSkills: vi.fn().mockResolvedValue([]) };
-      const { manager, storage } = makeManager({ findByNameAndSource: vi.fn().mockResolvedValue({ ...SKILL, installed: true }) }, { brainManager });
+      const { manager, storage } = makeManager(
+        { findByNameAndSource: vi.fn().mockResolvedValue({ ...SKILL, installed: true }) },
+        { brainManager }
+      );
       await manager.onBrainSkillDeleted('Test Skill', 'marketplace');
       expect(storage.setInstalled).toHaveBeenCalledWith('skill-1', false);
     });
 
     it('does not reset when brain skills still exist for name', async () => {
-      const brainManager = { listSkills: vi.fn().mockResolvedValue([{ id: 'bs-1', name: 'Test Skill' }]) };
+      const brainManager = {
+        listSkills: vi.fn().mockResolvedValue([{ id: 'bs-1', name: 'Test Skill' }]),
+      };
       const { manager, storage } = makeManager({}, { brainManager });
       await manager.onBrainSkillDeleted('Test Skill', 'marketplace');
       expect(storage.setInstalled).not.toHaveBeenCalled();
@@ -156,7 +189,10 @@ describe('MarketplaceManager', () => {
       const skill = await manager.publish({ name: 'New Skill', description: 'test' } as any);
       expect(skill.id).toBe('skill-1');
       expect(storage.addSkill).toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith('Skill published to marketplace', { id: 'skill-1', name: 'Test Skill' });
+      expect(logger.info).toHaveBeenCalledWith('Skill published to marketplace', {
+        id: 'skill-1',
+        name: 'Test Skill',
+      });
     });
   });
 
@@ -188,7 +224,9 @@ describe('MarketplaceManager', () => {
       vi.mocked(fs.existsSync).mockReturnValue(false);
       const { manager } = makeManager({}, { communityRepoPath: '/tmp/community' });
       const result = await manager.syncFromCommunity('/tmp/community');
-      expect(result.errors.some((e) => e.includes('Path not found') || e.includes('No skills'))).toBe(true);
+      expect(
+        result.errors.some((e) => e.includes('Path not found') || e.includes('No skills'))
+      ).toBe(true);
     });
   });
 

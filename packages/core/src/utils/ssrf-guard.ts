@@ -21,10 +21,10 @@ const PRIVATE_V4_RANGES: Array<[string, number]> = [
   ['10.0.0.0', 8],
   ['172.16.0.0', 12],
   ['192.168.0.0', 16],
-  ['127.0.0.0', 8],      // loopback
-  ['169.254.0.0', 16],   // link-local / cloud metadata
-  ['100.64.0.0', 10],    // carrier-grade NAT
-  ['0.0.0.0', 8],        // "this" network
+  ['127.0.0.0', 8], // loopback
+  ['169.254.0.0', 16], // link-local / cloud metadata
+  ['100.64.0.0', 10], // carrier-grade NAT
+  ['0.0.0.0', 8], // "this" network
 ];
 
 function isPrivateIPv4(ip: string): boolean {

@@ -26,8 +26,7 @@ function isTTYStream(stream: NodeJS.WritableStream): boolean {
  */
 export function colorContext(stream: NodeJS.WritableStream) {
   const enabled = isTTYStream(stream);
-  const wrap = (code: string) => (text: string) =>
-    enabled ? `${code}${text}${ANSI_RESET}` : text;
+  const wrap = (code: string) => (text: string) => (enabled ? `${code}${text}${ANSI_RESET}` : text);
   return {
     green: wrap(ANSI_GREEN),
     red: wrap(ANSI_RED),

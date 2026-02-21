@@ -58,14 +58,22 @@ export class StripeIntegration implements WebhookIntegration {
     this.logger?.info('Stripe integration stopped');
   }
 
-  async sendMessage(_chatId: string, _text: string, _metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    _chatId: string,
+    _text: string,
+    _metadata?: Record<string, unknown>
+  ): Promise<string> {
     // Stripe is inbound-only; outbound is not applicable
     return `stripe_noop_${Date.now()}`;
   }
 
-  isHealthy(): boolean { return this.running; }
+  isHealthy(): boolean {
+    return this.running;
+  }
 
-  getWebhookPath(): string { return '/webhooks/stripe'; }
+  getWebhookPath(): string {
+    return '/webhooks/stripe';
+  }
 
   verifyWebhook(payload: string, signature: string): boolean {
     if (!this.stripeConfig?.webhookSecret) return false;
@@ -101,7 +109,7 @@ export class StripeIntegration implements WebhookIntegration {
           text = `Payment succeeded: ${amount != null ? `${amount / 100} ${(currency ?? '').toUpperCase()}` : 'unknown amount'} (customer: ${customer || 'anonymous'})`;
           break;
         case 'payment_intent.payment_failed':
-          text = `Payment failed: ${(obj['last_payment_error'] as Record<string,string> | undefined)?.message ?? 'unknown error'} (customer: ${customer || 'anonymous'})`;
+          text = `Payment failed: ${(obj['last_payment_error'] as Record<string, string> | undefined)?.message ?? 'unknown error'} (customer: ${customer || 'anonymous'})`;
           break;
         case 'customer.created':
           text = `New Stripe customer: ${(obj['email'] as string | undefined) ?? id}`;
@@ -143,7 +151,9 @@ export class StripeIntegration implements WebhookIntegration {
       };
       await this.deps.onMessage(unified);
     } catch (err) {
-      this.logger?.warn('Stripe webhook parse error', { error: err instanceof Error ? err.message : String(err) });
+      this.logger?.warn('Stripe webhook parse error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
@@ -154,7 +164,10 @@ export class StripeIntegration implements WebhookIntegration {
       });
       if (!resp.ok) return { ok: false, message: `Stripe API error: ${resp.status}` };
       const account = (await resp.json()) as { id: string; business_profile?: { name?: string } };
-      return { ok: true, message: `Connected to Stripe account ${account.business_profile?.name ?? account.id}` };
+      return {
+        ok: true,
+        message: `Connected to Stripe account ${account.business_profile?.name ?? account.id}`,
+      };
     } catch (err) {
       return { ok: false, message: err instanceof Error ? err.message : String(err) };
     }

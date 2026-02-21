@@ -7,7 +7,10 @@ import type { ToolMiddleware } from './index.js';
 function mockClient(): CoreApiClient {
   return {
     get: vi.fn().mockResolvedValue({ jobs: [], total: 0 }),
-    post: vi.fn().mockResolvedValue({ description: 'A cat on a mat', imageUrl: 'https://example.com/img.png' }),
+    post: vi.fn().mockResolvedValue({
+      description: 'A cat on a mat',
+      imageUrl: 'https://example.com/img.png',
+    }),
     put: vi.fn().mockResolvedValue({}),
     delete: vi.fn().mockResolvedValue({}),
     healthCheck: vi.fn().mockResolvedValue(true),

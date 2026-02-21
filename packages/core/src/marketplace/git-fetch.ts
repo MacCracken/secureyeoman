@@ -24,9 +24,7 @@ export function validateGitUrl(url: string): void {
     throw new Error(`Invalid git URL: ${url}`);
   }
   if (!['https:', 'file:'].includes(parsed.protocol)) {
-    throw new Error(
-      `Git URL protocol not allowed: ${parsed.protocol} (use https:// or file://)`
-    );
+    throw new Error(`Git URL protocol not allowed: ${parsed.protocol} (use https:// or file://)`);
   }
 }
 

@@ -219,11 +219,13 @@ describe('GeminiProvider', () => {
       async function* mockChunks() {
         yield {
           text: () => '',
-          candidates: [{
-            content: {
-              parts: [{ functionCall: { name: 'search', args: {} } }],
+          candidates: [
+            {
+              content: {
+                parts: [{ functionCall: { name: 'search', args: {} } }],
+              },
             },
-          }],
+          ],
         };
       }
       const finalResp = {
@@ -247,7 +249,9 @@ describe('GeminiProvider', () => {
       mockGenerateContentStream.mockRejectedValueOnce(new Error('429 rate limit exceeded'));
       const { RateLimitError } = await import('../errors.js');
       await expect(async () => {
-        for await (const _ of provider.chatStream(simpleRequest)) { /* consume */ }
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* consume */
+        }
       }).rejects.toThrow(RateLimitError);
     });
   });
@@ -262,7 +266,11 @@ describe('GeminiProvider', () => {
       });
       const request: AIRequest = {
         messages: [
-          { role: 'tool', content: 'result', toolResult: { toolCallId: 'search_fn', content: 'found it' } },
+          {
+            role: 'tool',
+            content: 'result',
+            toolResult: { toolCallId: 'search_fn', content: 'found it' },
+          },
         ],
         stream: false,
       };

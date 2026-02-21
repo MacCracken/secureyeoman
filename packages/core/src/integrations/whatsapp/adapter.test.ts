@@ -196,10 +196,7 @@ describe('WhatsAppIntegration', () => {
     it('should create session directory when it does not exist', async () => {
       mockExistsSync.mockReturnValueOnce(false);
       await integration.init(makeConfig(), makeDeps());
-      expect(mockMkdirSync).toHaveBeenCalledWith(
-        expect.any(String),
-        { recursive: true }
-      );
+      expect(mockMkdirSync).toHaveBeenCalledWith(expect.any(String), { recursive: true });
     });
 
     it('should not create session directory when it already exists', async () => {
@@ -216,9 +213,7 @@ describe('WhatsAppIntegration', () => {
       await integration.init(makeConfig(), makeDeps());
       await integration.start();
       expect(mockMakeWASocket).toHaveBeenCalledOnce();
-      expect(mockMakeWASocket).toHaveBeenCalledWith(
-        expect.objectContaining({ auth: {} })
-      );
+      expect(mockMakeWASocket).toHaveBeenCalledWith(expect.objectContaining({ auth: {} }));
     });
 
     it('should register creds.update handler on socket events', async () => {
@@ -319,10 +314,9 @@ describe('WhatsAppIntegration', () => {
       await integration.start();
 
       const id = await integration.sendMessage('1234567890@s.whatsapp.net', 'Hello WA!');
-      expect(mockSockSendMessage).toHaveBeenCalledWith(
-        '1234567890@s.whatsapp.net',
-        { text: 'Hello WA!' }
-      );
+      expect(mockSockSendMessage).toHaveBeenCalledWith('1234567890@s.whatsapp.net', {
+        text: 'Hello WA!',
+      });
       expect(id).toBe('wa-msg-id-1');
     });
 
@@ -345,23 +339,22 @@ describe('WhatsAppIntegration', () => {
     });
 
     it('should throw when called before init', async () => {
-      await expect(
-        integration.sendMessage('1234@s.whatsapp.net', 'test')
-      ).rejects.toThrow('not initialized');
+      await expect(integration.sendMessage('1234@s.whatsapp.net', 'test')).rejects.toThrow(
+        'not initialized'
+      );
     });
   });
 
   // ── messages.upsert handler ────────────────────────────────────────────────
 
   describe('messages.upsert handler', () => {
-    async function startAndGetUpsertHandler(
-      onMessage = vi.fn().mockResolvedValue(undefined)
-    ) {
+    async function startAndGetUpsertHandler(onMessage = vi.fn().mockResolvedValue(undefined)) {
       await integration.init(makeConfig(), makeDeps(onMessage));
       await integration.start();
-      return sockEventHandlers.get('messages.upsert') as (
-        args: { messages: any[]; type: string }
-      ) => Promise<void>;
+      return sockEventHandlers.get('messages.upsert') as (args: {
+        messages: any[];
+        type: string;
+      }) => Promise<void>;
     }
 
     function makeRawMessage(overrides: Record<string, unknown> = {}) {
@@ -526,7 +519,7 @@ describe('WhatsAppIntegration', () => {
       ) => void;
       handler({ qr: 'qr-data-string' });
 
-      expect((deps.logger.info as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+      expect(deps.logger.info as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(
         expect.stringContaining('QR code')
       );
     });
@@ -541,7 +534,7 @@ describe('WhatsAppIntegration', () => {
       ) => void;
       handler({ connection: 'open' });
 
-      expect((deps.logger.info as ReturnType<typeof vi.fn>)).toHaveBeenCalledWith(
+      expect(deps.logger.info as ReturnType<typeof vi.fn>).toHaveBeenCalledWith(
         expect.stringContaining('connected')
       );
     });
@@ -559,7 +552,7 @@ describe('WhatsAppIntegration', () => {
         lastDisconnect: { error: { output: { statusCode: 500 } } },
       });
 
-      expect((deps.logger.warn as ReturnType<typeof vi.fn>)).toHaveBeenCalled();
+      expect(deps.logger.warn as ReturnType<typeof vi.fn>).toHaveBeenCalled();
     });
   });
 });

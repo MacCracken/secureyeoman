@@ -47,7 +47,9 @@ migrations before the core Deployment rolls out.
     } catch (err) {
       // Fall back to noop logger if config fails; let the DB error surface below
       logger = createNoopLogger();
-      ctx.stderr.write(`Failed to load config: ${err instanceof Error ? err.message : String(err)}\n`);
+      ctx.stderr.write(
+        `Failed to load config: ${err instanceof Error ? err.message : String(err)}\n`
+      );
       return 1;
     }
 

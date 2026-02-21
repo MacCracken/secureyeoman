@@ -395,12 +395,24 @@ export class AuthService {
   }
 
   /** User management delegated to storage */
-  async listUsers() { return this.deps.storage.listUsers(); }
-  async getUserById(id: string) { return this.deps.storage.getUserById(id); }
-  async getUserByEmail(email: string) { return this.deps.storage.getUserByEmail(email); }
-  async createUser(data: import('@secureyeoman/shared').UserCreate) { return this.deps.storage.createUser(data); }
-  async updateUser(id: string, data: import('@secureyeoman/shared').UserUpdate) { return this.deps.storage.updateUser(id, data); }
-  async deleteUser(id: string) { return this.deps.storage.deleteUser(id); }
+  async listUsers() {
+    return this.deps.storage.listUsers();
+  }
+  async getUserById(id: string) {
+    return this.deps.storage.getUserById(id);
+  }
+  async getUserByEmail(email: string) {
+    return this.deps.storage.getUserByEmail(email);
+  }
+  async createUser(data: import('@secureyeoman/shared').UserCreate) {
+    return this.deps.storage.createUser(data);
+  }
+  async updateUser(id: string, data: import('@secureyeoman/shared').UserUpdate) {
+    return this.deps.storage.updateUser(id, data);
+  }
+  async deleteUser(id: string) {
+    return this.deps.storage.deleteUser(id);
+  }
 
   // ── Password Reset ──────────────────────────────────────────────
 

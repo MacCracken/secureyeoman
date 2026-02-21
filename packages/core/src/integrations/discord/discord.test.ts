@@ -116,7 +116,9 @@ vi.mock('discord.js', () => {
     },
     REST: MockREST,
     Routes: {
-      applicationGuildCommands: vi.fn((clientId: string, guildId: string) => `/guilds/${guildId}/commands`),
+      applicationGuildCommands: vi.fn(
+        (clientId: string, guildId: string) => `/guilds/${guildId}/commands`
+      ),
       applicationCommands: vi.fn((clientId: string) => `/applications/${clientId}/commands`),
     },
     MessageEmbed: MockEmbedBuilder,
@@ -457,10 +459,15 @@ describe('DiscordIntegration', () => {
     await integration.init(makeConfig(), makeDeps());
     await integration.start();
 
-    const threadChannel = { send: vi.fn().mockResolvedValue({ id: 'thread_msg_1' }), name: 'thread' };
+    const threadChannel = {
+      send: vi.fn().mockResolvedValue({ id: 'thread_msg_1' }),
+      name: 'thread',
+    };
     mockChannelsFetch.mockResolvedValueOnce(threadChannel);
 
-    const msgId = await integration.sendMessage('ch_123', 'Hello thread!', { threadId: 'thread_ch_456' });
+    const msgId = await integration.sendMessage('ch_123', 'Hello thread!', {
+      threadId: 'thread_ch_456',
+    });
     expect(mockChannelsFetch).toHaveBeenCalledWith('thread_ch_456');
     expect(msgId).toBe('thread_msg_1');
   });

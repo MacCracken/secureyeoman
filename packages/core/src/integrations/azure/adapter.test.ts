@@ -92,7 +92,11 @@ describe('AzureDevOpsIntegration – adapter.ts', () => {
 
   afterEach(async () => {
     vi.unstubAllGlobals();
-    try { await adapter.stop(); } catch { /* ignore */ }
+    try {
+      await adapter.stop();
+    } catch {
+      /* ignore */
+    }
   });
 
   // ── Platform metadata ─────────────────────────────────────────────────────
@@ -117,9 +121,9 @@ describe('AzureDevOpsIntegration – adapter.ts', () => {
     });
 
     it('throws when organizationUrl is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ organizationUrl: '' }), makeDeps())
-      ).rejects.toThrow('requires an organizationUrl');
+      await expect(adapter.init(makeConfig({ organizationUrl: '' }), makeDeps())).rejects.toThrow(
+        'requires an organizationUrl'
+      );
     });
 
     it('throws when personalAccessToken is missing', async () => {
@@ -129,13 +133,16 @@ describe('AzureDevOpsIntegration – adapter.ts', () => {
     });
 
     it('throws when project is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ project: '' }), makeDeps())
-      ).rejects.toThrow('requires a project name');
+      await expect(adapter.init(makeConfig({ project: '' }), makeDeps())).rejects.toThrow(
+        'requires a project name'
+      );
     });
 
     it('strips trailing slash from organizationUrl', async () => {
-      await adapter.init(makeConfig({ organizationUrl: 'https://dev.azure.com/myorg/' }), makeDeps());
+      await adapter.init(
+        makeConfig({ organizationUrl: 'https://dev.azure.com/myorg/' }),
+        makeDeps()
+      );
       mockFetch.mockResolvedValue({ ok: true, json: async () => ({ id: 42 }) });
       await adapter.sendMessage('5', 'test');
       expect(mockFetch).toHaveBeenCalledWith(
@@ -289,7 +296,11 @@ describe('AzureDevOpsIntegration – adapter.ts', () => {
       const deps = makeDeps();
       await adapter.init(makeConfig(), deps);
       await adapter.start();
-      await adapter.handleWebhook('workitem.created', makeWorkItemPayload('workitem.created'), 'webhook-secret');
+      await adapter.handleWebhook(
+        'workitem.created',
+        makeWorkItemPayload('workitem.created'),
+        'webhook-secret'
+      );
       expect(deps.onMessage).toHaveBeenCalledTimes(1);
       const msg = deps.onMessage.mock.calls[0][0];
       expect(msg.platform).toBe('azure');
@@ -302,7 +313,11 @@ describe('AzureDevOpsIntegration – adapter.ts', () => {
       const deps = makeDeps();
       await adapter.init(makeConfig(), deps);
       await adapter.start();
-      await adapter.handleWebhook('workitem.updated', makeWorkItemPayload('workitem.updated'), 'webhook-secret');
+      await adapter.handleWebhook(
+        'workitem.updated',
+        makeWorkItemPayload('workitem.updated'),
+        'webhook-secret'
+      );
       expect(deps.onMessage).toHaveBeenCalledTimes(1);
       const msg = deps.onMessage.mock.calls[0][0];
       expect(msg.text).toContain('updated');

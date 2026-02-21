@@ -122,7 +122,9 @@ describe('assertPublicUrl', () => {
   });
 
   it('includes label in error message', () => {
-    expect(() => assertPublicUrl('http://localhost', 'Webhook URL')).toThrow('Webhook URL must not target');
+    expect(() => assertPublicUrl('http://localhost', 'Webhook URL')).toThrow(
+      'Webhook URL must not target'
+    );
   });
 
   it('uses default label when not specified', () => {

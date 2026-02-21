@@ -54,7 +54,10 @@ export class ExperimentStorage extends PgBaseStorage {
     return row ? this.rowToExperiment(row) : null;
   }
 
-  async list(opts?: { limit?: number; offset?: number }): Promise<{ experiments: Experiment[]; total: number }> {
+  async list(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ experiments: Experiment[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 

@@ -278,20 +278,16 @@ describe('GitHubIntegration', () => {
     expect(msg.metadata?.path).toBe('src/main.ts');
     expect(msg.metadata?.line).toBe(42);
     expect(msg.metadata?.prNumber).toBe(10);
-    expect(msg.metadata?.commentUrl).toBe(
-      'https://github.com/owner/repo/pull/10#discussion_r601'
-    );
+    expect(msg.metadata?.commentUrl).toBe('https://github.com/owner/repo/pull/10#discussion_r601');
   });
 
   // ── sendMessage with reviewEvent ─────────────────────────────────
 
   it('sendMessage with reviewEvent should call pulls.createReview instead of createComment', async () => {
     await integration.init(makeConfig(), makeDeps());
-    const reviewId = await integration.sendMessage(
-      'owner/repo/pulls/10',
-      'LGTM!',
-      { reviewEvent: 'APPROVE' }
-    );
+    const reviewId = await integration.sendMessage('owner/repo/pulls/10', 'LGTM!', {
+      reviewEvent: 'APPROVE',
+    });
 
     expect(reviewId).toBe('99');
     expect(mockCreateReview).toHaveBeenCalledWith({

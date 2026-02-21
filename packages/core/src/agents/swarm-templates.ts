@@ -12,9 +12,21 @@ export const BUILTIN_SWARM_TEMPLATES: Omit<SwarmTemplate, 'createdAt'>[] = [
       'Sequential pipeline: researcher gathers information, coder implements, reviewer audits the result.',
     strategy: 'sequential',
     roles: [
-      { role: 'researcher', profileName: 'researcher', description: 'Gather relevant information and context' },
-      { role: 'coder', profileName: 'coder', description: 'Implement the solution based on research' },
-      { role: 'reviewer', profileName: 'reviewer', description: 'Audit the implementation for quality and correctness' },
+      {
+        role: 'researcher',
+        profileName: 'researcher',
+        description: 'Gather relevant information and context',
+      },
+      {
+        role: 'coder',
+        profileName: 'coder',
+        description: 'Implement the solution based on research',
+      },
+      {
+        role: 'reviewer',
+        profileName: 'reviewer',
+        description: 'Audit the implementation for quality and correctness',
+      },
     ],
     coordinatorProfile: null,
     isBuiltin: true,
@@ -28,7 +40,11 @@ export const BUILTIN_SWARM_TEMPLATES: Omit<SwarmTemplate, 'createdAt'>[] = [
     roles: [
       { role: 'researcher', profileName: 'researcher', description: 'Gather raw data and sources' },
       { role: 'analyst', profileName: 'analyst', description: 'Interpret and analyze the data' },
-      { role: 'summarizer', profileName: 'summarizer', description: 'Produce a concise, clear summary' },
+      {
+        role: 'summarizer',
+        profileName: 'summarizer',
+        description: 'Produce a concise, clear summary',
+      },
     ],
     coordinatorProfile: null,
     isBuiltin: true,
@@ -54,7 +70,11 @@ export const BUILTIN_SWARM_TEMPLATES: Omit<SwarmTemplate, 'createdAt'>[] = [
     strategy: 'sequential',
     roles: [
       { role: 'coder', profileName: 'coder', description: 'Implement the requested code' },
-      { role: 'reviewer', profileName: 'reviewer', description: 'Review code for quality and correctness' },
+      {
+        role: 'reviewer',
+        profileName: 'reviewer',
+        description: 'Review code for quality and correctness',
+      },
     ],
     coordinatorProfile: null,
     isBuiltin: true,

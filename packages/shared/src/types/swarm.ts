@@ -13,13 +13,7 @@ export type SwarmStrategy = z.infer<typeof SwarmStrategySchema>;
 
 // ─── Status ────────────────────────────────────────────────────────
 
-export const SwarmStatusSchema = z.enum([
-  'pending',
-  'running',
-  'completed',
-  'failed',
-  'cancelled',
-]);
+export const SwarmStatusSchema = z.enum(['pending', 'running', 'completed', 'failed', 'cancelled']);
 export type SwarmStatus = z.infer<typeof SwarmStatusSchema>;
 
 // ─── Role Config ───────────────────────────────────────────────────

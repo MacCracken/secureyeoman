@@ -6,16 +6,25 @@ import type { IntegrationDeps } from '../types.js';
 // ─── Helpers ──────────────────────────────────────────────────
 
 const mockLogger = {
-  info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
   child: vi.fn().mockReturnThis(),
 };
 
 function makeConfig(overrides: Record<string, unknown> = {}): IntegrationConfig {
   return {
-    id: 'gitlab-test-1', platform: 'gitlab', displayName: 'GitLab Test',
-    enabled: true, status: 'disconnected', messageCount: 0,
-    createdAt: Date.now(), updatedAt: Date.now(),
+    id: 'gitlab-test-1',
+    platform: 'gitlab',
+    displayName: 'GitLab Test',
+    enabled: true,
+    status: 'disconnected',
+    messageCount: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     config: {
       personalAccessToken: 'glpat-abc123',
       webhookSecret: 'whsec_xyz',
@@ -46,9 +55,13 @@ function makeMRPayload(action = 'open') {
     user: { username: 'bob', name: 'Bob' },
     project: { path_with_namespace: 'org/repo', web_url: 'https://gitlab.com/org/repo' },
     object_attributes: {
-      iid: 42, title: 'Add feature', state: 'opened', action,
+      iid: 42,
+      title: 'Add feature',
+      state: 'opened',
+      action,
       url: 'https://gitlab.com/org/repo/-/merge_requests/42',
-      target_branch: 'main', source_branch: 'feat/x',
+      target_branch: 'main',
+      source_branch: 'feat/x',
     },
   });
 }
@@ -59,7 +72,9 @@ function makeNotePayload(extras: Record<string, unknown> = {}) {
     user: { username: 'carol', name: 'Carol' },
     project: { path_with_namespace: 'org/repo' },
     object_attributes: {
-      id: 99, note: 'Looks good!', noteable_type: 'MergeRequest',
+      id: 99,
+      note: 'Looks good!',
+      noteable_type: 'MergeRequest',
       url: 'https://gitlab.com/org/repo/-/merge_requests/42#note_99',
       created_at: '2024-01-01T00:00:00Z',
     },
@@ -73,7 +88,10 @@ function makeIssuePayload(action = 'open') {
     user: { username: 'dave', name: 'Dave' },
     project: { path_with_namespace: 'org/repo' },
     object_attributes: {
-      iid: 7, title: 'Bug report', state: 'opened', action,
+      iid: 7,
+      title: 'Bug report',
+      state: 'opened',
+      action,
       url: 'https://gitlab.com/org/repo/-/issues/7',
       created_at: '2024-01-01T00:00:00Z',
     },
@@ -90,7 +108,8 @@ describe('GitLabIntegration', () => {
     vi.clearAllMocks();
     adapter = new GitLabIntegration();
     mockFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       text: vi.fn().mockResolvedValue(''),
       json: vi.fn().mockResolvedValue({ id: 1001, username: 'alice', name: 'Alice' }),
     });
@@ -125,9 +144,9 @@ describe('GitLabIntegration', () => {
     });
 
     it('throws when webhookSecret is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ webhookSecret: '' }), makeDeps())
-      ).rejects.toThrow('webhookSecret');
+      await expect(adapter.init(makeConfig({ webhookSecret: '' }), makeDeps())).rejects.toThrow(
+        'webhookSecret'
+      );
     });
   });
 
@@ -198,12 +217,16 @@ describe('GitLabIntegration', () => {
 
     it('throws when chatId format is invalid', async () => {
       await adapter.init(makeConfig(), makeDeps());
-      await expect(adapter.sendMessage('bad-format', 'text')).rejects.toThrow('Invalid chatId format');
+      await expect(adapter.sendMessage('bad-format', 'text')).rejects.toThrow(
+        'Invalid chatId format'
+      );
     });
 
     it('throws when IID is not a number', async () => {
       await adapter.init(makeConfig(), makeDeps());
-      await expect(adapter.sendMessage('org/repo/issues/abc', 'text')).rejects.toThrow('Invalid issue/MR IID');
+      await expect(adapter.sendMessage('org/repo/issues/abc', 'text')).rejects.toThrow(
+        'Invalid issue/MR IID'
+      );
     });
 
     it('throws when API returns error', async () => {
@@ -212,7 +235,9 @@ describe('GitLabIntegration', () => {
         text: vi.fn().mockResolvedValue('Forbidden'),
       });
       await adapter.init(makeConfig(), makeDeps());
-      await expect(adapter.sendMessage('org/repo/issues/1', 'text')).rejects.toThrow('Failed to post GitLab note');
+      await expect(adapter.sendMessage('org/repo/issues/1', 'text')).rejects.toThrow(
+        'Failed to post GitLab note'
+      );
     });
 
     it('uses custom gitlabUrl', async () => {
@@ -249,9 +274,9 @@ describe('GitLabIntegration', () => {
   describe('handleWebhook()', () => {
     it('throws on invalid token', async () => {
       await adapter.init(makeConfig(), makeDeps());
-      await expect(
-        adapter.handleWebhook('push', makePushPayload(), 'bad-token')
-      ).rejects.toThrow('Invalid webhook token');
+      await expect(adapter.handleWebhook('push', makePushPayload(), 'bad-token')).rejects.toThrow(
+        'Invalid webhook token'
+      );
     });
 
     it('dispatches push event', async () => {

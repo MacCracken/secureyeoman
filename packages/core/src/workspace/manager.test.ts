@@ -2,11 +2,23 @@ import { describe, it, expect, vi } from 'vitest';
 import { WorkspaceManager } from './manager.js';
 
 const makeLogger = () => ({
-  info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  trace: vi.fn(), fatal: vi.fn(), child: vi.fn().mockReturnThis(), level: 'info',
+  info: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info',
 });
 
-const WORKSPACE = { id: 'ws-1', name: 'My Workspace', description: 'Test', createdAt: 1000, updatedAt: 1000 };
+const WORKSPACE = {
+  id: 'ws-1',
+  name: 'My Workspace',
+  description: 'Test',
+  createdAt: 1000,
+  updatedAt: 1000,
+};
 const MEMBER = { workspaceId: 'ws-1', userId: 'user-1', role: 'member', joinedAt: 1000 };
 
 function makeStorage(overrides: any = {}) {
@@ -100,7 +112,10 @@ describe('WorkspaceManager', () => {
       const { manager, logger } = makeManager();
       const member = await manager.addMember('ws-1', 'user-1', 'member');
       expect(member.role).toBe('member');
-      expect(logger.info).toHaveBeenCalledWith('Member added to workspace', { workspaceId: 'ws-1', userId: 'user-1' });
+      expect(logger.info).toHaveBeenCalledWith('Member added to workspace', {
+        workspaceId: 'ws-1',
+        userId: 'user-1',
+      });
     });
   });
 
@@ -109,7 +124,10 @@ describe('WorkspaceManager', () => {
       const { manager, logger } = makeManager();
       const ok = await manager.removeMember('ws-1', 'user-1');
       expect(ok).toBe(true);
-      expect(logger.info).toHaveBeenCalledWith('Member removed from workspace', { workspaceId: 'ws-1', userId: 'user-1' });
+      expect(logger.info).toHaveBeenCalledWith('Member removed from workspace', {
+        workspaceId: 'ws-1',
+        userId: 'user-1',
+      });
     });
   });
 
@@ -118,7 +136,11 @@ describe('WorkspaceManager', () => {
       const { manager, logger } = makeManager();
       const member = await manager.updateMemberRole('ws-1', 'user-1', 'admin');
       expect(member?.role).toBe('admin');
-      expect(logger.info).toHaveBeenCalledWith('Member role updated', { workspaceId: 'ws-1', userId: 'user-1', role: 'admin' });
+      expect(logger.info).toHaveBeenCalledWith('Member role updated', {
+        workspaceId: 'ws-1',
+        userId: 'user-1',
+        role: 'admin',
+      });
     });
   });
 
@@ -141,7 +163,9 @@ describe('WorkspaceManager', () => {
 
   describe('ensureDefaultWorkspace', () => {
     it('does nothing when workspaces exist', async () => {
-      const { manager, storage } = makeManager({ list: vi.fn().mockResolvedValue({ workspaces: [WORKSPACE], total: 1 }) });
+      const { manager, storage } = makeManager({
+        list: vi.fn().mockResolvedValue({ workspaces: [WORKSPACE], total: 1 }),
+      });
       await manager.ensureDefaultWorkspace();
       expect(storage.create).not.toHaveBeenCalled();
     });

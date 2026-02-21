@@ -331,7 +331,8 @@ export class LettaProvider extends BaseProvider {
     const mapped: { role: string; content: string }[] = [];
     for (const msg of messages) {
       if (msg.role === 'tool') continue; // Letta manages tool results internally
-      const role = msg.role === 'assistant' ? 'assistant' : msg.role === 'system' ? 'system' : 'user';
+      const role =
+        msg.role === 'assistant' ? 'assistant' : msg.role === 'system' ? 'system' : 'user';
       mapped.push({ role, content: msg.content ?? '' });
     }
     return mapped;

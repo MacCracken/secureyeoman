@@ -1,5 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { extractFlag, extractBoolFlag, formatUptime, formatTable, colorContext, Spinner } from './utils.js';
+import {
+  extractFlag,
+  extractBoolFlag,
+  formatUptime,
+  formatTable,
+  colorContext,
+  Spinner,
+} from './utils.js';
 
 describe('extractFlag', () => {
   it('should extract flag with value', () => {
@@ -113,7 +120,7 @@ describe('colorContext', () => {
     const c = colorContext(makeTTYStream());
     const green = c.green('hello');
     expect(green).toContain('hello');
-    expect(green).toContain('\x1b[');    // has ANSI escape
+    expect(green).toContain('\x1b['); // has ANSI escape
     expect(green).toContain('\x1b[0m'); // reset code
   });
 
@@ -137,7 +144,12 @@ describe('colorContext', () => {
 describe('Spinner', () => {
   function makeStream() {
     let buf = '';
-    const stream = { write: (s: string) => { buf += s; return true; } } as NodeJS.WritableStream;
+    const stream = {
+      write: (s: string) => {
+        buf += s;
+        return true;
+      },
+    } as NodeJS.WritableStream;
     return { stream, getOutput: () => buf };
   }
 

@@ -159,7 +159,10 @@ export class SwarmStorage extends PgBaseStorage {
     return row ? templateFromRow(row) : null;
   }
 
-  async listTemplates(opts?: { limit?: number; offset?: number }): Promise<{ templates: SwarmTemplate[]; total: number }> {
+  async listTemplates(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ templates: SwarmTemplate[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 
@@ -209,10 +212,7 @@ export class SwarmStorage extends PgBaseStorage {
 
   // ── Run operations ────────────────────────────────────────────
 
-  async createRun(
-    params: SwarmRunParams,
-    template: SwarmTemplate
-  ): Promise<SwarmRun> {
+  async createRun(params: SwarmRunParams, template: SwarmTemplate): Promise<SwarmRun> {
     const id = uuidv7();
     const now = Date.now();
     const row = await this.queryOne<SwarmRunRow>(
@@ -291,10 +291,9 @@ export class SwarmStorage extends PgBaseStorage {
   }
 
   async getRun(id: string): Promise<SwarmRun | null> {
-    const row = await this.queryOne<SwarmRunRow>(
-      `SELECT * FROM agents.swarm_runs WHERE id = $1`,
-      [id]
-    );
+    const row = await this.queryOne<SwarmRunRow>(`SELECT * FROM agents.swarm_runs WHERE id = $1`, [
+      id,
+    ]);
     return row ? runFromRow(row) : null;
   }
 

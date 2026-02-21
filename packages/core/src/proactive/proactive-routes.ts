@@ -67,7 +67,11 @@ export function registerProactiveRoutes(
         const trigger = await proactiveManager.createTrigger(request.body as any);
         return reply.code(201).send(trigger);
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to create trigger');
+        return sendError(
+          reply,
+          400,
+          err instanceof Error ? err.message : 'Failed to create trigger'
+        );
       }
     }
   );

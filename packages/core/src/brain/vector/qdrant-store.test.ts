@@ -12,7 +12,9 @@ const { mockQdrantClient, MockQdrantClient } = vi.hoisted(() => {
     delete: vi.fn().mockResolvedValue({}),
   };
 
-  const MockQdrantClient = vi.fn().mockImplementation(function() { return mockQdrantClient; });
+  const MockQdrantClient = vi.fn().mockImplementation(function () {
+    return mockQdrantClient;
+  });
   return { mockQdrantClient, MockQdrantClient };
 });
 
@@ -120,7 +122,7 @@ describe('QdrantVectorStore', () => {
     it('maps Qdrant results to VectorResult shape', async () => {
       mockQdrantClient.search.mockResolvedValueOnce([
         { id: 'id-1', score: 0.95, payload: { source: 'test' } },
-        { id: 42, score: 0.80 },
+        { id: 42, score: 0.8 },
       ]);
 
       const results = await store.search([1, 0, 0], 5);
@@ -140,9 +142,7 @@ describe('QdrantVectorStore', () => {
     });
 
     it('retries once on connection error', async () => {
-      mockQdrantClient.search
-        .mockRejectedValueOnce(new Error('timeout'))
-        .mockResolvedValueOnce([]);
+      mockQdrantClient.search.mockRejectedValueOnce(new Error('timeout')).mockResolvedValueOnce([]);
 
       const results = await store.search([1, 0, 0], 5);
       expect(results).toEqual([]);
@@ -183,7 +183,7 @@ describe('QdrantVectorStore', () => {
     it('returns 0 when points_count is missing', async () => {
       mockQdrantClient.getCollection
         .mockResolvedValueOnce({ points_count: 5 }) // ensureInitialized
-        .mockResolvedValueOnce({});                  // count query (no points_count)
+        .mockResolvedValueOnce({}); // count query (no points_count)
 
       const count = await store.count();
       expect(count).toBe(0);

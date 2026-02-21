@@ -18,10 +18,7 @@ export interface GroupChatRoutesOptions {
   integrationManager: IntegrationManager;
 }
 
-export function registerGroupChatRoutes(
-  app: FastifyInstance,
-  opts: GroupChatRoutesOptions
-): void {
+export function registerGroupChatRoutes(app: FastifyInstance, opts: GroupChatRoutesOptions): void {
   const { groupChatStorage, integrationManager } = opts;
 
   // ── Channel listing ──────────────────────────────────────────────────────
@@ -105,11 +102,7 @@ export function registerGroupChatRoutes(
         });
         return reply.code(201).send({ success: true, integrationId, chatId, text: text.trim() });
       } catch (err) {
-        return sendError(
-          reply,
-          500,
-          err instanceof Error ? err.message : 'Failed to send message'
-        );
+        return sendError(reply, 500, err instanceof Error ? err.message : 'Failed to send message');
       }
     }
   );

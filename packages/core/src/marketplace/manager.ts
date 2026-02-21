@@ -53,7 +53,13 @@ export class MarketplaceManager {
     }
   }
 
-  async search(query?: string, category?: string, limit?: number, offset?: number, source?: string) {
+  async search(
+    query?: string,
+    category?: string,
+    limit?: number,
+    offset?: number,
+    source?: string
+  ) {
     return await this.storage.search(query, category, limit, offset, source);
   }
 
@@ -82,7 +88,12 @@ export class MarketplaceManager {
               personalityId: personalityId ?? null,
             })
           );
-          this.logger.info('Brain skill created from marketplace', { id, name: skill.name, source: brainSource, personalityId: personalityId ?? null });
+          this.logger.info('Brain skill created from marketplace', {
+            id,
+            name: skill.name,
+            source: brainSource,
+            personalityId: personalityId ?? null,
+          });
         } catch (err) {
           this.logger.error('Failed to create brain skill from marketplace', {
             id,
@@ -141,8 +152,8 @@ export class MarketplaceManager {
       let mpSkill =
         brainSource === 'community'
           ? await this.storage.findByNameAndSource(skillName, 'community')
-          : (await this.storage.findByNameAndSource(skillName, 'published')) ??
-            (await this.storage.findByNameAndSource(skillName, 'builtin'));
+          : ((await this.storage.findByNameAndSource(skillName, 'published')) ??
+            (await this.storage.findByNameAndSource(skillName, 'builtin')));
       if (mpSkill?.installed) {
         await this.storage.setInstalled(mpSkill.id, false);
         this.logger.info('Marketplace skill marked uninstalled (brain skill deleted)', {
@@ -191,9 +202,7 @@ export class MarketplaceManager {
       try {
         await gitCloneOrPull(effectiveGitUrl, repoPath, this.logger);
       } catch (err) {
-        result.errors.push(
-          `Git fetch failed: ${err instanceof Error ? err.message : String(err)}`
-        );
+        result.errors.push(`Git fetch failed: ${err instanceof Error ? err.message : String(err)}`);
         return result;
       }
     }

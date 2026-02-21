@@ -68,7 +68,9 @@ export class BrainManager {
         if (this.vectorEnabled) {
           try {
             await this.deps.vectorMemoryManager!.removeMemory(lowest[0].id);
-          } catch { /* best-effort vector cleanup */ }
+          } catch {
+            /* best-effort vector cleanup */
+          }
         }
       }
     }
@@ -581,7 +583,9 @@ export class BrainManager {
         try {
           await this.deps.vectorMemoryManager!.removeMemory(id);
           vectorSynced++;
-        } catch { /* best-effort vector cleanup */ }
+        } catch {
+          /* best-effort vector cleanup */
+        }
       }
     }
 

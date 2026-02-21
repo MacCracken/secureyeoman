@@ -19,7 +19,9 @@ const {
     reconstruct: vi.fn().mockReturnValue([0.1, 0.2, 0.3]),
   };
 
-  const MockIndexFlatL2 = vi.fn().mockImplementation(function() { return mockIndex; });
+  const MockIndexFlatL2 = vi.fn().mockImplementation(function () {
+    return mockIndex;
+  });
   (MockIndexFlatL2 as any).read = vi.fn().mockReturnValue(mockIndex);
 
   return {
@@ -27,9 +29,9 @@ const {
     MockIndexFlatL2,
     mockMkdirSync: vi.fn(),
     mockExistsSync: vi.fn().mockReturnValue(false),
-    mockReadFileSync: vi.fn().mockReturnValue(
-      JSON.stringify({ idToIndex: {}, indexToId: {}, nextIndex: 0 })
-    ),
+    mockReadFileSync: vi
+      .fn()
+      .mockReturnValue(JSON.stringify({ idToIndex: {}, indexToId: {}, nextIndex: 0 })),
     mockWriteFileSync: vi.fn(),
   };
 });
@@ -63,9 +65,9 @@ describe('FaissVectorStore', () => {
     (MockIndexFlatL2 as any).read.mockClear().mockReturnValue(mockIndex);
     mockMkdirSync.mockClear();
     mockExistsSync.mockClear().mockReturnValue(false);
-    mockReadFileSync.mockClear().mockReturnValue(
-      JSON.stringify({ idToIndex: {}, indexToId: {}, nextIndex: 0 })
-    );
+    mockReadFileSync
+      .mockClear()
+      .mockReturnValue(JSON.stringify({ idToIndex: {}, indexToId: {}, nextIndex: 0 }));
     mockWriteFileSync.mockClear();
 
     store = new FaissVectorStore(3, '/tmp/test-faiss');
@@ -134,7 +136,7 @@ describe('FaissVectorStore', () => {
     it('returns empty array when no vectors in index', async () => {
       mockIndex.ntotal.mockReturnValue(0);
       await store.insert('id-1', [1, 0, 0]); // initialize
-      mockIndex.ntotal.mockReturnValue(0);     // but report 0
+      mockIndex.ntotal.mockReturnValue(0); // but report 0
       const results = await store.search([1, 0, 0], 5);
       expect(results).toEqual([]);
     });
@@ -218,7 +220,9 @@ describe('FaissVectorStore', () => {
 
     it('handles reconstruct errors gracefully without throwing', async () => {
       await store.insert('id-1', [1, 0, 0]);
-      mockIndex.reconstruct.mockImplementationOnce(() => { throw new Error('reconstruct failed'); });
+      mockIndex.reconstruct.mockImplementationOnce(() => {
+        throw new Error('reconstruct failed');
+      });
       await expect(store.compact()).resolves.not.toThrow();
     });
   });

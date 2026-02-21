@@ -66,8 +66,18 @@ describe('ConsolidationExecutor', () => {
   describe('execute (dry run)', () => {
     it('counts actions without applying them in dry run', async () => {
       const actions = [
-        { type: 'MERGE' as const, sourceIds: ['m1', 'm2'], reason: 'similar', mergedContent: 'merged' },
-        { type: 'REPLACE' as const, sourceIds: ['m3', 'm4'], reason: 'duplicate', replaceTargetId: 'm3' },
+        {
+          type: 'MERGE' as const,
+          sourceIds: ['m1', 'm2'],
+          reason: 'similar',
+          mergedContent: 'merged',
+        },
+        {
+          type: 'REPLACE' as const,
+          sourceIds: ['m3', 'm4'],
+          reason: 'duplicate',
+          replaceTargetId: 'm3',
+        },
         { type: 'SKIP' as const, sourceIds: ['m5'], reason: 'unique' },
         { type: 'KEEP_SEPARATE' as const, sourceIds: ['m6', 'm7'], reason: 'different' },
       ];
@@ -100,7 +110,14 @@ describe('ConsolidationExecutor', () => {
         .mockResolvedValueOnce(makeMemory('m2'));
 
       const summary = await executor.execute(
-        [{ type: 'MERGE', sourceIds: ['m1', 'm2'], reason: 'similar', mergedContent: 'Merged content' }],
+        [
+          {
+            type: 'MERGE',
+            sourceIds: ['m1', 'm2'],
+            reason: 'similar',
+            mergedContent: 'Merged content',
+          },
+        ],
         false
       );
 
@@ -123,10 +140,7 @@ describe('ConsolidationExecutor', () => {
     });
 
     it('skips MERGE when mergedContent is missing', async () => {
-      await executor.execute(
-        [{ type: 'MERGE', sourceIds: ['m1'], reason: 'test' } as any],
-        false
-      );
+      await executor.execute([{ type: 'MERGE', sourceIds: ['m1'], reason: 'test' } as any], false);
 
       expect(mockStorage.createMemory).not.toHaveBeenCalled();
       expect(mockLogger.warn).toHaveBeenCalledWith(
@@ -204,7 +218,14 @@ describe('ConsolidationExecutor', () => {
       mockStorage.createMemory.mockResolvedValue(makeMemory('m1-updated'));
 
       await executor.execute(
-        [{ type: 'UPDATE', sourceIds: ['m1'], reason: 'correction', updateData: { content: 'Updated content' } }],
+        [
+          {
+            type: 'UPDATE',
+            sourceIds: ['m1'],
+            reason: 'correction',
+            updateData: { content: 'Updated content' },
+          },
+        ],
         false
       );
 

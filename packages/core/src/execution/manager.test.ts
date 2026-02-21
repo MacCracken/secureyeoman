@@ -75,7 +75,11 @@ function buildManager(configOverrides?: Partial<ExecutionConfig>, storageOverrid
   const logger = makeMockLogger();
   const auditChain = makeMockAuditChain();
   const config = { ...BASE_CONFIG, ...configOverrides };
-  const manager = new CodeExecutionManager(config, { storage: storage as any, logger: logger as any, auditChain: auditChain as any });
+  const manager = new CodeExecutionManager(config, {
+    storage: storage as any,
+    logger: logger as any,
+    auditChain: auditChain as any,
+  });
   return { manager, storage, logger, auditChain };
 }
 
@@ -84,7 +88,11 @@ function buildManager(configOverrides?: Partial<ExecutionConfig>, storageOverrid
 describe('CodeExecutionManager — initialization', () => {
   it('initializes and expires stale sessions', async () => {
     vi.useFakeTimers();
-    const staleSession = { ...SESSION, status: 'active' as const, lastActivity: Date.now() - 9999999 };
+    const staleSession = {
+      ...SESSION,
+      status: 'active' as const,
+      lastActivity: Date.now() - 9999999,
+    };
     const { manager, storage } = buildManager(undefined, {
       listSessions: vi.fn().mockResolvedValue({ sessions: [staleSession], total: 1 }),
     });
@@ -106,27 +114,31 @@ describe('CodeExecutionManager — initialization', () => {
 describe('CodeExecutionManager.execute — validation errors', () => {
   it('throws when execution is disabled', async () => {
     const { manager } = buildManager({ enabled: false });
-    await expect(manager.execute({ runtime: 'node', code: 'console.log("hi")' })).rejects.toThrow('disabled');
+    await expect(manager.execute({ runtime: 'node', code: 'console.log("hi")' })).rejects.toThrow(
+      'disabled'
+    );
   });
 
   it('throws when runtime is not allowed', async () => {
     const { manager } = buildManager({ allowedRuntimes: ['python'] });
-    await expect(manager.execute({ runtime: 'node', code: 'x' })).rejects.toThrow("not allowed");
+    await expect(manager.execute({ runtime: 'node', code: 'x' })).rejects.toThrow('not allowed');
   });
 
   it('throws when code validation fails', async () => {
     const { manager } = buildManager();
     // dangerous Node pattern
-    await expect(manager.execute({ runtime: 'node', code: "require('child_process')" })).rejects.toThrow('validation failed');
+    await expect(
+      manager.execute({ runtime: 'node', code: "require('child_process')" })
+    ).rejects.toThrow('validation failed');
   });
 });
 
 describe('CodeExecutionManager.execute — approval policies', () => {
   it('throws ApprovalRequiredError when policy is "always"', async () => {
     const { manager } = buildManager({ approvalPolicy: 'always' });
-    await expect(
-      manager.execute({ runtime: 'node', code: 'console.log("safe")' })
-    ).rejects.toThrow(ApprovalRequiredError);
+    await expect(manager.execute({ runtime: 'node', code: 'console.log("safe")' })).rejects.toThrow(
+      ApprovalRequiredError
+    );
   });
 
   it('throws ApprovalRequiredError for first-time runtime when policy is "first-time"', async () => {
@@ -134,9 +146,9 @@ describe('CodeExecutionManager.execute — approval policies', () => {
       { approvalPolicy: 'first-time' },
       { listSessions: vi.fn().mockResolvedValue({ sessions: [], total: 0 }) }
     );
-    await expect(
-      manager.execute({ runtime: 'node', code: 'console.log("safe")' })
-    ).rejects.toThrow(ApprovalRequiredError);
+    await expect(manager.execute({ runtime: 'node', code: 'console.log("safe")' })).rejects.toThrow(
+      ApprovalRequiredError
+    );
   });
 
   it('does NOT throw for already-used runtime when policy is "first-time"', async () => {
@@ -151,7 +163,11 @@ describe('CodeExecutionManager.execute — approval policies', () => {
 
     const manager = new CodeExecutionManager(
       { ...BASE_CONFIG, approvalPolicy: 'first-time' },
-      { storage: storage as any, logger: makeMockLogger() as any, auditChain: makeMockAuditChain() as any }
+      {
+        storage: storage as any,
+        logger: makeMockLogger() as any,
+        auditChain: makeMockAuditChain() as any,
+      }
     );
 
     // Mock the runtime to return output
@@ -160,7 +176,9 @@ describe('CodeExecutionManager.execute — approval policies', () => {
       yield { stream: 'stdout' as const, data: 'Hello\n', timestamp: Date.now() };
     });
 
-    await expect(manager.execute({ runtime: 'node', code: 'console.log("safe")' })).resolves.toBeDefined();
+    await expect(
+      manager.execute({ runtime: 'node', code: 'console.log("safe")' })
+    ).resolves.toBeDefined();
   });
 });
 
@@ -199,7 +217,9 @@ describe('CodeExecutionManager.execute — session management', () => {
       { maxConcurrent: 5 },
       { listSessions: vi.fn().mockResolvedValue({ sessions: activeSessions, total: 5 }) }
     );
-    await expect(manager.execute({ runtime: 'node', code: 'console.log("safe")' })).rejects.toThrow('Maximum concurrent');
+    await expect(manager.execute({ runtime: 'node', code: 'console.log("safe")' })).rejects.toThrow(
+      'Maximum concurrent'
+    );
   });
 });
 

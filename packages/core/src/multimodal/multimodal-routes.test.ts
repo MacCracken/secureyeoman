@@ -14,9 +14,7 @@ function createMockManager(): MultimodalManager {
     generateImage: vi
       .fn()
       .mockResolvedValue({ imageUrl: 'https://example.openai.com/img.png', durationMs: 10 }),
-    triggerHaptic: vi
-      .fn()
-      .mockResolvedValue({ triggered: true, patternMs: 200, durationMs: 1 }),
+    triggerHaptic: vi.fn().mockResolvedValue({ triggered: true, patternMs: 200, durationMs: 1 }),
     getStorage: vi.fn().mockReturnValue({
       listJobs: vi.fn().mockResolvedValue({ jobs: [], total: 0 }),
     }),

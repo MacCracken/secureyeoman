@@ -22,11 +22,24 @@ function makeMockCostCalculator(): CostCalculator {
   };
 
   return {
-    calculate: vi.fn((_provider: string, model: string, usage: { inputTokens: number; outputTokens: number; cachedTokens: number; totalTokens: number }) => {
-      const pricing = PER_MODEL[model] ?? { inputPer1M: 3, outputPer1M: 15 };
-      return (usage.inputTokens / 1_000_000) * pricing.inputPer1M
-           + (usage.outputTokens / 1_000_000) * pricing.outputPer1M;
-    }),
+    calculate: vi.fn(
+      (
+        _provider: string,
+        model: string,
+        usage: {
+          inputTokens: number;
+          outputTokens: number;
+          cachedTokens: number;
+          totalTokens: number;
+        }
+      ) => {
+        const pricing = PER_MODEL[model] ?? { inputPer1M: 3, outputPer1M: 15 };
+        return (
+          (usage.inputTokens / 1_000_000) * pricing.inputPer1M +
+          (usage.outputTokens / 1_000_000) * pricing.outputPer1M
+        );
+      }
+    ),
     getPricing: vi.fn((_, model: string) => PER_MODEL[model] ?? { inputPer1M: 3, outputPer1M: 15 }),
   } as unknown as CostCalculator;
 }
@@ -38,8 +51,18 @@ vi.mock('./cost-calculator.js', async (importOriginal) => {
     ...actual,
     getAvailableModels: vi.fn(() => ({
       anthropic: [
-        { provider: 'anthropic', model: 'claude-haiku-3-5-20241022', inputPer1M: 0.8, outputPer1M: 4 },
-        { provider: 'anthropic', model: 'claude-sonnet-4-20250514', inputPer1M: 3, outputPer1M: 15 },
+        {
+          provider: 'anthropic',
+          model: 'claude-haiku-3-5-20241022',
+          inputPer1M: 0.8,
+          outputPer1M: 4,
+        },
+        {
+          provider: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+          inputPer1M: 3,
+          outputPer1M: 15,
+        },
         { provider: 'anthropic', model: 'claude-opus-4-20250514', inputPer1M: 15, outputPer1M: 75 },
       ],
       openai: [
@@ -196,7 +219,10 @@ describe('ModelRouter', () => {
         // (0.8/4 vs 3/15 per 1M tokens) and should surface as the alternative.
         const decision = router.route(
           'implement a complex algorithm with extensive reasoning about edge cases',
-          { allowedModels: ['claude-sonnet-4-20250514', 'claude-haiku-3-5-20241022'], tokenBudget: 50000 }
+          {
+            allowedModels: ['claude-sonnet-4-20250514', 'claude-haiku-3-5-20241022'],
+            tokenBudget: 50000,
+          }
         );
         expect(decision.selectedModel).toBe('claude-sonnet-4-20250514');
         expect(decision.cheaperAlternative).not.toBeNull();
@@ -229,13 +255,23 @@ describe('ModelRouter', () => {
 
   describe('estimateCost()', () => {
     it('returns a non-negative cost', () => {
-      const cost = router.estimateCost('summarize this', 'claude-sonnet-4-20250514', 'anthropic', 50000);
+      const cost = router.estimateCost(
+        'summarize this',
+        'claude-sonnet-4-20250514',
+        'anthropic',
+        50000
+      );
       expect(cost).toBeGreaterThanOrEqual(0);
     });
 
     it('returns higher cost for larger token budgets', () => {
       const small = router.estimateCost('summarize', 'claude-sonnet-4-20250514', 'anthropic', 1000);
-      const large = router.estimateCost('summarize', 'claude-sonnet-4-20250514', 'anthropic', 100000);
+      const large = router.estimateCost(
+        'summarize',
+        'claude-sonnet-4-20250514',
+        'anthropic',
+        100000
+      );
       expect(large).toBeGreaterThan(small);
     });
 

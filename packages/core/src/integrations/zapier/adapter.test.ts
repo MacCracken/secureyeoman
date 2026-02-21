@@ -192,7 +192,11 @@ describe('ZapierIntegration', () => {
       await adapter.init(makeConfig(), makeDeps(onMessage));
       await adapter.start();
 
-      const payload = JSON.stringify({ message: 'Hello from Zap', sender: 'zapier_user', chatId: 'chan_1' });
+      const payload = JSON.stringify({
+        message: 'Hello from Zap',
+        sender: 'zapier_user',
+        chatId: 'chan_1',
+      });
       await adapter.handleWebhook(payload, '');
 
       expect(onMessage).toHaveBeenCalledOnce();

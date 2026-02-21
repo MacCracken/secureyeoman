@@ -116,7 +116,7 @@ export class DiscordIntegration implements Integration {
         message.channel.type === ChannelType.PrivateThread;
       const channelName = isThread
         ? `${(message.channel as any).parent?.name ?? 'thread'}/${(message.channel as any).name}`
-        : (message.channel as TextChannel).name ?? '';
+        : ((message.channel as TextChannel).name ?? '');
 
       const unified: UnifiedMessage = {
         id: `dc_${message.id}`,
@@ -159,7 +159,9 @@ export class DiscordIntegration implements Integration {
                   mimeType: att.mimeType,
                 });
                 unified.text = `[Image: ${result.description}]\n${unified.text}`;
-              } catch { /* non-fatal */ }
+              } catch {
+                /* non-fatal */
+              }
             }
           }
           await this.deps!.onMessage(unified);
@@ -241,9 +243,7 @@ export class DiscordIntegration implements Integration {
       }
 
       if (commandName === 'feedback') {
-        const modal = new ModalBuilder()
-          .setCustomId('friday_feedback')
-          .setTitle('Submit Feedback');
+        const modal = new ModalBuilder().setCustomId('friday_feedback').setTitle('Submit Feedback');
 
         const feedbackInput = new TextInputBuilder()
           .setCustomId('feedback_input')

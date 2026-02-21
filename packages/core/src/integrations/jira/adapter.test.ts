@@ -6,16 +6,25 @@ import type { IntegrationDeps } from '../types.js';
 // ─── Helpers ──────────────────────────────────────────────────
 
 const mockLogger = {
-  info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
   child: vi.fn().mockReturnThis(),
 };
 
 function makeConfig(overrides: Record<string, unknown> = {}): IntegrationConfig {
   return {
-    id: 'jira-test-1', platform: 'jira', displayName: 'Jira Test',
-    enabled: true, status: 'disconnected', messageCount: 0,
-    createdAt: Date.now(), updatedAt: Date.now(),
+    id: 'jira-test-1',
+    platform: 'jira',
+    displayName: 'Jira Test',
+    enabled: true,
+    status: 'disconnected',
+    messageCount: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     config: {
       instanceUrl: 'https://myorg.atlassian.net',
       email: 'user@example.com',
@@ -30,7 +39,9 @@ function makeDeps(onMessage = vi.fn().mockResolvedValue(undefined)): Integration
   return { logger: mockLogger as any, onMessage };
 }
 
-function makeIssuePayload(event: 'jira:issue_created' | 'jira:issue_updated' = 'jira:issue_created') {
+function makeIssuePayload(
+  event: 'jira:issue_created' | 'jira:issue_updated' = 'jira:issue_created'
+) {
   return JSON.stringify({
     webhookEvent: event,
     user: { displayName: 'Alice', accountId: 'acc-1' },
@@ -42,11 +53,13 @@ function makeIssuePayload(event: 'jira:issue_created' | 'jira:issue_updated' = '
         issuetype: { name: 'Bug' },
       },
     },
-    ...(event === 'jira:issue_updated' ? {
-      changelog: {
-        items: [{ field: 'status', fromString: 'To Do', toString: 'In Progress' }],
-      },
-    } : {}),
+    ...(event === 'jira:issue_updated'
+      ? {
+          changelog: {
+            items: [{ field: 'status', fromString: 'To Do', toString: 'In Progress' }],
+          },
+        }
+      : {}),
   });
 }
 
@@ -76,7 +89,8 @@ describe('JiraIntegration', () => {
     vi.clearAllMocks();
     adapter = new JiraIntegration();
     mockFetch = vi.fn().mockResolvedValue({
-      ok: true, status: 200,
+      ok: true,
+      status: 200,
       text: vi.fn().mockResolvedValue(''),
       json: vi.fn().mockResolvedValue({
         id: 'cmt-1',
@@ -109,21 +123,21 @@ describe('JiraIntegration', () => {
     });
 
     it('throws when instanceUrl is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ instanceUrl: '' }), makeDeps())
-      ).rejects.toThrow('instanceUrl');
+      await expect(adapter.init(makeConfig({ instanceUrl: '' }), makeDeps())).rejects.toThrow(
+        'instanceUrl'
+      );
     });
 
     it('throws when email is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ email: '' }), makeDeps())
-      ).rejects.toThrow('email and apiToken');
+      await expect(adapter.init(makeConfig({ email: '' }), makeDeps())).rejects.toThrow(
+        'email and apiToken'
+      );
     });
 
     it('throws when apiToken is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ apiToken: '' }), makeDeps())
-      ).rejects.toThrow('email and apiToken');
+      await expect(adapter.init(makeConfig({ apiToken: '' }), makeDeps())).rejects.toThrow(
+        'email and apiToken'
+      );
     });
 
     it('strips trailing slash from instanceUrl', async () => {
@@ -194,7 +208,9 @@ describe('JiraIntegration', () => {
         text: vi.fn().mockResolvedValue('Forbidden'),
       });
       await adapter.init(makeConfig(), makeDeps());
-      await expect(adapter.sendMessage('PROJ-1', 'text')).rejects.toThrow('Failed to post Jira comment');
+      await expect(adapter.sendMessage('PROJ-1', 'text')).rejects.toThrow(
+        'Failed to post Jira comment'
+      );
     });
   });
 

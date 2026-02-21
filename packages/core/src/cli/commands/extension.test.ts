@@ -23,8 +23,16 @@ function makeCtx(argv: string[]) {
   const err: string[] = [];
   return {
     argv,
-    stdout: { write: (s: string) => { out.push(s); } },
-    stderr: { write: (s: string) => { err.push(s); } },
+    stdout: {
+      write: (s: string) => {
+        out.push(s);
+      },
+    },
+    stderr: {
+      write: (s: string) => {
+        err.push(s);
+      },
+    },
     out,
     err,
   };
@@ -56,9 +64,7 @@ describe('extensionCommand', () => {
       mockApiCall.mockResolvedValue({
         ok: true,
         data: {
-          extensions: [
-            { id: 'ext-uuid-1', name: 'my-ext', version: '1.0.0', enabled: true },
-          ],
+          extensions: [{ id: 'ext-uuid-1', name: 'my-ext', version: '1.0.0', enabled: true }],
         },
       });
 
@@ -69,7 +75,9 @@ describe('extensionCommand', () => {
     });
 
     it('outputs JSON with --json flag', async () => {
-      const data = { extensions: [{ id: 'ext-uuid-1', name: 'test', version: '1.0', enabled: false }] };
+      const data = {
+        extensions: [{ id: 'ext-uuid-1', name: 'test', version: '1.0', enabled: false }],
+      };
       mockApiCall.mockResolvedValue({ ok: true, data });
 
       const ctx = makeCtx(['list', '--json']);
@@ -93,7 +101,13 @@ describe('extensionCommand', () => {
         ok: true,
         data: {
           hooks: [
-            { id: 'hook-uuid', hookPoint: 'before:chat', semantics: 'filter', priority: 10, enabled: true },
+            {
+              id: 'hook-uuid',
+              hookPoint: 'before:chat',
+              semantics: 'filter',
+              priority: 10,
+              enabled: true,
+            },
           ],
         },
       });
@@ -117,7 +131,12 @@ describe('extensionCommand', () => {
         ok: true,
         data: {
           webhooks: [
-            { id: 'wh-uuid', url: 'http://example.com/hook', hookPoints: ['a', 'b'], enabled: true },
+            {
+              id: 'wh-uuid',
+              url: 'http://example.com/hook',
+              hookPoints: ['a', 'b'],
+              enabled: true,
+            },
           ],
         },
       });

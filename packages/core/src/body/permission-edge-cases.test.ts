@@ -145,7 +145,10 @@ describe('PermissionEdgeCaseHandler', () => {
       const handler = new PermissionEdgeCaseHandler();
       await handler.handleOSUpgrade();
       expect(handler.getLastKnownStatus('screen')).toEqual({ granted: true, canRequest: false });
-      expect(handler.getLastKnownStatus('microphone')).toEqual({ granted: true, canRequest: false });
+      expect(handler.getLastKnownStatus('microphone')).toEqual({
+        granted: true,
+        canRequest: false,
+      });
     });
   });
 
