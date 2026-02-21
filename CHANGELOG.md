@@ -4,7 +4,76 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 32 (2026-02-21): Letta Stateful Agent Provider
+## Phase 32 (2026-02-21): Cross-Integration Routing Rules
+
+### New Features
+
+- **Routing rules engine** — Priority-ordered rule evaluation system that runs after a message is stored but before the task executor processes it. Rules specify trigger conditions (platform allowlist, integration allowlist, chatId/senderId/keyword regex patterns, direction) and a single action. All matching rules fire; evaluation is fire-and-forget so rule failures never drop a message.
+- **Four action types** — `forward` relays the message (optionally via Mustache template) to a different `(integrationId, chatId)`; `reply` is the same but scoped conceptually to the same conversation on a different integration; `personality` invokes an `onPersonalityOverride` callback with a specified personality ID; `notify` HTTP POSTs the message payload to a webhook URL (10 s `AbortSignal` timeout).
+- **Pattern matching** — Trigger patterns evaluated with `new RegExp(pattern, 'i')`; invalid regex strings fall back to silent literal substring matching; `null` patterns are wildcards (always match).
+- **Match analytics** — Each matched rule has `match_count` incremented and `last_matched_at` updated non-blocking via `recordMatch()`. Surfaced in the rule list UI.
+- **Dry-run test endpoint** — `POST /api/v1/routing-rules/:id/test` evaluates a rule against synthetic params without sending anything. Used by the rule builder's test panel.
+- **Visual rule builder** — `RoutingRulesPage` embedded as the **Routing Rules** tab in the Connections page (`/connections?tab=routing`). Lists rules with enable/disable toggles, edit, inline dry-run test panel, and delete. `RuleForm` covers all trigger fields and action-type-specific configuration. Redirect from `/routing-rules` → `/connections?tab=routing`.
+- **Cross-integration routing wired into `MessageRouter`** — `RoutingRulesManager.processMessage()` called from `handleInbound()` via fire-and-forget `void` wrapper; routing rule failures cannot delay or drop message processing.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `packages/core/src/integrations/routing-rules-storage.ts` | `RoutingRulesStorage` (extends `PgBaseStorage`) — CRUD + `listEnabled()` + `recordMatch()` |
+| `packages/core/src/integrations/routing-rules-manager.ts` | `RoutingRulesManager` — `evaluateRules()`, `applyRule()`, `processMessage()`, `testRule()` |
+| `packages/core/src/integrations/routing-rules-routes.ts` | REST API: `GET/POST/PUT/DELETE /api/v1/routing-rules[/:id]` + `POST /api/v1/routing-rules/:id/test` |
+| `packages/dashboard/src/components/RoutingRulesPage.tsx` | Visual rule builder embedded in ConnectionsPage as the Routing Rules tab |
+| `packages/dashboard/src/components/RoutingRulesPage.test.tsx` | Unit tests: empty state, rule list render, form open, create rule, enable/disable toggle, dry-run panel |
+| `docs/adr/088-cross-integration-routing-rules.md` | ADR — rule schema, action types, evaluation pipeline, dry-run design, trade-offs |
+
+### Modified Files
+
+- **`packages/core/src/integrations/message-router.ts`** — Added `setRoutingRulesManager()` setter and fire-and-forget `processMessage()` call in `handleInbound()` after the empty-message guard
+- **`packages/core/src/secureyeoman.ts`** — Added `RoutingRulesStorage`, `RoutingRulesManager` fields and initialisation; added `getRoutingRulesStorage()` / `getRoutingRulesManager()` getters; wires `RoutingRulesManager` → `MessageRouter` after integration manager is ready
+- **`packages/core/src/gateway/server.ts`** — Registered routing-rules REST routes via `registerRoutingRulesRoutes()`
+- **`packages/dashboard/src/api/client.ts`** — Added `RoutingRule` interface; added `fetchRoutingRules()`, `createRoutingRule()`, `updateRoutingRule()`, `deleteRoutingRule()`, `testRoutingRule()` API functions
+- **`packages/dashboard/src/components/ConnectionsPage.tsx`** — Added `'routing'` to `TabType`; added Routing Rules tab button with `ArrowRightLeft` icon; added `<RoutingRulesTab>` pane
+- **`packages/dashboard/src/components/DashboardLayout.tsx`** — Added `/routing-rules` → `/connections?tab=routing` redirect route
+- **`docs/development/roadmap.md`** — Added Phase 32 to timeline; removed Cross-Integration Routing Rules from Future Features
+- **`README.md`** — Updated Integrations and Dashboard feature descriptions; updated test and ADR counts
+
+---
+
+## Phase 31 (2026-02-21): Group Chat View
+
+### New Features
+
+- **Unified channel list** — `/group-chat` page with three panes: channel list (all `(integrationId, chatId)` pairs sorted by most recent activity, 15 s refetch), message thread (paginated history, newest-first reversal for display, 5 s refetch), and reply box (free-text; `Enter` sends, `Shift+Enter` newlines).
+- **Read projection over existing messages table** — No new table required. Channels are derived by `GROUP BY (integration_id, chat_id)` with correlated subqueries for last message, unread count, and personality. Migration 030 added `personality_id` to the `messages` table; personality names resolved via a secondary `SELECT` from `soul.personalities` to avoid JOIN fragility.
+- **Group Chat pins schema** — `group_chat_pins` table added for future pinned-message support (schema-only; not yet surfaced in UI). See ADR 087.
+- **Reply pipeline** — Reuses the hardened `IntegrationManager.sendMessage()` path; no new send logic.
+- **WebSocket channel** — `group_chat` WebSocket channel registered with `integrations:read` permission in `CHANNEL_PERMISSIONS`; current polling is sufficient for initial release; WS push ready for future use.
+- **Sidebar navigation** — `MessagesSquare` icon and **Group Chat** nav item added before Connections in `Sidebar.tsx`; lazy-loaded page at `/group-chat` in `DashboardLayout.tsx`.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `packages/core/src/integrations/group-chat-storage.ts` | `GroupChatStorage` (extends `PgBaseStorage`) — `listChannels()` + `listMessages()` |
+| `packages/core/src/integrations/group-chat-routes.ts` | REST API: `GET /api/v1/group-chat/channels`, `GET /api/v1/group-chat/channels/:integrationId/:chatId/messages`, `POST /api/v1/group-chat/channels/:integrationId/:chatId/messages` |
+| `packages/dashboard/src/components/GroupChatPage.tsx` | Three-pane Group Chat UI with `MessageBubble`, `timeAgo()`, `platformIcon()` |
+| `packages/dashboard/src/components/GroupChatPage.test.tsx` | Unit tests: empty state, channel list render, message thread on click, send message |
+| `docs/adr/087-group-chat-view.md` | ADR — read-projection design, 3-pane layout, polling vs WS trade-offs |
+
+### Modified Files
+
+- **`packages/core/src/secureyeoman.ts`** — Added `GroupChatStorage` field and initialisation (Step 5.76); added `getGroupChatStorage()` getter
+- **`packages/core/src/gateway/server.ts`** — Registered group-chat REST routes via `registerGroupChatRoutes()`; added `group_chat` to `CHANNEL_PERMISSIONS`
+- **`packages/dashboard/src/api/client.ts`** — Added `GroupChatChannel`, `GroupChatMessage` interfaces; added `fetchGroupChatChannels()`, `fetchGroupChatMessages()`, `sendGroupChatMessage()` API functions
+- **`packages/dashboard/src/components/DashboardLayout.tsx`** — Added lazy import and `/group-chat` route
+- **`packages/dashboard/src/components/Sidebar.tsx`** — Added `MessagesSquare` import and Group Chat nav item
+- **`docs/development/roadmap.md`** — Added Phase 31 to timeline; removed Group Chat View from Future Features
+- **`README.md`** — Updated Dashboard feature description; updated test and ADR counts
+
+---
+
+## Phase 30 (2026-02-21): Letta Stateful Agent Provider
 
 ### New Features
 
@@ -34,13 +103,13 @@ All notable changes to SecureYeoman are documented in this file.
 - **`packages/core/src/ai/model-router.ts`** — Added Letta model IDs to `MODEL_TIER` map (fast: `openai/gpt-4o-mini`, `anthropic/claude-haiku-*`; capable: `openai/gpt-4o`, `anthropic/claude-sonnet-*`)
 - **`.env.example`** — Added `LETTA_API_KEY`, `LETTA_BASE_URL`, `LETTA_AGENT_ID`, `LETTA_LOCAL` entries
 - **`.env.dev.example`** — Added `LETTA_API_KEY`, `LETTA_BASE_URL`, `LETTA_AGENT_ID`, `LETTA_LOCAL` entries
-- **`docs/development/roadmap.md`** — Added Phase 32 to timeline
+- **`docs/development/roadmap.md`** — Added Phase 30 to timeline
 - **`README.md`** — Added Letta to AI Integration feature table and provider count
 - **`docs/guides/ai-provider-api-keys.md`** — Added Letta API key setup section
 
 ---
 
-## Phase 31 (2026-02-21): Intelligent Model Routing
+## Phase 29 (2026-02-21): Intelligent Model Routing
 
 ### New Features
 

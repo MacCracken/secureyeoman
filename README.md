@@ -4,7 +4,7 @@
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 6389+](https://img.shields.io/badge/Tests-6389%2B-brightgreen.svg)]()
+[![Tests: 6399+](https://img.shields.io/badge/Tests-6399%2B-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -68,7 +68,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Security** | RBAC (Admin/Operator/Auditor/Viewer), JWT + API key auth, mTLS, AES-256-GCM encryption at rest, sandboxed execution (Landlock/macOS sandbox), rate limiting (per-user, per-IP, global), HTTP security headers (HSTS, CSP, X-Frame-Options), CORS policy enforcement |
 | **Observability** | Cryptographic audit trails (HMAC-SHA256 chain), Prometheus metrics, Grafana dashboards, structured JSONL log rotation, audit retention enforcement, audit export |
 | **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama, LM Studio, LocalAI (local), OpenCode Zen, DeepSeek, Mistral, x.ai Grok, Letta (stateful agent platform with persistent memory); automatic fallback chains on rate limits/outages; dynamic model discovery |
-| **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); overview with stat cards (tasks, heartbeat, audit, memory) and services status panel (core, Postgres, audit chain, MCP); system flow graph (ReactFlow) with live connection edges; task history, security events, resource monitor, personality editor (Brain section shows associated skills with direct edit navigation), skills manager, code editor (Monaco), notification & retention settings; **WebGL graph visualization** (Sigma.js + graphology) with pluggable layout algorithms — ForceAtlas2 for hub-and-spoke peer networks, Dagre hierarchical layout for delegation trees and DAGs; **rich chat rendering** — assistant messages rendered as full Markdown with syntax-highlighted code (Prism, dark/light theme-aware), interactive Mermaid diagrams, KaTeX math expressions, GitHub-style alert callouts, task list checkboxes, and styled tables; **real-time collaborative editing** — personality system prompts and skill instructions use Yjs CRDT over a binary `/ws/collab` WebSocket; **presence indicators** — `PresenceBanner` shows who else is editing the same field in real time (colored dots + name label) |
+| **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); overview with stat cards (tasks, heartbeat, audit, memory) and services status panel (core, Postgres, audit chain, MCP); system flow graph (ReactFlow) with live connection edges; task history, security events, resource monitor, personality editor (Brain section shows associated skills with direct edit navigation), skills manager, code editor (Monaco), notification & retention settings; **WebGL graph visualization** (Sigma.js + graphology) with pluggable layout algorithms — ForceAtlas2 for hub-and-spoke peer networks, Dagre hierarchical layout for delegation trees and DAGs; **rich chat rendering** — assistant messages rendered as full Markdown with syntax-highlighted code (Prism, dark/light theme-aware), interactive Mermaid diagrams, KaTeX math expressions, GitHub-style alert callouts, task list checkboxes, and styled tables; **real-time collaborative editing** — personality system prompts and skill instructions use Yjs CRDT over a binary `/ws/collab` WebSocket; **presence indicators** — `PresenceBanner` shows who else is editing the same field in real time (colored dots + name label); **Group Chat view** (`/group-chat`) — unified three-pane channel list + message thread + reply box aggregating all connected integrations, with personality tracking per message; **Cross-Integration Routing Rules** — visual rule builder embedded in the Connections page (Routing Rules tab) for priority-ordered rules that forward, reply, override personality, or notify webhooks across integrations |
 | **Agent Architecture** | Soul (identity/archetypes/personality), Spirit (passions/inspirations/pains), Brain (memory/knowledge/skills with decay & pruning, vector semantic search via FAISS/Qdrant/ChromaDB, LLM-powered memory consolidation), Body (heartbeat/vital signs/screen capture, per-personality capabilities: vision, auditory, vocalization, limb movement, haptic) |
 | **Cognitive Architecture** | Vector semantic memory (local SentenceTransformers + OpenAI/Gemini API embeddings), FAISS, Qdrant, and ChromaDB vector backends, LLM-powered memory consolidation with on-save dedup and scheduled deep analysis, 3-tier progressive history compression (message → topic → bulk) with AI summarization |
 | **Extensions** | 38 lifecycle hook points (observe/transform/veto semantics), TypeScript plugin modules with filesystem discovery, EventEmitter integration, outbound webhook dispatch with HMAC signing, hot-reload support |
@@ -83,7 +83,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Voice** | Push-to-talk (Ctrl+Shift+V), browser-native speech recognition & synthesis, voice overlay |
 | **Deployment** | **Single binary** (Bun compile, ~80 MB, no runtime deps) for Linux x64/arm64 and macOS arm64; Tier 2 SQLite `lite` binary for edge/embedded; Docker image ~80 MB (binary-based, vs ~600 MB Node.js); Kubernetes Helm chart (EKS/GKE/AKS), GHCR image registry, HPA autoscaling, PodDisruptionBudgets, NetworkPolicies, ExternalSecret CRD support |
 | **CLI** | 21 commands covering server management, health, config validation, integration management, role/extension management, browser automation, vector memory, web scraping, multimodal I/O, AI model switching, security policy, plugin management; shell completions (bash/zsh/fish); `--json` output on all commands for scripting; colored output (green/red status indicators, TTY-aware); progress spinners for long-running operations |
-| **Development** | TypeScript strict mode, 6351+ tests across 351 files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint); **Storybook** component development environment integrated into the Developers section (gated by `allowStorybook` security policy), with quick-start instructions, component story gallery, and iframe to localhost:6006 |
+| **Development** | TypeScript strict mode, 6361+ tests across 353 files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint); **Storybook** component development environment integrated into the Developers section (gated by `allowStorybook` security policy), with quick-start instructions, component story gallery, and iframe to localhost:6006 |
 
 ---
 
@@ -264,7 +264,7 @@ Access http://localhost:18789 after starting the system. The dashboard provides:
 - **Overview**: Stat cards (tasks, heartbeat beats, audit entries, memory), services status (core, Postgres, audit chain, MCP servers, uptime, version), and system flow graph with live connection edges
 - **Tasks**: Task history with create/edit/delete, filtering, and live updates
 - **Security**: Security event log with severity filtering, heartbeat task viewer
-- **Connections**: Integration management (connect/start/stop platforms), MCP server management
+- **Connections**: Integration management (connect/start/stop platforms), MCP server management, **Routing Rules** tab — visual rule builder for cross-integration message routing
 - **Personality**: Identity editor, archetype selector, skill builder; system prompt uses live collaborative editing (Yjs CRDT) with presence indicators showing co-editors in real time
 - **Code**: Monaco editor with personality-scoped AI chat sidebar; assistant messages render as rich Markdown
 - **Chat**: Conversational AI interface with full Markdown rendering — syntax-highlighted code blocks (Prism, language-labelled, theme-aware), interactive Mermaid diagrams, KaTeX math (`$inline$` / `$$block$$`), GitHub-style alert callouts (`[!NOTE]`, `[!TIP]`, `[!WARNING]`, `[!CAUTION]`, `[!IMPORTANT]`), task list checkboxes, and styled tables
@@ -517,7 +517,7 @@ secureyeoman/
 │   └── mcp/             # Standalone MCP service (34+ tools, 7 resources, 4 prompts)
 ├── tests/               # Security, load (k6), and chaos tests
 ├── deploy/              # Docker, Helm chart, Prometheus, Grafana, Loki configs
-├── docs/                # Documentation + ADRs (87 decision records)
+├── docs/                # Documentation + ADRs (89 decision records)
 │   ├── api/             # REST API + WebSocket API + OpenAPI 3.1 spec
 │   ├── adr/             # Architecture Decision Records
 │   ├── guides/          # Getting started, integrations
@@ -555,8 +555,8 @@ npx vitest run tests/security/ tests/chaos/
 |---------|-------|-------|----------|
 | `@secureyeoman/core` | 5642 | 287 | 84% lines / 85% funcs / 71% branches ✅ |
 | `@secureyeoman/mcp` | 326 | 31 | — |
-| `@secureyeoman/dashboard` | 421 | 34 | — |
-| **Total** | **6389** | **352** | |
+| `@secureyeoman/dashboard` | 431 | 36 | — |
+| **Total** | **6399** | **354** | |
 
 ### Building
 
@@ -599,7 +599,7 @@ This updates all `package.json` files in the monorepo. The core server reads its
 | **Integrations** | [Integration Setup](docs/guides/integrations.md) |
 | **AI Provider Keys** | [AI Provider API Keys](docs/guides/ai-provider-api-keys.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (87 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (89 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |

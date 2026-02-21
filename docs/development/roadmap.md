@@ -131,16 +131,9 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 - [x] **Presence Indicators** — Show "Alice is editing this personality" to prevent concurrent edits at the UX level before investing in true merge semantics. *(Done — Phase 26, ADR 080)*
 - [x] **CRDT Implementation** — Conflict-free Replicated Data Types (Yjs Y.Text) for concurrent editing of personality system prompts and skill instructions. *(Done — Phase 26, ADR 080)*
 
-### Group Chat View
-
-*Revisit once multi-user and multi-integration usage data confirms demand for a unified conversation surface.*
-
-- [ ] **Group Chat view** — Slack/Discord-style channel list sidebar with a unified message stream. Threads, reactions, and pinned messages. Surfaces all connected messaging integrations (Telegram, Discord, Slack, WhatsApp, Twitter/X, etc.) in a single familiar UI rather than per-integration task routing.
-- [ ] **Cross-integration routing rules** — Visual rule builder for forwarding messages between integrations (e.g. Twitter mention → Slack notification → agent response → Twitter reply).
-
 ### Mobile Application
 
-*Revisit after Group Chat view ships — the mobile app mirrors that surface.*
+*Revisit after Group Chat view ships — it has shipped (Phase 31, ADR 087). The mobile app mirrors that surface.*
 
 - [ ] **Mobile app** — Native iOS/Android companion app. Primary view: chat interface (mirrors Group Chat view) + at-a-glance overview stats (task count, heartbeat, recent activity). Connects to the existing SecureYeoman REST + WebSocket API; no separate backend required.
 - [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across desktop dashboard, mobile app, and any connected messaging integration via the existing CRDT + WebSocket infrastructure.
@@ -165,4 +158,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Phase 31 complete*
+*Last updated: 2026-02-21 — Phase 32 complete*
