@@ -63,25 +63,6 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 - [ ] Find and Repair
 
-### CI / Quality Gate — Open Items (2026-02-21)
-
-*Uncovered during Phase 34 Final Inspection run. All were pre-existing before the Zod `nonneg` fix that revealed them.*
-
-#### Typecheck
-- [x] **discord.js v13 → v14** — Bumped `packages/core` to `^14.25.1`, removed stray root dep. *(Fixed 2026-02-21)*
-- [x] **Missing `@types/express`** — Added to `packages/core` devDependencies. *(Fixed 2026-02-21)*
-- [x] **Missing `@testing-library/dom`** — Added as explicit devDep in `packages/dashboard`. *(Fixed 2026-02-21)*
-- [x] **Missing `graphology-types`** — Added as explicit devDep in `packages/dashboard`. *(Fixed 2026-02-21)*
-- [x] **`@storybook/react` unresolvable** — Added as explicit devDep in `packages/dashboard`. *(Fixed 2026-02-21)*
-
-#### Lint
-- [x] **ESLint zero errors** *(Done — 2026-02-21)* — Resolved all 36 remaining errors: `no-unnecessary-type-conversion`, `no-confusing-void-expression`, `no-unnecessary-type-parameters`, `no-deprecated` (`Figma` brand icon, `JSX` namespace), `dot-notation`, `array-type`, storybook `parserOptions.project`, `prefer-optional-chain`, `no-unused-expressions`, `no-unnecessary-template-expression`, `no-redundant-type-constituents`, `non-nullable-type-assertion-style`. Lint now exits with 0 errors.
-
-#### Security
-- [ ] **14 npm audit vulnerabilities remain** — blocked upstream:
-  - `minimatch <10.2.1` (10 high-severity ReDoS, dev-only) — fix requires ESLint v10, blocked until `typescript-eslint` publishes ESLint-v10-compatible release. See dependency-watch.md.
-  - `undici <6.23.0` (4 moderate, decompression chain) — now in `discord.js@14` chain; blocked until discord.js releases a patch bumping its bundled undici to `>=6.23.0`. See dependency-watch.md.
-
 ### Additional Small Features for Improvement
 
 - [x] **Per-Personality Active Hours** *(Brain)* — Each personality can define a schedule of active hours during which it responds to heartbeats and incoming triggers. Outside those windows the personality's body is at rest; the Brain enforces the schedule, suppressing task execution and proactive behavior until the window reopens. Configurable per-personality in the Brain settings panel. *(Done — 2026-02-21, ADR 091)*
