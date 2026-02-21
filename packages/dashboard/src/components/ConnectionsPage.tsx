@@ -66,6 +66,7 @@ import { ConfirmDialog } from './common/ConfirmDialog';
 import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { McpPrebuilts } from './McpPrebuilts';
+import { RoutingRulesPage } from './RoutingRulesPage';
 
 const LOCAL_MCP_NAME = 'YEOMAN MCP';
 
@@ -1010,7 +1011,7 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
   },
 };
 
-type TabType = 'integrations' | 'mcp';
+type TabType = 'integrations' | 'mcp' | 'routing';
 type IntegrationSubTab = 'messaging' | 'email' | 'productivity' | 'devops' | 'oauth';
 
 // Platform categorization for tab filtering
@@ -1395,6 +1396,7 @@ export function ConnectionsPage() {
           [
             ['integrations', 'Integrations', <Cable key="int" className="w-4 h-4" />],
             ['mcp', 'MCP', <Wrench key="mcp" className="w-4 h-4" />],
+            ['routing', 'Routing Rules', <ArrowRightLeft key="routing" className="w-4 h-4" />],
           ] as [TabType, string, React.ReactNode][]
         ).map(([tab, label, icon]) => (
           <button
@@ -1562,6 +1564,10 @@ export function ConnectionsPage() {
         </div>
       )}
 
+      {activeTab === 'routing' && (
+        <RoutingRulesTab />
+      )}
+
       {activeTab === 'mcp' && (
         <>
         <McpPrebuilts />
@@ -1609,6 +1615,10 @@ export function ConnectionsPage() {
       )}
     </div>
   );
+}
+
+function RoutingRulesTab() {
+  return <RoutingRulesPage />;
 }
 
 function MessagingTab({

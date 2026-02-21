@@ -12,6 +12,7 @@ import type { IntegrationManager } from './manager.js';
 import type { IntegrationStorage } from './storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { OutboundWebhookDispatcher } from './outbound-webhook-dispatcher.js';
+import type { RoutingRulesManager } from './routing-rules-manager.js';
 
 export interface MessageRouterDeps {
   logger: SecureLogger;
@@ -37,9 +38,15 @@ export interface MessageRouterDeps {
 
 export class MessageRouter {
   private readonly deps: MessageRouterDeps;
+  private routingRulesManager: RoutingRulesManager | null = null;
 
   constructor(deps: MessageRouterDeps) {
     this.deps = deps;
+  }
+
+  /** Inject routing rules manager after construction (avoids init-order issues). */
+  setRoutingRulesManager(manager: RoutingRulesManager): void {
+    this.routingRulesManager = manager;
   }
 
   /** Inject multimodal + personality deps after construction (avoids init-order issues). */
@@ -100,6 +107,11 @@ export class MessageRouter {
     if (!message.text.trim()) {
       logger.debug('Skipping empty inbound message');
       return;
+    }
+
+    // Cross-integration routing rules (non-blocking — errors are logged inside processMessage)
+    if (this.routingRulesManager) {
+      void this.routingRulesManager.processMessage(message);
     }
 
     // Integration access enforcement — gate inbound routing by active personality's allowlist.

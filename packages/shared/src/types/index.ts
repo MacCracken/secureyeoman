@@ -452,6 +452,34 @@ export {
   type ProactiveConfig,
 } from './proactive.js';
 
+// Group Chat View types (ADR 086)
+export {
+  GroupChatChannelSchema,
+  GroupChatMessageSchema,
+  GroupChatSendSchema,
+  GroupChatEventSchema,
+  type GroupChatChannel,
+  type GroupChatMessage,
+  type GroupChatSend,
+  type GroupChatEvent,
+} from './group-chat.js';
+
+// Cross-Integration Routing Rules types (ADR 087)
+export {
+  RoutingActionTypeSchema,
+  RoutingRuleSchema,
+  RoutingRuleCreateSchema,
+  RoutingRuleUpdateSchema,
+  RoutingRuleMatchSchema,
+  RoutingRuleDryRunSchema,
+  type RoutingActionType,
+  type RoutingRule,
+  type RoutingRuleCreate,
+  type RoutingRuleUpdate,
+  type RoutingRuleMatch,
+  type RoutingRuleDryRun,
+} from './routing-rules.js';
+
 // Multimodal types
 export {
   VisionRequestSchema,

@@ -4,6 +4,42 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 32 (2026-02-21): Letta Stateful Agent Provider
+
+### New Features
+
+- **Letta provider** (`provider: letta`) — Adds Letta as the 11th AI provider. Letta is a stateful agent platform where each agent maintains persistent memory across requests using in-context memory blocks and archival vector storage. Unlike all other SecureYeoman providers (which are stateless chat completion endpoints), Letta agents accumulate and recall context across the lifetime of the provider instance.
+- **Agent lifecycle management** — `LettaProvider` lazily creates one Letta agent on first use and caches the agent ID for the provider's lifetime. Concurrent first-request races are coalesced into a single creation promise. Set `LETTA_AGENT_ID` in `.env` to reuse a pre-existing agent and skip creation entirely.
+- **Streaming support** — `chatStream()` uses Letta's SSE stream endpoint (`POST /v1/agents/{id}/messages/stream` with `streaming: true`), yielding `content_delta`, `usage`, and `done` chunks in the unified `AIStreamChunk` format.
+- **Tool/function calling** — `client_tools` are sent via the messages endpoint; `tool_calls` in `assistant_message` responses are mapped to the unified `ToolCall[]` format.
+- **Dynamic model discovery** — `GET /v1/models` is called when `LETTA_API_KEY` is set. Falls back to `getKnownModels()` when the endpoint is unreachable.
+- **Self-hosted support** — Set `LETTA_BASE_URL` to point at a self-hosted Letta server, or use `LETTA_LOCAL=true` as shorthand for `http://localhost:8283`.
+- **Model tier registration** — Letta model IDs (`openai/gpt-4o`, `openai/gpt-4o-mini`, `anthropic/claude-sonnet-4-20250514`, `anthropic/claude-haiku-3-5-20241022`) are added to the `ModelRouter` tier map so intelligent routing works across Letta models.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `packages/core/src/ai/providers/letta.ts` | `LettaProvider` — stateful Letta agent adapter using native `fetch` |
+| `packages/core/src/ai/providers/letta.test.ts` | Unit tests: constructor, agent lifecycle, chat, streaming, error mapping, model discovery |
+| `docs/adr/086-letta-provider.md` | ADR — agent vs. completion design, SDK vs. fetch decision, trade-offs |
+
+### Modified Files
+
+- **`packages/shared/src/types/ai.ts`** — Added `'letta'` to `AIProviderNameSchema` enum
+- **`packages/shared/src/types/config.ts`** — Added `'letta'` to `ModelConfigSchema.provider` and `FallbackModelConfigSchema.provider` enums
+- **`packages/core/src/ai/client.ts`** — Imported `LettaProvider`; added `case 'letta'` to `createProvider()` factory
+- **`packages/core/src/ai/cost-calculator.ts`** — Added Letta model pricing entries (`openai/gpt-4o`, `openai/gpt-4o-mini`, `anthropic/claude-*`), `FALLBACK_PRICING.letta`, `PROVIDER_KEY_ENV.letta = 'LETTA_API_KEY'`, and `getAvailableModelsAsync()` dynamic discovery task for Letta
+- **`packages/core/src/ai/model-routes.ts`** — Added `'letta'` to `validProviders` list in `POST /api/v1/model/switch`
+- **`packages/core/src/ai/model-router.ts`** — Added Letta model IDs to `MODEL_TIER` map (fast: `openai/gpt-4o-mini`, `anthropic/claude-haiku-*`; capable: `openai/gpt-4o`, `anthropic/claude-sonnet-*`)
+- **`.env.example`** — Added `LETTA_API_KEY`, `LETTA_BASE_URL`, `LETTA_AGENT_ID`, `LETTA_LOCAL` entries
+- **`.env.dev.example`** — Added `LETTA_API_KEY`, `LETTA_BASE_URL`, `LETTA_AGENT_ID`, `LETTA_LOCAL` entries
+- **`docs/development/roadmap.md`** — Added Phase 32 to timeline
+- **`README.md`** — Added Letta to AI Integration feature table and provider count
+- **`docs/guides/ai-provider-api-keys.md`** — Added Letta API key setup section
+
+---
+
 ## Phase 31 (2026-02-21): Intelligent Model Routing
 
 ### New Features

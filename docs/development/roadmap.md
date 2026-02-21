@@ -40,15 +40,18 @@
 | | **Tag 2026.2.20** | **2026-02-20** | **Tagged** |
 | 25 | Twitter/X + HA + Coolify Integrations | 2026.2.21 | Complete |
 | 26 | Semantic Search MCP Prebuilts | 2026.2.21 | Complete |
-| 27 | Fix All the Bugs | — | In Progress |
-| 28 | Final Inspection | — | Pending |
-| 29 | Device Control MCP Prebuilt | 2026.2.21 | Complete |
-| 30 | Multimodal Provider Abstraction + ElevenLabs | 2026.2.21 | Complete |
-| 31 | Intelligent Model Routing | 2026.2.21 | Complete |
+| 27 | Device Control MCP Prebuilt | 2026.2.21 | Complete |
+| 28 | Multimodal Provider Abstraction + ElevenLabs | 2026.2.21 | Complete |
+| 29 | Intelligent Model Routing | 2026.2.21 | Complete |
+| 30 | Letta Stateful Agent Provider | 2026.2.21 | Complete |
+| 31 | Group Chat View | 2026.2.21 | Complete |
+| 32 | Cross-Integration Routing Rules | 2026.2.21 | Complete |
+| 33 | Fix All the Bugs | — | In Progress |
+| 34 | Final Inspection | — | Pending |
 
 ---
 
-## Phase 27: Fix All the Bugs
+## Phase 33: Fix All the Bugs
 
 **Status**: In Progress
 
@@ -60,7 +63,7 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 - [ ] Find and Repair
 
-## Phase 28: Final Inspection
+## Phase 34: Final Inspection
 
 **Status**: Pending
 

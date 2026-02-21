@@ -72,6 +72,12 @@ const MODEL_TIER: Record<string, ModelTier> = {
   'gpt-4-turbo': 'premium',
   o1: 'premium',
   'o1-mini': 'premium',
+
+  // Letta (stateful agent platform — provider/model-id naming)
+  'openai/gpt-4o-mini': 'fast',
+  'anthropic/claude-haiku-3-5-20241022': 'fast',
+  'openai/gpt-4o': 'capable',
+  'anthropic/claude-sonnet-4-20250514': 'capable',
 };
 
 /** Local providers are always free and always fast. */

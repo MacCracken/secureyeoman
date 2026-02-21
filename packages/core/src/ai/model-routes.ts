@@ -60,6 +60,7 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
         'deepseek',
         'mistral',
         'grok',
+        'letta',
       ];
       if (!validProviders.includes(provider)) {
         return sendError(reply, 400, `Invalid provider. Must be one of: ${validProviders.join(', ')}`);

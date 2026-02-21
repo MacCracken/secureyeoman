@@ -69,6 +69,9 @@ const ProactivePage = lazy(() =>
 const CostsPage = lazy(() =>
   import('./CostsPage').then((m) => ({ default: m.CostsPage }))
 );
+const GroupChatPage = lazy(() =>
+  import('./GroupChatPage').then((m) => ({ default: m.GroupChatPage }))
+);
 
 export function DashboardLayout() {
   const { logout } = useAuth();
@@ -222,6 +225,8 @@ export function DashboardLayout() {
                   <Route path="/skills" element={<SkillsPage />} />
                   <Route path="/marketplace" element={<SkillsPage />} />
                   <Route path="/agents" element={<AgentsPage />} />
+                  <Route path="/group-chat" element={<GroupChatPage />} />
+                  <Route path="/routing-rules" element={<Navigate to="/connections?tab=routing" replace />} />
                   <Route path="/connections" element={<ConnectionsPage />} />
                   <Route path="/mcp" element={<ConnectionsPage />} />
                   <Route path="/developers" element={<DeveloperPage />} />
