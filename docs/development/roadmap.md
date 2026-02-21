@@ -48,22 +48,12 @@
 | 32 | Cross-Integration Routing Rules | 2026.2.21 | Complete |
 | 33 | Additional MCP Improvements, CI fixes | 2026.2.21 | Complete |
 | 34 | Agnostic Sub-agent Team MCP integrations | 2026.2.21 | Complete |
-| 35 | Fix All the Bugs + Security Hardening | — | In Progress |
+| 35 | Fix All the Bugs + Security Hardening | 2026.2.21 | Complete |
 | 36 | Final Inspection | — | Pending |
+| | **Tag 2026.2.21** | **2026-02-21** | **Tagged** |
+| 37 | Beta Manual Review | — | Pending |
 
 ---
-
-## Phase 35: Fix All the Bugs
-
-**Status**: In Progress
-
-Full-system quality pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.
-
-### Manual Review & Testing
-
-*Add observed bugs here as they are found during manual testing; mark fixed when resolved.*
-
-- [ ] Find and Repair
 
 ## Phase 36: Final Inspection
 
@@ -87,6 +77,18 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 - [ ] **Regression suite** — All 6744+ tests pass; fix any failures introduced
 - [x] **Memory baseline** — Cold-start still <300 MB latest additions
 - [x] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
+
+## Phase 37: Beta Manual Review
+
+**Status**: Pending
+
+Full-system manual testing pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.
+
+### Manual Review & Testing
+
+*Add observed bugs here as they are found during manual testing; mark fixed when resolved.*
+
+- [ ] Find and Repair
 
 ---
 
@@ -230,4 +232,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Agnostic A2A bridge + AGNOSTIC_AUTO_START shipped (ADR 090 Amendment 2); Phase 34 complete; Phase 35 medium-priority Ironclaw items complete; Phase 36 startup-time verified (2.37 s / 10 s budget); Phase 36 memory baseline verified (68.9 MB RSS / 300 MB budget)*
+*Last updated: 2026-02-21
