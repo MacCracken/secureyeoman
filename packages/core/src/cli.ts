@@ -23,6 +23,8 @@
  *   secureyeoman policy               # Security policy management (get, set, dynamic-tools)
  *   secureyeoman completion           # Generate shell completion scripts (bash, zsh, fish)
  *   secureyeoman plugin               # Manage integration plugins (list, info, add, remove)
+ *   secureyeoman security             # Manage Kali security toolkit container (setup, teardown, update, status)
+ *   secureyeoman agnostic             # Manage Agnostic QA sub-agent team Docker Compose stack (start, stop, status, logs, pull)
  */
 
 import { createRouter } from './cli/router.js';
@@ -47,6 +49,8 @@ import { completionCommand } from './cli/commands/completion.js';
 import { pluginCommand } from './cli/commands/plugin.js';
 import { mcpServerCommand } from './cli/commands/mcp-server.js';
 import { migrateCommand } from './cli/commands/migrate.js';
+import { securityCommand } from './cli/commands/security.js';
+import { agnosticCommand } from './cli/commands/agnostic.js';
 
 const router = createRouter('start');
 
@@ -72,6 +76,8 @@ router.register(completionCommand);
 router.register(pluginCommand);
 router.register(mcpServerCommand);
 router.register(migrateCommand);
+router.register(securityCommand);
+router.register(agnosticCommand);
 
 // Help command
 router.register({

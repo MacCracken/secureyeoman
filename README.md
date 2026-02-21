@@ -4,7 +4,7 @@
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 6399+](https://img.shields.io/badge/Tests-6399%2B-brightgreen.svg)]()
+[![Tests: 6461+](https://img.shields.io/badge/Tests-6461%2B-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -76,14 +76,14 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **A2A Protocol** | Agent-to-Agent cross-instance delegation via E2E encrypted messaging, peer discovery (mDNS/DNS-SD/static), capability negotiation, trust progression (untrusted/verified/trusted), remote delegation in unified delegation tree |
 | **Multi-Agent Architecture** | Sub-agent delegation system with role-based profiles (researcher, coder, analyst, reviewer, summarizer); Agent Swarms with named templates and three strategies — `sequential` (context-chaining pipeline), `parallel` (`Promise.all` + optional coordinator synthesis), `dynamic` (coordinator-driven, uses `delegate_task` internally); `create_swarm` MCP tool; 4 built-in templates; dashboard Swarms tab; **Dynamic Tool Creation** — agents can generate and register new tools at runtime (Agent Zero-style), gated by `allowDynamicTools` security policy with `sandboxDynamicTools` isolation; **Extensible sub-agent types** — `llm` (agentic loop), `binary` (spawn external process via JSON stdin/stdout, zero token cost, gated by `allowBinaryAgents`), `mcp-bridge` (call MCP tool directly with Mustache template, zero token cost); **Intelligent Model Routing** — heuristic task profiler selects the cheapest appropriate model per delegation (fast tier for summarise/classify/extract, capable tier for code/reason/plan), cost-aware swarm scheduling injects model overrides per role, `POST /api/v1/model/estimate-cost` provides pre-execution cost estimates with cheaper-alternative suggestions |
 | **Integrations** | Telegram (inline keyboards, document attachments), Discord (threads, modals, slash command registration via REST), Slack (Block Kit actions, modal dialogs, Workflow Builder steps), GitHub (PR review automation, issue auto-labeling, code search triggers), GitLab, Google Chat, Gmail, Email (IMAP/SMTP), Google Calendar, Notion, Jira, AWS, Azure DevOps, CLI, Generic Webhook — plugin architecture with unified message routing |
-| **MCP Protocol** | Standalone `@secureyeoman/mcp` service (34+ tools including web scraping, search, browser automation placeholders; 7 resources, 4 prompts); SSRF-protected web tools; health monitoring for external servers; AES-256-GCM encrypted credential storage; streamable HTTP, SSE, and stdio transports; feature toggles with dashboard UI; one-click pre-built integrations for Bright Data, Exa, E2B, Supabase, Figma, Stripe, Zapier, Linear, Meilisearch, Qdrant, Device Control (camera/printer/audio/screen), ElevenLabs (voice cloning), Home Assistant, and Coolify (MetaMCP); TTS/STT provider routing — OpenAI or Voicebox local Qwen3-TTS/Whisper via `TTS_PROVIDER` / `STT_PROVIDER` env vars |
+| **MCP Protocol** | Standalone `@secureyeoman/mcp` service (57+ tools including web scraping, search, browser automation placeholders; 7 resources, 4 prompts); SSRF-protected web tools; health monitoring for external servers; AES-256-GCM encrypted credential storage; streamable HTTP, SSE, and stdio transports; feature toggles with dashboard UI; one-click pre-built integrations for Bright Data, Exa, E2B, Supabase, Figma, Stripe, Zapier, Linear, Meilisearch, Qdrant, Device Control (camera/printer/audio/screen), ElevenLabs (voice cloning), Home Assistant, and Coolify (MetaMCP); TTS/STT provider routing — OpenAI or Voicebox local Qwen3-TTS/Whisper via `TTS_PROVIDER` / `STT_PROVIDER` env vars; **Kali Security Toolkit** (`sec_*` tools: nmap, gobuster, ffuf, sqlmap, nikto, nuclei, whatweb, wpscan, hashcat, john, theHarvester, dig, whois, shodan) gated by `MCP_EXPOSE_SECURITY_TOOLS` with scope enforcement; **Agnostic QA Bridge** (`agnostic_*` tools) delegates QA tasks to the Agnostic 6-agent CrewAI platform gated by `MCP_EXPOSE_AGNOSTIC_TOOLS` |
 | **Marketplace** | Skill discovery, search, install/uninstall (syncs with Brain skills), publish; **Community Skills** — local-path sync from [`secureyeoman-community-skills`](https://github.com/MacCracken/secureyeoman-community-skills) or any compatible repo; source tracking (`builtin` / `community` / `published`) |
 | **Team Collaboration** | Multi-user foundation (`auth.users`); workspaces with isolation, member management, workspace-scoped RBAC; **SSO/OIDC** — Okta, Azure AD, Auth0 and any standards-compliant OIDC issuer via `openid-client` v6; PKCE flow; JIT user provisioning; per-workspace IDP binding; **CRDT collaborative editing** — Yjs Y.Text over `/ws/collab/:docId` (personality/skill scoped); server-resolved presence identities (display name from soul users table); DB-backed Y.Doc state (`soul.collab_docs`) survives server restarts |
 | **Reports & Analytics** | Audit report generator (JSON/HTML/CSV), cost optimization recommendations, A/B testing framework |
 | **Voice** | Push-to-talk (Ctrl+Shift+V), browser-native speech recognition & synthesis, voice overlay |
 | **Deployment** | **Single binary** (Bun compile, ~80 MB, no runtime deps) for Linux x64/arm64 and macOS arm64; Tier 2 SQLite `lite` binary for edge/embedded; Docker image ~80 MB (binary-based, vs ~600 MB Node.js); Kubernetes Helm chart (EKS/GKE/AKS), GHCR image registry, HPA autoscaling, PodDisruptionBudgets, NetworkPolicies, ExternalSecret CRD support |
-| **CLI** | 21 commands covering server management, health, config validation, integration management, role/extension management, browser automation, vector memory, web scraping, multimodal I/O, AI model switching, security policy, plugin management; shell completions (bash/zsh/fish); `--json` output on all commands for scripting; colored output (green/red status indicators, TTY-aware); progress spinners for long-running operations |
-| **Development** | TypeScript strict mode, 6361+ tests across 353 files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint); **Storybook** component development environment integrated into the Developers section (gated by `allowStorybook` security policy), with quick-start instructions, component story gallery, and iframe to localhost:6006 |
+| **CLI** | 23 commands covering server management, health, config validation, integration management, role/extension management, browser automation, vector memory, web scraping, multimodal I/O, AI model switching, security policy, plugin management, **Kali security toolkit lifecycle** (`secureyeoman security setup/teardown/update/status`), **Agnostic QA stack lifecycle** (`secureyeoman agnostic start/stop/status/logs/pull`); shell completions (bash/zsh/fish); `--json` output on all commands for scripting; colored output (green/red status indicators, TTY-aware); progress spinners for long-running operations |
+| **Development** | TypeScript strict mode, 6461+ tests across 358 files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint); **Storybook** component development environment integrated into the Developers section (gated by `allowStorybook` security policy), with quick-start instructions, component story gallery, and iframe to localhost:6006 |
 
 ---
 
@@ -112,7 +112,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
     ┌────▼────┐   ┌─────▼─────┐  ┌────▼────┐
     │ SQLite  │   │ Platforms │  │  MCP    │
     │  (WAL)  │   │ TG/DC/SL/ │  │ Service │
-    │         │   │ GH/GC/WH  │  │(34+tools│
+    │         │   │ GH/GC/WH  │  │(57+tools│
     └─────────┘   └───────────┘  └─────────┘
 ```
 
@@ -514,10 +514,10 @@ secureyeoman/
 │   │       ├── spirit/          # Emotional core (passions, inspirations, pains)
 │   │       └── task/            # Task executor + SQLite storage
 │   ├── dashboard/       # React UI (Vite + Tailwind + TanStack Query)
-│   └── mcp/             # Standalone MCP service (34+ tools, 7 resources, 4 prompts)
+│   └── mcp/             # Standalone MCP service (57+ tools, 7 resources, 4 prompts)
 ├── tests/               # Security, load (k6), and chaos tests
 ├── deploy/              # Docker, Helm chart, Prometheus, Grafana, Loki configs
-├── docs/                # Documentation + ADRs (89 decision records)
+├── docs/                # Documentation + ADRs (91 decision records)
 │   ├── api/             # REST API + WebSocket API + OpenAPI 3.1 spec
 │   ├── adr/             # Architecture Decision Records
 │   ├── guides/          # Getting started, integrations
@@ -553,10 +553,10 @@ npx vitest run tests/security/ tests/chaos/
 
 | Package | Tests | Files | Coverage |
 |---------|-------|-------|----------|
-| `@secureyeoman/core` | 5642 | 287 | 84% lines / 85% funcs / 71% branches ✅ |
-| `@secureyeoman/mcp` | 326 | 31 | — |
+| `@secureyeoman/core` | 5679 | 289 | 84% lines / 85% funcs / 71% branches ✅ |
+| `@secureyeoman/mcp` | 351 | 33 | — |
 | `@secureyeoman/dashboard` | 431 | 36 | — |
-| **Total** | **6399** | **354** | |
+| **Total** | **6461** | **358** | |
 
 ### Building
 

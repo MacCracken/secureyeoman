@@ -65,8 +65,8 @@ function idpFromRow(r: IdpRow): IdentityProvider {
     autoProvision: r.auto_provision,
     defaultRole: r.default_role,
     config: r.config ?? {},
-    createdAt: Number(r.created_at),
-    updatedAt: Number(r.updated_at),
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
   };
 }
 
@@ -99,8 +99,8 @@ function mappingFromRow(r: MappingRow): IdentityMapping {
     localUserId: r.local_user_id,
     externalSubject: r.external_subject,
     attributes: r.attributes ?? {},
-    createdAt: Number(r.created_at),
-    lastLoginAt: r.last_login_at ? Number(r.last_login_at) : null,
+    createdAt: r.created_at,
+    lastLoginAt: r.last_login_at,
   };
 }
 
@@ -310,7 +310,7 @@ export class SsoStorage extends PgBaseStorage {
       expires_at: number;
     }>('SELECT * FROM auth.sso_state WHERE state = $1', [state]);
     if (!row) return null;
-    if (Number(row.expires_at) < Date.now()) {
+    if (row.expires_at < Date.now()) {
       await this.deleteSsoState(state);
       return null;
     }
@@ -320,8 +320,8 @@ export class SsoStorage extends PgBaseStorage {
       redirectUri: row.redirect_uri,
       codeVerifier: row.code_verifier,
       workspaceId: row.workspace_id,
-      createdAt: Number(row.created_at),
-      expiresAt: Number(row.expires_at),
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
     };
   }
 

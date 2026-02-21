@@ -4,6 +4,75 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Kali Security Toolkit MCP (2026-02-21) — ADR 089
+
+### New Features
+
+- **`sec_*` MCP tools** — 14 security tools exposed via MCP: `sec_nmap`, `sec_gobuster`, `sec_ffuf`, `sec_sqlmap`, `sec_nikto`, `sec_nuclei`, `sec_whatweb`, `sec_wpscan`, `sec_hashcat`, `sec_john`, `sec_theharvester`, `sec_dig`, `sec_whois`, and `sec_shodan`. All tools are disabled by default and gated by `MCP_EXPOSE_SECURITY_TOOLS=true`.
+- **Three deployment modes** — `native` (run tools from host PATH), `docker-exec` (run via `docker exec` into a managed Kali container), and a future pre-built image path. Mode selected via `MCP_SECURITY_TOOLS_MODE`.
+- **Scope enforcement** — `validateTarget()` checks every active-tool invocation against `MCP_ALLOWED_TARGETS` (comma-separated CIDRs, hostnames, URL prefixes). `*` wildcard available for lab/CTF mode. Scope violations throw a `ScopeViolationError` before any subprocess is spawned.
+- **Dynamic availability checks** — `registerSecurityTools()` is async; it runs `which <bin>` (or `docker exec <container> which <bin>` in docker-exec mode) at startup and only registers tools whose binaries are present. Missing tools are silently skipped.
+- **`secureyeoman security` CLI** — Four subcommands manage the Kali container lifecycle: `setup` (pull `kalilinux/kali-rolling`, start container, install tools), `teardown` (stop + rm container), `update` (apt-get upgrade inside container), `status` (container state + per-tool availability table + env var snapshot).
+- **Community skills independence** — `ethical-whitehat-hacker` and `security-researcher` community skills (prompt instructions) are parsed and injected by the Soul Manager regardless of `MCP_EXPOSE_SECURITY_TOOLS`. Skills provide AI reasoning capabilities on any system; the `sec_*` tools are an optional additive layer for systems that have Docker or native Kali tools.
+- **Shodan integration** — `sec_shodan` performs a Shodan host lookup via the REST API (no binary required). Enabled when `SHODAN_API_KEY` is set.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `packages/mcp/src/tools/security-tools.ts` | `registerSecurityTools()` — 14 `sec_*` MCP tools with scope validation, docker-exec/native dispatch, availability checks |
+| `packages/mcp/src/tools/security-tools.test.ts` | Unit tests: disabled guard, enabled registration, docker-exec mode, scope validation, wildcard, shodan |
+| `packages/core/src/cli/commands/security.ts` | `secureyeoman security` CLI — setup/teardown/update/status subcommands |
+| `packages/core/src/cli/commands/security.test.ts` | Unit tests: all four subcommands, failure paths, missing Docker, container-exists guard |
+| `docs/adr/089-kali-security-toolkit-mcp.md` | ADR — three deployment modes, tool surface, scope enforcement, community skills independence, trade-offs |
+
+### Modified Files
+
+- **`packages/shared/src/types/mcp.ts`** — Added `exposeSecurityTools`, `securityToolsMode`, `securityToolsContainer`, `allowedTargets`, `shodanApiKey` to `McpServiceConfigSchema`
+- **`packages/mcp/src/config/config.ts`** — Added env var parsing for `MCP_EXPOSE_SECURITY_TOOLS`, `MCP_SECURITY_TOOLS_MODE`, `MCP_SECURITY_TOOLS_CONTAINER`, `MCP_ALLOWED_TARGETS`, `SHODAN_API_KEY`
+- **`packages/mcp/src/tools/index.ts`** — `registerAllTools` made async; added `await registerSecurityTools()`
+- **`packages/mcp/src/cli.ts`** and **`packages/mcp/src/server.ts`** — `await registerAllTools()`
+- **`packages/core/src/cli.ts`** — Registered `securityCommand`
+- **`docs/development/roadmap.md`** — Added Kali Security Toolkit future enhancements section (CIDR-aware scope validation, scope manifest UI, prebuilt image, structured output normalization, Hydra)
+- **`docs/guides/getting-started.md`** — Added Security Toolkit (Optional) section with setup walkthrough, env vars, lifecycle commands, community skills note
+- **`docs/configuration.md`** — Added Security Toolkit subsection with 5-row env var table
+
+---
+
+## Agnostic QA Sub-Agent Team (2026-02-21) — ADR 090
+
+### New Features
+
+- **`agnostic_*` MCP tools** — Nine tools bridge YEOMAN agents to the [Agnostic](https://github.com/MacCracken/agnostic) Python/CrewAI 6-agent QA platform: `agnostic_health`, `agnostic_agents_status`, `agnostic_agents_queues`, `agnostic_dashboard`, `agnostic_session_list`, `agnostic_session_detail`, `agnostic_generate_report`, `agnostic_submit_qa`, `agnostic_task_status`. All disabled by default; enabled via `MCP_EXPOSE_AGNOSTIC_TOOLS=true`.
+- **JWT auth with in-process caching** — The bridge logs in via `POST /api/auth/login` on first use and caches the JWT keyed by `agnosticUrl`; auto-refreshes before expiry. No manual token management required.
+- **Incremental readiness** — Read-only tools (health, agents status, queue depths, session list/detail, report generation) work immediately once Agnostic is running. `agnostic_submit_qa` and `agnostic_task_status` return an actionable error referencing `agnostic/TODO.md Priority 1` until Agnostic implements `POST /api/tasks`.
+- **`secureyeoman agnostic` CLI** — Five subcommands manage the Agnostic Docker Compose stack: `start` (`docker compose up -d`), `stop` (`docker compose down`), `status` (NDJSON container table + API URL hint), `logs [agent] [--follow] [--tail N]` (streaming or buffered), `pull` (`docker compose pull`).
+- **Agnostic path auto-detection** — The CLI finds the agnostic directory from `--path` flag, `AGNOSTIC_PATH` env var, or auto-detection of `../agnostic`, `~/agnostic`, `~/Repos/agnostic`, `~/Projects/agnostic`.
+- **`agnostic/TODO.md`** — A prioritised REST API improvement backlog written to the Agnostic repo covering 7 items: `POST /api/tasks` + `GET /api/tasks/{id}` (P1), API key auth (P2), webhook callbacks (P3), agent-specific task endpoints (P4), OpenAPI schema + TS client generation (P5), enhanced `/health` (P6), CORS headers (P7).
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `packages/mcp/src/tools/agnostic-tools.ts` | `registerAgnosticTools()` — 9 `agnostic_*` MCP tools with JWT caching and incremental readiness |
+| `packages/mcp/src/tools/agnostic-tools.test.ts` | Unit tests: disabled guard, health (unauthenticated), auth caching, read-only tools, submit_qa P1 error |
+| `packages/core/src/cli/commands/agnostic.ts` | `secureyeoman agnostic` CLI — start/stop/status/logs/pull subcommands |
+| `packages/core/src/cli/commands/agnostic.test.ts` | Unit tests: help, path resolution, all subcommands including NDJSON status parsing and log filtering |
+| `docs/adr/090-agnostic-qa-sub-agent-team.md` | ADR — two-layer integration design (lifecycle CLI + MCP bridge), tool table, TODO.md summary, trade-offs |
+| `/home/macro/Repos/agnostic/TODO.md` | Prioritised REST API improvements for YEOMAN integration |
+
+### Modified Files
+
+- **`packages/shared/src/types/mcp.ts`** — Added `exposeAgnosticTools`, `agnosticUrl`, `agnosticEmail`, `agnosticPassword` to `McpServiceConfigSchema`
+- **`packages/mcp/src/config/config.ts`** — Added env var parsing for `MCP_EXPOSE_AGNOSTIC_TOOLS`, `AGNOSTIC_URL`, `AGNOSTIC_EMAIL`, `AGNOSTIC_PASSWORD`
+- **`packages/mcp/src/tools/index.ts`** — Added `registerAgnosticTools()`
+- **`packages/core/src/cli.ts`** — Registered `agnosticCommand`
+- **`docs/development/roadmap.md`** — Added Agnostic QA Sub-Agent Team future enhancements section; added Phase 32 Agnostic reference
+- **`docs/guides/getting-started.md`** — Added Agnostic QA Sub-Agent Team (Optional) section
+- **`docs/configuration.md`** — Added Agnostic QA Team Bridge subsection with 4-row env var table
+
+---
+
 ## Phase 32 (2026-02-21): Cross-Integration Routing Rules
 
 ### New Features

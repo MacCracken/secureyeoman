@@ -66,7 +66,7 @@ export class McpServiceServer {
     const secretRedactor = createSecretRedactor();
 
     // 3. Register tools, resources, prompts
-    registerAllTools(this.mcpServer, this.coreClient, this.config, {
+    await registerAllTools(this.mcpServer, this.coreClient, this.config, {
       rateLimiter,
       inputValidator,
       auditLogger,

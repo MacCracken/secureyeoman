@@ -48,50 +48,50 @@ _secureyeoman_completions() {
     cur="\${COMP_WORDS[COMP_CWORD]}"
     prev="\${COMP_WORDS[COMP_CWORD-1]}"
     words=("\${COMP_WORDS[@]}")
-    cword=\$COMP_CWORD
+    cword=$COMP_CWORD
   }
 
   local commands="${COMMANDS.join(' ')}"
 
-  if [[ \$cword -eq 1 ]]; then
-    COMPREPLY=($(compgen -W "\$commands" -- "\$cur"))
+  if [[ $cword -eq 1 ]]; then
+    COMPREPLY=($(compgen -W "$commands" -- "$cur"))
     return
   fi
 
   local command="\${words[1]}"
-  case "\$command" in
+  case "$command" in
     config|cfg)
-      COMPREPLY=($(compgen -W "${CONFIG_SUBCOMMANDS.join(' ')} --config --check-secrets --json --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "${CONFIG_SUBCOMMANDS.join(' ')} --config --check-secrets --json --help" -- "$cur"))
       ;;
     integration|int)
-      COMPREPLY=($(compgen -W "${INTEGRATION_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "${INTEGRATION_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "$cur"))
       ;;
     role)
-      COMPREPLY=($(compgen -W "${ROLE_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "${ROLE_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "$cur"))
       ;;
     extension|ext)
-      COMPREPLY=($(compgen -W "${EXTENSION_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "${EXTENSION_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "$cur"))
       ;;
     model)
-      COMPREPLY=($(compgen -W "${MODEL_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "${MODEL_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "$cur"))
       ;;
     policy|pol)
-      COMPREPLY=($(compgen -W "${POLICY_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "${POLICY_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "$cur"))
       ;;
     plugin)
-      COMPREPLY=($(compgen -W "${PLUGIN_SUBCOMMANDS.join(' ')} --dir --json --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "${PLUGIN_SUBCOMMANDS.join(' ')} --dir --json --help" -- "$cur"))
       ;;
     completion)
-      COMPREPLY=($(compgen -W "${COMPLETION_SHELLS.join(' ')} --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "${COMPLETION_SHELLS.join(' ')} --help" -- "$cur"))
       ;;
     health|h)
-      COMPREPLY=($(compgen -W "--url --token --json --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "--url --token --json --help" -- "$cur"))
       ;;
     start)
-      COMPREPLY=($(compgen -W "--port --host --config --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "--port --host --config --help" -- "$cur"))
       ;;
     *)
-      COMPREPLY=($(compgen -W "--url --token --json --help" -- "\$cur"))
+      COMPREPLY=($(compgen -W "--url --token --json --help" -- "$cur"))
       ;;
   esac
 }
@@ -114,7 +114,7 @@ _secureyeoman() {
     '1: :->command' \\
     '*: :->args'
 
-  case \$state in
+  case $state in
     command)
       local commands=(
         ${COMMANDS.map((c) => `'${c}'`).join('\n        ')}
@@ -122,7 +122,7 @@ _secureyeoman() {
       _describe 'command' commands
       ;;
     args)
-      case \$words[2] in
+      case $words[2] in
         config|cfg)
           _arguments \\
             '1: :(${CONFIG_SUBCOMMANDS.join(' ')})' \\
@@ -211,7 +211,7 @@ _secureyeoman() {
   esac
 }
 
-_secureyeoman "\$@"
+_secureyeoman "$@"
 `;
 }
 

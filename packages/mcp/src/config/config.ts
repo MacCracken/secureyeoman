@@ -52,6 +52,17 @@ export function loadConfig(
     proxyScraperapiKey: env.MCP_PROXY_SCRAPERAPI_KEY,
     proxyMaxRetries: parseIntSafe(env.MCP_PROXY_MAX_RETRIES, 3),
     proxyRetryBaseDelayMs: parseIntSafe(env.MCP_PROXY_RETRY_BASE_DELAY_MS, 1000),
+    exposeSecurityTools: parseBool(env.MCP_EXPOSE_SECURITY_TOOLS, false),
+    securityToolsMode: (env.MCP_SECURITY_TOOLS_MODE ?? 'native') as 'native' | 'docker-exec',
+    securityToolsContainer: env.MCP_SECURITY_TOOLS_CONTAINER ?? 'kali-sy-toolkit',
+    allowedTargets: env.MCP_ALLOWED_TARGETS
+      ? env.MCP_ALLOWED_TARGETS.split(',').map((t) => t.trim()).filter(Boolean)
+      : [],
+    shodanApiKey: env.SHODAN_API_KEY,
+    exposeAgnosticTools: parseBool(env.MCP_EXPOSE_AGNOSTIC_TOOLS, false),
+    agnosticUrl: env.AGNOSTIC_URL ?? 'http://127.0.0.1:8000',
+    agnosticEmail: env.AGNOSTIC_EMAIL,
+    agnosticPassword: env.AGNOSTIC_PASSWORD,
   };
 
   return McpServiceConfigSchema.parse(raw);

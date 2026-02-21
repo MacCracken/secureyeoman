@@ -120,7 +120,7 @@ export class RoutingRulesManager {
       if (result.matched) {
         matched.push(rule);
         // Fire-and-forget — don't block message routing on stat update
-        this.deps.storage.recordMatch(rule.id).catch((err) => {
+        this.deps.storage.recordMatch(rule.id).catch((err: unknown) => {
           this.deps.logger.warn(
             `Failed to record match for rule ${rule.id}: ${err instanceof Error ? err.message : String(err)}`
           );

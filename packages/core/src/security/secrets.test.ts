@@ -105,7 +105,9 @@ describe('SecretStore', () => {
   function cleanup() {
     try {
       rmSync(tmpDir, { recursive: true, force: true });
-    } catch {}
+    } catch {
+      // intentionally empty — cleanup errors are non-fatal
+    }
   }
 
   it('throws when master key is too short', () => {

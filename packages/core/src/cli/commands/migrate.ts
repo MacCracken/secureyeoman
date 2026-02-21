@@ -41,7 +41,7 @@ migrations before the core Deployment rolls out.
     // Minimal logger — migrations run before full system init
     let logger;
     try {
-      const config = await loadConfig();
+      const config = loadConfig();
       logger = initializeLogger(config.logging);
       initPoolFromConfig(config.core.database);
     } catch (err) {

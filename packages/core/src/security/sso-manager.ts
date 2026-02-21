@@ -118,7 +118,7 @@ export class SsoManager {
     const claims = tokens.claims();
     if (!claims) throw new Error('No claims in ID token');
 
-    const externalSubject = String(claims.sub);
+    const externalSubject = claims.sub;
     const email = String(claims.email ?? '');
     const displayName = String(claims.name ?? claims.email ?? externalSubject);
 
