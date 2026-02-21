@@ -13,6 +13,21 @@ jobs:
     name: Build binaries
     runs-on: ubuntu-latest
 
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: secureyeoman
+          POSTGRES_PASSWORD: secureyeoman_dev
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U secureyeoman"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,6 +54,14 @@ jobs:
 
       - name: List artifacts
         run: ls -lh dist/secureyeoman-*
+
+      - name: Smoke test (linux-x64 Tier 1 + Tier 2)
+        env:
+          SMOKE_PG_HOST: localhost
+          SMOKE_PG_PORT: "5432"
+          SMOKE_PG_USER: secureyeoman
+          SMOKE_PG_PASSWORD: secureyeoman_dev
+        run: bash scripts/smoke-test-binary.sh
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2

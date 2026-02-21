@@ -4,6 +4,88 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 25 (2026-02-20): Bug Fixes — Single Binary Smoke Test
+
+### Verified
+
+- **`--version` on all runnable targets** — `secureyeoman --version` exits 0 and
+  prints `secureyeoman v2026.2.19` for linux-x64 (Tier 1). arm64 and darwin-arm64
+  targets skipped on x86_64 Linux; will be validated in CI cross-platform builds.
+
+- **`config validate --json` on all runnable targets** — exits 0 with
+  `{"valid":true,...}` using a minimal smoke config (Ollama provider, audit and
+  encryption disabled, only `SECUREYEOMAN_TOKEN_SECRET` and
+  `SECUREYEOMAN_ADMIN_PASSWORD` required). Tier 1 linux-x64 passes.
+
+- **`health --json` on Tier 1 linux-x64** — binary starts against a fresh
+  PostgreSQL smoke database (created and dropped per run), all 30 migrations apply,
+  `/health` returns `{"status":"ok"}`, `health --json` exits 0 and reports
+  `status=ok`. Tier 2 (lite) linux-x64 will be validated in CI once Bun is
+  available in the build environment.
+
+### Bugs Fixed
+
+- **`start.ts`: version hardcoded as `v1.5.1`** — `secureyeoman --version` and the
+  startup banner both printed the stale hardcoded string `v1.5.1` regardless of the
+  current release version. Fixed by introducing `packages/core/src/version.ts`
+  (exports `VERSION = '2026.2.19'`) and importing it in `start.ts`; `--version`
+  now prints the correct release version.
+
+- **`server.ts`: `/health` returned `"version":"0.0.0"`** — The health endpoint
+  read the version from `package.json` via `getPackageVersion()`. In a Bun-compiled
+  standalone binary `import.meta.url` resolves into the virtual FS root
+  (`/$bunfs/`) and `package.json` is not bundled, so every path check failed and
+  the fallback `'0.0.0'` was always returned. Fixed by replacing `getPackageVersion()`
+  with a direct import of `VERSION` from `version.ts`.
+
+- **Audit chain key conflict on repeated smoke test runs** — Running the smoke test
+  a second time against the same PostgreSQL database failed with
+  `Audit chain integrity compromised: last entry signature invalid` because the
+  previous run had written audit entries signed with a different dummy key.
+  Fixed in `scripts/smoke-test-binary.sh`: each binary test now creates and drops a
+  fresh uniquely-named database (`sy_smoke_<pid>_<epoch>`) so there are no leftover
+  entries from prior runs.
+
+- **`build-binary.sh`: Tier 2 lite binaries failed to compile** — The Tier 2 build
+  did not include `--external` flags for `playwright`, `playwright-core`, `electron`,
+  and `chromium-bidi`, causing `bun build --compile` to fail with
+  `Could not resolve: "electron"` errors. Tier 1 already excluded these optional
+  dependencies; Tier 2 now uses the same flags.
+
+### New Files
+
+- `packages/core/src/version.ts` — Single source of truth for the release version
+  string in compiled binaries. Exported constant `VERSION`; updated automatically
+  by `scripts/set-version.sh`. Eliminates the need to read `package.json` at runtime.
+
+- `scripts/smoke-test-binary.sh` — End-to-end binary smoke test script. Accepts
+  `--build` to compile all targets before testing. For each binary: checks
+  `--version`, runs `config validate --json` (offline), and starts the server
+  against a fresh PostgreSQL database to verify `health --json` returns `status=ok`.
+  Skips binaries that cannot run on the current platform/arch. Cleans up the smoke
+  database on exit.
+
+### Files Changed
+
+- `packages/core/src/version.ts` — new file; `VERSION = '2026.2.19'`
+- `packages/core/src/cli/commands/start.ts` — imports `VERSION`; `--version` output
+  and banner now use the constant instead of the hardcoded string `v1.5.1`
+- `packages/core/src/gateway/server.ts` — imports `VERSION`; `/health` version field
+  now uses the constant; removed `getPackageVersion()` helper that silently fell back
+  to `'0.0.0'` in binary mode
+- `scripts/set-version.sh` — now also updates the `VERSION` constant in
+  `packages/core/src/version.ts` alongside the `package.json` files
+- `scripts/smoke-test-binary.sh` — new smoke test script (see New Files above)
+- `scripts/build-binary.sh` — Tier 2 lite targets now include the same
+  `--external playwright --external playwright-core --external electron
+  --external chromium-bidi` flags as Tier 1; without these the Tier 2 compile
+  failed with unresolved module errors
+- `.github/workflows/release-binary.yml` — added `postgres` service container and
+  `Smoke test` step (`bash scripts/smoke-test-binary.sh`) after binary compilation;
+  smoke test runs against `localhost:5432` before the GitHub Release is created
+
+---
+
 ## Phase 25 (2026-02-20): Bug Fixes — Helm / Kubernetes
 
 ### Verified

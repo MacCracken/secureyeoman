@@ -58,7 +58,11 @@ echo "==> Compiling Tier 2 lite binaries (SQLite, no native addons)..."
 for TARGET in bun-linux-x64 bun-linux-arm64; do
   PLATFORM="${TARGET#bun-}"
   echo "    → lite-${PLATFORM}"
+  # playwright-core optional deps (electron, chromium-bidi) are not available
+  # at compile time and are never used in the server binary path.
   SECUREYEOMAN_BUILD_TIER=lite bun build --compile --target "${TARGET}" \
+    --external "playwright" --external "playwright-core" \
+    --external "electron" --external "chromium-bidi" \
     "${REPO_ROOT}/packages/core/src/cli.ts" \
     --outfile "${DIST_DIR}/secureyeoman-lite-${PLATFORM}"
 done

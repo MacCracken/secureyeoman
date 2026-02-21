@@ -9,12 +9,14 @@ import type { SecureYeoman } from '../../secureyeoman.js';
 import { isOpenSSLAvailable, generateDevCerts } from '../../security/cert-gen.js';
 import type { Command, CommandContext } from '../router.js';
 import { extractFlag, extractBoolFlag } from '../utils.js';
+import { VERSION } from '../../version.js';
 
 function printBanner(stream: NodeJS.WritableStream, host: string, port: number, tls = false): void {
   const scheme = tls ? 'https' : 'http';
+  const versionLabel = `v${VERSION}`.padEnd(13);
   stream.write(`
   ╔═══════════════════════════════════════════╗
-  ║          SecureYeoman v1.5.1              ║
+  ║          SecureYeoman ${versionLabel}          ║
   ║   Secure Autonomous Agent Framework       ║
   ╚═══════════════════════════════════════════╝
 
@@ -71,7 +73,7 @@ export const startCommand: Command = {
     // --version
     const versionResult = extractBoolFlag(argv, 'version', 'v');
     if (versionResult.value) {
-      ctx.stdout.write('secureyeoman v1.5.1\n');
+      ctx.stdout.write(`secureyeoman v${VERSION}\n`);
       return 0;
     }
     argv = versionResult.rest;
