@@ -19,7 +19,7 @@ const {
     reconstruct: vi.fn().mockReturnValue([0.1, 0.2, 0.3]),
   };
 
-  const MockIndexFlatL2 = vi.fn().mockImplementation(() => mockIndex);
+  const MockIndexFlatL2 = vi.fn().mockImplementation(function() { return mockIndex; });
   (MockIndexFlatL2 as any).read = vi.fn().mockReturnValue(mockIndex);
 
   return {
