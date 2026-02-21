@@ -37,22 +37,12 @@
 | | **Tag 2026.2.19** | **2026-02-19** | **Tagged** |
 | 23 | Community Marketplace Improvements | 2026.2.20 | Complete |
 | | **Tag 2026.2.20** | **2026-02-20** | **Tagged** |
-| 24 | Testing All the Things | — | In Progress |
+| 24 | Testing All the Things | 2026.2.21 | Complete |
+| | **Tag 2026.2.21** | **2026-02-21** | **Tagged** |
 | 25 | Fix All the Bugs | — | In Progress |
 | 26 | Final Inspection | — | Pending |
 
 ---
-
-## Phase 24: Testing All the Things
-
-**Status**: In-Progress
-
-*Full-system testing pass: Get Test coverages up over 80%, mark real bugs in shipped code and fix them in phase 25. Every package, every integration path, every edge case.*
-
-### Test Coverage
-
-- [ ] **Integration test gaps** — Audit `packages/core/src/__integration__/` for missing scenarios: multi-user auth flows, workspace member RBAC, SSO callback edge cases, binary sub-agent timeout/kill, mcp-bridge template errors
-
 
 ## Phase 25: Fix All the Bugs
 
@@ -88,7 +78,7 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 ### Regression & Performance
 
-- [ ] **Regression suite** — All 6300+ tests pass; fix any failures introduced
+- [ ] **Regression suite** — All 6325+ tests pass; fix any failures introduced
 - [ ] **Memory baseline** — Cold-start still <300 MB latest additions
 - [ ] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
 
@@ -149,4 +139,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21
+*Last updated: 2026-02-21 — Phase 24 complete*
