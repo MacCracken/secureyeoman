@@ -9,12 +9,14 @@ SecureYeoman supports multiple platform integrations for receiving and respondin
 | Airtable | Stable | Productivity | Personal access token, base/record management |
 | CLI      | Stable | Messaging | Built-in REST API / command-line interface |
 | Coolify (MetaMCP) | Stable | MCP | One-click streamable-http MCP prebuilt via MetaMCP |
+| Meilisearch | Stable | MCP | One-click stdio MCP prebuilt via meilisearch-mcp (uvx) |
 | Discord  | Stable | Messaging | Slash commands, embeds, guild messages |
 | Email (IMAP/SMTP) | Stable | Email | Any IMAP/SMTP provider — ProtonMail Bridge, Outlook, Yahoo, Fastmail |
 | Figma    | Stable | DevOps | File comments, design metadata, REST polling |
 | GitHub   | Stable | DevOps | Webhooks, issue comments, PR events |
 | GitLab   | Stable | DevOps | Webhooks, MR comments, issue events, self-hosted support |
 | Home Assistant | Stable | MCP | One-click streamable-http MCP prebuilt via native HA MCP server |
+| Qdrant | Stable | MCP | One-click stdio MCP prebuilt via mcp-server-qdrant (uvx) |
 | Gmail    | Stable | Email | OAuth2, polling, label filtering, send/receive |
 | Google Calendar | Stable | Productivity | OAuth2, event polling, quick-add event creation |
 | Google Chat | Stable | Messaging | Bot messages, card messages, space integration |
@@ -42,7 +44,7 @@ Integrations are grouped into sub-tabs in the Connections view:
 | **Productivity** | Notion, Stripe, Linear, Google Calendar, Airtable, Todoist, Spotify, YouTube |
 | **DevOps** | GitHub, GitLab, Jira, AWS, Azure, Figma, Zapier |
 | **OAuth** | Google OAuth, GitHub OAuth |
-| **MCP** | Home Assistant, Coolify (MetaMCP), Bright Data, Exa, E2B, Supabase, Figma, Stripe, Zapier, Linear |
+| **MCP** | Home Assistant, Coolify (MetaMCP), Meilisearch, Qdrant, Bright Data, Exa, E2B, Supabase, Figma, Stripe, Zapier, Linear |
 
 ## CLI
 
@@ -758,6 +760,67 @@ curl -X POST http://localhost:18789/api/v1/mcp/servers \
 
 ### What You Get
 A single MCP connection that proxies all the MCP servers you have configured in MetaMCP — Coolify service monitoring, custom tools, and any other servers you add. Useful for managing infrastructure alongside agent tasks.
+
+---
+
+## Meilisearch (MCP)
+
+Meilisearch is a fast, self-hostable hybrid search engine combining BM25 full-text search with vector similarity. Connect it via the **MCP** tab using the official `meilisearch-mcp` Python package.
+
+> **Prerequisite**: Install `uv` (Python package manager): `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+### Setup via Dashboard
+
+1. Start Meilisearch: `docker run -p 7700:7700 getmeili/meilisearch`
+2. Go to **Connections → MCP** tab → Featured MCP Servers
+3. Find **Meilisearch** and click **Connect**
+4. Enter your Meilisearch URL (default: `http://localhost:7700`) and Master Key
+5. Click **Connect** — `uvx meilisearch-mcp` starts automatically
+
+### Config Options
+
+| Env var | Default | Description |
+|---------|---------|-------------|
+| `MEILI_HTTP_ADDR` | `http://localhost:7700` | Meilisearch instance URL |
+| `MEILI_MASTER_KEY` | *(optional for local)* | API key; required for remote/production instances |
+
+### What You Get
+MCP tools for: index management (create/delete/list), document operations (add, update, delete, bulk), search (standard, multi-search, facet search with filters and pagination), settings management.
+
+### When to Use Meilisearch vs Brain Module
+- **Brain module** — semantic memory and knowledge base with LLM-powered consolidation; pure vector search
+- **Meilisearch** — existing application search infrastructure; hybrid BM25 + vector; typo tolerance; faceted filtering; multi-language
+
+---
+
+## Qdrant (MCP)
+
+Qdrant is a high-performance vector database. Connect it via the **MCP** tab using the official `mcp-server-qdrant` Python package to query collections independently of the Brain module's managed storage.
+
+> **Prerequisite**: Install `uv` (Python package manager): `curl -LsSf https://astral.sh/uv/install.sh | sh`
+
+### Setup via Dashboard
+
+1. Start Qdrant: `docker run -p 6333:6333 qdrant/qdrant`
+2. Go to **Connections → MCP** tab → Featured MCP Servers
+3. Find **Qdrant** and click **Connect**
+4. Enter your Qdrant URL (default: `http://localhost:6333`), API key (blank for local), and collection name
+5. Click **Connect** — `uvx mcp-server-qdrant` starts automatically
+
+### Config Options
+
+| Env var | Default | Description |
+|---------|---------|-------------|
+| `QDRANT_URL` | `http://localhost:6333` | Qdrant instance URL |
+| `QDRANT_API_KEY` | *(optional)* | API key; required for Qdrant Cloud |
+| `COLLECTION_NAME` | *(required)* | Collection to expose as the default search target |
+
+### What You Get
+MCP tools for: storing memories/documents with embeddings (`qdrant-store`), semantic similarity search across the collection (`qdrant-find`), filtered queries by payload metadata.
+
+### When to Use Qdrant MCP vs Brain Module
+- **Brain module** — managed semantic memory for the agent itself; automated consolidation and decay
+- **Qdrant MCP** — query your *own* application's Qdrant collections; access existing embeddings not managed by SecureYeoman
 
 ---
 

@@ -41,6 +41,7 @@
 | 25 | Fix All the Bugs | — | In Progress |
 | 26 | Final Inspection | — | Pending |
 | 27 | Twitter/X + HA + Coolify Integrations | 2026.2.21 | Complete |
+| 28 | Semantic Search MCP Prebuilts | 2026.2.21 | Complete |
 
 ---
 
@@ -154,4 +155,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Phase 27 complete*
+*Last updated: 2026-02-21 — Phase 28 complete*

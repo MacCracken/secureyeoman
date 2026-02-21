@@ -1,10 +1,10 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.2.19-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.19)
+[![Version](https://img.shields.io/badge/Version-2026.2.21-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.21)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 6326+](https://img.shields.io/badge/Tests-6326%2B-brightgreen.svg)]()
+[![Tests: 6351+](https://img.shields.io/badge/Tests-6351%2B-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -68,7 +68,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Security** | RBAC (Admin/Operator/Auditor/Viewer), JWT + API key auth, mTLS, AES-256-GCM encryption at rest, sandboxed execution (Landlock/macOS sandbox), rate limiting (per-user, per-IP, global), HTTP security headers (HSTS, CSP, X-Frame-Options), CORS policy enforcement |
 | **Observability** | Cryptographic audit trails (HMAC-SHA256 chain), Prometheus metrics, Grafana dashboards, structured JSONL log rotation, audit retention enforcement, audit export |
 | **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama, LM Studio, LocalAI (local), OpenCode Zen, DeepSeek, Mistral, x.ai Grok; automatic fallback chains on rate limits/outages; dynamic model discovery |
-| **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); overview with stat cards (tasks, heartbeat, audit, memory) and services status panel (core, Postgres, audit chain, MCP); system flow graph (ReactFlow) with live connection edges; task history, security events, resource monitor, personality editor (Brain section shows associated skills with direct edit navigation), skills manager, code editor (Monaco), notification & retention settings; **WebGL graph visualization** (Sigma.js + graphology) with pluggable layout algorithms — ForceAtlas2 for hub-and-spoke peer networks, Dagre hierarchical layout for delegation trees and DAGs; **rich chat rendering** — assistant messages rendered as full Markdown with syntax-highlighted code (Prism, dark/light theme-aware), interactive Mermaid diagrams, KaTeX math expressions, GitHub-style alert callouts, task list checkboxes, and styled tables |
+| **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); overview with stat cards (tasks, heartbeat, audit, memory) and services status panel (core, Postgres, audit chain, MCP); system flow graph (ReactFlow) with live connection edges; task history, security events, resource monitor, personality editor (Brain section shows associated skills with direct edit navigation), skills manager, code editor (Monaco), notification & retention settings; **WebGL graph visualization** (Sigma.js + graphology) with pluggable layout algorithms — ForceAtlas2 for hub-and-spoke peer networks, Dagre hierarchical layout for delegation trees and DAGs; **rich chat rendering** — assistant messages rendered as full Markdown with syntax-highlighted code (Prism, dark/light theme-aware), interactive Mermaid diagrams, KaTeX math expressions, GitHub-style alert callouts, task list checkboxes, and styled tables; **real-time collaborative editing** — personality system prompts and skill instructions use Yjs CRDT over a binary `/ws/collab` WebSocket; **presence indicators** — `PresenceBanner` shows who else is editing the same field in real time (colored dots + name label) |
 | **Agent Architecture** | Soul (identity/archetypes/personality), Spirit (passions/inspirations/pains), Brain (memory/knowledge/skills with decay & pruning, vector semantic search via FAISS/Qdrant/ChromaDB, LLM-powered memory consolidation), Body (heartbeat/vital signs/screen capture, per-personality capabilities: vision, auditory, vocalization, limb movement, haptic) |
 | **Cognitive Architecture** | Vector semantic memory (local SentenceTransformers + OpenAI/Gemini API embeddings), FAISS, Qdrant, and ChromaDB vector backends, LLM-powered memory consolidation with on-save dedup and scheduled deep analysis, 3-tier progressive history compression (message → topic → bulk) with AI summarization |
 | **Extensions** | 38 lifecycle hook points (observe/transform/veto semantics), TypeScript plugin modules with filesystem discovery, EventEmitter integration, outbound webhook dispatch with HMAC signing, hot-reload support |
@@ -78,12 +78,12 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Integrations** | Telegram (inline keyboards, document attachments), Discord (threads, modals, slash command registration via REST), Slack (Block Kit actions, modal dialogs, Workflow Builder steps), GitHub (PR review automation, issue auto-labeling, code search triggers), GitLab, Google Chat, Gmail, Email (IMAP/SMTP), Google Calendar, Notion, Jira, AWS, Azure DevOps, CLI, Generic Webhook — plugin architecture with unified message routing |
 | **MCP Protocol** | Standalone `@secureyeoman/mcp` service (34+ tools including web scraping, search, browser automation placeholders; 7 resources, 4 prompts); SSRF-protected web tools; health monitoring for external servers; AES-256-GCM encrypted credential storage; streamable HTTP, SSE, and stdio transports; feature toggles with dashboard UI; one-click pre-built integrations for Bright Data, Exa, E2B, and Supabase |
 | **Marketplace** | Skill discovery, search, install/uninstall (syncs with Brain skills), publish; **Community Skills** — local-path sync from [`secureyeoman-community-skills`](https://github.com/MacCracken/secureyeoman-community-skills) or any compatible repo; source tracking (`builtin` / `community` / `published`) |
-| **Team Collaboration** | Multi-user foundation (`auth.users`); workspaces with isolation, member management, workspace-scoped RBAC; **SSO/OIDC** — Okta, Azure AD, Auth0 and any standards-compliant OIDC issuer via `openid-client` v6; PKCE flow; JIT user provisioning; per-workspace IDP binding |
+| **Team Collaboration** | Multi-user foundation (`auth.users`); workspaces with isolation, member management, workspace-scoped RBAC; **SSO/OIDC** — Okta, Azure AD, Auth0 and any standards-compliant OIDC issuer via `openid-client` v6; PKCE flow; JIT user provisioning; per-workspace IDP binding; **CRDT collaborative editing** — Yjs Y.Text over `/ws/collab/:docId` (personality/skill scoped); server-resolved presence identities (display name from soul users table); DB-backed Y.Doc state (`soul.collab_docs`) survives server restarts |
 | **Reports & Analytics** | Audit report generator (JSON/HTML/CSV), cost optimization recommendations, A/B testing framework |
 | **Voice** | Push-to-talk (Ctrl+Shift+V), browser-native speech recognition & synthesis, voice overlay |
 | **Deployment** | **Single binary** (Bun compile, ~80 MB, no runtime deps) for Linux x64/arm64 and macOS arm64; Tier 2 SQLite `lite` binary for edge/embedded; Docker image ~80 MB (binary-based, vs ~600 MB Node.js); Kubernetes Helm chart (EKS/GKE/AKS), GHCR image registry, HPA autoscaling, PodDisruptionBudgets, NetworkPolicies, ExternalSecret CRD support |
 | **CLI** | 21 commands covering server management, health, config validation, integration management, role/extension management, browser automation, vector memory, web scraping, multimodal I/O, AI model switching, security policy, plugin management; shell completions (bash/zsh/fish); `--json` output on all commands for scripting; colored output (green/red status indicators, TTY-aware); progress spinners for long-running operations |
-| **Development** | TypeScript strict mode, 6326+ tests across 348 files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint); **Storybook** component development environment integrated into the Developers section (gated by `allowStorybook` security policy), with quick-start instructions, component story gallery, and iframe to localhost:6006 |
+| **Development** | TypeScript strict mode, 6351+ tests across 351 files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint); **Storybook** component development environment integrated into the Developers section (gated by `allowStorybook` security policy), with quick-start instructions, component story gallery, and iframe to localhost:6006 |
 
 ---
 
@@ -261,7 +261,7 @@ Access http://localhost:18789 after starting the system. The dashboard provides:
 - **Tasks**: Task history with create/edit/delete, filtering, and live updates
 - **Security**: Security event log with severity filtering, heartbeat task viewer
 - **Connections**: Integration management (connect/start/stop platforms), MCP server management
-- **Personality**: Identity editor, archetype selector, skill builder
+- **Personality**: Identity editor, archetype selector, skill builder; system prompt uses live collaborative editing (Yjs CRDT) with presence indicators showing co-editors in real time
 - **Code**: Monaco editor with personality-scoped AI chat sidebar; assistant messages render as rich Markdown
 - **Chat**: Conversational AI interface with full Markdown rendering — syntax-highlighted code blocks (Prism, language-labelled, theme-aware), interactive Mermaid diagrams, KaTeX math (`$inline$` / `$$block$$`), GitHub-style alert callouts (`[!NOTE]`, `[!TIP]`, `[!WARNING]`, `[!CAUTION]`, `[!IMPORTANT]`), task list checkboxes, and styled tables
 - **Settings**: Notification preferences, log retention policy, API key management, audit export
@@ -506,14 +506,14 @@ secureyeoman/
 │   │       ├── marketplace/     # Skill marketplace (discovery, install, publish)
 │   │       ├── mcp/             # MCP client manager + tool storage
 │   │       ├── security/        # RBAC, encryption, sandbox, rate limiting
-│   │       ├── soul/            # Personality, identity, archetypes
+│   │       ├── soul/            # Personality, identity, archetypes, CRDT collab
 │   │       ├── spirit/          # Emotional core (passions, inspirations, pains)
 │   │       └── task/            # Task executor + SQLite storage
 │   ├── dashboard/       # React UI (Vite + Tailwind + TanStack Query)
 │   └── mcp/             # Standalone MCP service (34+ tools, 7 resources, 4 prompts)
 ├── tests/               # Security, load (k6), and chaos tests
 ├── deploy/              # Docker, Helm chart, Prometheus, Grafana, Loki configs
-├── docs/                # Documentation + ADRs (75 decision records)
+├── docs/                # Documentation + ADRs (80 decision records)
 │   ├── api/             # REST API + WebSocket API + OpenAPI 3.1 spec
 │   ├── adr/             # Architecture Decision Records
 │   ├── guides/          # Getting started, integrations
@@ -549,10 +549,10 @@ npx vitest run tests/security/ tests/chaos/
 
 | Package | Tests | Files | Coverage |
 |---------|-------|-------|----------|
-| `@secureyeoman/core` | 5594 | 285 | 84% lines / 85% funcs / 71% branches ✅ |
+| `@secureyeoman/core` | 5604 | 286 | 84% lines / 85% funcs / 71% branches ✅ |
 | `@secureyeoman/mcp` | 326 | 31 | — |
-| `@secureyeoman/dashboard` | 406 | 32 | — |
-| **Total** | **6326** | **348** | |
+| `@secureyeoman/dashboard` | 421 | 34 | — |
+| **Total** | **6351** | **351** | |
 
 ### Building
 
@@ -595,7 +595,7 @@ This updates all `package.json` files in the monorepo. The core server reads its
 | **Integrations** | [Integration Setup](docs/guides/integrations.md) |
 | **AI Provider Keys** | [AI Provider API Keys](docs/guides/ai-provider-api-keys.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (75 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (80 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |

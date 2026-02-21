@@ -19,6 +19,8 @@ interface PrebuiltServer {
   /** Keys whose values are URLs (rendered as text inputs instead of password inputs) */
   urlKeys?: string[];
   requiredEnvVars: { key: string; label: string }[];
+  /** Optional prerequisite note shown in the expanded form (e.g. runtime requirements) */
+  note?: string;
 }
 
 const PREBUILT_SERVERS: PrebuiltServer[] = [
@@ -72,6 +74,46 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
     description: 'Create and query issues, projects, and cycles via the Linear MCP server',
     command: 'npx -y @linear/mcp-server',
     requiredEnvVars: [{ key: 'LINEAR_API_KEY', label: 'Linear API Key' }],
+  },
+  {
+    name: 'Meilisearch',
+    description:
+      'Hybrid full-text + semantic search engine — index documents and query with vector similarity, facets, and typo tolerance',
+    command: 'uvx meilisearch-mcp',
+    note: 'Requires uv (Python package manager). Install: curl -LsSf https://astral.sh/uv/install.sh | sh',
+    urlKeys: ['MEILI_HTTP_ADDR'],
+    requiredEnvVars: [
+      {
+        key: 'MEILI_HTTP_ADDR',
+        label: 'Meilisearch URL',
+      },
+      {
+        key: 'MEILI_MASTER_KEY',
+        label: 'Master Key',
+      },
+    ],
+  },
+  {
+    name: 'Qdrant',
+    description:
+      'High-performance vector database — store and query embeddings with filtering, payload search, and named vectors',
+    command: 'uvx mcp-server-qdrant',
+    note: 'Requires uv (Python package manager). Install: curl -LsSf https://astral.sh/uv/install.sh | sh',
+    urlKeys: ['QDRANT_URL'],
+    requiredEnvVars: [
+      {
+        key: 'QDRANT_URL',
+        label: 'Qdrant URL',
+      },
+      {
+        key: 'QDRANT_API_KEY',
+        label: 'API Key (leave blank for local)',
+      },
+      {
+        key: 'COLLECTION_NAME',
+        label: 'Collection Name',
+      },
+    ],
   },
   {
     name: 'Home Assistant',
@@ -211,6 +253,11 @@ export function McpPrebuilts() {
 
               {isExpanded && !isConnected && (
                 <div className="space-y-2 pt-2 border-t border-border">
+                  {server.note && (
+                    <p className="text-xs text-yellow-400/80 bg-yellow-400/5 border border-yellow-400/20 rounded px-2 py-1.5">
+                      {server.note}
+                    </p>
+                  )}
                   {server.requiredEnvVars.map((v) => {
                     const isUrl = server.urlKeys?.includes(v.key);
                     return (
