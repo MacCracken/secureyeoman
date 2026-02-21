@@ -2622,12 +2622,12 @@ export function PersonalityEditor() {
                       </span>
                       <button
                         type="button"
-                        onClick={() =>
-                          { setForm((f) => ({
+                        onClick={() => {
+                          setForm((f) => ({
                             ...f,
                             modelFallbacks: (f.modelFallbacks ?? []).filter((_, i) => i !== idx),
-                          })); }
-                        }
+                          }));
+                        }}
                         className="text-muted-foreground hover:text-destructive text-xs px-1"
                         aria-label="Remove fallback"
                       >
@@ -2643,7 +2643,9 @@ export function PersonalityEditor() {
                 <div className="flex gap-2">
                   <select
                     value={pendingFallback}
-                    onChange={(e) => { setPendingFallback(e.target.value); }}
+                    onChange={(e) => {
+                      setPendingFallback(e.target.value);
+                    }}
                     className="flex-1 px-3 py-2 rounded border bg-background text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                     data-testid="fallback-add-select"
                   >

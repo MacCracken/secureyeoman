@@ -26,16 +26,25 @@ const SECURITY_TOOLS = [
   'hashcat',
   'john',
   'theharvester',
-  'dnsutils',  // provides dig
+  'dnsutils', // provides dig
   'whois',
 ];
 
 function docker(args: string[]): Promise<{ stdout: string; stderr: string; code: number }> {
   return new Promise((resolve) => {
-    execFile('docker', args, { maxBuffer: 10 * 1024 * 1024, timeout: 600_000 }, (err, stdout, stderr) => {
-      const code = (err as NodeJS.ErrnoException & { code?: number } | null)?.code ?? 0;
-      resolve({ stdout: stdout.trim(), stderr: stderr.trim(), code: typeof code === 'number' ? code : (err ? 1 : 0) });
-    });
+    execFile(
+      'docker',
+      args,
+      { maxBuffer: 10 * 1024 * 1024, timeout: 600_000 },
+      (err, stdout, stderr) => {
+        const code = (err as (NodeJS.ErrnoException & { code?: number }) | null)?.code ?? 0;
+        resolve({
+          stdout: stdout.trim(),
+          stderr: stderr.trim(),
+          code: typeof code === 'number' ? code : err ? 1 : 0,
+        });
+      }
+    );
   });
 }
 
@@ -93,13 +102,17 @@ Environment variables set after setup:
     if (subcommand === 'setup') {
       ctx.stdout.write('Checking Docker availability...\n');
       if (!(await isDockerAvailable())) {
-        ctx.stderr.write('Error: Docker is not available. Install Docker and ensure the daemon is running.\n');
+        ctx.stderr.write(
+          'Error: Docker is not available. Install Docker and ensure the daemon is running.\n'
+        );
         return 1;
       }
       ctx.stdout.write('Docker is available.\n');
 
       if (await containerExists()) {
-        ctx.stdout.write(`Container "${CONTAINER}" already exists. Run teardown first to recreate it.\n`);
+        ctx.stdout.write(
+          `Container "${CONTAINER}" already exists. Run teardown first to recreate it.\n`
+        );
         return 1;
       }
 
@@ -128,8 +141,12 @@ Environment variables set after setup:
 
       ctx.stdout.write(`Installing tools: ${SECURITY_TOOLS.join(', ')}...\n`);
       const install = await docker([
-        'exec', CONTAINER,
-        'apt-get', 'install', '-y', '--no-install-recommends',
+        'exec',
+        CONTAINER,
+        'apt-get',
+        'install',
+        '-y',
+        '--no-install-recommends',
         ...SECURITY_TOOLS,
       ]);
       if (install.code !== 0) {
@@ -142,7 +159,9 @@ Environment variables set after setup:
       ctx.stdout.write(`  MCP_EXPOSE_SECURITY_TOOLS=true\n`);
       ctx.stdout.write(`  MCP_SECURITY_TOOLS_MODE=docker-exec\n`);
       ctx.stdout.write(`  MCP_SECURITY_TOOLS_CONTAINER=${CONTAINER}\n`);
-      ctx.stdout.write(`  MCP_ALLOWED_TARGETS=<enter your targets, comma-separated CIDRs/hostnames/URLs>\n`);
+      ctx.stdout.write(
+        `  MCP_ALLOWED_TARGETS=<enter your targets, comma-separated CIDRs/hostnames/URLs>\n`
+      );
       ctx.stdout.write(`  # SHODAN_API_KEY=<optional, enables sec_shodan tool>\n\n`);
       ctx.stdout.write(`Run 'secureyeoman security status' to verify tool availability.\n`);
       return 0;

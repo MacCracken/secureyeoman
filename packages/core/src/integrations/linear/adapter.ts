@@ -125,9 +125,7 @@ export class LinearIntegration implements WebhookIntegration {
       const id = (data.id as string | undefined) ?? `linear_${Date.now()}`;
       const title = (data.title as string | undefined) ?? '';
       const identifier = (data.identifier as string | undefined) ?? '';
-      const state = (data.state as Record<string, unknown> | undefined)?.name as
-        | string
-        | undefined;
+      const state = (data.state as Record<string, unknown> | undefined)?.name as string | undefined;
       const assignee = (data.assignee as Record<string, unknown> | undefined)?.name as
         | string
         | undefined;

@@ -43,7 +43,7 @@ export class ChromaVectorStore implements VectorStore {
       ...init,
       headers: {
         'Content-Type': 'application/json',
-        ...(init?.headers as Record<string, string> | undefined ?? {}),
+        ...((init?.headers as Record<string, string> | undefined) ?? {}),
       },
     });
   }
@@ -154,7 +154,7 @@ export class ChromaVectorStore implements VectorStore {
           id,
           // ChromaDB cosine distance = 1 − similarity → invert back to similarity
           score: 1 - (distances[i] ?? 1),
-          metadata: (metadatas[i] ?? {}),
+          metadata: metadatas[i] ?? {},
         }))
         .filter((r) => r.score >= threshold);
     });

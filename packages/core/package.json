@@ -36,7 +36,7 @@
     "@vitest/coverage-v8": "^4.0.18",
     "baileys": "^6.7.9",
     "better-sqlite3": "^11.0.0",
-    "discord.js": "^13.17.1",
+    "discord.js": "^14.25.1",
     "fastify": "^5.7.4",
     "grammy": "^1.40.0",
     "imapflow": "^1.0.171",
@@ -60,6 +60,7 @@
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.8",
+    "@types/express": "^5.0.0",
     "@types/node": "^20.14.12",
     "@types/nodemailer": "^6.4.17",
     "@types/pg": "^8.11.10",

@@ -55,7 +55,9 @@ function makeConfig(overrides?: Partial<McpServiceConfig>): McpServiceConfig {
   } as McpServiceConfig;
 }
 
-function mockFetch(responses: Array<{ ok: boolean; status: number; json?: unknown; text?: string }>) {
+function mockFetch(
+  responses: Array<{ ok: boolean; status: number; json?: unknown; text?: string }>
+) {
   let callIndex = 0;
   return vi.fn().mockImplementation(() => {
     const resp = responses[callIndex % responses.length];
@@ -85,7 +87,11 @@ describe('agnostic-tools', () => {
 
     it('does not throw for any config combination when disabled', () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      const config = makeConfig({ exposeAgnosticTools: false, agnosticEmail: undefined, agnosticPassword: undefined });
+      const config = makeConfig({
+        exposeAgnosticTools: false,
+        agnosticEmail: undefined,
+        agnosticPassword: undefined,
+      });
       expect(() => registerAgnosticTools(server, config, noopMiddleware())).not.toThrow();
     });
   });
@@ -105,9 +111,12 @@ describe('agnostic-tools', () => {
 
   describe('agnostic_health', () => {
     it('returns health data when Agnostic is reachable', async () => {
-      vi.stubGlobal('fetch', mockFetch([
-        { ok: true, status: 200, json: { status: 'healthy', timestamp: '2026-02-21T00:00:00Z' } },
-      ]));
+      vi.stubGlobal(
+        'fetch',
+        mockFetch([
+          { ok: true, status: 200, json: { status: 'healthy', timestamp: '2026-02-21T00:00:00Z' } },
+        ])
+      );
 
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerAgnosticTools(server, makeConfig(), noopMiddleware());
@@ -126,10 +135,13 @@ describe('agnostic-tools', () => {
   describe('agnostic_submit_qa', () => {
     it('handles 404 from missing POST /api/tasks gracefully', async () => {
       // Auth login mock + task submission mock
-      vi.stubGlobal('fetch', mockFetch([
-        { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } }, // login
-        { ok: false, status: 404, json: { detail: 'Not Found' } },                  // POST /api/tasks
-      ]));
+      vi.stubGlobal(
+        'fetch',
+        mockFetch([
+          { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } }, // login
+          { ok: false, status: 404, json: { detail: 'Not Found' } }, // POST /api/tasks
+        ])
+      );
 
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerAgnosticTools(server, makeConfig(), noopMiddleware());
@@ -137,10 +149,17 @@ describe('agnostic-tools', () => {
     });
 
     it('handles successful task submission', async () => {
-      vi.stubGlobal('fetch', mockFetch([
-        { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } },
-        { ok: true, status: 200, json: { task_id: 'task-123', session_id: 'session-abc', status: 'pending' } },
-      ]));
+      vi.stubGlobal(
+        'fetch',
+        mockFetch([
+          { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } },
+          {
+            ok: true,
+            status: 200,
+            json: { task_id: 'task-123', session_id: 'session-abc', status: 'pending' },
+          },
+        ])
+      );
 
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerAgnosticTools(server, makeConfig(), noopMiddleware());
@@ -150,10 +169,13 @@ describe('agnostic-tools', () => {
 
   describe('agnostic_task_status', () => {
     it('handles 404 from missing GET /api/tasks/{id} gracefully', async () => {
-      vi.stubGlobal('fetch', mockFetch([
-        { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } },
-        { ok: false, status: 404, json: { detail: 'Task not found' } },
-      ]));
+      vi.stubGlobal(
+        'fetch',
+        mockFetch([
+          { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } },
+          { ok: false, status: 404, json: { detail: 'Task not found' } },
+        ])
+      );
 
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerAgnosticTools(server, makeConfig(), noopMiddleware());

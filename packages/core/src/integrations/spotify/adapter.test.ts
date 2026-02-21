@@ -164,9 +164,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
       await adapter.start();
       expect(adapter.isHealthy()).toBe(true);
       // Token should only be fetched once (second start() returns early)
-      const tokenCalls = mockFetch.mock.calls.filter((c) =>
-        c[0].includes('accounts.spotify.com')
-      );
+      const tokenCalls = mockFetch.mock.calls.filter((c) => c[0].includes('accounts.spotify.com'));
       expect(tokenCalls).toHaveLength(1);
     });
 
@@ -185,18 +183,14 @@ describe('SpotifyIntegration – adapter.ts', () => {
     it('refreshes access token during start()', async () => {
       await adapter.init(makeConfig(), makeDeps());
       await adapter.start();
-      const tokenCalls = mockFetch.mock.calls.filter((c) =>
-        c[0].includes('accounts.spotify.com')
-      );
+      const tokenCalls = mockFetch.mock.calls.filter((c) => c[0].includes('accounts.spotify.com'));
       expect(tokenCalls.length).toBeGreaterThan(0);
     });
 
     it('sends refresh token in token request body', async () => {
       await adapter.init(makeConfig(), makeDeps());
       await adapter.start();
-      const tokenCall = mockFetch.mock.calls.find((c) =>
-        c[0].includes('accounts.spotify.com')
-      );
+      const tokenCall = mockFetch.mock.calls.find((c) => c[0].includes('accounts.spotify.com'));
       expect(tokenCall).toBeDefined();
       const body = (tokenCall![1] as RequestInit).body as string;
       expect(body).toContain('refresh_token=test-refresh-token');

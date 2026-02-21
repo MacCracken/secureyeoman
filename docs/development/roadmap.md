@@ -63,6 +63,25 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 - [ ] Find and Repair
 
+### CI / Quality Gate — Open Items (2026-02-21)
+
+*Uncovered during Phase 34 Final Inspection run. All were pre-existing before the Zod `nonneg` fix that revealed them.*
+
+#### Typecheck
+- [x] **discord.js v13 → v14** — Bumped `packages/core` to `^14.25.1`, removed stray root dep. *(Fixed 2026-02-21)*
+- [x] **Missing `@types/express`** — Added to `packages/core` devDependencies. *(Fixed 2026-02-21)*
+- [x] **Missing `@testing-library/dom`** — Added as explicit devDep in `packages/dashboard`. *(Fixed 2026-02-21)*
+- [x] **Missing `graphology-types`** — Added as explicit devDep in `packages/dashboard`. *(Fixed 2026-02-21)*
+- [x] **`@storybook/react` unresolvable** — Added as explicit devDep in `packages/dashboard`. *(Fixed 2026-02-21)*
+
+#### Lint
+- [ ] **74 ESLint errors** (deferred) — Primarily new rules from `typescript-eslint@^8.54`: `no-unnecessary-type-conversion` (redundant `Number()`/`String()`/`!!`), `no-useless-escape`, `use-unknown-in-catch-callback-variable`, `no-redundant-type-constituents`, `ban-ts-comment` (missing descriptions), `no-unnecessary-type-parameters`, `no-deprecated` (`JSX` → `React.JSX`), `no-empty`. Run `npm run lint 2>&1 | grep error` for the full list.
+
+#### Security
+- [ ] **14 npm audit vulnerabilities remain** — blocked upstream:
+  - `minimatch <10.2.1` (10 high-severity ReDoS, dev-only) — fix requires ESLint v10, blocked until `typescript-eslint` publishes ESLint-v10-compatible release. See dependency-watch.md.
+  - `undici <6.23.0` (4 moderate, decompression chain) — now in `discord.js@14` chain; blocked until discord.js releases a patch bumping its bundled undici to `>=6.23.0`. See dependency-watch.md.
+
 ### Additional Small Features for Improvement
 
 - [ ] **Per-Personality Active Hours** *(Brain)* — Each personality can define a schedule of active hours during which it responds to heartbeats and incoming triggers. Outside those windows the personality's body is at rest; the Brain enforces the schedule, suppressing task execution and proactive behavior until the window reopens. Configurable per-personality in the Brain settings panel.
@@ -80,9 +99,10 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 ### Run all the Checks
 
-- [ ] Typecheck
-- [ ] Lint & Format
-- [ ] Security
+- [x] **Format** — Passing ✅
+- [x] **Typecheck** — Passing ✅ (fixed: discord.js v14 upgrade, @types/express, @testing-library/dom, graphology-types, @storybook/react)
+- [ ] **Lint** — 74 errors deferred to Phase 33 open items
+- [ ] **Security** — 14 vulns remaining; minimatch (dev-only, blocked by typescript-eslint ESLint-v10 compat) and undici (blocked by discord.js upstream patch) — see dependency-watch.md
 
 ### Regression & Performance
 
@@ -182,4 +202,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Kali Security Toolkit MCP (ADR 089) + Agnostic QA Sub-Agent Team (ADR 090) implemented*
+*Last updated: 2026-02-21 — Phase 34 Final Inspection started; CI quality gate open items logged*

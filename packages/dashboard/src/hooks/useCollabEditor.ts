@@ -63,7 +63,6 @@ export function useCollabEditor(
     if (docId === null) {
       setText(initialText);
     }
-     
   }, [initialText, docId]);
 
   useEffect(() => {
