@@ -113,7 +113,7 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 - [x] **Routing-focused descriptions on all community skills** — All 11 community skill descriptions rewritten to lead with "Use when: … Don't use when: …" routing guidance. The skill catalog listing in `composeSoulPrompt` (`- **Name**: Description`) is now the routing signal it needs to be. *(Done — 2026-02-21)*
 
-- [ ] **`triggerPatterns` hygiene pass on community skills** — Most community skills have empty `triggerPatterns` arrays, falling back to name-keyword matching. Add 3–5 concrete regex patterns to each community skill covering the most common invocation phrases (e.g. `review.*code`, `\bpr\b`, `diff` for Code Reviewer). Improves the instruction-injection gate in `isSkillInContext()` independently of the catalog routing.
+- [x] **`triggerPatterns` hygiene pass on community skills** — All 11 bundled + 18 external community skills now have exactly 5 `triggerPatterns` each. The full data path (JSON → `syncFromCommunity` → `marketplace.skills` DB → `brainManager.createSkill`) was also wired end-to-end; `MarketplaceSkillSchema` and migration `032_marketplace_trigger_patterns.sql` added the missing DB column and schema field. *(Done — 2026-02-21)*
 
 **Schema additions (`packages/shared/src/types/soul.ts`):**
 

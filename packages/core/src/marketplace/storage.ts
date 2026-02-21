@@ -35,6 +35,7 @@ export class MarketplaceStorage extends PgBaseStorage {
       rating: data.rating ?? 0,
       instructions: data.instructions ?? '',
       tools: data.tools ?? [],
+      triggerPatterns: data.triggerPatterns ?? [],
       installed: data.installed ?? false,
       source: data.source ?? 'published',
       publishedAt: data.publishedAt ?? now,
@@ -42,8 +43,8 @@ export class MarketplaceStorage extends PgBaseStorage {
     };
     await this.execute(
       `INSERT INTO marketplace.skills
-        (id, name, description, version, author, author_info, category, tags, download_count, rating, instructions, tools, installed, source, published_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+        (id, name, description, version, author, author_info, category, tags, download_count, rating, instructions, tools, trigger_patterns, installed, source, published_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
       [
         id,
         skill.name,
@@ -57,6 +58,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         skill.rating,
         skill.instructions,
         JSON.stringify(skill.tools),
+        JSON.stringify(skill.triggerPatterns),
         skill.installed,
         skill.source,
         skill.publishedAt,
@@ -94,8 +96,9 @@ export class MarketplaceStorage extends PgBaseStorage {
         category = COALESCE($6, category),
         tags = COALESCE($7, tags),
         instructions = COALESCE($8, instructions),
-        updated_at = $9
-       WHERE id = $10`,
+        trigger_patterns = COALESCE($9, trigger_patterns),
+        updated_at = $10
+       WHERE id = $11`,
       [
         data.name ?? null,
         data.description ?? null,
@@ -105,6 +108,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         data.category ?? null,
         data.tags ? JSON.stringify(data.tags) : null,
         data.instructions ?? null,
+        data.triggerPatterns ? JSON.stringify(data.triggerPatterns) : null,
         now,
         id,
       ]
@@ -186,6 +190,7 @@ export class MarketplaceStorage extends PgBaseStorage {
       rating: (row.rating as number) ?? 0,
       instructions: (row.instructions as string) ?? '',
       tools: row.tools as MarketplaceSkill['tools'],
+      triggerPatterns: Array.isArray(row.trigger_patterns) ? (row.trigger_patterns as string[]) : [],
       installed: row.installed as boolean,
       source: ((row.source as string) ?? 'published') as MarketplaceSkill['source'],
       publishedAt: row.published_at as number,

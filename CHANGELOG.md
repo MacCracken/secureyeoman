@@ -4,6 +4,49 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## `triggerPatterns` Hygiene Pass — Full Pipeline Wiring (2026-02-21)
+
+`triggerPatterns` now flows end-to-end from community skill JSON files through the marketplace catalog into installed brain skills, and all 29 community skills (11 bundled + 18 external) ship with 5 concrete patterns each.
+
+### What changed
+
+**Pipeline wiring (was broken)**
+
+| Layer | Before | After |
+|-------|--------|-------|
+| `MarketplaceSkillSchema` | No `triggerPatterns` field | `z.array(z.string().max(500)).default([])` |
+| `marketplace.skills` DB | No column | `trigger_patterns JSONB DEFAULT '[]'` (migration 032) |
+| `marketplace/storage.ts` | Not written/read | INSERT, UPDATE, `rowToSkill` all handle `triggerPatterns` |
+| `syncFromCommunity()` | Field silently dropped | Mapped from JSON `triggerPatterns` array |
+| `install()` | Not forwarded | Passed to `SkillCreateSchema.parse()` |
+
+Migration `032_marketplace_trigger_patterns.sql` was added and registered in `manifest.ts` (which also backfilled the missing `030_group_chat` and `031_routing_rules` manifest entries).
+
+**Community skills — 5 patterns each**
+
+- All 11 bundled skills in `community-skills/skills/` updated
+- All 18 external skills in `secureyeoman-community-skills/skills/` updated (7 previously description-only skills also received routing descriptions)
+- Both `skill.schema.json` files updated to declare `triggerPatterns` as a valid property
+
+**How `isSkillInContext()` uses them**
+
+Each pattern is compiled as a case-insensitive `RegExp` and tested against the user message. A match injects the skill's instructions into the system prompt for that turn. If the array is empty, the engine falls back to substring matching on the skill name — accurate but coarser.
+
+### Files changed
+
+- `packages/shared/src/types/marketplace.ts` — `MarketplaceSkillSchema` + `triggerPatterns`
+- `packages/core/src/storage/migrations/032_marketplace_trigger_patterns.sql` (new)
+- `packages/core/src/storage/migrations/manifest.ts` — 030, 031, 032 entries
+- `packages/core/src/marketplace/storage.ts` — INSERT / UPDATE / rowToSkill
+- `packages/core/src/marketplace/manager.ts` — syncFromCommunity + install
+- `community-skills/schema/skill.schema.json` + all 11 bundled skill JSONs
+- `secureyeoman-community-skills/schema/skill.schema.json` + all 18 external skill JSONs
+- `community-skills/README.md` — `triggerPatterns` authoring guide
+- `docs/adr/063-community-skills-registry.md` — JSON schema contract updated
+- `docs/development/roadmap.md` — item marked done
+
+---
+
 ## Community Skill Routing Descriptions (2026-02-21)
 
 All 11 community skill descriptions rewritten with explicit routing guidance, inspired by [OpenAI's Skills + Shell Tips](https://developers.openai.com/blog/skills-shell-tips/) blog post. The core insight: Glean improved skill routing accuracy from 73% → 85% by changing descriptions from "what it does" to "Use when / Don't use when" contracts.

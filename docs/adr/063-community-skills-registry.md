@@ -70,8 +70,10 @@ POST /api/v1/marketplace/:id/install
 Community skills must satisfy [`schema/skill.schema.json`](https://github.com/MacCracken/secureyeoman-community-skills/blob/main/schema/skill.schema.json):
 
 - **Required**: `name` (string), `instructions` (string)
-- **Optional**: `description`, `version`, `author`, `category`, `tags`, `tools`
+- **Optional**: `description`, `version`, `author`, `category`, `tags`, `tools`, `triggerPatterns`
 - Validated client-side (editor) — server-side validation checks `name` is present and non-empty; invalid files are skipped with an error entry in the sync result
+
+`triggerPatterns` is an array of case-insensitive regex strings (up to 20, each up to 500 chars) stored in the `marketplace.skills.trigger_patterns` JSONB column (migration `032_marketplace_trigger_patterns.sql`) and propagated to `brain.skills.trigger_patterns` on install. `isSkillInContext()` in `soul/manager.ts` uses these patterns to gate skill instruction injection; falls back to name-keyword matching when the array is empty.
 
 ---
 

@@ -26,6 +26,7 @@ export const MarketplaceSkillSchema = z.object({
   rating: z.number().min(0).max(5).default(0),
   instructions: z.string().max(8000).default(''),
   tools: z.array(ToolSchema).default([]),
+  triggerPatterns: z.array(z.string().max(500)).default([]),
   installed: z.boolean().default(false),
   source: z.enum(['builtin', 'community', 'published']).default('published'),
   publishedAt: z.number().int().nonnegative(),
