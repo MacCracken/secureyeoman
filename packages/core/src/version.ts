@@ -9,4 +9,4 @@
  * Updated automatically by scripts/set-version.sh — do not edit by hand.
  */
 
-export const VERSION = '2026.2.19';
+export const VERSION = '2026.2.20';
