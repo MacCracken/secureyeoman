@@ -4,6 +4,30 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Hotfix — Group Chat schema-qualification bug (2026-02-21)
+
+Discovered during cold-start memory baseline check: migration 030 (`030_group_chat.sql`) and `GroupChatStorage` referenced bare table names `messages` and `integrations`, which do not exist in PostgreSQL's default `public` search path. The actual tables live in the `integration` schema. This caused a fatal `relation "messages" does not exist` error on any fresh database, preventing the server from starting.
+
+**Root cause:** Missing `integration.` schema prefix on all table references added in Phase 31 (Group Chat View, ADR 087).
+
+**Impact:** Cold-start on a fresh database; existing databases with migrations already applied were unaffected at runtime (the migration was already recorded as applied, so the broken SQL was never re-executed). The `GroupChatStorage` runtime queries would also fail on any unqualified `messages` reference in the existing schema.
+
+**Fix:**
+- All `messages` → `integration.messages` and `integrations` → `integration.integrations` in migration and storage class
+- `group_chat_pins` table moved to `integration` schema in the migration
+- `dist/migrations/030_group_chat.sql` updated alongside source
+
+**Tests added:** `packages/core/src/integrations/group-chat-storage.test.ts` — 16 test cases covering `listChannels()` and `listMessages()`, including schema-qualification assertions.
+
+**Files changed:**
+- `packages/core/src/storage/migrations/030_group_chat.sql` — schema-qualified table names
+- `packages/core/src/integrations/group-chat-storage.ts` — schema-qualified SQL; ADR reference corrected (086 → 087)
+- `packages/core/src/integrations/group-chat-storage.test.ts` (new)
+- `dist/migrations/030_group_chat.sql` — dist copy updated
+- `docs/adr/087-group-chat-view.md` — Amendment 1
+
+---
+
 ## Phase 34 Complete — Agnostic A2A Bridge + Auto-Start Toggle (2026-02-21)
 
 Closes the remaining two items from the Agnostic QA Sub-Agent Team future-enhancements list (ADR 090 Amendment 2).
