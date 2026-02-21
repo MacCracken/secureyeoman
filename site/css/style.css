@@ -1308,9 +1308,15 @@ img {
   border-top: 1px solid var(--border-color);
 }
 
+.footer-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+}
+
 .footer-grid {
   display: grid;
-  grid-template-columns: 1.5fr repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--space-12);
   margin-bottom: var(--space-16);
 }
