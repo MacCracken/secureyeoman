@@ -1501,6 +1501,14 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the cost calculator instance (from the active AI client).
+   */
+  getCostCalculator() {
+    this.ensureInitialized();
+    return this.aiClient?.getCostCalculator() ?? null;
+  }
+
+  /**
    * Get the dashboard manager instance
    */
   getDashboardManager(): DashboardManager | null {

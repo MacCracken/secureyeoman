@@ -15,6 +15,8 @@ import { uuidv7 } from '../utils/crypto.js';
 import { spawn } from 'node:child_process';
 import { SubAgentStorage, type DelegationRecord } from './storage.js';
 import { getDelegationTools } from './tools.js';
+import { ModelRouter } from '../ai/model-router.js';
+import type { CostCalculator } from '../ai/cost-calculator.js';
 import type {
   AgentProfile,
   AgentProfileCreate,
@@ -40,6 +42,8 @@ export interface SubAgentManagerDeps {
   securityConfig?: SecurityConfig;
   /** Optional extension manager for lifecycle hook emissions */
   extensionManager?: ExtensionManager;
+  /** Cost calculator injected for intelligent model routing. */
+  costCalculator?: CostCalculator;
 }
 
 interface ActiveDelegation {
@@ -58,11 +62,13 @@ export class SubAgentManager {
   private readonly config: DelegationConfig;
   private readonly deps: SubAgentManagerDeps;
   private readonly activeDelegations = new Map<string, ActiveDelegation>();
+  private readonly modelRouter: ModelRouter | null;
 
   constructor(config: DelegationConfig, deps: SubAgentManagerDeps) {
     this.config = config;
     this.deps = deps;
     this.storage = deps.storage;
+    this.modelRouter = deps.costCalculator ? new ModelRouter(deps.costCalculator) : null;
   }
 
   async initialize(): Promise<void> {
@@ -302,12 +308,42 @@ export class SubAgentManager {
         return await this.executeMcpBridgeDelegation(delegationId, profile, params, startTime, timeoutMs, signal);
       }
 
-      // Create fresh AIClient with profile's model override
+      // Resolve model: explicit override > intelligent router > profile default > system default
+      let resolvedModel: string | undefined;
+
+      if (params.modelOverride) {
+        // Swarm scheduler or caller already selected a model
+        resolvedModel = params.modelOverride;
+      } else if (this.modelRouter) {
+        const routingDecision = this.modelRouter.route(params.task, {
+          defaultModel: profile.defaultModel ?? undefined,
+          tokenBudget,
+          context: params.context,
+        });
+
+        if (routingDecision.selectedModel && routingDecision.confidence >= 0.5) {
+          resolvedModel = routingDecision.selectedModel;
+          this.deps.logger.debug('ModelRouter selected model for delegation', {
+            delegationId,
+            selectedModel: routingDecision.selectedModel,
+            tier: routingDecision.tier,
+            confidence: routingDecision.confidence,
+            taskType: routingDecision.taskProfile.taskType,
+            complexity: routingDecision.taskProfile.complexity,
+          });
+        } else {
+          resolvedModel = profile.defaultModel ?? undefined;
+        }
+      } else {
+        resolvedModel = profile.defaultModel ?? undefined;
+      }
+
+      // Create fresh AIClient with resolved model
       const aiConfig: AIClientConfig = {
         ...this.deps.aiClientConfig,
         model: {
           ...this.deps.aiClientConfig.model,
-          ...(profile.defaultModel ? { model: profile.defaultModel } : {}),
+          ...(resolvedModel ? { model: resolvedModel } : {}),
         },
       };
       const aiClient = new AIClient(aiConfig, this.deps.aiClientDeps);

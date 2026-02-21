@@ -5,6 +5,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
 import { getAvailableModelsAsync } from './cost-calculator.js';
+import { ModelRouter, profileTask } from './model-router.js';
 import { sendError } from '../utils/errors.js';
 
 export interface ModelRoutesOptions {
@@ -131,4 +132,71 @@ export function registerModelRoutes(app: FastifyInstance, opts: ModelRoutesOptio
       return sendError(reply, 500, message);
     }
   });
+
+  // ── Cost estimation (pre-execution) ─────────────────────────────────────────
+
+  app.post(
+    '/api/v1/model/estimate-cost',
+    async (
+      request: FastifyRequest<{
+        Body: {
+          task: string;
+          context?: string;
+          tokenBudget?: number;
+          roleCount?: number;
+          allowedModels?: string[];
+        };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const { task, context, tokenBudget = 50000, roleCount = 1, allowedModels = [] } = request.body;
+
+      if (!task || typeof task !== 'string') {
+        return sendError(reply, 400, 'task is required and must be a string');
+      }
+
+      try {
+        const costOptimizer = secureYeoman.getCostOptimizer();
+        if (!costOptimizer) {
+          return sendError(reply, 503, 'Cost calculator not available');
+        }
+
+        const costCalculator = secureYeoman.getCostCalculator();
+        if (!costCalculator) {
+          return sendError(reply, 503, 'Cost calculator not available');
+        }
+
+        const router = new ModelRouter(costCalculator);
+        const decision = router.route(task, {
+          allowedModels,
+          tokenBudget,
+          context,
+        });
+
+        const taskProfile = profileTask(task, context);
+        const perRoleCost = decision.estimatedCostUsd;
+        const totalEstimatedCost = perRoleCost * roleCount;
+
+        return {
+          task: { type: taskProfile.taskType, complexity: taskProfile.complexity },
+          selectedModel: decision.selectedModel,
+          selectedProvider: decision.selectedProvider,
+          tier: decision.tier,
+          confidence: decision.confidence,
+          estimatedCostUsd: totalEstimatedCost,
+          estimatedCostPerRoleUsd: perRoleCost,
+          roleCount,
+          cheaperAlternative: decision.cheaperAlternative
+            ? {
+                ...decision.cheaperAlternative,
+                estimatedTotalCostUsd: decision.cheaperAlternative.estimatedCostUsd * roleCount,
+              }
+            : null,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        return sendError(reply, 500, message);
+      }
+    }
+  );
 }
