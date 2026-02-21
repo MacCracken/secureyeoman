@@ -65,11 +65,9 @@
 
 Full-system quality pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.
 
-### Bug Hunt
-- [ ] **Single binary smoke test** — Build all Tier 1 + Tier 2 targets; run `--version`, `health --json`, `config validate --json` against each
-- [x] **Docker cold-start development** — `docker compose --profile up` with empty volumes; migrations run, default workspace created, healthcheck passes
-- [x] **Docker cold-start production** — `docker compose up` (no profile: postgres + core only) with empty volumes; all 30 migrations applied, default workspace created, `health --json` returns `{"status":"ok"}` with `database: true` and `auditChain: true`
-- [x] **Helm Checks** — Pre-install/pre-upgrade Job hook (`secureyeoman migrate`) added; Postgres advisory lock in `runner.ts`; three chart bugs fixed (`migrate.ts` wrong config path, missing secrets, missing `SECUREYEOMAN_LOG_FORMAT`); kind cluster deploy verified: 30 migrations applied, core pod healthy, rolling restart fast-path confirmed
+### Manual Testing
+
+*Add observed bugs here as they are found during manual testing; mark fixed when resolved.*
 
 ## Phase 26: Final Inspection
 
@@ -159,4 +157,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-20
+*Last updated: 2026-02-21

@@ -60,22 +60,7 @@ import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
 import { registerBrowserRoutes } from '../browser/browser-routes.js';
 import { formatPrometheusMetrics } from './prometheus.js';
 import { httpStatusName, sendError } from '../utils/errors.js';
-
-/** Read version from the closest package.json (core → root). */
-function getPackageVersion(): string {
-  const __dirname = dirname(fileURLToPath(import.meta.url));
-  for (const rel of ['../../package.json', '../../../../package.json']) {
-    const p = resolve(__dirname, rel);
-    if (existsSync(p)) {
-      try {
-        return JSON.parse(readFileSync(p, 'utf-8')).version ?? '0.0.0';
-      } catch {
-        /* fall through */
-      }
-    }
-  }
-  return '0.0.0';
-}
+import { VERSION } from '../version.js';
 
 /**
  * Check if an IP address belongs to a private/loopback range.
@@ -651,7 +636,7 @@ export class GatewayServer {
       const state = this.secureYeoman.getState();
       return {
         status: state.healthy ? 'ok' : 'error',
-        version: getPackageVersion(),
+        version: VERSION,
         uptime: state.startedAt ? Date.now() - state.startedAt : 0,
         checks: {
           database: true,

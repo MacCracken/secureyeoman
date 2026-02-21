@@ -94,6 +94,51 @@ unusable without a YAML config override.
 **Fix:** Added `SECUREYEOMAN_LOG_FORMAT` environment variable to `config/loader.ts`
 (values: `json` | `pretty`). The `Dockerfile` now sets `ENV SECUREYEOMAN_LOG_FORMAT=json`.
 
+## Phase 25 Corrections — Single Binary Smoke Test (2026-02-21)
+
+Three additional bugs uncovered by the `scripts/smoke-test-binary.sh` smoke test:
+
+### Bug 5 — `start.ts`: `--version` hardcoded as `v1.5.1`
+
+`secureyeoman --version` and the startup banner both emitted the stale hardcoded
+string `v1.5.1` regardless of the release version. The `getPackageVersion()` helper
+in `server.ts` read `package.json` from a relative path that does not exist inside a
+Bun-compiled binary (virtual FS `/$bunfs/`), silently returning `'0.0.0'` for every
+`/health` response.
+
+**Fix:** Added `packages/core/src/version.ts` (constant `VERSION = '2026.2.19'`).
+`start.ts` and `server.ts` import this constant. `scripts/set-version.sh` now updates
+the constant alongside `package.json` files. `getPackageVersion()` removed.
+
+### Bug 6 — `build-binary.sh`: Tier 2 lite builds missing `--external` flags
+
+The Tier 2 `bun build --compile` step did not pass `--external playwright`,
+`--external playwright-core`, `--external electron`, or `--external chromium-bidi`.
+`playwright-core` is a transitive dependency; Bun attempted to bundle it and failed
+with `Could not resolve: "electron"`. Tier 1 already excluded these.
+
+**Fix:** Added the same four `--external` flags to both Tier 2 build targets.
+
+### Bug 7 — Smoke test: audit chain key conflict on repeated runs
+
+Rerunning the smoke test against the same PostgreSQL database failed with
+`Audit chain integrity compromised: last entry signature invalid` because the previous
+run had left audit entries signed with a different dummy key.
+
+**Fix:** `scripts/smoke-test-binary.sh` now creates a uniquely-named temporary
+database (`sy_smoke_<pid>_<epoch>`) per binary test and drops it on exit, ensuring
+a clean audit chain on every run.
+
+### Smoke Test Verified (2026-02-21)
+
+All six runnable checks pass on `x86_64 Linux` with Bun 1.3.9:
+
+| Binary | `--version` | `config validate` | `health --json` |
+|---|---|---|---|
+| `secureyeoman-linux-x64` (Tier 1) | ✓ `v2026.2.19` | ✓ `valid=true` | ✓ `status=ok` |
+| `secureyeoman-lite-linux-x64` (Tier 2) | ✓ `v2026.2.19` | ✓ `valid=true` | ✓ `status=ok` |
+| `*-linux-arm64`, `*-darwin-arm64` | skipped (cross-arch/OS) | — | — |
+
 ## Files Changed
 - `packages/mcp/src/cli.ts` — export runMcpServer()
 - `packages/core/src/cli/commands/mcp-server.ts` — NEW
@@ -111,3 +156,10 @@ unusable without a YAML config override.
 - *(Phase 25)* `packages/core/src/logging/logger.ts` — JSON stdout bypasses worker-thread transport
 - *(Phase 25)* `packages/core/src/config/loader.ts` — `SECUREYEOMAN_LOG_FORMAT` env-var support
 - *(Phase 25)* `Dockerfile` — `ENV SECUREYEOMAN_LOG_FORMAT=json`
+- *(Phase 25)* `packages/core/src/version.ts` — NEW; `VERSION` constant for compiled binaries
+- *(Phase 25)* `packages/core/src/cli/commands/start.ts` — import `VERSION`; remove hardcoded `v1.5.1`
+- *(Phase 25)* `packages/core/src/gateway/server.ts` — import `VERSION`; remove `getPackageVersion()`
+- *(Phase 25)* `scripts/set-version.sh` — also updates `version.ts` constant
+- *(Phase 25)* `scripts/smoke-test-binary.sh` — NEW; end-to-end binary smoke test
+- *(Phase 25)* `scripts/build-binary.sh` — Tier 2 builds now include `--external` playwright flags
+- *(Phase 25)* `.github/workflows/release-binary.yml` — postgres service + smoke test step added

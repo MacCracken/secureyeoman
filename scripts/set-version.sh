@@ -26,4 +26,16 @@ do
   fi
 done
 
+# Update the compiled-binary version constant
+VERSION_TS="$ROOT/packages/core/src/version.ts"
+if [ -f "$VERSION_TS" ]; then
+  node -e "
+    const fs = require('fs');
+    let content = fs.readFileSync('$VERSION_TS', 'utf-8');
+    content = content.replace(/export const VERSION = '[^']*';/, \"export const VERSION = '$VERSION';\");
+    fs.writeFileSync('$VERSION_TS', content);
+  "
+  echo "  updated packages/core/src/version.ts"
+fi
+
 echo "All packages set to $VERSION"
