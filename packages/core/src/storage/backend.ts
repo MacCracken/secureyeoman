@@ -28,7 +28,7 @@ export function resolveBackend(configBackend = 'auto'): BackendResolutionResult 
   }
 
   // auto: pick PG if DATABASE_URL is available
-  if (process.env['DATABASE_URL'] || process.env['POSTGRES_URL']) {
+  if (process.env.DATABASE_URL || process.env.POSTGRES_URL) {
     return { backend: 'pg', reason: 'DATABASE_URL detected' };
   }
 

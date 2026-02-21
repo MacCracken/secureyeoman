@@ -115,7 +115,7 @@ export class WebhookTransformer {
       if (rule.matchEvent && event && rule.matchEvent !== event) continue;
 
       // ── Extract fields ─────────────────────────────────────
-      for (const extract of rule.extractRules as ExtractRule[]) {
+      for (const extract of rule.extractRules) {
         const value = evaluatePath(payload, extract.path) ?? extract.default;
         if (value !== undefined) {
           extractedVars[extract.field] = value;

@@ -200,7 +200,7 @@ describe('SSO Routes — authorization flow', () => {
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toContain('sso_error');
     // Parse the sso_error query param (handles + encoding in query strings)
-    const errParam = new URL(res.headers.location as string).searchParams.get('sso_error');
+    const errParam = new URL(res.headers.location!).searchParams.get('sso_error');
     expect(errParam).toContain('Missing state parameter');
   });
 
@@ -217,7 +217,7 @@ describe('SSO Routes — authorization flow', () => {
     });
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toContain('sso_error');
-    const errParam = new URL(res.headers.location as string).searchParams.get('sso_error');
+    const errParam = new URL(res.headers.location!).searchParams.get('sso_error');
     expect(errParam).toContain('access_denied');
   });
 
@@ -231,7 +231,7 @@ describe('SSO Routes — authorization flow', () => {
       headers: { host: 'localhost' },
     });
     expect(res.statusCode).toBe(302);
-    const errParam = new URL(res.headers.location as string).searchParams.get('sso_error');
+    const errParam = new URL(res.headers.location!).searchParams.get('sso_error');
     expect(errParam).toContain('expired');
   });
 });

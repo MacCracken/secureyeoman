@@ -17,7 +17,7 @@ function ipv4InRange(ip: string, cidrBase: string, prefixLen: number): boolean {
   return (toNum(ip) & mask) === (toNum(cidrBase) & mask);
 }
 
-const PRIVATE_V4_RANGES: Array<[string, number]> = [
+const PRIVATE_V4_RANGES: [string, number][] = [
   ['10.0.0.0', 8],
   ['172.16.0.0', 12],
   ['192.168.0.0', 16],

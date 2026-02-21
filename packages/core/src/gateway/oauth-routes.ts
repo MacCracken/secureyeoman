@@ -475,7 +475,7 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
               userId: userInfo.id,
               accessToken: tokens.accessToken,
               refreshToken: tokens.refreshToken,
-              scopes: OAUTH_PROVIDERS['gmail']?.scopes.join(' ') ?? '',
+              scopes: OAUTH_PROVIDERS.gmail?.scopes.join(' ') ?? '',
               expiresIn: 3600,
             });
           }

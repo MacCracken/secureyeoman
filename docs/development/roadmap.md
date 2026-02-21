@@ -63,6 +63,10 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 - [ ] Find and Repair
 
+### Additional Small Features for Improvement
+
+- [ ] **Per-Personality Active Hours** *(Brain)* — Each personality can define a schedule of active hours during which it responds to heartbeats and incoming triggers. Outside those windows the personality's body is at rest; the Brain enforces the schedule, suppressing task execution and proactive behavior until the window reopens. Configurable per-personality in the Brain settings panel.
+
 ## Phase 34: Final Inspection
 
 **Status**: Pending

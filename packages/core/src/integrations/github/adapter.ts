@@ -240,8 +240,8 @@ export class GitHubIntegration implements WebhookIntegration {
 
       // Code search trigger: @friday search: <query>
       if (/^@friday\s+search:/i.test(comment.body ?? '')) {
-        unified.metadata!.isCodeSearchTrigger = true;
-        unified.metadata!.searchQuery = (comment.body ?? '')
+        unified.metadata.isCodeSearchTrigger = true;
+        unified.metadata.searchQuery = (comment.body ?? '')
           .replace(/^@friday\s+search:/i, '')
           .trim();
       }

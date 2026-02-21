@@ -16,10 +16,10 @@ import * as poolModule from '../storage/pg-pool.js';
 function makePool(rows: Record<string, unknown>[] = [], rowCount = 0) {
   return {
     query: vi.fn().mockImplementation((sql: string) => {
-      if (/COUNT/.test(sql)) {
+      if (sql.includes('COUNT')) {
         return Promise.resolve({ rows: [{ count: String(rows.length) }] });
       }
-      if (/INSERT/.test(sql)) {
+      if (sql.includes('INSERT')) {
         return Promise.resolve({ rows: [], rowCount: 1 });
       }
       return Promise.resolve({ rows, rowCount });

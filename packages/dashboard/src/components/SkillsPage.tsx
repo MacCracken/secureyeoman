@@ -100,7 +100,7 @@ export function SkillsPage() {
 
       <div className="flex gap-1 border-b border-border">
         <button
-          onClick={() => setActiveTab('my-skills')}
+          onClick={() => { setActiveTab('my-skills'); }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'my-skills'
               ? 'border-primary text-primary'
@@ -111,7 +111,7 @@ export function SkillsPage() {
           Personal
         </button>
         <button
-          onClick={() => setActiveTab('marketplace')}
+          onClick={() => { setActiveTab('marketplace'); }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'marketplace'
               ? 'border-primary text-primary'
@@ -122,7 +122,7 @@ export function SkillsPage() {
           Marketplace
         </button>
         <button
-          onClick={() => setActiveTab('community')}
+          onClick={() => { setActiveTab('community'); }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'community'
               ? 'border-primary text-primary'
@@ -133,7 +133,7 @@ export function SkillsPage() {
           Community
         </button>
         <button
-          onClick={() => setActiveTab('installed')}
+          onClick={() => { setActiveTab('installed'); }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
             activeTab === 'installed'
               ? 'border-primary text-primary'
@@ -322,7 +322,7 @@ function MySkillsTab() {
         </button>
         <select
           value={filterStatus}
-          onChange={(e) => setFilterStatus(e.target.value)}
+          onChange={(e) => { setFilterStatus(e.target.value); }}
           className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
         >
           <option value="">All Status</option>
@@ -332,7 +332,7 @@ function MySkillsTab() {
         </select>
         <select
           value={filterSource}
-          onChange={(e) => setFilterSource(e.target.value)}
+          onChange={(e) => { setFilterSource(e.target.value); }}
           className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
         >
           <option value="">All Sources</option>
@@ -355,19 +355,19 @@ function MySkillsTab() {
               className="bg-background border rounded-lg px-3 py-2 text-sm"
               placeholder="Skill name"
               value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
+              onChange={(e) => { setForm({ ...form, name: e.target.value }); }}
             />
             <input
               className="bg-background border rounded-lg px-3 py-2 text-sm"
               placeholder="Description"
               value={form.description}
-              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              onChange={(e) => { setForm({ ...form, description: e.target.value }); }}
             />
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <select
                 value={form.personalityId ?? ''}
-                onChange={(e) => setForm({ ...form, personalityId: e.target.value || null })}
+                onChange={(e) => { setForm({ ...form, personalityId: e.target.value || null }); }}
                 className="w-full bg-background border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
               >
                 <option value="">Global (All Personalities)</option>
@@ -413,7 +413,7 @@ function MySkillsTab() {
                 className="bg-background border rounded-lg px-3 py-2 text-sm flex-1"
                 placeholder="Trigger patterns (e.g., /mycommand)"
                 value={triggerInput}
-                onChange={(e) => setTriggerInput(e.target.value)}
+                onChange={(e) => { setTriggerInput(e.target.value); }}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -430,7 +430,7 @@ function MySkillsTab() {
                 {(form.triggerPatterns || []).map((p, i) => (
                   <span key={i} className="badge flex items-center gap-1">
                     {p}
-                    <button onClick={() => handleRemoveTrigger(i)}>
+                    <button onClick={() => { handleRemoveTrigger(i); }}>
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -456,7 +456,7 @@ function MySkillsTab() {
                   'Save'
                 )}
               </button>
-              <button onClick={() => setEditing(null)} className="btn btn-ghost">
+              <button onClick={() => { setEditing(null); }} className="btn btn-ghost">
                 Cancel
               </button>
             </div>
@@ -515,14 +515,14 @@ function MySkillsTab() {
                   {skill.status === 'pending_approval' && (
                     <>
                       <button
-                        onClick={() => approveMut.mutate(skill.id)}
+                        onClick={() => { approveMut.mutate(skill.id); }}
                         className="btn btn-ghost p-2"
                         title="Approve"
                       >
                         <ThumbsUp className="w-4 h-4 text-success" />
                       </button>
                       <button
-                        onClick={() => rejectMut.mutate(skill.id)}
+                        onClick={() => { rejectMut.mutate(skill.id); }}
                         className="btn btn-ghost p-2"
                         title="Reject"
                       >
@@ -549,10 +549,10 @@ function MySkillsTab() {
                       )}
                     </button>
                   )}
-                  <button onClick={() => startEdit(skill)} className="btn btn-ghost p-2">
+                  <button onClick={() => { startEdit(skill); }} className="btn btn-ghost p-2">
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => setDeleteTarget(skill)} className="btn btn-ghost p-2">
+                  <button onClick={() => { setDeleteTarget(skill); }} className="btn btn-ghost p-2">
                     <Trash2 className="w-4 h-4 text-destructive" />
                   </button>
                 </div>
@@ -572,7 +572,7 @@ function MySkillsTab() {
           deleteMut.mutate(deleteTarget!.id);
           setDeleteTarget(null);
         }}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => { setDeleteTarget(null); }}
       />
     </div>
   );
@@ -645,7 +645,7 @@ function InstalledSkillsTab() {
         <div className="flex items-center gap-1">
           <button
             onClick={() =>
-              skill.enabled ? disableMut.mutate(skill.id) : enableMut.mutate(skill.id)
+              { skill.enabled ? disableMut.mutate(skill.id) : enableMut.mutate(skill.id); }
             }
             className="btn btn-ghost p-2"
             title={skill.enabled ? 'Disable' : 'Enable'}
@@ -656,7 +656,7 @@ function InstalledSkillsTab() {
               <ToggleLeft className="w-5 h-5 text-muted-foreground" />
             )}
           </button>
-          <button onClick={() => setDeleteTarget(skill)} className="btn btn-ghost p-2">
+          <button onClick={() => { setDeleteTarget(skill); }} className="btn btn-ghost p-2">
             <Trash2 className="w-4 h-4 text-destructive" />
           </button>
         </div>
@@ -672,7 +672,7 @@ function InstalledSkillsTab() {
           <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <select
             value={filterPersonalityId}
-            onChange={(e) => setFilterPersonalityId(e.target.value)}
+            onChange={(e) => { setFilterPersonalityId(e.target.value); }}
             className="bg-card border border-border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
           >
             <option value="">All Personalities</option>
@@ -759,7 +759,7 @@ function InstalledSkillsTab() {
           deleteMut.mutate(deleteTarget!.id);
           setDeleteTarget(null);
         }}
-        onCancel={() => setDeleteTarget(null)}
+        onCancel={() => { setDeleteTarget(null); }}
       />
     </div>
   );
@@ -860,7 +860,7 @@ function PersonalitySelector({
         <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
         <select
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(e) => { onChange(e.target.value); }}
           className="bg-card border border-border rounded-lg pl-10 pr-8 py-2.5 text-sm min-w-[200px] focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
         >
           {!required && <option value="">Global (All Personalities)</option>}
@@ -929,7 +929,7 @@ function MarketplaceTab() {
       invalidate();
       setInstallingId(null);
     },
-    onError: () => setInstallingId(null),
+    onError: () => { setInstallingId(null); },
   });
 
   const uninstallMut = useMutation({
@@ -938,7 +938,7 @@ function MarketplaceTab() {
       invalidate();
       setUninstallingId(null);
     },
-    onError: () => setUninstallingId(null),
+    onError: () => { setUninstallingId(null); },
   });
 
   // Separate builtin and published, exclude community
@@ -981,7 +981,7 @@ function MarketplaceTab() {
             className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             placeholder="Search skills by name, description, or author..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); }}
           />
         </div>
         <PersonalitySelector
@@ -1101,7 +1101,7 @@ function CommunityTab() {
       invalidate();
       setInstallingId(null);
     },
-    onError: () => setInstallingId(null),
+    onError: () => { setInstallingId(null); },
   });
 
   const uninstallMut = useMutation({
@@ -1110,7 +1110,7 @@ function CommunityTab() {
       invalidate();
       setUninstallingId(null);
     },
-    onError: () => setUninstallingId(null),
+    onError: () => { setUninstallingId(null); },
   });
 
   const skills = data?.skills ?? [];
@@ -1130,7 +1130,7 @@ function CommunityTab() {
             className="w-full bg-card border border-border rounded-lg pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             placeholder="Search community skills..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(e) => { setQuery(e.target.value); }}
           />
         </div>
 

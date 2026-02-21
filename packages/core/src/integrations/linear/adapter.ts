@@ -65,7 +65,7 @@ export class LinearIntegration implements WebhookIntegration {
     metadata?: Record<string, unknown>
   ): Promise<string> {
     if (!this.linearConfig?.apiKey) return 'linear_noop';
-    const teamId = (metadata?.['teamId'] as string | undefined) ?? this.linearConfig.teamId ?? '';
+    const teamId = (metadata?.teamId as string | undefined) ?? this.linearConfig.teamId ?? '';
     if (!teamId) return 'linear_noop_no_team';
     try {
       const mutation = `
@@ -122,17 +122,17 @@ export class LinearIntegration implements WebhookIntegration {
     try {
       const event = JSON.parse(payload) as LinearWebhookPayload;
       const data = event.data;
-      const id = (data['id'] as string | undefined) ?? `linear_${Date.now()}`;
-      const title = (data['title'] as string | undefined) ?? '';
-      const identifier = (data['identifier'] as string | undefined) ?? '';
-      const state = (data['state'] as Record<string, unknown> | undefined)?.['name'] as
+      const id = (data.id as string | undefined) ?? `linear_${Date.now()}`;
+      const title = (data.title as string | undefined) ?? '';
+      const identifier = (data.identifier as string | undefined) ?? '';
+      const state = (data.state as Record<string, unknown> | undefined)?.name as
         | string
         | undefined;
-      const assignee = (data['assignee'] as Record<string, unknown> | undefined)?.['name'] as
+      const assignee = (data.assignee as Record<string, unknown> | undefined)?.name as
         | string
         | undefined;
-      const commentBody = (data['body'] as string | undefined) ?? '';
-      const userId = (data['userId'] as string | undefined) ?? event.organizationId ?? 'linear';
+      const commentBody = (data.body as string | undefined) ?? '';
+      const userId = (data.userId as string | undefined) ?? event.organizationId ?? 'linear';
 
       let text: string;
       switch (event.type) {

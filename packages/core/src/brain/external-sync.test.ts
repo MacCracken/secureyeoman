@@ -208,7 +208,7 @@ describe('ExternalBrainSync', () => {
     it('includes frontmatter in memory output', async () => {
       mockBrain.recall.mockResolvedValueOnce([makeMemory('m1')]);
       await sync.sync();
-      const content = (mockWriteFileSync.mock.calls[0] as any[])[1] as string;
+      const content = (mockWriteFileSync.mock.calls[0]!)[1] as string;
       expect(content).toContain('---');
       expect(content).toContain('type: semantic');
     });

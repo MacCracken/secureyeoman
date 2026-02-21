@@ -264,10 +264,10 @@ export class GoogleCalendarIntegration implements Integration {
     }
 
     const clientId =
-      process.env['GOOGLE_CALENDAR_OAUTH_CLIENT_ID'] || process.env['GOOGLE_OAUTH_CLIENT_ID'];
+      process.env.GOOGLE_CALENDAR_OAUTH_CLIENT_ID || process.env.GOOGLE_OAUTH_CLIENT_ID;
     const clientSecret =
-      process.env['GOOGLE_CALENDAR_OAUTH_CLIENT_SECRET'] ||
-      process.env['GOOGLE_OAUTH_CLIENT_SECRET'];
+      process.env.GOOGLE_CALENDAR_OAUTH_CLIENT_SECRET ||
+      process.env.GOOGLE_OAUTH_CLIENT_SECRET;
 
     if (!clientId || !clientSecret) {
       this.logger?.warn('Cannot refresh Google Calendar token: missing OAuth credentials');

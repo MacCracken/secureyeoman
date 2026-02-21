@@ -150,7 +150,7 @@ export class AirtableIntegration implements Integration {
         if (this.seenRecordIds.has(record.id)) continue;
         this.seenRecordIds.add(record.id);
 
-        const name = String(record.fields['Name'] ?? record.id);
+        const name = String(record.fields.Name ?? record.id);
         const unified: UnifiedMessage = {
           id: `airtable_${record.id}_${Date.now()}`,
           integrationId: this.config!.id,

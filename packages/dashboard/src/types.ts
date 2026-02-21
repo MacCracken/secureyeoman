@@ -141,7 +141,7 @@ export interface Personality {
   voice: string;
   preferredLanguage: string;
   defaultModel: DefaultModel | null;
-  modelFallbacks: Array<{ provider: string; model: string }>;
+  modelFallbacks: { provider: string; model: string }[];
   includeArchetypes: boolean;
   isActive: boolean;
   body?: {
@@ -199,7 +199,7 @@ export interface PersonalityCreate {
   voice?: string;
   preferredLanguage?: string;
   defaultModel?: DefaultModel | null;
-  modelFallbacks?: Array<{ provider: string; model: string }>;
+  modelFallbacks?: { provider: string; model: string }[];
   includeArchetypes?: boolean;
   body?: {
     enabled?: boolean;

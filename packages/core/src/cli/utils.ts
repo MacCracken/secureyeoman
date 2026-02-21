@@ -16,7 +16,7 @@ const ANSI_CYAN = '\x1b[36m';
 
 /** Returns true when the stream supports ANSI colors and NO_COLOR is unset. */
 function isTTYStream(stream: NodeJS.WritableStream): boolean {
-  return !process.env['NO_COLOR'] && !!(stream as NodeJS.WriteStream).isTTY;
+  return !process.env.NO_COLOR && !!(stream as NodeJS.WriteStream).isTTY;
 }
 
 /**

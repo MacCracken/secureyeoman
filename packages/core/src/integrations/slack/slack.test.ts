@@ -285,7 +285,7 @@ describe('SlackIntegration', () => {
   it('/friday-modal command should call client.views.open', async () => {
     await integration.init(makeConfig(), makeDeps());
 
-    const handler = commandHandlers['/friday-modal'] as Function;
+    const handler = commandHandlers['/friday-modal']!;
     const ack = vi.fn().mockResolvedValue(undefined);
     const fakeCommand = {
       trigger_id: 'trig_123',
@@ -308,7 +308,7 @@ describe('SlackIntegration', () => {
     const onMessage = vi.fn().mockResolvedValue(undefined);
     await integration.init(makeConfig(), makeDeps(onMessage));
 
-    const viewHandler = viewHandlers['friday_modal'] as Function;
+    const viewHandler = viewHandlers['friday_modal']!;
     expect(viewHandler).toBeDefined();
 
     const ack = vi.fn().mockResolvedValue(undefined);

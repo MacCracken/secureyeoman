@@ -186,7 +186,7 @@ describe('GitHubIntegration', () => {
     const onMessage = vi.fn().mockResolvedValue(undefined);
     await integration.init(makeConfig(), makeDeps(onMessage));
 
-    const handler = webhookHandlers['pull_request_review'] as Function;
+    const handler = webhookHandlers['pull_request_review']!;
     expect(handler).toBeDefined();
 
     await handler({
@@ -225,7 +225,7 @@ describe('GitHubIntegration', () => {
     const onMessage = vi.fn().mockResolvedValue(undefined);
     await integration.init(makeConfig(), makeDeps(onMessage));
 
-    const handler = webhookHandlers['pull_request_review'] as Function;
+    const handler = webhookHandlers['pull_request_review']!;
 
     await handler({
       id: 'evt_2',
@@ -248,7 +248,7 @@ describe('GitHubIntegration', () => {
     const onMessage = vi.fn().mockResolvedValue(undefined);
     await integration.init(makeConfig(), makeDeps(onMessage));
 
-    const handler = webhookHandlers['pull_request_review_comment'] as Function;
+    const handler = webhookHandlers['pull_request_review_comment']!;
     expect(handler).toBeDefined();
 
     await handler({
@@ -331,7 +331,7 @@ describe('GitHubIntegration', () => {
       makeDeps(onMessage)
     );
 
-    const handler = webhookHandlers['issues'] as Function;
+    const handler = webhookHandlers['issues']!;
 
     await handler({
       id: 'evt_4',
@@ -378,7 +378,7 @@ describe('GitHubIntegration', () => {
       makeDeps(onMessage)
     );
 
-    const handler = webhookHandlers['issues'] as Function;
+    const handler = webhookHandlers['issues']!;
 
     await handler({
       id: 'evt_5',
@@ -413,7 +413,7 @@ describe('GitHubIntegration', () => {
       makeDeps()
     );
 
-    const handler = webhookHandlers['issues'] as Function;
+    const handler = webhookHandlers['issues']!;
 
     await handler({
       id: 'evt_6',
@@ -439,7 +439,7 @@ describe('GitHubIntegration', () => {
   it('should not auto-label when autoLabelKeywords is not configured', async () => {
     await integration.init(makeConfig(), makeDeps());
 
-    const handler = webhookHandlers['issues'] as Function;
+    const handler = webhookHandlers['issues']!;
 
     await handler({
       id: 'evt_7',
@@ -468,7 +468,7 @@ describe('GitHubIntegration', () => {
     const onMessage = vi.fn().mockResolvedValue(undefined);
     await integration.init(makeConfig(), makeDeps(onMessage));
 
-    const handler = webhookHandlers['issue_comment'] as Function;
+    const handler = webhookHandlers['issue_comment']!;
 
     await handler({
       id: 'evt_8',
@@ -496,7 +496,7 @@ describe('GitHubIntegration', () => {
     const onMessage = vi.fn().mockResolvedValue(undefined);
     await integration.init(makeConfig(), makeDeps(onMessage));
 
-    const handler = webhookHandlers['issue_comment'] as Function;
+    const handler = webhookHandlers['issue_comment']!;
 
     await handler({
       id: 'evt_9',
@@ -523,7 +523,7 @@ describe('GitHubIntegration', () => {
     const onMessage = vi.fn().mockResolvedValue(undefined);
     await integration.init(makeConfig(), makeDeps(onMessage));
 
-    const handler = webhookHandlers['issue_comment'] as Function;
+    const handler = webhookHandlers['issue_comment']!;
 
     await handler({
       id: 'evt_10',

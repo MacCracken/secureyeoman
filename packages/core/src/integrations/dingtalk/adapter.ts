@@ -68,13 +68,13 @@ export class DingTalkIntegration implements WebhookIntegration {
   ): Promise<string> {
     // Use sessionWebhook from metadata if available (reply in-conversation)
     const webhookUrl =
-      (metadata?.['sessionWebhook'] as string | undefined) ??
+      (metadata?.sessionWebhook as string | undefined) ??
       chatId ??
       this.dtConfig?.outboundWebhookUrl;
     if (!webhookUrl?.startsWith('http'))
       throw new Error('No DingTalk outbound webhook URL configured');
 
-    const isMarkdown = metadata?.['markdown'] === true;
+    const isMarkdown = metadata?.markdown === true;
     const body = isMarkdown
       ? { msgtype: 'markdown', markdown: { title: text.slice(0, 20), text } }
       : { msgtype: 'text', text: { content: text } };

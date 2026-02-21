@@ -80,8 +80,8 @@ export class StripeIntegration implements WebhookIntegration {
     try {
       // Stripe-Signature header: t=<timestamp>,v1=<sig>
       const parts = Object.fromEntries(signature.split(',').map((p) => p.split('=')));
-      const timestamp = parts['t'];
-      const expectedSig = parts['v1'];
+      const timestamp = parts.t;
+      const expectedSig = parts.v1;
       if (!timestamp || !expectedSig) return false;
       const signed = `${timestamp}.${payload}`;
       const computed = createHmac('sha256', this.stripeConfig.webhookSecret)
@@ -98,10 +98,10 @@ export class StripeIntegration implements WebhookIntegration {
     try {
       const event = JSON.parse(payload) as StripeEvent;
       const obj = event.data.object;
-      const id = (obj['id'] as string | undefined) ?? event.id;
-      const amount = obj['amount'] as number | undefined;
-      const currency = obj['currency'] as string | undefined;
-      const customer = (obj['customer'] as string | undefined) ?? '';
+      const id = (obj.id as string | undefined) ?? event.id;
+      const amount = obj.amount as number | undefined;
+      const currency = obj.currency as string | undefined;
+      const customer = (obj.customer as string | undefined) ?? '';
 
       let text: string;
       switch (event.type) {
@@ -109,13 +109,13 @@ export class StripeIntegration implements WebhookIntegration {
           text = `Payment succeeded: ${amount != null ? `${amount / 100} ${(currency ?? '').toUpperCase()}` : 'unknown amount'} (customer: ${customer || 'anonymous'})`;
           break;
         case 'payment_intent.payment_failed':
-          text = `Payment failed: ${(obj['last_payment_error'] as Record<string, string> | undefined)?.message ?? 'unknown error'} (customer: ${customer || 'anonymous'})`;
+          text = `Payment failed: ${(obj.last_payment_error as Record<string, string> | undefined)?.message ?? 'unknown error'} (customer: ${customer || 'anonymous'})`;
           break;
         case 'customer.created':
-          text = `New Stripe customer: ${(obj['email'] as string | undefined) ?? id}`;
+          text = `New Stripe customer: ${(obj.email as string | undefined) ?? id}`;
           break;
         case 'customer.deleted':
-          text = `Stripe customer deleted: ${(obj['email'] as string | undefined) ?? id}`;
+          text = `Stripe customer deleted: ${(obj.email as string | undefined) ?? id}`;
           break;
         case 'invoice.paid':
           text = `Invoice paid: ${amount != null ? `${amount / 100} ${(currency ?? '').toUpperCase()}` : 'unknown'} (customer: ${customer || 'anonymous'})`;

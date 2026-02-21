@@ -224,7 +224,7 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
                 >
                   <div className="flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      {STATUS_ICONS[run.status] ?? STATUS_ICONS['pending']}
+                      {STATUS_ICONS[run.status] ?? STATUS_ICONS.pending}
                       <span className="text-sm font-medium truncate">{run.templateName}</span>
                       <span
                         className={`text-xs px-1.5 py-0.5 rounded border ${STRATEGY_COLORS[run.strategy] ?? ''}`}
@@ -345,7 +345,7 @@ function RunDetail({ run, onCancel }: { run: SwarmRun; onCancel?: () => void }) 
                 key={m.id}
                 className="flex items-center gap-2 text-xs py-1 px-2 rounded bg-muted/30"
               >
-                {STATUS_ICONS[m.status] ?? STATUS_ICONS['pending']}
+                {STATUS_ICONS[m.status] ?? STATUS_ICONS.pending}
                 <span className="font-mono font-medium">{m.role}</span>
                 <span className="text-muted-foreground">→ {m.profileName}</span>
                 <span

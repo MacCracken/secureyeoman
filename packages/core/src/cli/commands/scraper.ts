@@ -63,7 +63,7 @@ Options:
           return 1;
         }
         const tools = result.data as {
-          tools: Array<{ name: string; description: string; inputSchema: object }>;
+          tools: { name: string; description: string; inputSchema: object }[];
         };
         if (json) {
           ctx.stdout.write(JSON.stringify(tools, null, 2) + '\n');
@@ -96,11 +96,11 @@ Options:
           return 0;
         }
         const data = result.data as {
-          servers?: Array<{ id: string; name: string; status: string; enabled: boolean }>;
+          servers?: { id: string; name: string; status: string; enabled: boolean }[];
         };
         const servers =
           data.servers ??
-          (result.data as Array<{ id: string; name: string; status: string; enabled: boolean }>);
+          (result.data as { id: string; name: string; status: string; enabled: boolean }[]);
         if (!servers || servers.length === 0) {
           ctx.stdout.write('No MCP servers registered.\n');
           return 0;

@@ -682,7 +682,7 @@ export class SecureYeoman {
       }
 
       // Wire up external plugin loader (INTEGRATION_PLUGIN_DIR env var)
-      const pluginDir = process.env['INTEGRATION_PLUGIN_DIR'];
+      const pluginDir = process.env.INTEGRATION_PLUGIN_DIR;
       if (pluginDir) {
         const pluginLoader = new PluginLoader({
           pluginDir,
@@ -795,9 +795,9 @@ export class SecureYeoman {
       this.marketplaceManager = new MarketplaceManager(this.marketplaceStorage, {
         logger: this.logger.child({ component: 'MarketplaceManager' }),
         brainManager: this.brainManager ?? undefined,
-        communityRepoPath: process.env['COMMUNITY_REPO_PATH'] ?? './community-skills',
+        communityRepoPath: process.env.COMMUNITY_REPO_PATH ?? './community-skills',
         allowCommunityGitFetch: this.config.security.allowCommunityGitFetch,
-        communityGitUrl: this.config.security.communityGitUrl ?? process.env['COMMUNITY_GIT_URL'],
+        communityGitUrl: this.config.security.communityGitUrl ?? process.env.COMMUNITY_GIT_URL,
       });
       await this.marketplaceManager.seedBuiltinSkills();
       // Wire marketplace into soul so skill deletion keeps installed state in sync
