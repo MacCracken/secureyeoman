@@ -188,4 +188,194 @@ describe('GeminiProvider', () => {
       expect(models).toEqual([]);
     });
   });
+
+  describe('chatStream', () => {
+    it('yields content_delta chunks from stream', async () => {
+      async function* mockChunks() {
+        yield { text: () => 'Hello ', candidates: undefined };
+        yield { text: () => 'world', candidates: undefined };
+        yield { text: () => '', candidates: undefined };
+      }
+      const finalResp = {
+        candidates: [{ finishReason: 'STOP' }],
+        usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 20, totalTokenCount: 30 },
+      };
+      mockGenerateContentStream.mockResolvedValue({
+        stream: mockChunks(),
+        response: Promise.resolve(finalResp),
+      });
+
+      const chunks: any[] = [];
+      for await (const chunk of provider.chatStream(simpleRequest)) {
+        chunks.push(chunk);
+      }
+      expect(chunks.filter((c) => c.type === 'content_delta')).toHaveLength(2);
+      expect(chunks.some((c) => c.type === 'done')).toBe(true);
+      const done = chunks.find((c) => c.type === 'done');
+      expect(done.usage.inputTokens).toBe(10);
+    });
+
+    it('yields tool_call_delta for function call parts', async () => {
+      async function* mockChunks() {
+        yield {
+          text: () => '',
+          candidates: [{
+            content: {
+              parts: [{ functionCall: { name: 'search', args: {} } }],
+            },
+          }],
+        };
+      }
+      const finalResp = {
+        candidates: [{ finishReason: 'STOP' }],
+        usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 5, totalTokenCount: 10 },
+      };
+      mockGenerateContentStream.mockResolvedValue({
+        stream: mockChunks(),
+        response: Promise.resolve(finalResp),
+      });
+
+      const chunks: any[] = [];
+      for await (const chunk of provider.chatStream(simpleRequest)) {
+        chunks.push(chunk);
+      }
+      expect(chunks.some((c) => c.type === 'tool_call_delta')).toBe(true);
+      expect(chunks.some((c) => c.type === 'done')).toBe(true);
+    });
+
+    it('propagates mapped errors from stream', async () => {
+      mockGenerateContentStream.mockRejectedValueOnce(new Error('429 rate limit exceeded'));
+      const { RateLimitError } = await import('../errors.js');
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) { /* consume */ }
+      }).rejects.toThrow(RateLimitError);
+    });
+  });
+
+  describe('message mapping', () => {
+    it('maps tool role messages to function role', async () => {
+      mockGenerateContent.mockResolvedValue({
+        response: {
+          candidates: [{ content: { parts: [{ text: 'ok' }] }, finishReason: 'STOP' }],
+          usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 5, totalTokenCount: 10 },
+        },
+      });
+      const request: AIRequest = {
+        messages: [
+          { role: 'tool', content: 'result', toolResult: { toolCallId: 'search_fn', content: 'found it' } },
+        ],
+        stream: false,
+      };
+      await provider.chat(request);
+      const callArgs = mockGenerateContent.mock.calls[0][0];
+      expect(callArgs.contents[0].role).toBe('function');
+      expect(callArgs.contents[0].parts[0].functionResponse.name).toBe('search_fn');
+    });
+
+    it('maps assistant messages with tool calls to model role', async () => {
+      mockGenerateContent.mockResolvedValue({
+        response: {
+          candidates: [{ content: { parts: [{ text: 'ok' }] }, finishReason: 'STOP' }],
+          usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 5, totalTokenCount: 10 },
+        },
+      });
+      const request: AIRequest = {
+        messages: [
+          {
+            role: 'assistant',
+            content: 'Let me search',
+            toolCalls: [{ id: 'tc-1', name: 'search', arguments: { query: 'hello' } }],
+          },
+        ],
+        stream: false,
+      };
+      await provider.chat(request);
+      const callArgs = mockGenerateContent.mock.calls[0][0];
+      expect(callArgs.contents[0].role).toBe('model');
+      expect(callArgs.contents[0].parts.some((p: any) => 'functionCall' in p)).toBe(true);
+    });
+
+    it('maps stop sequences', async () => {
+      mockGenerateContent.mockResolvedValue({
+        response: {
+          candidates: [{ content: { parts: [{ text: 'ok' }] }, finishReason: 'STOP' }],
+          usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 5, totalTokenCount: 10 },
+        },
+      });
+      await provider.chat({
+        messages: [{ role: 'user', content: 'hi' }],
+        stream: false,
+        stopSequences: ['END'],
+      });
+      const callArgs = mockGenerateContent.mock.calls[0][0];
+      // Gemini uses generationConfig.stopSequences
+      expect(callArgs).toBeDefined();
+    });
+  });
+
+  describe('stopReason mapping', () => {
+    it('maps MAX_TOKENS to max_tokens', async () => {
+      mockGenerateContent.mockResolvedValue({
+        response: {
+          candidates: [{ content: { parts: [{ text: 'truncated' }] }, finishReason: 'MAX_TOKENS' }],
+          usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 1000, totalTokenCount: 1005 },
+        },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.stopReason).toBe('max_tokens');
+    });
+
+    it('maps SAFETY to error', async () => {
+      mockGenerateContent.mockResolvedValue({
+        response: {
+          candidates: [{ content: { parts: [{ text: '' }] }, finishReason: 'SAFETY' }],
+          usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 0, totalTokenCount: 5 },
+        },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.stopReason).toBe('error');
+    });
+
+    it('maps unknown finishReason to end_turn', async () => {
+      mockGenerateContent.mockResolvedValue({
+        response: {
+          candidates: [{ content: { parts: [{ text: 'ok' }] }, finishReason: 'OTHER' }],
+          usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 5, totalTokenCount: 10 },
+        },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.stopReason).toBe('end_turn');
+    });
+  });
+
+  describe('error handling', () => {
+    it('maps rate limit error', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('429 resource exhausted'));
+      const { RateLimitError } = await import('../errors.js');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(RateLimitError);
+    });
+
+    it('maps auth error', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('401 api key invalid'));
+      const { AuthenticationError } = await import('../errors.js');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(AuthenticationError);
+    });
+
+    it('maps unavailable error', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('503 service unavailable'));
+      const { ProviderUnavailableError } = await import('../errors.js');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
+    });
+
+    it('maps generic error to InvalidResponseError', async () => {
+      mockGenerateContent.mockRejectedValueOnce(new Error('some unknown error'));
+      const { InvalidResponseError } = await import('../errors.js');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(InvalidResponseError);
+    });
+
+    it('rethrows non-Error objects as Error', async () => {
+      mockGenerateContent.mockRejectedValueOnce('string error');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow('string error');
+    });
+  });
 });

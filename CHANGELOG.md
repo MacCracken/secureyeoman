@@ -4,6 +4,97 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 25 (2026-02-20): Bug Fixes — Helm / Kubernetes
+
+### Verified
+
+- **All 30 migrations apply via pre-install hook** — `helm install` on a kind cluster against
+  fresh Postgres; the pre-install Job (`secureyeoman migrate`, hook weight -5) applied all 30
+  migrations and exited 0 before the Deployment rolled out.
+
+- **Core pod Running and healthy** — `/health` returned
+  `{"status":"ok","checks":{"database":true,"auditChain":true}}` immediately after the
+  Deployment became available.
+
+- **Rolling restart fast-path confirmed** — `kubectl rollout restart deployment/sy-secureyeoman-core`
+  completed cleanly; new pod started without executing any migration SQL; migration count
+  remained at 30.
+
+- **Idempotent `helm upgrade`** — pre-upgrade hook ran `secureyeoman migrate`; fast-path
+  returned immediately (all 30 already applied); no duplicate inserts.
+
+### Bugs Fixed
+
+- **`migrate.ts` wrong config path: `config.database` → `config.core.database`** — The
+  `initPoolFromConfig` call used the top-level `config.database` which does not exist in
+  `ConfigSchema`. The database config is nested under `core` (`config.core.database`). Every
+  migrate Job attempt failed with
+  `TypeError: undefined is not an object (evaluating 'dbConfig.passwordEnv')`.
+
+- **Chart missing required app secrets** — `secret.yaml` and `values.yaml` lacked
+  `SECUREYEOMAN_SIGNING_KEY`, `SECUREYEOMAN_TOKEN_SECRET`, `SECUREYEOMAN_ENCRYPTION_KEY`,
+  `SECUREYEOMAN_ADMIN_PASSWORD`. Core pods failed with `Missing required secrets`.
+  Added to both files.
+
+- **Chart missing `SECUREYEOMAN_LOG_FORMAT`** — Without this, core pods used the `pretty`
+  log format which spawns pino transport worker threads that fail in the lean binary image.
+  Added `SECUREYEOMAN_LOG_FORMAT: "json"` to `configmap.yaml`.
+
+- **`migrate-job.yaml`: ServiceAccount, ConfigMap, and secrets unavailable at hook time** —
+  The Job used the app ServiceAccount and a ConfigMap that don't exist at pre-install time
+  (regular chart resources). Fixed: `serviceAccountName: default`; DB config inlined as env
+  vars; secrets extracted to a new hook-only Secret (`migrate-secret.yaml`, weight -10).
+
+### New Files
+
+- `deploy/helm/secureyeoman/templates/migrate-job.yaml` — pre-install/pre-upgrade Helm hook
+  Job running `secureyeoman migrate` (hook weight -5); `backoffLimit: 3`;
+  `activeDeadlineSeconds: 300`; non-root, read-only root filesystem, all capabilities dropped.
+
+- `deploy/helm/secureyeoman/templates/migrate-secret.yaml` — pre-install/pre-upgrade hook
+  Secret (weight -10) providing `POSTGRES_PASSWORD` and app secrets to the migrate Job before
+  the main chart `secret.yaml` resource exists.
+
+- `packages/core/src/cli/commands/migrate.ts` — new `secureyeoman migrate` CLI subcommand:
+  loads config, initialises pool, runs migrations, exits 0/1. Used by the Helm hook Job and
+  can be run standalone (CI, manual pre-migration).
+
+### Files Changed
+
+- `packages/core/src/cli/commands/migrate.ts` — `config.database` → `config.core.database`
+- `packages/core/src/cli.ts` — registered `migrateCommand`
+- `packages/core/src/storage/migrations/runner.ts` — Postgres advisory lock
+  (`pg_advisory_lock(hashtext('secureyeoman_migrations'))`) wraps the per-entry loop;
+  double-check fast-path after lock acquired; `pg_advisory_unlock` in `finally`
+- `deploy/helm/secureyeoman/values.yaml` — added `migration.hookEnabled: true`; added
+  `secrets.signingKey`, `tokenSecret`, `encryptionKey`, `adminPassword`
+- `deploy/helm/secureyeoman/templates/secret.yaml` — added four required app secrets
+- `deploy/helm/secureyeoman/templates/configmap.yaml` — added `SECUREYEOMAN_LOG_FORMAT: "json"`
+
+---
+
+## Phase 24 (2026-02-20): Migration Integrity — Helm / Kubernetes
+
+### Verified
+
+- **`helm lint` passes** — No errors; one informational warning (missing `icon` field in
+  `Chart.yaml`).
+
+- **`helm template` renders cleanly** — All resources render without errors; checksum
+  annotations computed; hook resources carry correct `helm.sh/hook` annotations and weights.
+
+- **kind cluster: 30 migrations applied via hook** — `helm install` on `kind-sy-test`;
+  pre-install migrate Job ran to completion; `SELECT COUNT(*) FROM schema_migrations`
+  returned 30.
+
+- **Core pod healthy** — `/health` returned
+  `{"status":"ok","checks":{"database":true,"auditChain":true}}`.
+
+- **Rolling restart fast-path** — `kubectl rollout restart` completed; new pod did not run
+  any migration SQL; count remained 30.
+
+---
+
 ## Phase 24 (2026-02-20): Migration Integrity — Binary & Docker Production (Binary-Based)
 
 ### Verified

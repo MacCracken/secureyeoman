@@ -1,0 +1,87 @@
+{{- if .Values.migration.hookEnabled }}
+# Pre-install / pre-upgrade Helm hook Job that runs `secureyeoman migrate`
+# before the core Deployment rolls out. This ensures migrations are applied
+# by exactly one process before any core pod starts, eliminating the race
+# condition that occurs when core.replicaCount > 1 and multiple pods
+# simultaneously call runMigrations() on a fresh database.
+#
+# The advisory lock in runner.ts is a complementary safeguard for cases where
+# the Job is disabled or migrations are triggered outside of a Helm deploy.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "secureyeoman.fullname" . }}-migrate
+  namespace: {{ include "secureyeoman.namespace" . }}
+  labels:
+    {{- include "secureyeoman.labels" . | nindent 4 }}
+    app.kubernetes.io/component: migrate
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+spec:
+  backoffLimit: 3
+  activeDeadlineSeconds: 300
+  template:
+    metadata:
+      labels:
+        {{- include "secureyeoman.labels" . | nindent 8 }}
+        app.kubernetes.io/component: migrate
+    spec:
+      # Use the default service account — the app ServiceAccount is a regular
+      # chart resource not yet created when this pre-install hook runs.
+      # The migrate Job only needs network access to Postgres; no K8s RBAC required.
+      serviceAccountName: default
+      restartPolicy: Never
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: migrate
+          image: "{{ .Values.image.core.repository }}:{{ .Values.image.core.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.core.pullPolicy }}
+          command: ["secureyeoman", "migrate"]
+          # Non-sensitive DB config inlined — the ConfigMap is a regular chart
+          # resource and does not exist yet at pre-install hook time.
+          env:
+            - name: DATABASE_HOST
+              value: {{ .Values.database.host | quote }}
+            - name: DATABASE_PORT
+              value: {{ .Values.database.port | quote }}
+            - name: DATABASE_NAME
+              value: {{ .Values.database.name | quote }}
+            - name: DATABASE_USER
+              value: {{ .Values.database.user | quote }}
+            - name: SECUREYEOMAN_LOG_FORMAT
+              value: "json"
+          # Sensitive values from the hook-only Secret (weight -10, created first).
+          envFrom:
+            - secretRef:
+                name: {{ include "secureyeoman.fullname" . }}-migrate-secrets
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      volumes:
+        - name: tmp
+          emptyDir: {}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

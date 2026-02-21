@@ -56,7 +56,7 @@
 - [x] **Migration integrity — Docker dev** — All 30 manifest entries (001–028, with two 006_* and two 007_* pairs) apply cleanly on a fresh database (`docker compose --profile dev down -v && up --build`) and idempotently on an already-migrated one (restart triggers fast-path, no errors, no duplicate inserts). `runner.test.ts` added with four coverage cases: fresh apply, idempotent second call, partial-state recovery, and timestamp validation. `truncateAllTables` updated to include `proactive` schema.
 - [x] **Migration integrity — Docker production** — Fresh + idempotency verified against binary-based `Dockerfile` + standalone `docker compose up`; all 30 migrations applied, default workspace created, fast-path confirmed on restart. Three bugs fixed: `.dockerignore` missing `!dist/migrations/` exception; `manifest.ts` Bun-binary detection used `.startsWith` instead of `.includes` for `file:///$bunfs/` URLs; `pino` transport worker threads (including `pino/file`) fail in lean binary image — JSON stdout now bypasses the transport layer (writes directly via `pino(options)`) and `SECUREYEOMAN_LOG_FORMAT=json` added to Dockerfile; `loader.ts` gained `SECUREYEOMAN_LOG_FORMAT` env-var support.
 - [x] **Migration integrity — Binary** — Bun 1.3.9 binary built (`npm run build:binary`); `dist/migrations/` shipped alongside binary; all 30 migrations applied against fresh Postgres via `secureyeoman start`; fast-path triggers on restart; `health --json` returns `{"status":"ok","database":true,"auditChain":true}`.
-- [ ] **Migration integrity — Helm / Kubernetes** — `helm lint`; `helm template` renders cleanly; deploy to kind cluster against fresh Postgres, verify all 30 apply; rolling restart confirms fast-path; **note**: production values set `replicaCount: 3` with no migration init container or advisory lock — concurrent pods can race on startup
+- [x] **Migration integrity — Helm / Kubernetes** — `helm lint`; `helm template` renders cleanly; deploy to kind cluster against fresh Postgres, all 30 migrations applied via pre-install Job hook; rolling restart confirms fast-path; three bugs fixed (see Phase 25 Helm Checks entry and ADR 042)
 
 
 ## Phase 25: Fix All the Bugs
@@ -69,7 +69,7 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 - [ ] **Single binary smoke test** — Build all Tier 1 + Tier 2 targets; run `--version`, `health --json`, `config validate --json` against each
 - [x] **Docker cold-start development** — `docker compose --profile up` with empty volumes; migrations run, default workspace created, healthcheck passes
 - [x] **Docker cold-start production** — `docker compose up` (no profile: postgres + core only) with empty volumes; all 30 migrations applied, default workspace created, `health --json` returns `{"status":"ok"}` with `database: true` and `auditChain: true`
-- [ ] **Helm Checks**
+- [x] **Helm Checks** — Pre-install/pre-upgrade Job hook (`secureyeoman migrate`) added; Postgres advisory lock in `runner.ts`; three chart bugs fixed (`migrate.ts` wrong config path, missing secrets, missing `SECUREYEOMAN_LOG_FORMAT`); kind cluster deploy verified: 30 migrations applied, core pod healthy, rolling restart fast-path confirmed
 
 ## Phase 26: Final Inspection
 

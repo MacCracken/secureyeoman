@@ -5,11 +5,21 @@ import type { AIRequest, ModelConfig } from '@secureyeoman/shared';
 const mockCreate = vi.fn();
 
 vi.mock('openai', () => {
+  class APIError extends Error {
+    status: number;
+    constructor(status: number, message: string) {
+      super(message);
+      this.status = status;
+      this.name = 'APIError';
+    }
+  }
+
   class MockOpenAI {
     chat = { completions: { create: mockCreate } };
+    static APIError = APIError;
     constructor(_opts?: unknown) {}
   }
-  return { default: MockOpenAI };
+  return { default: MockOpenAI, APIError };
 });
 
 function makeConfig(): { model: ModelConfig; retryConfig: { maxRetries: number } } {
@@ -220,6 +230,89 @@ describe('LMStudioProvider', () => {
       const models = await LMStudioProvider.fetchAvailableModels();
       expect(models).toEqual([]);
       vi.unstubAllGlobals();
+    });
+  });
+
+  describe('chatStream', () => {
+    it('yields content_delta and done chunks', async () => {
+      async function* mockStream() {
+        yield { choices: [{ delta: { content: 'Hello' }, finish_reason: null }], usage: null };
+        yield { choices: [{ delta: { content: ' world' }, finish_reason: null }], usage: null };
+        yield { choices: [{ delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 } };
+      }
+      mockCreate.mockResolvedValueOnce(mockStream());
+      const chunks: any[] = [];
+      for await (const chunk of provider.chatStream(simpleRequest)) {
+        chunks.push(chunk);
+      }
+      expect(chunks.some((c) => c.type === 'content_delta')).toBe(true);
+      expect(chunks.some((c) => c.type === 'done')).toBe(true);
+      expect(chunks.some((c) => c.type === 'usage')).toBe(true);
+    });
+
+    it('yields tool_call_delta chunks', async () => {
+      async function* mockStream() {
+        yield {
+          choices: [{
+            delta: {
+              tool_calls: [{ id: 'call_1', function: { name: 'search', arguments: '' } }],
+            },
+            finish_reason: null,
+          }],
+          usage: null,
+        };
+        yield { choices: [{ delta: {}, finish_reason: 'tool_calls' }], usage: null };
+      }
+      mockCreate.mockResolvedValueOnce(mockStream());
+      const chunks: any[] = [];
+      for await (const chunk of provider.chatStream(simpleRequest)) {
+        chunks.push(chunk);
+      }
+      expect(chunks.some((c) => c.type === 'tool_call_delta')).toBe(true);
+    });
+
+    it('propagates mapped errors from stream', async () => {
+      const { APIError } = await import('openai');
+      const { RateLimitError } = await import('../errors.js');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(429, 'rate limited'));
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) { /* consume */ }
+      }).rejects.toThrow(RateLimitError);
+    });
+  });
+
+  describe('error handling', () => {
+    it('maps 429 to RateLimitError', async () => {
+      const { APIError } = await import('openai');
+      const { RateLimitError } = await import('../errors.js');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(429, 'rate limited'));
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(RateLimitError);
+    });
+
+    it('maps 400 token error to TokenLimitError', async () => {
+      const { APIError } = await import('openai');
+      const { TokenLimitError } = await import('../errors.js');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'context length exceeded token limit'));
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(TokenLimitError);
+    });
+
+    it('maps 502 to ProviderUnavailableError', async () => {
+      const { APIError } = await import('openai');
+      const { ProviderUnavailableError } = await import('../errors.js');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(502, 'bad gateway'));
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
+    });
+
+    it('maps 400 non-token error to InvalidResponseError', async () => {
+      const { APIError } = await import('openai');
+      const { InvalidResponseError } = await import('../errors.js');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'bad request'));
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(InvalidResponseError);
+    });
+
+    it('rethrows non-Error as Error', async () => {
+      mockCreate.mockRejectedValueOnce('plain string');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow('plain string');
     });
   });
 });

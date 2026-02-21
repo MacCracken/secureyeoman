@@ -168,6 +168,64 @@ describe('OllamaProvider', () => {
     });
   });
 
+  describe('message mapping', () => {
+    it('maps tool role messages', async () => {
+      vi.spyOn(global, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({ message: { role: 'assistant', content: 'ok' }, done: true }),
+          { status: 200 }
+        )
+      );
+      await provider.chat({
+        messages: [
+          { role: 'tool', content: 'result', toolResult: { toolCallId: 'tc-1', content: 'tool output' } },
+        ],
+        stream: false,
+      });
+      const body = JSON.parse(vi.spyOn(global, 'fetch').mock.calls[0]?.[1]?.body as string ?? '{}');
+      expect(body.messages?.[0]?.role).toBe('tool');
+    });
+
+    it('maps assistant messages with tool calls', async () => {
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({ message: { role: 'assistant', content: 'ok' }, done: true }),
+          { status: 200 }
+        )
+      );
+      await provider.chat({
+        messages: [
+          {
+            role: 'assistant',
+            content: 'Let me search',
+            toolCalls: [{ id: 'tc-1', name: 'search', arguments: { query: 'hello' } }],
+          },
+        ],
+        stream: false,
+      });
+      const body = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
+      expect(body.messages[0].role).toBe('assistant');
+      expect(body.messages[0].tool_calls).toHaveLength(1);
+      expect(body.messages[0].tool_calls[0].function.name).toBe('search');
+    });
+
+    it('maps stop sequences in request body', async () => {
+      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
+        new Response(
+          JSON.stringify({ message: { role: 'assistant', content: 'ok' }, done: true }),
+          { status: 200 }
+        )
+      );
+      await provider.chat({
+        messages: [{ role: 'user', content: 'hi' }],
+        stream: false,
+        stopSequences: ['END', 'STOP'],
+      });
+      const body = JSON.parse(fetchSpy.mock.calls[0][1]!.body as string);
+      expect(body.options.stop).toEqual(['END', 'STOP']);
+    });
+  });
+
   describe('streaming', () => {
     it('should parse NDJSON stream', async () => {
       const chunks = [
