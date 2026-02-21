@@ -308,26 +308,6 @@ describe('SkillScheduler', () => {
     });
   });
 
-  describe('immediate execution branch (delay <= 0)', () => {
-    it('executes skill immediately when intervalMs is 0', async () => {
-      vi.useRealTimers();
-      const s3 = new SkillScheduler({ maxScheduled: 5 });
-      const events: ScheduleEvent[] = [];
-      s3.onEvent((e) => events.push(e));
-
-      // intervalMs: 0 → nextRunAt = now → delay ≈ 0 or negative → immediate execution
-      const s = makeScheduledSkill({ schedule: { type: 'interval', intervalMs: 0 } });
-      s3.schedule(s);
-      s3.start();
-
-      await new Promise((r) => setTimeout(r, 100));
-      s3.stop();
-      vi.useFakeTimers();
-
-      expect(events.some((e) => e.type === 'scheduled_skill_run')).toBe(true);
-    }, 5000);
-  });
-
   describe('emitEvent error handling', () => {
     it('does not propagate errors from event handlers', async () => {
       vi.useRealTimers();

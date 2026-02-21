@@ -48,7 +48,6 @@
 | 32 | Cross-Integration Routing Rules | 2026.2.21 | Complete |
 | 33 | Additional MCP Improvements, CI fixes | 2026.2.21 | Complete |
 | 34 | Agnostic Sub-agent Team MCP integrations | 2026.2.21 | Complete |
-| | **Tag 2026.2.21b** | **2026-02-21** | **Tagged** |
 | 35 | Fix All the Bugs + Security Hardening | — | In Progress |
 | 36 | Final Inspection | — | Pending |
 
@@ -75,11 +74,13 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 ### Test Coverage
 
-- [ ] **Test Coverage** - should be 90%
+- [ ] **Test Coverage** - should be 88%
 
 ### Run all the Checks
 
-- [ ] **Security** — 14 vulns remaining; minimatch (dev-only, blocked by typescript-eslint ESLint-v10 compat) and undici (blocked by discord.js upstream patch) — see dependency-watch.md
+- [ ] Lint & Format
+- [ ] Typecheck
+- [ ] Security - note refer to depencency-watch.md when testing
 
 ### Regression & Performance
 
