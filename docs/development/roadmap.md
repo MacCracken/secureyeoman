@@ -65,7 +65,7 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 - [ ] Find and Repair
 
-## Phase 35: Final Inspection
+## Phase 36: Final Inspection
 
 **Status**: Pending
 
@@ -78,9 +78,6 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 ### Run all the Checks
 
-- [x] **Format** — Passing ✅
-- [x] **Typecheck** — Passing ✅ (fixed: discord.js v14 upgrade, @types/express, @testing-library/dom, graphology-types, @storybook/react)
-- [x] **Lint** — Passing ✅ (fixed: all 36 errors cleared 2026-02-21)
 - [ ] **Security** — 14 vulns remaining; minimatch (dev-only, blocked by typescript-eslint ESLint-v10 compat) and undici (blocked by discord.js upstream patch) — see dependency-watch.md
 
 ### Regression & Performance
@@ -99,21 +96,12 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 *Core integration shipped (ADR 090). The `secureyeoman agnostic` lifecycle CLI, `agnostic_*` MCP bridge tools, and `agnostic/TODO.md` are live. These items complete the end-to-end automation once implemented in Agnostic.*
 
-- [x] **`POST /api/tasks` in Agnostic** — P1 implemented: Redis-backed task state, fire-and-forget `asyncio.create_task`. `agnostic_submit_qa` and `agnostic_task_status` are now fully functional end-to-end. *(Done — 2026-02-21)*
-- [x] **API key auth in Agnostic** — P2 implemented: `AGNOSTIC_API_KEY` / `X-API-Key` header supported. YEOMAN bridge prefers API key auth over JWT; `AGNOSTIC_API_KEY` added to `McpServiceConfig`. *(Done — 2026-02-21)*
-- [x] **Webhook callback support** — P3 implemented: `callback_url` + `callback_secret` on `TaskSubmitRequest`. Agnostic POSTs HMAC-SHA256 signed `TaskStatusResponse` on completion. `agnostic_submit_qa` tool exposes both fields. *(Done — 2026-02-21)*
 - [ ] **A2A protocol bridge** — Longer-term: implement an A2A server in Agnostic so YEOMAN can delegate via the structured `delegate_task` A2A message rather than REST. Enables the full delegation tree to include Agnostic agents as peers.
 - [ ] **Auto-start toggle** — Optional `AGNOSTIC_AUTO_START=true` that causes `secureyeoman start` to also call `docker compose up -d` in the configured Agnostic path.
 
 ### Skill Routing Quality (OpenAI Skills + Shell Tips)
 
 *Inspired by [OpenAI's Skills + Shell Tips](https://developers.openai.com/blog/skills-shell-tips/). The blog post documents how Glean improved skill routing accuracy from 73% → 85% by restructuring descriptions to include explicit "Use when / Don't use when" guidance and embedding task templates inside skills rather than the system prompt. Several improvements are actionable in YEOMAN without schema changes; others require new schema fields.*
-
-**Immediate improvements (no schema change):**
-
-- [x] **Routing-focused descriptions on all community skills** — All 11 community skill descriptions rewritten to lead with "Use when: … Don't use when: …" routing guidance. The skill catalog listing in `composeSoulPrompt` (`- **Name**: Description`) is now the routing signal it needs to be. *(Done — 2026-02-21)*
-
-- [x] **`triggerPatterns` hygiene pass on community skills** — All 11 bundled + 18 external community skills now have exactly 5 `triggerPatterns` each. The full data path (JSON → `syncFromCommunity` → `marketplace.skills` DB → `brainManager.createSkill`) was also wired end-to-end; `MarketplaceSkillSchema` and migration `032_marketplace_trigger_patterns.sql` added the missing DB column and schema field. *(Done — 2026-02-21)*
 
 **Schema additions (`packages/shared/src/types/soul.ts`):**
 
@@ -203,8 +191,6 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 *Revisit once multi-workspace/multi-user usage data shows concurrent editing is a real pain point.*
 
 - [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
-- [x] **Presence Indicators** — Show "Alice is editing this personality" to prevent concurrent edits at the UX level before investing in true merge semantics. *(Done — Phase 26, ADR 080)*
-- [x] **CRDT Implementation** — Conflict-free Replicated Data Types (Yjs Y.Text) for concurrent editing of personality system prompts and skill instructions. *(Done — Phase 26, ADR 080)*
 
 ### Mobile Application
 
@@ -233,4 +219,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Phase 34 Final Inspection started; CI quality gate open items logged*
+*Last updated: 2026-02-21 — Completed items removed; Phase 35/36 numbering corrected; open items reflect remaining work*
