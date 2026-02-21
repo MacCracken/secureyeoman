@@ -4,6 +4,37 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 24 (2026-02-20): Testing All the Things — Coverage Baseline
+
+### Coverage Achieved
+
+- **`@secureyeoman/core` coverage thresholds met** — All four Vitest coverage thresholds now pass:
+  - Lines: **84.16%** (threshold: 80%) ✅
+  - Functions: **85.32%** (threshold: 80%) ✅
+  - Branches: **71.3%** (threshold: 70%) ✅
+  - Statements: **83.7%** (threshold: 80%) ✅
+
+### New Test Files (122 added)
+
+- **Integration adapters** — Full test suites for all 30 platform adapters: Slack, Discord, Telegram, WhatsApp, GitHub, GitLab, Gmail, Email (IMAP/SMTP), Google Calendar, Google Chat, Line, Linear, Notion, Jira, Azure DevOps, AWS Lambda, Stripe, Airtable, YouTube, Spotify, Figma, Todoist, Zapier, Signal, DingTalk, QQ, Webhook, iMessage, Teams, CLI
+- **CLI commands** — `init.ts`, `start.ts`, `mcp-server.ts` (join existing `migrate.ts`, `extension.ts`)
+- **Body layer** — `capture-process.ts` (sandbox lifecycle, platform detection, timeout enforcement)
+- **Storage & security** — `pg-pool.ts`, `pg-base.ts`, keyring providers (Linux secret service, macOS Keychain, Windows DPAPI), `cert-gen.ts`, `agent-comms.ts`
+- **Brain & memory** — `brain/storage.ts`, `brain/vector/manager.ts`, `faiss-store.ts`, `qdrant-store.ts`, `external-sync.ts`, `consolidation/executor.ts`
+- **Soul/Spirit/Config** — `soul/storage.ts`, `spirit/storage.ts`, `system-preferences-storage.ts`
+- **MCP** — `mcp/client.ts`, `mcp/server.ts`
+
+### Test Count
+
+| Package | Before | After |
+|---------|--------|-------|
+| `@secureyeoman/core` | 2,170 tests / 161 files | **5,580 tests / 283 files** |
+| `@secureyeoman/mcp` | 326 tests / 31 files | 326 tests / 31 files |
+| `@secureyeoman/dashboard` | 406 tests / 32 files | 406 tests / 32 files |
+| **Total** | **2,902 / 224 files** | **6,312 / 346 files** |
+
+---
+
 ## Phase 25 (2026-02-20): Bug Fixes — Single Binary Smoke Test
 
 ### Verified
