@@ -615,4 +615,45 @@ describe('SoulManager', () => {
       expect(storage.close).toHaveBeenCalled();
     });
   });
+
+  describe('personality presets', () => {
+    it('listPersonalityPresets returns all built-in presets', () => {
+      const { manager } = makeManager();
+      const presets = manager.listPersonalityPresets();
+      expect(presets.length).toBeGreaterThanOrEqual(2);
+      expect(presets.map((p) => p.id)).toContain('friday');
+      expect(presets.map((p) => p.id)).toContain('t-ron');
+    });
+
+    it('createPersonalityFromPreset creates personality from friday preset', async () => {
+      const { manager, storage } = makeManager();
+      await manager.createPersonalityFromPreset('friday');
+      expect(storage.createPersonality).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'FRIDAY' })
+      );
+    });
+
+    it('createPersonalityFromPreset creates personality from t-ron preset', async () => {
+      const { manager, storage } = makeManager();
+      await manager.createPersonalityFromPreset('t-ron');
+      expect(storage.createPersonality).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'T.Ron' })
+      );
+    });
+
+    it('createPersonalityFromPreset applies overrides over preset data', async () => {
+      const { manager, storage } = makeManager();
+      await manager.createPersonalityFromPreset('t-ron', { name: 'My Guard' });
+      expect(storage.createPersonality).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'My Guard' })
+      );
+    });
+
+    it('createPersonalityFromPreset throws for unknown preset id', async () => {
+      const { manager } = makeManager();
+      await expect(manager.createPersonalityFromPreset('nope')).rejects.toThrow(
+        'Unknown personality preset: nope'
+      );
+    });
+  });
 });
