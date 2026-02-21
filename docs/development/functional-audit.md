@@ -8,15 +8,15 @@
 
 | Aspect | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw | Personal AI (Market) |
 |--------|--------------|----------|------------|----------|----------|---------------------|
-| **Focus** | Enterprise-grade secure AI agent | Consumer/local-first personal AI | Developer automation framework | Ultra-lightweight embedded AI | Privacy-first, security-depth Rust agent | Managed SaaS solutions |
+| **Focus** | Enterprise-grade secure AI agent | Consumer/local-first personal AI | General-purpose personal AI assistant | Ultra-lightweight embedded AI | Privacy-first, security-depth Rust agent | Managed SaaS solutions |
 | **Deployment** | Self-hosted, server-centric | Local-first, desktop/server | Docker-based VM | $10 hardware, embedded | Self-hosted, local-first | Cloud-hosted |
 | **Language** | TypeScript | TypeScript | Python | Go | **Rust** | Various |
-| **RAM Usage** | ~1GB+ | >1GB | >100MB | **<10MB** | ~50MB (Rust) | Cloud-based |
-| **Startup Time** | ~30s+ | >500s | >30s | **<1s** | **<1s** (Rust) | N/A |
+| **RAM Usage** | ~1GB+ | min 2 GB, 1-8 GB typical | Several hundred MB (4 GB recommended) | **<10MB** | **~7.8MB** (Rust) | Cloud-based |
+| **Startup Time** | ~30s+ | seconds (background boot) | >30s | **<1s** | **<10ms** (Rust) | N/A |
 | **Security** | **Strong** - RBAC, encryption, audit, ToolOutputScanner, Skill Trust Tiers | Basic | Basic (Docker isolation) | Basic (sandbox) | **Strong** - WASM sandbox, Docker proxy, credential leak detection | Variable |
-| **Multi-channel** | 22+ platforms | 15+ platforms | CLI/Web only | 5 platforms | 5 channels (TUI, HTTP, WS, WASM, REPL) | Platform-specific |
-| **Multi-agent** | Sub-agents, A2A protocol, Agnostic QA Bridge | Workspace/agent routing | Hierarchical agents | Sub-agents (spawn) | ❌ Not a focus | Limited |
-| **Memory** | Vector (FAISS/Qdrant), consolidation, **Hybrid FTS + RRF**, chunked | Markdown/YAML file-based | Persistent memory | File-based | **Hybrid FTS + vector (RRF)**, chunked | Cloud storage |
+| **Multi-channel** | 22+ platforms | 23+ platforms | CLI/Web only | 10+ platforms | 5 channels (TUI, HTTP, WS, WASM, REPL) | Platform-specific |
+| **Multi-agent** | Sub-agents, A2A protocol, Agnostic QA Bridge | Workspace/agent routing | Hierarchical agents | Sub-agents (spawn) | Parallel background jobs; no dedicated multi-agent protocol | Limited |
+| **Memory** | Vector (FAISS/Qdrant), consolidation, **Hybrid FTS + RRF**, chunked | Markdown + SQLite index (optional vector) | Persistent memory (FAISS vector) | File-based | **Hybrid FTS + vector (RRF)**, chunked | Cloud storage |
 | **Customization** | Hooks, extensions, skills, trust tiers | Skills, plugins | Dynamic tool creation | Skills | SKILL.md + ClawHub + WASM plugins | Limited |
 
 ---
@@ -30,10 +30,10 @@
 | **Agent Type** | Server-first, API-driven | Gateway-based, message-driven | Docker VM with Linux | Single binary, embedded | Message-driven, multi-channel |
 | **Language** | TypeScript | TypeScript/JS | Python | Go | **Rust** |
 | **Database** | PostgreSQL + SQLite | File-based (Markdown) | File-based | File-based | PostgreSQL + libSQL (trait-swappable) |
-| **AI Providers** | 10+ (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen, DeepSeek, Mistral, **x.ai Grok**, Letta) | Multiple | Multiple | OpenRouter, Zhipu, Groq, Anthropic, OpenAI, Gemini, DeepSeek | NEAR AI, Tinfoil (TEE), OpenAI, Anthropic, Ollama, any OAI-compatible |
-| **MCP Support** | Full MCP server + client (58+ tools, 7 resources, 4 prompts) | Limited | No | ❌ | ✅ As tool implementation path |
-| **Memory Footprint** | ~1GB+ | >1GB | >100MB | **<10MB** | ~50MB (Rust) |
-| **Startup Time** | ~30s+ | >500s | >30s | **<1s** | **<1s** (Rust static) |
+| **AI Providers** | 10+ (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen, DeepSeek, Mistral, **x.ai Grok**, Letta) | Multiple | Multiple | OpenRouter, Zhipu, Groq, Anthropic, OpenAI, Gemini, DeepSeek, Qwen, Cerebras | NEAR AI, Tinfoil (TEE), OpenAI, Anthropic, Ollama, any OAI-compatible |
+| **MCP Support** | Full MCP server + client (58+ tools, 7 resources, 4 prompts) | Limited | ✅ Full MCP (server + client, mid-2025) | ❌ | ✅ As tool implementation path |
+| **Memory Footprint** | ~1GB+ | min 2 GB, 1-8 GB typical | Several hundred MB (4 GB recommended) | **<10MB** | **~7.8MB** (Rust) |
+| **Startup Time** | ~30s+ | seconds (background boot) | >30s | **<1s** | **<10ms** (Rust static) |
 | **Enterprise Ready** | ✅ Production-hardened (Single binary, K8s) | ❌ Developer-focused | ❌ Experimental | ❌ Embedded/IoT focus | ❌ No RBAC/SSO/K8s |
 
 ### 2. Security & Compliance
@@ -42,11 +42,11 @@
 |---------|--------------|----------|------------|----------|----------|
 | **RBAC** | ✅ Full (Admin/Operator/Auditor/Viewer) | ❌ | ❌ | ❌ | ❌ |
 | **Encryption at Rest** | ✅ AES-256-GCM | ❌ | ❌ | ❌ | ✅ Local PostgreSQL |
-| **Audit Chain** | ✅ HMAC-SHA256 | ❌ | ❌ | ❌ | ❌ |
+| **Audit Chain** | ✅ HMAC-SHA256 | ❌ | ❌ | ❌ | Local DB audit log (not cryptographic) |
 | **Input Validation** | ✅ Prompt injection defense | ❌ | ❌ | ❌ | ✅ Multi-layer (sanitize → validate → policy → leak) |
 | **Tool-output Credential Scanning** | ✅ ToolOutputScanner — 18 patterns (API keys, JWTs, PEM, DB strings, bearer tokens); scans every LLM response; `[REDACTED:<type>]` replacement | ❌ | ❌ | ❌ | ✅ LeakDetector at tool output + LLM response |
-| **Rate Limiting** | ✅ Per-user, per-IP, global | Basic | ❌ | ❌ | ✅ WASM fuel metering |
-| **Sandboxing** | ✅ Landlock (Linux), sandbox-exec (macOS), seccomp, namespaces | ❌ | Docker-only | ✅ Workspace restriction | ✅ WASM (wasmtime) + Docker + outbound network proxy |
+| **Rate Limiting** | ✅ Per-user, per-IP, global | Configurable (not default) | ❌ | ❌ | ✅ WASM fuel metering |
+| **Sandboxing** | ✅ Landlock (Linux), sandbox-exec (macOS), seccomp, namespaces | Docker sandbox (opt-in) | Docker-only | ✅ Workspace restriction | ✅ WASM (wasmtime) + Docker + outbound network proxy |
 | **Skill Trust Tiers** | ✅ community skills restricted to read-only tool access (26 name-prefix allow-list); enforced in SoulManager + BrainManager | ❌ | ❌ | ❌ | ✅ Trusted (all tools) vs Installed (read-only) |
 | **Outbound Network Proxy** | ❌ | ❌ | ❌ | ❌ | ✅ Credential injection at proxy; endpoint allowlist |
 | **API Keys** | ✅ With rate limiting | Basic | ❌ | ✅ Config-based | ✅ |
@@ -74,7 +74,7 @@
 | **AWS** | ✅ Stable | ✅ | ❌ | ❌ | ❌ |
 | **Azure DevOps** | ✅ Stable | ❌ | ❌ | ❌ | ❌ |
 | **OAuth2** | ✅ First-class (Google) | ❌ | ❌ | ❌ | ❌ |
-| **SSO/OIDC** | ✅ (Okta, Azure AD, Auth0, any OIDC) | ❌ | ✅ (some) | ❌ | ❌ |
+| **SSO/OIDC** | ✅ (Okta, Azure AD, Auth0, any OIDC) | ❌ | ❌ | ❌ | ❌ |
 | **Generic Webhook** | ✅ | ✅ | ❌ | ❌ | ✅ Webhook triggers routines |
 | **Terminal UI (TUI)** | ✅ `secureyeoman tui` — full-screen, live status, scrollable chat, keyboard shortcuts | ❌ | ❌ | ❌ | ✅ Ratatui full TUI |
 
@@ -82,14 +82,14 @@
 
 | Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |---------|--------------|----------|------------|----------|----------|
-| **Browser Automation** | ✅ Playwright | ✅ Built-in | ✅ | ❌ | ❌ |
+| **Browser Automation** | ✅ Playwright | ✅ Built-in | ✅ browser-use library (Playwright-backed) | ❌ | ❌ |
 | **Web Scraping** | ✅ Advanced (MCP) | ✅ | ❌ | ❌ | ✅ (via HTTP WASM tools) |
 | **Web Search** | ✅ Multi-provider | ✅ | ❌ | ✅ (Brave, DuckDuckGo) | ❌ |
 | **Shell Execution** | ✅ Sandboxed | ✅ | ✅ | ✅ (restricted) | ✅ Sandboxed (env-scrubbed) |
 | **File Operations** | ✅ Sandboxed | ✅ | ✅ | ✅ (workspace-restricted) | ✅ Sandboxed |
 | **Calendar** | ✅ Google Calendar | ✅ | ❌ | ❌ | ❌ |
 | **Code Execution** | ✅ Sandboxed (Python, Node.js, shell) | ✅ | ✅ | ❌ | ✅ Docker container (3 isolation policies) |
-| **Custom Skills** | ✅ Lifecycle hooks (38 hook points) | ✅ 5,700+ community | ✅ Dynamic | ✅ Skills | ✅ SKILL.md + ClawHub registry |
+| **Custom Skills** | ✅ Lifecycle hooks (38 hook points) | ✅ ~3,286 community (ClawHub) | ✅ Dynamic | ✅ Skills | ✅ SKILL.md + ClawHub registry |
 | **WASM Tool Sandbox** | ✅ (policy flag, off by default) | ❌ | ❌ | ❌ | ✅ First-class (wasmtime, fuel metering, capability-based) |
 | **MCP Tools** | ✅ 58+ tools | ❌ | ❌ | ❌ | ✅ MCP as tool path |
 | **Cron/Scheduling** | ✅ | ❌ | ❌ | ✅ | ✅ Routines engine |
@@ -107,7 +107,7 @@
 
 | Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |---------|--------------|----------|------------|----------|----------|
-| **Vector Memory** | ✅ FAISS, Qdrant | ❌ | ❌ | ❌ | ✅ pgvector |
+| **Vector Memory** | ✅ FAISS, Qdrant | ❌ | ✅ FAISS-backed | ❌ | ✅ pgvector |
 | **Full-Text Search (FTS)** | ✅ tsvector GIN index on memories + knowledge (migration 029) | ❌ | ❌ | ❌ | ✅ tsvector |
 | **Hybrid FTS + Vector (RRF)** | ✅ `queryMemoriesByRRF()` + `queryKnowledgeByRRF()`; Reciprocal Rank Fusion (ADR 095) | ❌ | ❌ | ❌ | ✅ Reciprocal Rank Fusion |
 | **Content Chunking** | ✅ `brain.document_chunks` — 800 tokens, 15% overlap; per-chunk FTS + vector (ADR 096) | ❌ | ❌ | ❌ | ✅ 800 tokens, 15% overlap |
@@ -148,13 +148,13 @@
 
 | Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |---------|--------------|----------|------------|----------|----------|
-| **Kubernetes** | ✅ Helm charts (HPA, PDB, NetworkPolicies) | ❌ | ❌ | ❌ | ❌ |
+| **Kubernetes** | ✅ Helm charts (HPA, PDB, NetworkPolicies) | Community operator | ❌ | ❌ | ❌ |
 | **Prometheus** | ✅ Metrics + Grafana dashboards | ❌ | ❌ | ❌ | ❌ |
 | **Workspace/Team** | ✅ | ❌ | ✅ | ❌ | ❌ |
-| **SSO/OIDC** | ✅ (Okta, Azure AD, Auth0, any OIDC via openid-client v6) | ❌ | ✅ (some) | ❌ | ❌ |
+| **SSO/OIDC** | ✅ (Okta, Azure AD, Auth0, any OIDC via openid-client v6) | ❌ | ❌ | ❌ | ❌ |
 | **Onboarding** | ✅ (Wizard at http://localhost:18789) | ❌ | ✅ | ✅ (onboard CLI) | ❌ |
 | **Single Binary** | ✅ (Bun compile, ~80MB, Linux x64/arm64, macOS arm64) | ❌ | ❌ | ✅ | ✅ (Rust static) |
-| **Lite Binary** | ✅ (SQLite, edge/embedded) | ❌ | ❌ | ✅ ($10 hardware) | ✅ (libSQL backend) |
+| **Lite Binary** | ✅ (SQLite, edge/embedded) | ❌ | ❌ | ✅ (standard binary already <10MB, runs on $10 hardware) | ✅ (libSQL backend) |
 | **Docker** | ✅ (~80MB binary-based) | ✅ | ✅ | ❌ | ✅ |
 | **CLI** | ✅ (24 commands, shell completions, --json output) | ✅ | ✅ | ✅ | ✅ (REPL) |
 | **Dual DB Backend** | ✅ (PostgreSQL + SQLite, same schema) | ❌ | ❌ | ❌ | ✅ (PostgreSQL + libSQL via trait) |
@@ -172,9 +172,10 @@
 
 **Notes:**
 - **SecureYeoman**: Full TypeScript strict mode, 6,744+ tests across 366 files with 84% line coverage
-- **OpenClaw**: Rapid growth (185K+ stars), but significant security concerns — multiple CVEs in 2026, including critical RCE vulnerability (CVE-2026-25253, CVSS 8.8), auth bypass, and supply chain poisoning in skills marketplace
-- **Agent Zero**: Minimal test infrastructure, experimental/prototype status
-- **PicoClaw**: Minimal test infrastructure, Go-based lightweight focus
+- **OpenClaw**: Rapid growth (~200K+ stars), but significant security concerns — multiple CVEs in 2026, including critical RCE vulnerability (CVE-2026-25253, CVSS 8.8), auth bypass, and supply chain poisoning in skills marketplace; Docker sandbox opt-in; community K8s operator; min 2 GB RAM; ~3,286 ClawHub skills
+- **Agent Zero**: Minimal test infrastructure, experimental status; now has full MCP (server + client, mid-2025), FAISS-backed vector memory, and A2A protocol (v0.9.8); no SSO; several hundred MB RAM (4 GB recommended); focus shifted to general-purpose personal AI
+- **PicoClaw**: Minimal test infrastructure, Go-based lightweight focus; 10+ platforms including QQ, DingTalk, Feishu, LINE, OneBot; 9+ AI providers; standard binary already <10MB — no distinct lite binary needed
+- **Ironclaw**: ~7.8MB RAM, <10ms startup (Rust static); TEE attestation v0.9.0; PR #203 reducing chunk size 800→300 words; PR #271 Signal channel in review; local DB audit log (not cryptographic chain)
 
 ---
 
@@ -217,7 +218,7 @@
 ## Gap Analysis: Opportunities to Improve
 
 ### ❌ Missing vs OpenClaw
-1. **Community Skills** - 5,700+ community skills vs SecureYeoman hooks (mitigated by Marketplace + community sync)
+1. **Community Skills** - ~3,286 community skills (ClawHub) vs SecureYeoman hooks (mitigated by Marketplace + community sync)
 
 ### ❌ Missing vs PicoClaw
 1. **Ultra-low Memory Footprint** - <10MB vs 1GB+ (optimization opportunity via lite binary)
@@ -237,7 +238,7 @@
 - Kubernetes / Helm / HPA / NetworkPolicies
 - Personality system (named, scoped, schedulable, per-personality active hours, presets)
 - Multi-agent: A2A protocol, swarms, sub-agent budget/depth controls, Agnostic QA bridge
-- 22+ messaging integrations vs ~2 (Telegram + Slack WASM modules)
+- 22+ messaging integrations vs ~2 (Telegram WASM + Slack WASM; Signal channel PR in review)
 - Intelligent model routing (task complexity scoring, cost-aware tier selection)
 - Full React dashboard (Monaco editor, WebGL graph, rich chat, group chat)
 - Voice TTS/STT, DALL-E image generation
@@ -258,8 +259,8 @@
 | Market Segment | SecureYeoman Position |
 |----------------|---------------------|
 | **Enterprise Self-Hosted** | Leader - Only option with full security, RBAC, SSO |
-| **Developer Automation** | Challenger - OpenClaw/Agent Zero lead |
-| **Privacy-First / Rust** | Challenged by Ironclaw - deeper sandbox + credential safety, lower RAM; SecureYeoman leads on features and enterprise posture; Ironclaw's high/medium security gaps (credential scanning, skill trust, hybrid search, context compaction, self-repair) now resolved |
+| **Developer Automation** | Challenger - OpenClaw leads; Agent Zero repositioned as personal AI |
+| **Privacy-First / Rust** | Challenged by Ironclaw - deeper sandbox + credential safety, ~7.8MB RAM / <10ms startup; SecureYeoman leads on features and enterprise posture; Ironclaw's high/medium security gaps (credential scanning, skill trust, hybrid search, context compaction, self-repair) now resolved |
 | **Embedded/IoT AI** | Challenger - Lite binary available, PicoClaw leads on cost |
 | **Consumer Personal AI** | Differentiated - Local-first with enterprise features |
 | **Managed SaaS** | Not positioned - Self-hosted only |
@@ -272,8 +273,8 @@
 - SSO/OIDC support (Okta, Azure AD, Auth0, any OIDC)
 - Single binary distribution (~80MB, no runtime deps)
 - **Unlike PicoClaw**: Full enterprise features (RBAC, encryption, audit, SSO) with more capabilities at the cost of higher resource usage
-- **Unlike Ironclaw**: RBAC, SSO, A2A, personality system, 22+ integrations, agent swarms, Agnostic QA bridge — Ironclaw wins on Rust memory safety and raw sandbox depth; SecureYeoman wins on breadth, enterprise auth, and multi-agent orchestration
+- **Unlike Ironclaw**: RBAC, SSO, A2A, personality system, 22+ integrations, agent swarms, Agnostic QA bridge — Ironclaw wins on Rust memory safety (~7.8MB RAM, <10ms startup) and raw sandbox depth; SecureYeoman wins on breadth, enterprise auth, and multi-agent orchestration
 
 ---
 
-*Updated: 2026-02-21 — reflected Phase 34–35 completions: ToolOutputScanner, Skill Trust Tiers, TUI, Hybrid FTS+RRF, Content-chunked indexing, Proactive Context Compaction, Self-repairing TaskLoop, Agnostic A2A Bridge; updated test counts (6,744+/366 files) and MCP tool count (58+)*
+*Updated: 2026-02-21
