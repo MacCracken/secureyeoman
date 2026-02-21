@@ -44,7 +44,7 @@ export const RoutingRuleSchema = z.object({
   /** Mustache-style template: {{text}}, {{senderName}}, {{platform}}, {{chatId}} */
   actionMessageTemplate: z.string().max(10000).nullable().default(null),
 
-  matchCount: z.number().int().nonneg().default(0),
+  matchCount: z.number().int().nonnegative().default(0),
   lastMatchedAt: z.number().nullable().default(null),
   createdAt: z.number(),
   updatedAt: z.number(),
