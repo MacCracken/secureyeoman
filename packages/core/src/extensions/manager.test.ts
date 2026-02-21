@@ -441,7 +441,6 @@ describe('ExtensionManager', () => {
 
   describe('extension with multiple hooks', () => {
     it('registers all hooks from a multi-hook extension manifest', async () => {
-      const { manager } = makeManager();
       const multiHookManifest = {
         id: 'ext-multi',
         name: 'Multi Hook Extension',
@@ -451,12 +450,15 @@ describe('ExtensionManager', () => {
           { point: 'task.created', semantics: 'observe', priority: 100 },
         ],
       };
+      // Storage mock must return the full manifest so registerExtension iterates both hooks
+      const { manager } = makeManager({
+        registerExtension: vi.fn().mockResolvedValue(multiHookManifest),
+      });
       await manager.registerExtension(multiHookManifest as any);
       expect(manager.getRegisteredHooks()).toHaveLength(2);
     });
 
     it('removes all hooks when multi-hook extension is removed', async () => {
-      const { manager } = makeManager();
       const multiHookManifest = {
         id: 'ext-multi2',
         name: 'Multi Hook Extension',
@@ -466,6 +468,9 @@ describe('ExtensionManager', () => {
           { point: 'task.created', semantics: 'observe', priority: 100 },
         ],
       };
+      const { manager } = makeManager({
+        registerExtension: vi.fn().mockResolvedValue(multiHookManifest),
+      });
       await manager.registerExtension(multiHookManifest as any);
       expect(manager.getRegisteredHooks()).toHaveLength(2);
       await manager.removeExtension('ext-multi2');
