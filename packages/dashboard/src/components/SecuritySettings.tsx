@@ -393,6 +393,7 @@ export function SecuritySettings() {
   const anomalyDetectionAllowed = securityPolicy?.allowAnomalyDetection ?? false;
   const gvisorAllowed = securityPolicy?.sandboxGvisor ?? false;
   const wasmAllowed = securityPolicy?.sandboxWasm ?? false;
+  const credentialProxyAllowed = securityPolicy?.sandboxCredentialProxy ?? false;
   const roleIds = roles.map((r) => r.id);
 
   const handleCreateRole = (form: RoleFormData) => {
@@ -751,6 +752,16 @@ export function SecuritySettings() {
               policyMutation.mutate({ sandboxWasm: !wasmAllowed });
             }}
             description="Run code inside a WebAssembly sandbox for additional memory and capability isolation."
+          />
+          <PolicyToggle
+            label="Outbound Credential Proxy"
+            icon={<Network className="w-4 h-4 text-muted-foreground" />}
+            enabled={credentialProxyAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ sandboxCredentialProxy: !credentialProxyAllowed });
+            }}
+            description="Inject Authorization headers for known hosts via a localhost proxy. Secrets never enter the sandbox environment."
           />
         </div>
       </div>

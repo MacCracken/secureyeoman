@@ -1749,6 +1749,7 @@ export interface SecurityPolicy {
   allowAnomalyDetection: boolean;
   sandboxGvisor: boolean;
   sandboxWasm: boolean;
+  sandboxCredentialProxy: boolean;
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -1770,6 +1771,7 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     };
   }
 }

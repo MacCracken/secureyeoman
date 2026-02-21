@@ -4,6 +4,80 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 36 — Memory Baseline + Startup Time Tests (2026-02-21)
+
+Closes the startup-time and memory-baseline items in the Phase 36 Final Inspection checklist.
+
+### Memory baseline — `packages/core/src/memory-baseline.test.ts` (new)
+
+Process-level integration test that:
+
+1. Applies all DB migrations in-process (`beforeAll`) — child takes the fast-path.
+2. Spawns `tsx src/cli.ts start --log-level error` as a real child process.
+3. Polls `/health` until `status:ok`, then waits 1 s for post-init allocations to settle.
+4. Reads `VmRSS` from `/proc/<pid>/status` (same value as `process.memoryUsage().rss`).
+5. Asserts RSS < 300 MB.
+
+**Observed result:** **68.9 MB RSS** — 77% below the 300 MB budget. Vitest timeout 16 s (10 s startup + 1 s settle + 5 s buffer).
+
+### Startup time — `packages/core/src/startup-time.test.ts` (new)
+
+`packages/core/src/startup-time.test.ts` (new) — process-level integration test that:
+
+1. Applies all DB migrations in-process (`beforeAll`) so the child takes the migration fast-path (single `SELECT` with no advisory lock).
+2. Spawns `tsx src/cli.ts start --log-level error` as a real child process with a synthetic but valid set of required environment variables.
+3. Polls `GET http://127.0.0.1:19191/health` every 100 ms until `{ status: 'ok' }` is returned.
+4. Asserts wall-clock elapsed time < 10 000 ms.
+5. Kills the child with SIGTERM (SIGKILL fallback after 2 s) in `finally`.
+
+**Observed result:** 2.37 s wall-clock on a local dev machine with the test database already migrated (fast-path active). Vitest timeout set to 15 s (10 s budget + 5 s breathing room for spawn/teardown overhead).
+
+**Requires:** PostgreSQL reachable via `TEST_DB_* / DATABASE_* / POSTGRES_PASSWORD` env vars (same as `runner.test.ts`).
+
+### Files changed
+
+- `packages/core/src/startup-time.test.ts` (new)
+- `docs/development/roadmap.md` — startup-time item marked `[x]`
+
+---
+
+## Phase 35 — Outbound Credential Proxy at Sandbox Boundary (2026-02-21)
+
+Closes the last functional-audit gap versus Ironclaw (ADR 099). The "Outbound Network Proxy" row in `docs/development/functional-audit.md` moves from ❌ to ✅.
+
+### Design rationale
+
+Sandboxed processes previously received secrets as environment variables, which are visible to any code running inside the process and appear in `/proc/self/environ` on Linux. The `CredentialProxy` eliminates this exposure: credentials are held exclusively in the **parent** process; sandboxed children receive only `http_proxy=http://127.0.0.1:PORT`.
+
+- **Plain HTTP** — proxy validates target hostname against the allowlist, injects the matching credential header, forwards the request, and pipes the response back. Returns `403` for blocked hosts.
+- **HTTPS CONNECT** — proxy validates hostname and creates a raw TCP tunnel. Header injection is not possible inside TLS; allowlist enforcement provides defence-in-depth.
+- Credential-rule hosts are implicitly added to the allowlist.
+- Proxy lifecycle managed by `SandboxManager.startProxy()` / `stopProxy()`, URL surfaced in `getStatus()`.
+- Policy toggle `sandboxCredentialProxy` in the Security Policy (dashboard Sandbox Isolation card, CLI, REST API).
+
+### Files changed
+
+- `packages/core/src/sandbox/credential-proxy.ts` (new) — `CredentialProxy` class
+- `packages/core/src/sandbox/credential-proxy.test.ts` (new) — 10 unit tests
+- `packages/core/src/sandbox/manager.ts` — `startProxy`, `stopProxy`, `getStatus` (adds `credentialProxyUrl`)
+- `packages/core/src/sandbox/index.ts` — re-exports `CredentialProxy`, `CredentialProxyHandle`, `CredentialRule`, `CredentialProxyConfig`
+- `packages/core/src/sandbox/types.ts` — `credentialProxy?` in `SandboxCapabilities`
+- `packages/shared/src/types/config.ts` — `SandboxProxyCredentialSchema`, `credentialProxy` sub-object in `SandboxConfigSchema`, `sandboxCredentialProxy` in `SecurityConfigSchema`
+- `packages/core/src/secureyeoman.ts` — `sandboxCredentialProxy` in `updateSecurityPolicy` + `policyKeys`
+- `packages/core/src/gateway/server.ts` — `sandboxCredentialProxy` in GET/PATCH policy + sandbox status
+- `packages/core/src/cli/commands/policy.ts` — `sandboxCredentialProxy` in `ALL_POLICY_FLAGS`
+- `packages/dashboard/src/api/client.ts` — `sandboxCredentialProxy` in `SecurityPolicy` + fallback
+- `packages/dashboard/src/components/SecuritySettings.tsx` — `PolicyToggle` in Sandbox Isolation card
+- `packages/dashboard/src/components/SecuritySettings.test.tsx` — mock policy field
+- `docs/adr/099-sandbox-credential-proxy.md` (new)
+- `docs/development/roadmap.md` — bullet marked `[x]`
+- `docs/development/functional-audit.md` — Outbound Network Proxy row ❌ → ✅
+- `docs/configuration.md` — `security.sandbox.credentialProxy` section
+- `README.md` — Outbound Credential Proxy in security feature list
+- `docs/guides/security-testing.md` — proxy verification note
+
+---
+
 ## Hotfix — Group Chat schema-qualification bug (2026-02-21)
 
 Discovered during cold-start memory baseline check: migration 030 (`030_group_chat.sql`) and `GroupChatStorage` referenced bare table names `messages` and `integrations`, which do not exist in PostgreSQL's default `public` search path. The actual tables live in the `integration` schema. This caused a fatal `relation "messages" does not exist` error on any fresh database, preventing the server from starting.

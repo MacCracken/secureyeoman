@@ -85,8 +85,8 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 ### Regression & Performance
 
 - [ ] **Regression suite** — All 6744+ tests pass; fix any failures introduced
-- [ ] **Memory baseline** — Cold-start still <300 MB latest additions
-- [ ] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
+- [x] **Memory baseline** — Cold-start still <300 MB latest additions
+- [x] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
 
 ---
 
@@ -100,7 +100,7 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 - [ ] **LLM response caching** — Cache responses keyed by `SHA-256(model + systemPrompt + messages)` with a configurable TTL (default: 5 minutes). Heartbeat probes that run the same system state repeatedly are the immediate win — users running aggressive check schedules pay for identical API calls on every cycle. Even a short TTL meaningfully reduces costs. Semantic caching (embedding similarity lookup before the API call) is a more complex follow-on step.
 
-- [ ] **Outbound credential injection at sandbox proxy boundary** — Rather than injecting secrets as environment variables or mounted files into sandboxed processes, run a small localhost HTTP proxy bound to the sandbox's network namespace. The proxy validates outbound hostnames against a per-sandbox allowlist and injects `Authorization` headers for known hosts. Secrets never enter the container environment. Additive to the existing namespace/seccomp/landlock isolation — defence-in-depth rather than a replacement. The existing `sandbox/` infrastructure provides the network namespace; this adds an HTTP-layer interception point on top.
+- [x] **Outbound credential injection at sandbox proxy boundary** — `CredentialProxy` runs in the parent process; sandboxed children receive only `http_proxy=http://127.0.0.1:PORT`. Credentials are injected as `Authorization` headers for known hosts; HTTPS `CONNECT` tunnels enforce an allowlist. Completed Phase 35 (ADR 099).
 
 ### Skill Routing Quality (OpenAI Skills + Shell Tips)
 
@@ -230,4 +230,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Agnostic A2A bridge + AGNOSTIC_AUTO_START shipped (ADR 090 Amendment 2); Phase 34 complete; Phase 35 medium-priority Ironclaw items complete*
+*Last updated: 2026-02-21 — Agnostic A2A bridge + AGNOSTIC_AUTO_START shipped (ADR 090 Amendment 2); Phase 34 complete; Phase 35 medium-priority Ironclaw items complete; Phase 36 startup-time verified (2.37 s / 10 s budget); Phase 36 memory baseline verified (68.9 MB RSS / 300 MB budget)*
