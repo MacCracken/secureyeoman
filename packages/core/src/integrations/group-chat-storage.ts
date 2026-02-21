@@ -2,7 +2,7 @@
  * GroupChatStorage — Queries the existing messages + integrations tables
  * to surface channel listings and message threads for the Group Chat View.
  *
- * ADR 086
+ * ADR 087
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
@@ -56,7 +56,7 @@ export class GroupChatStorage extends PgBaseStorage {
          COALESCE(i.display_name, m.platform) AS integration_name,
          MAX(m.timestamp) AS last_message_at,
          (
-           SELECT text FROM messages
+           SELECT text FROM integration.messages
            WHERE integration_id = m.integration_id
              AND chat_id = m.chat_id
            ORDER BY timestamp DESC LIMIT 1
@@ -64,14 +64,14 @@ export class GroupChatStorage extends PgBaseStorage {
          COUNT(*)::integer AS message_count,
          COUNT(*) FILTER (WHERE m.direction = 'inbound')::integer AS unreplied_count,
          (
-           SELECT personality_id FROM messages
+           SELECT personality_id FROM integration.messages
            WHERE integration_id = m.integration_id
              AND chat_id = m.chat_id
              AND personality_id IS NOT NULL
            ORDER BY timestamp DESC LIMIT 1
          ) AS personality_id
-       FROM messages m
-       LEFT JOIN integrations i ON i.id = m.integration_id
+       FROM integration.messages m
+       LEFT JOIN integration.integrations i ON i.id = m.integration_id
        ${where}
        GROUP BY m.integration_id, m.chat_id, m.platform, i.display_name
        ORDER BY last_message_at DESC NULLS LAST
@@ -81,7 +81,7 @@ export class GroupChatStorage extends PgBaseStorage {
 
     const countRows = await this.queryMany<{ total: number }>(
       `SELECT COUNT(DISTINCT (integration_id, chat_id))::integer AS total
-       FROM messages m
+       FROM integration.messages m
        ${where}`,
       params
     );
@@ -159,7 +159,7 @@ export class GroupChatStorage extends PgBaseStorage {
       `SELECT id, integration_id, platform, direction, sender_id, sender_name,
               chat_id, text, attachments, reply_to_message_id, platform_message_id,
               metadata, timestamp, personality_id
-       FROM messages
+       FROM integration.messages
        ${where}
        ORDER BY timestamp DESC
        LIMIT $${p++} OFFSET $${p++}`,
@@ -167,7 +167,7 @@ export class GroupChatStorage extends PgBaseStorage {
     );
 
     const countRows = await this.queryMany<{ total: number }>(
-      `SELECT COUNT(*)::integer AS total FROM messages ${where}`,
+      `SELECT COUNT(*)::integer AS total FROM integration.messages ${where}`,
       [integrationId, chatId]
     );
 

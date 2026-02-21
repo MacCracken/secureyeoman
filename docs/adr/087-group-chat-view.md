@@ -66,3 +66,15 @@ The channel list and message thread both use `refetchInterval` via React Query (
 | New `channels` table | Duplication; existing `messages` table already contains all needed data |
 | WS-only (no REST) | REST is simpler to test and cache; WS can be added later |
 | Platform-native embeds | Not feasible — each platform has different embedding constraints |
+
+---
+
+## Amendment 1 — Schema-qualification bug fix (2026-02-21)
+
+**Problem:** `030_group_chat.sql` and `GroupChatStorage` referenced bare table names `messages` and `integrations` without the `integration.` schema prefix. PostgreSQL's default `search_path` (`"$user", public`) does not include the `integration` schema, so migration 030 threw `relation "messages" does not exist` on any fresh database, blocking cold-start entirely.
+
+**Fix:**
+- `packages/core/src/storage/migrations/030_group_chat.sql` — all references updated to `integration.messages`, `integration.integrations`, and `integration.group_chat_pins`
+- `packages/core/src/integrations/group-chat-storage.ts` — all five SQL query strings updated to use `integration.messages` and `integration.integrations`
+
+**Test coverage added:** `packages/core/src/integrations/group-chat-storage.test.ts` — assertions that every generated SQL string contains `integration.messages` / `integration.integrations`, plus full functional coverage of `listChannels()` and `listMessages()`.
