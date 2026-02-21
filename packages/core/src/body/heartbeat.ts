@@ -174,7 +174,7 @@ export class HeartbeatManager {
     const now = new Date();
     if (daysOfWeek.length > 0) {
       const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
-      if (!daysOfWeek.includes(days[now.getUTCDay()] as string)) return false;
+      if (!daysOfWeek.includes(days[now.getUTCDay()]!)) return false;
     }
     const cur = now.getUTCHours() * 60 + now.getUTCMinutes();
     const [sh = 0, sm = 0] = start.split(':').map(Number);

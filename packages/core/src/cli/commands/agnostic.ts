@@ -231,7 +231,7 @@ Environment variables (set after start to wire MCP tools):
 
       // compose ps --format json outputs one JSON object per line (NDJSON)
       const lines = result.stdout.split('\n').filter(Boolean);
-      const containers: Array<{ Name: string; State: string; Status: string; Ports?: string }> = [];
+      const containers: { Name: string; State: string; Status: string; Ports?: string }[] = [];
 
       for (const line of lines) {
         try {
@@ -245,12 +245,12 @@ Environment variables (set after start to wire MCP tools):
         } catch {
           // older Docker versions output a JSON array
           try {
-            const arr = JSON.parse(result.stdout) as Array<{
+            const arr = JSON.parse(result.stdout) as {
               Name: string;
               State: string;
               Status: string;
               Ports?: string;
-            }>;
+            }[];
             containers.push(...arr);
             break;
           } catch {
@@ -312,7 +312,9 @@ Environment variables (set after start to wire MCP tools):
           });
           child.stdout.on('data', (chunk: Buffer) => ctx.stdout.write(chunk.toString()));
           child.stderr.on('data', (chunk: Buffer) => ctx.stdout.write(chunk.toString()));
-          child.on('close', (code) => resolve(code ?? 0));
+          child.on('close', (code) => {
+            resolve(code ?? 0);
+          });
         });
       }
 

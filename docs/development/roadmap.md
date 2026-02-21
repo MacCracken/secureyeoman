@@ -75,7 +75,7 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 - [x] **`@storybook/react` unresolvable** — Added as explicit devDep in `packages/dashboard`. *(Fixed 2026-02-21)*
 
 #### Lint
-- [ ] **74 ESLint errors** (deferred) — Primarily new rules from `typescript-eslint@^8.54`: `no-unnecessary-type-conversion` (redundant `Number()`/`String()`/`!!`), `no-useless-escape`, `use-unknown-in-catch-callback-variable`, `no-redundant-type-constituents`, `ban-ts-comment` (missing descriptions), `no-unnecessary-type-parameters`, `no-deprecated` (`JSX` → `React.JSX`), `no-empty`. Run `npm run lint 2>&1 | grep error` for the full list.
+- [x] **ESLint zero errors** *(Done — 2026-02-21)* — Resolved all 36 remaining errors: `no-unnecessary-type-conversion`, `no-confusing-void-expression`, `no-unnecessary-type-parameters`, `no-deprecated` (`Figma` brand icon, `JSX` namespace), `dot-notation`, `array-type`, storybook `parserOptions.project`, `prefer-optional-chain`, `no-unused-expressions`, `no-unnecessary-template-expression`, `no-redundant-type-constituents`, `non-nullable-type-assertion-style`. Lint now exits with 0 errors.
 
 #### Security
 - [ ] **14 npm audit vulnerabilities remain** — blocked upstream:
@@ -101,7 +101,7 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 - [x] **Format** — Passing ✅
 - [x] **Typecheck** — Passing ✅ (fixed: discord.js v14 upgrade, @types/express, @testing-library/dom, graphology-types, @storybook/react)
-- [ ] **Lint** — 74 errors deferred to Phase 33 open items
+- [x] **Lint** — Passing ✅ (fixed: all 36 errors cleared 2026-02-21)
 - [ ] **Security** — 14 vulns remaining; minimatch (dev-only, blocked by typescript-eslint ESLint-v10 compat) and undici (blocked by discord.js upstream patch) — see dependency-watch.md
 
 ### Regression & Performance

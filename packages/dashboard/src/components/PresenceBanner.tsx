@@ -5,6 +5,7 @@
  * Shows colored presence dots and a human-readable label.
  */
 
+import React from 'react';
 import type { PresenceUser } from '../hooks/useCollabEditor.js';
 
 interface PresenceBannerProps {
@@ -20,7 +21,7 @@ function formatLabel(users: PresenceUser[]): string {
   return `${users[0].name} and ${users.length - 1} others are also editing this`;
 }
 
-export function PresenceBanner({ users }: PresenceBannerProps): JSX.Element | null {
+export function PresenceBanner({ users }: PresenceBannerProps): React.JSX.Element | null {
   if (users.length === 0) return null;
 
   return (

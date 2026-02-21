@@ -4,6 +4,34 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## ESLint Zero-Error Pass (2026-02-21) — Phase 33 Lint
+
+### Quality
+
+- **0 ESLint errors** — Resolved all 36 errors deferred from Phase 34 Final Inspection. Errors spanned `no-unnecessary-type-conversion` (15), `no-confusing-void-expression` (5), `no-unnecessary-type-parameters` (3), `no-deprecated` (2), `dot-notation` (2), `array-type` (2), storybook parsing (2), `prefer-optional-chain`, `no-unused-expressions`, `no-unnecessary-template-expression`, `no-redundant-type-constituents`, `non-nullable-type-assertion-style`.
+- **Storybook files linted** — Added `.storybook/*.ts` to `packages/dashboard/tsconfig.node.json` so the parser can resolve project types for Storybook config.
+- **Deprecated `Figma` icon replaced** — `ConnectionsPage.tsx` now uses `Globe` (lucide-react) in place of the deprecated brand icon.
+- **`JSX` namespace updated** — `PresenceBanner.tsx` now uses `React.JSX.Element` per the current TypeScript + React type conventions.
+- **Test fixes** — `packages/dashboard` test files updated to fix pre-existing failures: `fetchMultimodalConfig` mock added to `MultimodalPage.test.tsx` and `AgentsPage.test.tsx`; `scrollIntoView` polyfilled in `GroupChatPage.test.tsx`; Connect-button selectors and ElevenLabs index corrected in `McpPrebuilts.test.tsx`.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `packages/core/src/body/heartbeat.ts` | `as string` → `!` assertion (`non-nullable-type-assertion-style`) |
+| `packages/core/src/cli/commands/agnostic.test.ts` | Removed 13 redundant `String()` wrappers around `string` params |
+| `packages/core/src/cli/commands/agnostic.ts` | `Array<T>` → `T[]` (×2); void arrow shorthand → block body |
+| `packages/core/src/cli/commands/security.ts` | `x && x.includes()` → `x?.includes()` |
+| `packages/core/src/storage/pg-base.test.ts` | Removed unused `<T>` type parameters from 3 test-helper methods |
+| `packages/dashboard/tsconfig.node.json` | Added `.storybook/*.ts` to `include` |
+| `packages/dashboard/src/components/ConnectionsPage.tsx` | Replaced deprecated `Figma` icon with `Globe` |
+| `packages/dashboard/src/components/PersonalityEditor.tsx` | Added block bodies to 4 void `onChange` arrow functions |
+| `packages/dashboard/src/components/PresenceBanner.tsx` | `JSX.Element` → `React.JSX.Element` |
+| `packages/dashboard/src/components/RoutingRulesPage.tsx` | Removed redundant `Number()` wrapper; removed literal `'new'` from union type |
+| `packages/dashboard/src/components/SkillsPage.tsx` | Ternary statement → `if/else` |
+| `packages/mcp/src/tools/agnostic-tools.ts` | `headers['Authorization']` → `headers.Authorization` (×2); removed unnecessary template literal and `String()` wrapper |
+
+---
+
 ## Per-Personality Active Hours (2026-02-21) — ADR 091
 
 ### New Features

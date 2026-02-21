@@ -690,7 +690,11 @@ function InstalledSkillsTab() {
         <div className="flex items-center gap-1">
           <button
             onClick={() => {
-              skill.enabled ? disableMut.mutate(skill.id) : enableMut.mutate(skill.id);
+              if (skill.enabled) {
+                disableMut.mutate(skill.id);
+              } else {
+                enableMut.mutate(skill.id);
+              }
             }}
             className="btn btn-ghost p-2"
             title={skill.enabled ? 'Disable' : 'Enable'}

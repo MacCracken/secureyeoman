@@ -95,7 +95,7 @@ function formToRule(
     name: f.name,
     description: f.description,
     enabled: f.enabled,
-    priority: Number(f.priority),
+    priority: f.priority,
     triggerPlatforms: splitList(f.triggerPlatforms),
     triggerIntegrationIds: splitList(f.triggerIntegrationIds),
     triggerChatIdPattern: f.triggerChatIdPattern || null,
@@ -134,7 +134,7 @@ function ruleToForm(r: RoutingRule): RuleFormState {
 
 export function RoutingRulesPage() {
   const qc = useQueryClient();
-  const [editingId, setEditingId] = useState<string | 'new' | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<RuleFormState>(EMPTY_FORM);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [testParams, setTestParams] = useState({ platform: '', text: '' });

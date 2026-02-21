@@ -131,7 +131,7 @@ describe('agnostic command', () => {
   describe('start', () => {
     it('runs docker compose up -d and prints config snippet', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       execFile.mockImplementation(makeComposeSuccess('Started'));
@@ -146,7 +146,7 @@ describe('agnostic command', () => {
 
     it('returns 1 when compose fails', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       execFile.mockImplementation(makeComposeFailure(1, 'Cannot connect to Docker'));
@@ -161,7 +161,7 @@ describe('agnostic command', () => {
   describe('stop', () => {
     it('runs docker compose down', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       execFile.mockImplementation(makeComposeSuccess('Network qa-network Removed'));
@@ -175,7 +175,7 @@ describe('agnostic command', () => {
 
     it('returns 1 when compose down fails', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       execFile.mockImplementation(makeComposeFailure(1));
@@ -190,7 +190,7 @@ describe('agnostic command', () => {
   describe('status', () => {
     it('shows no containers message when stack is down', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       execFile.mockImplementation(makeComposeSuccess('')); // empty output = no containers
@@ -203,7 +203,7 @@ describe('agnostic command', () => {
 
     it('parses NDJSON container list', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       const ndjson = [
@@ -223,7 +223,7 @@ describe('agnostic command', () => {
 
     it('returns 1 when compose ps fails', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       execFile.mockImplementation(makeComposeFailure(1, 'compose error'));
@@ -238,7 +238,7 @@ describe('agnostic command', () => {
   describe('logs', () => {
     it('runs compose logs with default tail', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       execFile.mockImplementation(makeComposeSuccess('[qa-manager] starting...'));
@@ -251,7 +251,7 @@ describe('agnostic command', () => {
 
     it('filters logs to a specific agent', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       let capturedArgs: string[] = [];
@@ -274,7 +274,7 @@ describe('agnostic command', () => {
 
     it('respects --tail flag', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       let capturedArgs: string[] = [];
@@ -299,7 +299,7 @@ describe('agnostic command', () => {
   describe('pull', () => {
     it('runs docker compose pull', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       execFile.mockImplementation(makeComposeSuccess('Pulling redis... done'));
@@ -313,7 +313,7 @@ describe('agnostic command', () => {
 
     it('returns 1 when pull fails', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const execFile = await getExecFileMock();
       execFile.mockImplementation(makeComposeFailure(1));
@@ -328,7 +328,7 @@ describe('agnostic command', () => {
   describe('unknown subcommand', () => {
     it('returns 1 for unknown subcommand', async () => {
       const fs = await getFsMock();
-      fs.mockImplementation((p: string) => String(p).endsWith('docker-compose.yml'));
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
 
       const { stdout, stderr, getStderr } = createStreams();
       const code = await agnosticCommand.run({ argv: ['reboot'], stdout, stderr });

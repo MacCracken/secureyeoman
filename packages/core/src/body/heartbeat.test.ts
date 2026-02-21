@@ -1133,7 +1133,13 @@ describe('HeartbeatManager', () => {
       const suppressed = await hb.beat();
       expect(suppressed.checks).toHaveLength(0);
 
-      hb.setPersonalitySchedule({ enabled: false, start: '09:00', end: '17:00', daysOfWeek: [], timezone: 'UTC' });
+      hb.setPersonalitySchedule({
+        enabled: false,
+        start: '09:00',
+        end: '17:00',
+        daysOfWeek: [],
+        timezone: 'UTC',
+      });
       const resumed = await hb.beat();
       expect(resumed.checks.length).toBeGreaterThan(0);
     });
