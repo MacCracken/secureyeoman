@@ -197,7 +197,9 @@ export function RoutingRulesPage() {
   const testMutation = useMutation({
     mutationFn: ({ id, params }: { id: string; params: { platform: string; text: string } }) =>
       testRoutingRule(id, { platform: params.platform, text: params.text, direction: 'inbound' }),
-    onSuccess: (data) => { setTestResult({ matched: data.matched, reason: data.reason }); },
+    onSuccess: (data) => {
+      setTestResult({ matched: data.matched, reason: data.reason });
+    },
   });
 
   const handleSubmit = () => {
@@ -259,7 +261,9 @@ export function RoutingRulesPage() {
             enabled: p.isActive,
           }))}
           onSubmit={handleSubmit}
-          onCancel={() => { setEditingId(null); }}
+          onCancel={() => {
+            setEditingId(null);
+          }}
           isNew={editingId === 'new'}
           isPending={createMutation.isPending || updateMutation.isPending}
           error={
@@ -290,7 +294,9 @@ export function RoutingRulesPage() {
               {/* Rule header row */}
               <div className="flex items-center gap-3 p-4">
                 <button
-                  onClick={() => { toggleMutation.mutate({ id: rule.id, enabled: !rule.enabled }); }}
+                  onClick={() => {
+                    toggleMutation.mutate({ id: rule.id, enabled: !rule.enabled });
+                  }}
                   className={`flex-shrink-0 p-1.5 rounded transition-colors ${
                     rule.enabled
                       ? 'text-green-500 hover:bg-green-50 dark:hover:bg-green-950'
@@ -328,7 +334,9 @@ export function RoutingRulesPage() {
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => { setExpandedId(isExpanded ? null : rule.id); }}
+                    onClick={() => {
+                      setExpandedId(isExpanded ? null : rule.id);
+                    }}
                     className="p-1.5 rounded hover:bg-muted text-muted-foreground"
                     title="Test"
                   >
@@ -346,7 +354,9 @@ export function RoutingRulesPage() {
                     <Trash2 className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => { setExpandedId(isExpanded ? null : rule.id); }}
+                    onClick={() => {
+                      setExpandedId(isExpanded ? null : rule.id);
+                    }}
                     className="p-1.5 rounded hover:bg-muted text-muted-foreground"
                   >
                     {isExpanded ? (
@@ -369,14 +379,18 @@ export function RoutingRulesPage() {
                       type="text"
                       placeholder="Platform (e.g. slack)"
                       value={testParams.platform}
-                      onChange={(e) => { setTestParams((p) => ({ ...p, platform: e.target.value })); }}
+                      onChange={(e) => {
+                        setTestParams((p) => ({ ...p, platform: e.target.value }));
+                      }}
                       className="w-32 rounded border border-input bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                     <input
                       type="text"
                       placeholder="Message text"
                       value={testParams.text}
-                      onChange={(e) => { setTestParams((p) => ({ ...p, text: e.target.value })); }}
+                      onChange={(e) => {
+                        setTestParams((p) => ({ ...p, text: e.target.value }));
+                      }}
                       className="flex-1 rounded border border-input bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring"
                     />
                     <button
@@ -490,7 +504,9 @@ function RuleForm({
           <input
             type="text"
             value={form.name}
-            onChange={(e) => { setField('name', e.target.value); }}
+            onChange={(e) => {
+              setField('name', e.target.value);
+            }}
             placeholder="e.g. Forward Slack → Telegram"
             className={inputClass}
           />
@@ -500,7 +516,9 @@ function RuleForm({
           <input
             type="number"
             value={form.priority}
-            onChange={(e) => { setField('priority', Number(e.target.value)); }}
+            onChange={(e) => {
+              setField('priority', Number(e.target.value));
+            }}
             min={1}
             max={9999}
             className={inputClass}
@@ -513,7 +531,9 @@ function RuleForm({
         <input
           type="text"
           value={form.description}
-          onChange={(e) => { setField('description', e.target.value); }}
+          onChange={(e) => {
+            setField('description', e.target.value);
+          }}
           placeholder="Optional description"
           className={inputClass}
         />
@@ -529,7 +549,9 @@ function RuleForm({
             <label className={labelClass}>Direction</label>
             <select
               value={form.triggerDirection}
-              onChange={(e) => { setField('triggerDirection', e.target.value as Direction); }}
+              onChange={(e) => {
+                setField('triggerDirection', e.target.value as Direction);
+              }}
               className={inputClass}
             >
               <option value="inbound">Inbound</option>
@@ -542,7 +564,9 @@ function RuleForm({
             <input
               type="text"
               value={form.triggerPlatforms}
-              onChange={(e) => { setField('triggerPlatforms', e.target.value); }}
+              onChange={(e) => {
+                setField('triggerPlatforms', e.target.value);
+              }}
               placeholder="slack, telegram (blank = all)"
               className={inputClass}
             />
@@ -552,7 +576,9 @@ function RuleForm({
             <input
               type="text"
               value={form.triggerIntegrationIds}
-              onChange={(e) => { setField('triggerIntegrationIds', e.target.value); }}
+              onChange={(e) => {
+                setField('triggerIntegrationIds', e.target.value);
+              }}
               placeholder="blank = all"
               className={inputClass}
             />
@@ -562,7 +588,9 @@ function RuleForm({
             <input
               type="text"
               value={form.triggerKeywordPattern}
-              onChange={(e) => { setField('triggerKeywordPattern', e.target.value); }}
+              onChange={(e) => {
+                setField('triggerKeywordPattern', e.target.value);
+              }}
               placeholder="e.g. urgent|help"
               className={`${inputClass} font-mono`}
             />
@@ -572,7 +600,9 @@ function RuleForm({
             <input
               type="text"
               value={form.triggerChatIdPattern}
-              onChange={(e) => { setField('triggerChatIdPattern', e.target.value); }}
+              onChange={(e) => {
+                setField('triggerChatIdPattern', e.target.value);
+              }}
               placeholder="e.g. ^C[A-Z]+"
               className={`${inputClass} font-mono`}
             />
@@ -582,7 +612,9 @@ function RuleForm({
             <input
               type="text"
               value={form.triggerSenderIdPattern}
-              onChange={(e) => { setField('triggerSenderIdPattern', e.target.value); }}
+              onChange={(e) => {
+                setField('triggerSenderIdPattern', e.target.value);
+              }}
               placeholder="e.g. bot_.*"
               className={`${inputClass} font-mono`}
             />
@@ -600,7 +632,9 @@ function RuleForm({
             <label className={labelClass}>Action Type *</label>
             <select
               value={form.actionType}
-              onChange={(e) => { setField('actionType', e.target.value as ActionType); }}
+              onChange={(e) => {
+                setField('actionType', e.target.value as ActionType);
+              }}
               className={inputClass}
             >
               {(Object.entries(ACTION_TYPE_LABELS) as [ActionType, string][]).map(([v, label]) => (
@@ -617,7 +651,9 @@ function RuleForm({
                 <label className={labelClass}>Target Integration</label>
                 <select
                   value={form.actionTargetIntegrationId}
-                  onChange={(e) => { setField('actionTargetIntegrationId', e.target.value); }}
+                  onChange={(e) => {
+                    setField('actionTargetIntegrationId', e.target.value);
+                  }}
                   className={inputClass}
                 >
                   <option value="">Same integration</option>
@@ -633,7 +669,9 @@ function RuleForm({
                 <input
                   type="text"
                   value={form.actionTargetChatId}
-                  onChange={(e) => { setField('actionTargetChatId', e.target.value); }}
+                  onChange={(e) => {
+                    setField('actionTargetChatId', e.target.value);
+                  }}
                   placeholder="Same chat if blank"
                   className={inputClass}
                 />
@@ -646,7 +684,9 @@ function RuleForm({
               <label className={labelClass}>Override Personality</label>
               <select
                 value={form.actionPersonalityId}
-                onChange={(e) => { setField('actionPersonalityId', e.target.value); }}
+                onChange={(e) => {
+                  setField('actionPersonalityId', e.target.value);
+                }}
                 className={inputClass}
               >
                 <option value="">Select personality…</option>
@@ -666,7 +706,9 @@ function RuleForm({
               <input
                 type="url"
                 value={form.actionWebhookUrl}
-                onChange={(e) => { setField('actionWebhookUrl', e.target.value); }}
+                onChange={(e) => {
+                  setField('actionWebhookUrl', e.target.value);
+                }}
                 placeholder="https://hooks.example.com/..."
                 className={inputClass}
               />
@@ -682,7 +724,9 @@ function RuleForm({
               </label>
               <textarea
                 value={form.actionMessageTemplate}
-                onChange={(e) => { setField('actionMessageTemplate', e.target.value); }}
+                onChange={(e) => {
+                  setField('actionMessageTemplate', e.target.value);
+                }}
                 placeholder={'From {{senderName}} on {{platform}}: {{text}}'}
                 rows={2}
                 className={`${inputClass} resize-none`}
@@ -700,7 +744,9 @@ function RuleForm({
           <input
             type="checkbox"
             checked={form.enabled}
-            onChange={(e) => { setField('enabled', e.target.checked); }}
+            onChange={(e) => {
+              setField('enabled', e.target.checked);
+            }}
             className="rounded"
           />
           Enabled

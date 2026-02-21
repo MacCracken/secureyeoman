@@ -86,26 +86,23 @@ function runTool(
         }
         resolve({
           stdout:
-            stdout.length > MAX_OUTPUT
-              ? stdout.slice(0, MAX_OUTPUT) + '\n...[truncated]'
-              : stdout,
+            stdout.length > MAX_OUTPUT ? stdout.slice(0, MAX_OUTPUT) + '\n...[truncated]' : stdout,
           stderr:
-            stderr.length > MAX_OUTPUT
-              ? stderr.slice(0, MAX_OUTPUT) + '\n...[truncated]'
-              : stderr,
+            stderr.length > MAX_OUTPUT ? stderr.slice(0, MAX_OUTPUT) + '\n...[truncated]' : stderr,
         });
       }
     );
   });
 }
 
-function formatSecResult(tool: string, target: string, command: string, stdout: string, stderr: string): string {
-  const parts: string[] = [
-    `Tool: ${tool}`,
-    `Target: ${target}`,
-    `Command: ${command}`,
-    '---',
-  ];
+function formatSecResult(
+  tool: string,
+  target: string,
+  command: string,
+  stdout: string,
+  stderr: string
+): string {
+  const parts: string[] = [`Tool: ${tool}`, `Target: ${target}`, `Command: ${command}`, '---'];
   if (stdout.trim()) parts.push(stdout.trim());
   if (stderr.trim()) parts.push(`stderr:\n${stderr.trim()}`);
   if (!stdout.trim() && !stderr.trim()) parts.push('(no output)');
@@ -142,9 +139,20 @@ export async function registerSecurityTools(
   if (!config.exposeSecurityTools) {
     // Register stub tools that return the disabled message so agents understand why
     const stubTools = [
-      'sec_nmap', 'sec_gobuster', 'sec_ffuf', 'sec_sqlmap', 'sec_nikto',
-      'sec_nuclei', 'sec_whatweb', 'sec_wpscan', 'sec_hashcat', 'sec_john',
-      'sec_theharvester', 'sec_dig', 'sec_whois', 'sec_shodan',
+      'sec_nmap',
+      'sec_gobuster',
+      'sec_ffuf',
+      'sec_sqlmap',
+      'sec_nikto',
+      'sec_nuclei',
+      'sec_whatweb',
+      'sec_wpscan',
+      'sec_hashcat',
+      'sec_john',
+      'sec_theharvester',
+      'sec_dig',
+      'sec_whois',
+      'sec_shodan',
     ];
     for (const name of stubTools) {
       server.registerTool(
@@ -161,9 +169,19 @@ export async function registerSecurityTools(
 
   // Check availability of each binary concurrently
   const bins = [
-    'nmap', 'gobuster', 'ffuf', 'sqlmap', 'nikto',
-    'nuclei', 'whatweb', 'wpscan', 'hashcat', 'john',
-    'theHarvester', 'dig', 'whois',
+    'nmap',
+    'gobuster',
+    'ffuf',
+    'sqlmap',
+    'nikto',
+    'nuclei',
+    'whatweb',
+    'wpscan',
+    'hashcat',
+    'john',
+    'theHarvester',
+    'dig',
+    'whois',
   ];
   const availability = await Promise.all(bins.map((b) => checkAvailable(config, b)));
   const available = new Map(bins.map((b, i) => [b, availability[i]]));
@@ -198,7 +216,14 @@ export async function registerSecurityTools(
         nmapArgs.push(args.target);
         const { stdout, stderr } = await runTool(config, 'nmap', nmapArgs);
         const cmd = buildCommandString(config, 'nmap', nmapArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('nmap', args.target, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('nmap', args.target, cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -209,7 +234,8 @@ export async function registerSecurityTools(
     server.registerTool(
       'sec_gobuster',
       {
-        description: 'Run gobuster directory, DNS, or vhost brute-force against an authorized target',
+        description:
+          'Run gobuster directory, DNS, or vhost brute-force against an authorized target',
         inputSchema: {
           target: z.string().describe('Target URL or domain'),
           mode: z.enum(['dir', 'dns', 'vhost']).default('dir').describe('Scan mode'),
@@ -221,7 +247,14 @@ export async function registerSecurityTools(
         const gbArgs = [args.mode, '-u', args.target, '-w', args.wordlist, '-q'];
         const { stdout, stderr } = await runTool(config, 'gobuster', gbArgs);
         const cmd = buildCommandString(config, 'gobuster', gbArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('gobuster', args.target, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('gobuster', args.target, cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -232,7 +265,8 @@ export async function registerSecurityTools(
     server.registerTool(
       'sec_ffuf',
       {
-        description: 'Run ffuf web fuzzer. Place FUZZ in the URL where the wordlist should substitute',
+        description:
+          'Run ffuf web fuzzer. Place FUZZ in the URL where the wordlist should substitute',
         inputSchema: {
           url: z.string().describe('URL with FUZZ placeholder, e.g. https://target.com/FUZZ'),
           wordlist: z.string().describe('Path to wordlist file'),
@@ -242,13 +276,21 @@ export async function registerSecurityTools(
       wrapToolHandler('sec_ffuf', middleware, async (args) => {
         // Extract hostname from URL for scope validation
         let target = args.url;
-        try { target = new URL(args.url.replace('FUZZ', 'test')).hostname; } catch { /* keep raw */ }
+        try {
+          target = new URL(args.url.replace('FUZZ', 'test')).hostname;
+        } catch {
+          /* keep raw */
+        }
         validateTarget(target, config);
         const ffufArgs = ['-u', args.url, '-w', args.wordlist, '-s'];
         if (args.filter) ffufArgs.push('-fc', args.filter);
         const { stdout, stderr } = await runTool(config, 'ffuf', ffufArgs);
         const cmd = buildCommandString(config, 'ffuf', ffufArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('ffuf', target, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            { type: 'text' as const, text: formatSecResult('ffuf', target, cmd, stdout, stderr) },
+          ],
+        };
       })
     );
   }
@@ -259,7 +301,8 @@ export async function registerSecurityTools(
     server.registerTool(
       'sec_sqlmap',
       {
-        description: 'Run sqlmap SQL injection detection (no --os-shell) against an authorized target',
+        description:
+          'Run sqlmap SQL injection detection (no --os-shell) against an authorized target',
         inputSchema: {
           url: z.string().describe('Target URL with parameters, e.g. https://target.com/page?id=1'),
           level: z.number().int().min(1).max(5).default(1).describe('Test level (1-5)'),
@@ -268,19 +311,30 @@ export async function registerSecurityTools(
       },
       wrapToolHandler('sec_sqlmap', middleware, async (args) => {
         let target = args.url;
-        try { target = new URL(args.url).hostname; } catch { /* keep raw */ }
+        try {
+          target = new URL(args.url).hostname;
+        } catch {
+          /* keep raw */
+        }
         validateTarget(target, config);
         // Explicitly block os-shell/os-cmd execution
         const sqlArgs = [
-          '-u', args.url,
-          '--level', String(args.level),
-          '--risk', String(args.risk),
+          '-u',
+          args.url,
+          '--level',
+          String(args.level),
+          '--risk',
+          String(args.risk),
           '--batch',
           '--no-logging',
         ];
         const { stdout, stderr } = await runTool(config, 'sqlmap', sqlArgs);
         const cmd = buildCommandString(config, 'sqlmap', sqlArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('sqlmap', target, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            { type: 'text' as const, text: formatSecResult('sqlmap', target, cmd, stdout, stderr) },
+          ],
+        };
       })
     );
   }
@@ -301,7 +355,14 @@ export async function registerSecurityTools(
         const niktoArgs = ['-h', args.target, '-nointeractive'];
         const { stdout, stderr } = await runTool(config, 'nikto', niktoArgs);
         const cmd = buildCommandString(config, 'nikto', niktoArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('nikto', args.target, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('nikto', args.target, cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -320,13 +381,24 @@ export async function registerSecurityTools(
       },
       wrapToolHandler('sec_nuclei', middleware, async (args) => {
         let scopeTarget = args.target;
-        try { scopeTarget = new URL(args.target).hostname; } catch { /* keep raw */ }
+        try {
+          scopeTarget = new URL(args.target).hostname;
+        } catch {
+          /* keep raw */
+        }
         validateTarget(scopeTarget, config);
         const nucleiArgs = ['-u', args.target, '-silent'];
         if (args.tags) nucleiArgs.push('-tags', args.tags);
         const { stdout, stderr } = await runTool(config, 'nuclei', nucleiArgs);
         const cmd = buildCommandString(config, 'nuclei', nucleiArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('nuclei', scopeTarget, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('nuclei', scopeTarget, cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -347,7 +419,14 @@ export async function registerSecurityTools(
         const wwArgs = [args.target, '--quiet'];
         const { stdout, stderr } = await runTool(config, 'whatweb', wwArgs);
         const cmd = buildCommandString(config, 'whatweb', wwArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('whatweb', args.target, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('whatweb', args.target, cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -365,12 +444,23 @@ export async function registerSecurityTools(
       },
       wrapToolHandler('sec_wpscan', middleware, async (args) => {
         let scopeTarget = args.target;
-        try { scopeTarget = new URL(args.target).hostname; } catch { /* keep raw */ }
+        try {
+          scopeTarget = new URL(args.target).hostname;
+        } catch {
+          /* keep raw */
+        }
         validateTarget(scopeTarget, config);
         const wpArgs = ['--url', args.target, '--no-banner', '--quiet'];
         const { stdout, stderr } = await runTool(config, 'wpscan', wpArgs);
         const cmd = buildCommandString(config, 'wpscan', wpArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('wpscan', scopeTarget, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('wpscan', scopeTarget, cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -386,7 +476,11 @@ export async function registerSecurityTools(
         description: 'Attempt offline hash cracking with hashcat (no live brute-force)',
         inputSchema: {
           hash: z.string().describe('The hash string to crack'),
-          mode: z.number().int().min(0).describe('Hashcat mode number, e.g. 0 for MD5, 1000 for NTLM'),
+          mode: z
+            .number()
+            .int()
+            .min(0)
+            .describe('Hashcat mode number, e.g. 0 for MD5, 1000 for NTLM'),
           wordlist: z.string().describe('Path to wordlist file'),
         },
       },
@@ -394,7 +488,14 @@ export async function registerSecurityTools(
         const hcArgs = ['-m', String(args.mode), args.hash, args.wordlist, '--quiet'];
         const { stdout, stderr } = await runTool(config, 'hashcat', hcArgs);
         const cmd = buildCommandString(config, 'hashcat', hcArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('hashcat', '(offline)', cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('hashcat', '(offline)', cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -408,7 +509,10 @@ export async function registerSecurityTools(
         description: 'Attempt offline hash cracking with John the Ripper (no live brute-force)',
         inputSchema: {
           hashfile: z.string().describe('Path to file containing hashes to crack'),
-          wordlist: z.string().optional().describe('Path to wordlist file (omit for default rules)'),
+          wordlist: z
+            .string()
+            .optional()
+            .describe('Path to wordlist file (omit for default rules)'),
         },
       },
       wrapToolHandler('sec_john', middleware, async (args) => {
@@ -416,7 +520,14 @@ export async function registerSecurityTools(
         if (args.wordlist) johnArgs.push(`--wordlist=${args.wordlist}`);
         const { stdout, stderr } = await runTool(config, 'john', johnArgs);
         const cmd = buildCommandString(config, 'john', johnArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('john', '(offline)', cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('john', '(offline)', cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -427,17 +538,29 @@ export async function registerSecurityTools(
     server.registerTool(
       'sec_theharvester',
       {
-        description: 'Run theHarvester OSINT tool to collect emails, subdomains, and hosts for a domain',
+        description:
+          'Run theHarvester OSINT tool to collect emails, subdomains, and hosts for a domain',
         inputSchema: {
           domain: z.string().describe('Target domain for OSINT collection'),
-          sources: z.string().optional().default('google,bing,dnsdumpster').describe('Comma-separated data sources'),
+          sources: z
+            .string()
+            .optional()
+            .default('google,bing,dnsdumpster')
+            .describe('Comma-separated data sources'),
         },
       },
       wrapToolHandler('sec_theharvester', middleware, async (args) => {
         const thArgs = ['-d', args.domain, '-b', args.sources ?? 'google,bing,dnsdumpster'];
         const { stdout, stderr } = await runTool(config, 'theHarvester', thArgs);
         const cmd = buildCommandString(config, 'theHarvester', thArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('theHarvester', args.domain, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('theHarvester', args.domain, cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -451,14 +574,25 @@ export async function registerSecurityTools(
         description: 'DNS lookup using dig',
         inputSchema: {
           domain: z.string().describe('Domain or hostname to query'),
-          type: z.string().optional().default('A').describe('DNS record type, e.g. A, AAAA, MX, TXT, NS, CNAME'),
+          type: z
+            .string()
+            .optional()
+            .default('A')
+            .describe('DNS record type, e.g. A, AAAA, MX, TXT, NS, CNAME'),
         },
       },
       wrapToolHandler('sec_dig', middleware, async (args) => {
         const digArgs = [args.domain, args.type ?? 'A', '+short'];
         const { stdout, stderr } = await runTool(config, 'dig', digArgs);
         const cmd = buildCommandString(config, 'dig', digArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('dig', args.domain, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('dig', args.domain, cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -478,7 +612,14 @@ export async function registerSecurityTools(
         const whoisArgs = [args.domain];
         const { stdout, stderr } = await runTool(config, 'whois', whoisArgs);
         const cmd = buildCommandString(config, 'whois', whoisArgs);
-        return { content: [{ type: 'text' as const, text: formatSecResult('whois', args.domain, cmd, stdout, stderr) }] };
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: formatSecResult('whois', args.domain, cmd, stdout, stderr),
+            },
+          ],
+        };
       })
     );
   }
@@ -497,14 +638,25 @@ export async function registerSecurityTools(
         const apiKey = config.shodanApiKey;
         if (!apiKey) {
           return {
-            content: [{ type: 'text' as const, text: 'Shodan lookup requires SHODAN_API_KEY to be configured.' }],
+            content: [
+              {
+                type: 'text' as const,
+                text: 'Shodan lookup requires SHODAN_API_KEY to be configured.',
+              },
+            ],
             isError: true,
           };
         }
         const url = `https://api.shodan.io/shodan/host/${encodeURIComponent(args.ip)}?key=${apiKey}`;
         const res = await fetch(url);
         const body = await res.text();
-        const text = formatSecResult('shodan', args.ip, `GET ${url.replace(apiKey, '[REDACTED]')}`, body, '');
+        const text = formatSecResult(
+          'shodan',
+          args.ip,
+          `GET ${url.replace(apiKey, '[REDACTED]')}`,
+          body,
+          ''
+        );
         return { content: [{ type: 'text' as const, text }] };
       })
     );

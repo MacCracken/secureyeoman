@@ -56,7 +56,9 @@ export function loadConfig(
     securityToolsMode: (env.MCP_SECURITY_TOOLS_MODE ?? 'native') as 'native' | 'docker-exec',
     securityToolsContainer: env.MCP_SECURITY_TOOLS_CONTAINER ?? 'kali-sy-toolkit',
     allowedTargets: env.MCP_ALLOWED_TARGETS
-      ? env.MCP_ALLOWED_TARGETS.split(',').map((t) => t.trim()).filter(Boolean)
+      ? env.MCP_ALLOWED_TARGETS.split(',')
+          .map((t) => t.trim())
+          .filter(Boolean)
       : [],
     shodanApiKey: env.SHODAN_API_KEY,
     exposeAgnosticTools: parseBool(env.MCP_EXPOSE_AGNOSTIC_TOOLS, false),

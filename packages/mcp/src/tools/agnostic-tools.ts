@@ -64,7 +64,11 @@ async function agnosticGet(
 
   const res = await fetch(`${config.agnosticUrl}${path}`, { headers });
   let body: unknown;
-  try { body = await res.json(); } catch { body = await res.text().catch(() => ''); }
+  try {
+    body = await res.json();
+  } catch {
+    body = await res.text().catch(() => '');
+  }
   return { ok: res.ok, status: res.status, body };
 }
 
@@ -83,7 +87,11 @@ async function agnosticPost(
     body: JSON.stringify(payload),
   });
   let body: unknown;
-  try { body = await res.json(); } catch { body = await res.text().catch(() => ''); }
+  try {
+    body = await res.json();
+  } catch {
+    body = await res.text().catch(() => '');
+  }
   return { ok: res.ok, status: res.status, body };
 }
 
@@ -129,7 +137,12 @@ export function registerAgnosticTools(
         };
       } catch (err) {
         return {
-          content: [{ type: 'text' as const, text: `Cannot reach Agnostic at ${config.agnosticUrl}: ${err instanceof Error ? err.message : String(err)}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Cannot reach Agnostic at ${config.agnosticUrl}: ${err instanceof Error ? err.message : String(err)}`,
+            },
+          ],
           isError: true,
         };
       }
@@ -148,11 +161,18 @@ export function registerAgnosticTools(
       const { ok, status, body } = await agnosticGet(config, '/api/agents');
       if (!ok) {
         return {
-          content: [{ type: 'text' as const, text: `Agents status failed: HTTP ${status}\n${JSON.stringify(body)}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Agents status failed: HTTP ${status}\n${JSON.stringify(body)}`,
+            },
+          ],
           isError: true,
         };
       }
-      return { content: [{ type: 'text' as const, text: formatResponse('Agnostic Agents', body) }] };
+      return {
+        content: [{ type: 'text' as const, text: formatResponse('Agnostic Agents', body) }],
+      };
     })
   );
 
@@ -168,11 +188,18 @@ export function registerAgnosticTools(
       const { ok, status, body } = await agnosticGet(config, '/api/agents/queues');
       if (!ok) {
         return {
-          content: [{ type: 'text' as const, text: `Queue depths failed: HTTP ${status}\n${JSON.stringify(body)}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Queue depths failed: HTTP ${status}\n${JSON.stringify(body)}`,
+            },
+          ],
           isError: true,
         };
       }
-      return { content: [{ type: 'text' as const, text: formatResponse('Agnostic Queue Depths', body) }] };
+      return {
+        content: [{ type: 'text' as const, text: formatResponse('Agnostic Queue Depths', body) }],
+      };
     })
   );
 
@@ -181,18 +208,26 @@ export function registerAgnosticTools(
   server.registerTool(
     'agnostic_dashboard',
     {
-      description: 'Get the Agnostic QA platform dashboard overview (active sessions, metrics, agent status)',
+      description:
+        'Get the Agnostic QA platform dashboard overview (active sessions, metrics, agent status)',
       inputSchema: {},
     },
     wrapToolHandler('agnostic_dashboard', middleware, async () => {
       const { ok, status, body } = await agnosticGet(config, '/api/dashboard');
       if (!ok) {
         return {
-          content: [{ type: 'text' as const, text: `Dashboard failed: HTTP ${status}\n${JSON.stringify(body)}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Dashboard failed: HTTP ${status}\n${JSON.stringify(body)}`,
+            },
+          ],
           isError: true,
         };
       }
-      return { content: [{ type: 'text' as const, text: formatResponse('Agnostic Dashboard', body) }] };
+      return {
+        content: [{ type: 'text' as const, text: formatResponse('Agnostic Dashboard', body) }],
+      };
     })
   );
 
@@ -214,11 +249,18 @@ export function registerAgnosticTools(
       );
       if (!ok) {
         return {
-          content: [{ type: 'text' as const, text: `Sessions failed: HTTP ${status}\n${JSON.stringify(body)}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Sessions failed: HTTP ${status}\n${JSON.stringify(body)}`,
+            },
+          ],
           isError: true,
         };
       }
-      return { content: [{ type: 'text' as const, text: formatResponse('Agnostic Sessions', body) }] };
+      return {
+        content: [{ type: 'text' as const, text: formatResponse('Agnostic Sessions', body) }],
+      };
     })
   );
 
@@ -233,14 +275,21 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_session_detail', middleware, async (args) => {
-      const { ok, status, body } = await agnosticGet(config, `/api/sessions/${encodeURIComponent(args.session_id)}`);
+      const { ok, status, body } = await agnosticGet(
+        config,
+        `/api/sessions/${encodeURIComponent(args.session_id)}`
+      );
       if (!ok) {
         return {
           content: [{ type: 'text' as const, text: `Session not found: HTTP ${status}` }],
           isError: true,
         };
       }
-      return { content: [{ type: 'text' as const, text: formatResponse(`Session: ${args.session_id}`, body) }] };
+      return {
+        content: [
+          { type: 'text' as const, text: formatResponse(`Session: ${args.session_id}`, body) },
+        ],
+      };
     })
   );
 
@@ -267,11 +316,18 @@ export function registerAgnosticTools(
       });
       if (!ok) {
         return {
-          content: [{ type: 'text' as const, text: `Report generation failed: HTTP ${status}\n${JSON.stringify(body)}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Report generation failed: HTTP ${status}\n${JSON.stringify(body)}`,
+            },
+          ],
           isError: true,
         };
       }
-      return { content: [{ type: 'text' as const, text: formatResponse('Report Generated', body) }] };
+      return {
+        content: [{ type: 'text' as const, text: formatResponse('Report Generated', body) }],
+      };
     })
   );
 
@@ -288,14 +344,18 @@ export function registerAgnosticTools(
         'Requires POST /api/tasks to be implemented — see agnostic TODO.md Priority 1.',
       inputSchema: {
         title: z.string().describe('Short title for the QA task'),
-        description: z.string().describe('What to test — feature description, PR summary, or acceptance criteria'),
+        description: z
+          .string()
+          .describe('What to test — feature description, PR summary, or acceptance criteria'),
         target_url: z.string().optional().describe('Primary URL to test against'),
         priority: z
           .enum(['critical', 'high', 'medium', 'low'])
           .default('high')
           .describe('Task priority'),
         agents: z
-          .array(z.enum(['security_compliance', 'performance', 'senior_qa', 'junior_qa', 'qa_analyst']))
+          .array(
+            z.enum(['security_compliance', 'performance', 'senior_qa', 'junior_qa', 'qa_analyst'])
+          )
           .default([])
           .describe('Agents to invoke (empty = all agents)'),
         standards: z
@@ -316,22 +376,29 @@ export function registerAgnosticTools(
 
       if (status === 404 || status === 405) {
         return {
-          content: [{
-            type: 'text' as const,
-            text:
-              'POST /api/tasks is not yet implemented in the Agnostic platform.\n\n' +
-              'To enable task submission, implement Priority 1 from:\n' +
-              '/home/macro/Repos/agnostic/TODO.md\n\n' +
-              'In the meantime, use the Agnostic Chainlit UI at:\n' +
-              `${config.agnosticUrl}`,
-          }],
+          content: [
+            {
+              type: 'text' as const,
+              text:
+                'POST /api/tasks is not yet implemented in the Agnostic platform.\n\n' +
+                'To enable task submission, implement Priority 1 from:\n' +
+                '/home/macro/Repos/agnostic/TODO.md\n\n' +
+                'In the meantime, use the Agnostic Chainlit UI at:\n' +
+                `${config.agnosticUrl}`,
+            },
+          ],
           isError: true,
         };
       }
 
       if (!ok) {
         return {
-          content: [{ type: 'text' as const, text: `Task submission failed: HTTP ${status}\n${JSON.stringify(body)}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Task submission failed: HTTP ${status}\n${JSON.stringify(body)}`,
+            },
+          ],
           isError: true,
         };
       }
@@ -354,22 +421,28 @@ export function registerAgnosticTools(
       },
     },
     wrapToolHandler('agnostic_task_status', middleware, async (args) => {
-      const { ok, status, body } = await agnosticGet(config, `/api/tasks/${encodeURIComponent(args.task_id)}`);
+      const { ok, status, body } = await agnosticGet(
+        config,
+        `/api/tasks/${encodeURIComponent(args.task_id)}`
+      );
 
       if (status === 404) {
-        const bodyText = typeof body === 'object' && body !== null && 'detail' in body
-          ? String((body as { detail: string }).detail)
-          : 'Task not found';
+        const bodyText =
+          typeof body === 'object' && body !== null && 'detail' in body
+            ? String((body as { detail: string }).detail)
+            : 'Task not found';
 
         if (bodyText.includes('not found') || bodyText.includes('Not Found')) {
           // Could be missing endpoint rather than missing task
           return {
-            content: [{
-              type: 'text' as const,
-              text:
-                'GET /api/tasks/{task_id} is not yet implemented in the Agnostic platform.\n\n' +
-                'See /home/macro/Repos/agnostic/TODO.md Priority 1.',
-            }],
+            content: [
+              {
+                type: 'text' as const,
+                text:
+                  'GET /api/tasks/{task_id} is not yet implemented in the Agnostic platform.\n\n' +
+                  'See /home/macro/Repos/agnostic/TODO.md Priority 1.',
+              },
+            ],
             isError: true,
           };
         }
@@ -377,12 +450,19 @@ export function registerAgnosticTools(
 
       if (!ok) {
         return {
-          content: [{ type: 'text' as const, text: `Task status failed: HTTP ${status}\n${JSON.stringify(body)}` }],
+          content: [
+            {
+              type: 'text' as const,
+              text: `Task status failed: HTTP ${status}\n${JSON.stringify(body)}`,
+            },
+          ],
           isError: true,
         };
       }
 
-      return { content: [{ type: 'text' as const, text: formatResponse(`Task: ${args.task_id}`, body) }] };
+      return {
+        content: [{ type: 'text' as const, text: formatResponse(`Task: ${args.task_id}`, body) }],
+      };
     })
   );
 }

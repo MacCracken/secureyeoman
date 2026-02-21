@@ -235,12 +235,22 @@ Environment variables (set after start to wire MCP tools):
 
       for (const line of lines) {
         try {
-          const obj = JSON.parse(line) as { Name: string; State: string; Status: string; Ports?: string };
+          const obj = JSON.parse(line) as {
+            Name: string;
+            State: string;
+            Status: string;
+            Ports?: string;
+          };
           containers.push(obj);
         } catch {
           // older Docker versions output a JSON array
           try {
-            const arr = JSON.parse(result.stdout) as Array<{ Name: string; State: string; Status: string; Ports?: string }>;
+            const arr = JSON.parse(result.stdout) as Array<{
+              Name: string;
+              State: string;
+              Status: string;
+              Ports?: string;
+            }>;
             containers.push(...arr);
             break;
           } catch {
@@ -256,7 +266,9 @@ Environment variables (set after start to wire MCP tools):
         for (const c of containers) {
           const state = c.State ?? 'unknown';
           const icon = state === 'running' ? '✓' : state === 'exited' ? '✗' : '~';
-          ctx.stdout.write(`${icon} ${c.Name.padEnd(colW - 2)} ${state.padEnd(12)} ${c.Status ?? ''}\n`);
+          ctx.stdout.write(
+            `${icon} ${c.Name.padEnd(colW - 2)} ${state.padEnd(12)} ${c.Status ?? ''}\n`
+          );
         }
 
         const running = containers.filter((c) => c.State === 'running').length;

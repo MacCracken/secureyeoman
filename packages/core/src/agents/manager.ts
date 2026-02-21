@@ -703,10 +703,9 @@ export class SubAgentManager {
         };
 
         // Timeout kill
-        const timeoutHandle = setTimeout(
-          () => { killChild(`Binary agent timed out after ${timeoutMs}ms`); },
-          timeoutMs
-        );
+        const timeoutHandle = setTimeout(() => {
+          killChild(`Binary agent timed out after ${timeoutMs}ms`);
+        }, timeoutMs);
 
         // Abort-signal kill
         if (signal.aborted) {
@@ -912,11 +911,15 @@ export class SubAgentManager {
     const mcpResultRaw = await Promise.race([
       this.deps.mcpClient.callTool(mcpBridgeToolDef.serverId, mcpTool, toolInput),
       new Promise<never>((_, reject) =>
-        setTimeout(() => { reject(new Error('MCP bridge timeout')); }, timeoutMs)
+        setTimeout(() => {
+          reject(new Error('MCP bridge timeout'));
+        }, timeoutMs)
       ),
       new Promise<never>((_, reject) => {
         if (signal.aborted) reject(new Error('Delegation aborted'));
-        signal.addEventListener('abort', () => { reject(new Error('Delegation aborted')); });
+        signal.addEventListener('abort', () => {
+          reject(new Error('Delegation aborted'));
+        });
       }),
     ]);
 

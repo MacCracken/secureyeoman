@@ -2325,7 +2325,9 @@ function McpTab({
                             )}
                           </div>
                           <button
-                            onClick={() => { onToggleToolVisibility(toolKey); }}
+                            onClick={() => {
+                              onToggleToolVisibility(toolKey);
+                            }}
                             className="text-muted-foreground hover:text-foreground p-0.5 shrink-0"
                             title={isHidden ? 'Show tool' : 'Hide tool'}
                           >

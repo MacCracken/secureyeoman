@@ -351,7 +351,9 @@ export class GatewayServer {
       const soulManager = this.secureYeoman.getSoulManager();
       registerSoulRoutes(this.app, {
         soulManager,
-        broadcast: (payload) => { this.broadcast('soul', payload); },
+        broadcast: (payload) => {
+          this.broadcast('soul', payload);
+        },
       });
     } catch {
       // Soul manager may not be available — skip routes

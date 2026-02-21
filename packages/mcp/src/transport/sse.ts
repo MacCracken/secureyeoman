@@ -3,7 +3,7 @@
  */
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
- 
+
 // legacy MCP client compatibility. New clients should use StreamableHTTPServerTransport via
 // the /mcp/v1 endpoint. See ADR 048 / roadmap Dependency Watch for migration tracking.
 import { SSEServerTransport } from '@modelcontextprotocol/sdk/server/sse.js';

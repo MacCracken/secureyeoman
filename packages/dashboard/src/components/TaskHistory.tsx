@@ -887,7 +887,9 @@ function HeartbeatTaskRow({ task }: { task: HeartbeatTask }) {
         </td>
         <td className="px-2 py-3">
           <button
-            onClick={() => { setExpanded((e) => !e); }}
+            onClick={() => {
+              setExpanded((e) => !e);
+            }}
             className="flex items-center gap-1 hover:opacity-80 transition-opacity"
             title="Toggle execution history"
           >

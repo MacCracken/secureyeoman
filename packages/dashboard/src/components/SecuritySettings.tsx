@@ -514,7 +514,9 @@ export function SecuritySettings() {
             <button
               className="text-xs text-destructive hover:text-destructive/80"
               disabled={clearDefaultMutation.isPending}
-              onClick={() => { clearDefaultMutation.mutate(); }}
+              onClick={() => {
+                clearDefaultMutation.mutate();
+              }}
             >
               {clearDefaultMutation.isPending ? 'Clearing…' : 'Clear'}
             </button>
@@ -701,9 +703,9 @@ export function SecuritySettings() {
             icon={<Brain className="w-4 h-4 text-muted-foreground" />}
             enabled={anomalyDetectionAllowed}
             isPending={policyMutation.isPending}
-            onToggle={() =>
-              { policyMutation.mutate({ allowAnomalyDetection: !anomalyDetectionAllowed }); }
-            }
+            onToggle={() => {
+              policyMutation.mutate({ allowAnomalyDetection: !anomalyDetectionAllowed });
+            }}
             description="Use machine learning to detect unusual patterns in agent behavior, API calls, and security events. Disabled by default."
           />
         </div>
@@ -735,7 +737,9 @@ export function SecuritySettings() {
             icon={<Shield className="w-4 h-4 text-muted-foreground" />}
             enabled={gvisorAllowed}
             isPending={policyMutation.isPending}
-            onToggle={() => { policyMutation.mutate({ sandboxGvisor: !gvisorAllowed }); }}
+            onToggle={() => {
+              policyMutation.mutate({ sandboxGvisor: !gvisorAllowed });
+            }}
             description="Add a gVisor (runsc) kernel-level isolation layer to sandboxed execution. Requires gVisor installed on the host system."
           />
           <PolicyToggle
@@ -743,7 +747,9 @@ export function SecuritySettings() {
             icon={<Blocks className="w-4 h-4 text-muted-foreground" />}
             enabled={wasmAllowed}
             isPending={policyMutation.isPending}
-            onToggle={() => { policyMutation.mutate({ sandboxWasm: !wasmAllowed }); }}
+            onToggle={() => {
+              policyMutation.mutate({ sandboxWasm: !wasmAllowed });
+            }}
             description="Run code inside a WebAssembly sandbox for additional memory and capability isolation."
           />
         </div>

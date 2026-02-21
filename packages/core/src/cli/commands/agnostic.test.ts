@@ -110,7 +110,9 @@ describe('agnostic command', () => {
     it('uses --path flag when provided', async () => {
       const fs = await getFsMock();
       // Only the --path candidate should be checked first
-      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml') && p.includes('/custom/agnostic/'));
+      fs.mockImplementation(
+        (p: string) => p.endsWith('docker-compose.yml') && p.includes('/custom/agnostic/')
+      );
 
       const execFile = await getExecFileMock();
       execFile.mockImplementation(makeComposeSuccess('Network qa-network Created'));
@@ -253,10 +255,17 @@ describe('agnostic command', () => {
 
       const execFile = await getExecFileMock();
       let capturedArgs: string[] = [];
-      execFile.mockImplementation((_cmd: string, args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
-        capturedArgs = args as string[];
-        cb(null, '[senior-qa] ready', '');
-      });
+      execFile.mockImplementation(
+        (
+          _cmd: string,
+          args: string[],
+          _opts: unknown,
+          cb: (err: null, stdout: string, stderr: string) => void
+        ) => {
+          capturedArgs = args as string[];
+          cb(null, '[senior-qa] ready', '');
+        }
+      );
 
       const { stdout, stderr } = createStreams();
       await agnosticCommand.run({ argv: ['logs', 'senior-qa'], stdout, stderr });
@@ -269,10 +278,17 @@ describe('agnostic command', () => {
 
       const execFile = await getExecFileMock();
       let capturedArgs: string[] = [];
-      execFile.mockImplementation((_cmd: string, args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
-        capturedArgs = args as string[];
-        cb(null, '', '');
-      });
+      execFile.mockImplementation(
+        (
+          _cmd: string,
+          args: string[],
+          _opts: unknown,
+          cb: (err: null, stdout: string, stderr: string) => void
+        ) => {
+          capturedArgs = args as string[];
+          cb(null, '', '');
+        }
+      );
 
       const { stdout, stderr } = createStreams();
       await agnosticCommand.run({ argv: ['logs', '--tail', '100'], stdout, stderr });

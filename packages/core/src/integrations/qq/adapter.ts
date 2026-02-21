@@ -156,8 +156,7 @@ export class QQIntegration implements Integration {
 
   private async oneBotFetch(path: string, init?: RequestInit): Promise<Response> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (this.qqConfig?.accessToken)
-      headers.Authorization = `Bearer ${this.qqConfig.accessToken}`;
+    if (this.qqConfig?.accessToken) headers.Authorization = `Bearer ${this.qqConfig.accessToken}`;
     return fetch(`${this.qqConfig!.httpUrl}${path}`, {
       ...init,
       headers: { ...headers, ...((init?.headers ?? {}) as Record<string, string>) },

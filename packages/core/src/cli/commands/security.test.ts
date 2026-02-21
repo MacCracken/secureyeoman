@@ -123,12 +123,12 @@ describe('security command', () => {
     it('outputs config snippet on successful setup', async () => {
       const execFile = await getExecFileMock();
       execFile
-        .mockImplementationOnce(makeDockerSuccess('1.2.3'))      // docker info
-        .mockImplementationOnce(makeDockerFailure(1))            // docker inspect (not found)
+        .mockImplementationOnce(makeDockerSuccess('1.2.3')) // docker info
+        .mockImplementationOnce(makeDockerFailure(1)) // docker inspect (not found)
         .mockImplementationOnce(makeDockerSuccess('sha256:abc')) // docker pull
         .mockImplementationOnce(makeDockerSuccess('container-id')) // docker run
-        .mockImplementationOnce(makeDockerSuccess(''))           // apt-get update
-        .mockImplementationOnce(makeDockerSuccess(''));          // apt-get install
+        .mockImplementationOnce(makeDockerSuccess('')) // apt-get update
+        .mockImplementationOnce(makeDockerSuccess('')); // apt-get install
 
       const { stdout, stderr, getStdout, getStderr } = createStreams();
       const code = await securityCommand.run({ argv: ['setup'], stdout, stderr });
@@ -156,7 +156,7 @@ describe('security command', () => {
     it('returns 1 if docker rm fails', async () => {
       const execFile = await getExecFileMock();
       execFile
-        .mockImplementationOnce(makeDockerSuccess(''))       // docker stop
+        .mockImplementationOnce(makeDockerSuccess('')) // docker stop
         .mockImplementationOnce(makeDockerFailure(1, 'no such container')); // docker rm
 
       const { stdout, stderr, getStderr } = createStreams();
@@ -181,9 +181,9 @@ describe('security command', () => {
     it('upgrades packages when container is running', async () => {
       const execFile = await getExecFileMock();
       execFile
-        .mockImplementationOnce(makeDockerSuccess('true'))  // inspect Running=true
-        .mockImplementationOnce(makeDockerSuccess(''))      // apt-get update
-        .mockImplementationOnce(makeDockerSuccess(''));     // apt-get upgrade
+        .mockImplementationOnce(makeDockerSuccess('true')) // inspect Running=true
+        .mockImplementationOnce(makeDockerSuccess('')) // apt-get update
+        .mockImplementationOnce(makeDockerSuccess('')); // apt-get upgrade
 
       const { stdout, stderr, getStdout, getStderr } = createStreams();
       const code = await securityCommand.run({ argv: ['update'], stdout, stderr });
@@ -208,7 +208,7 @@ describe('security command', () => {
       const execFile = await getExecFileMock();
       // inspect exists, inspect running=true, then 13 tool which checks
       execFile
-        .mockImplementationOnce(makeDockerSuccess('{}'))    // docker inspect (exists)
+        .mockImplementationOnce(makeDockerSuccess('{}')) // docker inspect (exists)
         .mockImplementationOnce(makeDockerSuccess('true')) // Running
         .mockImplementation(makeDockerSuccess('/usr/bin/nmap')); // all tool which checks
 
