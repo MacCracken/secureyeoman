@@ -60,8 +60,10 @@ describe('McpPrebuilts', () => {
       'Linear',
       'Meilisearch',
       'Qdrant',
+      'Device Control',
       'Home Assistant',
       'Coolify (MetaMCP)',
+      'ElevenLabs',
     ];
     for (const name of expectedServers) {
       expect(await screen.findByText(name)).toBeInTheDocument();
@@ -138,6 +140,18 @@ describe('McpPrebuilts', () => {
     expect(screen.getByText(/Requires uv/)).toBeInTheDocument();
   });
 
+  it('shows the prerequisite note for Device Control when expanded', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await screen.findByText('Device Control');
+    const allConnectButtons = await screen.findAllByText('Connect');
+    // Device Control is 11th server (index 10)
+    await user.click(allConnectButtons[10]);
+
+    expect(screen.getByText(/Requires: uv/)).toBeInTheDocument();
+  });
+
   it('does not show a note for npx-based servers (Exa)', async () => {
     const user = userEvent.setup();
     renderComponent();
@@ -157,8 +171,8 @@ describe('McpPrebuilts', () => {
 
     await screen.findByText('Home Assistant');
     const allConnectButtons = await screen.findAllByText('Connect');
-    // Home Assistant is 11th (index 10)
-    await user.click(allConnectButtons[10]);
+    // Home Assistant is 12th (index 11)
+    await user.click(allConnectButtons[11]);
 
     const haUrlInput = screen.getByPlaceholderText('https://');
     expect(haUrlInput).toHaveAttribute('type', 'text');
@@ -170,7 +184,7 @@ describe('McpPrebuilts', () => {
 
     await screen.findByText('Home Assistant');
     const allConnectButtons = await screen.findAllByText('Connect');
-    await user.click(allConnectButtons[10]);
+    await user.click(allConnectButtons[11]);
 
     const inputs = screen.getAllByLabelText(/Token/i);
     expect(inputs[0]).toHaveAttribute('type', 'password');
@@ -233,7 +247,7 @@ describe('McpPrebuilts', () => {
 
     await screen.findByText('Home Assistant');
     const allConnectButtons = await screen.findAllByText('Connect');
-    await user.click(allConnectButtons[10]);
+    await user.click(allConnectButtons[11]);
 
     const urlInput = screen.getByPlaceholderText('https://');
     await user.type(urlInput, 'https://homeassistant.local:8123');
@@ -252,6 +266,69 @@ describe('McpPrebuilts', () => {
           name: 'Home Assistant',
           transport: 'streamable-http',
           url: 'https://homeassistant.local:8123/api/mcp',
+          enabled: true,
+        })
+      );
+    });
+  });
+
+  // ── Device Control (no required env vars) ─────────────────────────────────
+
+  it('connects Device Control without filling any env vars', async () => {
+    const user = userEvent.setup();
+    mockAddMcpServer.mockResolvedValue({ id: 'device-server' });
+    renderComponent();
+
+    await screen.findByText('Device Control');
+    const allConnectButtons = await screen.findAllByText('Connect');
+    // Device Control is 11th server (index 10) — no env var inputs
+    await user.click(allConnectButtons[10]);
+
+    const innerConnect = screen.getAllByText('Connect').find(
+      (el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost')
+    );
+    await user.click(innerConnect!.closest('button')!);
+
+    await waitFor(() => {
+      expect(mockAddMcpServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Device Control',
+          transport: 'stdio',
+          command: 'uvx mcp-device-server',
+          env: {},
+          enabled: true,
+        })
+      );
+    });
+  });
+
+  // ── ElevenLabs connect flow ────────────────────────────────────────────────
+
+  it('calls addMcpServer with stdio transport for ElevenLabs', async () => {
+    const user = userEvent.setup();
+    mockAddMcpServer.mockResolvedValue({ id: 'el-server' });
+    renderComponent();
+
+    await screen.findByText('ElevenLabs');
+    const allConnectButtons = await screen.findAllByText('Connect');
+    // ElevenLabs is 14th server (index 13)
+    await user.click(allConnectButtons[13]);
+
+    const apiKeyInput = screen.getByPlaceholderText('ELEVENLABS_API_KEY');
+    await user.type(apiKeyInput, 'el-test-key');
+
+    const innerConnect = screen.getAllByText('Connect').find(
+      (el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost')
+    );
+    await user.click(innerConnect!.closest('button')!);
+
+    await waitFor(() => {
+      expect(mockAddMcpServer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'ElevenLabs',
+          transport: 'stdio',
+          command: 'npx -y @elevenlabs/mcp',
+          env: { ELEVENLABS_API_KEY: 'el-test-key' },
           enabled: true,
         })
       );

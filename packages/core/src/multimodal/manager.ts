@@ -72,6 +72,73 @@ export class MultimodalManager {
     this.deps.logger.info('MultimodalManager initialized');
   }
 
+  /** Get the base URL for the Voicebox local server (trailing slash stripped). */
+  private getVoiceboxUrl(): string {
+    return (process.env.VOICEBOX_URL ?? 'http://localhost:17493').replace(/\/$/, '');
+  }
+
+  /** Transcribe audio via the Voicebox local Whisper backend. */
+  private async transcribeViaVoicebox(
+    request: STTRequest
+  ): Promise<{ text: string; language?: string }> {
+    const baseUrl = this.getVoiceboxUrl();
+    const audioBuffer = Buffer.from(request.audioBase64, 'base64');
+    const blob = new Blob([audioBuffer], { type: `audio/${request.format ?? 'wav'}` });
+    const formData = new FormData();
+    formData.append('file', blob, `audio.${request.format ?? 'wav'}`);
+
+    const response = await fetch(`${baseUrl}/transcribe`, {
+      method: 'POST',
+      body: formData,
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+
+    if (!response.ok) {
+      const errBody = await response.text();
+      throw new Error(`Voicebox STT error (${response.status}): ${errBody}`);
+    }
+
+    return (await response.json()) as { text: string; language?: string };
+  }
+
+  /** Synthesize speech via the Voicebox local Qwen3-TTS backend. */
+  private async synthesizeViaVoicebox(
+    request: TTSRequest
+  ): Promise<{ audioBase64: string; format: string }> {
+    const baseUrl = this.getVoiceboxUrl();
+    const profileId = process.env.VOICEBOX_PROFILE_ID;
+    if (!profileId) {
+      throw new Error(
+        'VOICEBOX_PROFILE_ID environment variable is required when TTS_PROVIDER=voicebox'
+      );
+    }
+
+    const genResponse = await fetch(`${baseUrl}/generate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ profile_id: profileId, text: request.text }),
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+
+    if (!genResponse.ok) {
+      const errBody = await genResponse.text();
+      throw new Error(`Voicebox TTS error (${genResponse.status}): ${errBody}`);
+    }
+
+    const genData = (await genResponse.json()) as { id: string };
+
+    const audioResponse = await fetch(`${baseUrl}/audio/${genData.id}`, {
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    });
+
+    if (!audioResponse.ok) {
+      throw new Error(`Voicebox audio fetch error (${audioResponse.status})`);
+    }
+
+    const arrayBuffer = await audioResponse.arrayBuffer();
+    return { audioBase64: Buffer.from(arrayBuffer).toString('base64'), format: 'wav' };
+  }
+
   /**
    * Analyze an image using the AI client's vision capability.
    */
@@ -132,7 +199,8 @@ export class MultimodalManager {
   }
 
   /**
-   * Transcribe audio using OpenAI Whisper API.
+   * Transcribe audio — routes to OpenAI Whisper or Voicebox local Whisper based on
+   * STT_PROVIDER env var (or config.stt.provider). Defaults to 'openai'.
    */
   async transcribeAudio(request: STTRequest): Promise<STTResult> {
     if (!this.config.stt.enabled) {
@@ -151,37 +219,45 @@ export class MultimodalManager {
 
     const start = Date.now();
     try {
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) throw new Error('OPENAI_API_KEY environment variable is not set');
+      const provider = (
+        process.env.STT_PROVIDER ??
+        this.config.stt.provider ??
+        'openai'
+      ).toLowerCase();
 
-      const audioBuffer = Buffer.from(request.audioBase64, 'base64');
-      const blob = new Blob([audioBuffer], { type: `audio/${request.format}` });
+      let data: { text: string; language?: string };
 
-      const formData = new FormData();
-      formData.append('file', blob, `audio.${request.format}`);
-      formData.append('model', this.config.stt.model);
-      if (request.language) formData.append('language', request.language);
+      if (provider === 'voicebox') {
+        data = await this.transcribeViaVoicebox(request);
+      } else {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) throw new Error('OPENAI_API_KEY environment variable is not set');
 
-      const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${apiKey}` },
-        body: formData,
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
+        const audioBuffer = Buffer.from(request.audioBase64, 'base64');
+        const blob = new Blob([audioBuffer], { type: `audio/${request.format}` });
 
-      if (!response.ok) {
-        const errBody = await response.text();
-        throw new Error(`Whisper API error (${response.status}): ${errBody}`);
+        const formData = new FormData();
+        formData.append('file', blob, `audio.${request.format}`);
+        formData.append('model', this.config.stt.model);
+        if (request.language) formData.append('language', request.language);
+
+        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${apiKey}` },
+          body: formData,
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
+
+        if (!response.ok) {
+          const errBody = await response.text();
+          throw new Error(`Whisper API error (${response.status}): ${errBody}`);
+        }
+
+        data = (await response.json()) as { text: string; language?: string };
       }
 
-      const data = (await response.json()) as { text: string; language?: string };
       const durationMs = Date.now() - start;
-
-      const result: STTResult = {
-        text: data.text,
-        language: data.language,
-        durationMs,
-      };
+      const result: STTResult = { text: data.text, language: data.language, durationMs };
 
       await this.storage.completeJob(
         jobId,
@@ -203,7 +279,8 @@ export class MultimodalManager {
   }
 
   /**
-   * Synthesize speech using OpenAI TTS API.
+   * Synthesize speech — routes to OpenAI TTS or Voicebox local Qwen3-TTS based on
+   * TTS_PROVIDER env var (or config.tts.provider). Defaults to 'openai'.
    */
   async synthesizeSpeech(request: TTSRequest): Promise<TTSResult> {
     if (!this.config.tts.enabled) {
@@ -218,38 +295,50 @@ export class MultimodalManager {
 
     const start = Date.now();
     try {
-      const apiKey = process.env.OPENAI_API_KEY;
-      if (!apiKey) throw new Error('OPENAI_API_KEY environment variable is not set');
+      const provider = (
+        process.env.TTS_PROVIDER ??
+        this.config.tts.provider ??
+        'openai'
+      ).toLowerCase();
 
-      const response = await fetch('https://api.openai.com/v1/audio/speech', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: request.model,
-          input: request.text,
-          voice: request.voice,
-          response_format: request.responseFormat,
-        }),
-        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-      });
+      let audioBase64: string;
+      let format: string;
 
-      if (!response.ok) {
-        const errBody = await response.text();
-        throw new Error(`TTS API error (${response.status}): ${errBody}`);
+      if (provider === 'voicebox') {
+        const data = await this.synthesizeViaVoicebox(request);
+        audioBase64 = data.audioBase64;
+        format = data.format;
+      } else {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) throw new Error('OPENAI_API_KEY environment variable is not set');
+
+        const response = await fetch('https://api.openai.com/v1/audio/speech', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: request.model,
+            input: request.text,
+            voice: request.voice,
+            response_format: request.responseFormat,
+          }),
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
+
+        if (!response.ok) {
+          const errBody = await response.text();
+          throw new Error(`TTS API error (${response.status}): ${errBody}`);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        audioBase64 = Buffer.from(arrayBuffer).toString('base64');
+        format = request.responseFormat;
       }
 
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBase64 = Buffer.from(arrayBuffer).toString('base64');
       const durationMs = Date.now() - start;
-
-      const result: TTSResult = {
-        audioBase64,
-        format: request.responseFormat,
-        durationMs,
-      };
+      const result: TTSResult = { audioBase64, format, durationMs };
 
       await this.storage.completeJob(
         jobId,

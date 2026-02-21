@@ -38,14 +38,16 @@
 | 23 | Community Marketplace Improvements | 2026.2.20 | Complete |
 | 24 | Testing All the Things | 2026.2.21 | Complete |
 | | **Tag 2026.2.20** | **2026-02-20** | **Tagged** |
-| 25 | Fix All the Bugs | — | In Progress |
-| 26 | Final Inspection | — | Pending |
-| 27 | Twitter/X + HA + Coolify Integrations | 2026.2.21 | Complete |
-| 28 | Semantic Search MCP Prebuilts | 2026.2.21 | Complete |
+| 25 | Twitter/X + HA + Coolify Integrations | 2026.2.21 | Complete |
+| 26 | Semantic Search MCP Prebuilts | 2026.2.21 | Complete |
+| 27 | Fix All the Bugs | — | In Progress |
+| 28 | Final Inspection | — | Pending |
+| 29 | Device Control MCP Prebuilt | 2026.2.21 | Complete |
+| 30 | Multimodal Provider Abstraction + ElevenLabs | 2026.2.21 | Complete |
 
 ---
 
-## Phase 25: Fix All the Bugs
+## Phase 27: Fix All the Bugs
 
 **Status**: In Progress
 
@@ -57,7 +59,7 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 - [ ] Find and Repair
 
-## Phase 26: Final Inspection
+## Phase 28: Final Inspection
 
 **Status**: Pending
 
@@ -85,6 +87,18 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 ## Future Features
 
 *Demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
+
+### Multimodal I/O Enhancement
+
+*Phase B and C from the Voicebox integration review (ADR 084). Implement once real-world provider usage confirms demand for deeper local voice integration.*
+
+- [ ] **Interactive TTS/STT provider picker** — Runtime provider switching from the MultimodalPage UI without a server restart. Detects available providers automatically: is Voicebox server reachable? Is ElevenLabs MCP connected? Is OpenAI API key set? Stores selection in the settings table. See ADR 084.
+- [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity — FRIDAY speaks in FRIDAY's voice. Supports multiple reference audio samples, language selection, avatar, and ZIP export/import.
+- [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call. Based on Voicebox's `utils/cache.py` pattern.
+- [ ] **Audio validation before STT** — Validate incoming audio before sending to Whisper: duration 2–30s, RMS > 0.01 (no silence), peak < 0.99 (no clipping). Return a clear error rather than passing bad audio to the API. Based on Voicebox's `utils/validation.py` checks.
+- [ ] **Whisper model size selection** — Expose `tiny | base | small | medium | large` model size in the multimodal config rather than hardcoding `whisper-1`. Surfaces in the provider card UI as a dropdown.
+- [ ] **Streaming TTS via SSE** — Stream audio chunks from the TTS backend to the browser as they're generated, rather than waiting for the full audio buffer. Reduces perceived latency for long text. Uses Server-Sent Events (same pattern as model download progress in Voicebox).
+- [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`. Eliminates the awkward fixed wait and stops recording immediately when the user stops speaking.
 
 ### Intelligent Model Routing
 
@@ -155,4 +169,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Phase 28 complete*
+*Last updated: 2026-02-21 — Phase 30 complete*
