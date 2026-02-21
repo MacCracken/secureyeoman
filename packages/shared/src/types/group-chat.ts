@@ -16,9 +16,9 @@ export const GroupChatChannelSchema = z.object({
   integrationName: z.string(),
   lastMessageAt: z.number().nullable(),
   lastMessageText: z.string().nullable(),
-  messageCount: z.number().int().nonneg(),
+  messageCount: z.number().int().nonnegative(),
   /** Number of inbound messages not yet responded to (approximate unread count). */
-  unrepliedCount: z.number().int().nonneg().default(0),
+  unrepliedCount: z.number().int().nonnegative().default(0),
   /** Active personality that last handled this channel, if known. */
   personalityId: z.string().nullable().default(null),
   personalityName: z.string().nullable().default(null),
