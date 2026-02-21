@@ -12,7 +12,7 @@ const { mockQdrantClient, MockQdrantClient } = vi.hoisted(() => {
     delete: vi.fn().mockResolvedValue({}),
   };
 
-  const MockQdrantClient = vi.fn().mockImplementation(() => mockQdrantClient);
+  const MockQdrantClient = vi.fn().mockImplementation(function() { return mockQdrantClient; });
   return { mockQdrantClient, MockQdrantClient };
 });
 
