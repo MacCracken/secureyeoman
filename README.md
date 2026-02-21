@@ -113,7 +113,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
     ┌────▼────┐   ┌─────▼─────┐  ┌────▼────┐
     │ SQLite  │   │ Platforms │  │  MCP    │
     │  (WAL)  │   │ TG/DC/SL/ │  │ Service │
-    │         │   │ GH/GC/WH  │  │(57+tools│
+    │         │   │ GH/GC/WH  │  │(58+tools│
     └─────────┘   └───────────┘  └─────────┘
 ```
 
