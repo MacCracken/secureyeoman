@@ -36,9 +36,8 @@
 | 22 | Major Audit | 2026.2.19 | Complete |
 | | **Tag 2026.2.19** | **2026-02-19** | **Tagged** |
 | 23 | Community Marketplace Improvements | 2026.2.20 | Complete |
-| | **Tag 2026.2.20** | **2026-02-20** | **Tagged** |
 | 24 | Testing All the Things | 2026.2.21 | Complete |
-| | **Tag 2026.2.21** | **2026-02-21** | **Tagged** |
+| | **Tag 2026.2.20** | **2026-02-20** | **Tagged** |
 | 25 | Fix All the Bugs | — | In Progress |
 | 26 | Final Inspection | — | Pending |
 
