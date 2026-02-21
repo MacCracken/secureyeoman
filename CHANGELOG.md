@@ -4,7 +4,7 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## Phase 24 (2026-02-20): Testing All the Things — Coverage Baseline
+## Phase 24 (2026-02-20 → 2026-02-21): Testing All the Things
 
 ### Coverage Achieved
 
@@ -24,14 +24,19 @@ All notable changes to SecureYeoman are documented in this file.
 - **Soul/Spirit/Config** — `soul/storage.ts`, `spirit/storage.ts`, `system-preferences-storage.ts`
 - **MCP** — `mcp/client.ts`, `mcp/server.ts`
 
+### Integration Test Gaps — Closed
+
+- **`multi-user.integration.test.ts`** (6 tests) — concurrent session isolation, logout scope, viewer/admin concurrency, refresh token rotation, multi-key lifecycle
+- **`workspace-rbac.integration.test.ts`** (7 tests) — workspace CRUD, member add/role-update/remove, viewer RBAC enforcement, last-admin protection, invalid role rejection
+
 ### Test Count
 
-| Package | Before | After |
-|---------|--------|-------|
-| `@secureyeoman/core` | 2,170 tests / 161 files | **5,580 tests / 283 files** |
+| Package | Before Phase 24 | After Phase 24 |
+|---------|-----------------|----------------|
+| `@secureyeoman/core` | 2,170 tests / 161 files | **5,594 tests / 285 files** |
 | `@secureyeoman/mcp` | 326 tests / 31 files | 326 tests / 31 files |
 | `@secureyeoman/dashboard` | 406 tests / 32 files | 406 tests / 32 files |
-| **Total** | **2,902 / 224 files** | **6,312 / 346 files** |
+| **Total** | **2,902 / 224 files** | **6,326 / 348 files** |
 
 ---
 

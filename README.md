@@ -4,7 +4,7 @@
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 6300+](https://img.shields.io/badge/Tests-6300%2B-brightgreen.svg)]()
+[![Tests: 6326+](https://img.shields.io/badge/Tests-6326%2B-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -83,7 +83,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 | **Voice** | Push-to-talk (Ctrl+Shift+V), browser-native speech recognition & synthesis, voice overlay |
 | **Deployment** | **Single binary** (Bun compile, ~80 MB, no runtime deps) for Linux x64/arm64 and macOS arm64; Tier 2 SQLite `lite` binary for edge/embedded; Docker image ~80 MB (binary-based, vs ~600 MB Node.js); Kubernetes Helm chart (EKS/GKE/AKS), GHCR image registry, HPA autoscaling, PodDisruptionBudgets, NetworkPolicies, ExternalSecret CRD support |
 | **CLI** | 21 commands covering server management, health, config validation, integration management, role/extension management, browser automation, vector memory, web scraping, multimodal I/O, AI model switching, security policy, plugin management; shell completions (bash/zsh/fish); `--json` output on all commands for scripting; colored output (green/red status indicators, TTY-aware); progress spinners for long-running operations |
-| **Development** | TypeScript strict mode, 6300+ tests across 346 files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint); **Storybook** component development environment integrated into the Developers section (gated by `allowStorybook` security policy), with quick-start instructions, component story gallery, and iframe to localhost:6006 |
+| **Development** | TypeScript strict mode, 6326+ tests across 348 files, CI/CD pipeline (lint/typecheck/test/build/security audit/docker-push/helm-lint); **Storybook** component development environment integrated into the Developers section (gated by `allowStorybook` security policy), with quick-start instructions, component story gallery, and iframe to localhost:6006 |
 
 ---
 
@@ -549,10 +549,10 @@ npx vitest run tests/security/ tests/chaos/
 
 | Package | Tests | Files | Coverage |
 |---------|-------|-------|----------|
-| `@secureyeoman/core` | 5580 | 283 | 84% lines / 85% funcs / 71% branches ✅ |
+| `@secureyeoman/core` | 5594 | 285 | 84% lines / 85% funcs / 71% branches ✅ |
 | `@secureyeoman/mcp` | 326 | 31 | — |
 | `@secureyeoman/dashboard` | 406 | 32 | — |
-| **Total** | **6312** | **346** | |
+| **Total** | **6326** | **348** | |
 
 ### Building
 

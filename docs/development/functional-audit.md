@@ -14,7 +14,7 @@
 | **RAM Usage** | ~1GB+ | >1GB | >100MB | **<10MB** | Cloud-based |
 | **Startup Time** | ~30s+ | >500s | >30s | **<1s** | N/A |
 | **Security** | **Strong** - RBAC, encryption, audit | Basic | Basic (Docker isolation) | Basic (sandbox) | Variable |
-| **Multi-channel** | 8+ platforms | 13+ platforms | CLI/Web only | 5 platforms | Platform-specific |
+| **Multi-channel** | 22+ platforms | 15+ platforms | CLI/Web only | 5 platforms | Platform-specific |
 | **Multi-agent** | Sub-agents, A2A protocol | Workspace/agent routing | Hierarchical agents | Sub-agents (spawn) | Limited |
 | **Memory** | Vector (FAISS/Qdrant), consolidation | Markdown/YAML file-based | Persistent memory | File-based | Cloud storage |
 | **Customization** | Hooks, extensions, skills | Skills, plugins | Dynamic tool creation | Skills | Limited |
@@ -30,7 +30,7 @@
 | **Agent Type** | Server-first, API-driven | Gateway-based, message-driven | Docker VM with Linux | Single binary, embedded |
 | **Language** | TypeScript | TypeScript/JS | Python | Go |
 | **Database** | PostgreSQL + SQLite | File-based (Markdown) | File-based | File-based |
-| **AI Providers** | 10+ (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen, DeepSeek, Mistral) | Multiple | Multiple | OpenRouter, Zhipu, Groq, Anthropic, OpenAI, Gemini, DeepSeek |
+| **AI Providers** | 10+ (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, OpenCode Zen, DeepSeek, Mistral, **x.ai Grok**) | Multiple | Multiple | OpenRouter, Zhipu, Groq, Anthropic, OpenAI, Gemini, DeepSeek |
 | **MCP Support** | Full MCP server + client (34+ tools, 7 resources, 4 prompts) | Limited | No | ❌ |
 | **Memory Footprint** | ~1GB+ | >1GB | >100MB | **<10MB** |
 | **Startup Time** | ~30s+ | >500s | >30s | **<1s** |
@@ -144,6 +144,23 @@
 | **Docker** | ✅ (~80MB binary-based) | ✅ | ✅ | ❌ |
 | **CLI** | ✅ (21 commands, shell completions, --json output) | ✅ | ✅ | ✅ |
 
+### 9. Testing & Quality
+
+| Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw |
+|---------|--------------|----------|------------|----------|
+| **Test Count** | 6,312+ | ~Limited (community-driven) | Minimal | Minimal |
+| **Test Coverage** | 84% lines / 85% funcs / 71% branches | Not publicly tracked | Not publicly tracked | Not publicly tracked |
+| **Test Files** | 346 | Unknown | Unknown | Unknown |
+| **CI/CD Pipeline** | ✅ (lint/typecheck/test/build/security audit/docker-push/helm-lint) | ✅ | Basic | Minimal |
+| **Security Tests** | ✅ Dedicated security + chaos test suites | ❌ (recent CVEs: CVE-2026-25253 RCE, CVE-2026-26327) | ❌ | ❌ |
+| **Storybook** | ✅ (component development) | ❌ | ❌ | ❌ |
+
+**Notes:**
+- **SecureYeoman**: Full TypeScript strict mode, 6,312+ tests across 346 files with 84% line coverage
+- **OpenClaw**: Rapid growth (185K+ stars), but significant security concerns — multiple CVEs in 2026, including critical RCE vulnerability (CVE-2026-25253, CVSS 8.8), auth bypass, and supply chain poisoning in skills marketplace
+- **Agent Zero**: Minimal test infrastructure, experimental/prototype status
+- **PicoClaw**: Minimal test infrastructure, Go-based lightweight focus
+
 ---
 
 ## Gap Analysis: Where SecureYeoman Leads
@@ -216,4 +233,4 @@
 
 ---
 
-*Updated: 2026-02-19*
+*Updated: 2026-02-20*
