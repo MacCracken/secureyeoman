@@ -116,6 +116,14 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
     ],
   },
   {
+    name: 'Device Control',
+    description:
+      'Camera capture, printer management, audio recording/playback, and screen recording via locally connected peripheral devices',
+    command: 'uvx mcp-device-server',
+    note: 'Requires: uv (Python package manager) · ffmpeg · PortAudio. Install uv: curl -LsSf https://astral.sh/uv/install.sh | sh — then install ffmpeg and portaudio via your system package manager.',
+    requiredEnvVars: [],
+  },
+  {
     name: 'Home Assistant',
     description:
       'Control smart home devices and query entity states via the built-in Home Assistant MCP server',
