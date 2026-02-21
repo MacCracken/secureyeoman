@@ -4,6 +4,55 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 30 (2026-02-21): Multimodal Provider Abstraction — Voicebox + ElevenLabs
+
+### New Features
+
+- **TTS provider routing** — `synthesizeSpeech()` now dispatches to Voicebox local Qwen3-TTS when `TTS_PROVIDER=voicebox`. Existing OpenAI path unchanged. `VOICEBOX_URL` (default `http://localhost:17493`) and `VOICEBOX_PROFILE_ID` env vars configure the Voicebox connection.
+- **STT provider routing** — `transcribeAudio()` now dispatches to Voicebox local Whisper when `STT_PROVIDER=voicebox`. Supports MLX (Apple Silicon) and PyTorch backends transparently.
+- **Provider info in config endpoint** — `GET /api/v1/multimodal/config` now returns a `providers` object with `active`, `available`, and `voiceboxUrl` for both TTS and STT.
+- **Speech Providers card in MultimodalPage** — New read-only card above the job stats shows which TTS and STT providers are active (highlighted badge) and what's available, with env var switch hints.
+- **ElevenLabs MCP prebuilt** — One-click `stdio` MCP connection to ElevenLabs via the official `@elevenlabs/mcp` package. Provides 3,000+ voices, voice cloning, and 32-language synthesis as MCP tools. Requires `ELEVENLABS_API_KEY`.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `docs/adr/084-multimodal-provider-abstraction.md` | ADR — provider routing design; Voicebox selection rationale; ElevenLabs prebuilt; deferred items |
+
+### Modified Files
+
+- **`packages/core/src/multimodal/manager.ts`** — Added `getVoiceboxUrl()`, `transcribeViaVoicebox()`, `synthesizeViaVoicebox()` private methods; refactored `transcribeAudio()` and `synthesizeSpeech()` to branch on `STT_PROVIDER` / `TTS_PROVIDER` env vars
+- **`packages/core/src/multimodal/multimodal-routes.ts`** — Updated config endpoint to include `providers` (active/available/voiceboxUrl) for TTS and STT
+- **`packages/core/src/multimodal/manager.test.ts`** — Added voicebox STT/TTS routing tests (7 new tests: happy path, URL normalisation, error cases, missing PROFILE_ID)
+- **`packages/dashboard/src/components/MultimodalPage.tsx`** — Added `ProviderCard` + `ProviderBadge` components; fetches config via `useQuery`; `Radio` icon imported
+- **`packages/dashboard/src/components/McpPrebuilts.tsx`** — Added ElevenLabs prebuilt entry
+- **`packages/dashboard/src/components/McpPrebuilts.test.tsx`** — Added ElevenLabs to expected servers list; added ElevenLabs connect flow test
+- **`docs/development/roadmap.md`** — Added phases 29–30 to timeline; added Multimodal I/O Enhancement future features section
+
+---
+
+## Phase 29 (2026-02-21): Device Control MCP Prebuilt — Local Peripheral Access
+
+### New Features
+
+- **Device Control MCP prebuilt** — One-click `stdio` MCP connection to locally attached peripherals via `uvx mcp-device-server`. Provides 18+ tools across four categories: camera capture/recording (webcam), printer management (list, print, cancel jobs), audio recording/playback (microphone + speakers), and screen recording. No API keys required — device server auto-detects connected hardware.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `docs/adr/083-device-control-mcp-prebuilt.md` | ADR — integration model; native TS alternative considered and rejected; no-env-vars prebuilt pattern established |
+
+### Modified Files
+
+- **`packages/dashboard/src/components/McpPrebuilts.tsx`** — Added `Device Control` prebuilt entry (`uvx mcp-device-server`, `requiredEnvVars: []`, prerequisite note for uv/ffmpeg/PortAudio)
+- **`packages/dashboard/src/components/McpPrebuilts.test.tsx`** — Added Device Control to expected servers list; updated Home Assistant button indices (10→11); added Device Control note and no-env-vars connect tests
+- **`docs/guides/integrations.md`** — Added Device Control row to Supported Platforms table and MCP tab list; added Device Control setup section
+- **`README.md`** — Updated MCP Protocol feature row to include Device Control prebuilt
+
+---
+
 ## Phase 28 (2026-02-21): Semantic Search MCP Prebuilts — Meilisearch & Qdrant
 
 ### New Features

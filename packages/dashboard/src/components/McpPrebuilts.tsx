@@ -142,6 +142,13 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
     ],
   },
   {
+    name: 'ElevenLabs',
+    description:
+      'Professional AI voice synthesis with voice cloning, 3,000+ voices, and 32 languages via the official ElevenLabs MCP server',
+    command: 'npx -y @elevenlabs/mcp',
+    requiredEnvVars: [{ key: 'ELEVENLABS_API_KEY', label: 'ElevenLabs API Key' }],
+  },
+  {
     name: 'Coolify (MetaMCP)',
     description:
       'Connect to a MetaMCP instance deployed on Coolify — aggregates multiple MCP servers behind a single endpoint',

@@ -9,8 +9,10 @@ SecureYeoman supports multiple platform integrations for receiving and respondin
 | Airtable | Stable | Productivity | Personal access token, base/record management |
 | CLI      | Stable | Messaging | Built-in REST API / command-line interface |
 | Coolify (MetaMCP) | Stable | MCP | One-click streamable-http MCP prebuilt via MetaMCP |
+| Device Control | Stable | MCP | One-click stdio MCP prebuilt for camera, printer, audio, screen via mcp-device-server (uvx) |
 | Meilisearch | Stable | MCP | One-click stdio MCP prebuilt via meilisearch-mcp (uvx) |
 | Discord  | Stable | Messaging | Slash commands, embeds, guild messages |
+| ElevenLabs | Stable | MCP | One-click stdio MCP prebuilt — 3,000+ voices, voice cloning, 32 languages |
 | Email (IMAP/SMTP) | Stable | Email | Any IMAP/SMTP provider — ProtonMail Bridge, Outlook, Yahoo, Fastmail |
 | Figma    | Stable | DevOps | File comments, design metadata, REST polling |
 | GitHub   | Stable | DevOps | Webhooks, issue comments, PR events |
@@ -44,7 +46,67 @@ Integrations are grouped into sub-tabs in the Connections view:
 | **Productivity** | Notion, Stripe, Linear, Google Calendar, Airtable, Todoist, Spotify, YouTube |
 | **DevOps** | GitHub, GitLab, Jira, AWS, Azure, Figma, Zapier |
 | **OAuth** | Google OAuth, GitHub OAuth |
-| **MCP** | Home Assistant, Coolify (MetaMCP), Meilisearch, Qdrant, Bright Data, Exa, E2B, Supabase, Figma, Stripe, Zapier, Linear |
+| **MCP** | Home Assistant, Coolify (MetaMCP), Device Control, ElevenLabs, Meilisearch, Qdrant, Bright Data, Exa, E2B, Supabase, Figma, Stripe, Zapier, Linear |
+
+## Device Control
+
+### Overview
+
+The Device Control prebuilt connects to [`mcp-device-server`](https://github.com/akshitsinha/mcp-device-server) — a Python MCP server that exposes locally attached peripherals (webcams, printers, microphones, speakers, displays) as MCP tools. No API keys or credentials are required; the server auto-detects connected hardware.
+
+**Available tool categories:**
+
+| Category | Tools |
+|----------|-------|
+| Camera | List cameras, get info, capture image, start/stop video recording |
+| Printer | List printers, print file, convert to PDF, list/cancel print jobs |
+| Audio | List input/output devices, start/stop microphone recording, play audio file |
+| Screen | List displays, take screenshot, start/stop screen recording |
+
+### Prerequisites
+
+Install the following system dependencies before connecting:
+
+**uv** (Python package manager):
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+**ffmpeg** (camera and screen recording):
+```bash
+# macOS
+brew install ffmpeg
+
+# Ubuntu / Debian
+sudo apt install ffmpeg
+
+# Fedora
+sudo dnf install ffmpeg
+```
+
+**PortAudio** (audio recording/playback):
+```bash
+# macOS
+brew install portaudio
+
+# Ubuntu / Debian
+sudo apt install portaudio19-dev
+
+# Fedora
+sudo dnf install portaudio-devel
+```
+
+### Setup
+
+In the Dashboard, go to **Connections → MCP** tab, find **Device Control**, click **Connect**, review the prerequisite note, then click **Connect** again. The server is added to your MCP client with `uvx mcp-device-server` as the startup command.
+
+### How It Works
+
+- The MCP client spawns `uvx mcp-device-server` as a child process over stdio on first use
+- All 18+ hardware tools become available in your agent's tool roster
+- Feature flags (`ENABLE_CAMERA`, `ENABLE_PRINTER`, `ENABLE_AUDIO`, `ENABLE_SCREEN`) can be set in your shell environment to restrict which categories are loaded (all enabled by default)
+
+---
 
 ## CLI
 

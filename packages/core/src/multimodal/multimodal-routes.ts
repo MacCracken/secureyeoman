@@ -180,6 +180,22 @@ export function registerMultimodalRoutes(
   // ── Config ────────────────────────────────────────────────────────
 
   app.get('/api/v1/multimodal/config', async () => {
-    return multimodalManager.getConfig();
+    const config = multimodalManager.getConfig();
+    const voiceboxUrl = process.env.VOICEBOX_URL ?? 'http://localhost:17493';
+    return {
+      ...config,
+      providers: {
+        tts: {
+          active: (process.env.TTS_PROVIDER ?? config.tts.provider ?? 'openai').toLowerCase(),
+          available: ['openai', 'voicebox'] as string[],
+          voiceboxUrl,
+        },
+        stt: {
+          active: (process.env.STT_PROVIDER ?? config.stt.provider ?? 'openai').toLowerCase(),
+          available: ['openai', 'voicebox'] as string[],
+          voiceboxUrl,
+        },
+      },
+    };
   });
 }

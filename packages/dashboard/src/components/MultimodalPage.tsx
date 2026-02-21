@@ -13,8 +13,9 @@ import {
   ChevronDown,
   ChevronRight,
   Filter,
+  Radio,
 } from 'lucide-react';
-import { fetchMultimodalJobs, fetchSecurityPolicy } from '../api/client';
+import { fetchMultimodalConfig, fetchMultimodalJobs, fetchSecurityPolicy } from '../api/client';
 
 type JobType = 'vision' | 'stt' | 'tts' | 'image_gen';
 type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
@@ -63,6 +64,12 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
   const { data: securityPolicy } = useQuery({
     queryKey: ['security-policy'],
     queryFn: fetchSecurityPolicy,
+    staleTime: 30000,
+  });
+
+  const { data: configData } = useQuery({
+    queryKey: ['multimodalConfig'],
+    queryFn: fetchMultimodalConfig,
     staleTime: 30000,
   });
 
@@ -117,6 +124,9 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
           </p>
         </div>
       )}
+
+      {/* Provider Configuration */}
+      <ProviderCard config={configData} />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
@@ -295,6 +305,69 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
               </div>
             </div>
           )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const PROVIDER_LABELS: Record<string, string> = {
+  openai: 'OpenAI',
+  voicebox: 'Voicebox (local)',
+  browser: 'Browser Native',
+};
+
+function ProviderBadge({ provider, active }: { provider: string; active: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${
+        active
+          ? 'border-primary/50 bg-primary/10 text-primary font-medium'
+          : 'border-border bg-muted/30 text-muted-foreground'
+      }`}
+    >
+      {active && <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />}
+      {PROVIDER_LABELS[provider] ?? provider}
+    </span>
+  );
+}
+
+function ProviderCard({ config }: { config: Record<string, unknown> | undefined }) {
+  const providers = config?.providers as
+    | {
+        tts: { active: string; available: string[] };
+        stt: { active: string; available: string[] };
+      }
+    | undefined;
+
+  return (
+    <div className="card p-4">
+      <div className="flex items-center gap-2 mb-3">
+        <Radio className="w-4 h-4 text-muted-foreground" />
+        <h2 className="text-sm font-medium">Speech Providers</h2>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground font-medium">Text-to-Speech</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(providers?.tts.available ?? ['openai', 'voicebox']).map((p) => (
+              <ProviderBadge key={p} provider={p} active={p === (providers?.tts.active ?? 'openai')} />
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground/60">
+            Switch: <code className="font-mono">TTS_PROVIDER=voicebox</code> in .env
+          </p>
+        </div>
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground font-medium">Speech-to-Text</p>
+          <div className="flex flex-wrap gap-1.5">
+            {(providers?.stt.available ?? ['openai', 'voicebox']).map((p) => (
+              <ProviderBadge key={p} provider={p} active={p === (providers?.stt.active ?? 'openai')} />
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground/60">
+            Switch: <code className="font-mono">STT_PROVIDER=voicebox</code> in .env
+          </p>
         </div>
       </div>
     </div>

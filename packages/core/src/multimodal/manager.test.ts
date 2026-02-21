@@ -112,6 +112,166 @@ describe('MultimodalManager', () => {
     });
   });
 
+  // ── Voicebox STT provider ──────────────────────────────────────────────────
+
+  describe('transcribeAudio — voicebox provider', () => {
+    it('routes to voicebox /transcribe when STT_PROVIDER=voicebox', async () => {
+      process.env.STT_PROVIDER = 'voicebox';
+      process.env.VOICEBOX_URL = 'http://localhost:17493';
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ text: 'Hello from voicebox', language: 'en' }),
+        text: async () => '',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' });
+
+      expect(result.text).toBe('Hello from voicebox');
+      expect(result.language).toBe('en');
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:17493/transcribe',
+        expect.objectContaining({ method: 'POST' })
+      );
+
+      vi.unstubAllGlobals();
+      delete process.env.STT_PROVIDER;
+      delete process.env.VOICEBOX_URL;
+    });
+
+    it('strips trailing slash from VOICEBOX_URL', async () => {
+      process.env.STT_PROVIDER = 'voicebox';
+      process.env.VOICEBOX_URL = 'http://localhost:17493/';
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ text: 'ok' }),
+        text: async () => '',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'http://localhost:17493/transcribe',
+        expect.any(Object)
+      );
+
+      vi.unstubAllGlobals();
+      delete process.env.STT_PROVIDER;
+      delete process.env.VOICEBOX_URL;
+    });
+
+    it('throws when voicebox STT returns non-ok status', async () => {
+      process.env.STT_PROVIDER = 'voicebox';
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        text: async () => 'Service Unavailable',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(
+        manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' })
+      ).rejects.toThrow('Voicebox STT error (503)');
+
+      vi.unstubAllGlobals();
+      delete process.env.STT_PROVIDER;
+    });
+  });
+
+  // ── Voicebox TTS provider ──────────────────────────────────────────────────
+
+  describe('synthesizeSpeech — voicebox provider', () => {
+    it('throws when TTS_PROVIDER=voicebox and VOICEBOX_PROFILE_ID is not set', async () => {
+      process.env.TTS_PROVIDER = 'voicebox';
+      delete process.env.VOICEBOX_PROFILE_ID;
+
+      await expect(
+        manager.synthesizeSpeech({
+          text: 'Hello',
+          voice: 'alloy',
+          model: 'tts-1',
+          responseFormat: 'mp3',
+        })
+      ).rejects.toThrow('VOICEBOX_PROFILE_ID');
+
+      delete process.env.TTS_PROVIDER;
+    });
+
+    it('routes to voicebox /generate + /audio when TTS_PROVIDER=voicebox', async () => {
+      process.env.TTS_PROVIDER = 'voicebox';
+      process.env.VOICEBOX_PROFILE_ID = 'profile-abc';
+      process.env.VOICEBOX_URL = 'http://localhost:17493';
+
+      const audioBytes = Buffer.from('fake-audio-data');
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ id: 'gen-123' }),
+          text: async () => '',
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          arrayBuffer: async () => audioBytes.buffer,
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await manager.synthesizeSpeech({
+        text: 'Hello world',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      });
+
+      expect(result.audioBase64).toBe(audioBytes.toString('base64'));
+      expect(result.format).toBe('wav');
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        1,
+        'http://localhost:17493/generate',
+        expect.objectContaining({ method: 'POST' })
+      );
+      expect(mockFetch).toHaveBeenNthCalledWith(
+        2,
+        'http://localhost:17493/audio/gen-123',
+        expect.any(Object)
+      );
+
+      vi.unstubAllGlobals();
+      delete process.env.TTS_PROVIDER;
+      delete process.env.VOICEBOX_PROFILE_ID;
+      delete process.env.VOICEBOX_URL;
+    });
+
+    it('throws when voicebox generate returns non-ok status', async () => {
+      process.env.TTS_PROVIDER = 'voicebox';
+      process.env.VOICEBOX_PROFILE_ID = 'profile-abc';
+
+      const mockFetch = vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: async () => 'Internal Server Error',
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await expect(
+        manager.synthesizeSpeech({
+          text: 'Hello',
+          voice: 'alloy',
+          model: 'tts-1',
+          responseFormat: 'mp3',
+        })
+      ).rejects.toThrow('Voicebox TTS error (500)');
+
+      vi.unstubAllGlobals();
+      delete process.env.TTS_PROVIDER;
+      delete process.env.VOICEBOX_PROFILE_ID;
+    });
+  });
+
   describe('transcribeAudio', () => {
     it('throws when STT is disabled', async () => {
       const disabledManager = new MultimodalManager(storage, deps, {
