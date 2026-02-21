@@ -44,6 +44,7 @@
 | 28 | Final Inspection | — | Pending |
 | 29 | Device Control MCP Prebuilt | 2026.2.21 | Complete |
 | 30 | Multimodal Provider Abstraction + ElevenLabs | 2026.2.21 | Complete |
+| 31 | Intelligent Model Routing | 2026.2.21 | Complete |
 
 ---
 
@@ -99,14 +100,6 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 - [ ] **Whisper model size selection** — Expose `tiny | base | small | medium | large` model size in the multimodal config rather than hardcoding `whisper-1`. Surfaces in the provider card UI as a dropdown.
 - [ ] **Streaming TTS via SSE** — Stream audio chunks from the TTS backend to the browser as they're generated, rather than waiting for the full audio buffer. Reduces perceived latency for long text. Uses Server-Sent Events (same pattern as model download progress in Voicebox).
 - [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`. Eliminates the awkward fixed wait and stops recording immediately when the user stops speaking.
-
-### Intelligent Model Routing
-
-*Revisit once sub-agent usage volume reveals meaningful cost/latency patterns worth optimising automatically.*
-
-- [ ] **Neural sub-agent model selection** — When spawning a sub-agent, automatically select the optimal provider and model based on task characteristics (complexity score, required capabilities, context length), current API costs, and latency targets. Uses a lightweight classifier trained on historical task outcomes to score candidate models before dispatch. Falls back to the personality's configured default when confidence is low. Target: reduce sub-agent API cost by ≥30% without measurable quality regression on standard benchmark tasks.
-- [ ] **Cost-aware swarm scheduling** — Swarm coordinator profiles task complexity before assigning roles; routes summarisation/classification subtasks to cheaper/faster models (Haiku, Gemini Flash) and reserves capable models (Opus, Sonnet) for reasoning-heavy steps. Respects per-personality `allowedModels` policy and budget limits.
-- [ ] **Real-time cost feedback** — Show estimated cost before executing a multi-step plan; alert when a task exceeds a configurable threshold and offer a cheaper model alternative.
 
 ### Encryption
 
@@ -169,4 +162,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Phase 30 complete*
+*Last updated: 2026-02-21 — Phase 31 complete*

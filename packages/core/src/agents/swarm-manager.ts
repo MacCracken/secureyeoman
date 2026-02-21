@@ -1,10 +1,16 @@
 /**
  * SwarmManager — Orchestrates agent swarms across sequential, parallel, and dynamic strategies.
+ *
+ * Includes cost-aware scheduling (ADR 085): profiles each role's task type and routes
+ * summarisation/classification subtasks to cheaper/faster models while reserving capable
+ * models for reasoning-heavy steps.
  */
 
 import type { SecureLogger } from '../logging/logger.js';
 import type { SubAgentManager } from './manager.js';
 import { SwarmStorage } from './swarm-storage.js';
+import { ModelRouter, profileTask } from '../ai/model-router.js';
+import type { CostCalculator } from '../ai/cost-calculator.js';
 import type {
   SwarmTemplate,
   SwarmTemplateCreate,
@@ -17,17 +23,77 @@ export interface SwarmManagerDeps {
   storage: SwarmStorage;
   subAgentManager: SubAgentManager;
   logger: SecureLogger;
+  /** Cost calculator injected for cost-aware swarm scheduling. */
+  costCalculator?: CostCalculator;
+  /** Per-personality model allowlist forwarded to the model router. */
+  allowedModels?: string[];
 }
 
 export class SwarmManager {
   private readonly storage: SwarmStorage;
   private readonly subAgentManager: SubAgentManager;
   private readonly logger: SecureLogger;
+  private readonly modelRouter: ModelRouter | null;
+  private readonly allowedModels: string[];
 
   constructor(deps: SwarmManagerDeps) {
     this.storage = deps.storage;
     this.subAgentManager = deps.subAgentManager;
     this.logger = deps.logger;
+    this.modelRouter = deps.costCalculator ? new ModelRouter(deps.costCalculator) : null;
+    this.allowedModels = deps.allowedModels ?? [];
+  }
+
+  /**
+   * Estimate total cost for a proposed swarm run before execution.
+   * Returns cost in USD and the per-role model decisions.
+   */
+  estimateSwarmCost(
+    template: SwarmTemplate,
+    task: string,
+    tokenBudget = 500000,
+    context?: string
+  ): { estimatedCostUsd: number; roleDecisions: { role: string; model: string | null; costUsd: number }[] } {
+    if (!this.modelRouter) {
+      return { estimatedCostUsd: 0, roleDecisions: [] };
+    }
+
+    const perBudget = Math.floor(tokenBudget / Math.max(template.roles.length, 1));
+    const roleDecisions: { role: string; model: string | null; costUsd: number }[] = [];
+    let totalCost = 0;
+
+    for (const roleConfig of template.roles) {
+      const decision = this.modelRouter.route(task, {
+        allowedModels: this.allowedModels,
+        tokenBudget: perBudget,
+        context,
+      });
+      roleDecisions.push({
+        role: roleConfig.role,
+        model: decision.selectedModel,
+        costUsd: decision.estimatedCostUsd,
+      });
+      totalCost += decision.estimatedCostUsd;
+    }
+
+    return { estimatedCostUsd: totalCost, roleDecisions };
+  }
+
+  /**
+   * Select a model override for a specific swarm role based on task complexity.
+   * Returns null when no router is available or no suitable candidate found.
+   */
+  private selectModelForRole(task: string, tokenBudget: number, context?: string): string | null {
+    if (!this.modelRouter) return null;
+    const decision = this.modelRouter.route(task, {
+      allowedModels: this.allowedModels,
+      tokenBudget,
+      context,
+    });
+    if (decision.selectedModel && decision.confidence >= 0.5) {
+      return decision.selectedModel;
+    }
+    return null;
   }
 
   async initialize(): Promise<void> {
@@ -163,11 +229,21 @@ export class SwarmManager {
       }
 
       try {
+        const perBudget = Math.floor((params.tokenBudget ?? 500000) / template.roles.length);
+        const roleTaskProfile = profileTask(params.task, context || undefined);
+        const modelOverride = this.selectModelForRole(params.task, perBudget, context || undefined);
+        if (modelOverride) {
+          this.logger.debug('Cost-aware swarm: selected model for role', {
+            runId: run.id, role: roleConfig.role, model: modelOverride,
+            taskType: roleTaskProfile.taskType, complexity: roleTaskProfile.complexity,
+          });
+        }
         const delegation = await this.subAgentManager.delegate({
           profile: roleConfig.profileName,
           task: params.task,
           context: context || undefined,
-          maxTokenBudget: Math.floor((params.tokenBudget ?? 500000) / template.roles.length),
+          maxTokenBudget: perBudget,
+          modelOverride: modelOverride ?? undefined,
         });
 
         lastResult = delegation.result ?? '';
@@ -224,11 +300,13 @@ export class SwarmManager {
         await this.storage.updateMember(member.id, { status: 'running', startedAt: Date.now() });
 
         try {
+          const modelOverride = this.selectModelForRole(params.task, perBudget, params.context);
           const delegation = await this.subAgentManager.delegate({
             profile: roleConfig.profileName,
             task: params.task,
             context: params.context || undefined,
             maxTokenBudget: perBudget,
+            modelOverride: modelOverride ?? undefined,
           });
 
           const result = delegation.result ?? '';

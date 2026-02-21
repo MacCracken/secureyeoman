@@ -272,6 +272,10 @@ export class AIClient {
     return this.usageTracker;
   }
 
+  getCostCalculator(): CostCalculator {
+    return this.costCalculator;
+  }
+
   /**
    * Load historical usage records from the database.
    * Safe to call multiple times — subsequent calls are no-ops.

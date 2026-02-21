@@ -4,6 +4,37 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 31 (2026-02-21): Intelligent Model Routing
+
+### New Features
+
+- **Heuristic task profiler** — `profileTask()` analyses a task string and returns `{ complexity, taskType, estimatedInputTokens }`. Task types: `summarize`, `classify`, `extract`, `qa`, `code`, `reason`, `plan`, `general`. Complexity: `simple` / `moderate` / `complex` derived from word count, multi-clause indicators, and task type.
+- **ModelRouter** — Selects the cheapest appropriate model for a delegation or swarm role without sacrificing quality. Routes `fast`-tier tasks (summarise, classify, extract, QA) to cheap/fast models (Haiku, gpt-4o-mini, Gemini Flash) and `capable`-tier tasks (code, reason, plan) to balanced models (Sonnet, gpt-4o). Respects the personality's `allowedModels` policy; falls back to the profile's configured default when confidence < 0.5 or no candidates survive filtering. Targets ≥30% cost reduction on mixed sub-agent workloads.
+- **Cost-aware swarm scheduling** — `SwarmManager` now accepts a `ModelRouter` and profiles each role's task type before delegation. Injects a `modelOverride` into each `DelegationParams` so cheaper models handle simple roles while capable models handle reasoning-heavy ones. Applies to both sequential and parallel swarm strategies.
+- **`POST /api/v1/model/estimate-cost`** — Pre-execution cost estimate endpoint. Accepts `{ task, context?, tokenBudget?, roleCount?, allowedModels? }` and returns task profile, selected model, tier, confidence, estimated cost in USD, and a cheaper alternative when one exists. Enables dashboards and scripts to show cost estimates before committing to a swarm run.
+- **`AIClient.getCostCalculator()`** — Exposes the client's internal `CostCalculator` instance for use by the router and route handlers.
+- **`SecureYeoman.getCostCalculator()`** — Proxy to `AIClient.getCostCalculator()` for use in Fastify route options.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `packages/core/src/ai/model-router.ts` | `ModelRouter`, `profileTask()`, tier definitions, routing algorithm |
+| `packages/core/src/ai/model-router.test.ts` | Unit tests: task type detection, complexity scoring, tier routing, allowedModels filtering, cost estimation, fallback |
+| `docs/adr/085-intelligent-model-routing.md` | ADR — design rationale; heuristic vs. ML approach; what was deferred |
+
+### Modified Files
+
+- **`packages/shared/src/types/delegation.ts`** — Added optional `modelOverride` field to `DelegationParamsSchema` (additive, no breaking change)
+- **`packages/core/src/agents/manager.ts`** — Added `costCalculator?` to `SubAgentManagerDeps`; constructs `ModelRouter`; resolves model via override → router → profile default → system default in `executeDelegation()`
+- **`packages/core/src/agents/swarm-manager.ts`** — Added `costCalculator?` and `allowedModels?` to `SwarmManagerDeps`; constructs `ModelRouter`; added `selectModelForRole()` private helper; added `estimateSwarmCost()` public method; injects `modelOverride` in sequential and parallel role delegations
+- **`packages/core/src/ai/client.ts`** — Added `getCostCalculator()` method
+- **`packages/core/src/ai/model-routes.ts`** — Added `POST /api/v1/model/estimate-cost` route
+- **`packages/core/src/secureyeoman.ts`** — Added `getCostCalculator()` method
+- **`docs/development/roadmap.md`** — Added Phase 31 to timeline; removed Intelligent Model Routing from Future Features
+
+---
+
 ## Phase 30 (2026-02-21): Multimodal Provider Abstraction — Voicebox + ElevenLabs
 
 ### New Features

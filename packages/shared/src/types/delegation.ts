@@ -94,6 +94,8 @@ export const DelegationParamsSchema = z.object({
   maxTokenBudget: z.number().int().positive().max(500000).optional(),
   maxDepth: z.number().int().min(1).max(10).optional(),
   timeout: z.number().int().positive().max(600000).optional(),
+  /** Explicit model override injected by the cost-aware swarm scheduler or model router. */
+  modelOverride: z.string().max(200).optional(),
 });
 
 export type DelegationParams = z.infer<typeof DelegationParamsSchema>;
