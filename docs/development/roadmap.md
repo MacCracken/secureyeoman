@@ -46,12 +46,14 @@
 | 30 | Letta Stateful Agent Provider | 2026.2.21 | Complete |
 | 31 | Group Chat View | 2026.2.21 | Complete |
 | 32 | Cross-Integration Routing Rules | 2026.2.21 | Complete |
-| 33 | Fix All the Bugs | — | In Progress |
-| 34 | Final Inspection | — | Pending |
+| 33 | Additional MCP Improvements, CI fixes | 2026.2.21 | Complete |
+| 34 | Agnostic Sub-agent Team MCP integrations | 2026.2.21 | In Progress |
+| 35 | Fix All the Bugs | — | In Progress |
+| 36 | Final Inspection | — | Pending |
 
 ---
 
-## Phase 33: Fix All the Bugs
+## Phase 35: Fix All the Bugs
 
 **Status**: In Progress
 
@@ -63,11 +65,7 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 - [ ] Find and Repair
 
-### Additional Small Features for Improvement
-
-- [x] **Per-Personality Active Hours** *(Brain)* — Each personality can define a schedule of active hours during which it responds to heartbeats and incoming triggers. Outside those windows the personality's body is at rest; the Brain enforces the schedule, suppressing task execution and proactive behavior until the window reopens. Configurable per-personality in the Brain settings panel. *(Done — 2026-02-21, ADR 091)*
-
-## Phase 34: Final Inspection
+## Phase 35: Final Inspection
 
 **Status**: Pending
 
@@ -101,11 +99,35 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 *Core integration shipped (ADR 090). The `secureyeoman agnostic` lifecycle CLI, `agnostic_*` MCP bridge tools, and `agnostic/TODO.md` are live. These items complete the end-to-end automation once implemented in Agnostic.*
 
-- [ ] **`POST /api/tasks` in Agnostic** — Implement Priority 1 from `agnostic/TODO.md` so `agnostic_submit_qa` and `agnostic_task_status` become functional end-to-end. This is the single highest-leverage item.
-- [ ] **API key auth in Agnostic** — Priority 2: replace `AGNOSTIC_EMAIL`/`AGNOSTIC_PASSWORD` with `AGNOSTIC_API_KEY` (`X-API-Key` header). Eliminates plaintext password in `.env`.
-- [ ] **Webhook callback support** — Priority 3: instead of polling `agnostic_task_status`, Agnostic POSTs the result to a YEOMAN webhook URL on completion. Enables true fire-and-forget delegation.
+- [x] **`POST /api/tasks` in Agnostic** — P1 implemented: Redis-backed task state, fire-and-forget `asyncio.create_task`. `agnostic_submit_qa` and `agnostic_task_status` are now fully functional end-to-end. *(Done — 2026-02-21)*
+- [x] **API key auth in Agnostic** — P2 implemented: `AGNOSTIC_API_KEY` / `X-API-Key` header supported. YEOMAN bridge prefers API key auth over JWT; `AGNOSTIC_API_KEY` added to `McpServiceConfig`. *(Done — 2026-02-21)*
+- [x] **Webhook callback support** — P3 implemented: `callback_url` + `callback_secret` on `TaskSubmitRequest`. Agnostic POSTs HMAC-SHA256 signed `TaskStatusResponse` on completion. `agnostic_submit_qa` tool exposes both fields. *(Done — 2026-02-21)*
 - [ ] **A2A protocol bridge** — Longer-term: implement an A2A server in Agnostic so YEOMAN can delegate via the structured `delegate_task` A2A message rather than REST. Enables the full delegation tree to include Agnostic agents as peers.
 - [ ] **Auto-start toggle** — Optional `AGNOSTIC_AUTO_START=true` that causes `secureyeoman start` to also call `docker compose up -d` in the configured Agnostic path.
+
+### Markdown for Agents (MCP Content Negotiation)
+
+*[Cloudflare's Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/) uses HTTP content negotiation (`Accept: text/markdown`) to deliver clean, LLM-optimized markdown instead of raw HTML — achieving up to 80% token reduction. YEOMAN's MCP layer should support this as both a **consumer** (web-fetch tools) and a **producer** (MCP resource endpoints for personalities and skills).*
+
+**Consumer — smarter web fetching in `web-tools.ts`:**
+
+- [ ] **`Accept: text/markdown` content negotiation in `web_scrape_markdown`** — Before falling back to HTML fetch + `node-html-markdown` conversion, send `Accept: text/markdown, text/html;q=0.9` on the initial request. If the server responds `Content-Type: text/markdown`, use the body directly — no conversion needed, no noise from nav/footer/ads. Fall back to the existing HTML→markdown pipeline when the server ignores or rejects the header.
+
+- [ ] **Token savings telemetry in tool output** — Surface the `x-markdown-tokens` response header (native markdown token count) in the tool's text output alongside the content. When the server does not support markdown, estimate token count from the converted markdown byte length (`chars / 4`). Include a one-line summary: `"Source: native markdown — 3,150 tokens (est. 80% saving vs HTML)"` so agents can factor cost into decisions.
+
+- [ ] **`Content-Signal` header enforcement** — Parse `Content-Signal: ai-input=no` (or `ai-train=no`) on any web response. When `ai-input=no` is set, return an error response rather than feeding the content to the agent: `"Content owner has indicated this page is not for AI input (Content-Signal: ai-input=no)."` Configurable opt-out via `MCP_RESPECT_CONTENT_SIGNAL=false` for private-network URLs.
+
+- [ ] **YAML front matter extraction from markdown responses** — When a markdown response includes YAML front matter (triple-dash fenced block), parse it and return title, description, and any other metadata fields as a structured preamble before the body. Enables agents to use page metadata without reading the full content (e.g. `web_extract_structured` can be replaced with a cheap front-matter-only fetch).
+
+- [ ] **`web_fetch_markdown` dedicated tool** — A leaner, single-purpose tool: fetch one URL, return clean markdown, report token count and `Content-Signal`. Distinct from `web_scrape_markdown` (no selector filtering, no batch mode). Optimised for the common agent pattern of "read this page, summarise it" — minimal overhead, maximum clarity. Exposes `prefer_native: boolean` (default `true`) to control whether `Accept: text/markdown` is sent.
+
+**Producer — serving YEOMAN content to external agents:**
+
+- [ ] **Personality system prompts as `text/markdown` MCP resources** — Register each active personality's system prompt as an MCP resource with URI `yeoman://personalities/{id}/prompt`. Serve with `Content-Type: text/markdown` and YAML front matter: `name`, `description`, `version`, `capabilities[]`, `created_at`. Allows external agents consuming YEOMAN via MCP to read personality context at minimal token cost without calling the REST API.
+
+- [ ] **Skill definitions as `text/markdown` MCP resources** — Register each enabled skill as `yeoman://skills/{id}` with front matter: `name`, `description`, `triggers[]`, `author`, `version`. The markdown body is the skill's instruction block. Enables agent-to-agent skill discovery: an agent can list YEOMAN's skills and read their instructions as markdown before deciding whether to delegate.
+
+- [ ] **`x-markdown-tokens` response header on all markdown MCP endpoints** — Add a middleware layer (or per-route header) to any MCP HTTP endpoint returning `text/markdown` content. Compute token estimate (`content.length / 4`) and attach as `x-markdown-tokens`. Follows the Cloudflare spec so any agent-side markdown-aware client can report savings automatically.
 
 ### Kali Security Toolkit — Future Enhancements
 

@@ -529,16 +529,17 @@ Configuration is via environment variables (not the YAML config file):
 
 #### Agnostic QA Team Bridge
 
-> MCP tools that delegate QA tasks to the [Agnostic](https://github.com/MacCracken/agnostic) 6-agent QA platform. Agnostic must be running separately (see its `docker-compose.yml`). See `agnostic/TODO.md` for planned REST API improvements that unlock task submission.
+> MCP tools that delegate QA tasks to the [Agnostic](https://github.com/MacCracken/agnostic) 6-agent QA platform. Agnostic must be running separately (see its `docker-compose.yml`).
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `MCP_EXPOSE_AGNOSTIC_TOOLS` | `false` | Enable `agnostic_*` MCP tools. |
 | `AGNOSTIC_URL` | `http://127.0.0.1:8000` | Base URL of the running Agnostic platform. |
-| `AGNOSTIC_EMAIL` | *(empty)* | Email address for Agnostic JWT auth. |
-| `AGNOSTIC_PASSWORD` | *(empty)* | Password for Agnostic JWT auth. |
+| `AGNOSTIC_API_KEY` | *(empty)* | Static API key for Agnostic (`X-API-Key` header). **Preferred** — use this instead of email/password. |
+| `AGNOSTIC_EMAIL` | *(empty)* | Email address for Agnostic JWT auth (fallback when `AGNOSTIC_API_KEY` is not set). |
+| `AGNOSTIC_PASSWORD` | *(empty)* | Password for Agnostic JWT auth (fallback when `AGNOSTIC_API_KEY` is not set). |
 
-**Authentication:** The bridge logs in via `POST /api/auth/login` on first use and caches the token in-process (auto-refreshed when it nears expiry). Once `POST /api/tasks` is implemented in Agnostic (see `agnostic/TODO.md` Priority 1 and 2), API key auth will replace username/password.
+**Authentication:** Set `AGNOSTIC_API_KEY` for simple, secure service-to-service auth (preferred). If only `AGNOSTIC_EMAIL` and `AGNOSTIC_PASSWORD` are set, the bridge logs in via `POST /api/auth/login` on first use and caches the token in-process (auto-refreshed when it nears expiry).
 
 #### Agnostic CLI Lifecycle
 

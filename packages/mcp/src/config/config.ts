@@ -65,6 +65,7 @@ export function loadConfig(
     agnosticUrl: env.AGNOSTIC_URL ?? 'http://127.0.0.1:8000',
     agnosticEmail: env.AGNOSTIC_EMAIL,
     agnosticPassword: env.AGNOSTIC_PASSWORD,
+    agnosticApiKey: env.AGNOSTIC_API_KEY,
   };
 
   return McpServiceConfigSchema.parse(raw);

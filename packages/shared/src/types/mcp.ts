@@ -117,6 +117,7 @@ export const McpServiceConfigSchema = z.object({
   agnosticUrl: z.string().url().default('http://127.0.0.1:8000'),
   agnosticEmail: z.string().optional(),
   agnosticPassword: z.string().optional(),
+  agnosticApiKey: z.string().optional(),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

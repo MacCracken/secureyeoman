@@ -1,6 +1,6 @@
 # ADR 090 — Agnostic QA Sub-Agent Team Integration
 
-**Status**: Accepted
+**Status**: Accepted (amended 2026-02-21)
 **Date**: 2026-02-21
 
 ---
@@ -50,21 +50,21 @@ This means `secureyeoman agnostic start` just works in the common case where bot
 
 Nine MCP tools bridge YEOMAN agents to the Agnostic REST API:
 
-| Tool | Purpose | Needs Agnostic TODO P1 |
-|------|---------|----------------------|
-| `agnostic_health` | Reachability check | No |
-| `agnostic_agents_status` | Per-agent live status | No |
-| `agnostic_agents_queues` | RabbitMQ queue depths | No |
-| `agnostic_dashboard` | Aggregate metrics | No |
-| `agnostic_session_list` | Recent QA sessions | No |
-| `agnostic_session_detail` | Full session results | No |
-| `agnostic_generate_report` | Generate exec/security/perf report | No |
-| `agnostic_submit_qa` | Submit a QA task to the full team | **Yes** |
-| `agnostic_task_status` | Poll task completion | **Yes** |
+| Tool | Purpose | Status |
+|------|---------|--------|
+| `agnostic_health` | Reachability check | ✅ Fully functional |
+| `agnostic_agents_status` | Per-agent live status | ✅ Fully functional |
+| `agnostic_agents_queues` | RabbitMQ queue depths | ✅ Fully functional |
+| `agnostic_dashboard` | Aggregate metrics | ✅ Fully functional |
+| `agnostic_session_list` | Recent QA sessions | ✅ Fully functional |
+| `agnostic_session_detail` | Full session results | ✅ Fully functional |
+| `agnostic_generate_report` | Generate exec/security/perf report | ✅ Fully functional |
+| `agnostic_submit_qa` | Submit a QA task to the full team | ✅ Fully functional (Agnostic P1–P3 implemented) |
+| `agnostic_task_status` | Poll task completion | ✅ Fully functional (Agnostic P1 implemented) |
 
-`agnostic_submit_qa` and `agnostic_task_status` are wired and ready but return an actionable error pointing to `agnostic/TODO.md Priority 1` until `POST /api/tasks` and `GET /api/tasks/{id}` are implemented in Agnostic.
+All nine tools are now end-to-end functional. `agnostic_submit_qa` supports `callback_url` + `callback_secret` for webhook delivery (no polling required), `business_goals`, `constraints`, and agent selection.
 
-**Auth** — the bridge logs in via `POST /api/auth/login` on first use and caches the JWT in-process, refreshing before expiry. Once Agnostic implements API key auth (TODO Priority 2), `AGNOSTIC_API_KEY` will replace the username/password pair.
+**Auth** — prefers `AGNOSTIC_API_KEY` (`X-API-Key` header; static or Redis-backed). Falls back to `POST /api/auth/login` JWT when only `AGNOSTIC_EMAIL` + `AGNOSTIC_PASSWORD` are set. Token is cached in-process and refreshed before expiry.
 
 ### Configuration
 
@@ -75,9 +75,27 @@ AGNOSTIC_PATH=/path/to/agnostic     # optional override
 # MCP tool bridge
 MCP_EXPOSE_AGNOSTIC_TOOLS=true
 AGNOSTIC_URL=http://127.0.0.1:8000
-AGNOSTIC_EMAIL=admin@example.com
-AGNOSTIC_PASSWORD=your-password
+AGNOSTIC_API_KEY=your-api-key       # preferred: static key auth
+# AGNOSTIC_EMAIL=admin@example.com  # fallback: JWT auth
+# AGNOSTIC_PASSWORD=your-password   # fallback: JWT auth
 ```
+
+---
+
+## Amendment — 2026-02-21: Agnostic Priorities 1–4 Implemented
+
+After verifying the Agnostic REST API (`webgui/api.py`), Priorities 1–4 from `agnostic/TODO.md` are now fully implemented in Agnostic:
+
+- **P1** — `POST /api/tasks` + `GET /api/tasks/{task_id}`: Redis-backed task state, fire-and-forget `asyncio.create_task`
+- **P2** — `X-API-Key` auth: `AGNOSTIC_API_KEY` env var, `sha256(key)` storage, management endpoints
+- **P3** — Webhook callbacks: `callback_url` + `callback_secret` on `TaskSubmitRequest`; HMAC-SHA256 signed POST on completion
+- **P4** — Agent-specific endpoints: `POST /api/tasks/security`, `/performance`, `/regression`, `/full`
+
+The YEOMAN MCP bridge has been updated accordingly:
+- `getAuthHeaders()` replaces `getToken()`: returns `{ 'X-API-Key': key }` or `{ Authorization: 'Bearer ...' }` based on which credentials are configured
+- `agnostic_submit_qa` now accepts `callback_url`, `callback_secret`, `business_goals`, `constraints`
+- `AGNOSTIC_API_KEY` added to `McpServiceConfig` schema and config parser
+- All "not yet implemented" TODO stubs removed — all nine tools are end-to-end functional
 
 ---
 
@@ -109,14 +127,13 @@ A prioritised improvement list was written to `agnostic/TODO.md` covering:
 **Positive**
 - YEOMAN agents can delegate the full QA pipeline (security, performance, regression, compliance) to a specialised team with a single `agnostic_submit_qa` tool call
 - Container lifecycle is first-class — no manual directory switching
-- The bridge works incrementally: read-only tools (status, sessions, reports) work today; task submission works as soon as Agnostic implements the REST endpoint
+- The bridge is fully end-to-end: all nine tools work, including task submission (`agnostic_submit_qa`) and polling (`agnostic_task_status`)
 - Skills and tools remain independent — the ethical-whitehat-hacker skill works on any system; the Agnostic bridge is additive
 
 **Negative / Trade-offs**
 - Requires Agnostic to be running separately — adds operational complexity
 - Python/Docker dependency chain is outside the YEOMAN TypeScript monorepo
-- Task submission requires `agnostic/TODO.md Priority 1` before end-to-end automation works
-- No automatic auth token refresh if the server restarts — token cache is in-process memory
+- No automatic auth token refresh if the server restarts — JWT token cache is in-process memory (mitigated by preferring `AGNOSTIC_API_KEY`)
 
 ---
 

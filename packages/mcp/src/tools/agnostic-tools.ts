@@ -8,11 +8,10 @@
  * Configure via:
  *   MCP_EXPOSE_AGNOSTIC_TOOLS=true
  *   AGNOSTIC_URL=http://127.0.0.1:8000   (default)
- *   AGNOSTIC_EMAIL=admin@example.com
- *   AGNOSTIC_PASSWORD=your-password
  *
- * See /home/macro/Repos/agnostic/TODO.md for planned API improvements including
- * API key auth, task submission endpoint, and webhook callbacks.
+ * Authentication (choose one):
+ *   AGNOSTIC_API_KEY=<key>               (preferred — static or Redis-backed key)
+ *   AGNOSTIC_EMAIL + AGNOSTIC_PASSWORD   (fallback — JWT login)
  */
 
 import { z } from 'zod';
@@ -22,19 +21,31 @@ import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler } from './tool-utils.js';
 
 const DISABLED_MSG =
-  'Agnostic QA tools are disabled. Set MCP_EXPOSE_AGNOSTIC_TOOLS=true, AGNOSTIC_URL, AGNOSTIC_EMAIL, and AGNOSTIC_PASSWORD.';
+  'Agnostic QA tools are disabled. Set MCP_EXPOSE_AGNOSTIC_TOOLS=true and either AGNOSTIC_API_KEY or AGNOSTIC_EMAIL + AGNOSTIC_PASSWORD.';
 
 // ─── Auth helpers ─────────────────────────────────────────────────────────────
 
-/** In-process token cache — avoids a login on every tool call. */
+/** In-process JWT token cache — used only when falling back to email/password auth. */
 const tokenCache = new Map<string, { token: string; expiresAt: number }>();
 
-async function getToken(config: McpServiceConfig): Promise<string | null> {
+/**
+ * Returns the appropriate auth headers for a request.
+ * Prefers X-API-Key (AGNOSTIC_API_KEY) over JWT login (email+password).
+ */
+async function getAuthHeaders(config: McpServiceConfig): Promise<Record<string, string>> {
+  // Prefer static/Redis API key
+  if (config.agnosticApiKey) {
+    return { 'X-API-Key': config.agnosticApiKey };
+  }
+
+  // Fall back to JWT login
+  if (!config.agnosticEmail || !config.agnosticPassword) return {};
+
   const cacheKey = config.agnosticUrl ?? '';
   const cached = tokenCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now() + 30_000) return cached.token;
-
-  if (!config.agnosticEmail || !config.agnosticPassword) return null;
+  if (cached && cached.expiresAt > Date.now() + 30_000) {
+    return { Authorization: `Bearer ${cached.token}` };
+  }
 
   try {
     const res = await fetch(`${config.agnosticUrl}/api/auth/login`, {
@@ -42,15 +53,15 @@ async function getToken(config: McpServiceConfig): Promise<string | null> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: config.agnosticEmail, password: config.agnosticPassword }),
     });
-    if (!res.ok) return null;
+    if (!res.ok) return {};
     const data = (await res.json()) as { access_token: string; expires_in: number };
     tokenCache.set(cacheKey, {
       token: data.access_token,
       expiresAt: Date.now() + (data.expires_in ?? 3600) * 1000,
     });
-    return data.access_token;
+    return { Authorization: `Bearer ${data.access_token}` };
   } catch {
-    return null;
+    return {};
   }
 }
 
@@ -58,9 +69,8 @@ async function agnosticGet(
   config: McpServiceConfig,
   path: string
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
-  const token = await getToken(config);
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const authHeaders = await getAuthHeaders(config);
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders };
 
   const res = await fetch(`${config.agnosticUrl}${path}`, { headers });
   let body: unknown;
@@ -77,9 +87,8 @@ async function agnosticPost(
   path: string,
   payload: unknown
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
-  const token = await getToken(config);
-  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers.Authorization = `Bearer ${token}`;
+  const authHeaders = await getAuthHeaders(config);
+  const headers: Record<string, string> = { 'Content-Type': 'application/json', ...authHeaders };
 
   const res = await fetch(`${config.agnosticUrl}${path}`, {
     method: 'POST',
@@ -332,16 +341,14 @@ export function registerAgnosticTools(
   );
 
   // ── agnostic_submit_qa ────────────────────────────────────────────────────
-  // NOTE: This tool requires POST /api/tasks to be implemented in Agnostic.
-  // See /home/macro/Repos/agnostic/TODO.md Priority 1.
-  // Until then it returns a clear error pointing to the TODO.
 
   server.registerTool(
     'agnostic_submit_qa',
     {
       description:
-        'Submit a QA task to the Agnostic 6-agent team (security, performance, regression, analysis). ' +
-        'Requires POST /api/tasks to be implemented — see agnostic TODO.md Priority 1.',
+        'Submit a QA task to the Agnostic 6-agent team (security, performance, regression, ' +
+        'analysis). Returns a task_id for polling with agnostic_task_status, or supply a ' +
+        'callback_url to receive the result via webhook when complete.',
       inputSchema: {
         title: z.string().describe('Short title for the QA task'),
         description: z
@@ -362,6 +369,20 @@ export function registerAgnosticTools(
           .array(z.string())
           .default([])
           .describe('Compliance standards to check, e.g. ["OWASP", "GDPR", "PCI DSS"]'),
+        business_goals: z
+          .string()
+          .optional()
+          .describe('Business goals context for the QA assessment'),
+        constraints: z.string().optional().describe('Testing constraints or environment notes'),
+        callback_url: z
+          .string()
+          .url()
+          .optional()
+          .describe('Webhook URL — Agnostic will POST the completed TaskStatusResponse here'),
+        callback_secret: z
+          .string()
+          .optional()
+          .describe('HMAC-SHA256 signing secret for the webhook payload (X-Signature header)'),
       },
     },
     wrapToolHandler('agnostic_submit_qa', middleware, async (args) => {
@@ -372,24 +393,11 @@ export function registerAgnosticTools(
         priority: args.priority,
         agents: args.agents,
         standards: args.standards,
+        business_goals: args.business_goals,
+        constraints: args.constraints,
+        callback_url: args.callback_url,
+        callback_secret: args.callback_secret,
       });
-
-      if (status === 404 || status === 405) {
-        return {
-          content: [
-            {
-              type: 'text' as const,
-              text:
-                'POST /api/tasks is not yet implemented in the Agnostic platform.\n\n' +
-                'To enable task submission, implement Priority 1 from:\n' +
-                '/home/macro/Repos/agnostic/TODO.md\n\n' +
-                'In the meantime, use the Agnostic Chainlit UI at:\n' +
-                config.agnosticUrl,
-            },
-          ],
-          isError: true,
-        };
-      }
 
       if (!ok) {
         return {
@@ -408,14 +416,13 @@ export function registerAgnosticTools(
   );
 
   // ── agnostic_task_status ──────────────────────────────────────────────────
-  // NOTE: Requires GET /api/tasks/{task_id} — see agnostic TODO.md Priority 1.
 
   server.registerTool(
     'agnostic_task_status',
     {
       description:
         'Poll the status of a submitted Agnostic QA task. ' +
-        'Requires GET /api/tasks/{task_id} — see agnostic TODO.md Priority 1.',
+        'Returns status (pending | running | completed | failed) and the result when complete.',
       inputSchema: {
         task_id: z.string().describe('Task ID returned by agnostic_submit_qa'),
       },
@@ -425,28 +432,6 @@ export function registerAgnosticTools(
         config,
         `/api/tasks/${encodeURIComponent(args.task_id)}`
       );
-
-      if (status === 404) {
-        const bodyText =
-          typeof body === 'object' && body !== null && 'detail' in body
-            ? (body as { detail: string }).detail
-            : 'Task not found';
-
-        if (bodyText.includes('not found') || bodyText.includes('Not Found')) {
-          // Could be missing endpoint rather than missing task
-          return {
-            content: [
-              {
-                type: 'text' as const,
-                text:
-                  'GET /api/tasks/{task_id} is not yet implemented in the Agnostic platform.\n\n' +
-                  'See /home/macro/Repos/agnostic/TODO.md Priority 1.',
-              },
-            ],
-            isError: true,
-          };
-        }
-      }
 
       if (!ok) {
         return {
