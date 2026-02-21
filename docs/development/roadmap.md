@@ -69,6 +69,8 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 *Add observed bugs here as they are found during manual testing; mark fixed when resolved.*
 
+- [ ] Find and Repair
+
 ## Phase 26: Final Inspection
 
 **Status**: Pending
@@ -94,11 +96,6 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 - [ ] **Regression suite** — All 2900+ tests pass; fix any failures introduced
 - [ ] **Memory baseline** — Cold-start still <300 MB latest additions
 - [ ] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
-
-### Manual Review
-
-- [ ] Manual Review; bugs observed, generate report for repairs
-- [ ] Repair Remaining Issues
 
 ---
 
