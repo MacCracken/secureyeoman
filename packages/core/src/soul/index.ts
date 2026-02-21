@@ -5,6 +5,11 @@
  */
 
 export { SACRED_ARCHETYPES, composeArchetypesPreamble, type Archetype } from './archetypes.js';
+export {
+  PERSONALITY_PRESETS,
+  getPersonalityPreset,
+  type PersonalityPreset,
+} from './presets.js';
 export { SoulStorage } from './storage.js';
 export { SoulManager } from './manager.js';
 

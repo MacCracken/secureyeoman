@@ -384,4 +384,92 @@ describe('ExtensionManager', () => {
       expect(manager.getConfig()).toEqual(config);
     });
   });
+
+  describe('emit with no hooks at hookPoint', () => {
+    it('returns clean result for hookPoint with no registered handlers', async () => {
+      const { manager } = makeManager();
+      // Register a hook for a different hookPoint
+      manager.registerHook('task.created' as any, vi.fn().mockResolvedValue({ vetoed: false, errors: [] }));
+      // Emit for message.received (no handlers registered)
+      const result = await manager.emit('message.received' as any, {
+        event: 'message.received',
+        data: { text: 'hello' },
+        timestamp: Date.now(),
+      });
+      expect(result.vetoed).toBe(false);
+      expect(result.errors).toHaveLength(0);
+    });
+  });
+
+  describe('multiple hooks — errors do not stop execution', () => {
+    it('continues calling remaining hooks after one returns errors', async () => {
+      const { manager } = makeManager();
+      const callOrder: string[] = [];
+
+      manager.registerHook(
+        'message.received' as any,
+        async () => { callOrder.push('first'); return { vetoed: false, errors: ['warn1'] }; },
+        { priority: 10, semantics: 'observe' }
+      );
+      manager.registerHook(
+        'message.received' as any,
+        async () => { callOrder.push('second'); return { vetoed: false, errors: [] }; },
+        { priority: 20, semantics: 'observe' }
+      );
+
+      const result = await manager.emit('message.received' as any, {
+        event: 'message.received',
+        data: {},
+        timestamp: Date.now(),
+      });
+      expect(callOrder).toEqual(['first', 'second']);
+      expect(result.errors).toContain('warn1');
+    });
+  });
+
+  describe('initialize with extensions already registered', () => {
+    it('re-registers hooks from stored extensions on initialize', async () => {
+      const { manager } = makeManager({
+        listExtensions: vi.fn().mockResolvedValue([EXTENSION_MANIFEST]),
+        listWebhooks: vi.fn().mockResolvedValue([WEBHOOK_CONFIG]),
+      });
+      await manager.initialize();
+      // Hook from EXTENSION_MANIFEST should be present
+      expect(manager.getRegisteredHooks()).toHaveLength(1);
+    });
+  });
+
+  describe('extension with multiple hooks', () => {
+    it('registers all hooks from a multi-hook extension manifest', async () => {
+      const { manager } = makeManager();
+      const multiHookManifest = {
+        id: 'ext-multi',
+        name: 'Multi Hook Extension',
+        version: '1.0.0',
+        hooks: [
+          { point: 'message.received', semantics: 'observe', priority: 100 },
+          { point: 'task.created', semantics: 'observe', priority: 100 },
+        ],
+      };
+      await manager.registerExtension(multiHookManifest as any);
+      expect(manager.getRegisteredHooks()).toHaveLength(2);
+    });
+
+    it('removes all hooks when multi-hook extension is removed', async () => {
+      const { manager } = makeManager();
+      const multiHookManifest = {
+        id: 'ext-multi2',
+        name: 'Multi Hook Extension',
+        version: '1.0.0',
+        hooks: [
+          { point: 'message.received', semantics: 'observe', priority: 100 },
+          { point: 'task.created', semantics: 'observe', priority: 100 },
+        ],
+      };
+      await manager.registerExtension(multiHookManifest as any);
+      expect(manager.getRegisteredHooks()).toHaveLength(2);
+      await manager.removeExtension('ext-multi2');
+      expect(manager.getRegisteredHooks()).toHaveLength(0);
+    });
+  });
 });

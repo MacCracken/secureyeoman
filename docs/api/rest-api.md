@@ -902,6 +902,65 @@ Create new personality.
 | `defaultModel` | object\|null | No | Default model `{ provider, model }` for this personality |
 | `modelFallbacks` | array | No | Ordered fallback models (max 5) `[{ provider, model }]` tried when the primary fails |
 
+#### GET /api/v1/soul/personalities/presets
+
+List all built-in personality presets available for instantiation.
+
+**Required Permissions**: `soul.read`
+
+**Response**
+```json
+{
+  "presets": [
+    {
+      "id": "friday",
+      "name": "FRIDAY",
+      "summary": "Friendly, Reliable, Intelligent Digitally Adaptable Yeoman — the default helpful assistant.",
+      "data": { "..." }
+    },
+    {
+      "id": "t-ron",
+      "name": "T.Ron",
+      "summary": "Tactical Response & Operations Network — communications monitor, MCP watchdog, and guardian against rogue AI incursions.",
+      "data": { "..." }
+    }
+  ]
+}
+```
+
+#### POST /api/v1/soul/personalities/presets/:id/instantiate
+
+Create a new personality from a built-in preset. The resulting personality is stored in the database and can be activated like any other personality. Optional body fields override the preset defaults.
+
+**Required Permissions**: `soul.write`
+
+**URL Parameters**
+- `id`: Preset identifier — `friday` or `t-ron`
+
+**Request Body** (all fields optional — override specific preset values)
+```json
+{
+  "name": "T.Ron",
+  "defaultModel": { "provider": "anthropic", "model": "claude-opus-4-6" }
+}
+```
+
+**Response** `201 Created`
+```json
+{
+  "personality": {
+    "id": "01jk...",
+    "name": "T.Ron",
+    "description": "Tactical Response & Operations Network...",
+    "isActive": false,
+    "..."
+  }
+}
+```
+
+**Error Responses**
+- `400 Bad Request` — unknown preset ID or validation failure
+
 #### GET /api/v1/soul/prompt/preview
 
 Preview the composed system prompt. By default uses the active personality; pass `personalityId` to preview a specific personality's prompt.
