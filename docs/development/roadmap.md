@@ -65,6 +65,32 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 - [ ] Find and Repair
 
+### Ironclaw Security & Architecture Improvements
+
+*Findings from comparative analysis of [nearai/ironclaw](https://github.com/nearai/ironclaw) — a Rust-based privacy-first agent with strong sandbox depth and memory architecture. See `docs/development/functional-audit.md` § Missing vs Ironclaw for full context.*
+
+#### High Priority
+
+- [ ] **Tool-output credential leak detection** — Add a `ToolOutputScanner` that runs after every tool execution, before the output is appended to the chat context. Scan for 15+ secret patterns: `sk-[A-Za-z0-9]{32,}`, `ghp_[A-Za-z0-9]{36}`, `AKIA[A-Z0-9]{16}`, PEM private key headers, `postgresql://.*:.*@`, bearer token patterns, JWTs, etc. Also run the same scan on the final LLM response before delivery. Replace matched groups with `[REDACTED:<type>]` and emit a `warn` log entry. The existing `secrets.ts` keyring already knows the shape of managed secrets — contribute those patterns to the scanner automatically. This closes a real exfiltration path: a shell tool that echoes `$AWS_SECRET_ACCESS_KEY`, or a web-fetch that returns a page containing an API key, currently flows straight into the model context.
+
+- [ ] **Skill trust tiers — community skills get read-only tool access** — Map `BrainSkill.source` to a tool permission set at dispatch time. Community-sourced skills (`source === 'community'`) should only have read MCP tools available; no shell execution, no file writes, no arbitrary HTTP. User-created and marketplace-published skills retain full access. Enforcement is a config-time gate in the soul's tool-list composition — the skill instructions inject normally, but the tool list passed to the model is filtered by source. Skills that legitimately need broader access can be overridden per-skill in the dashboard editor. The `source` field already exists on `BrainSkill`; this is purely an enforcement addition.
+
+#### Medium Priority
+
+- [ ] **Hybrid FTS + vector search with Reciprocal Rank Fusion (RRF)** — Add a `search_vec tsvector` column to `brain.memories` and `brain.knowledge` (new migration). Implement a combined search path: run both a `tsvector @@ to_tsquery` FTS query and the existing `pgvector` cosine similarity query, then merge results via RRF (`score = Σ 1/(60 + rank_i)`). A document ranking #2 in FTS and #3 in vector beats one ranking #1 in only one index. Pure vector recall is weak for exact terms, names, and commands — e.g. "Redis migration" may not be near the embedding of a memory tagged "infrastructure change." The FTS path degrades gracefully when `search_vec` is null on older rows; the existing vector path is unchanged as a fallback.
+
+- [ ] **Content-chunked workspace indexing** — Documents stored in `workspace/manager.ts` are currently indexed whole. Add a `chunk()` function that splits documents at paragraph/sentence boundaries within an 800-token budget with 15% overlap, preserving semantic context at chunk boundaries. Each chunk becomes a separate vector + FTS index entry; retrieval merges chunks from the same document and deduplicates. Required precursor for effective hybrid search on large documents that currently overflow context or get truncated.
+
+- [ ] **Proactive context compaction** — The current path catches `context length exceeded` errors after the LLM call fails (`retry-manager.ts`), then re-tries with the same overflowing context. Instead, estimate token usage before each call and trigger compaction when usage exceeds ~80% of the model's `contextWindowSize`. Summarise older turns using the cheap/fast model tier from the existing `ModelRouter`, replace with a `[Context summary: ...]` system message, and continue. Prevents cryptic failures and avoids wasting a full API round-trip on a doomed request.
+
+- [ ] **Self-repairing task loop** — The current retry path in `retry-manager.ts` retries identical context after a failure. Add a stuck-task detection layer: when an agent task exceeds a configurable time threshold or produces the same tool call twice in a row, inject a diagnostic recovery prompt before resuming: `"Your previous attempt stalled after ${elapsed}ms. Last tool: ${lastTool} → ${lastOutcome}. Try a different approach or decompose the problem."` This is higher-leverage than blind retry because the model receives diagnostic context rather than repeating the same reasoning.
+
+#### Low Priority
+
+- [ ] **LLM response caching** — Cache responses keyed by `SHA-256(model + systemPrompt + messages)` with a configurable TTL (default: 5 minutes). Heartbeat probes that run the same system state repeatedly are the immediate win — users running aggressive check schedules pay for identical API calls on every cycle. Even a short TTL meaningfully reduces costs. Semantic caching (embedding similarity lookup before the API call) is a more complex follow-on step.
+
+- [ ] **Outbound credential injection at sandbox proxy boundary** — Rather than injecting secrets as environment variables or mounted files into sandboxed processes, run a small localhost HTTP proxy bound to the sandbox's network namespace. The proxy validates outbound hostnames against a per-sandbox allowlist and injects `Authorization` headers for known hosts. Secrets never enter the container environment. Additive to the existing namespace/seccomp/landlock isolation — defence-in-depth rather than a replacement. The existing `sandbox/` infrastructure provides the network namespace; this adds an HTTP-layer interception point on top.
+
 ## Phase 36: Final Inspection
 
 **Status**: Pending
