@@ -935,8 +935,11 @@ img {
   background: var(--bg-hover);
 }
 
-.bottom-item i {
+.bottom-item i,
+.bottom-item svg {
   font-size: 1.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
   color: var(--text-secondary);
 }
 
