@@ -126,6 +126,36 @@ export class A2AManager {
     return peer;
   }
 
+  /**
+   * Register a pre-configured local peer (e.g. Agnostic running at 127.0.0.1) without
+   * going through the SSRF guard.  Only call this for services whose URL is read from
+   * trusted configuration — never for user-supplied URLs.
+   */
+  async addTrustedLocalPeer(params: {
+    id?: string;
+    name: string;
+    url: string;
+  }): Promise<PeerAgent> {
+    const id = params.id ?? uuidv7();
+    const peer = await this.deps.storage.addPeer({
+      id,
+      name: params.name,
+      url: params.url,
+      publicKey: '',
+      trustLevel: 'trusted',
+      status: 'unknown',
+    });
+    this.missedHeartbeats.set(peer.id, 0);
+
+    await this.auditRecord('a2a_local_peer_registered', {
+      peerId: peer.id,
+      peerName: peer.name,
+      url: peer.url,
+    });
+
+    return (await this.deps.storage.getPeer(peer.id)) ?? peer;
+  }
+
   async removePeer(id: string): Promise<boolean> {
     const removed = await this.deps.storage.removePeer(id);
     if (removed) {

@@ -546,6 +546,236 @@ export class BrainStorage extends PgBaseStorage {
     return Number(row?.count ?? 0);
   }
 
+  // ── Hybrid FTS + Vector RRF ─────────────────────────────────
+
+  /**
+   * Hybrid Reciprocal Rank Fusion search over brain.memories.
+   *
+   * Runs both a `tsvector @@ to_tsquery` FTS query and a `pgvector` cosine
+   * similarity query independently, then merges results via RRF:
+   *   score = Σ 1 / (60 + rank_i)
+   *
+   * Degrades gracefully when `search_vec` is NULL or embeddings are absent.
+   */
+  async queryMemoriesByRRF(
+    query: string,
+    embedding: number[] | null,
+    limit: number,
+    ftsWeight = 1.0,
+    vectorWeight = 1.0
+  ): Promise<(Memory & { rrfScore: number })[]> {
+    const params: unknown[] = [];
+    let idx = 1;
+
+    const tsQuery = query.replace(/[!'()*:&|\\]/g, ' ').trim();
+    if (!tsQuery) return [];
+
+    params.push(tsQuery);
+    const ftsParam = idx++;
+
+    const ftsSubquery = `
+      SELECT id, ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, to_tsquery('english', $${ftsParam})) DESC) AS fts_rank
+      FROM brain.memories
+      WHERE search_vec @@ to_tsquery('english', $${ftsParam})
+    `;
+
+    let vectorSubquery: string;
+    if (embedding && embedding.length > 0) {
+      const vectorStr = `[${embedding.join(',')}]`;
+      params.push(vectorStr);
+      const vecParam = idx++;
+      vectorSubquery = `
+        SELECT id, ROW_NUMBER() OVER (ORDER BY (embedding <=> $${vecParam}::vector) ASC) AS vec_rank
+        FROM brain.memories WHERE embedding IS NOT NULL
+      `;
+    } else {
+      vectorSubquery = `SELECT id, NULL::bigint AS vec_rank FROM brain.memories WHERE FALSE`;
+    }
+
+    params.push(ftsWeight, vectorWeight, limit);
+    const fwParam = idx++;
+    const vwParam = idx++;
+    const limitParam = idx++;
+
+    const sql = `
+      WITH fts AS (${ftsSubquery}),
+           vec AS (${vectorSubquery}),
+           combined AS (
+             SELECT COALESCE(fts.id, vec.id) AS id,
+                    COALESCE($${fwParam}::float / (60.0 + COALESCE(fts.fts_rank, 9999)), 0)
+                    + COALESCE($${vwParam}::float / (60.0 + COALESCE(vec.vec_rank, 9999)), 0) AS rrf_score
+             FROM fts FULL OUTER JOIN vec ON fts.id = vec.id
+           )
+      SELECT m.*, c.rrf_score
+      FROM combined c JOIN brain.memories m ON m.id = c.id
+      ORDER BY c.rrf_score DESC LIMIT $${limitParam}
+    `;
+
+    const rows = await this.queryMany<MemoryRow & { rrf_score: number }>(sql, params);
+    return rows.map((row) => ({ ...rowToMemory(row), rrfScore: row.rrf_score }));
+  }
+
+  /**
+   * Hybrid RRF search over brain.knowledge.
+   */
+  async queryKnowledgeByRRF(
+    query: string,
+    embedding: number[] | null,
+    limit: number,
+    ftsWeight = 1.0,
+    vectorWeight = 1.0
+  ): Promise<(KnowledgeEntry & { rrfScore: number })[]> {
+    const params: unknown[] = [];
+    let idx = 1;
+
+    const tsQuery = query.replace(/[!'()*:&|\\]/g, ' ').trim();
+    if (!tsQuery) return [];
+
+    params.push(tsQuery);
+    const ftsParam = idx++;
+
+    const ftsSubquery = `
+      SELECT id, ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, to_tsquery('english', $${ftsParam})) DESC) AS fts_rank
+      FROM brain.knowledge
+      WHERE search_vec @@ to_tsquery('english', $${ftsParam})
+    `;
+
+    let vectorSubquery: string;
+    if (embedding && embedding.length > 0) {
+      const vectorStr = `[${embedding.join(',')}]`;
+      params.push(vectorStr);
+      const vecParam = idx++;
+      vectorSubquery = `
+        SELECT id, ROW_NUMBER() OVER (ORDER BY (embedding <=> $${vecParam}::vector) ASC) AS vec_rank
+        FROM brain.knowledge WHERE embedding IS NOT NULL
+      `;
+    } else {
+      vectorSubquery = `SELECT id, NULL::bigint AS vec_rank FROM brain.knowledge WHERE FALSE`;
+    }
+
+    params.push(ftsWeight, vectorWeight, limit);
+    const fwParam = idx++;
+    const vwParam = idx++;
+    const limitParam = idx++;
+
+    const sql = `
+      WITH fts AS (${ftsSubquery}),
+           vec AS (${vectorSubquery}),
+           combined AS (
+             SELECT COALESCE(fts.id, vec.id) AS id,
+                    COALESCE($${fwParam}::float / (60.0 + COALESCE(fts.fts_rank, 9999)), 0)
+                    + COALESCE($${vwParam}::float / (60.0 + COALESCE(vec.vec_rank, 9999)), 0) AS rrf_score
+             FROM fts FULL OUTER JOIN vec ON fts.id = vec.id
+           )
+      SELECT k.*, c.rrf_score
+      FROM combined c JOIN brain.knowledge k ON k.id = c.id
+      ORDER BY c.rrf_score DESC LIMIT $${limitParam}
+    `;
+
+    const rows = await this.queryMany<KnowledgeRow & { rrf_score: number }>(sql, params);
+    return rows.map((row) => ({ ...rowToKnowledge(row), rrfScore: row.rrf_score }));
+  }
+
+  // ── Document Chunks ──────────────────────────────────────────
+
+  async createChunks(
+    sourceId: string,
+    sourceTable: 'memories' | 'knowledge',
+    chunks: { id: string; content: string; chunkIndex: number }[]
+  ): Promise<void> {
+    if (chunks.length === 0) return;
+    const now = Date.now();
+    for (const c of chunks) {
+      await this.query(
+        `INSERT INTO brain.document_chunks (id, source_id, source_table, chunk_index, content, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6) ON CONFLICT (id) DO NOTHING`,
+        [c.id, sourceId, sourceTable, c.chunkIndex, c.content, now]
+      );
+    }
+  }
+
+  async deleteChunksForSource(sourceId: string): Promise<void> {
+    await this.execute('DELETE FROM brain.document_chunks WHERE source_id = $1', [sourceId]);
+  }
+
+  async updateChunkEmbedding(chunkId: string, embedding: number[]): Promise<void> {
+    const vectorStr = `[${embedding.join(',')}]`;
+    await this.execute('UPDATE brain.document_chunks SET embedding = $1::vector WHERE id = $2', [
+      vectorStr,
+      chunkId,
+    ]);
+  }
+
+  async queryChunksByRRF(
+    query: string,
+    embedding: number[] | null,
+    limit: number
+  ): Promise<{ sourceId: string; sourceTable: string; content: string; rrfScore: number }[]> {
+    const params: unknown[] = [];
+    let idx = 1;
+
+    const tsQuery = query.replace(/[!'()*:&|\\]/g, ' ').trim();
+    if (!tsQuery) return [];
+
+    params.push(tsQuery);
+    const ftsParam = idx++;
+
+    const ftsSubquery = `
+      SELECT id, source_id, source_table, content,
+             ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, to_tsquery('english', $${ftsParam})) DESC) AS fts_rank
+      FROM brain.document_chunks
+      WHERE search_vec @@ to_tsquery('english', $${ftsParam})
+    `;
+
+    let vectorSubquery: string;
+    if (embedding && embedding.length > 0) {
+      const vectorStr = `[${embedding.join(',')}]`;
+      params.push(vectorStr);
+      const vecParam = idx++;
+      vectorSubquery = `
+        SELECT id, source_id, source_table, content,
+               ROW_NUMBER() OVER (ORDER BY (embedding <=> $${vecParam}::vector) ASC) AS vec_rank
+        FROM brain.document_chunks WHERE embedding IS NOT NULL
+      `;
+    } else {
+      vectorSubquery = `
+        SELECT id, source_id, source_table, content, NULL::bigint AS vec_rank
+        FROM brain.document_chunks WHERE FALSE
+      `;
+    }
+
+    params.push(limit);
+    const limitParam = idx++;
+
+    const sql = `
+      WITH fts AS (${ftsSubquery}),
+           vec AS (${vectorSubquery}),
+           combined AS (
+             SELECT COALESCE(fts.id, vec.id) AS id,
+                    COALESCE(fts.source_id, vec.source_id) AS source_id,
+                    COALESCE(fts.source_table, vec.source_table) AS source_table,
+                    COALESCE(fts.content, vec.content) AS content,
+                    1.0 / (60.0 + COALESCE(fts.fts_rank, 9999))
+                    + 1.0 / (60.0 + COALESCE(vec.vec_rank, 9999)) AS rrf_score
+             FROM fts FULL OUTER JOIN vec ON fts.id = vec.id
+           )
+      SELECT * FROM combined ORDER BY rrf_score DESC LIMIT $${limitParam}
+    `;
+
+    const rows = await this.queryMany<{
+      source_id: string;
+      source_table: string;
+      content: string;
+      rrf_score: number;
+    }>(sql, params);
+    return rows.map((r) => ({
+      sourceId: r.source_id,
+      sourceTable: r.source_table,
+      content: r.content,
+      rrfScore: r.rrf_score,
+    }));
+  }
+
   // ── Vector Similarity ───────────────────────────────────────────
 
   async queryMemoriesBySimilarity(

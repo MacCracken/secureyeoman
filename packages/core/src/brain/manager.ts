@@ -22,6 +22,8 @@ import type { AuditQueryOptions, AuditQueryResult } from '../logging/sqlite-stor
 import type { Skill, SkillCreate, SkillUpdate, Tool, BrainConfig } from '@secureyeoman/shared';
 import type { VectorResult } from './vector/types.js';
 import { applySkillTrustFilter } from '../soul/skill-trust.js';
+import { chunk as chunkContent } from './chunker.js';
+import { uuidv7 } from '../utils/crypto.js';
 
 export class BrainManager {
   private readonly storage: BrainStorage;
@@ -100,6 +102,22 @@ export class BrainManager {
       }
     }
 
+    // Content-chunked indexing for large documents (best-effort)
+    if (content.length > 200) {
+      try {
+        const chunks = chunkContent(content);
+        if (chunks.length > 1) {
+          await this.storage.createChunks(
+            memory.id,
+            'memories',
+            chunks.map((c) => ({ id: uuidv7(), content: c.text, chunkIndex: c.index }))
+          );
+        }
+      } catch (err) {
+        this.deps.logger.warn('Failed to create content chunks for memory', { error: String(err) });
+      }
+    }
+
     // Consolidation quick check when enabled
     if (this.deps.consolidationManager) {
       try {
@@ -117,31 +135,62 @@ export class BrainManager {
       return [];
     }
 
-    // Use semantic search when vector is enabled and a search query is provided
+    // Hybrid RRF: combine vector search (primary) with FTS (supplementary).
+    // The vector manager computes the embedding; the FTS path uses `search_vec`
+    // tsvector columns added by migration 029. Results from both paths are
+    // merged via application-level RRF scoring.
     if (this.vectorEnabled && query.search) {
       try {
         const limit = query.limit ?? 10;
         const threshold = this.config.vector.similarityThreshold;
+
+        // Vector search — primary path, same call as before
         const vectorResults = await this.deps.vectorMemoryManager!.searchMemories(
           query.search,
           limit,
           threshold
         );
 
-        if (vectorResults.length > 0) {
+        // FTS search — supplementary path, degrades gracefully pre-migration
+        const ftsRrfScores = new Map<string, number>();
+        try {
+          const ftsResults = await this.storage.queryMemoriesByRRF(
+            query.search,
+            null, // embedding not needed for FTS-only contribution
+            limit
+          );
+          ftsResults.forEach((r, i) => {
+            ftsRrfScores.set(r.id, 1 / (60 + i + 1));
+          });
+        } catch {
+          // FTS columns not yet migrated — skip FTS contribution
+        }
+
+        // Merge via RRF
+        const combined = new Map<string, number>();
+        vectorResults.forEach((r, i) => {
+          combined.set(r.id, (combined.get(r.id) ?? 0) + 1 / (60 + i + 1));
+        });
+        for (const [id, ftsScore] of ftsRrfScores) {
+          combined.set(id, (combined.get(id) ?? 0) + ftsScore);
+        }
+
+        if (combined.size > 0) {
+          const sorted = [...combined.entries()]
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, limit);
           const memories: Memory[] = [];
-          for (const vr of vectorResults) {
-            const memory = await this.storage.getMemory(vr.id);
+          for (const [id] of sorted) {
+            const memory = await this.storage.getMemory(id);
             if (memory) memories.push(memory);
           }
-
           if (memories.length > 0) {
             await this.storage.touchMemories(memories.map((m) => m.id));
             return memories;
           }
         }
       } catch (err) {
-        this.deps.logger.warn('Vector memory search failed, falling back to text search', {
+        this.deps.logger.warn('Hybrid memory search failed, falling back to text search', {
           error: String(err),
         });
       }
@@ -159,6 +208,12 @@ export class BrainManager {
 
   async forget(id: string): Promise<void> {
     await this.storage.deleteMemory(id);
+    // Remove associated content chunks
+    try {
+      await this.storage.deleteChunksForSource(id);
+    } catch {
+      /* best-effort chunk cleanup */
+    }
     if (this.vectorEnabled) {
       try {
         await this.deps.vectorMemoryManager!.removeMemory(id);
@@ -209,6 +264,24 @@ export class BrainManager {
       }
     }
 
+    // Content-chunked indexing for large knowledge entries (best-effort)
+    if (content.length > 200) {
+      try {
+        const chunks = chunkContent(content);
+        if (chunks.length > 1) {
+          await this.storage.createChunks(
+            entry.id,
+            'knowledge',
+            chunks.map((c) => ({ id: uuidv7(), content: c.text, chunkIndex: c.index }))
+          );
+        }
+      } catch (err) {
+        this.deps.logger.warn('Failed to create content chunks for knowledge', {
+          error: String(err),
+        });
+      }
+    }
+
     return entry;
   }
 
@@ -235,6 +308,12 @@ export class BrainManager {
 
   async deleteKnowledge(id: string): Promise<void> {
     await this.storage.deleteKnowledge(id);
+    // Remove associated content chunks
+    try {
+      await this.storage.deleteChunksForSource(id);
+    } catch {
+      /* best-effort chunk cleanup */
+    }
     if (this.vectorEnabled) {
       try {
         await this.deps.vectorMemoryManager!.removeKnowledge(id);

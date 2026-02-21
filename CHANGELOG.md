@@ -4,6 +4,109 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 34 Complete — Agnostic A2A Bridge + Auto-Start Toggle (2026-02-21)
+
+Closes the remaining two items from the Agnostic QA Sub-Agent Team future-enhancements list (ADR 090 Amendment 2).
+
+### AGNOSTIC_AUTO_START — one-command launch
+
+`secureyeoman start` now optionally brings up the Agnostic Docker stack before printing the gateway banner.
+
+Set `AGNOSTIC_AUTO_START=true` in your environment. The start command reuses the same path-resolution logic as `secureyeoman agnostic start`:
+1. `AGNOSTIC_PATH` env var
+2. `../agnostic` (sibling directory)
+3. `~/agnostic`, `~/Repos/agnostic`, `~/Projects/agnostic`
+
+Compose failure is non-fatal — a warning is logged and the gateway starts regardless. `resolveAgnosticPath()` and `compose()` are now exported from `agnostic.ts` for reuse.
+
+**Files changed:**
+- `packages/core/src/cli/commands/agnostic.ts` — exported `resolveAgnosticPath` and `compose`
+- `packages/core/src/cli/commands/start.ts` — auto-start logic + `AGNOSTIC_AUTO_START` in help text
+- `packages/core/src/cli/commands/start.test.ts` — 6 new test cases
+
+### agnostic_delegate_a2a — A2A protocol delegation
+
+New MCP tool `agnostic_delegate_a2a` sends a structured `a2a:delegate` message to Agnostic's A2A receive endpoint (`POST /api/v1/a2a/receive`). The payload carries all standard QA task fields. On a 404 response (Agnostic P8 not yet implemented), the tool returns the prepared message as guidance rather than a silent error.
+
+`A2AManager.addTrustedLocalPeer()` registers a pre-configured local service as a trusted A2A peer without the SSRF guard. `POST /api/v1/a2a/peers/local` REST endpoint wraps it for runtime registration.
+
+Agnostic P8 (`POST /api/v1/a2a/receive`) is documented in `agnostic/TODO.md`.
+
+**Files changed:**
+- `packages/mcp/src/tools/agnostic-tools.ts` — `agnostic_delegate_a2a` (10th Agnostic MCP tool)
+- `packages/mcp/src/tools/agnostic-tools.test.ts` — 5 new test cases
+- `packages/core/src/a2a/manager.ts` — `addTrustedLocalPeer()` method
+- `packages/core/src/a2a/a2a-routes.ts` — `POST /api/v1/a2a/peers/local` route
+- `docs/adr/090-agnostic-qa-sub-agent-team.md` — Amendment 2 (2026-02-21)
+- `agnostic/TODO.md` — P8 A2A receive endpoint spec
+
+---
+
+## Phase 35 — Ironclaw Security & Architecture Improvements, Medium Priority (2026-02-21)
+
+Four medium-priority items from the Ironclaw comparative analysis completed:
+
+### Hybrid FTS + Vector Search with Reciprocal Rank Fusion (ADR 095)
+
+`packages/core/src/storage/migrations/029_fts_rrf.sql` — adds `search_vec tsvector` columns to `brain.memories` and `brain.knowledge` with GIN indexes and auto-maintenance triggers.
+
+`packages/core/src/brain/storage.ts` — new `queryMemoriesByRRF()` and `queryKnowledgeByRRF()` methods run both a `tsvector @@ to_tsquery` FTS query and a `pgvector` cosine similarity query, then merge results via RRF (`score = Σ 1/(60 + rank_i)`). Both degrade gracefully when `search_vec` is NULL (pre-migration rows) or when no embedding is available.
+
+`packages/core/src/brain/manager.ts` — `recall()` now uses hybrid RRF first, falls back to pure vector search, then to ILIKE text search. Improves recall for exact terms, named entities, and command strings that are poorly served by pure vector search.
+
+### Content-Chunked Workspace Indexing (ADR 096)
+
+`packages/core/src/brain/chunker.ts` — new `chunk(content, options?)` function splits documents at paragraph/sentence boundaries within an 800-token budget with 15% overlap. Returns `DocumentChunk[]` with index, text, and estimated token count.
+
+`packages/core/src/storage/migrations/030_document_chunks.sql` — new `brain.document_chunks` table stores per-chunk content with FTS vector (`search_vec`) and optional pgvector `embedding` column. Includes GIN + HNSW indexes and a FTS maintenance trigger.
+
+`packages/core/src/brain/storage.ts` — new `createChunks()`, `deleteChunksForSource()`, `updateChunkEmbedding()`, and `queryChunksByRRF()` methods.
+
+`packages/core/src/brain/manager.ts` — `remember()` and `learn()` chunk content longer than 200 characters (best-effort, no failure if table unavailable). `forget()` and `deleteKnowledge()` clean up orphaned chunks.
+
+### Proactive Context Compaction (ADR 097)
+
+`packages/core/src/ai/context-compactor.ts` — new `ContextCompactor` class estimates token usage before each LLM call using a `~4 chars/token` heuristic. Triggers compaction at 80% of the model's context-window size (configurable via `thresholdFraction`). Summarises older turns via a caller-provided `summariser` callback; preserves the last `preserveRecentTurns` turns verbatim; injects a `[Context summary: …]` system message.
+
+Model context-window registry covers Anthropic (200 k), OpenAI (128 k), Gemini (1 M), Grok (131 k), DeepSeek (64 k), and Mistral (32 k) models. Unknown models fall back to a conservative 8 192-token default.
+
+`packages/core/src/ai/chat-routes.ts` — wired before every `aiClient.chat()` call. On failure, compaction is best-effort and the request proceeds uncompacted with a warn log.
+
+### Self-Repairing Task Loop (ADR 098)
+
+`packages/core/src/ai/task-loop.ts` — new `TaskLoop` class tracks tool-call history per agent session and detects two stuck conditions:
+
+| Condition | Default threshold |
+|-----------|------------------|
+| Timeout | 30 000 ms |
+| Tool-call repetition | 2 consecutive identical calls |
+
+`buildRecoveryPrompt(reason)` generates a diagnostic message — elapsed time, last tool, last outcome — to inject as a `user` turn before the next LLM call. The model receives diagnostic context rather than repeating the same failed reasoning.
+
+Exported from `packages/core/src/ai/index.ts` alongside `RetryManager` for use in task handlers and agent loops.
+
+### Files changed
+
+- `packages/core/src/storage/migrations/029_fts_rrf.sql` (new)
+- `packages/core/src/storage/migrations/030_document_chunks.sql` (new)
+- `packages/core/src/brain/chunker.ts` (new)
+- `packages/core/src/brain/chunker.test.ts` (new)
+- `packages/core/src/ai/context-compactor.ts` (new)
+- `packages/core/src/ai/context-compactor.test.ts` (new)
+- `packages/core/src/ai/task-loop.ts` (new)
+- `packages/core/src/ai/task-loop.test.ts` (new)
+- `packages/core/src/brain/storage.ts` — `queryMemoriesByRRF`, `queryKnowledgeByRRF`, `createChunks`, `deleteChunksForSource`, `updateChunkEmbedding`, `queryChunksByRRF`
+- `packages/core/src/brain/manager.ts` — hybrid RRF recall, chunk-on-save, chunk-on-delete
+- `packages/core/src/ai/chat-routes.ts` — proactive context compaction wired in
+- `packages/core/src/ai/index.ts` — `ContextCompactor`, `TaskLoop` exported
+- `docs/adr/095-hybrid-fts-rrf.md` (new)
+- `docs/adr/096-content-chunked-indexing.md` (new)
+- `docs/adr/097-proactive-context-compaction.md` (new)
+- `docs/adr/098-self-repairing-task-loop.md` (new)
+- `docs/development/roadmap.md` — medium items marked complete; low-priority items moved to Future Features
+
+---
+
 ## T.Ron — Personality Presets (2026-02-21)
 
 Introduces a built-in personality preset system with **T.Ron** as the first curated security-focused personality alongside the existing FRIDAY default.

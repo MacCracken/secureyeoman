@@ -10,6 +10,7 @@ import { isOpenSSLAvailable, generateDevCerts } from '../../security/cert-gen.js
 import type { Command, CommandContext } from '../router.js';
 import { extractFlag, extractBoolFlag } from '../utils.js';
 import { VERSION } from '../../version.js';
+import { resolveAgnosticPath, compose } from './agnostic.js';
 
 function printBanner(stream: NodeJS.WritableStream, host: string, port: number, tls = false): void {
   const scheme = tls ? 'https' : 'http';
@@ -51,6 +52,9 @@ Environment Variables:
   ANTHROPIC_API_KEY              Anthropic API key
   OPENAI_API_KEY                 OpenAI API key
   GOOGLE_GENERATIVE_AI_API_KEY   Google Gemini API key
+
+  AGNOSTIC_AUTO_START=true       Also start the Agnostic QA Docker stack on launch
+  AGNOSTIC_PATH=/path/to/agnostic  Path to the Agnostic project (auto-detected if omitted)
 \n`);
 }
 
@@ -130,6 +134,28 @@ export const startCommand: Command = {
 
       gw.tls = tlsConfig;
       overrides.gateway = gw;
+    }
+
+    // AGNOSTIC_AUTO_START: optionally bring up the Agnostic QA Docker stack first
+    if (process.env.AGNOSTIC_AUTO_START === 'true') {
+      const agnosticDir = resolveAgnosticPath();
+      if (agnosticDir) {
+        ctx.stdout.write(`AGNOSTIC_AUTO_START: starting Agnostic QA team at ${agnosticDir}...\n`);
+        const agnosticResult = await compose(agnosticDir, ['up', '-d', '--remove-orphans']);
+        if (agnosticResult.code !== 0) {
+          ctx.stdout.write(
+            `AGNOSTIC_AUTO_START: compose up exited ${agnosticResult.code} — gateway will continue without Agnostic.\n`
+          );
+          if (agnosticResult.stderr) ctx.stdout.write(agnosticResult.stderr + '\n');
+        } else {
+          ctx.stdout.write('AGNOSTIC_AUTO_START: Agnostic QA team started.\n');
+        }
+      } else {
+        ctx.stdout.write(
+          'AGNOSTIC_AUTO_START=true but Agnostic directory not found — skipping. ' +
+            'Set AGNOSTIC_PATH or ensure agnostic is at ../agnostic.\n'
+        );
+      }
     }
 
     let instance: SecureYeoman | null = null;

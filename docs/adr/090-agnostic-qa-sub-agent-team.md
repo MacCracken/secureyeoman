@@ -113,11 +113,65 @@ A prioritised improvement list was written to `agnostic/TODO.md` covering:
 
 ---
 
+## Amendment 2 — 2026-02-21: A2A Bridge + Auto-Start Toggle
+
+### Auto-Start Toggle (`AGNOSTIC_AUTO_START=true`)
+
+`secureyeoman start` now checks `AGNOSTIC_AUTO_START=true` at startup. When set, it resolves the Agnostic path (same priority order as the `agnostic` CLI command) and runs `docker compose up -d --remove-orphans` before printing the gateway banner.
+
+**Behaviour:**
+- Non-fatal: if compose fails or the path is not found, a warning is logged and the gateway starts regardless.
+- Uses the exported `resolveAgnosticPath()` and `compose()` helpers from `agnostic.ts`.
+
+**Configuration:**
+```env
+AGNOSTIC_AUTO_START=true          # enable auto-start
+AGNOSTIC_PATH=/path/to/agnostic  # optional path override (same as agnostic CLI)
+```
+
+### A2A Protocol Bridge (`agnostic_delegate_a2a` MCP tool)
+
+**YEOMAN side (shipped):**
+
+1. **`agnostic_delegate_a2a` MCP tool** — constructs a structured `a2a:delegate` message and POSTs it to `{AGNOSTIC_URL}/api/v1/a2a/receive`. The message payload carries all QA task fields (`title`, `description`, `target_url`, `priority`, `agents`, `standards`). Returns `message_id` on success, or a 404 guidance message if Agnostic P8 is not yet implemented.
+
+2. **`A2AManager.addTrustedLocalPeer()`** — registers a pre-configured local/internal service as an A2A peer without the SSRF guard. Sets `trustLevel: 'trusted'` and logs an audit event. Use only for services whose URL is read from trusted configuration.
+
+3. **`POST /api/v1/a2a/peers/local`** — REST endpoint wrapping `addTrustedLocalPeer()`. Use to register Agnostic as a peer in YEOMAN's delegation tree at runtime.
+
+**Agnostic side (pending — see `agnostic/TODO.md` P8):**
+
+Agnostic needs to implement:
+- `POST /api/v1/a2a/receive` — accept `A2AMessage` JSON, handle `a2a:delegate` type by routing the `payload` to the task queue. The YEOMAN `a2a:delegate` payload structure is:
+
+```python
+class A2ADelegatePayload(BaseModel):
+    task_type: str          # always "qa" from YEOMAN
+    title: str
+    description: str
+    target_url: str | None
+    priority: str           # critical | high | medium | low
+    agents: list[str]       # [] = all agents
+    standards: list[str]    # ["OWASP", "GDPR", ...]
+```
+
+**Message format (from YEOMAN):**
+```json
+{
+  "id": "<uuid>",
+  "type": "a2a:delegate",
+  "fromPeerId": "yeoman",
+  "toPeerId": "agnostic",
+  "payload": { "task_type": "qa", "title": "...", ... },
+  "timestamp": 1708560000000
+}
+```
+
+---
+
 ## What Was NOT Decided
 
 - Whether to merge Agnostic into the YEOMAN monorepo (kept separate — different language/stack)
-- Auto-start Agnostic on `secureyeoman start` (opt-in; user runs `secureyeoman agnostic start`)
-- A2A protocol integration between YEOMAN and Agnostic (possible future — use A2A for structured delegation rather than REST)
 - Whether Agnostic's Redis should be shared with YEOMAN (currently separate; sharing via `AGNOSTIC_REDIS_URL` is a future option)
 
 ---
