@@ -85,10 +85,10 @@ describe('SpotifyIntegration – adapter.ts', () => {
 
     // Default: token exchange succeeds, recently-played returns empty
     mockFetch.mockImplementation((url: string) => {
-      if (String(url).includes('accounts.spotify.com')) {
+      if (url.includes('accounts.spotify.com')) {
         return Promise.resolve(makeTokenResponse());
       }
-      if (String(url).includes('recently-played')) {
+      if (url.includes('recently-played')) {
         return Promise.resolve(makeRecentResponse([]));
       }
       return Promise.resolve({ ok: true, json: async () => ({}) });
@@ -165,7 +165,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
       expect(adapter.isHealthy()).toBe(true);
       // Token should only be fetched once (second start() returns early)
       const tokenCalls = mockFetch.mock.calls.filter((c) =>
-        String(c[0]).includes('accounts.spotify.com')
+        c[0].includes('accounts.spotify.com')
       );
       expect(tokenCalls).toHaveLength(1);
     });
@@ -186,7 +186,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
       await adapter.init(makeConfig(), makeDeps());
       await adapter.start();
       const tokenCalls = mockFetch.mock.calls.filter((c) =>
-        String(c[0]).includes('accounts.spotify.com')
+        c[0].includes('accounts.spotify.com')
       );
       expect(tokenCalls.length).toBeGreaterThan(0);
     });
@@ -195,7 +195,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
       await adapter.init(makeConfig(), makeDeps());
       await adapter.start();
       const tokenCall = mockFetch.mock.calls.find((c) =>
-        String(c[0]).includes('accounts.spotify.com')
+        c[0].includes('accounts.spotify.com')
       );
       expect(tokenCall).toBeDefined();
       const body = (tokenCall![1] as RequestInit).body as string;
@@ -209,10 +209,10 @@ describe('SpotifyIntegration – adapter.ts', () => {
   describe('sendMessage()', () => {
     it('queues a track URI and returns the URI', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
-        if (String(url).includes('/me/player/queue')) {
+        if (url.includes('/me/player/queue')) {
           return Promise.resolve({ ok: true });
         }
         return Promise.resolve(makeRecentResponse([]));
@@ -222,14 +222,14 @@ describe('SpotifyIntegration – adapter.ts', () => {
       await adapter.start();
       const result = await adapter.sendMessage('ignored', 'spotify:track:abc123');
       expect(result).toBe('spotify:track:abc123');
-      const queueCall = mockFetch.mock.calls.find((c) => String(c[0]).includes('/me/player/queue'));
+      const queueCall = mockFetch.mock.calls.find((c) => c[0].includes('/me/player/queue'));
       expect(queueCall).toBeDefined();
-      expect(String(queueCall![0])).toContain(encodeURIComponent('spotify:track:abc123'));
+      expect(queueCall![0]).toContain(encodeURIComponent('spotify:track:abc123'));
     });
 
     it('uses POST method for queue endpoint', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
         return Promise.resolve({ ok: true });
@@ -238,16 +238,16 @@ describe('SpotifyIntegration – adapter.ts', () => {
       await adapter.init(makeConfig(), makeDeps());
       await adapter.start();
       await adapter.sendMessage('_', 'spotify:track:xyz');
-      const queueCall = mockFetch.mock.calls.find((c) => String(c[0]).includes('/me/player/queue'));
+      const queueCall = mockFetch.mock.calls.find((c) => c[0].includes('/me/player/queue'));
       expect((queueCall![1] as RequestInit).method).toBe('POST');
     });
 
     it('throws when the queue endpoint returns an error', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
-        if (String(url).includes('/me/player/queue')) {
+        if (url.includes('/me/player/queue')) {
           return Promise.resolve({ ok: false, text: async () => 'Premium required' });
         }
         return Promise.resolve(makeRecentResponse([]));
@@ -262,7 +262,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
 
     it('trims whitespace from the track URI', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
         return Promise.resolve({ ok: true });
@@ -272,8 +272,8 @@ describe('SpotifyIntegration – adapter.ts', () => {
       await adapter.start();
       const result = await adapter.sendMessage('_', '  spotify:track:abc  ');
       expect(result).toBe('  spotify:track:abc  '); // returns original text arg
-      const queueCall = mockFetch.mock.calls.find((c) => String(c[0]).includes('/me/player/queue'));
-      expect(String(queueCall![0])).toContain(encodeURIComponent('spotify:track:abc'));
+      const queueCall = mockFetch.mock.calls.find((c) => c[0].includes('/me/player/queue'));
+      expect(queueCall![0]).toContain(encodeURIComponent('spotify:track:abc'));
     });
   });
 
@@ -304,10 +304,10 @@ describe('SpotifyIntegration – adapter.ts', () => {
   describe('testConnection()', () => {
     it('returns ok=true with display_name when profile API succeeds', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
-        if (String(url).includes('/me') && !String(url).includes('player')) {
+        if (url.includes('/me') && !url.includes('player')) {
           return Promise.resolve({
             ok: true,
             json: async () => ({ id: 'user123', display_name: 'Test User' }),
@@ -324,10 +324,10 @@ describe('SpotifyIntegration – adapter.ts', () => {
 
     it('uses id when display_name is absent', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
-        if (String(url).includes('/me') && !String(url).includes('player')) {
+        if (url.includes('/me') && !url.includes('player')) {
           return Promise.resolve({
             ok: true,
             json: async () => ({ id: 'user123' }),
@@ -344,7 +344,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
 
     it('returns ok=false when profile API returns an error', async () => {
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
         return Promise.resolve({ ok: false, statusText: 'Unauthorized' });
@@ -385,7 +385,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
 
       // seed: return track1 during start()'s seedSeenTracks
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
         return Promise.resolve(makeRecentResponse([item]));
@@ -397,7 +397,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
       // poll: same track1 returned again — should be skipped
       vi.useFakeTimers();
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
         return Promise.resolve(makeRecentResponse([item]));
@@ -416,7 +416,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
       vi.useFakeTimers();
 
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
         // Seed call during start(): empty
@@ -428,7 +428,7 @@ describe('SpotifyIntegration – adapter.ts', () => {
 
       // Now reconfigure fetch so the next poll returns a new track
       mockFetch.mockImplementation((url: string) => {
-        if (String(url).includes('accounts.spotify.com')) {
+        if (url.includes('accounts.spotify.com')) {
           return Promise.resolve(makeTokenResponse());
         }
         return Promise.resolve(

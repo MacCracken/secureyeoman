@@ -96,6 +96,26 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 *Demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
 
+### Agnostic QA Sub-Agent Team — Future Enhancements
+
+*Core integration shipped (ADR 090). The `secureyeoman agnostic` lifecycle CLI, `agnostic_*` MCP bridge tools, and `agnostic/TODO.md` are live. These items complete the end-to-end automation once implemented in Agnostic.*
+
+- [ ] **`POST /api/tasks` in Agnostic** — Implement Priority 1 from `agnostic/TODO.md` so `agnostic_submit_qa` and `agnostic_task_status` become functional end-to-end. This is the single highest-leverage item.
+- [ ] **API key auth in Agnostic** — Priority 2: replace `AGNOSTIC_EMAIL`/`AGNOSTIC_PASSWORD` with `AGNOSTIC_API_KEY` (`X-API-Key` header). Eliminates plaintext password in `.env`.
+- [ ] **Webhook callback support** — Priority 3: instead of polling `agnostic_task_status`, Agnostic POSTs the result to a YEOMAN webhook URL on completion. Enables true fire-and-forget delegation.
+- [ ] **A2A protocol bridge** — Longer-term: implement an A2A server in Agnostic so YEOMAN can delegate via the structured `delegate_task` A2A message rather than REST. Enables the full delegation tree to include Agnostic agents as peers.
+- [ ] **Auto-start toggle** — Optional `AGNOSTIC_AUTO_START=true` that causes `secureyeoman start` to also call `docker compose up -d` in the configured Agnostic path.
+
+### Kali Security Toolkit — Future Enhancements
+
+*Core implementation shipped (ADR 089). The `sec_*` MCP tools, `secureyeoman security` CLI, and three deployment modes (native/docker-exec/prebuilt) are live. These items are the next tier of improvements, gated on real-world usage.*
+
+- [ ] **CIDR-aware scope validation** — Replace the current substring/prefix match in `validateTarget()` with proper CIDR range parsing using a lightweight library (e.g. `ip-cidr`). Enables accurate enforcement of network ranges like `10.10.10.0/24` without false positives/negatives at subnet boundaries.
+- [ ] **Scope manifest UI** — Dashboard panel for managing `MCP_ALLOWED_TARGETS` — add/remove CIDRs, hostnames, URL prefixes. Wildcard (`*`) mode requires explicit acknowledgement checkbox. Reads/writes the running server's environment or a persisted config table.
+- [ ] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — Publish a versioned Kali-based Docker image as a one-click MCP prebuilt in `McpPrebuilts.tsx` for cloud deployments where `secureyeoman security setup` is not convenient. Targets environments that cannot run `secureyeoman` CLI locally.
+- [ ] **Structured output normalization** — Parse nmap XML (`-oX`), sqlmap JSON (`--output-format=json`), nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining (e.g. nmap port list → gobuster per open port → nuclei per service).
+- [ ] **Hydra live brute-force** — Credential testing against authorized targets. Requires scope enforcement proven stable and an additional per-tool authorization flag beyond `MCP_ALLOWED_TARGETS`.
+
 ### Multimodal I/O Enhancement
 
 *Phase B and C from the Voicebox integration review (ADR 084). Implement once real-world provider usage confirms demand for deeper local voice integration.*
@@ -162,4 +182,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Phase 32 complete*
+*Last updated: 2026-02-21 — Kali Security Toolkit MCP (ADR 089) + Agnostic QA Sub-Agent Team (ADR 090) implemented*

@@ -13,7 +13,7 @@ describe('countTokens', () => {
   it('returns 0 for null/undefined-like falsy', () => {
     // @ts-expect-error testing runtime falsy behavior
     expect(countTokens(null)).toBe(0);
-    // @ts-expect-error
+    // @ts-expect-error -- testing invalid argument type at runtime
     expect(countTokens(undefined)).toBe(0);
   });
 

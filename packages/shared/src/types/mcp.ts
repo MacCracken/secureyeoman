@@ -108,6 +108,15 @@ export const McpServiceConfigSchema = z.object({
   proxyScraperapiKey: z.string().optional(),
   proxyMaxRetries: z.number().int().min(0).max(10).default(3),
   proxyRetryBaseDelayMs: z.number().int().min(100).max(10000).default(1000),
+  exposeSecurityTools: z.boolean().default(false),
+  securityToolsMode: z.enum(['native', 'docker-exec']).default('native'),
+  securityToolsContainer: z.string().default('kali-sy-toolkit'),
+  allowedTargets: z.array(z.string()).default([]),
+  shodanApiKey: z.string().optional(),
+  exposeAgnosticTools: z.boolean().default(false),
+  agnosticUrl: z.string().url().default('http://127.0.0.1:8000'),
+  agnosticEmail: z.string().optional(),
+  agnosticPassword: z.string().optional(),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

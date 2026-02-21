@@ -396,6 +396,129 @@ For full MCP configuration details, see the [Integration Setup Guide](integratio
 
 ---
 
+## Security Toolkit (Optional)
+
+The security toolkit exposes a curated set of Kali Linux tools as MCP tools (`sec_nmap`, `sec_gobuster`, `sec_ffuf`, `sec_sqlmap`, `sec_nikto`, `sec_nuclei`, `sec_whatweb`, `sec_wpscan`, `sec_hashcat`, `sec_john`, `sec_theharvester`, `sec_dig`, `sec_whois`, `sec_shodan`) for use in authorized penetration testing, CTF challenges, and security research.
+
+**Important:** The `ethical-whitehat-hacker` and `security-researcher` community skills work **independently** of the security toolkit. Skills are prompt instructions — they enhance agent reasoning regardless of whether the execution toolkit is installed. Install them from the marketplace whether or not you run the toolkit.
+
+### Prerequisites
+
+- Docker (for the recommended docker-exec mode)
+- `MCP_EXPOSE_SECURITY_TOOLS=true` in your `.env`
+- `MCP_ALLOWED_TARGETS` set to your authorized targets
+
+### Setup
+
+```bash
+# Provision the Kali container and install all tools (~5 minutes first run)
+secureyeoman security setup
+```
+
+This pulls `kalilinux/kali-rolling`, starts a persistent container named `kali-sy-toolkit`, and installs nmap, gobuster, ffuf, nikto, sqlmap, nuclei, whatweb, wpscan, hashcat, john, theHarvester, dig, and whois.
+
+After setup, add to your `.env`:
+
+```env
+MCP_EXPOSE_SECURITY_TOOLS=true
+MCP_SECURITY_TOOLS_MODE=docker-exec
+MCP_SECURITY_TOOLS_CONTAINER=kali-sy-toolkit
+MCP_ALLOWED_TARGETS=10.10.10.0/24,ctf.example.com
+# SHODAN_API_KEY=<optional — enables sec_shodan>
+```
+
+### Verify
+
+```bash
+secureyeoman security status
+```
+
+This shows the container state and which tools are available.
+
+### Lifecycle
+
+```bash
+secureyeoman security teardown  # stop and remove the container
+secureyeoman security update    # apt-get upgrade inside the container
+```
+
+### Community Skills
+
+Install the security skills from the marketplace to get AI-guided methodology, ethical framing, and reasoning — regardless of whether the toolkit is running:
+
+- **ethical-whitehat-hacker** — Authorized penetration testing methodology, scope awareness, responsible disclosure
+- **security-researcher** — Security research mindset, CVE analysis, threat modeling
+
+See the [Community Skills Registry](https://github.com/MacCracken/secureyeoman-community-skills) for the full catalogue.
+
+For full security toolkit configuration, see the [Configuration Reference](../configuration.md#security-toolkit).
+
+---
+
+## Agnostic QA Sub-Agent Team (Optional)
+
+[Agnostic](https://github.com/MacCracken/agnostic) is a Python/CrewAI 6-agent QA platform that YEOMAN can spin up and orchestrate as a sub-agent team. Once running, YEOMAN agents can delegate full QA sessions — security audits, load tests, regression suites, compliance checks — via `agnostic_*` MCP tools.
+
+### Prerequisites
+
+- Docker and Docker Compose
+- Agnostic cloned alongside this repo (or set `AGNOSTIC_PATH`)
+
+```bash
+git clone https://github.com/MacCracken/agnostic.git ../agnostic
+```
+
+### Start the Team
+
+```bash
+# Start all 6 agents + Redis + RabbitMQ + WebUI
+secureyeoman agnostic start
+
+# Check all containers are running
+secureyeoman agnostic status
+```
+
+Then add to your `.env`:
+
+```env
+MCP_EXPOSE_AGNOSTIC_TOOLS=true
+AGNOSTIC_URL=http://127.0.0.1:8000
+AGNOSTIC_EMAIL=<your-email>
+AGNOSTIC_PASSWORD=<your-password>
+```
+
+### Available MCP Tools
+
+Once enabled, these tools are available to YEOMAN agents:
+
+| Tool | Purpose |
+|------|---------|
+| `agnostic_health` | Check Agnostic is reachable |
+| `agnostic_agents_status` | Per-agent live status |
+| `agnostic_dashboard` | Aggregate QA metrics |
+| `agnostic_session_list` | Recent QA sessions |
+| `agnostic_session_detail` | Full results for a session |
+| `agnostic_generate_report` | Generate executive/security/performance report |
+| `agnostic_submit_qa` | Submit a QA task to the full team *(requires Agnostic TODO P1)* |
+| `agnostic_task_status` | Poll task completion *(requires Agnostic TODO P1)* |
+
+### Lifecycle Management
+
+```bash
+secureyeoman agnostic stop              # stop the stack
+secureyeoman agnostic pull              # pull latest images
+secureyeoman agnostic logs              # tail all logs
+secureyeoman agnostic logs senior-qa    # tail a specific agent
+secureyeoman agnostic logs -f           # follow mode
+secureyeoman agnostic --help            # full usage
+```
+
+The Agnostic UI is available at http://localhost:8000.
+
+For configuration details see the [Configuration Reference](../configuration.md#agnostic-qa-team-bridge) and [ADR 090](../adr/090-agnostic-qa-sub-agent-team.md).
+
+---
+
 ## Next Steps
 
 ### Configure AI Providers

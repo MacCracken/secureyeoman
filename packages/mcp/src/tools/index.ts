@@ -20,6 +20,8 @@ import { registerGitTools } from './git-tools.js';
 import { registerWebTools } from './web-tools.js';
 import { registerBrowserTools, type OnBrowserSessionEvent } from './browser-tools.js';
 import { registerMultimodalTools } from './multimodal-tools.js';
+import { registerSecurityTools } from './security-tools.js';
+import { registerAgnosticTools } from './agnostic-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -28,13 +30,13 @@ export interface ToolMiddleware {
   secretRedactor: SecretRedactorMiddleware;
 }
 
-export function registerAllTools(
+export async function registerAllTools(
   server: McpServer,
   client: CoreApiClient,
   config: McpServiceConfig,
   middleware: ToolMiddleware,
   onBrowserSessionEvent?: OnBrowserSessionEvent
-): void {
+): Promise<void> {
   registerBrainTools(server, client, middleware);
   registerTaskTools(server, client, middleware);
   registerSystemTools(server, client, config, middleware);
@@ -50,4 +52,6 @@ export function registerAllTools(
   registerWebTools(server, config, middleware);
   registerBrowserTools(server, config, middleware, onBrowserSessionEvent);
   registerMultimodalTools(server, client, middleware);
+  await registerSecurityTools(server, config, middleware);
+  registerAgnosticTools(server, config, middleware);
 }

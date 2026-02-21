@@ -163,8 +163,8 @@ export class AuthStorage extends PgBaseStorage {
       email: row.email,
       displayName: row.display_name,
       isAdmin: row.is_admin,
-      createdAt: Number(row.created_at),
-      updatedAt: Number(row.updated_at),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     };
   }
 
@@ -186,8 +186,8 @@ export class AuthStorage extends PgBaseStorage {
       email: row.email,
       displayName: row.display_name,
       isAdmin: row.is_admin,
-      createdAt: Number(row.created_at),
-      updatedAt: Number(row.updated_at),
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
     };
   }
 
@@ -207,8 +207,8 @@ export class AuthStorage extends PgBaseStorage {
       email: r.email,
       displayName: r.display_name,
       isAdmin: r.is_admin,
-      createdAt: Number(r.created_at),
-      updatedAt: Number(r.updated_at),
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
     }));
   }
 

@@ -43,7 +43,7 @@ export class ChromaVectorStore implements VectorStore {
       ...init,
       headers: {
         'Content-Type': 'application/json',
-        ...(init?.headers ?? {}),
+        ...(init?.headers as Record<string, string> | undefined ?? {}),
       },
     });
   }

@@ -515,6 +515,39 @@ Configuration is via environment variables (not the YAML config file):
 | `MCP_PROXY_MAX_RETRIES` | `3` | Max retry attempts on failure/CAPTCHA (0–10) |
 | `MCP_PROXY_RETRY_BASE_DELAY_MS` | `1000` | Base delay for exponential backoff in ms (100–10000) |
 
+#### Security Toolkit
+
+> Exposes Kali Linux security tools as MCP tools. See `secureyeoman security setup` to provision the container and [Getting Started — Security Toolkit](guides/getting-started.md#security-toolkit-optional) for a walkthrough.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_EXPOSE_SECURITY_TOOLS` | `false` | Enable `sec_*` MCP tools. Must be explicitly set to `true`. |
+| `MCP_SECURITY_TOOLS_MODE` | `native` | `native` — invoke tools from host PATH; `docker-exec` — invoke via `docker exec` into the container |
+| `MCP_SECURITY_TOOLS_CONTAINER` | `kali-sy-toolkit` | Container name for `docker-exec` mode. Provisioned by `secureyeoman security setup`. |
+| `MCP_ALLOWED_TARGETS` | *(empty)* | Comma-separated CIDRs, hostnames, and URL prefixes that active tools are permitted to reach. Use `*` for unrestricted lab/CTF mode (skips scope enforcement). Required when `MCP_EXPOSE_SECURITY_TOOLS=true`. |
+| `SHODAN_API_KEY` | *(empty)* | Shodan REST API key. Required to enable the `sec_shodan` tool. |
+
+#### Agnostic QA Team Bridge
+
+> MCP tools that delegate QA tasks to the [Agnostic](https://github.com/MacCracken/agnostic) 6-agent QA platform. Agnostic must be running separately (see its `docker-compose.yml`). See `agnostic/TODO.md` for planned REST API improvements that unlock task submission.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_EXPOSE_AGNOSTIC_TOOLS` | `false` | Enable `agnostic_*` MCP tools. |
+| `AGNOSTIC_URL` | `http://127.0.0.1:8000` | Base URL of the running Agnostic platform. |
+| `AGNOSTIC_EMAIL` | *(empty)* | Email address for Agnostic JWT auth. |
+| `AGNOSTIC_PASSWORD` | *(empty)* | Password for Agnostic JWT auth. |
+
+**Authentication:** The bridge logs in via `POST /api/auth/login` on first use and caches the token in-process (auto-refreshed when it nears expiry). Once `POST /api/tasks` is implemented in Agnostic (see `agnostic/TODO.md` Priority 1 and 2), API key auth will replace username/password.
+
+#### Agnostic CLI Lifecycle
+
+> Used by `secureyeoman agnostic start|stop|status|logs|pull` to locate the Agnostic Docker Compose project directory.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `AGNOSTIC_PATH` | *(auto-detect)* | Absolute path to the Agnostic project directory. Auto-detected from `../agnostic`, `~/agnostic`, `~/Repos/agnostic`, `~/Projects/agnostic` when not set. Override with `--path` flag or this variable. |
+
 **Authentication:** The MCP service self-mints a service JWT on startup using the shared `SECUREYEOMAN_TOKEN_SECRET`. No manual token configuration is needed — just ensure `SECUREYEOMAN_TOKEN_SECRET` is set in your `.env` file (it's the same secret used by core for JWT signing).
 
 See the [Getting Started Guide](guides/getting-started.md#mcp-service-optional) for step-by-step setup instructions.

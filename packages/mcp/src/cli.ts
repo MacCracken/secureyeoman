@@ -56,7 +56,7 @@ export async function runMcpServer(_argv: string[] = []): Promise<number> {
     const auditLogger = createAuditLogger(coreClient);
     const secretRedactor = createSecretRedactor();
 
-    registerAllTools(mcpServer, coreClient, config, {
+    await registerAllTools(mcpServer, coreClient, config, {
       rateLimiter,
       inputValidator,
       auditLogger,

@@ -280,12 +280,12 @@ export class UsageStorage extends PgBaseStorage {
       provider: row.provider,
       model: row.model,
       personalityId: row.personality_id,
-      inputTokens: Number(row.input_tokens),
-      outputTokens: Number(row.output_tokens),
-      cachedTokens: Number(row.cached_tokens),
-      totalTokens: Number(row.total_tokens),
-      costUsd: Number(row.cost_usd),
-      calls: Number(row.calls),
+      inputTokens: row.input_tokens,
+      outputTokens: row.output_tokens,
+      cachedTokens: row.cached_tokens,
+      totalTokens: row.total_tokens,
+      costUsd: row.cost_usd,
+      calls: row.calls,
     }));
   }
 
