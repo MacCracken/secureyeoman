@@ -4,6 +4,30 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Community Skill Routing Descriptions (2026-02-21)
+
+All 11 community skill descriptions rewritten with explicit routing guidance, inspired by [OpenAI's Skills + Shell Tips](https://developers.openai.com/blog/skills-shell-tips/) blog post. The core insight: Glean improved skill routing accuracy from 73% → 85% by changing descriptions from "what it does" to "Use when / Don't use when" contracts.
+
+The skill catalog in `composeSoulPrompt` emits `- **Name**: Description` for every enabled skill. These one-liners are the model's routing signal — every character counts. Old descriptions said what a skill is; new descriptions tell the model when to fire it and, critically, when to leave it alone.
+
+| Skill | Change summary |
+|-------|---------------|
+| Code Reviewer | Added "Use when: PR/diff/function review. Don't use when: writing new code, debugging runtime errors." |
+| Git Assistant | Added "Use when: commit message, branching, conflict resolution. Don't use when: code debugging, CI setup." |
+| SQL Expert | Added "Use when: query writing/optimization/schema. Don't use when: ORM issues, non-SQL databases." |
+| Universal Script Assistant | Clarified scope (narrative scripts only). Added "Don't use when: code scripts, shell, automations." |
+| Email Composer | Added "Use when: email drafting/editing. Don't use when: social posts, long-form docs, chat." |
+| Meeting Summarizer | Added "Use when: transcript/notes input. Don't use when: non-meeting content." |
+| Recruiting Expert | Condensed long description. Added "Don't use when: general professional docs not related to hiring." |
+| Technical Writer | Added "Use when: feature/API/system documentation. Don't use when: emails, meeting summaries." |
+| Security Researcher | Added "Don't use when: live attacks/scanning — use sec_* MCP tools for that." |
+| Data Formatter | Added "Use when: format conversion/validation. Don't use when: scale data processing, database queries." |
+| Regex Builder | Added "Don't use when: full parsers, general string transformations." |
+
+A new **Skill Routing Quality** section has been added to `docs/development/roadmap.md` Future Features with 7 further tasks: `triggerPatterns` hygiene pass, `useWhen`/`doNotUseWhen` schema fields, `successCriteria`, `mcpToolsAllowed` per-skill tool gating, explicit routing mode, invocation accuracy telemetry, and output directory convention.
+
+---
+
 ## Roadmap — Markdown for Agents added to Future Features (2026-02-21)
 
 Added a new **Markdown for Agents** section to `docs/development/roadmap.md` Future Features, based on [Cloudflare's Markdown for Agents specification](https://blog.cloudflare.com/markdown-for-agents/). The spec uses HTTP content negotiation (`Accept: text/markdown`) to deliver clean, LLM-optimized markdown instead of raw HTML — achieving up to 80% token reduction.
