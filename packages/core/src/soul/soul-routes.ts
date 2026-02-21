@@ -13,14 +13,16 @@ import type {
   UserProfileUpdate,
 } from './types.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
+import type { HeartbeatManager } from '../body/heartbeat.js';
 
 export interface SoulRoutesOptions {
   soulManager: SoulManager;
   broadcast?: (payload: unknown) => void;
+  heartbeatManager?: HeartbeatManager | null;
 }
 
 export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions): void {
-  const { soulManager, broadcast } = opts;
+  const { soulManager, broadcast, heartbeatManager } = opts;
 
   // ── Personality ─────────────────────────────────────────────
 
@@ -59,6 +61,12 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       try {
         const personality = await soulManager.updatePersonality(request.params.id, request.body);
         broadcast?.({ event: 'updated', type: 'personality', id: personality.id });
+        if (heartbeatManager) {
+          const active = await soulManager.getActivePersonality();
+          if (active?.id === personality.id) {
+            heartbeatManager.setPersonalitySchedule(personality.body?.activeHours ?? null);
+          }
+        }
         return { personality };
       } catch (err) {
         return sendError(reply, 404, toErrorMessage(err));
@@ -84,6 +92,9 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       try {
         await soulManager.setPersonality(request.params.id);
         const personality = await soulManager.getActivePersonality();
+        if (heartbeatManager && personality) {
+          heartbeatManager.setPersonalitySchedule(personality.body?.activeHours ?? null);
+        }
         return { personality };
       } catch (err) {
         return sendError(reply, 404, toErrorMessage(err));
@@ -394,6 +405,13 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
                 securityAlertDigest: false,
               },
               learning: { enabled: true, minConfidence: 0.7 },
+            },
+            activeHours: {
+              enabled: false,
+              start: '09:00',
+              end: '17:00',
+              daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+              timezone: 'UTC',
             },
           },
         };

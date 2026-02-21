@@ -722,6 +722,19 @@ export class SecureYeoman {
         this.logger.debug('Heart manager started', {
           intervalMs: this.config.heartbeat.intervalMs,
         });
+        const hbmRef = this.heartbeatManager;
+        void this.soulManager
+          .getActivePersonality()
+          .then((active) => {
+            if (active?.body?.activeHours) {
+              hbmRef.setPersonalitySchedule(active.body.activeHours);
+            }
+          })
+          .catch((err: unknown) => {
+            this.logger?.warn('Failed to seed personality active hours for heartbeat', {
+              error: err instanceof Error ? err.message : 'Unknown error',
+            });
+          });
       }
 
       // Step 6.7: Initialize external brain sync (if configured)

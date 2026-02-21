@@ -94,6 +94,20 @@ export const ProactivePersonalityConfigSchema = z
 
 export type ProactivePersonalityConfig = z.infer<typeof ProactivePersonalityConfigSchema>;
 
+export const PersonalityActiveHoursSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    start: z.string().regex(/^\d{2}:\d{2}$/).default('09:00'), // "HH:mm" UTC
+    end: z.string().regex(/^\d{2}:\d{2}$/).default('17:00'), // "HH:mm" UTC
+    daysOfWeek: z
+      .array(z.enum(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun']))
+      .default(['mon', 'tue', 'wed', 'thu', 'fri']),
+    timezone: z.string().default('UTC'),
+  })
+  .default({});
+
+export type PersonalityActiveHours = z.infer<typeof PersonalityActiveHoursSchema>;
+
 export const BodyConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
@@ -104,6 +118,7 @@ export const BodyConfigSchema = z
     selectedIntegrations: z.array(z.string()).default([]),
     mcpFeatures: McpFeaturesSchema.default({}),
     proactiveConfig: ProactivePersonalityConfigSchema.default({}),
+    activeHours: PersonalityActiveHoursSchema.default({}),
   })
   .default({});
 

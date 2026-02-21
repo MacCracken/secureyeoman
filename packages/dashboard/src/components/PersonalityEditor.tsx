@@ -1095,6 +1095,20 @@ interface BodySectionProps {
     };
     learning: { enabled: boolean; minConfidence: number };
   }) => void;
+  activeHours: {
+    enabled: boolean;
+    start: string;
+    end: string;
+    daysOfWeek: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
+    timezone: string;
+  };
+  onActiveHoursChange: (config: {
+    enabled: boolean;
+    start: string;
+    end: string;
+    daysOfWeek: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
+    timezone: string;
+  }) => void;
 }
 
 function BodySection({
@@ -1112,6 +1126,8 @@ function BodySection({
   onCreationConfigChange,
   proactiveConfig,
   onProactiveConfigChange,
+  activeHours,
+  onActiveHoursChange,
 }: BodySectionProps) {
   const capabilities = ['auditory', 'haptic', 'limb_movement', 'vision', 'vocalization'] as const;
   const { data: serversData, isLoading: serversLoading } = useQuery({
@@ -1976,6 +1992,96 @@ function BodySection({
           })}
         </div>
       </CollapsibleSection>
+
+      {/* Active Hours */}
+      <CollapsibleSection title="Active Hours — Brain Schedule" defaultOpen={false}>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Outside these hours, the personality&apos;s body is at rest — heartbeat checks and
+            proactive triggers are suppressed.
+          </p>
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium">Enable active hours</span>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                checked={activeHours.enabled}
+                onChange={() => onActiveHoursChange({ ...activeHours, enabled: !activeHours.enabled })}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+            </label>
+          </div>
+          {activeHours.enabled && (
+            <div className="space-y-3">
+              <div className="flex gap-4">
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground block mb-1">Start (UTC)</label>
+                  <input
+                    type="time"
+                    value={activeHours.start}
+                    onChange={(e) => onActiveHoursChange({ ...activeHours, start: e.target.value })}
+                    className="w-full text-xs rounded border border-border bg-background px-2 py-1"
+                  />
+                </div>
+                <div className="flex-1">
+                  <label className="text-xs text-muted-foreground block mb-1">End (UTC)</label>
+                  <input
+                    type="time"
+                    value={activeHours.end}
+                    onChange={(e) => onActiveHoursChange({ ...activeHours, end: e.target.value })}
+                    className="w-full text-xs rounded border border-border bg-background px-2 py-1"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Days of week</label>
+                <div className="flex gap-1 flex-wrap">
+                  {(['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const).map((day) => {
+                    const isSelected = activeHours.daysOfWeek.includes(day);
+                    return (
+                      <button
+                        key={day}
+                        type="button"
+                        onClick={() => {
+                          const days = isSelected
+                            ? activeHours.daysOfWeek.filter((d) => d !== day)
+                            : [...activeHours.daysOfWeek, day];
+                          onActiveHoursChange({ ...activeHours, daysOfWeek: days });
+                        }}
+                        className={`text-xs px-2 py-1 rounded border capitalize transition-colors ${
+                          isSelected
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'bg-muted/50 border-border hover:bg-muted'
+                        }`}
+                      >
+                        {day}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Timezone</label>
+                <select
+                  value={activeHours.timezone}
+                  onChange={(e) => onActiveHoursChange({ ...activeHours, timezone: e.target.value })}
+                  className="w-full text-xs rounded border border-border bg-background px-2 py-1"
+                >
+                  <option value="UTC">UTC</option>
+                  <option value="America/New_York">America/New_York (ET)</option>
+                  <option value="America/Chicago">America/Chicago (CT)</option>
+                  <option value="America/Denver">America/Denver (MT)</option>
+                  <option value="America/Los_Angeles">America/Los_Angeles (PT)</option>
+                  <option value="Europe/London">Europe/London (GMT)</option>
+                  <option value="Europe/Berlin">Europe/Berlin (CET)</option>
+                  <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
+                </select>
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
     </CollapsibleSection>
   );
 }
@@ -2091,6 +2197,19 @@ export function PersonalityEditor() {
       securityAlertDigest: false,
     },
     learning: { enabled: true, minConfidence: 0.7 },
+  });
+  const [activeHours, setActiveHours] = useState<{
+    enabled: boolean;
+    start: string;
+    end: string;
+    daysOfWeek: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
+    timezone: string;
+  }>({
+    enabled: false,
+    start: '09:00',
+    end: '17:00',
+    daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+    timezone: 'UTC',
   });
 
   // Collaborative editing — active when an existing personality is open for editing
@@ -2252,6 +2371,13 @@ export function PersonalityEditor() {
         minConfidence: body.proactiveConfig?.learning?.minConfidence ?? 0.7,
       },
     });
+    setActiveHours({
+      enabled: body.activeHours?.enabled ?? false,
+      start: body.activeHours?.start ?? '09:00',
+      end: body.activeHours?.end ?? '17:00',
+      daysOfWeek: body.activeHours?.daysOfWeek ?? ['mon', 'tue', 'wed', 'thu', 'fri'],
+      timezone: body.activeHours?.timezone ?? 'UTC',
+    });
     setSetActiveOnSave(false);
     setEditing(p.id);
   };
@@ -2325,6 +2451,13 @@ export function PersonalityEditor() {
       },
       learning: { enabled: true, minConfidence: 0.7 },
     });
+    setActiveHours({
+      enabled: false,
+      start: '09:00',
+      end: '17:00',
+      daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+      timezone: 'UTC',
+    });
     setSetActiveOnSave(false);
     setEditing('new');
   };
@@ -2345,6 +2478,7 @@ export function PersonalityEditor() {
         selectedIntegrations,
         mcpFeatures,
         proactiveConfig,
+        activeHours,
       },
     };
     if (editing === 'new') {
@@ -2717,6 +2851,8 @@ export function PersonalityEditor() {
             onCreationConfigChange={setCreationConfig}
             proactiveConfig={proactiveConfig}
             onProactiveConfigChange={setProactiveConfig}
+            activeHours={activeHours}
+            onActiveHoursChange={setActiveHours}
           />
 
           {/* Heart Section */}

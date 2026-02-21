@@ -71,6 +71,7 @@ const MOCK_MESSAGE: api.GroupChatMessage = {
 describe('GroupChatPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    window.HTMLElement.prototype.scrollIntoView = vi.fn();
     mockFetchPersonalities.mockResolvedValue({ personalities: [] } as never);
   });
 

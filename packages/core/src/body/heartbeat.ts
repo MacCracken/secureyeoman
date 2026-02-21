@@ -92,6 +92,13 @@ export class HeartbeatManager {
   private running = false;
   private taskLastRun = new Map<string, number>();
   private actionHistory = new Map<string, number>(); // Track last action execution per check
+  private personalitySchedule: {
+    enabled: boolean;
+    start: string;
+    end: string;
+    daysOfWeek: string[];
+    timezone: string;
+  } | null = null;
 
   constructor(
     brain: BrainManager,
@@ -159,6 +166,22 @@ export class HeartbeatManager {
     }
 
     return true;
+  }
+
+  private isWithinPersonalityActiveHours(): boolean {
+    if (!this.personalitySchedule?.enabled) return true;
+    const { start, end, daysOfWeek } = this.personalitySchedule;
+    const now = new Date();
+    if (daysOfWeek.length > 0) {
+      const days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+      if (!daysOfWeek.includes(days[now.getUTCDay()] as string)) return false;
+    }
+    const cur = now.getUTCHours() * 60 + now.getUTCMinutes();
+    const [sh = 0, sm = 0] = start.split(':').map(Number);
+    const [eh = 23, em = 59] = end.split(':').map(Number);
+    const s = sh * 60 + sm;
+    const e = eh * 60 + em;
+    return e > s ? cur >= s && cur <= e : cur >= s || cur <= e; // overnight range
   }
 
   /**
@@ -500,8 +523,27 @@ export class HeartbeatManager {
     this.logger.info('Heartbeat stopped');
   }
 
+  setPersonalitySchedule(
+    schedule: {
+      enabled: boolean;
+      start: string;
+      end: string;
+      daysOfWeek: string[];
+      timezone: string;
+    } | null
+  ): void {
+    this.personalitySchedule = schedule;
+    this.logger.debug('Personality active hours updated', { schedule });
+  }
+
   async beat(): Promise<HeartbeatResult> {
     const start = Date.now();
+
+    if (!this.isWithinPersonalityActiveHours()) {
+      this.logger.debug('Heartbeat suppressed — personality is at rest (outside active hours)');
+      return { timestamp: start, durationMs: Date.now() - start, checks: [] };
+    }
+
     const checks: HeartbeatCheckResult[] = [];
 
     const enabledChecks = this.config.checks.filter((c) => c.enabled);
@@ -620,6 +662,14 @@ export class HeartbeatManager {
     intervalMs: number;
     beatCount: number;
     lastBeat: HeartbeatResult | null;
+    personalityAtRest: boolean;
+    personalitySchedule: {
+      enabled: boolean;
+      start: string;
+      end: string;
+      daysOfWeek: string[];
+      timezone: string;
+    } | null;
     tasks: {
       name: string;
       type: string;
@@ -635,6 +685,8 @@ export class HeartbeatManager {
       intervalMs: this.config.intervalMs,
       beatCount: this.beatCount,
       lastBeat: this.lastBeat,
+      personalityAtRest: !this.isWithinPersonalityActiveHours(),
+      personalitySchedule: this.personalitySchedule,
       tasks: this.config.checks.map((c) => ({
         name: c.name,
         type: c.type,

@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { registerSoulRoutes } from './soul-routes.js';
 import type { SoulManager } from './manager.js';
+import type { HeartbeatManager } from '../body/heartbeat.js';
 
 const PERSONALITY = { id: 'pers-1', name: 'FRIDAY', systemPrompt: 'You are helpful.', traits: {} };
 const SKILL = { id: 'skill-1', name: 'Search', status: 'enabled', source: 'builtin' };
@@ -39,9 +40,15 @@ function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
   } as unknown as SoulManager;
 }
 
-function buildApp(overrides?: Partial<SoulManager>) {
+function mockHeartbeatManager(): HeartbeatManager {
+  return {
+    setPersonalitySchedule: vi.fn(),
+  } as unknown as HeartbeatManager;
+}
+
+function buildApp(overrides?: Partial<SoulManager>, heartbeatManager?: HeartbeatManager | null) {
   const app = Fastify();
-  registerSoulRoutes(app, { soulManager: makeMockManager(overrides) });
+  registerSoulRoutes(app, { soulManager: makeMockManager(overrides), heartbeatManager });
   return app;
 }
 
@@ -428,5 +435,75 @@ describe('POST /api/v1/soul/onboarding/complete', () => {
       payload: {},
     });
     expect(res.statusCode).toBe(400);
+  });
+});
+
+describe('heartbeatManager wiring', () => {
+  const ACTIVE_HOURS = { enabled: true, start: '09:00', end: '17:00', daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'], timezone: 'UTC' };
+  const PERSONALITY_WITH_HOURS = { ...PERSONALITY, body: { activeHours: ACTIVE_HOURS } };
+
+  it('POST activate → calls setPersonalitySchedule with personality.body.activeHours', async () => {
+    const hbm = mockHeartbeatManager();
+    const app = buildApp(
+      { getActivePersonality: vi.fn().mockResolvedValue(PERSONALITY_WITH_HOURS) },
+      hbm
+    );
+    await app.inject({ method: 'POST', url: '/api/v1/soul/personalities/pers-1/activate' });
+    expect(hbm.setPersonalitySchedule).toHaveBeenCalledWith(ACTIVE_HOURS);
+  });
+
+  it('POST activate → works gracefully when heartbeatManager is not provided', async () => {
+    const app = buildApp(
+      { getActivePersonality: vi.fn().mockResolvedValue(PERSONALITY_WITH_HOURS) },
+      undefined
+    );
+    const res = await app.inject({ method: 'POST', url: '/api/v1/soul/personalities/pers-1/activate' });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('PUT update → calls setPersonalitySchedule when updated personality is active', async () => {
+    const hbm = mockHeartbeatManager();
+    const updatedPersonality = { ...PERSONALITY_WITH_HOURS, id: 'pers-1' };
+    const app = buildApp(
+      {
+        updatePersonality: vi.fn().mockResolvedValue(updatedPersonality),
+        getActivePersonality: vi.fn().mockResolvedValue(updatedPersonality),
+      },
+      hbm
+    );
+    await app.inject({
+      method: 'PUT',
+      url: '/api/v1/soul/personalities/pers-1',
+      payload: { name: 'FRIDAY' },
+    });
+    expect(hbm.setPersonalitySchedule).toHaveBeenCalledWith(ACTIVE_HOURS);
+  });
+
+  it('PUT update → does NOT call setPersonalitySchedule when updated personality is not active', async () => {
+    const hbm = mockHeartbeatManager();
+    const updatedPersonality = { ...PERSONALITY_WITH_HOURS, id: 'pers-2' };
+    const app = buildApp(
+      {
+        updatePersonality: vi.fn().mockResolvedValue(updatedPersonality),
+        getActivePersonality: vi.fn().mockResolvedValue({ ...PERSONALITY, id: 'pers-1' }),
+      },
+      hbm
+    );
+    await app.inject({
+      method: 'PUT',
+      url: '/api/v1/soul/personalities/pers-2',
+      payload: { name: 'Alt' },
+    });
+    expect(hbm.setPersonalitySchedule).not.toHaveBeenCalled();
+  });
+
+  it('PUT update → works gracefully when heartbeatManager is not provided', async () => {
+    const app = buildApp(undefined, undefined);
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/soul/personalities/pers-1',
+      payload: { name: 'FRIDAY' },
+    });
+    expect(res.statusCode).toBe(200);
   });
 });

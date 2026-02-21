@@ -187,8 +187,8 @@ describe('McpPrebuilts', () => {
     const allConnectButtons = await screen.findAllByText('Connect');
     await user.click(allConnectButtons[11]);
 
-    const inputs = screen.getAllByLabelText(/Token/i);
-    expect(inputs[0]).toHaveAttribute('type', 'password');
+    const tokenInput = screen.getByPlaceholderText('HA_TOKEN');
+    expect(tokenInput).toHaveAttribute('type', 'password');
   });
 
   it('renders Meilisearch URL field as text input', async () => {
@@ -223,7 +223,7 @@ describe('McpPrebuilts', () => {
     // Click the inner Connect button
     const innerConnect = screen
       .getAllByText('Connect')
-      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost'));
+      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost') && !el.closest('button')?.classList.contains('shrink-0'));
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -258,7 +258,7 @@ describe('McpPrebuilts', () => {
 
     const innerConnect = screen
       .getAllByText('Connect')
-      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost'));
+      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost') && !el.closest('button')?.classList.contains('shrink-0'));
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -287,7 +287,7 @@ describe('McpPrebuilts', () => {
 
     const innerConnect = screen
       .getAllByText('Connect')
-      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost'));
+      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost') && !el.closest('button')?.classList.contains('shrink-0'));
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -312,15 +312,15 @@ describe('McpPrebuilts', () => {
 
     await screen.findByText('ElevenLabs');
     const allConnectButtons = await screen.findAllByText('Connect');
-    // ElevenLabs is 14th server (index 13)
-    await user.click(allConnectButtons[13]);
+    // ElevenLabs is 13th server (index 12) — Coolify (MetaMCP) is 14th
+    await user.click(allConnectButtons[12]);
 
     const apiKeyInput = screen.getByPlaceholderText('ELEVENLABS_API_KEY');
     await user.type(apiKeyInput, 'el-test-key');
 
     const innerConnect = screen
       .getAllByText('Connect')
-      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost'));
+      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost') && !el.closest('button')?.classList.contains('shrink-0'));
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -349,7 +349,7 @@ describe('McpPrebuilts', () => {
     // Do not fill in the API key — click Connect immediately
     const innerConnect = screen
       .getAllByText('Connect')
-      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost'));
+      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost') && !el.closest('button')?.classList.contains('shrink-0'));
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
