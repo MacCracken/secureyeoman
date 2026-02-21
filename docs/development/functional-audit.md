@@ -48,7 +48,7 @@
 | **Rate Limiting** | ✅ Per-user, per-IP, global | Configurable (not default) | ❌ | ❌ | ✅ WASM fuel metering |
 | **Sandboxing** | ✅ Landlock (Linux), sandbox-exec (macOS), seccomp, namespaces | Docker sandbox (opt-in) | Docker-only | ✅ Workspace restriction | ✅ WASM (wasmtime) + Docker + outbound network proxy |
 | **Skill Trust Tiers** | ✅ community skills restricted to read-only tool access (26 name-prefix allow-list); enforced in SoulManager + BrainManager | ❌ | ❌ | ❌ | ✅ Trusted (all tools) vs Installed (read-only) |
-| **Outbound Network Proxy** | ❌ | ❌ | ❌ | ❌ | ✅ Credential injection at proxy; endpoint allowlist |
+| **Outbound Network Proxy** | ✅ `CredentialProxy` — parent-process HTTP proxy injects `Authorization` headers for known hosts; HTTPS CONNECT allowlist enforced; secrets never enter the sandbox (ADR 099) | ❌ | ❌ | ❌ | ✅ Credential injection at proxy; endpoint allowlist |
 | **API Keys** | ✅ With rate limiting | Basic | ❌ | ✅ Config-based | ✅ |
 | **mTLS** | ✅ | ❌ | ❌ | ❌ | ❌ |
 

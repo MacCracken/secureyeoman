@@ -30,6 +30,9 @@ export default defineConfig({
         'src/**/index.ts',
         // Pure TypeScript type definitions — no runtime code
         'src/**/types.ts',
+        // Application entry points — require system/integration testing, not unit testing
+        'src/secureyeoman.ts',
+        'src/cli.ts',
       ],
       thresholds: {
         lines: 87,

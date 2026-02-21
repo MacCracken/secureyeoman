@@ -1114,6 +1114,7 @@ export class GatewayServer {
         allowAnomalyDetection: config.security.allowAnomalyDetection,
         sandboxGvisor: config.security.sandboxGvisor,
         sandboxWasm: config.security.sandboxWasm,
+        sandboxCredentialProxy: config.security.sandboxCredentialProxy,
         allowCommunityGitFetch: config.security.allowCommunityGitFetch,
         communityGitUrl: config.security.communityGitUrl,
       };
@@ -1139,6 +1140,7 @@ export class GatewayServer {
             allowAnomalyDetection?: boolean;
             sandboxGvisor?: boolean;
             sandboxWasm?: boolean;
+            sandboxCredentialProxy?: boolean;
             allowCommunityGitFetch?: boolean;
             communityGitUrl?: string;
           };
@@ -1161,6 +1163,7 @@ export class GatewayServer {
             allowAnomalyDetection,
             sandboxGvisor,
             sandboxWasm,
+            sandboxCredentialProxy,
             allowCommunityGitFetch,
             communityGitUrl,
           } = request.body;
@@ -1179,6 +1182,7 @@ export class GatewayServer {
             allowAnomalyDetection === undefined &&
             sandboxGvisor === undefined &&
             sandboxWasm === undefined &&
+            sandboxCredentialProxy === undefined &&
             allowCommunityGitFetch === undefined &&
             communityGitUrl === undefined
           ) {
@@ -1199,6 +1203,7 @@ export class GatewayServer {
             allowAnomalyDetection,
             sandboxGvisor,
             sandboxWasm,
+            sandboxCredentialProxy,
             allowCommunityGitFetch,
             communityGitUrl,
           });
@@ -1218,6 +1223,7 @@ export class GatewayServer {
             allowAnomalyDetection: config.security.allowAnomalyDetection,
             sandboxGvisor: config.security.sandboxGvisor,
             sandboxWasm: config.security.sandboxWasm,
+            sandboxCredentialProxy: config.security.sandboxCredentialProxy,
             allowCommunityGitFetch: config.security.allowCommunityGitFetch,
             communityGitUrl: config.security.communityGitUrl,
           };

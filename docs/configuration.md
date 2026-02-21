@@ -87,6 +87,11 @@ security:
     maxCpuPercent: 50            # max 100
     maxFileSizeMb: 100           # max 10240
     networkAllowed: true
+    credentialProxy:
+      enabled: false             # Enable outbound credential proxy for sandboxed processes
+      credentials: []            # List of {host, headerName, headerValue} rules
+      allowedHosts: []           # Additional allowed outbound hostnames (credential hosts are always allowed)
+      requestTimeoutMs: 10000    # Proxy forwarding timeout (max 60000 ms)
 
   rateLimiting:
     enabled: true

@@ -159,6 +159,12 @@ const EncryptionConfigSchema = z
   })
   .default({});
 
+export const SandboxProxyCredentialSchema = z.object({
+  host: z.string().min(1),
+  headerName: z.string().min(1),
+  headerValue: z.string().min(1),
+});
+
 const SandboxConfigSchema = z
   .object({
     enabled: z.boolean().default(true),
@@ -169,6 +175,14 @@ const SandboxConfigSchema = z
     maxCpuPercent: z.number().int().positive().max(100).default(50),
     maxFileSizeMb: z.number().int().positive().max(10240).default(100),
     networkAllowed: z.boolean().default(true),
+    credentialProxy: z
+      .object({
+        enabled: z.boolean().default(false),
+        credentials: z.array(SandboxProxyCredentialSchema).default([]),
+        allowedHosts: z.array(z.string()).default([]),
+        requestTimeoutMs: z.number().int().positive().max(60000).default(10000),
+      })
+      .default({}),
   })
   .default({});
 
@@ -227,6 +241,8 @@ export const SecurityConfigSchema = z.object({
   sandboxGvisor: z.boolean().default(false),
   /** Enable WebAssembly-based isolation for code execution. Off by default. */
   sandboxWasm: z.boolean().default(false),
+  /** Enable outbound credential injection at sandbox proxy boundary. Off by default. */
+  sandboxCredentialProxy: z.boolean().default(false),
   /** Allow git clone/pull from a URL during community skill sync. Off by default. */
   allowCommunityGitFetch: z.boolean().default(false),
   /** Default git URL for community skills repo when git fetch is enabled. */

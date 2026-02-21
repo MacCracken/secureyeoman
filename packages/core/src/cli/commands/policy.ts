@@ -13,6 +13,7 @@ const ALL_POLICY_FLAGS = [
   'allowAnomalyDetection',
   'sandboxGvisor',
   'sandboxWasm',
+  'sandboxCredentialProxy',
   'allowSubAgents',
   'allowA2A',
   'allowSwarms',

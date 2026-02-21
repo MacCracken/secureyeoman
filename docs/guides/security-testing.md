@@ -111,6 +111,27 @@ The smoke test:
 
 Environment variables: `CLUSTER_NAME`, `NAMESPACE`, `TIMEOUT`.
 
+## Sandbox Credential Proxy
+
+The `CredentialProxy` (ADR 099) can be verified manually after enabling the
+`sandboxCredentialProxy` policy flag:
+
+```bash
+# Enable the policy flag
+secureyeoman policy set sandboxCredentialProxy true
+
+# Run the unit tests
+npx vitest run packages/core/src/sandbox/credential-proxy.test.ts
+```
+
+Key properties to verify:
+- The proxy URL format is `http://127.0.0.1:<PORT>` (ephemeral port, not fixed).
+- Requests to non-allowlisted hosts receive `HTTP 403 Forbidden`.
+- The `Authorization` header injected by the proxy matches the configured credential rule
+  and does NOT appear in the environment of any sandboxed child process.
+- After `stop()`, connections to the proxy port are refused (server fully closed).
+- Concurrent requests to different allowed hosts do not mix up credential headers.
+
 ## Proxy Security
 
 When proxy integration is enabled (`MCP_PROXY_ENABLED=true`), the following security properties are maintained:

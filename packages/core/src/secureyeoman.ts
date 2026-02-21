@@ -1845,6 +1845,7 @@ export class SecureYeoman {
     allowAnomalyDetection?: boolean;
     sandboxGvisor?: boolean;
     sandboxWasm?: boolean;
+    sandboxCredentialProxy?: boolean;
     allowCommunityGitFetch?: boolean;
     communityGitUrl?: string;
   }): void {
@@ -1891,6 +1892,9 @@ export class SecureYeoman {
     }
     if (updates.sandboxWasm !== undefined) {
       this.config!.security.sandboxWasm = updates.sandboxWasm;
+    }
+    if (updates.sandboxCredentialProxy !== undefined) {
+      this.config!.security.sandboxCredentialProxy = updates.sandboxCredentialProxy;
     }
     if (updates.allowCommunityGitFetch !== undefined) {
       this.config!.security.allowCommunityGitFetch = updates.allowCommunityGitFetch;
@@ -1959,6 +1963,7 @@ export class SecureYeoman {
         'allowAnomalyDetection',
         'sandboxGvisor',
         'sandboxWasm',
+        'sandboxCredentialProxy',
       ] as const;
       for (const row of result.rows) {
         if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {

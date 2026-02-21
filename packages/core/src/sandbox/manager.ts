@@ -12,6 +12,11 @@ import type { Sandbox, SandboxCapabilities } from './types.js';
 import { NoopSandbox } from './noop-sandbox.js';
 import { LinuxSandbox } from './linux-sandbox.js';
 import { DarwinSandbox } from './darwin-sandbox.js';
+import {
+  CredentialProxy,
+  type CredentialProxyHandle,
+  type CredentialRule,
+} from './credential-proxy.js';
 
 export interface SandboxManagerConfig {
   enabled: boolean;
@@ -35,6 +40,7 @@ export class SandboxManager {
   private sandbox: Sandbox | null = null;
   private capabilities: SandboxCapabilities | null = null;
   private logger: SecureLogger | null = null;
+  private proxyHandle: CredentialProxyHandle | null = null;
 
   constructor(config: SandboxManagerConfig, deps: SandboxManagerDeps = {}) {
     this.config = config;
@@ -173,6 +179,34 @@ export class SandboxManager {
   }
 
   /**
+   * Start the credential proxy with the given rules and allowed hosts.
+   * Returns the proxy URL (e.g. `http://127.0.0.1:PORT`).
+   * Calling startProxy() when one is already running replaces it.
+   */
+  async startProxy(credentials: CredentialRule[], allowedHosts: string[]): Promise<string> {
+    if (this.proxyHandle) {
+      await this.proxyHandle.stop().catch(() => undefined);
+      this.proxyHandle = null;
+    }
+
+    const proxy = new CredentialProxy({ credentials, allowedHosts });
+    this.proxyHandle = await proxy.start();
+
+    this.getLogger().info('Credential proxy started', { url: this.proxyHandle.proxyUrl });
+    return this.proxyHandle.proxyUrl;
+  }
+
+  /**
+   * Stop the running credential proxy, if any.
+   */
+  async stopProxy(): Promise<void> {
+    if (!this.proxyHandle) return;
+    await this.proxyHandle.stop();
+    this.proxyHandle = null;
+    this.getLogger().info('Credential proxy stopped');
+  }
+
+  /**
    * Get status info for the /api/v1/sandbox/status endpoint.
    */
   getStatus(): {
@@ -180,6 +214,7 @@ export class SandboxManager {
     technology: string;
     capabilities: SandboxCapabilities;
     sandboxType: string;
+    credentialProxyUrl: string | null;
   } {
     const sandbox = this.createSandbox();
     return {
@@ -187,6 +222,7 @@ export class SandboxManager {
       technology: this.config.technology,
       capabilities: this.getCapabilities(),
       sandboxType: sandbox.constructor.name,
+      credentialProxyUrl: this.proxyHandle?.proxyUrl ?? null,
     };
   }
 }

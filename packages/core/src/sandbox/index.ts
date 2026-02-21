@@ -31,3 +31,10 @@ export {
   type IntegrityCheckResult,
   type IntegrityReport,
 } from './monitor.js';
+
+export {
+  CredentialProxy,
+  type CredentialProxyHandle,
+  type CredentialRule,
+  type CredentialProxyConfig,
+} from './credential-proxy.js';

@@ -114,6 +114,7 @@ describe('SecuritySettings', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
@@ -130,6 +131,7 @@ describe('SecuritySettings', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: null, model: null });
@@ -176,6 +178,7 @@ describe('SecuritySettings', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -247,6 +250,7 @@ describe('SecuritySettings', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -279,6 +283,7 @@ describe('SecuritySettings', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -301,6 +306,7 @@ describe('SecuritySettings', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -417,6 +423,7 @@ describe('SecuritySettings', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -439,6 +446,7 @@ describe('SecuritySettings', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -471,6 +479,7 @@ describe('SecuritySettings', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
