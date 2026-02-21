@@ -454,7 +454,7 @@ curl -X POST http://localhost:18789/api/v1/marketplace/community/sync \
 
 Only `https://` and `file://` URLs are accepted. The policy is **OFF by default** for security.
 Set `COMMUNITY_GIT_URL` in `.env` (or via policy) to configure the default URL. See
-[COMMUNITY_IMPROVEMENTS.md](COMMUNITY_IMPROVEMENTS.md) for the full security model and developer
+[Configuration Reference](docs/configuration.md) for the full security model and developer
 workflow.
 
 **To use a pre-cloned local path** (original method, still supported):
@@ -525,12 +525,12 @@ secureyeoman/
 │   └── mcp/             # Standalone MCP service (58+ tools, 7 resources, 4 prompts)
 ├── tests/               # Security, load (k6), and chaos tests
 ├── deploy/              # Docker, Helm chart, Prometheus, Grafana, Loki configs
-├── docs/                # Documentation + ADRs (99 decision records)
+├── docs/                # Documentation + ADRs (100 decision records)
 │   ├── api/             # REST API + WebSocket API + OpenAPI 3.1 spec
-│   ├── adr/             # Architecture Decision Records
-│   ├── guides/          # Getting started, integrations
+│   ├── adr/             # Architecture Decision Records (ADR-000 to ADR-099)
+│   ├── guides/          # Getting started, integrations, security testing
 │   ├── security/        # Security model documentation
-│   └── development/     # Roadmap
+│   └── development/     # Roadmap, architecture overview, dependency notes
 ├── scripts/             # Utility scripts
 └── .github/             # CI/CD workflows
 ```
@@ -607,10 +607,13 @@ This updates all `package.json` files in the monorepo. The core server reads its
 | **Integrations** | [Integration Setup](docs/guides/integrations.md) |
 | **AI Provider Keys** | [AI Provider API Keys](docs/guides/ai-provider-api-keys.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (99 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (100 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
+| **Architecture Overview** | [Architecture](docs/development/architecture.md) |
+| **Security Testing** | [Security Testing Guide](docs/guides/security-testing.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |
+| **Code of Conduct** | [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) |
 | **Security Policy** | [SECURITY.md](SECURITY.md) |
 
 ---
