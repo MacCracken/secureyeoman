@@ -225,22 +225,7 @@
 3. **$10 Hardware Deployment** - Embedded device support (lite binary available)
 4. **Go-based Runtime** - Potential future language option for core
 
-### Ironclaw Comparison
-
-Ironclaw ([nearai/ironclaw](https://github.com/nearai/ironclaw)) is a Rust-based privacy-first AI agent with a strong security and memory architecture. It is not enterprise-grade (no RBAC, SSO, K8s, audit chain), but it introduced several patterns we have evaluated and now partially or fully matched.
-
-#### ✅ Resolved (formerly "Missing vs Ironclaw")
-
-| Feature | Ironclaw approach | SecureYeoman implementation | ADR |
-|---------|------------------|----------------------------|-----|
-| **Tool-output credential scanning** | `LeakDetector` scans tool output and LLM responses for 15+ secret patterns | `ToolOutputScanner` — 18 built-in patterns + SecretStore literal patterns; scans every LLM response; `[REDACTED:<type>]` replacement | 092 |
-| **Skill trust tiers** | Registry-downloaded (Installed) skills get read-only tools only; user-placed (Trusted) skills get full tool access | `applySkillTrustFilter()` — community skills restricted to 26 read-only tool-name prefixes; enforced in SoulManager + BrainManager | 092 |
-| **Hybrid FTS + Vector Search (RRF)** | Every query hits both `tsvector` FTS and `pgvector` cosine similarity; merged via Reciprocal Rank Fusion | `queryMemoriesByRRF()` + `queryKnowledgeByRRF()`; graceful fallback to pure vector, then ILIKE | 095 |
-| **Content-chunked workspace** | Documents chunked at 800 tokens with 15% overlap before indexing | `brain/chunker.ts` + `brain.document_chunks` table; `remember()` and `learn()` chunk on save; `forget()` cleans up | 096 |
-| **Proactive context compaction** | Compacts session history at ~80% of context window before hitting the limit | `ContextCompactor` — token-usage heuristic before each LLM call; summarises older turns; wired into `chat-routes.ts` | 097 |
-| **Self-repairing task loop** | Stuck job detection → re-analysis prompt ("here's what failed, try differently") | `TaskLoop` — 30 s timeout + 2-consecutive-identical-calls detection; `buildRecoveryPrompt()` injects elapsed time + last tool outcome | 098 |
-
-#### ❌ Remaining Gaps vs Ironclaw
+#### ❌ Missing vs Ironclaw
 
 | Gap | Ironclaw approach | SecureYeoman status | Priority |
 |-----|------------------|---------------------|----------|
