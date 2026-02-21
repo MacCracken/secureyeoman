@@ -83,6 +83,7 @@ export class MarketplaceManager {
               description: skill.description,
               instructions: skill.instructions,
               tools: skill.tools,
+              triggerPatterns: skill.triggerPatterns,
               source: brainSource,
               enabled: true,
               personalityId: personalityId ?? null,
@@ -262,6 +263,9 @@ export class MarketplaceManager {
           category: typeof data.category === 'string' ? data.category : 'general',
           tags: Array.isArray(data.tags) ? (data.tags as string[]) : [],
           instructions: typeof data.instructions === 'string' ? data.instructions : '',
+          triggerPatterns: Array.isArray(data.triggerPatterns)
+            ? (data.triggerPatterns as string[])
+            : [],
           source: 'community',
         };
 

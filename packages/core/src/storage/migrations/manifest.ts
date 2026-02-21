@@ -66,4 +66,7 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '027_marketplace_author_info', sql: readSql('027_marketplace_author_info.sql') },
   { id: '028_heartbeat_log', sql: readSql('028_heartbeat_log.sql') },
   { id: '029_collab_docs', sql: readSql('029_collab_docs.sql') },
+  { id: '030_group_chat', sql: readSql('030_group_chat.sql') },
+  { id: '031_routing_rules', sql: readSql('031_routing_rules.sql') },
+  { id: '032_marketplace_trigger_patterns', sql: readSql('032_marketplace_trigger_patterns.sql') },
 ];

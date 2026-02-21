@@ -375,6 +375,34 @@ describe('Community Skill Sync', () => {
     expect(communityBrainSkills[0].name).toBe('Community Helper');
   });
 
+  it('should propagate triggerPatterns from JSON through sync → marketplace DB → brain skill on install', async () => {
+    const { brainManager } = createBrainManager();
+    const mgr = new MarketplaceManager(storage, {
+      logger: createNoopLogger(),
+      brainManager,
+      communityRepoPath: tmpDir,
+    });
+
+    const patterns = ['review.*code|code.*review', '\\bpr\\b|pull.?request', '\\bdiff\\b'];
+    writeSkill('skills/development/pattern-skill.json', {
+      name: 'Pattern Skill',
+      instructions: 'Reviews code',
+      triggerPatterns: patterns,
+    });
+
+    await mgr.syncFromCommunity();
+    const { skills } = await mgr.search(undefined, undefined, 20, 0, 'community');
+    expect(skills).toHaveLength(1);
+    // Patterns survive the JSON → marketplace DB round-trip
+    expect(skills[0].triggerPatterns).toEqual(patterns);
+
+    await mgr.install(skills[0].id);
+    const brainSkills = await brainManager.listSkills({ source: 'community' });
+    expect(brainSkills).toHaveLength(1);
+    // Patterns survive the marketplace DB → brain skill install
+    expect(brainSkills[0].triggerPatterns).toEqual(patterns);
+  });
+
   it('should skip invalid JSON files and continue importing valid ones', async () => {
     writeSkill('skills/development/good-skill.json', {
       name: 'Good Skill',
