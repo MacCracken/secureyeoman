@@ -35,7 +35,7 @@ interface PluginEntry {
 }
 
 function resolvePluginDir(dirFlag: string | undefined): string | undefined {
-  return dirFlag ?? process.env['INTEGRATION_PLUGIN_DIR'];
+  return dirFlag ?? process.env.INTEGRATION_PLUGIN_DIR;
 }
 
 function scanPlugins(pluginDir: string): { entries: PluginEntry[]; errors: string[] } {
@@ -188,7 +188,7 @@ async function infoPlugin(
   }
 
   // Match by filename-inferred name or actual exported platform
-  let entry = entries.find((e) => e.platform === platform);
+  const entry = entries.find((e) => e.platform === platform);
   if (!entry) {
     ctx.stderr.write(`Plugin not found: ${platform}\n`);
     return 1;

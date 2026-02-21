@@ -24,7 +24,7 @@ const PROVIDER_KEY_ENV: Record<string, string> = {
 };
 
 function resolvePersonalityFallbacks(
-  fallbacks: Array<{ provider: string; model: string }>
+  fallbacks: { provider: string; model: string }[]
 ): FallbackModelConfig[] {
   return fallbacks.map((f) => ({
     provider: f.provider as AIProviderName,

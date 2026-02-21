@@ -322,7 +322,7 @@ export class LettaProvider extends BaseProvider {
     const messages = this.mapMessages(request.messages);
     const body: Record<string, unknown> = { messages };
     if (request.tools?.length) {
-      body['client_tools'] = this.mapTools(request.tools);
+      body.client_tools = this.mapTools(request.tools);
     }
     return body;
   }

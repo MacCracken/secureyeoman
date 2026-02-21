@@ -224,7 +224,7 @@ export class RoutingRulesManager {
     } catch (err) {
       logger.error(
         `Routing rule "${rule.name}" (${rule.id}) action failed: ` +
-          `${err instanceof Error ? err.message : String(err)}`
+          (err instanceof Error ? err.message : String(err))
       );
     }
   }

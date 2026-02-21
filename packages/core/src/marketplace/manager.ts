@@ -149,7 +149,7 @@ export class MarketplaceManager {
         if (remaining.length > 0) return;
       }
       // Find the marketplace record and reset installed flag
-      let mpSkill =
+      const mpSkill =
         brainSource === 'community'
           ? await this.storage.findByNameAndSource(skillName, 'community')
           : ((await this.storage.findByNameAndSource(skillName, 'published')) ??
@@ -244,17 +244,17 @@ export class MarketplaceManager {
           authorDisplay = rawAuthor;
         } else if (rawAuthor && typeof rawAuthor === 'object') {
           const a = rawAuthor as Record<string, unknown>;
-          authorDisplay = typeof a['name'] === 'string' ? a['name'] : 'community';
+          authorDisplay = typeof a.name === 'string' ? a.name : 'community';
           authorInfo = {
             name: authorDisplay,
-            github: typeof a['github'] === 'string' ? a['github'] : undefined,
-            website: typeof a['website'] === 'string' ? a['website'] : undefined,
-            license: typeof a['license'] === 'string' ? a['license'] : undefined,
+            github: typeof a.github === 'string' ? a.github : undefined,
+            website: typeof a.website === 'string' ? a.website : undefined,
+            license: typeof a.license === 'string' ? a.license : undefined,
           };
         }
 
         const skillData: Partial<MarketplaceSkill> = {
-          name: data.name as string,
+          name: data.name,
           description: typeof data.description === 'string' ? data.description : '',
           version: typeof data.version === 'string' ? data.version : '1.0.0',
           author: authorDisplay,

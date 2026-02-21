@@ -51,7 +51,7 @@ export class ZapierIntegration implements WebhookIntegration {
     metadata?: Record<string, unknown>
   ): Promise<string> {
     const outboundUrl =
-      (metadata?.['outboundUrl'] as string | undefined) ?? this.zapierConfig?.outboundUrl;
+      (metadata?.outboundUrl as string | undefined) ?? this.zapierConfig?.outboundUrl;
     if (!outboundUrl) throw new Error('No Zapier outbound webhook URL configured');
     const payload = { message: text, ...metadata };
     const resp = await fetch(outboundUrl, {
@@ -89,12 +89,12 @@ export class ZapierIntegration implements WebhookIntegration {
     try {
       const data = JSON.parse(payload) as Record<string, unknown>;
       const text =
-        (data['message'] as string | undefined) ??
-        (data['text'] as string | undefined) ??
-        (data['content'] as string | undefined) ??
+        (data.message as string | undefined) ??
+        (data.text as string | undefined) ??
+        (data.content as string | undefined) ??
         `Zap triggered: ${JSON.stringify(data).slice(0, 200)}`;
       const senderId =
-        (data['sender'] as string | undefined) ?? (data['from'] as string | undefined) ?? 'zapier';
+        (data.sender as string | undefined) ?? (data.from as string | undefined) ?? 'zapier';
 
       const unified: UnifiedMessage = {
         id: `zapier_${Date.now()}`,
@@ -103,10 +103,10 @@ export class ZapierIntegration implements WebhookIntegration {
         direction: 'inbound',
         senderId,
         senderName: 'Zapier',
-        chatId: (data['chatId'] as string | undefined) ?? 'zapier',
+        chatId: (data.chatId as string | undefined) ?? 'zapier',
         text,
         attachments: [],
-        platformMessageId: String(data['id'] ?? Date.now()),
+        platformMessageId: String(data.id ?? Date.now()),
         metadata: { ...data, rawPayload: payload.slice(0, 2000) },
         timestamp: Date.now(),
       };

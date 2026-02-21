@@ -14,7 +14,7 @@ const {
   mockPromptChoice,
   mockCreateInterface,
 } = vi.hoisted(() => {
-  let flagCallCount = 0;
+  const flagCallCount = 0;
 
   return {
     mockExistsSync: vi.fn().mockReturnValue(false),

@@ -50,7 +50,7 @@ export function CostsPage() {
         {(['summary', 'history'] as TabId[]).map((tab) => (
           <button
             key={tab}
-            onClick={() => setActiveTab(tab)}
+            onClick={() => { setActiveTab(tab); }}
             className={`px-4 py-2 text-sm font-medium capitalize transition-colors border-b-2 -mb-px ${
               activeTab === tab
                 ? 'border-primary text-primary'
@@ -124,7 +124,7 @@ function SummaryTab() {
           label="Avg Latency"
           value={`${(resources?.apiLatencyAvgMs ?? 0).toFixed(0)} ms`}
           loading={metricsLoading}
-          onReset={() => resetMutation.mutate('latency')}
+          onReset={() => { resetMutation.mutate('latency'); }}
           resetting={resetMutation.isPending && resetMutation.variables === 'latency'}
         />
       </div>
@@ -157,7 +157,7 @@ function SummaryTab() {
             <button
               className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 disabled:opacity-50"
               disabled={resetMutation.isPending}
-              onClick={() => resetMutation.mutate('errors')}
+              onClick={() => { resetMutation.mutate('errors'); }}
               title="Reset error counter"
             >
               {resetMutation.isPending && resetMutation.variables === 'errors' ? (
@@ -378,7 +378,7 @@ function HistoryTab() {
             <input
               type="date"
               value={filters.from ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, from: e.target.value }))}
+              onChange={(e) => { setFilters((f) => ({ ...f, from: e.target.value })); }}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             />
           </div>
@@ -387,7 +387,7 @@ function HistoryTab() {
             <input
               type="date"
               value={filters.to ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, to: e.target.value }))}
+              onChange={(e) => { setFilters((f) => ({ ...f, to: e.target.value })); }}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             />
           </div>
@@ -395,7 +395,7 @@ function HistoryTab() {
             <label className="text-xs text-muted-foreground">Provider</label>
             <select
               value={filters.provider ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, provider: e.target.value }))}
+              onChange={(e) => { setFilters((f) => ({ ...f, provider: e.target.value })); }}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             >
               <option value="">All providers</option>
@@ -415,7 +415,7 @@ function HistoryTab() {
             <input
               type="text"
               value={filters.model ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, model: e.target.value }))}
+              onChange={(e) => { setFilters((f) => ({ ...f, model: e.target.value })); }}
               placeholder="Filter by model name…"
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             />
@@ -424,7 +424,7 @@ function HistoryTab() {
             <label className="text-xs text-muted-foreground">Personality</label>
             <select
               value={filters.personalityId ?? ''}
-              onChange={(e) => setFilters((f) => ({ ...f, personalityId: e.target.value }))}
+              onChange={(e) => { setFilters((f) => ({ ...f, personalityId: e.target.value })); }}
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             >
               <option value="">All personalities</option>
@@ -440,7 +440,7 @@ function HistoryTab() {
             <select
               value={filters.groupBy ?? 'day'}
               onChange={(e) =>
-                setFilters((f) => ({ ...f, groupBy: e.target.value as 'day' | 'hour' }))
+                { setFilters((f) => ({ ...f, groupBy: e.target.value as 'day' | 'hour' })); }
               }
               className="w-full h-9 px-3 rounded-md border border-input bg-background text-sm"
             >

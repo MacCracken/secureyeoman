@@ -81,7 +81,7 @@ export class QQIntegration implements Integration {
     text: string,
     metadata?: Record<string, unknown>
   ): Promise<string> {
-    const isGroup = metadata?.['group'] === true || chatId.startsWith('group_');
+    const isGroup = metadata?.group === true || chatId.startsWith('group_');
     const id = chatId.replace(/^group_/, '');
     const endpoint = isGroup ? '/send_group_msg' : '/send_private_msg';
     const body = isGroup
@@ -157,7 +157,7 @@ export class QQIntegration implements Integration {
   private async oneBotFetch(path: string, init?: RequestInit): Promise<Response> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (this.qqConfig?.accessToken)
-      headers['Authorization'] = `Bearer ${this.qqConfig.accessToken}`;
+      headers.Authorization = `Bearer ${this.qqConfig.accessToken}`;
     return fetch(`${this.qqConfig!.httpUrl}${path}`, {
       ...init,
       headers: { ...headers, ...((init?.headers ?? {}) as Record<string, string>) },

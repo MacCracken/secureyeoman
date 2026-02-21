@@ -154,7 +154,7 @@ export class ChromaVectorStore implements VectorStore {
           id,
           // ChromaDB cosine distance = 1 − similarity → invert back to similarity
           score: 1 - (distances[i] ?? 1),
-          metadata: (metadatas[i] ?? {}) as Record<string, unknown>,
+          metadata: (metadatas[i] ?? {}),
         }))
         .filter((r) => r.score >= threshold);
     });

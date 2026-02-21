@@ -159,7 +159,7 @@ export function GroupChatPage() {
             return (
               <button
                 key={`${ch.integrationId}:${ch.chatId}`}
-                onClick={() => setSelected({ integrationId: ch.integrationId, chatId: ch.chatId })}
+                onClick={() => { setSelected({ integrationId: ch.integrationId, chatId: ch.chatId }); }}
                 className={`w-full text-left px-4 py-3 border-b border-border hover:bg-muted transition-colors ${
                   isActive ? 'bg-muted' : ''
                 }`}
@@ -206,7 +206,7 @@ export function GroupChatPage() {
           {/* Header */}
           <div className="p-4 border-b border-border flex items-center gap-3">
             <button
-              onClick={() => setSelected(null)}
+              onClick={() => { setSelected(null); }}
               className="md:hidden p-1 rounded hover:bg-muted text-muted-foreground"
             >
               <ChevronLeft className="w-4 h-4" />
@@ -258,7 +258,7 @@ export function GroupChatPage() {
             <div className="flex gap-2">
               <textarea
                 value={replyText}
-                onChange={(e) => setReplyText(e.target.value)}
+                onChange={(e) => { setReplyText(e.target.value); }}
                 onKeyDown={handleKeyDown}
                 placeholder="Type a reply… (Enter to send, Shift+Enter for newline)"
                 rows={2}

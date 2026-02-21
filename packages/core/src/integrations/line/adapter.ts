@@ -76,7 +76,7 @@ export class LineIntegration implements WebhookIntegration {
     text: string,
     metadata?: Record<string, unknown>
   ): Promise<string> {
-    const replyToken = metadata?.['replyToken'] as string | undefined;
+    const replyToken = metadata?.replyToken as string | undefined;
     if (replyToken) {
       // Reply message (must be used within 30s of receiving event)
       const resp = await this.lineFetch('/message/reply', {

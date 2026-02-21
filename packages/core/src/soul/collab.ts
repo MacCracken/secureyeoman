@@ -257,7 +257,7 @@ export class CollabManager {
     // The format is intentionally lightweight (not full Yjs awareness encoding)
     // because our dashboard hook reads it as JSON rather than using the Yjs
     // awareness library client-side.
-    const users: Array<{ clientId: string; name: string; color: string }> = [];
+    const users: { clientId: string; name: string; color: string }[] = [];
     for (const [cid, client] of entry.clients) {
       users.push({ clientId: cid, name: client.displayName, color: client.color });
     }

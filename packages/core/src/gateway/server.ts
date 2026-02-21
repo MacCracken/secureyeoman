@@ -318,9 +318,9 @@ export class GatewayServer {
       // Unified OAuth token service — persists Google tokens across restarts
       const oauthTokenStorage = new OAuthTokenStorage();
       const googleClientId =
-        process.env['GOOGLE_OAUTH_CLIENT_ID'] ?? process.env['GMAIL_OAUTH_CLIENT_ID'];
+        process.env.GOOGLE_OAUTH_CLIENT_ID ?? process.env.GMAIL_OAUTH_CLIENT_ID;
       const googleClientSecret =
-        process.env['GOOGLE_OAUTH_CLIENT_SECRET'] ?? process.env['GMAIL_OAUTH_CLIENT_SECRET'];
+        process.env.GOOGLE_OAUTH_CLIENT_SECRET ?? process.env.GMAIL_OAUTH_CLIENT_SECRET;
       const oauthTokenService = new OAuthTokenService({
         storage: oauthTokenStorage,
         logger: this.logger ?? createNoopLogger(),
@@ -351,7 +351,7 @@ export class GatewayServer {
       const soulManager = this.secureYeoman.getSoulManager();
       registerSoulRoutes(this.app, {
         soulManager,
-        broadcast: (payload) => this.broadcast('soul', payload),
+        broadcast: (payload) => { this.broadcast('soul', payload); },
       });
     } catch {
       // Soul manager may not be available — skip routes
@@ -1575,7 +1575,7 @@ export class GatewayServer {
   private resolveDashboardDist(): string | null {
     const candidates = [
       this.dashboardDist,
-      process.env['SECUREYEOMAN_DASHBOARD_DIST'],
+      process.env.SECUREYEOMAN_DASHBOARD_DIST,
       join(dirname(fileURLToPath(import.meta.url)), '../../../../dashboard/dist'),
       '/usr/share/secureyeoman/dashboard',
     ].filter(Boolean) as string[];

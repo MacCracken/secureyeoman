@@ -65,7 +65,7 @@ Options:
           ctx.stderr.write(`Search failed: HTTP ${result.status}\n`);
           return 1;
         }
-        const results = result.data as Array<{ id: string; content: string; similarity: number }>;
+        const results = result.data as { id: string; content: string; similarity: number }[];
         if (json) {
           ctx.stdout.write(JSON.stringify(results, null, 2) + '\n');
           return 0;
@@ -89,12 +89,12 @@ Options:
           ctx.stderr.write(`Failed to fetch memories: HTTP ${result.status}\n`);
           return 1;
         }
-        const memories = result.data as Array<{
+        const memories = result.data as {
           id: string;
           type: string;
           content: string;
           importance: number;
-        }>;
+        }[];
         if (json) {
           ctx.stdout.write(JSON.stringify(memories, null, 2) + '\n');
           return 0;
@@ -121,7 +121,7 @@ Options:
           ctx.stderr.write(`Failed to fetch knowledge: HTTP ${result.status}\n`);
           return 1;
         }
-        const knowledge = result.data as Array<{ id: string; title: string; content: string }>;
+        const knowledge = result.data as { id: string; title: string; content: string }[];
         if (json) {
           ctx.stdout.write(JSON.stringify(knowledge, null, 2) + '\n');
           return 0;

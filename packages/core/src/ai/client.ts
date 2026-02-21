@@ -328,8 +328,7 @@ export class AIClient {
     if (cached) {
       const systemFbConfig = this.fallbackConfigs[index];
       if (
-        systemFbConfig &&
-        systemFbConfig.provider === fbConfig.provider &&
+        systemFbConfig?.provider === fbConfig.provider &&
         systemFbConfig.model === fbConfig.model
       ) {
         return cached;

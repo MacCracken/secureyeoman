@@ -13,11 +13,11 @@ interface PresenceBannerProps {
 
 function formatLabel(users: PresenceUser[]): string {
   if (users.length === 0) return '';
-  if (users.length === 1) return `${users[0]!.name} is also editing this`;
+  if (users.length === 1) return `${users[0].name} is also editing this`;
   if (users.length === 2) {
-    return `${users[0]!.name} and ${users[1]!.name} are also editing this`;
+    return `${users[0].name} and ${users[1].name} are also editing this`;
   }
-  return `${users[0]!.name} and ${users.length - 1} others are also editing this`;
+  return `${users[0].name} and ${users.length - 1} others are also editing this`;
 }
 
 export function PresenceBanner({ users }: PresenceBannerProps): JSX.Element | null {

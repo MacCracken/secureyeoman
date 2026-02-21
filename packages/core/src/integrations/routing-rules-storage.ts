@@ -8,7 +8,7 @@ import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 import type { RoutingRule, RoutingRuleCreate, RoutingRuleUpdate } from '@secureyeoman/shared';
 
-type DbRow = {
+interface DbRow {
   id: string;
   name: string;
   description: string;
@@ -30,7 +30,7 @@ type DbRow = {
   last_matched_at: number | null;
   created_at: number;
   updated_at: number;
-};
+}
 
 function rowToRule(r: DbRow): RoutingRule {
   return {

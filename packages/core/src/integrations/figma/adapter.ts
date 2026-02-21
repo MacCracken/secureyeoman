@@ -125,7 +125,7 @@ export class FigmaIntegration implements Integration {
           direction: 'inbound',
           senderId: comment.user?.id ?? '',
           senderName: comment.user?.handle ?? 'Figma',
-          chatId: this.figmaConfig.fileKey!,
+          chatId: this.figmaConfig.fileKey,
           text: comment.message,
           attachments: [],
           platformMessageId: comment.id,

@@ -370,19 +370,19 @@ async function resolvePersonality(
   baseUrl: string,
   token: string | undefined,
   personalityId: string | undefined
-): Promise<{ id: string; modelFallbacks: Array<{ provider: string; model: string }> } | null> {
+): Promise<{ id: string; modelFallbacks: { provider: string; model: string }[] } | null> {
   if (personalityId) {
     const result = await apiCall(baseUrl, `/api/v1/soul/personalities/${personalityId}`, { token });
     if (!result.ok) return null;
     return result.data as {
       id: string;
-      modelFallbacks: Array<{ provider: string; model: string }>;
+      modelFallbacks: { provider: string; model: string }[];
     };
   }
 
   const result = await apiCall(baseUrl, '/api/v1/soul/personality', { token });
   if (!result.ok) return null;
-  return result.data as { id: string; modelFallbacks: Array<{ provider: string; model: string }> };
+  return result.data as { id: string; modelFallbacks: { provider: string; model: string }[] };
 }
 
 async function pfGet(

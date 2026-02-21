@@ -67,12 +67,12 @@ Options:
           ctx.stderr.write(`Failed to fetch jobs: HTTP ${result.status}\n`);
           return 1;
         }
-        const jobs = result.data as Array<{
+        const jobs = result.data as {
           id: string;
           type: string;
           status: string;
           created_at: string;
-        }>;
+        }[];
         if (json) {
           ctx.stdout.write(JSON.stringify(jobs, null, 2) + '\n');
           return 0;

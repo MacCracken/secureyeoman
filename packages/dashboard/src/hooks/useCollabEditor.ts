@@ -63,7 +63,7 @@ export function useCollabEditor(
     if (docId === null) {
       setText(initialText);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [initialText, docId]);
 
   useEffect(() => {

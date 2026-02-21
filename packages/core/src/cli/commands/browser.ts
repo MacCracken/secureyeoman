@@ -50,7 +50,7 @@ Options:
           ctx.stderr.write(`Failed to fetch sessions: HTTP ${result.status}\n`);
           return 1;
         }
-        const sessions = result.data as Array<{ id: string; status: string; created_at: string }>;
+        const sessions = result.data as { id: string; status: string; created_at: string }[];
         if (json) {
           ctx.stdout.write(JSON.stringify(sessions, null, 2) + '\n');
           return 0;
