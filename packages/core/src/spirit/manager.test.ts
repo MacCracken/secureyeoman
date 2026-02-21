@@ -2,13 +2,43 @@ import { describe, it, expect, vi } from 'vitest';
 import { SpiritManager } from './manager.js';
 
 const makeLogger = () => ({
-  info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  trace: vi.fn(), fatal: vi.fn(), child: vi.fn().mockReturnThis(), level: 'info',
+  info: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info',
 });
 
-const PASSION = { id: 'pass-1', name: 'Security', description: 'Keeping things secure', intensity: 1, isActive: true, createdAt: 1000, updatedAt: 1000 };
-const INSPIRATION = { id: 'insp-1', source: 'Clean Code', description: 'Writing clean code', impact: 0.9, isActive: true, createdAt: 1000, updatedAt: 1000 };
-const PAIN = { id: 'pain-1', trigger: 'Security Breaches', description: 'Systems compromised', severity: 1, isActive: true, createdAt: 1000, updatedAt: 1000 };
+const PASSION = {
+  id: 'pass-1',
+  name: 'Security',
+  description: 'Keeping things secure',
+  intensity: 1,
+  isActive: true,
+  createdAt: 1000,
+  updatedAt: 1000,
+};
+const INSPIRATION = {
+  id: 'insp-1',
+  source: 'Clean Code',
+  description: 'Writing clean code',
+  impact: 0.9,
+  isActive: true,
+  createdAt: 1000,
+  updatedAt: 1000,
+};
+const PAIN = {
+  id: 'pain-1',
+  trigger: 'Security Breaches',
+  description: 'Systems compromised',
+  severity: 1,
+  isActive: true,
+  createdAt: 1000,
+  updatedAt: 1000,
+};
 
 function makeStorage(overrides: any = {}) {
   return {
@@ -41,7 +71,13 @@ function makeStorage(overrides: any = {}) {
 function makeManager(storageOverrides: any = {}, configOverrides: any = {}) {
   const storage = makeStorage(storageOverrides);
   const logger = makeLogger();
-  const config = { enabled: true, maxPassions: 10, maxInspirations: 10, maxPains: 10, ...configOverrides };
+  const config = {
+    enabled: true,
+    maxPassions: 10,
+    maxInspirations: 10,
+    maxPains: 10,
+    ...configOverrides,
+  };
   const deps = { logger: logger as any };
   const manager = new SpiritManager(storage as any, config as any, deps);
   return { manager, storage, logger, config };
@@ -51,14 +87,23 @@ describe('SpiritManager', () => {
   describe('passion operations', () => {
     it('createPassion delegates to storage', async () => {
       const { manager, storage } = makeManager();
-      await manager.createPassion({ name: 'Security', description: 'test', intensity: 1, isActive: true });
+      await manager.createPassion({
+        name: 'Security',
+        description: 'test',
+        intensity: 1,
+        isActive: true,
+      });
       expect(storage.createPassion).toHaveBeenCalled();
     });
 
     it('createPassion throws when max limit reached', async () => {
-      const { manager } = makeManager({ getPassionCount: vi.fn().mockResolvedValue(10) }, { maxPassions: 10 });
-      await expect(manager.createPassion({ name: 'New', description: 'test', intensity: 1, isActive: true }))
-        .rejects.toThrow('Maximum passion limit reached');
+      const { manager } = makeManager(
+        { getPassionCount: vi.fn().mockResolvedValue(10) },
+        { maxPassions: 10 }
+      );
+      await expect(
+        manager.createPassion({ name: 'New', description: 'test', intensity: 1, isActive: true })
+      ).rejects.toThrow('Maximum passion limit reached');
     });
 
     it('getPassion returns passion', async () => {
@@ -93,14 +138,28 @@ describe('SpiritManager', () => {
 
   describe('inspiration operations', () => {
     it('createInspiration throws when max limit reached', async () => {
-      const { manager } = makeManager({ getInspirationCount: vi.fn().mockResolvedValue(10) }, { maxInspirations: 10 });
-      await expect(manager.createInspiration({ source: 'New', description: 'test', impact: 0.5, isActive: true }))
-        .rejects.toThrow('Maximum inspiration limit reached');
+      const { manager } = makeManager(
+        { getInspirationCount: vi.fn().mockResolvedValue(10) },
+        { maxInspirations: 10 }
+      );
+      await expect(
+        manager.createInspiration({
+          source: 'New',
+          description: 'test',
+          impact: 0.5,
+          isActive: true,
+        })
+      ).rejects.toThrow('Maximum inspiration limit reached');
     });
 
     it('createInspiration delegates to storage', async () => {
       const { manager, storage } = makeManager();
-      await manager.createInspiration({ source: 'Clean Code', description: 'test', impact: 0.9, isActive: true });
+      await manager.createInspiration({
+        source: 'Clean Code',
+        description: 'test',
+        impact: 0.9,
+        isActive: true,
+      });
       expect(storage.createInspiration).toHaveBeenCalled();
     });
 
@@ -136,14 +195,23 @@ describe('SpiritManager', () => {
 
   describe('pain operations', () => {
     it('createPain throws when max limit reached', async () => {
-      const { manager } = makeManager({ getPainCount: vi.fn().mockResolvedValue(10) }, { maxPains: 10 });
-      await expect(manager.createPain({ trigger: 'New', description: 'test', severity: 0.5, isActive: true }))
-        .rejects.toThrow('Maximum pain limit reached');
+      const { manager } = makeManager(
+        { getPainCount: vi.fn().mockResolvedValue(10) },
+        { maxPains: 10 }
+      );
+      await expect(
+        manager.createPain({ trigger: 'New', description: 'test', severity: 0.5, isActive: true })
+      ).rejects.toThrow('Maximum pain limit reached');
     });
 
     it('createPain delegates to storage', async () => {
       const { manager, storage } = makeManager();
-      await manager.createPain({ trigger: 'Security Breaches', description: 'test', severity: 1, isActive: true });
+      await manager.createPain({
+        trigger: 'Security Breaches',
+        description: 'test',
+        severity: 1,
+        isActive: true,
+      });
       expect(storage.createPain).toHaveBeenCalled();
     });
 

@@ -375,8 +375,7 @@ function ExecutionGated({ children }: { children: React.ReactNode }) {
     staleTime: 30000,
   });
 
-  const enabled =
-    (configData?.config)?.enabled === true || securityPolicy?.allowExecution === true;
+  const enabled = configData?.config?.enabled === true || securityPolicy?.allowExecution === true;
 
   if (!enabled) {
     return (

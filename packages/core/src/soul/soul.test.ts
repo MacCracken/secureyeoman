@@ -899,7 +899,14 @@ describe('SoulManager skill deletion with marketplace sync', () => {
     });
     brainManager = new BrainManager(
       brainStorage,
-      { enabled: true, maxMemories: 10000, maxKnowledge: 5000, memoryRetentionDays: 90, importanceDecayRate: 0.01, contextWindowMemories: 10 },
+      {
+        enabled: true,
+        maxMemories: 10000,
+        maxKnowledge: 5000,
+        memoryRetentionDays: 90,
+        importanceDecayRate: 0.01,
+        contextWindowMemories: 10,
+      },
       { auditChain, logger: noopLogger() }
     );
     marketplaceStorage = new MarketplaceStorage();

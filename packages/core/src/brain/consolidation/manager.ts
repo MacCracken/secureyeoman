@@ -136,7 +136,9 @@ export class ConsolidationManager {
     const timeoutMs = this.config.deepConsolidation.timeoutMs;
 
     const timeoutPromise = new Promise<never>((_, reject) =>
-      setTimeout(() => { reject(new Error(`Deep consolidation timed out after ${timeoutMs}ms`)); }, timeoutMs)
+      setTimeout(() => {
+        reject(new Error(`Deep consolidation timed out after ${timeoutMs}ms`));
+      }, timeoutMs)
     );
 
     return Promise.race([this.runDeepConsolidationInner(), timeoutPromise]);

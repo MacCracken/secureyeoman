@@ -68,7 +68,9 @@ export class BrowserPool {
       };
     }
 
-    this.browser = await playwright.chromium.launch(launchOptions as Parameters<typeof playwright.chromium.launch>[0]);
+    this.browser = await playwright.chromium.launch(
+      launchOptions as Parameters<typeof playwright.chromium.launch>[0]
+    );
 
     return this.browser;
   }

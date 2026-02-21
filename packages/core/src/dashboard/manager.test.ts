@@ -2,11 +2,23 @@ import { describe, it, expect, vi } from 'vitest';
 import { DashboardManager } from './manager.js';
 
 const makeLogger = () => ({
-  info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  trace: vi.fn(), fatal: vi.fn(), child: vi.fn().mockReturnThis(), level: 'info',
+  info: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info',
 });
 
-const DASHBOARD = { id: 'dash-1', name: 'My Dashboard', widgets: [], createdAt: 1000, updatedAt: 1000 };
+const DASHBOARD = {
+  id: 'dash-1',
+  name: 'My Dashboard',
+  widgets: [],
+  createdAt: 1000,
+  updatedAt: 1000,
+};
 
 function makeStorage(overrides: any = {}) {
   return {
@@ -32,7 +44,10 @@ describe('DashboardManager', () => {
       const { manager, logger } = makeManager();
       const d = await manager.create({ name: 'New Dashboard', widgets: [] } as any);
       expect(d.id).toBe('dash-1');
-      expect(logger.info).toHaveBeenCalledWith('Custom dashboard created', { id: 'dash-1', name: 'My Dashboard' });
+      expect(logger.info).toHaveBeenCalledWith('Custom dashboard created', {
+        id: 'dash-1',
+        name: 'My Dashboard',
+      });
     });
   });
 

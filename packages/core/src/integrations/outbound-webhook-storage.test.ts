@@ -60,9 +60,9 @@ describe('OutboundWebhookStorage', () => {
       mockQuery.mockResolvedValueOnce({ rows: [webhookRow], rowCount: 1 });
       await storage.createWebhook({ name: 'Test', url: 'https://test.com' });
       const params = mockQuery.mock.calls[0][1] as unknown[];
-      expect(params[3]).toBeNull();       // secret
-      expect(params[4]).toBe('[]');       // events serialized
-      expect(params[5]).toBe(true);       // enabled default
+      expect(params[3]).toBeNull(); // secret
+      expect(params[4]).toBe('[]'); // events serialized
+      expect(params[5]).toBe(true); // enabled default
     });
 
     it('uses provided events and secret', async () => {

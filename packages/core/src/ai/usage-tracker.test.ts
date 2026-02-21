@@ -112,8 +112,22 @@ describe('UsageTracker', () => {
   it('should seed apiCallsTotal, apiErrorsTotal, and latency from DB on init', async () => {
     const now = Date.now();
     const historicalRecords = [
-      { provider: 'anthropic' as const, model: 'claude-opus-4-20250514', usage: makeUsage(500), costUsd: 0.005, timestamp: now - 1000, latencyMs: 120 },
-      { provider: 'anthropic' as const, model: 'claude-opus-4-20250514', usage: makeUsage(300), costUsd: 0.003, timestamp: now - 500, latencyMs: 80 },
+      {
+        provider: 'anthropic' as const,
+        model: 'claude-opus-4-20250514',
+        usage: makeUsage(500),
+        costUsd: 0.005,
+        timestamp: now - 1000,
+        latencyMs: 120,
+      },
+      {
+        provider: 'anthropic' as const,
+        model: 'claude-opus-4-20250514',
+        usage: makeUsage(300),
+        costUsd: 0.003,
+        timestamp: now - 500,
+        latencyMs: 80,
+      },
     ];
     const mockStorage = {
       loadRecent: async () => historicalRecords,

@@ -41,10 +41,10 @@ const AgentProfileBaseSchema = z.object({
 export const AgentProfileSchema = AgentProfileBaseSchema.refine(
   (p) => p.type !== 'binary' || !!p.command,
   { message: "'binary' profile type requires 'command' to be set", path: ['command'] }
-).refine(
-  (p) => p.type !== 'mcp-bridge' || !!p.mcpTool,
-  { message: "'mcp-bridge' profile type requires 'mcpTool' to be set", path: ['mcpTool'] }
-);
+).refine((p) => p.type !== 'mcp-bridge' || !!p.mcpTool, {
+  message: "'mcp-bridge' profile type requires 'mcpTool' to be set",
+  path: ['mcpTool'],
+});
 
 export type AgentProfile = z.infer<typeof AgentProfileSchema>;
 
@@ -53,13 +53,15 @@ export const AgentProfileCreateSchema = AgentProfileBaseSchema.omit({
   isBuiltin: true,
   createdAt: true,
   updatedAt: true,
-}).refine(
-  (p) => p.type !== 'binary' || !!p.command,
-  { message: "'binary' profile type requires 'command' to be set", path: ['command'] }
-).refine(
-  (p) => p.type !== 'mcp-bridge' || !!p.mcpTool,
-  { message: "'mcp-bridge' profile type requires 'mcpTool' to be set", path: ['mcpTool'] }
-);
+})
+  .refine((p) => p.type !== 'binary' || !!p.command, {
+    message: "'binary' profile type requires 'command' to be set",
+    path: ['command'],
+  })
+  .refine((p) => p.type !== 'mcp-bridge' || !!p.mcpTool, {
+    message: "'mcp-bridge' profile type requires 'mcpTool' to be set",
+    path: ['mcpTool'],
+  });
 
 export type AgentProfileCreate = z.infer<typeof AgentProfileCreateSchema>;
 

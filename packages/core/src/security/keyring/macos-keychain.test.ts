@@ -45,7 +45,9 @@ describe('MacOSKeychainProvider', () => {
 
     it('returns false on darwin when security CLI is missing', () => {
       vi.spyOn(process, 'platform', 'get').mockReturnValue('darwin');
-      mockExecFileSync.mockImplementationOnce(() => { throw new Error('not found'); });
+      mockExecFileSync.mockImplementationOnce(() => {
+        throw new Error('not found');
+      });
       expect(provider.isAvailable()).toBe(false);
     });
 
@@ -71,7 +73,9 @@ describe('MacOSKeychainProvider', () => {
     });
 
     it('returns undefined when exec throws', () => {
-      mockExecFileSync.mockImplementationOnce(() => { throw new Error('item not found'); });
+      mockExecFileSync.mockImplementationOnce(() => {
+        throw new Error('item not found');
+      });
       expect(provider.get('svc', 'key')).toBeUndefined();
     });
 
@@ -93,7 +97,9 @@ describe('MacOSKeychainProvider', () => {
     });
 
     it('throws when security CLI fails', () => {
-      mockExecFileSync.mockImplementationOnce(() => { throw new Error('errSecAuthFailed'); });
+      mockExecFileSync.mockImplementationOnce(() => {
+        throw new Error('errSecAuthFailed');
+      });
       expect(() => provider.set('svc', 'key', 'val')).toThrow(
         'security add-generic-password failed'
       );
@@ -112,7 +118,9 @@ describe('MacOSKeychainProvider', () => {
     });
 
     it('does not throw when item does not exist', () => {
-      mockExecFileSync.mockImplementationOnce(() => { throw new Error('item not found'); });
+      mockExecFileSync.mockImplementationOnce(() => {
+        throw new Error('item not found');
+      });
       expect(() => provider.delete('svc', 'key')).not.toThrow();
     });
   });

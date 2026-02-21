@@ -122,7 +122,10 @@ export async function createTestGateway(stack: TestStack): Promise<FastifyInstan
   const logger = stack.logger;
 
   // Auth + RBAC hooks
-  app.addHook('onRequest', createAuthHook({ authService: stack.authService, logger, rbac: stack.rbac }));
+  app.addHook(
+    'onRequest',
+    createAuthHook({ authService: stack.authService, logger, rbac: stack.rbac })
+  );
   app.addHook(
     'onRequest',
     createRbacHook({

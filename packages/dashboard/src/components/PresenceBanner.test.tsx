@@ -22,16 +22,12 @@ describe('PresenceBanner', () => {
 
   it('shows two users correctly', () => {
     render(<PresenceBanner users={[makeUser(1), makeUser(2)]} />);
-    expect(
-      screen.getByText('User1 and User2 are also editing this')
-    ).toBeInTheDocument();
+    expect(screen.getByText('User1 and User2 are also editing this')).toBeInTheDocument();
   });
 
   it('shows "N others" format for three or more users', () => {
     render(<PresenceBanner users={[makeUser(1), makeUser(2), makeUser(3)]} />);
-    expect(
-      screen.getByText('User1 and 2 others are also editing this')
-    ).toBeInTheDocument();
+    expect(screen.getByText('User1 and 2 others are also editing this')).toBeInTheDocument();
   });
 
   it('renders a colored dot per user (up to 4)', () => {
@@ -42,9 +38,7 @@ describe('PresenceBanner', () => {
   });
 
   it('applies user color to each dot', () => {
-    const users: PresenceUser[] = [
-      { clientId: 'c1', name: 'Alice', color: '#aabbcc' },
-    ];
+    const users: PresenceUser[] = [{ clientId: 'c1', name: 'Alice', color: '#aabbcc' }];
     render(<PresenceBanner users={users} />);
     const dot = screen.getByTestId('presence-dot');
     expect(dot).toHaveStyle({ backgroundColor: '#aabbcc' });

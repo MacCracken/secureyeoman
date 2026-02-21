@@ -41,7 +41,9 @@ export function loadConfig(
     logLevel: env.MCP_LOG_LEVEL ?? 'info',
     proxyEnabled: parseBool(env.MCP_PROXY_ENABLED, false),
     proxyProviders: env.MCP_PROXY_PROVIDERS
-      ? env.MCP_PROXY_PROVIDERS.split(',').map(p => p.trim()).filter(Boolean)
+      ? env.MCP_PROXY_PROVIDERS.split(',')
+          .map((p) => p.trim())
+          .filter(Boolean)
       : [],
     proxyStrategy: env.MCP_PROXY_STRATEGY ?? 'round-robin',
     proxyDefaultCountry: env.MCP_PROXY_DEFAULT_COUNTRY,

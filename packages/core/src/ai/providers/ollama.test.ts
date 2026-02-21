@@ -178,21 +178,29 @@ describe('OllamaProvider', () => {
       );
       await provider.chat({
         messages: [
-          { role: 'tool', content: 'result', toolResult: { toolCallId: 'tc-1', content: 'tool output' } },
+          {
+            role: 'tool',
+            content: 'result',
+            toolResult: { toolCallId: 'tc-1', content: 'tool output' },
+          },
         ],
         stream: false,
       });
-      const body = JSON.parse(vi.spyOn(global, 'fetch').mock.calls[0]?.[1]?.body as string ?? '{}');
+      const body = JSON.parse(
+        (vi.spyOn(global, 'fetch').mock.calls[0]?.[1]?.body as string) ?? '{}'
+      );
       expect(body.messages?.[0]?.role).toBe('tool');
     });
 
     it('maps assistant messages with tool calls', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response(
-          JSON.stringify({ message: { role: 'assistant', content: 'ok' }, done: true }),
-          { status: 200 }
-        )
-      );
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ message: { role: 'assistant', content: 'ok' }, done: true }),
+            { status: 200 }
+          )
+        );
       await provider.chat({
         messages: [
           {
@@ -210,12 +218,14 @@ describe('OllamaProvider', () => {
     });
 
     it('maps stop sequences in request body', async () => {
-      const fetchSpy = vi.spyOn(global, 'fetch').mockResolvedValue(
-        new Response(
-          JSON.stringify({ message: { role: 'assistant', content: 'ok' }, done: true }),
-          { status: 200 }
-        )
-      );
+      const fetchSpy = vi
+        .spyOn(global, 'fetch')
+        .mockResolvedValue(
+          new Response(
+            JSON.stringify({ message: { role: 'assistant', content: 'ok' }, done: true }),
+            { status: 200 }
+          )
+        );
       await provider.chat({
         messages: [{ role: 'user', content: 'hi' }],
         stream: false,

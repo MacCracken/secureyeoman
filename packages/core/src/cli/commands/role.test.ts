@@ -4,8 +4,18 @@ import { roleCommand } from './role.js';
 function createStreams() {
   let stdoutBuf = '';
   let stderrBuf = '';
-  const stdout = { write: (s: string) => { stdoutBuf += s; return true; } } as NodeJS.WritableStream;
-  const stderr = { write: (s: string) => { stderrBuf += s; return true; } } as NodeJS.WritableStream;
+  const stdout = {
+    write: (s: string) => {
+      stdoutBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
+  const stderr = {
+    write: (s: string) => {
+      stderrBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
   return { stdout, stderr, getStdout: () => stdoutBuf, getStderr: () => stderrBuf };
 }
 
@@ -25,11 +35,19 @@ afterEach(() => {
 
 describe('role command — list', () => {
   it('lists roles in table format by default', async () => {
-    vi.stubGlobal('fetch', mockFetch({
-      roles: [
-        { id: 'role-1', name: 'admin', isBuiltin: true, permissions: [{ resource: 'chat', action: 'read' }] },
-      ],
-    }));
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        roles: [
+          {
+            id: 'role-1',
+            name: 'admin',
+            isBuiltin: true,
+            permissions: [{ resource: 'chat', action: 'read' }],
+          },
+        ],
+      })
+    );
     const { stdout, stderr, getStdout } = createStreams();
     const code = await roleCommand.run({ argv: ['list'], stdout, stderr });
     expect(code).toBe(0);
@@ -76,7 +94,11 @@ describe('role command — create', () => {
 
   it('returns 1 when --name missing', async () => {
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await roleCommand.run({ argv: ['create', '--permissions', 'chat:read'], stdout, stderr });
+    const code = await roleCommand.run({
+      argv: ['create', '--permissions', 'chat:read'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('--name is required');
   });
@@ -156,7 +178,11 @@ describe('role command — assign', () => {
   it('returns 1 on API error', async () => {
     vi.stubGlobal('fetch', mockFetch({}, false, 409));
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await roleCommand.run({ argv: ['assign', '--user', 'u', '--role', 'r'], stdout, stderr });
+    const code = await roleCommand.run({
+      argv: ['assign', '--user', 'u', '--role', 'r'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Error');
   });
@@ -189,9 +215,12 @@ describe('role command — revoke', () => {
 
 describe('role command — assignments', () => {
   it('lists assignments in table format', async () => {
-    vi.stubGlobal('fetch', mockFetch({
-      assignments: [{ userId: 'user-1', roleId: 'role-1' }],
-    }));
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        assignments: [{ userId: 'user-1', roleId: 'role-1' }],
+      })
+    );
     const { stdout, stderr, getStdout } = createStreams();
     const code = await roleCommand.run({ argv: ['assignments'], stdout, stderr });
     expect(code).toBe(0);

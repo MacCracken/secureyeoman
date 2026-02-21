@@ -550,7 +550,10 @@ describe('Community Skill Sync — git fetch', () => {
       communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
     });
 
-    const result = await manager.syncFromCommunity(undefined, 'https://github.com/MacCracken/secureyeoman-community-skills');
+    const result = await manager.syncFromCommunity(
+      undefined,
+      'https://github.com/MacCracken/secureyeoman-community-skills'
+    );
     expect(spy).toHaveBeenCalledWith(
       'https://github.com/MacCracken/secureyeoman-community-skills',
       tmpDir,
@@ -575,7 +578,10 @@ describe('Community Skill Sync — git fetch', () => {
       allowCommunityGitFetch: false,
     });
 
-    const result = await manager.syncFromCommunity(undefined, 'https://github.com/MacCracken/secureyeoman-community-skills');
+    const result = await manager.syncFromCommunity(
+      undefined,
+      'https://github.com/MacCracken/secureyeoman-community-skills'
+    );
     expect(spy).not.toHaveBeenCalled();
     expect(result.added).toBe(1);
   });
@@ -591,7 +597,10 @@ describe('Community Skill Sync — git fetch', () => {
       communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
     });
 
-    const result = await manager.syncFromCommunity(undefined, 'https://github.com/MacCracken/secureyeoman-community-skills');
+    const result = await manager.syncFromCommunity(
+      undefined,
+      'https://github.com/MacCracken/secureyeoman-community-skills'
+    );
     expect(result.errors).toHaveLength(1);
     expect(result.errors[0]).toMatch(/git clone failed/i);
     expect(result.added).toBe(0);
@@ -638,12 +647,18 @@ describe('Community Skill Sync — git fetch', () => {
     });
 
     // Git fetch disabled — spy not called
-    await manager.syncFromCommunity(undefined, 'https://github.com/MacCracken/secureyeoman-community-skills');
+    await manager.syncFromCommunity(
+      undefined,
+      'https://github.com/MacCracken/secureyeoman-community-skills'
+    );
     expect(spy).not.toHaveBeenCalled();
 
     // Enable via updatePolicy
     manager.updatePolicy({ allowCommunityGitFetch: true });
-    await manager.syncFromCommunity(undefined, 'https://github.com/MacCracken/secureyeoman-community-skills');
+    await manager.syncFromCommunity(
+      undefined,
+      'https://github.com/MacCracken/secureyeoman-community-skills'
+    );
     expect(spy).toHaveBeenCalledTimes(1);
   });
 });

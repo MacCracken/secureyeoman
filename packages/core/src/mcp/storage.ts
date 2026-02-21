@@ -3,7 +3,12 @@
  */
 
 import { PgBaseStorage } from '../storage/pg-base.js';
-import type { McpServerConfig, McpServerCreate, McpToolDef, McpServerHealth } from '@secureyeoman/shared';
+import type {
+  McpServerConfig,
+  McpServerCreate,
+  McpToolDef,
+  McpServerHealth,
+} from '@secureyeoman/shared';
 import { uuidv7 } from '../utils/crypto.js';
 
 export interface McpFeatureConfig {
@@ -97,7 +102,10 @@ export class McpStorage extends PgBaseStorage {
     return row ? this.rowToConfig(row) : null;
   }
 
-  async listServers(opts?: { limit?: number; offset?: number }): Promise<{ servers: McpServerConfig[]; total: number }> {
+  async listServers(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ servers: McpServerConfig[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 

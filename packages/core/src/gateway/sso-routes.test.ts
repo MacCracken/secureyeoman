@@ -62,7 +62,9 @@ function buildApp(storageOverrides?: Partial<SsoStorage>, managerOverrides?: Par
 describe('SSO Routes — provider discovery', () => {
   let app: ReturnType<typeof Fastify>;
 
-  beforeEach(() => { app = buildApp(); });
+  beforeEach(() => {
+    app = buildApp();
+  });
 
   it('GET /api/v1/auth/sso/providers returns enabled providers without client secrets', async () => {
     const res = await app.inject({ method: 'GET', url: '/api/v1/auth/sso/providers' });
@@ -86,7 +88,9 @@ describe('SSO Routes — authorization flow', () => {
   });
 
   it('GET /api/v1/auth/sso/authorize/:id returns 400 on manager error', async () => {
-    const app = buildApp(undefined, { getAuthorizationUrl: vi.fn().mockRejectedValue(new Error('provider disabled')) });
+    const app = buildApp(undefined, {
+      getAuthorizationUrl: vi.fn().mockRejectedValue(new Error('provider disabled')),
+    });
     const res = await app.inject({ method: 'GET', url: '/api/v1/auth/sso/authorize/idp-1' });
     expect(res.statusCode).toBe(400);
   });
@@ -94,7 +98,9 @@ describe('SSO Routes — authorization flow', () => {
   // ── Scheme calculation (operator-precedence bug regression) ──────
 
   it('authorize: passes http:// redirect URI when x-forwarded-proto is http', async () => {
-    const getAuthorizationUrl = vi.fn().mockResolvedValue('https://idp.example.com/authorize?state=xyz');
+    const getAuthorizationUrl = vi
+      .fn()
+      .mockResolvedValue('https://idp.example.com/authorize?state=xyz');
     const app = buildApp(undefined, { getAuthorizationUrl });
     await app.inject({
       method: 'GET',
@@ -109,7 +115,9 @@ describe('SSO Routes — authorization flow', () => {
   });
 
   it('authorize: passes https:// redirect URI when x-forwarded-proto is https', async () => {
-    const getAuthorizationUrl = vi.fn().mockResolvedValue('https://idp.example.com/authorize?state=xyz');
+    const getAuthorizationUrl = vi
+      .fn()
+      .mockResolvedValue('https://idp.example.com/authorize?state=xyz');
     const app = buildApp(undefined, { getAuthorizationUrl });
     await app.inject({
       method: 'GET',
@@ -124,7 +132,9 @@ describe('SSO Routes — authorization flow', () => {
   });
 
   it('authorize: falls back to http:// when x-forwarded-proto header is absent', async () => {
-    const getAuthorizationUrl = vi.fn().mockResolvedValue('https://idp.example.com/authorize?state=xyz');
+    const getAuthorizationUrl = vi
+      .fn()
+      .mockResolvedValue('https://idp.example.com/authorize?state=xyz');
     const app = buildApp(undefined, { getAuthorizationUrl });
     await app.inject({
       method: 'GET',
@@ -139,7 +149,9 @@ describe('SSO Routes — authorization flow', () => {
   });
 
   it('authorize: passes workspace query param to manager', async () => {
-    const getAuthorizationUrl = vi.fn().mockResolvedValue('https://idp.example.com/authorize?state=xyz');
+    const getAuthorizationUrl = vi
+      .fn()
+      .mockResolvedValue('https://idp.example.com/authorize?state=xyz');
     const app = buildApp(undefined, { getAuthorizationUrl });
     await app.inject({
       method: 'GET',
@@ -153,14 +165,24 @@ describe('SSO Routes — authorization flow', () => {
 
   it('GET /api/v1/auth/sso/callback/:id redirects to dashboard with tokens', async () => {
     const app = buildApp();
-    const res = await app.inject({ method: 'GET', url: '/api/v1/auth/sso/callback/idp-1?state=xyz&code=abc', headers: { host: 'localhost' } });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/sso/callback/idp-1?state=xyz&code=abc',
+      headers: { host: 'localhost' },
+    });
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toContain('access_token=tok-a');
   });
 
   it('GET /api/v1/auth/sso/callback/:id redirects to dashboard with error on failure', async () => {
-    const app = buildApp(undefined, { handleCallback: vi.fn().mockRejectedValue(new Error('invalid state')) });
-    const res = await app.inject({ method: 'GET', url: '/api/v1/auth/sso/callback/idp-1?state=bad', headers: { host: 'localhost' } });
+    const app = buildApp(undefined, {
+      handleCallback: vi.fn().mockRejectedValue(new Error('invalid state')),
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/sso/callback/idp-1?state=bad',
+      headers: { host: 'localhost' },
+    });
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toContain('sso_error');
   });
@@ -170,7 +192,11 @@ describe('SSO Routes — authorization flow', () => {
     const app = buildApp(undefined, {
       handleCallback: vi.fn().mockRejectedValue(new Error('Missing state parameter in callback')),
     });
-    const res = await app.inject({ method: 'GET', url: '/api/v1/auth/sso/callback/idp-1', headers: { host: 'localhost' } });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/sso/callback/idp-1',
+      headers: { host: 'localhost' },
+    });
     expect(res.statusCode).toBe(302);
     expect(res.headers.location).toContain('sso_error');
     // Parse the sso_error query param (handles + encoding in query strings)
@@ -180,9 +206,9 @@ describe('SSO Routes — authorization flow', () => {
 
   it('callback: IDP error response (access_denied) redirects with sso_error', async () => {
     const app = buildApp(undefined, {
-      handleCallback: vi.fn().mockRejectedValue(
-        Object.assign(new Error('access_denied'), { error: 'access_denied' })
-      ),
+      handleCallback: vi
+        .fn()
+        .mockRejectedValue(Object.assign(new Error('access_denied'), { error: 'access_denied' })),
     });
     const res = await app.inject({
       method: 'GET',
@@ -213,13 +239,21 @@ describe('SSO Routes — authorization flow', () => {
 describe('SSO Routes — provider management (admin)', () => {
   let app: ReturnType<typeof Fastify>;
 
-  beforeEach(() => { app = buildApp(); });
+  beforeEach(() => {
+    app = buildApp();
+  });
 
   it('POST /api/v1/auth/sso/providers creates provider (strips secret)', async () => {
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/sso/providers',
-      payload: { name: 'Okta', type: 'oidc', issuerUrl: 'https://okta.example.com', clientId: 'c1', clientSecret: 'secret' },
+      payload: {
+        name: 'Okta',
+        type: 'oidc',
+        issuerUrl: 'https://okta.example.com',
+        clientId: 'c1',
+        clientSecret: 'secret',
+      },
     });
     expect(res.statusCode).toBe(201);
     expect(res.json().provider.name).toBe('Okta');
@@ -227,8 +261,14 @@ describe('SSO Routes — provider management (admin)', () => {
   });
 
   it('POST /api/v1/auth/sso/providers returns 400 on storage error', async () => {
-    const a = buildApp({ createIdentityProvider: vi.fn().mockRejectedValue(new Error('duplicate')) });
-    const res = await a.inject({ method: 'POST', url: '/api/v1/auth/sso/providers', payload: { name: 'X', type: 'oidc' } });
+    const a = buildApp({
+      createIdentityProvider: vi.fn().mockRejectedValue(new Error('duplicate')),
+    });
+    const res = await a.inject({
+      method: 'POST',
+      url: '/api/v1/auth/sso/providers',
+      payload: { name: 'X', type: 'oidc' },
+    });
     expect(res.statusCode).toBe(400);
   });
 
@@ -246,7 +286,11 @@ describe('SSO Routes — provider management (admin)', () => {
   });
 
   it('PUT /api/v1/auth/sso/providers/:id updates provider', async () => {
-    const res = await app.inject({ method: 'PUT', url: '/api/v1/auth/sso/providers/idp-1', payload: { name: 'Updated' } });
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/auth/sso/providers/idp-1',
+      payload: { name: 'Updated' },
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().provider.id).toBe('idp-1');
     expect(res.json().provider.clientSecret).toBeUndefined();
@@ -254,13 +298,23 @@ describe('SSO Routes — provider management (admin)', () => {
 
   it('PUT /api/v1/auth/sso/providers/:id returns 404 when provider not found', async () => {
     const a = buildApp({ updateIdentityProvider: vi.fn().mockResolvedValue(null) });
-    const res = await a.inject({ method: 'PUT', url: '/api/v1/auth/sso/providers/missing', payload: {} });
+    const res = await a.inject({
+      method: 'PUT',
+      url: '/api/v1/auth/sso/providers/missing',
+      payload: {},
+    });
     expect(res.statusCode).toBe(404);
   });
 
   it('PUT /api/v1/auth/sso/providers/:id returns 400 on storage error', async () => {
-    const a = buildApp({ updateIdentityProvider: vi.fn().mockRejectedValue(new Error('constraint')) });
-    const res = await a.inject({ method: 'PUT', url: '/api/v1/auth/sso/providers/idp-1', payload: {} });
+    const a = buildApp({
+      updateIdentityProvider: vi.fn().mockRejectedValue(new Error('constraint')),
+    });
+    const res = await a.inject({
+      method: 'PUT',
+      url: '/api/v1/auth/sso/providers/idp-1',
+      payload: {},
+    });
     expect(res.statusCode).toBe(400);
   });
 

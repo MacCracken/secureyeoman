@@ -103,11 +103,15 @@ describe('SecretStore', () => {
   });
 
   function cleanup() {
-    try { rmSync(tmpDir, { recursive: true, force: true }); } catch {}
+    try {
+      rmSync(tmpDir, { recursive: true, force: true });
+    } catch {}
   }
 
   it('throws when master key is too short', () => {
-    expect(() => new SecretStore({ storePath, masterKey: 'short' })).toThrow('Master key must be at least 16 characters');
+    expect(() => new SecretStore({ storePath, masterKey: 'short' })).toThrow(
+      'Master key must be at least 16 characters'
+    );
     cleanup();
   });
 

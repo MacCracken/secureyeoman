@@ -45,7 +45,10 @@ const META_EXPIRED = {
 
 function makeManager(storageOverrides: any = {}) {
   const storage = makeStorage(storageOverrides);
-  const manager = new SecretRotationManager(storage as any, { checkIntervalMs: 60000, warningDaysBeforeExpiry: 7 });
+  const manager = new SecretRotationManager(storage as any, {
+    checkIntervalMs: 60000,
+    warningDaysBeforeExpiry: 7,
+  });
   return { manager, storage };
 }
 
@@ -69,7 +72,12 @@ describe('SecretRotationManager', () => {
     });
 
     it('returns ok status for non-expiring secret', async () => {
-      const meta = { ...META_INTERNAL, autoRotate: false, expiresAt: null, rotationIntervalDays: null };
+      const meta = {
+        ...META_INTERNAL,
+        autoRotate: false,
+        expiresAt: null,
+        rotationIntervalDays: null,
+      };
       const { manager } = makeManager({ getAll: vi.fn().mockResolvedValue([meta]) });
       const statuses = await manager.getStatus();
       expect(statuses[0].status).toBe('ok');
@@ -126,14 +134,22 @@ describe('SecretRotationManager', () => {
       const newValue = await manager.rotateSecret('JWT_SECRET');
       expect(typeof newValue).toBe('string');
       expect(newValue.length).toBeGreaterThan(0);
-      expect(storage.updateRotation).toHaveBeenCalledWith('JWT_SECRET', expect.any(Number), expect.any(Number));
+      expect(storage.updateRotation).toHaveBeenCalledWith(
+        'JWT_SECRET',
+        expect.any(Number),
+        expect.any(Number)
+      );
     });
 
     it('stores previous value when env var exists', async () => {
       process.env.JWT_SECRET = 'old-value';
       const { manager, storage } = makeManager({ get: vi.fn().mockResolvedValue(META_INTERNAL) });
       await manager.rotateSecret('JWT_SECRET');
-      expect(storage.storePreviousValue).toHaveBeenCalledWith('JWT_SECRET', 'old-value', expect.any(Number));
+      expect(storage.storePreviousValue).toHaveBeenCalledWith(
+        'JWT_SECRET',
+        'old-value',
+        expect.any(Number)
+      );
       delete process.env.JWT_SECRET;
     });
 

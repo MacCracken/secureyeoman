@@ -44,7 +44,11 @@ describe('checkCapturePermission', () => {
   });
 
   it('returns granted when RBAC grants permission', async () => {
-    mockCheckPermission.mockReturnValue({ granted: true, reason: undefined, matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
     mockGetRole.mockReturnValue(null);
 
     const result = await checkCapturePermission('capture.screen', 'capture', {}, userCtx);
@@ -57,7 +61,11 @@ describe('checkCapturePermission', () => {
   });
 
   it('returns denied when RBAC denies permission', async () => {
-    mockCheckPermission.mockReturnValue({ granted: false, reason: 'PERMISSION_DENIED', matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: false,
+      reason: 'PERMISSION_DENIED',
+      matchedPermission: undefined,
+    });
 
     const result = await checkCapturePermission('capture.screen', 'capture', {}, userCtx);
     expect(result.granted).toBe(false);
@@ -65,7 +73,11 @@ describe('checkCapturePermission', () => {
   });
 
   it('returns cached result on second call with same params', async () => {
-    mockCheckPermission.mockReturnValue({ granted: true, reason: undefined, matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
     mockGetRole.mockReturnValue(null);
 
     await checkCapturePermission('capture.screen', 'capture', {}, userCtx);
@@ -80,9 +92,7 @@ describe('checkCapturePermission', () => {
       granted: true,
       reason: undefined,
       matchedPermission: {
-        conditions: [
-          { field: 'duration', operator: 'lte', value: 300 },
-        ],
+        conditions: [{ field: 'duration', operator: 'lte', value: 300 }],
       },
     });
     mockGetRole.mockReturnValue(null);
@@ -92,11 +102,13 @@ describe('checkCapturePermission', () => {
   });
 
   it('returns allowedActions when granted and role has matching permissions', async () => {
-    mockCheckPermission.mockReturnValue({ granted: true, reason: undefined, matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
     mockGetRole.mockReturnValue({
-      permissions: [
-        { resource: 'capture.screen', actions: ['capture', 'view'] },
-      ],
+      permissions: [{ resource: 'capture.screen', actions: ['capture', 'view'] }],
     });
 
     const result = await checkCapturePermission('capture.screen', 'capture', {}, userCtx);
@@ -104,14 +116,22 @@ describe('checkCapturePermission', () => {
   });
 
   it('returns undefined allowedActions when denied', async () => {
-    mockCheckPermission.mockReturnValue({ granted: false, reason: 'denied', matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: false,
+      reason: 'denied',
+      matchedPermission: undefined,
+    });
 
     const result = await checkCapturePermission('capture.screen', 'capture', {}, userCtx);
     expect(result.allowedActions).toBeUndefined();
   });
 
   it('uses different cache keys for different resources', async () => {
-    mockCheckPermission.mockReturnValue({ granted: true, reason: undefined, matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
     mockGetRole.mockReturnValue(null);
 
     await checkCapturePermission('capture.screen', 'capture', {}, userCtx);
@@ -128,7 +148,11 @@ describe('requireCapturePermission', () => {
   });
 
   it('returns result when permission is granted', async () => {
-    mockCheckPermission.mockReturnValue({ granted: true, reason: undefined, matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
     mockGetRole.mockReturnValue(null);
 
     const result = await requireCapturePermission('capture.screen', 'capture', {}, userCtx);
@@ -136,7 +160,11 @@ describe('requireCapturePermission', () => {
   });
 
   it('throws PermissionDeniedError when permission is denied', async () => {
-    mockCheckPermission.mockReturnValue({ granted: false, reason: 'ROLE_NOT_FOUND', matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: false,
+      reason: 'ROLE_NOT_FOUND',
+      matchedPermission: undefined,
+    });
 
     await expect(
       requireCapturePermission('capture.screen', 'capture', {}, userCtx)
@@ -144,11 +172,15 @@ describe('requireCapturePermission', () => {
   });
 
   it('throws with default reason when none provided', async () => {
-    mockCheckPermission.mockReturnValue({ granted: false, reason: undefined, matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: false,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
 
-    await expect(
-      requireCapturePermission('capture.camera', 'view', {}, userCtx)
-    ).rejects.toThrow('Permission denied');
+    await expect(requireCapturePermission('capture.camera', 'view', {}, userCtx)).rejects.toThrow(
+      'Permission denied'
+    );
   });
 });
 
@@ -169,11 +201,20 @@ describe('requireCapturePermissionMiddleware', () => {
   });
 
   it('calls next without error when permission is granted', async () => {
-    mockCheckPermission.mockReturnValue({ granted: true, reason: undefined, matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
     mockGetRole.mockReturnValue(null);
 
     const middleware = requireCapturePermissionMiddleware('capture.screen', 'capture');
-    const req = { user: { id: 'user-1', role: 'admin' }, body: {}, get: vi.fn().mockReturnValue(undefined), ip: '127.0.0.1' } as any;
+    const req = {
+      user: { id: 'user-1', role: 'admin' },
+      body: {},
+      get: vi.fn().mockReturnValue(undefined),
+      ip: '127.0.0.1',
+    } as any;
     const res = {} as any;
     const next = vi.fn();
 
@@ -182,10 +223,18 @@ describe('requireCapturePermissionMiddleware', () => {
   });
 
   it('calls next with error when permission is denied', async () => {
-    mockCheckPermission.mockReturnValue({ granted: false, reason: 'ACCESS_DENIED', matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: false,
+      reason: 'ACCESS_DENIED',
+      matchedPermission: undefined,
+    });
 
     const middleware = requireCapturePermissionMiddleware('capture.screen', 'capture');
-    const req = { user: { id: 'user-1', role: 'viewer' }, body: {}, get: vi.fn().mockReturnValue(undefined) } as any;
+    const req = {
+      user: { id: 'user-1', role: 'viewer' },
+      body: {},
+      get: vi.fn().mockReturnValue(undefined),
+    } as any;
     const res = {} as any;
     const next = vi.fn();
 
@@ -201,7 +250,11 @@ describe('clearCapturePermissionCache', () => {
   });
 
   it('clears the permission cache', async () => {
-    mockCheckPermission.mockReturnValue({ granted: true, reason: undefined, matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
     mockGetRole.mockReturnValue(null);
 
     // Populate cache
@@ -231,7 +284,11 @@ describe('getCaptureCacheStats', () => {
 
   it('reflects current cache size', async () => {
     vi.clearAllMocks();
-    mockCheckPermission.mockReturnValue({ granted: true, reason: undefined, matchedPermission: undefined });
+    mockCheckPermission.mockReturnValue({
+      granted: true,
+      reason: undefined,
+      matchedPermission: undefined,
+    });
     mockGetRole.mockReturnValue(null);
 
     await checkCapturePermission('capture.screen', 'capture', {}, userCtx);

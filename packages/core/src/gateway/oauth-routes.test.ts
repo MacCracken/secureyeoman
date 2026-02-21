@@ -21,9 +21,15 @@ function makeMockOAuthService(overrides: Partial<OAuthService> = {}): OAuthServi
     getProvider: vi.fn().mockReturnValue(MOCK_PROVIDER),
     getConfiguredProviders: vi.fn().mockReturnValue(['google']),
     generateState: vi.fn().mockReturnValue('mock-state-token'),
-    validateState: vi.fn().mockReturnValue({ provider: 'google', redirectUri: 'http://localhost/callback', createdAt: Date.now() }),
+    validateState: vi.fn().mockReturnValue({
+      provider: 'google',
+      redirectUri: 'http://localhost/callback',
+      createdAt: Date.now(),
+    }),
     exchangeCode: vi.fn().mockResolvedValue({ accessToken: 'acc-tok', refreshToken: 'ref-tok' }),
-    getUserInfo: vi.fn().mockResolvedValue({ id: 'goog-1', email: 'user@example.com', name: 'Test User' }),
+    getUserInfo: vi
+      .fn()
+      .mockResolvedValue({ id: 'goog-1', email: 'user@example.com', name: 'Test User' }),
     generateOAuthConnectionToken: vi.fn().mockReturnValue('conn-token-123'),
     ...overrides,
   } as unknown as OAuthService;
@@ -38,10 +44,7 @@ function makeMockTokenService(overrides?: Partial<OAuthTokenService>): OAuthToke
   } as unknown as OAuthTokenService;
 }
 
-function buildApp(
-  oauthOverrides: Partial<OAuthService> = {},
-  withTokenService = false
-) {
+function buildApp(oauthOverrides: Partial<OAuthService> = {}, withTokenService = false) {
   const app = Fastify();
   const oauthService = makeMockOAuthService(oauthOverrides);
   const authService = {} as AuthService;
@@ -130,7 +133,11 @@ describe('GET /api/v1/auth/oauth/:provider/callback', () => {
 
   it('redirects to email page on successful gmail exchange', async () => {
     const app = buildApp({
-      validateState: vi.fn().mockReturnValue({ provider: 'gmail', redirectUri: 'http://localhost/callback', createdAt: Date.now() }),
+      validateState: vi.fn().mockReturnValue({
+        provider: 'gmail',
+        redirectUri: 'http://localhost/callback',
+        createdAt: Date.now(),
+      }),
     });
     const res = await app.inject({
       method: 'GET',
@@ -141,7 +148,9 @@ describe('GET /api/v1/auth/oauth/:provider/callback', () => {
   });
 
   it('redirects to error page on exchange failure', async () => {
-    const app = buildApp({ exchangeCode: vi.fn().mockRejectedValue(new Error('token exchange failed')) });
+    const app = buildApp({
+      exchangeCode: vi.fn().mockRejectedValue(new Error('token exchange failed')),
+    });
     const res = await app.inject({
       method: 'GET',
       url: '/api/v1/auth/oauth/google/callback?code=auth-code&state=mock-state',

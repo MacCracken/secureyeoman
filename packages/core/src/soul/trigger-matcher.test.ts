@@ -123,7 +123,9 @@ describe('SkillTriggerMatcher', () => {
           message: { patterns: ['HELLO'], matchMode: 'contains', caseSensitive: false },
         }),
       ]);
-      const ctx = makeContext({ message: { text: 'say hello world', userId: 'u1', timestamp: Date.now() } });
+      const ctx = makeContext({
+        message: { text: 'say hello world', userId: 'u1', timestamp: Date.now() },
+      });
       expect(matcher.findMatchingTriggers([skill], ctx)).toHaveLength(1);
     });
 
@@ -145,8 +147,18 @@ describe('SkillTriggerMatcher', () => {
           message: { patterns: ['ping'], matchMode: 'exact', caseSensitive: false },
         }),
       ]);
-      expect(matcher.findMatchingTriggers([skill], makeContext({ message: { text: 'ping', userId: 'u1', timestamp: 0 } }))).toHaveLength(1);
-      expect(matcher.findMatchingTriggers([skill], makeContext({ message: { text: 'ping me', userId: 'u1', timestamp: 0 } }))).toHaveLength(0);
+      expect(
+        matcher.findMatchingTriggers(
+          [skill],
+          makeContext({ message: { text: 'ping', userId: 'u1', timestamp: 0 } })
+        )
+      ).toHaveLength(1);
+      expect(
+        matcher.findMatchingTriggers(
+          [skill],
+          makeContext({ message: { text: 'ping me', userId: 'u1', timestamp: 0 } })
+        )
+      ).toHaveLength(0);
     });
 
     it('matches startsWith mode', () => {
@@ -156,8 +168,18 @@ describe('SkillTriggerMatcher', () => {
           message: { patterns: ['hey'], matchMode: 'startsWith', caseSensitive: false },
         }),
       ]);
-      expect(matcher.findMatchingTriggers([skill], makeContext({ message: { text: 'hey there', userId: 'u1', timestamp: 0 } }))).toHaveLength(1);
-      expect(matcher.findMatchingTriggers([skill], makeContext({ message: { text: 'say hey', userId: 'u1', timestamp: 0 } }))).toHaveLength(0);
+      expect(
+        matcher.findMatchingTriggers(
+          [skill],
+          makeContext({ message: { text: 'hey there', userId: 'u1', timestamp: 0 } })
+        )
+      ).toHaveLength(1);
+      expect(
+        matcher.findMatchingTriggers(
+          [skill],
+          makeContext({ message: { text: 'say hey', userId: 'u1', timestamp: 0 } })
+        )
+      ).toHaveLength(0);
     });
 
     it('matches regex mode', () => {
@@ -167,8 +189,18 @@ describe('SkillTriggerMatcher', () => {
           message: { patterns: ['^hello\\s+world$'], matchMode: 'regex', caseSensitive: false },
         }),
       ]);
-      expect(matcher.findMatchingTriggers([skill], makeContext({ message: { text: 'hello   world', userId: 'u1', timestamp: 0 } }))).toHaveLength(1);
-      expect(matcher.findMatchingTriggers([skill], makeContext({ message: { text: 'hello', userId: 'u1', timestamp: 0 } }))).toHaveLength(0);
+      expect(
+        matcher.findMatchingTriggers(
+          [skill],
+          makeContext({ message: { text: 'hello   world', userId: 'u1', timestamp: 0 } })
+        )
+      ).toHaveLength(1);
+      expect(
+        matcher.findMatchingTriggers(
+          [skill],
+          makeContext({ message: { text: 'hello', userId: 'u1', timestamp: 0 } })
+        )
+      ).toHaveLength(0);
     });
 
     it('skips invalid regex without throwing', () => {
@@ -229,17 +261,13 @@ describe('SkillTriggerMatcher', () => {
     });
 
     it('does not match when event type not in list', () => {
-      const skill = makeSkill([
-        makeTrigger({ type: 'event', event: { events: ['startup'] } }),
-      ]);
+      const skill = makeSkill([makeTrigger({ type: 'event', event: { events: ['startup'] } })]);
       const ctx = makeContext({ event: { type: 'shutdown', data: {} } });
       expect(matcher.findMatchingTriggers([skill], ctx)).toHaveLength(0);
     });
 
     it('does not match when no event in context', () => {
-      const skill = makeSkill([
-        makeTrigger({ type: 'event', event: { events: ['startup'] } }),
-      ]);
+      const skill = makeSkill([makeTrigger({ type: 'event', event: { events: ['startup'] } })]);
       expect(matcher.findMatchingTriggers([skill], makeContext())).toHaveLength(0);
     });
   });
@@ -289,9 +317,7 @@ describe('SkillTriggerMatcher', () => {
     });
 
     it('returns false for unknown trigger type', () => {
-      const skill = makeSkill([
-        makeTrigger({ type: 'unknown_type' as never }),
-      ]);
+      const skill = makeSkill([makeTrigger({ type: 'unknown_type' as never })]);
       expect(matcher.findMatchingTriggers([skill], makeContext())).toHaveLength(0);
     });
   });
@@ -354,7 +380,10 @@ describe('renderContextTemplate', () => {
   };
 
   it('replaces {{sessionId}} and {{personalityId}}', () => {
-    const result = renderContextTemplate('session={{sessionId}}, personality={{personalityId}}', baseCtx);
+    const result = renderContextTemplate(
+      'session={{sessionId}}, personality={{personalityId}}',
+      baseCtx
+    );
     expect(result).toBe('session=sess-42, personality=pers-99');
   });
 
@@ -372,7 +401,10 @@ describe('renderContextTemplate', () => {
       ...baseCtx,
       tool: { name: 'search', input: { q: 'test' }, output: { results: [] }, success: true },
     };
-    const result = renderContextTemplate('tool={{tool.name}}, in={{tool.input}}, out={{tool.output}}', ctx);
+    const result = renderContextTemplate(
+      'tool={{tool.name}}, in={{tool.input}}, out={{tool.output}}',
+      ctx
+    );
     expect(result).toContain('tool=search');
     expect(result).toContain('"q":"test"');
   });

@@ -227,7 +227,10 @@ describe('McpHealthMonitor', () => {
     });
 
     it('returns empty array when no servers exist', async () => {
-      (storage.listServers as ReturnType<typeof vi.fn>).mockResolvedValue({ servers: [], total: 0 });
+      (storage.listServers as ReturnType<typeof vi.fn>).mockResolvedValue({
+        servers: [],
+        total: 0,
+      });
 
       const monitor = new McpHealthMonitor(storage, logger);
       const results = await monitor.checkAll();

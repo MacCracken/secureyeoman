@@ -97,7 +97,13 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     '/api/v1/soul/skills',
     async (
       request: FastifyRequest<{
-        Querystring: { status?: string; source?: string; personalityId?: string; limit?: string; offset?: string };
+        Querystring: {
+          status?: string;
+          source?: string;
+          personalityId?: string;
+          limit?: string;
+          offset?: string;
+        };
       }>
     ) => {
       const { status, source, personalityId, limit: limitStr, offset: offsetStr } = request.query;

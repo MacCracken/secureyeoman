@@ -199,10 +199,17 @@ async function safeFetch(
       try {
         return await doFetch();
       } catch (err) {
-        if (err instanceof RetryableError || (err instanceof Error && err.message.startsWith('HTTP 429'))) {
+        if (
+          err instanceof RetryableError ||
+          (err instanceof Error && err.message.startsWith('HTTP 429'))
+        ) {
           lastError = err;
           if (attempt < maxRetries) {
-            const delay = Math.min(baseDelay * Math.pow(2, attempt) + Math.random() * 0.3 * baseDelay * Math.pow(2, attempt), 15000);
+            const delay = Math.min(
+              baseDelay * Math.pow(2, attempt) +
+                Math.random() * 0.3 * baseDelay * Math.pow(2, attempt),
+              15000
+            );
             await new Promise((resolve) => setTimeout(resolve, delay));
             continue;
           }
@@ -427,14 +434,21 @@ export function registerWebTools(
   server.registerTool(
     'web_scrape_markdown',
     {
-      description: 'Scrape a webpage and convert to clean LLM-ready markdown (requires MCP_EXPOSE_WEB=true)',
+      description:
+        'Scrape a webpage and convert to clean LLM-ready markdown (requires MCP_EXPOSE_WEB=true)',
       inputSchema: {
         url: z.string().describe('URL to scrape'),
-        country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+        country: z
+          .string()
+          .length(2)
+          .optional()
+          .describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
       },
     },
     wrapToolHandler('web_scrape_markdown', middleware, async (args) => {
-      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, { country: args.country });
+      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, {
+        country: args.country,
+      });
       const markdown = htmlToMarkdown(body);
       const output = truncateOutput(`# Scraped: ${finalUrl}\n\n${markdown}`);
       return { content: [{ type: 'text' as const, text: output }] };
@@ -445,15 +459,25 @@ export function registerWebTools(
   server.registerTool(
     'web_scrape_html',
     {
-      description: 'Scrape raw HTML from a webpage, optionally filtering by CSS selector (requires MCP_EXPOSE_WEB=true)',
+      description:
+        'Scrape raw HTML from a webpage, optionally filtering by CSS selector (requires MCP_EXPOSE_WEB=true)',
       inputSchema: {
         url: z.string().describe('URL to scrape'),
-        selector: z.string().optional().describe('CSS selector to extract (basic: #id, .class, tag)'),
-        country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+        selector: z
+          .string()
+          .optional()
+          .describe('CSS selector to extract (basic: #id, .class, tag)'),
+        country: z
+          .string()
+          .length(2)
+          .optional()
+          .describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
       },
     },
     wrapToolHandler('web_scrape_html', middleware, async (args) => {
-      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, { country: args.country });
+      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, {
+        country: args.country,
+      });
       const html = args.selector ? extractWithSelector(body, args.selector) : body;
       const output = truncateOutput(html);
       return {
@@ -466,16 +490,23 @@ export function registerWebTools(
   server.registerTool(
     'web_scrape_batch',
     {
-      description: 'Scrape multiple URLs in parallel and return markdown (max 10 URLs, requires MCP_EXPOSE_WEB=true)',
+      description:
+        'Scrape multiple URLs in parallel and return markdown (max 10 URLs, requires MCP_EXPOSE_WEB=true)',
       inputSchema: {
         urls: z.array(z.string()).min(1).max(MAX_BATCH_URLS).describe('URLs to scrape (max 10)'),
-        country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+        country: z
+          .string()
+          .length(2)
+          .optional()
+          .describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
       },
     },
     wrapToolHandler('web_scrape_batch', middleware, async (args) => {
       const results = await Promise.allSettled(
         args.urls.map(async (url: string) => {
-          const { body, finalUrl } = await safeFetch(url, config, webLimiter, proxyManager, { country: args.country });
+          const { body, finalUrl } = await safeFetch(url, config, webLimiter, proxyManager, {
+            country: args.country,
+          });
           const markdown = htmlToMarkdown(body);
           return { url: finalUrl, markdown };
         })
@@ -498,7 +529,8 @@ export function registerWebTools(
   server.registerTool(
     'web_extract_structured',
     {
-      description: 'Extract structured data from a webpage as JSON based on a schema description (requires MCP_EXPOSE_WEB=true)',
+      description:
+        'Extract structured data from a webpage as JSON based on a schema description (requires MCP_EXPOSE_WEB=true)',
       inputSchema: {
         url: z.string().describe('URL to extract data from'),
         fields: z
@@ -510,11 +542,17 @@ export function registerWebTools(
             })
           )
           .describe('Fields to extract'),
-        country: z.string().length(2).optional().describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
+        country: z
+          .string()
+          .length(2)
+          .optional()
+          .describe('ISO 3166-1 alpha-2 country code for geo-targeting (e.g., US, DE)'),
       },
     },
     wrapToolHandler('web_extract_structured', middleware, async (args) => {
-      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, { country: args.country });
+      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, {
+        country: args.country,
+      });
       const text = stripHtmlTags(body);
 
       // Best-effort extraction based on field descriptions
@@ -544,10 +582,17 @@ export function registerWebTools(
   server.registerTool(
     'web_search',
     {
-      description: 'Search the web using configurable search backend (requires MCP_EXPOSE_WEB=true)',
+      description:
+        'Search the web using configurable search backend (requires MCP_EXPOSE_WEB=true)',
       inputSchema: {
         query: z.string().min(1).max(500).describe('Search query'),
-        maxResults: z.number().int().min(1).max(20).default(10).describe('Maximum results to return'),
+        maxResults: z
+          .number()
+          .int()
+          .min(1)
+          .max(20)
+          .default(10)
+          .describe('Maximum results to return'),
       },
     },
     wrapToolHandler('web_search', middleware, async (args) => {
@@ -580,7 +625,8 @@ export function registerWebTools(
   server.registerTool(
     'web_search_batch',
     {
-      description: 'Run multiple search queries in parallel for research (max 5 queries, requires MCP_EXPOSE_WEB=true)',
+      description:
+        'Run multiple search queries in parallel for research (max 5 queries, requires MCP_EXPOSE_WEB=true)',
       inputSchema: {
         queries: z
           .array(z.string().min(1).max(500))

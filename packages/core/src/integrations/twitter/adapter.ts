@@ -44,13 +44,7 @@ export class TwitterIntegration implements Integration {
     this.deps = deps;
     this.logger = deps.logger;
 
-    const {
-      bearerToken,
-      apiKey,
-      apiKeySecret,
-      accessToken,
-      accessTokenSecret,
-    } = config.config as {
+    const { bearerToken, apiKey, apiKeySecret, accessToken, accessTokenSecret } = config.config as {
       bearerToken?: string;
       apiKey?: string;
       apiKeySecret?: string;
@@ -93,9 +87,12 @@ export class TwitterIntegration implements Integration {
       this.me = meResult.data;
       this.logger?.info(`Twitter connected as @${this.me.username} (${this.me.id})`);
     } catch (err) {
-      this.logger?.warn('Twitter: could not resolve authenticated user — mention polling disabled', {
-        error: err instanceof Error ? err.message : String(err),
-      });
+      this.logger?.warn(
+        'Twitter: could not resolve authenticated user — mention polling disabled',
+        {
+          error: err instanceof Error ? err.message : String(err),
+        }
+      );
     }
 
     this.schedulePoll();
@@ -106,7 +103,9 @@ export class TwitterIntegration implements Integration {
     if (!this.running) return;
     const interval = (this.config?.config.pollIntervalMs as number | undefined) ?? 300_000;
     this.pollTimer = setTimeout(() => {
-      void this.poll().finally(() => { this.schedulePoll(); });
+      void this.poll().finally(() => {
+        this.schedulePoll();
+      });
     }, interval);
   }
 
@@ -141,7 +140,7 @@ export class TwitterIntegration implements Integration {
           platform: 'twitter',
           direction: 'inbound',
           senderId: tweet.author_id ?? 'unknown',
-          senderName: author ? `@${author.username}` : tweet.author_id ?? 'unknown',
+          senderName: author ? `@${author.username}` : (tweet.author_id ?? 'unknown'),
           chatId: tweet.id,
           text: tweet.text,
           attachments: [],
@@ -191,9 +190,7 @@ export class TwitterIntegration implements Integration {
       );
     }
 
-    const payload = chatId
-      ? { text, reply: { in_reply_to_tweet_id: chatId } }
-      : { text };
+    const payload = chatId ? { text, reply: { in_reply_to_tweet_id: chatId } } : { text };
 
     const result = await this.client.v2.tweet(payload);
     return result.data.id;

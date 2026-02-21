@@ -81,7 +81,9 @@ export async function executeWebhookAction(
           'Content-Type': 'application/json',
           ...action.headers,
         },
-        body: action.body ?? JSON.stringify({ source: 'secureyeoman-proactive', timestamp: Date.now() }),
+        body:
+          action.body ??
+          JSON.stringify({ source: 'secureyeoman-proactive', timestamp: Date.now() }),
         signal: controller.signal,
       });
 

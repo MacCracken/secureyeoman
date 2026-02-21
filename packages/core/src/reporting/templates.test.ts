@@ -84,11 +84,14 @@ describe('formatHtmlReport', () => {
   });
 
   it('shows empty states when no data', () => {
-    const html = formatHtmlReport('Empty Report', makeData({
-      auditEntries: [],
-      tasks: [],
-      heartbeatTasks: [],
-    }));
+    const html = formatHtmlReport(
+      'Empty Report',
+      makeData({
+        auditEntries: [],
+        tasks: [],
+        heartbeatTasks: [],
+      })
+    );
     expect(html).toContain('No audit entries.');
     expect(html).toContain('No tasks recorded.');
     expect(html).toContain('No heartbeat tasks configured.');
@@ -179,11 +182,13 @@ describe('formatCsvReport', () => {
   });
 
   it('handles empty data gracefully', () => {
-    const csv = formatCsvReport(makeData({
-      auditEntries: [],
-      tasks: [],
-      heartbeatTasks: [],
-    }));
+    const csv = formatCsvReport(
+      makeData({
+        auditEntries: [],
+        tasks: [],
+        heartbeatTasks: [],
+      })
+    );
     expect(csv).toContain('# Audit Log');
     // No data rows, just headers
     const lines = csv.split('\n');

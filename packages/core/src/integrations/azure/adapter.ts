@@ -182,10 +182,7 @@ export class AzureDevOpsIntegration implements WebhookIntegration {
     let unified: UnifiedMessage | null = null;
 
     if ('eventType' in payload) {
-      if (
-        payload.eventType === 'workitem.created' ||
-        payload.eventType === 'workitem.updated'
-      ) {
+      if (payload.eventType === 'workitem.created' || payload.eventType === 'workitem.updated') {
         unified = this.handleWorkItemEvent(payload);
       } else if (payload.eventType === 'build.complete') {
         unified = this.handleBuildEvent(payload);

@@ -273,7 +273,9 @@ export class SoulStorage extends PgBaseStorage {
           : existing.defaultModel
             ? JSON.stringify(existing.defaultModel)
             : null,
-        JSON.stringify(data.modelFallbacks !== undefined ? data.modelFallbacks : existing.modelFallbacks),
+        JSON.stringify(
+          data.modelFallbacks !== undefined ? data.modelFallbacks : existing.modelFallbacks
+        ),
         data.includeArchetypes !== undefined ? data.includeArchetypes : existing.includeArchetypes,
         JSON.stringify(
           data.body ??
@@ -304,7 +306,10 @@ export class SoulStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listPersonalities(opts?: { limit?: number; offset?: number }): Promise<{ personalities: Personality[]; total: number }> {
+  async listPersonalities(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ personalities: Personality[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 
@@ -408,7 +413,9 @@ export class SoulStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listSkills(filter?: SkillFilter & { limit?: number; offset?: number }): Promise<{ skills: Skill[]; total: number }> {
+  async listSkills(
+    filter?: SkillFilter & { limit?: number; offset?: number }
+  ): Promise<{ skills: Skill[]; total: number }> {
     let sql = 'SELECT * FROM soul.skills WHERE 1=1';
     const params: unknown[] = [];
     let idx = 1;
@@ -567,7 +574,10 @@ export class SoulStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async listUsers(opts?: { limit?: number; offset?: number }): Promise<{ users: UserProfile[]; total: number }> {
+  async listUsers(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ users: UserProfile[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 

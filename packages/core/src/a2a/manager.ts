@@ -135,7 +135,12 @@ export class A2AManager {
     return removed;
   }
 
-  async listPeers(filter?: { status?: string; trustLevel?: string; limit?: number; offset?: number }): Promise<{ peers: PeerAgent[]; total: number }> {
+  async listPeers(filter?: {
+    status?: string;
+    trustLevel?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ peers: PeerAgent[]; total: number }> {
     return this.deps.storage.listPeers(filter);
   }
 

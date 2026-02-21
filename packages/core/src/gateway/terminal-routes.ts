@@ -48,7 +48,11 @@ function isBlockedCommand(command: string): boolean {
   const lower = command.toLowerCase();
   if (BLOCKED_PATTERNS.some((re) => re.test(lower))) return true;
   // Block commands containing shell injection operators targeting sensitive paths
-  if (SHELL_INJECTION_PATTERN.test(command) && SENSITIVE_PATH_PREFIXES.some((p) => command.includes(p))) return true;
+  if (
+    SHELL_INJECTION_PATTERN.test(command) &&
+    SENSITIVE_PATH_PREFIXES.some((p) => command.includes(p))
+  )
+    return true;
   return false;
 }
 
@@ -75,7 +79,11 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
 
       // Reject sensitive system path prefixes first (fast path, before allowlist check)
       if (SENSITIVE_PATH_PREFIXES.some((p) => workingDir === p || workingDir.startsWith(p + '/'))) {
-        logger.warn('Blocked command with sensitive working directory', { command, cwd: workingDir, ip: request.ip });
+        logger.warn('Blocked command with sensitive working directory', {
+          command,
+          cwd: workingDir,
+          ip: request.ip,
+        });
         return sendError(reply, 403, 'Working directory is not allowed.');
       }
 
@@ -83,8 +91,9 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
       const allowedPrefixes = [process.cwd(), '/home', '/tmp', '/var/tmp'];
 
       const isAllowedPath =
-        allowedPrefixes.some((prefix) => workingDir === prefix || workingDir.startsWith(prefix + '/'))
-        || workingDir.startsWith(process.cwd() + '/');
+        allowedPrefixes.some(
+          (prefix) => workingDir === prefix || workingDir.startsWith(prefix + '/')
+        ) || workingDir.startsWith(process.cwd() + '/');
 
       if (!isAllowedPath) {
         logger.warn('Blocked command with disallowed working directory', {
@@ -92,7 +101,11 @@ export function registerTerminalRoutes(app: FastifyInstance): void {
           cwd: workingDir,
           ip: request.ip,
         });
-        return sendError(reply, 403, 'Working directory is not allowed. Must be within project directory or standard system paths.');
+        return sendError(
+          reply,
+          403,
+          'Working directory is not allowed. Must be within project directory or standard system paths.'
+        );
       }
 
       try {

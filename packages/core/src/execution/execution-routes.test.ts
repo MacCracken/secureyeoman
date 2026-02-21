@@ -40,7 +40,9 @@ function makeMockManager(overrides?: Partial<CodeExecutionManager>): CodeExecuti
     getExecutionHistory: vi.fn().mockResolvedValue({ executions: [EXECUTION_RESULT], total: 1 }),
     approve: vi.fn().mockResolvedValue(APPROVAL),
     reject: vi.fn().mockResolvedValue({ ...APPROVAL, status: 'rejected' }),
-    getConfig: vi.fn().mockReturnValue({ enabled: true, allowedRuntimes: ['node', 'python', 'shell'] }),
+    getConfig: vi
+      .fn()
+      .mockReturnValue({ enabled: true, allowedRuntimes: ['node', 'python', 'shell'] }),
     listPendingApprovals: vi.fn().mockResolvedValue([]),
     ...overrides,
   } as unknown as CodeExecutionManager;

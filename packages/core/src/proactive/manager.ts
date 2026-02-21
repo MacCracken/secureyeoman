@@ -79,7 +79,12 @@ export class ProactiveManager {
 
   // ── Trigger CRUD ────────────────────────────────────────────────
 
-  async listTriggers(filter?: { type?: string; enabled?: boolean; limit?: number; offset?: number }): Promise<{ triggers: ProactiveTrigger[]; total: number }> {
+  async listTriggers(filter?: {
+    type?: string;
+    enabled?: boolean;
+    limit?: number;
+    offset?: number;
+  }): Promise<{ triggers: ProactiveTrigger[]; total: number }> {
     return this.storage.listTriggers(filter);
   }
 

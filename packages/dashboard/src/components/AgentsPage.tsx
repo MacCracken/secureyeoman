@@ -46,11 +46,11 @@ export function AgentsPage() {
   });
 
   const subAgentsEnabled =
-    (agentConfig?.config)?.enabled === true ||
+    agentConfig?.config?.enabled === true ||
     agentConfig?.allowedBySecurityPolicy === true ||
     securityPolicy?.allowSubAgents === true;
 
-  const a2aEnabled = (a2aConfig?.config)?.enabled === true || securityPolicy?.allowA2A === true;
+  const a2aEnabled = a2aConfig?.config?.enabled === true || securityPolicy?.allowA2A === true;
 
   const multimodalEnabled = securityPolicy?.allowMultimodal === true;
 

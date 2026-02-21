@@ -358,16 +358,28 @@ export class HeartbeatManager {
     // Route to appropriate integration
     switch (channel) {
       case 'slack':
-        this.logger.info('Slack heartbeat notification pending integration', { message, recipients });
+        this.logger.info('Slack heartbeat notification pending integration', {
+          message,
+          recipients,
+        });
         break;
       case 'telegram':
-        this.logger.info('Telegram heartbeat notification pending integration', { message, recipients });
+        this.logger.info('Telegram heartbeat notification pending integration', {
+          message,
+          recipients,
+        });
         break;
       case 'discord':
-        this.logger.info('Discord heartbeat notification pending integration', { message, recipients });
+        this.logger.info('Discord heartbeat notification pending integration', {
+          message,
+          recipients,
+        });
         break;
       case 'email':
-        this.logger.info('Email heartbeat notification pending integration', { message, recipients });
+        this.logger.info('Email heartbeat notification pending integration', {
+          message,
+          recipients,
+        });
         break;
       default:
         this.logger.warn('Unknown notification channel', { channel });
@@ -427,7 +439,9 @@ export class HeartbeatManager {
       args,
       result: result.status,
     });
-    throw new Error('Command execution action is not implemented — enable sandbox execution via the execution config');
+    throw new Error(
+      'Command execution action is not implemented — enable sandbox execution via the execution config'
+    );
   }
 
   /**
@@ -450,7 +464,9 @@ export class HeartbeatManager {
       maxTokens,
       promptLength: prompt?.length,
     });
-    throw new Error('LLM analysis action is not implemented — heartbeat LLM actions require an AI client integration');
+    throw new Error(
+      'LLM analysis action is not implemented — heartbeat LLM actions require an AI client integration'
+    );
   }
 
   /**

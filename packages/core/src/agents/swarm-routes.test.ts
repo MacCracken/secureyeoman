@@ -64,7 +64,10 @@ describe('GET /api/v1/agents/swarms/templates', () => {
 describe('GET /api/v1/agents/swarms/templates/:id', () => {
   it('returns template by ID', async () => {
     const app = buildApp();
-    const res = await app.inject({ method: 'GET', url: '/api/v1/agents/swarms/templates/research-and-code' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/agents/swarms/templates/research-and-code',
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().template.name).toBe('research-and-code');
   });
@@ -108,19 +111,28 @@ describe('DELETE /api/v1/agents/swarms/templates/:id', () => {
   it('deletes non-builtin template and returns 204', async () => {
     const customTemplate = { ...TEMPLATE, isBuiltin: false };
     const app = buildApp({ getTemplate: vi.fn().mockResolvedValue(customTemplate) });
-    const res = await app.inject({ method: 'DELETE', url: '/api/v1/agents/swarms/templates/custom' });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/agents/swarms/templates/custom',
+    });
     expect(res.statusCode).toBe(204);
   });
 
   it('returns 404 when template not found', async () => {
     const app = buildApp({ getTemplate: vi.fn().mockResolvedValue(null) });
-    const res = await app.inject({ method: 'DELETE', url: '/api/v1/agents/swarms/templates/missing' });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/agents/swarms/templates/missing',
+    });
     expect(res.statusCode).toBe(404);
   });
 
   it('returns 403 when trying to delete a builtin template', async () => {
     const app = buildApp(); // TEMPLATE.isBuiltin = true
-    const res = await app.inject({ method: 'DELETE', url: '/api/v1/agents/swarms/templates/research-and-code' });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/agents/swarms/templates/research-and-code',
+    });
     expect(res.statusCode).toBe(403);
   });
 });
@@ -138,7 +150,9 @@ describe('POST /api/v1/agents/swarms', () => {
   });
 
   it('returns 400 on execution error', async () => {
-    const app = buildApp({ executeSwarm: vi.fn().mockRejectedValue(new Error('profile not found')) });
+    const app = buildApp({
+      executeSwarm: vi.fn().mockRejectedValue(new Error('profile not found')),
+    });
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/agents/swarms',

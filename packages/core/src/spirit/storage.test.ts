@@ -110,7 +110,9 @@ describe('SpiritStorage', () => {
   describe('updatePassion', () => {
     it('throws if passion not found', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-      await expect(storage.updatePassion('missing', { name: 'x' })).rejects.toThrow('Passion not found');
+      await expect(storage.updatePassion('missing', { name: 'x' })).rejects.toThrow(
+        'Passion not found'
+      );
     });
 
     it('updates and returns the updated passion', async () => {
@@ -198,7 +200,9 @@ describe('SpiritStorage', () => {
   describe('updateInspiration', () => {
     it('throws if not found', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
-      await expect(storage.updateInspiration('missing', {})).rejects.toThrow('Inspiration not found');
+      await expect(storage.updateInspiration('missing', {})).rejects.toThrow(
+        'Inspiration not found'
+      );
     });
   });
 

@@ -177,9 +177,7 @@ export class AwsIntegration implements Integration {
   }
 
   private getSignatureKey(dateStamp: string, service: string): Buffer {
-    const kDate = createHmac('sha256', `AWS4${this.secretAccessKey}`)
-      .update(dateStamp)
-      .digest();
+    const kDate = createHmac('sha256', `AWS4${this.secretAccessKey}`).update(dateStamp).digest();
     const kRegion = createHmac('sha256', kDate).update(this.region).digest();
     const kService = createHmac('sha256', kRegion).update(service).digest();
     return createHmac('sha256', kService).update('aws4_request').digest();

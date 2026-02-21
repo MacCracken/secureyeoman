@@ -153,7 +153,9 @@ describe('POST /api/v1/auth/refresh', () => {
   });
 
   it('returns 401 when refresh token is invalid', async () => {
-    const app = buildApp({ refresh: vi.fn().mockRejectedValue(new AuthError('Token expired', 401)) });
+    const app = buildApp({
+      refresh: vi.fn().mockRejectedValue(new AuthError('Token expired', 401)),
+    });
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/refresh',

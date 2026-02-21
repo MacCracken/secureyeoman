@@ -4,8 +4,19 @@ import { registerExtensionRoutes } from './extension-routes.js';
 import type { ExtensionManager } from './manager.js';
 
 const EXTENSION = { id: 'ext-1', name: 'Test Extension', version: '1.0.0', hooks: [] };
-const HOOK = { id: 'hook-1', hookPoint: 'pre-chat', extensionId: 'ext-1', priority: 10, semantics: 'filter' };
-const WEBHOOK = { id: 'wh-1', url: 'https://example.com/hook', hookPoints: ['pre-chat'], enabled: true };
+const HOOK = {
+  id: 'hook-1',
+  hookPoint: 'pre-chat',
+  extensionId: 'ext-1',
+  priority: 10,
+  semantics: 'filter',
+};
+const WEBHOOK = {
+  id: 'wh-1',
+  url: 'https://example.com/hook',
+  hookPoints: ['pre-chat'],
+  enabled: true,
+};
 
 function makeMockManager(overrides?: Partial<ExtensionManager>): ExtensionManager {
   return {
@@ -123,7 +134,11 @@ describe('POST /api/v1/extensions/hooks', () => {
   });
 
   it('returns 400 on error', async () => {
-    const app = buildApp({ registerHook: vi.fn().mockImplementation(() => { throw new Error('invalid'); }) });
+    const app = buildApp({
+      registerHook: vi.fn().mockImplementation(() => {
+        throw new Error('invalid');
+      }),
+    });
     const res = await app.inject({
       method: 'POST',
       url: '/api/v1/extensions/hooks',

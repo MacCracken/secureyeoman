@@ -4,8 +4,18 @@ import { a2aCommand } from './a2a.js';
 function createStreams() {
   let stdoutBuf = '';
   let stderrBuf = '';
-  const stdout = { write: (s: string) => { stdoutBuf += s; return true; } } as NodeJS.WritableStream;
-  const stderr = { write: (s: string) => { stderrBuf += s; return true; } } as NodeJS.WritableStream;
+  const stdout = {
+    write: (s: string) => {
+      stdoutBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
+  const stderr = {
+    write: (s: string) => {
+      stderrBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
   return { stdout, stderr, getStdout: () => stdoutBuf, getStderr: () => stderrBuf };
 }
 
@@ -42,9 +52,20 @@ describe('a2a command — help', () => {
 
 describe('a2a command — peers subcommand', () => {
   it('lists peers in table format', async () => {
-    vi.stubGlobal('fetch', mockFetch({
-      peers: [{ id: 'peer-abc123', name: 'My Peer', url: 'https://peer.example.com', trustLevel: 'trusted', status: 'online' }],
-    }));
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        peers: [
+          {
+            id: 'peer-abc123',
+            name: 'My Peer',
+            url: 'https://peer.example.com',
+            trustLevel: 'trusted',
+            status: 'online',
+          },
+        ],
+      })
+    );
     const { stdout, stderr, getStdout } = createStreams();
     const code = await a2aCommand.run({ argv: ['peers'], stdout, stderr });
     expect(code).toBe(0);
@@ -92,7 +113,11 @@ describe('a2a command — add subcommand', () => {
   it('returns 1 on API error', async () => {
     vi.stubGlobal('fetch', mockFetch({}, false, 400));
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await a2aCommand.run({ argv: ['add', '--peer-url', 'https://bad.com'], stdout, stderr });
+    const code = await a2aCommand.run({
+      argv: ['add', '--peer-url', 'https://bad.com'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Failed to add peer');
   });
@@ -146,7 +171,11 @@ describe('a2a command — trust subcommand', () => {
   it('returns 1 on API error', async () => {
     vi.stubGlobal('fetch', mockFetch({}, false, 404));
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await a2aCommand.run({ argv: ['trust', 'missing', '--level', 'trusted'], stdout, stderr });
+    const code = await a2aCommand.run({
+      argv: ['trust', 'missing', '--level', 'trusted'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Failed to update trust');
   });
@@ -193,7 +222,11 @@ describe('a2a command — delegate subcommand', () => {
   it('returns 1 on API error', async () => {
     vi.stubGlobal('fetch', mockFetch({}, false, 404));
     const { stdout, stderr, getStderr } = createStreams();
-    const code = await a2aCommand.run({ argv: ['delegate', '--peer', 'missing', '--task', 'task'], stdout, stderr });
+    const code = await a2aCommand.run({
+      argv: ['delegate', '--peer', 'missing', '--task', 'task'],
+      stdout,
+      stderr,
+    });
     expect(code).toBe(1);
     expect(getStderr()).toContain('Delegation failed');
   });
@@ -201,10 +234,21 @@ describe('a2a command — delegate subcommand', () => {
 
 describe('a2a command — messages subcommand', () => {
   it('lists messages', async () => {
-    vi.stubGlobal('fetch', mockFetch({
-      messages: [{ id: 'msg-1', type: 'delegate', fromPeerId: 'local', toPeerId: 'peer-1', timestamp: Date.now() }],
-      total: 1,
-    }));
+    vi.stubGlobal(
+      'fetch',
+      mockFetch({
+        messages: [
+          {
+            id: 'msg-1',
+            type: 'delegate',
+            fromPeerId: 'local',
+            toPeerId: 'peer-1',
+            timestamp: Date.now(),
+          },
+        ],
+        total: 1,
+      })
+    );
     const { stdout, stderr, getStdout } = createStreams();
     const code = await a2aCommand.run({ argv: ['messages'], stdout, stderr });
     expect(code).toBe(0);

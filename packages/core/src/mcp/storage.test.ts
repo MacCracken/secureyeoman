@@ -252,10 +252,15 @@ describe('McpStorage', () => {
     it('handles empty tools list', async () => {
       await storage.saveTools('srv-1', 'my-server', []);
 
-      expect(mockClientQuery).toHaveBeenCalledWith(expect.stringContaining('DELETE FROM mcp.server_tools'), ['srv-1']);
+      expect(mockClientQuery).toHaveBeenCalledWith(
+        expect.stringContaining('DELETE FROM mcp.server_tools'),
+        ['srv-1']
+      );
       // Only BEGIN, DELETE, COMMIT - no inserts
       const calls = mockClientQuery.mock.calls.map((c) => c[0]);
-      const insertCalls = calls.filter((sql: string) => sql.includes('INSERT INTO mcp.server_tools'));
+      const insertCalls = calls.filter((sql: string) =>
+        sql.includes('INSERT INTO mcp.server_tools')
+      );
       expect(insertCalls).toHaveLength(0);
     });
   });

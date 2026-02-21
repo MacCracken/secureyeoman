@@ -3,6 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { McpServerConfig } from '../types';
 import { McpPrebuilts } from './McpPrebuilts';
 
 vi.mock('../api/client', () => ({
@@ -37,7 +38,7 @@ describe('McpPrebuilts', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
-    mockAddMcpServer.mockResolvedValue({});
+    mockAddMcpServer.mockResolvedValue({ server: {} as McpServerConfig });
   });
 
   // ── Renders ────────────────────────────────────────────────────────────────
@@ -79,7 +80,7 @@ describe('McpPrebuilts', () => {
 
   it('shows Connected badge for already-connected servers', async () => {
     mockFetchMcpServers.mockResolvedValue({
-      servers: [{ name: 'Exa', id: '1', transport: 'stdio', enabled: true }],
+      servers: [{ name: 'Exa', id: '1', transport: 'stdio', enabled: true } as McpServerConfig],
       total: 1,
     });
     renderComponent();
@@ -207,7 +208,7 @@ describe('McpPrebuilts', () => {
 
   it('calls addMcpServer with stdio transport for npx-based servers', async () => {
     const user = userEvent.setup();
-    mockAddMcpServer.mockResolvedValue({ id: 'new-server' });
+    mockAddMcpServer.mockResolvedValue({ server: { id: 'new-server' } as McpServerConfig });
     renderComponent();
 
     // Expand Exa
@@ -220,9 +221,9 @@ describe('McpPrebuilts', () => {
     await user.type(apiKeyInput, 'test-exa-key');
 
     // Click the inner Connect button
-    const innerConnect = screen.getAllByText('Connect').find(
-      (el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost')
-    );
+    const innerConnect = screen
+      .getAllByText('Connect')
+      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost'));
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -242,7 +243,7 @@ describe('McpPrebuilts', () => {
 
   it('calls addMcpServer with streamable-http transport and resolved URL for Home Assistant', async () => {
     const user = userEvent.setup();
-    mockAddMcpServer.mockResolvedValue({ id: 'ha-server' });
+    mockAddMcpServer.mockResolvedValue({ server: { id: 'ha-server' } as McpServerConfig });
     renderComponent();
 
     await screen.findByText('Home Assistant');
@@ -255,9 +256,9 @@ describe('McpPrebuilts', () => {
     const tokenInput = screen.getByPlaceholderText('HA_TOKEN');
     await user.type(tokenInput, 'eyJ0...');
 
-    const innerConnect = screen.getAllByText('Connect').find(
-      (el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost')
-    );
+    const innerConnect = screen
+      .getAllByText('Connect')
+      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost'));
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -276,7 +277,7 @@ describe('McpPrebuilts', () => {
 
   it('connects Device Control without filling any env vars', async () => {
     const user = userEvent.setup();
-    mockAddMcpServer.mockResolvedValue({ id: 'device-server' });
+    mockAddMcpServer.mockResolvedValue({ server: { id: 'device-server' } as McpServerConfig });
     renderComponent();
 
     await screen.findByText('Device Control');
@@ -284,9 +285,9 @@ describe('McpPrebuilts', () => {
     // Device Control is 11th server (index 10) — no env var inputs
     await user.click(allConnectButtons[10]);
 
-    const innerConnect = screen.getAllByText('Connect').find(
-      (el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost')
-    );
+    const innerConnect = screen
+      .getAllByText('Connect')
+      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost'));
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -306,7 +307,7 @@ describe('McpPrebuilts', () => {
 
   it('calls addMcpServer with stdio transport for ElevenLabs', async () => {
     const user = userEvent.setup();
-    mockAddMcpServer.mockResolvedValue({ id: 'el-server' });
+    mockAddMcpServer.mockResolvedValue({ server: { id: 'el-server' } as McpServerConfig });
     renderComponent();
 
     await screen.findByText('ElevenLabs');
@@ -317,9 +318,9 @@ describe('McpPrebuilts', () => {
     const apiKeyInput = screen.getByPlaceholderText('ELEVENLABS_API_KEY');
     await user.type(apiKeyInput, 'el-test-key');
 
-    const innerConnect = screen.getAllByText('Connect').find(
-      (el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost')
-    );
+    const innerConnect = screen
+      .getAllByText('Connect')
+      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost'));
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -346,9 +347,9 @@ describe('McpPrebuilts', () => {
     await user.click(allConnectButtons[1]);
 
     // Do not fill in the API key — click Connect immediately
-    const innerConnect = screen.getAllByText('Connect').find(
-      (el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost')
-    );
+    const innerConnect = screen
+      .getAllByText('Connect')
+      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost'));
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {

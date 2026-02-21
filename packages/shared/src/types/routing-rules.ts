@@ -10,10 +10,10 @@ import { z } from 'zod';
 // ─── Action Types ─────────────────────────────────────────────────────────────
 
 export const RoutingActionTypeSchema = z.enum([
-  'forward',      // forward message text to another integration/chat
-  'reply',        // send a reply via a different integration (same chatId unless overridden)
-  'personality',  // override the active personality for this message's response
-  'notify',       // POST the message payload to a webhook URL
+  'forward', // forward message text to another integration/chat
+  'reply', // send a reply via a different integration (same chatId unless overridden)
+  'personality', // override the active personality for this message's response
+  'notify', // POST the message payload to a webhook URL
 ]);
 
 export type RoutingActionType = z.infer<typeof RoutingActionTypeSchema>;
@@ -28,8 +28,8 @@ export const RoutingRuleSchema = z.object({
   priority: z.number().int().min(1).max(9999).default(100),
 
   // Trigger conditions — null = wildcard (match all)
-  triggerPlatforms: z.array(z.string()).default([]),         // [] = all
-  triggerIntegrationIds: z.array(z.string()).default([]),    // [] = all
+  triggerPlatforms: z.array(z.string()).default([]), // [] = all
+  triggerIntegrationIds: z.array(z.string()).default([]), // [] = all
   triggerChatIdPattern: z.string().nullable().default(null), // regex or null
   triggerSenderIdPattern: z.string().nullable().default(null),
   triggerKeywordPattern: z.string().nullable().default(null),

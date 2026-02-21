@@ -22,7 +22,14 @@ interface LineEvent {
   replyToken?: string;
   source?: { type: string; userId?: string; groupId?: string; roomId?: string };
   timestamp: number;
-  message?: { id: string; type: string; text?: string; packageId?: string; stickerId?: string; fileName?: string };
+  message?: {
+    id: string;
+    type: string;
+    text?: string;
+    packageId?: string;
+    stickerId?: string;
+    fileName?: string;
+  };
 }
 
 interface LineWebhookBody {
@@ -64,7 +71,11 @@ export class LineIntegration implements WebhookIntegration {
     this.logger?.info('Line integration stopped');
   }
 
-  async sendMessage(chatId: string, text: string, metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
     const replyToken = metadata?.['replyToken'] as string | undefined;
     if (replyToken) {
       // Reply message (must be used within 30s of receiving event)
@@ -90,9 +101,13 @@ export class LineIntegration implements WebhookIntegration {
     return `line_push_${Date.now()}`;
   }
 
-  isHealthy(): boolean { return this.running; }
+  isHealthy(): boolean {
+    return this.running;
+  }
 
-  getWebhookPath(): string { return '/webhooks/line'; }
+  getWebhookPath(): string {
+    return '/webhooks/line';
+  }
 
   verifyWebhook(payload: string, signature: string): boolean {
     if (!this.lineConfig?.channelSecret) return false;
@@ -114,7 +129,9 @@ export class LineIntegration implements WebhookIntegration {
         await this.processEvent(event, body.destination);
       }
     } catch (err) {
-      this.logger?.warn('Line webhook parse error', { error: err instanceof Error ? err.message : String(err) });
+      this.logger?.warn('Line webhook parse error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 

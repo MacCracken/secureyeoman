@@ -20,10 +20,7 @@ function makeMockManager(overrides?: Partial<MarketplaceManager>): MarketplaceMa
   } as unknown as MarketplaceManager;
 }
 
-function buildApp(
-  overrides?: Partial<MarketplaceManager>,
-  getConfig?: () => Config
-) {
+function buildApp(overrides?: Partial<MarketplaceManager>, getConfig?: () => Config) {
   const app = Fastify();
   registerMarketplaceRoutes(app, {
     marketplaceManager: makeMockManager(overrides),

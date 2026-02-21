@@ -37,13 +37,17 @@ export const GroupChatMessageSchema = z.object({
   senderName: z.string(),
   chatId: z.string(),
   text: z.string(),
-  attachments: z.array(z.object({
-    type: z.enum(['image', 'audio', 'video', 'file', 'location']),
-    url: z.string().optional(),
-    mimeType: z.string().optional(),
-    fileName: z.string().optional(),
-    size: z.number().optional(),
-  })).default([]),
+  attachments: z
+    .array(
+      z.object({
+        type: z.enum(['image', 'audio', 'video', 'file', 'location']),
+        url: z.string().optional(),
+        mimeType: z.string().optional(),
+        fileName: z.string().optional(),
+        size: z.number().optional(),
+      })
+    )
+    .default([]),
   replyToMessageId: z.string().nullable().optional(),
   platformMessageId: z.string().nullable().optional(),
   metadata: z.record(z.string(), z.unknown()).default({}),

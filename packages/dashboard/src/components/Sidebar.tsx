@@ -137,7 +137,8 @@ export function Sidebar({
   const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
   const a2aAllowed = securityPolicy?.allowA2A ?? false;
   const multimodalAllowed = securityPolicy?.allowMultimodal ?? false;
-  const hasAgents = subAgentsAllowed || a2aAllowed || multimodalAllowed || (agentsData?.profiles?.length ?? 0) > 0;
+  const hasAgents =
+    subAgentsAllowed || a2aAllowed || multimodalAllowed || (agentsData?.profiles?.length ?? 0) > 0;
   const extensionsEnabled =
     (securityPolicy?.allowExtensions ?? false) || extensionConfig?.config?.enabled === true;
   const proactiveEnabled =
@@ -155,7 +156,8 @@ export function Sidebar({
       });
     }
     return items.filter((item) => {
-      if (item.to === '/developers') return extensionsEnabled || experimentsEnabled || storybookEnabled;
+      if (item.to === '/developers')
+        return extensionsEnabled || experimentsEnabled || storybookEnabled;
       if (item.to === '/proactive') return proactiveEnabled;
       return true;
     });

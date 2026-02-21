@@ -151,12 +151,20 @@ function detectTaskType(task: string): TaskType {
 function scoreComplexity(task: string, taskType: TaskType): TaskComplexity {
   const words = task.trim().split(/\s+/).length;
   const hasManySubtasks =
-    (task.match(/\b(and (then|also)|additionally|furthermore|then|next|finally|step \d|first.*second)\b/gi)?.length ?? 0) >= 3;
+    (task.match(
+      /\b(and (then|also)|additionally|furthermore|then|next|finally|step \d|first.*second)\b/gi
+    )?.length ?? 0) >= 3;
   const hasComparisons = (task.match(/\bcompare|versus|vs\.?\b/gi)?.length ?? 0) >= 2;
 
   // code, reason, and plan tasks are never trivially simple — even a short description implies
   // meaningful work that warrants at least a capable-tier model.
-  if (words < 30 && !hasManySubtasks && taskType !== 'plan' && taskType !== 'reason' && taskType !== 'code') {
+  if (
+    words < 30 &&
+    !hasManySubtasks &&
+    taskType !== 'plan' &&
+    taskType !== 'reason' &&
+    taskType !== 'code'
+  ) {
     return 'simple';
   }
 
@@ -248,16 +256,12 @@ export class ModelRouter {
     }
 
     // Find candidates at target tier
-    let tieredCandidates = candidates.filter(
-      (m) => modelTier(m.model, m.provider) === tier
-    );
+    let tieredCandidates = candidates.filter((m) => modelTier(m.model, m.provider) === tier);
 
     // If nothing at target tier, widen to next cheaper tier
     if (tieredCandidates.length === 0) {
       const fallbackTier: ModelTier = tier === 'premium' ? 'capable' : 'fast';
-      tieredCandidates = candidates.filter(
-        (m) => modelTier(m.model, m.provider) === fallbackTier
-      );
+      tieredCandidates = candidates.filter((m) => modelTier(m.model, m.provider) === fallbackTier);
     }
 
     // Still nothing — widen to all candidates

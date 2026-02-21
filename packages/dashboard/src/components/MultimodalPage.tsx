@@ -213,7 +213,9 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
                       <React.Fragment key={job.id}>
                         <tr
                           className="border-b hover:bg-muted/30 cursor-pointer transition-colors"
-                          onClick={() => { setExpandedId(expanded ? null : job.id); }}
+                          onClick={() => {
+                            setExpandedId(expanded ? null : job.id);
+                          }}
                         >
                           <td className="py-2 pr-3">
                             {expanded ? (
@@ -291,14 +293,18 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
                 <button
                   className="btn-ghost text-xs px-2 py-1"
                   disabled={page === 0}
-                  onClick={() => { setPage((p) => Math.max(0, p - 1)); }}
+                  onClick={() => {
+                    setPage((p) => Math.max(0, p - 1));
+                  }}
                 >
                   Previous
                 </button>
                 <button
                   className="btn-ghost text-xs px-2 py-1"
                   disabled={page >= totalPages - 1}
-                  onClick={() => { setPage((p) => p + 1); }}
+                  onClick={() => {
+                    setPage((p) => p + 1);
+                  }}
                 >
                   Next
                 </button>
@@ -351,7 +357,11 @@ function ProviderCard({ config }: { config: Record<string, unknown> | undefined 
           <p className="text-xs text-muted-foreground font-medium">Text-to-Speech</p>
           <div className="flex flex-wrap gap-1.5">
             {(providers?.tts.available ?? ['openai', 'voicebox']).map((p) => (
-              <ProviderBadge key={p} provider={p} active={p === (providers?.tts.active ?? 'openai')} />
+              <ProviderBadge
+                key={p}
+                provider={p}
+                active={p === (providers?.tts.active ?? 'openai')}
+              />
             ))}
           </div>
           <p className="text-xs text-muted-foreground/60">
@@ -362,7 +372,11 @@ function ProviderCard({ config }: { config: Record<string, unknown> | undefined 
           <p className="text-xs text-muted-foreground font-medium">Speech-to-Text</p>
           <div className="flex flex-wrap gap-1.5">
             {(providers?.stt.available ?? ['openai', 'voicebox']).map((p) => (
-              <ProviderBadge key={p} provider={p} active={p === (providers?.stt.active ?? 'openai')} />
+              <ProviderBadge
+                key={p}
+                provider={p}
+                active={p === (providers?.stt.active ?? 'openai')}
+              />
             ))}
           </div>
           <p className="text-xs text-muted-foreground/60">

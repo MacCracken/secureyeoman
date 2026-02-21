@@ -1246,7 +1246,9 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
   }
 }
 
-export async function updateMcpConfig(data: Partial<McpConfigResponse>): Promise<McpConfigResponse> {
+export async function updateMcpConfig(
+  data: Partial<McpConfigResponse>
+): Promise<McpConfigResponse> {
   return request('/mcp/config', {
     method: 'PATCH',
     body: JSON.stringify(data),
@@ -1896,7 +1898,10 @@ export async function fetchExtensionConfig(): Promise<{ config: Record<string, u
   }
 }
 
-export async function fetchHookExecutionLog(hookPoint?: string, limit = 100): Promise<{
+export async function fetchHookExecutionLog(
+  hookPoint?: string,
+  limit = 100
+): Promise<{
   entries: {
     id: string;
     hookPoint: string;
@@ -1918,10 +1923,7 @@ export async function fetchHookExecutionLog(hookPoint?: string, limit = 100): Pr
   }
 }
 
-export async function testHookPoint(data: {
-  hookPoint: string;
-  data?: unknown;
-}): Promise<{
+export async function testHookPoint(data: { hookPoint: string; data?: unknown }): Promise<{
   result: { vetoed: boolean; errors: string[]; transformed?: unknown };
   durationMs: number;
 }> {
@@ -2476,7 +2478,9 @@ export interface CostHistoryParams {
   groupBy?: 'day' | 'hour';
 }
 
-export async function fetchCostHistory(params: CostHistoryParams = {}): Promise<CostHistoryResponse> {
+export async function fetchCostHistory(
+  params: CostHistoryParams = {}
+): Promise<CostHistoryResponse> {
   const qs = new URLSearchParams();
   if (params.from) qs.set('from', params.from);
   if (params.to) qs.set('to', params.to);
@@ -2752,7 +2756,9 @@ export async function createRoutingRule(
 
 export async function updateRoutingRule(
   id: string,
-  data: Partial<Omit<RoutingRule, 'id' | 'matchCount' | 'lastMatchedAt' | 'createdAt' | 'updatedAt'>>
+  data: Partial<
+    Omit<RoutingRule, 'id' | 'matchCount' | 'lastMatchedAt' | 'createdAt' | 'updatedAt'>
+  >
 ): Promise<RoutingRule> {
   return request(`/routing-rules/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 }

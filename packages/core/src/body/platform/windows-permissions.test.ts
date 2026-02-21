@@ -110,7 +110,10 @@ describe('WindowsPermissionManager', () => {
 
   describe('requestPermission', () => {
     it('for screen, opens system preferences and checks', async () => {
-      vi.spyOn(global, 'setTimeout').mockImplementation((fn: any) => { fn(); return 0 as any; });
+      vi.spyOn(global, 'setTimeout').mockImplementation((fn: any) => {
+        fn();
+        return 0 as any;
+      });
       const result = await manager.requestPermission('screen');
       expect(result).toBeDefined();
       // Should have called exec for opening settings
@@ -118,7 +121,10 @@ describe('WindowsPermissionManager', () => {
     });
 
     it('for camera, just checks permission', async () => {
-      vi.spyOn(global, 'setTimeout').mockImplementation((fn: any) => { fn(); return 0 as any; });
+      vi.spyOn(global, 'setTimeout').mockImplementation((fn: any) => {
+        fn();
+        return 0 as any;
+      });
       const result = await manager.requestPermission('camera');
       expect(result).toBeDefined();
     });

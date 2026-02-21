@@ -6,16 +6,25 @@ import type { IntegrationDeps } from '../types.js';
 // ─── Helpers ──────────────────────────────────────────────────
 
 const mockLogger = {
-  info: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  debug: vi.fn(), trace: vi.fn(), fatal: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  debug: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
   child: vi.fn().mockReturnThis(),
 };
 
 function makeConfig(overrides: Record<string, unknown> = {}): IntegrationConfig {
   return {
-    id: 'gmail-test-1', platform: 'gmail', displayName: 'Gmail Test',
-    enabled: true, status: 'disconnected', messageCount: 0,
-    createdAt: Date.now(), updatedAt: Date.now(),
+    id: 'gmail-test-1',
+    platform: 'gmail',
+    displayName: 'Gmail Test',
+    enabled: true,
+    status: 'disconnected',
+    messageCount: 0,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
     config: {
       accessToken: 'ya29.access',
       refreshToken: 'refresh123',
@@ -49,7 +58,9 @@ function makeHistoryResponse(messageIds: string[] = []) {
   }));
   return {
     ok: true,
-    json: vi.fn().mockResolvedValue({ history: history.length ? history : undefined, historyId: 'h-200' }),
+    json: vi
+      .fn()
+      .mockResolvedValue({ history: history.length ? history : undefined, historyId: 'h-200' }),
     text: vi.fn().mockResolvedValue(''),
   };
 }
@@ -121,15 +132,15 @@ describe('GmailIntegration', () => {
     });
 
     it('throws when accessToken is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ accessToken: '' }), makeDeps())
-      ).rejects.toThrow('accessToken and refreshToken');
+      await expect(adapter.init(makeConfig({ accessToken: '' }), makeDeps())).rejects.toThrow(
+        'accessToken and refreshToken'
+      );
     });
 
     it('throws when refreshToken is missing', async () => {
-      await expect(
-        adapter.init(makeConfig({ refreshToken: '' }), makeDeps())
-      ).rejects.toThrow('accessToken and refreshToken');
+      await expect(adapter.init(makeConfig({ refreshToken: '' }), makeDeps())).rejects.toThrow(
+        'accessToken and refreshToken'
+      );
     });
 
     it('throws when profile fetch fails', async () => {
@@ -137,7 +148,9 @@ describe('GmailIntegration', () => {
         ok: false,
         text: vi.fn().mockResolvedValue('Unauthorized'),
       });
-      await expect(adapter.init(makeConfig(), makeDeps())).rejects.toThrow('Failed to fetch Gmail profile');
+      await expect(adapter.init(makeConfig(), makeDeps())).rejects.toThrow(
+        'Failed to fetch Gmail profile'
+      );
     });
   });
 
@@ -291,7 +304,10 @@ describe('GmailIntegration', () => {
       mockFetch.mockResolvedValueOnce(makeProfileResponse());
       // Start: profile fetch for historyId seed
       mockFetch.mockResolvedValueOnce(makeProfileResponse());
-      await adapter.init(makeConfig({ pollIntervalMs: 1000, lastHistoryId: undefined }), makeDeps(onMessage));
+      await adapter.init(
+        makeConfig({ pollIntervalMs: 1000, lastHistoryId: undefined }),
+        makeDeps(onMessage)
+      );
       await adapter.start();
 
       // Poll: history returns a new message
@@ -318,10 +334,12 @@ describe('GmailIntegration', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: vi.fn().mockResolvedValue({
-          history: [{
-            id: 'h1',
-            messagesAdded: [{ message: { id: 'sent-1', threadId: 't1', labelIds: ['SENT'] } }],
-          }],
+          history: [
+            {
+              id: 'h1',
+              messagesAdded: [{ message: { id: 'sent-1', threadId: 't1', labelIds: ['SENT'] } }],
+            },
+          ],
           historyId: 'h-201',
         }),
       });
@@ -350,7 +368,8 @@ describe('GmailIntegration', () => {
       await adapter.start();
 
       mockFetch.mockResolvedValueOnce({
-        ok: false, status: 500,
+        ok: false,
+        status: 500,
         text: vi.fn().mockResolvedValue('Internal error'),
       });
 

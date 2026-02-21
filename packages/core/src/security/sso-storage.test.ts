@@ -34,7 +34,10 @@ describe('SsoStorage', () => {
     storage = new SsoStorage();
     authStorage = new AuthStorage();
     // Create a real user to satisfy FK constraints on identity_mappings
-    const user = await authStorage.createUser({ email: 'test@example.com', displayName: 'Test User' });
+    const user = await authStorage.createUser({
+      email: 'test@example.com',
+      displayName: 'Test User',
+    });
     testUserId = user.id;
   });
 
@@ -80,7 +83,10 @@ describe('SsoStorage', () => {
 
     it('should update a provider', async () => {
       const p = await storage.createIdentityProvider(IDP);
-      const updated = await storage.updateIdentityProvider(p.id, { name: 'Updated Name', enabled: false });
+      const updated = await storage.updateIdentityProvider(p.id, {
+        name: 'Updated Name',
+        enabled: false,
+      });
       expect(updated?.name).toBe('Updated Name');
       expect(updated?.enabled).toBe(false);
       expect(updated?.issuerUrl).toBe(IDP.issuerUrl); // unchanged
@@ -112,7 +118,6 @@ describe('SsoStorage', () => {
     it('should return false when deleting non-existent provider', async () => {
       expect(await storage.deleteIdentityProvider('nonexistent')).toBe(false);
     });
-
   });
 
   // ── Identity Mappings ───────────────────────────────────────────
@@ -144,10 +149,25 @@ describe('SsoStorage', () => {
     it('should get mappings by local user', async () => {
       const p = await storage.createIdentityProvider(IDP);
       // Create a second user for multi-user test
-      const user2 = await authStorage.createUser({ email: 'user2@example.com', displayName: 'User 2' });
-      await storage.createIdentityMapping({ idpId: p.id, localUserId: testUserId, externalSubject: 'sub-1' });
-      await storage.createIdentityMapping({ idpId: p.id, localUserId: testUserId, externalSubject: 'sub-2' });
-      await storage.createIdentityMapping({ idpId: p.id, localUserId: user2.id, externalSubject: 'sub-3' });
+      const user2 = await authStorage.createUser({
+        email: 'user2@example.com',
+        displayName: 'User 2',
+      });
+      await storage.createIdentityMapping({
+        idpId: p.id,
+        localUserId: testUserId,
+        externalSubject: 'sub-1',
+      });
+      await storage.createIdentityMapping({
+        idpId: p.id,
+        localUserId: testUserId,
+        externalSubject: 'sub-2',
+      });
+      await storage.createIdentityMapping({
+        idpId: p.id,
+        localUserId: user2.id,
+        externalSubject: 'sub-3',
+      });
       const user1Mappings = await storage.getMappingsByUser(testUserId);
       expect(user1Mappings).toHaveLength(2);
       expect(user1Mappings.every((m) => m.localUserId === testUserId)).toBe(true);
@@ -155,7 +175,11 @@ describe('SsoStorage', () => {
 
     it('should update mapping last login', async () => {
       const p = await storage.createIdentityProvider(IDP);
-      const m = await storage.createIdentityMapping({ idpId: p.id, localUserId: testUserId, externalSubject: 'sub-1' });
+      const m = await storage.createIdentityMapping({
+        idpId: p.id,
+        localUserId: testUserId,
+        externalSubject: 'sub-1',
+      });
       const before = Date.now();
       await storage.updateMappingLastLogin(m.id);
       const updated = await storage.getMappingByExternalSubject(p.id, 'sub-1');
@@ -164,9 +188,19 @@ describe('SsoStorage', () => {
 
     it('should upsert on conflict (same idp+externalSubject)', async () => {
       const p = await storage.createIdentityProvider(IDP);
-      await storage.createIdentityMapping({ idpId: p.id, localUserId: testUserId, externalSubject: 'sub-dup', attributes: { v: 1 } });
+      await storage.createIdentityMapping({
+        idpId: p.id,
+        localUserId: testUserId,
+        externalSubject: 'sub-dup',
+        attributes: { v: 1 },
+      });
       // Same idp+subject — should update attributes
-      await storage.createIdentityMapping({ idpId: p.id, localUserId: testUserId, externalSubject: 'sub-dup', attributes: { v: 2 } });
+      await storage.createIdentityMapping({
+        idpId: p.id,
+        localUserId: testUserId,
+        externalSubject: 'sub-dup',
+        attributes: { v: 2 },
+      });
       const m = await storage.getMappingByExternalSubject(p.id, 'sub-dup');
       expect(m?.attributes).toEqual({ v: 2 });
     });
@@ -222,8 +256,22 @@ describe('SsoStorage', () => {
     });
 
     it('should cleanup expired states', async () => {
-      await storage.createSsoState({ state: 'fresh', providerId: 'p', redirectUri: 'r', codeVerifier: null, workspaceId: null, expiresAt: Date.now() + 60000 });
-      await storage.createSsoState({ state: 'stale', providerId: 'p', redirectUri: 'r', codeVerifier: null, workspaceId: null, expiresAt: Date.now() - 1 });
+      await storage.createSsoState({
+        state: 'fresh',
+        providerId: 'p',
+        redirectUri: 'r',
+        codeVerifier: null,
+        workspaceId: null,
+        expiresAt: Date.now() + 60000,
+      });
+      await storage.createSsoState({
+        state: 'stale',
+        providerId: 'p',
+        redirectUri: 'r',
+        codeVerifier: null,
+        workspaceId: null,
+        expiresAt: Date.now() - 1,
+      });
       await storage.cleanupExpiredSsoState();
       expect(await storage.getSsoState('fresh')).not.toBeNull();
     });

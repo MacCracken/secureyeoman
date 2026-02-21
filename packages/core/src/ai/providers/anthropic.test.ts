@@ -190,7 +190,9 @@ describe('AnthropicProvider', () => {
         yield { type: 'content_block_delta', delta: { type: 'text_delta', text: 'world' } };
         yield { type: 'message_delta', delta: {} };
       }
-      const streamObj = Object.assign(mockStreamEvents(), { finalMessage: vi.fn().mockResolvedValue(finalMsg) });
+      const streamObj = Object.assign(mockStreamEvents(), {
+        finalMessage: vi.fn().mockResolvedValue(finalMsg),
+      });
       mockStream.mockReturnValueOnce(streamObj);
 
       const chunks: any[] = [];
@@ -207,11 +209,19 @@ describe('AnthropicProvider', () => {
         stop_reason: 'tool_use',
       };
       async function* mockStreamEvents() {
-        yield { type: 'content_block_start', content_block: { type: 'tool_use', id: 'tc-1', name: 'search' } };
-        yield { type: 'content_block_delta', delta: { type: 'input_json_delta', partial_json: '{"q"' } };
+        yield {
+          type: 'content_block_start',
+          content_block: { type: 'tool_use', id: 'tc-1', name: 'search' },
+        };
+        yield {
+          type: 'content_block_delta',
+          delta: { type: 'input_json_delta', partial_json: '{"q"' },
+        };
         yield { type: 'message_delta', delta: {} };
       }
-      const streamObj = Object.assign(mockStreamEvents(), { finalMessage: vi.fn().mockResolvedValue(finalMsg) });
+      const streamObj = Object.assign(mockStreamEvents(), {
+        finalMessage: vi.fn().mockResolvedValue(finalMsg),
+      });
       mockStream.mockReturnValueOnce(streamObj);
 
       const chunks: any[] = [];
@@ -227,7 +237,9 @@ describe('AnthropicProvider', () => {
         throw new (APIError as any)(429, 'rate limited', {});
       });
       await expect(async () => {
-        for await (const _ of provider.chatStream(simpleRequest)) { /* consume */ }
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* consume */
+        }
       }).rejects.toThrow(RateLimitError);
     });
   });
@@ -242,7 +254,11 @@ describe('AnthropicProvider', () => {
       });
       const request: AIRequest = {
         messages: [
-          { role: 'tool', content: 'result', toolResult: { toolCallId: 'tc-1', content: 'search result' } },
+          {
+            role: 'tool',
+            content: 'result',
+            toolResult: { toolCallId: 'tc-1', content: 'search result' },
+          },
         ],
         stream: false,
       };
@@ -352,7 +368,9 @@ describe('AnthropicProvider', () => {
     it('should map 400 token error to TokenLimitError', async () => {
       const { APIError } = await import('@anthropic-ai/sdk');
       const { TokenLimitError } = await import('../errors.js');
-      mockClient.messages.create.mockRejectedValue(new (APIError as any)(400, 'context exceeded token limit'));
+      mockClient.messages.create.mockRejectedValue(
+        new (APIError as any)(400, 'context exceeded token limit')
+      );
       await expect(provider.chat(simpleRequest)).rejects.toThrow(TokenLimitError);
     });
 

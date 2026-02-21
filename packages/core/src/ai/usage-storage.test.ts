@@ -47,9 +47,15 @@ describe('UsageStorage', () => {
     it('creates tables and indexes then prunes', async () => {
       await storage.init();
       const calls = mockQuery.mock.calls.map((c: any[]) => c[0] as string);
-      expect(calls.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS usage_records'))).toBe(true);
-      expect(calls.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS usage_error_records'))).toBe(true);
-      expect(calls.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS usage_resets'))).toBe(true);
+      expect(calls.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS usage_records'))).toBe(
+        true
+      );
+      expect(
+        calls.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS usage_error_records'))
+      ).toBe(true);
+      expect(calls.some((sql) => sql.includes('CREATE TABLE IF NOT EXISTS usage_resets'))).toBe(
+        true
+      );
       // prune() is called at end of init
       expect(calls.some((sql) => sql.includes('DELETE FROM usage_records'))).toBe(true);
     });

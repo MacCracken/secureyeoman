@@ -68,11 +68,18 @@ export class FigmaIntegration implements Integration {
 
   async stop(): Promise<void> {
     this.running = false;
-    if (this.pollTimer) { clearInterval(this.pollTimer); this.pollTimer = null; }
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
     this.logger?.info('Figma integration stopped');
   }
 
-  async sendMessage(chatId: string, text: string, _metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    _metadata?: Record<string, unknown>
+  ): Promise<string> {
     const fileKey = chatId || this.figmaConfig?.fileKey;
     if (!fileKey) throw new Error('No Figma file key configured');
     const resp = await this.figmaFetch(`/files/${fileKey}/comments`, {
@@ -84,7 +91,9 @@ export class FigmaIntegration implements Integration {
     return data.id;
   }
 
-  isHealthy(): boolean { return this.running; }
+  isHealthy(): boolean {
+    return this.running;
+  }
 
   async testConnection(): Promise<{ ok: boolean; message: string }> {
     try {
@@ -101,7 +110,10 @@ export class FigmaIntegration implements Integration {
     if (!this.running || !this.deps || !this.figmaConfig?.fileKey) return;
     try {
       const resp = await this.figmaFetch(`/files/${this.figmaConfig.fileKey}/comments`);
-      if (!resp.ok) { this.logger?.warn('Figma poll failed', { status: resp.status }); return; }
+      if (!resp.ok) {
+        this.logger?.warn('Figma poll failed', { status: resp.status });
+        return;
+      }
       const data = (await resp.json()) as { comments: FigmaComment[] };
       for (const comment of data.comments) {
         if (comment.resolved_at || this.seenCommentIds.has(comment.id)) continue;
@@ -127,7 +139,9 @@ export class FigmaIntegration implements Integration {
         await this.deps.onMessage(unified);
       }
     } catch (err) {
-      this.logger?.warn('Figma poll error', { error: err instanceof Error ? err.message : String(err) });
+      this.logger?.warn('Figma poll error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 

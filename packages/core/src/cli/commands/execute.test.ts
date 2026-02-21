@@ -4,8 +4,18 @@ import { executeCommand } from './execute.js';
 function createStreams() {
   let stdoutBuf = '';
   let stderrBuf = '';
-  const stdout = { write: (s: string) => { stdoutBuf += s; return true; } } as NodeJS.WritableStream;
-  const stderr = { write: (s: string) => { stderrBuf += s; return true; } } as NodeJS.WritableStream;
+  const stdout = {
+    write: (s: string) => {
+      stdoutBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
+  const stderr = {
+    write: (s: string) => {
+      stderrBuf += s;
+      return true;
+    },
+  } as NodeJS.WritableStream;
   return { stdout, stderr, getStdout: () => stdoutBuf, getStderr: () => stderrBuf };
 }
 
@@ -105,9 +115,7 @@ describe('execute command — run subcommand', () => {
 describe('execute command — sessions subcommand', () => {
   it('lists sessions in table format', async () => {
     const data = {
-      sessions: [
-        { id: 'sess-abc123', runtime: 'node', status: 'active', createdAt: Date.now() },
-      ],
+      sessions: [{ id: 'sess-abc123', runtime: 'node', status: 'active', createdAt: Date.now() }],
     };
     vi.stubGlobal('fetch', mockFetch(data));
     const { stdout, stderr, getStdout } = createStreams();

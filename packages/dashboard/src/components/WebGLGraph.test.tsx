@@ -15,7 +15,13 @@ const mockRegisterEvents = vi.fn((handlers: Record<string, (args: unknown) => vo
 });
 
 vi.mock('@react-sigma/core', () => ({
-  SigmaContainer: ({ children, style }: { children: React.ReactNode; style: React.CSSProperties }) => (
+  SigmaContainer: ({
+    children,
+    style,
+  }: {
+    children: React.ReactNode;
+    style: React.CSSProperties;
+  }) => (
     <div data-testid="sigma-container" style={style}>
       {children}
     </div>

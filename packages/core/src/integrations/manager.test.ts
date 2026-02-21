@@ -2,13 +2,25 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { IntegrationManager } from './manager.js';
 
 const makeLogger = () => ({
-  info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  trace: vi.fn(), fatal: vi.fn(), child: vi.fn().mockReturnThis(), level: 'info',
+  info: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info',
 });
 
 const CONFIG = {
-  id: 'int-1', platform: 'slack', displayName: 'Slack', enabled: true,
-  config: {}, createdAt: 1000, updatedAt: 1000, status: 'disconnected',
+  id: 'int-1',
+  platform: 'slack',
+  displayName: 'Slack',
+  enabled: true,
+  config: {},
+  createdAt: 1000,
+  updatedAt: 1000,
+  status: 'disconnected',
 };
 
 function makeStorage(overrides: any = {}) {
@@ -64,8 +76,9 @@ describe('IntegrationManager', () => {
   describe('createIntegration', () => {
     it('throws when platform not registered', async () => {
       const { manager } = makeManager();
-      await expect(manager.createIntegration({ platform: 'slack', displayName: 'S', config: {} } as any))
-        .rejects.toThrow('Platform "slack" is not registered');
+      await expect(
+        manager.createIntegration({ platform: 'slack', displayName: 'S', config: {} } as any)
+      ).rejects.toThrow('Platform "slack" is not registered');
     });
 
     it('creates integration when platform is registered', async () => {
@@ -84,8 +97,9 @@ describe('IntegrationManager', () => {
         }),
       };
       manager.registerPlatform('slack' as any, () => makeIntegration() as any, schema as any);
-      await expect(manager.createIntegration({ platform: 'slack', displayName: 'S', config: {} } as any))
-        .rejects.toThrow('Invalid config for platform "slack"');
+      await expect(
+        manager.createIntegration({ platform: 'slack', displayName: 'S', config: {} } as any)
+      ).rejects.toThrow('Invalid config for platform "slack"');
     });
   });
 
@@ -121,17 +135,25 @@ describe('IntegrationManager', () => {
   describe('startIntegration', () => {
     it('throws when integration not found', async () => {
       const { manager } = makeManager({ getIntegration: vi.fn().mockResolvedValue(null) });
-      await expect(manager.startIntegration('missing')).rejects.toThrow('Integration missing not found');
+      await expect(manager.startIntegration('missing')).rejects.toThrow(
+        'Integration missing not found'
+      );
     });
 
     it('throws when integration is disabled', async () => {
-      const { manager } = makeManager({ getIntegration: vi.fn().mockResolvedValue({ ...CONFIG, enabled: false }) });
-      await expect(manager.startIntegration('int-1')).rejects.toThrow('Integration int-1 is disabled');
+      const { manager } = makeManager({
+        getIntegration: vi.fn().mockResolvedValue({ ...CONFIG, enabled: false }),
+      });
+      await expect(manager.startIntegration('int-1')).rejects.toThrow(
+        'Integration int-1 is disabled'
+      );
     });
 
     it('throws when no adapter registered for platform', async () => {
       const { manager } = makeManager();
-      await expect(manager.startIntegration('int-1')).rejects.toThrow('No adapter registered for platform "slack"');
+      await expect(manager.startIntegration('int-1')).rejects.toThrow(
+        'No adapter registered for platform "slack"'
+      );
     });
 
     it('starts integration successfully', async () => {
@@ -156,7 +178,9 @@ describe('IntegrationManager', () => {
 
     it('records error status when start fails', async () => {
       const { manager, storage } = makeManager();
-      const integration = makeIntegration({ start: vi.fn().mockRejectedValue(new Error('connection refused')) });
+      const integration = makeIntegration({
+        start: vi.fn().mockRejectedValue(new Error('connection refused')),
+      });
       manager.registerPlatform('slack' as any, () => integration as any);
       await expect(manager.startIntegration('int-1')).rejects.toThrow('connection refused');
       expect(storage.updateStatus).toHaveBeenCalledWith('int-1', 'error', 'connection refused');
@@ -255,7 +279,12 @@ describe('IntegrationManager', () => {
       const msgId = await manager.sendMessage('int-1', 'chat-1', 'Hello');
       expect(msgId).toBe('msg-id-1');
       expect(storage.storeMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ integrationId: 'int-1', chatId: 'chat-1', text: 'Hello', direction: 'outbound' })
+        expect.objectContaining({
+          integrationId: 'int-1',
+          chatId: 'chat-1',
+          text: 'Hello',
+          direction: 'outbound',
+        })
       );
     });
   });
@@ -276,7 +305,9 @@ describe('IntegrationManager', () => {
 
     it('loadPlugin throws when no loader configured', async () => {
       const { manager } = makeManager();
-      await expect(manager.loadPlugin('/path/to/plugin.js')).rejects.toThrow('No plugin loader configured');
+      await expect(manager.loadPlugin('/path/to/plugin.js')).rejects.toThrow(
+        'No plugin loader configured'
+      );
     });
   });
 
@@ -286,13 +317,14 @@ describe('IntegrationManager', () => {
       // Use an integration that is healthy on start but unhealthy on check,
       // and will become healthy again on reconnect attempt (new factory instance)
       let startCount = 0;
-      const makeHealthyIntegration = () => makeIntegration({
-        isHealthy: vi.fn().mockReturnValue(true),
-      }) as any;
+      const makeHealthyIntegration = () =>
+        makeIntegration({
+          isHealthy: vi.fn().mockReturnValue(true),
+        }) as any;
       const unhealthyIntegration = makeIntegration({ isHealthy: vi.fn().mockReturnValue(false) });
       manager.registerPlatform('slack' as any, () => {
         startCount++;
-        return startCount === 1 ? unhealthyIntegration as any : makeHealthyIntegration();
+        return startCount === 1 ? (unhealthyIntegration as any) : makeHealthyIntegration();
       });
       await manager.startIntegration('int-1');
       await manager.runHealthChecks();

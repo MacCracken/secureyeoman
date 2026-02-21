@@ -6,11 +6,7 @@
  */
 
 import type { UnifiedMessage } from '@secureyeoman/shared';
-import type {
-  RoutingRule,
-  RoutingRuleMatch,
-  RoutingRuleDryRun,
-} from '@secureyeoman/shared';
+import type { RoutingRule, RoutingRuleMatch, RoutingRuleDryRun } from '@secureyeoman/shared';
 import type { RoutingRulesStorage } from './routing-rules-storage.js';
 import type { IntegrationManager } from './manager.js';
 import type { SecureLogger } from '../logging/logger.js';

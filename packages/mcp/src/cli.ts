@@ -118,10 +118,12 @@ export async function runMcpServer(_argv: string[] = []): Promise<number> {
 
 // Direct execution entry point
 if (import.meta.url === `file://${process.argv[1]}`) {
-  runMcpServer(process.argv.slice(2)).then((code) => {
-    if (code !== 0) process.exitCode = code;
-  }).catch((err: unknown) => {
-    console.error('[secureyeoman-mcp] Fatal:', err);
-    process.exit(1);
-  });
+  runMcpServer(process.argv.slice(2))
+    .then((code) => {
+      if (code !== 0) process.exitCode = code;
+    })
+    .catch((err: unknown) => {
+      console.error('[secureyeoman-mcp] Fatal:', err);
+      process.exit(1);
+    });
 }

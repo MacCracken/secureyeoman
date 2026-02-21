@@ -2,11 +2,27 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { ConsolidationManager } from './manager.js';
 
 const makeLogger = () => ({
-  info: vi.fn(), debug: vi.fn(), warn: vi.fn(), error: vi.fn(),
-  trace: vi.fn(), fatal: vi.fn(), child: vi.fn().mockReturnThis(), level: 'info',
+  info: vi.fn(),
+  debug: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  trace: vi.fn(),
+  fatal: vi.fn(),
+  child: vi.fn().mockReturnThis(),
+  level: 'info',
 });
 
-const MEMORY = { id: 'mem-1', type: 'semantic', content: 'test content', source: 'user', createdAt: 1000, updatedAt: 1000, lastAccessedAt: 1000, importance: 0.5, accessCount: 1 };
+const MEMORY = {
+  id: 'mem-1',
+  type: 'semantic',
+  content: 'test content',
+  source: 'user',
+  createdAt: 1000,
+  updatedAt: 1000,
+  lastAccessedAt: 1000,
+  importance: 0.5,
+  accessCount: 1,
+};
 
 function makeVectorManager(overrides: any = {}) {
   return {
@@ -51,7 +67,13 @@ function makeManager(storageOverrides: any = {}, configOverrides: any = {}, aiPr
   const logger = makeLogger();
   const auditChain = { record: vi.fn().mockResolvedValue(undefined) };
   const config = makeConfig(configOverrides);
-  const deps = { vectorManager: vectorManager as any, storage: storage as any, auditChain: auditChain as any, logger: logger as any, aiProvider };
+  const deps = {
+    vectorManager: vectorManager as any,
+    storage: storage as any,
+    auditChain: auditChain as any,
+    logger: logger as any,
+    aiProvider,
+  };
   const manager = new ConsolidationManager(config as any, deps);
   return { manager, storage, vectorManager, logger, config };
 }
@@ -113,13 +135,24 @@ describe('ConsolidationManager', () => {
     });
 
     it('runs without AI provider using threshold-based dedup', async () => {
-      const similarResult = { id: 'mem-2', score: 0.95, content: 'similar content', importance: 0.3 };
+      const similarResult = {
+        id: 'mem-2',
+        score: 0.95,
+        content: 'similar content',
+        importance: 0.3,
+      };
       const { manager, storage, vectorManager } = makeManager();
       storage.queryMemories.mockResolvedValue([MEMORY]);
       vectorManager.searchMemories.mockResolvedValue([similarResult]);
       storage.getMemory.mockImplementation((id: string) => {
         if (id === 'mem-1') return Promise.resolve(MEMORY);
-        if (id === 'mem-2') return Promise.resolve({ ...MEMORY, id: 'mem-2', content: 'similar content', importance: 0.3 });
+        if (id === 'mem-2')
+          return Promise.resolve({
+            ...MEMORY,
+            id: 'mem-2',
+            content: 'similar content',
+            importance: 0.3,
+          });
         return Promise.resolve(null);
       });
       const report = await manager.runDeepConsolidation();
@@ -127,7 +160,17 @@ describe('ConsolidationManager', () => {
     });
 
     it('runs in dryRun mode when configured', async () => {
-      const { manager } = makeManager({}, { deepConsolidation: { replaceThreshold: 0.9, batchSize: 10, timeoutMs: 30000, dryRun: true } });
+      const { manager } = makeManager(
+        {},
+        {
+          deepConsolidation: {
+            replaceThreshold: 0.9,
+            batchSize: 10,
+            timeoutMs: 30000,
+            dryRun: true,
+          },
+        }
+      );
       const report = await manager.runDeepConsolidation();
       expect(report.dryRun).toBe(true);
     });

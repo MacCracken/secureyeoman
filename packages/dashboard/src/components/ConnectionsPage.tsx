@@ -1429,14 +1429,20 @@ export function ConnectionsPage() {
               [
                 ['messaging', 'Messaging', <MessageCircle key="msg" className="w-3.5 h-3.5" />],
                 ['email', 'Email', <Mail key="email" className="w-3.5 h-3.5" />],
-                ['productivity', 'Productivity', <LayoutGrid key="productivity" className="w-3.5 h-3.5" />],
+                [
+                  'productivity',
+                  'Productivity',
+                  <LayoutGrid key="productivity" className="w-3.5 h-3.5" />,
+                ],
                 ['devops', 'DevOps', <GitBranchIcon key="devops" className="w-3.5 h-3.5" />],
                 ['oauth', 'OAuth', <ArrowRightLeft key="oauth" className="w-3.5 h-3.5" />],
               ] as [IntegrationSubTab, string, React.ReactNode][]
             ).map(([subTab, label, icon]) => (
               <button
                 key={subTab}
-                onClick={() => { setActiveSubTab(subTab); }}
+                onClick={() => {
+                  setActiveSubTab(subTab);
+                }}
                 className={`flex items-center gap-1 px-2.5 sm:px-3 py-1.5 text-xs font-medium rounded-md transition-colors whitespace-nowrap shrink-0 ${
                   activeSubTab === subTab
                     ? 'bg-primary/10 text-primary'
@@ -1470,7 +1476,10 @@ export function ConnectionsPage() {
               onStart={startIntegrationMut.mutate}
               onStop={stopIntegrationMut.mutate}
               onDelete={(id) => {
-                setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+                setDeleteTarget({
+                  type: 'integration',
+                  item: integrations.find((i) => i.id === id)!,
+                });
               }}
               isStarting={startIntegrationMut.isPending}
               isStopping={stopIntegrationMut.isPending}
@@ -1489,7 +1498,10 @@ export function ConnectionsPage() {
               onStart={startIntegrationMut.mutate}
               onStop={stopIntegrationMut.mutate}
               onDelete={(id) => {
-                setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+                setDeleteTarget({
+                  type: 'integration',
+                  item: integrations.find((i) => i.id === id)!,
+                });
               }}
               isStarting={startIntegrationMut.isPending}
               isStopping={stopIntegrationMut.isPending}
@@ -1514,7 +1526,10 @@ export function ConnectionsPage() {
               onStart={startIntegrationMut.mutate}
               onStop={stopIntegrationMut.mutate}
               onDelete={(id) => {
-                setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+                setDeleteTarget({
+                  type: 'integration',
+                  item: integrations.find((i) => i.id === id)!,
+                });
               }}
               isStarting={startIntegrationMut.isPending}
               isStopping={stopIntegrationMut.isPending}
@@ -1541,7 +1556,10 @@ export function ConnectionsPage() {
               onStart={startIntegrationMut.mutate}
               onStop={stopIntegrationMut.mutate}
               onDelete={(id) => {
-                setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+                setDeleteTarget({
+                  type: 'integration',
+                  item: integrations.find((i) => i.id === id)!,
+                });
               }}
               isStarting={startIntegrationMut.isPending}
               isStopping={stopIntegrationMut.isPending}
@@ -1556,7 +1574,10 @@ export function ConnectionsPage() {
             <OAuthTab
               integrations={integrations}
               onDelete={(id) => {
-                setDeleteTarget({ type: 'integration', item: integrations.find((i) => i.id === id)! });
+                setDeleteTarget({
+                  type: 'integration',
+                  item: integrations.find((i) => i.id === id)!,
+                });
               }}
               isDeleting={deleteIntegrationMut.isPending}
             />
@@ -1564,53 +1585,51 @@ export function ConnectionsPage() {
         </div>
       )}
 
-      {activeTab === 'routing' && (
-        <RoutingRulesTab />
-      )}
+      {activeTab === 'routing' && <RoutingRulesTab />}
 
       {activeTab === 'mcp' && (
         <>
-        <McpPrebuilts />
-        <McpTab
-          servers={servers}
-          externalServers={externalServers}
-          localServer={localServer}
-          tools={tools}
-          toolsByServer={toolsByServer}
-          featureConfig={featureConfig}
-          showAddForm={showAddMcpForm}
-          form={mcpForm}
-          toolsExpanded={toolsExpanded}
-          hiddenTools={hiddenTools}
-          isRestarting={isRestarting}
-          onShowAddForm={(show) => {
-            setShowAddMcpForm(show);
-            setMcpForm(EMPTY_FORM);
-          }}
-          onFormChange={setMcpForm}
-          onAddMcp={addMcpMut.mutate}
-          isAdding={addMcpMut.isPending}
-          addError={addMcpMut.error}
-          onAddEnvVar={handleAddEnvVar}
-          onRemoveEnvVar={handleRemoveEnvVar}
-          onEnvChange={handleEnvChange}
-          onToggle={(id, enabled) => {
-            toggleMcpMut.mutate({ id, enabled });
-          }}
-          isToggling={toggleMcpMut.isPending}
-          onDelete={(id) => {
-            setDeleteTarget({ type: 'mcp', item: servers.find((s) => s.id === id)! });
-          }}
-          isDeleting={deleteMcpMut.isPending}
-          onFeatureToggle={(data) => {
-            featureToggleMut.mutate(data);
-          }}
-          isFeatureToggling={featureToggleMut.isPending}
-          onToggleToolsExpanded={() => {
-            setToolsExpanded(!toolsExpanded);
-          }}
-          onToggleToolVisibility={toggleToolVisibility}
-        />
+          <McpPrebuilts />
+          <McpTab
+            servers={servers}
+            externalServers={externalServers}
+            localServer={localServer}
+            tools={tools}
+            toolsByServer={toolsByServer}
+            featureConfig={featureConfig}
+            showAddForm={showAddMcpForm}
+            form={mcpForm}
+            toolsExpanded={toolsExpanded}
+            hiddenTools={hiddenTools}
+            isRestarting={isRestarting}
+            onShowAddForm={(show) => {
+              setShowAddMcpForm(show);
+              setMcpForm(EMPTY_FORM);
+            }}
+            onFormChange={setMcpForm}
+            onAddMcp={addMcpMut.mutate}
+            isAdding={addMcpMut.isPending}
+            addError={addMcpMut.error}
+            onAddEnvVar={handleAddEnvVar}
+            onRemoveEnvVar={handleRemoveEnvVar}
+            onEnvChange={handleEnvChange}
+            onToggle={(id, enabled) => {
+              toggleMcpMut.mutate({ id, enabled });
+            }}
+            isToggling={toggleMcpMut.isPending}
+            onDelete={(id) => {
+              setDeleteTarget({ type: 'mcp', item: servers.find((s) => s.id === id)! });
+            }}
+            isDeleting={deleteMcpMut.isPending}
+            onFeatureToggle={(data) => {
+              featureToggleMut.mutate(data);
+            }}
+            isFeatureToggling={featureToggleMut.isPending}
+            onToggleToolsExpanded={() => {
+              setToolsExpanded(!toolsExpanded);
+            }}
+            onToggleToolVisibility={toggleToolVisibility}
+          />
         </>
       )}
     </div>
@@ -1679,7 +1698,9 @@ function MessagingTab({
               <div className="p-1.5 rounded-lg bg-surface text-muted">
                 {PLATFORM_META[connectingPlatform].icon}
               </div>
-              <h3 className="font-medium text-sm">Connect {PLATFORM_META[connectingPlatform].name}</h3>
+              <h3 className="font-medium text-sm">
+                Connect {PLATFORM_META[connectingPlatform].name}
+              </h3>
             </div>
           </div>
           {PLATFORM_META[connectingPlatform].setupSteps && (
@@ -1723,9 +1744,7 @@ function MessagingTab({
               </div>
             ))}
             {createError && (
-              <p className="text-xs text-red-400">
-                {createError.message || 'Connection failed'}
-              </p>
+              <p className="text-xs text-red-400">{createError.message || 'Connection failed'}</p>
             )}
             <div className="flex gap-2">
               <button
@@ -1754,12 +1773,12 @@ function MessagingTab({
       {integrations.length > 0 ? (
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium text-muted">
-              {integrations.length} Connected
-            </h3>
+            <h3 className="text-sm font-medium text-muted">{integrations.length} Connected</h3>
             {addablePlatforms.length > 0 && !connectingPlatform && (
               <button
-                onClick={() => { setShowAddPicker(!showAddPicker); }}
+                onClick={() => {
+                  setShowAddPicker(!showAddPicker);
+                }}
                 className="btn btn-primary text-xs px-3 py-1.5 flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -1791,7 +1810,9 @@ function MessagingTab({
           <p className="text-sm text-muted-foreground">No integrations connected yet</p>
           {addablePlatforms.length > 0 && (
             <button
-              onClick={() => { setShowAddPicker(true); }}
+              onClick={() => {
+                setShowAddPicker(true);
+              }}
               className="btn btn-primary text-xs px-4 py-2 inline-flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -1807,7 +1828,9 @@ function MessagingTab({
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">Choose a platform</h3>
             <button
-              onClick={() => { setShowAddPicker(false); }}
+              onClick={() => {
+                setShowAddPicker(false);
+              }}
               className="text-xs text-muted-foreground hover:text-foreground"
             >
               Cancel
@@ -1826,9 +1849,7 @@ function MessagingTab({
                   }}
                   className="flex items-center gap-2.5 p-2.5 rounded-md border border-border hover:border-primary hover:bg-primary/5 transition-colors text-left"
                 >
-                  <div className="p-1.5 rounded bg-surface text-muted shrink-0">
-                    {meta.icon}
-                  </div>
+                  <div className="p-1.5 rounded bg-surface text-muted shrink-0">{meta.icon}</div>
                   <div className="min-w-0">
                     <p className="text-sm font-medium truncate">{meta.name}</p>
                     <p className="text-xs text-muted-foreground truncate">{meta.description}</p>
@@ -2876,7 +2897,9 @@ function EmailTab({
                     setGmailForm((f) => ({ ...f, labelName: e.target.value }));
                   }}
                   placeholder={
-                    gmailForm.labelFilter === 'custom' ? `secureyeoman.${oauthEmail}` : 'e.g. SecureYeoman'
+                    gmailForm.labelFilter === 'custom'
+                      ? `secureyeoman.${oauthEmail}`
+                      : 'e.g. SecureYeoman'
                   }
                   className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                 />

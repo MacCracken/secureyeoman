@@ -68,7 +68,9 @@ export function registerAgentRoutes(
           ...(request.body.commandArgs !== undefined && { commandArgs: request.body.commandArgs }),
           ...(request.body.commandEnv !== undefined && { commandEnv: request.body.commandEnv }),
           ...(request.body.mcpTool !== undefined && { mcpTool: request.body.mcpTool }),
-          ...(request.body.mcpToolInput !== undefined && { mcpToolInput: request.body.mcpToolInput }),
+          ...(request.body.mcpToolInput !== undefined && {
+            mcpToolInput: request.body.mcpToolInput,
+          }),
         } as const;
         const profile = await subAgentManager.createProfile(data);
         return reply.code(201).send({ profile });

@@ -179,7 +179,8 @@ describe('AirtableIntegration', () => {
     it('should POST a new record and return its ID', async () => {
       const createdRecord = { id: 'recNewRecord1', fields: { Name: 'Buy milk' } };
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         // First call: seedSeenRecords during start()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ records: [] }) })
         // Second call: create record
@@ -205,7 +206,8 @@ describe('AirtableIntegration', () => {
     it('should fall back to configured baseId + "Tasks" when chatId is empty', async () => {
       const createdRecord = { id: 'recFallback1', fields: { Name: 'Fallback' } };
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ records: [] }) })
         .mockResolvedValueOnce({
           ok: true,
@@ -239,7 +241,8 @@ describe('AirtableIntegration', () => {
     });
 
     it('should throw when record creation fails', async () => {
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ records: [] }) })
         .mockResolvedValueOnce({
           ok: false,
@@ -266,7 +269,8 @@ describe('AirtableIntegration', () => {
         createdTime: '2024-06-01T00:00:00.000Z',
       };
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         // seedSeenRecords: returns empty
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ records: [] }) })
         // poll: returns one new record
@@ -282,7 +286,9 @@ describe('AirtableIntegration', () => {
       vi.stubGlobal('fetch', mockFetch);
 
       const onMessage = vi.fn().mockResolvedValue(undefined);
-      const cfg = makeConfig({ config: { apiKey: 'pat_test_apikey', baseId: 'appTestBase123', pollIntervalMs: 1000 } });
+      const cfg = makeConfig({
+        config: { apiKey: 'pat_test_apikey', baseId: 'appTestBase123', pollIntervalMs: 1000 },
+      });
       await adapter.init(cfg, makeDeps(onMessage));
       await adapter.start();
 
@@ -309,19 +315,25 @@ describe('AirtableIntegration', () => {
       const warnFn = vi.fn();
       const logger = { ...noopLogger(), warn: warnFn };
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         // seedSeenRecords
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ records: [] }) })
         // poll failure
         .mockResolvedValueOnce({ ok: false, status: 429 });
       vi.stubGlobal('fetch', mockFetch);
 
-      const cfg = makeConfig({ config: { apiKey: 'pat_test_apikey', baseId: 'appTestBase123', pollIntervalMs: 1000 } });
+      const cfg = makeConfig({
+        config: { apiKey: 'pat_test_apikey', baseId: 'appTestBase123', pollIntervalMs: 1000 },
+      });
       await adapter.init(cfg, { logger, onMessage: vi.fn().mockResolvedValue(undefined) });
       await adapter.start();
 
       await vi.advanceTimersByTimeAsync(1000);
-      expect(warnFn).toHaveBeenCalledWith('Airtable poll failed', expect.objectContaining({ status: 429 }));
+      expect(warnFn).toHaveBeenCalledWith(
+        'Airtable poll failed',
+        expect.objectContaining({ status: 429 })
+      );
 
       await adapter.stop();
     });
@@ -333,13 +345,16 @@ describe('AirtableIntegration', () => {
         createdTime: '2024-06-01T00:00:00.000Z',
       };
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ records: [] }) })
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ records: [newRecord] }) });
       vi.stubGlobal('fetch', mockFetch);
 
       const onMessage = vi.fn().mockResolvedValue(undefined);
-      const cfg = makeConfig({ config: { apiKey: 'pat_test_apikey', baseId: 'appTestBase123', pollIntervalMs: 1000 } });
+      const cfg = makeConfig({
+        config: { apiKey: 'pat_test_apikey', baseId: 'appTestBase123', pollIntervalMs: 1000 },
+      });
       await adapter.init(cfg, makeDeps(onMessage));
       await adapter.start();
 

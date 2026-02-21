@@ -130,9 +130,7 @@ async function listPlugins(
   json: boolean
 ): Promise<number> {
   if (!pluginDir) {
-    ctx.stderr.write(
-      'Plugin directory not set. Use --dir or set INTEGRATION_PLUGIN_DIR.\n'
-    );
+    ctx.stderr.write('Plugin directory not set. Use --dir or set INTEGRATION_PLUGIN_DIR.\n');
     return 1;
   }
 
@@ -177,9 +175,7 @@ async function infoPlugin(
   }
 
   if (!pluginDir) {
-    ctx.stderr.write(
-      'Plugin directory not set. Use --dir or set INTEGRATION_PLUGIN_DIR.\n'
-    );
+    ctx.stderr.write('Plugin directory not set. Use --dir or set INTEGRATION_PLUGIN_DIR.\n');
     return 1;
   }
 
@@ -234,9 +230,7 @@ async function addPlugin(
   }
 
   if (!pluginDir) {
-    ctx.stderr.write(
-      'Plugin directory not set. Use --dir or set INTEGRATION_PLUGIN_DIR.\n'
-    );
+    ctx.stderr.write('Plugin directory not set. Use --dir or set INTEGRATION_PLUGIN_DIR.\n');
     return 1;
   }
 
@@ -293,9 +287,7 @@ async function removePlugin(
   }
 
   if (!pluginDir) {
-    ctx.stderr.write(
-      'Plugin directory not set. Use --dir or set INTEGRATION_PLUGIN_DIR.\n'
-    );
+    ctx.stderr.write('Plugin directory not set. Use --dir or set INTEGRATION_PLUGIN_DIR.\n');
     return 1;
   }
 

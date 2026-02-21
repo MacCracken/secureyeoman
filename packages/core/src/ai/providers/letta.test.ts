@@ -41,11 +41,13 @@ function mockAgentCreate(agentId = 'agent-test-123') {
   });
 }
 
-function mockMessageResponse(overrides: Partial<{
-  messages: object[];
-  usage: object;
-  stop_reason: string;
-}> = {}) {
+function mockMessageResponse(
+  overrides: Partial<{
+    messages: object[];
+    usage: object;
+    stop_reason: string;
+  }> = {}
+) {
   mockFetch.mockResolvedValueOnce({
     ok: true,
     json: async () => ({
@@ -168,10 +170,12 @@ describe('LettaProvider', () => {
 
     it('shares a single creation promise for concurrent calls', async () => {
       let resolveAgent!: (v: Response) => void;
-      const agentPromise = new Promise<Response>((res) => { resolveAgent = res; });
+      const agentPromise = new Promise<Response>((res) => {
+        resolveAgent = res;
+      });
 
       mockFetch
-        .mockReturnValueOnce(agentPromise)  // agent creation (delayed)
+        .mockReturnValueOnce(agentPromise) // agent creation (delayed)
         .mockResolvedValue({
           ok: true,
           json: async () => ({
@@ -272,7 +276,9 @@ describe('LettaProvider', () => {
 
     it('returns empty content when no assistant_message in response', async () => {
       mockAgentCreate();
-      mockMessageResponse({ messages: [{ message_type: 'reasoning_message', content: 'thinking' }] });
+      mockMessageResponse({
+        messages: [{ message_type: 'reasoning_message', content: 'thinking' }],
+      });
       const provider = new LettaProvider(makeConfig());
       const response = await provider.chat(simpleRequest);
       expect(response.content).toBe('');
@@ -319,7 +325,7 @@ describe('LettaProvider', () => {
       });
 
       const msgCall = mockFetch.mock.calls[1]!;
-      const body = JSON.parse(msgCall[1].body as string) as { messages: {role:string}[] };
+      const body = JSON.parse(msgCall[1].body as string) as { messages: { role: string }[] };
       expect(body.messages[0]).toEqual({ role: 'system', content: 'Be concise' });
       expect(body.messages[1]).toEqual({ role: 'user', content: 'Hi' });
     });
@@ -337,7 +343,7 @@ describe('LettaProvider', () => {
       });
 
       const msgCall = mockFetch.mock.calls[1]!;
-      const body = JSON.parse(msgCall[1].body as string) as { messages: {role:string}[] };
+      const body = JSON.parse(msgCall[1].body as string) as { messages: { role: string }[] };
       expect(body.messages).toHaveLength(1);
       expect(body.messages[0]!.role).toBe('user');
     });
@@ -451,7 +457,8 @@ describe('LettaProvider', () => {
         body: {
           getReader() {
             return {
-              read: vi.fn()
+              read: vi
+                .fn()
                 .mockResolvedValueOnce({ done: false, value: encoder.encode(data) })
                 .mockResolvedValueOnce({ done: true, value: undefined }),
               releaseLock: vi.fn(),
@@ -509,9 +516,7 @@ describe('LettaProvider', () => {
     it('yields done chunk from stop_reason', async () => {
       process.env.LETTA_AGENT_ID = 'agent-stream-3';
       mockFetch.mockResolvedValueOnce(
-        makeStreamResponse([
-          JSON.stringify({ stop_reason: 'end_turn' }),
-        ])
+        makeStreamResponse([JSON.stringify({ stop_reason: 'end_turn' })])
       );
 
       const provider = new LettaProvider(makeConfig());
@@ -552,7 +557,9 @@ describe('LettaProvider', () => {
 
       const provider = new LettaProvider(makeConfig());
       await expect(async () => {
-        for await (const _ of provider.chatStream(simpleRequest)) { /* drain */ }
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* drain */
+        }
       }).rejects.toThrow(RateLimitError);
     });
   });
@@ -604,7 +611,11 @@ describe('LettaProvider', () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          models: [{ id: 'openai/gpt-4o' }, { id: '' }, { id: 'anthropic/claude-haiku-3-5-20241022' }],
+          models: [
+            { id: 'openai/gpt-4o' },
+            { id: '' },
+            { id: 'anthropic/claude-haiku-3-5-20241022' },
+          ],
         }),
       });
 

@@ -82,7 +82,9 @@ const EMPTY_FORM: RuleFormState = {
   actionMessageTemplate: '',
 };
 
-function formToRule(f: RuleFormState): Omit<RoutingRule, 'id' | 'matchCount' | 'lastMatchedAt' | 'createdAt' | 'updatedAt'> {
+function formToRule(
+  f: RuleFormState
+): Omit<RoutingRule, 'id' | 'matchCount' | 'lastMatchedAt' | 'createdAt' | 'updatedAt'> {
   const splitList = (s: string) =>
     s
       .split(',')
@@ -159,13 +161,26 @@ export function RoutingRulesPage() {
 
   const createMutation = useMutation({
     mutationFn: (d: Parameters<typeof createRoutingRule>[0]) => createRoutingRule(d),
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['routing-rules'] }); setEditingId(null); },
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['routing-rules'] });
+      setEditingId(null);
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data: d }: { id: string; data: Partial<Omit<RoutingRule, 'id' | 'matchCount' | 'lastMatchedAt' | 'createdAt' | 'updatedAt'>> }) =>
-      updateRoutingRule(id, d),
-    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['routing-rules'] }); setEditingId(null); },
+    mutationFn: ({
+      id,
+      data: d,
+    }: {
+      id: string;
+      data: Partial<
+        Omit<RoutingRule, 'id' | 'matchCount' | 'lastMatchedAt' | 'createdAt' | 'updatedAt'>
+      >;
+    }) => updateRoutingRule(id, d),
+    onSuccess: () => {
+      void qc.invalidateQueries({ queryKey: ['routing-rules'] });
+      setEditingId(null);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -218,7 +233,8 @@ export function RoutingRulesPage() {
           <div>
             <h1 className="text-xl font-bold">Routing Rules</h1>
             <p className="text-sm text-muted-foreground">
-              Route inbound messages between integrations, override personalities, or trigger webhooks.
+              Route inbound messages between integrations, override personalities, or trigger
+              webhooks.
             </p>
           </div>
         </div>
@@ -237,7 +253,11 @@ export function RoutingRulesPage() {
           form={form}
           setField={setField}
           integrations={integrations}
-          personalities={personalities}
+          personalities={personalities.map((p) => ({
+            id: p.id,
+            name: p.name,
+            enabled: p.isActive,
+          }))}
           onSubmit={handleSubmit}
           onCancel={() => setEditingId(null)}
           isNew={editingId === 'new'}
@@ -246,8 +266,8 @@ export function RoutingRulesPage() {
             createMutation.error instanceof Error
               ? createMutation.error.message
               : updateMutation.error instanceof Error
-              ? updateMutation.error.message
-              : null
+                ? updateMutation.error.message
+                : null
           }
         />
       )}
@@ -298,7 +318,10 @@ export function RoutingRulesPage() {
 
                 <div className="flex items-center gap-1 flex-shrink-0">
                   <button
-                    onClick={() => { startEdit(rule); setExpandedId(null); }}
+                    onClick={() => {
+                      startEdit(rule);
+                      setExpandedId(null);
+                    }}
                     className="p-1.5 rounded hover:bg-muted text-muted-foreground"
                     title="Edit"
                   >
@@ -396,11 +419,26 @@ export function RoutingRulesPage() {
 
                   {/* Rule detail summary */}
                   <dl className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
-                    <dt>Direction</dt><dd>{rule.triggerDirection}</dd>
-                    <dt>Platforms</dt><dd>{rule.triggerPlatforms.join(', ') || 'any'}</dd>
-                    <dt>Action</dt><dd>{rule.actionType}</dd>
-                    {rule.triggerKeywordPattern && <><dt>Keyword</dt><dd className="font-mono">{rule.triggerKeywordPattern}</dd></>}
-                    {rule.matchCount > 0 && <><dt>Last matched</dt><dd>{rule.lastMatchedAt ? new Date(rule.lastMatchedAt).toLocaleString() : '—'}</dd></>}
+                    <dt>Direction</dt>
+                    <dd>{rule.triggerDirection}</dd>
+                    <dt>Platforms</dt>
+                    <dd>{rule.triggerPlatforms.join(', ') || 'any'}</dd>
+                    <dt>Action</dt>
+                    <dd>{rule.actionType}</dd>
+                    {rule.triggerKeywordPattern && (
+                      <>
+                        <dt>Keyword</dt>
+                        <dd className="font-mono">{rule.triggerKeywordPattern}</dd>
+                      </>
+                    )}
+                    {rule.matchCount > 0 && (
+                      <>
+                        <dt>Last matched</dt>
+                        <dd>
+                          {rule.lastMatchedAt ? new Date(rule.lastMatchedAt).toLocaleString() : '—'}
+                        </dd>
+                      </>
+                    )}
                   </dl>
                 </div>
               )}
@@ -426,7 +464,17 @@ interface RuleFormProps {
   error: string | null;
 }
 
-function RuleForm({ form, setField, integrations, personalities, onSubmit, onCancel, isNew, isPending, error }: RuleFormProps) {
+function RuleForm({
+  form,
+  setField,
+  integrations,
+  personalities,
+  onSubmit,
+  onCancel,
+  isNew,
+  isPending,
+  error,
+}: RuleFormProps) {
   const inputClass =
     'w-full rounded border border-input bg-background px-2.5 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring';
   const labelClass = 'block text-xs font-medium text-muted-foreground mb-1';
@@ -556,7 +604,9 @@ function RuleForm({ form, setField, integrations, personalities, onSubmit, onCan
               className={inputClass}
             >
               {(Object.entries(ACTION_TYPE_LABELS) as [ActionType, string][]).map(([v, label]) => (
-                <option key={v} value={v}>{label}</option>
+                <option key={v} value={v}>
+                  {label}
+                </option>
               ))}
             </select>
           </div>
@@ -572,7 +622,9 @@ function RuleForm({ form, setField, integrations, personalities, onSubmit, onCan
                 >
                   <option value="">Same integration</option>
                   {integrations.map((i) => (
-                    <option key={i.id} value={i.id}>{i.displayName} ({i.platform})</option>
+                    <option key={i.id} value={i.id}>
+                      {i.displayName} ({i.platform})
+                    </option>
                   ))}
                 </select>
               </div>
@@ -599,7 +651,10 @@ function RuleForm({ form, setField, integrations, personalities, onSubmit, onCan
               >
                 <option value="">Select personality…</option>
                 {personalities.map((p) => (
-                  <option key={p.id} value={p.id}>{p.name}{p.enabled ? ' (active)' : ''}</option>
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                    {p.enabled ? ' (active)' : ''}
+                  </option>
                 ))}
               </select>
             </div>
@@ -618,7 +673,9 @@ function RuleForm({ form, setField, integrations, personalities, onSubmit, onCan
             </div>
           )}
 
-          {(form.actionType === 'forward' || form.actionType === 'reply' || form.actionType === 'notify') && (
+          {(form.actionType === 'forward' ||
+            form.actionType === 'reply' ||
+            form.actionType === 'notify') && (
             <div className="col-span-2">
               <label className={labelClass}>
                 Message Template (optional — use {'{{text}}'}, {'{{senderName}}'}, {'{{platform}}'})

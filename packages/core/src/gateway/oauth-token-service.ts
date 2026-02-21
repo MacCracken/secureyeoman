@@ -138,7 +138,10 @@ export class OAuthTokenService {
       const expiresAt = Date.now() + data.expires_in * 1000;
 
       await this.storage.updateAccessToken(record.id, newAccessToken, expiresAt);
-      this.logger.debug('OAuth token refreshed', { provider: record.provider, email: record.email });
+      this.logger.debug('OAuth token refreshed', {
+        provider: record.provider,
+        email: record.email,
+      });
       return newAccessToken;
     } catch (err) {
       this.logger.error('OAuth token refresh error', {

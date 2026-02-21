@@ -19,12 +19,16 @@ export interface McpRoutesOptions {
   credentialManager?: McpCredentialManager;
 }
 
-
 const LOCAL_MCP_NAME = 'YEOMAN MCP';
 const GIT_TOOL_PREFIXES = ['git_', 'github_'];
 const FS_TOOL_PREFIXES = ['fs_'];
 const WEB_TOOL_PREFIXES = ['web_'];
-const WEB_SCRAPING_TOOLS = ['web_scrape_markdown', 'web_scrape_html', 'web_scrape_batch', 'web_extract_structured'];
+const WEB_SCRAPING_TOOLS = [
+  'web_scrape_markdown',
+  'web_scrape_html',
+  'web_scrape_batch',
+  'web_extract_structured',
+];
 const WEB_SEARCH_TOOLS = ['web_search', 'web_search_batch'];
 const BROWSER_TOOL_PREFIXES = ['browser_'];
 
@@ -158,13 +162,15 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
     const tools = allTools.filter((tool) => {
       if (tool.serverName !== LOCAL_MCP_NAME) return true; // external tools always pass
       if (!config.exposeGit && GIT_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) return false;
-      if (!config.exposeFilesystem && FS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) return false;
+      if (!config.exposeFilesystem && FS_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
       if (!config.exposeWeb && WEB_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) return false;
       if (config.exposeWeb) {
         if (!config.exposeWebScraping && WEB_SCRAPING_TOOLS.includes(tool.name)) return false;
         if (!config.exposeWebSearch && WEB_SEARCH_TOOLS.includes(tool.name)) return false;
       }
-      if (!config.exposeBrowser && BROWSER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))) return false;
+      if (!config.exposeBrowser && BROWSER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
       return true;
     });
 

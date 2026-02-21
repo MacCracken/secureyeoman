@@ -19,7 +19,9 @@ describe('validateGitUrl', () => {
   });
 
   it('rejects ssh:// URLs', () => {
-    expect(() => validateGitUrl('ssh://git@github.com/user/repo.git')).toThrow('protocol not allowed');
+    expect(() => validateGitUrl('ssh://git@github.com/user/repo.git')).toThrow(
+      'protocol not allowed'
+    );
   });
 
   it('rejects invalid URLs', () => {

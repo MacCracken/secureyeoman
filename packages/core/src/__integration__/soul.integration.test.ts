@@ -33,7 +33,10 @@ async function createSoulTestGateway(
   const app = Fastify({ logger: false });
   const logger = stack.logger;
 
-  app.addHook('onRequest', createAuthHook({ authService: stack.authService, logger, rbac: stack.rbac }));
+  app.addHook(
+    'onRequest',
+    createAuthHook({ authService: stack.authService, logger, rbac: stack.rbac })
+  );
   app.addHook(
     'onRequest',
     createRbacHook({

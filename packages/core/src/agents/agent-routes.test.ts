@@ -64,7 +64,14 @@ function makeMockManager(overrides?: Partial<SubAgentManager>): SubAgentManager 
     getDelegationTree: vi.fn().mockResolvedValue([DELEGATION]),
     getDelegationMessages: vi.fn().mockResolvedValue([]),
     cancel: vi.fn().mockResolvedValue(undefined),
-    getConfig: vi.fn().mockReturnValue({ enabled: true, maxDepth: 3, maxConcurrent: 5, defaultTimeout: 300000, tokenBudget: { default: 50000, max: 200000 }, context: { sealOnComplete: true, brainWriteScope: 'delegated' } }),
+    getConfig: vi.fn().mockReturnValue({
+      enabled: true,
+      maxDepth: 3,
+      maxConcurrent: 5,
+      defaultTimeout: 300000,
+      tokenBudget: { default: 50000, max: 200000 },
+      context: { sealOnComplete: true, brainWriteScope: 'delegated' },
+    }),
     isAllowedBySecurityPolicy: vi.fn().mockReturnValue(true),
     ...overrides,
   } as unknown as SubAgentManager;
@@ -92,7 +99,10 @@ describe('GET /api/v1/agents/profiles', () => {
 describe('GET /api/v1/agents/profiles/:id', () => {
   it('returns profile by ID', async () => {
     const app = buildApp();
-    const res = await app.inject({ method: 'GET', url: '/api/v1/agents/profiles/builtin-researcher' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/agents/profiles/builtin-researcher',
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().name).toBe('researcher');
   });
@@ -166,7 +176,10 @@ describe('DELETE /api/v1/agents/profiles/:id', () => {
 
   it('returns 403 when trying to delete a builtin profile', async () => {
     const app = buildApp(); // PROFILE.isBuiltin = true
-    const res = await app.inject({ method: 'DELETE', url: '/api/v1/agents/profiles/builtin-researcher' });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/agents/profiles/builtin-researcher',
+    });
     expect(res.statusCode).toBe(403);
   });
 
@@ -245,7 +258,10 @@ describe('GET /api/v1/agents/delegations/:id', () => {
 describe('POST /api/v1/agents/delegations/:id/cancel', () => {
   it('cancels delegation', async () => {
     const app = buildApp();
-    const res = await app.inject({ method: 'POST', url: '/api/v1/agents/delegations/del-1/cancel' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/agents/delegations/del-1/cancel',
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().success).toBe(true);
   });
@@ -254,7 +270,10 @@ describe('POST /api/v1/agents/delegations/:id/cancel', () => {
 describe('GET /api/v1/agents/delegations/:id/messages', () => {
   it('returns messages', async () => {
     const app = buildApp();
-    const res = await app.inject({ method: 'GET', url: '/api/v1/agents/delegations/del-1/messages' });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/agents/delegations/del-1/messages',
+    });
     expect(res.statusCode).toBe(200);
     expect(res.json().messages).toEqual([]);
   });

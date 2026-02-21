@@ -48,7 +48,9 @@ describe('LinuxSecretServiceProvider', () => {
 
     it('returns false on linux when secret-tool not found', () => {
       vi.spyOn(process, 'platform', 'get').mockReturnValue('linux');
-      mockExecFileSync.mockImplementationOnce(() => { throw new Error('not found'); });
+      mockExecFileSync.mockImplementationOnce(() => {
+        throw new Error('not found');
+      });
       expect(provider.isAvailable()).toBe(false);
     });
 
@@ -74,7 +76,9 @@ describe('LinuxSecretServiceProvider', () => {
     });
 
     it('returns undefined when exec fails', () => {
-      mockExecFileSync.mockImplementationOnce(() => { throw new Error('not found'); });
+      mockExecFileSync.mockImplementationOnce(() => {
+        throw new Error('not found');
+      });
       expect(provider.get('svc', 'key')).toBeUndefined();
     });
 
@@ -124,7 +128,9 @@ describe('LinuxSecretServiceProvider', () => {
     });
 
     it('does not throw when exec fails (key may not exist)', () => {
-      mockExecFileSync.mockImplementationOnce(() => { throw new Error('not found'); });
+      mockExecFileSync.mockImplementationOnce(() => {
+        throw new Error('not found');
+      });
       expect(() => provider.delete('svc', 'key')).not.toThrow();
     });
   });

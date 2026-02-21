@@ -378,8 +378,18 @@ function MySkillsTab() {
                 ))}
               </select>
               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                <svg
+                  className="w-4 h-4 text-muted-foreground"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </div>
             </div>
@@ -542,10 +552,7 @@ function MySkillsTab() {
                   <button onClick={() => startEdit(skill)} className="btn btn-ghost p-2">
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => setDeleteTarget(skill)}
-                    className="btn btn-ghost p-2"
-                  >
+                  <button onClick={() => setDeleteTarget(skill)} className="btn btn-ghost p-2">
                     <Trash2 className="w-4 h-4 text-destructive" />
                   </button>
                 </div>
@@ -677,8 +684,18 @@ function InstalledSkillsTab() {
             ))}
           </select>
           <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-            <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            <svg
+              className="w-4 h-4 text-muted-foreground"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
             </svg>
           </div>
         </div>
@@ -703,7 +720,9 @@ function InstalledSkillsTab() {
         </div>
       ) : filteredSkills.length === 0 ? (
         <div className="card p-8 text-center">
-          <p className="text-sm text-muted-foreground">No installed skills for the selected personality.</p>
+          <p className="text-sm text-muted-foreground">
+            No installed skills for the selected personality.
+          </p>
         </div>
       ) : (
         <div className="space-y-8">
@@ -853,7 +872,12 @@ function PersonalitySelector({
           ))}
         </select>
         <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          <svg className="w-4 h-4 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg
+            className="w-4 h-4 text-muted-foreground"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
           </svg>
         </div>
@@ -901,13 +925,19 @@ function MarketplaceTab() {
   const installMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
       installMarketplaceSkill(id, personalityId),
-    onSuccess: () => { invalidate(); setInstallingId(null); },
+    onSuccess: () => {
+      invalidate();
+      setInstallingId(null);
+    },
     onError: () => setInstallingId(null),
   });
 
   const uninstallMut = useMutation({
     mutationFn: uninstallMarketplaceSkill,
-    onSuccess: () => { invalidate(); setUninstallingId(null); },
+    onSuccess: () => {
+      invalidate();
+      setUninstallingId(null);
+    },
     onError: () => setUninstallingId(null),
   });
 
@@ -916,7 +946,10 @@ function MarketplaceTab() {
   const builtinSkills = allSkills.filter((s) => s.source === 'builtin');
   const publishedSkills = allSkills.filter((s) => s.source === 'published');
 
-  const renderGrid = (skills: MarketplaceSkill[], badgeFn?: (s: MarketplaceSkill) => React.ReactNode) => (
+  const renderGrid = (
+    skills: MarketplaceSkill[],
+    badgeFn?: (s: MarketplaceSkill) => React.ReactNode
+  ) => (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {skills.map((skill) => (
         <SkillCard
@@ -1064,13 +1097,19 @@ function CommunityTab() {
   const installMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId: string }) =>
       installMarketplaceSkill(id, personalityId),
-    onSuccess: () => { invalidate(); setInstallingId(null); },
+    onSuccess: () => {
+      invalidate();
+      setInstallingId(null);
+    },
     onError: () => setInstallingId(null),
   });
 
   const uninstallMut = useMutation({
     mutationFn: uninstallMarketplaceSkill,
-    onSuccess: () => { invalidate(); setUninstallingId(null); },
+    onSuccess: () => {
+      invalidate();
+      setUninstallingId(null);
+    },
     onError: () => setUninstallingId(null),
   });
 
@@ -1105,10 +1144,17 @@ function CommunityTab() {
 
         {/* Sync button */}
         <button
-          onClick={() => { setSyncResult(null); syncMut.mutate(); }}
+          onClick={() => {
+            setSyncResult(null);
+            syncMut.mutate();
+          }}
           disabled={syncMut.isPending}
           className="btn btn-secondary flex items-center gap-2 whitespace-nowrap"
-          title={statusData?.communityRepoPath ? `Sync from ${statusData.communityRepoPath}` : 'Sync from community repo'}
+          title={
+            statusData?.communityRepoPath
+              ? `Sync from ${statusData.communityRepoPath}`
+              : 'Sync from community repo'
+          }
         >
           <RefreshCw className={`w-4 h-4 ${syncMut.isPending ? 'animate-spin' : ''}`} />
           {syncMut.isPending ? 'Syncing…' : 'Sync'}
@@ -1119,7 +1165,9 @@ function CommunityTab() {
       {statusData && (
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
           <GitBranch className="w-3.5 h-3.5 shrink-0" />
-          <span className="font-mono truncate">{statusData.communityRepoPath ?? 'No path configured'}</span>
+          <span className="font-mono truncate">
+            {statusData.communityRepoPath ?? 'No path configured'}
+          </span>
           {lastSynced && <span className="shrink-0">· Last synced {lastSynced}</span>}
         </div>
       )}
@@ -1134,24 +1182,29 @@ function CommunityTab() {
 
       {/* Sync result */}
       {syncResult && (
-        <div className={`p-3 rounded-lg border text-xs space-y-1 ${
-          syncResult.errors.length > 0
-            ? 'bg-warning/10 border-warning/20'
-            : 'bg-success/10 border-success/20'
-        }`}>
+        <div
+          className={`p-3 rounded-lg border text-xs space-y-1 ${
+            syncResult.errors.length > 0
+              ? 'bg-warning/10 border-warning/20'
+              : 'bg-success/10 border-success/20'
+          }`}
+        >
           <div className="flex items-center gap-2 font-medium">
             {syncResult.errors.length > 0 ? (
               <AlertCircle className="w-4 h-4 text-warning" />
             ) : (
               <CheckCircle className="w-4 h-4 text-success" />
             )}
-            Sync complete — {syncResult.added} added, {syncResult.updated} updated, {syncResult.skipped} skipped
+            Sync complete — {syncResult.added} added, {syncResult.updated} updated,{' '}
+            {syncResult.skipped} skipped
             {syncResult.errors.length > 0 && `, ${syncResult.errors.length} error(s)`}
           </div>
           {syncResult.errors.length > 0 && (
             <ul className="mt-1 space-y-0.5 text-muted-foreground">
               {syncResult.errors.map((e, i) => (
-                <li key={i} className="truncate">· {e}</li>
+                <li key={i} className="truncate">
+                  · {e}
+                </li>
               ))}
             </ul>
           )}
@@ -1168,12 +1221,14 @@ function CommunityTab() {
           <Users className="w-12 h-12 mx-auto text-muted-foreground" />
           <p className="text-muted-foreground font-medium">No community skills found</p>
           <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Click <strong>Sync</strong> to import skills from the community repo — the
-            repo is fetched automatically when{' '}
-            <span className="font-mono">COMMUNITY_GIT_URL</span> is configured.
+            Click <strong>Sync</strong> to import skills from the community repo — the repo is
+            fetched automatically when <span className="font-mono">COMMUNITY_GIT_URL</span> is
+            configured.
           </p>
           {statusData?.communityRepoPath && (
-            <p className="text-xs text-muted-foreground font-mono">{statusData.communityRepoPath}</p>
+            <p className="text-xs text-muted-foreground font-mono">
+              {statusData.communityRepoPath}
+            </p>
           )}
         </div>
       ) : (

@@ -3,11 +3,17 @@ import { OutboundWebhookDispatcher } from './outbound-webhook-dispatcher.js';
 import type { OutboundWebhookStorage, OutboundWebhook } from './outbound-webhook-storage.js';
 import type { SecureLogger } from '../logging/logger.js';
 
-const makeLogger = (): SecureLogger => ({
-  trace: vi.fn(), debug: vi.fn(), info: vi.fn(),
-  warn: vi.fn(), error: vi.fn(), fatal: vi.fn(),
-  child: vi.fn().mockReturnThis(), level: 'debug',
-} as unknown as SecureLogger);
+const makeLogger = (): SecureLogger =>
+  ({
+    trace: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+    child: vi.fn().mockReturnThis(),
+    level: 'debug',
+  }) as unknown as SecureLogger;
 
 function makeWebhook(overrides: Partial<OutboundWebhook> = {}): OutboundWebhook {
   return {
@@ -21,7 +27,10 @@ function makeWebhook(overrides: Partial<OutboundWebhook> = {}): OutboundWebhook 
   } as unknown as OutboundWebhook;
 }
 
-function makeStorage(webhooks: OutboundWebhook[] = [], overrides: Partial<OutboundWebhookStorage> = {}): OutboundWebhookStorage {
+function makeStorage(
+  webhooks: OutboundWebhook[] = [],
+  overrides: Partial<OutboundWebhookStorage> = {}
+): OutboundWebhookStorage {
   return {
     listForEvent: vi.fn().mockResolvedValue(webhooks),
     recordSuccess: vi.fn().mockResolvedValue(undefined),
@@ -48,7 +57,10 @@ describe('OutboundWebhookDispatcher', () => {
     it('calls listForEvent and POSTs to webhook', async () => {
       const webhook = makeWebhook();
       const storage = makeStorage([webhook]);
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 0, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 0,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', { taskId: 'task-1' });
 
@@ -62,7 +74,10 @@ describe('OutboundWebhookDispatcher', () => {
 
     it('includes event type in request headers', async () => {
       const storage = makeStorage([makeWebhook()]);
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 0, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 0,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', { taskId: 't1' });
 
@@ -75,7 +90,10 @@ describe('OutboundWebhookDispatcher', () => {
 
     it('includes HMAC signature when webhook has a secret', async () => {
       const storage = makeStorage([makeWebhook({ secret: 'my-secret' })]);
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 0, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 0,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', {});
 
@@ -87,7 +105,10 @@ describe('OutboundWebhookDispatcher', () => {
 
     it('does not include signature when no secret', async () => {
       const storage = makeStorage([makeWebhook()]);
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 0, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 0,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', {});
 
@@ -99,12 +120,15 @@ describe('OutboundWebhookDispatcher', () => {
 
     it('blocks SSRF to private IP addresses', async () => {
       const storage = makeStorage([makeWebhook({ url: 'http://192.168.1.1/hook' })]);
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 0, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 0,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', {});
 
       // Give the async dispatch time to run
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
       expect(mockFetch).not.toHaveBeenCalled();
       expect(logger.warn).toHaveBeenCalledWith(
         expect.stringContaining('SSRF'),
@@ -114,11 +138,14 @@ describe('OutboundWebhookDispatcher', () => {
 
     it('blocks SSRF to localhost', async () => {
       const storage = makeStorage([makeWebhook({ url: 'http://localhost/hook' })]);
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 0, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 0,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', {});
 
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
       expect(mockFetch).not.toHaveBeenCalled();
     });
 
@@ -126,7 +153,10 @@ describe('OutboundWebhookDispatcher', () => {
       const storage = makeStorage([], {
         listForEvent: vi.fn().mockRejectedValue(new Error('DB down')),
       });
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 0, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 0,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', {});
 
@@ -137,7 +167,10 @@ describe('OutboundWebhookDispatcher', () => {
     it('records failure when all retries exhausted', async () => {
       mockFetch.mockResolvedValue({ ok: false, status: 500 });
       const storage = makeStorage([makeWebhook()]);
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 1, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 1,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', {});
 
@@ -148,7 +181,10 @@ describe('OutboundWebhookDispatcher', () => {
     it('records failure on network error', async () => {
       mockFetch.mockRejectedValue(new Error('ECONNREFUSED'));
       const storage = makeStorage([makeWebhook()]);
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 0, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 0,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', {});
 
@@ -161,7 +197,10 @@ describe('OutboundWebhookDispatcher', () => {
         makeWebhook({ id: 'wh-2', url: 'https://example.com/hook2' }),
       ];
       const storage = makeStorage(webhooks);
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 0, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 0,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', {});
 
@@ -171,11 +210,14 @@ describe('OutboundWebhookDispatcher', () => {
 
     it('handles no webhooks for event gracefully', async () => {
       const storage = makeStorage([]);
-      const dispatcher = new OutboundWebhookDispatcher(storage, logger, { maxRetries: 0, baseDelayMs: 0 });
+      const dispatcher = new OutboundWebhookDispatcher(storage, logger, {
+        maxRetries: 0,
+        baseDelayMs: 0,
+      });
 
       dispatcher.dispatch('task.completed', {});
 
-      await new Promise(r => setTimeout(r, 50));
+      await new Promise((r) => setTimeout(r, 50));
       expect(mockFetch).not.toHaveBeenCalled();
     });
   });

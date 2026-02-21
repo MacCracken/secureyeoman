@@ -151,9 +151,9 @@ describe('WorkspaceStorage', () => {
 
     it('updates name', async () => {
       mockQuery
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 })   // execute UPDATE
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // execute UPDATE
         .mockResolvedValueOnce({ rows: [workspaceRow], rowCount: 1 }) // get after update
-        .mockResolvedValueOnce({ rows: [], rowCount: 0 });  // getMembers
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // getMembers
 
       const result = await storage.update('ws-1', { name: 'New Name' });
       const updateSql = mockQuery.mock.calls[0][0] as string;

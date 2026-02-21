@@ -204,9 +204,7 @@ function SummaryTab() {
                     <th className="text-right py-3 px-4 font-medium text-muted-foreground">
                       Tokens Used
                     </th>
-                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">
-                      Cost
-                    </th>
+                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">Cost</th>
                     <th className="text-right py-3 px-4 font-medium text-muted-foreground">
                       Calls
                     </th>
@@ -260,7 +258,9 @@ function SummaryTab() {
                         .toLocaleString()}
                     </td>
                     <td className="py-3 px-4 text-right font-mono font-bold">
-                      {Object.values(providers).reduce((sum, p) => sum + p.errors, 0).toLocaleString()}
+                      {Object.values(providers)
+                        .reduce((sum, p) => sum + p.errors, 0)
+                        .toLocaleString()}
                     </td>
                   </tr>
                 </tfoot>
@@ -528,9 +528,7 @@ function HistoryTab() {
                     <td className="py-3 px-4 text-right font-mono">
                       {totals.totalTokens.toLocaleString()}
                     </td>
-                    <td className="py-3 px-4 text-right font-mono">
-                      ${totals.costUsd.toFixed(4)}
-                    </td>
+                    <td className="py-3 px-4 text-right font-mono">${totals.costUsd.toFixed(4)}</td>
                     <td className="py-3 px-4 text-right font-mono">{totals.calls}</td>
                   </tr>
                 </tfoot>
@@ -612,7 +610,8 @@ function RecommendationCard({ recommendation }: RecommendationCardProps) {
           <p className="text-sm text-muted-foreground mb-2">{recommendation.description}</p>
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
             <span>
-              Category: <span className="font-medium text-foreground">{recommendation.category}</span>
+              Category:{' '}
+              <span className="font-medium text-foreground">{recommendation.category}</span>
             </span>
             <span>
               Current cost:{' '}

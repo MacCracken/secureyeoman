@@ -19,15 +19,14 @@ const dbConfig = {
   port: Number(process.env['TEST_DB_PORT'] ?? '5432'),
   database: process.env['TEST_DB_NAME'] ?? 'secureyeoman_test',
   user: process.env['TEST_DB_USER'] ?? 'secureyeoman',
-  password: process.env['TEST_DB_PASSWORD'] ?? process.env['POSTGRES_PASSWORD'] ?? 'secureyeoman_dev',
+  password:
+    process.env['TEST_DB_PASSWORD'] ?? process.env['POSTGRES_PASSWORD'] ?? 'secureyeoman_dev',
   ssl: false,
   poolSize: 3,
 };
 
 async function appliedIds(): Promise<string[]> {
-  const res = await getPool().query<{ id: string }>(
-    'SELECT id FROM schema_migrations ORDER BY id'
-  );
+  const res = await getPool().query<{ id: string }>('SELECT id FROM schema_migrations ORDER BY id');
   return res.rows.map((r) => r.id);
 }
 

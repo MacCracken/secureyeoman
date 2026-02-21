@@ -111,10 +111,9 @@ export class OAuthTokenStorage extends PgBaseStorage {
   /** Find a token by its primary key ID. */
   async getById(id: string): Promise<OAuthToken | null> {
     const pool = this.getPool();
-    const result = await pool.query<OAuthTokenRow>(
-      'SELECT * FROM oauth_tokens WHERE id = $1',
-      [id]
-    );
+    const result = await pool.query<OAuthTokenRow>('SELECT * FROM oauth_tokens WHERE id = $1', [
+      id,
+    ]);
     return result.rows[0] ? rowToToken(result.rows[0]) : null;
   }
 

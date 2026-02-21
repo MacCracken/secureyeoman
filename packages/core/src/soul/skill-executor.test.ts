@@ -51,9 +51,17 @@ describe('SkillExecutor', () => {
     });
 
     it('returns error for http action blocked by domain allowlist', async () => {
-      const executor = new SkillExecutor({ timeoutMs: 5000, memoryLimitMb: 128, allowedDomains: ['example.com'] });
+      const executor = new SkillExecutor({
+        timeoutMs: 5000,
+        memoryLimitMb: 128,
+        allowedDomains: ['example.com'],
+      });
       const skill = makeSkill([
-        { id: 'a1', type: 'http', http: { url: 'https://evil.com/data', method: 'GET', headers: {} } } as never,
+        {
+          id: 'a1',
+          type: 'http',
+          http: { url: 'https://evil.com/data', method: 'GET', headers: {} },
+        } as never,
       ]);
       const result = await executor.executeAction(skill, 'a1', CTX);
       expect(result.success).toBe(false);
@@ -61,7 +69,11 @@ describe('SkillExecutor', () => {
     });
 
     it('returns error for http action with invalid URL when allowlist is set', async () => {
-      const executor = new SkillExecutor({ timeoutMs: 5000, memoryLimitMb: 128, allowedDomains: ['example.com'] });
+      const executor = new SkillExecutor({
+        timeoutMs: 5000,
+        memoryLimitMb: 128,
+        allowedDomains: ['example.com'],
+      });
       const skill = makeSkill([
         { id: 'a1', type: 'http', http: { url: 'not-a-url', method: 'GET', headers: {} } } as never,
       ]);
@@ -79,9 +91,17 @@ describe('SkillExecutor', () => {
       });
       vi.stubGlobal('fetch', mockFetch);
 
-      const executor = new SkillExecutor({ timeoutMs: 5000, memoryLimitMb: 128, allowedDomains: ['api.example.com'] });
+      const executor = new SkillExecutor({
+        timeoutMs: 5000,
+        memoryLimitMb: 128,
+        allowedDomains: ['api.example.com'],
+      });
       const skill = makeSkill([
-        { id: 'a1', type: 'http', http: { url: 'https://api.example.com/endpoint', method: 'GET', headers: {} } } as never,
+        {
+          id: 'a1',
+          type: 'http',
+          http: { url: 'https://api.example.com/endpoint', method: 'GET', headers: {} },
+        } as never,
       ]);
       const result = await executor.executeAction(skill, 'a1', CTX);
       expect(result.success).toBe(true);
@@ -99,7 +119,11 @@ describe('SkillExecutor', () => {
 
       const executor = new SkillExecutor({ timeoutMs: 5000, memoryLimitMb: 128 });
       const skill = makeSkill([
-        { id: 'a1', type: 'http', http: { url: 'https://api.example.com/', method: 'GET', headers: {} } } as never,
+        {
+          id: 'a1',
+          type: 'http',
+          http: { url: 'https://api.example.com/', method: 'GET', headers: {} },
+        } as never,
       ]);
       const result = await executor.executeAction(skill, 'a1', CTX);
       expect(result.success).toBe(true);
@@ -107,12 +131,18 @@ describe('SkillExecutor', () => {
     });
 
     it('handles fetch timeout (AbortError)', async () => {
-      const mockFetch = vi.fn().mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValue(Object.assign(new Error('aborted'), { name: 'AbortError' }));
       vi.stubGlobal('fetch', mockFetch);
 
       const executor = new SkillExecutor({ timeoutMs: 1, memoryLimitMb: 128 });
       const skill = makeSkill([
-        { id: 'a1', type: 'http', http: { url: 'https://slow.example.com/', method: 'GET', headers: {}, timeoutMs: 1 } } as never,
+        {
+          id: 'a1',
+          type: 'http',
+          http: { url: 'https://slow.example.com/', method: 'GET', headers: {}, timeoutMs: 1 },
+        } as never,
       ]);
       const result = await executor.executeAction(skill, 'a1', CTX);
       expect(result.success).toBe(false);
@@ -123,7 +153,11 @@ describe('SkillExecutor', () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('Network error')));
       const executor = new SkillExecutor({ timeoutMs: 5000, memoryLimitMb: 128 });
       const skill = makeSkill([
-        { id: 'a1', type: 'http', http: { url: 'https://api.example.com/', method: 'GET', headers: {} } } as never,
+        {
+          id: 'a1',
+          type: 'http',
+          http: { url: 'https://api.example.com/', method: 'GET', headers: {} },
+        } as never,
       ]);
       const result = await executor.executeAction(skill, 'a1', CTX);
       expect(result.success).toBe(false);
@@ -153,7 +187,11 @@ describe('SkillExecutor', () => {
     it('catches synchronous throws and returns failure', async () => {
       const executor = new SkillExecutor();
       // Force an internal error by passing malformed data that will throw
-      const skill = { id: 'skill-1', name: 'bad', actions: [{ id: 'a1', type: 'code', code: null }] } as unknown as Skill;
+      const skill = {
+        id: 'skill-1',
+        name: 'bad',
+        actions: [{ id: 'a1', type: 'code', code: null }],
+      } as unknown as Skill;
       // code action with null code returns 'Action has no valid configuration' — not an error
       const result = await executor.executeAction(skill, 'a1', CTX);
       expect(typeof result.success).toBe('boolean');

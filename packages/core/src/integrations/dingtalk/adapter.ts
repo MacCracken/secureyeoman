@@ -61,12 +61,18 @@ export class DingTalkIntegration implements WebhookIntegration {
     this.logger?.info('DingTalk integration stopped');
   }
 
-  async sendMessage(chatId: string, text: string, metadata?: Record<string, unknown>): Promise<string> {
+  async sendMessage(
+    chatId: string,
+    text: string,
+    metadata?: Record<string, unknown>
+  ): Promise<string> {
     // Use sessionWebhook from metadata if available (reply in-conversation)
-    const webhookUrl = (metadata?.['sessionWebhook'] as string | undefined)
-      ?? chatId
-      ?? this.dtConfig?.outboundWebhookUrl;
-    if (!webhookUrl?.startsWith('http')) throw new Error('No DingTalk outbound webhook URL configured');
+    const webhookUrl =
+      (metadata?.['sessionWebhook'] as string | undefined) ??
+      chatId ??
+      this.dtConfig?.outboundWebhookUrl;
+    if (!webhookUrl?.startsWith('http'))
+      throw new Error('No DingTalk outbound webhook URL configured');
 
     const isMarkdown = metadata?.['markdown'] === true;
     const body = isMarkdown
@@ -82,9 +88,13 @@ export class DingTalkIntegration implements WebhookIntegration {
     return `dingtalk_${Date.now()}`;
   }
 
-  isHealthy(): boolean { return this.running; }
+  isHealthy(): boolean {
+    return this.running;
+  }
 
-  getWebhookPath(): string { return '/webhooks/dingtalk'; }
+  getWebhookPath(): string {
+    return '/webhooks/dingtalk';
+  }
 
   verifyWebhook(payload: string, signature: string): boolean {
     if (!this.dtConfig?.webhookToken) return true;
@@ -103,9 +113,8 @@ export class DingTalkIntegration implements WebhookIntegration {
     if (!this.deps) return;
     try {
       const event = JSON.parse(payload) as DingTalkEvent;
-      const text = event.text?.content?.trim()
-        ?? event.markdown?.text
-        ?? `DingTalk event: ${event.msgtype}`;
+      const text =
+        event.text?.content?.trim() ?? event.markdown?.text ?? `DingTalk event: ${event.msgtype}`;
 
       const unified: UnifiedMessage = {
         id: `dingtalk_${event.msgId ?? Date.now()}`,
@@ -128,13 +137,18 @@ export class DingTalkIntegration implements WebhookIntegration {
       };
       await this.deps.onMessage(unified);
     } catch (err) {
-      this.logger?.warn('DingTalk webhook parse error', { error: err instanceof Error ? err.message : String(err) });
+      this.logger?.warn('DingTalk webhook parse error', {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 
   async testConnection(): Promise<{ ok: boolean; message: string }> {
     if (this.dtConfig?.outboundWebhookUrl) {
-      return { ok: true, message: `DingTalk outbound configured: ${this.dtConfig.outboundWebhookUrl}` };
+      return {
+        ok: true,
+        message: `DingTalk outbound configured: ${this.dtConfig.outboundWebhookUrl}`,
+      };
     }
     if (this.dtConfig?.appKey) {
       try {
@@ -142,7 +156,10 @@ export class DingTalkIntegration implements WebhookIntegration {
           method: 'GET',
           headers: { 'x-acs-dingtalk-access-token': this.dtConfig.appKey },
         });
-        return { ok: resp.status !== 401, message: resp.status === 401 ? 'Invalid app credentials' : 'DingTalk connected' };
+        return {
+          ok: resp.status !== 401,
+          message: resp.status === 401 ? 'Invalid app credentials' : 'DingTalk connected',
+        };
       } catch (err) {
         return { ok: false, message: err instanceof Error ? err.message : String(err) };
       }

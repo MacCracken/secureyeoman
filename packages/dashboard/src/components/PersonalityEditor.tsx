@@ -2481,7 +2481,10 @@ export function PersonalityEditor() {
                 maxLength={8000}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                {((collabDocId ? collabSystemPrompt : form.systemPrompt)?.length ?? 0).toLocaleString()} / 8,000 chars
+                {(
+                  (collabDocId ? collabSystemPrompt : form.systemPrompt)?.length ?? 0
+                ).toLocaleString()}{' '}
+                / 8,000 chars
               </p>
             </div>
 

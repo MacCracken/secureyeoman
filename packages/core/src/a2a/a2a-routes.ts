@@ -14,7 +14,11 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
 
   app.get(
     '/api/v1/a2a/peers',
-    async (request: FastifyRequest<{ Querystring: { status?: string; trustLevel?: string; limit?: string; offset?: string } }>) => {
+    async (
+      request: FastifyRequest<{
+        Querystring: { status?: string; trustLevel?: string; limit?: string; offset?: string };
+      }>
+    ) => {
       const { status, trustLevel, limit: limitStr, offset: offsetStr } = request.query;
       const limit = limitStr ? Number(limitStr) : undefined;
       const offset = offsetStr ? Number(offsetStr) : undefined;

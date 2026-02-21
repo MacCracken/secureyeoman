@@ -14,11 +14,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { RoutingRulesStorage } from './routing-rules-storage.js';
 import type { RoutingRulesManager } from './routing-rules-manager.js';
-import type {
-  RoutingRuleCreate,
-  RoutingRuleUpdate,
-  RoutingRuleDryRun,
-} from '@secureyeoman/shared';
+import type { RoutingRuleCreate, RoutingRuleUpdate, RoutingRuleDryRun } from '@secureyeoman/shared';
 import { sendError } from '../utils/errors.js';
 
 export interface RoutingRulesRoutesOptions {
@@ -54,10 +50,7 @@ export function registerRoutingRulesRoutes(
 
   app.get(
     '/api/v1/routing-rules/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const rule = await storage.get(request.params.id);
       if (!rule) return sendError(reply, 404, `Routing rule not found: ${request.params.id}`);
       return rule;
@@ -68,10 +61,7 @@ export function registerRoutingRulesRoutes(
 
   app.post(
     '/api/v1/routing-rules',
-    async (
-      request: FastifyRequest<{ Body: RoutingRuleCreate }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body: RoutingRuleCreate }>, reply: FastifyReply) => {
       const data = request.body;
       if (!data?.actionType) {
         return sendError(reply, 400, 'actionType is required');
@@ -102,10 +92,7 @@ export function registerRoutingRulesRoutes(
 
   app.delete(
     '/api/v1/routing-rules/:id',
-    async (
-      request: FastifyRequest<{ Params: { id: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
       const deleted = await storage.delete(request.params.id);
       if (!deleted) return sendError(reply, 404, `Routing rule not found: ${request.params.id}`);
       return reply.code(204).send();

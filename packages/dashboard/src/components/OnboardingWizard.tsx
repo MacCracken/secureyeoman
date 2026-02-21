@@ -282,7 +282,8 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                   maxLength={100}
                 />
                 <p className="text-xs text-muted-foreground mt-1">
-                  Default for {selectedProvider}: <code className="font-mono">{PROVIDER_DEFAULTS[selectedProvider]}</code>
+                  Default for {selectedProvider}:{' '}
+                  <code className="font-mono">{PROVIDER_DEFAULTS[selectedProvider]}</code>
                 </p>
               </div>
 

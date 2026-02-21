@@ -33,7 +33,10 @@ const mocks = vi.hoisted(() => {
     event: vi.fn().mockImplementation(function (name: string, handler: (...args: any[]) => any) {
       registeredHandlers[`event:${name}`] = handler;
     }),
-    action: vi.fn().mockImplementation(function (pattern: unknown, handler: (...args: any[]) => any) {
+    action: vi.fn().mockImplementation(function (
+      pattern: unknown,
+      handler: (...args: any[]) => any
+    ) {
       registeredHandlers['action'] = handler;
     }),
     command: vi.fn().mockImplementation(function (name: string, handler: (...args: any[]) => any) {
@@ -127,16 +130,28 @@ describe('SlackIntegration', () => {
     mocks.mockAppInstance.message.mockImplementation(function (handler: (...args: any[]) => any) {
       mocks.registeredHandlers['message'] = handler;
     });
-    mocks.mockAppInstance.event.mockImplementation(function (name: string, handler: (...args: any[]) => any) {
+    mocks.mockAppInstance.event.mockImplementation(function (
+      name: string,
+      handler: (...args: any[]) => any
+    ) {
       mocks.registeredHandlers[`event:${name}`] = handler;
     });
-    mocks.mockAppInstance.action.mockImplementation(function (_pattern: unknown, handler: (...args: any[]) => any) {
+    mocks.mockAppInstance.action.mockImplementation(function (
+      _pattern: unknown,
+      handler: (...args: any[]) => any
+    ) {
       mocks.registeredHandlers['action'] = handler;
     });
-    mocks.mockAppInstance.command.mockImplementation(function (name: string, handler: (...args: any[]) => any) {
+    mocks.mockAppInstance.command.mockImplementation(function (
+      name: string,
+      handler: (...args: any[]) => any
+    ) {
       mocks.registeredHandlers[`command:${name}`] = handler;
     });
-    mocks.mockAppInstance.view.mockImplementation(function (name: string, handler: (...args: any[]) => any) {
+    mocks.mockAppInstance.view.mockImplementation(function (
+      name: string,
+      handler: (...args: any[]) => any
+    ) {
       mocks.registeredHandlers[`view:${name}`] = handler;
     });
     integration = new SlackIntegration();
@@ -161,19 +176,13 @@ describe('SlackIntegration', () => {
 
     it('should throw when botToken is missing', async () => {
       await expect(
-        integration.init(
-          makeConfig({ config: { appToken: 'xapp-token' } }),
-          makeDeps()
-        )
+        integration.init(makeConfig({ config: { appToken: 'xapp-token' } }), makeDeps())
       ).rejects.toThrow('botToken');
     });
 
     it('should throw when appToken is missing', async () => {
       await expect(
-        integration.init(
-          makeConfig({ config: { botToken: 'xoxb-token' } }),
-          makeDeps()
-        )
+        integration.init(makeConfig({ config: { botToken: 'xoxb-token' } }), makeDeps())
       ).rejects.toThrow('appToken');
     });
 

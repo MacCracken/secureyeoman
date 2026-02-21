@@ -117,7 +117,10 @@ describe('SubAgentStorage', () => {
     it('returns profiles list with count', async () => {
       mockQuery
         .mockResolvedValueOnce({ rows: [{ count: '2' }], rowCount: 1 }) // count
-        .mockResolvedValueOnce({ rows: [profileRow, { ...profileRow, id: 'prof-2', name: 'coder' }], rowCount: 2 }); // rows
+        .mockResolvedValueOnce({
+          rows: [profileRow, { ...profileRow, id: 'prof-2', name: 'coder' }],
+          rowCount: 2,
+        }); // rows
       const result = await storage.listProfiles();
       expect(result.total).toBe(2);
       expect(result.profiles).toHaveLength(2);
@@ -232,7 +235,18 @@ describe('SubAgentStorage', () => {
     });
 
     it('accepts optional fields', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ ...delegationRow, parent_delegation_id: 'parent-1', initiated_by: 'user1', correlation_id: 'corr-1', context: 'ctx' }], rowCount: 1 });
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          {
+            ...delegationRow,
+            parent_delegation_id: 'parent-1',
+            initiated_by: 'user1',
+            correlation_id: 'corr-1',
+            context: 'ctx',
+          },
+        ],
+        rowCount: 1,
+      });
       const result = await storage.createDelegation({
         id: 'del-2',
         parentDelegationId: 'parent-1',
@@ -259,7 +273,10 @@ describe('SubAgentStorage', () => {
     });
 
     it('updates status', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ ...delegationRow, status: 'completed' }], rowCount: 1 });
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...delegationRow, status: 'completed' }],
+        rowCount: 1,
+      });
       const result = await storage.updateDelegation('del-1', { status: 'completed' });
       expect(result!.status).toBe('completed');
     });

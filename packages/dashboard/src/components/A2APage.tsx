@@ -78,7 +78,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
 
   const peers = peersData?.peers ?? [];
 
-  const enabled = (configData?.config)?.enabled === true || securityPolicy?.allowA2A === true;
+  const enabled = configData?.config?.enabled === true || securityPolicy?.allowA2A === true;
 
   const discoverMut = useMutation({
     mutationFn: discoverA2APeers,
@@ -759,24 +759,39 @@ function NetworkTab({ peers }: { peers: PeerEntry[] }) {
       <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground px-1">
         <span className="font-medium">Trust level:</span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#10b981' }} />
+          <span
+            className="w-2.5 h-2.5 rounded-full inline-block"
+            style={{ backgroundColor: '#10b981' }}
+          />
           Trusted
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#f59e0b' }} />
+          <span
+            className="w-2.5 h-2.5 rounded-full inline-block"
+            style={{ backgroundColor: '#f59e0b' }}
+          />
           Verified
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#ef4444' }} />
+          <span
+            className="w-2.5 h-2.5 rounded-full inline-block"
+            style={{ backgroundColor: '#ef4444' }}
+          />
           Untrusted
         </span>
         <span className="ml-4 font-medium">Edge color:</span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#10b981' }} />
+          <span
+            className="w-2.5 h-2.5 rounded-full inline-block"
+            style={{ backgroundColor: '#10b981' }}
+          />
           Online
         </span>
         <span className="flex items-center gap-1.5">
-          <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: '#6b7280' }} />
+          <span
+            className="w-2.5 h-2.5 rounded-full inline-block"
+            style={{ backgroundColor: '#6b7280' }}
+          />
           Offline
         </span>
       </div>

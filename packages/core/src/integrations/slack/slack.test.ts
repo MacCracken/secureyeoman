@@ -46,7 +46,10 @@ vi.mock('@slack/bolt', () => {
   }
 
   class MockWorkflowStep {
-    constructor(public callbackId: string, public handlers: any) {}
+    constructor(
+      public callbackId: string,
+      public handlers: any
+    ) {}
   }
 
   return { App: MockApp, WorkflowStep: MockWorkflowStep };

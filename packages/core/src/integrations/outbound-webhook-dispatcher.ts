@@ -73,10 +73,9 @@ export class OutboundWebhookDispatcher {
     try {
       webhooks = await this.storage.listForEvent(event);
     } catch (err) {
-      this.logger.error(
-        `OutboundWebhookDispatcher: failed to list webhooks for event ${event}`,
-        { error: err instanceof Error ? err.message : String(err) }
-      );
+      this.logger.error(`OutboundWebhookDispatcher: failed to list webhooks for event ${event}`, {
+        error: err instanceof Error ? err.message : String(err),
+      });
       return;
     }
 
@@ -92,7 +91,10 @@ export class OutboundWebhookDispatcher {
   ): Promise<void> {
     // SSRF guard: block delivery to private/internal network addresses
     if (isPrivateUrl(wh.url)) {
-      this.logger.warn('OutboundWebhookDispatcher: blocked SSRF attempt', { webhookId: wh.id, url: wh.url });
+      this.logger.warn('OutboundWebhookDispatcher: blocked SSRF attempt', {
+        webhookId: wh.id,
+        url: wh.url,
+      });
       return;
     }
 

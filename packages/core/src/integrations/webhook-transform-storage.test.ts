@@ -61,12 +61,12 @@ describe('WebhookTransformStorage', () => {
       mockQuery.mockResolvedValueOnce({ rows: [ruleRow], rowCount: 1 });
       await storage.createRule({ name: 'Simple Rule' });
       const params = mockQuery.mock.calls[0][1] as unknown[];
-      expect(params[1]).toBeNull();       // integrationId
-      expect(params[3]).toBeNull();       // matchEvent
-      expect(params[4]).toBe(100);        // default priority
-      expect(params[5]).toBe(true);       // default enabled
-      expect(params[6]).toBe('[]');       // empty extractRules
-      expect(params[7]).toBeNull();       // no template
+      expect(params[1]).toBeNull(); // integrationId
+      expect(params[3]).toBeNull(); // matchEvent
+      expect(params[4]).toBe(100); // default priority
+      expect(params[5]).toBe(true); // default enabled
+      expect(params[6]).toBe('[]'); // empty extractRules
+      expect(params[7]).toBeNull(); // no template
     });
 
     it('uses provided integrationId', async () => {

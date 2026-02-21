@@ -74,7 +74,16 @@ export function generateDevCerts(outputDir: string): CertPaths {
   // Generate server CSR
   execFileSync(
     'openssl',
-    ['req', '-new', '-key', serverKey, '-out', serverCsr, '-subj', '/CN=localhost/O=SecureYeoman/C=US'],
+    [
+      'req',
+      '-new',
+      '-key',
+      serverKey,
+      '-out',
+      serverCsr,
+      '-subj',
+      '/CN=localhost/O=SecureYeoman/C=US',
+    ],
     { stdio: 'pipe' }
   );
 

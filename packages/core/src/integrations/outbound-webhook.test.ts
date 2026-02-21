@@ -134,7 +134,11 @@ describe('OutboundWebhookStorage', () => {
   });
 
   it('should delete a webhook', async () => {
-    const wh = await storage.createWebhook({ name: 'To delete', url: 'https://del.com', events: [] });
+    const wh = await storage.createWebhook({
+      name: 'To delete',
+      url: 'https://del.com',
+      events: [],
+    });
     const deleted = await storage.deleteWebhook(wh.id);
     expect(deleted).toBe(true);
     expect(await storage.getWebhook(wh.id)).toBeNull();

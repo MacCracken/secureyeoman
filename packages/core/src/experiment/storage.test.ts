@@ -16,7 +16,10 @@ const expRow = {
   name: 'My Experiment',
   description: 'A/B test',
   status: 'running',
-  variants: [{ id: 'v-1', name: 'Control' }, { id: 'v-2', name: 'Treatment' }],
+  variants: [
+    { id: 'v-1', name: 'Control' },
+    { id: 'v-2', name: 'Treatment' },
+  ],
   results: [],
   started_at: 1000,
   completed_at: null,
@@ -67,8 +70,8 @@ describe('ExperimentStorage', () => {
       const params = mockQuery.mock.calls[0][1] as unknown[];
       expect(params[1]).toBe('Exp');
       expect(params[3]).toBe('draft'); // default status
-      expect(params[6]).toBeNull();    // started_at
-      expect(params[7]).toBeNull();    // completed_at
+      expect(params[6]).toBeNull(); // started_at
+      expect(params[7]).toBeNull(); // completed_at
     });
   });
 
@@ -135,7 +138,7 @@ describe('ExperimentStorage', () => {
     it('updates and returns merged experiment', async () => {
       mockQuery
         .mockResolvedValueOnce({ rows: [expRow], rowCount: 1 }) // get
-        .mockResolvedValueOnce({ rows: [], rowCount: 1 });       // execute UPDATE
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // execute UPDATE
 
       const result = await storage.update('exp-1', { status: 'completed', completedAt: 9999 });
       expect(result).not.toBeNull();

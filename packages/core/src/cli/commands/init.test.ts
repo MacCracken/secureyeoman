@@ -30,18 +30,24 @@ const {
       }
       return { value: undefined, rest: argv };
     }),
-    mockExtractBoolFlag: vi.fn().mockImplementation((argv: string[], long: string, short?: string) => {
-      const hasLong = argv.includes(`--${long}`);
-      const hasShort = short ? argv.includes(`-${short}`) : false;
-      const value = hasLong || hasShort;
-      const rest = argv.filter((a) => a !== `--${long}` && (!short || a !== `-${short}`));
-      return { value, rest };
-    }),
+    mockExtractBoolFlag: vi
+      .fn()
+      .mockImplementation((argv: string[], long: string, short?: string) => {
+        const hasLong = argv.includes(`--${long}`);
+        const hasShort = short ? argv.includes(`-${short}`) : false;
+        const value = hasLong || hasShort;
+        const rest = argv.filter((a) => a !== `--${long}` && (!short || a !== `-${short}`));
+        return { value, rest };
+      }),
     mockApiCall: vi.fn().mockResolvedValue({ ok: false }),
-    mockPrompt: vi.fn().mockImplementation((_rl: any, _q: string, def: string) => Promise.resolve(def)),
-    mockPromptChoice: vi.fn().mockImplementation((_rl: any, _q: string, choices: string[], defIdx: number) =>
-      Promise.resolve(choices[defIdx])
-    ),
+    mockPrompt: vi
+      .fn()
+      .mockImplementation((_rl: any, _q: string, def: string) => Promise.resolve(def)),
+    mockPromptChoice: vi
+      .fn()
+      .mockImplementation((_rl: any, _q: string, choices: string[], defIdx: number) =>
+        Promise.resolve(choices[defIdx])
+      ),
     mockCreateInterface: vi.fn().mockReturnValue({ close: vi.fn() }),
   };
 });

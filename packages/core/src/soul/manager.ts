@@ -55,7 +55,10 @@ function isSkillInContext(skill: Skill, message: string): boolean {
     });
   }
   // Keyword fallback: significant words from the skill name
-  const words = skill.name.toLowerCase().split(/\s+/).filter((w) => w.length > 3);
+  const words = skill.name
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((w) => w.length > 3);
   const msg = message.toLowerCase();
   return words.some((w) => msg.includes(w));
 }
@@ -200,7 +203,10 @@ export class SoulManager {
     await this.storage.deletePersonality(id);
   }
 
-  async listPersonalities(opts?: { limit?: number; offset?: number }): Promise<{ personalities: Personality[]; total: number }> {
+  async listPersonalities(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ personalities: Personality[]; total: number }> {
     return this.storage.listPersonalities(opts);
   }
 
@@ -253,7 +259,9 @@ export class SoulManager {
     await this.storage.updateSkill(id, { enabled: false });
   }
 
-  async listSkills(filter?: SkillFilter & { limit?: number; offset?: number }): Promise<{ skills: Skill[]; total: number }> {
+  async listSkills(
+    filter?: SkillFilter & { limit?: number; offset?: number }
+  ): Promise<{ skills: Skill[]; total: number }> {
     let skills: Skill[];
     let total: number;
 
@@ -342,7 +350,10 @@ export class SoulManager {
     return this.storage.deleteUser(id);
   }
 
-  async listUsers(opts?: { limit?: number; offset?: number }): Promise<{ users: UserProfile[]; total: number }> {
+  async listUsers(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ users: UserProfile[]; total: number }> {
     return this.storage.listUsers(opts);
   }
 
@@ -593,9 +604,7 @@ export class SoulManager {
     // Determine which skills to fully expand:
     // - With a message: only skills that match the context (triggerPatterns or keyword)
     // - Without a message: all skills (can't be selective without input)
-    const skillsToExpand = input
-      ? skills.filter((s) => isSkillInContext(s, input))
-      : skills;
+    const skillsToExpand = input ? skills.filter((s) => isSkillInContext(s, input)) : skills;
 
     // Append full instructions for contextually relevant skills —
     // stop before exceeding the cap (never slice mid-skill)

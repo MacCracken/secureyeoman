@@ -118,7 +118,11 @@ describe('IMessageIntegration – adapter.ts', () => {
 
   afterEach(async () => {
     Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
-    try { await adapter.stop(); } catch { /* ignore */ }
+    try {
+      await adapter.stop();
+    } catch {
+      /* ignore */
+    }
     vi.useRealTimers();
   });
 
@@ -166,7 +170,9 @@ describe('IMessageIntegration – adapter.ts', () => {
 
     it('throws when Database.prepare/get fails', async () => {
       mocks.mockPrepare.mockReturnValue({
-        get: vi.fn().mockImplementation(() => { throw new Error('db locked'); }),
+        get: vi.fn().mockImplementation(() => {
+          throw new Error('db locked');
+        }),
         all: vi.fn().mockReturnValue([]),
       });
       await expect(adapter.init(makeConfig(), makeDeps())).rejects.toThrow(
@@ -191,9 +197,7 @@ describe('IMessageIntegration – adapter.ts', () => {
       mocks.mockDbGet.mockReturnValue({ maxId: 42 });
       await adapter.init(makeConfig(), makeDeps());
       // lastRowId is private but we can verify the DB was queried
-      expect(mocks.mockPrepare).toHaveBeenCalledWith(
-        expect.stringContaining('SELECT MAX(ROWID)')
-      );
+      expect(mocks.mockPrepare).toHaveBeenCalledWith(expect.stringContaining('SELECT MAX(ROWID)'));
     });
 
     it('handles null maxId gracefully (empty db)', async () => {

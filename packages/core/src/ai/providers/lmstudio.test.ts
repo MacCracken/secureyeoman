@@ -108,7 +108,9 @@ describe('LMStudioProvider', () => {
     it('maps length finish reason to max_tokens', async () => {
       mockCreate.mockResolvedValue({
         id: 'cmpl-3',
-        choices: [{ message: { content: 'truncated', role: 'assistant' }, finish_reason: 'length' }],
+        choices: [
+          { message: { content: 'truncated', role: 'assistant' }, finish_reason: 'length' },
+        ],
         usage: { prompt_tokens: 5, completion_tokens: 1024, total_tokens: 1029 },
       });
 
@@ -124,9 +126,7 @@ describe('LMStudioProvider', () => {
             message: {
               role: 'assistant',
               content: null,
-              tool_calls: [
-                { id: 'call-1', function: { name: 'tool', arguments: 'not-json' } },
-              ],
+              tool_calls: [{ id: 'call-1', function: { name: 'tool', arguments: 'not-json' } }],
             },
             finish_reason: 'tool_calls',
           },
@@ -200,15 +200,18 @@ describe('LMStudioProvider', () => {
 
   describe('fetchAvailableModels', () => {
     it('returns models from API', async () => {
-      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          data: [
-            { id: 'llama-3', owned_by: 'meta' },
-            { id: 'mistral-7b', owned_by: 'mistral' },
-          ],
-        }),
-      }));
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: async () => ({
+            data: [
+              { id: 'llama-3', owned_by: 'meta' },
+              { id: 'mistral-7b', owned_by: 'mistral' },
+            ],
+          }),
+        })
+      );
 
       const models = await LMStudioProvider.fetchAvailableModels('http://localhost:1234/v1');
       expect(models).toHaveLength(2);
@@ -238,7 +241,10 @@ describe('LMStudioProvider', () => {
       async function* mockStream() {
         yield { choices: [{ delta: { content: 'Hello' }, finish_reason: null }], usage: null };
         yield { choices: [{ delta: { content: ' world' }, finish_reason: null }], usage: null };
-        yield { choices: [{ delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 } };
+        yield {
+          choices: [{ delta: {}, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 },
+        };
       }
       mockCreate.mockResolvedValueOnce(mockStream());
       const chunks: any[] = [];
@@ -253,12 +259,14 @@ describe('LMStudioProvider', () => {
     it('yields tool_call_delta chunks', async () => {
       async function* mockStream() {
         yield {
-          choices: [{
-            delta: {
-              tool_calls: [{ id: 'call_1', function: { name: 'search', arguments: '' } }],
+          choices: [
+            {
+              delta: {
+                tool_calls: [{ id: 'call_1', function: { name: 'search', arguments: '' } }],
+              },
+              finish_reason: null,
             },
-            finish_reason: null,
-          }],
+          ],
           usage: null,
         };
         yield { choices: [{ delta: {}, finish_reason: 'tool_calls' }], usage: null };
@@ -276,7 +284,9 @@ describe('LMStudioProvider', () => {
       const { RateLimitError } = await import('../errors.js');
       mockCreate.mockRejectedValueOnce(new (APIError as any)(429, 'rate limited'));
       await expect(async () => {
-        for await (const _ of provider.chatStream(simpleRequest)) { /* consume */ }
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* consume */
+        }
       }).rejects.toThrow(RateLimitError);
     });
   });
@@ -292,7 +302,9 @@ describe('LMStudioProvider', () => {
     it('maps 400 token error to TokenLimitError', async () => {
       const { APIError } = await import('openai');
       const { TokenLimitError } = await import('../errors.js');
-      mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'context length exceeded token limit'));
+      mockCreate.mockRejectedValueOnce(
+        new (APIError as any)(400, 'context length exceeded token limit')
+      );
       await expect(provider.chat(simpleRequest)).rejects.toThrow(TokenLimitError);
     });
 

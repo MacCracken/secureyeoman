@@ -1,7 +1,15 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('../logging/logger.js', () => ({
-  getLogger: () => ({ trace: vi.fn(), debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(), fatal: vi.fn(), child: () => ({}) }),
+  getLogger: () => ({
+    trace: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    fatal: vi.fn(),
+    child: () => ({}),
+  }),
 }));
 
 import { SkillScheduler } from './skill-scheduler.js';
@@ -53,7 +61,9 @@ describe('SkillScheduler', () => {
       for (let i = 0; i < 5; i++) {
         scheduler.schedule(makeScheduledSkill());
       }
-      expect(() => scheduler.schedule(makeScheduledSkill())).toThrow('Maximum scheduled skills limit');
+      expect(() => scheduler.schedule(makeScheduledSkill())).toThrow(
+        'Maximum scheduled skills limit'
+      );
     });
 
     it('allows updating an existing scheduled skill (same id)', () => {

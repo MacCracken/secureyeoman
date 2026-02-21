@@ -68,7 +68,10 @@ export class SpiritManager {
     return this.storage.deletePassion(id);
   }
 
-  async listPassions(opts?: { limit?: number; offset?: number }): Promise<{ passions: Passion[]; total: number }> {
+  async listPassions(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ passions: Passion[]; total: number }> {
     return this.storage.listPassions(undefined, opts);
   }
 
@@ -98,7 +101,10 @@ export class SpiritManager {
     return this.storage.deleteInspiration(id);
   }
 
-  async listInspirations(opts?: { limit?: number; offset?: number }): Promise<{ inspirations: Inspiration[]; total: number }> {
+  async listInspirations(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ inspirations: Inspiration[]; total: number }> {
     return this.storage.listInspirations(undefined, opts);
   }
 
@@ -128,7 +134,10 @@ export class SpiritManager {
     return this.storage.deletePain(id);
   }
 
-  async listPains(opts?: { limit?: number; offset?: number }): Promise<{ pains: Pain[]; total: number }> {
+  async listPains(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ pains: Pain[]; total: number }> {
     return this.storage.listPains(undefined, opts);
   }
 

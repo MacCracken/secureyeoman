@@ -88,8 +88,7 @@ export function ExtensionsPage() {
     staleTime: 30000,
   });
 
-  const enabled =
-    (configData?.config)?.enabled === true || securityPolicy?.allowExtensions === true;
+  const enabled = configData?.config?.enabled === true || securityPolicy?.allowExtensions === true;
 
   const discoverMut = useMutation({
     mutationFn: discoverExtensions,

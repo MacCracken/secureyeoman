@@ -103,7 +103,9 @@ describe('ensureCollection', () => {
 
     const store = makeStore();
     // search() propagates ensureCollection errors (unlike count/delete which are fault-tolerant)
-    await expect(store.search([1, 0, 0], 5)).rejects.toThrow(/ChromaDB.*get\/create collection.*500/);
+    await expect(store.search([1, 0, 0], 5)).rejects.toThrow(
+      /ChromaDB.*get\/create collection.*500/
+    );
   });
 });
 
@@ -117,9 +119,7 @@ describe('insert / insertBatch', () => {
     const store = makeStore();
     await store.insert('id-1', [0.1, 0.2, 0.3], { type: 'memory' });
 
-    const upsertCall = mockFetch.mock.calls.find(([url]: [string]) =>
-      url.includes('/upsert')
-    );
+    const upsertCall = mockFetch.mock.calls.find(([url]: [string]) => url.includes('/upsert'));
     expect(upsertCall).toBeDefined();
     const body = JSON.parse(upsertCall![1].body as string);
     expect(body.ids).toEqual(['id-1']);
@@ -138,9 +138,7 @@ describe('insert / insertBatch', () => {
       { id: 'c', vector: [0, 0, 1] },
     ]);
 
-    const upsertCall = mockFetch.mock.calls.find(([url]: [string]) =>
-      url.includes('/upsert')
-    );
+    const upsertCall = mockFetch.mock.calls.find(([url]: [string]) => url.includes('/upsert'));
     const body = JSON.parse(upsertCall![1].body as string);
     expect(body.ids).toEqual(['a', 'b', 'c']);
     expect(body.embeddings).toHaveLength(3);
@@ -164,9 +162,7 @@ describe('insert / insertBatch', () => {
     const store = makeStore();
     await store.insert('id-1', [1, 0, 0]);
 
-    const upsertCall = mockFetch.mock.calls.find(([url]: [string]) =>
-      url.includes('/upsert')
-    );
+    const upsertCall = mockFetch.mock.calls.find(([url]: [string]) => url.includes('/upsert'));
     expect(upsertCall![0]).toContain(COLLECTION_ID);
   });
 
@@ -212,7 +208,7 @@ describe('search', () => {
       if (url.includes('/query')) {
         return mockResponse({
           ids: [['id-a', 'id-b']],
-          distances: [[0.05, 0.7]],  // similarities: 0.95, 0.30
+          distances: [[0.05, 0.7]], // similarities: 0.95, 0.30
           metadatas: [[{}, {}]],
         });
       }
@@ -239,9 +235,7 @@ describe('search', () => {
 
     expect(results).toEqual([]);
     // query endpoint should never be called
-    const queryCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
-      url.includes('/query')
-    );
+    const queryCalls = mockFetch.mock.calls.filter(([url]: [string]) => url.includes('/query'));
     expect(queryCalls).toHaveLength(0);
   });
 
@@ -249,7 +243,11 @@ describe('search', () => {
     mockFetch = withCollectionSetup((url: string) => {
       if (url.includes('/count')) return mockResponse(2);
       if (url.includes('/query')) {
-        return mockResponse({ ids: [['id-a', 'id-b']], distances: [[0.1, 0.2]], metadatas: [[{}, {}]] });
+        return mockResponse({
+          ids: [['id-a', 'id-b']],
+          distances: [[0.1, 0.2]],
+          metadatas: [[{}, {}]],
+        });
       }
       return mockResponse(null);
     });
@@ -258,9 +256,7 @@ describe('search', () => {
     const store = makeStore();
     await store.search([1, 0, 0], 100); // ask for 100 but only 2 exist
 
-    const queryCall = mockFetch.mock.calls.find(([url]: [string]) =>
-      url.includes('/query')
-    );
+    const queryCall = mockFetch.mock.calls.find(([url]: [string]) => url.includes('/query'));
     const body = JSON.parse(queryCall![1].body as string);
     expect(body.n_results).toBe(2); // clamped to collection size
   });
@@ -296,9 +292,7 @@ describe('delete', () => {
     const result = await store.delete('target-id');
 
     expect(result).toBe(true);
-    const deleteCall = mockFetch.mock.calls.find(([url]: [string]) =>
-      url.includes('/delete')
-    );
+    const deleteCall = mockFetch.mock.calls.find(([url]: [string]) => url.includes('/delete'));
     expect(deleteCall).toBeDefined();
     const body = JSON.parse(deleteCall![1].body as string);
     expect(body.ids).toEqual(['target-id']);

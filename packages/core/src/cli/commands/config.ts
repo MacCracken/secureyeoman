@@ -152,9 +152,7 @@ Options:
   const allPassed = checks.every((c) => c.passed);
 
   if (jsonResult.value) {
-    ctx.stdout.write(
-      JSON.stringify({ valid: allPassed, checks }, null, 2) + '\n'
-    );
+    ctx.stdout.write(JSON.stringify({ valid: allPassed, checks }, null, 2) + '\n');
     return allPassed ? 0 : 1;
   }
 

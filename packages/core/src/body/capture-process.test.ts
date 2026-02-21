@@ -3,8 +3,8 @@ import { EventEmitter } from 'node:events';
 
 // ─── Hoisted Mocks ────────────────────────────────────────────
 
-const { mockSpawn, mockSandbox, MockLinuxCaptureSandbox, MockDarwinCaptureSandbox } =
-  vi.hoisted(() => {
+const { mockSpawn, mockSandbox, MockLinuxCaptureSandbox, MockDarwinCaptureSandbox } = vi.hoisted(
+  () => {
     const mockSandbox = {
       initialize: vi.fn().mockResolvedValue(undefined),
       checkResourceLimits: vi.fn().mockReturnValue(true),
@@ -36,7 +36,8 @@ const { mockSpawn, mockSandbox, MockLinuxCaptureSandbox, MockDarwinCaptureSandbo
     const mockSpawn = vi.fn().mockImplementation(() => makeChild());
 
     return { mockSpawn, mockSandbox, MockLinuxCaptureSandbox, MockDarwinCaptureSandbox };
-  });
+  }
+);
 
 vi.mock('node:child_process', () => ({ spawn: mockSpawn }));
 vi.mock('node:os', () => ({ platform: vi.fn().mockReturnValue('linux') }));
@@ -134,9 +135,7 @@ describe('CaptureProcess', () => {
     it('accepts onEvent and onViolation callbacks', () => {
       const onEvent = vi.fn();
       const onViolation = vi.fn();
-      expect(
-        () => new CaptureProcess(makeCfg({ onEvent, onViolation }))
-      ).not.toThrow();
+      expect(() => new CaptureProcess(makeCfg({ onEvent, onViolation }))).not.toThrow();
     });
   });
 

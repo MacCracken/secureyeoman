@@ -18,8 +18,8 @@ describe('countTokens', () => {
   });
 
   it('approximates token count as ceil(length / 4)', () => {
-    expect(countTokens('abcd')).toBe(1);       // 4 chars → 1 token
-    expect(countTokens('abcde')).toBe(2);      // 5 chars → ceil(5/4) = 2
+    expect(countTokens('abcd')).toBe(1); // 4 chars → 1 token
+    expect(countTokens('abcde')).toBe(2); // 5 chars → ceil(5/4) = 2
     expect(countTokens('hello world')).toBe(3); // 11 chars → ceil(11/4) = 3
   });
 
@@ -71,7 +71,7 @@ describe('countMessageTokens', () => {
 describe('clearTokenCache', () => {
   it('clears cached values', () => {
     const text = 'clear me';
-    countTokens(text);    // populate cache
+    countTokens(text); // populate cache
     clearTokenCache();
     // After clearing, the same text should recompute (no observable side effect, just should not throw)
     expect(() => countTokens(text)).not.toThrow();

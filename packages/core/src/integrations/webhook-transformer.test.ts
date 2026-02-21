@@ -51,7 +51,10 @@ describe('WebhookTransformer.applyRules', () => {
       extractRules: [{ field: 'text', path: '$.commits[0].message', default: undefined }],
     });
     const transformer = new WebhookTransformer(makeStorage([rule]));
-    const patch = await transformer.applyRules({ commits: [{ message: 'feat: add tests' }] }, 'int-1');
+    const patch = await transformer.applyRules(
+      { commits: [{ message: 'feat: add tests' }] },
+      'int-1'
+    );
     expect(patch.text).toBe('feat: add tests');
   });
 
@@ -82,7 +85,10 @@ describe('WebhookTransformer.applyRules', () => {
       template: '{{senderName}} {{action}} the PR',
     });
     const transformer = new WebhookTransformer(makeStorage([rule]));
-    const patch = await transformer.applyRules({ user: { login: 'alice' }, action: 'opened' }, 'int-1');
+    const patch = await transformer.applyRules(
+      { user: { login: 'alice' }, action: 'opened' },
+      'int-1'
+    );
     expect(patch.text).toBe('alice opened the PR');
   });
 

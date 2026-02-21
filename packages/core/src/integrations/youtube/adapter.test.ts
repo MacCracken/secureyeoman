@@ -247,7 +247,8 @@ describe('YouTubeIntegration', () => {
     it('should dispatch new videos as UnifiedMessages', async () => {
       const newItem = makeSearchItem('vid_new1', 'New Video Title', 'UCTestChannel123');
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         // seedSeenVideos: empty
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
         // poll: returns one new video
@@ -283,11 +284,15 @@ describe('YouTubeIntegration', () => {
     it('should not re-dispatch videos seen during seed', async () => {
       const existingItem = makeSearchItem('vid_existing', 'Old Video');
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         // seedSeenVideos: returns existing
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [existingItem] }) })
         // poll: same video
-        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [existingItem] }) });
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ items: [existingItem] }),
+        });
       vi.stubGlobal('fetch', mockFetch);
 
       const onMessage = vi.fn().mockResolvedValue(undefined);
@@ -306,7 +311,8 @@ describe('YouTubeIntegration', () => {
     it('should not re-dispatch a new video on the second poll', async () => {
       const newItem = makeSearchItem('vid_once', 'One-Time Video');
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [newItem] }) })
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [newItem] }) });
@@ -338,9 +344,13 @@ describe('YouTubeIntegration', () => {
         },
       };
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
-        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [itemWithoutVideoId] }) });
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ items: [itemWithoutVideoId] }),
+        });
       vi.stubGlobal('fetch', mockFetch);
 
       const onMessage = vi.fn().mockResolvedValue(undefined);
@@ -358,9 +368,16 @@ describe('YouTubeIntegration', () => {
 
     it('should include description snippet (up to 200 chars) in message text', async () => {
       const longDesc = 'A'.repeat(300);
-      const newItem = makeSearchItem('vid_desc', 'Described Video', 'UCTestChannel123', '2024-06-01T12:00:00Z', longDesc);
+      const newItem = makeSearchItem(
+        'vid_desc',
+        'Described Video',
+        'UCTestChannel123',
+        '2024-06-01T12:00:00Z',
+        longDesc
+      );
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [newItem] }) });
       vi.stubGlobal('fetch', mockFetch);
@@ -385,7 +402,8 @@ describe('YouTubeIntegration', () => {
       const warnFn = vi.fn();
       const logger = { ...noopLogger(), warn: warnFn };
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         // seedSeenVideos: empty
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
         // search request fails
@@ -401,7 +419,10 @@ describe('YouTubeIntegration', () => {
       await vi.advanceTimersByTimeAsync(1000);
       // The failed search returns [] but the poll completes without throwing
       // The warn here is within fetchLatestVideos which warns on non-OK
-      expect(warnFn).toHaveBeenCalledWith('YouTube search failed', expect.objectContaining({ status: 403 }));
+      expect(warnFn).toHaveBeenCalledWith(
+        'YouTube search failed',
+        expect.objectContaining({ status: 403 })
+      );
 
       await adapter.stop();
     });
@@ -417,7 +438,8 @@ describe('YouTubeIntegration', () => {
         },
       };
 
-      const mockFetch = vi.fn()
+      const mockFetch = vi
+        .fn()
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [itemNoDate] }) });
       vi.stubGlobal('fetch', mockFetch);
@@ -480,8 +502,7 @@ describe('YouTubeIntegration', () => {
     it('should return ok=true with the channel title', async () => {
       const mockFetch = vi.fn().mockResolvedValue({
         ok: true,
-        json: () =>
-          Promise.resolve({ items: [{ snippet: { title: 'My Awesome Channel' } }] }),
+        json: () => Promise.resolve({ items: [{ snippet: { title: 'My Awesome Channel' } }] }),
         statusText: 'OK',
       });
       vi.stubGlobal('fetch', mockFetch);

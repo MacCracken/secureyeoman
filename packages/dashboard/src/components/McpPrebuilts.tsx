@@ -238,8 +238,7 @@ export function McpPrebuilts() {
         {PREBUILT_SERVERS.map((server) => {
           const isConnected = connectedNames.has(server.name);
           const isExpanded = expandedServer === server.name;
-          const isConnecting =
-            connectMut.isPending && connectMut.variables?.name === server.name;
+          const isConnecting = connectMut.isPending && connectMut.variables?.name === server.name;
 
           return (
             <div key={server.name} className="card p-4 space-y-3">
@@ -258,7 +257,9 @@ export function McpPrebuilts() {
                 </div>
                 {!isConnected && !isExpanded && (
                   <button
-                    onClick={() => { setExpandedServer(server.name); }}
+                    onClick={() => {
+                      setExpandedServer(server.name);
+                    }}
                     className="btn btn-primary text-xs px-3 py-1.5 shrink-0"
                   >
                     Connect
@@ -283,38 +284,35 @@ export function McpPrebuilts() {
                         <input
                           type={isUrl ? 'text' : 'password'}
                           value={envValues[`${server.name}:${v.key}`] ?? ''}
-                          onChange={(e) =>
-                            { setEnvValues((prev) => ({
+                          onChange={(e) => {
+                            setEnvValues((prev) => ({
                               ...prev,
                               [`${server.name}:${v.key}`]: e.target.value,
-                            })); }
-                          }
+                            }));
+                          }}
                           placeholder={isUrl ? 'https://' : v.key}
                           className="input w-full text-xs"
                         />
                       </div>
                     );
                   })}
-                  {connectMut.error &&
-                    connectMut.variables?.name === server.name && (
-                      <p className="text-xs text-destructive">
-                        {connectMut.error.message}
-                      </p>
-                    )}
+                  {connectMut.error && connectMut.variables?.name === server.name && (
+                    <p className="text-xs text-destructive">{connectMut.error.message}</p>
+                  )}
                   <div className="flex gap-2">
                     <button
-                      onClick={() => { connectMut.mutate(server); }}
+                      onClick={() => {
+                        connectMut.mutate(server);
+                      }}
                       disabled={isConnecting}
                       className="btn btn-primary text-xs px-3 py-1.5"
                     >
-                      {isConnecting ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        'Connect'
-                      )}
+                      {isConnecting ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Connect'}
                     </button>
                     <button
-                      onClick={() => { setExpandedServer(null); }}
+                      onClick={() => {
+                        setExpandedServer(null);
+                      }}
                       className="btn btn-ghost text-xs px-3 py-1.5"
                     >
                       Cancel

@@ -136,7 +136,9 @@ describe('scraper command', () => {
         ok: true,
         status: 200,
         headers: { get: () => 'application/json' },
-        json: async () => ({ tools: [{ name: 'web_search', description: 'Search', inputSchema: {} }] }),
+        json: async () => ({
+          tools: [{ name: 'web_search', description: 'Search', inputSchema: {} }],
+        }),
       })
     );
 

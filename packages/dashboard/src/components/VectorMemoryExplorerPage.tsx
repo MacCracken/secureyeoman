@@ -48,7 +48,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // Add memory form
-  const [newType, setNewType] = useState<'episodic' | 'semantic' | 'procedural' | 'preference'>('semantic');
+  const [newType, setNewType] = useState<'episodic' | 'semantic' | 'procedural' | 'preference'>(
+    'semantic'
+  );
   const [newContent, setNewContent] = useState('');
   const [newSource, setNewSource] = useState('manual');
   const [newImportance, setNewImportance] = useState(0.5);
@@ -104,7 +106,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
       });
       setSearchResults(result.results);
     } catch (err) {
-      setSearchError(err instanceof Error ? err.message : 'Semantic search failed. Ensure vector memory is enabled.');
+      setSearchError(
+        err instanceof Error
+          ? err.message
+          : 'Semantic search failed. Ensure vector memory is enabled.'
+      );
       setSearchResults(null);
     } finally {
       setIsSearching(false);
@@ -123,8 +129,16 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
 
   const tabs = [
     { id: 'search' as const, label: 'Semantic Search', icon: <Search className="w-4 h-4" /> },
-    { id: 'memories' as const, label: `Memories (${memories.length})`, icon: <Brain className="w-4 h-4" /> },
-    { id: 'knowledge' as const, label: `Knowledge (${knowledge.length})`, icon: <BookOpen className="w-4 h-4" /> },
+    {
+      id: 'memories' as const,
+      label: `Memories (${memories.length})`,
+      icon: <Brain className="w-4 h-4" />,
+    },
+    {
+      id: 'knowledge' as const,
+      label: `Knowledge (${knowledge.length})`,
+      icon: <BookOpen className="w-4 h-4" />,
+    },
     { id: 'add' as const, label: 'Add Entry', icon: <Plus className="w-4 h-4" /> },
   ];
 
@@ -148,14 +162,14 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
           <p className="text-xs text-muted-foreground">Reindex</p>
           <button
             className="text-xs mt-1 text-primary hover:underline disabled:opacity-50"
-            onClick={() => { reindexMutation.mutate(); }}
+            onClick={() => {
+              reindexMutation.mutate();
+            }}
             disabled={reindexMutation.isPending}
           >
             {reindexMutation.isPending ? 'Reindexing...' : 'Reindex All'}
           </button>
-          {reindexMutation.isSuccess && (
-            <p className="text-xs text-green-500 mt-0.5">Done</p>
-          )}
+          {reindexMutation.isSuccess && <p className="text-xs text-green-500 mt-0.5">Done</p>}
         </div>
       </div>
 
@@ -164,7 +178,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => { setActiveTab(tab.id); }}
+            onClick={() => {
+              setActiveTab(tab.id);
+            }}
             className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 text-xs font-medium border-b-2 transition-colors whitespace-nowrap shrink-0 ${
               activeTab === tab.id
                 ? 'border-primary text-primary'
@@ -189,14 +205,18 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
               <input
                 type="text"
                 value={searchQuery}
-                onChange={(e) => { setSearchQuery(e.target.value); }}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                }}
                 placeholder="Search for similar memories..."
                 className="w-full sm:flex-1 bg-card border border-border rounded-lg text-sm py-1.5 px-3"
                 onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
               />
               <select
                 value={searchType}
-                onChange={(e) => { setSearchType(e.target.value as 'all' | 'memories' | 'knowledge'); }}
+                onChange={(e) => {
+                  setSearchType(e.target.value as 'all' | 'memories' | 'knowledge');
+                }}
                 className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-full sm:w-32"
               >
                 <option value="all">All</option>
@@ -211,7 +231,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                   max={1}
                   step={0.05}
                   value={searchThreshold}
-                  onChange={(e) => { setSearchThreshold(parseFloat(e.target.value) || 0.7); }}
+                  onChange={(e) => {
+                    setSearchThreshold(parseFloat(e.target.value) || 0.7);
+                  }}
                   className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-16"
                 />
               </div>
@@ -220,7 +242,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 onClick={handleSearch}
                 disabled={isSearching || !searchQuery.trim()}
               >
-                {isSearching ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+                {isSearching ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Search className="w-3.5 h-3.5" />
+                )}
                 Search
               </button>
             </div>
@@ -282,7 +308,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : memories.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground text-sm">No memories stored.</div>
+              <div className="text-center py-12 text-muted-foreground text-sm">
+                No memories stored.
+              </div>
             ) : (
               <div className="space-y-0">
                 {memories.slice(0, 50).map((mem: Memory) => {
@@ -291,26 +319,50 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                     <React.Fragment key={mem.id}>
                       <div
                         className="flex items-center gap-2 py-2 px-1 border-b hover:bg-muted/30 cursor-pointer"
-                        onClick={() => { setExpandedId(expanded ? null : mem.id); }}
+                        onClick={() => {
+                          setExpandedId(expanded ? null : mem.id);
+                        }}
                       >
-                        {expanded ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                        {expanded ? (
+                          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
                         <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                           {MEMORY_TYPE_LABELS[mem.type] ?? mem.type}
                         </span>
                         <span className="text-sm flex-1 truncate">{mem.content.slice(0, 80)}</span>
-                        <span className="text-xs text-muted-foreground">{mem.importance.toFixed(2)}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {mem.importance.toFixed(2)}
+                        </span>
                       </div>
                       {expanded && (
                         <div className="bg-muted/20 p-3 border-b text-xs space-y-1">
-                          <div><span className="font-medium">ID:</span> {mem.id}</div>
-                          <div><span className="font-medium">Source:</span> {mem.source}</div>
-                          <div><span className="font-medium">Importance:</span> {mem.importance}</div>
-                          <div><span className="font-medium">Created:</span> {new Date(mem.createdAt).toLocaleString()}</div>
-                          <div><span className="font-medium">Content:</span></div>
-                          <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40 whitespace-pre-wrap break-words">{mem.content}</pre>
+                          <div>
+                            <span className="font-medium">ID:</span> {mem.id}
+                          </div>
+                          <div>
+                            <span className="font-medium">Source:</span> {mem.source}
+                          </div>
+                          <div>
+                            <span className="font-medium">Importance:</span> {mem.importance}
+                          </div>
+                          <div>
+                            <span className="font-medium">Created:</span>{' '}
+                            {new Date(mem.createdAt).toLocaleString()}
+                          </div>
+                          <div>
+                            <span className="font-medium">Content:</span>
+                          </div>
+                          <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40 whitespace-pre-wrap break-words">
+                            {mem.content}
+                          </pre>
                           <button
                             className="btn-ghost text-xs px-2 py-1 mt-1 flex items-center gap-1 text-destructive hover:bg-destructive/10"
-                            onClick={(e) => { e.stopPropagation(); deleteMutation.mutate(mem.id); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteMutation.mutate(mem.id);
+                            }}
                             disabled={deleteMutation.isPending}
                           >
                             <Trash2 className="w-3 h-3" /> Delete
@@ -344,7 +396,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
             ) : knowledge.length === 0 ? (
-              <div className="text-center py-12 text-muted-foreground text-sm">No knowledge entries stored.</div>
+              <div className="text-center py-12 text-muted-foreground text-sm">
+                No knowledge entries stored.
+              </div>
             ) : (
               <div className="space-y-0">
                 {knowledge.slice(0, 50).map((entry: KnowledgeEntry) => {
@@ -353,26 +407,52 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                     <React.Fragment key={entry.id}>
                       <div
                         className="flex items-center gap-2 py-2 px-1 border-b hover:bg-muted/30 cursor-pointer"
-                        onClick={() => { setExpandedId(expanded ? null : entry.id); }}
+                        onClick={() => {
+                          setExpandedId(expanded ? null : entry.id);
+                        }}
                       >
-                        {expanded ? <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" /> : <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />}
+                        {expanded ? (
+                          <ChevronDown className="w-3.5 h-3.5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="w-3.5 h-3.5 text-muted-foreground" />
+                        )}
                         <span className="text-xs bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded">
                           {entry.topic}
                         </span>
-                        <span className="text-sm flex-1 truncate">{entry.content.slice(0, 80)}</span>
-                        <span className="text-xs text-muted-foreground">{entry.confidence.toFixed(2)}</span>
+                        <span className="text-sm flex-1 truncate">
+                          {entry.content.slice(0, 80)}
+                        </span>
+                        <span className="text-xs text-muted-foreground">
+                          {entry.confidence.toFixed(2)}
+                        </span>
                       </div>
                       {expanded && (
                         <div className="bg-muted/20 p-3 border-b text-xs space-y-1">
-                          <div><span className="font-medium">ID:</span> {entry.id}</div>
-                          <div><span className="font-medium">Source:</span> {entry.source}</div>
-                          <div><span className="font-medium">Confidence:</span> {entry.confidence}</div>
-                          <div><span className="font-medium">Created:</span> {new Date(entry.createdAt).toLocaleString()}</div>
-                          <div><span className="font-medium">Content:</span></div>
-                          <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40 whitespace-pre-wrap break-words">{entry.content}</pre>
+                          <div>
+                            <span className="font-medium">ID:</span> {entry.id}
+                          </div>
+                          <div>
+                            <span className="font-medium">Source:</span> {entry.source}
+                          </div>
+                          <div>
+                            <span className="font-medium">Confidence:</span> {entry.confidence}
+                          </div>
+                          <div>
+                            <span className="font-medium">Created:</span>{' '}
+                            {new Date(entry.createdAt).toLocaleString()}
+                          </div>
+                          <div>
+                            <span className="font-medium">Content:</span>
+                          </div>
+                          <pre className="mt-1 p-2 bg-muted rounded text-xs overflow-auto max-h-40 whitespace-pre-wrap break-words">
+                            {entry.content}
+                          </pre>
                           <button
                             className="btn-ghost text-xs px-2 py-1 mt-1 flex items-center gap-1 text-destructive hover:bg-destructive/10"
-                            onClick={(e) => { e.stopPropagation(); deleteKnowledgeMutation.mutate(entry.id); }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteKnowledgeMutation.mutate(entry.id);
+                            }}
                             disabled={deleteKnowledgeMutation.isPending}
                           >
                             <Trash2 className="w-3 h-3" /> Delete
@@ -406,7 +486,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 <label className="text-xs text-muted-foreground block mb-1">Type</label>
                 <select
                   value={newType}
-                  onChange={(e) => { setNewType(e.target.value as typeof newType); }}
+                  onChange={(e) => {
+                    setNewType(e.target.value as typeof newType);
+                  }}
                   className="bg-card border border-border rounded-lg text-sm py-1.5 px-2 w-full"
                 >
                   <option value="semantic">Semantic</option>
@@ -420,7 +502,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 <input
                   type="text"
                   value={newSource}
-                  onChange={(e) => { setNewSource(e.target.value); }}
+                  onChange={(e) => {
+                    setNewSource(e.target.value);
+                  }}
                   className="bg-card border border-border rounded-lg text-sm py-1.5 px-3 w-full"
                 />
               </div>
@@ -432,7 +516,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                   max={1}
                   step={0.05}
                   value={newImportance}
-                  onChange={(e) => { setNewImportance(parseFloat(e.target.value) || 0.5); }}
+                  onChange={(e) => {
+                    setNewImportance(parseFloat(e.target.value) || 0.5);
+                  }}
                   className="bg-card border border-border rounded-lg text-sm py-1.5 px-3 w-full"
                 />
               </div>
@@ -441,7 +527,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
               <label className="text-xs text-muted-foreground block mb-1">Content</label>
               <textarea
                 value={newContent}
-                onChange={(e) => { setNewContent(e.target.value); }}
+                onChange={(e) => {
+                  setNewContent(e.target.value);
+                }}
                 placeholder="Enter memory content..."
                 rows={4}
                 className="w-full bg-card border border-border rounded-lg text-sm py-2 px-3 resize-y"
@@ -453,13 +541,18 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                 onClick={handleAddMemory}
                 disabled={addMutation.isPending || !newContent.trim()}
               >
-                {addMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                {addMutation.isPending ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <Plus className="w-4 h-4" />
+                )}
                 Add Memory
               </button>
             </div>
             {addMutation.isError && (
               <div className="border border-destructive/30 bg-destructive/10 rounded-lg p-2 text-xs text-destructive">
-                Failed to add memory: {addMutation.error instanceof Error ? addMutation.error.message : 'Unknown error'}
+                Failed to add memory:{' '}
+                {addMutation.error instanceof Error ? addMutation.error.message : 'Unknown error'}
               </div>
             )}
           </div>
@@ -471,7 +564,14 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
 
 function SimilarityBar({ score }: { score: number }) {
   const pct = Math.round(score * 100);
-  const color = score >= 0.9 ? 'bg-green-500' : score >= 0.7 ? 'bg-blue-500' : score >= 0.5 ? 'bg-yellow-500' : 'bg-muted-foreground';
+  const color =
+    score >= 0.9
+      ? 'bg-green-500'
+      : score >= 0.7
+        ? 'bg-blue-500'
+        : score >= 0.5
+          ? 'bg-yellow-500'
+          : 'bg-muted-foreground';
   return (
     <div className="flex items-center gap-2">
       <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
@@ -482,7 +582,15 @@ function SimilarityBar({ score }: { score: number }) {
   );
 }
 
-function StatCard({ label, value, color }: { label: string; value: string | number; color?: string }) {
+function StatCard({
+  label,
+  value,
+  color,
+}: {
+  label: string;
+  value: string | number;
+  color?: string;
+}) {
   return (
     <div className="card p-3 sm:p-4">
       <p className="text-xs text-muted-foreground">{label}</p>

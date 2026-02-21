@@ -188,10 +188,7 @@ export function registerExtensionRoutes(
       }>,
       reply: FastifyReply
     ) => {
-      const updated = await extensionManager.storage.updateWebhook(
-        request.params.id,
-        request.body
-      );
+      const updated = await extensionManager.storage.updateWebhook(request.params.id, request.body);
       if (!updated) {
         return sendError(reply, 404, 'Webhook not found');
       }

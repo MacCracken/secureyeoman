@@ -25,12 +25,16 @@ const mockStorage = {
 };
 
 vi.mock('./crypto.js', () => ({
-  AgentCrypto: vi.fn().mockImplementation(function() { return mockCrypto; }),
+  AgentCrypto: vi.fn().mockImplementation(function () {
+    return mockCrypto;
+  }),
   sanitizePayload: vi.fn().mockImplementation((p: unknown) => p),
 }));
 
 vi.mock('./storage.js', () => ({
-  CommsStorage: vi.fn().mockImplementation(function() { return mockStorage; }),
+  CommsStorage: vi.fn().mockImplementation(function () {
+    return mockStorage;
+  }),
 }));
 
 vi.mock('../utils/crypto.js', () => ({
@@ -73,10 +77,9 @@ describe('AgentComms', () => {
     mockStorage.queryMessageLog.mockResolvedValue([]);
     mockStorage.pruneOldMessages.mockResolvedValue(5);
 
-    comms = new AgentComms(
-      { agentName: 'FRIDAY', maxPeers: 10, messageRetentionDays: 30 } as any,
-      { logger: mockLogger as any }
-    );
+    comms = new AgentComms({ agentName: 'FRIDAY', maxPeers: 10, messageRetentionDays: 30 } as any, {
+      logger: mockLogger as any,
+    });
   });
 
   describe('init', () => {
@@ -148,17 +151,17 @@ describe('AgentComms', () => {
 
   describe('encryptMessage', () => {
     it('throws if not initialized', async () => {
-      await expect(
-        comms.encryptMessage('peer-1', { type: 'ping', data: {} })
-      ).rejects.toThrow('not initialized');
+      await expect(comms.encryptMessage('peer-1', { type: 'ping', data: {} })).rejects.toThrow(
+        'not initialized'
+      );
     });
 
     it('throws when peer not found', async () => {
       mockStorage.getPeer.mockResolvedValue(null);
       await comms.init();
-      await expect(
-        comms.encryptMessage('unknown', { type: 'ping', data: {} })
-      ).rejects.toThrow('Unknown peer');
+      await expect(comms.encryptMessage('unknown', { type: 'ping', data: {} })).rejects.toThrow(
+        'Unknown peer'
+      );
     });
 
     it('encrypts, signs, logs, and returns encrypted message', async () => {
@@ -176,7 +179,12 @@ describe('AgentComms', () => {
       expect(msg.ciphertext).toBe('ct');
       expect(msg.signature).toBe('sig');
       expect(msg.toAgentId).toBe('peer-1');
-      expect(mockStorage.logMessage).toHaveBeenCalledWith('sent', 'peer-1', 'ping', expect.any(String));
+      expect(mockStorage.logMessage).toHaveBeenCalledWith(
+        'sent',
+        'peer-1',
+        'ping',
+        expect.any(String)
+      );
     });
   });
 
@@ -184,9 +192,9 @@ describe('AgentComms', () => {
     it('throws when sender is unknown', async () => {
       mockStorage.getPeer.mockResolvedValue(null);
       await comms.init();
-      await expect(
-        comms.decryptMessage({ fromAgentId: 'unknown' } as any)
-      ).rejects.toThrow('Unknown sender');
+      await expect(comms.decryptMessage({ fromAgentId: 'unknown' } as any)).rejects.toThrow(
+        'Unknown sender'
+      );
     });
 
     it('throws on invalid signature', async () => {
@@ -224,7 +232,10 @@ describe('AgentComms', () => {
 
       expect(payload.type).toBe('pong');
       expect(mockStorage.logMessage).toHaveBeenCalledWith(
-        'received', 'peer-1', 'pong', expect.any(String)
+        'received',
+        'peer-1',
+        'pong',
+        expect.any(String)
       );
       expect(mockStorage.updatePeerLastSeen).toHaveBeenCalledWith('peer-1');
     });
@@ -237,7 +248,13 @@ describe('AgentComms', () => {
 
     it('returns mapped log entries', async () => {
       mockStorage.queryMessageLog.mockResolvedValue([
-        { id: 'log-1', direction: 'sent', peer_agent_id: 'peer-1', message_type: 'ping', timestamp: 1000 },
+        {
+          id: 'log-1',
+          direction: 'sent',
+          peer_agent_id: 'peer-1',
+          message_type: 'ping',
+          timestamp: 1000,
+        },
       ]);
 
       await comms.init();

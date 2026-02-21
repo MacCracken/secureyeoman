@@ -62,7 +62,11 @@ export function registerSwarmRoutes(
         });
         return reply.code(201).send({ template });
       } catch (err) {
-        return sendError(reply, 400, err instanceof Error ? err.message : 'Failed to create template');
+        return sendError(
+          reply,
+          400,
+          err instanceof Error ? err.message : 'Failed to create template'
+        );
       }
     }
   );

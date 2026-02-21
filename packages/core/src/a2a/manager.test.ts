@@ -53,7 +53,10 @@ function makeTransport(overrides: any = {}) {
 
 function makeLogger() {
   return {
-    debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn(),
+    debug: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
     child: vi.fn().mockReturnThis(),
   };
 }
@@ -77,7 +80,12 @@ function makeManager(configOverrides: any = {}, storageOverrides: any = {}) {
   const logger = makeLogger();
   const auditChain = makeAuditChain();
   const config = { ...defaultConfig, ...configOverrides };
-  const manager = new A2AManager(config, { storage: storage as any, transport: transport as any, logger: logger as any, auditChain: auditChain as any });
+  const manager = new A2AManager(config, {
+    storage: storage as any,
+    transport: transport as any,
+    logger: logger as any,
+    auditChain: auditChain as any,
+  });
   return { manager, storage, transport, logger, auditChain };
 }
 
@@ -123,11 +131,15 @@ describe('A2AManager', () => {
       vi.mocked(manualDiscover).mockResolvedValueOnce([]);
       const { manager, storage, auditChain } = makeManager();
       const result = await manager.addPeer('https://agent.example.com', 'My Agent');
-      expect(storage.addPeer).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'unknown',
-        trustLevel: 'untrusted',
-      }));
-      expect(auditChain.record).toHaveBeenCalledWith(expect.objectContaining({ event: 'a2a_peer_added' }));
+      expect(storage.addPeer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'unknown',
+          trustLevel: 'untrusted',
+        })
+      );
+      expect(auditChain.record).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'a2a_peer_added' })
+      );
       expect(result).toBeDefined();
     });
 
@@ -135,10 +147,12 @@ describe('A2AManager', () => {
       vi.mocked(manualDiscover).mockResolvedValueOnce([peerAgent]);
       const { manager, storage } = makeManager();
       const result = await manager.addPeer('https://agent.example.com');
-      expect(storage.addPeer).toHaveBeenCalledWith(expect.objectContaining({
-        status: 'online',
-        trustLevel: 'untrusted',
-      }));
+      expect(storage.addPeer).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: 'online',
+          trustLevel: 'untrusted',
+        })
+      );
       expect(result).toBeDefined();
     });
 
@@ -167,11 +181,16 @@ describe('A2AManager', () => {
       const result = await manager.removePeer('peer-1');
       expect(result).toBe(true);
       expect(storage.removePeer).toHaveBeenCalledWith('peer-1');
-      expect(auditChain.record).toHaveBeenCalledWith(expect.objectContaining({ event: 'a2a_peer_removed' }));
+      expect(auditChain.record).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'a2a_peer_removed' })
+      );
     });
 
     it('does not audit when peer not found', async () => {
-      const { manager, auditChain } = makeManager({}, { removePeer: vi.fn().mockResolvedValue(false) });
+      const { manager, auditChain } = makeManager(
+        {},
+        { removePeer: vi.fn().mockResolvedValue(false) }
+      );
       const result = await manager.removePeer('no-such');
       expect(result).toBe(false);
       expect(auditChain.record).not.toHaveBeenCalled();
@@ -196,11 +215,16 @@ describe('A2AManager', () => {
       const result = await manager.updateTrust('peer-1', 'trusted');
       expect(result).toBeDefined();
       expect(storage.updatePeer).toHaveBeenCalledWith('peer-1', { trustLevel: 'trusted' });
-      expect(auditChain.record).toHaveBeenCalledWith(expect.objectContaining({ event: 'a2a_trust_updated' }));
+      expect(auditChain.record).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'a2a_trust_updated' })
+      );
     });
 
     it('does not audit when peer not found', async () => {
-      const { manager, auditChain } = makeManager({}, { updatePeer: vi.fn().mockResolvedValue(null) });
+      const { manager, auditChain } = makeManager(
+        {},
+        { updatePeer: vi.fn().mockResolvedValue(null) }
+      );
       await manager.updateTrust('no-such', 'trusted');
       expect(auditChain.record).not.toHaveBeenCalled();
     });
@@ -248,7 +272,9 @@ describe('A2AManager', () => {
       const result = await manager.delegate('peer-1', 'Do a task');
       expect(transport.send).toHaveBeenCalled();
       expect(storage.logMessage).toHaveBeenCalled();
-      expect(auditChain.record).toHaveBeenCalledWith(expect.objectContaining({ event: 'a2a_delegation_sent' }));
+      expect(auditChain.record).toHaveBeenCalledWith(
+        expect.objectContaining({ event: 'a2a_delegation_sent' })
+      );
       expect(result).not.toBeNull();
     });
 
@@ -287,7 +313,11 @@ describe('A2AManager', () => {
     it('sends query and returns stored capabilities', async () => {
       const { manager, storage } = makeManager(
         {},
-        { getCapabilities: vi.fn().mockResolvedValue([{ name: 'search', description: 'Search', version: '1.0' }]) }
+        {
+          getCapabilities: vi
+            .fn()
+            .mockResolvedValue([{ name: 'search', description: 'Search', version: '1.0' }]),
+        }
       );
       const result = await manager.queryCapabilities('peer-1');
       expect(storage.logMessage).toHaveBeenCalled();
@@ -296,7 +326,9 @@ describe('A2AManager', () => {
 
     it('falls back to stored capabilities when transport fails', async () => {
       const storage = makeStorage({
-        getCapabilities: vi.fn().mockResolvedValue([{ name: 'chat', description: 'Chat', version: '1.0' }]),
+        getCapabilities: vi
+          .fn()
+          .mockResolvedValue([{ name: 'chat', description: 'Chat', version: '1.0' }]),
       });
       const failingManager = new A2AManager(defaultConfig, {
         storage: storage as any,

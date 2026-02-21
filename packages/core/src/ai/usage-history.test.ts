@@ -95,9 +95,9 @@ describe('UsageStorage.queryHistory()', () => {
     await storage.insert(makeRecord({ timestamp: day3 }));
 
     const result = await storage.queryHistory({ from: day2 });
-    expect(result.every((r) => new Date(r.date).getTime() >= new Date('2026-02-02').getTime())).toBe(
-      true
-    );
+    expect(
+      result.every((r) => new Date(r.date).getTime() >= new Date('2026-02-02').getTime())
+    ).toBe(true);
     // Should not include day1 record
     const dates = result.map((r) => r.date);
     expect(dates).not.toContain('2026-02-01');

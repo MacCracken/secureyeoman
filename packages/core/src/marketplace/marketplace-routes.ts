@@ -22,7 +22,13 @@ export function registerMarketplaceRoutes(
     '/api/v1/marketplace',
     async (
       request: FastifyRequest<{
-        Querystring: { query?: string; category?: string; limit?: string; offset?: string; source?: string };
+        Querystring: {
+          query?: string;
+          category?: string;
+          limit?: string;
+          offset?: string;
+          source?: string;
+        };
       }>
     ) => {
       const q = request.query;
@@ -91,10 +97,7 @@ export function registerMarketplaceRoutes(
   // Community sync — accepts optional repoUrl when allowCommunityGitFetch policy is enabled.
   app.post(
     '/api/v1/marketplace/community/sync',
-    async (
-      request: FastifyRequest<{ Body?: { repoUrl?: string } }>,
-      reply: FastifyReply
-    ) => {
+    async (request: FastifyRequest<{ Body?: { repoUrl?: string } }>, reply: FastifyReply) => {
       const repoUrl = request.body?.repoUrl;
       if (repoUrl && opts.getConfig && !opts.getConfig().security.allowCommunityGitFetch) {
         return sendError(reply, 403, 'Community git fetch is disabled by security policy');

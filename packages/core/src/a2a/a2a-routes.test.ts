@@ -32,7 +32,9 @@ function makeMockManager(overrides?: Partial<A2AManager>): A2AManager {
     removePeer: vi.fn().mockResolvedValue(true),
     updateTrust: vi.fn().mockResolvedValue(PEER),
     discover: vi.fn().mockResolvedValue([PEER]),
-    getLocalCapabilities: vi.fn().mockReturnValue([{ name: 'chat', description: 'Chat', version: '1.0' }]),
+    getLocalCapabilities: vi
+      .fn()
+      .mockReturnValue([{ name: 'chat', description: 'Chat', version: '1.0' }]),
     delegate: vi.fn().mockResolvedValue(MESSAGE),
     getMessageHistory: vi.fn().mockResolvedValue({ messages: [MESSAGE], total: 1 }),
     getConfig: vi.fn().mockReturnValue({ enabled: true }),

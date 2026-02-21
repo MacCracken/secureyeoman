@@ -215,7 +215,10 @@ describe('MistralProvider', () => {
       async function* mockStream() {
         yield { choices: [{ delta: { content: 'Hello' }, finish_reason: null }], usage: null };
         yield { choices: [{ delta: { content: ' Mistral' }, finish_reason: null }], usage: null };
-        yield { choices: [{ delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 } };
+        yield {
+          choices: [{ delta: {}, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 },
+        };
       }
       mockCreate.mockResolvedValueOnce(mockStream());
       const chunks: any[] = [];
@@ -229,12 +232,14 @@ describe('MistralProvider', () => {
     it('yields tool_call_delta chunks', async () => {
       async function* mockStream() {
         yield {
-          choices: [{
-            delta: {
-              tool_calls: [{ id: 'call_1', function: { name: 'search', arguments: '' } }],
+          choices: [
+            {
+              delta: {
+                tool_calls: [{ id: 'call_1', function: { name: 'search', arguments: '' } }],
+              },
+              finish_reason: null,
             },
-            finish_reason: null,
-          }],
+          ],
           usage: null,
         };
         yield { choices: [{ delta: {}, finish_reason: 'tool_calls' }], usage: null };
@@ -250,7 +255,10 @@ describe('MistralProvider', () => {
     it('yields usage chunk when provided', async () => {
       async function* mockStream() {
         yield { choices: [{ delta: { content: 'Hi' }, finish_reason: null }], usage: null };
-        yield { choices: [{ delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 } };
+        yield {
+          choices: [{ delta: {}, finish_reason: 'stop' }],
+          usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+        };
       }
       mockCreate.mockResolvedValueOnce(mockStream());
       const chunks: any[] = [];
@@ -264,7 +272,9 @@ describe('MistralProvider', () => {
       const { APIError } = await import('openai');
       mockCreate.mockRejectedValueOnce(new (APIError as any)(429, 'rate limited'));
       await expect(async () => {
-        for await (const _ of provider.chatStream(simpleRequest)) { /* consume */ }
+        for await (const _ of provider.chatStream(simpleRequest)) {
+          /* consume */
+        }
       }).rejects.toThrow(RateLimitError);
     });
   });
@@ -278,13 +288,21 @@ describe('MistralProvider', () => {
       });
       const request: AIRequest = {
         messages: [
-          { role: 'tool', content: 'result', toolResult: { toolCallId: 'tc-1', content: 'tool output' } },
+          {
+            role: 'tool',
+            content: 'result',
+            toolResult: { toolCallId: 'tc-1', content: 'tool output' },
+          },
         ],
         stream: false,
       };
       await provider.chat(request);
       const callArgs = mockCreate.mock.calls[0][0];
-      expect(callArgs.messages[0]).toEqual({ role: 'tool', tool_call_id: 'tc-1', content: 'tool output' });
+      expect(callArgs.messages[0]).toEqual({
+        role: 'tool',
+        tool_call_id: 'tc-1',
+        content: 'tool output',
+      });
     });
 
     it('maps assistant messages with tool calls', async () => {
@@ -327,14 +345,22 @@ describe('MistralProvider', () => {
     it('maps invalid JSON tool call arguments gracefully', async () => {
       mockCreate.mockResolvedValueOnce({
         id: 'r1',
-        choices: [{
-          message: {
-            role: 'assistant',
-            content: null,
-            tool_calls: [{ id: 'tc-1', type: 'function', function: { name: 'search', arguments: 'not-json' } }],
+        choices: [
+          {
+            message: {
+              role: 'assistant',
+              content: null,
+              tool_calls: [
+                {
+                  id: 'tc-1',
+                  type: 'function',
+                  function: { name: 'search', arguments: 'not-json' },
+                },
+              ],
+            },
+            finish_reason: 'tool_calls',
           },
-          finish_reason: 'tool_calls',
-        }],
+        ],
         usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
       });
       const response = await provider.chat(simpleRequest);
@@ -346,7 +372,9 @@ describe('MistralProvider', () => {
     it('maps length finish_reason to max_tokens', async () => {
       mockCreate.mockResolvedValueOnce({
         id: 'r1',
-        choices: [{ message: { role: 'assistant', content: 'truncated' }, finish_reason: 'length' }],
+        choices: [
+          { message: { role: 'assistant', content: 'truncated' }, finish_reason: 'length' },
+        ],
         usage: { prompt_tokens: 5, completion_tokens: 1000, total_tokens: 1005 },
       });
       const response = await provider.chat(simpleRequest);
@@ -356,7 +384,9 @@ describe('MistralProvider', () => {
     it('maps unknown finish_reason to end_turn', async () => {
       mockCreate.mockResolvedValueOnce({
         id: 'r1',
-        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'content_filter' }],
+        choices: [
+          { message: { role: 'assistant', content: 'ok' }, finish_reason: 'content_filter' },
+        ],
         usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
       });
       const response = await provider.chat(simpleRequest);
@@ -368,7 +398,9 @@ describe('MistralProvider', () => {
     it('maps 400 token error to TokenLimitError', async () => {
       const { APIError } = await import('openai');
       const { TokenLimitError } = await import('../errors.js');
-      mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'context length exceeded token limit'));
+      mockCreate.mockRejectedValueOnce(
+        new (APIError as any)(400, 'context length exceeded token limit')
+      );
       await expect(provider.chat(simpleRequest)).rejects.toThrow(TokenLimitError);
     });
 

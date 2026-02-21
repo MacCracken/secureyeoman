@@ -50,7 +50,10 @@ export class DashboardStorage extends PgBaseStorage {
     return row ? this.rowToDashboard(row) : null;
   }
 
-  async list(opts?: { limit?: number; offset?: number }): Promise<{ dashboards: CustomDashboard[]; total: number }> {
+  async list(opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<{ dashboards: CustomDashboard[]; total: number }> {
     const limit = opts?.limit ?? 50;
     const offset = opts?.offset ?? 0;
 

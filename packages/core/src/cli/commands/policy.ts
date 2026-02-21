@@ -207,7 +207,9 @@ async function dynamicTools(
     case 'personality':
       return await dtcPersonality(ctx, baseUrl, token, json, personalityId, subArgs);
     default:
-      ctx.stderr.write(`Usage: secureyeoman policy dynamic-tools <get|enable|disable|sandbox|personality>\n`);
+      ctx.stderr.write(
+        `Usage: secureyeoman policy dynamic-tools <get|enable|disable|sandbox|personality>\n`
+      );
       return 1;
   }
 }
@@ -229,7 +231,10 @@ async function dtcGet(
   if (json) {
     ctx.stdout.write(
       JSON.stringify(
-        { allowDynamicTools: data.allowDynamicTools, sandboxDynamicTools: data.sandboxDynamicTools },
+        {
+          allowDynamicTools: data.allowDynamicTools,
+          sandboxDynamicTools: data.sandboxDynamicTools,
+        },
         null,
         2
       ) + '\n'
@@ -238,7 +243,9 @@ async function dtcGet(
   }
 
   ctx.stdout.write(`Dynamic Tool Creation:  ${data.allowDynamicTools ? 'enabled' : 'disabled'}\n`);
-  ctx.stdout.write(`Sandboxed Execution:    ${data.sandboxDynamicTools ? 'enabled' : 'disabled'}\n`);
+  ctx.stdout.write(
+    `Sandboxed Execution:    ${data.sandboxDynamicTools ? 'enabled' : 'disabled'}\n`
+  );
   return 0;
 }
 

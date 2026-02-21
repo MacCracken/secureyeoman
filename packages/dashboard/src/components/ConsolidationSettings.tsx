@@ -7,15 +7,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  Brain,
-  Play,
-  Loader2,
-  TrendingDown,
-  Layers,
-  RefreshCw,
-  Clock,
-} from 'lucide-react';
+import { Brain, Play, Loader2, TrendingDown, Layers, RefreshCw, Clock } from 'lucide-react';
 import {
   runConsolidation,
   fetchConsolidationSchedule,
@@ -383,15 +375,7 @@ export default function ConsolidationSettings() {
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-}) {
+function StatCard({ icon, label, value }: { icon: React.ReactNode; label: string; value: string }) {
   return (
     <div className="p-3 rounded-lg bg-muted/30">
       <div className="flex items-center gap-2 mb-1">

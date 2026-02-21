@@ -55,7 +55,16 @@ describe('HeartbeatLogStorage', () => {
       expect(entry.durationMs).toBe(42);
       expect(pool.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO proactive.heartbeat_log'),
-        expect.arrayContaining(['test-uuid-001', 'system_health', null, 1700000000000, 'ok', 'All good', 42, null])
+        expect.arrayContaining([
+          'test-uuid-001',
+          'system_health',
+          null,
+          1700000000000,
+          'ok',
+          'All good',
+          42,
+          null,
+        ])
       );
     });
 
@@ -131,7 +140,9 @@ describe('HeartbeatLogStorage', () => {
 
       const calls = pool.query.mock.calls;
       // The SELECT query should include WHERE check_name = $1
-      const selectCall = calls.find((c) => String(c[0]).includes('SELECT') && !String(c[0]).includes('COUNT'));
+      const selectCall = calls.find(
+        (c) => String(c[0]).includes('SELECT') && !String(c[0]).includes('COUNT')
+      );
       expect(selectCall).toBeDefined();
       expect(String(selectCall![0])).toContain('check_name =');
       expect(selectCall![1]).toContain('system_health');
@@ -144,7 +155,9 @@ describe('HeartbeatLogStorage', () => {
       await storage.list({ status: 'warning' });
 
       const calls = pool.query.mock.calls;
-      const selectCall = calls.find((c) => String(c[0]).includes('SELECT') && !String(c[0]).includes('COUNT'));
+      const selectCall = calls.find(
+        (c) => String(c[0]).includes('SELECT') && !String(c[0]).includes('COUNT')
+      );
       expect(selectCall).toBeDefined();
       expect(String(selectCall![0])).toContain('status =');
       expect(selectCall![1]).toContain('warning');

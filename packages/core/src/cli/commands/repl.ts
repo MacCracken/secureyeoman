@@ -148,7 +148,6 @@ async function handleLine(line: string, ctx: CommandContext, baseUrl: string): P
       break;
 
     default:
-       
       ctx.stderr.write(`Unknown command: ${cmd}. Type "help" for available commands.\n`);
   }
 }
