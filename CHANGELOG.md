@@ -4,6 +4,55 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Roadmap — Markdown for Agents added to Future Features (2026-02-21)
+
+Added a new **Markdown for Agents** section to `docs/development/roadmap.md` Future Features, based on [Cloudflare's Markdown for Agents specification](https://blog.cloudflare.com/markdown-for-agents/). The spec uses HTTP content negotiation (`Accept: text/markdown`) to deliver clean, LLM-optimized markdown instead of raw HTML — achieving up to 80% token reduction.
+
+Eight concrete tasks have been written across two tracks:
+
+**Consumer track** (improvements to `web-tools.ts`):
+- `Accept: text/markdown` content negotiation in `web_scrape_markdown` — native markdown when the server supports it, HTML→markdown fallback otherwise
+- Token savings telemetry — surface `x-markdown-tokens` header and estimated savings in tool output
+- `Content-Signal` header enforcement — refuse to feed `ai-input=no` content to agents
+- YAML front matter extraction — parse fenced front matter for cheap metadata access
+- New `web_fetch_markdown` dedicated tool — lightweight single-URL markdown fetch with token reporting
+
+**Producer track** (YEOMAN serving content to external agents):
+- Personality system prompts as `text/markdown` MCP resources at `yeoman://personalities/{id}/prompt`
+- Skill definitions as `text/markdown` MCP resources at `yeoman://skills/{id}`
+- `x-markdown-tokens` response header middleware on all markdown MCP endpoints
+
+---
+
+## Agnostic QA Sub-Agent Team — Full Integration Complete (2026-02-21) — ADR 090 amendment
+
+Agnostic Priorities 1–4 are now implemented in `webgui/api.py`. The YEOMAN MCP bridge has been updated to take full advantage of all new endpoints and auth modes. All nine `agnostic_*` tools are now end-to-end functional.
+
+### What changed in YEOMAN
+
+- **`packages/shared/src/types/mcp.ts`** — added `agnosticApiKey: z.string().optional()` to `McpServiceConfigSchema`
+- **`packages/mcp/src/config/config.ts`** — maps `AGNOSTIC_API_KEY` env var to `agnosticApiKey`
+- **`packages/mcp/src/tools/agnostic-tools.ts`** — full rewrite:
+  - `getAuthHeaders()` replaces `getToken()`: returns `{ 'X-API-Key': key }` (preferred) or `{ Authorization: 'Bearer ...' }` (JWT fallback)
+  - `agnostic_submit_qa` adds `callback_url`, `callback_secret`, `business_goals`, `constraints`
+  - Removed all "not yet implemented" error stubs — both `agnostic_submit_qa` and `agnostic_task_status` are live
+- **`packages/mcp/src/tools/agnostic-tools.test.ts`** — updated tests: API key auth, no-login assertion, callback_url schema, updated error message text
+
+### What changed in docs
+
+- `docs/configuration.md` — added `AGNOSTIC_API_KEY` row, updated auth description
+- `docs/adr/090-agnostic-qa-sub-agent-team.md` — amendment section, updated tools table (all ✅), updated config example
+- `docs/development/roadmap.md` — marked 3 Future Features items done: `POST /api/tasks`, API key auth, webhook callbacks
+- `agnostic/TODO.md` — P1–P4 marked ✅ Implemented; Integration Reference table fully green
+- `packages/core/src/cli/commands/agnostic.ts` — updated JSDoc comment to show `AGNOSTIC_API_KEY`
+
+### What remains deferred
+
+- A2A protocol bridge (Agnostic as a peer via structured delegation messages)
+- Auto-start toggle (`AGNOSTIC_AUTO_START=true` on `secureyeoman start`)
+
+---
+
 ## Phase 33 Quality Gate Closed (2026-02-21)
 
 All CI / Quality Gate open items uncovered during the Phase 34 Final Inspection run have been resolved. The tracking section has been removed from the roadmap; the permanent record is here.

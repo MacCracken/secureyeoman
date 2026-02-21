@@ -20,8 +20,9 @@
  * Once the stack is up, configure YEOMAN to communicate with it:
  *   MCP_EXPOSE_AGNOSTIC_TOOLS=true
  *   AGNOSTIC_URL=http://127.0.0.1:8000
- *   AGNOSTIC_EMAIL=<email>
- *   AGNOSTIC_PASSWORD=<password>
+ *   AGNOSTIC_API_KEY=<key>          (preferred — static API key auth)
+ *   AGNOSTIC_EMAIL=<email>          (fallback — JWT login)
+ *   AGNOSTIC_PASSWORD=<password>    (fallback — JWT login)
  */
 
 import { execFile, spawn } from 'node:child_process';

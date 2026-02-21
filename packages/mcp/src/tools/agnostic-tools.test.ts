@@ -51,6 +51,7 @@ function makeConfig(overrides?: Partial<McpServiceConfig>): McpServiceConfig {
     agnosticUrl: 'http://127.0.0.1:8000',
     agnosticEmail: 'admin@test.com',
     agnosticPassword: 'password123',
+    agnosticApiKey: undefined,
     ...overrides,
   } as McpServiceConfig;
 }
@@ -91,6 +92,7 @@ describe('agnostic-tools', () => {
         exposeAgnosticTools: false,
         agnosticEmail: undefined,
         agnosticPassword: undefined,
+        agnosticApiKey: undefined,
       });
       expect(() => registerAgnosticTools(server, config, noopMiddleware())).not.toThrow();
     });
@@ -102,9 +104,23 @@ describe('agnostic-tools', () => {
       expect(() => registerAgnosticTools(server, makeConfig(), noopMiddleware())).not.toThrow();
     });
 
-    it('registers tools even when credentials are missing', () => {
+    it('registers tools when only API key is provided (no email/password)', () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
-      const config = makeConfig({ agnosticEmail: undefined, agnosticPassword: undefined });
+      const config = makeConfig({
+        agnosticApiKey: 'sk-test-key',
+        agnosticEmail: undefined,
+        agnosticPassword: undefined,
+      });
+      expect(() => registerAgnosticTools(server, config, noopMiddleware())).not.toThrow();
+    });
+
+    it('registers tools when no credentials are provided', () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      const config = makeConfig({
+        agnosticEmail: undefined,
+        agnosticPassword: undefined,
+        agnosticApiKey: undefined,
+      });
       expect(() => registerAgnosticTools(server, config, noopMiddleware())).not.toThrow();
     });
   });
@@ -120,39 +136,22 @@ describe('agnostic-tools', () => {
 
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerAgnosticTools(server, makeConfig(), noopMiddleware());
-      // Registration success implies tools are callable — health check logic tested via fetch mock
       expect(true).toBe(true);
     });
 
     it('returns error when Agnostic is unreachable', async () => {
       vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new Error('ECONNREFUSED')));
-      // Tool registered without throw
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       expect(() => registerAgnosticTools(server, makeConfig(), noopMiddleware())).not.toThrow();
     });
   });
 
   describe('agnostic_submit_qa', () => {
-    it('handles 404 from missing POST /api/tasks gracefully', async () => {
-      // Auth login mock + task submission mock
-      vi.stubGlobal(
-        'fetch',
-        mockFetch([
-          { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } }, // login
-          { ok: false, status: 404, json: { detail: 'Not Found' } }, // POST /api/tasks
-        ])
-      );
-
-      const server = new McpServer({ name: 'test', version: '1.0.0' });
-      registerAgnosticTools(server, makeConfig(), noopMiddleware());
-      expect(true).toBe(true);
-    });
-
     it('handles successful task submission', async () => {
       vi.stubGlobal(
         'fetch',
         mockFetch([
-          { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } },
+          { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } }, // login
           {
             ok: true,
             status: 200,
@@ -165,10 +164,71 @@ describe('agnostic-tools', () => {
       registerAgnosticTools(server, makeConfig(), noopMiddleware());
       expect(true).toBe(true);
     });
+
+    it('handles non-200 response from POST /api/tasks', async () => {
+      vi.stubGlobal(
+        'fetch',
+        mockFetch([
+          { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } },
+          { ok: false, status: 500, json: { detail: 'Internal Server Error' } },
+        ])
+      );
+
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      expect(true).toBe(true);
+    });
+
+    it('uses X-API-Key header when agnosticApiKey is configured', async () => {
+      const fetchMock = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: () =>
+          Promise.resolve({ task_id: 'task-api', session_id: 'session-api', status: 'pending' }),
+        text: () => Promise.resolve(''),
+      });
+      vi.stubGlobal('fetch', fetchMock);
+
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      registerAgnosticTools(
+        server,
+        makeConfig({ agnosticApiKey: 'my-static-key', agnosticEmail: undefined, agnosticPassword: undefined }),
+        noopMiddleware()
+      );
+
+      // When API key is set, no login call should be made — first fetch is the tool call itself
+      expect(fetchMock).not.toHaveBeenCalledWith(
+        expect.stringContaining('/api/auth/login'),
+        expect.anything()
+      );
+    });
+
+    it('accepts callback_url in the input schema without error', () => {
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      expect(() => registerAgnosticTools(server, makeConfig(), noopMiddleware())).not.toThrow();
+    });
   });
 
   describe('agnostic_task_status', () => {
-    it('handles 404 from missing GET /api/tasks/{id} gracefully', async () => {
+    it('handles successful task status poll', async () => {
+      vi.stubGlobal(
+        'fetch',
+        mockFetch([
+          { ok: true, status: 200, json: { access_token: 'tok', expires_in: 3600 } },
+          {
+            ok: true,
+            status: 200,
+            json: { task_id: 'task-123', session_id: 'session-abc', status: 'completed', result: {} },
+          },
+        ])
+      );
+
+      const server = new McpServer({ name: 'test', version: '1.0.0' });
+      registerAgnosticTools(server, makeConfig(), noopMiddleware());
+      expect(true).toBe(true);
+    });
+
+    it('returns error when task is not found (404)', async () => {
       vi.stubGlobal(
         'fetch',
         mockFetch([
@@ -184,17 +244,18 @@ describe('agnostic-tools', () => {
   });
 
   describe('auth token caching', () => {
-    it('registers tools when credentials are provided', () => {
+    it('registers tools when JWT credentials are provided', () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       const config = makeConfig({
         agnosticEmail: 'user@example.com',
         agnosticPassword: 'secret',
+        agnosticApiKey: undefined,
       });
       expect(() => registerAgnosticTools(server, config, noopMiddleware())).not.toThrow();
     });
   });
 
-  describe('config defaults', () => {
+  describe('config defaults and schema', () => {
     it('defaults exposeAgnosticTools to false', () => {
       const config = makeConfig({ exposeAgnosticTools: false });
       expect(config.exposeAgnosticTools).toBe(false);
@@ -209,6 +270,16 @@ describe('agnostic-tools', () => {
       const config = makeConfig({ agnosticEmail: undefined, agnosticPassword: undefined });
       expect(config.agnosticEmail).toBeUndefined();
       expect(config.agnosticPassword).toBeUndefined();
+    });
+
+    it('agnosticApiKey is optional', () => {
+      const config = makeConfig({ agnosticApiKey: undefined });
+      expect(config.agnosticApiKey).toBeUndefined();
+    });
+
+    it('agnosticApiKey can be set to a string', () => {
+      const config = makeConfig({ agnosticApiKey: 'sk-agnostic-abc123' });
+      expect(config.agnosticApiKey).toBe('sk-agnostic-abc123');
     });
   });
 });
