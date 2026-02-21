@@ -11,6 +11,8 @@ import type { AIRequest, Tool, FallbackModelConfig, AIProviderName } from '@secu
 import type { McpToolDef } from '@secureyeoman/shared';
 import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
 import { sendError } from '../utils/errors.js';
+import { ToolOutputScanner } from '../security/tool-output-scanner.js';
+import { getLogger } from '../logging/logger.js';
 
 // Map provider name → standard API key env var (no-key providers get empty string)
 const PROVIDER_KEY_ENV: Record<string, string> = {
@@ -66,6 +68,14 @@ interface BrainContextMeta {
 
 export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions): void {
   const { secureYeoman } = opts;
+
+  // Scanner is instantiated once per route registration; logger is best-effort.
+  let scanner: ToolOutputScanner;
+  try {
+    scanner = new ToolOutputScanner({ logger: getLogger().child({ component: 'chat-routes' }) });
+  } catch {
+    scanner = new ToolOutputScanner();
+  }
 
   app.post(
     '/api/v1/chat',
@@ -224,11 +234,17 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           ? resolvePersonalityFallbacks(personality.modelFallbacks)
           : undefined;
 
-        const response = await aiClient.chat(
+        const rawResponse = await aiClient.chat(
           aiRequest,
           { source: 'dashboard_chat' },
           personalityFallbacks
         );
+
+        // Scan LLM response for credential leaks before returning to caller.
+        const scanResult = scanner.scan(rawResponse.content, 'llm_response');
+        const response = scanResult.redacted
+          ? { ...rawResponse, content: scanResult.text }
+          : rawResponse;
 
         // Persist messages to conversation storage when conversationId is provided
         if (conversationId) {

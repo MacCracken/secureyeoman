@@ -151,4 +151,203 @@ describe('SubAgentManager', () => {
       expect(config.maxConcurrent).toBe(5);
     });
   });
+
+  describe('security policy', () => {
+    it('isAllowedBySecurityPolicy returns true when no securityConfig', () => {
+      expect(manager.isAllowedBySecurityPolicy()).toBe(true);
+    });
+
+    it('isAllowedBySecurityPolicy returns false when allowSubAgents is false', () => {
+      const restrictedManager = new SubAgentManager(defaultConfig, {
+        storage: mockStorage as any,
+        aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
+        aiClientDeps: {},
+        auditChain: mockAuditChain as any,
+        logger: mockLogger as any,
+        securityConfig: { allowSubAgents: false } as any,
+      });
+      expect(restrictedManager.isAllowedBySecurityPolicy()).toBe(false);
+    });
+
+    it('delegate throws when securityConfig.allowSubAgents is false', async () => {
+      const restrictedManager = new SubAgentManager(defaultConfig, {
+        storage: mockStorage as any,
+        aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
+        aiClientDeps: {},
+        auditChain: mockAuditChain as any,
+        logger: mockLogger as any,
+        securityConfig: { allowSubAgents: false } as any,
+      });
+      await expect(
+        restrictedManager.delegate({ profile: 'researcher', task: 'test' })
+      ).rejects.toThrow('disabled by security policy');
+    });
+  });
+
+  describe('max concurrent delegations', () => {
+    it('throws when activeDelegations map is at max capacity', async () => {
+      // Pre-fill the private activeDelegations map to simulate max concurrent
+      for (let i = 0; i < 5; i++) {
+        (manager as any).activeDelegations.set(`fake-del-${i}`, {
+          abortController: new AbortController(),
+          promise: new Promise(() => {}),
+          startedAt: Date.now(),
+          profileName: 'test',
+          task: 'task',
+          depth: 0,
+          tokenBudget: 10000,
+          tokensUsed: 0,
+        });
+      }
+      await expect(manager.delegate({ profile: 'researcher', task: 'test' })).rejects.toThrow(
+        'Maximum concurrent delegations'
+      );
+    });
+  });
+
+  describe('delegation query passthrough', () => {
+    it('getResult returns null when delegation not found', async () => {
+      mockStorage.getDelegation.mockResolvedValue(null);
+      const result = await manager.getResult('nonexistent');
+      expect(result).toBeNull();
+    });
+
+    it('getDelegation delegates to storage', async () => {
+      mockStorage.getDelegation.mockResolvedValue({ id: 'del-1' });
+      const result = await manager.getDelegation('del-1');
+      expect(mockStorage.getDelegation).toHaveBeenCalledWith('del-1');
+      expect(result).toEqual({ id: 'del-1' });
+    });
+
+    it('listDelegations delegates to storage', async () => {
+      await manager.listDelegations({ status: 'completed', limit: 10 });
+      expect(mockStorage.listDelegations).toHaveBeenCalled();
+    });
+
+    it('getActiveDelegations delegates to storage', async () => {
+      await manager.getActiveDelegations();
+      expect(mockStorage.getActiveDelegations).toHaveBeenCalled();
+    });
+
+    it('getDelegationTree delegates to storage', async () => {
+      await manager.getDelegationTree('root-id');
+      expect(mockStorage.getDelegationTree).toHaveBeenCalledWith('root-id');
+    });
+
+    it('getDelegationMessages delegates to storage', async () => {
+      await manager.getDelegationMessages('del-1');
+      expect(mockStorage.getDelegationMessages).toHaveBeenCalledWith('del-1');
+    });
+
+    it('updateProfile delegates to storage', async () => {
+      mockStorage.updateProfile = vi.fn().mockResolvedValue({ id: 'prof-1', name: 'updated' });
+      const result = await manager.updateProfile('prof-1', { name: 'updated' });
+      expect(mockStorage.updateProfile).toHaveBeenCalledWith('prof-1', { name: 'updated' });
+      expect(result).toEqual({ id: 'prof-1', name: 'updated' });
+    });
+  });
+
+  describe('cancel with active delegation', () => {
+    it('aborts active delegation and updates storage', async () => {
+      const abortSpy = vi.fn();
+      const mockAbortController = { abort: abortSpy, signal: {} };
+      (manager as any).activeDelegations.set('del-cancel', {
+        abortController: mockAbortController,
+        promise: new Promise(() => {}),
+        startedAt: Date.now(),
+        profileName: 'test',
+        task: 'task',
+        depth: 0,
+        tokenBudget: 10000,
+        tokensUsed: 0,
+      });
+
+      await manager.cancel('del-cancel');
+      expect(abortSpy).toHaveBeenCalled();
+      expect(mockStorage.updateDelegation).toHaveBeenCalledWith(
+        'del-cancel',
+        expect.objectContaining({ status: 'cancelled' })
+      );
+    });
+  });
+
+  describe('binary profile — allowBinaryAgents disabled', () => {
+    it('returns failed result when allowBinaryAgents is false', async () => {
+      const securedManager = new SubAgentManager(defaultConfig, {
+        storage: mockStorage as any,
+        aiClientConfig: { model: { provider: 'anthropic', model: 'test' } as any },
+        aiClientDeps: {},
+        auditChain: mockAuditChain as any,
+        logger: mockLogger as any,
+        securityConfig: { allowSubAgents: true, allowBinaryAgents: false } as any,
+      });
+
+      const binaryProfile = {
+        id: 'binary-profile-1',
+        name: 'binary-runner',
+        systemPrompt: '',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+        type: 'binary',
+        command: '/usr/bin/echo',
+        commandArgs: ['hello'],
+      };
+
+      mockStorage.getProfile.mockResolvedValue(binaryProfile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+
+      const result = await securedManager.delegate({ profile: 'binary-runner', task: 'run task' });
+      expect(result.status).toBe('failed');
+      expect(result.error).toContain('allowBinaryAgents');
+    });
+  });
+
+  describe('mcp-bridge profile — no mcpClient', () => {
+    it('returns failed result when no mcpClient is configured', async () => {
+      const mcpProfile = {
+        id: 'mcp-profile-1',
+        name: 'mcp-bridge-agent',
+        systemPrompt: '',
+        maxTokenBudget: 50000,
+        allowedTools: [],
+        type: 'mcp-bridge',
+        mcpTool: 'my-mcp-tool',
+      };
+
+      mockStorage.getProfile.mockResolvedValue(mcpProfile);
+      mockStorage.createDelegation.mockResolvedValue(undefined);
+      mockStorage.updateDelegation.mockResolvedValue(undefined);
+
+      // manager has no mcpClient — mcp-bridge should fail
+      const result = await manager.delegate({ profile: 'mcp-bridge-agent', task: 'bridge task' });
+      expect(result.status).toBe('failed');
+      expect(result.error).toContain('MCP client not available');
+    });
+  });
+
+  describe('listActive with active delegations', () => {
+    it('returns info for active delegations', async () => {
+      (manager as any).activeDelegations.set('del-active', {
+        abortController: new AbortController(),
+        promise: new Promise(() => {}),
+        startedAt: Date.now() - 1000,
+        profileName: 'researcher',
+        task: 'active task',
+        depth: 1,
+        tokenBudget: 25000,
+        tokensUsed: 500,
+      });
+
+      const active = await manager.listActive();
+      expect(active).toHaveLength(1);
+      expect(active[0].profileName).toBe('researcher');
+      expect(active[0].task).toBe('active task');
+      expect(active[0].status).toBe('running');
+      expect(active[0].elapsedMs).toBeGreaterThan(0);
+
+      // Cleanup
+      (manager as any).activeDelegations.clear();
+    });
+  });
 });

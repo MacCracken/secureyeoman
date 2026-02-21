@@ -25,6 +25,7 @@
  *   secureyeoman plugin               # Manage integration plugins (list, info, add, remove)
  *   secureyeoman security             # Manage Kali security toolkit container (setup, teardown, update, status)
  *   secureyeoman agnostic             # Manage Agnostic QA sub-agent team Docker Compose stack (start, stop, status, logs, pull)
+ *   secureyeoman tui                  # Full-screen terminal dashboard (status, chat, memory)
  */
 
 import { createRouter } from './cli/router.js';
@@ -51,6 +52,7 @@ import { mcpServerCommand } from './cli/commands/mcp-server.js';
 import { migrateCommand } from './cli/commands/migrate.js';
 import { securityCommand } from './cli/commands/security.js';
 import { agnosticCommand } from './cli/commands/agnostic.js';
+import { tuiCommand } from './cli/commands/tui.js';
 
 const router = createRouter('start');
 
@@ -78,6 +80,7 @@ router.register(mcpServerCommand);
 router.register(migrateCommand);
 router.register(securityCommand);
 router.register(agnosticCommand);
+router.register(tuiCommand);
 
 // Help command
 router.register({

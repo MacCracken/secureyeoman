@@ -162,3 +162,128 @@ describe('runtime cleanup', () => {
     await expect(runtime.cleanup({} as any)).resolves.toBeUndefined();
   });
 });
+
+// ── NodeRuntime.execute() ────────────────────────────────────────────
+
+describe('NodeRuntime.execute()', () => {
+  const session = { id: 'session-1', startedAt: Date.now() } as any;
+
+  it('yields stdout data from a valid node script', async () => {
+    const runtime = new NodeRuntime();
+    const chunks: any[] = [];
+    for await (const chunk of runtime.execute(
+      'process.stdout.write("hello")',
+      session,
+      { timeout: 10000 }
+    )) {
+      chunks.push(chunk);
+    }
+    const stdout = chunks
+      .filter((c) => c.stream === 'stdout')
+      .map((c) => c.data)
+      .join('');
+    expect(stdout).toContain('hello');
+  });
+
+  it('yields stderr data when node writes to stderr', async () => {
+    const runtime = new NodeRuntime();
+    const chunks: any[] = [];
+    for await (const chunk of runtime.execute(
+      'process.stderr.write("err-msg")',
+      session,
+      { timeout: 10000 }
+    )) {
+      chunks.push(chunk);
+    }
+    const stderr = chunks
+      .filter((c) => c.stream === 'stderr')
+      .map((c) => c.data)
+      .join('');
+    expect(stderr).toContain('err-msg');
+  });
+
+  it('completes cleanly for code that produces no output', async () => {
+    const runtime = new NodeRuntime();
+    const chunks: any[] = [];
+    for await (const chunk of runtime.execute('1 + 1', session, { timeout: 10000 })) {
+      chunks.push(chunk);
+    }
+    // Should complete (no infinite loop)
+    expect(chunks.length).toBeGreaterThanOrEqual(0);
+  });
+
+  it('chunk objects have stream and timestamp fields', async () => {
+    const runtime = new NodeRuntime();
+    const chunks: any[] = [];
+    for await (const chunk of runtime.execute(
+      'process.stdout.write("x")',
+      session,
+      { timeout: 10000 }
+    )) {
+      chunks.push(chunk);
+    }
+    const dataChunks = chunks.filter((c) => c.data.length > 0);
+    expect(dataChunks[0]).toHaveProperty('stream');
+    expect(dataChunks[0]).toHaveProperty('timestamp');
+    expect(dataChunks[0]).toHaveProperty('data');
+  });
+});
+
+// ── PythonRuntime.execute() ──────────────────────────────────────────
+
+describe('PythonRuntime.execute()', () => {
+  const session = { id: 'session-py', startedAt: Date.now() } as any;
+
+  it('yields stdout data from a valid python script', async () => {
+    const runtime = new PythonRuntime();
+    const chunks: any[] = [];
+    for await (const chunk of runtime.execute(
+      'import sys; sys.stdout.write("pyout")',
+      session,
+      { timeout: 10000 }
+    )) {
+      chunks.push(chunk);
+    }
+    const stdout = chunks
+      .filter((c) => c.stream === 'stdout')
+      .map((c) => c.data)
+      .join('');
+    expect(stdout).toContain('pyout');
+  });
+});
+
+// ── ShellRuntime.execute() ───────────────────────────────────────────
+
+describe('ShellRuntime.execute()', () => {
+  const session = { id: 'session-sh', startedAt: Date.now() } as any;
+
+  it('yields stdout data from a shell command', async () => {
+    const runtime = new ShellRuntime();
+    const chunks: any[] = [];
+    for await (const chunk of runtime.execute('printf shellout', session, { timeout: 10000 })) {
+      chunks.push(chunk);
+    }
+    const stdout = chunks
+      .filter((c) => c.stream === 'stdout')
+      .map((c) => c.data)
+      .join('');
+    expect(stdout).toContain('shellout');
+  });
+
+  it('yields stderr for shell command that writes to stderr', async () => {
+    const runtime = new ShellRuntime();
+    const chunks: any[] = [];
+    for await (const chunk of runtime.execute(
+      'printf "sherr" >&2',
+      session,
+      { timeout: 10000 }
+    )) {
+      chunks.push(chunk);
+    }
+    const stderr = chunks
+      .filter((c) => c.stream === 'stderr')
+      .map((c) => c.data)
+      .join('');
+    expect(stderr).toContain('sherr');
+  });
+});

@@ -21,6 +21,7 @@ import type {
 import type { AuditQueryOptions, AuditQueryResult } from '../logging/sqlite-storage.js';
 import type { Skill, SkillCreate, SkillUpdate, Tool, BrainConfig } from '@secureyeoman/shared';
 import type { VectorResult } from './vector/types.js';
+import { applySkillTrustFilter } from '../soul/skill-trust.js';
 
 export class BrainManager {
   private readonly storage: BrainStorage;
@@ -480,9 +481,9 @@ export class BrainManager {
     const skills = await this.storage.getEnabledSkills(personalityId);
     const tools: Tool[] = [];
     for (const skill of skills) {
-      if (skill.tools && skill.tools.length > 0) {
-        tools.push(...skill.tools);
-      }
+      if (!skill.tools || skill.tools.length === 0) continue;
+      const filtered = applySkillTrustFilter(skill.tools, skill.source);
+      tools.push(...filtered);
     }
     return tools;
   }
