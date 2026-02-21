@@ -354,6 +354,7 @@ export class GatewayServer {
         broadcast: (payload) => {
           this.broadcast('soul', payload);
         },
+        heartbeatManager: this.secureYeoman.getHeartbeatManager(),
       });
     } catch {
       // Soul manager may not be available — skip routes

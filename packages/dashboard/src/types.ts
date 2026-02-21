@@ -185,6 +185,13 @@ export interface Personality {
         minConfidence?: number;
       };
     };
+    activeHours?: {
+      enabled?: boolean;
+      start?: string;
+      end?: string;
+      daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
+      timezone?: string;
+    };
   };
   createdAt: number;
   updatedAt: number;
@@ -241,6 +248,13 @@ export interface PersonalityCreate {
         enabled?: boolean;
         minConfidence?: number;
       };
+    };
+    activeHours?: {
+      enabled?: boolean;
+      start?: string;
+      end?: string;
+      daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
+      timezone?: string;
     };
   };
 }

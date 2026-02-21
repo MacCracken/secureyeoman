@@ -32,6 +32,7 @@ vi.mock('../api/client', () => ({
   fetchA2AMessages: vi.fn(),
   // MultimodalPage dependencies
   fetchMultimodalJobs: vi.fn(),
+  fetchMultimodalConfig: vi.fn(),
   // BrowserAutomationPage / WebPage dependencies
   fetchBrowserSessions: vi.fn(),
   closeBrowserSession: vi.fn(),
@@ -118,6 +119,13 @@ describe('AgentsPage', () => {
     mockFetchA2AMessages.mockResolvedValue({ messages: [], total: 0 });
     // MultimodalPage data
     mockFetchMultimodalJobs.mockResolvedValue({ jobs: [], total: 0 });
+    vi.mocked(api.fetchMultimodalConfig).mockResolvedValue({
+      enabled: true,
+      providers: {
+        tts: { active: 'openai', available: ['openai'] },
+        stt: { active: 'openai', available: ['openai'] },
+      },
+    });
     // BrowserAutomationPage data
     mockFetchBrowserSessions.mockResolvedValue({ sessions: [], total: 0 });
     // VectorMemoryExplorerPage data

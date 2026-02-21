@@ -8,6 +8,7 @@ import { MultimodalPage } from './MultimodalPage';
 
 vi.mock('../api/client', () => ({
   fetchMultimodalJobs: vi.fn(),
+  fetchMultimodalConfig: vi.fn(),
   fetchSecurityPolicy: vi.fn(),
 }));
 
@@ -15,6 +16,7 @@ import * as api from '../api/client';
 
 const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchMultimodalJobs = vi.mocked(api.fetchMultimodalJobs);
+const mockFetchMultimodalConfig = vi.mocked(api.fetchMultimodalConfig);
 
 function createQueryClient() {
   return new QueryClient({
@@ -74,6 +76,13 @@ const MOCK_JOBS = {
 describe('MultimodalPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockFetchMultimodalConfig.mockResolvedValue({
+      enabled: true,
+      providers: {
+        tts: { active: 'openai', available: ['openai'] },
+        stt: { active: 'openai', available: ['openai'] },
+      },
+    });
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,

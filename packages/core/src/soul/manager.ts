@@ -166,6 +166,13 @@ export class SoulManager {
           },
           learning: { enabled: true, minConfidence: 0.7 },
         },
+        activeHours: {
+          enabled: false,
+          start: '09:00',
+          end: '17:00',
+          daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+          timezone: 'UTC',
+        },
       },
     });
 

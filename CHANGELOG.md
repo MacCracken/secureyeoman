@@ -4,6 +4,30 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Per-Personality Active Hours (2026-02-21) — ADR 091
+
+### New Features
+
+- **Active hours scheduling** — Each personality can now define a schedule of active hours (`body.activeHours`) during which heartbeat checks and proactive triggers are allowed to run. Outside the configured window, the personality's body is at rest and `HeartbeatManager.beat()` returns immediately with no checks executed.
+- **`PersonalityActiveHoursSchema`** — New Zod schema in `@secureyeoman/shared` with `enabled`, `start`/`end` (HH:mm UTC), `daysOfWeek` (mon–sun array), and `timezone` fields. Stored in the existing `body` JSONB column — no database migration required.
+- **`setPersonalitySchedule()`** — New public method on `HeartbeatManager` for pushing the active personality's schedule. Called on startup (seed), on personality activation, and on personality update.
+- **UI** — New "Active Hours — Brain Schedule" collapsible section in PersonalityEditor's Body panel: enable toggle, time pickers for start/end, day-of-week buttons, and timezone select.
+
+### Files Changed
+| File | Change |
+|------|--------|
+| `packages/shared/src/types/soul.ts` | `PersonalityActiveHoursSchema`, `PersonalityActiveHours` type, `activeHours` in `BodyConfigSchema` |
+| `packages/core/src/body/heartbeat.ts` | `personalitySchedule` field, `setPersonalitySchedule()`, `isWithinPersonalityActiveHours()`, gate in `beat()`, exposed in `getStatus()` |
+| `packages/core/src/soul/soul-routes.ts` | `heartbeatManager` in `SoulRoutesOptions`; push schedule on activate and update-of-active |
+| `packages/core/src/gateway/server.ts` | Pass `heartbeatManager` to `registerSoulRoutes` |
+| `packages/core/src/secureyeoman.ts` | Seed active personality schedule after heartbeat init |
+| `packages/dashboard/src/components/PersonalityEditor.tsx` | `activeHours` state, seed in `startEdit`/`startCreate`, merge in `handleSave`, Active Hours UI in `BodySection` |
+| `packages/core/src/body/heartbeat.test.ts` | Personality active hours test suite (6 tests) |
+| `packages/core/src/soul/soul-routes.test.ts` | HeartbeatManager wiring tests (5 tests) |
+| `docs/adr/091-per-personality-active-hours.md` | ADR — schema, enforcement point, push pattern, trade-offs |
+
+---
+
 ## Kali Security Toolkit MCP (2026-02-21) — ADR 089
 
 ### New Features

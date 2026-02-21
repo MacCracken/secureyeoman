@@ -1044,4 +1044,113 @@ describe('HeartbeatManager', () => {
       expect(result.checks).toHaveLength(3);
     });
   });
+
+  describe('personality active hours', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+      vi.setSystemTime(new Date('2026-02-21T14:00:00Z')); // Saturday 14:00 UTC
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('beat() with null schedule → checks run normally', async () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      // no setPersonalitySchedule called — schedule is null
+      const result = await hb.beat();
+      expect(result.checks.length).toBeGreaterThan(0);
+    });
+
+    it('beat() with enabled=false → checks run normally', async () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.setPersonalitySchedule({
+        enabled: false,
+        start: '23:00',
+        end: '00:00',
+        daysOfWeek: ['mon'],
+        timezone: 'UTC',
+      });
+      const result = await hb.beat();
+      expect(result.checks.length).toBeGreaterThan(0);
+    });
+
+    it('beat() with enabled=true, time inside window → checks run', async () => {
+      // 14:00 UTC is inside 09:00–17:00
+      vi.setSystemTime(new Date('2026-02-21T14:00:00Z')); // Saturday
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.setPersonalitySchedule({
+        enabled: true,
+        start: '09:00',
+        end: '17:00',
+        daysOfWeek: [], // no day filter
+        timezone: 'UTC',
+      });
+      const result = await hb.beat();
+      expect(result.checks.length).toBeGreaterThan(0);
+    });
+
+    it('beat() with enabled=true, time outside window → returns { checks: [] }', async () => {
+      // 14:00 UTC is outside 20:00–22:00
+      vi.setSystemTime(new Date('2026-02-21T14:00:00Z'));
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.setPersonalitySchedule({
+        enabled: true,
+        start: '20:00',
+        end: '22:00',
+        daysOfWeek: [],
+        timezone: 'UTC',
+      });
+      const result = await hb.beat();
+      expect(result.checks).toHaveLength(0);
+    });
+
+    it('beat() with enabled=true, wrong day-of-week → returns { checks: [] }', async () => {
+      // 2026-02-21 is Saturday — schedule only allows mon
+      vi.setSystemTime(new Date('2026-02-21T14:00:00Z'));
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.setPersonalitySchedule({
+        enabled: true,
+        start: '09:00',
+        end: '17:00',
+        daysOfWeek: ['mon'],
+        timezone: 'UTC',
+      });
+      const result = await hb.beat();
+      expect(result.checks).toHaveLength(0);
+    });
+
+    it('setPersonalitySchedule resets suppression after disable', async () => {
+      vi.setSystemTime(new Date('2026-02-21T14:00:00Z'));
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.setPersonalitySchedule({
+        enabled: true,
+        start: '20:00',
+        end: '22:00',
+        daysOfWeek: [],
+        timezone: 'UTC',
+      });
+      const suppressed = await hb.beat();
+      expect(suppressed.checks).toHaveLength(0);
+
+      hb.setPersonalitySchedule({ enabled: false, start: '09:00', end: '17:00', daysOfWeek: [], timezone: 'UTC' });
+      const resumed = await hb.beat();
+      expect(resumed.checks.length).toBeGreaterThan(0);
+    });
+
+    it('getStatus() exposes personalityAtRest and personalitySchedule', async () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      const schedule = {
+        enabled: true,
+        start: '20:00',
+        end: '22:00',
+        daysOfWeek: [] as string[],
+        timezone: 'UTC',
+      };
+      hb.setPersonalitySchedule(schedule);
+      const status = hb.getStatus();
+      expect(status.personalityAtRest).toBe(true); // 14:00 is outside 20:00-22:00
+      expect(status.personalitySchedule).toEqual(schedule);
+    });
+  });
 });
