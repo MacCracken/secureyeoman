@@ -2618,3 +2618,159 @@ export async function fetchSwarmRun(id: string): Promise<{ run: SwarmRun } | nul
 export async function cancelSwarmRun(id: string): Promise<{ success: boolean }> {
   return request(`/agents/swarms/${id}/cancel`, { method: 'POST' });
 }
+
+// ─── Group Chat View (ADR 086) ─────────────────────────────────
+
+export interface GroupChatChannel {
+  integrationId: string;
+  chatId: string;
+  platform: string;
+  integrationName: string;
+  lastMessageAt: number | null;
+  lastMessageText: string | null;
+  messageCount: number;
+  unrepliedCount: number;
+  personalityId: string | null;
+  personalityName: string | null;
+}
+
+export interface GroupChatMessage {
+  id: string;
+  integrationId: string;
+  platform: string;
+  direction: 'inbound' | 'outbound';
+  senderId: string;
+  senderName: string;
+  chatId: string;
+  text: string;
+  attachments: unknown[];
+  replyToMessageId?: string;
+  platformMessageId?: string;
+  metadata: Record<string, unknown>;
+  timestamp: number;
+  personalityId: string | null;
+  personalityName: string | null;
+}
+
+export async function fetchGroupChatChannels(params?: {
+  platform?: string;
+  integrationId?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ channels: GroupChatChannel[]; total: number }> {
+  try {
+    const qs = new URLSearchParams();
+    if (params?.platform) qs.set('platform', params.platform);
+    if (params?.integrationId) qs.set('integrationId', params.integrationId);
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.offset) qs.set('offset', String(params.offset));
+    const query = qs.toString();
+    return await request(`/group-chat/channels${query ? `?${query}` : ''}`);
+  } catch {
+    return { channels: [], total: 0 };
+  }
+}
+
+export async function fetchGroupChatMessages(
+  integrationId: string,
+  chatId: string,
+  params?: { limit?: number; offset?: number; before?: number }
+): Promise<{ messages: GroupChatMessage[]; total: number }> {
+  try {
+    const qs = new URLSearchParams();
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.offset) qs.set('offset', String(params.offset));
+    if (params?.before) qs.set('before', String(params.before));
+    const query = qs.toString();
+    return await request(
+      `/group-chat/channels/${encodeURIComponent(integrationId)}/${encodeURIComponent(chatId)}/messages${query ? `?${query}` : ''}`
+    );
+  } catch {
+    return { messages: [], total: 0 };
+  }
+}
+
+export async function sendGroupChatMessage(
+  integrationId: string,
+  chatId: string,
+  text: string
+): Promise<{ success: boolean; integrationId: string; chatId: string; text: string }> {
+  return request(
+    `/group-chat/channels/${encodeURIComponent(integrationId)}/${encodeURIComponent(chatId)}/messages`,
+    { method: 'POST', body: JSON.stringify({ text }) }
+  );
+}
+
+// ─── Routing Rules (ADR 087) ───────────────────────────────────
+
+export interface RoutingRule {
+  id: string;
+  name: string;
+  description: string;
+  enabled: boolean;
+  priority: number;
+  triggerPlatforms: string[];
+  triggerIntegrationIds: string[];
+  triggerChatIdPattern: string | null;
+  triggerSenderIdPattern: string | null;
+  triggerKeywordPattern: string | null;
+  triggerDirection: 'inbound' | 'outbound' | 'both';
+  actionType: 'forward' | 'reply' | 'personality' | 'notify';
+  actionTargetIntegrationId: string | null;
+  actionTargetChatId: string | null;
+  actionPersonalityId: string | null;
+  actionWebhookUrl: string | null;
+  actionMessageTemplate: string | null;
+  matchCount: number;
+  lastMatchedAt: number | null;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function fetchRoutingRules(params?: {
+  enabled?: boolean;
+  limit?: number;
+  offset?: number;
+}): Promise<{ rules: RoutingRule[]; total: number }> {
+  try {
+    const qs = new URLSearchParams();
+    if (params?.enabled !== undefined) qs.set('enabled', String(params.enabled));
+    if (params?.limit) qs.set('limit', String(params.limit));
+    if (params?.offset) qs.set('offset', String(params.offset));
+    const query = qs.toString();
+    return await request(`/routing-rules${query ? `?${query}` : ''}`);
+  } catch {
+    return { rules: [], total: 0 };
+  }
+}
+
+export async function createRoutingRule(
+  data: Omit<RoutingRule, 'id' | 'matchCount' | 'lastMatchedAt' | 'createdAt' | 'updatedAt'>
+): Promise<RoutingRule> {
+  return request('/routing-rules', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateRoutingRule(
+  id: string,
+  data: Partial<Omit<RoutingRule, 'id' | 'matchCount' | 'lastMatchedAt' | 'createdAt' | 'updatedAt'>>
+): Promise<RoutingRule> {
+  return request(`/routing-rules/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export async function deleteRoutingRule(id: string): Promise<void> {
+  await request(`/routing-rules/${id}`, { method: 'DELETE' });
+}
+
+export async function testRoutingRule(
+  id: string,
+  params: {
+    platform: string;
+    integrationId?: string;
+    chatId?: string;
+    senderId?: string;
+    text?: string;
+    direction?: 'inbound' | 'outbound';
+  }
+): Promise<{ rule: RoutingRule; matched: boolean; reason?: string }> {
+  return request(`/routing-rules/${id}/test`, { method: 'POST', body: JSON.stringify(params) });
+}

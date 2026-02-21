@@ -382,6 +382,7 @@ export const FallbackModelConfigSchema = z.object({
     'deepseek',
     'mistral',
     'grok',
+    'letta',
   ]),
   model: z.string(),
   apiKeyEnv: EnvVarRefSchema,
@@ -407,6 +408,7 @@ export const ModelConfigSchema = z.object({
       'deepseek',
       'mistral',
       'grok',
+      'letta',
     ])
     .default('anthropic'),
   model: z.string().default('claude-sonnet-4-20250514'),

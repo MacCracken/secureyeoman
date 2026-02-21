@@ -4,7 +4,7 @@
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 6351+](https://img.shields.io/badge/Tests-6351%2B-brightgreen.svg)]()
+[![Tests: 6389+](https://img.shields.io/badge/Tests-6389%2B-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -56,7 +56,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 - **Prioritizes Security**: Enterprise-grade RBAC, encryption, sandboxing, and audit trails
 - **Respects Privacy**: Local-first architecture with data that never leaves your system
 - **Provides Observability**: Every action is logged with cryptographic integrity verification
-- **Offers Flexibility**: Multi-provider AI support (Anthropic, OpenAI, Gemini, Ollama, DeepSeek, OpenCode Zen, Mistral, x.ai Grok)
+- **Offers Flexibility**: Multi-provider AI support (Anthropic, OpenAI, Gemini, Ollama, DeepSeek, OpenCode Zen, Mistral, x.ai Grok, Letta)
 - **Learns and Adapts**: Editable personality, learnable skills, and a marketplace for sharing them
 
 ---
@@ -67,7 +67,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 |----------|----------|
 | **Security** | RBAC (Admin/Operator/Auditor/Viewer), JWT + API key auth, mTLS, AES-256-GCM encryption at rest, sandboxed execution (Landlock/macOS sandbox), rate limiting (per-user, per-IP, global), HTTP security headers (HSTS, CSP, X-Frame-Options), CORS policy enforcement |
 | **Observability** | Cryptographic audit trails (HMAC-SHA256 chain), Prometheus metrics, Grafana dashboards, structured JSONL log rotation, audit retention enforcement, audit export |
-| **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama, LM Studio, LocalAI (local), OpenCode Zen, DeepSeek, Mistral, x.ai Grok; automatic fallback chains on rate limits/outages; dynamic model discovery |
+| **AI Integration** | Anthropic Claude, OpenAI GPT, Google Gemini, Ollama, LM Studio, LocalAI (local), OpenCode Zen, DeepSeek, Mistral, x.ai Grok, Letta (stateful agent platform with persistent memory); automatic fallback chains on rate limits/outages; dynamic model discovery |
 | **Dashboard** | React + Vite + Tailwind; real-time WebSocket updates (channel-based RBAC); overview with stat cards (tasks, heartbeat, audit, memory) and services status panel (core, Postgres, audit chain, MCP); system flow graph (ReactFlow) with live connection edges; task history, security events, resource monitor, personality editor (Brain section shows associated skills with direct edit navigation), skills manager, code editor (Monaco), notification & retention settings; **WebGL graph visualization** (Sigma.js + graphology) with pluggable layout algorithms — ForceAtlas2 for hub-and-spoke peer networks, Dagre hierarchical layout for delegation trees and DAGs; **rich chat rendering** — assistant messages rendered as full Markdown with syntax-highlighted code (Prism, dark/light theme-aware), interactive Mermaid diagrams, KaTeX math expressions, GitHub-style alert callouts, task list checkboxes, and styled tables; **real-time collaborative editing** — personality system prompts and skill instructions use Yjs CRDT over a binary `/ws/collab` WebSocket; **presence indicators** — `PresenceBanner` shows who else is editing the same field in real time (colored dots + name label) |
 | **Agent Architecture** | Soul (identity/archetypes/personality), Spirit (passions/inspirations/pains), Brain (memory/knowledge/skills with decay & pruning, vector semantic search via FAISS/Qdrant/ChromaDB, LLM-powered memory consolidation), Body (heartbeat/vital signs/screen capture, per-personality capabilities: vision, auditory, vocalization, limb movement, haptic) |
 | **Cognitive Architecture** | Vector semantic memory (local SentenceTransformers + OpenAI/Gemini API embeddings), FAISS, Qdrant, and ChromaDB vector backends, LLM-powered memory consolidation with on-save dedup and scheduled deep analysis, 3-tier progressive history compression (message → topic → bulk) with AI summarization |
@@ -122,7 +122,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 
 - **Node.js** 20 LTS or later
 - **npm** (project uses npm workspaces)
-- **AI Provider API Key**: At least one of Anthropic, OpenAI, Google Gemini, OpenCode Zen, or Ollama (local)
+- **AI Provider API Key**: At least one of Anthropic, OpenAI, Google Gemini, OpenCode Zen, DeepSeek, Mistral, Grok, Letta, or Ollama (local)
 
 ---
 
@@ -226,7 +226,11 @@ ANTHROPIC_API_KEY="sk-ant-..."
 # or OPENAI_API_KEY="sk-..."
 # or GOOGLE_GENERATIVE_AI_API_KEY="..."
 # or OPENCODE_API_KEY="..."
-# or OLLAMA_BASE_URL="http://localhost:11434"
+# or DEEPSEEK_API_KEY="..."
+# or MISTRAL_API_KEY="..."
+# or XAI_API_KEY="xai-..."              # x.ai Grok
+# or LETTA_API_KEY="sk-letta-..."       # Letta stateful agents
+# or OLLAMA_HOST="http://localhost:11434"  # local inference, no key needed
 ```
 
 Optional:
@@ -513,7 +517,7 @@ secureyeoman/
 │   └── mcp/             # Standalone MCP service (34+ tools, 7 resources, 4 prompts)
 ├── tests/               # Security, load (k6), and chaos tests
 ├── deploy/              # Docker, Helm chart, Prometheus, Grafana, Loki configs
-├── docs/                # Documentation + ADRs (80 decision records)
+├── docs/                # Documentation + ADRs (87 decision records)
 │   ├── api/             # REST API + WebSocket API + OpenAPI 3.1 spec
 │   ├── adr/             # Architecture Decision Records
 │   ├── guides/          # Getting started, integrations
@@ -549,10 +553,10 @@ npx vitest run tests/security/ tests/chaos/
 
 | Package | Tests | Files | Coverage |
 |---------|-------|-------|----------|
-| `@secureyeoman/core` | 5604 | 286 | 84% lines / 85% funcs / 71% branches ✅ |
+| `@secureyeoman/core` | 5642 | 287 | 84% lines / 85% funcs / 71% branches ✅ |
 | `@secureyeoman/mcp` | 326 | 31 | — |
 | `@secureyeoman/dashboard` | 421 | 34 | — |
-| **Total** | **6351** | **351** | |
+| **Total** | **6389** | **352** | |
 
 ### Building
 
@@ -595,7 +599,7 @@ This updates all `package.json` files in the monorepo. The core server reads its
 | **Integrations** | [Integration Setup](docs/guides/integrations.md) |
 | **AI Provider Keys** | [AI Provider API Keys](docs/guides/ai-provider-api-keys.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (80 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (87 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |

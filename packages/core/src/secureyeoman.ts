@@ -124,6 +124,9 @@ import { A2AStorage } from './a2a/storage.js';
 import { A2AManager } from './a2a/manager.js';
 import { RemoteDelegationTransport } from './a2a/transport.js';
 import { SystemPreferencesStorage } from './config/system-preferences-storage.js';
+import { GroupChatStorage } from './integrations/group-chat-storage.js';
+import { RoutingRulesStorage } from './integrations/routing-rules-storage.js';
+import { RoutingRulesManager } from './integrations/routing-rules-manager.js';
 import { initPoolFromConfig, getPool } from './storage/pg-pool.js';
 import { runMigrations } from './storage/migrations/runner.js';
 import { closePool } from './storage/pg-pool.js';
@@ -216,6 +219,9 @@ export class SecureYeoman {
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
   private systemPreferences: SystemPreferencesStorage | null = null;
+  private groupChatStorage: GroupChatStorage | null = null;
+  private routingRulesStorage: RoutingRulesStorage | null = null;
+  private routingRulesManager: RoutingRulesManager | null = null;
   private modelDefaultSet = false;
   private initialized = false;
   private startedAt: number | null = null;
@@ -549,6 +555,11 @@ export class SecureYeoman {
       // is available (see post-step-6 below). For now just store the storage.
       this.logger.debug('Integration storage initialized');
 
+      // Step 5.76: Initialize group chat + routing rules storage (PostgreSQL-backed)
+      this.groupChatStorage = new GroupChatStorage();
+      this.routingRulesStorage = new RoutingRulesStorage();
+      this.logger.debug('Group chat and routing rules storage initialized');
+
       // Step 5.8: Initialize sandbox manager
       const sandboxConfig: SandboxManagerConfig = {
         enabled: this.config.security.sandbox.enabled,
@@ -653,6 +664,19 @@ export class SecureYeoman {
       this.integrationManager.registerPlatform('spotify', () => new SpotifyIntegration());
       this.integrationManager.registerPlatform('youtube', () => new YouTubeIntegration());
       this.integrationManager.registerPlatform('twitter', () => new TwitterIntegration());
+
+      // Wire up RoutingRulesManager into MessageRouter
+      if (this.routingRulesStorage && this.integrationManager) {
+        this.routingRulesManager = new RoutingRulesManager({
+          storage: this.routingRulesStorage,
+          integrationManager: this.integrationManager,
+          logger: this.logger.child({ component: 'RoutingRulesManager' }),
+        });
+        // Inject routing rule processing into the message router
+        (this.messageRouter as MessageRouter & { setRoutingRulesManager?: (m: RoutingRulesManager) => void })
+          .setRoutingRulesManager?.(this.routingRulesManager);
+        this.logger.debug('Routing rules manager initialized and wired to message router');
+      }
 
       // Wire up external plugin loader (INTEGRATION_PLUGIN_DIR env var)
       const pluginDir = process.env['INTEGRATION_PLUGIN_DIR'];
@@ -1626,6 +1650,27 @@ export class SecureYeoman {
    */
   getMessageRouter(): MessageRouter | null {
     return this.messageRouter;
+  }
+
+  /**
+   * Get the group chat storage instance (may return null if not yet initialised).
+   */
+  getGroupChatStorage(): GroupChatStorage | null {
+    return this.groupChatStorage;
+  }
+
+  /**
+   * Get the routing rules storage instance (may return null if not yet initialised).
+   */
+  getRoutingRulesStorage(): RoutingRulesStorage | null {
+    return this.routingRulesStorage;
+  }
+
+  /**
+   * Get the routing rules manager instance (may return null if not yet initialised).
+   */
+  getRoutingRulesManager(): RoutingRulesManager | null {
+    return this.routingRulesManager;
   }
 
   /**

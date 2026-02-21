@@ -58,6 +58,8 @@ import { registerA2ARoutes } from '../a2a/a2a-routes.js';
 import { registerProactiveRoutes } from '../proactive/proactive-routes.js';
 import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
 import { registerBrowserRoutes } from '../browser/browser-routes.js';
+import { registerGroupChatRoutes } from '../integrations/group-chat-routes.js';
+import { registerRoutingRulesRoutes } from '../integrations/routing-rules-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -97,6 +99,7 @@ const CHANNEL_PERMISSIONS: Record<string, { resource: string; action: string }> 
   security: { resource: 'security_events', action: 'read' },
   proactive: { resource: 'proactive', action: 'read' },
   soul: { resource: 'soul', action: 'read' },
+  group_chat: { resource: 'integrations', action: 'read' },
 };
 
 export interface GatewayServerOptions {
@@ -624,6 +627,39 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Browser automation routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Group Chat View routes
+    try {
+      const groupChatStorage = this.secureYeoman.getGroupChatStorage();
+      const integrationManager = (() => {
+        try { return this.secureYeoman.getIntegrationManager(); } catch { return null; }
+      })();
+      if (groupChatStorage && integrationManager) {
+        registerGroupChatRoutes(this.app, { groupChatStorage, integrationManager });
+        this.getLogger().info('Group chat routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Group chat routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Routing Rules routes
+    try {
+      const routingRulesStorage = this.secureYeoman.getRoutingRulesStorage();
+      const routingRulesManager = this.secureYeoman.getRoutingRulesManager();
+      if (routingRulesStorage && routingRulesManager) {
+        registerRoutingRulesRoutes(this.app, {
+          storage: routingRulesStorage,
+          manager: routingRulesManager,
+        });
+        this.getLogger().info('Routing rules routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Routing rules routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

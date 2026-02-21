@@ -152,6 +152,42 @@ Available models: `grok-3`, `grok-3-mini`, `grok-2-1212`, `grok-2-vision-1212`.
 
 Cost: Usage-based. See [docs.x.ai/docs/models](https://docs.x.ai/docs/models) for current pricing.
 
+### Letta (Stateful Agent Platform)
+
+Letta provides AI agents with persistent memory that survives context window limits. Unlike other
+providers, Letta agents remember information across conversations and self-improve over time.
+
+1. Go to [app.letta.com](https://app.letta.com)
+2. Create an account or sign in
+3. Navigate to **Settings → API Keys**
+4. Click **Create API Key**
+5. Copy the key — it's only shown once
+
+Set in `.env`:
+```bash
+LETTA_API_KEY=sk-letta-...
+# Optional: reuse an existing agent instead of creating a new one
+# LETTA_AGENT_ID=agent-<uuid>
+# Optional: self-hosted Letta server
+# LETTA_BASE_URL=http://my-letta-server:8283
+# Optional: local Docker container shorthand
+# LETTA_LOCAL=true
+```
+
+Available models (Letta `provider/model-id` format):
+- `openai/gpt-4o` — GPT-4o via Letta (requires OpenAI key in Letta settings)
+- `openai/gpt-4o-mini` — Fast, cost-effective
+- `anthropic/claude-sonnet-4-20250514` — Claude Sonnet via Letta
+- `anthropic/claude-haiku-3-5-20241022` — Fast Claude via Letta
+
+Cost: Letta charges for the underlying model's tokens plus any Letta platform fee.
+See [letta.com/pricing](https://letta.com/pricing) for current rates.
+
+> **Note**: The Letta provider creates one agent per `LettaProvider` instance. Set
+> `LETTA_AGENT_ID` to reuse a pre-existing agent and preserve memory across restarts.
+
+---
+
 ### Local Models (Ollama, LM Studio, LocalAI)
 
 No key needed. Configure the base URL in `.env`:

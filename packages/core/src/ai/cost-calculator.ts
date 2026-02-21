@@ -17,6 +17,7 @@ import { LocalAIProvider } from './providers/localai.js';
 import { DeepSeekProvider } from './providers/deepseek.js';
 import { GrokProvider } from './providers/grok.js';
 import { MistralProvider } from './providers/mistral.js';
+import { LettaProvider } from './providers/letta.js';
 
 interface ModelPricing {
   inputPer1M: number;
@@ -60,6 +61,12 @@ const PRICING: Record<string, ModelPricing> = {
   'grok-3-mini': { inputPer1M: 0.30, outputPer1M: 0.50 },
   'grok-2-1212': { inputPer1M: 2, outputPer1M: 10 },
   'grok-2-vision-1212': { inputPer1M: 2, outputPer1M: 10 },
+
+  // Letta (stateful agent platform — model IDs use provider/model-id format)
+  'openai/gpt-4o': { inputPer1M: 2.5, outputPer1M: 10 },
+  'openai/gpt-4o-mini': { inputPer1M: 0.15, outputPer1M: 0.6 },
+  'anthropic/claude-sonnet-4-20250514': { inputPer1M: 3, outputPer1M: 15 },
+  'anthropic/claude-haiku-3-5-20241022': { inputPer1M: 0.8, outputPer1M: 4 },
 };
 
 // Fallback pricing per provider when model is unknown
@@ -74,6 +81,7 @@ const FALLBACK_PRICING: Record<string, ModelPricing> = {
   deepseek: { inputPer1M: 0.27, outputPer1M: 1.1 },
   mistral: { inputPer1M: 2, outputPer1M: 6 },
   grok: { inputPer1M: 2, outputPer1M: 10 },
+  letta: { inputPer1M: 2.5, outputPer1M: 10 },
 };
 
 export interface AvailableModel {
@@ -108,6 +116,10 @@ const MODEL_PROVIDER_MAP: Record<string, string> = {
   'grok-3-mini': 'grok',
   'grok-2-1212': 'grok',
   'grok-2-vision-1212': 'grok',
+  'openai/gpt-4o': 'letta',
+  'openai/gpt-4o-mini': 'letta',
+  'anthropic/claude-sonnet-4-20250514': 'letta',
+  'anthropic/claude-haiku-3-5-20241022': 'letta',
 };
 
 /**
@@ -125,6 +137,7 @@ export const PROVIDER_KEY_ENV: Record<string, string | null> = {
   deepseek: 'DEEPSEEK_API_KEY',
   mistral: 'MISTRAL_API_KEY',
   grok: 'XAI_API_KEY',
+  letta: 'LETTA_API_KEY',
 };
 
 /**
@@ -380,6 +393,27 @@ export async function getAvailableModelsAsync(
           const fallback = FALLBACK_PRICING.grok!;
           return {
             provider: 'grok',
+            model: m.id,
+            inputPer1M: knownPricing?.inputPer1M ?? fallback.inputPer1M,
+            outputPer1M: knownPricing?.outputPer1M ?? fallback.outputPer1M,
+            cachedInputPer1M: knownPricing?.cachedInputPer1M,
+          };
+        });
+      }),
+    });
+  }
+
+  const lettaKey = process.env.LETTA_API_KEY;
+  if (lettaKey) {
+    tasks.push({
+      provider: 'letta',
+      promise: LettaProvider.fetchAvailableModels(lettaKey).then((models) => {
+        const list = models.length > 0 ? models : LettaProvider.getKnownModels();
+        return list.map((m) => {
+          const knownPricing = PRICING[m.id];
+          const fallback = FALLBACK_PRICING.letta!;
+          return {
+            provider: 'letta',
             model: m.id,
             inputPer1M: knownPricing?.inputPer1M ?? fallback.inputPer1M,
             outputPer1M: knownPricing?.outputPer1M ?? fallback.outputPer1M,

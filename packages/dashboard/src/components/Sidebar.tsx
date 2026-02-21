@@ -27,6 +27,7 @@ import {
   Plus,
   Info,
   X,
+  MessagesSquare,
 } from 'lucide-react';
 import { useSidebar } from '../hooks/useSidebar';
 import { useTheme } from '../hooks/useTheme';
@@ -62,6 +63,7 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
   { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
   { to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" />, enabled: true },
+  { to: '/group-chat', label: 'Group Chat', icon: <MessagesSquare className="w-5 h-5" /> },
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
   { to: '/developers', label: 'Developers', icon: <Code2 className="w-5 h-5" />, enabled: true },
   { to: '/costs', label: 'Costs', icon: <DollarSign className="w-5 h-5" /> },
