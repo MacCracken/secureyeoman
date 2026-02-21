@@ -4,6 +4,28 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 28 (2026-02-21): Semantic Search MCP Prebuilts — Meilisearch & Qdrant
+
+### New Features
+
+- **Meilisearch MCP prebuilt** — One-click `stdio` MCP connection to a Meilisearch instance via the official `meilisearch-mcp` Python package (`uvx meilisearch-mcp`). Provides hybrid full-text + vector search, facets, typo tolerance, and multi-index queries as MCP tools.
+- **Qdrant MCP prebuilt** — One-click `stdio` MCP connection to a Qdrant vector database via the official `mcp-server-qdrant` Python package (`uvx mcp-server-qdrant`). Lets agents query existing Qdrant collections independently of the Brain module's managed storage.
+- **Prerequisite note UI** — `PrebuiltServer.note` field surfaces runtime requirements (e.g. "requires uv") as a yellow advisory callout in the expanded connect form. Python-based prebuilts use this to inform users about the `uv` prerequisite.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `packages/core/src/integrations/twitter/adapter.test.ts` | Full unit test suite for `TwitterIntegration` (mock `twitter-api-v2`) |
+| `packages/dashboard/src/components/McpPrebuilts.test.tsx` | Component tests for `McpPrebuilts` — render, expand/collapse, note, URL vs password inputs, stdio and streamable-http connect flows, validation |
+| `docs/adr/082-semantic-search-mcp-prebuilts.md` | ADR — Meilisearch/Qdrant integration model; QMD not needed rationale |
+
+### Modified Files
+
+- **`packages/dashboard/src/components/McpPrebuilts.tsx`** — Added `note` field to `PrebuiltServer` interface; yellow advisory callout rendered in expanded form; added Meilisearch and Qdrant prebuilt entries
+
+---
+
 ## Phase 27 (2026-02-21): Twitter/X Integration + Home Assistant & Coolify MCP Prebuilts
 
 ### New Features
