@@ -105,6 +105,34 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 - [ ] **A2A protocol bridge** — Longer-term: implement an A2A server in Agnostic so YEOMAN can delegate via the structured `delegate_task` A2A message rather than REST. Enables the full delegation tree to include Agnostic agents as peers.
 - [ ] **Auto-start toggle** — Optional `AGNOSTIC_AUTO_START=true` that causes `secureyeoman start` to also call `docker compose up -d` in the configured Agnostic path.
 
+### Skill Routing Quality (OpenAI Skills + Shell Tips)
+
+*Inspired by [OpenAI's Skills + Shell Tips](https://developers.openai.com/blog/skills-shell-tips/). The blog post documents how Glean improved skill routing accuracy from 73% → 85% by restructuring descriptions to include explicit "Use when / Don't use when" guidance and embedding task templates inside skills rather than the system prompt. Several improvements are actionable in YEOMAN without schema changes; others require new schema fields.*
+
+**Immediate improvements (no schema change):**
+
+- [x] **Routing-focused descriptions on all community skills** — All 11 community skill descriptions rewritten to lead with "Use when: … Don't use when: …" routing guidance. The skill catalog listing in `composeSoulPrompt` (`- **Name**: Description`) is now the routing signal it needs to be. *(Done — 2026-02-21)*
+
+- [ ] **`triggerPatterns` hygiene pass on community skills** — Most community skills have empty `triggerPatterns` arrays, falling back to name-keyword matching. Add 3–5 concrete regex patterns to each community skill covering the most common invocation phrases (e.g. `review.*code`, `\bpr\b`, `diff` for Code Reviewer). Improves the instruction-injection gate in `isSkillInContext()` independently of the catalog routing.
+
+**Schema additions (`packages/shared/src/types/soul.ts`):**
+
+- [ ] **`useWhen` / `doNotUseWhen` structured fields on `SkillSchema`** — Add `useWhen: z.string().max(500).default('')` and `doNotUseWhen: z.string().max(500).default('')` as first-class schema fields alongside `description`. Update `composeSoulPrompt` to emit them in the catalog block when non-empty: `Use when: {useWhen}. Don't use when: {doNotUseWhen}.` Makes routing guidance machine-readable and surfaceable in the dashboard skill editor as distinct labelled inputs.
+
+- [ ] **`successCriteria` field on `SkillSchema`** — `z.string().max(300).default('')`. What does a successful invocation look like? Injected at the end of the skill's instructions block so the model knows when to declare the skill complete. Borrowed directly from the blog post's recommendation to "define success criteria" in skill descriptions.
+
+- [ ] **`mcpToolsAllowed` field on `SkillSchema`** — `z.array(z.string()).default([])`. When non-empty, only the listed MCP tool names are available to the LLM while this skill's instructions are active. Implements the blog's security recommendation: "Combining skills with open network access creates a high-risk path for data exfiltration — restrict allowlists." Zero-config default (empty = all tools available) preserves backward compatibility.
+
+- [ ] **`routing` field on `SkillSchema`** — `z.enum(['fuzzy', 'explicit']).default('fuzzy')`. When `'explicit'`, the system prompt appends: `"To perform [skill name] tasks, use the [skill name] skill."` Replaces fuzzy pattern matching with a deterministic instruction for workflows where routing reliability matters (e.g. SOPs, compliance workflows). Analogous to the blog's "explicitly instruct: Use the [skill name] skill" pattern.
+
+**Runtime improvements:**
+
+- [ ] **Skill invocation accuracy telemetry** — `usageCount` tracks install count but not routing accuracy. Add `invokedCount: number` (incremented when the skill's instructions are actually injected into a prompt) and `selectedCount: number` (incremented when the model cites the skill name in its response). The ratio `selectedCount / invokedCount` surfaces routing precision — the same metric Glean used to measure the 73% → 85% improvement.
+
+- [ ] **Credential placeholder convention enforcement** — Skills that reference external services should use `$VAR_NAME` placeholders (e.g. `$JIRA_API_KEY`) rather than embedding literal credentials. Add a validation warning in the skill editor and CLI sync when `instructions` matches known credential patterns (emails with passwords, long alphanumeric strings, JWT prefixes). Mirrors the blog's `domain_secrets` model where models see placeholders and the runtime injects real values.
+
+- [ ] **Output directory convention for file-creating skills** — Skills that produce artifacts (reports, datasets, formatted files) should write to a conventional path. Proposed: `outputs/{skill-slug}/{iso-date}/`. Document this convention in `community-skills/README.md` and surface it in skill instructions as a template variable `{{output_dir}}`. Analogous to the blog's `/mnt/data` standard artifact location.
+
 ### Markdown for Agents (MCP Content Negotiation)
 
 *[Cloudflare's Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/) uses HTTP content negotiation (`Accept: text/markdown`) to deliver clean, LLM-optimized markdown instead of raw HTML — achieving up to 80% token reduction. YEOMAN's MCP layer should support this as both a **consumer** (web-fetch tools) and a **producer** (MCP resource endpoints for personalities and skills).*
