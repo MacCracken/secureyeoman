@@ -79,12 +79,13 @@ PostgreSQL runs outside Kubernetes (RDS, Cloud SQL, Azure Database) because:
 
 ## Phase 25 Corrections (2026-02-20)
 
-### Migration Race Condition — `replicaCount: 3`, No Init Container
+### Migration Race Condition — `replicaCount: 3`, No Init Container (FIXED)
 
 Discovered during the Phase 24/25 cold-start audit: `values-production.yaml` sets
-`core.replicaCount: 3` (and HPA `minReplicas: 3`), but the Helm chart has no migration
-init container or Postgres advisory lock. On a first deploy — or any deploy that introduces
-new migrations — all three core pods start simultaneously and each calls `runMigrations()`.
+`core.replicaCount: 3` (and HPA `minReplicas: 3`), but the original Helm chart had no
+migration init container or Postgres advisory lock. On a first deploy — or any deploy that
+introduces new migrations — all three core pods start simultaneously and each calls
+`runMigrations()`.
 
 The runner's fast-path returns immediately if the latest manifest ID is already in
 `schema_migrations`. But on first boot all three pods race through the per-entry loop in
@@ -93,15 +94,48 @@ the DDL itself is safe, but the `INSERT INTO schema_migrations` record step is n
 can both pass the `SELECT id ... WHERE id = $1` check before either inserts, then both attempt
 the `INSERT`, and the second one fails with a unique-constraint violation on the primary key.
 
-**Status**: Open — tracked in roadmap Phase 25 "Helm Checks". Fix candidates:
-1. **Kubernetes Job pre-migration** — a `helm hook: pre-upgrade,pre-install` Job that runs
-   `secureyeoman migrate` before the Deployment rolls out. Simplest and recommended.
-2. **Postgres advisory lock** — wrap the per-entry loop in
-   `SELECT pg_try_advisory_lock(hashtext('schema_migrations'))` so only one pod runs migrations
-   at a time; others proceed once the lock is released.
+**Status**: Fixed. Two complementary safeguards implemented:
 
-Until resolved, first-deploy to a multi-replica cluster should set `core.replicaCount: 1`,
-run the deploy, then scale back up.
+1. **Pre-install/pre-upgrade Job hook** (`templates/migrate-job.yaml`, weight -5) — A Helm
+   hook Job that runs `secureyeoman migrate` before the Deployment rolls out. The Job runs on
+   a single pod, applies all migrations, exits 0, and the Deployment only starts after it
+   completes. This is the primary migration serialisation mechanism.
+
+2. **Postgres advisory lock** (`runner.ts`) — `pg_advisory_lock(hashtext('secureyeoman_migrations'))`
+   wraps the per-entry migration loop so that, even if multiple pods call `runMigrations()`
+   simultaneously (e.g., when the hook is disabled), only one runs at a time. The others wait,
+   then perform a double-check fast-path and return immediately. The lock is released via
+   `pg_advisory_unlock` in the `finally` block.
+
+Both fixes were verified in a kind cluster: all 30 migrations applied cleanly, core pod
+reached `Running` + `/health` returned `{"status":"ok","checks":{"database":true,"auditChain":true}}`,
+and a rolling restart confirmed the fast-path (no migration SQL executed on second boot).
+
+### Additional Chart Bugs Fixed
+
+- **`migrate.ts` wrong config path** — `initPoolFromConfig(config.database)` should be
+  `initPoolFromConfig(config.core.database)`. The database config is nested under `core` in
+  the `ConfigSchema`. This caused `TypeError: undefined is not an object (evaluating 'dbConfig.passwordEnv')`
+  on every migrate Job attempt.
+
+- **Missing required secrets in `secret.yaml`** — `SECUREYEOMAN_SIGNING_KEY`, `SECUREYEOMAN_TOKEN_SECRET`,
+  `SECUREYEOMAN_ENCRYPTION_KEY`, `SECUREYEOMAN_ADMIN_PASSWORD` were absent. Core pods failed
+  to start with `Missing required secrets`. Added to `secret.yaml` and `values.yaml`.
+
+- **Missing `SECUREYEOMAN_LOG_FORMAT` in `configmap.yaml`** — Without this, the core pod used
+  the default `pretty` format which uses pino transport worker threads that fail in the lean
+  binary Docker image. Fixed by adding `SECUREYEOMAN_LOG_FORMAT: "json"` to the ConfigMap.
+
+- **`migrate-secret.yaml` hook-only secret** — A new pre-install hook Secret (weight -10,
+  before the migrate Job at weight -5) provides `POSTGRES_PASSWORD` and other required secrets
+  to the migration Job. This is needed because the main `secret.yaml` resource is a regular
+  chart resource (not a hook) and does not exist when pre-install hooks run.
+
+- **`migrate-job.yaml` ServiceAccount** — The app ServiceAccount is a regular chart resource
+  not yet created at pre-install hook time. Changed `serviceAccountName` to `default`.
+
+- **`migrate-job.yaml` ConfigMap ref** — The ConfigMap is also a regular resource not yet
+  created at pre-install time. Replaced `configMapRef` with inline `env` for DB host/port/name/user.
 
 ## References
 

@@ -8,6 +8,7 @@ metadata:
 data:
   NODE_ENV: {{ .Values.config.nodeEnv | quote }}
   SECUREYEOMAN_HOST: {{ .Values.config.secureyeomanHost | quote }}
+  SECUREYEOMAN_LOG_FORMAT: "json"
   DATABASE_HOST: {{ .Values.database.host | quote }}
   DATABASE_PORT: {{ .Values.database.port | quote }}
   DATABASE_NAME: {{ .Values.database.name | quote }}

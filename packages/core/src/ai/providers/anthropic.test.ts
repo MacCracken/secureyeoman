@@ -179,6 +179,154 @@ describe('AnthropicProvider', () => {
     });
   });
 
+  describe('chatStream', () => {
+    it('yields content_delta and done chunks', async () => {
+      const finalMsg = {
+        usage: { input_tokens: 10, output_tokens: 20 },
+        stop_reason: 'end_turn',
+      };
+      async function* mockStreamEvents() {
+        yield { type: 'content_block_delta', delta: { type: 'text_delta', text: 'Hello ' } };
+        yield { type: 'content_block_delta', delta: { type: 'text_delta', text: 'world' } };
+        yield { type: 'message_delta', delta: {} };
+      }
+      const streamObj = Object.assign(mockStreamEvents(), { finalMessage: vi.fn().mockResolvedValue(finalMsg) });
+      mockStream.mockReturnValueOnce(streamObj);
+
+      const chunks: any[] = [];
+      for await (const chunk of provider.chatStream(simpleRequest)) {
+        chunks.push(chunk);
+      }
+      expect(chunks.filter((c) => c.type === 'content_delta')).toHaveLength(2);
+      expect(chunks.some((c) => c.type === 'done')).toBe(true);
+    });
+
+    it('yields tool_call_delta for tool_use blocks', async () => {
+      const finalMsg = {
+        usage: { input_tokens: 10, output_tokens: 5 },
+        stop_reason: 'tool_use',
+      };
+      async function* mockStreamEvents() {
+        yield { type: 'content_block_start', content_block: { type: 'tool_use', id: 'tc-1', name: 'search' } };
+        yield { type: 'content_block_delta', delta: { type: 'input_json_delta', partial_json: '{"q"' } };
+        yield { type: 'message_delta', delta: {} };
+      }
+      const streamObj = Object.assign(mockStreamEvents(), { finalMessage: vi.fn().mockResolvedValue(finalMsg) });
+      mockStream.mockReturnValueOnce(streamObj);
+
+      const chunks: any[] = [];
+      for await (const chunk of provider.chatStream(simpleRequest)) {
+        chunks.push(chunk);
+      }
+      expect(chunks.some((c) => c.type === 'tool_call_delta')).toBe(true);
+    });
+
+    it('propagates mapped errors', async () => {
+      const { APIError } = await import('@anthropic-ai/sdk');
+      mockStream.mockImplementationOnce(() => {
+        throw new (APIError as any)(429, 'rate limited', {});
+      });
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) { /* consume */ }
+      }).rejects.toThrow(RateLimitError);
+    });
+  });
+
+  describe('message mapping', () => {
+    it('maps tool role messages to user with tool_result', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        content: [{ type: 'text', text: 'ok' }],
+        usage: { input_tokens: 5, output_tokens: 5 },
+        stop_reason: 'end_turn',
+      });
+      const request: AIRequest = {
+        messages: [
+          { role: 'tool', content: 'result', toolResult: { toolCallId: 'tc-1', content: 'search result' } },
+        ],
+        stream: false,
+      };
+      await provider.chat(request);
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.messages[0].role).toBe('user');
+      expect(callArgs.messages[0].content[0].type).toBe('tool_result');
+    });
+
+    it('maps assistant messages with tool calls', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        content: [{ type: 'text', text: 'ok' }],
+        usage: { input_tokens: 5, output_tokens: 5 },
+        stop_reason: 'end_turn',
+      });
+      const request: AIRequest = {
+        messages: [
+          {
+            role: 'assistant',
+            content: 'Let me search',
+            toolCalls: [{ id: 'tc-1', name: 'search', arguments: { query: 'hello' } }],
+          },
+        ],
+        stream: false,
+      };
+      await provider.chat(request);
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.messages[0].role).toBe('assistant');
+      expect(callArgs.messages[0].content.some((b: any) => b.type === 'tool_use')).toBe(true);
+    });
+
+    it('maps stop sequences', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        content: [{ type: 'text', text: 'ok' }],
+        usage: { input_tokens: 5, output_tokens: 5 },
+        stop_reason: 'end_turn',
+      });
+      await provider.chat({
+        messages: [{ role: 'user', content: 'hi' }],
+        stream: false,
+        stopSequences: ['END'],
+      });
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.stop_sequences).toEqual(['END']);
+    });
+  });
+
+  describe('stopReason mapping', () => {
+    it('maps max_tokens', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        content: [{ type: 'text', text: 'truncated' }],
+        usage: { input_tokens: 5, output_tokens: 1000 },
+        stop_reason: 'max_tokens',
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.stopReason).toBe('max_tokens');
+    });
+
+    it('maps stop_sequence', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        content: [{ type: 'text', text: 'END' }],
+        usage: { input_tokens: 5, output_tokens: 5 },
+        stop_reason: 'stop_sequence',
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.stopReason).toBe('stop_sequence');
+    });
+
+    it('maps unknown to end_turn', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        content: [{ type: 'text', text: 'ok' }],
+        usage: { input_tokens: 5, output_tokens: 5 },
+        stop_reason: 'unknown_reason',
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.stopReason).toBe('end_turn');
+    });
+  });
+
   describe('error handling', () => {
     it('should map 429 to RateLimitError', async () => {
       const { APIError } = await import('@anthropic-ai/sdk');
@@ -199,6 +347,44 @@ describe('AnthropicProvider', () => {
       mockClient.messages.create.mockRejectedValue(new (APIError as any)(503, 'overloaded'));
 
       await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
+    });
+
+    it('should map 400 token error to TokenLimitError', async () => {
+      const { APIError } = await import('@anthropic-ai/sdk');
+      const { TokenLimitError } = await import('../errors.js');
+      mockClient.messages.create.mockRejectedValue(new (APIError as any)(400, 'context exceeded token limit'));
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(TokenLimitError);
+    });
+
+    it('should map 529 to ProviderUnavailableError', async () => {
+      const { APIError } = await import('@anthropic-ai/sdk');
+      mockClient.messages.create.mockRejectedValue(new (APIError as any)(529, 'overloaded'));
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
+    });
+
+    it('should map 400 non-token error to InvalidResponseError', async () => {
+      const { APIError } = await import('@anthropic-ai/sdk');
+      const { InvalidResponseError } = await import('../errors.js');
+      mockClient.messages.create.mockRejectedValue(new (APIError as any)(400, 'bad request'));
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(InvalidResponseError);
+    });
+
+    it('should rethrow non-Error as Error', async () => {
+      mockClient.messages.create.mockRejectedValue('plain string error');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow('plain string error');
+    });
+
+    it('should rethrow regular Error as-is', async () => {
+      mockClient.messages.create.mockRejectedValue(new Error('network timeout'));
+      await expect(provider.chat(simpleRequest)).rejects.toThrow('network timeout');
+    });
+
+    it('maps 429 with retry-after header to RateLimitError', async () => {
+      const { APIError } = await import('@anthropic-ai/sdk');
+      mockClient.messages.create.mockRejectedValue(
+        new (APIError as any)(429, 'rate limited', { 'retry-after': '30' })
+      );
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(RateLimitError);
     });
   });
 

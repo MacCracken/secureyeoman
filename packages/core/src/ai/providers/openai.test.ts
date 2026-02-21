@@ -151,6 +151,184 @@ describe('OpenAIProvider', () => {
     });
   });
 
+  describe('chatStream', () => {
+    it('yields content_delta chunks', async () => {
+      async function* mockStream() {
+        yield { choices: [{ delta: { content: 'Hello' }, finish_reason: null }], usage: null };
+        yield { choices: [{ delta: { content: ' world' }, finish_reason: null }], usage: null };
+        yield { choices: [{ delta: {}, finish_reason: 'stop' }], usage: { prompt_tokens: 5, completion_tokens: 10, total_tokens: 15 } };
+      }
+      mockCreate.mockResolvedValueOnce(mockStream());
+      const chunks: any[] = [];
+      for await (const chunk of provider.chatStream(simpleRequest)) {
+        chunks.push(chunk);
+      }
+      expect(chunks.some((c) => c.type === 'content_delta')).toBe(true);
+      expect(chunks.some((c) => c.type === 'done')).toBe(true);
+      expect(chunks.some((c) => c.type === 'usage')).toBe(true);
+    });
+
+    it('yields tool_call_delta chunks', async () => {
+      async function* mockStream() {
+        yield {
+          choices: [{
+            delta: {
+              tool_calls: [{ id: 'call_1', function: { name: 'search', arguments: '' } }],
+            },
+            finish_reason: null,
+          }],
+          usage: null,
+        };
+        yield { choices: [{ delta: {}, finish_reason: 'tool_calls' }], usage: null };
+      }
+      mockCreate.mockResolvedValueOnce(mockStream());
+      const chunks: any[] = [];
+      for await (const chunk of provider.chatStream(simpleRequest)) {
+        chunks.push(chunk);
+      }
+      expect(chunks.some((c) => c.type === 'tool_call_delta')).toBe(true);
+    });
+
+    it('propagates mapped errors from stream', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(429, 'rate limited'));
+      await expect(async () => {
+        for await (const _ of provider.chatStream(simpleRequest)) { /* consume */ }
+      }).rejects.toThrow(RateLimitError);
+    });
+  });
+
+  describe('message mapping', () => {
+    it('maps tool role messages', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const request: AIRequest = {
+        messages: [
+          { role: 'tool', content: 'result', toolResult: { toolCallId: 'tc-1', content: 'tool output' } },
+        ],
+        stream: false,
+      };
+      await provider.chat(request);
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.messages[0]).toEqual({ role: 'tool', tool_call_id: 'tc-1', content: 'tool output' });
+    });
+
+    it('maps assistant messages with tool calls', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const request: AIRequest = {
+        messages: [
+          {
+            role: 'assistant',
+            content: null,
+            toolCalls: [{ id: 'tc-1', name: 'search', arguments: { q: 'hello' } }],
+          },
+        ],
+        stream: false,
+      };
+      await provider.chat(request);
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.messages[0].tool_calls).toHaveLength(1);
+      expect(callArgs.messages[0].tool_calls[0].id).toBe('tc-1');
+    });
+
+    it('maps stop sequences', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'stop' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const request: AIRequest = {
+        messages: [{ role: 'user', content: 'hello' }],
+        stream: false,
+        stopSequences: ['END', 'STOP'],
+      };
+      await provider.chat(request);
+      const callArgs = mockCreate.mock.calls[0][0];
+      expect(callArgs.stop).toEqual(['END', 'STOP']);
+    });
+
+    it('maps invalid JSON tool call arguments gracefully', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{
+          message: {
+            role: 'assistant',
+            content: null,
+            tool_calls: [{ id: 'tc-1', type: 'function', function: { name: 'search', arguments: 'not-json' } }],
+          },
+          finish_reason: 'tool_calls',
+        }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.toolCalls![0].arguments).toEqual({ _raw: 'not-json' });
+    });
+  });
+
+  describe('stopReason mapping', () => {
+    it('maps length finish_reason to max_tokens', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'truncated' }, finish_reason: 'length' }],
+        usage: { prompt_tokens: 5, completion_tokens: 1000, total_tokens: 1005 },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.stopReason).toBe('max_tokens');
+    });
+
+    it('maps unknown finish_reason to end_turn', async () => {
+      mockCreate.mockResolvedValueOnce({
+        id: 'r1',
+        choices: [{ message: { role: 'assistant', content: 'ok' }, finish_reason: 'content_filter' }],
+        usage: { prompt_tokens: 5, completion_tokens: 5, total_tokens: 10 },
+      });
+      const response = await provider.chat(simpleRequest);
+      expect(response.stopReason).toBe('end_turn');
+    });
+  });
+
+  describe('additional error handling', () => {
+    it('maps 400 token error to TokenLimitError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'context length exceeded token limit'));
+      const { TokenLimitError } = await import('../errors.js');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(TokenLimitError);
+    });
+
+    it('maps 502 to ProviderUnavailableError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(502, 'bad gateway'));
+      const { ProviderUnavailableError } = await import('../errors.js');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
+    });
+
+    it('maps 503 to ProviderUnavailableError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(503, 'service unavailable'));
+      const { ProviderUnavailableError } = await import('../errors.js');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(ProviderUnavailableError);
+    });
+
+    it('maps 400 non-token error to InvalidResponseError', async () => {
+      const { APIError } = await import('openai');
+      mockCreate.mockRejectedValueOnce(new (APIError as any)(400, 'invalid request parameter'));
+      const { InvalidResponseError } = await import('../errors.js');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow(InvalidResponseError);
+    });
+
+    it('rethrows non-Error objects as Error', async () => {
+      mockCreate.mockRejectedValueOnce('string error');
+      await expect(provider.chat(simpleRequest)).rejects.toThrow('string error');
+    });
+  });
+
   describe('fetchAvailableModels', () => {
     beforeEach(() => {
       vi.stubGlobal('fetch', mockFetch);

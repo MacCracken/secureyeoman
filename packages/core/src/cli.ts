@@ -46,6 +46,7 @@ import { policyCommand } from './cli/commands/policy.js';
 import { completionCommand } from './cli/commands/completion.js';
 import { pluginCommand } from './cli/commands/plugin.js';
 import { mcpServerCommand } from './cli/commands/mcp-server.js';
+import { migrateCommand } from './cli/commands/migrate.js';
 
 const router = createRouter('start');
 
@@ -70,6 +71,7 @@ router.register(policyCommand);
 router.register(completionCommand);
 router.register(pluginCommand);
 router.register(mcpServerCommand);
+router.register(migrateCommand);
 
 // Help command
 router.register({

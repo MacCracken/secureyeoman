@@ -95,9 +95,20 @@ database:
   user: secureyeoman
   # password is in secrets
 
-# -- Secrets (base64-encoded values; use sealed-secrets or external-secrets in production)
+# -- Secrets (use sealed-secrets or external-secrets in production)
 secrets:
-  postgresPassword: ""
+  # Required application secrets
+  signingKey: ""           # SECUREYEOMAN_SIGNING_KEY  — audit chain signing key
+  tokenSecret: ""          # SECUREYEOMAN_TOKEN_SECRET  — JWT signing secret
+  encryptionKey: ""        # SECUREYEOMAN_ENCRYPTION_KEY — at-rest encryption key
+  adminPassword: ""        # SECUREYEOMAN_ADMIN_PASSWORD — initial admin password
+  # Database
+  postgresPassword: ""     # POSTGRES_PASSWORD
+  # LLM provider keys (at least one required)
+  anthropicApiKey: ""      # ANTHROPIC_API_KEY
+  openaiApiKey: ""         # OPENAI_API_KEY
+  googleApiKey: ""         # GOOGLE_GENERATIVE_AI_API_KEY
+  # OAuth (optional)
   githubOauthClientId: ""
   githubOauthClientSecret: ""
   googleOauthClientId: ""
@@ -106,6 +117,14 @@ secrets:
   gmailOauthClientSecret: ""
   # Annotations for sealed-secrets or external-secrets-operator
   annotations: {}
+
+# -- Database migration hook
+migration:
+  # Run a pre-install/pre-upgrade Helm hook Job (`secureyeoman migrate`) before
+  # the core Deployment rolls out. Eliminates the multi-replica migration race
+  # condition when core.replicaCount > 1. Requires the core image to include
+  # the `secureyeoman migrate` subcommand (added in Phase 25).
+  hookEnabled: true
 
 # -- Ingress
 ingress:
