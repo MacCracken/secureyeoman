@@ -4,6 +4,26 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 33 Quality Gate Closed (2026-02-21)
+
+All CI / Quality Gate open items uncovered during the Phase 34 Final Inspection run have been resolved. The tracking section has been removed from the roadmap; the permanent record is here.
+
+### Typecheck — All Fixed
+- **discord.js v13 → v14** — Bumped `packages/core` to `^14.25.1`, removed stray root dep.
+- **Missing `@types/express`** — Added to `packages/core` devDependencies.
+- **Missing `@testing-library/dom`** — Added as explicit devDep in `packages/dashboard`.
+- **Missing `graphology-types`** — Added as explicit devDep in `packages/dashboard`.
+- **`@storybook/react` unresolvable** — Added as explicit devDep in `packages/dashboard`.
+
+### Lint — All Fixed
+- **ESLint 0 errors** — 36 errors cleared (see ESLint Zero-Error Pass entry below).
+
+### Security — Blocked Upstream (tracked in dependency-watch.md)
+- **`minimatch <10.2.1`** (10 high-severity ReDoS, dev-only) — requires ESLint v10; blocked until `typescript-eslint` publishes an ESLint-v10-compatible release.
+- **`undici <6.23.0`** (4 moderate) — in the `discord.js@14` dependency chain; blocked until discord.js ships a patch bumping its bundled undici to `>=6.23.0`.
+
+---
+
 ## ESLint Zero-Error Pass (2026-02-21) — Phase 33 Lint
 
 ### Quality
