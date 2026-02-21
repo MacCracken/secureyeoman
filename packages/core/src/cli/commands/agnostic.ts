@@ -48,7 +48,7 @@ const ALL_SERVICES = [...INFRA_SERVICES, ...AGENT_SERVICES] as const;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function compose(
+export function compose(
   projectDir: string,
   args: string[]
 ): Promise<{ stdout: string; stderr: string; code: number }> {
@@ -66,7 +66,7 @@ function compose(
   });
 }
 
-function resolveAgnosticPath(flagPath?: string): string | null {
+export function resolveAgnosticPath(flagPath?: string): string | null {
   const candidates = [
     flagPath,
     process.env.AGNOSTIC_PATH,

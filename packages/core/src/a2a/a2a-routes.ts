@@ -46,6 +46,33 @@ export function registerA2ARoutes(app: FastifyInstance, opts: { a2aManager: A2AM
     }
   );
 
+  // Register a pre-configured local/internal peer (bypasses SSRF guard).
+  // Use this for trusted services like Agnostic that run on localhost.
+  app.post(
+    '/api/v1/a2a/peers/local',
+    async (
+      request: FastifyRequest<{
+        Body: { url: string; name: string; id?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const peer = await a2aManager.addTrustedLocalPeer({
+          id: request.body.id,
+          name: request.body.name,
+          url: request.body.url,
+        });
+        return reply.code(201).send({ peer });
+      } catch (err) {
+        return sendError(
+          reply,
+          400,
+          err instanceof Error ? err.message : 'Failed to register local peer'
+        );
+      }
+    }
+  );
+
   app.delete(
     '/api/v1/a2a/peers/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {

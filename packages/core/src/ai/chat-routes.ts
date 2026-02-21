@@ -12,6 +12,7 @@ import type { McpToolDef } from '@secureyeoman/shared';
 import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
 import { sendError } from '../utils/errors.js';
 import { ToolOutputScanner } from '../security/tool-output-scanner.js';
+import { ContextCompactor } from './context-compactor.js';
 import { getLogger } from '../logging/logger.js';
 
 // Map provider name → standard API key env var (no-key providers get empty string)
@@ -76,6 +77,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
   } catch {
     scanner = new ToolOutputScanner();
   }
+
+  // Context compactor — triggers at 80% of the model's context window.
+  const compactor = new ContextCompactor();
 
   app.post(
     '/api/v1/chat',
@@ -220,6 +224,34 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               parameters: tool.inputSchema as Tool['parameters'],
             });
           }
+        }
+      }
+
+      // Proactive context compaction — summarise older turns before the API
+      // call when token usage approaches the model's context-window limit.
+      // This prevents "context length exceeded" failures and avoids wasting a
+      // full API round-trip on a doomed request.
+      const currentModel = personality?.defaultModel?.model ?? 'unknown';
+      if (compactor.needsCompaction(messages, currentModel)) {
+        try {
+          const compactionResult = await compactor.compact(messages, currentModel, async (prompt) => {
+            const summaryReq: AIRequest = {
+              messages: [{ role: 'user', content: prompt }],
+              stream: false,
+            };
+            const summaryResp = await aiClient.chat(summaryReq, { source: 'context_compaction' });
+            return summaryResp.content;
+          });
+          if (compactionResult.compacted) {
+            messages.length = 0;
+            messages.push(...compactionResult.messages);
+          }
+        } catch (compactErr) {
+          // Compaction is best-effort — proceed with original messages on failure
+          const logger = getLogger().child({ component: 'chat-routes' });
+          logger.warn('Context compaction failed, proceeding with uncompacted context', {
+            error: String(compactErr),
+          });
         }
       }
 

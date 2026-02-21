@@ -11,6 +11,20 @@ export { OllamaProvider } from './providers/ollama.js';
 export { OpenCodeProvider } from './providers/opencode.js';
 export { GrokProvider, type GrokModelInfo } from './providers/grok.js';
 export { RetryManager, type RetryConfig } from './retry-manager.js';
+export {
+  ContextCompactor,
+  getContextWindowSize,
+  type CompactorOptions,
+  type CompactionResult,
+  type CompactorSummariser,
+} from './context-compactor.js';
+export {
+  TaskLoop,
+  createTaskLoop,
+  type TaskLoopOptions,
+  type ToolCallRecord,
+  type StuckReason,
+} from './task-loop.js';
 export { CostCalculator } from './cost-calculator.js';
 export { CostOptimizer, type CostOptimizerDeps } from './cost-optimizer.js';
 export { UsageTracker, type UsageStats, type UsageRecord } from './usage-tracker.js';

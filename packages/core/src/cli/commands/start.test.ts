@@ -2,26 +2,36 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // ─── Hoisted Mocks ────────────────────────────────────────────
 
-const { mockCreateSecureYeoman, mockIsOpenSSLAvailable, mockGenerateDevCerts, mockInstance } =
-  vi.hoisted(() => {
-    const mockInstance = {
-      getConfig: vi.fn().mockReturnValue({
-        gateway: { host: '127.0.0.1', port: 3000 },
-      }),
-      shutdown: vi.fn().mockResolvedValue(undefined),
-    };
+const {
+  mockCreateSecureYeoman,
+  mockIsOpenSSLAvailable,
+  mockGenerateDevCerts,
+  mockInstance,
+  mockResolveAgnosticPath,
+  mockCompose,
+} = vi.hoisted(() => {
+  const mockInstance = {
+    getConfig: vi.fn().mockReturnValue({
+      gateway: { host: '127.0.0.1', port: 3000 },
+    }),
+    shutdown: vi.fn().mockResolvedValue(undefined),
+  };
 
-    return {
-      mockCreateSecureYeoman: vi.fn().mockResolvedValue(mockInstance),
-      mockIsOpenSSLAvailable: vi.fn().mockReturnValue(true),
-      mockGenerateDevCerts: vi.fn().mockReturnValue({
-        serverCert: '/certs/server.crt',
-        serverKey: '/certs/server.key',
-        caCert: '/certs/ca.crt',
-      }),
-      mockInstance,
-    };
-  });
+  return {
+    mockCreateSecureYeoman: vi.fn().mockResolvedValue(mockInstance),
+    mockIsOpenSSLAvailable: vi.fn().mockReturnValue(true),
+    mockGenerateDevCerts: vi.fn().mockReturnValue({
+      serverCert: '/certs/server.crt',
+      serverKey: '/certs/server.key',
+      caCert: '/certs/ca.crt',
+    }),
+    mockInstance,
+    mockResolveAgnosticPath: vi.fn().mockReturnValue(null),
+    mockCompose: vi
+      .fn()
+      .mockResolvedValue({ stdout: 'Started', stderr: '', code: 0 }),
+  };
+});
 
 vi.mock('../../secureyeoman.js', () => ({
   createSecureYeoman: mockCreateSecureYeoman,
@@ -34,6 +44,11 @@ vi.mock('../../security/cert-gen.js', () => ({
 
 vi.mock('../../version.js', () => ({
   VERSION: '1.2.3',
+}));
+
+vi.mock('./agnostic.js', () => ({
+  resolveAgnosticPath: mockResolveAgnosticPath,
+  compose: mockCompose,
 }));
 
 // ─── Tests ────────────────────────────────────────────────────
@@ -223,6 +238,79 @@ describe('startCommand', () => {
       await runPromise;
 
       vi.restoreAllMocks();
+    });
+  });
+
+  describe('AGNOSTIC_AUTO_START', () => {
+    beforeEach(() => {
+      delete process.env.AGNOSTIC_AUTO_START;
+    });
+
+    afterEach(() => {
+      delete process.env.AGNOSTIC_AUTO_START;
+    });
+
+    it('does not call compose when AGNOSTIC_AUTO_START is not set', async () => {
+      mockCreateSecureYeoman.mockRejectedValue(new Error('stop'));
+      const ctx = makeCtx([]);
+      await startCommand.run(ctx as any);
+      expect(mockCompose).not.toHaveBeenCalled();
+    });
+
+    it('does not call compose when AGNOSTIC_AUTO_START=false', async () => {
+      process.env.AGNOSTIC_AUTO_START = 'false';
+      mockCreateSecureYeoman.mockRejectedValue(new Error('stop'));
+      const ctx = makeCtx([]);
+      await startCommand.run(ctx as any);
+      expect(mockCompose).not.toHaveBeenCalled();
+    });
+
+    it('skips with warning when AGNOSTIC_AUTO_START=true but path not found', async () => {
+      process.env.AGNOSTIC_AUTO_START = 'true';
+      mockResolveAgnosticPath.mockReturnValue(null);
+      mockCreateSecureYeoman.mockRejectedValue(new Error('stop'));
+      const ctx = makeCtx([]);
+      await startCommand.run(ctx as any);
+      expect(mockCompose).not.toHaveBeenCalled();
+    });
+
+    it('runs compose up -d when AGNOSTIC_AUTO_START=true and path found', async () => {
+      process.env.AGNOSTIC_AUTO_START = 'true';
+      mockResolveAgnosticPath.mockReturnValue('/repos/agnostic');
+      mockCompose.mockResolvedValue({ stdout: 'Started', stderr: '', code: 0 });
+      mockCreateSecureYeoman.mockRejectedValue(new Error('stop'));
+      const ctx = makeCtx([]);
+      await startCommand.run(ctx as any);
+      expect(mockCompose).toHaveBeenCalledWith('/repos/agnostic', ['up', '-d', '--remove-orphans']);
+    });
+
+    it('logs warning and continues when compose fails', async () => {
+      process.env.AGNOSTIC_AUTO_START = 'true';
+      mockResolveAgnosticPath.mockReturnValue('/repos/agnostic');
+      mockCompose.mockResolvedValue({ stdout: '', stderr: 'Docker not running', code: 1 });
+      mockCreateSecureYeoman.mockRejectedValue(new Error('stop'));
+      const ctx = makeCtx([]);
+      const code = await startCommand.run(ctx as any);
+      // start command itself still exits 1 due to createSecureYeoman rejection
+      expect(code).toBe(1);
+      expect(ctx.out.join('')).toContain('compose up exited 1');
+    });
+
+    it('prints auto-start path in stdout when successful', async () => {
+      process.env.AGNOSTIC_AUTO_START = 'true';
+      mockResolveAgnosticPath.mockReturnValue('/home/user/agnostic');
+      mockCompose.mockResolvedValue({ stdout: 'Network created', stderr: '', code: 0 });
+      mockCreateSecureYeoman.mockRejectedValue(new Error('stop'));
+      const ctx = makeCtx([]);
+      await startCommand.run(ctx as any);
+      expect(ctx.out.join('')).toContain('/home/user/agnostic');
+      expect(ctx.out.join('')).toContain('Agnostic QA team started');
+    });
+
+    it('help text includes AGNOSTIC_AUTO_START', async () => {
+      const ctx = makeCtx(['--help']);
+      await startCommand.run(ctx as any);
+      expect(ctx.out.join('')).toContain('AGNOSTIC_AUTO_START');
     });
   });
 });

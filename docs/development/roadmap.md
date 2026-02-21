@@ -47,7 +47,8 @@
 | 31 | Group Chat View | 2026.2.21 | Complete |
 | 32 | Cross-Integration Routing Rules | 2026.2.21 | Complete |
 | 33 | Additional MCP Improvements, CI fixes | 2026.2.21 | Complete |
-| 34 | Agnostic Sub-agent Team MCP integrations | 2026.2.21 | In Progress |
+| 34 | Agnostic Sub-agent Team MCP integrations | 2026.2.21 | Complete |
+| | **Tag 2026.2.21b** | **2026-02-21** | **Tagged** |
 | 35 | Fix All the Bugs + Security Hardening | — | In Progress |
 | 36 | Final Inspection | — | Pending |
 
@@ -64,32 +65,6 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 *Add observed bugs here as they are found during manual testing; mark fixed when resolved.*
 
 - [ ] Find and Repair
-
-### Ironclaw Security & Architecture Improvements
-
-*Findings from comparative analysis of [nearai/ironclaw](https://github.com/nearai/ironclaw) — a Rust-based privacy-first agent with strong sandbox depth and memory architecture. See `docs/development/functional-audit.md` § Missing vs Ironclaw for full context.*
-
-#### High Priority
-
-- [x] **Tool-output credential leak detection** — `ToolOutputScanner` (ADR 092) — 18 built-in patterns + SecretStore literal-value patterns. LLM response scanned in `chat-routes.ts` before delivery. `[REDACTED:<type>]` replacement with `warn` log. See `security/tool-output-scanner.ts`.
-
-- [x] **Skill trust tiers — community skills get read-only tool access** — `applySkillTrustFilter()` (ADR 092) — community skills restricted to 26 read-only tool name prefixes. Enforced in both `SoulManager.getActiveTools()` and `BrainManager.getActiveTools()`. See `soul/skill-trust.ts`.
-
-#### Medium Priority
-
-- [ ] **Hybrid FTS + vector search with Reciprocal Rank Fusion (RRF)** — Add a `search_vec tsvector` column to `brain.memories` and `brain.knowledge` (new migration). Implement a combined search path: run both a `tsvector @@ to_tsquery` FTS query and the existing `pgvector` cosine similarity query, then merge results via RRF (`score = Σ 1/(60 + rank_i)`). A document ranking #2 in FTS and #3 in vector beats one ranking #1 in only one index. Pure vector recall is weak for exact terms, names, and commands — e.g. "Redis migration" may not be near the embedding of a memory tagged "infrastructure change." The FTS path degrades gracefully when `search_vec` is null on older rows; the existing vector path is unchanged as a fallback.
-
-- [ ] **Content-chunked workspace indexing** — Documents stored in `workspace/manager.ts` are currently indexed whole. Add a `chunk()` function that splits documents at paragraph/sentence boundaries within an 800-token budget with 15% overlap, preserving semantic context at chunk boundaries. Each chunk becomes a separate vector + FTS index entry; retrieval merges chunks from the same document and deduplicates. Required precursor for effective hybrid search on large documents that currently overflow context or get truncated.
-
-- [ ] **Proactive context compaction** — The current path catches `context length exceeded` errors after the LLM call fails (`retry-manager.ts`), then re-tries with the same overflowing context. Instead, estimate token usage before each call and trigger compaction when usage exceeds ~80% of the model's `contextWindowSize`. Summarise older turns using the cheap/fast model tier from the existing `ModelRouter`, replace with a `[Context summary: ...]` system message, and continue. Prevents cryptic failures and avoids wasting a full API round-trip on a doomed request.
-
-- [ ] **Self-repairing task loop** — The current retry path in `retry-manager.ts` retries identical context after a failure. Add a stuck-task detection layer: when an agent task exceeds a configurable time threshold or produces the same tool call twice in a row, inject a diagnostic recovery prompt before resuming: `"Your previous attempt stalled after ${elapsed}ms. Last tool: ${lastTool} → ${lastOutcome}. Try a different approach or decompose the problem."` This is higher-leverage than blind retry because the model receives diagnostic context rather than repeating the same reasoning.
-
-#### Low Priority
-
-- [ ] **LLM response caching** — Cache responses keyed by `SHA-256(model + systemPrompt + messages)` with a configurable TTL (default: 5 minutes). Heartbeat probes that run the same system state repeatedly are the immediate win — users running aggressive check schedules pay for identical API calls on every cycle. Even a short TTL meaningfully reduces costs. Semantic caching (embedding similarity lookup before the API call) is a more complex follow-on step.
-
-- [ ] **Outbound credential injection at sandbox proxy boundary** — Rather than injecting secrets as environment variables or mounted files into sandboxed processes, run a small localhost HTTP proxy bound to the sandbox's network namespace. The proxy validates outbound hostnames against a per-sandbox allowlist and injects `Authorization` headers for known hosts. Secrets never enter the container environment. Additive to the existing namespace/seccomp/landlock isolation — defence-in-depth rather than a replacement. The existing `sandbox/` infrastructure provides the network namespace; this adds an HTTP-layer interception point on top.
 
 ## Phase 36: Final Inspection
 
@@ -108,7 +83,7 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 ### Regression & Performance
 
-- [ ] **Regression suite** — All 6325+ tests pass; fix any failures introduced
+- [ ] **Regression suite** — All 6744+ tests pass; fix any failures introduced
 - [ ] **Memory baseline** — Cold-start still <300 MB latest additions
 - [ ] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
 
@@ -118,12 +93,13 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 *Demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
 
-### Agnostic QA Sub-Agent Team — Future Enhancements
+### Ironclaw Low-Priority — Deferred
 
-*Core integration shipped (ADR 090). The `secureyeoman agnostic` lifecycle CLI, `agnostic_*` MCP bridge tools, and `agnostic/TODO.md` are live. These items complete the end-to-end automation once implemented in Agnostic.*
+*Originally Phase 35 low-priority items from the Ironclaw comparative analysis. Moved here pending real-world usage data.*
 
-- [ ] **A2A protocol bridge** — Longer-term: implement an A2A server in Agnostic so YEOMAN can delegate via the structured `delegate_task` A2A message rather than REST. Enables the full delegation tree to include Agnostic agents as peers.
-- [ ] **Auto-start toggle** — Optional `AGNOSTIC_AUTO_START=true` that causes `secureyeoman start` to also call `docker compose up -d` in the configured Agnostic path.
+- [ ] **LLM response caching** — Cache responses keyed by `SHA-256(model + systemPrompt + messages)` with a configurable TTL (default: 5 minutes). Heartbeat probes that run the same system state repeatedly are the immediate win — users running aggressive check schedules pay for identical API calls on every cycle. Even a short TTL meaningfully reduces costs. Semantic caching (embedding similarity lookup before the API call) is a more complex follow-on step.
+
+- [ ] **Outbound credential injection at sandbox proxy boundary** — Rather than injecting secrets as environment variables or mounted files into sandboxed processes, run a small localhost HTTP proxy bound to the sandbox's network namespace. The proxy validates outbound hostnames against a per-sandbox allowlist and injects `Authorization` headers for known hosts. Secrets never enter the container environment. Additive to the existing namespace/seccomp/landlock isolation — defence-in-depth rather than a replacement. The existing `sandbox/` infrastructure provides the network namespace; this adds an HTTP-layer interception point on top.
 
 ### Skill Routing Quality (OpenAI Skills + Shell Tips)
 
@@ -245,4 +221,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Completed items removed; Phase 35/36 numbering corrected; open items reflect remaining work*
+*Last updated: 2026-02-21 — Agnostic A2A bridge + AGNOSTIC_AUTO_START shipped (ADR 090 Amendment 2); Phase 34 complete; Phase 35 medium-priority Ironclaw items complete*

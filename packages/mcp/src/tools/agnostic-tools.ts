@@ -14,6 +14,7 @@
  *   AGNOSTIC_EMAIL + AGNOSTIC_PASSWORD   (fallback — JWT login)
  */
 
+import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
@@ -447,6 +448,106 @@ export function registerAgnosticTools(
 
       return {
         content: [{ type: 'text' as const, text: formatResponse(`Task: ${args.task_id}`, body) }],
+      };
+    })
+  );
+
+  // ── agnostic_delegate_a2a ─────────────────────────────────────────────────
+
+  server.registerTool(
+    'agnostic_delegate_a2a',
+    {
+      description:
+        'Delegate a QA task to Agnostic via the A2A (Agent-to-Agent) protocol. ' +
+        'Constructs a structured a2a:delegate message and sends it to the Agnostic A2A ' +
+        'receive endpoint (POST /api/v1/a2a/receive). ' +
+        'Requires Agnostic P8 (A2A server) to be implemented on the Agnostic side. ' +
+        'Use agnostic_submit_qa for REST-based submission (available now without P8).',
+      inputSchema: {
+        title: z.string().describe('Short title for the QA task'),
+        description: z
+          .string()
+          .describe('What to test — feature description, PR summary, or acceptance criteria'),
+        target_url: z.string().optional().describe('Primary URL to test against'),
+        priority: z
+          .enum(['critical', 'high', 'medium', 'low'])
+          .default('high')
+          .describe('Task priority'),
+        agents: z
+          .array(
+            z.enum(['security_compliance', 'performance', 'senior_qa', 'junior_qa', 'qa_analyst'])
+          )
+          .default([])
+          .describe('Agents to invoke (empty = all agents)'),
+        standards: z
+          .array(z.string())
+          .default([])
+          .describe('Compliance standards to check, e.g. ["OWASP", "GDPR", "PCI DSS"]'),
+        from_peer_id: z
+          .string()
+          .default('yeoman')
+          .describe('Sender peer ID — identifies this YEOMAN instance to Agnostic'),
+      },
+    },
+    wrapToolHandler('agnostic_delegate_a2a', middleware, async (args) => {
+      const messageId = randomUUID();
+      const message = {
+        id: messageId,
+        type: 'a2a:delegate',
+        fromPeerId: args.from_peer_id,
+        toPeerId: 'agnostic',
+        payload: {
+          task_type: 'qa',
+          title: args.title,
+          description: args.description,
+          target_url: args.target_url,
+          priority: args.priority,
+          agents: args.agents,
+          standards: args.standards,
+        },
+        timestamp: Date.now(),
+      };
+
+      const { ok, status, body } = await agnosticPost(
+        config,
+        '/api/v1/a2a/receive',
+        message
+      );
+
+      if (!ok) {
+        if (status === 404) {
+          return {
+            content: [
+              {
+                type: 'text' as const,
+                text:
+                  `A2A endpoint not found (HTTP 404). Agnostic P8 (POST /api/v1/a2a/receive) ` +
+                  `is not yet implemented on the Agnostic side.\n` +
+                  `Use agnostic_submit_qa for REST-based submission.\n\n` +
+                  `A2A message that would be sent:\n${JSON.stringify(message, null, 2)}`,
+              },
+            ],
+            isError: true,
+          };
+        }
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `A2A delegation failed: HTTP ${status}\n${JSON.stringify(body)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+
+      return {
+        content: [
+          {
+            type: 'text' as const,
+            text: formatResponse(`A2A Delegation Sent (message_id: ${messageId})`, body),
+          },
+        ],
       };
     })
   );

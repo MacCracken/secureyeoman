@@ -1218,6 +1218,8 @@ Get spirit system statistics.
 
 ### Brain System
 
+> **Search behaviour (Phase 35):** The `search` parameter on memory and knowledge endpoints now uses **Hybrid FTS + Reciprocal Rank Fusion** when the database is running migration 029. FTS and pgvector results are merged via `score = Σ 1/(60 + rank_i)` before being returned. This improves recall for exact terms, named entities, and command strings that pure vector search misses. The response shape is unchanged.
+
 #### GET /api/v1/brain/memories
 
 List memories with optional filtering.
@@ -1226,7 +1228,7 @@ List memories with optional filtering.
 
 **Query Parameters**
 - `type` (optional): Filter by memory type (`episodic`, `semantic`, `procedural`, `preference`)
-- `search` (optional): Full-text search across memory content
+- `search` (optional): Hybrid FTS + vector search across memory content (RRF merged)
 - `minImportance` (optional): Minimum importance score (0-1)
 - `limit` (optional): Number of results (default: 50)
 
