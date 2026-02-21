@@ -4,6 +4,20 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Roadmap Cleanup (2026-02-21)
+
+Removed all completed `[x]` items from `docs/development/roadmap.md` — open items only, per the file's stated policy. Corrected the duplicate "Phase 35" heading: Final Inspection is now correctly labelled **Phase 36** (matching the timeline table). All removed items were already documented in prior changelog entries:
+
+| Removed item | Changelog entry |
+|---|---|
+| Format / Typecheck / Lint passing | Phase 33 Quality Gate Closed |
+| `POST /api/tasks`, API key auth, webhook callbacks (Agnostic) | Agnostic QA Sub-Agent Team — Full Integration Complete |
+| Routing-focused descriptions on community skills | Community Skill Routing Descriptions |
+| `triggerPatterns` hygiene pass on community skills | `triggerPatterns` Hygiene Pass — Full Pipeline Wiring |
+| Presence Indicators + CRDT | Phase 26: Real-Time Collaboration |
+
+---
+
 ## `triggerPatterns` Hygiene Pass — Full Pipeline Wiring (2026-02-21)
 
 `triggerPatterns` now flows end-to-end from community skill JSON files through the marketplace catalog into installed brain skills, and all 29 community skills (11 bundled + 18 external) ship with 5 concrete patterns each.
