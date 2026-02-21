@@ -51,12 +51,7 @@
 
 ### Test Coverage
 
-- [ ] **Coverage baseline** — Run `npm run test:coverage` across all packages; add targeted tests for any file below 80%
 - [ ] **Integration test gaps** — Audit `packages/core/src/__integration__/` for missing scenarios: multi-user auth flows, workspace member RBAC, SSO callback edge cases, binary sub-agent timeout/kill, mcp-bridge template errors
-- [x] **Migration integrity — Docker dev** — All 30 manifest entries (001–028, with two 006_* and two 007_* pairs) apply cleanly on a fresh database (`docker compose --profile dev down -v && up --build`) and idempotently on an already-migrated one (restart triggers fast-path, no errors, no duplicate inserts). `runner.test.ts` added with four coverage cases: fresh apply, idempotent second call, partial-state recovery, and timestamp validation. `truncateAllTables` updated to include `proactive` schema.
-- [x] **Migration integrity — Docker production** — Fresh + idempotency verified against binary-based `Dockerfile` + standalone `docker compose up`; all 30 migrations applied, default workspace created, fast-path confirmed on restart. Three bugs fixed: `.dockerignore` missing `!dist/migrations/` exception; `manifest.ts` Bun-binary detection used `.startsWith` instead of `.includes` for `file:///$bunfs/` URLs; `pino` transport worker threads (including `pino/file`) fail in lean binary image — JSON stdout now bypasses the transport layer (writes directly via `pino(options)`) and `SECUREYEOMAN_LOG_FORMAT=json` added to Dockerfile; `loader.ts` gained `SECUREYEOMAN_LOG_FORMAT` env-var support.
-- [x] **Migration integrity — Binary** — Bun 1.3.9 binary built (`npm run build:binary`); `dist/migrations/` shipped alongside binary; all 30 migrations applied against fresh Postgres via `secureyeoman start`; fast-path triggers on restart; `health --json` returns `{"status":"ok","database":true,"auditChain":true}`.
-- [x] **Migration integrity — Helm / Kubernetes** — `helm lint`; `helm template` renders cleanly; deploy to kind cluster against fresh Postgres, all 30 migrations applied via pre-install Job hook; rolling restart confirms fast-path; three bugs fixed (see Phase 25 Helm Checks entry and ADR 042)
 
 
 ## Phase 25: Fix All the Bugs
@@ -93,7 +88,7 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 ### Regression & Performance
 
-- [ ] **Regression suite** — All 2900+ tests pass; fix any failures introduced
+- [ ] **Regression suite** — All 6300+ tests pass; fix any failures introduced
 - [ ] **Memory baseline** — Cold-start still <300 MB latest additions
 - [ ] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
 
