@@ -2006,7 +2006,9 @@ function BodySection({
               <input
                 type="checkbox"
                 checked={activeHours.enabled}
-                onChange={() => onActiveHoursChange({ ...activeHours, enabled: !activeHours.enabled })}
+                onChange={() => {
+                  onActiveHoursChange({ ...activeHours, enabled: !activeHours.enabled });
+                }}
                 className="sr-only peer"
               />
               <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
@@ -2020,7 +2022,9 @@ function BodySection({
                   <input
                     type="time"
                     value={activeHours.start}
-                    onChange={(e) => onActiveHoursChange({ ...activeHours, start: e.target.value })}
+                    onChange={(e) => {
+                      onActiveHoursChange({ ...activeHours, start: e.target.value });
+                    }}
                     className="w-full text-xs rounded border border-border bg-background px-2 py-1"
                   />
                 </div>
@@ -2029,7 +2033,9 @@ function BodySection({
                   <input
                     type="time"
                     value={activeHours.end}
-                    onChange={(e) => onActiveHoursChange({ ...activeHours, end: e.target.value })}
+                    onChange={(e) => {
+                      onActiveHoursChange({ ...activeHours, end: e.target.value });
+                    }}
                     className="w-full text-xs rounded border border-border bg-background px-2 py-1"
                   />
                 </div>
@@ -2065,7 +2071,9 @@ function BodySection({
                 <label className="text-xs text-muted-foreground block mb-1">Timezone</label>
                 <select
                   value={activeHours.timezone}
-                  onChange={(e) => onActiveHoursChange({ ...activeHours, timezone: e.target.value })}
+                  onChange={(e) => {
+                    onActiveHoursChange({ ...activeHours, timezone: e.target.value });
+                  }}
                   className="w-full text-xs rounded border border-border bg-background px-2 py-1"
                 >
                   <option value="UTC">UTC</option>

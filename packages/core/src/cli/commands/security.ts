@@ -118,7 +118,7 @@ Environment variables set after setup:
 
       ctx.stdout.write(`Pulling ${KALI_IMAGE} (this may take a few minutes)...\n`);
       const pull = await docker(['pull', KALI_IMAGE]);
-      if (pull.stderr && pull.stderr.includes('Error')) {
+      if (pull.stderr?.includes('Error')) {
         ctx.stderr.write(`Pull failed:\n${pull.stderr}\n`);
         return 1;
       }

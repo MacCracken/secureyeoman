@@ -60,7 +60,7 @@ async function agnosticGet(
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
   const token = await getToken(config);
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${config.agnosticUrl}${path}`, { headers });
   let body: unknown;
@@ -79,7 +79,7 @@ async function agnosticPost(
 ): Promise<{ ok: boolean; status: number; body: unknown }> {
   const token = await getToken(config);
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${config.agnosticUrl}${path}`, {
     method: 'POST',
@@ -384,7 +384,7 @@ export function registerAgnosticTools(
                 'To enable task submission, implement Priority 1 from:\n' +
                 '/home/macro/Repos/agnostic/TODO.md\n\n' +
                 'In the meantime, use the Agnostic Chainlit UI at:\n' +
-                `${config.agnosticUrl}`,
+                config.agnosticUrl,
             },
           ],
           isError: true,
@@ -429,7 +429,7 @@ export function registerAgnosticTools(
       if (status === 404) {
         const bodyText =
           typeof body === 'object' && body !== null && 'detail' in body
-            ? String((body as { detail: string }).detail)
+            ? (body as { detail: string }).detail
             : 'Task not found';
 
         if (bodyText.includes('not found') || bodyText.includes('Not Found')) {

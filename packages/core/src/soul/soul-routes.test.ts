@@ -439,7 +439,13 @@ describe('POST /api/v1/soul/onboarding/complete', () => {
 });
 
 describe('heartbeatManager wiring', () => {
-  const ACTIVE_HOURS = { enabled: true, start: '09:00', end: '17:00', daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'], timezone: 'UTC' };
+  const ACTIVE_HOURS = {
+    enabled: true,
+    start: '09:00',
+    end: '17:00',
+    daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
+    timezone: 'UTC',
+  };
   const PERSONALITY_WITH_HOURS = { ...PERSONALITY, body: { activeHours: ACTIVE_HOURS } };
 
   it('POST activate → calls setPersonalitySchedule with personality.body.activeHours', async () => {
@@ -457,7 +463,10 @@ describe('heartbeatManager wiring', () => {
       { getActivePersonality: vi.fn().mockResolvedValue(PERSONALITY_WITH_HOURS) },
       undefined
     );
-    const res = await app.inject({ method: 'POST', url: '/api/v1/soul/personalities/pers-1/activate' });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/pers-1/activate',
+    });
     expect(res.statusCode).toBe(200);
   });
 

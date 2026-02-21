@@ -19,13 +19,13 @@ import { PgBaseStorage } from './pg-base.js';
 
 // Expose protected methods via subclass
 class TestStorage extends PgBaseStorage {
-  testQuery<T>(text: string, values?: unknown[]) {
+  testQuery(text: string, values?: unknown[]) {
     return this.query<any>(text, values);
   }
-  testQueryOne<T>(text: string, values?: unknown[]) {
+  testQueryOne(text: string, values?: unknown[]) {
     return this.queryOne<any>(text, values);
   }
-  testQueryMany<T>(text: string, values?: unknown[]) {
+  testQueryMany(text: string, values?: unknown[]) {
     return this.queryMany<any>(text, values);
   }
   testExecute(text: string, values?: unknown[]) {

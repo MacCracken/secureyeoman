@@ -223,7 +223,12 @@ describe('McpPrebuilts', () => {
     // Click the inner Connect button
     const innerConnect = screen
       .getAllByText('Connect')
-      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost') && !el.closest('button')?.classList.contains('shrink-0'));
+      .find(
+        (el) =>
+          el.closest('button') &&
+          !el.closest('button')?.classList.contains('btn-ghost') &&
+          !el.closest('button')?.classList.contains('shrink-0')
+      );
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -258,7 +263,12 @@ describe('McpPrebuilts', () => {
 
     const innerConnect = screen
       .getAllByText('Connect')
-      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost') && !el.closest('button')?.classList.contains('shrink-0'));
+      .find(
+        (el) =>
+          el.closest('button') &&
+          !el.closest('button')?.classList.contains('btn-ghost') &&
+          !el.closest('button')?.classList.contains('shrink-0')
+      );
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -287,7 +297,12 @@ describe('McpPrebuilts', () => {
 
     const innerConnect = screen
       .getAllByText('Connect')
-      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost') && !el.closest('button')?.classList.contains('shrink-0'));
+      .find(
+        (el) =>
+          el.closest('button') &&
+          !el.closest('button')?.classList.contains('btn-ghost') &&
+          !el.closest('button')?.classList.contains('shrink-0')
+      );
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -320,7 +335,12 @@ describe('McpPrebuilts', () => {
 
     const innerConnect = screen
       .getAllByText('Connect')
-      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost') && !el.closest('button')?.classList.contains('shrink-0'));
+      .find(
+        (el) =>
+          el.closest('button') &&
+          !el.closest('button')?.classList.contains('btn-ghost') &&
+          !el.closest('button')?.classList.contains('shrink-0')
+      );
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {
@@ -349,7 +369,12 @@ describe('McpPrebuilts', () => {
     // Do not fill in the API key — click Connect immediately
     const innerConnect = screen
       .getAllByText('Connect')
-      .find((el) => el.closest('button') && !el.closest('button')?.classList.contains('btn-ghost') && !el.closest('button')?.classList.contains('shrink-0'));
+      .find(
+        (el) =>
+          el.closest('button') &&
+          !el.closest('button')?.classList.contains('btn-ghost') &&
+          !el.closest('button')?.classList.contains('shrink-0')
+      );
     await user.click(innerConnect!.closest('button')!);
 
     await waitFor(() => {

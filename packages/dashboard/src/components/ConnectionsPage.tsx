@@ -13,7 +13,6 @@ import {
   Globe,
   Wrench,
   GitBranch,
-  Figma,
   CreditCard,
   Zap,
   Building2,
@@ -649,7 +648,7 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
   figma: {
     name: 'Figma',
     description: 'Access Figma files, comments, and design metadata',
-    icon: <Figma className="w-6 h-6" />,
+    icon: <Globe className="w-6 h-6" />,
     fields: [
       ...BASE_FIELDS,
       {
