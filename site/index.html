@@ -106,9 +106,9 @@
             View on GitHub
           </a>
         </div>
-        <div class="hero-stats">
+          <div class="hero-stats">
           <div class="stat">
-            <span class="stat-value">6,399+</span>
+            <span class="stat-value">6,461+</span>
             <span class="stat-label">Tests</span>
           </div>
           <div class="stat-divider"></div>
@@ -118,12 +118,12 @@
           </div>
           <div class="stat-divider"></div>
           <div class="stat">
-            <span class="stat-value">34+</span>
+            <span class="stat-value">57+</span>
             <span class="stat-label">MCP Tools</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat">
-            <span class="stat-value">21</span>
+            <span class="stat-value">23</span>
             <span class="stat-label">CLI Commands</span>
           </div>
         </div>
@@ -271,11 +271,11 @@
             <p class="feature-desc">
               Connect with 22+ platforms including Telegram, Discord, Slack, WhatsApp, Signal, MS
               Teams, GitHub, GitLab, Gmail, Google Calendar, Notion, Jira, AWS, Azure DevOps, and
-              more. MCP protocol support with 34+ built-in tools.
+              more. MCP protocol support with 57+ built-in tools.
             </p>
             <ul class="feature-list">
               <li>Multi-platform support</li>
-              <li>34+ MCP tools</li>
+              <li>57+ MCP tools</li>
               <li>Webhook automation</li>
               <li>Custom integrations</li>
             </ul>
@@ -389,11 +389,11 @@
             </div>
             <h3 class="feature-title">CLI & Development</h3>
             <p class="feature-desc">
-              21 CLI commands with shell completions. Integrated Storybook for component development
+              23 CLI commands with shell completions. Integrated Storybook for component development
               with dark/light theme support.
             </p>
             <ul class="feature-list">
-              <li>21 CLI commands</li>
+              <li>23 CLI commands</li>
               <li>Shell completions</li>
               <li>Storybook</li>
               <li>JSON output</li>
@@ -649,13 +649,42 @@
         </div>
         <div class="getting-started-content">
           <div class="setup-tabs">
-            <button class="tab-btn active" data-tab="npm">npm</button>
+            <button class="tab-btn active" data-tab="binary">Single Binary</button>
+            <button class="tab-btn" data-tab="npm">npm</button>
             <button class="tab-btn" data-tab="docker">Docker</button>
             <button class="tab-btn" data-tab="kubernetes">Kubernetes</button>
             <button class="tab-btn" data-tab="source">Source</button>
           </div>
           <div class="setup-content">
-            <div class="tab-panel active" id="npm">
+            <div class="tab-panel active" id="binary">
+              <div class="code-window">
+                <div class="window-header">
+                  <div class="window-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                  </div>
+                  <span class="window-title">terminal</span>
+                  <button class="copy-btn" data-clipboard="binary">
+                    <i class="fas fa-copy"></i>
+                  </button>
+                </div>
+                <div class="window-body">
+                  <pre><code><span class="comment"># Install SecureYeoman (Linux/macOS)</span>
+<span class="prompt">$</span> curl -fsSL https://secureyeoman.ai/install | bash
+
+<span class="comment"># First-time setup</span>
+<span class="prompt">$</span> secureyeoman init
+
+<span class="comment"># Start the server</span>
+<span class="prompt">$</span> secureyeoman start
+
+<span class="comment"># Access the dashboard</span>
+<span class="prompt">$</span> open http://localhost:18789</code></pre>
+                </div>
+              </div>
+            </div>
+            <div class="tab-panel" id="npm">
               <div class="code-window">
                 <div class="window-header">
                   <div class="window-dots">
@@ -829,7 +858,7 @@ SECUREYEOMAN_ADMIN_PASSWORD="..."</code></pre>
               </div>
               <div class="stat-row">
                 <span class="stat-name">Files</span>
-                <span class="stat-value">354</span>
+                <span class="stat-value">358</span>
               </div>
             </div>
             <a
