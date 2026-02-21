@@ -58,6 +58,8 @@ import { registerA2ARoutes } from '../a2a/a2a-routes.js';
 import { registerProactiveRoutes } from '../proactive/proactive-routes.js';
 import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
 import { registerBrowserRoutes } from '../browser/browser-routes.js';
+import { CollabManager } from '../soul/collab.js';
+import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
 import { httpStatusName, sendError } from '../utils/errors.js';
 import { VERSION } from '../version.js';
@@ -94,6 +96,7 @@ const CHANNEL_PERMISSIONS: Record<string, { resource: string; action: string }> 
   tasks: { resource: 'tasks', action: 'read' },
   security: { resource: 'security_events', action: 'read' },
   proactive: { resource: 'proactive', action: 'read' },
+  soul: { resource: 'soul', action: 'read' },
 };
 
 export interface GatewayServerOptions {
@@ -111,6 +114,7 @@ export class GatewayServer {
   private readonly dashboardDist: string | undefined;
   private readonly app: FastifyInstance;
   private readonly clients = new Map<string, WebSocketClient>();
+  private readonly collabManager: CollabManager;
   private logger: SecureLogger | null = null;
   private metricsInterval: NodeJS.Timeout | null = null;
   private heartbeatInterval: NodeJS.Timeout | null = null;
@@ -122,6 +126,7 @@ export class GatewayServer {
     this.secureYeoman = options.secureYeoman;
     this.authService = options.authService;
     this.dashboardDist = options.dashboardDist;
+    this.collabManager = new CollabManager(new SoulStorage());
 
     // Build HTTPS options when TLS is enabled
     const httpsOpts = this.config.tls.enabled
@@ -338,7 +343,10 @@ export class GatewayServer {
     // Soul routes
     try {
       const soulManager = this.secureYeoman.getSoulManager();
-      registerSoulRoutes(this.app, { soulManager });
+      registerSoulRoutes(this.app, {
+        soulManager,
+        broadcast: (payload) => this.broadcast('soul', payload),
+      });
     } catch {
       // Soul manager may not be available — skip routes
     }
@@ -1417,6 +1425,105 @@ export class GatewayServer {
         });
       });
     });
+
+    // ── Collaborative editing endpoint (Yjs binary protocol) ────────────
+    // Path: /ws/collab/:docId?token=<jwt>
+    // docId format: "personality:<uuid>" | "skill:<uuid>"
+    this.app.get(
+      '/ws/collab/:docId',
+      { websocket: true },
+      async (socket, request) => {
+        const params = request.params as { docId: string };
+        const docId = params.docId;
+
+        // Auth — same token-in-query-param pattern as /ws/metrics
+        let authUser: { userId: string; role: string; displayName: string } | undefined;
+        if (this.authService) {
+          const url = new URL(request.url, `http://${request.hostname}`);
+          const token = url.searchParams.get('token');
+          if (!token) {
+            socket.close(4401, 'Missing authentication token');
+            return;
+          }
+          try {
+            const user = await this.authService.validateToken(token);
+            // Resolve display name: try soul users, fall back to role label
+            let displayName = user.role === 'admin' ? 'Admin' : 'User';
+            try {
+              const soulManager = this.secureYeoman.getSoulManager();
+              const soulUser = await soulManager.getUser(user.userId);
+              if (soulUser?.name) displayName = soulUser.name;
+            } catch {
+              // Non-fatal: user may not have a soul profile
+            }
+            authUser = { userId: user.userId, role: user.role, displayName };
+          } catch {
+            socket.close(4401, 'Invalid authentication token');
+            return;
+          }
+        } else {
+          // No auth service configured (dev mode) — allow with placeholder identity
+          authUser = { userId: 'dev', role: 'admin', displayName: 'Dev' };
+        }
+
+        // Validate docId format
+        if (!/^(personality|skill):[0-9a-f-]{36}$/.test(docId)) {
+          socket.close(4400, 'Invalid docId format');
+          return;
+        }
+
+        socket.binaryType = 'arraybuffer';
+
+        const clientId = `collab_${String(++this.clientIdCounter)}`;
+
+        // Resolve initial content from the soul manager so new rooms converge
+        // immediately to the current REST-persisted value.
+        let initialContent: string | undefined;
+        try {
+          const soulManager = this.secureYeoman.getSoulManager();
+          if (docId.startsWith('personality:')) {
+            const id = docId.slice('personality:'.length);
+            const p = await soulManager.getPersonality(id);
+            initialContent = p?.systemPrompt;
+          } else if (docId.startsWith('skill:')) {
+            const id = docId.slice('skill:'.length);
+            const s = await soulManager.getSkill(id);
+            initialContent = s?.instructions;
+          }
+        } catch {
+          // Non-fatal
+        }
+
+        await this.collabManager.join(
+          docId,
+          clientId,
+          socket,
+          authUser.userId,
+          authUser.displayName,
+          initialContent
+        );
+
+        socket.on('message', (message: Buffer) => {
+          const data = new Uint8Array(
+            message instanceof ArrayBuffer ? message : message.buffer
+          );
+          this.collabManager.handleMessage(docId, clientId, data);
+        });
+
+        socket.on('close', () => {
+          this.collabManager.leave(docId, clientId);
+          this.getLogger().debug('Collab client disconnected', { clientId, docId });
+        });
+
+        socket.on('error', (error: Error) => {
+          this.getLogger().error('Collab WebSocket error', {
+            clientId,
+            docId,
+            error: error.message,
+          });
+        });
+      }
+    );
   }
 
   /**

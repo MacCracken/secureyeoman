@@ -54,6 +54,8 @@ import {
   fetchSecurityPolicy,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
+import { useCollabEditor } from '../hooks/useCollabEditor.js';
+import { PresenceBanner } from './PresenceBanner.js';
 import type {
   Personality,
   PersonalityCreate,
@@ -2091,6 +2093,14 @@ export function PersonalityEditor() {
     learning: { enabled: true, minConfidence: 0.7 },
   });
 
+  // Collaborative editing — active when an existing personality is open for editing
+  const collabDocId = editing && editing !== 'new' ? `personality:${editing}` : null;
+  const {
+    text: collabSystemPrompt,
+    onTextChange: onCollabSystemPromptChange,
+    presenceUsers: systemPromptPresence,
+  } = useCollabEditor(collabDocId, 'systemPrompt', form.systemPrompt);
+
   const { data: personalitiesData, isLoading } = useQuery({
     queryKey: ['personalities'],
     queryFn: fetchPersonalities,
@@ -2454,17 +2464,24 @@ export function PersonalityEditor() {
 
             <div>
               <label className="block text-sm font-medium mb-1">System Prompt</label>
+              <PresenceBanner users={systemPromptPresence} />
               <textarea
-                value={form.systemPrompt}
+                value={collabDocId ? collabSystemPrompt : form.systemPrompt}
                 onChange={(e) => {
-                  setForm((f) => ({ ...f, systemPrompt: e.target.value }));
+                  const val = e.target.value;
+                  if (collabDocId) {
+                    onCollabSystemPromptChange(val);
+                    setForm((f) => ({ ...f, systemPrompt: val }));
+                  } else {
+                    setForm((f) => ({ ...f, systemPrompt: val }));
+                  }
                 }}
                 className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
                 rows={4}
                 maxLength={8000}
               />
               <p className="text-xs text-muted-foreground mt-1">
-                {(form.systemPrompt?.length ?? 0).toLocaleString()} / 8,000 chars
+                {((collabDocId ? collabSystemPrompt : form.systemPrompt)?.length ?? 0).toLocaleString()} / 8,000 chars
               </p>
             </div>
 

@@ -4,6 +4,78 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 27 (2026-02-21): Twitter/X Integration + Home Assistant & Coolify MCP Prebuilts
+
+### New Features
+
+- **Twitter/X integration** — Full messaging-platform adapter in the Messaging tab. Polls mentions via Bearer Token (App-only), posts replies via OAuth 1.0a. `sinceId` tracking, configurable poll interval (default 5 min), normalized to `UnifiedMessage` with `tw_` prefix.
+- **Home Assistant MCP prebuilt** — One-click `streamable-http` MCP connection to HA's native `/api/mcp` endpoint. User provides HA URL + Long-Lived Access Token; exposes all voice-assistant-exposed entities as MCP tools.
+- **Coolify (MetaMCP) MCP prebuilt** — One-click `streamable-http` MCP connection to a MetaMCP instance deployed on Coolify. Aggregates multiple MCP servers behind a single endpoint.
+- **Transport-aware MCP prebuilts** — `McpPrebuilts` component extended to support `streamable-http` prebuilts alongside existing `stdio` ones. URL template substitution (`{KEY}` tokens) resolves user-provided values at connect time.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `packages/core/src/integrations/twitter/adapter.ts` | `TwitterIntegration` adapter — mention polling + tweet replies |
+| `packages/core/src/integrations/twitter/index.ts` | Re-export |
+| `docs/adr/081-twitter-ha-coolify-integrations.md` | ADR — integration model decisions for each platform |
+
+### Modified Files
+
+- **`packages/shared/src/types/integration.ts`** — Added `'twitter'` to `PlatformSchema`
+- **`packages/core/src/secureyeoman.ts`** — Imported and registered `TwitterIntegration`
+- **`packages/core/package.json`** — Added `twitter-api-v2` dependency
+- **`packages/dashboard/src/components/ConnectionsPage.tsx`** — Added `twitter` entry to `PLATFORM_META` (Messaging tab)
+- **`packages/dashboard/src/components/McpPrebuilts.tsx`** — Extended `PrebuiltServer` interface for HTTP transport; added Home Assistant and Coolify prebuilts
+- **`docs/guides/integrations.md`** — Added Twitter/X, Home Assistant, Coolify, and Obsidian vault setup sections
+- **`docs/development/roadmap.md`** — Added Group Chat view and Mobile App future feature items
+
+---
+
+## Phase 26 (2026-02-21): Real-Time Collaboration — Presence Indicators + CRDT
+
+### New Features
+
+- **Presence Indicators** — `PresenceBanner` component shows who else is editing the same personality system prompt or skill instructions in real time (colored dots + name label).
+- **CRDT collaborative editing** — Y.Text (Yjs) CRDT ensures concurrent edits converge without data loss. System prompts and skill instructions are now collaboratively editable.
+
+### New WebSocket Endpoint
+
+- **`/ws/collab/:docId`** — Binary Yjs/y-websocket protocol endpoint. Handles sync (state vector exchange + incremental updates) and awareness (presence). Auth via `?token=` query param, same as `/ws/metrics`.
+  - `docId` format: `personality:<uuid>` or `skill:<uuid>`
+  - Server resolves display name from soul users table; falls back to role label.
+
+### New Files
+
+| File | Purpose |
+|------|---------|
+| `packages/core/src/soul/collab.ts` | `CollabManager` — Y.Doc lifecycle, Yjs relay, awareness, DB persistence |
+| `packages/core/src/soul/collab.test.ts` | Unit tests (lifecycle, sync, awareness, debounce, presence) |
+| `packages/core/src/storage/migrations/029_collab_docs.sql` | `soul.collab_docs(doc_id, state, updated_at)` |
+| `packages/dashboard/src/hooks/useCollabEditor.ts` | Yjs hook: text state, sync, presence, null-safe disabled mode |
+| `packages/dashboard/src/hooks/useCollabEditor.test.ts` | Hook tests (WS mock, binary messages, presence, cleanup) |
+| `packages/dashboard/src/components/PresenceBanner.tsx` | Presence UI banner |
+| `packages/dashboard/src/components/PresenceBanner.test.tsx` | Component tests (render, labels, color dots) |
+| `docs/adr/080-real-time-collaboration.md` | ADR — Yjs vs Automerge, unified endpoint design |
+
+### Modified Files
+
+- **`packages/core/src/soul/storage.ts`** — Added `saveCollabDoc` / `loadCollabDoc` methods
+- **`packages/core/src/storage/migrations/manifest.ts`** — Registered migration 029
+- **`packages/core/src/gateway/server.ts`** — Added `CollabManager` field, `soul` channel permission, `/ws/collab` route
+- **`packages/core/src/soul/soul-routes.ts`** — `broadcast` option; emits `soul` events on personality/skill update
+- **`packages/dashboard/src/components/PersonalityEditor.tsx`** — `systemPrompt` textarea wired to `useCollabEditor` + `PresenceBanner`
+- **`packages/dashboard/src/components/SkillsPage.tsx`** — `instructions` textarea wired to `useCollabEditor` + `PresenceBanner`
+- **`packages/core/package.json`** — Added `yjs` dependency
+- **`packages/dashboard/package.json`** — Added `yjs` dependency
+
+### Architecture
+
+See [ADR 080](docs/adr/080-real-time-collaboration.md) for the full design rationale (Yjs vs Automerge, custom server vs Hocuspocus, persistence strategy).
+
+---
+
 ## Phase 24 (2026-02-20 → 2026-02-21): Testing All the Things
 
 ### Coverage Achieved

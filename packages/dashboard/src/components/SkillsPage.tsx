@@ -43,6 +43,8 @@ import {
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { Skill, SkillCreate, Personality, MarketplaceSkill } from '../types';
 import { sanitizeText } from '../utils/sanitize';
+import { useCollabEditor } from '../hooks/useCollabEditor.js';
+import { PresenceBanner } from './PresenceBanner.js';
 
 type TabType = 'my-skills' | 'marketplace' | 'community' | 'installed';
 
@@ -171,6 +173,14 @@ function MySkillsTab() {
     personalityId: null,
   });
   const [triggerInput, setTriggerInput] = useState('');
+
+  // Collaborative editing — active when an existing skill is open for editing
+  const collabSkillDocId = editing && editing !== 'new' ? `skill:${editing}` : null;
+  const {
+    text: collabInstructions,
+    onTextChange: onCollabInstructionsChange,
+    presenceUsers: instructionsPresence,
+  } = useCollabEditor(collabSkillDocId, 'instructions', form.instructions);
 
   const { data, isLoading } = useQuery({
     queryKey: ['skills', filterStatus, filterSource],
@@ -373,11 +383,20 @@ function MySkillsTab() {
                 </svg>
               </div>
             </div>
+            <PresenceBanner users={instructionsPresence} />
             <textarea
               className="bg-background border rounded-lg px-3 py-2 text-sm min-h-[80px]"
               placeholder="Instructions (what the skill does)"
-              value={form.instructions}
-              onChange={(e) => setForm({ ...form, instructions: e.target.value })}
+              value={collabSkillDocId ? collabInstructions : form.instructions}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (collabSkillDocId) {
+                  onCollabInstructionsChange(val);
+                  setForm({ ...form, instructions: val });
+                } else {
+                  setForm({ ...form, instructions: val });
+                }
+              }}
             />
             <div className="flex gap-2">
               <input

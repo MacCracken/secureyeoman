@@ -16,10 +16,11 @@ import { toErrorMessage, sendError } from '../utils/errors.js';
 
 export interface SoulRoutesOptions {
   soulManager: SoulManager;
+  broadcast?: (payload: unknown) => void;
 }
 
 export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions): void {
-  const { soulManager } = opts;
+  const { soulManager, broadcast } = opts;
 
   // ── Personality ─────────────────────────────────────────────
 
@@ -57,6 +58,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     ) => {
       try {
         const personality = await soulManager.updatePersonality(request.params.id, request.body);
+        broadcast?.({ event: 'updated', type: 'personality', id: personality.id });
         return { personality };
       } catch (err) {
         return sendError(reply, 404, toErrorMessage(err));
@@ -128,6 +130,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     ) => {
       try {
         const skill = await soulManager.updateSkill(request.params.id, request.body);
+        broadcast?.({ event: 'updated', type: 'skill', id: skill.id });
         return { skill };
       } catch (err) {
         return sendError(reply, 404, toErrorMessage(err));

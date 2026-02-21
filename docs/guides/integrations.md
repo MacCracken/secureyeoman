@@ -8,11 +8,13 @@ SecureYeoman supports multiple platform integrations for receiving and respondin
 |----------|--------|---------------|----------|
 | Airtable | Stable | Productivity | Personal access token, base/record management |
 | CLI      | Stable | Messaging | Built-in REST API / command-line interface |
+| Coolify (MetaMCP) | Stable | MCP | One-click streamable-http MCP prebuilt via MetaMCP |
 | Discord  | Stable | Messaging | Slash commands, embeds, guild messages |
 | Email (IMAP/SMTP) | Stable | Email | Any IMAP/SMTP provider — ProtonMail Bridge, Outlook, Yahoo, Fastmail |
 | Figma    | Stable | DevOps | File comments, design metadata, REST polling |
 | GitHub   | Stable | DevOps | Webhooks, issue comments, PR events |
 | GitLab   | Stable | DevOps | Webhooks, MR comments, issue events, self-hosted support |
+| Home Assistant | Stable | MCP | One-click streamable-http MCP prebuilt via native HA MCP server |
 | Gmail    | Stable | Email | OAuth2, polling, label filtering, send/receive |
 | Google Calendar | Stable | Productivity | OAuth2, event polling, quick-add event creation |
 | Google Chat | Stable | Messaging | Bot messages, card messages, space integration |
@@ -24,6 +26,7 @@ SecureYeoman supports multiple platform integrations for receiving and respondin
 | Stripe   | Stable | Productivity | Payment/invoice webhook events, HMAC-SHA256 verification |
 | Telegram | Stable | Messaging | Long-polling, commands, text messages |
 | Todoist  | Stable | Productivity | Task and project management via REST API |
+| Twitter / X | Stable | Messaging | Mention polling (Bearer Token), tweet replies (OAuth 1.0a) |
 | Webhook  | Stable | Messaging | Generic inbound/outbound HTTP webhooks |
 | YouTube  | Stable | Productivity | Video search, channel data, playlist management |
 | Zapier   | Stable | DevOps | Zap trigger webhooks, bidirectional catch-hook |
@@ -34,11 +37,12 @@ Integrations are grouped into sub-tabs in the Connections view:
 
 | Tab | Platforms |
 |-----|-----------|
-| **Messaging** | Telegram, Discord, Slack, WhatsApp, Signal, Teams, Google Chat, iMessage, QQ, DingTalk, Line, CLI, Webhook |
+| **Messaging** | Telegram, Discord, Slack, WhatsApp, Signal, Teams, Google Chat, iMessage, QQ, DingTalk, Line, CLI, Webhook, Twitter/X |
 | **Email** | Gmail, Email (IMAP/SMTP) |
 | **Productivity** | Notion, Stripe, Linear, Google Calendar, Airtable, Todoist, Spotify, YouTube |
 | **DevOps** | GitHub, GitLab, Jira, AWS, Azure, Figma, Zapier |
 | **OAuth** | Google OAuth, GitHub OAuth |
+| **MCP** | Home Assistant, Coolify (MetaMCP), Bright Data, Exa, E2B, Supabase, Figma, Stripe, Zapier, Linear |
 
 ## CLI
 
@@ -641,6 +645,143 @@ curl -X POST http://localhost:18789/api/v1/integrations \
 - **Outbound**: `sendMessage()` posts notes on issues or merge requests
 - **chatId format**: `namespace/project/issues/123` or `namespace/project/merge_requests/456`
 - Rate limit: 10 requests/second
+
+## Twitter / X
+
+### Requirements
+- Twitter Developer account at [developer.twitter.com](https://developer.twitter.com)
+- A Project + App with **Read and Write** permissions enabled
+- Bearer Token (required for all use; enables mention polling)
+- API Key, API Key Secret, Access Token, Access Token Secret (required for posting)
+
+> **API tier note**: Twitter's free tier allows approximately 1 mention lookup per 15-minute window and 17 posts per 24 hours. The default poll interval is 300 seconds (5 minutes). For heavier workloads upgrade to the Basic or Pro tier and lower `pollIntervalMs` accordingly.
+
+### Setup
+
+1. Go to [developer.twitter.com](https://developer.twitter.com) and create a project and app
+2. Set app permissions to **Read and Write**
+3. Copy the **Bearer Token** from the Keys and Tokens tab
+4. Under **Authentication Tokens**, generate **Access Token & Secret**
+5. Create an integration:
+
+```bash
+curl -X POST http://localhost:18789/api/v1/integrations \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "platform": "twitter",
+    "displayName": "SecureYeoman Twitter",
+    "enabled": true,
+    "config": {
+      "bearerToken": "AAAA...",
+      "apiKey": "your-api-key",
+      "apiKeySecret": "your-api-key-secret",
+      "accessToken": "your-access-token",
+      "accessTokenSecret": "your-access-token-secret"
+    }
+  }'
+```
+
+**Read-only mode** (mention monitoring only, no posting):
+```json
+{ "bearerToken": "AAAA..." }
+```
+
+### Config Options
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `bearerToken` | string | *(required)* | App-only Bearer Token for reading mentions |
+| `apiKey` | string | *(optional)* | OAuth 1.0a API Key (Consumer Key) |
+| `apiKeySecret` | string | *(optional)* | OAuth 1.0a API Key Secret |
+| `accessToken` | string | *(optional)* | OAuth 1.0a Access Token |
+| `accessTokenSecret` | string | *(optional)* | OAuth 1.0a Access Token Secret |
+| `pollIntervalMs` | number | `300000` | Mention polling interval in milliseconds |
+
+### How It Works
+- **Inbound**: Polls `GET /2/users/:id/mentions` at the configured interval. `sinceId` tracking ensures no mention is delivered twice. Normalized to `UnifiedMessage` with `tw_` prefix.
+- **Outbound**: `sendMessage(tweetId, text)` posts a reply tweet using OAuth 1.0a. Throws if OAuth credentials are absent.
+- **chatId**: The tweet ID to reply to. Use the `tweetId` from inbound message metadata.
+- Rate limit: ~2 outbound posts/minute (`platformRateLimit.maxPerSecond = 0.033`)
+
+---
+
+## Home Assistant (MCP)
+
+Home Assistant ships a native MCP server since version 2025.2. Connect it via the MCP tab in Connections → Featured MCP Servers rather than as a native integration.
+
+### Setup via Dashboard
+
+1. Go to **Connections → MCP** tab
+2. Find **Home Assistant** under Featured MCP Servers
+3. Enter your Home Assistant URL (e.g. `https://homeassistant.local:8123`)
+4. Generate a Long-Lived Access Token in HA: Profile → Security → Long-Lived Access Tokens → Create Token
+5. Paste the token and click **Connect**
+
+### Setup in Home Assistant
+
+1. Go to Settings → Devices & Services → Add Integration
+2. Search for **Model Context Protocol Server**
+3. Expose entities via voice assistant settings (Settings → Voice assistants → Expose entities) — only exposed entities appear as MCP tools
+
+### What You Get
+Once connected, all exposed HA entities become MCP tools available to your agent: turn lights on/off, query sensor states, lock/unlock doors, run scripts and automations, etc.
+
+### Manual API setup
+```bash
+curl -X POST http://localhost:18789/api/v1/mcp/servers \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Home Assistant",
+    "transport": "streamable-http",
+    "url": "https://homeassistant.local:8123/api/mcp",
+    "env": { "HA_TOKEN": "your-long-lived-token" },
+    "enabled": true
+  }'
+```
+
+---
+
+## Coolify — MetaMCP (MCP)
+
+[MetaMCP](https://github.com/metatool-ai/metamcp) is an MCP aggregator that groups multiple MCP servers behind a single HTTP endpoint. Deploy it on Coolify to manage all your self-hosted MCP servers in one place.
+
+### Setup via Dashboard
+
+1. Deploy MetaMCP on Coolify from the Coolify service catalog
+2. Note the MetaMCP endpoint URL (e.g. `https://metamcp.yourdomain.com/mcp/v1`)
+3. Generate an API key in the MetaMCP dashboard
+4. Go to **Connections → MCP** tab in SecureYeoman
+5. Find **Coolify (MetaMCP)** under Featured MCP Servers
+6. Enter the MetaMCP URL and API key, then click **Connect**
+
+### What You Get
+A single MCP connection that proxies all the MCP servers you have configured in MetaMCP — Coolify service monitoring, custom tools, and any other servers you add. Useful for managing infrastructure alongside agent tasks.
+
+---
+
+## Obsidian Vault
+
+Obsidian vaults are plain Markdown files — no dedicated integration is required. Use SecureYeoman's built-in MCP filesystem tools to read, write, and search your vault directly.
+
+### Enable filesystem access
+
+Set in your `.env`:
+```bash
+MCP_EXPOSE_FILESYSTEM=true
+MCP_ALLOWED_PATHS=/path/to/your/ObsidianVault
+```
+
+### Available tools
+- `fs_read` — Read a note by path
+- `fs_write` — Create or update a note
+- `fs_list` — List files/folders in a directory
+- `fs_search` — Full-text search across the vault
+
+Combine with the Brain module's semantic memory for richer recall: ingest vault content via `knowledge_store` and query it with `knowledge_search` / `memory_recall`.
+
+---
 
 ## API Reference
 
