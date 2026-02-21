@@ -34,6 +34,7 @@ import type {
   UserProfileCreate,
   UserProfileUpdate,
 } from './types.js';
+import { applySkillTrustFilter } from './skill-trust.js';
 
 /**
  * Returns true when the user message is relevant to the given skill.
@@ -637,9 +638,9 @@ export class SoulManager {
     const skills = await this.storage.getEnabledSkills();
     const tools: Tool[] = [];
     for (const skill of skills) {
-      if (skill.tools && skill.tools.length > 0) {
-        tools.push(...skill.tools);
-      }
+      if (!skill.tools || skill.tools.length === 0) continue;
+      const filtered = applySkillTrustFilter(skill.tools, skill.source);
+      tools.push(...filtered);
     }
     return tools;
   }

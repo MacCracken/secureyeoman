@@ -4,6 +4,59 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 35 — Ironclaw Security Hardening & TUI (2026-02-21)
+
+Three items from the Phase 35 high-priority backlog closed:
+
+### ToolOutputScanner — credential leak detection (ADR 092)
+
+`packages/core/src/security/tool-output-scanner.ts` — a new scanner that redacts credentials from LLM responses before they reach the caller.
+
+- **18 built-in patterns:** OpenAI / Anthropic API keys, GitHub PAT variants (`ghp_`, `github_pat_`, `gho_`, `ghs_`, `ghr_`), AWS access key IDs and secret assignments, PEM private key blocks, database connection strings (PostgreSQL, MySQL, MongoDB, Redis, AMQP), `Authorization: Bearer` headers, JWTs, Slack tokens, Stripe keys, Twilio tokens, Discord bot tokens, generic `api_key=` assignments, GCP service account JSON fields.
+- **SecretStore integration:** `createScannerWithSecrets()` accepts known secrets from the keyring and generates literal-match patterns automatically — no manual pattern maintenance for managed secrets.
+- **Integration:** `chat-routes.ts` scans every LLM response with `scanner.scan(response.content, 'llm_response')` before returning it to the caller. Matches are replaced with `[REDACTED:<type>]` and a `warn` log entry is emitted.
+- **Tests:** 35+ test cases in `tool-output-scanner.test.ts`.
+
+### Skill Trust Tiers — community skills read-only (ADR 092)
+
+`packages/core/src/soul/skill-trust.ts` — `applySkillTrustFilter(tools, source)` gates tool access by skill source.
+
+| Source | Tool access |
+|--------|-------------|
+| `user` / `ai_proposed` / `ai_learned` / `marketplace` | Full |
+| `community` | Read-only (26 name-prefix allow-list) |
+
+- `SoulManager.getActiveTools()` and `BrainManager.getActiveTools()` both call `applySkillTrustFilter()` per skill before accumulating the final tool list.
+- Community skill *instructions* still inject into the system prompt normally — only the available tool set is restricted.
+- Tests: `skill-trust.test.ts` covers full-access sources, community filtering, mixed sets, and `isReadOnlyTool()` prefix logic.
+
+### TUI — full-screen terminal dashboard (ADR 093)
+
+`secureyeoman tui` (alias: `dashboard`) — a zero-dependency, full-screen terminal dashboard.
+
+**Panels:** header bar (brand, server URL), live status pane (health, uptime, active personality, model/provider), scrollable chat history with word-wrap, input bar with live cursor.
+
+**Key bindings:** `Enter` send, `Ctrl+R` refresh status, `Ctrl+L` clear chat, `↑↓` / `Page Up/Down` scroll, `Ctrl+C` / `q` quit.
+
+**Implementation:** Node.js `readline` + ANSI escape codes only — no new npm dependencies. Alternate screen buffer preserves terminal history. Non-TTY environments receive a clear error. Status polled every 30 s; `conversationId` preserved across chat turns.
+
+### Files changed
+
+- `packages/core/src/security/tool-output-scanner.ts` (new)
+- `packages/core/src/security/tool-output-scanner.test.ts` (new)
+- `packages/core/src/soul/skill-trust.ts` (new)
+- `packages/core/src/soul/skill-trust.test.ts` (new)
+- `packages/core/src/cli/commands/tui.ts` (new)
+- `packages/core/src/ai/chat-routes.ts` — scanner integration
+- `packages/core/src/soul/manager.ts` — `getActiveTools()` trust filter
+- `packages/core/src/brain/manager.ts` — `getActiveTools()` trust filter
+- `packages/core/src/cli.ts` — `tuiCommand` registered
+- `docs/adr/092-tool-output-scanner-skill-trust-tiers.md` (new)
+- `docs/adr/093-tui-terminal-dashboard.md` (new)
+- `docs/development/roadmap.md` — high-priority items marked complete
+
+---
+
 ## Roadmap Cleanup (2026-02-21)
 
 Removed all completed `[x]` items from `docs/development/roadmap.md` — open items only, per the file's stated policy. Corrected the duplicate "Phase 35" heading: Final Inspection is now correctly labelled **Phase 36** (matching the timeline table). All removed items were already documented in prior changelog entries:

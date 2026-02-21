@@ -48,7 +48,7 @@
 | 32 | Cross-Integration Routing Rules | 2026.2.21 | Complete |
 | 33 | Additional MCP Improvements, CI fixes | 2026.2.21 | Complete |
 | 34 | Agnostic Sub-agent Team MCP integrations | 2026.2.21 | In Progress |
-| 35 | Fix All the Bugs | — | In Progress |
+| 35 | Fix All the Bugs + Security Hardening | — | In Progress |
 | 36 | Final Inspection | — | Pending |
 
 ---
@@ -71,9 +71,9 @@ Full-system quality pass: find real bugs in shipped code and fix them. Every pac
 
 #### High Priority
 
-- [ ] **Tool-output credential leak detection** — Add a `ToolOutputScanner` that runs after every tool execution, before the output is appended to the chat context. Scan for 15+ secret patterns: `sk-[A-Za-z0-9]{32,}`, `ghp_[A-Za-z0-9]{36}`, `AKIA[A-Z0-9]{16}`, PEM private key headers, `postgresql://.*:.*@`, bearer token patterns, JWTs, etc. Also run the same scan on the final LLM response before delivery. Replace matched groups with `[REDACTED:<type>]` and emit a `warn` log entry. The existing `secrets.ts` keyring already knows the shape of managed secrets — contribute those patterns to the scanner automatically. This closes a real exfiltration path: a shell tool that echoes `$AWS_SECRET_ACCESS_KEY`, or a web-fetch that returns a page containing an API key, currently flows straight into the model context.
+- [x] **Tool-output credential leak detection** — `ToolOutputScanner` (ADR 092) — 18 built-in patterns + SecretStore literal-value patterns. LLM response scanned in `chat-routes.ts` before delivery. `[REDACTED:<type>]` replacement with `warn` log. See `security/tool-output-scanner.ts`.
 
-- [ ] **Skill trust tiers — community skills get read-only tool access** — Map `BrainSkill.source` to a tool permission set at dispatch time. Community-sourced skills (`source === 'community'`) should only have read MCP tools available; no shell execution, no file writes, no arbitrary HTTP. User-created and marketplace-published skills retain full access. Enforcement is a config-time gate in the soul's tool-list composition — the skill instructions inject normally, but the tool list passed to the model is filtered by source. Skills that legitimately need broader access can be overridden per-skill in the dashboard editor. The `source` field already exists on `BrainSkill`; this is purely an enforcement addition.
+- [x] **Skill trust tiers — community skills get read-only tool access** — `applySkillTrustFilter()` (ADR 092) — community skills restricted to 26 read-only tool name prefixes. Enforced in both `SoulManager.getActiveTools()` and `BrainManager.getActiveTools()`. See `soul/skill-trust.ts`.
 
 #### Medium Priority
 
