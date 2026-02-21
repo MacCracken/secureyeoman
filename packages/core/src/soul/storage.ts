@@ -585,4 +585,23 @@ export class SoulStorage extends PgBaseStorage {
       total: parseInt(countResult?.count ?? '0', 10),
     };
   }
+
+  // ── Collab Docs ────────────────────────────────────────────
+
+  async saveCollabDoc(docId: string, stateBytes: Uint8Array): Promise<void> {
+    await this.execute(
+      `INSERT INTO soul.collab_docs (doc_id, state, updated_at)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (doc_id) DO UPDATE SET state = $2, updated_at = $3`,
+      [docId, Buffer.from(stateBytes), Date.now()]
+    );
+  }
+
+  async loadCollabDoc(docId: string): Promise<Uint8Array | null> {
+    const row = await this.queryOne<{ state: Buffer }>(
+      'SELECT state FROM soul.collab_docs WHERE doc_id = $1',
+      [docId]
+    );
+    return row ? new Uint8Array(row.state) : null;
+  }
 }

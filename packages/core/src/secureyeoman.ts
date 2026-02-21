@@ -90,6 +90,7 @@ import { AirtableIntegration } from './integrations/airtable/index.js';
 import { TodoistIntegration } from './integrations/todoist/index.js';
 import { SpotifyIntegration } from './integrations/spotify/index.js';
 import { YouTubeIntegration } from './integrations/youtube/index.js';
+import { TwitterIntegration } from './integrations/twitter/index.js';
 import { HeartbeatManager } from './body/heartbeat.js';
 import { HeartbeatLogStorage } from './body/heartbeat-log-storage.js';
 import { HeartManager } from './body/heart.js';
@@ -651,6 +652,7 @@ export class SecureYeoman {
       this.integrationManager.registerPlatform('todoist', () => new TodoistIntegration());
       this.integrationManager.registerPlatform('spotify', () => new SpotifyIntegration());
       this.integrationManager.registerPlatform('youtube', () => new YouTubeIntegration());
+      this.integrationManager.registerPlatform('twitter', () => new TwitterIntegration());
 
       // Wire up external plugin loader (INTEGRATION_PLUGIN_DIR env var)
       const pluginDir = process.env['INTEGRATION_PLUGIN_DIR'];

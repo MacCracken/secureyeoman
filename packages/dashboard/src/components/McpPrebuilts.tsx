@@ -6,7 +6,18 @@ import { addMcpServer, fetchMcpServers } from '../api/client';
 interface PrebuiltServer {
   name: string;
   description: string;
-  command: string;
+  /** stdio: launched via npx command. streamable-http: connects to a running HTTP endpoint. */
+  transport?: 'stdio' | 'streamable-http';
+  /** stdio transport: the npx/node command to run */
+  command?: string;
+  /**
+   * streamable-http transport: URL template where {KEY} tokens are substituted
+   * with the matching requiredEnvVar value before connecting.
+   * e.g. "{HA_URL}/api/mcp"
+   */
+  urlTemplate?: string;
+  /** Keys whose values are URLs (rendered as text inputs instead of password inputs) */
+  urlKeys?: string[];
   requiredEnvVars: { key: string; label: string }[];
 }
 
@@ -62,6 +73,42 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
     command: 'npx -y @linear/mcp-server',
     requiredEnvVars: [{ key: 'LINEAR_API_KEY', label: 'Linear API Key' }],
   },
+  {
+    name: 'Home Assistant',
+    description:
+      'Control smart home devices and query entity states via the built-in Home Assistant MCP server',
+    transport: 'streamable-http',
+    urlTemplate: '{HA_URL}/api/mcp',
+    urlKeys: ['HA_URL'],
+    requiredEnvVars: [
+      {
+        key: 'HA_URL',
+        label: 'Home Assistant URL',
+      },
+      {
+        key: 'HA_TOKEN',
+        label: 'Long-Lived Access Token',
+      },
+    ],
+  },
+  {
+    name: 'Coolify (MetaMCP)',
+    description:
+      'Connect to a MetaMCP instance deployed on Coolify — aggregates multiple MCP servers behind a single endpoint',
+    transport: 'streamable-http',
+    urlTemplate: '{METAMCP_URL}',
+    urlKeys: ['METAMCP_URL'],
+    requiredEnvVars: [
+      {
+        key: 'METAMCP_URL',
+        label: 'MetaMCP Endpoint URL',
+      },
+      {
+        key: 'METAMCP_API_KEY',
+        label: 'MetaMCP API Key',
+      },
+    ],
+  },
 ];
 
 export function McpPrebuilts() {
@@ -85,6 +132,24 @@ export function McpPrebuilts() {
         if (!val?.trim()) throw new Error(`${v.label} is required`);
         env[v.key] = val.trim();
       }
+
+      const transport = server.transport ?? 'stdio';
+
+      if (transport === 'streamable-http') {
+        // Resolve the URL template by substituting {KEY} tokens with env values
+        const url = (server.urlTemplate ?? '').replace(/\{(\w+)\}/g, (_, key: string) => {
+          return env[key] ?? '';
+        });
+        return addMcpServer({
+          name: server.name,
+          description: server.description,
+          transport: 'streamable-http',
+          url,
+          env,
+          enabled: true,
+        });
+      }
+
       return addMcpServer({
         name: server.name,
         description: server.description,
@@ -146,25 +211,28 @@ export function McpPrebuilts() {
 
               {isExpanded && !isConnected && (
                 <div className="space-y-2 pt-2 border-t border-border">
-                  {server.requiredEnvVars.map((v) => (
-                    <div key={v.key}>
-                      <label className="text-xs text-muted-foreground block mb-1">
-                        {v.label}
-                      </label>
-                      <input
-                        type="password"
-                        value={envValues[`${server.name}:${v.key}`] ?? ''}
-                        onChange={(e) =>
-                          { setEnvValues((prev) => ({
-                            ...prev,
-                            [`${server.name}:${v.key}`]: e.target.value,
-                          })); }
-                        }
-                        placeholder={v.key}
-                        className="input w-full text-xs"
-                      />
-                    </div>
-                  ))}
+                  {server.requiredEnvVars.map((v) => {
+                    const isUrl = server.urlKeys?.includes(v.key);
+                    return (
+                      <div key={v.key}>
+                        <label className="text-xs text-muted-foreground block mb-1">
+                          {v.label}
+                        </label>
+                        <input
+                          type={isUrl ? 'text' : 'password'}
+                          value={envValues[`${server.name}:${v.key}`] ?? ''}
+                          onChange={(e) =>
+                            { setEnvValues((prev) => ({
+                              ...prev,
+                              [`${server.name}:${v.key}`]: e.target.value,
+                            })); }
+                          }
+                          placeholder={isUrl ? 'https://' : v.key}
+                          className="input w-full text-xs"
+                        />
+                      </div>
+                    );
+                  })}
                   {connectMut.error &&
                     connectMut.variables?.name === server.name && (
                       <p className="text-xs text-destructive">

@@ -958,6 +958,56 @@ const PLATFORM_META: Record<string, PlatformMeta> = {
       'Paste the API key above',
     ],
   },
+  twitter: {
+    name: 'Twitter / X',
+    description: 'Monitor mentions and post replies via Twitter API v2',
+    icon: <MessageCircle className="w-6 h-6" />,
+    fields: [
+      ...BASE_FIELDS,
+      {
+        key: 'bearerToken',
+        label: 'Bearer Token',
+        type: 'password' as const,
+        placeholder: 'AAAA...',
+        helpText: 'App-only Bearer Token — required for reading mentions',
+      },
+      {
+        key: 'apiKey',
+        label: 'API Key (Consumer Key)',
+        type: 'password' as const,
+        placeholder: 'API Key',
+        helpText: 'OAuth 1.0a API Key — required for posting tweets',
+      },
+      {
+        key: 'apiKeySecret',
+        label: 'API Key Secret',
+        type: 'password' as const,
+        placeholder: 'API Key Secret',
+        helpText: 'OAuth 1.0a API Key Secret',
+      },
+      {
+        key: 'accessToken',
+        label: 'Access Token',
+        type: 'password' as const,
+        placeholder: 'Access Token',
+        helpText: 'OAuth 1.0a Access Token for your account',
+      },
+      {
+        key: 'accessTokenSecret',
+        label: 'Access Token Secret',
+        type: 'password' as const,
+        placeholder: 'Access Token Secret',
+        helpText: 'OAuth 1.0a Access Token Secret',
+      },
+    ],
+    setupSteps: [
+      'Go to developer.twitter.com and create a project + app',
+      'Enable Read and Write permissions on your app',
+      'Copy the Bearer Token from the Keys and Tokens tab',
+      'Generate Access Token & Secret under Authentication Tokens',
+      'Paste all tokens above — Bearer Token alone enables read-only monitoring',
+    ],
+  },
 };
 
 type TabType = 'integrations' | 'mcp';

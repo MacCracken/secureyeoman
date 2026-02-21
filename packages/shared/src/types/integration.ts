@@ -40,6 +40,7 @@ export const PlatformSchema = z.enum([
   'jira',
   'aws',
   'azure',
+  'twitter',
   'openweather',
 ]);
 export type Platform = z.infer<typeof PlatformSchema>;

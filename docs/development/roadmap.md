@@ -40,6 +40,7 @@
 | | **Tag 2026.2.20** | **2026-02-20** | **Tagged** |
 | 25 | Fix All the Bugs | — | In Progress |
 | 26 | Final Inspection | — | Pending |
+| 27 | Twitter/X + HA + Coolify Integrations | 2026.2.21 | Complete |
 
 ---
 
@@ -84,6 +85,14 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 *Demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
 
+### Intelligent Model Routing
+
+*Revisit once sub-agent usage volume reveals meaningful cost/latency patterns worth optimising automatically.*
+
+- [ ] **Neural sub-agent model selection** — When spawning a sub-agent, automatically select the optimal provider and model based on task characteristics (complexity score, required capabilities, context length), current API costs, and latency targets. Uses a lightweight classifier trained on historical task outcomes to score candidate models before dispatch. Falls back to the personality's configured default when confidence is low. Target: reduce sub-agent API cost by ≥30% without measurable quality regression on standard benchmark tasks.
+- [ ] **Cost-aware swarm scheduling** — Swarm coordinator profiles task complexity before assigning roles; routes summarisation/classification subtasks to cheaper/faster models (Haiku, Gemini Flash) and reserves capable models (Opus, Sonnet) for reasoning-heavy steps. Respects per-personality `allowedModels` policy and budget limits.
+- [ ] **Real-time cost feedback** — Show estimated cost before executing a multi-step plan; alert when a task exceeds a configurable threshold and offer a cheaper model alternative.
+
 ### Encryption
 
 - [ ] **HSM Integration** — Hardware Security Module integration for key management
@@ -108,12 +117,22 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 *Revisit once multi-workspace/multi-user usage data shows concurrent editing is a real pain point.*
 
 - [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
-- [ ] **Presence Indicators** — Show "Alice is editing this personality" to prevent concurrent edits at the UX level before investing in true merge semantics.
-- [ ] **CRDT Implementation** — Conflict-free Replicated Data Types (e.g. Yjs or Automerge) for concurrent editing of personality system prompts and skill instructions.
+- [x] **Presence Indicators** — Show "Alice is editing this personality" to prevent concurrent edits at the UX level before investing in true merge semantics. *(Done — Phase 26, ADR 080)*
+- [x] **CRDT Implementation** — Conflict-free Replicated Data Types (Yjs Y.Text) for concurrent editing of personality system prompts and skill instructions. *(Done — Phase 26, ADR 080)*
 
-### Platform
+### Group Chat View
 
-- [ ] **Mobile app** — Native iOS/Android
+*Revisit once multi-user and multi-integration usage data confirms demand for a unified conversation surface.*
+
+- [ ] **Group Chat view** — Slack/Discord-style channel list sidebar with a unified message stream. Threads, reactions, and pinned messages. Surfaces all connected messaging integrations (Telegram, Discord, Slack, WhatsApp, Twitter/X, etc.) in a single familiar UI rather than per-integration task routing.
+- [ ] **Cross-integration routing rules** — Visual rule builder for forwarding messages between integrations (e.g. Twitter mention → Slack notification → agent response → Twitter reply).
+
+### Mobile Application
+
+*Revisit after Group Chat view ships — the mobile app mirrors that surface.*
+
+- [ ] **Mobile app** — Native iOS/Android companion app. Primary view: chat interface (mirrors Group Chat view) + at-a-glance overview stats (task count, heartbeat, recent activity). Connects to the existing SecureYeoman REST + WebSocket API; no separate backend required.
+- [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across desktop dashboard, mobile app, and any connected messaging integration via the existing CRDT + WebSocket infrastructure.
 
 ---
 
@@ -135,4 +154,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21 — Phase 24 complete*
+*Last updated: 2026-02-21 — Phase 27 complete*
