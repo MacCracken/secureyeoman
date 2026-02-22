@@ -4,39 +4,11 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { createMetricsSnapshot } from '../test/mocks';
-import type { HealthStatus } from '../types';
 
-// ── Capture navigate calls ──────────────────────────────────────────
+// ── Mock lazy-loaded route components ────────────────────────────────
 
-const mockNavigate = vi.fn();
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-  };
-});
-
-// ── Mock lazy-loaded components ─────────────────────────────────────
-// Only MetricsGraph is relevant; stub others to avoid pulling in
-// heavy dependencies (ReactFlow, Recharts, Monaco, etc.)
-
-let capturedOnNodeClick: ((nodeId: string) => void) | undefined;
-
-vi.mock('./MetricsGraph', () => ({
-  MetricsGraph: ({
-    onNodeClick,
-  }: {
-    onNodeClick?: (nodeId: string) => void;
-    [key: string]: unknown;
-  }) => {
-    capturedOnNodeClick = onNodeClick;
-    return <div data-testid="metrics-graph">MetricsGraph</div>;
-  },
-}));
-
-vi.mock('./ResourceMonitor', () => ({
-  ResourceMonitor: () => <div data-testid="resource-monitor">ResourceMonitor</div>,
+vi.mock('./MetricsPage', () => ({
+  MetricsPage: () => <div data-testid="metrics-page">MetricsPage</div>,
 }));
 
 vi.mock('./SecurityPage', () => ({
@@ -75,7 +47,7 @@ vi.mock('./ExperimentsPage', () => ({
   ExperimentsPage: () => <div>ExperimentsPage</div>,
 }));
 
-// ── Mock hooks and other components ─────────────────────────────────
+// ── Mock hooks and layout components ─────────────────────────────────
 
 vi.mock('../hooks/useAuth', () => ({
   useAuth: () => ({ logout: vi.fn() }),
@@ -109,15 +81,12 @@ vi.mock('./common/ErrorBoundary', () => ({
   ErrorBoundary: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
-// ── Mock API client ─────────────────────────────────────────────────
+// ── Mock API client ──────────────────────────────────────────────────
 
 vi.mock('../api/client', () => ({
   fetchHealth: vi.fn(),
   fetchMetrics: vi.fn(),
   fetchOnboardingStatus: vi.fn(),
-  fetchHeartbeatStatus: vi.fn(),
-  fetchMcpServers: vi.fn(),
-  fetchActiveDelegations: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -125,10 +94,8 @@ import * as api from '../api/client';
 const mockFetchHealth = vi.mocked(api.fetchHealth);
 const mockFetchMetrics = vi.mocked(api.fetchMetrics);
 const mockFetchOnboardingStatus = vi.mocked(api.fetchOnboardingStatus);
-const mockFetchHeartbeatStatus = vi.mocked(api.fetchHeartbeatStatus);
-const mockFetchMcpServers = vi.mocked(api.fetchMcpServers);
 
-// ── Import after mocks ──────────────────────────────────────────────
+// ── Import after mocks ───────────────────────────────────────────────
 import { DashboardLayout } from './DashboardLayout';
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -141,10 +108,10 @@ function createQueryClient() {
   });
 }
 
-function renderOverviewPage() {
+function renderAt(path: string) {
   const qc = createQueryClient();
   return render(
-    <MemoryRouter initialEntries={['/']}>
+    <MemoryRouter initialEntries={[path]}>
       <QueryClientProvider client={qc}>
         <DashboardLayout />
       </QueryClientProvider>
@@ -152,13 +119,11 @@ function renderOverviewPage() {
   );
 }
 
-// ── Tests ────────────────────────────────────────────────────────────
+// ── Tests ─────────────────────────────────────────────────────────────
 
-describe('DashboardLayout — OverviewPage node click routing', () => {
+describe('DashboardLayout routing', () => {
   beforeEach(() => {
     vi.resetAllMocks();
-    capturedOnNodeClick = undefined;
-    mockNavigate.mockReset();
 
     mockFetchHealth.mockResolvedValue({
       status: 'ok',
@@ -172,76 +137,25 @@ describe('DashboardLayout — OverviewPage node click routing', () => {
       agentName: 'Friday',
       personality: null,
     });
-    mockFetchHeartbeatStatus.mockResolvedValue({
-      running: true,
-      enabled: true,
-      intervalMs: 60_000,
-      beatCount: 42,
-      lastBeat: null,
-      tasks: [],
-    });
-    mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
   });
 
-  it('renders MetricsGraph with onNodeClick on the overview page', async () => {
-    renderOverviewPage();
-    expect(await screen.findByTestId('metrics-graph')).toBeInTheDocument();
-    expect(capturedOnNodeClick).toBeDefined();
+  it('renders MetricsPage at /metrics', async () => {
+    renderAt('/metrics');
+    expect(await screen.findByTestId('metrics-page')).toBeInTheDocument();
   });
 
-  it('navigates to /security?tab=overview when security node is clicked', async () => {
-    renderOverviewPage();
-    await screen.findByTestId('metrics-graph');
-
-    capturedOnNodeClick!('security');
-    expect(mockNavigate).toHaveBeenCalledWith('/security?tab=overview');
+  it('redirects / to /metrics', async () => {
+    renderAt('/');
+    expect(await screen.findByTestId('metrics-page')).toBeInTheDocument();
   });
 
-  it('navigates to /security?tab=audit when audit node is clicked', async () => {
-    renderOverviewPage();
-    await screen.findByTestId('metrics-graph');
-
-    capturedOnNodeClick!('audit');
-    expect(mockNavigate).toHaveBeenCalledWith('/security?tab=audit');
+  it('redirects unknown paths to /metrics', async () => {
+    renderAt('/nonexistent-route');
+    expect(await screen.findByTestId('metrics-page')).toBeInTheDocument();
   });
 
-  it('navigates to /security?tab=tasks when tasks node is clicked', async () => {
-    renderOverviewPage();
-    await screen.findByTestId('metrics-graph');
-
-    capturedOnNodeClick!('tasks');
-    expect(mockNavigate).toHaveBeenCalledWith('/security?tab=tasks');
-  });
-
-  it('navigates to /mcp when mcp node is clicked', async () => {
-    renderOverviewPage();
-    await screen.findByTestId('metrics-graph');
-
-    capturedOnNodeClick!('mcp');
-    expect(mockNavigate).toHaveBeenCalledWith('/mcp');
-  });
-
-  it('navigates to /security?tab=nodes&node=agent for agent node', async () => {
-    renderOverviewPage();
-    await screen.findByTestId('metrics-graph');
-
-    capturedOnNodeClick!('agent');
-    expect(mockNavigate).toHaveBeenCalledWith('/security?tab=nodes&node=agent');
-  });
-
-  it('navigates to /security?tab=nodes&node=database for database node', async () => {
-    renderOverviewPage();
-    await screen.findByTestId('metrics-graph');
-
-    capturedOnNodeClick!('database');
-    expect(mockNavigate).toHaveBeenCalledWith('/security?tab=nodes&node=database');
-  });
-
-  it('navigates to /security?tab=nodes&node=resources for resources node', async () => {
-    renderOverviewPage();
-    await screen.findByTestId('metrics-graph');
-
-    capturedOnNodeClick!('resources');
-    expect(mockNavigate).toHaveBeenCalledWith('/security?tab=nodes&node=resources');
+  it('renders the sidebar', async () => {
+    renderAt('/metrics');
+    expect(await screen.findByTestId('sidebar')).toBeInTheDocument();
   });
 });

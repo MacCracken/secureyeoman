@@ -4,6 +4,109 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 43 — Costs Tab Consolidated into MetricsPage (2026-02-22)
+
+Moves the standalone **Costs** page into `MetricsPage` as a third tab, giving the metrics
+dashboard a unified **Overview | Costs | Full Metrics** view. The `/costs` route now redirects to
+`/metrics` for backward compatibility, and the **Costs** sidebar link is removed.
+
+### What changed
+
+**`MetricsPage.tsx`** — third Costs tab added:
+
+- `type Tab` extended to `'overview' | 'costs' | 'full'`; tab bar now renders three ARIA tabs.
+- `CostsTab` component (ported from `CostsPage`): internal **Summary** / **History** sub-tabs.
+- `CostSummaryTab`: provider cost-breakdown cards, monthly/daily/today stats, recommendations.
+- `CostHistoryTab`: date-range, provider, model, and personality filter form; cost history table
+  powered by `fetchCostHistory`.
+- Sub-components `CostSummaryCard` and `RecommendationCard` moved inline.
+- `onViewCosts` callback (used by Overview and Full Metrics cards) switches to the Costs tab
+  internally — no URL navigation required.
+
+**Routing** (`DashboardLayout.tsx`):
+
+| Path | Before | After |
+|------|--------|-------|
+| `/costs` | Rendered `CostsPage` | `<Navigate to="/metrics" replace />` |
+
+`CostsPage` lazy import removed.
+
+**Sidebar** (`Sidebar.tsx`):
+
+- Costs nav item (`DollarSign`, `to="/costs"`) removed from `NAV_ITEMS_WITHOUT_AGENTS`.
+- `DollarSign` import removed from `lucide-react`.
+
+**`ResourceMonitor.tsx`**:
+
+- `navigate('/costs')` on the Estimated Cost card updated to `navigate('/metrics')`.
+
+### Files changed
+
+- `packages/dashboard/src/components/MetricsPage.tsx` — Costs tab + sub-components
+- `packages/dashboard/src/components/DashboardLayout.tsx` — removed `CostsPage` import; `/costs` redirect
+- `packages/dashboard/src/components/Sidebar.tsx` — removed Costs nav item
+- `packages/dashboard/src/components/ResourceMonitor.tsx` — updated navigate target
+- `packages/dashboard/src/components/MetricsPage.test.tsx` — 7 new Costs tab tests; cost API mocks added to all `beforeEach` blocks
+- `packages/dashboard/src/components/Sidebar.test.tsx` — removed 2 costs-link tests; updated "Developers hidden" anchor
+- `docs/adr/106-costs-tab-in-metrics.md` — new ADR
+
+---
+
+## Phase 42 — Metrics Dashboard: Overview & Full Metrics Views (2026-02-22)
+
+Replaces the old **Dashboard Overview** (`/`) with a dedicated **Metrics** page at `/metrics`,
+featuring two tabs — **Overview** and **Full Metrics** — that surface all available
+`MetricsSnapshot` fields through professional Recharts visualisations.
+
+### What changed
+
+**New `MetricsPage` component** (`packages/dashboard/src/components/MetricsPage.tsx`):
+
+- **Overview tab** (default): six KPI stat cards, a System Health list, a combined CPU + Memory
+  area sparkline, Token Usage donut pie, Task Performance progress bar, Estimated Cost card, and
+  the live System Topology ReactFlow graph.
+- **Full Metrics tab**: three labelled sections (Task Performance, Resource Usage, Security) with
+  comprehensive charts:
+  - *Tasks*: status distribution donut, duration percentiles bar (Min / Avg / p50 / p95 / p99 /
+    Max colour-coded from green → red), tasks-by-type horizontal bar.
+  - *Resources*: dual CPU + Memory area time-series, tokens/API health (donut + error-rate bar),
+    disk utilisation, cost breakdown.
+  - *Security*: auth success/failure bar, events-by-severity donut, permission denial rate,
+    injection attempts, audit chain integrity badge.
+- Tab switcher uses an ARIA `tablist` / `tab` / `aria-selected` pattern.
+- `MetricsGraph` is lazy-loaded inside a `Suspense` boundary within `MetricsPage` to keep
+  ReactFlow out of the initial parse.
+
+**Routing updates** (`DashboardLayout.tsx`):
+
+| Path | Before | After |
+|------|--------|-------|
+| `/` | Rendered embedded `OverviewPage` | Redirects to `/metrics` |
+| `/metrics` | 404 → `/` | Renders `MetricsPage` |
+| `*` (unmatched) | Redirected to `/` | Redirects to `/metrics` |
+
+**Sidebar** (`Sidebar.tsx`):
+
+- Nav item renamed **Overview → Metrics**, route updated `/ → /metrics`, icon changed
+  `LayoutDashboard → BarChart2`.
+
+**Cleanup in `DashboardLayout.tsx`**:
+
+- Removed `OverviewPage`, `StatCard`, `ServiceStatus`, `formatUptime` (moved to `MetricsPage`).
+- Removed lazy imports for `MetricsGraph` and `ResourceMonitor` (now consumed inside `MetricsPage`).
+
+### Files changed
+
+- `packages/dashboard/src/components/MetricsPage.tsx` — new component
+- `packages/dashboard/src/components/DashboardLayout.tsx` — routing + cleanup
+- `packages/dashboard/src/components/Sidebar.tsx` — nav rename + icon
+- `packages/dashboard/src/components/MetricsPage.test.tsx` — 27 new tests
+- `packages/dashboard/src/components/DashboardLayout.test.tsx` — updated routing tests
+- `packages/dashboard/src/components/Sidebar.test.tsx` — 2 new Metrics nav tests
+- `docs/adr/105-metrics-dashboard.md` — new ADR
+
+---
+
 ## Phase 41b — Resource Creation "Enable All" Respects A2A / Swarms Policy (2026-02-22)
 
 Fixed a bug where clicking **"Enable all"** in Personality → Body → Resource Creation did not

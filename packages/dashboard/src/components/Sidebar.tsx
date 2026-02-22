@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Shield,
-  LayoutDashboard,
+  BarChart2,
   MessageSquare,
   ShieldAlert,
   Brain,
@@ -14,7 +14,6 @@ import {
   Settings,
   Code2,
   Sparkles,
-  DollarSign,
   PanelLeftOpen,
   PanelLeftClose,
   RefreshCw,
@@ -56,7 +55,7 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
   end?: boolean;
   enabled?: boolean;
 }[] = [
-  { to: '/', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" />, end: true },
+  { to: '/metrics', label: 'Metrics', icon: <BarChart2 className="w-5 h-5" /> },
   { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
   { to: '/chat', label: 'Chat', icon: <MessageSquare className="w-5 h-5" /> },
   { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> },
@@ -65,7 +64,6 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
   { to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" />, enabled: true },
   { to: '/group-chat', label: 'Group Chat', icon: <MessagesSquare className="w-5 h-5" /> },
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
-  { to: '/costs', label: 'Costs', icon: <DollarSign className="w-5 h-5" /> },
   { to: '/developers', label: 'Developers', icon: <Code2 className="w-5 h-5" />, enabled: true },
   { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
 ];

@@ -30,15 +30,13 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 - [ ] YEOMAN MCP - insure available tools are present
 - [ ] Group Chat - Needs Workspaces; Channels; move below Chat or integrate with enable toggle 
-- [ ] Full Metrics View; not just the overview
 - [ ] Remove env vars fot TTS and STT; should be internalized to the user ability to choose
 - [ ] Need to walkthrough and confirm each of the creation skills in chat.
 
 
-
 ### Bugs
 
-- [ ] enabled all doesn't switch on - A2A Networks or Agent Swarms (personality edit create)
+- [ ] Hearbeat tasks are not being displayed in Security > Tasks > Task History
 - [ ] Connect CLI when DisplayName entered and connected -Integration undefined not found
 - [ ] Chat needs responsive design in the response window to not blow up the view
 

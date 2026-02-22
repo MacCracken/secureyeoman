@@ -105,35 +105,28 @@ describe('Sidebar nav order', () => {
     mockFetchHealth.mockResolvedValue({ version: '1.0.0' } as any);
   });
 
-  it('Costs appears above Developers when Developers is visible', async () => {
-    mockFetchSecurityPolicy.mockResolvedValue({
-      ...BASE_POLICY,
-      allowExtensions: true,
-    } as any);
-
+  it('shows a Metrics nav link pointing to /metrics', async () => {
     renderSidebar();
 
-    const costsLink = await screen.findByRole('link', { name: /costs/i });
-    const devLink = await screen.findByRole('link', { name: /developers/i });
-
-    const links = Array.from(document.querySelectorAll('a')) as HTMLElement[];
-    const costsIdx = links.indexOf(costsLink);
-    const devIdx = links.indexOf(devLink);
-
-    expect(costsIdx).toBeLessThan(devIdx);
+    const metricsLink = await screen.findByRole('link', { name: /metrics/i });
+    expect(metricsLink).toBeInTheDocument();
+    expect(metricsLink).toHaveAttribute('href', '/metrics');
   });
 
-  it('Costs is present even when Developers is hidden', async () => {
+  it('Metrics link appears before Security in nav order', async () => {
     renderSidebar();
 
-    expect(await screen.findByRole('link', { name: /costs/i })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /developers/i })).not.toBeInTheDocument();
+    const metricsLink = await screen.findByRole('link', { name: /metrics/i });
+    const securityLink = await screen.findByRole('link', { name: /security/i });
+
+    const links = Array.from(document.querySelectorAll('a')) as HTMLElement[];
+    expect(links.indexOf(metricsLink)).toBeLessThan(links.indexOf(securityLink));
   });
 
   it('Developers is hidden when no developer features are enabled', async () => {
     renderSidebar();
 
-    await screen.findByRole('link', { name: /costs/i });
+    await screen.findByRole('link', { name: /metrics/i });
     expect(screen.queryByRole('link', { name: /developers/i })).not.toBeInTheDocument();
   });
 
