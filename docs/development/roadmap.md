@@ -46,7 +46,7 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 - [ ] OneClick MCP items need better responsive design (text under button)
 - [ ] enabled all doesn't switch on - A2A Networks or Agent Swarms (personality edit create)
-
+- [ ] Connect CLI when DisplayName entered and connected -Integration undefined not found
 
 ---
 
