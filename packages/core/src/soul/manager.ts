@@ -13,11 +13,7 @@
  */
 
 import { composeArchetypesPreamble } from './archetypes.js';
-import {
-  PERSONALITY_PRESETS,
-  getPersonalityPreset,
-  type PersonalityPreset,
-} from './presets.js';
+import { PERSONALITY_PRESETS, getPersonalityPreset, type PersonalityPreset } from './presets.js';
 import type { SoulStorage } from './storage.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { MarketplaceManager } from '../marketplace/manager.js';

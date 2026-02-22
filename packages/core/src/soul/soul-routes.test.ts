@@ -481,7 +481,9 @@ describe('POST /api/v1/soul/personalities/presets/:id/instantiate', () => {
 
   it('returns 400 when preset is unknown', async () => {
     const app = buildApp({
-      createPersonalityFromPreset: vi.fn().mockRejectedValue(new Error('Unknown personality preset: nope')),
+      createPersonalityFromPreset: vi
+        .fn()
+        .mockRejectedValue(new Error('Unknown personality preset: nope')),
     });
     const res = await app.inject({
       method: 'POST',

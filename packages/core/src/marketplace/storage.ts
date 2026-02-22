@@ -190,7 +190,9 @@ export class MarketplaceStorage extends PgBaseStorage {
       rating: (row.rating as number) ?? 0,
       instructions: (row.instructions as string) ?? '',
       tools: row.tools as MarketplaceSkill['tools'],
-      triggerPatterns: Array.isArray(row.trigger_patterns) ? (row.trigger_patterns as string[]) : [],
+      triggerPatterns: Array.isArray(row.trigger_patterns)
+        ? (row.trigger_patterns as string[])
+        : [],
       installed: row.installed as boolean,
       source: ((row.source as string) ?? 'published') as MarketplaceSkill['source'],
       publishedAt: row.published_at as number,

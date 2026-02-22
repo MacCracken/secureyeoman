@@ -89,6 +89,7 @@ describe('SettingsPage', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
   });
 

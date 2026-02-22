@@ -87,22 +87,60 @@ afterAll(() => {
 function createMockSecureYeoman(
   overrides: Partial<{
     switchModelError: string | null;
+    getConfigError: string | null;
+    modelDefault: { provider: string; model: string } | null;
+    getModelDefaultError: string | null;
+    setModelDefaultError: string | null;
+    clearModelDefaultError: string | null;
+    costOptimizer: object | null | 'missing';
+    costCalculator: object | null | 'missing';
   }> = {}
 ) {
   const mock = {
-    getConfig: vi.fn().mockReturnValue({
-      model: {
-        provider: 'anthropic',
-        model: 'claude-sonnet-4-20250514',
-        maxTokens: 16384,
-        temperature: 0.7,
-      },
-    }),
+    getConfig: overrides.getConfigError
+      ? vi.fn().mockImplementation(() => {
+          throw new Error(overrides.getConfigError!);
+        })
+      : vi.fn().mockReturnValue({
+          model: {
+            provider: 'anthropic',
+            model: 'claude-sonnet-4-20250514',
+            maxTokens: 16384,
+            temperature: 0.7,
+          },
+        }),
     switchModel: overrides.switchModelError
       ? vi.fn().mockImplementation(() => {
           throw new Error(overrides.switchModelError!);
         })
       : vi.fn(),
+    getModelDefault: overrides.getModelDefaultError
+      ? vi.fn().mockImplementation(() => {
+          throw new Error(overrides.getModelDefaultError!);
+        })
+      : vi.fn().mockReturnValue(overrides.modelDefault ?? null),
+    setModelDefault: overrides.setModelDefaultError
+      ? vi.fn().mockRejectedValue(new Error(overrides.setModelDefaultError!))
+      : vi.fn().mockResolvedValue(undefined),
+    clearModelDefault: overrides.clearModelDefaultError
+      ? vi.fn().mockRejectedValue(new Error(overrides.clearModelDefaultError!))
+      : vi.fn().mockResolvedValue(undefined),
+    getCostOptimizer:
+      overrides.costOptimizer === 'missing'
+        ? vi.fn().mockReturnValue(null)
+        : vi.fn().mockReturnValue(
+            overrides.costOptimizer ?? {
+              analyze: vi.fn().mockReturnValue({ recommendations: [] }),
+            }
+          ),
+    getCostCalculator:
+      overrides.costCalculator === 'missing'
+        ? vi.fn().mockReturnValue(null)
+        : vi.fn().mockReturnValue(
+            overrides.costCalculator ?? {
+              calculate: vi.fn().mockReturnValue(0.001),
+            }
+          ),
   } as unknown as SecureYeoman;
 
   return mock;
@@ -215,5 +253,236 @@ describe('Model Routes', () => {
 
     expect(res.statusCode).toBe(500);
     expect(JSON.parse(res.payload).message).toContain('API key missing');
+  });
+
+  // ── GET /api/v1/model/info error path ──────────────────────────────────────
+
+  it('GET /api/v1/model/info returns 500 on getConfig error', async () => {
+    const mock = createMockSecureYeoman({ getConfigError: 'config failed' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/info' });
+    expect(res.statusCode).toBe(500);
+    expect(JSON.parse(res.payload).message).toContain('config failed');
+  });
+
+  // ── GET /api/v1/model/default ──────────────────────────────────────────────
+
+  it('GET /api/v1/model/default returns null when no default set', async () => {
+    const mock = createMockSecureYeoman({ modelDefault: null });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/default' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.provider).toBeNull();
+    expect(body.model).toBeNull();
+  });
+
+  it('GET /api/v1/model/default returns stored default', async () => {
+    const mock = createMockSecureYeoman({
+      modelDefault: { provider: 'openai', model: 'gpt-4o' },
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/default' });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.provider).toBe('openai');
+    expect(body.model).toBe('gpt-4o');
+  });
+
+  it('GET /api/v1/model/default returns 500 on error', async () => {
+    const mock = createMockSecureYeoman({ getModelDefaultError: 'DB error' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/default' });
+    expect(res.statusCode).toBe(500);
+  });
+
+  // ── POST /api/v1/model/default ─────────────────────────────────────────────
+
+  it('POST /api/v1/model/default sets default and returns success', async () => {
+    const mock = createMockSecureYeoman();
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/default',
+      payload: { provider: 'openai', model: 'gpt-4o' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.success).toBe(true);
+    expect(body.provider).toBe('openai');
+  });
+
+  it('POST /api/v1/model/default returns 400 when fields missing', async () => {
+    const mock = createMockSecureYeoman();
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/default',
+      payload: { provider: 'openai' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('POST /api/v1/model/default returns 400 on Invalid provider error', async () => {
+    const mock = createMockSecureYeoman({
+      setModelDefaultError: 'Invalid provider: xyz',
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/default',
+      payload: { provider: 'openai', model: 'gpt-4o' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.payload).message).toContain('Invalid provider');
+  });
+
+  it('POST /api/v1/model/default returns 500 on other error', async () => {
+    const mock = createMockSecureYeoman({ setModelDefaultError: 'DB failure' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/default',
+      payload: { provider: 'openai', model: 'gpt-4o' },
+    });
+    expect(res.statusCode).toBe(500);
+  });
+
+  // ── DELETE /api/v1/model/default ───────────────────────────────────────────
+
+  it('DELETE /api/v1/model/default clears default and returns 204', async () => {
+    const mock = createMockSecureYeoman();
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/model/default' });
+    expect(res.statusCode).toBe(204);
+  });
+
+  it('DELETE /api/v1/model/default returns 500 on error', async () => {
+    const mock = createMockSecureYeoman({ clearModelDefaultError: 'DB error' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/model/default' });
+    expect(res.statusCode).toBe(500);
+  });
+
+  // ── GET /api/v1/model/cost-recommendations ─────────────────────────────────
+
+  it('GET /api/v1/model/cost-recommendations returns optimizer analysis', async () => {
+    const mock = createMockSecureYeoman({
+      costOptimizer: {
+        analyze: vi.fn().mockReturnValue({ recommendations: ['use cheaper model'] }),
+      },
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/cost-recommendations' });
+    expect(res.statusCode).toBe(200);
+    expect(JSON.parse(res.payload).recommendations).toBeDefined();
+  });
+
+  it('GET /api/v1/model/cost-recommendations returns 503 when optimizer missing', async () => {
+    const mock = createMockSecureYeoman({ costOptimizer: 'missing' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/cost-recommendations' });
+    expect(res.statusCode).toBe(503);
+  });
+
+  it('GET /api/v1/model/cost-recommendations returns 500 on error', async () => {
+    const mock = createMockSecureYeoman({
+      costOptimizer: {
+        analyze: vi.fn().mockImplementation(() => {
+          throw new Error('analysis failed');
+        }),
+      },
+    });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({ method: 'GET', url: '/api/v1/model/cost-recommendations' });
+    expect(res.statusCode).toBe(500);
+  });
+
+  // ── POST /api/v1/model/estimate-cost ───────────────────────────────────────
+
+  it('POST /api/v1/model/estimate-cost returns cost estimate', async () => {
+    const mock = createMockSecureYeoman();
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/estimate-cost',
+      payload: { task: 'summarize a document' },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.task).toBeDefined();
+    expect(body.selectedModel).toBeDefined();
+    expect(body.estimatedCostUsd).toBeDefined();
+  });
+
+  it('POST /api/v1/model/estimate-cost returns 400 when task missing', async () => {
+    const mock = createMockSecureYeoman();
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/estimate-cost',
+      payload: { context: 'some context' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(JSON.parse(res.payload).message).toContain('task');
+  });
+
+  it('POST /api/v1/model/estimate-cost returns 503 when costOptimizer missing', async () => {
+    const mock = createMockSecureYeoman({ costOptimizer: 'missing' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/estimate-cost',
+      payload: { task: 'do something' },
+    });
+    expect(res.statusCode).toBe(503);
+  });
+
+  it('POST /api/v1/model/estimate-cost returns 503 when costCalculator missing', async () => {
+    const mock = createMockSecureYeoman({ costCalculator: 'missing' });
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/estimate-cost',
+      payload: { task: 'do something' },
+    });
+    expect(res.statusCode).toBe(503);
+  });
+
+  it('POST /api/v1/model/estimate-cost accepts optional params', async () => {
+    const mock = createMockSecureYeoman();
+    registerModelRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/model/estimate-cost',
+      payload: {
+        task: 'analyze data',
+        context: 'large dataset',
+        tokenBudget: 100000,
+        roleCount: 3,
+        allowedModels: ['claude-sonnet-4-20250514'],
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.roleCount).toBe(3);
   });
 });

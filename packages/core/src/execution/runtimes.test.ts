@@ -171,11 +171,9 @@ describe('NodeRuntime.execute()', () => {
   it('yields stdout data from a valid node script', async () => {
     const runtime = new NodeRuntime();
     const chunks: any[] = [];
-    for await (const chunk of runtime.execute(
-      'process.stdout.write("hello")',
-      session,
-      { timeout: 10000 }
-    )) {
+    for await (const chunk of runtime.execute('process.stdout.write("hello")', session, {
+      timeout: 10000,
+    })) {
       chunks.push(chunk);
     }
     const stdout = chunks
@@ -188,11 +186,9 @@ describe('NodeRuntime.execute()', () => {
   it('yields stderr data when node writes to stderr', async () => {
     const runtime = new NodeRuntime();
     const chunks: any[] = [];
-    for await (const chunk of runtime.execute(
-      'process.stderr.write("err-msg")',
-      session,
-      { timeout: 10000 }
-    )) {
+    for await (const chunk of runtime.execute('process.stderr.write("err-msg")', session, {
+      timeout: 10000,
+    })) {
       chunks.push(chunk);
     }
     const stderr = chunks
@@ -215,11 +211,9 @@ describe('NodeRuntime.execute()', () => {
   it('chunk objects have stream and timestamp fields', async () => {
     const runtime = new NodeRuntime();
     const chunks: any[] = [];
-    for await (const chunk of runtime.execute(
-      'process.stdout.write("x")',
-      session,
-      { timeout: 10000 }
-    )) {
+    for await (const chunk of runtime.execute('process.stdout.write("x")', session, {
+      timeout: 10000,
+    })) {
       chunks.push(chunk);
     }
     const dataChunks = chunks.filter((c) => c.data.length > 0);
@@ -237,11 +231,9 @@ describe('PythonRuntime.execute()', () => {
   it('yields stdout data from a valid python script', async () => {
     const runtime = new PythonRuntime();
     const chunks: any[] = [];
-    for await (const chunk of runtime.execute(
-      'import sys; sys.stdout.write("pyout")',
-      session,
-      { timeout: 10000 }
-    )) {
+    for await (const chunk of runtime.execute('import sys; sys.stdout.write("pyout")', session, {
+      timeout: 10000,
+    })) {
       chunks.push(chunk);
     }
     const stdout = chunks
@@ -273,11 +265,7 @@ describe('ShellRuntime.execute()', () => {
   it('yields stderr for shell command that writes to stderr', async () => {
     const runtime = new ShellRuntime();
     const chunks: any[] = [];
-    for await (const chunk of runtime.execute(
-      'printf "sherr" >&2',
-      session,
-      { timeout: 10000 }
-    )) {
+    for await (const chunk of runtime.execute('printf "sherr" >&2', session, { timeout: 10000 })) {
       chunks.push(chunk);
     }
     const stderr = chunks

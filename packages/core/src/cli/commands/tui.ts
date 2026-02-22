@@ -83,9 +83,9 @@ function stripAnsi(str: string): string {
 
 // ── Layout constants ──────────────────────────────────────────────────────────
 
-const HEADER_ROWS = 3;   // header bar + divider
-const STATUS_ROWS = 7;   // status pane
-const FOOTER_ROWS = 3;   // input bar + key hints
+const HEADER_ROWS = 3; // header bar + divider
+const STATUS_ROWS = 7; // status pane
+const FOOTER_ROWS = 3; // input bar + key hints
 const MIN_CHAT_ROWS = 4;
 
 // ── Chat message types ────────────────────────────────────────────────────────
@@ -170,7 +170,11 @@ class TuiRenderer {
     const sub = `${A.dim}  Terminal Dashboard${A.reset}`;
     const right = `${A.dim}Ctrl+C to quit  ${A.reset}`;
 
-    const fill = w - stripAnsi(title).length - stripAnsi('  Terminal Dashboard').length - stripAnsi('Ctrl+C to quit  ').length;
+    const fill =
+      w -
+      stripAnsi(title).length -
+      stripAnsi('  Terminal Dashboard').length -
+      stripAnsi('Ctrl+C to quit  ').length;
     const spacing = fill > 0 ? ' '.repeat(fill) : ' ';
 
     this.write(moveTo(1, 1));
@@ -192,13 +196,15 @@ class TuiRenderer {
     const sd = this.statusData;
     const startRow = HEADER_ROWS + 1;
 
-    const dot = sd.status === 'ok'
-      ? `${A.green}●${A.reset}`
-      : sd.status === 'connecting…'
-        ? `${A.yellow}◌${A.reset}`
-        : `${A.red}●${A.reset}`;
+    const dot =
+      sd.status === 'ok'
+        ? `${A.green}●${A.reset}`
+        : sd.status === 'connecting…'
+          ? `${A.yellow}◌${A.reset}`
+          : `${A.red}●${A.reset}`;
 
-    const statusLabel = sd.status === 'ok' ? `${A.green}OK${A.reset}` : `${A.red}${sd.status}${A.reset}`;
+    const statusLabel =
+      sd.status === 'ok' ? `${A.green}OK${A.reset}` : `${A.red}${sd.status}${A.reset}`;
 
     const lines: string[] = [
       `${A.bold}${A.cyan}── Status ──────────────────────────────────────────${A.reset}`,
@@ -274,9 +280,7 @@ class TuiRenderer {
             ? 'Error'
             : 'System';
 
-    lines.push(
-      `${roleColor}${A.bold}${roleLabel}${A.reset}${A.dim}  ${msg.timestamp}${A.reset}`
-    );
+    lines.push(`${roleColor}${A.bold}${roleLabel}${A.reset}${A.dim}  ${msg.timestamp}${A.reset}`);
 
     // Word-wrap content
     const words = msg.content.split('\n');
@@ -359,7 +363,10 @@ class TuiRenderer {
 
   scrollUp(lines = 3): void {
     const chatRows = this.chatRows();
-    const allLines = this.messages.reduce((acc, m) => acc + this.formatMessage(m, this.cols - 4).length + 1, 0);
+    const allLines = this.messages.reduce(
+      (acc, m) => acc + this.formatMessage(m, this.cols - 4).length + 1,
+      0
+    );
     this.scrollOffset = Math.min(this.scrollOffset + lines, Math.max(0, allLines - chatRows + 2));
   }
 
@@ -443,7 +450,10 @@ Options:
 
         const health = healthRes.data as Record<string, unknown>;
         const personality = personalityRes?.ok
-          ? ((personalityRes.data as Record<string, unknown>)?.personality as Record<string, unknown> | null)
+          ? ((personalityRes.data as Record<string, unknown>)?.personality as Record<
+              string,
+              unknown
+            > | null)
           : null;
 
         // Try to get model info from usage or config endpoint
@@ -533,7 +543,11 @@ Options:
 
       // Refresh status
       if (key.ctrl && key.name === 'r') {
-        fetchStatus().then(() => renderer.render()).catch(() => null);
+        fetchStatus()
+          .then(() => {
+            renderer.render();
+          })
+          .catch(() => null);
         return;
       }
 
@@ -574,7 +588,11 @@ Options:
         inputBuf = '';
         renderer.setInput('');
         if (msg) {
-          sendChat(msg).then(() => renderer.render()).catch(() => null);
+          sendChat(msg)
+            .then(() => {
+              renderer.render();
+            })
+            .catch(() => null);
         }
         renderer.render();
         return;
@@ -589,8 +607,8 @@ Options:
       }
 
       // Typed character
-      if (!key.ctrl && !key.meta && key.sequence && key.sequence.length === 1) {
-        inputBuf += key.sequence;
+      if (!key.ctrl && !key.meta && key.sequence?.length === 1) {
+        inputBuf += key.sequence as string;
         renderer.setInput(inputBuf);
         renderer.render();
       }
@@ -607,9 +625,11 @@ Options:
     // Periodic status refresh (every 30 s)
     const pollInterval = setInterval(() => {
       if (!running) return;
-      fetchStatus().then(() => {
-        if (running) renderer.render();
-      }).catch(() => null);
+      fetchStatus()
+        .then(() => {
+          if (running) renderer.render();
+        })
+        .catch(() => null);
     }, 30_000);
 
     // ── Main loop — wait until quit ───────────────────────────────────────────

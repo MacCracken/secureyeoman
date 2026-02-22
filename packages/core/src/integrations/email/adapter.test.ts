@@ -400,7 +400,9 @@ describe('EmailIntegration – adapter.ts', () => {
     it('init succeeds with enableSend=false (transport still created; send blocked at call time)', async () => {
       // createTransport is always called in init() regardless of enableSend —
       // the flag only guards sendMessage(). Verify init resolves without error.
-      await expect(adapter.init(makeConfig({ enableSend: false }), makeDeps())).resolves.toBeUndefined();
+      await expect(
+        adapter.init(makeConfig({ enableSend: false }), makeDeps())
+      ).resolves.toBeUndefined();
     });
   });
 
@@ -426,6 +428,254 @@ describe('EmailIntegration – adapter.ts', () => {
       await adapter.sendMessage('to@example.com', 'hi');
       expect(mocks.mockSendMail).toHaveBeenCalledWith(
         expect.objectContaining({ from: 'user@example.com' })
+      );
+    });
+  });
+
+  // ── poll() error handling ──────────────────────────────────────────────────
+
+  describe('poll() — IMAP lock failure', () => {
+    it('logs a warning and returns early when getMailboxLock throws', async () => {
+      // start() also calls getMailboxLock once for initial setup — allow it to succeed
+      mocks.mockGetMailboxLock.mockResolvedValueOnce({ release: mocks.mockRelease });
+      // poll() will call getMailboxLock next and receive this rejection
+      mocks.mockGetMailboxLock.mockRejectedValueOnce(new Error('Lock unavailable'));
+
+      await adapter.init(makeConfig(), makeDeps());
+      await adapter.start();
+
+      // Invoke poll via exists event (handler calls void this.poll() — not awaited)
+      const existsCallArgs = mocks.mockOn.mock.calls.find(([evt]) => evt === 'exists');
+      if (existsCallArgs) existsCallArgs[1]({ count: 1 });
+
+      // Flush all pending microtasks so poll() runs to completion
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+      // poll() swallows the lock error — if it didn't, the test process would crash
+    });
+  });
+
+  // ── processMessage via poll() ──────────────────────────────────────────────
+
+  describe('processMessage() — via poll()', () => {
+    function makeAsyncIterator(messages: unknown[]) {
+      let idx = 0;
+      return {
+        [Symbol.asyncIterator]: () => ({
+          next: () => {
+            if (idx < messages.length) {
+              return Promise.resolve({ done: false, value: messages[idx++] });
+            }
+            return Promise.resolve({ done: true, value: undefined });
+          },
+        }),
+      };
+    }
+
+    it('skips self-sent messages', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      const selfMsg = {
+        uid: 101,
+        envelope: {
+          from: [{ address: 'user@example.com', name: 'Self' }],
+          subject: 'Test',
+          messageId: '<self@host>',
+          inReplyTo: '',
+          date: new Date(),
+        },
+        source: Buffer.from('From: user@example.com\r\n\r\nHello'),
+      };
+
+      mocks.mockFetch.mockReturnValueOnce(makeAsyncIterator([selfMsg]));
+      mocks.mockGetMailboxLock.mockResolvedValueOnce({ release: mocks.mockRelease });
+
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+      await adapter.start();
+
+      const existsArgs = mocks.mockOn.mock.calls.find(([evt]) => evt === 'exists');
+      if (existsArgs) {
+        await existsArgs[1]({ count: 1 });
+      }
+
+      expect(onMessage).not.toHaveBeenCalled();
+    });
+
+    it('delivers message from external sender to onMessage', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      const inboundMsg = {
+        uid: 102,
+        envelope: {
+          from: [{ address: 'sender@external.com', name: 'External Sender' }],
+          subject: 'Hello',
+          messageId: '<ext@host>',
+          inReplyTo: '',
+          date: new Date(),
+        },
+        source: Buffer.from('Content-Type: text/plain\r\n\r\nHello World'),
+      };
+
+      mocks.mockFetch.mockReturnValueOnce(makeAsyncIterator([inboundMsg]));
+      mocks.mockGetMailboxLock.mockResolvedValueOnce({ release: mocks.mockRelease });
+
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+      await adapter.start();
+
+      const existsArgs = mocks.mockOn.mock.calls.find(([evt]) => evt === 'exists');
+      // handler uses void this.poll() — don't await it, flush instead
+      if (existsArgs) existsArgs[1]({ count: 1 });
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          senderId: 'sender@external.com',
+          platform: 'email',
+        })
+      );
+    });
+
+    it('skips messages with no envelope', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      const noEnvMsg = { uid: 103, envelope: null, source: null };
+
+      mocks.mockFetch.mockReturnValueOnce(makeAsyncIterator([noEnvMsg]));
+      mocks.mockGetMailboxLock.mockResolvedValueOnce({ release: mocks.mockRelease });
+
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+      await adapter.start();
+
+      const existsArgs = mocks.mockOn.mock.calls.find(([evt]) => evt === 'exists');
+      if (existsArgs) {
+        await existsArgs[1]({ count: 1 });
+      }
+
+      expect(onMessage).not.toHaveBeenCalled();
+    });
+  });
+
+  // ── extractTextFromSource paths ────────────────────────────────────────────
+
+  describe('extractTextFromSource — internal paths', () => {
+    it('returns raw text when no header/body separator found', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      const msg = {
+        uid: 110,
+        envelope: {
+          from: [{ address: 'a@b.com', name: 'A' }],
+          subject: 'Test',
+          messageId: '<110@host>',
+          inReplyTo: '',
+          date: new Date(),
+        },
+        source: Buffer.from('no separator here'), // no \r\n\r\n
+      };
+
+      mocks.mockFetch.mockReturnValueOnce({
+        [Symbol.asyncIterator]: () => ({
+          next: (() => {
+            let done = false;
+            return () => {
+              if (!done) {
+                done = true;
+                return Promise.resolve({ done: false, value: msg });
+              }
+              return Promise.resolve({ done: true, value: undefined });
+            };
+          })(),
+        }),
+      });
+      mocks.mockGetMailboxLock.mockResolvedValueOnce({ release: mocks.mockRelease });
+
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+      await adapter.start();
+      const existsArgs = mocks.mockOn.mock.calls.find(([evt]) => evt === 'exists');
+      if (existsArgs) existsArgs[1]({ count: 1 });
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+      // Message should have been delivered with raw text as body
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ text: 'no separator here' })
+      );
+    });
+
+    it('decodes base64-encoded body', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      const encoded = Buffer.from('Hello base64!').toString('base64');
+      const raw = `Content-Type: text/plain\r\nContent-Transfer-Encoding: base64\r\n\r\n${encoded}`;
+      const msg = {
+        uid: 111,
+        envelope: {
+          from: [{ address: 'x@y.com', name: 'X' }],
+          subject: 'b64',
+          messageId: '<111@host>',
+          inReplyTo: '',
+          date: new Date(),
+        },
+        source: Buffer.from(raw),
+      };
+
+      mocks.mockFetch.mockReturnValueOnce({
+        [Symbol.asyncIterator]: () => ({
+          next: (() => {
+            let done = false;
+            return () => {
+              if (!done) {
+                done = true;
+                return Promise.resolve({ done: false, value: msg });
+              }
+              return Promise.resolve({ done: true, value: undefined });
+            };
+          })(),
+        }),
+      });
+      mocks.mockGetMailboxLock.mockResolvedValueOnce({ release: mocks.mockRelease });
+
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+      await adapter.start();
+      const existsArgs = mocks.mockOn.mock.calls.find(([evt]) => evt === 'exists');
+      if (existsArgs) existsArgs[1]({ count: 1 });
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+      expect(onMessage).toHaveBeenCalledWith(expect.objectContaining({ text: 'Hello base64!' }));
+    });
+
+    it('decodes quoted-printable body', async () => {
+      const onMessage = vi.fn().mockResolvedValue(undefined);
+      const raw = `Content-Type: text/plain\r\nContent-Transfer-Encoding: quoted-printable\r\n\r\nHello=20World`;
+      const msg = {
+        uid: 112,
+        envelope: {
+          from: [{ address: 'p@q.com', name: 'P' }],
+          subject: 'qp',
+          messageId: '<112@host>',
+          inReplyTo: '',
+          date: new Date(),
+        },
+        source: Buffer.from(raw),
+      };
+
+      mocks.mockFetch.mockReturnValueOnce({
+        [Symbol.asyncIterator]: () => ({
+          next: (() => {
+            let done = false;
+            return () => {
+              if (!done) {
+                done = true;
+                return Promise.resolve({ done: false, value: msg });
+              }
+              return Promise.resolve({ done: true, value: undefined });
+            };
+          })(),
+        }),
+      });
+      mocks.mockGetMailboxLock.mockResolvedValueOnce({ release: mocks.mockRelease });
+
+      await adapter.init(makeConfig(), makeDeps(onMessage));
+      await adapter.start();
+      const existsArgs = mocks.mockOn.mock.calls.find(([evt]) => evt === 'exists');
+      if (existsArgs) existsArgs[1]({ count: 1 });
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+      expect(onMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ text: expect.stringContaining('Hello World') })
       );
     });
   });

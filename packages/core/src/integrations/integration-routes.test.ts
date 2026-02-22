@@ -422,7 +422,10 @@ describe('message endpoints', () => {
     const manager = buildMockManager();
     const mockStorage = { listMessages: vi.fn().mockResolvedValue([]) } as any;
     const app = Fastify({ logger: false });
-    registerIntegrationRoutes(app, { integrationManager: manager, integrationStorage: mockStorage });
+    registerIntegrationRoutes(app, {
+      integrationManager: manager,
+      integrationStorage: mockStorage,
+    });
     await app.ready();
 
     await app.inject({
@@ -605,5 +608,280 @@ describe('webhook endpoints', () => {
     });
     expect(res.statusCode).toBe(400);
     expect(res.json().message).toContain('Webhook integration is not running');
+  });
+
+  it('POST /api/v1/webhooks/github/:id stringifies object body', async () => {
+    const manager = buildMockManager();
+    manager.getIntegration = vi.fn().mockResolvedValue({ ...BASE_INTEGRATION, platform: 'github' });
+    const { app } = await buildApp(manager);
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/webhooks/github/intg-1',
+      headers: {
+        'x-hub-signature-256': 'sha256=abc',
+        'x-github-event': 'ping',
+      },
+      payload: { zen: 'Keep it simple.' },
+    });
+    // body is an object → JSON.stringify branch → returns received: true
+    expect(res.statusCode).toBe(200);
+    expect(res.json().received).toBe(true);
+  });
+});
+
+// ── maskIntegration edge case ─────────────────────────────────────────────────
+
+describe('maskIntegration — no config field', () => {
+  it('GET /api/v1/integrations returns integration without config unchanged', async () => {
+    const noConfigIntegration = { ...BASE_INTEGRATION, config: undefined as any };
+    const manager = buildMockManager(noConfigIntegration);
+    const { app } = await buildApp(manager);
+    const res = await app.inject({ method: 'GET', url: '/api/v1/integrations' });
+    expect(res.statusCode).toBe(200);
+    // maskIntegration returns early when config is undefined/null
+    const body = res.json();
+    expect(body.integrations[0].config).toBeUndefined();
+  });
+});
+
+// ── Webhook Transform routes ──────────────────────────────────────────────────
+
+function buildTransformStorage() {
+  const RULE = { id: 'tr-1', name: 'Rule 1', enabled: true };
+  return {
+    listRules: vi.fn().mockResolvedValue([RULE]),
+    getRule: vi.fn().mockResolvedValue(RULE),
+    createRule: vi.fn().mockResolvedValue(RULE),
+    updateRule: vi.fn().mockResolvedValue(RULE),
+    deleteRule: vi.fn().mockResolvedValue(true),
+  } as any;
+}
+
+async function buildAppWithTransforms(
+  transformStorageOverrides: Record<string, ReturnType<typeof vi.fn>> = {}
+) {
+  const app = Fastify({ logger: false });
+  const mockStorage = { listMessages: vi.fn().mockResolvedValue([]) } as any;
+  const wts = { ...buildTransformStorage(), ...transformStorageOverrides };
+  registerIntegrationRoutes(app, {
+    integrationManager: buildMockManager(),
+    integrationStorage: mockStorage,
+    webhookTransformStorage: wts,
+  });
+  await app.ready();
+  return { app, wts };
+}
+
+describe('webhook-transform routes', () => {
+  it('GET /api/v1/webhook-transforms returns rules', async () => {
+    const { app } = await buildAppWithTransforms();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/webhook-transforms' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().rules).toHaveLength(1);
+  });
+
+  it('GET /api/v1/webhook-transforms passes integrationId filter', async () => {
+    const { app, wts } = await buildAppWithTransforms();
+    await app.inject({ method: 'GET', url: '/api/v1/webhook-transforms?integrationId=int-1' });
+    expect(wts.listRules).toHaveBeenCalledWith(expect.objectContaining({ integrationId: 'int-1' }));
+  });
+
+  it('GET /api/v1/webhook-transforms passes enabled filter', async () => {
+    const { app, wts } = await buildAppWithTransforms();
+    await app.inject({ method: 'GET', url: '/api/v1/webhook-transforms?enabled=true' });
+    expect(wts.listRules).toHaveBeenCalledWith(expect.objectContaining({ enabled: true }));
+  });
+
+  it('GET /api/v1/webhook-transforms/:id returns single rule', async () => {
+    const { app } = await buildAppWithTransforms();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/webhook-transforms/tr-1' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().rule.id).toBe('tr-1');
+  });
+
+  it('GET /api/v1/webhook-transforms/:id returns 404 when not found', async () => {
+    const { app } = await buildAppWithTransforms({ getRule: vi.fn().mockResolvedValue(null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/webhook-transforms/nonexistent' });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('POST /api/v1/webhook-transforms creates rule and returns 201', async () => {
+    const { app } = await buildAppWithTransforms();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/webhook-transforms',
+      payload: { name: 'New Rule', integrationId: 'int-1' },
+    });
+    expect(res.statusCode).toBe(201);
+  });
+
+  it('POST /api/v1/webhook-transforms returns 400 on storage error', async () => {
+    const { app } = await buildAppWithTransforms({
+      createRule: vi.fn().mockRejectedValue(new Error('duplicate key')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/webhook-transforms',
+      payload: { name: 'Rule' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('PUT /api/v1/webhook-transforms/:id updates rule', async () => {
+    const { app } = await buildAppWithTransforms();
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/webhook-transforms/tr-1',
+      payload: { name: 'Updated' },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('PUT /api/v1/webhook-transforms/:id returns 404 when not found', async () => {
+    const { app } = await buildAppWithTransforms({ updateRule: vi.fn().mockResolvedValue(null) });
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/webhook-transforms/nonexistent',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('DELETE /api/v1/webhook-transforms/:id returns 204', async () => {
+    const { app } = await buildAppWithTransforms();
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/webhook-transforms/tr-1' });
+    expect(res.statusCode).toBe(204);
+  });
+
+  it('DELETE /api/v1/webhook-transforms/:id returns 404 when not found', async () => {
+    const { app } = await buildAppWithTransforms({ deleteRule: vi.fn().mockResolvedValue(false) });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/webhook-transforms/nonexistent',
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('GET /api/v1/webhook-transforms passes null integrationId when empty string', async () => {
+    const { app, wts } = await buildAppWithTransforms();
+    await app.inject({ method: 'GET', url: '/api/v1/webhook-transforms?integrationId=' });
+    expect(wts.listRules).toHaveBeenCalledWith(expect.objectContaining({ integrationId: null }));
+  });
+});
+
+// ── Outbound Webhook routes ───────────────────────────────────────────────────
+
+function buildOutboundStorage() {
+  const HOOK = { id: 'ow-1', url: 'https://example.com/hook', enabled: true };
+  return {
+    listWebhooks: vi.fn().mockResolvedValue([HOOK]),
+    getWebhook: vi.fn().mockResolvedValue(HOOK),
+    createWebhook: vi.fn().mockResolvedValue(HOOK),
+    updateWebhook: vi.fn().mockResolvedValue(HOOK),
+    deleteWebhook: vi.fn().mockResolvedValue(true),
+  } as any;
+}
+
+async function buildAppWithOutbound(
+  outboundStorageOverrides: Record<string, ReturnType<typeof vi.fn>> = {}
+) {
+  const app = Fastify({ logger: false });
+  const mockStorage = { listMessages: vi.fn().mockResolvedValue([]) } as any;
+  const obs = { ...buildOutboundStorage(), ...outboundStorageOverrides };
+  registerIntegrationRoutes(app, {
+    integrationManager: buildMockManager(),
+    integrationStorage: mockStorage,
+    outboundWebhookStorage: obs,
+  });
+  await app.ready();
+  return { app, obs };
+}
+
+describe('outbound-webhook routes', () => {
+  it('GET /api/v1/outbound-webhooks returns webhooks', async () => {
+    const { app } = await buildAppWithOutbound();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/outbound-webhooks' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().webhooks).toHaveLength(1);
+  });
+
+  it('GET /api/v1/outbound-webhooks passes enabled filter', async () => {
+    const { app, obs } = await buildAppWithOutbound();
+    await app.inject({ method: 'GET', url: '/api/v1/outbound-webhooks?enabled=false' });
+    expect(obs.listWebhooks).toHaveBeenCalledWith(expect.objectContaining({ enabled: false }));
+  });
+
+  it('GET /api/v1/outbound-webhooks without filter omits enabled', async () => {
+    const { app, obs } = await buildAppWithOutbound();
+    await app.inject({ method: 'GET', url: '/api/v1/outbound-webhooks' });
+    expect(obs.listWebhooks).toHaveBeenCalledWith({});
+  });
+
+  it('GET /api/v1/outbound-webhooks/:id returns webhook', async () => {
+    const { app } = await buildAppWithOutbound();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/outbound-webhooks/ow-1' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().webhook.id).toBe('ow-1');
+  });
+
+  it('GET /api/v1/outbound-webhooks/:id returns 404 when not found', async () => {
+    const { app } = await buildAppWithOutbound({ getWebhook: vi.fn().mockResolvedValue(null) });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/outbound-webhooks/nonexistent' });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('POST /api/v1/outbound-webhooks creates webhook and returns 201', async () => {
+    const { app } = await buildAppWithOutbound();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/outbound-webhooks',
+      payload: { url: 'https://example.com/hook', events: ['message'] },
+    });
+    expect(res.statusCode).toBe(201);
+  });
+
+  it('POST /api/v1/outbound-webhooks returns 400 for private/localhost URL', async () => {
+    const { app } = await buildAppWithOutbound();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/outbound-webhooks',
+      payload: { url: 'http://localhost:9000/hook', events: ['message'] },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('PUT /api/v1/outbound-webhooks/:id updates webhook', async () => {
+    const { app } = await buildAppWithOutbound();
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/outbound-webhooks/ow-1',
+      payload: { enabled: false },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+
+  it('PUT /api/v1/outbound-webhooks/:id returns 404 when not found', async () => {
+    const { app } = await buildAppWithOutbound({ updateWebhook: vi.fn().mockResolvedValue(null) });
+    const res = await app.inject({
+      method: 'PUT',
+      url: '/api/v1/outbound-webhooks/nonexistent',
+      payload: {},
+    });
+    expect(res.statusCode).toBe(404);
+  });
+
+  it('DELETE /api/v1/outbound-webhooks/:id returns 204', async () => {
+    const { app } = await buildAppWithOutbound();
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/outbound-webhooks/ow-1' });
+    expect(res.statusCode).toBe(204);
+  });
+
+  it('DELETE /api/v1/outbound-webhooks/:id returns 404 when not found', async () => {
+    const { app } = await buildAppWithOutbound({ deleteWebhook: vi.fn().mockResolvedValue(false) });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/outbound-webhooks/nonexistent',
+    });
+    expect(res.statusCode).toBe(404);
   });
 });

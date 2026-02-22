@@ -3,6 +3,18 @@ import Fastify from 'fastify';
 import { registerChatRoutes } from './chat-routes.js';
 import type { SecureYeoman } from '../secureyeoman.js';
 
+vi.mock('../logging/logger.js', () => ({
+  getLogger: vi.fn().mockReturnValue({
+    child: vi.fn().mockReturnThis(),
+    warn: vi.fn(),
+    info: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+    trace: vi.fn(),
+    fatal: vi.fn(),
+  }),
+}));
+
 function createMockSecureYeoman(
   overrides: Partial<{
     aiClient: unknown;
@@ -12,6 +24,8 @@ function createMockSecureYeoman(
     hasAiClient: boolean;
     hasBrain: boolean;
     hasConversationStorage: boolean;
+    mcpClient: unknown;
+    mcpStorage: unknown;
   }> = {}
 ) {
   const mockAiClient = {
@@ -75,8 +89,8 @@ function createMockSecureYeoman(
             throw new Error('Brain manager is not available');
           })
         : vi.fn().mockReturnValue(overrides.brainManager ?? mockBrainManager),
-    getMcpClientManager: vi.fn().mockReturnValue(null),
-    getMcpStorage: vi.fn().mockReturnValue(null),
+    getMcpClientManager: vi.fn().mockReturnValue(overrides.mcpClient ?? null),
+    getMcpStorage: vi.fn().mockReturnValue(overrides.mcpStorage ?? null),
     getConversationStorage:
       overrides.hasConversationStorage === false
         ? vi.fn().mockReturnValue(null)
@@ -456,5 +470,488 @@ describe('Chat Routes', () => {
         knowledgeUsed: 0,
       })
     );
+  });
+
+  it('POST /api/v1/chat with memoryEnabled=false skips brain context', async () => {
+    const { mock, mockBrainManager } = createMockSecureYeoman();
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'hello', memoryEnabled: false },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(mockBrainManager.recall).not.toHaveBeenCalled();
+  });
+
+  // ── Feedback endpoint ──────────────────────────────────────────────────────
+
+  it('POST /api/v1/chat/feedback returns stored:true on success', async () => {
+    const { mock } = createMockSecureYeoman();
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat/feedback',
+      payload: {
+        conversationId: 'conv-1',
+        messageId: 'msg-1',
+        feedback: 'positive',
+      },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().stored).toBe(true);
+  });
+
+  it('POST /api/v1/chat/feedback returns 400 for missing required fields', async () => {
+    const { mock } = createMockSecureYeoman();
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat/feedback',
+      payload: { conversationId: 'conv-1', messageId: 'msg-1' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('required');
+  });
+
+  it('POST /api/v1/chat/feedback returns 400 for invalid feedback type', async () => {
+    const { mock } = createMockSecureYeoman();
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat/feedback',
+      payload: {
+        conversationId: 'conv-1',
+        messageId: 'msg-1',
+        feedback: 'invalid-type',
+      },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('feedback must be one of');
+  });
+
+  it('POST /api/v1/chat/feedback returns 503 when brain unavailable', async () => {
+    const { mock } = createMockSecureYeoman({ hasBrain: false });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat/feedback',
+      payload: {
+        conversationId: 'conv-1',
+        messageId: 'msg-1',
+        feedback: 'negative',
+      },
+    });
+    expect(res.statusCode).toBe(503);
+  });
+
+  it('POST /api/v1/chat/feedback accepts correction feedback with details', async () => {
+    const { mock } = createMockSecureYeoman();
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat/feedback',
+      payload: {
+        conversationId: 'conv-1',
+        messageId: 'msg-1',
+        feedback: 'correction',
+        details: 'The answer was wrong',
+      },
+    });
+    expect(res.statusCode).toBe(200);
+  });
+});
+
+// ── MCP tool gathering ─────────────────────────────────────────────────────────
+
+describe('Chat Routes — MCP tool gathering', () => {
+  let app: ReturnType<typeof Fastify>;
+
+  beforeEach(() => {
+    app = Fastify();
+  });
+
+  const mcpPersonality = {
+    id: 'p-mcp',
+    name: 'MCP Personality',
+    defaultModel: null,
+    modelFallbacks: [],
+    body: {
+      enabled: true,
+      selectedServers: ['external-server'],
+      mcpFeatures: {
+        exposeGit: false,
+        exposeFilesystem: false,
+        exposeWeb: true,
+        exposeWebScraping: false,
+        exposeWebSearch: false,
+        exposeBrowser: false,
+      },
+    },
+  };
+
+  const buildMcpSoulManager = (personality: unknown) => ({
+    composeSoulPrompt: vi.fn().mockReturnValue('System.'),
+    getActiveTools: vi.fn().mockReturnValue([]),
+    getPersonality: vi.fn().mockReturnValue(null),
+    getActivePersonality: vi.fn().mockReturnValue(personality),
+  });
+
+  it('includes tools from selectedServers when body.enabled=true', async () => {
+    const mockMcpClient = {
+      getAllTools: vi.fn().mockReturnValue([
+        {
+          name: 'my_tool',
+          serverName: 'external-server',
+          description: 'A tool',
+          inputSchema: { type: 'object', properties: {} },
+        },
+      ]),
+    };
+    const { mock, mockAiClient } = createMockSecureYeoman({
+      soulManager: buildMcpSoulManager(mcpPersonality),
+      mcpClient: mockMcpClient,
+      mcpStorage: {
+        getConfig: vi.fn().mockResolvedValue({ exposeGit: false, exposeFilesystem: false }),
+      },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+    await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'hello' } });
+    const chatCall = mockAiClient.chat.mock.calls[0][0];
+    expect(chatCall.tools).toHaveLength(1);
+    expect(chatCall.tools[0].name).toBe('my_tool');
+  });
+
+  it('excludes tools from servers not in selectedServers', async () => {
+    const mockMcpClient = {
+      getAllTools: vi.fn().mockReturnValue([
+        {
+          name: 'other_tool',
+          serverName: 'not-selected',
+          description: 'A tool',
+          inputSchema: { type: 'object', properties: {} },
+        },
+      ]),
+    };
+    const { mock, mockAiClient } = createMockSecureYeoman({
+      soulManager: buildMcpSoulManager(mcpPersonality),
+      mcpClient: mockMcpClient,
+      mcpStorage: {
+        getConfig: vi.fn().mockResolvedValue({ exposeGit: false, exposeFilesystem: false }),
+      },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+    await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'hello' } });
+    const chatCall = mockAiClient.chat.mock.calls[0][0];
+    expect(chatCall.tools ?? []).toHaveLength(0);
+  });
+
+  it('excludes YEOMAN MCP git tools when exposeGit is disabled globally', async () => {
+    const yeomanPersonality = {
+      ...mcpPersonality,
+      body: { ...mcpPersonality.body, selectedServers: ['YEOMAN MCP'] },
+    };
+    const mockMcpClient = {
+      getAllTools: vi.fn().mockReturnValue([
+        {
+          name: 'git_status',
+          serverName: 'YEOMAN MCP',
+          description: 'Git status',
+          inputSchema: {},
+        },
+        {
+          name: 'git_commit',
+          serverName: 'YEOMAN MCP',
+          description: 'Git commit',
+          inputSchema: {},
+        },
+      ]),
+    };
+    const { mock, mockAiClient } = createMockSecureYeoman({
+      soulManager: buildMcpSoulManager(yeomanPersonality),
+      mcpClient: mockMcpClient,
+      mcpStorage: {
+        getConfig: vi.fn().mockResolvedValue({ exposeGit: false, exposeFilesystem: false }),
+      },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+    await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'hello' } });
+    const chatCall = mockAiClient.chat.mock.calls[0][0];
+    expect(chatCall.tools ?? []).toHaveLength(0);
+  });
+
+  it('excludes YEOMAN MCP filesystem tools when exposeFilesystem is disabled', async () => {
+    const yeomanPersonality = {
+      ...mcpPersonality,
+      body: { ...mcpPersonality.body, selectedServers: ['YEOMAN MCP'] },
+    };
+    const mockMcpClient = {
+      getAllTools: vi.fn().mockReturnValue([
+        { name: 'fs_read', serverName: 'YEOMAN MCP', description: 'File read', inputSchema: {} },
+        {
+          name: 'file_write',
+          serverName: 'YEOMAN MCP',
+          description: 'File write',
+          inputSchema: {},
+        },
+        {
+          name: 'filesystem_list',
+          serverName: 'YEOMAN MCP',
+          description: 'List files',
+          inputSchema: {},
+        },
+      ]),
+    };
+    const { mock, mockAiClient } = createMockSecureYeoman({
+      soulManager: buildMcpSoulManager(yeomanPersonality),
+      mcpClient: mockMcpClient,
+      mcpStorage: {
+        getConfig: vi.fn().mockResolvedValue({ exposeGit: false, exposeFilesystem: false }),
+      },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+    await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'hello' } });
+    const chatCall = mockAiClient.chat.mock.calls[0][0];
+    expect(chatCall.tools ?? []).toHaveLength(0);
+  });
+
+  it('includes YEOMAN MCP non-git/non-fs tools regardless of feature gates', async () => {
+    const yeomanPersonality = {
+      ...mcpPersonality,
+      body: { ...mcpPersonality.body, selectedServers: ['YEOMAN MCP'] },
+    };
+    const mockMcpClient = {
+      getAllTools: vi.fn().mockReturnValue([
+        {
+          name: 'web_search',
+          serverName: 'YEOMAN MCP',
+          description: 'Web search',
+          inputSchema: {},
+        },
+      ]),
+    };
+    const { mock, mockAiClient } = createMockSecureYeoman({
+      soulManager: buildMcpSoulManager(yeomanPersonality),
+      mcpClient: mockMcpClient,
+      mcpStorage: {
+        getConfig: vi.fn().mockResolvedValue({ exposeGit: false, exposeFilesystem: false }),
+      },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+    await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'hello' } });
+    const chatCall = mockAiClient.chat.mock.calls[0][0];
+    expect(chatCall.tools).toHaveLength(1);
+    expect(chatCall.tools[0].name).toBe('web_search');
+  });
+
+  it('skips MCP gathering when personality.body.enabled is false', async () => {
+    const disabledBodyPersonality = {
+      ...mcpPersonality,
+      body: { ...mcpPersonality.body, enabled: false },
+    };
+    const mockMcpClient = {
+      getAllTools: vi.fn().mockReturnValue([
+        {
+          name: 'my_tool',
+          serverName: 'external-server',
+          description: 'A tool',
+          inputSchema: {},
+        },
+      ]),
+    };
+    const { mock } = createMockSecureYeoman({
+      soulManager: buildMcpSoulManager(disabledBodyPersonality),
+      mcpClient: mockMcpClient,
+      mcpStorage: { getConfig: vi.fn().mockResolvedValue({}) },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+    await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'hello' } });
+    expect(mockMcpClient.getAllTools).not.toHaveBeenCalled();
+  });
+
+  it('skips MCP gathering when selectedServers is empty', async () => {
+    const noServersPersonality = {
+      ...mcpPersonality,
+      body: { ...mcpPersonality.body, selectedServers: [] },
+    };
+    const mockMcpClient = {
+      getAllTools: vi.fn().mockReturnValue([
+        {
+          name: 'my_tool',
+          serverName: 'external-server',
+          description: 'A tool',
+          inputSchema: {},
+        },
+      ]),
+    };
+    const { mock } = createMockSecureYeoman({
+      soulManager: buildMcpSoulManager(noServersPersonality),
+      mcpClient: mockMcpClient,
+      mcpStorage: { getConfig: vi.fn().mockResolvedValue({}) },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+    await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'hello' } });
+    expect(mockMcpClient.getAllTools).not.toHaveBeenCalled();
+  });
+});
+
+// ── Context compaction ─────────────────────────────────────────────────────────
+
+describe('Chat Routes — context compaction', () => {
+  let app: ReturnType<typeof Fastify>;
+
+  beforeEach(() => {
+    app = Fastify();
+  });
+
+  // ~750 tokens each; 10 messages × 754 ≈ 7,540 tokens > 6,553 (80% of 8,192 default window)
+  const longContent = 'x'.repeat(3000);
+  const largeHistory = Array.from({ length: 10 }, (_, i) => ({
+    role: i % 2 === 0 ? 'user' : 'assistant',
+    content: longContent,
+  }));
+
+  it('compacts large message histories — calls AI twice (summary + response)', async () => {
+    const { mock, mockAiClient } = createMockSecureYeoman();
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'Short message', history: largeHistory },
+    });
+
+    expect(res.statusCode).toBe(200);
+    // Once for context summary, once for the actual response
+    expect(mockAiClient.chat).toHaveBeenCalledTimes(2);
+  });
+
+  it('continues with original messages when compaction summariser throws', async () => {
+    const failingThenSucceedingClient = {
+      chat: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('summarizer failed'))
+        .mockResolvedValueOnce({
+          id: 'resp-1',
+          content: 'Hello!',
+          toolCalls: [],
+          usage: { inputTokens: 100, outputTokens: 50, cachedTokens: 0, totalTokens: 150 },
+          stopReason: 'end_turn',
+          model: 'claude-sonnet',
+          provider: 'anthropic',
+        }),
+    };
+    const { mock } = createMockSecureYeoman({ aiClient: failingThenSucceedingClient });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'Short message', history: largeHistory },
+    });
+
+    // Compaction error is swallowed; falls through to normal response
+    expect(res.statusCode).toBe(200);
+    expect(failingThenSucceedingClient.chat).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ── Additional branch coverage ─────────────────────────────────────────────────
+
+describe('Chat Routes — additional branch coverage', () => {
+  let app: ReturnType<typeof Fastify>;
+
+  beforeEach(() => {
+    app = Fastify();
+  });
+
+  it('POST /api/v1/chat passes modelFallbacks (including unknown provider) to aiClient', async () => {
+    const personalityWithFallbacks = {
+      id: 'p-1',
+      name: 'Test',
+      defaultModel: null,
+      modelFallbacks: [
+        { provider: 'openai', model: 'gpt-4o' },
+        { provider: 'ollama', model: 'llama3' }, // not in PROVIDER_KEY_ENV → apiKeyEnv = ''
+      ],
+    };
+    const mockSoulManager = {
+      composeSoulPrompt: vi.fn().mockReturnValue('System.'),
+      getActiveTools: vi.fn().mockReturnValue([]),
+      getPersonality: vi.fn().mockReturnValue(null),
+      getActivePersonality: vi.fn().mockReturnValue(personalityWithFallbacks),
+    };
+    const { mock, mockAiClient } = createMockSecureYeoman({ soulManager: mockSoulManager });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'hello' } });
+
+    expect(mockAiClient.chat).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      expect.arrayContaining([
+        expect.objectContaining({
+          provider: 'openai',
+          model: 'gpt-4o',
+          apiKeyEnv: 'OPENAI_API_KEY',
+        }),
+        expect.objectContaining({ provider: 'ollama', model: 'llama3', apiKeyEnv: '' }),
+      ])
+    );
+  });
+
+  it('POST /api/v1/chat filters out history items with non-string content', async () => {
+    const { mock, mockAiClient } = createMockSecureYeoman();
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: {
+        message: 'Hello',
+        history: [
+          { role: 'user', content: null as unknown as string },
+          { role: 'user', content: 'Valid message' },
+        ],
+      },
+    });
+
+    const chatCall = mockAiClient.chat.mock.calls[0][0];
+    // system + 1 valid history msg + new user = 3 (null-content entry filtered)
+    expect(chatCall.messages).toHaveLength(3);
+    expect(chatCall.messages[1].content).toBe('Valid message');
+  });
+
+  it('POST /api/v1/chat uses getPersonality result when personalityId provided and found', async () => {
+    const specificPersonality = {
+      id: 'p-specific',
+      name: 'Specific',
+      defaultModel: null,
+      modelFallbacks: [],
+    };
+    const mockSoulManager = {
+      composeSoulPrompt: vi.fn().mockReturnValue('System.'),
+      getActiveTools: vi.fn().mockReturnValue([]),
+      getPersonality: vi.fn().mockReturnValue(specificPersonality),
+      getActivePersonality: vi.fn().mockReturnValue(null),
+    };
+    const { mock } = createMockSecureYeoman({ soulManager: mockSoulManager });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'hello', personalityId: 'p-specific' },
+    });
+
+    expect(mockSoulManager.getPersonality).toHaveBeenCalledWith('p-specific');
+    // getActivePersonality not called — getPersonality returned a value (no ?? fallback)
+    expect(mockSoulManager.getActivePersonality).not.toHaveBeenCalled();
   });
 });

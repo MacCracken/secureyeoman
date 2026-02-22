@@ -71,8 +71,7 @@ export class TaskLoop {
 
   /** Record a completed tool call. */
   recordToolCall(toolName: string, toolArgs: unknown, outcome: string): void {
-    const serialised =
-      typeof toolArgs === 'string' ? toolArgs : JSON.stringify(toolArgs ?? null);
+    const serialised = typeof toolArgs === 'string' ? toolArgs : JSON.stringify(toolArgs ?? null);
     this.history.push({
       toolName,
       toolArgs: serialised,
@@ -95,9 +94,7 @@ export class TaskLoop {
         type: 'timeout',
         detail:
           `Task has been running for ${elapsed}ms ` +
-          (last
-            ? `(last tool: ${last.toolName} → ${last.outcome})`
-            : '(no tool calls recorded)'),
+          (last ? `(last tool: ${last.toolName} → ${last.outcome})` : '(no tool calls recorded)'),
       };
     }
 

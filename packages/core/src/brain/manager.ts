@@ -176,9 +176,7 @@ export class BrainManager {
         }
 
         if (combined.size > 0) {
-          const sorted = [...combined.entries()]
-            .sort((a, b) => b[1] - a[1])
-            .slice(0, limit);
+          const sorted = [...combined.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
           const memories: Memory[] = [];
           for (const [id] of sorted) {
             const memory = await this.storage.getMemory(id);

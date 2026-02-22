@@ -60,7 +60,7 @@ describe('migrateCommand', () => {
     vi.clearAllMocks();
     mockInitializeLogger.mockReturnValue(mockLogger);
     mockCreateNoopLogger.mockReturnValue(mockLogger);
-    mockLoadConfig.mockResolvedValue({ logging: {}, core: { database: {} } });
+    mockLoadConfig.mockReturnValue({ logging: {}, core: { database: {} } });
     mockRunMigrations.mockResolvedValue(undefined);
     mockClosePool.mockResolvedValue(undefined);
   });
@@ -100,7 +100,9 @@ describe('migrateCommand', () => {
 
   describe('config load failure', () => {
     it('returns 1 when config cannot be loaded', async () => {
-      mockLoadConfig.mockRejectedValue(new Error('No config file'));
+      mockLoadConfig.mockImplementation(() => {
+        throw new Error('No config file');
+      });
       const ctx = makeCtx([]);
       const code = await migrateCommand.run(ctx as any);
       expect(code).toBe(1);
@@ -108,7 +110,9 @@ describe('migrateCommand', () => {
     });
 
     it('uses noop logger when config fails', async () => {
-      mockLoadConfig.mockRejectedValue(new Error('config missing'));
+      mockLoadConfig.mockImplementation(() => {
+        throw new Error('config missing');
+      });
       const ctx = makeCtx([]);
       await migrateCommand.run(ctx as any);
       expect(mockCreateNoopLogger).toHaveBeenCalled();

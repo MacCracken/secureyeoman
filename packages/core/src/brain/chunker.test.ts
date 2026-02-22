@@ -50,7 +50,10 @@ describe('chunk()', () => {
   });
 
   it('overlapping chunks share content at boundaries', () => {
-    const sentences = Array.from({ length: 20 }, (_, i) => `Sentence number ${i + 1} provides context here.`);
+    const sentences = Array.from(
+      { length: 20 },
+      (_, i) => `Sentence number ${i + 1} provides context here.`
+    );
     const content = sentences.join(' ');
     const result = chunk(content, { maxTokens: 100, overlapFraction: 0.2 });
 
@@ -79,14 +82,16 @@ describe('chunk()', () => {
   });
 
   it('preserves paragraph boundaries', () => {
-    const content = 'First paragraph content here.\n\nSecond paragraph content here.\n\nThird paragraph content.';
+    const content =
+      'First paragraph content here.\n\nSecond paragraph content here.\n\nThird paragraph content.';
     const result = chunk(content, { maxTokens: 800 });
     // All content fits in one chunk since it's short
     expect(result).toHaveLength(1);
   });
 
   it('splits multi-paragraph content correctly', () => {
-    const para = 'This is a paragraph sentence. It has multiple sentences. Each sentence adds tokens. ';
+    const para =
+      'This is a paragraph sentence. It has multiple sentences. Each sentence adds tokens. ';
     const content = (para + '\n\n').repeat(20);
     const result = chunk(content, { maxTokens: 200 });
     expect(result.length).toBeGreaterThan(1);

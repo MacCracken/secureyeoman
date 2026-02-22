@@ -207,6 +207,10 @@ describe('MultimodalManager', () => {
       process.env.VOICEBOX_URL = 'http://localhost:17493';
 
       const audioBytes = Buffer.from('fake-audio-data');
+      const audioArrayBuffer = audioBytes.buffer.slice(
+        audioBytes.byteOffset,
+        audioBytes.byteOffset + audioBytes.byteLength
+      );
       const mockFetch = vi
         .fn()
         .mockResolvedValueOnce({
@@ -216,7 +220,7 @@ describe('MultimodalManager', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
-          arrayBuffer: async () => audioBytes.buffer,
+          arrayBuffer: async () => audioArrayBuffer,
         });
       vi.stubGlobal('fetch', mockFetch);
 

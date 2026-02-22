@@ -54,9 +54,7 @@ const dbConfig = {
   database: process.env['TEST_DB_NAME'] ?? 'secureyeoman_test',
   user: process.env['TEST_DB_USER'] ?? 'secureyeoman',
   password:
-    process.env['TEST_DB_PASSWORD'] ??
-    process.env['POSTGRES_PASSWORD'] ??
-    'secureyeoman_dev',
+    process.env['TEST_DB_PASSWORD'] ?? process.env['POSTGRES_PASSWORD'] ?? 'secureyeoman_dev',
   ssl: false,
   poolSize: 3,
 };
@@ -69,16 +67,12 @@ const childEnv: NodeJS.ProcessEnv = {
   ...process.env,
   // Required secrets — values are synthetic but long enough to pass validation
   SECUREYEOMAN_SIGNING_KEY:
-    process.env['SECUREYEOMAN_SIGNING_KEY'] ??
-    'test-signing-key-at-least-32-characters-xxxx',
+    process.env['SECUREYEOMAN_SIGNING_KEY'] ?? 'test-signing-key-at-least-32-characters-xxxx',
   SECUREYEOMAN_TOKEN_SECRET:
-    process.env['SECUREYEOMAN_TOKEN_SECRET'] ??
-    'test-token-secret-at-least-32-chars-xxx',
+    process.env['SECUREYEOMAN_TOKEN_SECRET'] ?? 'test-token-secret-at-least-32-chars-xxx',
   SECUREYEOMAN_ENCRYPTION_KEY:
-    process.env['SECUREYEOMAN_ENCRYPTION_KEY'] ??
-    'test-encryption-key-32-chars-xxxxxxxx',
-  SECUREYEOMAN_ADMIN_PASSWORD:
-    process.env['SECUREYEOMAN_ADMIN_PASSWORD'] ?? 'test-admin-password',
+    process.env['SECUREYEOMAN_ENCRYPTION_KEY'] ?? 'test-encryption-key-32-chars-xxxxxxxx',
+  SECUREYEOMAN_ADMIN_PASSWORD: process.env['SECUREYEOMAN_ADMIN_PASSWORD'] ?? 'test-admin-password',
   // Forward test-DB settings — the pool reads POSTGRES_PASSWORD via passwordEnv
   DATABASE_HOST: dbConfig.host,
   DATABASE_NAME: dbConfig.database,
@@ -193,10 +187,9 @@ describe('Startup time — process-level (migration fast-path)', () => {
             `wall-clock=${wallMs} ms  budget=${STARTUP_BUDGET_MS} ms`
         );
 
-        expect(
-          wallMs,
-          `Expected startup < ${STARTUP_BUDGET_MS} ms, got ${wallMs} ms`
-        ).toBeLessThan(STARTUP_BUDGET_MS);
+        expect(wallMs, `Expected startup < ${STARTUP_BUDGET_MS} ms, got ${wallMs} ms`).toBeLessThan(
+          STARTUP_BUDGET_MS
+        );
       } finally {
         if (child) await killChild(child);
       }

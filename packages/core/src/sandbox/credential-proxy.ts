@@ -117,44 +117,41 @@ export class CredentialProxy {
     });
 
     // ── CONNECT (HTTPS tunnel) handler ────────────────────────────────
-    server.on(
-      'connect',
-      (req: IncomingMessage, clientSocket: net.Socket, head: Buffer) => {
-        const authority = req.url ?? '';
-        const colonIdx = authority.lastIndexOf(':');
-        const host = colonIdx !== -1 ? authority.slice(0, colonIdx) : authority;
-        const portStr = colonIdx !== -1 ? authority.slice(colonIdx + 1) : '443';
-        const port = parseInt(portStr, 10) || 443;
+    server.on('connect', (req: IncomingMessage, clientSocket: net.Socket, head: Buffer) => {
+      const authority = req.url ?? '';
+      const colonIdx = authority.lastIndexOf(':');
+      const host = colonIdx !== -1 ? authority.slice(0, colonIdx) : authority;
+      const portStr = colonIdx !== -1 ? authority.slice(colonIdx + 1) : '443';
+      const port = parseInt(portStr, 10) || 443;
 
-        if (!allowedSet.has(host)) {
-          clientSocket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
-          clientSocket.destroy();
-          return;
-        }
-
-        const serverSocket = net.createConnection({ host, port }, () => {
-          clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
-          if (head.length > 0) {
-            serverSocket.write(head);
-          }
-          serverSocket.pipe(clientSocket, { end: true });
-          clientSocket.pipe(serverSocket, { end: true });
-        });
-
-        serverSocket.on('error', () => {
-          if (!clientSocket.destroyed) {
-            clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
-            clientSocket.destroy();
-          }
-        });
-
-        clientSocket.on('error', () => {
-          if (!serverSocket.destroyed) {
-            serverSocket.destroy();
-          }
-        });
+      if (!allowedSet.has(host)) {
+        clientSocket.write('HTTP/1.1 403 Forbidden\r\n\r\n');
+        clientSocket.destroy();
+        return;
       }
-    );
+
+      const serverSocket = net.createConnection({ host, port }, () => {
+        clientSocket.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+        if (head.length > 0) {
+          serverSocket.write(head);
+        }
+        serverSocket.pipe(clientSocket, { end: true });
+        clientSocket.pipe(serverSocket, { end: true });
+      });
+
+      serverSocket.on('error', () => {
+        if (!clientSocket.destroyed) {
+          clientSocket.write('HTTP/1.1 502 Bad Gateway\r\n\r\n');
+          clientSocket.destroy();
+        }
+      });
+
+      clientSocket.on('error', () => {
+        if (!serverSocket.destroyed) {
+          serverSocket.destroy();
+        }
+      });
+    });
 
     // ── Start listening ────────────────────────────────────────────────
     await new Promise<void>((resolve, reject) => {

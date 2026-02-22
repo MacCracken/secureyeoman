@@ -76,7 +76,8 @@ export const PERSONALITY_PRESETS: PersonalityPreset[] = [
   {
     id: 'friday',
     name: 'FRIDAY',
-    summary: 'Friendly, Reliable, Intelligent Digitally Adaptable Yeoman — the default helpful assistant.',
+    summary:
+      'Friendly, Reliable, Intelligent Digitally Adaptable Yeoman — the default helpful assistant.',
     data: {
       name: 'FRIDAY',
       description: 'Friendly, Reliable, Intelligent Digitally Adaptable Yeoman',

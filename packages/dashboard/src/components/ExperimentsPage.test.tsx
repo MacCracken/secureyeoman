@@ -58,6 +58,7 @@ describe('ExperimentsPage', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
 
     renderComponent();
@@ -83,6 +84,7 @@ describe('ExperimentsPage', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
 
     renderComponent();
@@ -107,6 +109,7 @@ describe('ExperimentsPage', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
 
     renderComponent();
@@ -129,6 +132,7 @@ describe('ExperimentsPage', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
 
     renderComponent();

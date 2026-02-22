@@ -267,8 +267,12 @@ describe('SkillScheduler', () => {
       // 10:00 is outside a 22:00–06:00 window
       const realDate = Date;
       global.Date = class extends realDate {
-        getHours() { return 10; }
-        getMinutes() { return 0; }
+        getHours() {
+          return 10;
+        }
+        getMinutes() {
+          return 0;
+        }
       } as any;
 
       const s = makeScheduledSkill({
@@ -289,8 +293,12 @@ describe('SkillScheduler', () => {
     it('overnight window: returns true when inside window (23:00)', () => {
       const realDate = Date;
       global.Date = class extends realDate {
-        getHours() { return 23; }
-        getMinutes() { return 30; }
+        getHours() {
+          return 23;
+        }
+        getMinutes() {
+          return 30;
+        }
       } as any;
 
       const s = makeScheduledSkill({
@@ -314,8 +322,12 @@ describe('SkillScheduler', () => {
       const s4 = new SkillScheduler({ maxScheduled: 5 });
       // First handler throws; second should still be called
       const secondHandlerCalled: boolean[] = [];
-      s4.onEvent(() => { throw new Error('handler crash'); });
-      s4.onEvent(() => { secondHandlerCalled.push(true); });
+      s4.onEvent(() => {
+        throw new Error('handler crash');
+      });
+      s4.onEvent(() => {
+        secondHandlerCalled.push(true);
+      });
 
       const s = makeScheduledSkill({ schedule: { type: 'interval', intervalMs: 1 } });
       s4.schedule(s);
@@ -343,6 +355,132 @@ describe('SkillScheduler', () => {
       scheduler.start();
       // Disabled skill — nextRunAt should remain null/undefined (not set by scheduleNextRun)
       expect(scheduler.getNextRun(s.id)).toBeNull();
+    });
+  });
+
+  // ── Normal (non-overnight) activeHours window ───────────────────────────
+
+  describe('schedule with activeHours — normal window (startTime <= endTime)', () => {
+    it('normal window: returns false when outside the window', () => {
+      const realDate = Date;
+      global.Date = class extends realDate {
+        getHours() {
+          return 20;
+        }
+        getMinutes() {
+          return 0;
+        }
+      } as any;
+
+      const s = makeScheduledSkill({
+        schedule: { type: 'interval', intervalMs: 60000 },
+        conditions: {
+          activeHours: { start: '09:00', end: '17:00' }, // 09:00-17:00 window
+        },
+      });
+      scheduler.schedule(s);
+      scheduler.start();
+      const next = scheduler.getNextRun(s.id);
+      // Condition fails (20:00 outside 09:00-17:00) → check interval delay
+      expect(next).toBeGreaterThan(Date.now());
+
+      global.Date = realDate;
+    });
+
+    it('normal window: schedules normally when inside the window', () => {
+      const realDate = Date;
+      global.Date = class extends realDate {
+        getHours() {
+          return 10;
+        }
+        getMinutes() {
+          return 30;
+        }
+      } as any;
+
+      const s = makeScheduledSkill({
+        schedule: { type: 'interval', intervalMs: 60000 },
+        conditions: {
+          activeHours: { start: '09:00', end: '17:00' },
+        },
+      });
+      scheduler.schedule(s);
+      scheduler.start();
+      const next = scheduler.getNextRun(s.id);
+      expect(next).toBeGreaterThan(Date.now());
+
+      global.Date = realDate;
+    });
+  });
+
+  // ── executeScheduledSkill — success and catch paths ─────────────────────
+
+  describe('executeScheduledSkill — success path', () => {
+    it('emits scheduled_skill_success when triggerNow returns success=true', async () => {
+      vi.useRealTimers();
+      const s5 = new SkillScheduler({ maxScheduled: 5 });
+
+      // Override triggerNow to return success=true
+      vi.spyOn(s5, 'triggerNow').mockResolvedValue({
+        scheduledSkillId: 'sched-x',
+        skillId: 'sk-x',
+        startedAt: Date.now(),
+        completedAt: Date.now(),
+        success: true,
+        result: { data: 'ok' },
+      });
+
+      const events: ScheduleEvent[] = [];
+      s5.onEvent((e) => events.push(e));
+
+      const s = makeScheduledSkill({ schedule: { type: 'interval', intervalMs: 1 } });
+      s5.schedule(s);
+      s5.start();
+
+      await new Promise((r) => setTimeout(r, 100));
+      s5.stop();
+      vi.useFakeTimers();
+
+      const types = events.map((e) => e.type);
+      expect(types).toContain('scheduled_skill_success');
+    }, 5000);
+
+    it('emits scheduled_skill_failure when triggerNow throws', async () => {
+      vi.useRealTimers();
+      const s6 = new SkillScheduler({ maxScheduled: 5 });
+
+      // Override triggerNow to throw
+      vi.spyOn(s6, 'triggerNow').mockRejectedValue(new Error('executor crashed'));
+
+      const events: ScheduleEvent[] = [];
+      s6.onEvent((e) => events.push(e));
+
+      const s = makeScheduledSkill({ schedule: { type: 'interval', intervalMs: 1 } });
+      s6.schedule(s);
+      s6.start();
+
+      await new Promise((r) => setTimeout(r, 100));
+      s6.stop();
+      vi.useFakeTimers();
+
+      const types = events.map((e) => e.type);
+      expect(types).toContain('scheduled_skill_failure');
+    }, 5000);
+  });
+
+  // ── calculateNextRun — interval with delay <= 0 ─────────────────────────
+
+  describe('calculateNextRun — immediate interval (delay <= 0)', () => {
+    it('starts immediately when startAt is in the past', () => {
+      const pastStart = Date.now() - 5000;
+      const s = makeScheduledSkill({
+        schedule: { type: 'interval', intervalMs: 60000, startAt: pastStart },
+      });
+      scheduler.schedule(s);
+      scheduler.start();
+      // Past startAt → interval-based next: startAt + N*intervalMs
+      const next = scheduler.getNextRun(s.id);
+      expect(next).toBeGreaterThan(Date.now());
     });
   });
 });

@@ -186,6 +186,7 @@ beforeEach(() => {
     allowAnomalyDetection: false,
     sandboxGvisor: false,
     sandboxWasm: false,
+    sandboxCredentialProxy: false,
   });
 });
 

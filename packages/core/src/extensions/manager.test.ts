@@ -389,7 +389,10 @@ describe('ExtensionManager', () => {
     it('returns clean result for hookPoint with no registered handlers', async () => {
       const { manager } = makeManager();
       // Register a hook for a different hookPoint
-      manager.registerHook('task.created' as any, vi.fn().mockResolvedValue({ vetoed: false, errors: [] }));
+      manager.registerHook(
+        'task.created' as any,
+        vi.fn().mockResolvedValue({ vetoed: false, errors: [] })
+      );
       // Emit for message.received (no handlers registered)
       const result = await manager.emit('message.received' as any, {
         event: 'message.received',
@@ -408,12 +411,18 @@ describe('ExtensionManager', () => {
 
       manager.registerHook(
         'message.received' as any,
-        async () => { callOrder.push('first'); return { vetoed: false, errors: ['warn1'] }; },
+        async () => {
+          callOrder.push('first');
+          return { vetoed: false, errors: ['warn1'] };
+        },
         { priority: 10, semantics: 'observe' }
       );
       manager.registerHook(
         'message.received' as any,
-        async () => { callOrder.push('second'); return { vetoed: false, errors: [] }; },
+        async () => {
+          callOrder.push('second');
+          return { vetoed: false, errors: [] };
+        },
         { priority: 20, semantics: 'observe' }
       );
 
@@ -475,6 +484,198 @@ describe('ExtensionManager', () => {
       expect(manager.getRegisteredHooks()).toHaveLength(2);
       await manager.removeExtension('ext-multi2');
       expect(manager.getRegisteredHooks()).toHaveLength(0);
+    });
+  });
+
+  describe('emit — hook throws', () => {
+    it('catches hook error and adds it to result.errors', async () => {
+      const { manager } = makeManager();
+      manager.registerHook(
+        'message.received' as any,
+        async () => {
+          throw new Error('boom');
+        },
+        { semantics: 'observe' }
+      );
+      const result = await manager.emit('message.received' as any, {
+        event: 'message.received',
+        data: {},
+        timestamp: Date.now(),
+      });
+      expect(result.errors.length).toBeGreaterThan(0);
+      expect(result.errors[0]).toContain('boom');
+    });
+  });
+
+  describe('emit — veto semantics with errors', () => {
+    it('stops processing and includes errors when vetoed', async () => {
+      const { manager } = makeManager();
+      const secondCalled = vi.fn();
+      manager.registerHook(
+        'message.received' as any,
+        async () => ({ vetoed: true, errors: ['blocked by policy'] }),
+        { semantics: 'veto', priority: 10 }
+      );
+      manager.registerHook(
+        'message.received' as any,
+        async () => {
+          secondCalled();
+          return { vetoed: false, errors: [] };
+        },
+        { semantics: 'observe', priority: 20 }
+      );
+      const result = await manager.emit('message.received' as any, {
+        event: 'message.received',
+        data: {},
+        timestamp: Date.now(),
+      });
+      expect(result.vetoed).toBe(true);
+      expect(result.errors).toContain('blocked by policy');
+      expect(secondCalled).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('emit — transform semantics', () => {
+    it('applies transformed data for subsequent hooks', async () => {
+      const { manager } = makeManager();
+      let receivedData: unknown;
+      manager.registerHook(
+        'message.received' as any,
+        async (ctx) => ({
+          vetoed: false,
+          errors: [],
+          transformed: { ...(ctx.data as Record<string, unknown>), added: true },
+        }),
+        { semantics: 'transform', priority: 10 }
+      );
+      manager.registerHook(
+        'message.received' as any,
+        async (ctx) => {
+          receivedData = ctx.data;
+          return { vetoed: false, errors: [] };
+        },
+        { semantics: 'observe', priority: 20 }
+      );
+      await manager.emit('message.received' as any, {
+        event: 'message.received',
+        data: { original: true },
+        timestamp: Date.now(),
+      });
+      expect((receivedData as Record<string, unknown>).added).toBe(true);
+    });
+
+    it('ignores transform when hookResult.transformed is undefined', async () => {
+      const { manager } = makeManager();
+      manager.registerHook(
+        'message.received' as any,
+        async () => ({ vetoed: false, errors: [] }), // no transformed field
+        { semantics: 'transform', priority: 10 }
+      );
+      const result = await manager.emit('message.received' as any, {
+        event: 'message.received',
+        data: { original: true },
+        timestamp: Date.now(),
+      });
+      expect(result.transformed).toBeUndefined();
+    });
+  });
+
+  describe('dispatchWebhooks — allowWebhooks=false', () => {
+    it('skips webhook dispatch when allowWebhooks is false', async () => {
+      const { manager, storage } = makeManager(
+        { listWebhooks: vi.fn().mockResolvedValue([WEBHOOK_CONFIG]) },
+        { allowWebhooks: false }
+      );
+      await manager.emit('message.received' as any, {
+        event: 'message.received',
+        data: {},
+        timestamp: Date.now(),
+      });
+      expect(storage.listWebhooks).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('dispatchWebhooks — storage throws', () => {
+    it('logs warn and continues when listWebhooks throws', async () => {
+      const { manager, logger } = makeManager(
+        { listWebhooks: vi.fn().mockRejectedValue(new Error('DB error')) },
+        { allowWebhooks: true }
+      );
+      await expect(
+        manager.emit('message.received' as any, {
+          event: 'message.received',
+          data: {},
+          timestamp: Date.now(),
+        })
+      ).resolves.toBeDefined();
+      expect(logger.warn).toHaveBeenCalledWith(
+        'Failed to load webhooks for dispatch',
+        expect.any(Object)
+      );
+    });
+  });
+
+  describe('removeExtension — not found', () => {
+    it('does not audit when removeExtension returns false', async () => {
+      const { manager, auditChain } = makeManager({
+        removeExtension: vi.fn().mockResolvedValue(false),
+      });
+      await manager.removeExtension('no-such-ext');
+      const auditCalls = (auditChain.record as ReturnType<typeof vi.fn>).mock.calls;
+      const removedCalls = auditCalls.filter(
+        ([c]: [{ event: string }]) => c.event === 'extension_removed'
+      );
+      expect(removedCalls).toHaveLength(0);
+    });
+  });
+
+  describe('auditRecord — auditChain throws', () => {
+    it('does not propagate audit chain errors', async () => {
+      const { manager } = makeManager(
+        { registerWebhook: vi.fn().mockResolvedValue(WEBHOOK_CONFIG) },
+        {}
+      );
+      // Override auditChain to throw
+      (manager as any).deps.auditChain = {
+        record: vi.fn().mockRejectedValue(new Error('audit failure')),
+      };
+      await expect(
+        manager.registerWebhook({
+          url: 'https://example.com',
+          hookPoints: ['message.received'] as any,
+          enabled: true,
+        })
+      ).resolves.toBeDefined();
+    });
+  });
+
+  describe('getExecutionLog — filtered by hookPoint', () => {
+    it('returns only entries for the given hookPoint', async () => {
+      const { manager } = makeManager();
+      manager.registerHook('message.received' as any, async () => ({ vetoed: false, errors: [] }));
+      manager.registerHook('task.created' as any, async () => ({ vetoed: false, errors: [] }));
+      await manager.emit('message.received' as any, {
+        event: 'message.received',
+        data: {},
+        timestamp: Date.now(),
+      });
+      await manager.emit('task.created' as any, {
+        event: 'task.created',
+        data: {},
+        timestamp: Date.now(),
+      });
+      const log = manager.getExecutionLog('message.received' as any);
+      expect(log.every((e) => e.hookPoint === 'message.received')).toBe(true);
+    });
+  });
+
+  describe('testEmit', () => {
+    it('marks execution log entry as isTest=true', async () => {
+      const { manager } = makeManager();
+      manager.registerHook('message.received' as any, async () => ({ vetoed: false, errors: [] }));
+      await manager.testEmit('message.received' as any, { foo: 'bar' });
+      const log = manager.getExecutionLog();
+      expect(log[0].isTest).toBe(true);
     });
   });
 });

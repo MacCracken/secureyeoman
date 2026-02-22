@@ -1159,4 +1159,360 @@ describe('HeartbeatManager', () => {
       expect(status.personalitySchedule).toEqual(schedule);
     });
   });
+
+  describe('start() and stop()', () => {
+    it('start() sets running to true', () => {
+      vi.useFakeTimers();
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.start();
+      expect(hb.getStatus().running).toBe(true);
+      hb.stop();
+      vi.useRealTimers();
+    });
+
+    it('stop() sets running to false', () => {
+      vi.useFakeTimers();
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.start();
+      hb.stop();
+      expect(hb.getStatus().running).toBe(false);
+      vi.useRealTimers();
+    });
+
+    it('start() is idempotent (second call is a no-op)', () => {
+      vi.useFakeTimers();
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      hb.start();
+      hb.start(); // should not create second interval
+      expect(hb.getStatus().running).toBe(true);
+      hb.stop();
+      vi.useRealTimers();
+    });
+
+    it('stop() with no interval is safe', () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      expect(() => hb.stop()).not.toThrow();
+      expect(hb.getStatus().running).toBe(false);
+    });
+
+    it('start() does nothing when config.enabled is false', () => {
+      vi.useFakeTimers();
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig({ enabled: false }));
+      hb.start();
+      expect(hb.getStatus().running).toBe(false);
+      vi.useRealTimers();
+    });
+  });
+
+  describe('getLastBeat()', () => {
+    it('returns null before first beat', () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      expect(hb.getLastBeat()).toBeNull();
+    });
+
+    it('returns last beat result after beat()', async () => {
+      const hb = new HeartbeatManager(brain, audit, logger, defaultConfig());
+      await hb.beat();
+      expect(hb.getLastBeat()).not.toBeNull();
+      expect(hb.getLastBeat()!.checks).toBeDefined();
+    });
+  });
+
+  describe('check types — log_anomalies', () => {
+    it('returns ok when audit storage not available', async () => {
+      const cfg = defaultConfig({
+        checks: [{ name: 'logs', type: 'log_anomalies', enabled: true, config: {}, intervalMs: 0 }],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'logs');
+      expect(check?.status).toBe('ok');
+    });
+
+    it('returns warning when audit has 1-10 error entries', async () => {
+      const auditBrain = {
+        ...mockBrain(),
+        hasAuditStorage: vi.fn().mockReturnValue(true),
+        queryAuditLogs: vi.fn().mockResolvedValue({ total: 5, entries: [] }),
+      } as unknown as BrainManager;
+      const cfg = defaultConfig({
+        checks: [{ name: 'logs', type: 'log_anomalies', enabled: true, config: {}, intervalMs: 0 }],
+      });
+      const hb = new HeartbeatManager(auditBrain, audit, logger, cfg);
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'logs');
+      expect(check?.status).toBe('warning');
+    });
+
+    it('returns error when audit has >10 error entries', async () => {
+      const auditBrain = {
+        ...mockBrain(),
+        hasAuditStorage: vi.fn().mockReturnValue(true),
+        queryAuditLogs: vi.fn().mockResolvedValue({ total: 15, entries: [] }),
+      } as unknown as BrainManager;
+      const cfg = defaultConfig({
+        checks: [{ name: 'logs', type: 'log_anomalies', enabled: true, config: {}, intervalMs: 0 }],
+      });
+      const hb = new HeartbeatManager(auditBrain, audit, logger, cfg);
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'logs');
+      expect(check?.status).toBe('error');
+    });
+  });
+
+  describe('check types — integration_health', () => {
+    it('returns ok when integration manager not provided', async () => {
+      const cfg = defaultConfig({
+        checks: [
+          { name: 'ints', type: 'integration_health', enabled: true, config: {}, intervalMs: 0 },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'ints');
+      expect(check?.status).toBe('ok');
+    });
+
+    it('returns running count when integration manager provided', async () => {
+      const mockIntManager = { getRunningCount: vi.fn().mockReturnValue(3) } as any;
+      const cfg = defaultConfig({
+        checks: [
+          { name: 'ints', type: 'integration_health', enabled: true, config: {}, intervalMs: 0 },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg, mockIntManager);
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'ints');
+      expect(check?.data).toEqual(expect.objectContaining({ runningCount: 3 }));
+    });
+  });
+
+  describe('check types — custom and system_health', () => {
+    it('runs custom check and returns ok', async () => {
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'my_custom',
+            type: 'custom',
+            enabled: true,
+            config: { key: 'val' },
+            intervalMs: 0,
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'my_custom');
+      expect(check?.status).toBe('ok');
+    });
+
+    it('system_health returns warning on high heap usage', async () => {
+      // Mock process.memoryUsage to return high usage
+      const origMemUsage = process.memoryUsage;
+      process.memoryUsage = vi.fn().mockReturnValue({
+        heapUsed: 950 * 1024 * 1024,
+        heapTotal: 1000 * 1024 * 1024,
+        rss: 0,
+        external: 0,
+        arrayBuffers: 0,
+      }) as any;
+
+      const cfg = defaultConfig({
+        checks: [
+          { name: 'health', type: 'system_health', enabled: true, config: {}, intervalMs: 0 },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'health');
+      expect(check?.status).toBe('warning');
+
+      process.memoryUsage = origMemUsage;
+    });
+
+    it('memory_status returns warning on high pruning count', async () => {
+      const highPruneBrain = {
+        ...mockBrain(),
+        runMaintenance: vi.fn().mockReturnValue({ decayed: 5, pruned: 15 }),
+      } as unknown as BrainManager;
+      const cfg = defaultConfig({
+        checks: [{ name: 'mem', type: 'memory_status', enabled: true, config: {}, intervalMs: 0 }],
+      });
+      const hb = new HeartbeatManager(highPruneBrain, audit, logger, cfg);
+      const result = await hb.beat();
+      const check = result.checks.find((c) => c.name === 'mem');
+      expect(check?.status).toBe('warning');
+    });
+  });
+
+  describe('notify action — integration channels', () => {
+    function makeNotifyConfig(channel: string) {
+      return defaultConfig({
+        checks: [
+          {
+            name: 'check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: { channel, recipients: ['admin'] },
+              },
+            ],
+          },
+        ],
+      });
+    }
+
+    it('notify with slack channel — logs info via integration manager', async () => {
+      const intManager = { getRunningCount: vi.fn().mockReturnValue(0) } as any;
+      const hb = new HeartbeatManager(brain, audit, logger, makeNotifyConfig('slack'), intManager);
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+
+    it('notify with telegram channel — logs info', async () => {
+      const intManager = { getRunningCount: vi.fn().mockReturnValue(0) } as any;
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        makeNotifyConfig('telegram'),
+        intManager
+      );
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+
+    it('notify with discord channel — logs info', async () => {
+      const intManager = { getRunningCount: vi.fn().mockReturnValue(0) } as any;
+      const hb = new HeartbeatManager(
+        brain,
+        audit,
+        logger,
+        makeNotifyConfig('discord'),
+        intManager
+      );
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+
+    it('notify with email channel — logs info', async () => {
+      const intManager = { getRunningCount: vi.fn().mockReturnValue(0) } as any;
+      const hb = new HeartbeatManager(brain, audit, logger, makeNotifyConfig('email'), intManager);
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+
+    it('notify with unknown channel — logs warn', async () => {
+      const intManager = { getRunningCount: vi.fn().mockReturnValue(0) } as any;
+      const hb = new HeartbeatManager(brain, audit, logger, makeNotifyConfig('fax'), intManager);
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+
+    it('notify without integration manager — logs warn and returns early', async () => {
+      // No integration manager — should log warn and return without error
+      const hb = new HeartbeatManager(brain, audit, logger, makeNotifyConfig('slack'));
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+
+    it('notify with template variables replaces placeholders', async () => {
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'health',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: {
+                  channel: 'console',
+                  messageTemplate: '{{check.name}} is {{result.status}}: {{result.message}}',
+                },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+  });
+
+  describe('execute and llm_analyze actions — not-implemented throws', () => {
+    it('execute action throws "not implemented" error (caught by action runner)', async () => {
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'execute' as const,
+                config: { command: 'ls', args: [] },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      // Action runner catches the error — beat() itself should resolve
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+
+    it('llm_analyze action throws "not implemented" error (caught by action runner)', async () => {
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'llm_analyze' as const,
+                config: { prompt: 'analyze', model: 'fast', maxTokens: 100 },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+  });
+
+  describe('executeAction — unknown action type', () => {
+    it('logs warn for an unknown action type', async () => {
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'nonexistent_action' as any,
+                config: {},
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+  });
 });

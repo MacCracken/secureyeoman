@@ -57,9 +57,7 @@ const dbConfig = {
   database: process.env['TEST_DB_NAME'] ?? 'secureyeoman_test',
   user: process.env['TEST_DB_USER'] ?? 'secureyeoman',
   password:
-    process.env['TEST_DB_PASSWORD'] ??
-    process.env['POSTGRES_PASSWORD'] ??
-    'secureyeoman_dev',
+    process.env['TEST_DB_PASSWORD'] ?? process.env['POSTGRES_PASSWORD'] ?? 'secureyeoman_dev',
   ssl: false,
   poolSize: 3,
 };
@@ -69,16 +67,12 @@ const dbConfig = {
 const childEnv: NodeJS.ProcessEnv = {
   ...process.env,
   SECUREYEOMAN_SIGNING_KEY:
-    process.env['SECUREYEOMAN_SIGNING_KEY'] ??
-    'test-signing-key-at-least-32-characters-xxxx',
+    process.env['SECUREYEOMAN_SIGNING_KEY'] ?? 'test-signing-key-at-least-32-characters-xxxx',
   SECUREYEOMAN_TOKEN_SECRET:
-    process.env['SECUREYEOMAN_TOKEN_SECRET'] ??
-    'test-token-secret-at-least-32-chars-xxx',
+    process.env['SECUREYEOMAN_TOKEN_SECRET'] ?? 'test-token-secret-at-least-32-chars-xxx',
   SECUREYEOMAN_ENCRYPTION_KEY:
-    process.env['SECUREYEOMAN_ENCRYPTION_KEY'] ??
-    'test-encryption-key-32-chars-xxxxxxxx',
-  SECUREYEOMAN_ADMIN_PASSWORD:
-    process.env['SECUREYEOMAN_ADMIN_PASSWORD'] ?? 'test-admin-password',
+    process.env['SECUREYEOMAN_ENCRYPTION_KEY'] ?? 'test-encryption-key-32-chars-xxxxxxxx',
+  SECUREYEOMAN_ADMIN_PASSWORD: process.env['SECUREYEOMAN_ADMIN_PASSWORD'] ?? 'test-admin-password',
   DATABASE_HOST: dbConfig.host,
   DATABASE_NAME: dbConfig.database,
   DATABASE_USER: dbConfig.user,
@@ -116,7 +110,7 @@ async function pollUntilHealthy(port: number, timeoutMs: number): Promise<void> 
  */
 function readRssMb(pid: number): number {
   const status = readFileSync(`/proc/${pid}/status`, 'utf-8');
-  const match = status.match(/^VmRSS:\s+(\d+)\s+kB/m);
+  const match = /^VmRSS:\s+(\d+)\s+kB/m.exec(status);
   if (!match) throw new Error(`Could not parse VmRSS from /proc/${pid}/status`);
   return Number(match[1]) / 1024;
 }
@@ -173,9 +167,7 @@ describe('Memory baseline — cold-start RSS (migration fast-path)', () => {
         if (!pid) throw new Error('Child process has no PID');
         const rssMb = readRssMb(pid);
 
-        console.info(
-          `[memory-baseline] RSS=${rssMb.toFixed(1)} MB  budget=${MEMORY_BUDGET_MB} MB`
-        );
+        console.info(`[memory-baseline] RSS=${rssMb.toFixed(1)} MB  budget=${MEMORY_BUDGET_MB} MB`);
 
         expect(
           rssMb,

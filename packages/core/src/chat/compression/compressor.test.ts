@@ -306,4 +306,113 @@ describe('HistoryCompressor', () => {
       expect(history).toEqual([]);
     });
   });
+
+  describe('escalateTopics — error recovery', () => {
+    it('does not throw when summarizeBulk fails during topic escalation', async () => {
+      const failSummarizer = {
+        aiProvider: {
+          chat: vi.fn().mockRejectedValue(new Error('bulk AI error')),
+        },
+      };
+      const mockSt = createMockStorage();
+      const topicEntries = Array.from({ length: 3 }, (_, i) =>
+        makeEntry({ id: `terr-${i}`, tier: 'topic', tokenCount: 100, sealedAt: null })
+      );
+      // Trigger escalateTopics: message count > 2000
+      mockSt.getTokenCountByTier = vi.fn().mockResolvedValue({ message: 3000, topic: 0, bulk: 0 });
+      mockSt.getEntriesByConversation = vi.fn().mockImplementation(async (_id, tier) => {
+        if (tier === 'topic') return topicEntries;
+        return [];
+      });
+
+      const comp = new HistoryCompressor(defaultConfig, {
+        storage: mockSt as unknown as CompressionStorage,
+        summarizer: failSummarizer as any,
+        logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() } as any,
+      });
+
+      await expect(
+        comp.addMessage('conv-esc-err', { role: 'user', content: 'trigger' })
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('escalateTopics — not enough unsealed topics', () => {
+    it('skips escalation when fewer than bulkMergeSize topics are unsealed', async () => {
+      const summarizer = {
+        aiProvider: { chat: vi.fn().mockResolvedValue({ content: 'summary' }) },
+      };
+      const mockSt = createMockStorage();
+      // Only 2 unsealed topics — bulkMergeSize is 3 so escalateTopics returns early
+      const topicEntries = Array.from({ length: 2 }, (_, i) =>
+        makeEntry({ id: `few-topic-${i}`, tier: 'topic', tokenCount: 100, sealedAt: null })
+      );
+      mockSt.getTokenCountByTier = vi.fn().mockResolvedValue({ message: 3000, topic: 0, bulk: 0 });
+      mockSt.getEntriesByConversation = vi.fn().mockImplementation(async (_id, tier) => {
+        if (tier === 'topic') return topicEntries;
+        return [];
+      });
+
+      const comp = new HistoryCompressor(defaultConfig, {
+        storage: mockSt as unknown as CompressionStorage,
+        summarizer: summarizer as any,
+        logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() } as any,
+      });
+
+      await comp.addMessage('conv-few', { role: 'user', content: 'trigger' });
+      // AI should NOT be called since escalateTopics returns early
+      expect(summarizer.aiProvider.chat).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('escalateBulk — triggered by topic token threshold', () => {
+    it('runs escalateBulk when topic token count exceeds bulkMergeSize * topicSummaryTokens', async () => {
+      // topicSummaryTokens=200, bulkMergeSize=3, threshold=600
+      const summarizer = {
+        aiProvider: { chat: vi.fn().mockResolvedValue({ content: 'bulk' }) },
+      };
+      const mockSt = createMockStorage();
+      const topicEntries = Array.from({ length: 3 }, (_, i) =>
+        makeEntry({ id: `bulk-trig-${i}`, tier: 'topic', tokenCount: 100, sealedAt: null })
+      );
+      mockSt.getTokenCountByTier = vi.fn().mockResolvedValue({ message: 100, topic: 700, bulk: 0 });
+      mockSt.getEntriesByConversation = vi.fn().mockImplementation(async (_id, tier) => {
+        if (tier === 'topic') return topicEntries;
+        return [];
+      });
+
+      const comp = new HistoryCompressor(defaultConfig, {
+        storage: mockSt as unknown as CompressionStorage,
+        summarizer: summarizer as any,
+        logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() } as any,
+      });
+
+      await comp.addMessage('conv-bulk-trig', { role: 'user', content: 'trigger bulk' });
+      expect(summarizer.aiProvider.chat).toHaveBeenCalled();
+    });
+  });
+
+  describe('compressCurrentTopic — not enough messages', () => {
+    it('skips compression when fewer than 2 unsealed messages', async () => {
+      const summarizer = {
+        aiProvider: { chat: vi.fn().mockResolvedValue({ content: 'summary' }) },
+      };
+      const mockSt = createMockStorage();
+      // Only 1 unsealed message → compressCurrentTopic returns early
+      mockSt.getEntriesByConversation = vi.fn().mockImplementation(async (_id, tier) => {
+        if (tier === 'message') return [makeEntry({ id: 'solo', sealedAt: null })];
+        return [];
+      });
+
+      const comp = new HistoryCompressor(defaultConfig, {
+        storage: mockSt as unknown as CompressionStorage,
+        summarizer: summarizer as any,
+        logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() } as any,
+      });
+
+      // Seal triggers compressCurrentTopic, which should skip
+      await comp.sealCurrentTopic('conv-single');
+      expect(summarizer.aiProvider.chat).not.toHaveBeenCalled();
+    });
+  });
 });

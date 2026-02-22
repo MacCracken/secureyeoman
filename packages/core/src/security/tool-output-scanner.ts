@@ -43,19 +43,36 @@ export const BUILTIN_PATTERNS: SecretPattern[] = [
   // AWS access keys
   { type: 'aws-access-key', pattern: /AKIA[A-Z0-9]{16}/g },
   // AWS secret access keys (follow =)
-  { type: 'aws-secret-key', pattern: /(?:AWS_SECRET_ACCESS_KEY|aws_secret_access_key)\s*=\s*\S+/gi },
+  {
+    type: 'aws-secret-key',
+    pattern: /(?:AWS_SECRET_ACCESS_KEY|aws_secret_access_key)\s*=\s*\S+/gi,
+  },
   // PEM private key headers (catch any PEM block header)
-  { type: 'pem-private-key', pattern: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g },
+  {
+    type: 'pem-private-key',
+    pattern:
+      /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----[\s\S]*?-----END (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g,
+  },
   // PostgreSQL / generic DSN connection strings with credentials
-  { type: 'db-connection-string', pattern: /(?:postgresql|postgres|mysql|mongodb(?:\+srv)?|redis|amqp(?:s)?):\/\/[^:]+:[^@\s]+@[^\s"']+/gi },
+  {
+    type: 'db-connection-string',
+    pattern:
+      /(?:postgresql|postgres|mysql|mongodb(?:\+srv)?|redis|amqp(?:s)?):\/\/[^:]+:[^@\s]+@[^\s"']+/gi,
+  },
   // Bearer tokens in Authorization headers
-  { type: 'bearer-token', pattern: /(?:Authorization|authorization)\s*:\s*Bearer\s+[A-Za-z0-9_\-\.+/=]{20,}/g },
+  {
+    type: 'bearer-token',
+    pattern: /(?:Authorization|authorization)\s*:\s*Bearer\s+[A-Za-z0-9_\-.+/=]{20,}/g,
+  },
   // JSON Web Tokens (three base64url segments)
   { type: 'jwt', pattern: /ey[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}/g },
   // Anthropic API keys
   { type: 'anthropic-key', pattern: /sk-ant-[A-Za-z0-9_-]{40,}/g },
   // Google / GCP service account private keys (JSON inline)
-  { type: 'gcp-private-key', pattern: /"private_key"\s*:\s*"-----BEGIN[^"]+-----END[^"]+-----\\n"/g },
+  {
+    type: 'gcp-private-key',
+    pattern: /"private_key"\s*:\s*"-----BEGIN[^"]+-----END[^"]+-----\\n"/g,
+  },
   // Slack tokens
   { type: 'slack-token', pattern: /xox[baprs]-[A-Za-z0-9-]{10,}/g },
   // Stripe API keys
@@ -63,11 +80,15 @@ export const BUILTIN_PATTERNS: SecretPattern[] = [
   // Twilio tokens
   { type: 'twilio-token', pattern: /SK[a-f0-9]{32}/g },
   // Discord bot tokens
-  { type: 'discord-token', pattern: /[MN][A-Za-z0-9_-]{23,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{27,}/g },
+  {
+    type: 'discord-token',
+    pattern: /[MN][A-Za-z0-9_-]{23,}\.[A-Za-z0-9_-]{6,}\.[A-Za-z0-9_-]{27,}/g,
+  },
   // Generic high-entropy API key assignment (KEY=<32+ alphanum>)
   {
     type: 'generic-api-key',
-    pattern: /(?:api[_-]?key|apikey|secret[_-]?key|access[_-]?token|auth[_-]?token)\s*[=:]\s*["']?([A-Za-z0-9_\-+/=.]{32,})["']?/gi,
+    pattern:
+      /(?:api[_-]?key|apikey|secret[_-]?key|access[_-]?token|auth[_-]?token)\s*[=:]\s*["']?([A-Za-z0-9_\-+/=.]{32,})["']?/gi,
   },
   // SSH private key content lines (base64 PEM body heuristic)
   { type: 'ssh-private-key', pattern: /(?:^|[\r\n])([A-Za-z0-9+/]{60,}={0,2})(?=[\r\n]|$)/g },
@@ -97,11 +118,13 @@ export class ToolOutputScanner {
   private readonly patterns: SecretPattern[];
   private readonly logger: SecureLogger | null;
 
-  constructor(opts: {
-    /** Extra patterns beyond the builtins (e.g. from SecretStore values). */
-    extraPatterns?: SecretPattern[];
-    logger?: SecureLogger | null;
-  } = {}) {
+  constructor(
+    opts: {
+      /** Extra patterns beyond the builtins (e.g. from SecretStore values). */
+      extraPatterns?: SecretPattern[];
+      logger?: SecureLogger | null;
+    } = {}
+  ) {
     this.patterns = [...BUILTIN_PATTERNS, ...(opts.extraPatterns ?? [])];
     this.logger = opts.logger ?? null;
   }
@@ -170,9 +193,7 @@ function escapeRegex(s: string): string {
  * pattern so that managed secrets are always caught regardless of format.
  * Values shorter than 8 characters are skipped to avoid over-matching.
  */
-export function buildSecretStorePatterns(
-  knownSecrets: Map<string, string>
-): SecretPattern[] {
+export function buildSecretStorePatterns(knownSecrets: Map<string, string>): SecretPattern[] {
   const patterns: SecretPattern[] = [];
   for (const [key, value] of knownSecrets) {
     if (!value || value.length < 8) continue;

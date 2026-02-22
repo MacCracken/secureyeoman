@@ -380,6 +380,49 @@ describe('SoulManager', () => {
       expect(brain.enableSkill).toHaveBeenCalledWith('skill-1');
     });
 
+    it('updateSkill delegates to brain', async () => {
+      const brain = makeBrain();
+      const { manager } = makeManager({}, {}, brain);
+      await manager.updateSkill('skill-1', { enabled: false });
+      expect(brain.updateSkill).toHaveBeenCalledWith('skill-1', { enabled: false });
+    });
+
+    it('disableSkill delegates to brain', async () => {
+      const brain = makeBrain();
+      const { manager } = makeManager({}, {}, brain);
+      await manager.disableSkill('skill-1');
+      expect(brain.disableSkill).toHaveBeenCalledWith('skill-1');
+    });
+
+    it('getSkill delegates to brain', async () => {
+      const brain = makeBrain();
+      const { manager } = makeManager({}, {}, brain);
+      const skill = await manager.getSkill('skill-1');
+      expect(brain.getSkill).toHaveBeenCalledWith('skill-1');
+      expect(skill?.id).toBe('skill-1');
+    });
+
+    it('approveSkill delegates to brain', async () => {
+      const brain = makeBrain();
+      const { manager } = makeManager({}, {}, brain);
+      await manager.approveSkill('skill-1');
+      expect(brain.approveSkill).toHaveBeenCalledWith('skill-1');
+    });
+
+    it('rejectSkill delegates to brain', async () => {
+      const brain = makeBrain();
+      const { manager } = makeManager({}, {}, brain);
+      await manager.rejectSkill('skill-1');
+      expect(brain.rejectSkill).toHaveBeenCalledWith('skill-1');
+    });
+
+    it('incrementSkillUsage delegates to brain', async () => {
+      const brain = makeBrain();
+      const { manager } = makeManager({}, {}, brain);
+      await manager.incrementSkillUsage('skill-1');
+      expect(brain.incrementSkillUsage).toHaveBeenCalledWith('skill-1');
+    });
+
     it('listSkills uses brain results', async () => {
       const brain = makeBrain();
       const { manager } = makeManager({}, {}, brain);
@@ -613,6 +656,97 @@ describe('SoulManager', () => {
       const { manager, storage } = makeManager();
       manager.close();
       expect(storage.close).toHaveBeenCalled();
+    });
+  });
+
+  describe('isSkillInContext (tested via composeSoulPrompt)', () => {
+    it('uses keyword fallback when triggerPatterns is empty', async () => {
+      // Skill with no triggerPatterns, name "Search Helper" → keyword "search" (>3 chars)
+      const keywordSkill = {
+        ...SKILL,
+        name: 'Search Helper',
+        triggerPatterns: [],
+        instructions: 'I help you search.',
+      };
+      const { manager } = makeManager({
+        getEnabledSkills: vi.fn().mockResolvedValue([keywordSkill]),
+      });
+      const prompt = await manager.composeSoulPrompt('please search for dogs');
+      expect(prompt).toContain('I help you search');
+    });
+
+    it('uses catch block when triggerPattern is an invalid regex', async () => {
+      // Invalid regex — falls back to includes()
+      const invalidRegexSkill = {
+        ...SKILL,
+        name: 'Broken',
+        triggerPatterns: ['[invalid'],
+        instructions: 'Broken regex skill.',
+      };
+      const { manager } = makeManager({
+        getEnabledSkills: vi.fn().mockResolvedValue([invalidRegexSkill]),
+      });
+      // The literal string "[invalid" IS included in the message
+      const prompt = await manager.composeSoulPrompt('[invalid pattern test');
+      expect(prompt).toContain('Broken regex skill');
+    });
+  });
+
+  describe('composeBodyPrompt (tested via composeSoulPrompt)', () => {
+    it('includes MCP connections section when personality has selectedServers', async () => {
+      const bodyPersonality = {
+        ...PERSONALITY,
+        body: {
+          ...PERSONALITY.body,
+          enabled: true,
+          selectedServers: ['YEOMAN MCP'],
+          mcpFeatures: {
+            exposeGit: true,
+            exposeFilesystem: false,
+            exposeWeb: true,
+            exposeWebScraping: true,
+            exposeWebSearch: false,
+            exposeBrowser: false,
+          },
+        },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(bodyPersonality),
+      });
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('MCP Connections');
+      expect(prompt).toContain('YEOMAN MCP');
+    });
+
+    it('includes creation permissions when personality has creationConfig', async () => {
+      const bodyPersonality = {
+        ...PERSONALITY,
+        body: {
+          ...PERSONALITY.body,
+          enabled: true,
+          creationConfig: { files: true, code: false },
+        },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(bodyPersonality),
+      });
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Creation Permissions');
+    });
+
+    it('includes Heart section via heartManager', async () => {
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue({
+          ...PERSONALITY,
+          body: { ...PERSONALITY.body, enabled: true },
+        }),
+      });
+      const mockHeart = {
+        composeHeartPrompt: vi.fn().mockReturnValue('### Heart\nBeating steadily.'),
+      };
+      manager.setHeart(mockHeart as any);
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Heart');
     });
   });
 

@@ -95,6 +95,7 @@ const DEFAULT_POLICY = {
   allowAnomalyDetection: false,
   sandboxGvisor: false,
   sandboxWasm: false,
+  sandboxCredentialProxy: false,
 };
 
 describe('AgentsPage', () => {

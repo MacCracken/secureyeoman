@@ -27,9 +27,7 @@ const {
     }),
     mockInstance,
     mockResolveAgnosticPath: vi.fn().mockReturnValue(null),
-    mockCompose: vi
-      .fn()
-      .mockResolvedValue({ stdout: 'Started', stderr: '', code: 0 }),
+    mockCompose: vi.fn().mockResolvedValue({ stdout: 'Started', stderr: '', code: 0 }),
   };
 });
 

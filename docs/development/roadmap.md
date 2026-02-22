@@ -68,9 +68,9 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 ### Run all the Checks
 
-- [ ] Lint & Format
-- [ ] Typecheck
-- [ ] Security - note refer to depencency-watch.md when testing
+- [x] Lint & Format
+- [x] Typecheck
+- [x] Security - note refer to depencency-watch.md when testing
 
 ### Regression & Performance
 

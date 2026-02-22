@@ -508,11 +508,7 @@ export function registerAgnosticTools(
         timestamp: Date.now(),
       };
 
-      const { ok, status, body } = await agnosticPost(
-        config,
-        '/api/v1/a2a/receive',
-        message
-      );
+      const { ok, status, body } = await agnosticPost(config, '/api/v1/a2a/receive', message);
 
       if (!ok) {
         if (status === 404) {

@@ -109,7 +109,10 @@ describe('ContextCompactor', () => {
 
       if (result.compacted) {
         const summaryMsg = result.messages.find(
-          (m) => m.role === 'system' && typeof m.content === 'string' && m.content.startsWith('[Context summary:')
+          (m) =>
+            m.role === 'system' &&
+            typeof m.content === 'string' &&
+            m.content.startsWith('[Context summary:')
         );
         expect(summaryMsg).toBeDefined();
       }

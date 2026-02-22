@@ -234,14 +234,18 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       const currentModel = personality?.defaultModel?.model ?? 'unknown';
       if (compactor.needsCompaction(messages, currentModel)) {
         try {
-          const compactionResult = await compactor.compact(messages, currentModel, async (prompt) => {
-            const summaryReq: AIRequest = {
-              messages: [{ role: 'user', content: prompt }],
-              stream: false,
-            };
-            const summaryResp = await aiClient.chat(summaryReq, { source: 'context_compaction' });
-            return summaryResp.content;
-          });
+          const compactionResult = await compactor.compact(
+            messages,
+            currentModel,
+            async (prompt) => {
+              const summaryReq: AIRequest = {
+                messages: [{ role: 'user', content: prompt }],
+                stream: false,
+              };
+              const summaryResp = await aiClient.chat(summaryReq, { source: 'context_compaction' });
+              return summaryResp.content;
+            }
+          );
           if (compactionResult.compacted) {
             messages.length = 0;
             messages.push(...compactionResult.messages);

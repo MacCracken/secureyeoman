@@ -42,13 +42,32 @@ const ALL_TOOLS = [...READ_TOOLS, ...WRITE_TOOLS];
 describe('isReadOnlyTool', () => {
   it('returns true for read-only prefixes', () => {
     const readNames = [
-      'get_memory', 'list_skills', 'read_file', 'search_db',
-      'query_records', 'fetch_url', 'retrieve_doc', 'find_user',
-      'lookup_entry', 'check_status', 'inspect_process', 'describe_table',
-      'show_config', 'view_log', 'summarise_text', 'summarize_report',
-      'analyze_output', 'analyse_data', 'extract_info', 'count_rows',
-      'stat_cpu', 'stats_memory', 'info_disk', 'status_service',
-      'ping_host', 'health_check',
+      'get_memory',
+      'list_skills',
+      'read_file',
+      'search_db',
+      'query_records',
+      'fetch_url',
+      'retrieve_doc',
+      'find_user',
+      'lookup_entry',
+      'check_status',
+      'inspect_process',
+      'describe_table',
+      'show_config',
+      'view_log',
+      'summarise_text',
+      'summarize_report',
+      'analyze_output',
+      'analyse_data',
+      'extract_info',
+      'count_rows',
+      'stat_cpu',
+      'stats_memory',
+      'info_disk',
+      'status_service',
+      'ping_host',
+      'health_check',
     ];
     for (const name of readNames) {
       expect(isReadOnlyTool(name)).toBe(true);
@@ -57,9 +76,17 @@ describe('isReadOnlyTool', () => {
 
   it('returns false for write / exec tool names', () => {
     const writeNames = [
-      'write_file', 'delete_record', 'execute_shell', 'create_user',
-      'update_config', 'send_message', 'http_post', 'run_script',
-      'remove_entry', 'patch_config', 'insert_row',
+      'write_file',
+      'delete_record',
+      'execute_shell',
+      'create_user',
+      'update_config',
+      'send_message',
+      'http_post',
+      'run_script',
+      'remove_entry',
+      'patch_config',
+      'insert_row',
     ];
     for (const name of writeNames) {
       expect(isReadOnlyTool(name)).toBe(false);

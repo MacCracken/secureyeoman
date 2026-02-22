@@ -51,6 +51,7 @@ const FULL_POLICY = {
   allowAnomalyDetection: false,
   sandboxGvisor: false,
   sandboxWasm: false,
+  sandboxCredentialProxy: false,
 };
 
 describe('DeveloperPage', () => {

@@ -145,6 +145,108 @@ describe('loadConfig', () => {
 
     expect(config.security.inputValidation.maxInputLength).toBe(100000);
   });
+
+  it('should handle SECUREYEOMAN_LOG_LEVEL environment variable', () => {
+    process.env.SECUREYEOMAN_LOG_LEVEL = 'debug';
+    const config = loadConfig();
+    expect(config.core.logLevel).toBe('debug');
+  });
+
+  it('should handle SECUREYEOMAN_WORKSPACE environment variable', () => {
+    process.env.SECUREYEOMAN_WORKSPACE = '/custom/workspace';
+    const config = loadConfig();
+    expect(config.core.workspace).toBe('/custom/workspace');
+  });
+
+  it('should handle SECUREYEOMAN_HOST environment variable', () => {
+    process.env.SECUREYEOMAN_HOST = '0.0.0.0';
+    const config = loadConfig();
+    expect(config.gateway.host).toBe('0.0.0.0');
+  });
+
+  it('should handle SECUREYEOMAN_LOG_FORMAT=json environment variable', () => {
+    process.env.SECUREYEOMAN_LOG_FORMAT = 'json';
+    const config = loadConfig();
+    // Logging config includes stdout output with json format
+    expect(config.logging).toBeDefined();
+  });
+
+  it('should handle SECUREYEOMAN_LOG_FORMAT=pretty environment variable', () => {
+    process.env.SECUREYEOMAN_LOG_FORMAT = 'pretty';
+    const config = loadConfig();
+    expect(config.logging).toBeDefined();
+  });
+
+  it('should handle SECUREYEOMAN_BASE_URL environment variable', () => {
+    process.env.SECUREYEOMAN_BASE_URL = 'https://api.example.com';
+    const config = loadConfig();
+    expect(config.model.baseUrl).toBe('https://api.example.com');
+  });
+
+  it('should handle SECUREYEOMAN_EXTERNAL_BRAIN_ENABLED=true', () => {
+    process.env.SECUREYEOMAN_EXTERNAL_BRAIN_ENABLED = 'true';
+    const config = loadConfig();
+    expect(config.externalBrain?.enabled).toBe(true);
+  });
+
+  it('should handle valid SECUREYEOMAN_EXTERNAL_BRAIN_PROVIDER', () => {
+    process.env.SECUREYEOMAN_EXTERNAL_BRAIN_PROVIDER = 'obsidian';
+    const config = loadConfig();
+    expect(config.externalBrain?.provider).toBe('obsidian');
+  });
+
+  it('should ignore invalid SECUREYEOMAN_EXTERNAL_BRAIN_PROVIDER', () => {
+    process.env.SECUREYEOMAN_EXTERNAL_BRAIN_PROVIDER = 'invalid_provider';
+    const config = loadConfig();
+    // Invalid provider is silently ignored — value should not be 'invalid_provider'
+    expect(config.externalBrain?.provider).not.toBe('invalid_provider');
+  });
+
+  it('should handle SECUREYEOMAN_EXTERNAL_BRAIN_PATH and SUBDIR', () => {
+    process.env.SECUREYEOMAN_EXTERNAL_BRAIN_PATH = '/my/brain';
+    process.env.SECUREYEOMAN_EXTERNAL_BRAIN_SUBDIR = 'notes';
+    const config = loadConfig();
+    expect(config.externalBrain?.path).toBe('/my/brain');
+    expect(config.externalBrain?.subdir).toBe('notes');
+  });
+
+  it('should handle SECUREYEOMAN_EXTERNAL_BRAIN_SYNC_INTERVAL_MS', () => {
+    process.env.SECUREYEOMAN_EXTERNAL_BRAIN_SYNC_INTERVAL_MS = '30000';
+    const config = loadConfig();
+    expect(config.externalBrain?.syncIntervalMs).toBe(30000);
+  });
+
+  it('should ignore invalid SECUREYEOMAN_EXTERNAL_BRAIN_SYNC_INTERVAL_MS', () => {
+    process.env.SECUREYEOMAN_EXTERNAL_BRAIN_SYNC_INTERVAL_MS = 'not-a-number';
+    const config = loadConfig();
+    // NaN is ignored — syncIntervalMs should not be set to the invalid value
+    expect(config.externalBrain?.syncIntervalMs).not.toBe(NaN);
+    // and not the parsed-as-nan value
+    expect(config.externalBrain?.syncIntervalMs).not.toBe(999999);
+  });
+
+  it('should throw when encrypted config file has no master key', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'config-test-'));
+    try {
+      // Create a plain YAML file, rename to .enc.yaml to simulate encrypted
+      const encPath = join(tmpDir, 'config.enc.yaml');
+      writeFileSync(encPath, 'core:\n  environment: production\n', 'utf-8');
+      expect(() => loadConfig({ configPath: encPath, skipEnv: true })).toThrow('no master key');
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it('should throw when config file has invalid YAML content', () => {
+    const tmpDir = mkdtempSync(join(tmpdir(), 'config-test-'));
+    try {
+      const yamlPath = join(tmpDir, 'config.yaml');
+      writeFileSync(yamlPath, '{ invalid: yaml: : content }', 'utf-8');
+      expect(() => loadConfig({ configPath: yamlPath, skipEnv: true })).toThrow();
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
 });
 
 describe('getSecret', () => {

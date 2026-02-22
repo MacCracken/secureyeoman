@@ -532,4 +532,139 @@ describe('BrainStorage', () => {
       expect(stats.skills.total).toBe(3);
     });
   });
+
+  // ── queryMemories extra branches ───────────────────────────
+
+  describe('queryMemories — personalityId filter', () => {
+    it('adds personalityId filter when provided', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await storage.queryMemories({ personalityId: 'pid-1' } as any);
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('personality_id = $');
+    });
+  });
+
+  describe('queryMemories — short keyword fallback', () => {
+    it('uses single ILIKE when search has only short words', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      // All words < 3 chars → falls into the else branch
+      await storage.queryMemories({ search: 'a b' });
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('ILIKE');
+    });
+  });
+
+  // ── queryKnowledge extra branches ─────────────────────────
+
+  describe('queryKnowledge — short keyword fallback', () => {
+    it('uses single ILIKE when search has only short words', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await storage.queryKnowledge({ search: 'x y' } as any);
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('ILIKE');
+    });
+
+    it('adds search filter with multiple keywords', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      await storage.queryKnowledge({ search: 'machine learning' } as any);
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('ILIKE');
+    });
+  });
+
+  // ── listSkills — forPersonalityId branch ───────────────────
+
+  describe('listSkills — forPersonalityId', () => {
+    it('adds forPersonalityId filter including global skills', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [skillRow], rowCount: 1 });
+      const skills = await storage.listSkills({ forPersonalityId: 'pid-2' });
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('personality_id IS NULL');
+      expect(skills).toHaveLength(1);
+    });
+  });
+
+  // ── getPendingSkills ────────────────────────────────────────
+
+  describe('getPendingSkills', () => {
+    it('returns skills with pending_approval status', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...skillRow, status: 'pending_approval' }],
+        rowCount: 1,
+      });
+      const skills = await storage.getPendingSkills();
+      expect(skills).toHaveLength(1);
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('pending_approval');
+    });
+  });
+
+  // ── queryMemoriesByRRF ──────────────────────────────────────
+
+  describe('queryMemoriesByRRF', () => {
+    it('returns empty array for empty/special-char-only query', async () => {
+      const result = await storage.queryMemoriesByRRF('!!!', null, 5);
+      expect(result).toEqual([]);
+      expect(mockQuery).not.toHaveBeenCalled();
+    });
+
+    it('runs FTS-only query when no embedding provided', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...memoryRow, rrf_score: 0.8 }],
+        rowCount: 1,
+      });
+      const results = await storage.queryMemoriesByRRF('test memory', null, 5);
+      expect(results).toHaveLength(1);
+      expect(results[0].rrfScore).toBe(0.8);
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('fts');
+      expect(sql).toContain('WHERE FALSE');
+    });
+
+    it('includes vector subquery when embedding is provided', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...memoryRow, rrf_score: 0.9 }],
+        rowCount: 1,
+      });
+      const results = await storage.queryMemoriesByRRF('test query', [0.1, 0.2, 0.3], 10);
+      expect(results).toHaveLength(1);
+      expect(results[0].rrfScore).toBe(0.9);
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('<=>');
+    });
+  });
+
+  // ── queryKnowledgeByRRF ─────────────────────────────────────
+
+  describe('queryKnowledgeByRRF', () => {
+    it('returns empty array for empty/special-char-only query', async () => {
+      const result = await storage.queryKnowledgeByRRF('  !!! ', null, 5);
+      expect(result).toEqual([]);
+      expect(mockQuery).not.toHaveBeenCalled();
+    });
+
+    it('runs FTS-only query when no embedding provided', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...knowledgeRow, rrf_score: 0.7 }],
+        rowCount: 1,
+      });
+      const results = await storage.queryKnowledgeByRRF('test knowledge', null, 5);
+      expect(results).toHaveLength(1);
+      expect(results[0].rrfScore).toBe(0.7);
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('WHERE FALSE');
+    });
+
+    it('includes vector subquery when embedding is provided', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...knowledgeRow, rrf_score: 0.95 }],
+        rowCount: 1,
+      });
+      const results = await storage.queryKnowledgeByRRF('machine learning', [0.5, 0.6], 10);
+      expect(results).toHaveLength(1);
+      expect(results[0].rrfScore).toBe(0.95);
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('<=>');
+    });
+  });
 });

@@ -13,7 +13,11 @@ import { CredentialProxy, type CredentialProxyHandle } from './credential-proxy.
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 /** Start a minimal HTTP server that records incoming headers and responds 200. */
-function startEchoServer(): Promise<{ port: number; lastHeaders: () => http.IncomingHttpHeaders; stop: () => Promise<void> }> {
+function startEchoServer(): Promise<{
+  port: number;
+  lastHeaders: () => http.IncomingHttpHeaders;
+  stop: () => Promise<void>;
+}> {
   let lastHeaders: http.IncomingHttpHeaders = {};
   const server = http.createServer((req, res) => {
     lastHeaders = req.headers;
@@ -28,10 +32,7 @@ function startEchoServer(): Promise<{ port: number; lastHeaders: () => http.Inco
       resolve({
         port: addr.port,
         lastHeaders: () => lastHeaders,
-        stop: () =>
-          new Promise((res, rej) =>
-            server.close((err) => (err ? rej(err) : res()))
-          ),
+        stop: () => new Promise((res, rej) => server.close((err) => (err ? rej(err) : res()))),
       });
     });
   });
@@ -130,7 +131,10 @@ describe('CredentialProxy', () => {
       new Promise<void>((resolve, reject) => {
         const s = net.createConnection({ host: '127.0.0.1', port }, () => resolve());
         s.on('error', reject);
-        setTimeout(() => { s.destroy(); resolve(); }, 500);
+        setTimeout(() => {
+          s.destroy();
+          resolve();
+        }, 500);
       })
     ).rejects.toBeDefined();
   });
@@ -144,10 +148,7 @@ describe('CredentialProxy', () => {
     const handle = await proxy.start();
     handles.push(handle);
 
-    const { statusCode } = await proxyRequest(
-      handle.port,
-      `http://127.0.0.1:${echo.port}/`
-    );
+    const { statusCode } = await proxyRequest(handle.port, `http://127.0.0.1:${echo.port}/`);
 
     await echo.stop();
     expect(statusCode).toBe(200);

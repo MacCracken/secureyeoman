@@ -129,7 +129,7 @@ describe('GroupChatStorage', () => {
 
       const params = mockQuery.mock.calls[0][1] as unknown[];
       expect(params).toContain(50); // default limit
-      expect(params).toContain(0);  // default offset
+      expect(params).toContain(0); // default offset
     });
 
     it('uses custom limit and offset', async () => {
@@ -148,8 +148,9 @@ describe('GroupChatStorage', () => {
       const rowWithPersonality = { ...channelRow, personality_id: 'pers-1' };
       mockQuery
         .mockResolvedValueOnce({ rows: [rowWithPersonality], rowCount: 1 }) // channels
-        .mockResolvedValueOnce({ rows: [{ total: 1 }], rowCount: 1 })      // count
-        .mockResolvedValueOnce({                                             // soul.personalities
+        .mockResolvedValueOnce({ rows: [{ total: 1 }], rowCount: 1 }) // count
+        .mockResolvedValueOnce({
+          // soul.personalities
           rows: [{ id: 'pers-1', name: 'FRIDAY' }],
           rowCount: 1,
         });
@@ -252,7 +253,7 @@ describe('GroupChatStorage', () => {
 
       const params = mockQuery.mock.calls[0][1] as unknown[];
       expect(params).toContain(50); // default limit
-      expect(params).toContain(0);  // default offset
+      expect(params).toContain(0); // default offset
     });
 
     it('uses custom limit and offset', async () => {
@@ -271,8 +272,9 @@ describe('GroupChatStorage', () => {
       const rowWithPersonality = { ...messageRow, personality_id: 'pers-2' };
       mockQuery
         .mockResolvedValueOnce({ rows: [rowWithPersonality], rowCount: 1 }) // messages
-        .mockResolvedValueOnce({ rows: [{ total: 1 }], rowCount: 1 })       // count
-        .mockResolvedValueOnce({                                              // soul.personalities
+        .mockResolvedValueOnce({ rows: [{ total: 1 }], rowCount: 1 }) // count
+        .mockResolvedValueOnce({
+          // soul.personalities
           rows: [{ id: 'pers-2', name: 'T.Ron' }],
           rowCount: 1,
         });

@@ -44,6 +44,7 @@ const BASE_POLICY = {
   allowAnomalyDetection: false,
   sandboxGvisor: false,
   sandboxWasm: false,
+  sandboxCredentialProxy: false,
 };
 
 describe('StorybookPage', () => {

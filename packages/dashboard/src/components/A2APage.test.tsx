@@ -118,6 +118,7 @@ describe('A2APage', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     mockFetchA2APeers.mockResolvedValue(MOCK_PEERS);
     mockFetchA2ACapabilities.mockResolvedValue(MOCK_CAPABILITIES);
@@ -151,6 +152,7 @@ describe('A2APage', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     renderComponent();
     expect(await screen.findByText('A2A Protocol Not Enabled')).toBeInTheDocument();
@@ -179,6 +181,7 @@ describe('A2APage', () => {
       allowAnomalyDetection: false,
       sandboxGvisor: false,
       sandboxWasm: false,
+      sandboxCredentialProxy: false,
     });
     renderComponent();
     expect(await screen.findByText('Peers')).toBeInTheDocument();

@@ -49,10 +49,12 @@ function makeMessage(overrides: Partial<UnifiedMessage> = {}): UnifiedMessage {
   };
 }
 
-function makeDeps(overrides: Partial<{
-  listEnabled: RoutingRule[];
-  sendMessage: typeof vi.fn;
-}> = {}) {
+function makeDeps(
+  overrides: Partial<{
+    listEnabled: RoutingRule[];
+    sendMessage: typeof vi.fn;
+  }> = {}
+) {
   const storage = {
     listEnabled: vi.fn().mockResolvedValue(overrides.listEnabled ?? []),
     recordMatch: vi.fn().mockResolvedValue(undefined),
@@ -69,7 +71,11 @@ function makeDeps(overrides: Partial<{
     fatal: vi.fn(),
     child: vi.fn().mockReturnThis(),
   };
-  return { storage: storage as any, integrationManager: integrationManager as any, logger: logger as any };
+  return {
+    storage: storage as any,
+    integrationManager: integrationManager as any,
+    logger: logger as any,
+  };
 }
 
 // ── evaluateRule ──────────────────────────────────────────────────────────────
@@ -116,59 +122,95 @@ describe('evaluateRule', () => {
 
   it('returns not-matched when integrationId not in allowlist', () => {
     const rule = makeRule({ triggerIntegrationIds: ['int-A'] });
-    const result = evaluateRule(rule, { platform: 'slack', direction: 'inbound', integrationId: 'int-B' });
+    const result = evaluateRule(rule, {
+      platform: 'slack',
+      direction: 'inbound',
+      integrationId: 'int-B',
+    });
     expect(result.matched).toBe(false);
     expect(result.reason).toContain('integrationId');
   });
 
   it('returns matched when integrationId is in allowlist', () => {
     const rule = makeRule({ triggerIntegrationIds: ['int-A'] });
-    const result = evaluateRule(rule, { platform: 'slack', direction: 'inbound', integrationId: 'int-A' });
+    const result = evaluateRule(rule, {
+      platform: 'slack',
+      direction: 'inbound',
+      integrationId: 'int-A',
+    });
     expect(result.matched).toBe(true);
   });
 
   it('returns not-matched when chatId pattern does not match', () => {
     const rule = makeRule({ triggerChatIdPattern: '^admin-' });
-    const result = evaluateRule(rule, { platform: 'slack', direction: 'inbound', chatId: 'public-123' });
+    const result = evaluateRule(rule, {
+      platform: 'slack',
+      direction: 'inbound',
+      chatId: 'public-123',
+    });
     expect(result.matched).toBe(false);
     expect(result.reason).toContain('chatId');
   });
 
   it('returns matched when chatId pattern matches', () => {
     const rule = makeRule({ triggerChatIdPattern: '^admin-' });
-    const result = evaluateRule(rule, { platform: 'slack', direction: 'inbound', chatId: 'admin-007' });
+    const result = evaluateRule(rule, {
+      platform: 'slack',
+      direction: 'inbound',
+      chatId: 'admin-007',
+    });
     expect(result.matched).toBe(true);
   });
 
   it('returns matched when chatId pattern is null (wildcard)', () => {
     const rule = makeRule({ triggerChatIdPattern: null });
-    const result = evaluateRule(rule, { platform: 'slack', direction: 'inbound', chatId: 'any-chat' });
+    const result = evaluateRule(rule, {
+      platform: 'slack',
+      direction: 'inbound',
+      chatId: 'any-chat',
+    });
     expect(result.matched).toBe(true);
   });
 
   it('returns not-matched when senderId pattern does not match', () => {
     const rule = makeRule({ triggerSenderIdPattern: 'bot@' });
-    const result = evaluateRule(rule, { platform: 'slack', direction: 'inbound', senderId: 'user@example.com' });
+    const result = evaluateRule(rule, {
+      platform: 'slack',
+      direction: 'inbound',
+      senderId: 'user@example.com',
+    });
     expect(result.matched).toBe(false);
     expect(result.reason).toContain('senderId');
   });
 
   it('returns not-matched when keyword pattern does not match', () => {
     const rule = makeRule({ triggerKeywordPattern: 'urgent' });
-    const result = evaluateRule(rule, { platform: 'slack', direction: 'inbound', text: 'hello world' });
+    const result = evaluateRule(rule, {
+      platform: 'slack',
+      direction: 'inbound',
+      text: 'hello world',
+    });
     expect(result.matched).toBe(false);
     expect(result.reason).toContain('keyword');
   });
 
   it('returns matched when keyword pattern matches', () => {
     const rule = makeRule({ triggerKeywordPattern: 'hello' });
-    const result = evaluateRule(rule, { platform: 'slack', direction: 'inbound', text: 'hello world' });
+    const result = evaluateRule(rule, {
+      platform: 'slack',
+      direction: 'inbound',
+      text: 'hello world',
+    });
     expect(result.matched).toBe(true);
   });
 
   it('falls back to substring match when regex is invalid', () => {
     const rule = makeRule({ triggerKeywordPattern: '[[invalid' });
-    const result = evaluateRule(rule, { platform: 'slack', direction: 'inbound', text: '[[invalid pattern' });
+    const result = evaluateRule(rule, {
+      platform: 'slack',
+      direction: 'inbound',
+      text: '[[invalid pattern',
+    });
     expect(result.matched).toBe(true); // substring match
   });
 });
@@ -213,29 +255,49 @@ describe('RoutingRulesManager', () => {
 
   describe('applyRule — forward action', () => {
     it('forwards message using target integration and chat', async () => {
-      const rule = makeRule({ actionType: 'forward', actionTargetIntegrationId: 'int-2', actionTargetChatId: 'chat-2' });
+      const rule = makeRule({
+        actionType: 'forward',
+        actionTargetIntegrationId: 'int-2',
+        actionTargetChatId: 'chat-2',
+      });
       const msg = makeMessage();
       await manager.applyRule(rule, msg);
       expect(deps.integrationManager.sendMessage).toHaveBeenCalledWith(
-        'int-2', 'chat-2', msg.text, expect.objectContaining({ routedByRule: 'rule-1' })
+        'int-2',
+        'chat-2',
+        msg.text,
+        expect.objectContaining({ routedByRule: 'rule-1' })
       );
     });
 
     it('uses message template when provided', async () => {
-      const rule = makeRule({ actionType: 'forward', actionMessageTemplate: 'From {{senderName}}: {{text}}' });
+      const rule = makeRule({
+        actionType: 'forward',
+        actionMessageTemplate: 'From {{senderName}}: {{text}}',
+      });
       const msg = makeMessage({ senderName: 'Bob', text: 'hi' });
       await manager.applyRule(rule, msg);
       expect(deps.integrationManager.sendMessage).toHaveBeenCalledWith(
-        expect.any(String), expect.any(String), 'From Bob: hi', expect.any(Object)
+        expect.any(String),
+        expect.any(String),
+        'From Bob: hi',
+        expect.any(Object)
       );
     });
 
     it('falls back to message integrationId and chatId when action targets not set', async () => {
-      const rule = makeRule({ actionType: 'reply', actionTargetIntegrationId: null, actionTargetChatId: null });
+      const rule = makeRule({
+        actionType: 'reply',
+        actionTargetIntegrationId: null,
+        actionTargetChatId: null,
+      });
       const msg = makeMessage({ integrationId: 'int-orig', chatId: 'chat-orig' });
       await manager.applyRule(rule, msg);
       expect(deps.integrationManager.sendMessage).toHaveBeenCalledWith(
-        'int-orig', 'chat-orig', expect.any(String), expect.any(Object)
+        'int-orig',
+        'chat-orig',
+        expect.any(String),
+        expect.any(Object)
       );
     });
 
@@ -282,7 +344,10 @@ describe('RoutingRulesManager', () => {
       const mockFetch = vi.fn().mockResolvedValue({ ok: true });
       vi.stubGlobal('fetch', mockFetch);
 
-      const rule = makeRule({ actionType: 'notify', actionWebhookUrl: 'https://hooks.example.com/notify' });
+      const rule = makeRule({
+        actionType: 'notify',
+        actionWebhookUrl: 'https://hooks.example.com/notify',
+      });
       await manager.applyRule(rule, makeMessage());
       expect(mockFetch).toHaveBeenCalledWith(
         'https://hooks.example.com/notify',
@@ -296,7 +361,10 @@ describe('RoutingRulesManager', () => {
       const mockFetch = vi.fn().mockResolvedValue({ ok: false, status: 503 });
       vi.stubGlobal('fetch', mockFetch);
 
-      const rule = makeRule({ actionType: 'notify', actionWebhookUrl: 'https://hooks.example.com/notify' });
+      const rule = makeRule({
+        actionType: 'notify',
+        actionWebhookUrl: 'https://hooks.example.com/notify',
+      });
       await manager.applyRule(rule, makeMessage());
       expect(deps.logger.warn).toHaveBeenCalled();
       vi.unstubAllGlobals();
@@ -338,9 +406,7 @@ describe('RoutingRulesManager', () => {
     });
 
     it('processes message with no matching rules (no sends)', async () => {
-      deps.storage.listEnabled.mockResolvedValue([
-        makeRule({ enabled: false }),
-      ]);
+      deps.storage.listEnabled.mockResolvedValue([makeRule({ enabled: false })]);
       await manager.processMessage(makeMessage());
       expect(deps.integrationManager.sendMessage).not.toHaveBeenCalled();
     });

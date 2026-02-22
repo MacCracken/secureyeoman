@@ -192,7 +192,11 @@ describe('agnostic-tools', () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       registerAgnosticTools(
         server,
-        makeConfig({ agnosticApiKey: 'my-static-key', agnosticEmail: undefined, agnosticPassword: undefined }),
+        makeConfig({
+          agnosticApiKey: 'my-static-key',
+          agnosticEmail: undefined,
+          agnosticPassword: undefined,
+        }),
         noopMiddleware()
       );
 
@@ -218,7 +222,12 @@ describe('agnostic-tools', () => {
           {
             ok: true,
             status: 200,
-            json: { task_id: 'task-123', session_id: 'session-abc', status: 'completed', result: {} },
+            json: {
+              task_id: 'task-123',
+              session_id: 'session-abc',
+              status: 'completed',
+              result: {},
+            },
           },
         ])
       );
