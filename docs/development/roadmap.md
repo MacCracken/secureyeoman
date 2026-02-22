@@ -32,7 +32,6 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 - [ ] Group Chat - Needs Workspaces; Channels; move below Chat or integrate with enable toggle 
 - [ ] Full Metrics View; not just the overview
 - [ ] Remove env vars fot TTS and STT; should be internalized to the user ability to choose
-- [ ] Dev enviroment should display all available personalities
 - [ ] Need to walkthrough and confirm each of the creation skills in chat.
 
 

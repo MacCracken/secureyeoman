@@ -69,16 +69,18 @@ export function registerConversationRoutes(
   );
 
   // List conversations (paginated, sorted by updated_at DESC)
+  // Optionally filtered to a specific personality via ?personalityId=<id>
   app.get(
     '/api/v1/conversations',
     async (
       request: FastifyRequest<{
-        Querystring: { limit?: string; offset?: string };
+        Querystring: { limit?: string; offset?: string; personalityId?: string };
       }>
     ) => {
       const limit = request.query.limit ? Number(request.query.limit) : 50;
       const offset = request.query.offset ? Number(request.query.offset) : 0;
-      return await conversationStorage.listConversations({ limit, offset });
+      const { personalityId } = request.query;
+      return await conversationStorage.listConversations({ limit, offset, personalityId });
     }
   );
 

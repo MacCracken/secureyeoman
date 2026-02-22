@@ -4,6 +4,45 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 40 — Personality-Scoped Chat History (2026-02-22)
+
+Switching personalities in the Chat view now shows only that personality's conversations.
+Previously, all conversations were shown regardless of which personality was active, making
+multi-personality workflows confusing.
+
+### What changed
+
+- **`GET /api/v1/conversations` accepts `?personalityId=<id>`** — returns only conversations
+  belonging to that personality (both results and total count). The unfiltered path is unchanged.
+
+- **`ConversationStorage.listConversations()`** — gains an optional `personalityId` filter that
+  adds a `WHERE personality_id = $1` clause when provided.
+
+- **`fetchConversations()` (dashboard API client)** — forwards the new `personalityId` option
+  as a query parameter.
+
+- **`ChatPage.tsx` conversation query key** — changed from `['conversations']` to
+  `['conversations', effectivePersonalityId]`. React Query fetches a fresh filtered list
+  whenever the selected personality changes; previous personality lists remain cached for
+  instant re-display on back-navigation.
+
+- **Personality switch clears chat state** — clicking a different personality in the picker now
+  resets the active conversation and message history so users start a fresh scoped session,
+  preventing cross-personality context leakage in the UI.
+
+### Files changed
+
+- `packages/core/src/chat/conversation-storage.ts` — `listConversations` opts + SQL filter
+- `packages/core/src/chat/conversation-routes.ts` — `personalityId` query param
+- `packages/core/src/chat/conversation-storage.test.ts` — 3 new personality-filter tests
+- `packages/core/src/chat/conversation-routes.test.ts` — `personalityId` param test
+- `packages/dashboard/src/api/client.ts` — `fetchConversations` gains `personalityId?`
+- `packages/dashboard/src/components/ChatPage.tsx` — scoped query key + clear on switch
+- `docs/adr/103-personality-scoped-chat-history.md` — new ADR
+- `docs/api/rest-api.md` — conversation CRUD endpoints documented; `personalityId` param added
+
+---
+
 ## Phase 39e — Community Skills Sync: Default URL, Docker Path & Git (2026-02-22)
 
 Fixed three gaps that prevented community skill sync from working out-of-the-box in Docker.

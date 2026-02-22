@@ -1465,10 +1465,12 @@ export type { Conversation, ConversationDetail, ConversationMessageResponse };
 export async function fetchConversations(options?: {
   limit?: number;
   offset?: number;
+  personalityId?: string;
 }): Promise<{ conversations: Conversation[]; total: number }> {
   const params = new URLSearchParams();
   if (options?.limit) params.set('limit', String(options.limit));
   if (options?.offset) params.set('offset', String(options.offset));
+  if (options?.personalityId) params.set('personalityId', options.personalityId);
   const qs = params.toString();
   return request(`/conversations${qs ? `?${qs}` : ''}`);
 }

@@ -135,17 +135,35 @@ export class ConversationStorage extends PgBaseStorage {
     return row ? rowToConversation(row) : null;
   }
 
-  async listConversations(opts: { limit?: number; offset?: number } = {}): Promise<{
+  async listConversations(opts: {
+    limit?: number;
+    offset?: number;
+    personalityId?: string;
+  } = {}): Promise<{
     conversations: Conversation[];
     total: number;
   }> {
     const limit = opts.limit ?? 50;
     const offset = opts.offset ?? 0;
 
+    if (opts.personalityId) {
+      const totalRow = await this.queryOne<{ count: string }>(
+        'SELECT COUNT(*) as count FROM chat.conversations WHERE personality_id = $1',
+        [opts.personalityId]
+      );
+      const rows = await this.queryMany<ConversationRow>(
+        'SELECT * FROM chat.conversations WHERE personality_id = $1 ORDER BY updated_at DESC LIMIT $2 OFFSET $3',
+        [opts.personalityId, limit, offset]
+      );
+      return {
+        conversations: rows.map(rowToConversation),
+        total: Number(totalRow?.count ?? 0),
+      };
+    }
+
     const totalRow = await this.queryOne<{ count: string }>(
       'SELECT COUNT(*) as count FROM chat.conversations'
     );
-
     const rows = await this.queryMany<ConversationRow>(
       'SELECT * FROM chat.conversations ORDER BY updated_at DESC LIMIT $1 OFFSET $2',
       [limit, offset]

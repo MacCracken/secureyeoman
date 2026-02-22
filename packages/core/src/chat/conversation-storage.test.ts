@@ -53,6 +53,36 @@ describe('ConversationStorage', () => {
     expect(conversations[1].id).toBe(c2.id);
   });
 
+  it('filters conversations by personalityId', async () => {
+    await storage.createConversation({ title: 'FRIDAY chat', personalityId: 'p-friday' });
+    await storage.createConversation({ title: 'T.Ron chat', personalityId: 'p-tron' });
+    await storage.createConversation({ title: 'No personality' });
+
+    const { conversations, total } = await storage.listConversations({
+      personalityId: 'p-friday',
+    });
+    expect(total).toBe(1);
+    expect(conversations[0].title).toBe('FRIDAY chat');
+    expect(conversations[0].personalityId).toBe('p-friday');
+  });
+
+  it('returns empty list when no conversations match personalityId', async () => {
+    await storage.createConversation({ title: 'FRIDAY chat', personalityId: 'p-friday' });
+    const { conversations, total } = await storage.listConversations({
+      personalityId: 'p-nonexistent',
+    });
+    expect(total).toBe(0);
+    expect(conversations).toHaveLength(0);
+  });
+
+  it('returns all conversations when no personalityId filter', async () => {
+    await storage.createConversation({ title: 'A', personalityId: 'p-1' });
+    await storage.createConversation({ title: 'B', personalityId: 'p-2' });
+    await storage.createConversation({ title: 'C' });
+    const { total } = await storage.listConversations();
+    expect(total).toBe(3);
+  });
+
   it('paginates conversations', async () => {
     for (let i = 0; i < 5; i++) {
       await storage.createConversation({ title: `Chat ${i}` });

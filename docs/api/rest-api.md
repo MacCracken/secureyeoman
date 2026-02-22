@@ -1783,6 +1783,114 @@ Query the local message log.
 
 ### Chat
 
+#### GET /api/v1/conversations
+
+List conversations, optionally scoped to a specific personality.
+
+**Required Permissions**: Authenticated
+
+**Query Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `personalityId` | string | No | Filter to conversations belonging to this personality |
+| `limit` | number | No | Max results to return (default: 50) |
+| `offset` | number | No | Pagination offset (default: 0) |
+
+**Response**
+```json
+{
+  "conversations": [
+    {
+      "id": "conv-abc123",
+      "title": "How does pgvector work?",
+      "personalityId": "p-friday",
+      "messageCount": 6,
+      "createdAt": 1700000000000,
+      "updatedAt": 1700001000000
+    }
+  ],
+  "total": 1
+}
+```
+
+---
+
+#### POST /api/v1/conversations
+
+Create a new conversation, optionally linked to a personality.
+
+**Required Permissions**: Authenticated
+
+**Request Body**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `title` | string | Yes | Conversation title |
+| `personalityId` | string | No | Personality to scope this conversation to |
+
+**Response**: `201 Created` — the created `Conversation` object.
+
+---
+
+#### GET /api/v1/conversations/:id
+
+Fetch a conversation and its messages.
+
+**Required Permissions**: Authenticated
+
+**Query Parameters**
+- `limit` (optional): Max messages (default: 1000)
+- `offset` (optional): Message pagination offset
+
+**Response**
+```json
+{
+  "id": "conv-abc123",
+  "title": "How does pgvector work?",
+  "personalityId": "p-friday",
+  "messageCount": 6,
+  "createdAt": 1700000000000,
+  "updatedAt": 1700001000000,
+  "messages": [
+    {
+      "id": "msg-1",
+      "conversationId": "conv-abc123",
+      "role": "user",
+      "content": "How does pgvector work?",
+      "model": null,
+      "provider": null,
+      "tokensUsed": null,
+      "createdAt": 1700000000000
+    }
+  ]
+}
+```
+
+---
+
+#### PUT /api/v1/conversations/:id
+
+Rename a conversation.
+
+**Required Permissions**: Authenticated
+
+**Request Body**: `{ "title": "New title" }`
+
+**Response**: Updated `Conversation` object.
+
+---
+
+#### DELETE /api/v1/conversations/:id
+
+Delete a conversation and all its messages (CASCADE).
+
+**Required Permissions**: Authenticated
+
+**Response**: `204 No Content`
+
+---
+
 #### POST /api/v1/chat
 
 Send a message to a personality and receive an AI response. When `personalityId` is provided, the system prompt is composed for that personality; otherwise the active personality is used.

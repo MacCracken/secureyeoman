@@ -64,9 +64,16 @@ export function ChatPage() {
     queryFn: fetchModelInfo,
   });
 
+  const personalities = personalitiesData?.personalities ?? [];
+  const activePersonality = personalities.find((p) => p.isActive);
+  const effectivePersonalityId = selectedPersonalityId ?? activePersonality?.id ?? null;
+  const personality =
+    personalities.find((p) => p.id === effectivePersonalityId) ?? activePersonality ?? null;
+
   const { data: conversationsData, isLoading: conversationsLoading } = useQuery({
-    queryKey: ['conversations'],
-    queryFn: () => fetchConversations({ limit: 50 }),
+    queryKey: ['conversations', effectivePersonalityId],
+    queryFn: () =>
+      fetchConversations({ limit: 50, personalityId: effectivePersonalityId ?? undefined }),
     refetchInterval: 30000,
   });
 
@@ -75,12 +82,6 @@ export function ChatPage() {
   const currentModel = modelInfoData?.current
     ? `${modelInfoData.current.provider}/${modelInfoData.current.model}`
     : null;
-
-  const personalities = personalitiesData?.personalities ?? [];
-  const activePersonality = personalities.find((p) => p.isActive);
-  const effectivePersonalityId = selectedPersonalityId ?? activePersonality?.id ?? null;
-  const personality =
-    personalities.find((p) => p.id === effectivePersonalityId) ?? activePersonality ?? null;
 
   const personalityCapabilities = personality?.body?.capabilities ?? [];
   const hasVision = personalityCapabilities.includes('vision');
@@ -438,6 +439,11 @@ export function ChatPage() {
                     onClick={() => {
                       setSelectedPersonalityId(p.id);
                       setShowPersonalityPicker(false);
+                      // Clear conversation state so the sidebar reloads for this personality
+                      setSelectedConversationId(null);
+                      clearMessages();
+                      setRememberedIndices(new Set());
+                      setExpandedBrainIdx(null);
                       if (p.defaultModel) {
                         switchModel({
                           provider: p.defaultModel.provider,
