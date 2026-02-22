@@ -72,6 +72,80 @@ label already identifies the provider.
 
 ---
 
+## Phase 39d — Built-in Trigger Explanations Restored (2026-02-22)
+
+The **Built-in Triggers** card on the Proactive > Overview tab now shows a **When** and
+**Produces** explanation for each of the five known built-in triggers, describing when they
+fire and what output they generate.
+
+### Explanations added
+
+| Trigger | When | Produces |
+|---|---|---|
+| **Daily Standup Reminder** | Fires each morning on a configurable schedule (default 09:00) | Brief check-in message with tasks, blockers, and priorities |
+| **Weekly Summary** | Fires once a week (Monday morning or Friday afternoon) | Digest of the week's conversations, decisions, and open action items |
+| **Contextual Follow-up** | Fires when a conversation ended without a clear resolution | Resurfaces the unfinished thread for continuation or closure |
+| **Integration Health Alert** | Fires when a connected integration reports an error | Alert with affected integration name, last error, and remediation steps |
+| **Security Alert Digest** | Fires on a configurable cadence when new security events exist | Summary of audit events, anomaly detections, and policy violations |
+
+### Implementation
+
+- `BUILTIN_EXPLANATIONS` static map keyed by trigger `id` (matches the camelCase builtin keys)
+- Each trigger card conditionally renders a bordered `When` / `Produces` block when a matching
+  explanation exists; unknown/future builtins degrade gracefully showing only name and description
+
+### Files changed
+
+- `packages/dashboard/src/components/ProactivePage.tsx` — `BUILTIN_EXPLANATIONS` map + updated trigger card rendering
+- `packages/dashboard/src/components/ProactivePage.test.tsx` — 2 new tests: known builtin shows explanation; unknown builtin degrades gracefully
+
+---
+
+## Phase 39c — Sidebar Nav Order: Costs Above Developers (2026-02-22)
+
+Corrected the sidebar navigation order so **Costs** always appears above **Developers**.
+Previously Costs was listed after Developers; since Developers is conditionally shown
+(requires extensions, experiments, or storybook to be enabled), having Costs below it
+produced an inconsistent ordering.
+
+### What changed
+
+- `NAV_ITEMS_WITHOUT_AGENTS` — swapped `Costs` and `Developers` entries so Costs precedes
+  Developers in the static list; the existing filter logic is unchanged
+
+### Files changed
+
+- `packages/dashboard/src/components/Sidebar.tsx` — reordered two nav items
+- `packages/dashboard/src/components/Sidebar.test.tsx` — new test file with 4 tests:
+  Costs above Developers when both visible; Costs present when Developers hidden;
+  Developers hidden with no developer features; Developers shown when `allowExtensions` true
+
+---
+
+## Phase 39b — Active Hours Moved to Brain Section (2026-02-22)
+
+The **Active Hours** subsection in Personality > Edit/Create Personality was misclassified under
+Body. It now lives inside the **Brain — Intellect** section, after Skills, since it governs the
+brain's scheduling schedule (when heartbeat checks and proactive triggers fire), not the body's
+physical capabilities.
+
+### What changed
+
+- `BrainSection` gains `activeHours` + `onActiveHoursChange` props; the Active Hours
+  `<CollapsibleSection>` is rendered inside Brain, after Skills
+- `BodySectionProps` and `BodySection` no longer own `activeHours` / `onActiveHoursChange`
+- Render site passes `activeHours` state to `BrainSection` instead of `BodySection`
+- Section label simplified from `"Active Hours — Brain Schedule"` to `"Active Hours"`
+- Two new tests added: one asserting Active Hours appears in the Brain section, one verifying
+  the enable toggle reveals the time/day/timezone fields
+
+### Files changed
+
+- `packages/dashboard/src/components/PersonalityEditor.tsx` — moved Active Hours to BrainSection
+- `packages/dashboard/src/components/PersonalityEditor.test.tsx` — 2 new tests
+
+---
+
 ## Phase 38 — LLM Response Caching (2026-02-22)
 
 Added an in-memory, TTL-keyed response cache to `AIClient`. Identical non-streaming requests

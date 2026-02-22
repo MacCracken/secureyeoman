@@ -88,6 +88,81 @@ describe('ProactivePage', () => {
     });
   });
 
+  it('renders builtin trigger with When/Produces explanation', async () => {
+    (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
+      allowProactive: true,
+    });
+    (mockApi.fetchProactiveStatus as any).mockResolvedValue({
+      triggers: { total: 1, enabled: 1, byType: {} },
+      suggestions: { pending: 0 },
+      patterns: { detected: 0 },
+    });
+    (mockApi.fetchBuiltinTriggers as any).mockResolvedValue({
+      triggers: [
+        {
+          id: 'dailyStandup',
+          name: 'Daily Standup Reminder',
+          description: 'Morning check-in',
+          enabled: true,
+          type: 'schedule',
+          condition: {},
+          action: {},
+          approvalMode: 'suggest',
+          cooldownMs: 0,
+          limitPerDay: 1,
+          builtin: true,
+        },
+      ],
+    });
+    (mockApi.fetchProactiveTriggers as any).mockResolvedValue({ triggers: [] });
+
+    render(<ProactivePage />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Daily Standup Reminder')).toBeTruthy();
+      expect(screen.getByText('When:')).toBeTruthy();
+      expect(screen.getByText('Produces:')).toBeTruthy();
+      expect(screen.getByText(/Fires each morning/)).toBeTruthy();
+    });
+  });
+
+  it('renders builtin trigger without explanation when id is unknown', async () => {
+    (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
+      allowProactive: true,
+    });
+    (mockApi.fetchProactiveStatus as any).mockResolvedValue({
+      triggers: { total: 1, enabled: 1, byType: {} },
+      suggestions: { pending: 0 },
+      patterns: { detected: 0 },
+    });
+    (mockApi.fetchBuiltinTriggers as any).mockResolvedValue({
+      triggers: [
+        {
+          id: 'unknownTrigger',
+          name: 'Unknown Trigger',
+          description: 'Some custom trigger',
+          enabled: true,
+          type: 'event',
+          condition: {},
+          action: {},
+          approvalMode: 'manual',
+          cooldownMs: 0,
+          limitPerDay: 0,
+          builtin: true,
+        },
+      ],
+    });
+    (mockApi.fetchProactiveTriggers as any).mockResolvedValue({ triggers: [] });
+
+    render(<ProactivePage />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Unknown Trigger')).toBeTruthy();
+    });
+    expect(screen.queryByText('When:')).toBeNull();
+    expect(screen.queryByText('Produces:')).toBeNull();
+  });
+
   it('renders trigger list on triggers tab', async () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
       allowSubAgents: false,

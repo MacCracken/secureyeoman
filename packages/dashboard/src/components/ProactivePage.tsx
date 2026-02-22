@@ -171,21 +171,69 @@ function OverviewTab() {
             triggers each personality can use in its proactive settings.
           </p>
           <div className="space-y-3">
-            {(builtins?.triggers ?? []).map((trigger) => (
-              <div key={trigger.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                <Zap className="w-4 h-4 text-primary flex-shrink-0" />
-                <div className="min-w-0 flex-1">
-                  <p className="text-sm font-medium">{trigger.name}</p>
-                  <p className="text-xs text-muted-foreground">{trigger.description}</p>
+            {(builtins?.triggers ?? []).map((trigger) => {
+              const explanation = BUILTIN_EXPLANATIONS[trigger.id];
+              return (
+                <div key={trigger.id} className="flex gap-3 p-3 border rounded-lg">
+                  <Zap className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="min-w-0 flex-1 space-y-1">
+                    <p className="text-sm font-medium">{trigger.name}</p>
+                    {trigger.description && (
+                      <p className="text-xs text-muted-foreground">{trigger.description}</p>
+                    )}
+                    {explanation && (
+                      <div className="mt-2 space-y-1 text-xs text-muted-foreground border-t pt-2">
+                        <p>
+                          <span className="font-medium text-foreground">When: </span>
+                          {explanation.when}
+                        </p>
+                        <p>
+                          <span className="font-medium text-foreground">Produces: </span>
+                          {explanation.produces}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+const BUILTIN_EXPLANATIONS: Record<
+  string,
+  { when: string; produces: string }
+> = {
+  dailyStandup: {
+    when: 'Fires each morning on a configurable schedule (default 09:00 local time).',
+    produces:
+      'Sends a brief check-in message prompting you to outline tasks, blockers, and priorities for the day.',
+  },
+  weeklySummary: {
+    when: 'Fires once a week, typically Monday morning or Friday afternoon depending on personality settings.',
+    produces:
+      'Generates a digest of the week\'s activity — conversations, decisions, and open action items — so nothing falls through the cracks.',
+  },
+  contextualFollowup: {
+    when: 'Fires when a previous conversation ended without a clear resolution or follow-up action.',
+    produces:
+      'Resurfaces the unfinished thread and asks whether you\'d like to continue or close it out.',
+  },
+  integrationHealthAlert: {
+    when: 'Fires when a connected integration (MCP server, webhook, or external tool) reports an error or becomes unreachable.',
+    produces:
+      'Sends an alert with the affected integration\'s name, the last known error, and suggested remediation steps.',
+  },
+  securityAlertDigest: {
+    when: 'Fires on a configurable cadence (default daily) when new security events have been recorded.',
+    produces:
+      'Summarises recent audit events, anomaly detections, and policy violations into a concise digest rather than individual noise.',
+  },
+};
 
 // ── Triggers Tab ──────────────────────────────────────────────────────
 

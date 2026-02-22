@@ -255,6 +255,48 @@ describe('PersonalityEditor', () => {
     expect(screen.getByText('Community')).toBeInTheDocument();
   });
 
+  it('Active Hours section appears inside Brain section', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    // Open Brain section
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    // Active Hours should be visible inside the Brain section
+    expect(await screen.findByText('Active Hours')).toBeInTheDocument();
+  });
+
+  it('Active Hours toggle enables time fields', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    const activeHoursHeader = await screen.findByText('Active Hours');
+    await user.click(activeHoursHeader);
+
+    // Time inputs should not be visible before enabling
+    expect(screen.queryByLabelText(/Start/)).not.toBeInTheDocument();
+
+    // Toggle enable
+    const toggle = await screen.findByRole('checkbox', { name: /enable active hours/i });
+    await user.click(toggle);
+
+    // Time inputs should now appear
+    expect(await screen.findByText('Start (UTC)')).toBeInTheDocument();
+    expect(screen.getByText('End (UTC)')).toBeInTheDocument();
+  });
+
   it('clicking Edit on a skill navigates with openSkillId state', async () => {
     mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
     mockFetchSkills.mockResolvedValue({ skills: [DEFAULT_SKILL] });
