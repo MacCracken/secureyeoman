@@ -228,6 +228,39 @@ describe('MarketplaceManager', () => {
         result.errors.some((e) => e.includes('Path not found') || e.includes('No skills'))
       ).toBe(true);
     });
+
+    it('calls gitCloneOrPull with configured communityGitUrl when allowCommunityGitFetch is true', async () => {
+      const { gitCloneOrPull } = await import('./git-fetch.js');
+      const { manager } = makeManager(
+        {},
+        {
+          communityRepoPath: '/tmp/community',
+          allowCommunityGitFetch: true,
+          communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
+        }
+      );
+      await manager.syncFromCommunity();
+      expect(gitCloneOrPull).toHaveBeenCalledWith(
+        'https://github.com/MacCracken/secureyeoman-community-skills',
+        '/tmp/community',
+        expect.anything()
+      );
+    });
+
+    it('does not call gitCloneOrPull when allowCommunityGitFetch is false', async () => {
+      const { gitCloneOrPull } = await import('./git-fetch.js');
+      vi.mocked(gitCloneOrPull).mockClear();
+      const { manager } = makeManager(
+        {},
+        {
+          communityRepoPath: '/tmp/community',
+          allowCommunityGitFetch: false,
+          communityGitUrl: 'https://github.com/MacCracken/secureyeoman-community-skills',
+        }
+      );
+      await manager.syncFromCommunity();
+      expect(gitCloneOrPull).not.toHaveBeenCalled();
+    });
   });
 
   describe('getCommunityStatus', () => {

@@ -4,6 +4,44 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 39e — Community Skills Sync: Default URL, Docker Path & Git (2026-02-22)
+
+Fixed three gaps that prevented community skill sync from working out-of-the-box in Docker.
+
+### What changed
+
+- **Hardcoded default `communityGitUrl`** — `secureyeoman.ts` now falls back to
+  `https://github.com/MacCracken/secureyeoman-community-skills` when neither the
+  `communityGitUrl` policy field nor `COMMUNITY_GIT_URL` env var is set. Enabling
+  `allowCommunityGitFetch` is now sufficient to sync the official community repo with zero
+  additional configuration.
+
+- **`COMMUNITY_REPO_PATH` baked into Docker images** — Both `Dockerfile.dev` and the production
+  `Dockerfile` now set `ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-skills`,
+  matching the path where bundled skills are copied and where `docker-compose.yml` mounts the
+  host `./community-skills` directory. Previously the process defaulted to `./community-skills`
+  relative to the working dir (`/app`), which does not exist.
+
+- **`git` installed in runtime images** — `git` is now installed via `apk` (Alpine/`Dockerfile.dev`)
+  and `apt-get` (Debian/`Dockerfile`) so `gitCloneOrPull()` works without extra setup.
+
+- **Community empty-state copy updated** — `SkillsPage.tsx` no longer tells users to configure
+  `COMMUNITY_GIT_URL`. The new text reads: *"git fetch runs automatically when
+  `allowCommunityGitFetch` is enabled."*
+
+### Files changed
+
+- `packages/core/src/secureyeoman.ts` — hardcoded default fallback for `communityGitUrl`
+- `Dockerfile.dev` — `RUN apk add --no-cache git` + `ENV COMMUNITY_REPO_PATH`
+- `Dockerfile` — `RUN apt-get install git` + `ENV COMMUNITY_REPO_PATH`
+- `packages/dashboard/src/components/SkillsPage.tsx` — community empty-state copy
+- `packages/core/src/marketplace/manager.test.ts` — two new `syncFromCommunity` tests
+- `.env.example` / `.env.dev.example` — updated community section comments
+- `docs/adr/076-community-git-url-fetch.md` — updated fallback list and Phase 39e corrections
+- `secureyeoman_test` database created in Docker Postgres container
+
+---
+
 ## Phase 39 — Users Settings Dashboard + UI Consistency (2026-02-22)
 
 Added a **Users** tab to `Settings` (positioned between Keys and Roles) so operators can

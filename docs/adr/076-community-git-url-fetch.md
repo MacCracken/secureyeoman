@@ -59,9 +59,11 @@ the manager falls back to:
 
 1. `communityGitUrl` from the security policy (runtime configurable via PATCH)
 2. `COMMUNITY_GIT_URL` environment variable
-3. No git fetch (local path only)
+3. Hardcoded default: `https://github.com/MacCracken/secureyeoman-community-skills`
 
-This allows operators to configure the default once rather than on every API call.
+This allows operators to configure the default once rather than on every API call. The hardcoded
+default means zero configuration is required for the common case of syncing the official community
+skills repository — enabling `allowCommunityGitFetch` is sufficient.
 
 ### Timeout
 
@@ -80,8 +82,8 @@ or unresponsive remotes.
 
 ### Negative
 
-- The server process must have `git` installed in its runtime environment. Docker images and
-  single-binary distributions will document this requirement.
+- The server process must have `git` installed in its runtime environment. `Dockerfile.dev` and
+  the production `Dockerfile` both install `git` via the OS package manager.
 - `git clone --depth=1` discards history; operations requiring full history (e.g. `git log`) on
   the cloned repo will not work. Shallow clone is intentional to minimize disk and transfer costs.
 
@@ -117,3 +119,30 @@ fetch enabled.
 > when `COMMUNITY_GIT_URL` is configured."*
 
 No backend changes were required. The sync flow, policy gate, and URL validation are unchanged.
+
+## Phase 39e Corrections (2026-02-22)
+
+Three gaps were discovered and fixed:
+
+**1. No hardcoded default for `communityGitUrl`** — The fallback chain in `secureyeoman.ts` ended
+at `process.env.COMMUNITY_GIT_URL` with no further default, so the URL was `undefined` unless the
+operator explicitly set the env var or the policy field. A hardcoded fallback of
+`https://github.com/MacCracken/secureyeoman-community-skills` was added as the final step, making
+the common case (sync the official repo) work with zero env-var configuration.
+
+**2. `COMMUNITY_REPO_PATH` mismatch in Docker** — The Dockerfile copies bundled community skills
+to `/usr/share/secureyeoman/community-skills` and `docker-compose.yml` mounts the host
+`./community-skills` directory to the same path, but `COMMUNITY_REPO_PATH` was not set so the
+process defaulted to `./community-skills` relative to the working directory (`/app`), which does
+not exist. `ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-skills` was added to both
+`Dockerfile.dev` and the production `Dockerfile`.
+
+**3. `git` not installed in runtime images** — Git is required for `gitCloneOrPull()` but was
+absent from both Docker images. `RUN apk add --no-cache git` (Alpine) and `RUN apt-get install -y
+--no-install-recommends git` (Debian) were added to `Dockerfile.dev` and `Dockerfile` respectively.
+
+**Empty-state copy updated** — `SkillsPage.tsx` still referenced `COMMUNITY_GIT_URL` as a
+required configuration step. The text was updated to reflect that the URL is now automatic:
+
+> *"Click **Sync** to import skills from the community repo — git fetch runs automatically when
+> `allowCommunityGitFetch` is enabled."*

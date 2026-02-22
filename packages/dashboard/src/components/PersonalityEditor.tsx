@@ -911,6 +911,7 @@ function BrainSection({
             <label className="relative inline-flex items-center cursor-pointer">
               <input
                 type="checkbox"
+                aria-label="Enable active hours"
                 checked={activeHours.enabled}
                 onChange={() => {
                   onActiveHoursChange({ ...activeHours, enabled: !activeHours.enabled });

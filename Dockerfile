@@ -13,9 +13,13 @@ LABEL org.opencontainers.image.source="https://github.com/MacCracken/secureyeoma
 LABEL org.opencontainers.image.description="SecureYeoman — Secure, local-first AI assistant"
 LABEL org.opencontainers.image.licenses="MIT"
 
-RUN groupadd -r secureyeoman && useradd -r -g secureyeoman -d /home/secureyeoman -m secureyeoman \
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+ && rm -rf /var/lib/apt/lists/* \
+ && groupadd -r secureyeoman && useradd -r -g secureyeoman -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
  && chown -R secureyeoman:secureyeoman /home/secureyeoman
+
+ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-skills
 
 # Copy the pre-built binary (built via npm run build:binary)
 COPY dist/secureyeoman-linux-x64 /usr/local/bin/secureyeoman

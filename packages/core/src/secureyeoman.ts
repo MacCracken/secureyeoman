@@ -810,7 +810,7 @@ export class SecureYeoman {
         brainManager: this.brainManager ?? undefined,
         communityRepoPath: process.env.COMMUNITY_REPO_PATH ?? './community-skills',
         allowCommunityGitFetch: this.config.security.allowCommunityGitFetch,
-        communityGitUrl: this.config.security.communityGitUrl ?? process.env.COMMUNITY_GIT_URL,
+        communityGitUrl: this.config.security.communityGitUrl ?? process.env.COMMUNITY_GIT_URL ?? 'https://github.com/MacCracken/secureyeoman-community-skills',
       });
       await this.marketplaceManager.seedBuiltinSkills();
       // Wire marketplace into soul so skill deletion keeps installed state in sync

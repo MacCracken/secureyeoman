@@ -88,7 +88,35 @@ describe('ProactivePage', () => {
     });
   });
 
-  it('renders builtin trigger with When/Produces explanation', async () => {
+  it('renders all 5 builtin triggers statically with When/Produces explanations', async () => {
+    (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
+      allowProactive: true,
+    });
+    (mockApi.fetchProactiveStatus as any).mockResolvedValue({
+      triggers: { total: 0, enabled: 0, byType: {} },
+      suggestions: { pending: 0 },
+      patterns: { detected: 0 },
+    });
+    (mockApi.fetchBuiltinTriggers as any).mockResolvedValue({ triggers: [] });
+    (mockApi.fetchProactiveTriggers as any).mockResolvedValue({ triggers: [] });
+
+    render(<ProactivePage />, { wrapper: createWrapper() });
+
+    await waitFor(() => {
+      expect(screen.getByText('Daily Standup Reminder')).toBeTruthy();
+      expect(screen.getByText('Weekly Summary')).toBeTruthy();
+      expect(screen.getByText('Contextual Follow-up')).toBeTruthy();
+      expect(screen.getByText('Integration Health Alert')).toBeTruthy();
+      expect(screen.getByText('Security Alert Digest')).toBeTruthy();
+    });
+
+    const whenLabels = screen.getAllByText('When:');
+    expect(whenLabels).toHaveLength(5);
+    const producesLabels = screen.getAllByText('Produces:');
+    expect(producesLabels).toHaveLength(5);
+  });
+
+  it('marks a builtin as active when the API reports it enabled', async () => {
     (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
       allowProactive: true,
     });
@@ -102,7 +130,6 @@ describe('ProactivePage', () => {
         {
           id: 'dailyStandup',
           name: 'Daily Standup Reminder',
-          description: 'Morning check-in',
           enabled: true,
           type: 'schedule',
           condition: {},
@@ -119,48 +146,8 @@ describe('ProactivePage', () => {
     render(<ProactivePage />, { wrapper: createWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByText('Daily Standup Reminder')).toBeTruthy();
-      expect(screen.getByText('When:')).toBeTruthy();
-      expect(screen.getByText('Produces:')).toBeTruthy();
-      expect(screen.getByText(/Fires each morning/)).toBeTruthy();
+      expect(screen.getByText('active')).toBeTruthy();
     });
-  });
-
-  it('renders builtin trigger without explanation when id is unknown', async () => {
-    (mockApi.fetchSecurityPolicy as any).mockResolvedValue({
-      allowProactive: true,
-    });
-    (mockApi.fetchProactiveStatus as any).mockResolvedValue({
-      triggers: { total: 1, enabled: 1, byType: {} },
-      suggestions: { pending: 0 },
-      patterns: { detected: 0 },
-    });
-    (mockApi.fetchBuiltinTriggers as any).mockResolvedValue({
-      triggers: [
-        {
-          id: 'unknownTrigger',
-          name: 'Unknown Trigger',
-          description: 'Some custom trigger',
-          enabled: true,
-          type: 'event',
-          condition: {},
-          action: {},
-          approvalMode: 'manual',
-          cooldownMs: 0,
-          limitPerDay: 0,
-          builtin: true,
-        },
-      ],
-    });
-    (mockApi.fetchProactiveTriggers as any).mockResolvedValue({ triggers: [] });
-
-    render(<ProactivePage />, { wrapper: createWrapper() });
-
-    await waitFor(() => {
-      expect(screen.getByText('Unknown Trigger')).toBeTruthy();
-    });
-    expect(screen.queryByText('When:')).toBeNull();
-    expect(screen.queryByText('Produces:')).toBeNull();
   });
 
   it('renders trigger list on triggers tab', async () => {

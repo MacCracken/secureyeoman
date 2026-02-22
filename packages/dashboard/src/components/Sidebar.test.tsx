@@ -116,7 +116,7 @@ describe('Sidebar nav order', () => {
     const costsLink = await screen.findByRole('link', { name: /costs/i });
     const devLink = await screen.findByRole('link', { name: /developers/i });
 
-    const links = Array.from(document.querySelectorAll('a'));
+    const links = Array.from(document.querySelectorAll('a')) as HTMLElement[];
     const costsIdx = links.indexOf(costsLink);
     const devIdx = links.indexOf(devLink);
 

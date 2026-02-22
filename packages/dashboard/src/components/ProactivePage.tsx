@@ -171,28 +171,34 @@ function OverviewTab() {
             triggers each personality can use in its proactive settings.
           </p>
           <div className="space-y-3">
-            {(builtins?.triggers ?? []).map((trigger) => {
-              const explanation = BUILTIN_EXPLANATIONS[trigger.id];
+            {BUILTIN_TRIGGER_CATALOG.map((entry) => {
+              const live = (builtins?.triggers ?? []).find((t) => t.id === entry.id);
+              const enabled = live?.enabled ?? false;
               return (
-                <div key={trigger.id} className="flex gap-3 p-3 border rounded-lg">
-                  <Zap className="w-4 h-4 text-primary flex-shrink-0 mt-0.5" />
+                <div key={entry.id} className="flex gap-3 p-3 border rounded-lg">
+                  <Zap
+                    className={`w-4 h-4 flex-shrink-0 mt-0.5 ${enabled ? 'text-primary' : 'text-muted-foreground'}`}
+                  />
                   <div className="min-w-0 flex-1 space-y-1">
-                    <p className="text-sm font-medium">{trigger.name}</p>
-                    {trigger.description && (
-                      <p className="text-xs text-muted-foreground">{trigger.description}</p>
-                    )}
-                    {explanation && (
-                      <div className="mt-2 space-y-1 text-xs text-muted-foreground border-t pt-2">
-                        <p>
-                          <span className="font-medium text-foreground">When: </span>
-                          {explanation.when}
-                        </p>
-                        <p>
-                          <span className="font-medium text-foreground">Produces: </span>
-                          {explanation.produces}
-                        </p>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2">
+                      <p className="text-sm font-medium">{entry.name}</p>
+                      {enabled && (
+                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-success/15 text-success font-medium">
+                          active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">{entry.description}</p>
+                    <div className="mt-2 space-y-1 text-xs text-muted-foreground border-t pt-2">
+                      <p>
+                        <span className="font-medium text-foreground">When: </span>
+                        {entry.when}
+                      </p>
+                      <p>
+                        <span className="font-medium text-foreground">Produces: </span>
+                        {entry.produces}
+                      </p>
+                    </div>
                   </div>
                 </div>
               );
@@ -204,36 +210,54 @@ function OverviewTab() {
   );
 }
 
-const BUILTIN_EXPLANATIONS: Record<
-  string,
-  { when: string; produces: string }
-> = {
-  dailyStandup: {
+const BUILTIN_TRIGGER_CATALOG: {
+  id: string;
+  name: string;
+  description: string;
+  when: string;
+  produces: string;
+}[] = [
+  {
+    id: 'dailyStandup',
+    name: 'Daily Standup Reminder',
+    description: 'Morning check-in to set the tone for the day.',
     when: 'Fires each morning on a configurable schedule (default 09:00 local time).',
     produces:
       'Sends a brief check-in message prompting you to outline tasks, blockers, and priorities for the day.',
   },
-  weeklySummary: {
+  {
+    id: 'weeklySummary',
+    name: 'Weekly Summary',
+    description: 'End-of-week digest of activity and open items.',
     when: 'Fires once a week, typically Monday morning or Friday afternoon depending on personality settings.',
     produces:
-      'Generates a digest of the week\'s activity — conversations, decisions, and open action items — so nothing falls through the cracks.',
+      "Generates a digest of the week's activity — conversations, decisions, and open action items — so nothing falls through the cracks.",
   },
-  contextualFollowup: {
+  {
+    id: 'contextualFollowup',
+    name: 'Contextual Follow-up',
+    description: 'Resurfaces unresolved conversations before they go cold.',
     when: 'Fires when a previous conversation ended without a clear resolution or follow-up action.',
     produces:
-      'Resurfaces the unfinished thread and asks whether you\'d like to continue or close it out.',
+      "Resurfaces the unfinished thread and asks whether you'd like to continue or close it out.",
   },
-  integrationHealthAlert: {
+  {
+    id: 'integrationHealthAlert',
+    name: 'Integration Health Alert',
+    description: 'Notifies when a connected integration becomes unreachable.',
     when: 'Fires when a connected integration (MCP server, webhook, or external tool) reports an error or becomes unreachable.',
     produces:
-      'Sends an alert with the affected integration\'s name, the last known error, and suggested remediation steps.',
+      "Sends an alert with the affected integration's name, the last known error, and suggested remediation steps.",
   },
-  securityAlertDigest: {
+  {
+    id: 'securityAlertDigest',
+    name: 'Security Alert Digest',
+    description: 'Batches security events into a periodic summary.',
     when: 'Fires on a configurable cadence (default daily) when new security events have been recorded.',
     produces:
       'Summarises recent audit events, anomaly detections, and policy violations into a concise digest rather than individual noise.',
   },
-};
+];
 
 // ── Triggers Tab ──────────────────────────────────────────────────────
 

@@ -31,9 +31,12 @@ RUN npm run build
 # ---- runtime ----
 FROM node:20-alpine
 
-RUN addgroup -S secureyeoman && adduser -S -G secureyeoman -h /home/secureyeoman secureyeoman \
+RUN apk add --no-cache git \
+ && addgroup -S secureyeoman && adduser -S -G secureyeoman -h /home/secureyeoman secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
  && chown -R secureyeoman:secureyeoman /home/secureyeoman
+
+ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-skills
 
 WORKDIR /app
 

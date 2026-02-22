@@ -32,10 +32,8 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 - [ ] Group Chat - Needs Workspaces; Channels; move below Chat or integrate with enable toggle 
 - [ ] Community Sync - still don't work as expected - no repo.
 - [ ] Full Metrics View; not just the overview
-- [ ] Bring back the Explaination of the Triggers to Built-in Proactive Assistance
 - [ ] Remove env vars fot TTS and STT; should be internalized to the user ability to choose
 - [ ] Dev enviroment should display all available personalities
-- [ ] move Active Hours into Brain edit/create personality; unless it is hardwired. Need alternative fix.
 - [ ] Need to walkthrough and confirm each of the creation skills in chat.
 
 
