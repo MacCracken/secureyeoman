@@ -1093,7 +1093,7 @@ export function ConnectionsPage() {
     if (path.includes('/email')) return { tab: 'integrations', subTab: 'email' };
     if (path.includes('/oauth')) return { tab: 'integrations', subTab: 'oauth' };
 
-    return { tab: 'integrations', subTab: 'messaging' };
+    return { tab: 'mcp', subTab: 'messaging' };
   };
 
   const initialState = getInitialTab();
@@ -1393,8 +1393,8 @@ export function ConnectionsPage() {
       <div className="flex overflow-x-auto scrollbar-hide gap-0.5 sm:gap-1 border-b border-border -mx-1 px-1">
         {(
           [
-            ['integrations', 'Integrations', <Cable key="int" className="w-4 h-4" />],
             ['mcp', 'MCP', <Wrench key="mcp" className="w-4 h-4" />],
+            ['integrations', 'Integrations', <Cable key="int" className="w-4 h-4" />],
             ['routing', 'Routing Rules', <ArrowRightLeft key="routing" className="w-4 h-4" />],
           ] as [TabType, string, React.ReactNode][]
         ).map(([tab, label, icon]) => (
