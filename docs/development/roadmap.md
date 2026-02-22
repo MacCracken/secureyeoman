@@ -31,11 +31,6 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 *Demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
 
-### Ironclaw Low-Priority — Deferred
-
-*Originally Phase 35 low-priority items from the Ironclaw comparative analysis. Moved here pending real-world usage data.*
-
-- [ ] **LLM response caching** — Cache responses keyed by `SHA-256(model + systemPrompt + messages)` with a configurable TTL (default: 5 minutes). Heartbeat probes that run the same system state repeatedly are the immediate win — users running aggressive check schedules pay for identical API calls on every cycle. Even a short TTL meaningfully reduces costs. Semantic caching (embedding similarity lookup before the API call) is a more complex follow-on step.
 
 ### Skill Routing Quality (OpenAI Skills + Shell Tips)
 
