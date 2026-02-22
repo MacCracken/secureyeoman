@@ -410,6 +410,20 @@ export const FallbackModelConfigSchema = z.object({
 
 export type FallbackModelConfig = z.infer<typeof FallbackModelConfigSchema>;
 
+// Response cache configuration (ADR 101)
+export const ResponseCacheConfigSchema = z
+  .object({
+    /** Enable in-memory LLM response caching. Off by default. */
+    enabled: z.boolean().default(false),
+    /** Time-to-live for cached responses in milliseconds. Default: 5 minutes. */
+    ttlMs: z.number().int().positive().max(86_400_000).default(300_000),
+    /** Maximum number of cached entries before oldest is evicted. */
+    maxEntries: z.number().int().positive().max(10_000).default(500),
+  })
+  .default({});
+
+export type ResponseCacheConfig = z.infer<typeof ResponseCacheConfigSchema>;
+
 // Model/AI configuration
 export const ModelConfigSchema = z.object({
   provider: z
@@ -448,6 +462,9 @@ export const ModelConfigSchema = z.object({
 
   // Fallback models for rate limit / provider unavailability
   fallbacks: z.array(FallbackModelConfigSchema).max(5).default([]),
+
+  // Response caching (ADR 101)
+  responseCache: ResponseCacheConfigSchema,
 });
 
 export type ModelConfig = z.infer<typeof ModelConfigSchema>;

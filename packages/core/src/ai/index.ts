@@ -3,6 +3,7 @@
  */
 
 export { AIClient, type AIClientConfig, type AIClientDeps } from './client.js';
+export { ResponseCache, type CacheStats } from './response-cache.js';
 export { type AIProvider, BaseProvider, type ProviderConfig } from './providers/base.js';
 export { AnthropicProvider } from './providers/anthropic.js';
 export { OpenAIProvider } from './providers/openai.js';

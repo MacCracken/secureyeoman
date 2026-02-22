@@ -23,6 +23,7 @@ import type {
   ModelConfig,
   FallbackModelConfig,
 } from '@secureyeoman/shared';
+import { ResponseCache, type CacheStats } from './response-cache.js';
 import type { AIProvider } from './providers/base.js';
 import { AnthropicProvider } from './providers/anthropic.js';
 import { OpenAIProvider } from './providers/openai.js';
@@ -61,6 +62,12 @@ export interface AIClientDeps {
    * the existing tracker (already seeded from DB) is carried over as-is.
    */
   usageTracker?: UsageTracker;
+  /**
+   * Pre-built response cache. When provided, overrides the cache constructed
+   * from `config.model.responseCache` — useful for injecting a shared cache
+   * across multiple clients or for testing.
+   */
+  responseCache?: ResponseCache;
 }
 
 export class AIClient {
@@ -74,6 +81,7 @@ export class AIClient {
   private readonly fallbackConfigs: FallbackModelConfig[];
   private readonly fallbackProviders = new Map<number, AIProvider>();
   private readonly retryConfig?: Partial<RetryConfig>;
+  private readonly responseCache: ResponseCache | null;
   private soulManager: SoulManager | null;
   private initPromise: Promise<void> | null = null;
 
@@ -89,6 +97,9 @@ export class AIClient {
     this.retryConfig = config.retryConfig;
     this.soulManager = deps.soulManager ?? null;
     this.provider = this.createProvider(config);
+    this.responseCache =
+      deps.responseCache ??
+      (config.model.responseCache.enabled ? new ResponseCache(config.model.responseCache) : null);
   }
 
   /** Inject or replace the SoulManager after construction. */
@@ -114,12 +125,41 @@ export class AIClient {
       throw new TokenLimitError(this.providerName);
     }
 
+    // Cache check — only for non-streaming requests
+    const cache = this.responseCache;
+    const cacheKey = cache?.buildKey(
+      this.providerName,
+      request.model ?? this.primaryModelConfig.model,
+      request
+    );
+    if (cache && cacheKey) {
+      const cached = cache.get(cacheKey);
+      if (cached) {
+        await this.auditRecord('ai_cache_hit', {
+          provider: this.providerName,
+          model: cached.model,
+          keyPrefix: cacheKey.slice(0, 8),
+        });
+        return cached;
+      }
+    }
+
     const fallbacks = requestFallbacks ?? this.fallbackConfigs;
 
     // Try primary provider
     let primaryError: Error | undefined;
     try {
-      return await this.doChatWithProvider(this.provider, this.providerName, request, context);
+      const response = await this.doChatWithProvider(
+        this.provider,
+        this.providerName,
+        request,
+        context
+      );
+      // Cache successful primary responses only (not fallback responses)
+      if (cache && cacheKey) {
+        cache.set(cacheKey, response);
+      }
+      return response;
     } catch (error) {
       primaryError = error as Error;
       if (!this.isFallbackEligible(primaryError) || fallbacks.length === 0) {
@@ -278,6 +318,14 @@ export class AIClient {
   }
 
   /**
+   * Get response cache hit/miss statistics.
+   * Returns null when the cache is not enabled for this client.
+   */
+  getCacheStats(): CacheStats | null {
+    return this.responseCache?.getStats() ?? null;
+  }
+
+  /**
    * Load historical usage records from the database.
    * Safe to call multiple times — subsequent calls are no-ops.
    * Called automatically on the first chat()/chatStream() invocation;
@@ -349,6 +397,7 @@ export class AIClient {
       maxRetries: this.primaryModelConfig.maxRetries,
       retryDelayMs: this.primaryModelConfig.retryDelayMs,
       fallbacks: [],
+      responseCache: this.primaryModelConfig.responseCache,
     };
 
     const provider = this.createProvider({ model: fullModelConfig, retryConfig: this.retryConfig });

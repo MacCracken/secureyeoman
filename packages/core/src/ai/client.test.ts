@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { AIClient } from './client.js';
+import { ResponseCache } from './response-cache.js';
 import type {
   AIRequest,
   AIResponse,
@@ -63,6 +64,7 @@ function makeModelConfig(provider: string, fallbacks?: FallbackModelConfig[]): M
     maxRetries: 2,
     retryDelayMs: 100,
     fallbacks: fallbacks ?? [],
+    responseCache: { enabled: false, ttlMs: 300_000, maxEntries: 500 },
   };
 }
 
@@ -460,6 +462,127 @@ describe('AIClient', () => {
       expect(received).toHaveLength(3);
       expect(received[0]).toEqual({ type: 'content_delta', content: 'Partial' });
       expect(received[1]).toEqual({ type: 'content_delta', content: 'Complete fallback' });
+    });
+  });
+
+  describe('response cache integration', () => {
+    it('should return cached response on second identical request', async () => {
+      const cache = new ResponseCache({ enabled: true, ttlMs: 60_000, maxEntries: 100 });
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { responseCache: cache }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      await client.chat(mockRequest);
+      await client.chat(mockRequest);
+
+      // Provider should only be called once — second call is served from cache
+      expect(provider.chat).toHaveBeenCalledTimes(1);
+    });
+
+    it('should not count cached responses in token usage', async () => {
+      const cache = new ResponseCache({ enabled: true, ttlMs: 60_000, maxEntries: 100 });
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { responseCache: cache }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      await client.chat(mockRequest);
+      await client.chat(mockRequest);
+
+      const stats = client.getUsageStats();
+      // Only one real API call, so token count reflects one call only
+      expect(stats.tokensUsedToday).toBe(30);
+      expect(stats.apiCallsTotal).toBe(1);
+    });
+
+    it('should call provider when cache is disabled', async () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      await client.chat(mockRequest);
+      await client.chat(mockRequest);
+
+      expect(provider.chat).toHaveBeenCalledTimes(2);
+    });
+
+    it('should audit-log cache hits', async () => {
+      const mockAuditChain = { record: vi.fn().mockResolvedValue(undefined) };
+      const cache = new ResponseCache({ enabled: true, ttlMs: 60_000, maxEntries: 100 });
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { auditChain: mockAuditChain as any, responseCache: cache }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      await client.chat(mockRequest);
+      await client.chat(mockRequest);
+
+      const events = mockAuditChain.record.mock.calls.map((c: any) => c[0].event);
+      expect(events).toContain('ai_cache_hit');
+    });
+
+    it('should return null cache stats when cache is disabled', () => {
+      const client = new AIClient({ model: makeModelConfig('anthropic') });
+      expect(client.getCacheStats()).toBeNull();
+    });
+
+    it('should return cache stats when cache is enabled', async () => {
+      const cache = new ResponseCache({ enabled: true, ttlMs: 60_000, maxEntries: 100 });
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic') },
+        { responseCache: cache }
+      );
+      const provider = (client as any).provider;
+      provider.chat = vi.fn().mockResolvedValue(mockResponse);
+
+      await client.chat(mockRequest);
+      await client.chat(mockRequest); // cache hit
+
+      const stats = client.getCacheStats();
+      expect(stats).not.toBeNull();
+      expect(stats!.hits).toBe(1);
+      expect(stats!.misses).toBe(1);
+      expect(stats!.entries).toBe(1);
+    });
+
+    it('should not cache fallback responses', async () => {
+      const cache = new ResponseCache({ enabled: true, ttlMs: 60_000, maxEntries: 100 });
+      const fallbacks: FallbackModelConfig[] = [
+        { provider: 'openai', model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY' },
+      ];
+      const client = new AIClient(
+        { model: makeModelConfig('anthropic', fallbacks) },
+        { responseCache: cache }
+      );
+      (client as any).provider.chat = vi.fn().mockRejectedValue(new RateLimitError('anthropic'));
+
+      const fallbackResponse: AIResponse = {
+        id: 'fb-id',
+        content: 'Fallback',
+        usage: { inputTokens: 5, outputTokens: 10, cachedTokens: 0, totalTokens: 15 },
+        stopReason: 'end_turn',
+        model: 'gpt-4o',
+        provider: 'openai',
+      };
+      const mockFbProvider = {
+        name: 'openai',
+        chat: vi.fn().mockResolvedValue(fallbackResponse),
+        chatStream: vi.fn(),
+      };
+      (client as any).fallbackProviders.set(0, mockFbProvider);
+
+      await client.chat(mockRequest);
+
+      // Cache should have no entries — fallback responses are not cached
+      const stats = client.getCacheStats();
+      expect(stats!.entries).toBe(0);
     });
   });
 });

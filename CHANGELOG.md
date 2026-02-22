@@ -4,6 +4,46 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 38 — LLM Response Caching (2026-02-22)
+
+Added an in-memory, TTL-keyed response cache to `AIClient`. Identical non-streaming requests
+(same provider, model, messages, temperature, tool set) are served from the cache instead of
+making a live API call. Primary use-case: heartbeat probes on aggressive schedules that
+repeatedly pay for identical API calls.
+
+### How it works
+
+- Keyed by SHA-256 of `{ provider, model, messages, temperature, maxTokens, toolNames }`.
+- In-memory `Map` with configurable TTL (default **5 minutes**) and max entries (default **500**).
+- Eviction: TTL checked on `get()`; FIFO eviction when `maxEntries` is reached.
+- Cache hits are audit-logged as `ai_cache_hit`; token counters are not incremented.
+- Streaming (`chatStream()`) and fallback responses are never cached.
+- **Off by default** — enable via `model.responseCache.enabled: true` in config.
+
+### Configuration
+
+```yaml
+model:
+  responseCache:
+    enabled: true    # off by default
+    ttlMs: 300000    # 5 minutes
+    maxEntries: 500
+```
+
+### Files changed
+
+- `packages/core/src/ai/response-cache.ts` — new `ResponseCache` class
+- `packages/core/src/ai/response-cache.test.ts` — unit tests
+- `packages/core/src/ai/client.ts` — cache check/store in `chat()`, `getCacheStats()`
+- `packages/core/src/ai/client.test.ts` — cache integration tests
+- `packages/core/src/ai/index.ts` — exports `ResponseCache`, `CacheStats`
+- `packages/shared/src/types/config.ts` — `ResponseCacheConfigSchema`, `ResponseCacheConfig`
+- `packages/shared/src/types/index.ts` — exports `ResponseCacheConfigSchema`, `ResponseCacheConfig`
+- `docs/adr/101-llm-response-caching.md` — decision record
+- `docs/development/roadmap.md` — item removed (completed)
+
+---
+
 ## Phase 37 — BullShift MCP Trading Tools (2026-02-22)
 
 Added 5 MCP tools to `@secureyeoman/mcp` that connect to the BullShift trading platform's new REST API server, enabling any MCP client to query positions and submit trades through natural language.

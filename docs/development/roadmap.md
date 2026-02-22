@@ -8,75 +8,10 @@
 
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
-| 1 | Foundation | 2026.2.15 | Complete |
-| 2 | Security | 2026.2.15 | Complete |
-| 3 | Infrastructure | 2026.2.15 | Complete |
-| 4 | Dashboard | 2026.2.15 | Complete |
-| 5 | Integrations & Platforms | 2026.2.15 | Complete |
-| 6 | Production Hardening | 2026.2.15 | Complete |
-| | **Tag 2026.2.15** | **2026-02-15** | **Tagged** |
-| 7 | Cognitive & Memory | 2026.2.16 | Complete |
-| 8 | Extensions & Intelligence | 2026.2.16 | Complete |
-| | **Tag 2026.2.16** | **2026-02-16** | **Tagged** |
-| 9 | WebMCP & Browser Tools | 2026.2.17 | Complete |
-| 10 | Kubernetes Deployment | 2026.2.17 | Complete |
-| 11 | Dashboard UX | 2026.2.17 | Complete |
-| 12 | Expanded Integrations | 2026.2.17 | Complete |
-| 13 | Dashboard & Tooling | 2026.2.17 | Complete |
-| 14 | Dashboard Chat Enhancements | 2026.2.17 | Complete |
-| | **Tag 2026.2.17** | **2026-02-17** | **Tagged** |
-| 15 | Integration Expansion | 2026.2.18 | Complete |
-| 16 | Integration Enhancements | 2026.2.18 | Complete |
-| 17 | Advanced Capabilities | 2026.2.18 | Complete |
-| 18 | Skills Marketplace & Community | 2026.2.18 | Complete |
-| | **Tag 2026.2.18** | **2026-02-18** | **Tagged** |
-| 19 | Per-Personality Access | 2026.2.19 | Complete |
-| 20 | SaaS ready | 2026.2.19 | Complete |
-| 21 | Onboarding | 2026.2.19 | Complete |
-| 22 | Major Audit | 2026.2.19 | Complete |
-| | **Tag 2026.2.19** | **2026-02-19** | **Tagged** |
-| 23 | Community Marketplace Improvements | 2026.2.20 | Complete |
-| 24 | Testing All the Things | 2026.2.21 | Complete |
-| | **Tag 2026.2.20** | **2026-02-20** | **Tagged** |
-| 25 | Twitter/X + HA + Coolify Integrations | 2026.2.21 | Complete |
-| 26 | Semantic Search MCP Prebuilts | 2026.2.21 | Complete |
-| 27 | Device Control MCP Prebuilt | 2026.2.21 | Complete |
-| 28 | Multimodal Provider Abstraction + ElevenLabs | 2026.2.21 | Complete |
-| 29 | Intelligent Model Routing | 2026.2.21 | Complete |
-| 30 | Letta Stateful Agent Provider | 2026.2.21 | Complete |
-| 31 | Group Chat View | 2026.2.21 | Complete |
-| 32 | Cross-Integration Routing Rules | 2026.2.21 | Complete |
-| 33 | Additional MCP Improvements, CI fixes | 2026.2.21 | Complete |
-| 34 | Agnostic Sub-agent Team MCP integrations | 2026.2.21 | Complete |
-| 35 | Fix All the Bugs + Security Hardening | 2026.2.21 | Complete |
-| 36 | Final Inspection | — | Pending |
 | | **Tag 2026.2.21** | **2026-02-21** | **Tagged** |
 | 37 | Beta Manual Review | — | Pending |
 
 ---
-
-## Phase 36: Final Inspection
-
-**Status**: Pending
-
-Full-system final sweep before public beta Release; Confirm tests didn't regress, basslines and startup time still hold.
-
-
-### Test Coverage
-
-- [x] **Test Coverage** - 87.94% lines / 88.14% functions / 87.58% statements / 75.15% branches (`@secureyeoman/core`)
-
-### Run all the Checks
-
-- [x] Lint & Format
-- [x] Typecheck
-- [x] Security - note refer to depencency-watch.md when testing
-
-### Regression & Performance
-
-- [x] **Regression suite** — All 7071 tests pass (6257 core + 452 mcp + 362 dashboard; 373 test files)
-- [x] **Memory baseline** — Cold-start still <300 MB latest additions
-- [x] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
 
 ## Phase 37: Beta Manual Review
 
@@ -101,8 +36,6 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 *Originally Phase 35 low-priority items from the Ironclaw comparative analysis. Moved here pending real-world usage data.*
 
 - [ ] **LLM response caching** — Cache responses keyed by `SHA-256(model + systemPrompt + messages)` with a configurable TTL (default: 5 minutes). Heartbeat probes that run the same system state repeatedly are the immediate win — users running aggressive check schedules pay for identical API calls on every cycle. Even a short TTL meaningfully reduces costs. Semantic caching (embedding similarity lookup before the API call) is a more complex follow-on step.
-
-- [x] **Outbound credential injection at sandbox proxy boundary** — `CredentialProxy` runs in the parent process; sandboxed children receive only `http_proxy=http://127.0.0.1:PORT`. Credentials are injected as `Authorization` headers for known hosts; HTTPS `CONNECT` tunnels enforce an allowlist. Completed Phase 35 (ADR 099).
 
 ### Skill Routing Quality (OpenAI Skills + Shell Tips)
 
@@ -232,4 +165,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-21
+*Last updated: 2026-02-22
