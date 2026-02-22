@@ -4,6 +4,74 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 39 — Users Settings Dashboard + UI Consistency (2026-02-22)
+
+Added a **Users** tab to `Settings` (positioned between Keys and Roles) so operators can
+manage system users entirely from the dashboard — no direct database access required.
+Also aligned button and form-field styles across Settings tabs for visual consistency.
+
+### What's new
+
+- **`UserInfo` interface** — `id`, `email`, `displayName`, `isAdmin`, `isBuiltin`, `createdAt`,
+  `lastLoginAt`
+- **4 API client functions** — `fetchUsers`, `createUser`, `updateUser`, `deleteUser` hitting
+  the `/auth/users` REST endpoints introduced in Phase 20a (ADR 070)
+- **`UsersSettings` component** — inline create / edit / delete UI with:
+  - Admin badge (yellow) for admin users
+  - `built-in` badge and suppressed delete button for the system admin singleton
+  - Two-step inline delete confirmation
+  - Joined date and last login timestamp per row
+
+### Tab order
+
+```
+General | Security | Keys | Users | Roles | Logs
+```
+
+### UI consistency
+
+- **Add User** and **Create Key** header buttons switched to `btn-ghost text-sm` (matching
+  **Add Custom Role**)
+- **Users** and **Roles** form fields (labels, inputs, buttons) aligned to the ApiKeys style:
+  `bg-muted/30` container, `text-xs text-muted-foreground` labels, `bg-background` inputs with
+  `focus:ring-primary`, `btn btn-primary text-sm px-3 py-1` / `btn btn-ghost` action buttons
+
+### Files changed
+
+- `packages/dashboard/src/api/client.ts` — `UserInfo` + 4 API functions
+- `packages/dashboard/src/components/UsersSettings.tsx` — new component
+- `packages/dashboard/src/components/UsersSettings.test.tsx` — 20 unit tests
+- `packages/dashboard/src/components/SettingsPage.tsx` — `users` tab wired before `roles`
+- `packages/dashboard/src/components/SettingsPage.test.tsx` — 5 new tests + mock updates
+- `packages/dashboard/src/components/ApiKeysSettings.tsx` — button style update
+- `packages/dashboard/src/components/SecuritySettings.tsx` — `RoleForm` field style update
+- `docs/adr/102-users-settings-dashboard.md` — decision record
+
+---
+
+## Phase 39a — Personality Model Dropdowns Grouped by Provider (2026-02-22)
+
+The **Default Model** and **Model Fallbacks** dropdowns in Personality > Edit/Create Personality > Soul
+now group models by provider using `<optgroup>` elements, matching the style used in Security Settings
+and the New Entity dialog. Model names are displayed without the `provider/` prefix since the group
+label already identifies the provider.
+
+### What changed
+
+- **Default Model select** — flat option list replaced with `<optgroup>` per provider; empty groups
+  are never rendered; model options show only the model name
+- **Model Fallbacks select** — same grouping; providers whose models are all already selected (as
+  default or as existing fallbacks) are omitted from the list entirely
+- Provider labels use the same friendly map as `SecuritySettings`:
+  Anthropic, OpenAI, Gemini, Ollama (Local), OpenCode (Zen), LM Studio (Local), LocalAI (Local),
+  DeepSeek, Mistral
+
+### Files changed
+
+- `packages/dashboard/src/components/PersonalityEditor.tsx` — updated two selects
+
+---
+
 ## Phase 38 — LLM Response Caching (2026-02-22)
 
 Added an in-memory, TTL-keyed response cache to `AIClient`. Identical non-streaming requests

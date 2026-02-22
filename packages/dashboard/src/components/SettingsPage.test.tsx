@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { SettingsPage } from './SettingsPage';
@@ -26,6 +27,10 @@ vi.mock('../api/client', () => ({
   fetchApiKeys: vi.fn(),
   createApiKey: vi.fn(),
   revokeApiKey: vi.fn(),
+  fetchUsers: vi.fn(),
+  createUser: vi.fn(),
+  updateUser: vi.fn(),
+  deleteUser: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -37,6 +42,7 @@ const mockFetchMetrics = vi.mocked(api.fetchMetrics);
 const mockFetchRoles = vi.mocked(api.fetchRoles);
 const mockFetchAssignments = vi.mocked(api.fetchAssignments);
 const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
+const mockFetchUsers = vi.mocked(api.fetchUsers);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -74,6 +80,7 @@ describe('SettingsPage', () => {
     mockFetchMetrics.mockResolvedValue({} as never);
     mockFetchRoles.mockResolvedValue({ roles: [] });
     mockFetchAssignments.mockResolvedValue({ assignments: [] });
+    mockFetchUsers.mockResolvedValue({ users: [] });
     mockFetchSecurityPolicy.mockResolvedValue({
       allowSubAgents: false,
       allowA2A: false,
@@ -116,5 +123,60 @@ describe('SettingsPage', () => {
     expect(await screen.findByText('Rate Limiting')).toBeInTheDocument();
     expect(screen.getByText('Audit Chain')).toBeInTheDocument();
     expect(await screen.findByText('Valid')).toBeInTheDocument();
+  });
+
+  it('renders a Users tab', async () => {
+    renderComponent();
+    expect(await screen.findByRole('button', { name: /Users/ })).toBeInTheDocument();
+  });
+
+  it('Users tab appears before Roles tab in the tab bar', async () => {
+    renderComponent();
+    await screen.findByRole('button', { name: /Users/ });
+    const tabs = screen.getAllByRole('button', {
+      name: /General|Security|Keys|Users|Roles|Logs/,
+    });
+    const labels = tabs.map((t) => t.textContent?.trim());
+    const usersIdx = labels.findIndex((l) => l?.includes('Users'));
+    const rolesIdx = labels.findIndex((l) => l?.includes('Roles'));
+    expect(usersIdx).toBeGreaterThanOrEqual(0);
+    expect(rolesIdx).toBeGreaterThanOrEqual(0);
+    expect(usersIdx).toBeLessThan(rolesIdx);
+  });
+
+  it('switches to Users tab and shows user management content', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.click(await screen.findByRole('button', { name: /Users/ }));
+    expect(await screen.findByText('Add User')).toBeInTheDocument();
+  });
+
+  it('shows empty user list on Users tab when no users exist', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    await user.click(await screen.findByRole('button', { name: /Users/ }));
+    expect(await screen.findByText('No users found.')).toBeInTheDocument();
+  });
+
+  it('shows users when the Users tab is active', async () => {
+    const user = userEvent.setup();
+    mockFetchUsers.mockResolvedValue({
+      users: [
+        {
+          id: 'u1',
+          email: 'test@example.com',
+          displayName: 'Test User',
+          isAdmin: false,
+          createdAt: Date.now(),
+        },
+      ],
+    });
+    renderComponent();
+
+    await user.click(await screen.findByRole('button', { name: /Users/ }));
+    expect(await screen.findByText('Test User')).toBeInTheDocument();
+    expect(screen.getByText('test@example.com')).toBeInTheDocument();
   });
 });

@@ -1,14 +1,15 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Settings, Shield, Key, Blocks, Users, Clock, Archive } from 'lucide-react';
+import { Settings, Shield, Key, Blocks, UserCircle, Users, Clock, Archive } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { fetchSoulConfig, fetchAuditStats, fetchMetrics } from '../api/client';
 import { NotificationSettings } from './NotificationSettings';
 import { LogRetentionSettings } from './LogRetentionSettings';
 import { SecuritySettings, RolesSettings } from './SecuritySettings';
 import { ApiKeysSettings } from './ApiKeysSettings';
+import { UsersSettings } from './UsersSettings';
 
-type TabType = 'general' | 'security' | 'keys' | 'roles' | 'logs';
+type TabType = 'general' | 'security' | 'keys' | 'users' | 'roles' | 'logs';
 
 export function SettingsPage() {
   const location = useLocation();
@@ -73,6 +74,19 @@ export function SettingsPage() {
         </button>
         <button
           onClick={() => {
+            setActiveTab('users');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'users'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <UserCircle className="w-4 h-4" />
+          Users
+        </button>
+        <button
+          onClick={() => {
             setActiveTab('roles');
           }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -102,6 +116,7 @@ export function SettingsPage() {
       {activeTab === 'general' && <GeneralTab />}
       {activeTab === 'security' && <SecuritySettings />}
       {activeTab === 'keys' && <ApiKeysSettings />}
+      {activeTab === 'users' && <UsersSettings />}
       {activeTab === 'roles' && <RolesSettings />}
       {activeTab === 'logs' && <LogsTab />}
     </div>

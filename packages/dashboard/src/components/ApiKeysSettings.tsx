@@ -105,13 +105,13 @@ export function ApiKeysSettings() {
             Active Keys
           </h3>
           <button
-            className="btn btn-primary text-sm px-3 py-1 flex items-center gap-1"
+            className="btn btn-ghost text-sm flex items-center gap-1"
             onClick={() => {
               setShowCreateKey(true);
               setCreatedKey(null);
             }}
           >
-            <Plus className="w-3 h-3" />
+            <Plus className="w-4 h-4" />
             Create Key
           </button>
         </div>

@@ -82,12 +82,12 @@ function RoleForm({
   );
 
   return (
-    <div className="border rounded-md p-4 space-y-3 bg-muted/30">
+    <div className="p-3 rounded-lg bg-muted/30 space-y-3">
       <div>
-        <label className="block text-sm font-medium mb-1">Name</label>
+        <label className="text-xs text-muted-foreground block mb-1">Name</label>
         <input
           type="text"
-          className="input w-full"
+          className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="e.g. Custom Ops"
           value={form.name}
           onChange={(e) => {
@@ -96,10 +96,10 @@ function RoleForm({
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">Description</label>
+        <label className="text-xs text-muted-foreground block mb-1">Description</label>
         <input
           type="text"
-          className="input w-full"
+          className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="Optional description"
           value={form.description}
           onChange={(e) => {
@@ -108,15 +108,13 @@ function RoleForm({
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="text-xs text-muted-foreground block mb-1">
           Permissions{' '}
-          <span className="text-muted-foreground font-normal">
-            (comma-separated resource:action)
-          </span>
+          <span className="font-normal">(comma-separated resource:action)</span>
         </label>
         <input
           type="text"
-          className="input w-full"
+          className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder="tasks:read, metrics:read, audit:read"
           value={form.permissions}
           onChange={(e) => {
@@ -125,15 +123,13 @@ function RoleForm({
         />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">
+        <label className="text-xs text-muted-foreground block mb-1">
           Inherit From{' '}
-          <span className="text-muted-foreground font-normal">
-            (comma-separated role IDs, optional)
-          </span>
+          <span className="font-normal">(comma-separated role IDs, optional)</span>
         </label>
         <input
           type="text"
-          className="input w-full"
+          className="px-2 py-1 rounded border bg-background text-foreground text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
           placeholder={existingRoleIds.slice(0, 3).join(', ')}
           value={form.inheritFrom}
           onChange={(e) => {
@@ -143,7 +139,7 @@ function RoleForm({
       </div>
       <div className="flex gap-2 pt-1">
         <button
-          className="btn btn-primary text-sm"
+          className="btn btn-primary text-sm px-3 py-1"
           disabled={isPending || !form.name.trim() || !form.permissions.trim()}
           onClick={() => {
             onSubmit(form);
@@ -151,7 +147,11 @@ function RoleForm({
         >
           {isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save'}
         </button>
-        <button className="btn btn-ghost text-sm" onClick={onCancel} disabled={isPending}>
+        <button
+          className="btn btn-ghost text-sm px-3 py-1"
+          onClick={onCancel}
+          disabled={isPending}
+        >
           Cancel
         </button>
       </div>

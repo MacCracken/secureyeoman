@@ -761,6 +761,52 @@ export async function revokeAssignment(userId: string): Promise<{ message: strin
   return request(`/auth/assignments/${encodeURIComponent(userId)}`, { method: 'DELETE' });
 }
 
+// ─── Users ────────────────────────────────────────────────────────
+
+export interface UserInfo {
+  id: string;
+  email: string;
+  displayName: string;
+  isAdmin: boolean;
+  isBuiltin?: boolean;
+  createdAt: number;
+  lastLoginAt?: number;
+}
+
+export async function fetchUsers(): Promise<{ users: UserInfo[] }> {
+  try {
+    return await request('/auth/users');
+  } catch {
+    return { users: [] };
+  }
+}
+
+export async function createUser(data: {
+  email: string;
+  displayName: string;
+  password: string;
+  isAdmin?: boolean;
+}): Promise<{ user: UserInfo }> {
+  return request('/auth/users', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateUser(
+  id: string,
+  data: { displayName?: string; isAdmin?: boolean }
+): Promise<{ user: UserInfo }> {
+  return request(`/auth/users/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteUser(id: string): Promise<{ message: string }> {
+  return request(`/auth/users/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
 // ─── Audit Stats ──────────────────────────────────────────────────
 
 export async function fetchAuditStats(): Promise<{
