@@ -1236,6 +1236,146 @@ export class GatewayServer {
       }
     );
 
+    // ML Security Summary — aggregates ML-relevant events, computes a risk score,
+    // and buckets events into a trend chart.  No ML model is required; the risk
+    // score is a deterministic weighted sum based on event counts.
+    this.app.get(
+      '/api/v1/security/ml/summary',
+      async (request: FastifyRequest<{ Querystring: { period?: string } }>) => {
+        const ML_EVENT_TYPES = [
+          'anomaly',
+          'injection_attempt',
+          'sandbox_violation',
+          'secret_access',
+        ] as const;
+        const clamp = (v: number, lo: number, hi: number) =>
+          Math.max(lo, Math.min(hi, v));
+
+        const rawPeriod = request.query.period;
+        const period: '24h' | '7d' | '30d' =
+          rawPeriod === '24h' || rawPeriod === '7d' || rawPeriod === '30d'
+            ? rawPeriod
+            : '7d';
+
+        const now = Date.now();
+        const periodMs =
+          period === '24h'
+            ? 24 * 60 * 60 * 1000
+            : period === '7d'
+              ? 7 * 24 * 60 * 60 * 1000
+              : 30 * 24 * 60 * 60 * 1000;
+        const from = now - periodMs;
+
+        const zeroedResponse = (enabled: boolean) => ({
+          enabled,
+          period,
+          riskScore: 0,
+          riskLevel: 'low' as const,
+          detections: {
+            anomaly: 0,
+            injectionAttempt: 0,
+            sandboxViolation: 0,
+            secretAccess: 0,
+            total: 0,
+          },
+          trend: [] as { bucket: string; timestamp: number; count: number }[],
+        });
+
+        try {
+          const config = this.secureYeoman.getConfig();
+          const enabled = config.security.allowAnomalyDetection ?? false;
+
+          const result = await this.secureYeoman.queryAuditLog({
+            event: [...ML_EVENT_TYPES],
+            from,
+            to: now,
+            limit: 10000,
+            offset: 0,
+          });
+
+          const entries = result.entries;
+
+          // Count detections by category
+          let anomalyCount = 0;
+          let injectionCount = 0;
+          let sandboxCount = 0;
+          let secretAccessCount = 0;
+          for (const e of entries) {
+            if (e.event === 'anomaly') anomalyCount++;
+            else if (e.event === 'injection_attempt') injectionCount++;
+            else if (e.event === 'sandbox_violation') sandboxCount++;
+            else if (e.event === 'secret_access') secretAccessCount++;
+          }
+
+          // Deterministic risk score (0-100)
+          const riskScore = Math.min(
+            100,
+            clamp(anomalyCount * 10, 0, 30) +
+              clamp(injectionCount * 15, 0, 40) +
+              clamp(sandboxCount * 20, 0, 30) +
+              clamp(secretAccessCount * 5, 0, 20)
+          );
+          const riskLevel: 'low' | 'medium' | 'high' | 'critical' =
+            riskScore < 25
+              ? 'low'
+              : riskScore < 50
+                ? 'medium'
+                : riskScore < 75
+                  ? 'high'
+                  : 'critical';
+
+          // Bucket events by time (hourly for 24h, daily otherwise)
+          const bucketMs = period === '24h' ? 60 * 60 * 1000 : 24 * 60 * 60 * 1000;
+          const bucketCount = period === '24h' ? 24 : period === '7d' ? 7 : 30;
+          const buckets = new Map<number, number>();
+          for (let i = 0; i < bucketCount; i++) {
+            buckets.set(from + i * bucketMs, 0);
+          }
+          for (const e of entries) {
+            const idx = Math.floor((e.timestamp - from) / bucketMs);
+            const key = from + idx * bucketMs;
+            if (buckets.has(key)) {
+              buckets.set(key, (buckets.get(key) ?? 0) + 1);
+            }
+          }
+
+          const trend = Array.from(buckets.entries())
+            .sort(([a], [b]) => a - b)
+            .map(([timestamp, count]) => {
+              const d = new Date(timestamp);
+              const pad = (n: number) => String(n).padStart(2, '0');
+              const dateStr = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+              const bucket =
+                period === '24h' ? `${dateStr}T${pad(d.getUTCHours())}:00` : dateStr;
+              return { bucket, timestamp, count };
+            });
+
+          return {
+            enabled,
+            period,
+            riskScore,
+            riskLevel,
+            detections: {
+              anomaly: anomalyCount,
+              injectionAttempt: injectionCount,
+              sandboxViolation: sandboxCount,
+              secretAccess: secretAccessCount,
+              total: entries.length,
+            },
+            trend,
+          };
+        } catch {
+          // Graceful fallback — same pattern as /api/v1/security/events
+          try {
+            const config = this.secureYeoman.getConfig();
+            return zeroedResponse(config.security.allowAnomalyDetection ?? false);
+          } catch {
+            return zeroedResponse(false);
+          }
+        }
+      }
+    );
+
     // Audit log query
     this.app.get(
       '/api/v1/audit',

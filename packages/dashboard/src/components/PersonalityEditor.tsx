@@ -1317,9 +1317,9 @@ function BodySection({
       customRoles: newValue,
       roleAssignments: newValue,
       experiments: newValue,
-      // A2A/Swarms are sub-settings of subAgents — not toggled by Enable All
-      allowA2A: creationConfig.allowA2A,
-      allowSwarms: creationConfig.allowSwarms,
+      // A2A/Swarms: enable with All when policy permits; disable when toggling off
+      allowA2A: a2aBlockedByPolicy ? false : newValue,
+      allowSwarms: swarmsBlockedByPolicy ? false : newValue,
       // DTC is independent — respect policy but preserve current value
       allowDynamicTools: dtcBlockedByPolicy ? false : newValue,
     });
@@ -1976,6 +1976,7 @@ function BodySection({
               checked={allEnabled}
               onChange={toggleAllCreation}
               className="sr-only peer"
+              aria-label="Enable all resource creation"
             />
             <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
             <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
@@ -2022,6 +2023,7 @@ function BodySection({
                       }}
                       disabled={blocked}
                       className="sr-only peer"
+                      aria-label={item.label}
                     />
                     <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
                     <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
@@ -2079,6 +2081,7 @@ function BodySection({
                               }}
                               disabled={sub.blocked}
                               className="sr-only peer"
+                              aria-label={sub.label}
                             />
                             <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
                             <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">

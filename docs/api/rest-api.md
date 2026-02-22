@@ -704,6 +704,60 @@ Get security events.
 
 ---
 
+### ML Security Summary
+
+#### GET /api/v1/security/ml/summary
+
+Aggregate ML-relevant security events, compute a deterministic risk score, and return a trend
+chart for the dashboard ML tab.
+
+**Required Permissions**: `security.read`
+
+**Query Parameters**
+- `period` (optional): Time window — `24h`, `7d`, or `30d` (default: `7d`)
+
+**Response**
+```json
+{
+  "enabled": true,
+  "period": "7d",
+  "riskScore": 35,
+  "riskLevel": "medium",
+  "detections": {
+    "anomaly": 2,
+    "injectionAttempt": 1,
+    "sandboxViolation": 0,
+    "secretAccess": 3,
+    "total": 6
+  },
+  "trend": [
+    { "bucket": "2026-02-16", "timestamp": 1739664000000, "count": 0 },
+    { "bucket": "2026-02-17", "timestamp": 1739750400000, "count": 2 }
+  ]
+}
+```
+
+**Risk score formula**
+```
+score = min(100,
+  clamp(anomalyCount * 10, 0, 30) +
+  clamp(injectionCount * 15, 0, 40) +
+  clamp(sandboxCount * 20, 0, 30) +
+  clamp(secretAccessCount * 5, 0, 20)
+)
+```
+
+| riskLevel  | score range |
+|------------|-------------|
+| `low`      | 0 – 24      |
+| `medium`   | 25 – 49     |
+| `high`     | 50 – 74     |
+| `critical` | 75 – 100    |
+
+Returns a zeroed structure (not 500) if audit storage is unavailable.
+
+---
+
 ### Security Policy
 
 #### GET /api/v1/security/policy

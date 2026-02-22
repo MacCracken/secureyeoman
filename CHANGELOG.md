@@ -4,6 +4,78 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 41b — Resource Creation "Enable All" Respects A2A / Swarms Policy (2026-02-22)
+
+Fixed a bug where clicking **"Enable all"** in Personality → Body → Resource Creation did not
+enable **A2A Networks** or **Agent Swarms** even when those features were permitted by the
+security policy.
+
+### What changed
+
+- **`toggleAllCreation` in `PersonalityEditor.tsx`** — `allowA2A` and `allowSwarms` now follow
+  `newValue` when toggling all on/off, subject to their respective policy gates
+  (`a2aBlockedByPolicy` / `swarmsBlockedByPolicy`). Previously the two fields were always
+  preserved at their current value ("not toggled by Enable All"). The fix mirrors the existing
+  pattern used for `subAgents` and `allowDynamicTools`.
+
+- **`aria-label` on Resource Creation checkboxes** — "Enable all" master toggle, individual item
+  toggles, and A2A/Swarms sub-item toggles now carry `aria-label` values. Improves
+  accessibility and enables reliable role-based test queries.
+
+### Behaviour matrix
+
+| Policy `allowA2A` | Policy `allowSwarms` | "Enable all" result |
+|-------------------|----------------------|---------------------|
+| `true`            | `true`               | Both enabled        |
+| `true`            | `false`              | A2A enabled, Swarms blocked |
+| `false`           | `true`               | A2A blocked, Swarms enabled |
+| `false`           | `false`              | Both blocked        |
+
+### Files changed
+
+- `packages/dashboard/src/components/PersonalityEditor.tsx` — fix `toggleAllCreation`; add `aria-label` to three checkboxes
+- `packages/dashboard/src/components/PersonalityEditor.test.tsx` — 4 new tests covering all matrix cases
+
+---
+
+## Phase 41 — ML Security Dashboard Tab (2026-02-22)
+
+Adds an **ML** tab to the Security page that surfaces anomaly detection telemetry: a
+deterministic risk score, per-category detection counts, a Recharts bar chart timeline, and a
+paginated event feed filtered to ML-relevant event types. Also moves the **Tasks** tab to
+immediately after Overview.
+
+### What changed
+
+- **`GET /api/v1/security/ml/summary?period=24h|7d|30d`** — new endpoint in `server.ts` that
+  queries the audit log for `anomaly`, `injection_attempt`, `sandbox_violation`, and
+  `secret_access` events, computes a 0–100 risk score, buckets events for a trend chart, and
+  returns the `allowAnomalyDetection` flag. Returns a zeroed structure rather than 500 when
+  audit storage is unavailable.
+
+- **`MlSecuritySummary` + `fetchMlSummary()`** — new type and function in
+  `packages/dashboard/src/api/client.ts`. `fetchSecurityEvents` extended with `type` and
+  `offset` query parameters (backward-compatible).
+
+- **`MLSecurityTab` component** (inside `SecurityPage.tsx`) — detection status banner (enabled /
+  disabled), period selector, five stat cards including a color-coded risk score badge, a
+  Recharts `BarChart` timeline, and a click-to-expand paginated event feed. Summary refetches
+  every 30 s; event feed every 15 s.
+
+- **Tab reorder** — new order: `Overview | Tasks | Audit Log | ML | Reports | System`.
+
+### Files changed
+
+- `packages/core/src/gateway/server.ts` — `GET /api/v1/security/ml/summary` endpoint
+- `packages/dashboard/src/api/client.ts` — `MlSecuritySummary`, `fetchMlSummary`, extended `fetchSecurityEvents`
+- `packages/dashboard/src/components/SecurityPage.tsx` — ML tab + `MLSecurityTab` component + tab reorder
+- `packages/dashboard/src/components/SecurityPage.test.tsx` — `fetchMlSummary` mock + 8 ML tab tests
+- `docs/adr/104-ml-security-dashboard.md` — new ADR
+- `docs/api/rest-api.md` — new endpoint documented
+- `docs/guides/security-testing.md` — ML detection section added
+
+---
+
 ## Phase 40 — Personality-Scoped Chat History (2026-02-22)
 
 Switching personalities in the Chat view now shows only that personality's conversations.

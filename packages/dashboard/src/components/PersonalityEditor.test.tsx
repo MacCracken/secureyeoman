@@ -320,3 +320,141 @@ describe('PersonalityEditor', () => {
     });
   });
 });
+
+// ── Resource Creation "Enable all" + A2A/Swarms policy gating ────────
+
+async function openResourceCreation(user: ReturnType<typeof userEvent.setup>) {
+  const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+  await user.click(editBtn);
+  const bodyHeader = await screen.findByText('Body - Endowments');
+  await user.click(bodyHeader);
+  const rcHeader = await screen.findByText('Resource Creation');
+  await user.click(rcHeader);
+}
+
+describe('PersonalityEditor — Resource Creation "Enable all" A2A/Swarms gating', () => {
+  it('enables A2A when policy allows it and "Enable all" is clicked', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: true,
+      allowA2A: true,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: false,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: false,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+    });
+    const user = userEvent.setup();
+    renderComponent();
+    await openResourceCreation(user);
+
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resource creation/i });
+    await user.click(enableAllToggle);
+
+    // Sub-agents must be enabled before A2A sub-toggle appears
+    const subAgentsToggle = await screen.findByRole('checkbox', { name: /new sub-agents/i });
+    expect(subAgentsToggle).toBeChecked();
+
+    // A2A Networks sub-toggle should now be checked
+    const a2aToggle = await screen.findByRole('checkbox', { name: /a2a networks/i });
+    expect(a2aToggle).toBeChecked();
+  });
+
+  it('enables Agent Swarms when policy allows it and "Enable all" is clicked', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: true,
+      allowA2A: false,
+      allowSwarms: true,
+      allowExtensions: false,
+      allowExecution: false,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: false,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+    });
+    const user = userEvent.setup();
+    renderComponent();
+    await openResourceCreation(user);
+
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resource creation/i });
+    await user.click(enableAllToggle);
+
+    const swarmsToggle = await screen.findByRole('checkbox', { name: /agent swarms/i });
+    expect(swarmsToggle).toBeChecked();
+  });
+
+  it('does NOT enable A2A when policy blocks it even if "Enable all" is clicked', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: true,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: false,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: false,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+    });
+    const user = userEvent.setup();
+    renderComponent();
+    await openResourceCreation(user);
+
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resource creation/i });
+    await user.click(enableAllToggle);
+
+    const a2aToggle = await screen.findByRole('checkbox', { name: /a2a networks/i });
+    expect(a2aToggle).not.toBeChecked();
+  });
+
+  it('does NOT enable Agent Swarms when policy blocks it even if "Enable all" is clicked', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: true,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: false,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: false,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+    });
+    const user = userEvent.setup();
+    renderComponent();
+    await openResourceCreation(user);
+
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resource creation/i });
+    await user.click(enableAllToggle);
+
+    const swarmsToggle = await screen.findByRole('checkbox', { name: /agent swarms/i });
+    expect(swarmsToggle).not.toBeChecked();
+  });
+});

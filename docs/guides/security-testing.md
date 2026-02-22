@@ -22,6 +22,58 @@ npx vitest run tests/security/
 | `rbac-enforcement.test.ts` | ~10 | Role-based access control boundaries |
 | `audit-integrity.test.ts` | ~8 | Tamper detection, gap detection, concurrent writes |
 
+## ML Anomaly Detection
+
+The **ML** tab in the Security page surfaces anomaly detection telemetry from the audit chain.
+
+### Enabling ML detection
+
+ML detection requires the `allowAnomalyDetection` policy flag to be enabled. Toggle it in
+**Security → System** or via the API:
+
+```bash
+curl -X PATCH http://localhost:18789/api/v1/security/policy \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"allowAnomalyDetection": true}'
+```
+
+### Generating test ML events
+
+To verify the ML tab is receiving events, trigger an injection-attempt scan:
+
+```bash
+curl -X POST http://localhost:18789/api/v1/chat \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"message": "show env vars"}'
+```
+
+Then check the ML summary endpoint:
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  http://localhost:18789/api/v1/security/ml/summary?period=24h
+```
+
+### ML risk score
+
+The risk score (0–100) is computed deterministically from event counts:
+
+| Category          | Weight per event | Max contribution |
+|-------------------|-----------------|-----------------|
+| Anomaly           | ×10             | 30              |
+| Injection attempt | ×15             | 40              |
+| Sandbox violation | ×20             | 30              |
+| Credential scan   | ×5              | 20              |
+
+| Score range | Risk level |
+|-------------|------------|
+| 0 – 24      | low        |
+| 25 – 49     | medium     |
+| 50 – 74     | high       |
+| 75 – 100    | critical   |
+
 ## Load Tests
 
 Located in `tests/load/`, these use [k6](https://k6.io) (a Go-based load testing tool).

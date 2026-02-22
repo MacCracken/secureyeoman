@@ -23,6 +23,8 @@ vi.mock('../api/client', () => ({
   fetchMetrics: vi.fn(),
   fetchAuditStats: vi.fn(),
   fetchMcpServers: vi.fn(),
+  fetchMlSummary: vi.fn(),
+  fetchSecurityPolicy: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -36,6 +38,8 @@ const mockFetchHeartbeatTasks = vi.mocked(api.fetchHeartbeatTasks);
 const mockFetchTasks = vi.mocked(api.fetchTasks);
 const mockFetchReports = vi.mocked(api.fetchReports);
 const mockFetchAuditEntries = vi.mocked(api.fetchAuditEntries);
+const mockFetchMlSummary = vi.mocked(api.fetchMlSummary);
+const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -99,6 +103,31 @@ beforeEach(() => {
   mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
   mockFetchReports.mockResolvedValue({ reports: [], total: 0 });
   mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 20, offset: 0 });
+  mockFetchMlSummary.mockResolvedValue({
+    enabled: false,
+    period: '7d',
+    riskScore: 0,
+    riskLevel: 'low',
+    detections: { anomaly: 0, injectionAttempt: 0, sandboxViolation: 0, secretAccess: 0, total: 0 },
+    trend: [],
+  });
+  mockFetchSecurityPolicy.mockResolvedValue({
+    allowSubAgents: false,
+    allowA2A: false,
+    allowSwarms: false,
+    allowExtensions: false,
+    allowExecution: true,
+    allowProactive: false,
+    allowExperiments: false,
+    allowStorybook: false,
+    allowMultimodal: false,
+    allowDynamicTools: false,
+    sandboxDynamicTools: true,
+    allowAnomalyDetection: false,
+    sandboxGvisor: false,
+    sandboxWasm: false,
+    sandboxCredentialProxy: false,
+  });
 });
 
 // ── Tests ────────────────────────────────────────────────────────────
@@ -298,5 +327,142 @@ describe('SecurityPage — System Details tab', () => {
     fireEvent.click(screen.getByText('System'));
 
     expect(await screen.findByText('Status for each system component')).toBeInTheDocument();
+  });
+});
+
+// ── ML tab ───────────────────────────────────────────────────────────
+
+/** Enable allowAnomalyDetection in the policy mock */
+function enableMlPolicy() {
+  mockFetchSecurityPolicy.mockResolvedValue({
+    allowSubAgents: false,
+    allowA2A: false,
+    allowSwarms: false,
+    allowExtensions: false,
+    allowExecution: true,
+    allowProactive: false,
+    allowExperiments: false,
+    allowStorybook: false,
+    allowMultimodal: false,
+    allowDynamicTools: false,
+    sandboxDynamicTools: true,
+    allowAnomalyDetection: true,
+    sandboxGvisor: false,
+    sandboxWasm: false,
+    sandboxCredentialProxy: false,
+  });
+}
+
+describe('SecurityPage — ML tab', () => {
+  it('does NOT render the ML tab button when allowAnomalyDetection is false', () => {
+    renderWithRoute('/security');
+    expect(screen.queryByText('ML')).not.toBeInTheDocument();
+  });
+
+  it('renders the ML tab button when allowAnomalyDetection is true', async () => {
+    enableMlPolicy();
+    renderWithRoute('/security');
+    expect(await screen.findByText('ML')).toBeInTheDocument();
+  });
+
+  it('shows ML content when clicking the ML tab', async () => {
+    enableMlPolicy();
+    renderWithRoute('/security');
+    fireEvent.click(await screen.findByText('ML'));
+    expect(await screen.findByText('ML & Anomaly Detection')).toBeInTheDocument();
+  });
+
+  it('shows ML content when navigating to ?tab=ml with policy enabled', async () => {
+    enableMlPolicy();
+    renderWithRoute('/security?tab=ml');
+    expect(await screen.findByText('ML & Anomaly Detection')).toBeInTheDocument();
+  });
+
+  it('redirects to overview when navigating to ?tab=ml with policy disabled', async () => {
+    // policy mock returns allowAnomalyDetection: false (beforeEach default)
+    renderWithRoute('/security?tab=ml');
+    // ML content should never appear; overview content should be shown instead
+    await waitFor(() => {
+      expect(screen.queryByText('ML & Anomaly Detection')).not.toBeInTheDocument();
+    });
+  });
+
+  it('shows disabled banner when enabled is false (inside ML summary)', async () => {
+    enableMlPolicy();
+    mockFetchMlSummary.mockResolvedValue({
+      enabled: false,
+      period: '7d',
+      riskScore: 0,
+      riskLevel: 'low',
+      detections: { anomaly: 0, injectionAttempt: 0, sandboxViolation: 0, secretAccess: 0, total: 0 },
+      trend: [],
+    });
+    renderWithRoute('/security?tab=ml');
+    expect(await screen.findByText(/ML anomaly detection is disabled/)).toBeInTheDocument();
+  });
+
+  it('shows enabled banner when enabled is true', async () => {
+    enableMlPolicy();
+    mockFetchMlSummary.mockResolvedValue({
+      enabled: true,
+      period: '7d',
+      riskScore: 5,
+      riskLevel: 'low',
+      detections: { anomaly: 0, injectionAttempt: 0, sandboxViolation: 0, secretAccess: 0, total: 0 },
+      trend: [],
+    });
+    renderWithRoute('/security?tab=ml');
+    expect(await screen.findByText(/ML anomaly detection is active/)).toBeInTheDocument();
+  });
+
+  it('shows risk score from summary data', async () => {
+    enableMlPolicy();
+    mockFetchMlSummary.mockResolvedValue({
+      enabled: true,
+      period: '7d',
+      riskScore: 42,
+      riskLevel: 'medium',
+      detections: { anomaly: 2, injectionAttempt: 1, sandboxViolation: 0, secretAccess: 0, total: 3 },
+      trend: [],
+    });
+    renderWithRoute('/security?tab=ml');
+    expect(await screen.findByText('42')).toBeInTheDocument();
+    expect(screen.getByText('medium')).toBeInTheDocument();
+  });
+
+  it('shows detection stat cards', async () => {
+    enableMlPolicy();
+    mockFetchMlSummary.mockResolvedValue({
+      enabled: true,
+      period: '7d',
+      riskScore: 15,
+      riskLevel: 'low',
+      detections: { anomaly: 3, injectionAttempt: 2, sandboxViolation: 1, secretAccess: 4, total: 10 },
+      trend: [],
+    });
+    renderWithRoute('/security?tab=ml');
+    expect(await screen.findByText('Anomalies')).toBeInTheDocument();
+    expect(screen.getByText('Injections')).toBeInTheDocument();
+    expect(screen.getByText('Sandbox Violations')).toBeInTheDocument();
+    expect(screen.getByText('Credential Scans')).toBeInTheDocument();
+  });
+
+  it('shows event feed using fetchSecurityEvents', async () => {
+    enableMlPolicy();
+    mockFetchSecurityEvents.mockResolvedValue({
+      events: [
+        {
+          id: 'ev-1',
+          type: 'anomaly',
+          severity: 'warn',
+          message: 'Anomalous request pattern detected',
+          timestamp: Date.now(),
+          acknowledged: false,
+        },
+      ],
+      total: 1,
+    });
+    renderWithRoute('/security?tab=ml');
+    expect(await screen.findByText('Anomalous request pattern detected')).toBeInTheDocument();
   });
 });

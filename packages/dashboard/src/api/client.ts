@@ -363,11 +363,15 @@ export async function updateTask(
 
 export async function fetchSecurityEvents(params?: {
   severity?: string;
+  type?: string;
   limit?: number;
+  offset?: number;
 }): Promise<{ events: SecurityEvent[]; total: number }> {
   const query = new URLSearchParams();
   if (params?.severity) query.set('severity', params.severity);
+  if (params?.type) query.set('type', params.type);
   if (params?.limit) query.set('limit', params.limit.toString());
+  if (params?.offset !== undefined) query.set('offset', params.offset.toString());
 
   const queryString = query.toString();
   try {
@@ -406,6 +410,41 @@ function mapLevelToSeverity(level: string): SecurityEvent['severity'] {
       return 'critical';
     default:
       return 'info';
+  }
+}
+
+// ── ML Security Summary ──────────────────────────────────────────────
+
+export interface MlSecuritySummary {
+  enabled: boolean;
+  period: '24h' | '7d' | '30d';
+  riskScore: number;
+  riskLevel: 'low' | 'medium' | 'high' | 'critical';
+  detections: {
+    anomaly: number;
+    injectionAttempt: number;
+    sandboxViolation: number;
+    secretAccess: number;
+    total: number;
+  };
+  trend: { bucket: string; timestamp: number; count: number }[];
+}
+
+export async function fetchMlSummary(params?: {
+  period?: '24h' | '7d' | '30d';
+}): Promise<MlSecuritySummary> {
+  const qs = params?.period ? `?period=${params.period}` : '';
+  try {
+    return await request<MlSecuritySummary>(`/security/ml/summary${qs}`);
+  } catch {
+    return {
+      enabled: false,
+      period: params?.period ?? '7d',
+      riskScore: 0,
+      riskLevel: 'low',
+      detections: { anomaly: 0, injectionAttempt: 0, sandboxViolation: 0, secretAccess: 0, total: 0 },
+      trend: [],
+    };
   }
 }
 
