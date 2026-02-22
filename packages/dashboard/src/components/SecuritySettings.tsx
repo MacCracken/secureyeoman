@@ -556,6 +556,26 @@ export function SecuritySettings() {
         </div>
       </div>
 
+      {/* ML Security */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Brain className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">ML Security</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <PolicyToggle
+            label="Anomaly Detection"
+            icon={<Brain className="w-4 h-4 text-muted-foreground" />}
+            enabled={anomalyDetectionAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowAnomalyDetection: !anomalyDetectionAllowed });
+            }}
+            description="Use machine learning to detect unusual patterns in agent behavior, API calls, and security events. Disabled by default."
+          />
+        </div>
+      </div>
+
       {/* Proactive Assistance Policy */}
       <div className="card">
         <div className="p-4 border-b flex items-center gap-2">
@@ -689,26 +709,6 @@ export function SecuritySettings() {
               />
             </div>
           )}
-        </div>
-      </div>
-
-      {/* ML Security */}
-      <div className="card">
-        <div className="p-4 border-b flex items-center gap-2">
-          <Brain className="w-5 h-5 text-primary" />
-          <h3 className="font-medium">ML Security</h3>
-        </div>
-        <div className="p-4 space-y-4">
-          <PolicyToggle
-            label="Anomaly Detection"
-            icon={<Brain className="w-4 h-4 text-muted-foreground" />}
-            enabled={anomalyDetectionAllowed}
-            isPending={policyMutation.isPending}
-            onToggle={() => {
-              policyMutation.mutate({ allowAnomalyDetection: !anomalyDetectionAllowed });
-            }}
-            description="Use machine learning to detect unusual patterns in agent behavior, API calls, and security events. Disabled by default."
-          />
         </div>
       </div>
 

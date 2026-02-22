@@ -34,6 +34,17 @@ function renderComponent() {
   );
 }
 
+/** Opens the picker then clicks the given server name to open its credential form. */
+async function openPickerAndSelect(
+  user: ReturnType<typeof userEvent.setup>,
+  serverName: string
+) {
+  const addBtn = await screen.findByText('Add Featured MCP');
+  await user.click(addBtn);
+  const serverNameEl = await screen.findByText(serverName);
+  await user.click(serverNameEl);
+}
+
 describe('McpPrebuilts', () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -48,8 +59,24 @@ describe('McpPrebuilts', () => {
     expect(await screen.findByText('Featured MCP Servers')).toBeInTheDocument();
   });
 
-  it('renders all expected prebuilt server names', async () => {
+  it('renders the Add Featured MCP button', async () => {
     renderComponent();
+    expect(await screen.findByText('Add Featured MCP')).toBeInTheDocument();
+  });
+
+  it('does not show server names until the picker is opened', async () => {
+    renderComponent();
+    await screen.findByText('Featured MCP Servers'); // wait for render
+    expect(screen.queryByText('Bright Data')).not.toBeInTheDocument();
+    expect(screen.queryByText('Exa')).not.toBeInTheDocument();
+  });
+
+  it('renders all expected prebuilt server names in the picker', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    const addBtn = await screen.findByText('Add Featured MCP');
+    await user.click(addBtn);
+
     const expectedServers = [
       'Bright Data',
       'Exa',
@@ -71,47 +98,67 @@ describe('McpPrebuilts', () => {
     }
   });
 
-  it('shows Connect button for servers that are not yet connected', async () => {
+  it('shows unconnected servers as clickable buttons in the picker', async () => {
+    const user = userEvent.setup();
     renderComponent();
-    const connectButtons = await screen.findAllByText('Connect');
-    // All servers are unconnected — one Connect button per server
-    expect(connectButtons.length).toBeGreaterThan(0);
+    const addBtn = await screen.findByText('Add Featured MCP');
+    await user.click(addBtn);
+    // Server name text is inside a <button>
+    const brightDataEl = await screen.findByText('Bright Data');
+    expect(brightDataEl.closest('button')).not.toBeNull();
   });
 
-  it('shows Connected badge for already-connected servers', async () => {
+  it('shows Connected badge for already-connected servers in the picker', async () => {
     mockFetchMcpServers.mockResolvedValue({
       servers: [{ name: 'Exa', id: '1', transport: 'stdio', enabled: true } as McpServerConfig],
       total: 1,
     });
+    const user = userEvent.setup();
     renderComponent();
+    const addBtn = await screen.findByText('Add Featured MCP');
+    await user.click(addBtn);
     expect(await screen.findByText('Connected')).toBeInTheDocument();
-    // Exa's Connect button should be hidden when connected
-    const cards = await screen.findAllByText('Exa');
-    expect(cards.length).toBeGreaterThan(0);
+    expect(await screen.findByText('Exa')).toBeInTheDocument();
   });
 
-  // ── Expand / collapse ──────────────────────────────────────────────────────
+  // ── Picker open / close ────────────────────────────────────────────────────
 
-  it('expands the form when Connect is clicked', async () => {
+  it('opens the picker when Add Featured MCP is clicked', async () => {
     const user = userEvent.setup();
     renderComponent();
-
-    const connectButtons = await screen.findAllByText('Connect');
-    await user.click(connectButtons[0]); // Bright Data
-
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
+    expect(screen.queryByText('Choose a server')).not.toBeInTheDocument();
+    const addBtn = await screen.findByText('Add Featured MCP');
+    await user.click(addBtn);
+    expect(screen.getByText('Choose a server')).toBeInTheDocument();
   });
 
-  it('collapses the form when Cancel is clicked', async () => {
+  it('closes the picker when Cancel is clicked', async () => {
     const user = userEvent.setup();
     renderComponent();
-
-    const connectButtons = await screen.findAllByText('Connect');
-    await user.click(connectButtons[0]);
-    expect(screen.getByText('Cancel')).toBeInTheDocument();
-
+    const addBtn = await screen.findByText('Add Featured MCP');
+    await user.click(addBtn);
+    expect(screen.getByText('Choose a server')).toBeInTheDocument();
     await user.click(screen.getByText('Cancel'));
-    expect(screen.queryByText('Cancel')).not.toBeInTheDocument();
+    expect(screen.queryByText('Choose a server')).not.toBeInTheDocument();
+  });
+
+  // ── Credential form open / back ────────────────────────────────────────────
+
+  it('opens the credential form when a server is selected from the picker', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await openPickerAndSelect(user, 'Bright Data');
+    expect(screen.getByText('Back')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Connect' })).toBeInTheDocument();
+  });
+
+  it('goes back to the picker when Back is clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+    await openPickerAndSelect(user, 'Bright Data');
+    await user.click(screen.getByText('Back'));
+    expect(screen.getByText('Choose a server')).toBeInTheDocument();
+    expect(screen.queryByText('Back')).not.toBeInTheDocument();
   });
 
   // ── Note rendering ─────────────────────────────────────────────────────────
@@ -119,48 +166,28 @@ describe('McpPrebuilts', () => {
   it('shows the prerequisite note for Meilisearch when expanded', async () => {
     const user = userEvent.setup();
     renderComponent();
-
-    // Find and click the Connect button next to Meilisearch
-    await screen.findByText('Meilisearch');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    // Meilisearch is the 9th server (index 8)
-    await user.click(allConnectButtons[8]);
-
+    await openPickerAndSelect(user, 'Meilisearch');
     expect(screen.getByText(/Requires uv/)).toBeInTheDocument();
   });
 
   it('shows the prerequisite note for Qdrant when expanded', async () => {
     const user = userEvent.setup();
     renderComponent();
-
-    await screen.findByText('Qdrant');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    // Qdrant is the 10th server (index 9)
-    await user.click(allConnectButtons[9]);
-
+    await openPickerAndSelect(user, 'Qdrant');
     expect(screen.getByText(/Requires uv/)).toBeInTheDocument();
   });
 
   it('shows the prerequisite note for Device Control when expanded', async () => {
     const user = userEvent.setup();
     renderComponent();
-
-    await screen.findByText('Device Control');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    // Device Control is 11th server (index 10)
-    await user.click(allConnectButtons[10]);
-
+    await openPickerAndSelect(user, 'Device Control');
     expect(screen.getByText(/Requires: uv/)).toBeInTheDocument();
   });
 
   it('does not show a note for npx-based servers (Exa)', async () => {
     const user = userEvent.setup();
     renderComponent();
-
-    await screen.findByText('Exa');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    await user.click(allConnectButtons[1]); // Exa
-
+    await openPickerAndSelect(user, 'Exa');
     expect(screen.queryByText(/Requires uv/)).not.toBeInTheDocument();
   });
 
@@ -169,12 +196,7 @@ describe('McpPrebuilts', () => {
   it('renders URL fields as text inputs for Home Assistant URL', async () => {
     const user = userEvent.setup();
     renderComponent();
-
-    await screen.findByText('Home Assistant');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    // Home Assistant is 12th (index 11)
-    await user.click(allConnectButtons[11]);
-
+    await openPickerAndSelect(user, 'Home Assistant');
     const haUrlInput = screen.getByPlaceholderText('https://');
     expect(haUrlInput).toHaveAttribute('type', 'text');
   });
@@ -182,11 +204,7 @@ describe('McpPrebuilts', () => {
   it('renders secret fields as password inputs for Home Assistant token', async () => {
     const user = userEvent.setup();
     renderComponent();
-
-    await screen.findByText('Home Assistant');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    await user.click(allConnectButtons[11]);
-
+    await openPickerAndSelect(user, 'Home Assistant');
     const tokenInput = screen.getByPlaceholderText('HA_TOKEN');
     expect(tokenInput).toHaveAttribute('type', 'password');
   });
@@ -194,11 +212,7 @@ describe('McpPrebuilts', () => {
   it('renders Meilisearch URL field as text input', async () => {
     const user = userEvent.setup();
     renderComponent();
-
-    await screen.findByText('Meilisearch');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    await user.click(allConnectButtons[8]);
-
+    await openPickerAndSelect(user, 'Meilisearch');
     const urlInputs = screen.getAllByPlaceholderText('https://');
     expect(urlInputs.length).toBeGreaterThan(0);
     expect(urlInputs[0]).toHaveAttribute('type', 'text');
@@ -211,25 +225,12 @@ describe('McpPrebuilts', () => {
     mockAddMcpServer.mockResolvedValue({ server: { id: 'new-server' } as McpServerConfig });
     renderComponent();
 
-    // Expand Exa
-    await screen.findByText('Exa');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    await user.click(allConnectButtons[1]);
+    await openPickerAndSelect(user, 'Exa');
 
-    // Fill in API key
     const apiKeyInput = screen.getByPlaceholderText('EXA_API_KEY');
     await user.type(apiKeyInput, 'test-exa-key');
 
-    // Click the inner Connect button
-    const innerConnect = screen
-      .getAllByText('Connect')
-      .find(
-        (el) =>
-          el.closest('button') &&
-          !el.closest('button')?.classList.contains('btn-ghost') &&
-          !el.closest('button')?.classList.contains('shrink-0')
-      );
-    await user.click(innerConnect!.closest('button')!);
+    await user.click(screen.getByRole('button', { name: 'Connect' }));
 
     await waitFor(() => {
       expect(mockAddMcpServer).toHaveBeenCalledWith(
@@ -251,9 +252,7 @@ describe('McpPrebuilts', () => {
     mockAddMcpServer.mockResolvedValue({ server: { id: 'ha-server' } as McpServerConfig });
     renderComponent();
 
-    await screen.findByText('Home Assistant');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    await user.click(allConnectButtons[11]);
+    await openPickerAndSelect(user, 'Home Assistant');
 
     const urlInput = screen.getByPlaceholderText('https://');
     await user.type(urlInput, 'https://homeassistant.local:8123');
@@ -261,15 +260,7 @@ describe('McpPrebuilts', () => {
     const tokenInput = screen.getByPlaceholderText('HA_TOKEN');
     await user.type(tokenInput, 'eyJ0...');
 
-    const innerConnect = screen
-      .getAllByText('Connect')
-      .find(
-        (el) =>
-          el.closest('button') &&
-          !el.closest('button')?.classList.contains('btn-ghost') &&
-          !el.closest('button')?.classList.contains('shrink-0')
-      );
-    await user.click(innerConnect!.closest('button')!);
+    await user.click(screen.getByRole('button', { name: 'Connect' }));
 
     await waitFor(() => {
       expect(mockAddMcpServer).toHaveBeenCalledWith(
@@ -290,20 +281,9 @@ describe('McpPrebuilts', () => {
     mockAddMcpServer.mockResolvedValue({ server: { id: 'device-server' } as McpServerConfig });
     renderComponent();
 
-    await screen.findByText('Device Control');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    // Device Control is 11th server (index 10) — no env var inputs
-    await user.click(allConnectButtons[10]);
+    await openPickerAndSelect(user, 'Device Control');
 
-    const innerConnect = screen
-      .getAllByText('Connect')
-      .find(
-        (el) =>
-          el.closest('button') &&
-          !el.closest('button')?.classList.contains('btn-ghost') &&
-          !el.closest('button')?.classList.contains('shrink-0')
-      );
-    await user.click(innerConnect!.closest('button')!);
+    await user.click(screen.getByRole('button', { name: 'Connect' }));
 
     await waitFor(() => {
       expect(mockAddMcpServer).toHaveBeenCalledWith(
@@ -325,23 +305,12 @@ describe('McpPrebuilts', () => {
     mockAddMcpServer.mockResolvedValue({ server: { id: 'el-server' } as McpServerConfig });
     renderComponent();
 
-    await screen.findByText('ElevenLabs');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    // ElevenLabs is 13th server (index 12) — Coolify (MetaMCP) is 14th
-    await user.click(allConnectButtons[12]);
+    await openPickerAndSelect(user, 'ElevenLabs');
 
     const apiKeyInput = screen.getByPlaceholderText('ELEVENLABS_API_KEY');
     await user.type(apiKeyInput, 'el-test-key');
 
-    const innerConnect = screen
-      .getAllByText('Connect')
-      .find(
-        (el) =>
-          el.closest('button') &&
-          !el.closest('button')?.classList.contains('btn-ghost') &&
-          !el.closest('button')?.classList.contains('shrink-0')
-      );
-    await user.click(innerConnect!.closest('button')!);
+    await user.click(screen.getByRole('button', { name: 'Connect' }));
 
     await waitFor(() => {
       expect(mockAddMcpServer).toHaveBeenCalledWith(
@@ -362,20 +331,10 @@ describe('McpPrebuilts', () => {
     const user = userEvent.setup();
     renderComponent();
 
-    await screen.findByText('Exa');
-    const allConnectButtons = await screen.findAllByText('Connect');
-    await user.click(allConnectButtons[1]);
+    await openPickerAndSelect(user, 'Exa');
 
     // Do not fill in the API key — click Connect immediately
-    const innerConnect = screen
-      .getAllByText('Connect')
-      .find(
-        (el) =>
-          el.closest('button') &&
-          !el.closest('button')?.classList.contains('btn-ghost') &&
-          !el.closest('button')?.classList.contains('shrink-0')
-      );
-    await user.click(innerConnect!.closest('button')!);
+    await user.click(screen.getByRole('button', { name: 'Connect' }));
 
     await waitFor(() => {
       expect(screen.getByText(/is required/i)).toBeInTheDocument();

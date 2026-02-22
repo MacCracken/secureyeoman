@@ -29,8 +29,6 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 ### Thoughts
 
 - [ ] YEOMAN MCP - insure available tools are present
-- [ ] Collabsable - Featured MCP - One Click
-- [ ] MCP view should get first billing on Connections View
 - [ ] Group Chat - Needs Workspaces; Channels; move below Chat or integrate with enable toggle 
 - [ ] Community Sync - still don't work as expected - no repo.
 - [ ] Full Metrics View; not just the overview

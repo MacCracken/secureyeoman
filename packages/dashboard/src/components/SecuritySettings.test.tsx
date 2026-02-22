@@ -218,6 +218,35 @@ describe('SecuritySettings', () => {
     expect(screen.getByText('1 servers')).toBeInTheDocument();
   });
 
+  // ── ML Security ────────────────────────────────────────────────────
+
+  it('renders ML Security section header', async () => {
+    renderComponent();
+    expect(await screen.findByText('ML Security')).toBeInTheDocument();
+  });
+
+  it('renders Anomaly Detection toggle', async () => {
+    renderComponent();
+    expect(await screen.findByText('Anomaly Detection')).toBeInTheDocument();
+    expect(screen.getByLabelText('Toggle Anomaly Detection')).toBeInTheDocument();
+  });
+
+  it('Anomaly Detection is disabled by default (aria-checked=false)', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Anomaly Detection');
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy with allowAnomalyDetection when toggled', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Anomaly Detection');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowAnomalyDetection: true });
+    });
+  });
+
   it('shows Sub-Agent Delegation as disabled by default', async () => {
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Sub-Agent Delegation');
@@ -494,35 +523,6 @@ describe('SecuritySettings', () => {
     renderComponent();
     await screen.findByText('Security');
     expect(vi.mocked(api.fetchModelDefault)).toHaveBeenCalled();
-  });
-
-  // ── ML Security ────────────────────────────────────────────────────
-
-  it('renders ML Security section header', async () => {
-    renderComponent();
-    expect(await screen.findByText('ML Security')).toBeInTheDocument();
-  });
-
-  it('renders Anomaly Detection toggle', async () => {
-    renderComponent();
-    expect(await screen.findByText('Anomaly Detection')).toBeInTheDocument();
-    expect(screen.getByLabelText('Toggle Anomaly Detection')).toBeInTheDocument();
-  });
-
-  it('Anomaly Detection is disabled by default (aria-checked=false)', async () => {
-    renderComponent();
-    const toggle = await screen.findByLabelText('Toggle Anomaly Detection');
-    expect(toggle.getAttribute('aria-checked')).toBe('false');
-  });
-
-  it('calls updateSecurityPolicy with allowAnomalyDetection when toggled', async () => {
-    renderComponent();
-    const toggle = await screen.findByLabelText('Toggle Anomaly Detection');
-    fireEvent.click(toggle);
-    await waitFor(() => {
-      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
-      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowAnomalyDetection: true });
-    });
   });
 
   // ── Sandbox Isolation (includes Code Execution) ────────────────────

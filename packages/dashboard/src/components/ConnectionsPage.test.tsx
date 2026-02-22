@@ -81,18 +81,19 @@ describe('ConnectionsPage', () => {
     expect(await screen.findByText('Connections')).toBeInTheDocument();
   });
 
-  it('renders all three tabs', async () => {
+  it('renders MCP, Integrations, and Routing Rules tabs', async () => {
     renderComponent();
-    expect(await screen.findByText('Messaging')).toBeInTheDocument();
-    expect(screen.getByText('MCP')).toBeInTheDocument();
-    expect(screen.getByText('OAuth')).toBeInTheDocument();
+    expect(await screen.findByText('MCP')).toBeInTheDocument();
+    expect(screen.getByText('Integrations')).toBeInTheDocument();
+    expect(screen.getByText('Routing Rules')).toBeInTheDocument();
   });
 
-  it('shows Messaging tab content by default', async () => {
+  it('shows MCP tab content by default', async () => {
     renderComponent();
     expect(
       await screen.findByText('Manage integrations, MCP servers, and authentication')
     ).toBeInTheDocument();
+    expect(await screen.findByText('Featured MCP Servers')).toBeInTheDocument();
   });
 
   it('switches to MCP tab when clicked', async () => {
@@ -105,9 +106,22 @@ describe('ConnectionsPage', () => {
     expect(screen.getByText('Add Server')).toBeInTheDocument();
   });
 
+  it('switches to Integrations tab when clicked', async () => {
+    const user = userEvent.setup();
+    renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
+    expect(screen.getByText('Messaging')).toBeInTheDocument();
+  });
+
   it('switches to OAuth tab when clicked', async () => {
     const user = userEvent.setup();
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
 
     const oauthTab = await screen.findByText('OAuth');
     await user.click(oauthTab);
@@ -119,6 +133,9 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     renderComponent();
 
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const oauthTab = await screen.findByText('OAuth');
     await user.click(oauthTab);
 
@@ -127,13 +144,19 @@ describe('ConnectionsPage', () => {
   });
 
   it('shows empty state when no integrations connected', async () => {
+    const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     expect(await screen.findByText('No integrations connected yet')).toBeInTheDocument();
   });
 
   it('shows messaging integrations when available', async () => {
+    const user = userEvent.setup();
     mockFetchIntegrations.mockResolvedValue({
       integrations: createIntegrationList(),
       total: 3,
@@ -142,6 +165,10 @@ describe('ConnectionsPage', () => {
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['telegram', 'discord'] });
 
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     expect(await screen.findByText('Friday Telegram')).toBeInTheDocument();
     expect(screen.getByText('Dev Discord')).toBeInTheDocument();
   });
@@ -209,6 +236,9 @@ describe('ConnectionsPage', () => {
 
     renderComponent();
 
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const oauthTab = await screen.findByText('OAuth');
     await user.click(oauthTab);
 
@@ -217,6 +247,7 @@ describe('ConnectionsPage', () => {
   });
 
   it('shows Test button for each integration', async () => {
+    const user = userEvent.setup();
     mockFetchIntegrations.mockResolvedValue({
       integrations: createIntegrationList(),
       total: 3,
@@ -225,6 +256,10 @@ describe('ConnectionsPage', () => {
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['telegram', 'discord', 'slack'] });
 
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     await screen.findByText('Friday Telegram');
 
     const testButtons = screen.getAllByText('Test');
@@ -242,6 +277,10 @@ describe('ConnectionsPage', () => {
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['telegram', 'discord', 'slack'] });
 
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     await screen.findByText('Friday Telegram');
 
     const testButtons = screen.getAllByText('Test');
@@ -262,6 +301,10 @@ describe('ConnectionsPage', () => {
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['telegram', 'discord', 'slack'] });
 
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     await screen.findByText('Friday Telegram');
 
     const testButtons = screen.getAllByText('Test');
@@ -281,6 +324,10 @@ describe('ConnectionsPage', () => {
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['telegram', 'discord', 'slack'] });
 
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     await screen.findByText('Friday Telegram');
 
     const testButtons = screen.getAllByText('Test');
@@ -295,6 +342,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['figma'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     // Figma is in DEVOPS_PLATFORMS — navigate to DevOps sub-tab first
     const devopsTab = await screen.findByText('DevOps');
     await user.click(devopsTab);
@@ -307,6 +358,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['stripe'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     // Stripe is in PRODUCTIVITY_PLATFORMS — navigate to Productivity sub-tab
     const productivityTab = await screen.findByText('Productivity');
     await user.click(productivityTab);
@@ -319,6 +374,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['zapier'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const devopsTab = await screen.findByText('DevOps');
     await user.click(devopsTab);
     const addBtn = await screen.findByText('Add Integration');
@@ -330,7 +389,11 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['qq'] });
     renderComponent();
-    // QQ is a messaging platform — open the picker on the default Messaging sub-tab
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
+    // QQ is a messaging platform — Messaging is the default sub-tab
     const addBtn = await screen.findByText('Add Integration');
     await user.click(addBtn);
     expect(screen.getByText('QQ')).toBeInTheDocument();
@@ -340,6 +403,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['dingtalk'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const addBtn = await screen.findByText('Add Integration');
     await user.click(addBtn);
     expect(screen.getByText('DingTalk')).toBeInTheDocument();
@@ -349,6 +416,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['line'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const addBtn = await screen.findByText('Add Integration');
     await user.click(addBtn);
     expect(screen.getByText('Line')).toBeInTheDocument();
@@ -357,24 +428,24 @@ describe('ConnectionsPage', () => {
   it('shows Figma MCP featured server on MCP tab', async () => {
     const user = userEvent.setup();
     renderComponent();
-    const mcpTab = await screen.findByText('MCP');
-    await user.click(mcpTab);
+    const addFeaturedBtn = await screen.findByText('Add Featured MCP');
+    await user.click(addFeaturedBtn);
     expect(screen.getByText('Figma')).toBeInTheDocument();
   });
 
   it('shows Stripe MCP featured server on MCP tab', async () => {
     const user = userEvent.setup();
     renderComponent();
-    const mcpTab = await screen.findByText('MCP');
-    await user.click(mcpTab);
+    const addFeaturedBtn = await screen.findByText('Add Featured MCP');
+    await user.click(addFeaturedBtn);
     expect(screen.getByText('Stripe')).toBeInTheDocument();
   });
 
   it('shows Zapier MCP featured server on MCP tab', async () => {
     const user = userEvent.setup();
     renderComponent();
-    const mcpTab = await screen.findByText('MCP');
-    await user.click(mcpTab);
+    const addFeaturedBtn = await screen.findByText('Add Featured MCP');
+    await user.click(addFeaturedBtn);
     expect(screen.getByText('Zapier')).toBeInTheDocument();
   });
 
@@ -382,6 +453,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['linear'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     // Linear is in PRODUCTIVITY_PLATFORMS — navigate to Productivity sub-tab
     const productivityTab = await screen.findByText('Productivity');
     await user.click(productivityTab);
@@ -393,21 +468,26 @@ describe('ConnectionsPage', () => {
   it('shows Linear MCP featured server on MCP tab', async () => {
     const user = userEvent.setup();
     renderComponent();
-    const mcpTab = await screen.findByText('MCP');
-    await user.click(mcpTab);
+    const addFeaturedBtn = await screen.findByText('Add Featured MCP');
+    await user.click(addFeaturedBtn);
     expect(screen.getByText('Linear')).toBeInTheDocument();
   });
 
   // ── Productivity sub-tab ──────────────────────────────────
 
   it('renders the Productivity sub-tab', async () => {
+    const user = userEvent.setup();
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     expect(await screen.findByText('Productivity')).toBeInTheDocument();
   });
 
   it('does not render a Calendar sub-tab', async () => {
     renderComponent();
-    await screen.findByText('Messaging'); // wait for render
+    await screen.findByText('Featured MCP Servers'); // wait for render
     expect(screen.queryByRole('button', { name: /^Calendar$/i })).not.toBeInTheDocument();
   });
 
@@ -415,6 +495,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['notion'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const productivityTab = await screen.findByText('Productivity');
     await user.click(productivityTab);
     const addBtn = await screen.findByText('Add Integration');
@@ -426,6 +510,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['googlecalendar'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const productivityTab = await screen.findByText('Productivity');
     await user.click(productivityTab);
     const addBtn = await screen.findByText('Add Integration');
@@ -437,6 +525,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['airtable'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const productivityTab = await screen.findByText('Productivity');
     await user.click(productivityTab);
     const addBtn = await screen.findByText('Add Integration');
@@ -448,6 +540,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['todoist'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const productivityTab = await screen.findByText('Productivity');
     await user.click(productivityTab);
     const addBtn = await screen.findByText('Add Integration');
@@ -459,6 +555,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['spotify'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const productivityTab = await screen.findByText('Productivity');
     await user.click(productivityTab);
     const addBtn = await screen.findByText('Add Integration');
@@ -470,6 +570,10 @@ describe('ConnectionsPage', () => {
     const user = userEvent.setup();
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: ['youtube'] });
     renderComponent();
+
+    const intTab = await screen.findByText('Integrations');
+    await user.click(intTab);
+
     const productivityTab = await screen.findByText('Productivity');
     await user.click(productivityTab);
     const addBtn = await screen.findByText('Add Integration');
