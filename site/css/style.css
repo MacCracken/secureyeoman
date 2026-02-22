@@ -96,7 +96,7 @@
 
 html {
   scroll-behavior: smooth;
-  scroll-padding-top: 80px;
+  scroll-padding-top: calc(80px + var(--banner-height, 44px));
 }
 
 body {
@@ -136,7 +136,7 @@ img {
 /* Navigation */
 .navbar {
   position: fixed;
-  top: 0;
+  top: var(--banner-height, 44px);
   left: 0;
   right: 0;
   z-index: 1000;
@@ -1554,4 +1554,116 @@ button:focus-visible {
 ::selection {
   background: rgba(14, 165, 233, 0.3);
   color: var(--text-primary);
+}
+
+/* ===== Announcement Banner ===== */
+:root {
+  --banner-height: 44px;
+}
+
+.announcement-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1010;
+  height: var(--banner-height);
+  background: linear-gradient(90deg, #b45309 0%, #d97706 40%, #f59e0b 60%, #d97706 80%, #b45309 100%);
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  transition: height 0.3s ease, opacity 0.3s ease;
+}
+
+.announcement-banner.dismissed {
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.announcement-inner {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 var(--space-6);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  white-space: nowrap;
+}
+
+.announcement-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1;
+  justify-content: center;
+  font-size: 0.875rem;
+  color: #1c0a00;
+  font-weight: 500;
+  overflow: hidden;
+}
+
+.announcement-icon {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.announcement-sep {
+  opacity: 0.55;
+  margin: 0 0.125rem;
+  flex-shrink: 0;
+}
+
+.announcement-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.announcement-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: var(--space-2);
+  font-weight: 700;
+  color: #1c0a00;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease;
+}
+
+.announcement-link:hover {
+  opacity: 0.7;
+}
+
+.announcement-close {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #1c0a00;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  font-size: 0.75rem;
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s ease, background 0.15s ease;
+  line-height: 1;
+}
+
+.announcement-close:hover {
+  opacity: 1;
+  background: rgba(0, 0, 0, 0.12);
+}
+
+@media (max-width: 640px) {
+  .announcement-text {
+    display: none;
+  }
+
+  .announcement-sep {
+    display: none;
+  }
 }

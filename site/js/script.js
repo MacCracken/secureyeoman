@@ -14,6 +14,7 @@
 
   // Initialize when DOM is ready
   document.addEventListener('DOMContentLoaded', function () {
+    initBanner();
     initNavbar();
     initTabs();
     initCopyButtons();
@@ -21,6 +22,27 @@
     initSmoothScroll();
     initPerformanceMonitoring();
   });
+
+  // Announcement banner dismissal
+  function initBanner() {
+    const banner = document.getElementById('announcementBanner');
+    const closeBtn = document.getElementById('announcementClose');
+
+    if (!banner) return;
+
+    // Restore dismissed state from sessionStorage
+    if (sessionStorage.getItem('bannerDismissed')) {
+      banner.classList.add('dismissed');
+      document.documentElement.style.setProperty('--banner-height', '0px');
+      return;
+    }
+
+    closeBtn?.addEventListener('click', function () {
+      banner.classList.add('dismissed');
+      document.documentElement.style.setProperty('--banner-height', '0px');
+      sessionStorage.setItem('bannerDismissed', '1');
+    });
+  }
 
   // Navbar scroll effect
   function initNavbar() {
