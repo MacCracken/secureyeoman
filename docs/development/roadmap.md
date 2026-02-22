@@ -30,7 +30,6 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 - [ ] YEOMAN MCP - insure available tools are present
 - [ ] Group Chat - Needs Workspaces; Channels; move below Chat or integrate with enable toggle 
-- [ ] Community Sync - still don't work as expected - no repo.
 - [ ] Full Metrics View; not just the overview
 - [ ] Remove env vars fot TTS and STT; should be internalized to the user ability to choose
 - [ ] Dev enviroment should display all available personalities

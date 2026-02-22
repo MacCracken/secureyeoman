@@ -182,6 +182,45 @@ export class SoulManager {
     return (await this.storage.getPersonality(personality.id))!;
   }
 
+  /**
+   * Seeds all available personality presets on first boot.
+   *
+   * The first preset (FRIDAY) is created as the active personality, honouring
+   * the configured agent name. All other presets are created as inactive so they
+   * are immediately available for selection in the UI without manual instantiation.
+   */
+  async seedAvailablePresets(): Promise<Personality[]> {
+    const agentName = (await this.storage.getAgentName()) ?? 'FRIDAY';
+    const created: Personality[] = [];
+
+    const [firstPreset, ...restPresets] = PERSONALITY_PRESETS;
+
+    if (firstPreset) {
+      // For the primary preset, honour the configured agent name so the
+      // active personality matches whatever name was set during onboarding.
+      const data: PersonalityCreate = {
+        ...firstPreset.data,
+        name: agentName,
+        systemPrompt: `You are ${agentName}, a helpful and security-conscious AI assistant. You are direct, technically precise, and proactive about identifying risks.`,
+        includeArchetypes: agentName === 'FRIDAY',
+      };
+      const personality = await this.storage.createPersonality(data);
+      created.push(personality);
+    }
+
+    for (const preset of restPresets) {
+      const personality = await this.storage.createPersonality(preset.data);
+      created.push(personality);
+    }
+
+    const first = created[0];
+    if (first) {
+      await this.storage.setActivePersonality(first.id);
+    }
+
+    return created;
+  }
+
   // ── Personality ─────────────────────────────────────────────
 
   async getPersonality(id: string): Promise<Personality | null> {

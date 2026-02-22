@@ -188,6 +188,48 @@ describe('SoulManager', () => {
     });
   });
 
+  describe('seedAvailablePresets', () => {
+    it('creates one personality per preset and activates the first', async () => {
+      const { manager, storage } = makeManager();
+      const results = await manager.seedAvailablePresets();
+      // PERSONALITY_PRESETS has 2 entries (FRIDAY + T.Ron)
+      expect(storage.createPersonality).toHaveBeenCalledTimes(2);
+      expect(storage.setActivePersonality).toHaveBeenCalledWith('p-1');
+      expect(results).toHaveLength(2);
+    });
+
+    it('names the first preset after the configured agent name', async () => {
+      const { manager, storage } = makeManager({
+        getAgentName: vi.fn().mockResolvedValue('Jarvis'),
+      });
+      await manager.seedAvailablePresets();
+      const firstCall = storage.createPersonality.mock.calls[0][0];
+      expect(firstCall.name).toBe('Jarvis');
+      expect(firstCall.systemPrompt).toContain('Jarvis');
+    });
+
+    it('uses FRIDAY as default name when agent name is null', async () => {
+      const { manager, storage } = makeManager({ getAgentName: vi.fn().mockResolvedValue(null) });
+      await manager.seedAvailablePresets();
+      const firstCall = storage.createPersonality.mock.calls[0][0];
+      expect(firstCall.name).toBe('FRIDAY');
+    });
+
+    it('enables archetypes for FRIDAY agent name only', async () => {
+      const { manager: fridayManager, storage: fridayStorage } = makeManager();
+      await fridayManager.seedAvailablePresets();
+      const fridayCall = fridayStorage.createPersonality.mock.calls[0][0];
+      expect(fridayCall.includeArchetypes).toBe(true);
+
+      const { manager: customManager, storage: customStorage } = makeManager({
+        getAgentName: vi.fn().mockResolvedValue('Max'),
+      });
+      await customManager.seedAvailablePresets();
+      const customCall = customStorage.createPersonality.mock.calls[0][0];
+      expect(customCall.includeArchetypes).toBe(false);
+    });
+  });
+
   describe('personality CRUD', () => {
     it('getPersonality delegates to storage', async () => {
       const { manager } = makeManager();

@@ -522,12 +522,12 @@ export class SecureYeoman {
         if (!(await this.soulManager.getAgentName())) {
           await this.soulManager.setAgentName('FRIDAY');
         }
-        await this.soulManager.createDefaultPersonality();
+        await this.soulManager.seedAvailablePresets();
         if ((await this.soulManager.getAgentName()) === 'FRIDAY') {
           await this.brainManager.seedBaseKnowledge();
           await this.spiritManager.seedDefaultSpirit();
         }
-        this.logger.debug('Soul default personality created (onboarding)');
+        this.logger.debug('Soul personalities seeded (onboarding)');
       }
       this.logger.debug('Soul manager initialized');
 
