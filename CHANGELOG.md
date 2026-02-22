@@ -4,6 +4,70 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 37 — BullShift MCP Trading Tools (2026-02-22)
+
+Added 5 MCP tools to `@secureyeoman/mcp` that connect to the BullShift trading platform's new REST API server, enabling any MCP client to query positions and submit trades through natural language.
+
+### New tools (`packages/mcp/src/tools/trading-tools.ts`)
+
+| Tool | Description |
+|---|---|
+| `bullshift_health` | Verify BullShift API server is reachable |
+| `bullshift_get_account` | Account balance, available funds, margin |
+| `bullshift_get_positions` | All open positions with P&L |
+| `bullshift_submit_order` | Place market/limit/stop/stop-limit orders |
+| `bullshift_cancel_order` | Cancel an open order by ID |
+
+All tools go through the standard middleware stack (rate limiter, input validator, audit logger, secret redactor).
+
+### Files changed
+
+- `packages/mcp/src/tools/trading-tools.ts` — new tool file
+- `packages/mcp/src/tools/trading-tools.test.ts` — registration + error-path tests
+- `packages/mcp/src/tools/index.ts` — registered `registerTradingTools`
+- `docs/adr/100-bullshift-mcp-trading-tools.md` — decision record
+- `docs/guides/bullshift-trading-tools.md` — integration guide
+
+### Configuration
+
+Set `BULLSHIFT_API_URL` (default `http://localhost:8787`) in the MCP service environment.
+
+---
+
+## Phase 36 — Coverage Push to 87%+ (2026-02-22)
+
+Raised `@secureyeoman/core` vitest coverage thresholds and added targeted tests across the highest-gap files to meet them. Total test count across all packages grew from ~6744 to **7071**.
+
+### Coverage achieved (`@secureyeoman/core`)
+
+| Metric | Before | After | Threshold |
+|--------|--------|-------|-----------|
+| Lines | 84% | **87.94%** | 87% ✓ |
+| Functions | 85% | **88.14%** | 87% ✓ |
+| Statements | 85% | **87.58%** | 87% ✓ |
+| Branches | 71% | **75.15%** | 75% ✓ |
+
+### Test files extended
+
+- `src/ai/chat-routes.test.ts` — MCP tool gathering, context compaction trigger/error, model fallback and history filtering branches
+- `src/agents/manager.test.ts` — binary profile spawn (success, non-zero exit, ENOENT), MCP tool dispatch, recursive `delegate_task`, AI-throws path, mcp-bridge invalid JSON
+- `src/soul/skill-scheduler.test.ts` — `activeHours` normal window, `executeScheduledSkill` success/failure via `vi.spyOn`, past `startAt` interval calculation
+
+### Threshold config updated
+
+- `packages/core/vitest.config.ts` — thresholds: `lines/functions/statements: 87`, `branches: 75`
+
+### Files changed
+
+- `packages/core/src/ai/chat-routes.test.ts`
+- `packages/core/src/agents/manager.test.ts`
+- `packages/core/src/soul/skill-scheduler.test.ts`
+- `packages/core/vitest.config.ts`
+- `README.md` — test badge updated to 7071
+- `docs/development/roadmap.md` — coverage and regression items marked complete
+
+---
+
 ## Phase 36 — Memory Baseline + Startup Time Tests (2026-02-21)
 
 Closes the startup-time and memory-baseline items in the Phase 36 Final Inspection checklist.

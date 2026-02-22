@@ -64,7 +64,7 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 ### Test Coverage
 
-- [ ] **Test Coverage** - should be 88%
+- [x] **Test Coverage** - 87.94% lines / 88.14% functions / 87.58% statements / 75.15% branches (`@secureyeoman/core`)
 
 ### Run all the Checks
 
@@ -74,7 +74,7 @@ Full-system final sweep before public beta Release; Confirm tests didn't regress
 
 ### Regression & Performance
 
-- [ ] **Regression suite** — All 6744+ tests pass; fix any failures introduced
+- [x] **Regression suite** — All 7071 tests pass (6257 core + 452 mcp + 362 dashboard; 373 test files)
 - [x] **Memory baseline** — Cold-start still <300 MB latest additions
 - [x] **Startup time** — `secureyeoman start` reaches `ready` in <10 s with migration fast-path on an up-to-date database
 
