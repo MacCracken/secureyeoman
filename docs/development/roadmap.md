@@ -9,6 +9,7 @@
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
 | | **Tag 2026.2.21** | **2026-02-21** | **Tagged** |
+| | **Release 2026.2.21** | **2026-02-21** | **Released** |
 | 37 | Beta Manual Review | — | Pending |
 
 ---
