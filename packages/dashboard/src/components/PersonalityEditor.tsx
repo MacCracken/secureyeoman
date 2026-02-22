@@ -2095,7 +2095,6 @@ function BodySection({
           })}
         </div>
       </CollapsibleSection>
-
     </CollapsibleSection>
   );
 }
@@ -2952,9 +2951,7 @@ export function PersonalityEditor() {
       )}
 
       {/* Personality List */}
-      <div
-        className={editing ? 'space-y-3' : 'grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-3'}
-      >
+      <div className="space-y-3">
         {personalities.map((p) => (
           <div key={p.id}>
             <div
