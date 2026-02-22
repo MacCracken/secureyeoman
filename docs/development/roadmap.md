@@ -33,11 +33,20 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 - [ ] MCP view should get first billing on Connections View
 - [ ] Group Chat - Needs Workspaces; Channels; move below Chat or integrate with enable toggle 
 - [ ] Community Sync - still don't work as expected - no repo.
-- [ ] 
+- [ ] Full Metrics View; not just the overview
+- [ ] Move ML Security to the top of Security with Default true
+- [ ] Bring back the Explaination of the Triggers to Built-in Proactive Assistance
+- [ ] Remove env vars fot TTS and STT; should be internalized to the user ability to choose
+- [ ] Dev enviroment should display all available personalities
+- [ ] Selecing Model and fallbacks should be provider organized
+
+
 
 ### Bugs
 
 - [ ] OneClick MCP items need better responsive design (text under button)
+- [ ] enabled all doesn't switch on - A2A Networks or Agent Swarms (personality edit create)
+
 
 ---
 
