@@ -29,6 +29,7 @@ import {
   Play,
   Pause,
   ChevronDown,
+  ChevronUp,
   Server,
   Activity,
   Database,
@@ -48,6 +49,7 @@ import {
   deleteTask,
   updateTask,
   fetchHeartbeatTasks,
+  fetchHeartbeatLog,
   fetchReports,
   generateReport,
   downloadReport,
@@ -67,6 +69,7 @@ import type {
   AuditEntry,
   Task,
   HeartbeatTask,
+  HeartbeatLogEntry,
   McpServerConfig,
 } from '../types';
 
@@ -523,6 +526,152 @@ function formatInterval(ms: number): string {
   return `${(ms / 3_600_000).toFixed(1)}h`;
 }
 
+// ── Heartbeat log status helpers ──────────────────────────────────────
+
+const HB_STATUS_ICON: Record<'ok' | 'warning' | 'error', React.ReactNode> = {
+  ok: <CheckCircle className="w-3.5 h-3.5 text-success" />,
+  warning: <AlertTriangle className="w-3.5 h-3.5 text-warning" />,
+  error: <XCircle className="w-3.5 h-3.5 text-destructive" />,
+};
+
+const HB_STATUS_COLOR: Record<'ok' | 'warning' | 'error', string> = {
+  ok: 'text-success',
+  warning: 'text-warning',
+  error: 'text-destructive',
+};
+
+// ── HeartbeatTaskCard ─────────────────────────────────────────────────
+// Shows heartbeat task configuration + expandable execution history.
+
+function HeartbeatTaskCard({ task }: { task: HeartbeatTask }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const { data: logData, isLoading: logLoading } = useQuery({
+    queryKey: ['heartbeat-log', task.name],
+    queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 10 }),
+    enabled: expanded,
+    staleTime: 30_000,
+  });
+
+  const lastEntry: HeartbeatLogEntry | null = logData?.entries[0] ?? null;
+
+  return (
+    <div className={`border-l-4 ${task.enabled ? 'border-l-success' : 'border-l-muted-foreground/30'}`}>
+      {/* Task header row */}
+      <div className="p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3 min-w-0">
+          {task.enabled ? (
+            <Play className="w-4 h-4 text-success flex-shrink-0" />
+          ) : (
+            <Pause className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          )}
+          <div className="min-w-0">
+            <p className="font-medium text-sm">{task.name}</p>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <span className="badge text-xs">{task.type}</span>
+              {task.intervalMs && (
+                <span className="text-xs text-muted-foreground">
+                  every {formatInterval(task.intervalMs)}
+                </span>
+              )}
+              {task.lastRunAt ? (
+                <span className="text-xs text-muted-foreground">
+                  last run {new Date(task.lastRunAt).toLocaleString()}
+                </span>
+              ) : (
+                <span className="text-xs text-muted-foreground">never run</span>
+              )}
+              {task.personalityName && (
+                <span className="text-xs text-muted-foreground">{task.personalityName}</span>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {/* Last result badge — from log if available */}
+          {lastEntry ? (
+            <div className="flex items-center gap-1">
+              {HB_STATUS_ICON[lastEntry.status]}
+              <span className={`text-xs ${HB_STATUS_COLOR[lastEntry.status]}`}>
+                {lastEntry.status}
+              </span>
+            </div>
+          ) : (
+            <span className={`badge ${task.enabled ? 'badge-success' : 'badge'}`}>
+              {task.enabled ? 'enabled' : 'disabled'}
+            </span>
+          )}
+          {/* Expand / collapse history toggle */}
+          <button
+            onClick={() => { setExpanded((v) => !v); }}
+            className="btn-ghost p-1 rounded text-muted-foreground hover:text-foreground"
+            aria-label={expanded ? 'Hide execution history' : 'Show execution history'}
+            title={expanded ? 'Hide history' : 'Show history'}
+          >
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* Expandable execution history */}
+      {expanded && (
+        <div className="border-t border-border px-4 pb-4 pt-3 bg-muted/20">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
+            Recent Executions
+          </p>
+          {logLoading ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
+              <Loader2 className="w-3 h-3 animate-spin" />
+              Loading history…
+            </div>
+          ) : !logData?.entries.length ? (
+            <p className="text-xs text-muted-foreground py-1">No executions recorded yet.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-muted-foreground">
+                  <th className="text-left pb-1 pr-4 font-normal">Status</th>
+                  <th className="text-left pb-1 pr-4 font-normal">Ran at</th>
+                  <th className="text-left pb-1 pr-4 font-normal hidden sm:table-cell">Duration</th>
+                  <th className="text-left pb-1 font-normal">Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logData.entries.map((entry) => (
+                  <tr key={entry.id} className="border-t border-border/30">
+                    <td className="py-1 pr-4">
+                      <div className="flex items-center gap-1">
+                        {HB_STATUS_ICON[entry.status]}
+                        <span className={HB_STATUS_COLOR[entry.status]}>{entry.status}</span>
+                      </div>
+                    </td>
+                    <td className="py-1 pr-4 text-muted-foreground">
+                      {new Date(entry.ranAt).toLocaleString()}
+                    </td>
+                    <td className="py-1 pr-4 font-mono text-muted-foreground hidden sm:table-cell">
+                      {entry.durationMs < 1000
+                        ? `${entry.durationMs}ms`
+                        : `${(entry.durationMs / 1000).toFixed(1)}s`}
+                    </td>
+                    <td className="py-1 text-muted-foreground max-w-xs truncate">
+                      {entry.message}
+                      {entry.errorDetail && (
+                        <span className="text-destructive ml-1">
+                          ({entry.errorDetail.split('\n')[0]})
+                        </span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TasksTab() {
   const [searchParams, setSearchParams] = useState({ offset: '0', status: '', type: '' });
   const { data: tasksData, isLoading: tasksLoading } = useQuery({
@@ -588,46 +737,7 @@ function TasksTab() {
             ) : (
               <div className="divide-y divide-border">
                 {heartbeatTasks.map((task) => (
-                  <div
-                    key={task.name}
-                    className={`p-4 border-l-4 ${task.enabled ? 'border-l-success' : 'border-l-muted-foreground/30'}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {task.enabled ? (
-                          <Play className="w-4 h-4 text-success" />
-                        ) : (
-                          <Pause className="w-4 h-4 text-muted-foreground" />
-                        )}
-                        <div>
-                          <p className="font-medium text-sm">{task.name}</p>
-                          <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                            <span className="badge text-xs">{task.type}</span>
-                            {task.intervalMs && (
-                              <span className="text-xs text-muted-foreground">
-                                every {formatInterval(task.intervalMs)}
-                              </span>
-                            )}
-                            {task.lastRunAt ? (
-                              <span className="text-xs text-muted-foreground">
-                                last run {new Date(task.lastRunAt).toLocaleString()}
-                              </span>
-                            ) : (
-                              <span className="text-xs text-muted-foreground">never run</span>
-                            )}
-                            {task.personalityName && (
-                              <span className="text-xs text-muted-foreground">
-                                {task.personalityName}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <span className={`badge ${task.enabled ? 'badge-success' : 'badge'}`}>
-                        {task.enabled ? 'enabled' : 'disabled'}
-                      </span>
-                    </div>
-                  </div>
+                  <HeartbeatTaskCard key={task.name} task={task} />
                 ))}
               </div>
             )}
