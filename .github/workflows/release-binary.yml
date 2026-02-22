@@ -70,8 +70,10 @@ jobs:
             dist/secureyeoman-linux-x64
             dist/secureyeoman-linux-arm64
             dist/secureyeoman-darwin-arm64
+            dist/secureyeoman-windows-x64.exe
             dist/secureyeoman-lite-linux-x64
             dist/secureyeoman-lite-linux-arm64
+            dist/secureyeoman-lite-windows-x64.exe
             dist/SHA256SUMS
           generate_release_notes: true
         env:

@@ -15,8 +15,8 @@ SecureYeoman currently requires Node.js 20, npm, and ~600 MB Docker images. A se
 ## Decision
 
 ### Tiers
-- **Tier 1** (needs PostgreSQL): `secureyeoman-linux-x64`, `secureyeoman-linux-arm64`, `secureyeoman-darwin-arm64`
-- **Tier 2** (SQLite-only, no external deps): `secureyeoman-lite-linux-x64`, `secureyeoman-lite-linux-arm64`
+- **Tier 1** (needs PostgreSQL): `secureyeoman-linux-x64`, `secureyeoman-linux-arm64`, `secureyeoman-darwin-arm64`, `secureyeoman-windows-x64.exe`
+- **Tier 2** (SQLite-only, no external deps): `secureyeoman-lite-linux-x64`, `secureyeoman-lite-linux-arm64`, `secureyeoman-lite-windows-x64.exe`
 
 ### Build pipeline (`scripts/build-binary.sh`)
 Uses `bun build --compile` with `--assets packages/dashboard/dist` to embed the SPA. Tier 2 builds set `SECUREYEOMAN_BUILD_TIER=lite` (for future conditional imports of pg vs bun:sqlite).
@@ -138,6 +138,7 @@ All six runnable checks pass on `x86_64 Linux` with Bun 1.3.9:
 | `secureyeoman-linux-x64` (Tier 1) | ✓ `v2026.2.19` | ✓ `valid=true` | ✓ `status=ok` |
 | `secureyeoman-lite-linux-x64` (Tier 2) | ✓ `v2026.2.19` | ✓ `valid=true` | ✓ `status=ok` |
 | `*-linux-arm64`, `*-darwin-arm64` | skipped (cross-arch/OS) | — | — |
+| `*-windows-x64.exe` | skipped (Windows binary on Linux) | — | — |
 
 ## Files Changed
 - `packages/mcp/src/cli.ts` — export runMcpServer()
@@ -163,3 +164,6 @@ All six runnable checks pass on `x86_64 Linux` with Bun 1.3.9:
 - *(Phase 25)* `scripts/smoke-test-binary.sh` — NEW; end-to-end binary smoke test
 - *(Phase 25)* `scripts/build-binary.sh` — Tier 2 builds now include `--external` playwright flags
 - *(Phase 25)* `.github/workflows/release-binary.yml` — postgres service + smoke test step added
+- *(Phase 37)* `scripts/build-binary.sh` — added `bun-windows-x64` to Tier 1 and Tier 2 loops; `.exe` extension applied for Windows targets
+- *(Phase 37)* `scripts/smoke-test-binary.sh` — Windows binaries added to test loops; skip guard handles `Windows_NT` check
+- *(Phase 37)* `.github/workflows/release-binary.yml` — `secureyeoman-windows-x64.exe` and `secureyeoman-lite-windows-x64.exe` added to GitHub Release assets

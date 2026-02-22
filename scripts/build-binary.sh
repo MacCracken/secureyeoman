@@ -2,8 +2,8 @@
 # build-binary.sh — Bun compile pipeline for SecureYeoman single-binary distribution
 #
 # Produces:
-#   Tier 1 (needs PostgreSQL): secureyeoman-linux-x64, secureyeoman-linux-arm64, secureyeoman-darwin-arm64
-#   Tier 2 (SQLite-only, no external deps): secureyeoman-lite-linux-x64, secureyeoman-lite-linux-arm64
+#   Tier 1 (needs PostgreSQL): secureyeoman-linux-x64, secureyeoman-linux-arm64, secureyeoman-darwin-arm64, secureyeoman-windows-x64.exe
+#   Tier 2 (SQLite-only, no external deps): secureyeoman-lite-linux-x64, secureyeoman-lite-linux-arm64, secureyeoman-lite-windows-x64.exe
 #
 # Prerequisites: bun >= 1.1, npm (for TypeScript build step)
 #
@@ -36,27 +36,31 @@ mkdir -p "${DIST_DIR}/migrations"
 cp "${REPO_ROOT}/packages/core/src/storage/migrations"/*.sql "${DIST_DIR}/migrations/"
 
 echo "==> Compiling Tier 1 binaries (PostgreSQL-backed)..."
-for TARGET in bun-linux-x64 bun-linux-arm64 bun-darwin-arm64; do
+for TARGET in bun-linux-x64 bun-linux-arm64 bun-darwin-arm64 bun-windows-x64; do
   PLATFORM="${TARGET#bun-}"
+  EXT=""
+  [[ "$PLATFORM" == windows-* ]] && EXT=".exe"
   echo "    → ${PLATFORM}"
   # --assets embeds the dashboard dist into the binary's virtual FS (requires Bun >= 1.2).
   # Remove the comment prefix below once a compatible Bun version is in use.
   # bun build --compile --target "${TARGET}" \
   #   --assets "${REPO_ROOT}/packages/dashboard/dist" \
   #   "${REPO_ROOT}/packages/core/src/cli.ts" \
-  #   --outfile "${DIST_DIR}/secureyeoman-${PLATFORM}"
+  #   --outfile "${DIST_DIR}/secureyeoman-${PLATFORM}${EXT}"
   # playwright-core optional deps (electron, chromium-bidi) are not available
   # at compile time and are never used in the server binary path.
   bun build --compile --target "${TARGET}" \
     --external "playwright" --external "playwright-core" \
     --external "electron" --external "chromium-bidi" \
     "${REPO_ROOT}/packages/core/src/cli.ts" \
-    --outfile "${DIST_DIR}/secureyeoman-${PLATFORM}"
+    --outfile "${DIST_DIR}/secureyeoman-${PLATFORM}${EXT}"
 done
 
 echo "==> Compiling Tier 2 lite binaries (SQLite, no native addons)..."
-for TARGET in bun-linux-x64 bun-linux-arm64; do
+for TARGET in bun-linux-x64 bun-linux-arm64 bun-windows-x64; do
   PLATFORM="${TARGET#bun-}"
+  EXT=""
+  [[ "$PLATFORM" == windows-* ]] && EXT=".exe"
   echo "    → lite-${PLATFORM}"
   # playwright-core optional deps (electron, chromium-bidi) are not available
   # at compile time and are never used in the server binary path.
@@ -64,7 +68,7 @@ for TARGET in bun-linux-x64 bun-linux-arm64; do
     --external "playwright" --external "playwright-core" \
     --external "electron" --external "chromium-bidi" \
     "${REPO_ROOT}/packages/core/src/cli.ts" \
-    --outfile "${DIST_DIR}/secureyeoman-lite-${PLATFORM}"
+    --outfile "${DIST_DIR}/secureyeoman-lite-${PLATFORM}${EXT}"
 done
 
 echo ""

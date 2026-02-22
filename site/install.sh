@@ -23,15 +23,27 @@ while [[ $# -gt 0 ]]; do
 done
 
 # Detect OS and architecture
-OS=$(uname -s | tr '[:upper:]' '[:lower:]')
+_UNAME_S=$(uname -s)
 ARCH=$(uname -m | sed 's/x86_64/x64/;s/aarch64/arm64/;s/arm64/arm64/')
 
-if [[ "$OS" != "linux" && "$OS" != "darwin" ]]; then
-  echo "Unsupported OS: $OS (supported: linux, darwin)"
-  exit 1
-fi
+case "$_UNAME_S" in
+  Linux*)   OS="linux" ;;
+  Darwin*)  OS="darwin" ;;
+  MINGW*|MSYS*|CYGWIN*)
+    OS="windows"
+    INSTALL_DIR="${INSTALL_DIR:-$USERPROFILE/bin}"
+    ;;
+  *)
+    echo "Unsupported OS: $_UNAME_S (supported: linux, darwin, windows via Git Bash)"
+    exit 1
+    ;;
+esac
 
-BINARY_NAME="secureyeoman-${OS}-${ARCH}"
+if [[ "$OS" == "windows" ]]; then
+  BINARY_NAME="secureyeoman-windows-${ARCH}.exe"
+else
+  BINARY_NAME="secureyeoman-${OS}-${ARCH}"
+fi
 
 # Get latest version if not specified
 if [[ -z "$VERSION" ]]; then
@@ -44,11 +56,17 @@ if [[ -z "$VERSION" ]]; then
 fi
 
 URL="https://github.com/MacCracken/secureyeoman/releases/download/${VERSION}/${BINARY_NAME}"
-DEST="${INSTALL_DIR}/secureyeoman"
+if [[ "$OS" == "windows" ]]; then
+  DEST="${INSTALL_DIR}/secureyeoman.exe"
+else
+  DEST="${INSTALL_DIR}/secureyeoman"
+fi
 
 echo "Installing secureyeoman ${VERSION} (${OS}/${ARCH})..."
 echo "  Source: ${URL}"
 echo "  Destination: ${DEST}"
+
+mkdir -p "$INSTALL_DIR"
 
 # Download
 if command -v curl &>/dev/null; then
@@ -60,7 +78,7 @@ else
   exit 1
 fi
 
-chmod +x "$DEST"
+[[ "$OS" != "windows" ]] && chmod +x "$DEST"
 
 echo ""
 echo "✓ secureyeoman ${VERSION} installed at ${DEST}"

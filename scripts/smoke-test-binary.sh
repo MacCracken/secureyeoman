@@ -211,10 +211,11 @@ smoke_test() {
 
   # Skip binaries that cannot run on the current platform
   case "${name}" in
-    *darwin*) [ "${host_os}" = "Darwin" ] || { info "skip (Darwin binary on ${host_os})"; return; } ;;
-    *arm64*)  ( [ "${host_arch}" = "aarch64" ] || [ "${host_arch}" = "arm64" ] ) \
-                || { info "skip (arm64 binary on ${host_arch})"; return; } ;;
-    *x64*)    [ "${host_arch}" = "x86_64" ] || { info "skip (x64 binary on ${host_arch})"; return; } ;;
+    *darwin*)  [ "${host_os}" = "Darwin" ] || { info "skip (Darwin binary on ${host_os})"; return; } ;;
+    *windows*) [ "${host_os}" = "Windows_NT" ] || { info "skip (Windows binary on ${host_os})"; return; } ;;
+    *arm64*)   ( [ "${host_arch}" = "aarch64" ] || [ "${host_arch}" = "arm64" ] ) \
+                 || { info "skip (arm64 binary on ${host_arch})"; return; } ;;
+    *x64*)     [ "${host_arch}" = "x86_64" ] || { info "skip (x64 binary on ${host_arch})"; return; } ;;
   esac
 
   if [ ! -f "${binary}" ]; then
@@ -339,8 +340,8 @@ fi
 
 echo ""
 echo -e "${BOLD}SecureYeoman Binary Smoke Test${RESET}"
-echo -e "${DIM}Tier 1 (PostgreSQL-backed): linux-x64  linux-arm64  darwin-arm64${RESET}"
-echo -e "${DIM}Tier 2 (SQLite fallback):   lite-linux-x64  lite-linux-arm64${RESET}"
+echo -e "${DIM}Tier 1 (PostgreSQL-backed): linux-x64  linux-arm64  darwin-arm64  windows-x64${RESET}"
+echo -e "${DIM}Tier 2 (SQLite fallback):   lite-linux-x64  lite-linux-arm64  lite-windows-x64${RESET}"
 if [ "${PG_AVAILABLE}" = "true" ]; then
   echo -e "${DIM}PostgreSQL: ${PG_HOST}:${PG_PORT} (user=${PG_USER})${RESET}"
 else
@@ -351,7 +352,8 @@ echo -e "\n${BOLD}── Tier 1 ──${RESET}"
 for b in \
   "${DIST_DIR}/secureyeoman-linux-x64" \
   "${DIST_DIR}/secureyeoman-linux-arm64" \
-  "${DIST_DIR}/secureyeoman-darwin-arm64"
+  "${DIST_DIR}/secureyeoman-darwin-arm64" \
+  "${DIST_DIR}/secureyeoman-windows-x64.exe"
 do
   smoke_test "${b}"
 done
@@ -359,7 +361,8 @@ done
 echo -e "\n${BOLD}── Tier 2 ──${RESET}"
 for b in \
   "${DIST_DIR}/secureyeoman-lite-linux-x64" \
-  "${DIST_DIR}/secureyeoman-lite-linux-arm64"
+  "${DIST_DIR}/secureyeoman-lite-linux-arm64" \
+  "${DIST_DIR}/secureyeoman-lite-windows-x64.exe"
 do
   smoke_test "${b}"
 done

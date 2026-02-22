@@ -28,8 +28,10 @@ Or download directly from [GitHub Releases](https://github.com/MacCracken/secure
 | `secureyeoman-linux-x64` | PostgreSQL | Linux x64 |
 | `secureyeoman-linux-arm64` | PostgreSQL | Linux arm64 |
 | `secureyeoman-darwin-arm64` | PostgreSQL | macOS Apple Silicon |
+| `secureyeoman-windows-x64.exe` | PostgreSQL | Windows x64 |
 | `secureyeoman-lite-linux-x64` | Nothing (SQLite) | Linux x64 edge/embedded |
 | `secureyeoman-lite-linux-arm64` | Nothing (SQLite) | Linux arm64 edge/embedded |
+| `secureyeoman-lite-windows-x64.exe` | Nothing (SQLite) | Windows x64 edge/embedded |
 
 ```bash
 # Verify checksum
