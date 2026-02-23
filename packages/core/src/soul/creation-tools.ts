@@ -154,7 +154,20 @@ const UPDATE_PERSONALITY_TOOL: Tool = {
   },
 };
 
-const PERSONALITY_TOOLS: Tool[] = [CREATE_PERSONALITY_TOOL, UPDATE_PERSONALITY_TOOL];
+const DELETE_PERSONALITY_TOOL: Tool = {
+  name: 'delete_personality',
+  description:
+    'Permanently delete a personality by its ID. Cannot be used to delete the currently active (calling) personality — a personality cannot delete itself.',
+  parameters: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', description: 'ID of the personality to delete' },
+    },
+    required: ['id'],
+  },
+};
+
+const PERSONALITY_TOOLS: Tool[] = [CREATE_PERSONALITY_TOOL, UPDATE_PERSONALITY_TOOL, DELETE_PERSONALITY_TOOL];
 
 // ── Custom Role Tools ─────────────────────────────────────────────────────
 
@@ -184,7 +197,19 @@ const CREATE_CUSTOM_ROLE_TOOL: Tool = {
   },
 };
 
-const CUSTOM_ROLE_TOOLS: Tool[] = [CREATE_CUSTOM_ROLE_TOOL];
+const DELETE_CUSTOM_ROLE_TOOL: Tool = {
+  name: 'delete_custom_role',
+  description: 'Permanently delete a custom RBAC role by its ID. Built-in roles (admin, operator, user) cannot be deleted.',
+  parameters: {
+    type: 'object',
+    properties: {
+      roleId: { type: 'string', description: 'ID of the custom role to delete (e.g. "analyst")' },
+    },
+    required: ['roleId'],
+  },
+};
+
+const CUSTOM_ROLE_TOOLS: Tool[] = [CREATE_CUSTOM_ROLE_TOOL, DELETE_CUSTOM_ROLE_TOOL];
 
 // ── Role Assignment Tools ─────────────────────────────────────────────────
 
@@ -204,7 +229,19 @@ const ASSIGN_ROLE_TOOL: Tool = {
   },
 };
 
-const ROLE_ASSIGNMENT_TOOLS: Tool[] = [ASSIGN_ROLE_TOOL];
+const REVOKE_ROLE_TOOL: Tool = {
+  name: 'revoke_role',
+  description: 'Revoke the role assigned to a user, returning them to the default access level.',
+  parameters: {
+    type: 'object',
+    properties: {
+      userId: { type: 'string', description: 'ID of the user whose role should be revoked' },
+    },
+    required: ['userId'],
+  },
+};
+
+const ROLE_ASSIGNMENT_TOOLS: Tool[] = [ASSIGN_ROLE_TOOL, REVOKE_ROLE_TOOL];
 
 // ── Experiment Tools ──────────────────────────────────────────────────────
 
@@ -227,7 +264,19 @@ const CREATE_EXPERIMENT_TOOL: Tool = {
   },
 };
 
-const EXPERIMENT_TOOLS: Tool[] = [CREATE_EXPERIMENT_TOOL];
+const DELETE_EXPERIMENT_TOOL: Tool = {
+  name: 'delete_experiment',
+  description: 'Permanently delete an experiment by its ID.',
+  parameters: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', description: 'ID of the experiment to delete' },
+    },
+    required: ['id'],
+  },
+};
+
+const EXPERIMENT_TOOLS: Tool[] = [CREATE_EXPERIMENT_TOOL, DELETE_EXPERIMENT_TOOL];
 
 // ── A2A Tools ─────────────────────────────────────────────────────────────
 

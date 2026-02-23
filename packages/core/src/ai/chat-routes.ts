@@ -290,6 +290,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           if (toolName.startsWith('delete_')) return 'Deleted';
           if (toolName.startsWith('trigger_')) return 'Triggered';
           if (toolName.startsWith('assign_')) return 'Assigned';
+          if (toolName.startsWith('revoke_')) return 'Revoked';
           if (toolName === 'a2a_connect') return 'Connected';
           if (toolName === 'delegate_task') return 'Delegated';
           return 'Created';
@@ -304,10 +305,14 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           update_task: 'Task',
           create_personality: 'Personality',
           update_personality: 'Personality',
+          delete_personality: 'Personality',
           create_experiment: 'Experiment',
+          delete_experiment: 'Experiment',
           create_swarm: 'Swarm',
           create_custom_role: 'Custom Role',
+          delete_custom_role: 'Custom Role',
           assign_role: 'Role Assignment',
+          revoke_role: 'Role Assignment',
           a2a_connect: 'A2A Connection',
           delegate_task: 'Delegation',
           create_workflow: 'Workflow',

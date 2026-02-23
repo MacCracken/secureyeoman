@@ -169,6 +169,20 @@ export async function executeCreationTool(
         return { output: { personality }, isError: false };
       }
 
+      case 'delete_personality': {
+        const targetId = str(args.id);
+        // A personality must not be able to delete itself.
+        if (targetId === context?.personalityId) {
+          return {
+            output: { error: 'A personality cannot delete itself. Ask another personality or an admin to perform this deletion.' },
+            isError: true,
+          };
+        }
+        const soulManager = secureYeoman.getSoulManager();
+        await soulManager.deletePersonality(targetId);
+        return { output: { deleted: true, id: targetId }, isError: false };
+      }
+
       // ── Sub-Agents ─────────────────────────────────────────────────────
       case 'delegate_task': {
         const agentManager = secureYeoman.getSubAgentManager?.();
@@ -237,12 +251,29 @@ export async function executeCreationTool(
         return { output: { created: true, roleId: str(args.name).toLowerCase().replace(/\s+/g, '_') }, isError: false };
       }
 
+      case 'delete_custom_role': {
+        const { getRBAC } = await import('../security/rbac.js');
+        const rbac = getRBAC();
+        const removed = await rbac.removeRole(str(args.roleId));
+        if (!removed) {
+          return { output: { error: `Role '${args.roleId}' not found or cannot be deleted.` }, isError: true };
+        }
+        return { output: { deleted: true, roleId: args.roleId }, isError: false };
+      }
+
       // ── Role Assignments ───────────────────────────────────────────────
       case 'assign_role': {
         const { getRBAC } = await import('../security/rbac.js');
         const rbac = getRBAC();
         await rbac.assignUserRole(str(args.userId), str(args.roleId), 'ai');
         return { output: { assigned: true, userId: args.userId, roleId: args.roleId }, isError: false };
+      }
+
+      case 'revoke_role': {
+        const { getRBAC } = await import('../security/rbac.js');
+        const rbac = getRBAC();
+        await rbac.revokeUserRole(str(args.userId));
+        return { output: { revoked: true, userId: args.userId }, isError: false };
       }
 
       // ── Experiments ────────────────────────────────────────────────────
@@ -257,6 +288,15 @@ export async function executeCreationTool(
           variants: Array.isArray(args.variants) ? args.variants : [],
         } as any);
         return { output: { experiment }, isError: false };
+      }
+
+      case 'delete_experiment': {
+        const experimentManager = secureYeoman.getExperimentManager?.();
+        if (!experimentManager) {
+          return { output: { error: 'Experiment manager not available' }, isError: true };
+        }
+        await experimentManager.delete(str(args.id));
+        return { output: { deleted: true, id: args.id }, isError: false };
       }
 
       // ── A2A ────────────────────────────────────────────────────────────
