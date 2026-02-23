@@ -4,6 +4,25 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — Community Skills Sync Fixes (2026-02-23)
+
+### Bug Fixes
+
+**`packages/core/src/marketplace/git-fetch.ts`** — hardened `gitCloneOrPull` against stale/non-git directories:
+- Added `isGitRepo()` probe (`git rev-parse --git-dir`) to distinguish a valid repo from a plain directory before attempting `git pull`
+- Added `cloneIntoExisting()`: clones to a `<path>.clone-tmp` sibling, then `fs.cpSync`s contents into the target — avoids `rmSync` on Docker volume mount points (which fail with `EBUSY`)
+- The "not a git repo" path no longer attempts to remove the directory at all, making it safe for any mount topology
+
+**`docker-compose.yml`**:
+- Replaced bind mount `./community-skills:/usr/share/secureyeoman/community-skills` with named volume `community-skills:` — Docker initialises named volumes from the image (inheriting the `secureyeoman` user ownership set in the Dockerfile), whereas the bind mount was always created root-owned when the host directory was absent
+- Added `community-skills:` to the top-level `volumes:` block so skills persist across container restarts
+
+**`Dockerfile` + `Dockerfile.dev`**:
+- Removed stale `COPY community-skills/ /usr/share/secureyeoman/community-skills/` line (community skills are fetched at runtime via git sync, not bundled in the image)
+- Added `mkdir -p /usr/share/secureyeoman/community-skills && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman` so the named volume is initialised with correct ownership
+
+---
+
 ## Phase 55 — Navigate & Create: Workflows + Test Fixes (2026-02-22) `v2026.2.22`
 
 ### Enhancement: Workflows in Navigate & Create
