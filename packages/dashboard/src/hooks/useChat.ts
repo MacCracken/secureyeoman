@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { sendChatMessage, createConversation, fetchConversation } from '../api/client';
+import { sendChatMessage, createConversation, fetchConversation, getAccessToken } from '../api/client';
 import type { ChatMessage, CreationEvent } from '../types';
 
 export interface UseChatOptions {
@@ -350,9 +350,13 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
     const memoryOn = options?.memoryEnabled ?? true;
 
     try {
+      const streamToken = getAccessToken();
       const res = await fetch('/api/v1/chat/stream', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(streamToken ? { Authorization: `Bearer ${streamToken}` } : {}),
+        },
         signal: abortRef.current.signal,
         body: JSON.stringify({
           message: trimmed,
@@ -364,6 +368,10 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
         }),
       });
 
+      if (!res.ok) {
+        const errText = await res.text().catch(() => `HTTP ${res.status}`);
+        throw new Error(`Stream request failed (${res.status}): ${errText}`);
+      }
       if (!res.body) throw new Error('No response body');
 
       const reader = res.body.getReader();
