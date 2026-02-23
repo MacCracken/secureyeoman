@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Shield,
   BarChart2,
-  MessageSquare,
   ShieldAlert,
   Brain,
   Zap,
@@ -57,12 +56,11 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
 }[] = [
   { to: '/metrics', label: 'Metrics', icon: <BarChart2 className="w-5 h-5" /> },
   { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
-  { to: '/chat', label: 'Chat', icon: <MessageSquare className="w-5 h-5" /> },
+  { to: '/chat', label: 'Chat', icon: <MessagesSquare className="w-5 h-5" /> },
   { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> },
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
   { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
   { to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" />, enabled: true },
-  { to: '/group-chat', label: 'Group Chat', icon: <MessagesSquare className="w-5 h-5" /> },
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
   { to: '/developers', label: 'Developers', icon: <Code2 className="w-5 h-5" />, enabled: true },
   { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },

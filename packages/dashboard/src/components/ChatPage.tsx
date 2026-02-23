@@ -11,6 +11,7 @@ import {
   Plus,
   Trash2,
   MessageSquare,
+  MessagesSquare,
   Pencil,
   Check,
   X,
@@ -39,6 +40,7 @@ import { usePushToTalk } from '../hooks/usePushToTalk';
 import type { Personality, BrainContext, Conversation } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
+import { GroupChatPage } from './GroupChatPage';
 
 export function ChatPage() {
   const [showModelWidget, setShowModelWidget] = useState(false);
@@ -51,6 +53,7 @@ export function ChatPage() {
   const [memoryEnabled, setMemoryEnabled] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [activeSection, setActiveSection] = useState<'personality' | 'group'>('personality');
 
   const queryClient = useQueryClient();
 
@@ -258,7 +261,34 @@ export function ChatPage() {
   );
 
   return (
-    <div className="flex h-[calc(100vh-100px)] sm:h-[calc(100vh-140px)] gap-0 relative">
+    <div className="flex flex-col h-[calc(100vh-100px)] sm:h-[calc(100vh-140px)]">
+      {/* Tab bar */}
+      <div className="flex border-b border-border shrink-0">
+        <button
+          onClick={() => setActiveSection('personality')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeSection === 'personality'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <MessageSquare className="w-4 h-4" />
+          Personality Chat
+        </button>
+        <button
+          onClick={() => setActiveSection('group')}
+          className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+            activeSection === 'group'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <MessagesSquare className="w-4 h-4" />
+          Group Chat
+        </button>
+      </div>
+      {activeSection === 'personality' ? (
+      <div className="flex flex-1 min-h-0 gap-0 relative">
       {/* Conversation Sidebar — collapsible */}
       {sidebarOpen && (
         <>
@@ -766,6 +796,12 @@ export function ChatPage() {
           />
         </div>
       </div>
+      </div>
+      ) : (
+        <div className="flex-1 min-h-0">
+          <GroupChatPage />
+        </div>
+      )}
     </div>
   );
 }

@@ -149,8 +149,20 @@ export function GroupChatPage() {
             <div className="p-4 text-sm text-muted-foreground text-center">Loading channels…</div>
           )}
           {!channelsLoading && channels.length === 0 && (
-            <div className="p-4 text-sm text-muted-foreground text-center">
-              No conversations yet. Connect an integration to start receiving messages.
+            <div className="p-4 space-y-3">
+              <p className="text-sm font-medium text-foreground">No active conversations</p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Group Chat shows real-time conversations from your connected integrations —
+                Telegram, Slack, Discord, WhatsApp, and more.
+              </p>
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Once an integration is connected and receives an inbound message, the conversation
+                will appear here and you can reply directly from this view.
+              </p>
+              <p className="text-xs text-muted-foreground">
+                To get started, add an integration under{' '}
+                <span className="text-primary font-medium">Connections</span>.
+              </p>
             </div>
           )}
           {channels.map((ch) => {
