@@ -22,6 +22,7 @@ const PERSONALITY = {
   voice: '',
   preferredLanguage: '',
   isActive: false,
+  deletionProtected: false,
   includeArchetypes: true,
   defaultModel: null,
   modelFallbacks: [],
@@ -275,6 +276,15 @@ describe('SoulManager', () => {
       });
       await expect(manager.deletePersonality('p-1')).rejects.toThrow(
         'Cannot delete the active personality'
+      );
+    });
+
+    it('deletePersonality throws when personality is deletionProtected', async () => {
+      const { manager } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue({ ...PERSONALITY, isActive: false, deletionProtected: true }),
+      });
+      await expect(manager.deletePersonality('p-1')).rejects.toThrow(
+        'protected from deletion'
       );
     });
 
@@ -802,7 +812,7 @@ describe('SoulManager', () => {
       expect(names).toContain('get_delegation_result');
     });
 
-    it('injects experiment tool when body.enabled and creationConfig.experiments are true', async () => {
+    it('injects experiment tools when body.enabled and creationConfig.experiments are true', async () => {
       const personality = {
         ...PERSONALITY,
         body: {
@@ -828,7 +838,106 @@ describe('SoulManager', () => {
         getEnabledSkills: vi.fn().mockResolvedValue([]),
       });
       const tools = await manager.getActiveTools();
-      expect(tools.map((t) => t.name)).toContain('create_experiment');
+      const names = tools.map((t) => t.name);
+      expect(names).toContain('create_experiment');
+      expect(names).toContain('delete_experiment');
+    });
+
+    it('injects personality tools when body.enabled and creationConfig.personalities are true', async () => {
+      const personality = {
+        ...PERSONALITY,
+        body: {
+          ...PERSONALITY.body,
+          enabled: true,
+          creationConfig: {
+            skills: false,
+            tasks: false,
+            personalities: true,
+            subAgents: false,
+            customRoles: false,
+            roleAssignments: false,
+            experiments: false,
+            allowA2A: false,
+            allowSwarms: false,
+            allowDynamicTools: false,
+          },
+        },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+        getPersonality: vi.fn().mockResolvedValue(personality),
+        getEnabledSkills: vi.fn().mockResolvedValue([]),
+      });
+      const tools = await manager.getActiveTools();
+      const names = tools.map((t) => t.name);
+      expect(names).toContain('create_personality');
+      expect(names).toContain('update_personality');
+      expect(names).toContain('delete_personality');
+      expect(names).not.toContain('create_skill');
+    });
+
+    it('injects custom role tools when body.enabled and creationConfig.customRoles are true', async () => {
+      const personality = {
+        ...PERSONALITY,
+        body: {
+          ...PERSONALITY.body,
+          enabled: true,
+          creationConfig: {
+            skills: false,
+            tasks: false,
+            personalities: false,
+            subAgents: false,
+            customRoles: true,
+            roleAssignments: false,
+            experiments: false,
+            allowA2A: false,
+            allowSwarms: false,
+            allowDynamicTools: false,
+          },
+        },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+        getPersonality: vi.fn().mockResolvedValue(personality),
+        getEnabledSkills: vi.fn().mockResolvedValue([]),
+      });
+      const tools = await manager.getActiveTools();
+      const names = tools.map((t) => t.name);
+      expect(names).toContain('create_custom_role');
+      expect(names).toContain('delete_custom_role');
+      expect(names).not.toContain('create_skill');
+    });
+
+    it('injects role assignment tools when body.enabled and creationConfig.roleAssignments are true', async () => {
+      const personality = {
+        ...PERSONALITY,
+        body: {
+          ...PERSONALITY.body,
+          enabled: true,
+          creationConfig: {
+            skills: false,
+            tasks: false,
+            personalities: false,
+            subAgents: false,
+            customRoles: false,
+            roleAssignments: true,
+            experiments: false,
+            allowA2A: false,
+            allowSwarms: false,
+            allowDynamicTools: false,
+          },
+        },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(personality),
+        getPersonality: vi.fn().mockResolvedValue(personality),
+        getEnabledSkills: vi.fn().mockResolvedValue([]),
+      });
+      const tools = await manager.getActiveTools();
+      const names = tools.map((t) => t.name);
+      expect(names).toContain('assign_role');
+      expect(names).toContain('revoke_role');
+      expect(names).not.toContain('create_skill');
     });
 
     it('combines skill-based tools and creation tools', async () => {

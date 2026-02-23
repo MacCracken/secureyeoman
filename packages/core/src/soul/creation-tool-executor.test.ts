@@ -1,6 +1,9 @@
 /**
  * Tests for creation-tool-executor:
  *   - 'create_task' case — executor executes and returns; does NOT own storage
+ *   - 'delete_personality' case — self-deletion guard + deletionProtected guard
+ *   - 'delete_custom_role' / 'revoke_role' — RBAC delegation
+ *   - 'delete_experiment' — experiment manager delegation
  *   - 'register_dynamic_tool' case
  *   - default case dynamic-tool dispatch
  *
@@ -10,6 +13,19 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { executeCreationTool } from './creation-tool-executor.js';
 import type { ToolCall } from '@secureyeoman/shared';
+
+// ── Mock rbac module (used by delete_custom_role, revoke_role, assign_role) ───
+
+const mockRbac = {
+  removeRole: vi.fn(),
+  revokeUserRole: vi.fn(),
+  assignUserRole: vi.fn(),
+  defineRole: vi.fn(),
+};
+
+vi.mock('../security/rbac.js', () => ({
+  getRBAC: vi.fn(() => mockRbac),
+}));
 
 // ── Minimal DynamicToolManager mock ──────────────────────────────────────────
 
@@ -40,6 +56,7 @@ function makeSecureYeoman(dtm?: ReturnType<typeof makeDtm>) {
       createSkill: vi.fn().mockResolvedValue({ id: 's-1', name: 'Skill' }),
       updateSkill: vi.fn().mockResolvedValue({ id: 's-1' }),
       deleteSkill: vi.fn().mockResolvedValue(undefined),
+      deletePersonality: vi.fn().mockResolvedValue(undefined),
     }),
     getTaskStorage: vi.fn().mockReturnValue(null),
     getTaskExecutor: vi.fn().mockReturnValue(null),
@@ -56,6 +73,13 @@ function makeToolCall(name: string, args: Record<string, unknown> = {}): ToolCal
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+beforeEach(() => {
+  mockRbac.removeRole.mockReset();
+  mockRbac.revokeUserRole.mockReset();
+  mockRbac.assignUserRole.mockReset();
+  mockRbac.defineRole.mockReset();
+});
 
 describe('executeCreationTool — create_task', () => {
   describe('without a taskExecutor', () => {
@@ -358,5 +382,184 @@ describe('executeCreationTool — dynamic tool dispatch (default case)', () => {
       expect(result.isError).toBe(true);
       expect((result.output as { error: string }).error).toBe('execution failed');
     });
+  });
+});
+
+describe('executeCreationTool — delete_personality', () => {
+  it('blocks self-deletion when context.personalityId matches the target id', async () => {
+    const sy = makeSecureYeoman();
+    const ctx = { personalityId: 'p-self', personalityName: 'FRIDAY' };
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_personality', { id: 'p-self' }),
+      sy as any,
+      ctx
+    );
+
+    expect(result.isError).toBe(true);
+    expect((result.output as { error: string }).error).toMatch(/cannot delete itself/i);
+  });
+
+  it('does not call soulManager.deletePersonality when self-deletion is blocked', async () => {
+    const sy = makeSecureYeoman();
+    const soulMgr = sy.getSoulManager();
+    const ctx = { personalityId: 'p-self' };
+
+    await executeCreationTool(makeToolCall('delete_personality', { id: 'p-self' }), sy as any, ctx);
+
+    expect(soulMgr.deletePersonality).not.toHaveBeenCalled();
+  });
+
+  it('returns isError true when soulManager.deletePersonality throws (e.g. deletionProtected)', async () => {
+    const sy = makeSecureYeoman();
+    sy.getSoulManager().deletePersonality = vi.fn().mockRejectedValue(
+      new Error('This personality is protected from deletion. Disable "Protected from deletion" in its settings first.')
+    );
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_personality', { id: 'p-other' }),
+      sy as any,
+      { personalityId: 'p-self' }
+    );
+
+    expect(result.isError).toBe(true);
+    expect((result.output as { error: string }).error).toMatch(/protected from deletion/i);
+  });
+
+  it('returns { deleted: true, id } on success', async () => {
+    const sy = makeSecureYeoman();
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_personality', { id: 'p-other' }),
+      sy as any,
+      { personalityId: 'p-self' }
+    );
+
+    expect(result.isError).toBe(false);
+    expect(result.output).toEqual({ deleted: true, id: 'p-other' });
+  });
+
+  it('allows deletion when no context is provided (no self-deletion risk)', async () => {
+    const sy = makeSecureYeoman();
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_personality', { id: 'p-some' }),
+      sy as any
+      // no context
+    );
+
+    expect(result.isError).toBe(false);
+  });
+});
+
+describe('executeCreationTool — delete_custom_role', () => {
+  it('returns { deleted: true, roleId } when removeRole returns true', async () => {
+    mockRbac.removeRole.mockResolvedValue(true);
+    const sy = makeSecureYeoman();
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_custom_role', { roleId: 'analyst' }),
+      sy as any
+    );
+
+    expect(result.isError).toBe(false);
+    expect(result.output).toEqual({ deleted: true, roleId: 'analyst' });
+  });
+
+  it('returns isError true when removeRole returns false (not found)', async () => {
+    mockRbac.removeRole.mockResolvedValue(false);
+    const sy = makeSecureYeoman();
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_custom_role', { roleId: 'missing-role' }),
+      sy as any
+    );
+
+    expect(result.isError).toBe(true);
+    expect((result.output as { error: string }).error).toMatch(/not found or cannot be deleted/i);
+  });
+
+  it('calls removeRole with the provided roleId', async () => {
+    mockRbac.removeRole.mockResolvedValue(true);
+    const sy = makeSecureYeoman();
+
+    await executeCreationTool(
+      makeToolCall('delete_custom_role', { roleId: 'scanner' }),
+      sy as any
+    );
+
+    expect(mockRbac.removeRole).toHaveBeenCalledWith('scanner');
+  });
+});
+
+describe('executeCreationTool — revoke_role', () => {
+  it('returns { revoked: true, userId } on success', async () => {
+    mockRbac.revokeUserRole.mockResolvedValue(undefined);
+    const sy = makeSecureYeoman();
+
+    const result = await executeCreationTool(
+      makeToolCall('revoke_role', { userId: 'user-123' }),
+      sy as any
+    );
+
+    expect(result.isError).toBe(false);
+    expect(result.output).toEqual({ revoked: true, userId: 'user-123' });
+  });
+
+  it('calls revokeUserRole with the provided userId', async () => {
+    mockRbac.revokeUserRole.mockResolvedValue(undefined);
+    const sy = makeSecureYeoman();
+
+    await executeCreationTool(
+      makeToolCall('revoke_role', { userId: 'user-abc' }),
+      sy as any
+    );
+
+    expect(mockRbac.revokeUserRole).toHaveBeenCalledWith('user-abc');
+  });
+});
+
+describe('executeCreationTool — delete_experiment', () => {
+  it('returns isError true when experiment manager is not available', async () => {
+    const sy = makeSecureYeoman(); // getExperimentManager returns null
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_experiment', { id: 'exp-1' }),
+      sy as any
+    );
+
+    expect(result.isError).toBe(true);
+    expect((result.output as { error: string }).error).toMatch(/experiment manager not available/i);
+  });
+
+  it('returns { deleted: true, id } on success', async () => {
+    const mockExpManager = { delete: vi.fn().mockResolvedValue(undefined) };
+    const sy = {
+      ...makeSecureYeoman(),
+      getExperimentManager: vi.fn().mockReturnValue(mockExpManager),
+    };
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_experiment', { id: 'exp-99' }),
+      sy as any
+    );
+
+    expect(result.isError).toBe(false);
+    expect(result.output).toEqual({ deleted: true, id: 'exp-99' });
+  });
+
+  it('calls experimentManager.delete with the provided id', async () => {
+    const mockExpManager = { delete: vi.fn().mockResolvedValue(undefined) };
+    const sy = {
+      ...makeSecureYeoman(),
+      getExperimentManager: vi.fn().mockReturnValue(mockExpManager),
+    };
+
+    await executeCreationTool(
+      makeToolCall('delete_experiment', { id: 'exp-42' }),
+      sy as any
+    );
+
+    expect(mockExpManager.delete).toHaveBeenCalledWith('exp-42');
   });
 });

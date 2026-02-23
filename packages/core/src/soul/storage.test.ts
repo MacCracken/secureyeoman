@@ -31,6 +31,7 @@ const personalityRow = {
   model_fallbacks: [],
   include_archetypes: true,
   is_active: false,
+  deletion_protected: false,
   body: null,
   created_at: 1000,
   updated_at: 2000,
@@ -114,6 +115,18 @@ describe('SoulStorage', () => {
     it('returns null when not found', async () => {
       mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
       expect(await storage.getPersonality('missing')).toBeNull();
+    });
+
+    it('maps deletion_protected false to deletionProtected false', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...personalityRow, deletion_protected: false }], rowCount: 1 });
+      const p = await storage.getPersonality('per-1');
+      expect(p?.deletionProtected).toBe(false);
+    });
+
+    it('maps deletion_protected true to deletionProtected true', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...personalityRow, deletion_protected: true }], rowCount: 1 });
+      const p = await storage.getPersonality('per-1');
+      expect(p?.deletionProtected).toBe(true);
     });
   });
 

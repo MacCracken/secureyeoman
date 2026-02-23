@@ -4,6 +4,57 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — Personality Delete Tools + `deletionProtected` Flag (2026-02-23)
+
+### Features
+
+**Symmetric AI creation tools** — the AI can now delete what it creates, subject to the same `creationConfig` capability gate:
+- `delete_personality` (gate: `personalities`) — permanently deletes a personality by ID
+- `delete_custom_role` (gate: `customRoles`) — removes a custom RBAC role by ID
+- `revoke_role` (gate: `roleAssignments`) — strips the role assigned to a user
+- `delete_experiment` (gate: `experiments`) — deletes an A/B experiment by ID
+
+All four tools are exposed via `getCreationTools()` in `creation-tools.ts` and handled in `creation-tool-executor.ts`. Sparkle cards in chat record each deletion with `action: 'Deleted'` / `action: 'Revoked'` (via the `toolAction()` helper in `chat-routes.ts`).
+
+**Self-deletion guard** — `delete_personality` in the executor compares the target ID against `context.personalityId`. When they match it returns `isError: true` immediately; `soulManager.deletePersonality()` is never called. The guard lives in the executor (not the manager) because only the executor has access to the calling personality's context.
+
+**`deletionProtected` flag** — a new per-personality flag that blocks deletion via any path (UI, REST API, AI tool) until an operator explicitly disables it:
+- Migration `036_personality_deletion_protected.sql`: `deletion_protected BOOLEAN NOT NULL DEFAULT false`
+- `PersonalitySchema.deletionProtected` (Zod, `packages/shared`) — auto-flows into `PersonalityCreate` and `PersonalityUpdate` via schema derivation
+- `SoulStorage` (`packages/core`): `PersonalityRow.deletion_protected`, `rowToPersonality()`, INSERT `$13`, UPDATE `$11`
+- `SoulManager.deletePersonality()`: throws `"This personality is protected from deletion..."` when `deletionProtected` is `true`
+- `PersonalityEditor.tsx` (`packages/dashboard`): "Protected from deletion" checkbox toggle with explanatory label
+
+> **Note**: `locked` is reserved for edit-immutability (a future RBAC story). `deletionProtected` only blocks deletion.
+
+### Documentation
+
+**`docs/adr/111-personality-delete-tools-and-deletion-protected.md`** — new ADR:
+- Explains the symmetric create/delete capability model
+- Documents the self-deletion guard boundary (executor vs. manager)
+- Records the `deletionProtected` flag full stack and migration
+- Clarifies `locked` vs `deletionProtected` distinction
+
+### Tests
+
+**`packages/core/src/soul/manager.test.ts`**:
+- `PERSONALITY` fixture now includes `deletionProtected: false`
+- `deletePersonality throws when personality is deletionProtected`
+- Tool injection tests for `personalities` (delete_personality), `customRoles` (delete_custom_role), `roleAssignments` (revoke_role), `experiments` (delete_experiment)
+
+**`packages/core/src/soul/storage.test.ts`**:
+- `personalityRow` fixture now includes `deletion_protected: false`
+- Two new tests: `deletion_protected false/true → deletionProtected false/true`
+
+**`packages/core/src/soul/creation-tool-executor.test.ts`**:
+- Added `vi.mock('../security/rbac.js', ...)` for RBAC-delegating cases
+- `delete_personality`: self-deletion guard, `deletionProtected` guard (via manager throw), success, no-context success
+- `delete_custom_role`: success (removeRole true), not-found (removeRole false), argument forwarding
+- `revoke_role`: success, argument forwarding
+- `delete_experiment`: manager-unavailable error, success, argument forwarding
+
+---
+
 ## [Unreleased] — Resource Action Recording Refactor (2026-02-23)
 
 ### Bug Fixes

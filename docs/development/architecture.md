@@ -194,18 +194,29 @@ secureyeoman/
 **Location**: `packages/core/src/soul/`
 
 **Responsibilities**:
-- Personality management (create, switch, update active personality)
+- Personality management (create, switch, update, delete active personality)
 - Prompt composition following the "In Our Image" hierarchy (Soul > Spirit > Brain > Body > Heart)
 - Sacred archetypes cosmological preamble
 - User profile and owner context injection
 - Skill management (delegated to Brain when available)
+- AI-driven resource creation/deletion via capability-gated `creationConfig` tools
 
 The active personality is the sole source of identity in the composed prompt. The agent name is stored separately for display purposes but is not injected into the system prompt — the personality's own `name` and `systemPrompt` fields define the complete identity.
 
+**Personality deletion guards** — two independent protections apply before `SoulStorage.deletePersonality()` is ever called:
+1. **Active personality guard** — `SoulManager.deletePersonality()` throws if the target personality is currently active.
+2. **`deletionProtected` flag** — `SoulManager.deletePersonality()` throws if `personality.deletionProtected` is `true`. Set via the "Protected from deletion" toggle in the dashboard (or the REST API). Applies to UI, REST API, and AI tool calls equally.
+
+**AI self-deletion guard** — when the AI invokes `delete_personality`, `creation-tool-executor.ts` compares the target ID against the calling personality's context ID. A personality cannot delete itself; this check is in the executor (not the manager) because only the executor has the calling context.
+
+> **`locked` vs `deletionProtected`** — `deletionProtected` blocks deletion only. A future `locked` flag will block edits (edit-immutability, deferred RBAC story).
+
 **Key Modules**:
 - `archetypes.ts` - Sacred archetypes constant and `composeArchetypesPreamble()`
-- `storage.ts` - SQLite persistence for personalities, skills, users
-- `manager.ts` - SoulManager with prompt composition orchestrating all four layers
+- `storage.ts` - PostgreSQL persistence for personalities, skills, users; maps `deletion_protected` ↔ `deletionProtected`
+- `manager.ts` - SoulManager with prompt composition orchestrating all four layers; deletion guards
+- `creation-tools.ts` - Tool schemas for AI resource creation/deletion (skills, tasks, personalities, roles, experiments, workflows, A2A)
+- `creation-tool-executor.ts` - Executor for AI creation tools; self-deletion guard; delegates to managers
 - `soul-routes.ts` - REST API endpoints
 
 ### 6. Spirit System
