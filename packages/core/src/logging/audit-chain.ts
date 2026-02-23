@@ -81,6 +81,15 @@ export class AuditChain {
   private logger: SecureLogger | null = null;
   private signingKeyHistory: { fromEntryId: string; key: string }[] = [];
 
+  /**
+   * Promise queue that serializes all record() calls.
+   * Concurrent callers (including fire-and-forget `void record(...)` sites)
+   * would otherwise read the same stale this.lastHash before any of them
+   * finishes writing, producing duplicate previousEntryHash values and
+   * breaking chain verification with "previous hash mismatch".
+   */
+  private _recordQueue: Promise<unknown> = Promise.resolve();
+
   constructor(config: AuditChainConfig) {
     this.storage = config.storage;
     this.signingKey = config.signingKey;
@@ -158,9 +167,31 @@ export class AuditChain {
   }
 
   /**
-   * Record a new audit entry
+   * Record a new audit entry.
+   *
+   * All calls are serialized through an internal promise queue so that
+   * concurrent callers (including fire-and-forget `void record(...)` sites)
+   * never read a stale this.lastHash and corrupt the hash chain.
    */
-  async record(params: {
+  record(params: {
+    event: string;
+    level: AuditEntry['level'];
+    message: string;
+    userId?: string;
+    taskId?: string;
+    correlationId?: string;
+    metadata?: Record<string, unknown>;
+  }): Promise<AuditEntry> {
+    // Chain the new work onto the queue.  Errors from a previous enqueued
+    // call must not prevent subsequent records from running, so we catch and
+    // discard failures before attaching the next item.
+    const next = this._recordQueue.then(() => this._doRecord(params));
+    this._recordQueue = next.catch(() => undefined);
+    return next;
+  }
+
+  /** Internal implementation — called exclusively through record(). */
+  private async _doRecord(params: {
     event: string;
     level: AuditEntry['level'];
     message: string;

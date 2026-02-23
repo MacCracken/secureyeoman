@@ -183,6 +183,42 @@ describe('AuditChain', () => {
     });
   });
 
+  describe('record() concurrency', () => {
+    it('produces a valid chain when many records are fired concurrently', async () => {
+      // Simulate the fire-and-forget pattern used throughout the codebase
+      // (void auditChain.record(...)).  Without the promise queue these would
+      // all read the same stale this.lastHash and corrupt the chain.
+      const N = 20;
+      await Promise.all(
+        Array.from({ length: N }, (_, i) =>
+          chain.record({ event: `concurrent_${i}`, level: 'info', message: `entry ${i}` })
+        )
+      );
+
+      expect(await storage.count()).toBe(N);
+      const result = await chain.verify();
+      expect(result.valid).toBe(true);
+      expect(result.entriesChecked).toBe(N);
+    });
+
+    it('each entry has a unique previousEntryHash when fired concurrently', async () => {
+      await Promise.all([
+        chain.record({ event: 'a', level: 'info', message: 'A' }),
+        chain.record({ event: 'b', level: 'info', message: 'B' }),
+        chain.record({ event: 'c', level: 'info', message: 'C' }),
+      ]);
+
+      const hashes: string[] = [];
+      for await (const entry of storage.iterate()) {
+        hashes.push(entry.integrity.previousEntryHash);
+      }
+      // Each entry must have a different previousEntryHash — they form a chain,
+      // not a fan (which is what the race condition produces).
+      const unique = new Set(hashes);
+      expect(unique.size).toBe(hashes.length);
+    });
+  });
+
   describe('record() validation', () => {
     it('should set id, timestamp, and integrity fields automatically', async () => {
       const entry = await chain.record({
