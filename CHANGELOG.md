@@ -4,29 +4,74 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 45 — creationConfig Tool Injection Bug Fix (2026-02-22)
+
+Fixes a silent capability gap: when a personality had resource-creation abilities enabled via
+`creationConfig` toggles (skills, tasks, personalities, subAgents, etc.), the system prompt told
+the AI it had permission but no matching `Tool` definitions were ever injected into the AI's tool
+list. The AI could see its permissions but had no structured function signatures to act on them.
+
+### What changed
+
+**`packages/core/src/soul/creation-tools.ts`** (new file):
+
+- Defines `Tool` schemas for every `creationConfig` capability: `create_skill`, `update_skill`,
+  `delete_skill`, `create_task`, `update_task`, `create_personality`, `update_personality`,
+  `create_custom_role`, `assign_role`, `create_experiment`, `a2a_connect`, `a2a_send`,
+  `register_dynamic_tool`, plus delegation tools (`delegate_task`, `list_sub_agents`,
+  `get_delegation_result`, `create_swarm`) imported from `agents/tools.ts`.
+- Exports `getCreationTools(config, bodyEnabled)` — returns only the tools for toggles that are
+  `true`. Returns `[]` when `body.enabled` is `false` unconditionally.
+
+**`packages/core/src/soul/manager.ts`** — `getActiveTools()`:
+
+- Now resolves the personality (by `personalityId` or falls back to active) and calls
+  `getCreationTools()` on its `body.creationConfig`.
+- Creation tools are appended alongside existing skill-based tools so the full tool list is
+  correct in every context: dashboard chat, integration messages, heartbeat, CLI, etc.
+- Zero changes required in chat-routes, message-router, or any context-specific handler.
+
+**`packages/core/src/soul/manager.test.ts`**:
+
+- Seven new tests covering: body disabled suppresses creation tools; each major toggle injects the
+  right tool names; creation tools combine correctly with skill-based tools; brain path works.
+
+---
+
 ## Phase 44 — Heartbeat Task History & Reliability Fixes (2026-02-22)
 
-Fixes three heartbeat-related issues: execution history not visible in the dashboard, "never run"
-shown after restart despite prior runs, and a spurious memory warning triggered by normal V8 heap
-behaviour.
+Fixes five heartbeat-related issues: execution history not visible in the dashboard, log route
+gated behind a disabled feature flag, heartbeat section hidden by default, status badges missing
+in collapsed state, "never run" shown after restart despite prior runs, and a spurious memory
+warning triggered by normal V8 heap behaviour.
 
 ### What changed
 
 **`SecurityPage.tsx`** — expandable execution history per heartbeat task:
 
 - New `HeartbeatTaskCard` component replaces the static heartbeat card rendering in `TasksTab`.
-- Collapsed state shows task config (name, type, interval, last-run time) plus the most recent
-  execution status badge drawn from the log.
-- Expanded state fetches `fetchHeartbeatLog({ checkName, limit: 10 })` on demand and renders a
-  table of recent executions: status icon, ran-at timestamp, duration, message, and error detail.
+- Heartbeat Tasks section now **open by default** (was collapsed, making tasks invisible).
+- Always-on `heartbeat-log-latest` query (limit 1, `refetchInterval: 30s`) populates the status
+  badge in collapsed state — previously badges only appeared after expanding the card.
+- Expanded state fetches `fetchHeartbeatLog({ checkName, limit: 10 })` and renders a table of
+  recent executions: status icon, ran-at timestamp, duration, message, and error detail.
 - Expand/collapse toggle with `ChevronDown` / `ChevronUp` and accessible `aria-label`.
-- Log query uses `enabled: expanded` to avoid unnecessary polling and `refetchInterval: 30_000`
-  while the panel is open so new executions appear without requiring a collapse/re-expand.
+- Full history query uses `enabled: expanded` and `refetchInterval: 30_000` while open.
+
+**`brain-routes.ts` / `proactive-routes.ts` / `server.ts`** — log route always registered:
+
+- `/api/v1/proactive/heartbeat/log` was inside `registerProactiveRoutes`, which is only called
+  when `allowProactive: true` (default `false`). The route was never reachable, so `fetchHeartbeatLog`
+  always silently returned `{ entries: [], total: 0 }`.
+- Moved the route into `registerBrainRoutes` alongside the other heartbeat routes so it is
+  registered whenever `heartbeatLogStorage` is available, independent of the proactive system.
+- `HeartbeatLogStorage` added to `BrainRoutesOptions`; passed from `server.ts` at registration.
+- Removed the route and `HeartbeatLogStorage` import from `proactive-routes.ts`.
 
 **`heartbeat.ts`** — `taskLastRun` persists across restarts:
 
-- Added `async initialize(): Promise<void>` method that seeds the in-memory `taskLastRun` map
-  from the most recent `heartbeat_log` row for each configured check.
+- Added `async initialize(): Promise<void>` that seeds the in-memory `taskLastRun` map from the
+  most recent `heartbeat_log` row for each configured check.
 - Previously restarting the process always showed "never run" even when runs had been recorded.
 
 **`heartbeat.ts`** — memory check uses RSS threshold instead of heap ratio:
@@ -37,15 +82,24 @@ behaviour.
   `check.config.warnRssMb`).
 - Message and `data` payload now include `rssMb`, `externalMb`, and heap figures.
 
+**`heartbeat-log-storage.ts`** — BIGINT parsed correctly:
+
+- `ran_at` (`BIGINT`) and `duration_ms` are now wrapped with `Number()` since the `pg` driver
+  returns `BIGINT` columns as strings in Node.js.
+
 **`secureyeoman.ts`**:
 
-- `await this.heartbeatManager.initialize()` called at Step 6.6 before `start()` so `lastRunAt`
-  is hydrated from the database on every startup.
+- `await this.heartbeatManager.initialize()` called before `start()` so `lastRunAt` is hydrated
+  from the database on every startup.
 
 ### Files changed
 
-- `packages/dashboard/src/components/SecurityPage.tsx` — `HeartbeatTaskCard` with expandable log + `refetchInterval`
+- `packages/dashboard/src/components/SecurityPage.tsx` — open by default; always-on status badge query; `HeartbeatTaskCard` with expandable log
+- `packages/core/src/brain/brain-routes.ts` — heartbeat log route moved here; `heartbeatLogStorage` added to options
+- `packages/core/src/proactive/proactive-routes.ts` — heartbeat log route removed; `HeartbeatLogStorage` import removed
+- `packages/core/src/gateway/server.ts` — pass `heartbeatLogStorage` to `registerBrainRoutes`; removed from proactive routes call
 - `packages/core/src/body/heartbeat.ts` — `initialize()` method; RSS-based memory warning
+- `packages/core/src/body/heartbeat-log-storage.ts` — `Number()` parsing for BIGINT columns
 - `packages/core/src/secureyeoman.ts` — call `heartbeatManager.initialize()` before `start()`
 - `packages/core/src/body/heartbeat.test.ts` — updated memory warning test to use RSS mock
 

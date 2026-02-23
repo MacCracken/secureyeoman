@@ -36,6 +36,7 @@ import type {
   UserProfileUpdate,
 } from './types.js';
 import { applySkillTrustFilter } from './skill-trust.js';
+import { getCreationTools } from './creation-tools.js';
 
 /**
  * Returns true when the user message is relevant to the given skill.
@@ -688,18 +689,34 @@ export class SoulManager {
       return [];
     }
 
+    // Resolve personality so we can inject creation tools based on creationConfig.
+    // Fall back to active personality when no explicit id is provided.
+    const personality = personalityId
+      ? ((await this.storage.getPersonality(personalityId)) ??
+        (await this.storage.getActivePersonality()))
+      : await this.storage.getActivePersonality();
+
+    let skillTools: Tool[];
     if (this.brain) {
-      return this.brain.getActiveTools(personalityId);
+      skillTools = await this.brain.getActiveTools(personalityId);
+    } else {
+      const skills = await this.storage.getEnabledSkills();
+      skillTools = [];
+      for (const skill of skills) {
+        if (!skill.tools || skill.tools.length === 0) continue;
+        const filtered = applySkillTrustFilter(skill.tools, skill.source);
+        skillTools.push(...filtered);
+      }
     }
 
-    const skills = await this.storage.getEnabledSkills();
-    const tools: Tool[] = [];
-    for (const skill of skills) {
-      if (!skill.tools || skill.tools.length === 0) continue;
-      const filtered = applySkillTrustFilter(skill.tools, skill.source);
-      tools.push(...filtered);
-    }
-    return tools;
+    // Append creation tools for each creationConfig toggle that is enabled.
+    // Only injected when body.enabled is true — a disabled body has no creation
+    // capabilities regardless of individual toggle values.
+    const bodyEnabled = personality?.body?.enabled ?? false;
+    const creationConfig = personality?.body?.creationConfig ?? {};
+    const creationTools = getCreationTools(creationConfig, bodyEnabled);
+
+    return [...skillTools, ...creationTools];
   }
 
   // ── Config ──────────────────────────────────────────────────
