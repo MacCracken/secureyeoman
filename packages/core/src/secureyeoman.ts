@@ -125,6 +125,8 @@ import { CodeExecutionManager } from './execution/manager.js';
 import { A2AStorage } from './a2a/storage.js';
 import { A2AManager } from './a2a/manager.js';
 import { RemoteDelegationTransport } from './a2a/transport.js';
+import { DynamicToolStorage } from './soul/dynamic-tool-storage.js';
+import { DynamicToolManager } from './soul/dynamic-tool-manager.js';
 import { SystemPreferencesStorage } from './config/system-preferences-storage.js';
 import { GroupChatStorage } from './integrations/group-chat-storage.js';
 import { RoutingRulesStorage } from './integrations/routing-rules-storage.js';
@@ -219,6 +221,8 @@ export class SecureYeoman {
   private executionManager: CodeExecutionManager | null = null;
   private a2aStorage: A2AStorage | null = null;
   private a2aManager: A2AManager | null = null;
+  private dynamicToolStorage: DynamicToolStorage | null = null;
+  private dynamicToolManager: DynamicToolManager | null = null;
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
@@ -962,6 +966,41 @@ export class SecureYeoman {
         }
       }
 
+      // Step 6.15: Initialize dynamic tool manager (if enabled by security policy)
+      // The manager is started when allowDynamicTools is true at startup so that
+      // tools persisted from a previous session are immediately available.
+      if (this.config.security.allowDynamicTools) {
+        try {
+          this.dynamicToolStorage = new DynamicToolStorage();
+          await this.dynamicToolStorage.ensureTables();
+          this.dynamicToolManager = new DynamicToolManager(
+            this.dynamicToolStorage,
+            // Pass a live reference to the security config object so that runtime
+            // policy changes (e.g. toggling sandboxDynamicTools via the UI) are
+            // picked up immediately without requiring a restart.
+            this.config.security,
+            {
+              logger: this.logger.child({ component: 'DynamicToolManager' }),
+              auditChain: this.auditChain ?? undefined,
+              sandboxManager: this.sandboxManager ?? undefined,
+            }
+          );
+          await this.dynamicToolManager.initialize();
+          // Wire schemas into the soul manager so registered dynamic tools are
+          // injected into the AI context alongside skill and creation tools.
+          if (this.soulManager) {
+            this.soulManager.setDynamicToolManager(this.dynamicToolManager);
+          }
+          this.logger.debug('Dynamic tool manager initialized', {
+            sandboxed: this.config.security.sandboxDynamicTools ?? true,
+          });
+        } catch (error) {
+          this.logger.warn('Dynamic tool manager initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
       // Step 6b: Initialize Proactive Manager
       if (this.config.security.allowProactive || this.config.proactive?.enabled) {
         try {
@@ -1674,6 +1713,14 @@ export class SecureYeoman {
   getA2AManager(): A2AManager | null {
     this.ensureInitialized();
     return this.a2aManager;
+  }
+
+  /**
+   * Get the dynamic tool manager instance (null when allowDynamicTools is disabled).
+   */
+  getDynamicToolManager(): DynamicToolManager | null {
+    this.ensureInitialized();
+    return this.dynamicToolManager;
   }
 
   getProactiveManager(): import('./proactive/manager.js').ProactiveManager | null {

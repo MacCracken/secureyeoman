@@ -29,14 +29,13 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 ### Bugs
 
+- [ ] Tasks status and duration displayed in Task View > Task History still state pending and duration a'-'.
 - [ ] Connect CLI when DisplayName entered and connected -Integration undefined not found
 - [ ] Chat needs responsive design in the response window to not blow up the view
 
 ### Improvements
 - [ ] YEOMAN MCP show QUICKBOOKS Skills
 - [ ] CLI updates for the added toolsets
-- [x] Personality editor Body section: replaced flat "Resource Creation" with two-level "Resources" section (Creation + Orchestration sub-sections) — ADR 108
-- [x] Delegation managers (SubAgent/Swarm/Workflow) now bootstrap from persisted Security Settings, eliminating "Manager not available" errors when orchestration features are enabled via UI — ADR 109
 
 
 ---

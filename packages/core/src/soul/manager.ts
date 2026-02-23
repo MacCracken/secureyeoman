@@ -17,6 +17,7 @@ import { PERSONALITY_PRESETS, getPersonalityPreset, type PersonalityPreset } fro
 import type { SoulStorage } from './storage.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { MarketplaceManager } from '../marketplace/manager.js';
+import type { DynamicToolManager } from './dynamic-tool-manager.js';
 import type { SpiritManager } from '../spirit/manager.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 import { HeartManager } from '../body/heart.js';
@@ -75,9 +76,18 @@ export class SoulManager {
   private heartbeat: HeartbeatManager | null = null;
   private heartManager: HeartManager | null = null;
   private marketplace: MarketplaceManager | null = null;
+  private dynamicToolManager: DynamicToolManager | null = null;
 
   setMarketplaceManager(manager: MarketplaceManager): void {
     this.marketplace = manager;
+  }
+
+  /**
+   * Wire in the DynamicToolManager so that registered dynamic tool schemas are
+   * injected into the AI context by getActiveTools().
+   */
+  setDynamicToolManager(manager: DynamicToolManager): void {
+    this.dynamicToolManager = manager;
   }
 
   constructor(
@@ -740,7 +750,14 @@ export class SoulManager {
     const bodyEnabled = personality?.body?.enabled ?? false;
     const creationTools = getCreationTools(personality?.body?.creationConfig, bodyEnabled);
 
-    return [...skillTools, ...creationTools];
+    // Inject registered dynamic tool schemas so the AI can call tools that
+    // were previously created via register_dynamic_tool.  These are available
+    // whenever the DynamicToolManager exists (i.e. allowDynamicTools is on)
+    // and the personality body is enabled.
+    const dynamicTools =
+      bodyEnabled && this.dynamicToolManager ? this.dynamicToolManager.getSchemas() : [];
+
+    return [...skillTools, ...creationTools, ...dynamicTools];
   }
 
   // ── Config ──────────────────────────────────────────────────

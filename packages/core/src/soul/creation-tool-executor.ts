@@ -334,18 +334,41 @@ export async function executeCreationTool(
 
       // ── Dynamic Tools ──────────────────────────────────────────────────
       case 'register_dynamic_tool': {
-        return {
-          output: { error: 'Dynamic tool registration requires the dynamic tools manager which is not yet directly callable from chat context.' },
-          isError: true,
-        };
+        const dtm = secureYeoman.getDynamicToolManager?.();
+        if (!dtm) {
+          return {
+            output: {
+              error:
+                'Dynamic tool creation is not enabled. ' +
+                'Turn on the "Dynamic Tool Creation" toggle in Settings → Security, then restart.',
+            },
+            isError: true,
+          };
+        }
+        const tool = await dtm.register({
+          name: str(args.name),
+          description: typeof args.description === 'string' ? args.description : '',
+          parametersSchema: (args.parameters as Record<string, unknown>) ?? {},
+          implementation: str(args.implementation),
+          personalityId: context?.personalityId ?? null,
+          createdBy: context?.personalityName ?? 'ai',
+        });
+        return { output: { tool }, isError: false };
       }
 
-      // ── Unknown ────────────────────────────────────────────────────────
-      default:
+      // ── Unknown / registered dynamic tool ─────────────────────────────
+      default: {
+        // Before reporting "unknown tool", check whether the AI is calling
+        // a previously registered dynamic tool from the runtime registry.
+        const dtm = secureYeoman.getDynamicToolManager?.();
+        if (dtm?.has(toolCall.name)) {
+          return await dtm.execute(toolCall.name, args);
+        }
         return {
           output: { error: `Unknown tool: ${toolCall.name}. This tool may require a different execution context.` },
           isError: true,
         };
+      }
     }
   } catch (err) {
     return {
