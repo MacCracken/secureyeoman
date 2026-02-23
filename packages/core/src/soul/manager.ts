@@ -713,8 +713,7 @@ export class SoulManager {
     // Only injected when body.enabled is true — a disabled body has no creation
     // capabilities regardless of individual toggle values.
     const bodyEnabled = personality?.body?.enabled ?? false;
-    const creationConfig = personality?.body?.creationConfig ?? {};
-    const creationTools = getCreationTools(creationConfig, bodyEnabled);
+    const creationTools = getCreationTools(personality?.body?.creationConfig, bodyEnabled);
 
     return [...skillTools, ...creationTools];
   }

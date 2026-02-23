@@ -297,7 +297,8 @@ const DYNAMIC_TOOL_TOOLS: Tool[] = [REGISTER_DYNAMIC_TOOL];
  * Sub-agent delegation tools (`subAgents`) and swarm tools (`allowSwarms`)
  * are sourced from `agents/tools.ts` so the definitions stay canonical.
  */
-export function getCreationTools(config: CreationConfig, bodyEnabled: boolean): Tool[] {
+export function getCreationTools(config: Partial<CreationConfig> | undefined, bodyEnabled: boolean): Tool[] {
+  if (!config) return [];
   if (!bodyEnabled) return [];
 
   const tools: Tool[] = [];
