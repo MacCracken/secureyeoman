@@ -29,7 +29,6 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 ### Thoughts
 
 - [ ] YEOMAN MCP - insure available tools are present
-- [ ] Remove env vars fot TTS and STT; should be internalized to the user ability to choose
 - [ ] Need to walkthrough and confirm each of the creation skills in chat.
 
 

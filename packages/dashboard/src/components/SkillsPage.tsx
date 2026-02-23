@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -16,6 +16,7 @@ import {
   Search,
   X,
   Download,
+  Upload,
   User,
   Users,
   RefreshCw,
@@ -64,6 +65,33 @@ const STATUS_BADGES: Record<string, string> = {
   pending_approval: 'badge-warning',
   disabled: 'badge-error',
 };
+
+const AI_SOURCES: ReadonlySet<string> = new Set(['ai_learned', 'ai_proposed']);
+
+/** Download a skill as a portable .skill.json file for re-use or import. */
+function exportSkill(skill: Skill) {
+  // Strip server-managed runtime fields; keep everything a SkillCreate accepts
+  const {
+    id: _id,
+    createdAt: _c,
+    updatedAt: _u,
+    usageCount: _uc,
+    lastUsedAt: _la,
+    personalityName: _pn,
+    ...exportable
+  } = skill as Skill & { id: string; createdAt: number; updatedAt: number; usageCount: number; lastUsedAt: number | null; personalityName?: string | null };
+
+  const payload = JSON.stringify({ $schema: 'sy-skill/1', ...exportable }, null, 2);
+  const blob = new Blob([payload], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${skill.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')}.skill.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
 
 export function SkillsPage() {
   const location = useLocation();
@@ -174,6 +202,9 @@ function MySkillsTab() {
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterSource, setFilterSource] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
+  const [importSuccess, setImportSuccess] = useState<string | null>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState<SkillCreate>({
     name: '',
     description: '',
@@ -311,8 +342,77 @@ function MySkillsTab() {
     setEditing(s.id);
   };
 
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset so the same file can be re-selected after fixing an error
+    e.target.value = '';
+    setImportError(null);
+    setImportSuccess(null);
+    if (!file) return;
+
+    // Only accept JSON files (by extension or MIME type)
+    if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+      setImportError('Only .json files are accepted.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const raw = JSON.parse(ev.target?.result as string) as Record<string, unknown>;
+
+        // Schema validation
+        if (raw.$schema !== 'sy-skill/1') {
+          setImportError(
+            `Invalid file: $schema must be "sy-skill/1" (got ${JSON.stringify(raw.$schema ?? null)}).`,
+          );
+          return;
+        }
+
+        // Required field check
+        if (!raw.name || typeof raw.name !== 'string') {
+          setImportError('Invalid skill file: "name" field is required and must be a string.');
+          return;
+        }
+
+        // Strip any server-managed fields that may have been left in the export
+        const {
+          $schema: _s,
+          id: _id,
+          createdAt: _c,
+          updatedAt: _u,
+          usageCount: _uc,
+          lastUsedAt: _la,
+          personalityName: _pn,
+          ...skillData
+        } = raw;
+
+        createMut.mutate(
+          { ...(skillData as unknown as SkillCreate), source: 'user' },
+          {
+            onSuccess: () => setImportSuccess(`"${raw.name as string}" imported successfully.`),
+            onError: (err: unknown) =>
+              setImportError(err instanceof Error ? err.message : 'Import failed.'),
+          },
+        );
+      } catch {
+        setImportError('Could not parse file — ensure it is valid JSON.');
+      }
+    };
+    reader.readAsText(file);
+  };
+
   return (
     <div className="space-y-6">
+      {/* Hidden file picker — triggered by the Import button */}
+      <input
+        ref={importInputRef}
+        type="file"
+        accept=".json,application/json"
+        className="hidden"
+        onChange={handleImportFile}
+      />
+
       <div className="flex flex-wrap items-center gap-2">
         <button
           onClick={() => {
@@ -330,6 +430,17 @@ function MySkillsTab() {
           className="btn btn-primary"
         >
           <Plus className="w-4 h-4 mr-1" /> Add Skill
+        </button>
+        <button
+          onClick={() => {
+            setImportError(null);
+            setImportSuccess(null);
+            importInputRef.current?.click();
+          }}
+          className="btn btn-secondary"
+          title="Import a .skill.json file"
+        >
+          <Upload className="w-4 h-4 mr-1" /> Import
         </button>
         <select
           value={filterStatus}
@@ -361,6 +472,26 @@ function MySkillsTab() {
           <span className="badge badge-warning">{pendingCount} pending approval</span>
         )}
       </div>
+
+      {importError && (
+        <div className="flex items-center gap-2 rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span className="flex-1">{importError}</span>
+          <button onClick={() => setImportError(null)} className="btn btn-ghost p-1">
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
+      {importSuccess && (
+        <div className="flex items-center gap-2 rounded-lg border border-success/40 bg-success/10 px-3 py-2 text-sm text-success">
+          <CheckCircle className="w-4 h-4 shrink-0" />
+          <span className="flex-1">{importSuccess}</span>
+          <button onClick={() => setImportSuccess(null)} className="btn btn-ghost p-1">
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
 
       {editing !== null && (
         <div className="card p-4 space-y-4">
@@ -590,14 +721,25 @@ function MySkillsTab() {
                       startEdit(skill);
                     }}
                     className="btn btn-ghost p-2"
+                    title="Edit"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
+                  {AI_SOURCES.has(skill.source) && (
+                    <button
+                      onClick={() => exportSkill(skill)}
+                      className="btn btn-ghost p-2"
+                      title="Export as JSON"
+                    >
+                      <Download className="w-4 h-4 text-primary" />
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                       setDeleteTarget(skill);
                     }}
                     className="btn btn-ghost p-2"
+                    title="Delete"
                   >
                     <Trash2 className="w-4 h-4 text-destructive" />
                   </button>
@@ -739,6 +881,15 @@ function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
               <ToggleLeft className="w-5 h-5 text-muted-foreground" />
             )}
           </button>
+          {AI_SOURCES.has(skill.source) && (
+            <button
+              onClick={() => exportSkill(skill)}
+              className="btn btn-ghost p-2"
+              title="Export as JSON"
+            >
+              <Download className="w-4 h-4 text-primary" />
+            </button>
+          )}
           <button
             onClick={() => {
               setDeleteTarget(skill);

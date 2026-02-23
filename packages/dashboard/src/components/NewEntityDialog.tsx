@@ -21,7 +21,7 @@ import {
   GitBranch,
   Plug,
 } from 'lucide-react';
-import { fetchModelInfo, createProactiveTrigger, registerExtension, createUser } from '../api/client';
+import { fetchModelInfo, createProactiveTrigger, registerExtension, createUser, createWorkspace } from '../api/client';
 
 type IconComp = React.ComponentType<{ className?: string }>;
 
@@ -35,7 +35,8 @@ type DialogStep =
   | 'custom-role'
   | 'proactive'
   | 'extension'
-  | 'user';
+  | 'user'
+  | 'workspace';
 
 type ConfigItem =
   | { kind: 'form'; step: Exclude<DialogStep, 'select'>; icon: IconComp; label: string; desc: string }
@@ -65,7 +66,7 @@ const CONFIG_ITEMS: ConfigItem[] = [
   { kind: 'form', step: 'experiment',  icon: FlaskConical, label: 'Experiment', desc: 'Try a new feature'      },
   // Row 4 — access & workspace
   { kind: 'form', step: 'user',        icon: UserPlus,  label: 'User',       desc: 'Invite a new user'         },
-  { kind: 'nav',  path: '/settings',   icon: Building2, label: 'Workspace',  desc: 'Workspace settings'        },
+  { kind: 'form', step: 'workspace',   icon: Building2, label: 'Workspace',  desc: 'Create a new workspace'    },
   { kind: 'form', step: 'custom-role', icon: ShieldCheck, label: 'Custom Role', desc: 'Define an access role'  },
 ];
 
@@ -111,6 +112,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     isAdmin: false,
     error: '',
   });
+  const [workspace, setWorkspace] = useState({ name: '', description: '', error: '' });
 
   const queryClient = useQueryClient();
   const createTriggerMut = useMutation({
@@ -143,6 +145,17 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     },
   });
 
+  const createWorkspaceMut = useMutation({
+    mutationFn: createWorkspace,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['workspaces'] });
+      handleClose();
+    },
+    onError: (err) => {
+      setWorkspace((w) => ({ ...w, error: err instanceof Error ? err.message : 'Failed to create workspace' }));
+    },
+  });
+
   const { data: modelInfo } = useQuery({
     queryKey: ['modelInfo'],
     queryFn: fetchModelInfo,
@@ -169,6 +182,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     });
     setExtension({ id: '', name: '', version: '1.0.0', hooksText: '', error: '' });
     setUser({ email: '', displayName: '', password: '', isAdmin: false, error: '' });
+    setWorkspace({ name: '', description: '', error: '' });
   };
 
   const handleClose = () => {
@@ -931,6 +945,64 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
     );
   };
 
+  const renderWorkspace = () => {
+    const set = (patch: Partial<typeof workspace>) => setWorkspace((w) => ({ ...w, ...patch }));
+    const canSubmit = !!workspace.name.trim();
+
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-2">
+          <button onClick={goBack} className="btn-ghost p-1 rounded">
+            <ChevronDown className="w-4 h-4 rotate-90" />
+          </button>
+          <h3 className="text-lg font-semibold">New Workspace</h3>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Name *</label>
+          <input
+            type="text"
+            value={workspace.name}
+            onChange={(e) => set({ name: e.target.value, error: '' })}
+            className="w-full px-3 py-2 rounded border bg-background"
+            placeholder="e.g. Engineering"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium mb-1">Description</label>
+          <input
+            type="text"
+            value={workspace.description}
+            onChange={(e) => set({ description: e.target.value })}
+            className="w-full px-3 py-2 rounded border bg-background"
+            placeholder="Optional description"
+          />
+        </div>
+
+        {workspace.error && (
+          <p className="text-xs text-destructive">{workspace.error}</p>
+        )}
+
+        <div className="flex justify-end gap-2 pt-2">
+          <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
+          <button
+            disabled={!canSubmit || createWorkspaceMut.isPending}
+            className="btn btn-primary"
+            onClick={() =>
+              createWorkspaceMut.mutate({
+                name: workspace.name.trim(),
+                description: workspace.description.trim() || undefined,
+              })
+            }
+          >
+            {createWorkspaceMut.isPending ? 'Creating...' : 'Create Workspace'}
+          </button>
+        </div>
+      </div>
+    );
+  };
+
   const renderContent = () => {
     switch (step) {
       case 'select':      return renderSelect();
@@ -943,6 +1015,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
       case 'proactive':   return renderProactiveTrigger();
       case 'extension':   return renderExtension();
       case 'user':        return renderUser();
+      case 'workspace':   return renderWorkspace();
     }
   };
 

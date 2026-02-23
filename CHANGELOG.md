@@ -4,6 +4,96 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 50 — Skills JSON Export (2026-02-22)
+
+### New Feature: Export AI-Learned Skills as Portable JSON
+
+Users can now export individual AI-learned skills as `.skill.json` files, allowing them to back
+up, share, or re-import skills on another machine or into a different Personality.
+
+**`packages/dashboard/src/components/SkillsPage.tsx`**:
+- `AI_SOURCES` constant (`Set<string>`) gates the export button to `ai_learned` and `ai_proposed` skills only
+- `exportSkill(skill)` helper strips server-managed runtime fields (`id`, `createdAt`, `updatedAt`,
+  `usageCount`, `lastUsedAt`, `personalityName`) and serialises the rest as
+  `{ $schema: 'sy-skill/1', ...exportable }` — compatible with the `SkillCreate` contract
+- Download triggered via `Blob` + `URL.createObjectURL` + programmatic `<a>` click; filename is
+  derived from the skill name (`my-skill.skill.json`)
+- Export button (Download icon, primary colour) added to:
+  - **Personal tab** (`SkillsManager`) — between Edit and Delete
+  - **Installed tab** (`InstalledSkillsTab` `renderSkill`) — between the enable/disable toggle and Delete
+
+---
+
+## Phase 49 — Workspaces Settings View + Full Dialog Wiring (2026-02-22)
+
+### New Feature: Workspaces Settings Tab
+
+A new **Workspaces** tab is added to Settings, positioned after Keys.
+
+**`packages/dashboard/src/api/client.ts`** — 8 new workspace API functions:
+- `fetchWorkspaces`, `createWorkspace`, `updateWorkspace`, `deleteWorkspace`
+- `fetchWorkspaceMembers`, `addWorkspaceMember`, `updateWorkspaceMemberRole`, `removeWorkspaceMember`
+- Typed `Workspace` and `WorkspaceMember` interfaces exported from the client
+
+**`packages/dashboard/src/components/WorkspacesSettings.tsx`** (new) — Full CRUD component:
+- Lists all workspaces with member count and creation date
+- Inline create form (name + description)
+- Inline edit (name + description in-row)
+- Delete with confirmation banner
+- Expandable **Members Panel** per workspace — shows all members with role badges, role
+  selector, remove button; "Add" flow filters already-added users out of the dropdown
+- Role icons: Owner (crown), Admin (shield), Member (user), Viewer (eye)
+
+**`packages/dashboard/src/components/SettingsPage.tsx`**:
+- `'workspaces'` added to `TabType` union
+- Building2 tab button inserted after Keys
+- `{activeTab === 'workspaces' && <WorkspacesSettings />}` render
+
+### `+ New` Dialog — Workspace now fully wired
+
+**`packages/dashboard/src/components/NewEntityDialog.tsx`**:
+- Workspace tile changed from `kind: 'nav'` to `kind: 'form'` with step `'workspace'`
+- Renders a sub-form (name, description) that calls `createWorkspace` directly
+- Invalidates `['workspaces']` on success; shows inline error on failure
+
+---
+
+## Phase 48 — + New Dialog: Expanded Creation Grid (2026-02-22)
+
+### Dashboard `+ New` Button — all creation abilities surfaced
+
+**`packages/dashboard/src/components/NewEntityDialog.tsx`** completely rebuilt:
+
+**Create & Configure section** — 3-column, 4-row grid. Form-based tiles (solid border,
+primary icon) open a sub-form; navigate tiles (dashed border, muted icon) open the page.
+
+| Row | Col 1 | Col 2 | Col 3 |
+|-----|-------|-------|-------|
+| 1 | Skill | Task | Memory → `/settings` |
+| 2 | Personality | Sub-Agent | *(Coming Soon)* |
+| 3 | **Proactive Trigger** | Extension | Experiment |
+| 4 | User | Workspace | Custom Role |
+
+Five new form-backed steps (all call the real API and invalidate their query keys):
+- **Proactive Trigger** — mirrors `CreateTriggerForm` from `ProactivePage.tsx`: Name, Type
+  (schedule/event/pattern/webhook/llm), conditional Cron/Event Type, Action Type, Approval
+  Mode, Content; calls `createProactiveTrigger` → invalidates `['proactive-triggers']`
+- **Extension** — mirrors `ExtensionsPage.tsx`: Extension ID, Version, Name, Hooks (one per
+  line textarea parsed to `{point, semantics, priority}`); calls `registerExtension` →
+  invalidates `['extensions']`
+- **User** — mirrors `UsersSettings.tsx`: Email, Display Name, Password, Admin checkbox;
+  calls `createUser` → invalidates `['auth-users']`
+- **Sub-Agent** — name + description → navigates to `/agents?create=true&tab=profiles`
+- **Custom Role** — name + description → navigates to `/settings?tab=security&create=true`
+
+**Navigate & Create section** — 3-column, 2-row grid (all dashed, navigate directly):
+Conversation, MCP Server, A2A Peer, **Report**, **Routing Rule** (`/connections?tab=routing`),
+**Integration**
+
+Dialog widened to `max-w-lg` with `max-h-[90vh] overflow-y-auto`.
+
+---
+
 ## Phase 47 — Skill Personality Scoping + Installed Tab Sources (2026-02-22)
 
 ### Fixes

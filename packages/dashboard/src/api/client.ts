@@ -2869,3 +2869,85 @@ export async function testRoutingRule(
 ): Promise<{ rule: RoutingRule; matched: boolean; reason?: string }> {
   return request(`/routing-rules/${id}/test`, { method: 'POST', body: JSON.stringify(params) });
 }
+
+// ── Workspaces ────────────────────────────────────────────────────────────
+
+export interface WorkspaceMember {
+  userId: string;
+  role: 'owner' | 'admin' | 'member' | 'viewer';
+  joinedAt: number;
+  displayName?: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  description: string;
+  members: WorkspaceMember[];
+  settings: Record<string, unknown>;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export async function fetchWorkspaces(params?: {
+  limit?: number;
+  offset?: number;
+}): Promise<{ workspaces: Workspace[]; total: number }> {
+  const q = params ? `?limit=${params.limit ?? 50}&offset=${params.offset ?? 0}` : '';
+  return request(`/workspaces${q}`);
+}
+
+export async function createWorkspace(data: {
+  name: string;
+  description?: string;
+  settings?: Record<string, unknown>;
+}): Promise<{ workspace: Workspace }> {
+  return request('/workspaces', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateWorkspace(
+  id: string,
+  data: { name?: string; description?: string; settings?: Record<string, unknown> }
+): Promise<{ workspace: Workspace }> {
+  return request(`/workspaces/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export async function deleteWorkspace(id: string): Promise<void> {
+  await request(`/workspaces/${id}`, { method: 'DELETE' });
+}
+
+export async function fetchWorkspaceMembers(
+  workspaceId: string,
+  params?: { limit?: number; offset?: number }
+): Promise<{ members: WorkspaceMember[]; total: number }> {
+  const q = params ? `?limit=${params.limit ?? 50}&offset=${params.offset ?? 0}` : '';
+  return request(`/workspaces/${workspaceId}/members${q}`);
+}
+
+export async function addWorkspaceMember(
+  workspaceId: string,
+  data: { userId: string; role?: string }
+): Promise<{ member: WorkspaceMember }> {
+  return request(`/workspaces/${workspaceId}/members`, {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateWorkspaceMemberRole(
+  workspaceId: string,
+  userId: string,
+  role: string
+): Promise<{ member: WorkspaceMember }> {
+  return request(`/workspaces/${workspaceId}/members/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify({ role }),
+  });
+}
+
+export async function removeWorkspaceMember(
+  workspaceId: string,
+  userId: string
+): Promise<void> {
+  await request(`/workspaces/${workspaceId}/members/${userId}`, { method: 'DELETE' });
+}

@@ -773,7 +773,7 @@ function PatternsTab() {
         </div>
       ) : patterns.length === 0 ? (
         <div className="card p-8 text-center text-muted-foreground">
-          No patterns detected yet. Patterns will appear as FRIDAY learns from your interactions.
+          No patterns detected yet. Patterns will appear as your Personalities learn from your interactions.
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
