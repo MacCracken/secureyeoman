@@ -26,8 +26,6 @@ import {
   Plus,
   X,
   Split,
-  Search,
-  Maximize2,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -433,9 +431,6 @@ export function EditorPage() {
   const [terminalHistory, setTerminalHistory] = useState<TerminalOutput[]>([]);
   const [activeBottomTab, setActiveBottomTab] = useState<BottomTab>('terminal');
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [replaceQuery, setReplaceQuery] = useState('');
   const [splitView, setSplitView] = useState(false);
   const [editorSettings, setEditorSettings] = useState({
     fontSize: 14,
@@ -720,10 +715,6 @@ export function EditorPage() {
             e.preventDefault();
             handleRunCode();
             break;
-          case 'f':
-            e.preventDefault();
-            setSearchOpen(true);
-            break;
           case 's':
             e.preventDefault();
             setTabs((prev) =>
@@ -739,7 +730,6 @@ export function EditorPage() {
         }
       }
       if (e.key === 'Escape') {
-        setSearchOpen(false);
         setSettingsOpen(false);
       }
     };
@@ -885,17 +875,6 @@ export function EditorPage() {
               <div className="flex-1" />
 
               {/* Toolbar buttons */}
-              <button
-                onClick={() => {
-                  if (editorRef.current) {
-                    editorRef.current.getAction('actions.find')?.run();
-                  }
-                }}
-                className="btn-ghost p-1.5 rounded"
-                title="Search (Ctrl+F)"
-              >
-                <Search className="w-3.5 h-3.5" />
-              </button>
               <button
                 onClick={() => {
                   setSettingsOpen(!settingsOpen);

@@ -4,6 +4,27 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — Task View Status & Duration Fix (2026-02-23)
+
+### Bug Fixes
+
+**`packages/dashboard/src/components/TaskHistory.tsx`** — task status and duration were stuck after creation:
+- `refetchInterval: false` → dynamic function that polls every 2 s while any task has `pending` or `running` status, and returns `false` (stops polling) once all tasks reach a terminal state (`completed`, `failed`, `timeout`, `cancelled`)
+- `staleTime: 5000` → `0` so that query invalidation triggered by a create/delete mutation always results in an immediate re-fetch rather than serving cached data
+
+**`packages/dashboard/src/components/TaskHistory.test.tsx`** — new tests covering the fix:
+- Added imports: `afterEach`, `act`, `waitFor` from vitest/testing-library; `createTask` from test mocks
+- **`refetch polling behavior`** describe block (6 tests):
+  - Polls every 2 s when a task is `running`
+  - Polls every 2 s when a task is `pending`
+  - Does **not** poll when all tasks are `completed`
+  - Does **not** poll for other terminal statuses (`failed`, `timeout`, `cancelled`)
+  - Does **not** poll when the task list is empty
+  - Stops polling once tasks transition from `running` → `completed`
+- **`immediately re-fetches after a task is created`** — verifies `fetchTasks` is called again after `createTask` mutation succeeds (query invalidation + `staleTime: 0`)
+
+---
+
 ## [Unreleased] — Community Skills Sync Fixes (2026-02-23)
 
 ### Bug Fixes

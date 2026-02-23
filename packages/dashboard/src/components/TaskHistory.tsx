@@ -139,8 +139,12 @@ export function TaskHistory() {
         limit: pageSize,
         offset: page * pageSize,
       }),
-    staleTime: 5000,
-    refetchInterval: false,
+    staleTime: 0,
+    refetchInterval: (query) => {
+      const tasks = (query.state.data as { tasks: Task[] } | undefined)?.tasks ?? [];
+      const hasActive = tasks.some((t) => t.status === 'pending' || t.status === 'running');
+      return hasActive ? 2000 : false;
+    },
   });
 
   const { data: heartbeatData } = useQuery({

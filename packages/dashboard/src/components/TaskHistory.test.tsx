@@ -1,11 +1,11 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, act, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { TaskHistory } from './TaskHistory';
-import { createTaskList } from '../test/mocks';
+import { createTask, createTaskList } from '../test/mocks';
 
 // ── Mock API client ──────────────────────────────────────────────
 vi.mock('../api/client', () => ({
@@ -604,5 +604,196 @@ describe('TaskHistory', () => {
     expect(mockFetchHeartbeatLog).toHaveBeenCalledWith(
       expect.objectContaining({ checkName: 'log_anomalies', limit: 10 })
     );
+  });
+
+  // ── Polling / refetchInterval behaviour ───────────────────────────
+
+  describe('refetch polling behavior', () => {
+    beforeEach(() => {
+      vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it('re-polls every 2s while a task has running status', async () => {
+      mockFetchTasks.mockResolvedValue({
+        tasks: [createTask({ status: 'running', completedAt: undefined, durationMs: undefined })],
+        total: 1,
+      });
+
+      renderComponent();
+
+      // Flush the initial fetch
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const callsAfterInit = mockFetchTasks.mock.calls.length;
+      expect(callsAfterInit).toBeGreaterThan(0);
+
+      // Advance past the 2s refetch interval
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2100);
+      });
+
+      expect(mockFetchTasks.mock.calls.length).toBeGreaterThan(callsAfterInit);
+    });
+
+    it('re-polls every 2s while a task has pending status', async () => {
+      mockFetchTasks.mockResolvedValue({
+        tasks: [
+          createTask({
+            status: 'pending',
+            startedAt: undefined,
+            completedAt: undefined,
+            durationMs: undefined,
+          }),
+        ],
+        total: 1,
+      });
+
+      renderComponent();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const callsAfterInit = mockFetchTasks.mock.calls.length;
+      expect(callsAfterInit).toBeGreaterThan(0);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2100);
+      });
+
+      expect(mockFetchTasks.mock.calls.length).toBeGreaterThan(callsAfterInit);
+    });
+
+    it('does not re-poll when all tasks are completed', async () => {
+      mockFetchTasks.mockResolvedValue({
+        tasks: [createTask({ status: 'completed' })],
+        total: 1,
+      });
+
+      renderComponent();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const callsAfterInit = mockFetchTasks.mock.calls.length;
+      expect(callsAfterInit).toBeGreaterThan(0);
+
+      // Advance well beyond any poll interval — no additional fetches expected
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10000);
+      });
+
+      expect(mockFetchTasks.mock.calls.length).toBe(callsAfterInit);
+    });
+
+    it('does not re-poll for other terminal statuses (failed, timeout, cancelled)', async () => {
+      for (const status of ['failed', 'timeout', 'cancelled'] as const) {
+        vi.clearAllMocks();
+        mockFetchTasks.mockResolvedValue({ tasks: [createTask({ status })], total: 1 });
+        mockFetchHeartbeatTasks.mockResolvedValue({ tasks: [] });
+        mockFetchHeartbeatLog.mockResolvedValue({ entries: [], total: 0 });
+
+        const { unmount } = renderComponent();
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(50);
+        });
+
+        const callsAfterInit = mockFetchTasks.mock.calls.length;
+
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(5000);
+        });
+
+        expect(mockFetchTasks.mock.calls.length).toBe(callsAfterInit);
+        unmount();
+      }
+    });
+
+    it('does not re-poll when the task list is empty', async () => {
+      // mockFetchTasks already returns { tasks: [], total: 0 } from global beforeEach
+
+      renderComponent();
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      const callsAfterInit = mockFetchTasks.mock.calls.length;
+      expect(callsAfterInit).toBeGreaterThan(0);
+
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(5000);
+      });
+
+      expect(mockFetchTasks.mock.calls.length).toBe(callsAfterInit);
+    });
+
+    it('stops polling once all tasks transition to a terminal state', async () => {
+      // First call returns a running task; subsequent calls return it as completed
+      mockFetchTasks
+        .mockResolvedValueOnce({
+          tasks: [createTask({ status: 'running', completedAt: undefined, durationMs: undefined })],
+          total: 1,
+        })
+        .mockResolvedValue({
+          tasks: [createTask({ status: 'completed', durationMs: 1500 })],
+          total: 1,
+        });
+
+      renderComponent();
+
+      // Initial fetch — returns running task, polling starts
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(50);
+      });
+
+      // Trigger one poll — second call returns completed task, polling should stop
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2100);
+      });
+
+      const callsAfterSecondFetch = mockFetchTasks.mock.calls.length;
+      expect(callsAfterSecondFetch).toBeGreaterThanOrEqual(2);
+
+      // Advance further — no more fetches expected
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(10000);
+      });
+
+      expect(mockFetchTasks.mock.calls.length).toBe(callsAfterSecondFetch);
+    });
+  });
+
+  // ── staleTime: 0 — immediate refetch after mutation ────────────────
+
+  it('immediately re-fetches after a task is created', async () => {
+    const user = userEvent.setup();
+    mockCreateTask.mockResolvedValue(
+      createTask({ id: 'new-id', name: 'Fresh Task', status: 'pending', durationMs: undefined })
+    );
+
+    renderComponent();
+    await screen.findByText('Task History');
+
+    const callsAfterInit = mockFetchTasks.mock.calls.length;
+
+    await user.click(screen.getByText('New Task'));
+    await user.type(screen.getByPlaceholderText('e.g., Run backup'), 'Fresh Task');
+    await user.click(screen.getByText('Create Task'));
+
+    // Dialog closes on success, confirming mutation + invalidation ran
+    await waitFor(() => {
+      expect(screen.queryByText('Create New Task')).not.toBeInTheDocument();
+    });
+
+    expect(mockFetchTasks.mock.calls.length).toBeGreaterThan(callsAfterInit);
   });
 });
