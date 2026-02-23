@@ -10,8 +10,7 @@
  * disabled capabilities are excluded entirely.
  */
 
-import type { Tool } from '@secureyeoman/shared';
-import type { CreationConfig } from './types.js';
+import type { Tool, CreationConfig } from '@secureyeoman/shared';
 import { DELEGATION_TOOLS } from '../agents/tools.js';
 
 // ── Skill Tools ───────────────────────────────────────────────────────────
