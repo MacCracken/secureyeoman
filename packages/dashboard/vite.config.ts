@@ -51,7 +51,7 @@ export default defineConfig({
         target: GATEWAY_URL,
         changeOrigin: true,
       },
-      '/metrics': {
+      '/prom': {
         target: GATEWAY_URL,
         changeOrigin: true,
       },

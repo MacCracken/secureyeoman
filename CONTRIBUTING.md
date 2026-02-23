@@ -41,6 +41,18 @@ docker compose up -d
 npm run dev
 ```
 
+### Rebuilding After Code Changes (Docker dev workflow)
+
+When running via Docker Compose (`--profile dev`), the core container bakes the compiled source into the image at build time — source files are **not** volume-mounted into it. After changing anything in `packages/core` or `packages/dashboard`, you must rebuild the image and restart the container:
+
+```bash
+# Rebuild the core image (bypasses Docker layer cache) and restart
+docker compose --profile dev build --no-cache core
+docker compose --profile dev up -d core
+```
+
+> The `--no-cache` flag is required because Docker's content-based cache can serve stale layers when only `.ts` source files change inside `packages/`.
+
 ### Setting Up the Test Database
 
 The test suite uses a dedicated `secureyeoman_test` database that is separate from the development database. Create it once before running tests:

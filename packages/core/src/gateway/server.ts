@@ -1517,6 +1517,10 @@ export class GatewayServer {
         root: distPath,
         prefix: '/',
       });
+      // Pre-read the SPA shell so we can serve it from setNotFoundHandler without
+      // depending on reply.sendFile() which is unreliable inside a callNotFound context.
+      const indexHtml = readFileSync(join(distPath, 'index.html'), 'utf-8');
+
       // SPA fallback: serve index.html for SPA routes; JSON 404 for everything else.
       this.app.setNotFoundHandler((_request, reply) => {
         // Strip query string before all prefix/extension checks
@@ -1532,7 +1536,7 @@ export class GatewayServer {
           return sendError(reply, 404, 'Not found');
         }
         // All other routes are SPA routes — serve the app shell
-        return reply.sendFile('index.html', distPath);
+        return reply.type('text/html').send(indexHtml);
       });
       this.getLogger().info('Dashboard SPA serving enabled', { distPath });
     }
@@ -1756,7 +1760,7 @@ export class GatewayServer {
     const candidates = [
       this.dashboardDist,
       process.env.SECUREYEOMAN_DASHBOARD_DIST,
-      join(dirname(fileURLToPath(import.meta.url)), '../../../../dashboard/dist'),
+      join(dirname(fileURLToPath(import.meta.url)), '../../../dashboard/dist'),
       '/usr/share/secureyeoman/dashboard',
     ].filter(Boolean) as string[];
 
