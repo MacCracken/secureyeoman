@@ -286,6 +286,94 @@ const REGISTER_DYNAMIC_TOOL: Tool = {
 
 const DYNAMIC_TOOL_TOOLS: Tool[] = [REGISTER_DYNAMIC_TOOL];
 
+// ── Workflow Tools ────────────────────────────────────────────────────────
+
+const CREATE_WORKFLOW_TOOL: Tool = {
+  name: 'create_workflow',
+  description:
+    'Create a new workflow definition. Workflows are DAG-based automation pipelines composed of steps (agent, tool, condition, transform, webhook, etc.) with configurable triggers.',
+  parameters: {
+    type: 'object',
+    properties: {
+      name: { type: 'string', description: 'Name of the workflow (max 200 chars)' },
+      description: { type: 'string', description: 'What this workflow does' },
+      steps: {
+        type: 'array',
+        items: { type: 'object' },
+        description: 'Array of workflow step definitions',
+      },
+      edges: {
+        type: 'array',
+        items: { type: 'object' },
+        description: 'Directed edges connecting steps (from, to)',
+      },
+      triggers: {
+        type: 'array',
+        items: { type: 'object' },
+        description: 'Trigger configurations (manual, schedule, event, webhook, skill)',
+      },
+      isEnabled: {
+        type: 'boolean',
+        description: 'Whether the workflow is active (default true)',
+      },
+    },
+    required: ['name'],
+  },
+};
+
+const UPDATE_WORKFLOW_TOOL: Tool = {
+  name: 'update_workflow',
+  description: 'Update an existing workflow definition by its ID.',
+  parameters: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', description: 'ID of the workflow to update' },
+      name: { type: 'string', description: 'New name' },
+      description: { type: 'string', description: 'New description' },
+      steps: { type: 'array', items: { type: 'object' }, description: 'Updated steps' },
+      edges: { type: 'array', items: { type: 'object' }, description: 'Updated edges' },
+      triggers: { type: 'array', items: { type: 'object' }, description: 'Updated triggers' },
+      isEnabled: { type: 'boolean', description: 'Enable or disable the workflow' },
+    },
+    required: ['id'],
+  },
+};
+
+const DELETE_WORKFLOW_TOOL: Tool = {
+  name: 'delete_workflow',
+  description: 'Permanently delete a workflow definition by its ID.',
+  parameters: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', description: 'ID of the workflow to delete' },
+    },
+    required: ['id'],
+  },
+};
+
+const TRIGGER_WORKFLOW_TOOL: Tool = {
+  name: 'trigger_workflow',
+  description: 'Manually trigger a workflow run. Returns a run object immediately (202 async).',
+  parameters: {
+    type: 'object',
+    properties: {
+      id: { type: 'string', description: 'ID of the workflow to trigger' },
+      input: {
+        type: 'object',
+        description: 'Optional runtime input data passed to the first step',
+      },
+    },
+    required: ['id'],
+  },
+};
+
+const WORKFLOW_TOOLS: Tool[] = [
+  CREATE_WORKFLOW_TOOL,
+  UPDATE_WORKFLOW_TOOL,
+  DELETE_WORKFLOW_TOOL,
+  TRIGGER_WORKFLOW_TOOL,
+];
+
 // ── Aggregator ───────────────────────────────────────────────────────────
 
 /**
@@ -316,6 +404,7 @@ export function getCreationTools(config: Partial<CreationConfig> | undefined, bo
     if (swarmTool && !tools.some((t) => t.name === 'create_swarm')) tools.push(swarmTool);
   }
   if (config.allowDynamicTools) tools.push(...DYNAMIC_TOOL_TOOLS);
+  if (config.workflows) tools.push(...WORKFLOW_TOOLS);
 
   return tools;
 }

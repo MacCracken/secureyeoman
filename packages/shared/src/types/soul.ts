@@ -52,6 +52,8 @@ export const CreationConfigSchema = z
     allowSwarms: z.boolean().default(false),
     /** Allow this personality to generate and register tools dynamically. Gated by global allowDynamicTools policy. */
     allowDynamicTools: z.boolean().default(false),
+    /** Allow this personality to create and manage workflows. Gated by global allowWorkflows policy. */
+    workflows: z.boolean().default(false),
   })
   .default({});
 

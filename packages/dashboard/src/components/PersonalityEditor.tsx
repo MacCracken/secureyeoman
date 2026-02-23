@@ -1177,6 +1177,7 @@ interface BodySectionProps {
     allowA2A: boolean;
     allowSwarms: boolean;
     allowDynamicTools: boolean;
+    workflows: boolean;
   };
   onCreationConfigChange: (config: {
     skills: boolean;
@@ -1189,6 +1190,7 @@ interface BodySectionProps {
     allowA2A: boolean;
     allowSwarms: boolean;
     allowDynamicTools: boolean;
+    workflows: boolean;
   }) => void;
   proactiveConfig: {
     enabled: boolean;
@@ -1261,6 +1263,7 @@ function BodySection({
   const a2aBlockedByPolicy = securityPolicy?.allowA2A === false;
   const swarmsBlockedByPolicy = securityPolicy?.allowSwarms === false;
   const dtcBlockedByPolicy = securityPolicy?.allowDynamicTools === false;
+  const workflowsBlockedByPolicy = securityPolicy?.allowWorkflows === false;
 
   const creationItems = [
     { key: 'tasks' as const, label: 'New Tasks', icon: '📋' },
@@ -1281,6 +1284,12 @@ function BodySection({
       icon: '🔧',
       blockedByPolicy: dtcBlockedByPolicy,
     },
+    {
+      key: 'workflows' as const,
+      label: 'New Workflows',
+      icon: '⚡',
+      blockedByPolicy: workflowsBlockedByPolicy,
+    },
   ];
 
   const allEnabled = creationItems
@@ -1299,6 +1308,7 @@ function BodySection({
       | 'allowA2A'
       | 'allowSwarms'
       | 'allowDynamicTools'
+      | 'workflows'
   ) => {
     onCreationConfigChange({
       ...creationConfig,
@@ -1322,6 +1332,7 @@ function BodySection({
       allowSwarms: swarmsBlockedByPolicy ? false : newValue,
       // DTC is independent — respect policy but preserve current value
       allowDynamicTools: dtcBlockedByPolicy ? false : newValue,
+      workflows: workflowsBlockedByPolicy ? false : newValue,
     });
   };
 
@@ -2164,6 +2175,7 @@ export function PersonalityEditor() {
     allowA2A: false,
     allowSwarms: false,
     allowDynamicTools: false,
+    workflows: false,
   });
 
   const [allowConnections, setAllowConnections] = useState(false);
@@ -2352,6 +2364,7 @@ export function PersonalityEditor() {
       allowA2A: body.creationConfig?.allowA2A ?? false,
       allowSwarms: body.creationConfig?.allowSwarms ?? false,
       allowDynamicTools: p.body?.creationConfig?.allowDynamicTools ?? false,
+      workflows: body.creationConfig?.workflows ?? false,
     });
     setAllowConnections(body.enabled ?? false);
     setSelectedServers(body.selectedServers ?? []);
@@ -2437,6 +2450,7 @@ export function PersonalityEditor() {
       allowA2A: false,
       allowSwarms: false,
       allowDynamicTools: false,
+      workflows: false,
     });
     setAllowConnections(false);
     setSelectedServers([]);

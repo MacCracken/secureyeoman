@@ -282,6 +282,55 @@ export async function executeCreationTool(
         return { output: { sent: true, result }, isError: false };
       }
 
+      // ── Workflows ──────────────────────────────────────────────────────
+      case 'create_workflow': {
+        const workflowManager = secureYeoman.getWorkflowManager?.();
+        if (!workflowManager) {
+          return { output: { error: 'Workflow manager not available' }, isError: true };
+        }
+        const workflow = await workflowManager.createDefinition({
+          name: str(args.name),
+          description: typeof args.description === 'string' ? args.description : '',
+          steps: Array.isArray(args.steps) ? (args.steps as any[]) : [],
+          edges: Array.isArray(args.edges) ? (args.edges as any[]) : [],
+          triggers: Array.isArray(args.triggers) ? (args.triggers as any[]) : [],
+          isEnabled: typeof args.isEnabled === 'boolean' ? args.isEnabled : true,
+          createdBy: context?.personalityId ?? 'ai',
+        } as any);
+        return { output: { workflow }, isError: false };
+      }
+
+      case 'update_workflow': {
+        const workflowManager = secureYeoman.getWorkflowManager?.();
+        if (!workflowManager) {
+          return { output: { error: 'Workflow manager not available' }, isError: true };
+        }
+        const { id, ...rest } = args;
+        const workflow = await workflowManager.updateDefinition(str(id), rest as any);
+        return { output: { workflow }, isError: false };
+      }
+
+      case 'delete_workflow': {
+        const workflowManager = secureYeoman.getWorkflowManager?.();
+        if (!workflowManager) {
+          return { output: { error: 'Workflow manager not available' }, isError: true };
+        }
+        await workflowManager.deleteDefinition(str(args.id));
+        return { output: { deleted: true, id: args.id }, isError: false };
+      }
+
+      case 'trigger_workflow': {
+        const workflowManager = secureYeoman.getWorkflowManager?.();
+        if (!workflowManager) {
+          return { output: { error: 'Workflow manager not available' }, isError: true };
+        }
+        const run = await workflowManager.triggerRun(str(args.id), {
+          triggeredBy: 'manual',
+          input: (args.input as Record<string, unknown>) ?? {},
+        });
+        return { output: { run }, isError: false };
+      }
+
       // ── Dynamic Tools ──────────────────────────────────────────────────
       case 'register_dynamic_tool': {
         return {
