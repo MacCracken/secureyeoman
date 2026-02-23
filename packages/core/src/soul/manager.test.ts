@@ -987,20 +987,22 @@ describe('SoulManager', () => {
       expect(prompt).toContain('YEOMAN MCP');
     });
 
-    it('includes creation permissions when personality has creationConfig', async () => {
+    it('includes creation tools section when personality has enabled creationConfig toggles', async () => {
       const bodyPersonality = {
         ...PERSONALITY,
         body: {
           ...PERSONALITY.body,
           enabled: true,
-          creationConfig: { files: true, code: false },
+          creationConfig: { skills: true, tasks: false },
         },
       };
       const { manager } = makeManager({
         getActivePersonality: vi.fn().mockResolvedValue(bodyPersonality),
       });
       const prompt = await manager.composeSoulPrompt();
-      expect(prompt).toContain('Creation Permissions');
+      expect(prompt).toContain('Creation Tools');
+      expect(prompt).toContain('create_skill');
+      expect(prompt).not.toContain('create_task');
     });
 
     it('includes Heart section via heartManager', async () => {

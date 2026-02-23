@@ -517,15 +517,39 @@ export class SoulManager {
       );
     }
 
-    // Creation Permissions
+    // Creation Tools — list enabled capabilities with the exact tool names so
+    // the model knows how to act without hesitation.
     const creation = personality?.body?.creationConfig;
     if (creation) {
-      const perms = Object.entries(creation)
-        .map(([k, v]) => `${k}: ${v ? 'allowed' : 'denied'}`)
-        .join(', ');
-      lines.push('');
-      lines.push('### Creation Permissions');
-      lines.push(perms);
+      const TOOL_MAP: Record<string, string[]> = {
+        skills: ['create_skill', 'update_skill', 'delete_skill'],
+        tasks: ['create_task', 'update_task'],
+        personalities: ['create_personality', 'update_personality'],
+        subAgents: ['delegate_task', 'list_sub_agents', 'get_delegation_result'],
+        customRoles: ['create_custom_role'],
+        roleAssignments: ['assign_role'],
+        experiments: ['create_experiment'],
+        allowA2A: ['a2a_connect', 'a2a_send'],
+        allowSwarms: ['create_swarm'],
+        allowDynamicTools: ['register_dynamic_tool'],
+      };
+
+      const enabledLines: string[] = [];
+      for (const [key, toolNames] of Object.entries(TOOL_MAP)) {
+        if ((creation as Record<string, boolean>)[key]) {
+          enabledLines.push(`- **${key}**: use ${toolNames.map((t) => `\`${t}\``).join(', ')}`);
+        }
+      }
+
+      if (enabledLines.length > 0) {
+        lines.push('');
+        lines.push('### Creation Tools');
+        lines.push(
+          'You have been granted the following resource-creation tools. ' +
+          'Use them directly and confidently — do not ask for permission before calling them:'
+        );
+        lines.push(...enabledLines);
+      }
     }
 
     // Heart subsection

@@ -2517,7 +2517,7 @@ export function PersonalityEditor() {
     editing !== 'new' && editingPersonality && !editingPersonality.isActive;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 overflow-x-hidden">
       {/* Delete confirmation */}
       <ConfirmDialog
         open={!!deleteTarget}
@@ -2561,7 +2561,7 @@ export function PersonalityEditor() {
 
       {/* Editor Form */}
       {editing && (
-        <div className="card p-4 space-y-4 border-primary">
+        <div className="card p-3 sm:p-4 space-y-4 border-primary overflow-x-hidden">
           <h3 className="font-medium">
             {editing === 'new' ? 'Create Personality' : 'Edit Personality'}
           </h3>

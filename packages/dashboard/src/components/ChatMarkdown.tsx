@@ -184,7 +184,7 @@ export function ChatMarkdown({ content, size = 'sm' }: ChatMarkdownProps) {
     () => ({
       // ── Paragraphs ──────────────────────────────────────────────
       p: ({ children }: { children?: React.ReactNode }) => (
-        <p className="leading-relaxed">{children}</p>
+        <p className="leading-relaxed break-words">{children}</p>
       ),
 
       // ── Headings ────────────────────────────────────────────────
@@ -244,7 +244,9 @@ export function ChatMarkdown({ content, size = 'sm' }: ChatMarkdownProps) {
         );
 
         if (!codeEl) {
-          return <pre className="bg-background/60 rounded-md p-3 overflow-x-auto my-2 font-mono" />;
+          return (
+            <pre className="bg-background/60 rounded-md p-3 overflow-x-auto my-2 font-mono text-xs sm:text-sm break-all" />
+          );
         }
 
         const cls = ((codeEl.properties?.className as string[]) ?? []).join(' ');
@@ -257,7 +259,7 @@ export function ChatMarkdown({ content, size = 'sm' }: ChatMarkdownProps) {
         }
 
         return (
-          <div className="my-2 rounded-md overflow-hidden border border-muted-foreground/10">
+          <div className="my-2 rounded-md overflow-hidden border border-muted-foreground/10 overflow-x-auto">
             {lang && (
               <div className="px-3 py-1 bg-muted/60 border-b border-muted-foreground/10 flex items-center">
                 <span className={`${textSmall} font-mono text-muted-foreground`}>{lang}</span>

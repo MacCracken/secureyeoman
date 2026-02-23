@@ -129,7 +129,7 @@ export function GroupChatPage() {
   return (
     <div className="flex h-full overflow-hidden bg-background">
       {/* ── Channel list pane ──────────────────────────────────────────── */}
-      <div className="w-72 flex-shrink-0 border-r border-border flex flex-col">
+      <div className="w-64 sm:w-72 flex-shrink-0 border-r border-border flex flex-col">
         <div className="p-4 border-b border-border flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MessageSquare className="w-5 h-5 text-primary" />
@@ -144,7 +144,7 @@ export function GroupChatPage() {
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto">
+        <div className="flex-1 overflow-y-auto overflow-x-hidden">
           {channelsLoading && (
             <div className="p-4 text-sm text-muted-foreground text-center">Loading channels…</div>
           )}
@@ -245,7 +245,7 @@ export function GroupChatPage() {
           </div>
 
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3">
+          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-3">
             {messagesLoading && (
               <div className="text-sm text-muted-foreground text-center">Loading messages…</div>
             )}
@@ -315,15 +315,23 @@ function MessageBubble({ message }: { message: GroupChatMessage }) {
       >
         {isOutbound ? <Bot className="w-4 h-4" /> : <User className="w-4 h-4" />}
       </div>
-      <div className={`max-w-[70%] ${isOutbound ? 'items-end' : 'items-start'} flex flex-col`}>
+      <div
+        className={`max-w-[85%] sm:max-w-[70%] ${isOutbound ? 'items-end' : 'items-start'} flex flex-col`}
+      >
         <div
           className={`flex items-center gap-2 mb-0.5 ${isOutbound ? 'flex-row-reverse' : 'flex-row'}`}
         >
-          <span className="text-xs font-medium text-foreground">{message.senderName}</span>
+          <span className="text-xs font-medium text-foreground truncate max-w-[120px] sm:max-w-none">
+            {message.senderName}
+          </span>
           {message.personalityName && (
-            <span className="text-xs text-primary">🤖 {message.personalityName}</span>
+            <span className="text-xs text-primary truncate max-w-[80px] sm:max-w-none">
+              🤖 {message.personalityName}
+            </span>
           )}
-          <span className="text-xs text-muted-foreground">{timeAgo(message.timestamp)}</span>
+          <span className="text-xs text-muted-foreground flex-shrink-0">
+            {timeAgo(message.timestamp)}
+          </span>
         </div>
         <div
           className={`rounded-lg px-3 py-2 text-sm whitespace-pre-wrap break-words ${

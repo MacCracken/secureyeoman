@@ -14,6 +14,7 @@ import { sendError } from '../utils/errors.js';
 import { ToolOutputScanner } from '../security/tool-output-scanner.js';
 import { ContextCompactor } from './context-compactor.js';
 import { getLogger } from '../logging/logger.js';
+import { executeCreationTool } from '../soul/creation-tool-executor.js';
 
 // Map provider name → standard API key env var (no-key providers get empty string)
 const PROVIDER_KEY_ENV: Record<string, string> = {
@@ -270,11 +271,54 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           ? resolvePersonalityFallbacks(personality.modelFallbacks)
           : undefined;
 
-        const rawResponse = await aiClient.chat(
+        // Agentic tool-execution loop.
+        // When the model returns stopReason 'tool_use' we execute each tool,
+        // append the results as tool-role messages, and call the model again.
+        // This repeats until the model produces a final text response or we
+        // hit the iteration cap (prevents infinite loops on misbehaving models).
+        const MAX_TOOL_ITERATIONS = 10;
+        let iterationCount = 0;
+
+        let rawResponse = await aiClient.chat(
           aiRequest,
           { source: 'dashboard_chat' },
           personalityFallbacks
         );
+
+        while (
+          rawResponse.stopReason === 'tool_use' &&
+          rawResponse.toolCalls?.length &&
+          iterationCount < MAX_TOOL_ITERATIONS
+        ) {
+          iterationCount++;
+
+          // Append assistant's tool-call turn to the running message list
+          messages.push({
+            role: 'assistant' as const,
+            content: rawResponse.content || undefined,
+            toolCalls: rawResponse.toolCalls,
+          });
+
+          // Execute every tool call and collect results
+          for (const toolCall of rawResponse.toolCalls) {
+            const result = await executeCreationTool(toolCall, secureYeoman);
+            messages.push({
+              role: 'tool' as const,
+              toolResult: {
+                toolCallId: toolCall.id,
+                content: JSON.stringify(result.output),
+                isError: result.isError,
+              },
+            });
+          }
+
+          // Re-call the model with the updated conversation
+          rawResponse = await aiClient.chat(
+            { ...aiRequest, messages },
+            { source: 'dashboard_chat' },
+            personalityFallbacks
+          );
+        }
 
         // Scan LLM response for credential leaks before returning to caller.
         const scanResult = scanner.scan(rawResponse.content, 'llm_response');
