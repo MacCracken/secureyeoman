@@ -145,6 +145,7 @@ export interface Personality {
   modelFallbacks: { provider: string; model: string }[];
   includeArchetypes: boolean;
   isActive: boolean;
+  deletionProtected: boolean;
   body?: {
     enabled?: boolean;
     capabilities?: string[];

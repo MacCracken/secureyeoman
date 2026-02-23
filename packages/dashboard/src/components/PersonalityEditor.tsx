@@ -2178,6 +2178,7 @@ export function PersonalityEditor() {
     defaultModel: null,
     modelFallbacks: [],
     includeArchetypes: true,
+    deletionProtected: false,
     body: {
       enabled: false,
       capabilities: [],
@@ -2384,6 +2385,7 @@ export function PersonalityEditor() {
       defaultModel: p.defaultModel,
       modelFallbacks: p.modelFallbacks ?? [],
       includeArchetypes: p.includeArchetypes,
+      deletionProtected: p.deletionProtected ?? false,
       body,
     });
     setCreationConfig({
@@ -2470,6 +2472,7 @@ export function PersonalityEditor() {
       defaultModel: null,
       modelFallbacks: [],
       includeArchetypes: false,
+      deletionProtected: false,
       body,
     });
     setCreationConfig({
@@ -2699,6 +2702,23 @@ export function PersonalityEditor() {
               </div>
               <span className="text-xs text-muted-foreground ml-6">
                 Preamble is presented in prompt
+              </span>
+            </label>
+
+            <label className="flex flex-col gap-1 cursor-pointer" data-testid="deletion-protected-toggle">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={form.deletionProtected ?? false}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, deletionProtected: e.target.checked }));
+                  }}
+                  className="rounded border-muted-foreground"
+                />
+                <span className="text-sm">Protected from deletion</span>
+              </div>
+              <span className="text-xs text-muted-foreground ml-6">
+                Blocks deletion via UI, API, and AI tools until disabled
               </span>
             </label>
 

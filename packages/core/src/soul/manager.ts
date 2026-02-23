@@ -260,6 +260,9 @@ export class SoulManager {
     if (personality?.isActive) {
       throw new Error('Cannot delete the active personality');
     }
+    if (personality?.deletionProtected) {
+      throw new Error('This personality is protected from deletion. Disable "Protected from deletion" in its settings first.');
+    }
     await this.storage.deletePersonality(id);
   }
 

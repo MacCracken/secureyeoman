@@ -147,6 +147,8 @@ export const PersonalitySchema = z.object({
   modelFallbacks: z.array(ModelFallbackEntrySchema).max(5).default([]),
   includeArchetypes: z.boolean().default(true),
   isActive: z.boolean().default(false),
+  /** When true, deletion via any path (UI, API, AI tool) is blocked until cleared. */
+  deletionProtected: z.boolean().default(false),
   body: BodyConfigSchema.default({}),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
