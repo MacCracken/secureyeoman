@@ -4,6 +4,58 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 51 — Skills Import, Delete Refresh Fix & Community Sync Prune (2026-02-22)
+
+### New Feature: Import Skills from JSON
+
+Users can now import a `.skill.json` file directly into their Personal skills library using an
+**Import** button placed next to the existing "+ Add Skill" button.
+
+**`packages/dashboard/src/components/SkillsPage.tsx`**:
+- Import button (Upload icon, secondary style) added to `MySkillsTab` header, next to Add Skill
+- `handleImportClick` prefers the **File System Access API** (`showOpenFilePicker`) which opens the
+  picker in the user's home directory (`startIn: 'home'`), falling back to a hidden
+  `<input type="file">` for browsers that don't support the API (Firefox)
+- File validation (dual-check) — rejects files that fail either:
+  - Extension check: must end in `.json`
+  - MIME type check: must be `application/json`, `text/json`, or empty string (OS default)
+- Schema check: `$schema` field must equal `'sy-skill/1'`; any other value or missing field shows an error
+- On success, strips server-managed fields and calls `createSkill`, then shows a success banner
+- Both error and success banners are dismissible
+
+### Bug Fix: Skills List Not Refreshing After Delete
+
+Deleting a skill previously required a full page refresh before the list updated.
+
+**Root cause**: The server correctly returns `204 No Content` on DELETE, but `request()` in
+`packages/dashboard/src/api/client.ts` always called `response.json()`, which throws a
+`SyntaxError` on an empty body, preventing `onSuccess` from firing and TanStack Query's
+`invalidateQueries` from running.
+
+**Fix**: Added `parseResponseBody<T>(response)` helper that:
+- Returns `undefined` immediately for `204` responses
+- Reads body as text first; parses as JSON only when text is non-empty
+- Both response paths in `request()` now use `parseResponseBody` instead of `response.json()`
+
+### Bug Fix: Community Sync Prune — Stale Skills Removed
+
+Community skills that were removed from the repository were not deleted from the database on the
+next sync, leaving orphaned entries visible in the Community tab.
+
+**Root cause**: `syncFromCommunity` in `packages/core/src/marketplace/manager.ts` was append-only —
+it upserted new/updated skills but never deleted skills whose files had been removed.
+
+**Fix**: After the upsert loop, the sync now reconciles the database:
+1. Queries all `source='community'` skills from storage (up to 1 000 entries)
+2. Deletes any entry whose `name` is not in the set of names processed during the current sync
+3. Increments `CommunitySyncResult.removed` for each deletion
+
+`CommunitySyncResult` interface updated with `removed: number`. Dashboard sync result banner updated
+to display "X removed" when the count is greater than zero. `syncCommunitySkills` client function
+type updated accordingly.
+
+---
+
 ## Phase 50 — Skills JSON Export (2026-02-22)
 
 ### New Feature: Export AI-Learned Skills as Portable JSON

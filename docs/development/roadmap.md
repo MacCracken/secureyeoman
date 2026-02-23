@@ -8,15 +8,15 @@
 
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
-| | **Tag 2026.2.21** | **2026-02-21** | **Tagged** |
-| | **Release 2026.2.21** | **2026-02-21** | **Released** |
-| 37 | Beta Manual Review | — | Pending |
+| | **Tag 2026.2.22** | **2026-02-22** | **Tagged** |
+| | **Release 2026.2.22** | **2026-02-22** | **Released** |
+| 38 | Beta Manual Review | — | In Progress |
 
 ---
 
-## Phase 37: Beta Manual Review
+## Phase 38: Beta Manual Review
 
-**Status**: Pending
+**Status**: In Progress
 
 Full-system manual testing pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.
 
@@ -26,17 +26,11 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 - [ ] Find and Repair
 
-### Thoughts
-
-- [ ] YEOMAN MCP - insure available tools are present
-- [ ] Need to walkthrough and confirm each of the creation skills in chat.
-
 
 ### Bugs
 
 - [ ] Connect CLI when DisplayName entered and connected -Integration undefined not found
 - [ ] Chat needs responsive design in the response window to not blow up the view
-- [ ] Proactive > Pattens > No patterns detected yet. Patterns will appear as FRIDAY learns from your interactions; shouldn't be 'FRIDAY' but 'Personality'.
  
 
 ---

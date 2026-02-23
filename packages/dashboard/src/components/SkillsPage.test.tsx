@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { SkillsPage } from './SkillsPage';
@@ -60,6 +60,8 @@ const mockFetchSkills = vi.mocked(api.fetchSkills);
 const mockFetchPersonalities = vi.mocked(api.fetchPersonalities);
 const mockFetchMarketplaceSkills = vi.mocked(api.fetchMarketplaceSkills);
 const mockFetchCommunityStatus = vi.mocked(api.fetchCommunityStatus);
+const mockCreateSkill = vi.mocked(api.createSkill);
+const mockSyncCommunitySkills = vi.mocked(api.syncCommunitySkills);
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -145,5 +147,61 @@ describe('SkillsPage', () => {
 
     // Community tab content should be visible
     expect(await screen.findByText(/Sync Community Skills/i)).toBeInTheDocument();
+  });
+
+  it('renders Import button next to Add Skill button on Personal tab', async () => {
+    renderComponent();
+    // Personal tab is active by default
+    expect(await screen.findByText('Skills')).toBeInTheDocument();
+    // Both action buttons should be present
+    expect(screen.getByRole('button', { name: /import/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /add skill/i })).toBeInTheDocument();
+  });
+
+  it('shows error banner when importing a file with wrong $schema', async () => {
+    renderComponent();
+    await screen.findByText('Skills');
+
+    // Simulate selecting a file with a wrong schema marker via the hidden fallback input
+    const badSkillJson = JSON.stringify({ $schema: 'wrong/1', name: 'Bad Skill', instructions: 'x' });
+    const file = new File([badSkillJson], 'bad.skill.json', { type: 'application/json' });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    Object.defineProperty(input, 'files', { value: [file], configurable: true });
+    fireEvent.change(input);
+
+    // Component message: 'Invalid file: $schema must be "sy-skill/1"...'
+    expect(await screen.findByText(/invalid file.*schema/i)).toBeInTheDocument();
+  });
+
+  it('shows error banner when importing a non-JSON file', async () => {
+    renderComponent();
+    await screen.findByText('Skills');
+
+    const file = new File(['<svg></svg>'], 'image.svg', { type: 'image/svg+xml' });
+    const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(input).not.toBeNull();
+    Object.defineProperty(input, 'files', { value: [file], configurable: true });
+    fireEvent.change(input);
+
+    // Component message: 'Only .json files are accepted...'
+    expect(await screen.findByText(/only \.json files/i)).toBeInTheDocument();
+  });
+
+  it('shows removed count in sync result when community skills were pruned', async () => {
+    mockSyncCommunitySkills.mockResolvedValue({
+      added: 0,
+      updated: 5,
+      skipped: 0,
+      removed: 2,
+      errors: [],
+    });
+    renderComponent([{ pathname: '/skills', state: { initialTab: 'community' } }]);
+    await screen.findByText(/Sync Community Skills/i);
+
+    const syncBtn = screen.getByRole('button', { name: /sync/i });
+    fireEvent.click(syncBtn);
+
+    expect(await screen.findByText(/removed.*2|2.*removed/i)).toBeInTheDocument();
   });
 });

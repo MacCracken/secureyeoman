@@ -342,17 +342,14 @@ function MySkillsTab() {
     setEditing(s.id);
   };
 
-  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    // Reset so the same file can be re-selected after fixing an error
-    e.target.value = '';
-    setImportError(null);
-    setImportSuccess(null);
-    if (!file) return;
-
-    // Only accept JSON files (by extension or MIME type)
-    if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
-      setImportError('Only .json files are accepted.');
+  /** Validate and submit a File object as an imported skill. */
+  const processImportFile = (file: File) => {
+    // Must be .json by both extension AND MIME type — reject .svg, images, etc.
+    const hasJsonExt = file.name.toLowerCase().endsWith('.json');
+    const hasJsonMime =
+      file.type === 'application/json' || file.type === 'text/json' || file.type === '';
+    if (!hasJsonExt || !hasJsonMime) {
+      setImportError('Only .json files are accepted. Other file types are not supported.');
       return;
     }
 
@@ -375,7 +372,7 @@ function MySkillsTab() {
           return;
         }
 
-        // Strip any server-managed fields that may have been left in the export
+        // Strip server-managed fields that may still be present in the export
         const {
           $schema: _s,
           id: _id,
@@ -402,15 +399,72 @@ function MySkillsTab() {
     reader.readAsText(file);
   };
 
+  /** Fallback handler for the hidden <input type="file">. */
+  const handleImportInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset so the same file can be re-selected after fixing an error
+    e.target.value = '';
+    setImportError(null);
+    setImportSuccess(null);
+    if (!file) return;
+    processImportFile(file);
+  };
+
+  /**
+   * Prefer the File System Access API (showOpenFilePicker) which lets us hint
+   * startIn: 'home' so the picker opens in the user's home directory rather
+   * than the dev-server CWD. Falls back to a hidden <input> for unsupported browsers.
+   */
+  const handleImportClick = async () => {
+    setImportError(null);
+    setImportSuccess(null);
+
+    type ShowOpenFilePicker = (opts?: {
+      startIn?: string;
+      types?: Array<{ description: string; accept: Record<string, string[]> }>;
+      multiple?: boolean;
+      excludeAcceptAllOption?: boolean;
+    }) => Promise<Array<{ getFile(): Promise<File> }>>;
+
+    const picker = (window as Window & { showOpenFilePicker?: ShowOpenFilePicker })
+      .showOpenFilePicker;
+
+    if (typeof picker === 'function') {
+      try {
+        const [handle] = await picker({
+          startIn: 'home',
+          types: [
+            {
+              description: 'Skill JSON file',
+              accept: { 'application/json': ['.json'] },
+            },
+          ],
+          multiple: false,
+          excludeAcceptAllOption: true,
+        });
+        const file = await handle.getFile();
+        processImportFile(file);
+      } catch (err) {
+        // AbortError = user cancelled — not an error worth showing
+        if (err instanceof Error && err.name !== 'AbortError') {
+          setImportError('Could not open file picker.');
+        }
+      }
+    } else {
+      // Fallback: plain <input type="file">
+      importInputRef.current?.click();
+    }
+  };
+
   return (
     <div className="space-y-6">
-      {/* Hidden file picker — triggered by the Import button */}
+      {/* Fallback hidden input for browsers without showOpenFilePicker */}
       <input
         ref={importInputRef}
         type="file"
         accept=".json,application/json"
         className="hidden"
-        onChange={handleImportFile}
+        onChange={handleImportInputChange}
       />
 
       <div className="flex flex-wrap items-center gap-2">
@@ -431,12 +485,7 @@ function MySkillsTab() {
         >
           <Plus className="w-4 h-4 mr-1" /> Add Skill
         </button>
-        <button
-          onClick={() => {
-            setImportError(null);
-            setImportSuccess(null);
-            importInputRef.current?.click();
-          }}
+        <button onClick={() => void handleImportClick()}
           className="btn btn-secondary"
           title="Import a .skill.json file"
         >
@@ -1318,6 +1367,7 @@ function CommunityTab() {
     added: number;
     updated: number;
     skipped: number;
+    removed: number;
     errors: string[];
   } | null>(null);
 
@@ -1470,6 +1520,7 @@ function CommunityTab() {
             )}
             Sync complete — {syncResult.added} added, {syncResult.updated} updated,{' '}
             {syncResult.skipped} skipped
+            {syncResult.removed > 0 && `, ${syncResult.removed} removed`}
             {syncResult.errors.length > 0 && `, ${syncResult.errors.length} error(s)`}
           </div>
           {syncResult.errors.length > 0 && (

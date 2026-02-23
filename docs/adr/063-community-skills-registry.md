@@ -45,14 +45,28 @@ The `source` field was added to `MarketplaceSkillSchema` (shared types) and to t
 ```
 POST /api/v1/marketplace/community/sync
   → MarketplaceManager.syncFromCommunity(configuredPath)
+    → [if allowCommunityGitFetch && gitUrl] gitCloneOrPull(gitUrl, path)
     → fs.existsSync(path)                        // validate path exists
     → findJsonFiles(path/skills/)                // recursive glob, *.json
+    → syncedNames = new Set()
     → for each file:
         JSON.parse → validate (name required)
         findByNameAndSource(name, 'community')
         → exists? updateSkill() : addSkill({ source: 'community' })
-    → return { added, updated, skipped, errors }
+        syncedNames.add(name)
+    → [prune] storage.search(source='community') → for each not in syncedNames: storage.delete()
+    → return { added, updated, skipped, removed, errors }
 ```
+
+### Prune / Reconcile Step (Phase 51)
+
+After upserting all skills from disk, `syncFromCommunity` reconciles the database to remove skills
+that no longer exist in the repository. Up to 1 000 community skills are fetched from storage; any
+whose `name` is absent from the current sync's processed set is deleted. The `removed` counter in
+`CommunitySyncResult` tracks how many were pruned, and the dashboard Community tab displays the
+count when it is greater than zero.
+
+This prevents orphaned DB entries when skills are renamed or removed from the community repo.
 
 Install flow for community skills:
 
@@ -109,9 +123,25 @@ The Marketplace view gained a dedicated **Community** tab (Dashboard → Skills 
 
 The Marketplace tab is now split into two named sections: **YEOMAN Built-ins** (Shield badge) and **Published**, with community skills excluded.
 
+## Git-Fetch Policy (Phase 22 / implemented)
+
+The `allowCommunityGitFetch` policy (disabled by default) enables `syncFromCommunity` to
+git-clone or git-pull from a remote URL before scanning the local path. When enabled, the core
+calls `gitCloneOrPull(url, localPath)` before the filesystem scan.
+
+| Config | Purpose |
+|--------|---------|
+| `allowCommunityGitFetch` | Master switch. Must be explicitly enabled via Security Settings or the CLI. Off by default. |
+| `COMMUNITY_GIT_URL` / `communityGitUrl` | URL to clone/pull from. Defaults to `https://github.com/MacCracken/secureyeoman-community-skills`. Set only to point at an **alternative** community repo. |
+| `COMMUNITY_REPO_PATH` / `communityRepoPath` | Local path where the repo is cloned. Defaults to `./community-skills`. Set only to use an alternative local directory. |
+
+The env vars (`COMMUNITY_GIT_URL`, `COMMUNITY_REPO_PATH`) are **override knobs** — they exist for
+users who want to point at a different community repository or a custom local path. Normal usage
+only requires enabling `allowCommunityGitFetch`; the bundled default URL and path work out of the box.
+
 ## Security Considerations
 
-- **No network calls from core** — the agent never fetches from the internet during sync; the user controls what's on disk
+- **Git fetch is opt-in** — `allowCommunityGitFetch` defaults to `false`; no network calls are made until explicitly enabled
 - **Config-locked path** — `COMMUNITY_REPO_PATH` is set at startup; the sync endpoint accepts no user-supplied path
 - **File validation** — JSON.parse errors and missing required fields are caught per-file; one bad file does not block the rest
 - **Liability** — Community skills are user-contributed. The README clearly states that liability for skill use rests with the user. Security-oriented skills are for authorized use only.

@@ -23,6 +23,7 @@ export interface CommunitySyncResult {
   added: number;
   updated: number;
   skipped: number;
+  removed: number;
   errors: string[];
 }
 
@@ -195,7 +196,7 @@ export class MarketplaceManager {
    */
   async syncFromCommunity(localPath?: string, repoUrl?: string): Promise<CommunitySyncResult> {
     const repoPath = localPath ?? this.communityRepoPath;
-    const result: CommunitySyncResult = { added: 0, updated: 0, skipped: 0, errors: [] };
+    const result: CommunitySyncResult = { added: 0, updated: 0, skipped: 0, removed: 0, errors: [] };
 
     // Git fetch — only when policy allows and a git URL is available
     const effectiveGitUrl = repoUrl ?? this.communityGitUrl;
@@ -225,6 +226,7 @@ export class MarketplaceManager {
     }
 
     const jsonFiles = this.findJsonFiles(skillsDir);
+    const syncedNames = new Set<string>();
 
     for (const filePath of jsonFiles) {
       try {
@@ -277,10 +279,23 @@ export class MarketplaceManager {
           await this.storage.addSkill(skillData);
           result.added++;
         }
+
+        syncedNames.add(data.name);
       } catch (err) {
         result.errors.push(
           `Error processing ${filePath}: ${err instanceof Error ? err.message : String(err)}`
         );
+      }
+    }
+
+    // Prune community skills from the DB that no longer exist in the repo
+    const { skills: allCommunity } = await this.storage.search(
+      undefined, undefined, 1000, 0, 'community'
+    );
+    for (const stale of allCommunity) {
+      if (!syncedNames.has(stale.name)) {
+        await this.storage.delete(stale.id);
+        result.removed++;
       }
     }
 

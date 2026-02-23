@@ -261,6 +261,114 @@ describe('MarketplaceManager', () => {
       await manager.syncFromCommunity();
       expect(gitCloneOrPull).not.toHaveBeenCalled();
     });
+
+    it('counts added skills for new community entries', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any) => {
+        if (String(dir).endsWith('skills')) {
+          return [{ name: 'new-skill.json', isDirectory: () => false, isFile: () => true }] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ name: 'New Skill', description: 'A new skill', instructions: 'Do stuff.' })
+      );
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null), // not existing → add
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.added).toBe(1);
+      expect(result.updated).toBe(0);
+      expect(storage.addSkill).toHaveBeenCalled();
+    });
+
+    it('counts updated skills for existing community entries', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any) => {
+        if (String(dir).endsWith('skills')) {
+          return [{ name: 'existing.json', isDirectory: () => false, isFile: () => true }] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ name: 'Existing Skill', instructions: 'Updated instructions.' })
+      );
+      const existingSkill = { ...SKILL, id: 'cs-1', name: 'Existing Skill', source: 'community' };
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(existingSkill), // already exists → update
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.updated).toBe(1);
+      expect(result.added).toBe(0);
+      expect(storage.updateSkill).toHaveBeenCalledWith('cs-1', expect.any(Object));
+    });
+
+    it('counts skipped skills for files missing name field', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any) => {
+        if (String(dir).endsWith('skills')) {
+          return [{ name: 'bad.json', isDirectory: () => false, isFile: () => true }] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify({ description: 'No name here' }));
+      const { manager } = makeManager({
+        search: vi.fn().mockResolvedValue({ skills: [], total: 0 }),
+      });
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.skipped).toBe(1);
+      expect(result.errors.some((e) => e.includes('missing required field'))).toBe(true);
+    });
+
+    it('prunes stale community skills absent from the current sync', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any) => {
+        if (String(dir).endsWith('skills')) {
+          return [{ name: 'live.json', isDirectory: () => false, isFile: () => true }] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ name: 'Live Skill', instructions: 'Still here.' })
+      );
+      const staleSkill = { ...SKILL, id: 'stale-1', name: 'Stale Skill', source: 'community' };
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        // After upsert loop, search returns one stale skill not in synced set
+        search: vi.fn().mockResolvedValue({ skills: [staleSkill], total: 1 }),
+      });
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.removed).toBe(1);
+      expect(storage.delete).toHaveBeenCalledWith('stale-1');
+    });
+
+    it('does not prune skills that were just synced', async () => {
+      const { default: fs } = await import('fs');
+      vi.mocked(fs.existsSync).mockReturnValue(true);
+      vi.mocked(fs.readdirSync).mockImplementation((dir: any) => {
+        if (String(dir).endsWith('skills')) {
+          return [{ name: 'kept.json', isDirectory: () => false, isFile: () => true }] as any;
+        }
+        return [];
+      });
+      vi.mocked(fs.readFileSync).mockReturnValue(
+        JSON.stringify({ name: 'Kept Skill', instructions: 'Still present.' })
+      );
+      const keptSkill = { ...SKILL, id: 'kept-1', name: 'Kept Skill', source: 'community' };
+      const { manager, storage } = makeManager({
+        findByNameAndSource: vi.fn().mockResolvedValue(null),
+        search: vi.fn().mockResolvedValue({ skills: [keptSkill], total: 1 }),
+      });
+      const result = await manager.syncFromCommunity('/tmp/community');
+      expect(result.removed).toBe(0);
+      expect(storage.delete).not.toHaveBeenCalled();
+    });
   });
 
   describe('getCommunityStatus', () => {

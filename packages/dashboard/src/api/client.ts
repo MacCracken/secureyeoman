@@ -163,7 +163,7 @@ async function request<T>(
           error.code
         );
       }
-      return retryResponse.json();
+      return parseResponseBody(retryResponse);
     }
 
     // Refresh failed — clear auth and notify
@@ -181,7 +181,14 @@ async function request<T>(
     );
   }
 
-  return response.json();
+  return parseResponseBody(response);
+}
+
+/** Parse a response body, returning undefined for 204 / empty responses. */
+async function parseResponseBody<T>(response: Response): Promise<T> {
+  if (response.status === 204) return undefined as T;
+  const text = await response.text();
+  return (text ? JSON.parse(text) : undefined) as T;
 }
 
 // ── Login / Logout ────────────────────────────────────────────────────
@@ -1426,6 +1433,7 @@ export async function syncCommunitySkills(): Promise<{
   added: number;
   updated: number;
   skipped: number;
+  removed: number;
   errors: string[];
 }> {
   return request('/marketplace/community/sync', { method: 'POST' });
