@@ -37,7 +37,8 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 - [ ] Connect CLI when DisplayName entered and connected -Integration undefined not found
 - [ ] Chat needs responsive design in the response window to not blow up the view
-
+- [ ] Proactive > Pattens > No patterns detected yet. Patterns will appear as FRIDAY learns from your interactions; shouldn't be 'FRIDAY' but 'Personality'.
+ 
 
 ---
 
