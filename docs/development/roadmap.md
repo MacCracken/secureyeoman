@@ -36,6 +36,7 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 ### Improvements
 - [ ] YEOMAN MCP show QUICKBOOKS Skills
 - [ ] CLI updates for the added toolsets
+- [ ] FRIDAY's suggestions - [suggestions](friday_suggestions.md)
 
 
 ---
