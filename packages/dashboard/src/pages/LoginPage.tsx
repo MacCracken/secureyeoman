@@ -1,8 +1,10 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { Logo } from '../components/Logo';
+import { fetchHealth } from '../api/client';
 
 export function LoginPage() {
   const [password, setPassword] = useState('');
@@ -13,6 +15,7 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { data: health } = useQuery({ queryKey: ['health'], queryFn: fetchHealth, staleTime: 30000 });
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -106,7 +109,15 @@ export function LoginPage() {
           </button>
         </form>
 
-        <p className="text-xs text-muted-foreground text-center mt-6">Local Network Only</p>
+        <p className="text-xs text-center mt-6">
+          {health?.networkMode === 'public' ? (
+            <span className="text-success">Public (TLS Secured)</span>
+          ) : health?.networkMode === 'lan' ? (
+            <span className="text-warning">Network (No TLS)</span>
+          ) : (
+            <span className="text-muted-foreground">Local Network Only</span>
+          )}
+        </p>
       </div>
     </div>
   );

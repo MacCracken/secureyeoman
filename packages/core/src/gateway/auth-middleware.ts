@@ -573,6 +573,7 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
 
 const PUBLIC_ROUTES = new Set([
   '/health',
+  '/prom/metrics',
   '/api/v1/auth/login',
   '/ws/metrics',
   '/api/v1/auth/oauth/:provider',

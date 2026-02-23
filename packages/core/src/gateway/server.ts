@@ -699,7 +699,7 @@ export class GatewayServer {
     }
 
     // Prometheus metrics endpoint (unauthenticated)
-    this.app.get('/metrics', async (_request, reply) => {
+    this.app.get('/prom/metrics', async (_request, reply) => {
       try {
         const metrics = await this.secureYeoman.getMetrics();
         const text = formatPrometheusMetrics(metrics);
