@@ -6,7 +6,7 @@
     <title>SecureYeoman — Your Personal AI Yeoman</title>
     <meta
       name="description"
-      content="SecureYeoman is a secure, local-first AI assistant with enterprise-grade protection and comprehensive observability. Comes with default Agent Personality F.R.I.D.A.Y. who is ready to chat and can be proactive if enabled."
+      content="SecureYeoman — Your AI Security Yeoman. A privacy-first AI assistant with enterprise-grade protection, flexible network deployment (local, LAN, or public TLS), and comprehensive observability."
     />
     <link rel="stylesheet" href="css/style.css" />
     <link rel="icon" type="image/svg+xml" href="images/favicon.svg" />
@@ -82,7 +82,7 @@
       <div class="hero-content">
         <div class="hero-badge">
           <span class="badge-dot"></span>
-          <span>v2026.2.21 Now Available</span>
+          <span>v2026.2.22 Now Available</span>
           <a
             href="https://github.com/MacCracken/secureyeoman/releases"
             target="_blank"
@@ -96,9 +96,9 @@
           <span class="gradient-text">Yeoman</span>
         </h1>
         <p class="hero-subtitle">
-          SecureYeoman is a secure, local-first AI assistant with enterprise-grade protection. It
-          remembers everything, does anything, and works exclusively for you. Comes with default
-          Agent Personality F.R.I.D.A.Y. who is ready to chat and can be proactive if enabled.
+          Your AI Security Yeoman — a privacy-first AI assistant with enterprise-grade protection.
+          Runs locally by default, deployable on LAN or the public internet with TLS. Remembers
+          everything, does anything, and works exclusively for you.
         </p>
         <div class="hero-badges">
           <span class="tag tag-security">
@@ -106,8 +106,8 @@
             Enterprise Security
           </span>
           <span class="tag tag-local">
-            <i class="fas fa-lock"></i>
-            Local-First
+            <i class="fas fa-network-wired"></i>
+            Flexible Deployment
           </span>
           <span class="tag tag-privacy">
             <i class="fas fa-user-secret"></i>
@@ -130,7 +130,7 @@
         </div>
           <div class="hero-stats">
           <div class="stat">
-            <span class="stat-value">7,071+</span>
+            <span class="stat-value">7,243+</span>
             <span class="stat-label">Tests</span>
           </div>
           <div class="stat-divider"></div>
@@ -274,14 +274,14 @@
             </div>
             <h3 class="feature-title">Rich Dashboard</h3>
             <p class="feature-desc">
-              React + Vite + Tailwind dashboard with real-time WebSocket updates. Rich chat
-              rendering with Markdown, syntax highlighting, Mermaid diagrams, and KaTeX math.
+              React + Vite + Tailwind dashboard with real-time WebSocket updates, rich chat
+              rendering, collaborative editing, and a live network mode indicator (Local / LAN / Public).
             </p>
             <ul class="feature-list">
               <li>Real-time updates</li>
-              <li>Markdown rendering</li>
-              <li>Mermaid diagrams</li>
-              <li>KaTeX math</li>
+              <li>Markdown + Mermaid + KaTeX</li>
+              <li>Collaborative editing (Yjs)</li>
+              <li>Live network mode badge</li>
             </ul>
           </div>
 
@@ -428,14 +428,31 @@
             </div>
             <h3 class="feature-title">Skill Marketplace</h3>
             <p class="feature-desc">
-              Discover, install, and publish skills. Community skills from bundled local repo or
-              GitHub with source tracking.
+              Discover, install, publish, import, and export skills. Portable <code>.skill.json</code>
+              files, community repo sync (git or local path), and admin-controlled community policy.
             </p>
             <ul class="feature-list">
-              <li>Skill discovery</li>
-              <li>Community skills</li>
-              <li>Publish skills</li>
+              <li>Import / export skills</li>
+              <li>Community repo sync</li>
               <li>Per-personality install</li>
+              <li>Admin security policy</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-project-diagram"></i>
+            </div>
+            <h3 class="feature-title">Workflow Orchestration</h3>
+            <p class="feature-desc">
+              DAG-based automation engine with 9 step types, Mustache data-flow templates, parallel
+              tier execution, retry policies, and a ReactFlow visual builder.
+            </p>
+            <ul class="feature-list">
+              <li>9 step types</li>
+              <li>Parallel execution</li>
+              <li>Visual DAG builder</li>
+              <li>Retry &amp; fallback</li>
             </ul>
           </div>
 
@@ -876,7 +893,7 @@ SECUREYEOMAN_ADMIN_PASSWORD="..."</code></pre>
               </div>
               <div class="stat-row">
                 <span class="stat-name">Tests</span>
-                <span class="stat-value">7,071+</span>
+                <span class="stat-value">7,243+</span>
               </div>
               <div class="stat-row">
                 <span class="stat-name">Files</span>

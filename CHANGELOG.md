@@ -4,6 +4,39 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 55 — Navigate & Create: Workflows + Test Fixes (2026-02-22) `v2026.2.22`
+
+### Enhancement: Workflows in Navigate & Create
+
+**`packages/dashboard/src/components/NewEntityDialog.tsx`**:
+- Imported `GitMerge` from `lucide-react`
+- Added **Workflow** entry to `NAV_ITEMS` (`/workflows`, "Create an automation") so users can jump directly to workflow creation from the global Navigate & Create dialog
+
+### Test Fixes
+
+**`packages/core/src/ai/switch-model.test.ts`**:
+- Added `BASE_RESPONSE_CACHE` constant (`{ enabled: false, ttlMs: 300_000, maxEntries: 500 }`)
+- All 5 model config objects now include `responseCache: BASE_RESPONSE_CACHE`
+- Fixes `TypeError: Cannot read properties of undefined (reading 'enabled')` caused by `AIClient` accessing `config.model.responseCache.enabled` without an optional chain
+
+**`packages/dashboard/src/components/Sidebar.test.tsx`**:
+- `BASE_POLICY` now includes `allowWorkflows: true`
+- Fixes "shows a Workflows nav link" and "Skills link appears before Workflows" tests that were failing because the policy gate hid the link
+
+**`packages/dashboard/src/components/SkillsPage.test.tsx`**:
+- `fetchSecurityPolicy` added to the `vi.mock('../api/client', ...)` block
+- `mockFetchSecurityPolicy` typed and defaulted to `{ allowCommunityGitFetch: false }` in `beforeEach`
+- "shows removed count in sync result" test rewritten: enables policy, waits for Community tab button, clicks it, then clicks Sync — avoids the initialTab→useEffect reset race
+
+**`packages/dashboard/src/components/GroupChatPage.test.tsx`**:
+- Regex updated from `/No conversations yet/i` to `/No active conversations/i` to match actual component copy
+
+### Version
+
+All packages bumped `2026.2.21` → `2026.2.22`.
+
+---
+
 ## Phase 54 — Security Policy Toggles: Workflows & Community Skills (2026-02-22)
 
 ### New Feature: Workflow Orchestration Security Toggle

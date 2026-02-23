@@ -59,6 +59,8 @@ describe('ExperimentsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
 
     renderComponent();
@@ -85,6 +87,8 @@ describe('ExperimentsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
 
     renderComponent();
@@ -110,6 +114,8 @@ describe('ExperimentsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
 
     renderComponent();
@@ -133,6 +139,8 @@ describe('ExperimentsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
 
     renderComponent();

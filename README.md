@@ -10,7 +10,9 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Helm-326CE5.svg)](https://helm.sh/)
 
-> A secure, local-first AI assistant with enterprise-grade protection and comprehensive observability. Comes with default Agent Personality F.R.I.D.A.Y.
+> Your AI Security Yeoman — a secure, privacy-first AI assistant with enterprise-grade protection and comprehensive observability. Runs locally by default; configurable for LAN or public deployment.
+
+Ships with the default Agent Personality **F.R.I.D.A.Y.**:
 
 * **F**riendly
 * **R**eliable
@@ -68,7 +70,7 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 - **AI Integration** — 11 providers with automatic fallback chains; dynamic model discovery and routing
 - **Agent Architecture** — Soul/Spirit/Brain/Body cognitive model; personality presets (F.R.I.D.A.Y., T.Ron); per-personality active hours
 - **Cognitive Memory** — Vector search (FAISS/Qdrant/ChromaDB), hybrid FTS + RRF, content-chunked indexing, proactive context compaction, self-repairing task loop
-- **Dashboard** — React + Vite + Tailwind; rich Markdown chat, Mermaid diagrams, KaTeX math, real-time collaborative editing (Yjs CRDT), Group Chat, WebGL graph visualization
+- **Dashboard** — React + Vite + Tailwind; rich Markdown chat, Mermaid diagrams, KaTeX math, real-time collaborative editing (Yjs CRDT), Group Chat, WebGL graph visualization; About panel shows live network mode (Local / LAN / Public)
 - **Multi-Agent** — Sub-agent delegation, Agent Swarms (sequential/parallel/dynamic), A2A protocol, dynamic tool creation, intelligent model routing
 - **Skills & Marketplace** — Skill import/export (portable `.skill.json`), community repo sync (git-fetch or local path), install/uninstall synced to Brain, built-in + published + community source tiers
 - **MCP Protocol** — 58+ tools, 7 resources, 4 prompts; Kali Security Toolkit; Agnostic QA Bridge; BullShift trading tools; streamable HTTP, SSE, and stdio transports
@@ -86,6 +88,36 @@ See the [Feature Reference](docs/features.md) for the complete breakdown.
 
 - **Node.js** 20 LTS or later (source installs only)
 - **AI Provider API Key**: At least one of Anthropic, OpenAI, Google Gemini, OpenCode Zen, DeepSeek, Mistral, Grok, Letta, or Ollama (local)
+
+---
+
+## Network Access Modes
+
+SecureYeoman supports three network modes, selectable via `config.yml`. The **About** panel in the dashboard reflects the current mode in real time.
+
+| Mode | `gateway.host` | `gateway.tls.enabled` | Dashboard label | Use case |
+|------|---------------|----------------------|-----------------|----------|
+| **Local** (default) | `127.0.0.1` | `false` | Local Only | Single-machine, max privacy |
+| **LAN** | `0.0.0.0` | `false` | Network (No TLS) ⚠️ | Trusted internal network |
+| **Public** | `0.0.0.0` | `true` | Public (TLS Secured) | Internet / remote team |
+
+**Enabling public access** (`config.yml`):
+```yaml
+gateway:
+  host: "0.0.0.0"
+  tls:
+    enabled: true
+    certPath: "/etc/ssl/certs/server.crt"
+    keyPath:  "/etc/ssl/private/server.key"
+  cors:
+    origins:
+      - "https://your-domain.example.com"
+```
+
+> [!WARNING]
+> Do **not** expose SecureYeoman to the internet without TLS enabled. Without TLS, API keys and session tokens travel in plaintext.
+
+The `/health` endpoint now includes `networkMode` (`"local"` | `"lan"` | `"public"`) so monitoring tools and reverse proxies can assert the expected access tier.
 
 ---
 
@@ -132,6 +164,8 @@ TOKEN=$(curl -s -X POST http://localhost:18789/api/v1/auth/login \
   -d '{"password":"your-admin-password"}' | jq -r '.accessToken')
 
 curl http://localhost:18789/health
+# → {"status":"ok","version":"2026.2.22","uptime":12345,"networkMode":"local",...}
+
 curl http://localhost:18789/api/v1/audit?limit=50 -H "Authorization: Bearer $TOKEN"
 ```
 

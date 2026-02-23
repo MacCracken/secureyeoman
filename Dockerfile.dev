@@ -61,9 +61,6 @@ COPY --from=builder /app/packages/mcp/node_modules packages/mcp/node_modules/
 # dashboard (served by core gateway via @fastify/static)
 COPY --from=builder /app/packages/dashboard/dist packages/dashboard/dist/
 
-# Optional: bundled community skills
-COPY community-skills/ /usr/share/secureyeoman/community-skills/
-
 EXPOSE 18789
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \

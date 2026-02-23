@@ -110,6 +110,7 @@ export interface HealthStatus {
   status: 'ok' | 'degraded' | 'error';
   version: string;
   uptime: number;
+  networkMode?: 'local' | 'lan' | 'public';
   checks: {
     database: boolean;
     auditChain: boolean;

@@ -598,7 +598,8 @@ export class GatewayServer {
     try {
       const proactiveManager = this.secureYeoman.getProactiveManager();
       if (proactiveManager) {
-        registerProactiveRoutes(this.app, { proactiveManager });
+        const heartbeatLogStorage = this.secureYeoman.getHeartbeatLogStorage() ?? undefined;
+        registerProactiveRoutes(this.app, { proactiveManager, logStorage: heartbeatLogStorage });
         this.getLogger().info('Proactive routes registered');
       }
     } catch (err) {
@@ -711,10 +712,18 @@ export class GatewayServer {
     // Health check
     this.app.get('/health', async () => {
       const state = this.secureYeoman.getState();
+      const isLoopback =
+        this.config.host === '127.0.0.1' || this.config.host === 'localhost';
+      const networkMode = isLoopback
+        ? 'local'
+        : this.config.tls.enabled
+          ? 'public'
+          : 'lan';
       return {
         status: state.healthy ? 'ok' : 'error',
         version: VERSION,
         uptime: state.startedAt ? Date.now() - state.startedAt : 0,
+        networkMode,
         checks: {
           database: true,
           auditChain: true,

@@ -187,6 +187,8 @@ beforeEach(() => {
     sandboxGvisor: false,
     sandboxWasm: false,
     sandboxCredentialProxy: false,
+    allowWorkflows: false,
+    allowCommunityGitFetch: false,
   });
 });
 
@@ -351,6 +353,8 @@ describe('PersonalityEditor — Resource Creation "Enable all" A2A/Swarms gating
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -386,6 +390,8 @@ describe('PersonalityEditor — Resource Creation "Enable all" A2A/Swarms gating
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -416,6 +422,8 @@ describe('PersonalityEditor — Resource Creation "Enable all" A2A/Swarms gating
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -446,6 +454,8 @@ describe('PersonalityEditor — Resource Creation "Enable all" A2A/Swarms gating
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     const user = userEvent.setup();
     renderComponent();

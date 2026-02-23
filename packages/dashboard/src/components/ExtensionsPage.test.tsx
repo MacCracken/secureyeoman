@@ -99,6 +99,8 @@ describe('ExtensionsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     mockFetchExtensions.mockResolvedValue(MOCK_EXTENSIONS);
     mockFetchExtensionHooks.mockResolvedValue(MOCK_HOOKS);
@@ -130,6 +132,8 @@ describe('ExtensionsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     expect(await screen.findByText('Extensions Not Enabled')).toBeInTheDocument();
@@ -153,6 +157,8 @@ describe('ExtensionsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();
@@ -177,6 +183,8 @@ describe('ExtensionsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();

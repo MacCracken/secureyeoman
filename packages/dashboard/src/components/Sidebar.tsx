@@ -431,8 +431,14 @@ export function Sidebar({
                 <span className="text-sm font-medium">{health?.version ?? '...'}</span>
               </div>
               <div className="flex items-center justify-between py-2 border-b">
-                <span className="text-sm text-muted-foreground">Security</span>
-                <span className="text-sm font-medium text-success">Local Network Only</span>
+                <span className="text-sm text-muted-foreground">Network</span>
+                {health?.networkMode === 'public' ? (
+                  <span className="text-sm font-medium text-success">Public (TLS Secured)</span>
+                ) : health?.networkMode === 'lan' ? (
+                  <span className="text-sm font-medium text-warning">Network (No TLS)</span>
+                ) : (
+                  <span className="text-sm font-medium text-success">Local Only</span>
+                )}
               </div>
               <div className="flex items-center justify-between py-2 border-b">
                 <span className="text-sm text-muted-foreground">Status</span>
@@ -440,7 +446,7 @@ export function Sidebar({
               </div>
               <div className="pt-2">
                 <p className="text-xs text-muted text-center">
-                  F.R.I.D.A.Y. — Your AI Security Companion
+                  Your AI Security Yeoman
                 </p>
               </div>
             </div>

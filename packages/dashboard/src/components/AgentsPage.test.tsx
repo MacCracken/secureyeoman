@@ -96,6 +96,8 @@ const DEFAULT_POLICY = {
   sandboxGvisor: false,
   sandboxWasm: false,
   sandboxCredentialProxy: false,
+  allowWorkflows: false,
+  allowCommunityGitFetch: false,
 };
 
 describe('AgentsPage', () => {

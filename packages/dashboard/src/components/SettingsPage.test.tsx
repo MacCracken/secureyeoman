@@ -97,6 +97,8 @@ describe('SettingsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
   });
 

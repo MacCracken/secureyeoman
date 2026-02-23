@@ -157,6 +157,8 @@ describe('EditorPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
     mockFetchExecutionHistory.mockResolvedValue({
@@ -219,6 +221,8 @@ describe('EditorPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     await screen.findByText('Terminal');
