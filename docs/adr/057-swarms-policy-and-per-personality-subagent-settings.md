@@ -36,7 +36,7 @@ The Swarms tab in `SubAgentsPage.tsx` is filtered out when `securityPolicy.allow
 
 Added `allowA2A` and `allowSwarms` boolean fields to `CreationConfigSchema` in `packages/shared/src/types/soul.ts`.
 
-In `PersonalityEditor.tsx`, these appear as nested items below the "New Sub-Agents" row when `creationConfig.subAgents === true`. Each shows:
+In `PersonalityEditor.tsx`, these appear as nested items below the "Sub-Agent Delegation" row in the **Orchestration** sub-section (inside Body → Resources) when `creationConfig.subAgents === true`. Each shows:
 - The label, icon, and enabled/disabled state
 - A "disabled by security policy" indicator when the global policy blocks the feature
 - A toggle that is disabled (not interactive) when globally blocked

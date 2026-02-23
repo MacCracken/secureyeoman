@@ -114,10 +114,9 @@ export async function executeCreationTool(
           securityContext: { userId: 'ai', role: 'operator', permissionsUsed: [] },
           timeoutMs: typeof args.timeoutMs === 'number' ? args.timeoutMs : 300000,
         };
-        taskStorage.storeTask(task);
         if (taskExecutor) {
           try {
-            await taskExecutor.submit(
+            const executorTask = await taskExecutor.submit(
               {
                 type: task.type,
                 name: task.name,
@@ -127,10 +126,12 @@ export async function executeCreationTool(
               },
               { userId: 'ai', role: 'operator' }
             );
+            return { output: { task: executorTask }, isError: false };
           } catch {
-            // Task stored but not enqueued — not fatal
+            // Fall through to store as pending below
           }
         }
+        taskStorage.storeTask(task);
         return { output: { task }, isError: false };
       }
 

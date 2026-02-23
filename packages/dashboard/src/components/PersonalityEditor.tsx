@@ -1265,34 +1265,39 @@ function BodySection({
   const dtcBlockedByPolicy = securityPolicy?.allowDynamicTools === false;
   const workflowsBlockedByPolicy = securityPolicy?.allowWorkflows === false;
 
-  const creationItems = [
+  const resourceItems = [
     { key: 'tasks' as const, label: 'New Tasks', icon: '📋' },
     { key: 'skills' as const, label: 'New Skills', icon: '🧠' },
     { key: 'experiments' as const, label: 'New Experiments', icon: '🧪' },
     { key: 'personalities' as const, label: 'New Personalities', icon: '👤' },
+    { key: 'customRoles' as const, label: 'New Custom Roles', icon: '🛡️' },
+    { key: 'roleAssignments' as const, label: 'Assign Roles', icon: '🔑' },
+  ];
+
+  const orchestrationItems = [
     {
       key: 'subAgents' as const,
-      label: 'New Sub-Agents',
+      label: 'Sub-Agent Delegation',
       icon: '🤖',
       blockedByPolicy: subAgentsBlockedByPolicy,
     },
-    { key: 'customRoles' as const, label: 'New Custom Roles', icon: '🛡️' },
-    { key: 'roleAssignments' as const, label: 'Assign Roles', icon: '🔑' },
+    {
+      key: 'workflows' as const,
+      label: 'Workflows',
+      icon: '⚡',
+      blockedByPolicy: workflowsBlockedByPolicy,
+    },
     {
       key: 'allowDynamicTools' as const,
       label: 'Dynamic Tool Creation',
       icon: '🔧',
       blockedByPolicy: dtcBlockedByPolicy,
     },
-    {
-      key: 'workflows' as const,
-      label: 'New Workflows',
-      icon: '⚡',
-      blockedByPolicy: workflowsBlockedByPolicy,
-    },
   ];
 
-  const allEnabled = creationItems
+  const allCreationItems = [...resourceItems, ...orchestrationItems];
+
+  const allEnabled = allCreationItems
     .filter((item) => !('blockedByPolicy' in item && item.blockedByPolicy))
     .every((item) => creationConfig[item.key]);
 
@@ -1367,6 +1372,128 @@ function BodySection({
 
   const toggleCapability = (cap: string) => {
     onEnabledCapsChange({ ...enabledCaps, [cap]: !enabledCaps[cap] });
+  };
+
+  const renderToggleRow = (item: {
+    key:
+      | 'skills'
+      | 'tasks'
+      | 'personalities'
+      | 'subAgents'
+      | 'customRoles'
+      | 'roleAssignments'
+      | 'experiments'
+      | 'allowA2A'
+      | 'allowSwarms'
+      | 'allowDynamicTools'
+      | 'workflows';
+    label: string;
+    icon: string;
+    blockedByPolicy?: boolean;
+  }) => {
+    const blocked = item.blockedByPolicy ?? false;
+    const isEnabled = blocked ? false : creationConfig[item.key];
+    return (
+      <Fragment key={item.key}>
+        <div
+          className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+            blocked
+              ? 'bg-muted/30 border-border opacity-60'
+              : isEnabled
+                ? 'bg-success/5 border-success/30'
+                : 'bg-muted/50 border-border'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">{item.icon}</span>
+            <span className="font-medium">{item.label}</span>
+            {blocked && (
+              <span className="text-xs text-destructive">(disabled by security policy)</span>
+            )}
+          </div>
+          <label
+            className={`relative inline-flex items-center ${blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+          >
+            <input
+              type="checkbox"
+              checked={isEnabled}
+              onChange={() => {
+                if (!blocked) toggleCreationItem(item.key);
+              }}
+              disabled={blocked}
+              className="sr-only peer"
+              aria-label={item.label}
+            />
+            <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+            <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
+              {blocked ? 'Blocked' : isEnabled ? 'Enabled' : 'Disabled'}
+            </span>
+          </label>
+        </div>
+
+        {/* A2A and Swarms sub-settings — only visible when Sub-Agent Delegation is enabled */}
+        {item.key === 'subAgents' && creationConfig.subAgents && (
+          <div className="ml-6 pl-4 border-l-2 border-border space-y-2">
+            {[
+              {
+                key: 'allowA2A' as const,
+                label: 'A2A Networks',
+                icon: '🌐',
+                blocked: a2aBlockedByPolicy,
+              },
+              {
+                key: 'allowSwarms' as const,
+                label: 'Agent Swarms',
+                icon: '🐝',
+                blocked: swarmsBlockedByPolicy,
+              },
+            ].map((sub) => {
+              const subEnabled = sub.blocked ? false : creationConfig[sub.key];
+              return (
+                <div
+                  key={sub.key}
+                  className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
+                    sub.blocked
+                      ? 'bg-muted/30 border-border opacity-60'
+                      : subEnabled
+                        ? 'bg-success/5 border-success/30'
+                        : 'bg-muted/50 border-border'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{sub.icon}</span>
+                    <span className="font-medium">{sub.label}</span>
+                    {sub.blocked && (
+                      <span className="text-xs text-destructive">
+                        (disabled by security policy)
+                      </span>
+                    )}
+                  </div>
+                  <label
+                    className={`relative inline-flex items-center ${sub.blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={subEnabled}
+                      onChange={() => {
+                        if (!sub.blocked) toggleCreationItem(sub.key);
+                      }}
+                      disabled={sub.blocked}
+                      className="sr-only peer"
+                      aria-label={sub.label}
+                    />
+                    <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                    <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
+                      {sub.blocked ? 'Blocked' : subEnabled ? 'Enabled' : 'Disabled'}
+                    </span>
+                  </label>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </Fragment>
+    );
   };
 
   return (
@@ -1978,16 +2105,18 @@ function BodySection({
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Resource Creation" defaultOpen={false}>
-        <div className="flex items-center justify-between mb-2">
-          <h4 className="text-sm font-medium">Resource Creation</h4>
-          <label className="relative inline-flex items-center cursor-pointer">
+      <CollapsibleSection title="Resources" defaultOpen={false}>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs text-muted-foreground">
+            Grant this personality autonomous resource and orchestration capabilities.
+          </p>
+          <label className="relative inline-flex items-center cursor-pointer ml-4 shrink-0">
             <input
               type="checkbox"
               checked={allEnabled}
               onChange={toggleAllCreation}
               className="sr-only peer"
-              aria-label="Enable all resource creation"
+              aria-label="Enable all resources"
             />
             <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
             <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
@@ -1995,119 +2124,22 @@ function BodySection({
             </span>
           </label>
         </div>
-        <p className="text-xs text-muted-foreground mb-3">
-          Allow this personality to autonomously create new skills, tasks, roles, experiments, and
-          personalities.
-        </p>
-        <div className="space-y-2">
-          {creationItems.map((item) => {
-            const blocked = 'blockedByPolicy' in item && item.blockedByPolicy;
-            const isEnabled = blocked ? false : creationConfig[item.key];
-            return (
-              <Fragment key={item.key}>
-                <div
-                  className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
-                    blocked
-                      ? 'bg-muted/30 border-border opacity-60'
-                      : isEnabled
-                        ? 'bg-success/5 border-success/30'
-                        : 'bg-muted/50 border-border'
-                  }`}
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-base">{item.icon}</span>
-                    <span className="font-medium">{item.label}</span>
-                    {blocked && (
-                      <span className="text-xs text-destructive">
-                        (disabled by security policy)
-                      </span>
-                    )}
-                  </div>
-                  <label
-                    className={`relative inline-flex items-center ${blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isEnabled}
-                      onChange={() => {
-                        if (!blocked) toggleCreationItem(item.key);
-                      }}
-                      disabled={blocked}
-                      className="sr-only peer"
-                      aria-label={item.label}
-                    />
-                    <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-                    <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
-                      {blocked ? 'Blocked' : isEnabled ? 'Enabled' : 'Disabled'}
-                    </span>
-                  </label>
-                </div>
 
-                {/* A2A and Swarms sub-settings — only visible when New Sub-Agents is enabled */}
-                {item.key === 'subAgents' && creationConfig.subAgents && (
-                  <div className="ml-6 pl-4 border-l-2 border-border space-y-2">
-                    {[
-                      {
-                        key: 'allowA2A' as const,
-                        label: 'A2A Networks',
-                        icon: '🌐',
-                        blocked: a2aBlockedByPolicy,
-                      },
-                      {
-                        key: 'allowSwarms' as const,
-                        label: 'Agent Swarms',
-                        icon: '🐝',
-                        blocked: swarmsBlockedByPolicy,
-                      },
-                    ].map((sub) => {
-                      const subEnabled = sub.blocked ? false : creationConfig[sub.key];
-                      return (
-                        <div
-                          key={sub.key}
-                          className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
-                            sub.blocked
-                              ? 'bg-muted/30 border-border opacity-60'
-                              : subEnabled
-                                ? 'bg-success/5 border-success/30'
-                                : 'bg-muted/50 border-border'
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-base">{sub.icon}</span>
-                            <span className="font-medium">{sub.label}</span>
-                            {sub.blocked && (
-                              <span className="text-xs text-destructive">
-                                (disabled by security policy)
-                              </span>
-                            )}
-                          </div>
-                          <label
-                            className={`relative inline-flex items-center ${sub.blocked ? 'cursor-not-allowed' : 'cursor-pointer'}`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={subEnabled}
-                              onChange={() => {
-                                if (!sub.blocked) toggleCreationItem(sub.key);
-                              }}
-                              disabled={sub.blocked}
-                              className="sr-only peer"
-                              aria-label={sub.label}
-                            />
-                            <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-                            <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
-                              {sub.blocked ? 'Blocked' : subEnabled ? 'Enabled' : 'Disabled'}
-                            </span>
-                          </label>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </Fragment>
-            );
-          })}
-        </div>
+        <CollapsibleSection title="Creation" defaultOpen={false}>
+          <p className="text-xs text-muted-foreground mb-3">
+            Allow this personality to autonomously create new skills, tasks, roles, experiments, and
+            personalities.
+          </p>
+          <div className="space-y-2">{resourceItems.map(renderToggleRow)}</div>
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Orchestration" defaultOpen={false}>
+          <p className="text-xs text-muted-foreground mb-3">
+            Allow this personality to delegate to agents, run workflows, and register dynamic tools.
+            Requires the corresponding toggle to be enabled in Settings &gt; Security.
+          </p>
+          <div className="space-y-2">{orchestrationItems.map(renderToggleRow)}</div>
+        </CollapsibleSection>
       </CollapsibleSection>
     </CollapsibleSection>
   );

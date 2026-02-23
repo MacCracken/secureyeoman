@@ -957,6 +957,28 @@ export class GatewayServer {
             return sendError(reply, 400, 'Task name is required');
           }
 
+          if (taskExecutor) {
+            try {
+              const executorTask = await taskExecutor.submit(
+                {
+                  type: type as TaskType,
+                  name,
+                  description,
+                  input,
+                  timeoutMs,
+                  correlationId,
+                  parentTaskId,
+                },
+                { userId: 'api', role: 'operator' }
+              );
+              return reply.code(201).send(executorTask);
+            } catch (err) {
+              this.getLogger().warn('Task execution failed', { error: String(err) });
+              return sendError(reply, 500, 'Task execution failed');
+            }
+          }
+
+          // No executor available: store as a pending record only
           const task: Task = {
             id: uuidv7(),
             type: type as TaskType,
@@ -970,28 +992,7 @@ export class GatewayServer {
             correlationId,
             parentTaskId,
           };
-
           taskStorage.storeTask(task);
-
-          if (taskExecutor) {
-            try {
-              await taskExecutor.submit(
-                {
-                  type: type as TaskType,
-                  name,
-                  description,
-                  input,
-                  timeoutMs,
-                  correlationId,
-                  parentTaskId,
-                },
-                { userId: 'api', role: 'operator' }
-              );
-            } catch (err) {
-              this.getLogger().warn('Task created but failed to enqueue', { error: String(err) });
-            }
-          }
-
           return reply.code(201).send(task);
         } catch (err) {
           this.getLogger().error('Failed to create task', { error: String(err) });

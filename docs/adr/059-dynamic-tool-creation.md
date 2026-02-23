@@ -43,7 +43,7 @@ Both are propagated throughout the stack:
 
 Added `allowDynamicTools: z.boolean().default(false)` to `CreationConfigSchema` in `packages/shared/src/types/soul.ts`.
 
-In `PersonalityEditor.tsx`, the field appears as a standalone peer entry in the Resource Creation grid (NOT nested under subAgents — DTC is an independent capability, not a sub-agent delegation feature). It shows "(disabled by security policy)" when the global `allowDynamicTools` is false.
+In `PersonalityEditor.tsx`, the field appears as a standalone entry in the **Orchestration** sub-section (inside Body → Resources), alongside Sub-Agent Delegation and Workflows (NOT nested under subAgents — DTC is an independent capability, not a sub-agent delegation feature). It shows "(disabled by security policy)" when the global `allowDynamicTools` is false.
 
 The "Enable All" toggle respects the policy gate: DTC is set to `false` when `dtcBlockedByPolicy`, otherwise follows the new value.
 

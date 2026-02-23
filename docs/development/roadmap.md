@@ -33,9 +33,9 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 - [ ] Chat needs responsive design in the response window to not blow up the view
 
 ### Improvements
-- [x] Ability for the admin to toggle on or off the Community Skills from the Settings > Security view — toggle persists across restarts (`allowCommunityGitFetch` now loaded from DB on startup)
 - [ ] YEOMAN MCP show QUICKBOOKS Skills
 - [ ] CLI updates for the added toolsets
+- [x] Personality editor Body section: replaced flat "Resource Creation" with two-level "Resources" section (Resource Creation + Orchestration sub-sections) — ADR 108
 
 
 ---
