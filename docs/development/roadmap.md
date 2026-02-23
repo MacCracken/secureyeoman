@@ -35,6 +35,7 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
  
 ### Improvements
 - [ ] Ability for the admin to toggle on or off the Community Skills from the Settings > Security view
+- [ ] YEOMAN MCP show QUICKBOOKS Skills
 
 
 ---
