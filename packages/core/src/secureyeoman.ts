@@ -1858,7 +1858,7 @@ export class SecureYeoman {
 
   /**
    * Update security policy toggles at runtime.
-   * Changes are in-memory only (not persisted to YAML).
+   * Boolean toggles are persisted to the security.policy DB table and reloaded on startup.
    */
   updateSecurityPolicy(updates: {
     allowSubAgents?: boolean;
@@ -1999,6 +1999,7 @@ export class SecureYeoman {
         'sandboxGvisor',
         'sandboxWasm',
         'sandboxCredentialProxy',
+        'allowCommunityGitFetch',
       ] as const;
       for (const row of result.rows) {
         if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {

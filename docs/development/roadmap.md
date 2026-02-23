@@ -31,9 +31,9 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 - [ ] Connect CLI when DisplayName entered and connected -Integration undefined not found
 - [ ] Chat needs responsive design in the response window to not blow up the view
- 
+
 ### Improvements
-- [ ] Ability for the admin to toggle on or off the Community Skills from the Settings > Security view
+- [x] Ability for the admin to toggle on or off the Community Skills from the Settings > Security view — toggle persists across restarts (`allowCommunityGitFetch` now loaded from DB on startup)
 - [ ] YEOMAN MCP show QUICKBOOKS Skills
 - [ ] CLI updates for the added toolsets
 

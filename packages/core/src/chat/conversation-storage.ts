@@ -28,6 +28,7 @@ interface MessageRow {
   tokens_used: number | null;
   attachments_json: unknown;
   brain_context_json: unknown | null;
+  creation_events_json: unknown | null;
   created_at: number;
 }
 
@@ -58,6 +59,7 @@ export interface ConversationMessage {
   tokensUsed: number | null;
   attachments: { type: 'image'; data: string; mimeType: string }[];
   brainContext: BrainContextMeta | null;
+  creationEvents: { tool: string; label: string; name: string; id?: string }[] | null;
   createdAt: number;
 }
 
@@ -96,6 +98,12 @@ function rowToMessage(row: MessageRow): ConversationMessage {
     attachments: safeJsonParse(row.attachments_json, []),
     brainContext: row.brain_context_json
       ? safeJsonParse<BrainContextMeta | null>(row.brain_context_json, null)
+      : null,
+    creationEvents: row.creation_events_json
+      ? safeJsonParse<{ tool: string; label: string; name: string; id?: string }[] | null>(
+          row.creation_events_json,
+          null
+        )
       : null,
     createdAt: row.created_at,
   };
@@ -206,14 +214,15 @@ export class ConversationStorage extends PgBaseStorage {
     tokensUsed?: number | null;
     attachments?: { type: 'image'; data: string; mimeType: string }[];
     brainContext?: BrainContextMeta | null;
+    creationEvents?: { tool: string; label: string; name: string; id?: string }[] | null;
   }): Promise<ConversationMessage> {
     const now = Date.now();
     const id = uuidv7();
 
     await this.withTransaction(async (client) => {
       await client.query(
-        `INSERT INTO chat.messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+        `INSERT INTO chat.messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, creation_events_json, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
         [
           id,
           data.conversationId,
@@ -224,6 +233,9 @@ export class ConversationStorage extends PgBaseStorage {
           data.tokensUsed ?? null,
           JSON.stringify(data.attachments ?? []),
           data.brainContext ? JSON.stringify(data.brainContext) : null,
+          data.creationEvents && data.creationEvents.length > 0
+            ? JSON.stringify(data.creationEvents)
+            : null,
           now,
         ]
       );

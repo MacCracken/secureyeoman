@@ -473,6 +473,7 @@ export interface ConversationMessageResponse {
   provider: string | null;
   tokensUsed: number | null;
   brainContext: BrainContext | null;
+  creationEvents: CreationEvent[] | null;
   createdAt: number;
 }
 

@@ -65,6 +65,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
             provider: m.provider ?? undefined,
             tokensUsed: m.tokensUsed ?? undefined,
             brainContext: m.brainContext ?? undefined,
+            creationEvents: m.creationEvents ?? undefined,
           }))
         );
       })

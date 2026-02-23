@@ -4,6 +4,34 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — Security Policy Persistence + Sparkle Icon Fix (2026-02-23)
+
+### Bug Fixes
+
+**`packages/core/src/secureyeoman.ts`** — Community Skills toggle reset to off on every container restart:
+- `loadSecurityPolicyFromDb` was missing `'allowCommunityGitFetch'` from the `policyKeys` allowlist. The value was being correctly persisted to `security.policy` on save, but never read back at startup — causing the toggle to always revert to the config-file default (`false`). Added `'allowCommunityGitFetch'` to `policyKeys` so the DB-persisted value is restored on startup like all other policy toggles.
+- Updated stale JSDoc comment on `updateSecurityPolicy` to reflect that boolean toggles are persisted to DB (not in-memory only).
+
+**`packages/core/src/storage/migrations/035_message_creation_events.sql`** — new migration:
+- Adds `creation_events_json JSONB` column to `chat.messages` so AI creation events survive conversation reload.
+
+**`packages/core/src/chat/conversation-storage.ts`** — sparkle icons lost on conversation reload:
+- Added `creation_events_json` to `MessageRow` row type
+- Added `creationEvents` field to `ConversationMessage` domain type
+- Updated `rowToMessage` to parse `creation_events_json` → `creationEvents`
+- Updated `addMessage` to accept and store `creationEvents` (stored as `NULL` when empty, avoiding noise on user messages)
+
+**`packages/core/src/ai/chat-routes.ts`**:
+- Passes `creationEvents` to the assistant `addMessage` call so events are written to the DB at the time the message is saved.
+
+**`packages/dashboard/src/types.ts`**:
+- Added `creationEvents: CreationEvent[] | null` to `ConversationMessageResponse` so the field is typed on the frontend.
+
+**`packages/dashboard/src/hooks/useChat.ts`**:
+- Maps `m.creationEvents` when loading an existing conversation from the API so sparkle cards are rendered for reloaded messages.
+
+---
+
 ## [Unreleased] — Task View Status & Duration Fix (2026-02-23)
 
 ### Bug Fixes

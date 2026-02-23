@@ -391,6 +391,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 provider: response.provider,
                 tokensUsed: response.usage.totalTokens,
                 brainContext,
+                creationEvents: creationEvents.length > 0 ? creationEvents : null,
               });
             }
           } catch {
