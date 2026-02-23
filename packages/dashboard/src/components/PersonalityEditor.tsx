@@ -2338,6 +2338,7 @@ export function PersonalityEditor() {
         customRoles: false,
         roleAssignments: false,
         experiments: false,
+        workflows: false,
       },
     };
     setForm({

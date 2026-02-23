@@ -37,6 +37,7 @@ const BASE_BODY: PersonalityCreate['body'] = {
     allowA2A: false,
     allowSwarms: false,
     allowDynamicTools: false,
+    workflows: false,
   },
   selectedServers: [],
   selectedIntegrations: [],

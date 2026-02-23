@@ -408,6 +408,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               allowA2A: false,
               allowSwarms: false,
               allowDynamicTools: false,
+              workflows: false,
             },
             selectedServers: [],
             selectedIntegrations: [],

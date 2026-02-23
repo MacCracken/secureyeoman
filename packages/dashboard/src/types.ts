@@ -160,6 +160,7 @@ export interface Personality {
       allowA2A?: boolean;
       allowSwarms?: boolean;
       allowDynamicTools?: boolean;
+      workflows?: boolean;
     };
     selectedServers?: string[];
     selectedIntegrations?: string[];
@@ -224,6 +225,7 @@ export interface PersonalityCreate {
       allowA2A?: boolean;
       allowSwarms?: boolean;
       allowDynamicTools?: boolean;
+      workflows?: boolean;
     };
     selectedServers?: string[];
     selectedIntegrations?: string[];

@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useSearchParams } from 'react-router-dom';
 import Editor, { loader, type OnMount } from '@monaco-editor/react';
 import {
   Send,
@@ -22,13 +21,17 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertTriangle,
   Sparkles,
+  Settings,
+  Plus,
+  X,
+  Split,
+  Search,
+  Maximize2,
 } from 'lucide-react';
 import {
   fetchPersonalities,
   executeTerminalCommand,
-  executeCode,
   fetchExecutionSessions,
   terminateExecutionSession,
   fetchExecutionHistory,
@@ -58,6 +61,15 @@ interface TerminalOutput {
 }
 
 type BottomTab = 'terminal' | 'sessions' | 'history';
+
+interface EditorTab {
+  id: string;
+  name: string;
+  path: string;
+  content: string;
+  language: string;
+  isDirty: boolean;
+}
 
 const LANG_MAP: Record<string, string> = {
   ts: 'typescript',
@@ -90,6 +102,21 @@ const LANG_MAP: Record<string, string> = {
 function detectLanguage(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() ?? '';
   return LANG_MAP[ext] ?? 'plaintext';
+}
+
+function generateId(): string {
+  return Math.random().toString(36).substring(2, 9);
+}
+
+function createEditorTab(name: string, cwd: string, content = ''): EditorTab {
+  return {
+    id: generateId(),
+    name,
+    path: `${cwd}/${name}`,
+    content,
+    language: detectLanguage(name),
+    isDirty: false,
+  };
 }
 
 // ── Helpers ──────────────────────────────────────────────────────
@@ -397,20 +424,79 @@ function ExecutionGated({ children }: { children: React.ReactNode }) {
 
 export function EditorPage() {
   const { theme } = useTheme();
-  const [filename, setFilename] = useState('untitled.ts');
-  const [language, setLanguage] = useState(() => detectLanguage('untitled.ts'));
-  const [editorContent, setEditorContent] = useState('');
+  const [tabs, setTabs] = useState<EditorTab[]>(() => [createEditorTab('untitled.ts', '/tmp')]);
+  const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id);
   const [filesPanelOpen, setFilesPanelOpen] = useState(false);
   const [cwd, setCwd] = useState('/tmp');
-  const files = [{ name: 'untitled.ts', path: `${cwd}/untitled.ts` }];
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string | null>(null);
   const [terminalInput, setTerminalInput] = useState('');
   const [terminalHistory, setTerminalHistory] = useState<TerminalOutput[]>([]);
   const [activeBottomTab, setActiveBottomTab] = useState<BottomTab>('terminal');
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [replaceQuery, setReplaceQuery] = useState('');
+  const [splitView, setSplitView] = useState(false);
+  const [editorSettings, setEditorSettings] = useState({
+    fontSize: 14,
+    tabSize: 2,
+    minimap: false,
+    wordWrap: true,
+    lineNumbers: true,
+  });
   const editorRef = useRef<MonacoEditor | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const terminalEndRef = useRef<HTMLDivElement>(null);
   const terminalInputRef = useRef<HTMLInputElement>(null);
+
+  const activeTab = tabs.find((t) => t.id === activeTabId) ?? tabs[0];
+  const filename = activeTab?.name ?? 'untitled.ts';
+  const language = activeTab?.language ?? 'typescript';
+  const editorContent = activeTab?.content ?? '';
+
+  const updateTabContent = useCallback(
+    (content: string) => {
+      setTabs((prev) =>
+        prev.map((t) => (t.id === activeTabId ? { ...t, content, isDirty: true } : t))
+      );
+    },
+    [activeTabId]
+  );
+
+  const updateTabName = useCallback(
+    (name: string) => {
+      setTabs((prev) =>
+        prev.map((t) =>
+          t.id === activeTabId
+            ? { ...t, name, path: `${cwd}/${name}`, language: detectLanguage(name), isDirty: true }
+            : t
+        )
+      );
+    },
+    [activeTabId, cwd]
+  );
+
+  const closeTab = useCallback(
+    (tabId: string) => {
+      setTabs((prev) => {
+        const newTabs = prev.filter((t) => t.id !== tabId);
+        if (newTabs.length === 0) {
+          return [createEditorTab('untitled.ts', cwd)];
+        }
+        return newTabs;
+      });
+      if (activeTabId === tabId) {
+        setActiveTabId(tabs[0]?.id ?? tabs[0].id);
+      }
+    },
+    [activeTabId, tabs, cwd]
+  );
+
+  const createNewTab = useCallback(() => {
+    const newTab = createEditorTab('untitled.ts', cwd);
+    setTabs((prev) => [...prev, newTab]);
+    setActiveTabId(newTab.id);
+  }, [cwd]);
 
   const { data: personalitiesData } = useQuery({
     queryKey: ['personalities'],
@@ -422,7 +508,7 @@ export function EditorPage() {
   const effectivePersonalityId = selectedPersonalityId ?? activePersonality?.id ?? null;
   const currentPersonality = personalities.find((p) => p.id === effectivePersonalityId);
 
-  const { messages, input, setInput, handleSend, isPending, clearMessages } = useChat({
+  const { messages, input, setInput, handleSend, isPending } = useChat({
     personalityId: effectivePersonalityId,
   });
   const voice = useVoice();
@@ -513,10 +599,14 @@ export function EditorPage() {
     }
   }, [terminalMutation.isPending, terminalHistory.length, activeBottomTab]);
 
-  // Update language when filename changes
+  // Update tab language when filename changes
   useEffect(() => {
-    setLanguage(detectLanguage(filename));
-  }, [filename]);
+    if (activeTab && activeTab.name !== filename) {
+      setTabs((prev) =>
+        prev.map((t) => (t.id === activeTabId ? { ...t, language: detectLanguage(t.name) } : t))
+      );
+    }
+  }, [activeTabId]);
 
   useEffect(() => {
     if (editorRef.current) {
@@ -621,6 +711,45 @@ export function EditorPage() {
     );
   }, [filename, language, cwd, terminalMutation]);
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        switch (e.key) {
+          case 'Enter':
+            e.preventDefault();
+            handleRunCode();
+            break;
+          case 'f':
+            e.preventDefault();
+            setSearchOpen(true);
+            break;
+          case 's':
+            e.preventDefault();
+            setTabs((prev) =>
+              prev.map((t) => (t.id === activeTabId ? { ...t, isDirty: false } : t))
+            );
+            break;
+          case 'n':
+            if (e.shiftKey) {
+              e.preventDefault();
+              createNewTab();
+            }
+            break;
+        }
+      }
+      if (e.key === 'Escape') {
+        setSearchOpen(false);
+        setSettingsOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [activeTabId, handleRunCode, createNewTab]);
+
   const handleInsertAtCursor = useCallback((msg: ChatMessage) => {
     const editor = editorRef.current;
     if (!editor) return;
@@ -694,7 +823,7 @@ export function EditorPage() {
         <div className="flex-1 flex flex-col lg:flex-row gap-3 min-h-0 lg:min-h-0">
           {/* Left panel — Code Editor */}
           <div className="flex flex-col flex-1 lg:flex-[60] min-h-[250px] lg:min-h-0 border rounded-lg overflow-hidden bg-card">
-            {/* Editor toolbar */}
+            {/* Editor toolbar with tabs */}
             <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30 flex-wrap">
               <button
                 onClick={() => {
@@ -707,24 +836,89 @@ export function EditorPage() {
                   className={`w-4 h-4 transition-transform ${filesPanelOpen ? 'rotate-90' : ''}`}
                 />
               </button>
+
+              {/* Tabs */}
+              <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-[300px]">
+                {tabs.map((tab) => (
+                  <div
+                    key={tab.id}
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-mono whitespace-nowrap ${
+                      tab.id === activeTabId
+                        ? 'bg-primary/10 text-primary border border-primary/30'
+                        : 'hover:bg-muted/50 text-muted-foreground'
+                    }`}
+                    onClick={() => {
+                      setActiveTabId(tab.id);
+                    }}
+                  >
+                    <span className="max-w-[80px] sm:max-w-[120px] truncate">{tab.name}</span>
+                    {tab.isDirty && <span className="text-primary">●</span>}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        closeTab(tab.id);
+                      }}
+                      className="hover:text-destructive ml-1"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ))}
+                <button onClick={createNewTab} className="btn-ghost p-1 rounded" title="New file">
+                  <Plus className="w-3 h-3" />
+                </button>
+              </div>
+
+              {/* Active filename input */}
               <input
                 type="text"
                 value={filename}
                 onChange={(e) => {
-                  setFilename(e.target.value);
+                  updateTabName(e.target.value);
                 }}
-                className="bg-transparent border border-border rounded px-2 py-1 text-sm font-mono w-32 sm:w-48 focus:outline-none focus:ring-1 focus:ring-primary"
+                className="bg-transparent border border-border rounded px-2 py-1 text-sm font-mono w-24 sm:w-32 focus:outline-none focus:ring-1 focus:ring-primary"
                 placeholder="filename.ext"
               />
               <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded hidden sm:inline">
                 {language}
               </span>
               <div className="flex-1" />
+
+              {/* Toolbar buttons */}
+              <button
+                onClick={() => {
+                  if (editorRef.current) {
+                    editorRef.current.getAction('actions.find')?.run();
+                  }
+                }}
+                className="btn-ghost p-1.5 rounded"
+                title="Search (Ctrl+F)"
+              >
+                <Search className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => {
+                  setSettingsOpen(!settingsOpen);
+                }}
+                className={`btn-ghost p-1.5 rounded ${settingsOpen ? 'bg-primary/10 text-primary' : ''}`}
+                title="Editor settings"
+              >
+                <Settings className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => {
+                  setSplitView(!splitView);
+                }}
+                className={`btn-ghost p-1.5 rounded ${splitView ? 'bg-primary/10 text-primary' : ''}`}
+                title="Toggle split view"
+              >
+                <Split className="w-3.5 h-3.5" />
+              </button>
               <button
                 onClick={handleRunCode}
                 disabled={terminalMutation.isPending || !editorContent.trim()}
                 className="btn-ghost text-xs px-2 sm:px-3 py-1.5 rounded border hover:border-primary flex items-center gap-1"
-                title="Run code in terminal"
+                title="Run code in terminal (Ctrl+Enter)"
               >
                 <Play className="w-3 h-3" />
                 <span className="hidden sm:inline">Run</span>
@@ -741,7 +935,7 @@ export function EditorPage() {
 
             {/* Collapsible Files Panel */}
             <div
-              className={`border-b bg-muted transition-all ${filesPanelOpen ? 'max-h-48' : 'max-h-0'} overflow-hidden`}
+              className={`border-b bg-muted transition-all ${filesPanelOpen ? 'max-h-64' : 'max-h-0'} overflow-hidden`}
             >
               <div className="px-3 py-2 space-y-2">
                 <div className="flex items-center gap-2">
@@ -757,45 +951,143 @@ export function EditorPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  {files.map((file) => (
+                  {tabs.map((tab) => (
                     <button
-                      key={file.path}
+                      key={tab.id}
                       onClick={() => {
-                        setFilename(file.name);
+                        setActiveTabId(tab.id);
                       }}
                       className={`w-full flex items-center gap-2 px-2 py-1.5 rounded text-xs font-mono text-left hover:bg-muted/50 ${
-                        filename === file.name ? 'bg-primary/10 text-primary' : ''
+                        tab.id === activeTabId ? 'bg-primary/10 text-primary' : ''
                       }`}
                     >
                       <File className="w-3 h-3 flex-shrink-0" />
-                      <span className="truncate">{file.path}</span>
+                      <span className="truncate">{tab.name}</span>
                     </button>
                   ))}
                 </div>
               </div>
             </div>
 
+            {/* Settings Panel */}
+            {settingsOpen && (
+              <div className="border-b bg-muted/50 px-3 py-2 space-y-2">
+                <div className="flex items-center gap-4 flex-wrap">
+                  <label className="flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">Font Size:</span>
+                    <input
+                      type="number"
+                      min={10}
+                      max={24}
+                      value={editorSettings.fontSize}
+                      onChange={(e) => {
+                        setEditorSettings((s) => ({
+                          ...s,
+                          fontSize: parseInt(e.target.value) || 14,
+                        }));
+                      }}
+                      className="w-14 bg-card border border-border rounded px-2 py-1 text-xs"
+                    />
+                  </label>
+                  <label className="flex items-center gap-2 text-xs">
+                    <span className="text-muted-foreground">Tab Size:</span>
+                    <select
+                      value={editorSettings.tabSize}
+                      onChange={(e) => {
+                        setEditorSettings((s) => ({ ...s, tabSize: parseInt(e.target.value) }));
+                      }}
+                      className="bg-card border border-border rounded px-2 py-1 text-xs"
+                    >
+                      <option value={2}>2</option>
+                      <option value={4}>4</option>
+                      <option value={8}>8</option>
+                    </select>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editorSettings.minimap}
+                      onChange={(e) => {
+                        setEditorSettings((s) => ({ ...s, minimap: e.target.checked }));
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-muted-foreground">Minimap</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editorSettings.wordWrap}
+                      onChange={(e) => {
+                        setEditorSettings((s) => ({ ...s, wordWrap: e.target.checked }));
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-muted-foreground">Word Wrap</span>
+                  </label>
+                  <label className="flex items-center gap-2 text-xs cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={editorSettings.lineNumbers}
+                      onChange={(e) => {
+                        setEditorSettings((s) => ({ ...s, lineNumbers: e.target.checked }));
+                      }}
+                      className="rounded"
+                    />
+                    <span className="text-muted-foreground">Line Numbers</span>
+                  </label>
+                </div>
+              </div>
+            )}
+
             {/* Monaco Editor */}
-            <div className="flex-1 min-h-0">
+            <div className={`flex-1 min-h-0 ${splitView ? 'flex gap-1' : ''}`}>
               <Editor
                 height="100%"
+                width={splitView ? '50%' : '100%'}
                 language={language}
                 theme={theme === 'dark' ? 'vs-dark' : 'vs'}
                 value={editorContent}
                 onChange={(value) => {
-                  setEditorContent(value ?? '');
+                  updateTabContent(value ?? '');
                 }}
                 onMount={handleEditorMount}
                 options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  lineNumbers: 'on',
-                  wordWrap: 'on',
+                  minimap: { enabled: editorSettings.minimap },
+                  fontSize: editorSettings.fontSize,
+                  tabSize: editorSettings.tabSize,
+                  lineNumbers: editorSettings.lineNumbers ? 'on' : 'off',
+                  wordWrap: editorSettings.wordWrap ? 'on' : 'off',
                   automaticLayout: true,
                   scrollBeyondLastLine: false,
                   padding: { top: 8 },
+                  fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 }}
               />
+              {splitView && (
+                <Editor
+                  height="100%"
+                  width="50%"
+                  language={language}
+                  theme={theme === 'dark' ? 'vs-dark' : 'vs'}
+                  value={editorContent}
+                  onChange={(value) => {
+                    updateTabContent(value ?? '');
+                  }}
+                  options={{
+                    minimap: { enabled: editorSettings.minimap },
+                    fontSize: editorSettings.fontSize,
+                    tabSize: editorSettings.tabSize,
+                    lineNumbers: editorSettings.lineNumbers ? 'on' : 'off',
+                    wordWrap: editorSettings.wordWrap ? 'on' : 'off',
+                    automaticLayout: true,
+                    scrollBeyondLastLine: false,
+                    padding: { top: 8 },
+                    fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                    readOnly: true,
+                  }}
+                />
+              )}
             </div>
           </div>
 

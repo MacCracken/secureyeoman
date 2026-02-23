@@ -146,6 +146,7 @@ export class SoulManager {
           allowA2A: false,
           allowSwarms: false,
           allowDynamicTools: false,
+          workflows: false,
         },
         selectedServers: [],
         selectedIntegrations: [],
