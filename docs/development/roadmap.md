@@ -34,13 +34,9 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 - [ ] Chat needs responsive design in the response window to not blow up the view
 
 ### Improvements
-- [x] YEOMAN MCP show QUICKBOOKS Skills — `secureyeoman mcp-quickbooks status/enable/disable` CLI added; QBO tools surface in MCP catalog when `MCP_EXPOSE_QUICKBOOKS_TOOLS=true`. → **Done**
+
 - [ ] CLI updates for the added toolsets
 - [ ] FRIDAY's suggestions - [suggestions](friday_suggestions.md)
-- [x] Cast Deletion actions into another Resource Section (Personality > Body) - gate them per-personality; select style of auto, request, manual. → **Done** (ADR 113, migration 037)
-- [x] Content approval workflow (automation level + emergency stop + pending approvals queue). → **Done** (ADR 114, migration 038)
-- [x] CSRF architectural decision — Bearer-token API not subject to CSRF; documented in ADR 115, comment guard added to server.ts. → **Done**
-- [x] CIDR-aware scope validation — `validateTarget()` in security tools now handles CIDR ranges correctly (ADR 116). → **Done**
 
 ---
 

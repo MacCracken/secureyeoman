@@ -4,135 +4,17 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
-## [Unreleased] — Build Fixes (2026-02-23)
-
-### Bug Fixes
-
-**Docker build was broken by four pre-existing TypeScript errors** — `docker compose --profile dev build` failed during the `npm run build` step. All four errors are now resolved:
-
-| File | Error | Fix |
-|---|---|---|
-| `packages/shared/src/types/metrics.ts` | `ResourceMetricsSchema` missing `inputTokensToday` / `outputTokensToday` fields that `secureyeoman.ts` was already writing | Added both fields to the Zod schema |
-| `packages/dashboard/src/api/client.ts` | `fetchCostHistory` catch-block fallback object missing `inputTokens` / `outputTokens` required by `CostHistoryResponse.totals` type | Added `inputTokens: 0, outputTokens: 0` |
-| `packages/dashboard/src/components/ChatPage.test.tsx` | `.find()` return typed as `T \| undefined` but used without null guard (strict null checks) | Added `!` non-null assertion on all four call sites |
-| `packages/dashboard/src/components/MetricsPage.test.tsx` | Six mock `totals` objects missing `inputTokens` / `outputTokens` | Added both fields to all six mock objects |
-
----
-
-## [Unreleased] — Input/Output Token Breakdown (2026-02-23)
-
-### Features
-
-**Input and output token counts exposed separately** — all token usage surfaces now break down the `totalTokens` figure into `inputTokens` and `outputTokens` so operators can see exactly where tokens are being spent.
-
-Changes:
-- `UsageStats` gains `inputTokensToday` and `outputTokensToday` fields (alongside the existing `tokensUsedToday` total)
-- `ProviderStats` (per-provider breakdown) gains `inputTokensUsed` and `outputTokensUsed`
-- `GET /api/v1/costs/history` totals now include `inputTokens` and `outputTokens` in addition to `totalTokens`
-- `GET /api/v1/metrics` resources now includes `inputTokensToday` and `outputTokensToday`
-- Dashboard `ResourceMetrics` type updated with the two new fields
-- CostsPage, MetricsPage, and ResourceMonitor all display the input / output split inline beneath the total
-- Token pie charts updated to show three slices: Input, Output, Cached
-
----
-
-## [Unreleased] — QuickBooks MCP CLI (`mcp-quickbooks`) (2026-02-23)
-
-### Features
-
-**`secureyeoman mcp-quickbooks` command** — new CLI entry point for managing the QuickBooks Online MCP toolset without editing environment files manually.
-
-Subcommands:
-- `status` — shows whether `MCP_EXPOSE_QUICKBOOKS_TOOLS` is set, lists all five credential variables with present/missing indicators, and exits non-zero when tools are enabled but credentials are incomplete
-- `enable` — prints the `MCP_EXPOSE_QUICKBOOKS_TOOLS=true` line and all required credential variables to add to `.env`
-- `disable` — prints the `MCP_EXPOSE_QUICKBOOKS_TOOLS=false` line to add to `.env`
-
-Changes:
-- `packages/core/src/cli/commands/mcp-quickbooks.ts` — new command (alias: `mcp-qbo`)
-- `packages/core/src/cli.ts` — registered `mcpQuickbooksCommand`; added entry to header docs
-
----
-
-## [Unreleased] — CIDR-Aware Scope Validation (2026-02-23)
-
-### Security
-
-**Kali security tool scope enforcement now correctly handles CIDR ranges** — the previous `validateTarget()` implementation used a substring/prefix match that failed to honour CIDR notation (e.g. `10.10.10.0/24` in `MCP_ALLOWED_TARGETS` would not match `10.10.10.5`). Replaced with proper IPv4 CIDR math: a bitmask comparison against the network address.
-
-New matching rules for `MCP_ALLOWED_TARGETS` entries:
-- `10.10.10.0/24` — CIDR range; any IP in the subnet matches
-- `.example.com` — domain suffix; matches apex and all subdomains
-- `example.com` — hostname; matches exact host and any subdomain
-- `*` — wildcard (existing behaviour unchanged)
-
-Changes:
-- `packages/mcp/src/tools/security-tools.ts` — `isIpInCidr()` and `matchesScope()` helpers replace the old substring match in `validateTarget()`; both helpers exported for testing
-- `packages/mcp/src/tools/security-tools.test.ts` — new `isIpInCidr` and `matchesScope` test suites
-- `docs/adr/116-cidr-aware-scope-validation.md` — ADR documenting the decision
-
----
-
-## [Unreleased] — CSRF Architectural Decision (2026-02-23)
-
-### Security
-
-**CSRF protection not required for Bearer-token API** — documented as ADR 115. The SecureYeoman REST API is stateless and uses `Authorization: Bearer <token>` and `X-API-Key` headers exclusively; no `Set-Cookie` headers are emitted anywhere in the auth flow. Because CSRF exploits browser cookie auto-attachment, it is architecturally inapplicable to this API.
-
-Changes:
-- `docs/adr/115-csrf-not-applicable-bearer-token-api.md` — ADR documenting the decision and future obligations if cookies are ever introduced
-- `docs/security/security-model.md` — section 1.1 added: "CSRF: Not Applicable (Bearer-Token API)"
-- `packages/core/src/gateway/server.ts` — inline comment guard added near auth hook registration; warns future developers to add `@fastify/csrf-protection` if cookies are ever used
-
----
-
-## [Unreleased] — Human-in-the-Loop Approval Workflow (2026-02-23)
-
-### Features
-
-**Per-personality automation level and emergency stop** — `body.resourcePolicy` now has two new fields:
-
-| Field | Values | Effect |
-|---|---|---|
-| `automationLevel` | `supervised_auto` (default) · `semi_auto` · `full_manual` | Controls which AI-initiated tool calls are queued for human review before execution |
-| `emergencyStop` | `false` (default) · `true` | Kill-switch: when `true`, all AI-initiated mutations are blocked immediately regardless of automation level |
-
-- **Pending Approvals queue** (`soul.pending_approvals`, migration 038): AI tool calls that exceed the configured automation level are queued here instead of executed immediately.
-- **Review Queue API**: `GET /api/v1/soul/approvals`, `GET /api/v1/soul/approvals/count`, `POST /api/v1/soul/approvals/:id/approve`, `POST /api/v1/soul/approvals/:id/reject`
-- **Dashboard**: Automation Level (radio group) and Emergency Stop (checkbox) controls added to PersonalityEditor under **Body → Resources**
-
-Changes:
-- `packages/shared/src/types/soul.ts` — `ResourcePolicySchema` extended with `automationLevel` and `emergencyStop`
-- `packages/core/src/soul/approval-manager.ts` — new `ApprovalManager` class
-- `packages/core/src/soul/soul-routes.ts` — approval CRUD endpoints
-- `packages/core/src/soul/creation-tool-executor.ts` — emergency stop + automation level gating
-- `packages/core/src/secureyeoman.ts` — `getApprovalManager()` method
-- Migration 038: `soul.pending_approvals` table
-
----
-
-## [Unreleased] — Chat History Regression Fix (2026-02-23)
-
-### Bug Fixes
-
-**Conversation history lost when switching conversations** (`useChatStream`) — switching to an existing conversation in the chat sidebar showed only the empty state instead of loading prior messages. Root cause: the `useChatStream` hook (introduced in the streaming refactor) was missing the `useEffect` that loads conversation history when `conversationId` changes, which `useChat` had. The effect is now ported to `useChatStream` with the same `autoCreatedIds` guard to avoid re-fetching self-created conversations.
-
-**`brainContext` not surfaced from streaming responses** — the `done` SSE event handler in `useChatStream` was not mapping the `brainContext` field into the stored message, so Brain memory context indicators never appeared after a stream response. Fixed by including `brainContext` in the message produced by the `done` handler.
-
-Changes:
-- `packages/dashboard/src/hooks/useChat.ts` — `useChatStream`: added `isLoadingConversation` state, `prevExternalId` / `autoCreatedIds` refs, conversation-loading `useEffect`, `brainContext` in `done` handler
-- Test mocks updated: `EditorPage.test.tsx` now mocks `useChatStream`; `ChatPage.test.tsx` updated to mock `global.fetch` for SSE streaming instead of `sendChatMessage`
-
----
-
-## [Unreleased] — Deletion Gating Modes (2026-02-23)
+## [Unreleased] — Phase 38 Beta Manual Review (2026-02-23)
 
 ### Breaking Changes
 
 - **`deletionProtected` removed** — the boolean `deletion_protected` DB column and `deletionProtected` API field have been replaced by `body.resourcePolicy.deletionMode` (tri-state enum: `auto` | `request` | `manual`). Run migration 037 before deploying. Clients reading `deletionProtected` from the API must switch to `body.resourcePolicy.deletionMode`.
 
+---
+
 ### Features
 
-**Tri-state deletion gating (`auto` / `request` / `manual`)** — personalities now have a three-mode deletion policy stored in `body.resourcePolicy.deletionMode`:
+**Tri-state deletion gating (`auto` / `request` / `manual`)** (ADR 113) — personalities now have a three-mode deletion policy stored in `body.resourcePolicy.deletionMode`:
 
 | Mode | Behaviour |
 |---|---|
@@ -141,305 +23,75 @@ Changes:
 | `manual` (Manual) | Deletion is fully blocked at the backend until mode is changed |
 
 - Accessible in PersonalityEditor under **Body → Resources → Deletion**
-- AI tool executor respects both `request` and `manual` gating (blocks silently with a clear error message)
-- Migration 037 upgrades any existing `deletion_protected = true` rows to `deletionMode = 'manual'`
+- AI tool executor respects both `request` and `manual` gating (blocks with a clear error message)
+- Migration 037 upgrades existing `deletion_protected = true` rows to `deletionMode = 'manual'`
 
-**ADR:** `docs/adr/113-deletion-gating-modes.md`
+**Per-personality automation level and emergency stop** (ADR 114) — `body.resourcePolicy` now has two new fields:
 
----
-
-## [Unreleased] — Configurable Login Rate Limits (2026-02-23)
-
-### Features
-
-**Configurable login attempt rate limiting** — the `auth_attempts` rule is now driven by config rather than being hard-coded at `5 attempts / 15 minutes`. Operators and developers can override both values per environment:
-
-| Env var | Default | Description |
+| Field | Values | Effect |
 |---|---|---|
-| `SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS` | `5` | Maximum login attempts before IP is blocked |
-| `SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS` | `900000` (15 min) | Sliding window duration in milliseconds |
+| `automationLevel` | `supervised_auto` (default) · `semi_auto` · `full_manual` | Controls which AI-initiated tool calls are queued for human review before execution |
+| `emergencyStop` | `false` (default) · `true` | Kill-switch: when `true`, all AI-initiated mutations are blocked immediately regardless of automation level |
 
-`.env.dev` ships with relaxed values (`100` attempts / `60000` ms) so the limit is not hit during local development and testing.  If neither env var is set, the schema defaults apply — production behaviour is unchanged.
+- **Pending Approvals queue** (`soul.pending_approvals`, migration 038): AI tool calls that exceed the configured automation level are queued here instead of executed immediately
+- **Review Queue API**: `GET /api/v1/soul/approvals`, `GET /api/v1/soul/approvals/count`, `POST /api/v1/soul/approvals/:id/approve`, `POST /api/v1/soul/approvals/:id/reject`
+- **Dashboard**: Automation Level (radio group) and Emergency Stop (checkbox) controls added to PersonalityEditor under **Body → Resources**
 
-### Config Schema
+**`secureyeoman mcp-quickbooks` command** (ADR 117) — new CLI entry point for managing the QuickBooks Online MCP toolset without editing environment files manually.
 
-`packages/shared/src/types/config.ts`:
-- `RateLimitingConfigSchema` — added `authLoginMaxAttempts: number` (default `5`) and `authLoginWindowMs: number` (default `900000`)
+Subcommands:
+- `status` — shows whether `MCP_EXPOSE_QUICKBOOKS_TOOLS` is set, lists all five credential variables with present/missing indicators, and exits non-zero when tools are enabled but credentials are incomplete
+- `enable` — prints the env vars to add to `.env`
+- `disable` — disables the toolset
 
-### Implementation
+Changes: `packages/core/src/cli/commands/mcp-quickbooks.ts` (alias: `mcp-qbo`), registered in `packages/core/src/cli.ts`.
 
-`packages/core/src/security/rate-limiter.ts`:
-- `COMMON_RULES` renamed to `STATIC_RULES` (the static set of non-auth rules)
-- `createRateLimiter()` now builds the `auth_attempts` rule dynamically from `config.rateLimiting.authLoginMaxAttempts` / `authLoginWindowMs`
+**New `POST /api/v1/chat/stream` SSE endpoint** (ADR 112) — full streaming agentic loop that emits real-time events for every meaningful step: `thinking_delta`, `content_delta`, `tool_start`, `tool_result`, `mcp_tool_start`, `mcp_tool_result`, `creation_event`, `done`, `error`. Extended thinking support for Anthropic provider. New `ThinkingBlock.tsx` collapsible dashboard component. New `useChatStream()` React hook. All four chat surfaces now consume this endpoint.
 
-`packages/core/src/config/loader.ts`:
-- `loadEnvConfig()` reads `SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS` and `SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS` and merges them into `config.security.rateLimiting`; schema defaults apply when the env vars are absent
+**Symmetric AI creation tools** (ADR 111) — the AI can now delete what it creates, subject to the same `creationConfig` capability gate: `delete_personality`, `delete_custom_role`, `revoke_role`, `delete_experiment`. Self-deletion guard prevents a personality from deleting itself.
 
-### Tests
+**Input and output token counts exposed separately** — all token usage surfaces now break down `totalTokens` into `inputTokens` and `outputTokens`. Dashboard CostsPage, MetricsPage, and ResourceMonitor display the input/output split inline beneath the total. Token pie charts updated to show three slices: Input, Output, Cached.
 
-`packages/core/src/security/rate-limiter.test.ts`:
-- `createRateLimiter() — custom auth limits`: verifies the `auth_attempts` rule respects `authLoginMaxAttempts`
-- `createRateLimiter() — default auth limits are strict`: verifies the default 5-attempt limit applies when no override is provided
+**Configurable login attempt rate limiting** — `SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS` and `SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS` env vars control the auth rate limit. Defaults unchanged (5 attempts / 15 min). Dev environment ships with relaxed values (100 attempts / 60 s).
 
 ---
-
-## [Unreleased] — Extended Thinking + Streaming Agentic Loop (2026-02-23)
-
-### Features
-
-**New `POST /api/v1/chat/stream` SSE endpoint** — full streaming agentic loop that emits real-time events for every meaningful step:
-- `thinking_delta` — incremental thinking text as the model reasons
-- `content_delta` — incremental response text
-- `tool_start` / `tool_result` — creation tool execution progress
-- `mcp_tool_start` / `mcp_tool_result` — MCP tool execution progress
-- `creation_event` — resource created/updated/deleted (sparkle card payload)
-- `done` — final payload with `content`, `model`, `provider`, `tokensUsed`, `thinkingContent`, and `creationEvents`
-- `error` — stream-level error
-
-All four chat surfaces (dashboard chat, editor chat, TUI, integrations) now consume this endpoint.
-
-**Extended thinking — Anthropic provider** — full support for Anthropic extended thinking with correct API contract adherence:
-- `thinkingBudgetTokens` passed via `thinking: { type: 'enabled', budget_tokens: N }` in API params
-- `resolveTemperature()` forces `temperature: 1` when thinking is enabled (Anthropic requirement)
-- `mapMessages()` round-trips `ThinkingBlock[]` before text/tool-use blocks in every assistant turn (required ordering)
-- `ThinkingBlock.signature` preserved verbatim so the API can verify message integrity across turns
-- `thinkingTokens` tracked in `TokenUsage` from `thinking_input_tokens`
-
-**`ThinkingBlock.tsx`** — new collapsible dashboard component that displays the model's reasoning process. Auto-opens while streaming is active; collapses to a summary line when the response is complete.
-
-**`useChatStream()` hook** — new React hook in `useChat.ts` that consumes the SSE stream, accumulating thinking text, content deltas, and tool progress into reactive state consumed by `ChatPage` and `EditorPage`.
-
-**Personality thinking config** — "Extended Thinking" subsection in the Brain tab of `PersonalityEditor`:
-- Enable/disable checkbox
-- Budget tokens slider (range: 1024–32768)
-- Stored as `body.thinkingConfig: { enabled, budgetTokens }` in `BodyConfigSchema`
-
-**TUI streaming** — `tui.ts` switched from the blocking endpoint to SSE; renders the thinking text in an ANSI box-drawing frame and shows `⚙ Using [tool]…` badges during tool execution.
-
-**Integration platform thinking display**:
-- Telegram: thinking as `<blockquote expandable>` HTML (collapsed by default)
-- Discord: thinking as spoiler `||...||` in an embed field
-- Slack: thinking as a context block prepended before the main message
 
 ### Bug Fixes
 
-**MCP tool routing in chat routes** — `executeCreationTool` had no MCP routing path; any MCP tool call in the chat path returned `"Unknown tool"`. Both the blocking and streaming chat routes now route unrecognised tool names through `mcpClient.callTool()` before treating them as unknown.
+**Docker build broken by TypeScript errors** — `docker compose --profile dev build` failed during `npm run build`. Four errors resolved:
 
-### Shared Types
+| File | Error | Fix |
+|---|---|---|
+| `packages/shared/src/types/metrics.ts` | `ResourceMetricsSchema` missing `inputTokensToday` / `outputTokensToday` | Added both fields to Zod schema |
+| `packages/dashboard/src/api/client.ts` | `fetchCostHistory` catch-block fallback missing `inputTokens` / `outputTokens` | Added both fields to fallback object |
+| `packages/dashboard/src/components/ChatPage.test.tsx` | `.find()` return used without null guard (strict null checks) | Added `!` non-null assertion on all four call sites |
+| `packages/dashboard/src/components/MetricsPage.test.tsx` | Six mock `totals` objects missing `inputTokens` / `outputTokens` | Added both fields to all six mock objects |
 
-`packages/shared/src/types/ai.ts`:
-- `ThinkingBlockSchema` — `{ thinking: string, signature: string }`
-- `CreationEventSchema` — Zod schema for creation events
-- `TokenUsageSchema` — added `thinkingTokens?: number`
-- `AIMessageSchema` — added `thinkingBlocks?: ThinkingBlock[]`
-- `AIRequestSchema` — added `thinkingBudgetTokens?: number` (min 1024)
-- `AIResponseSchema` — added `thinkingContent?: string`, `thinkingBlocks?: ThinkingBlock[]`
-- `AIStreamChunkSchema` — new `thinking_delta` variant; `done` variant gains `toolCalls` and `thinkingBlocks`
-- `ChatStreamEventSchema` (NEW) — SSE event union: `thinking_delta`, `content_delta`, `tool_start`, `tool_result`, `mcp_tool_start`, `mcp_tool_result`, `creation_event`, `done`, `error`
+**Chat history lost when switching conversations** — `useChatStream` was missing the `useEffect` that loads conversation history when `conversationId` changes (which `useChat` had). `brainContext` was also not being surfaced from streaming responses.
 
-`packages/shared/src/types/soul.ts`:
-- `ThinkingPersonalityConfigSchema` — `{ enabled: boolean, budgetTokens: number }`
-- `BodyConfigSchema` — added `thinkingConfig?`
+**Resource action recording** (ADR 110) — task history entries were silently dropped (`storeTask()` called without `await`); workflow tools were missing from `CREATION_TOOL_LABELS`; sparkle cards always showed "created" regardless of actual operation. Chat routes now own all persistence; `toolAction()` helper derives the correct verb.
 
-### Documentation
+**Dashboard `/metrics` page returned 401/404 on refresh** — `resolveDashboardDist()` had an extra `../` in its path. Backend Prometheus endpoint renamed from `/metrics` to `/prom/metrics` to remove the route collision. Auth hooks now skip enforcement for non-API, non-WebSocket paths.
 
-**`docs/adr/112-extended-thinking-streaming-agentic-loop.md`** — new ADR:
-- Explains both problems (discarded thinking blocks, blocking loop) and why they were solved together
-- Documents the SSE event model and agentic loop architecture
-- Records the temperature constraint, thinking block round-trip ordering, and signature preservation requirements
-- Describes the MCP routing fix and its placement in both chat paths
-- Covers integration platform rendering choices and personality config schema
+**Login page network status was static** — "Local Network Only" was a hardcoded label; replaced with a live indicator fetching from `/health` (matches the About dialog logic).
+
+**Community Skills toggle reset on restart** — `'allowCommunityGitFetch'` was missing from `policyKeys` in `loadSecurityPolicyFromDb`; the value was saved but never restored. Sparkle icons lost on conversation reload; fixed by persisting `creation_events_json` to `chat.messages` (migration 035).
+
+**Task View status and duration stuck after creation** — `TaskHistory.tsx` was using `refetchInterval: false` and `staleTime: 5000`. Now polls every 2 s while tasks are active and re-fetches immediately after mutations.
+
+**Community Skills sync failures** — hardened `gitCloneOrPull` against stale/non-git directories. Docker named volume replaces bind mount to fix root-ownership issue when the host directory is absent.
 
 ---
 
-## [Unreleased] — Personality Delete Tools + `deletionProtected` Flag (2026-02-23)
+### Security
 
-### Features
+**CSRF not applicable to Bearer-token API** (ADR 115) — documented. No `Set-Cookie` headers are emitted anywhere in the auth flow; CSRF exploit vector does not apply. Comment guard added to `packages/core/src/gateway/server.ts` requiring future developers to add `@fastify/csrf-protection` if cookies are ever introduced.
 
-**Symmetric AI creation tools** — the AI can now delete what it creates, subject to the same `creationConfig` capability gate:
-- `delete_personality` (gate: `personalities`) — permanently deletes a personality by ID
-- `delete_custom_role` (gate: `customRoles`) — removes a custom RBAC role by ID
-- `revoke_role` (gate: `roleAssignments`) — strips the role assigned to a user
-- `delete_experiment` (gate: `experiments`) — deletes an A/B experiment by ID
-
-All four tools are exposed via `getCreationTools()` in `creation-tools.ts` and handled in `creation-tool-executor.ts`. Sparkle cards in chat record each deletion with `action: 'Deleted'` / `action: 'Revoked'` (via the `toolAction()` helper in `chat-routes.ts`).
-
-**Self-deletion guard** — `delete_personality` in the executor compares the target ID against `context.personalityId`. When they match it returns `isError: true` immediately; `soulManager.deletePersonality()` is never called. The guard lives in the executor (not the manager) because only the executor has access to the calling personality's context.
-
-**`deletionProtected` flag** — a new per-personality flag that blocks deletion via any path (UI, REST API, AI tool) until an operator explicitly disables it:
-- Migration `036_personality_deletion_protected.sql`: `deletion_protected BOOLEAN NOT NULL DEFAULT false`
-- `PersonalitySchema.deletionProtected` (Zod, `packages/shared`) — auto-flows into `PersonalityCreate` and `PersonalityUpdate` via schema derivation
-- `SoulStorage` (`packages/core`): `PersonalityRow.deletion_protected`, `rowToPersonality()`, INSERT `$13`, UPDATE `$11`
-- `SoulManager.deletePersonality()`: throws `"This personality is protected from deletion..."` when `deletionProtected` is `true`
-- `PersonalityEditor.tsx` (`packages/dashboard`): "Protected from deletion" checkbox toggle with explanatory label
-
-> **Note**: `locked` is reserved for edit-immutability (a future RBAC story). `deletionProtected` only blocks deletion.
-
-### Documentation
-
-**`docs/adr/111-personality-delete-tools-and-deletion-protected.md`** — new ADR:
-- Explains the symmetric create/delete capability model
-- Documents the self-deletion guard boundary (executor vs. manager)
-- Records the `deletionProtected` flag full stack and migration
-- Clarifies `locked` vs `deletionProtected` distinction
-
-### Tests
-
-**`packages/core/src/soul/manager.test.ts`**:
-- `PERSONALITY` fixture now includes `deletionProtected: false`
-- `deletePersonality throws when personality is deletionProtected`
-- Tool injection tests for `personalities` (delete_personality), `customRoles` (delete_custom_role), `roleAssignments` (revoke_role), `experiments` (delete_experiment)
-
-**`packages/core/src/soul/storage.test.ts`**:
-- `personalityRow` fixture now includes `deletion_protected: false`
-- Two new tests: `deletion_protected false/true → deletionProtected false/true`
-
-**`packages/core/src/soul/creation-tool-executor.test.ts`**:
-- Added `vi.mock('../security/rbac.js', ...)` for RBAC-delegating cases
-- `delete_personality`: self-deletion guard, `deletionProtected` guard (via manager throw), success, no-context success
-- `delete_custom_role`: success (removeRole true), not-found (removeRole false), argument forwarding
-- `revoke_role`: success, argument forwarding
-- `delete_experiment`: manager-unavailable error, success, argument forwarding
-
----
-
-## [Unreleased] — Resource Action Recording Refactor (2026-02-23)
-
-### Bug Fixes
-
-**`packages/core/src/soul/creation-tool-executor.ts`** — task history entries were silently dropped:
-- `taskStorage.storeTask()` in the `create_task` fallback path was called without `await` — a fire-and-forget write that was lost under any meaningful I/O latency
-- Added `await` and then removed the call entirely as part of the architectural refactor below
-
-**`packages/core/src/ai/chat-routes.ts`** — workflow creation/deletion/trigger operations produced no sparkle card and no task history entry:
-- `create_workflow`, `update_workflow`, `delete_workflow`, and `trigger_workflow` were absent from `CREATION_TOOL_LABELS`; all four are now present
-- `trigger_workflow` result is a `WorkflowRun` which carries `workflowName` (not `name`); added `item?.workflowName` to the name resolution chain
-- Sparkle cards always read "X created:" regardless of the actual operation (delete, update, trigger); fixed by adding an `action` field to `CreationEvent` and a `toolAction()` helper that derives the verb from the tool name prefix (`create_` → "Created", `delete_` → "Deleted", `trigger_` → "Triggered", etc.)
-
-### Refactor
-
-**`packages/core/src/soul/creation-tool-executor.ts`** + **`packages/core/src/ai/chat-routes.ts`** — architectural split where the executor owned storage for `create_task` while the chat route owned it for everything else:
-- **Executor contract simplified**: `creation-tool-executor.ts` now only executes tool calls and returns results. The `create_task` case no longer calls `taskStorage.storeTask()` — it builds the task object, submits it to `taskExecutor` if available, and returns the result.
-- **Chat routes own all persistence**: the `create_task` / `update_task` exclusion is removed. Every recognised resource action — skills, tasks, workflows, personalities, experiments, swarms, role assignments, A2A connections, delegations — goes through the same recording path.
-- **Status from result, not hardcoded**: `TaskStatus.COMPLETED` is used as the default, but `item?.status` is read from the result when present. A newly created task returns `status: 'pending'`; all other resource operations return `status: 'completed'`.
-- **`completedAt` / `durationMs` omitted for non-terminal entries**: the history record for a pending task correctly omits `completedAt` and `durationMs`, mirroring how the task executor would store a real in-flight task.
-
-### Documentation
-
-**`docs/adr/110-resource-action-recording.md`** — new ADR:
-- Documents the before state (split ownership, missing `await`, hardcoded verbs, missing workflow tools)
-- Records the decision to make chat-routes the sole owner of task-history persistence
-- Explains the `item?.status` status-derivation strategy and its trade-offs for the `taskExecutor.submit()` vs. fallback paths
-
-**`packages/core/src/ai/chat-routes.test.ts`** — new test block `Chat Routes — resource action recording` (6 tests):
-- Sparkle `CreationEvent` emitted for `create_skill`
-- `COMPLETED` history entry written for `create_skill`
-- `PENDING` history entry written for `create_task` (status taken from result item; `completedAt` absent)
-- `action: 'Deleted'` emitted for `delete_skill`
-- No event or storeTask call when executor returns `isError: true`
-- Sparkle emitted but `storeTask` skipped when `taskStorage` is unavailable
-
-**`packages/core/src/soul/creation-tool-executor.test.ts`** — new test block `executeCreationTool — create_task` (7 tests):
-- Returns pending task without `taskExecutor`
-- Does not call `getTaskStorage` — caller owns persistence
-- Includes generated id in returned task
-- Returns `executorTask` from `taskExecutor.submit()` on success
-- Passes name, description, input, and timeoutMs to `submit()`
-- Falls back to local pending task when executor throws
-- Does not propagate the executor error
-
----
-
-## [Unreleased] — Dashboard Login Network Status + /metrics Refresh Fix (2026-02-23)
-
-### Bug Fixes
-
-**`packages/dashboard/src/pages/LoginPage.tsx`** — "Local Network Only" was a static label:
-- Replaced static footer text with a live network-mode indicator that fetches from `/health`
-- Mirrors the logic in the About dialog: "Public (TLS Secured)" (green) / "Network (No TLS)" (amber) / "Local Network Only" (muted)
-- Added `useQuery` + `fetchHealth` imports; query uses `staleTime: 30000` consistent with the rest of the app
-
-**`packages/core/src/gateway/server.ts`** + **`packages/core/src/gateway/auth-middleware.ts`** + **`packages/dashboard/vite.config.ts`** — refreshing `/metrics` returned `401` / `404` instead of the dashboard page:
-- `resolveDashboardDist()` had one extra `../` in its relative path — resolved to `/app/dashboard/dist` instead of `/app/packages/dashboard/dist`, so `distPath` was always `null` and neither `@fastify/static` nor `setNotFoundHandler` were ever registered
-- Renamed the backend Prometheus scrape endpoint from `/metrics` to `/prom/metrics` to remove the route collision with the React Router `/metrics` page
-- Added `'/prom/metrics'` to `PUBLIC_ROUTES` in `auth-middleware.ts` (the endpoint was already commented "unauthenticated" but was never actually exempted)
-- Both `createAuthHook` and `createRbacHook` now skip enforcement for any path outside `/api/` and `/ws/` — browser navigations to SPA routes were being rejected before `setNotFoundHandler` could serve `index.html`
-- `setNotFoundHandler` now serves `index.html` via `readFileSync` + `reply.type('text/html').send()` instead of `reply.sendFile()`, which is unreliable when invoked from within `@fastify/static`'s own not-found path
-- Replaced the `/metrics` Vite dev-server proxy entry with `/prom` — the proxy was the original source of the 401, forwarding every browser navigation at `/metrics` directly to the gateway
-
-### Documentation
-
-**`CONTRIBUTING.md`** — added "Rebuilding After Code Changes" subsection:
-- The `core` Docker image bakes compiled source at build time (no volume mount) and must be rebuilt with `--no-cache` after editing TypeScript source files
-- Documents the correct `docker compose --profile dev build --no-cache core && docker compose --profile dev up -d core` workflow
-
----
-
-## [Unreleased] — Security Policy Persistence + Sparkle Icon Fix (2026-02-23)
-
-### Bug Fixes
-
-**`packages/core/src/secureyeoman.ts`** — Community Skills toggle reset to off on every container restart:
-- `loadSecurityPolicyFromDb` was missing `'allowCommunityGitFetch'` from the `policyKeys` allowlist. The value was being correctly persisted to `security.policy` on save, but never read back at startup — causing the toggle to always revert to the config-file default (`false`). Added `'allowCommunityGitFetch'` to `policyKeys` so the DB-persisted value is restored on startup like all other policy toggles.
-- Updated stale JSDoc comment on `updateSecurityPolicy` to reflect that boolean toggles are persisted to DB (not in-memory only).
-
-**`packages/core/src/storage/migrations/035_message_creation_events.sql`** — new migration:
-- Adds `creation_events_json JSONB` column to `chat.messages` so AI creation events survive conversation reload.
-
-**`packages/core/src/chat/conversation-storage.ts`** — sparkle icons lost on conversation reload:
-- Added `creation_events_json` to `MessageRow` row type
-- Added `creationEvents` field to `ConversationMessage` domain type
-- Updated `rowToMessage` to parse `creation_events_json` → `creationEvents`
-- Updated `addMessage` to accept and store `creationEvents` (stored as `NULL` when empty, avoiding noise on user messages)
-
-**`packages/core/src/ai/chat-routes.ts`**:
-- Passes `creationEvents` to the assistant `addMessage` call so events are written to the DB at the time the message is saved.
-
-**`packages/dashboard/src/types.ts`**:
-- Added `creationEvents: CreationEvent[] | null` to `ConversationMessageResponse` so the field is typed on the frontend.
-
-**`packages/dashboard/src/hooks/useChat.ts`**:
-- Maps `m.creationEvents` when loading an existing conversation from the API so sparkle cards are rendered for reloaded messages.
-
----
-
-## [Unreleased] — Task View Status & Duration Fix (2026-02-23)
-
-### Bug Fixes
-
-**`packages/dashboard/src/components/TaskHistory.tsx`** — task status and duration were stuck after creation:
-- `refetchInterval: false` → dynamic function that polls every 2 s while any task has `pending` or `running` status, and returns `false` (stops polling) once all tasks reach a terminal state (`completed`, `failed`, `timeout`, `cancelled`)
-- `staleTime: 5000` → `0` so that query invalidation triggered by a create/delete mutation always results in an immediate re-fetch rather than serving cached data
-
-**`packages/dashboard/src/components/TaskHistory.test.tsx`** — new tests covering the fix:
-- Added imports: `afterEach`, `act`, `waitFor` from vitest/testing-library; `createTask` from test mocks
-- **`refetch polling behavior`** describe block (6 tests):
-  - Polls every 2 s when a task is `running`
-  - Polls every 2 s when a task is `pending`
-  - Does **not** poll when all tasks are `completed`
-  - Does **not** poll for other terminal statuses (`failed`, `timeout`, `cancelled`)
-  - Does **not** poll when the task list is empty
-  - Stops polling once tasks transition from `running` → `completed`
-- **`immediately re-fetches after a task is created`** — verifies `fetchTasks` is called again after `createTask` mutation succeeds (query invalidation + `staleTime: 0`)
-
----
-
-## [Unreleased] — Community Skills Sync Fixes (2026-02-23)
-
-### Bug Fixes
-
-**`packages/core/src/marketplace/git-fetch.ts`** — hardened `gitCloneOrPull` against stale/non-git directories:
-- Added `isGitRepo()` probe (`git rev-parse --git-dir`) to distinguish a valid repo from a plain directory before attempting `git pull`
-- Added `cloneIntoExisting()`: clones to a `<path>.clone-tmp` sibling, then `fs.cpSync`s contents into the target — avoids `rmSync` on Docker volume mount points (which fail with `EBUSY`)
-- The "not a git repo" path no longer attempts to remove the directory at all, making it safe for any mount topology
-
-**`docker-compose.yml`**:
-- Replaced bind mount `./community-skills:/usr/share/secureyeoman/community-skills` with named volume `community-skills:` — Docker initialises named volumes from the image (inheriting the `secureyeoman` user ownership set in the Dockerfile), whereas the bind mount was always created root-owned when the host directory was absent
-- Added `community-skills:` to the top-level `volumes:` block so skills persist across container restarts
-
-**`Dockerfile` + `Dockerfile.dev`**:
-- Removed stale `COPY community-skills/ /usr/share/secureyeoman/community-skills/` line (community skills are fetched at runtime via git sync, not bundled in the image)
-- Added `mkdir -p /usr/share/secureyeoman/community-skills && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman` so the named volume is initialised with correct ownership
+**CIDR-aware scope validation** (ADR 116) — `validateTarget()` in Kali security tools now correctly handles CIDR ranges via IPv4 bitmask comparison. Previous substring match failed silently for ranges like `10.10.10.0/24` (would not match `10.10.10.5`). New matching rules for `MCP_ALLOWED_TARGETS`:
+- `10.10.10.0/24` — CIDR range; any IP in the subnet matches
+- `.example.com` — domain suffix; matches apex and all subdomains
+- `example.com` — hostname; matches exact host and any subdomain
+- `*` — wildcard (existing behaviour unchanged)
 
 ---
 
