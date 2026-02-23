@@ -1307,12 +1307,12 @@ describe('HeartbeatManager', () => {
     });
 
     it('system_health returns warning on high heap usage', async () => {
-      // Mock process.memoryUsage to return high usage
+      // Mock process.memoryUsage to return high RSS (above 512 MB default threshold)
       const origMemUsage = process.memoryUsage;
       process.memoryUsage = vi.fn().mockReturnValue({
-        heapUsed: 950 * 1024 * 1024,
-        heapTotal: 1000 * 1024 * 1024,
-        rss: 0,
+        heapUsed: 400 * 1024 * 1024,
+        heapTotal: 450 * 1024 * 1024,
+        rss: 600 * 1024 * 1024,
         external: 0,
         arrayBuffers: 0,
       }) as any;

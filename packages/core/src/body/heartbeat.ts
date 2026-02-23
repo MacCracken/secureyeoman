@@ -499,6 +499,27 @@ export class HeartbeatManager {
     return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
+  /**
+   * Hydrate taskLastRun from persisted log entries so that "last run" timestamps
+   * survive process restarts. Should be awaited before calling start().
+   */
+  async initialize(): Promise<void> {
+    if (!this.logStorage) return;
+    for (const check of this.config.checks) {
+      try {
+        const { entries } = await this.logStorage.list({ checkName: check.name, limit: 1 });
+        if (entries[0]) {
+          this.taskLastRun.set(check.name, entries[0].ranAt);
+        }
+      } catch {
+        // Non-fatal — taskLastRun stays empty for this check
+      }
+    }
+    this.logger.debug('Heartbeat task times hydrated from log', {
+      checks: this.config.checks.length,
+    });
+  }
+
   start(): void {
     if (!this.config.enabled || this.running) return;
 
@@ -770,17 +791,26 @@ export class HeartbeatManager {
 
   private async checkSystemHealth(check: HeartbeatCheck): Promise<HeartbeatCheckResult> {
     const stats = await this.brain.getStats();
-    const memUsage = process.memoryUsage();
+    const mem = process.memoryUsage();
 
-    const heapUsedMb = Math.round(memUsage.heapUsed / 1024 / 1024);
-    const heapTotalMb = Math.round(memUsage.heapTotal / 1024 / 1024);
+    const heapUsedMb = Math.round(mem.heapUsed / 1024 / 1024);
+    const heapTotalMb = Math.round(mem.heapTotal / 1024 / 1024);
+    const rssMb = Math.round(mem.rss / 1024 / 1024);
+    const externalMb = Math.round((mem.external + mem.arrayBuffers) / 1024 / 1024);
+
+    // V8's heapTotal tracks close to heapUsed by design — ratio-based checks on
+    // heapTotal produce near-constant false warnings. Use RSS (total process
+    // footprint) against a configurable absolute threshold instead.
+    const warnRssMb = (check.config.warnRssMb as number | undefined) ?? 512;
 
     let status: HeartbeatCheckResult['status'] = 'ok';
-    let message = `Memories: ${stats.memories.total}, Knowledge: ${stats.knowledge.total}, Heap: ${heapUsedMb}/${heapTotalMb}MB`;
+    let message =
+      `Memories: ${stats.memories.total}, Knowledge: ${stats.knowledge.total}, ` +
+      `RSS: ${rssMb}MB, Heap: ${heapUsedMb}/${heapTotalMb}MB`;
 
-    if (heapUsedMb > heapTotalMb * 0.9) {
+    if (rssMb > warnRssMb) {
       status = 'warning';
-      message = `High memory usage: ${heapUsedMb}/${heapTotalMb}MB. ` + message;
+      message = `High RSS memory: ${rssMb}MB (threshold: ${warnRssMb}MB). ` + message;
     }
 
     return {
@@ -794,6 +824,8 @@ export class HeartbeatManager {
         skills: stats.skills.total,
         heapUsedMb,
         heapTotalMb,
+        rssMb,
+        externalMb,
       },
     };
   }

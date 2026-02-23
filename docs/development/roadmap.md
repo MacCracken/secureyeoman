@@ -36,7 +36,6 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 ### Bugs
 
-- [ ] Hearbeat tasks are not being displayed in Security > Tasks > Task History
 - [ ] Connect CLI when DisplayName entered and connected -Integration undefined not found
 - [ ] Chat needs responsive design in the response window to not blow up the view
 

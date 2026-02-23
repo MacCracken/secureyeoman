@@ -718,6 +718,7 @@ export class SecureYeoman {
         );
         this.heartManager = new HeartManager(this.heartbeatManager);
         this.soulManager.setHeart(this.heartManager);
+        await this.heartbeatManager.initialize();
         this.heartbeatManager.start();
         this.logger.debug('Heart manager started', {
           intervalMs: this.config.heartbeat.intervalMs,
