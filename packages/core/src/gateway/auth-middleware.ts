@@ -608,6 +608,9 @@ export function createAuthHook(opts: AuthHookOptions) {
 
     if (PUBLIC_ROUTES.has(path)) return;
 
+    // SPA routes and static assets don't require auth — only API and WS paths do
+    if (!path.startsWith('/api/') && !path.startsWith('/ws/')) return;
+
     // Try client certificate (mTLS)
     const socket = request.raw.socket as TLSSocket;
     if (typeof socket.authorized === 'boolean' && socket.authorized) {
@@ -676,6 +679,9 @@ export function createRbacHook(opts: RbacHookOptions) {
 
     // Skip public + token-only routes
     if (PUBLIC_ROUTES.has(path) || TOKEN_ONLY_ROUTES.has(path)) return;
+
+    // SPA routes and static assets are not subject to RBAC
+    if (!path.startsWith('/api/') && !path.startsWith('/ws/')) return;
 
     const user = request.authUser;
     if (!user) {
