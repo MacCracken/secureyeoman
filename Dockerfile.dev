@@ -34,7 +34,9 @@ FROM node:20-alpine
 RUN apk add --no-cache git \
  && addgroup -S secureyeoman && adduser -S -G secureyeoman -h /home/secureyeoman secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
- && chown -R secureyeoman:secureyeoman /home/secureyeoman
+ && chown -R secureyeoman:secureyeoman /home/secureyeoman \
+ && mkdir -p /usr/share/secureyeoman/community-skills \
+ && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman
 
 ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-skills
 

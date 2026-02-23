@@ -29,7 +29,50 @@ export function validateGitUrl(url: string): void {
 }
 
 /**
- * Clone repo if localPath does not exist; otherwise git pull --ff-only.
+ * Returns true if localPath exists and contains a valid git repository.
+ */
+async function isGitRepo(localPath: string, timeoutMs: number): Promise<boolean> {
+  try {
+    await execFileAsync('git', ['-C', localPath, 'rev-parse', '--git-dir'], { timeout: timeoutMs });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Clone to a temp sibling directory then copy all contents into localPath.
+ * Used when localPath exists but cannot be removed (e.g. it is a Docker volume
+ * mount point). Cleans up the temp directory on success or failure.
+ */
+async function cloneIntoExisting(
+  repoUrl: string,
+  localPath: string,
+  logger: SecureLogger,
+  opts: { timeout: number }
+): Promise<void> {
+  const tmpPath = localPath + '.clone-tmp';
+  // Clean up any leftover temp dir from a previous failed attempt
+  if (fs.existsSync(tmpPath)) {
+    fs.rmSync(tmpPath, { recursive: true, force: true });
+  }
+  try {
+    logger.info('Git cloning community repo to temp path', { repoUrl, tmpPath });
+    await execFileAsync('git', ['clone', '--depth=1', repoUrl, tmpPath], opts);
+    logger.info('Copying cloned repo into target path', { tmpPath, localPath });
+    fs.cpSync(tmpPath, localPath, { recursive: true, force: true });
+  } finally {
+    if (fs.existsSync(tmpPath)) {
+      fs.rmSync(tmpPath, { recursive: true, force: true });
+    }
+  }
+}
+
+/**
+ * Clone repo if localPath does not exist; pull if it is already a git repo.
+ * If localPath exists but is not a git repo (e.g. a stale Docker volume mount),
+ * clone to a temp sibling directory and copy the contents in — avoiding any
+ * attempt to remove the mount point itself (which would fail with EBUSY).
  * Uses execFile (not exec) to prevent shell injection.
  */
 export async function gitCloneOrPull(
@@ -41,8 +84,16 @@ export async function gitCloneOrPull(
   validateGitUrl(repoUrl);
   const opts = { timeout: timeoutMs };
   if (fs.existsSync(localPath)) {
-    logger.info('Git pulling community repo', { localPath });
-    await execFileAsync('git', ['-C', localPath, 'pull', '--ff-only'], opts);
+    if (await isGitRepo(localPath, timeoutMs)) {
+      logger.info('Git pulling community repo', { localPath });
+      await execFileAsync('git', ['-C', localPath, 'pull', '--ff-only'], opts);
+    } else {
+      logger.warn(
+        'Community repo path exists but is not a git repository — cloning into existing directory',
+        { localPath }
+      );
+      await cloneIntoExisting(repoUrl, localPath, logger, opts);
+    }
   } else {
     logger.info('Git cloning community repo', { repoUrl, localPath });
     await execFileAsync('git', ['clone', '--depth=1', repoUrl, localPath], opts);

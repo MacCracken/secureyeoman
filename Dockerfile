@@ -17,7 +17,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends git \
  && rm -rf /var/lib/apt/lists/* \
  && groupadd -r secureyeoman && useradd -r -g secureyeoman -d /home/secureyeoman -m secureyeoman \
  && mkdir -p /home/secureyeoman/.secureyeoman/data /home/secureyeoman/.secureyeoman/workspace \
- && chown -R secureyeoman:secureyeoman /home/secureyeoman
+ && chown -R secureyeoman:secureyeoman /home/secureyeoman \
+ && mkdir -p /usr/share/secureyeoman/community-skills \
+ && chown -R secureyeoman:secureyeoman /usr/share/secureyeoman
 
 ENV COMMUNITY_REPO_PATH=/usr/share/secureyeoman/community-skills
 
@@ -29,9 +31,6 @@ RUN chmod +x /usr/local/bin/secureyeoman
 # find them via dirname(process.execPath)/migrations/ at runtime.
 # (Bun's --assets flag for embedding into the virtual FS requires Bun >= 1.2.)
 COPY dist/migrations/ /usr/local/bin/migrations/
-
-# Optional: bundled community skills
-COPY community-skills/ /usr/share/secureyeoman/community-skills/
 
 # Dashboard dist — served via @fastify/static from /usr/share/secureyeoman/dashboard.
 # Mount or COPY the dashboard build here, or set SECUREYEOMAN_DASHBOARD_DIST at runtime.
