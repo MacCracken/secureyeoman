@@ -379,7 +379,8 @@ export class GatewayServer {
       } catch {
         /* may not be available */
       }
-      registerBrainRoutes(this.app, { brainManager, heartbeatManager, externalSync, soulManager });
+      const heartbeatLogStorage = this.secureYeoman.getHeartbeatLogStorage() ?? undefined;
+      registerBrainRoutes(this.app, { brainManager, heartbeatManager, heartbeatLogStorage, externalSync, soulManager });
     } catch {
       // Brain manager may not be available — skip routes
     }
@@ -582,8 +583,7 @@ export class GatewayServer {
     try {
       const proactiveManager = this.secureYeoman.getProactiveManager();
       if (proactiveManager) {
-        const logStorage = this.secureYeoman.getHeartbeatLogStorage() ?? undefined;
-        registerProactiveRoutes(this.app, { proactiveManager, logStorage });
+        registerProactiveRoutes(this.app, { proactiveManager });
         this.getLogger().info('Proactive routes registered');
       }
     } catch (err) {

@@ -4,6 +4,53 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 44 — Heartbeat Task History & Reliability Fixes (2026-02-22)
+
+Fixes three heartbeat-related issues: execution history not visible in the dashboard, "never run"
+shown after restart despite prior runs, and a spurious memory warning triggered by normal V8 heap
+behaviour.
+
+### What changed
+
+**`SecurityPage.tsx`** — expandable execution history per heartbeat task:
+
+- New `HeartbeatTaskCard` component replaces the static heartbeat card rendering in `TasksTab`.
+- Collapsed state shows task config (name, type, interval, last-run time) plus the most recent
+  execution status badge drawn from the log.
+- Expanded state fetches `fetchHeartbeatLog({ checkName, limit: 10 })` on demand and renders a
+  table of recent executions: status icon, ran-at timestamp, duration, message, and error detail.
+- Expand/collapse toggle with `ChevronDown` / `ChevronUp` and accessible `aria-label`.
+- Log query uses `enabled: expanded` to avoid unnecessary polling and `refetchInterval: 30_000`
+  while the panel is open so new executions appear without requiring a collapse/re-expand.
+
+**`heartbeat.ts`** — `taskLastRun` persists across restarts:
+
+- Added `async initialize(): Promise<void>` method that seeds the in-memory `taskLastRun` map
+  from the most recent `heartbeat_log` row for each configured check.
+- Previously restarting the process always showed "never run" even when runs had been recorded.
+
+**`heartbeat.ts`** — memory check uses RSS threshold instead of heap ratio:
+
+- `checkSystemHealth` previously warned when `heapUsed > heapTotal * 0.9`; V8 keeps `heapTotal`
+  close to `heapUsed` by design, so this ratio almost always fires.
+- Replaced with an RSS-based absolute threshold (default **512 MB**, configurable via
+  `check.config.warnRssMb`).
+- Message and `data` payload now include `rssMb`, `externalMb`, and heap figures.
+
+**`secureyeoman.ts`**:
+
+- `await this.heartbeatManager.initialize()` called at Step 6.6 before `start()` so `lastRunAt`
+  is hydrated from the database on every startup.
+
+### Files changed
+
+- `packages/dashboard/src/components/SecurityPage.tsx` — `HeartbeatTaskCard` with expandable log + `refetchInterval`
+- `packages/core/src/body/heartbeat.ts` — `initialize()` method; RSS-based memory warning
+- `packages/core/src/secureyeoman.ts` — call `heartbeatManager.initialize()` before `start()`
+- `packages/core/src/body/heartbeat.test.ts` — updated memory warning test to use RSS mock
+
+---
+
 ## Phase 43 — Costs Tab Consolidated into MetricsPage (2026-02-22)
 
 Moves the standalone **Costs** page into `MetricsPage` as a third tab, giving the metrics

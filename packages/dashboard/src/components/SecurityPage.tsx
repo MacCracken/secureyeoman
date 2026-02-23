@@ -546,14 +546,25 @@ const HB_STATUS_COLOR: Record<'ok' | 'warning' | 'error', string> = {
 function HeartbeatTaskCard({ task }: { task: HeartbeatTask }) {
   const [expanded, setExpanded] = useState(false);
 
+  // Always fetch the most recent entry so the status badge is visible in collapsed state.
+  const { data: latestData } = useQuery({
+    queryKey: ['heartbeat-log-latest', task.name],
+    queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 1 }),
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  });
+
+  // Full history — only when expanded.
   const { data: logData, isLoading: logLoading } = useQuery({
     queryKey: ['heartbeat-log', task.name],
     queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 10 }),
     enabled: expanded,
     staleTime: 30_000,
+    refetchInterval: expanded ? 30_000 : false,
   });
 
-  const lastEntry: HeartbeatLogEntry | null = logData?.entries[0] ?? null;
+  const lastEntry: HeartbeatLogEntry | null =
+    (expanded ? logData?.entries[0] : latestData?.entries[0]) ?? null;
 
   return (
     <div className={`border-l-4 ${task.enabled ? 'border-l-success' : 'border-l-muted-foreground/30'}`}>
@@ -693,10 +704,7 @@ function TasksTab() {
   });
 
   const heartbeatTasks = heartbeatData?.tasks ?? [];
-  const [heartbeatOpen, setHeartbeatOpen] = useState(() => {
-    const params = new URLSearchParams(window.location.search);
-    return params.get('heartbeat') === '1';
-  });
+  const [heartbeatOpen, setHeartbeatOpen] = useState(true);
   const activeCount = heartbeatTasks.filter((t) => t.enabled).length;
 
   return (

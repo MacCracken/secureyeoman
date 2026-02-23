@@ -7,6 +7,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { BrainManager } from './manager.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
+import type { HeartbeatLogStorage } from '../body/heartbeat-log-storage.js';
 import type { ExternalBrainSync } from './external-sync.js';
 import type { SoulManager } from '../soul/manager.js';
 import type { MemoryType, MemoryQuery, KnowledgeQuery } from './types.js';
@@ -15,6 +16,7 @@ import { toErrorMessage, sendError } from '../utils/errors.js';
 export interface BrainRoutesOptions {
   brainManager: BrainManager;
   heartbeatManager?: HeartbeatManager;
+  heartbeatLogStorage?: HeartbeatLogStorage;
   externalSync?: ExternalBrainSync;
   soulManager?: SoulManager;
 }
@@ -53,7 +55,7 @@ function validateContent(content: unknown, reply: FastifyReply): string | null {
 }
 
 export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptions): void {
-  const { brainManager, heartbeatManager, externalSync, soulManager } = opts;
+  const { brainManager, heartbeatManager, heartbeatLogStorage, externalSync, soulManager } = opts;
 
   // ── Memories ─────────────────────────────────────────────────
 
@@ -303,6 +305,29 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       const limit = capLimit(request.query.limit, 10);
       const memories = await brainManager.recall({ source: 'heartbeat', limit });
       return { history: memories };
+    }
+  );
+
+  // ── Heartbeat Execution Log ───────────────────────────────
+  // Registered here (not under proactive routes) so it's always available
+  // regardless of whether the proactive system is enabled.
+
+  app.get(
+    '/api/v1/proactive/heartbeat/log',
+    async (
+      request: FastifyRequest<{
+        Querystring: { checkName?: string; status?: string; limit?: string; offset?: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      if (!heartbeatLogStorage) return sendError(reply, 503, 'Heartbeat log storage not available');
+      const { checkName, status, limit, offset } = request.query;
+      return heartbeatLogStorage.list({
+        checkName,
+        status: status as 'ok' | 'warning' | 'error' | undefined,
+        limit: limit ? Number(limit) : 20,
+        offset: offset ? Number(offset) : 0,
+      });
     }
   );
 

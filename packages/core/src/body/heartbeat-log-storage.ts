@@ -84,10 +84,10 @@ export class HeartbeatLogStorage extends PgBaseStorage {
       id: r.id as string,
       checkName: r.check_name as string,
       personalityId: (r.personality_id as string | null) ?? null,
-      ranAt: r.ran_at as number,
+      ranAt: Number(r.ran_at), // BIGINT returned as string by pg driver
       status: r.status as 'ok' | 'warning' | 'error',
       message: r.message as string,
-      durationMs: r.duration_ms as number,
+      durationMs: Number(r.duration_ms),
       errorDetail: (r.error_detail as string | null) ?? null,
     }));
 
