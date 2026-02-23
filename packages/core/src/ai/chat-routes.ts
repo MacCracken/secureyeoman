@@ -279,6 +279,27 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         const MAX_TOOL_ITERATIONS = 10;
         let iterationCount = 0;
 
+        // Collect resource-creation events to surface in the chat UI.
+        const creationEvents: Array<{ tool: string; label: string; name: string; id?: string }> =
+          [];
+
+        // Map tool names → human-readable labels for the contextual card.
+        const CREATION_TOOL_LABELS: Record<string, string> = {
+          create_skill: 'Skill',
+          update_skill: 'Skill',
+          delete_skill: 'Skill',
+          create_task: 'Task',
+          update_task: 'Task',
+          create_personality: 'Personality',
+          update_personality: 'Personality',
+          create_experiment: 'Experiment',
+          create_swarm: 'Swarm',
+          create_custom_role: 'Custom Role',
+          assign_role: 'Role Assignment',
+          a2a_connect: 'A2A Connection',
+          delegate_task: 'Delegation',
+        };
+
         let rawResponse = await aiClient.chat(
           aiRequest,
           { source: 'dashboard_chat' },
@@ -300,8 +321,34 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           });
 
           // Execute every tool call and collect results
+          const executionContext = {
+            personalityId: personality?.id ?? null,
+            personalityName: personality?.name ?? null,
+          };
           for (const toolCall of rawResponse.toolCalls) {
-            const result = await executeCreationTool(toolCall, secureYeoman);
+            const result = await executeCreationTool(toolCall, secureYeoman, executionContext);
+
+            // Capture creation metadata for the contextual UI card.
+            const label = CREATION_TOOL_LABELS[toolCall.name];
+            if (label && !result.isError) {
+              const out = result.output as Record<string, unknown>;
+              const item = (out.skill ??
+                out.task ??
+                out.personality ??
+                out.experiment ??
+                out.swarm) as Record<string, unknown> | undefined;
+              const itemName =
+                item?.name ??
+                (toolCall.arguments as Record<string, unknown>)?.name ??
+                toolCall.name;
+              creationEvents.push({
+                tool: toolCall.name,
+                label,
+                name: typeof itemName === 'string' ? itemName : String(itemName),
+                id: typeof item?.id === 'string' ? item.id : undefined,
+              });
+            }
+
             messages.push({
               role: 'tool' as const,
               toolResult: {
@@ -374,6 +421,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           tokensUsed: response.usage.totalTokens,
           brainContext,
           conversationId: conversationId ?? undefined,
+          creationEvents: creationEvents.length > 0 ? creationEvents : undefined,
         };
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'Unknown error';

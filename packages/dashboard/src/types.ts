@@ -479,6 +479,14 @@ export interface ConversationDetail extends Conversation {
 
 // ─── Chat Types ─────────────────────────────────────────────
 
+/** A resource created by the AI during a tool-execution loop. */
+export interface CreationEvent {
+  tool: string;
+  label: string;
+  name: string;
+  id?: string;
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -487,6 +495,7 @@ export interface ChatMessage {
   provider?: string;
   tokensUsed?: number;
   brainContext?: BrainContext;
+  creationEvents?: CreationEvent[];
 }
 
 export interface ChatResponse {
@@ -497,6 +506,7 @@ export interface ChatResponse {
   tokensUsed?: number;
   brainContext?: BrainContext;
   conversationId?: string;
+  creationEvents?: CreationEvent[];
 }
 
 // ─── Code Session Types ─────────────────────────────────────

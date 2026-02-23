@@ -18,15 +18,36 @@ export interface ToolExecutionResult {
   isError: boolean;
 }
 
+/** Caller-provided context so tools can be scoped to the active personality. */
+export interface ExecutionContext {
+  personalityId?: string | null;
+  personalityName?: string | null;
+}
+
 type Args = Record<string, unknown>;
 
 function str(v: unknown): string {
   return typeof v === 'string' ? v : JSON.stringify(v);
 }
 
+/**
+ * Normalise an AI-generated skill name:
+ *  - Replace underscores/hyphens with spaces
+ *  - Title-case each word
+ * e.g. "my_new_skill" → "My New Skill"
+ */
+function normalizeSkillName(raw: string): string {
+  return raw
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export async function executeCreationTool(
   toolCall: ToolCall,
-  secureYeoman: SecureYeoman
+  secureYeoman: SecureYeoman,
+  context?: ExecutionContext
 ): Promise<ToolExecutionResult> {
   const args = toolCall.arguments as Args;
 
@@ -36,7 +57,7 @@ export async function executeCreationTool(
       case 'create_skill': {
         const soulManager = secureYeoman.getSoulManager();
         const skill = await soulManager.createSkill({
-          name: str(args.name),
+          name: normalizeSkillName(str(args.name)),
           description: typeof args.description === 'string' ? args.description : '',
           instructions: typeof args.instructions === 'string' ? args.instructions : '',
           triggerPatterns: Array.isArray(args.triggerPatterns)
@@ -52,6 +73,9 @@ export async function executeCreationTool(
           enabled: true,
           source: 'ai_learned',
           status: 'active',
+          // Scope to the calling personality so the UI shows the personality name
+          // rather than "Global". personalityName is derived by storage from personalityId.
+          personalityId: context?.personalityId ?? null,
         });
         return { output: { skill }, isError: false };
       }

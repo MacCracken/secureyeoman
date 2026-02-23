@@ -4,6 +4,80 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 47 — Skill Personality Scoping + Installed Tab Sources (2026-02-22)
+
+### Fixes
+
+**AI-created skills show "Global" instead of personality name**
+
+`executeCreationTool` now accepts an optional `ExecutionContext` (`personalityId`,
+`personalityName`). `chat-routes.ts` passes the resolved personality when calling the executor.
+`create_skill` sets `personalityId` from this context so the skill is scoped to the creating
+personality and the UI shows the personality name rather than "Global".
+
+**AI-created skill names use underscores and lowercase**
+
+A `normalizeSkillName()` helper in `creation-tool-executor.ts` converts AI-generated names
+(`my_new_skill`) to properly cased, space-separated names (`My New Skill`) before saving.
+
+**Installed tab shows nothing**
+
+The Installed tab previously filtered to `source === 'marketplace' || 'community'` only —
+AI-created (`ai_learned`, `ai_proposed`) and user-created skills were invisible there.
+
+Changes to `SkillsPage.tsx` `InstalledSkillsTab`:
+- Shows **all** skills grouped by source: AI Created, User Created, Marketplace, Community.
+- Empty state replaced with **Available Sources** cards (each shows a description; Marketplace and
+  Community cards are clickable and navigate to the corresponding tab).
+- `onNavigateTab` prop wired from `SkillsPage` so source cards can switch tabs directly.
+
+---
+
+## Phase 46 — Chat Contextual Creation Cards + Message Editing (2026-02-22)
+
+Improves all chat contexts (dashboard, editor, integrated) with two features:
+
+### Creation Event Contextual Cards
+
+When a personality uses a creation tool (`create_skill`, `create_task`, `create_personality`, etc.)
+during the agentic tool-execution loop, the response now includes a `creationEvents` array.
+Each successful creation is rendered as a small inline card below the assistant message bubble
+(Sparkles icon + label + item name), giving the user immediate confirmation of what was created.
+
+- **`packages/core/src/ai/chat-routes.ts`**: collects `creationEvents` during the tool loop and
+  attaches them to the chat response.
+- **`packages/dashboard/src/types.ts`**: adds `CreationEvent` interface; `ChatMessage` and
+  `ChatResponse` now carry `creationEvents?: CreationEvent[]`.
+- **`packages/dashboard/src/hooks/useChat.ts`**: passes `creationEvents` from API response into
+  the in-memory message state.
+- **`packages/dashboard/src/components/ChatPage.tsx`**: renders creation event cards on assistant
+  messages.
+- **`packages/dashboard/src/components/EditorPage.tsx`**: same creation event pills in the editor
+  sidebar chat.
+
+### Message Editing (resend from edit point)
+
+User messages now show a **pencil icon on hover**. Clicking it:
+1. Populates the textarea with the original message content.
+2. Shows an "Editing message" banner above the input with a cancel (×) button.
+3. On send (or Enter), the conversation is truncated to just before the edited message, the new
+   version is sent with the truncated history, and the assistant responds fresh.  The edited branch
+   is not persisted to the existing conversation to avoid ghost messages in history.
+
+- **`packages/dashboard/src/hooks/useChat.ts`**: exposes `resendFrom(messageIndex, newContent)` in
+  `UseChatReturn`.
+- **`packages/dashboard/src/components/ChatPage.tsx`**: `editingMsgIdx` state, `doSend()` router,
+  `handleCancelEdit`, edit banner, send button icon switches to ✓ when in edit mode, message bubble
+  gets a ring highlight while being edited.
+
+### "Accept edits regardless of toggle state"
+
+Both `resendFrom` and the edit UI work independently of the memory toggle — message editing is
+never gated by `memoryEnabled`. The memory preference is respected for the re-sent message (brain
+context recalled / saved according to the current toggle), but editing itself is always available.
+
+---
+
 ## Phase 45 — creationConfig Tool Injection Bug Fix (2026-02-22)
 
 Fixes a silent capability gap: when a personality had resource-creation abilities enabled via

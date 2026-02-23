@@ -15,6 +15,8 @@ export interface UseChatReturn {
   input: string;
   setInput: React.Dispatch<React.SetStateAction<string>>;
   handleSend: () => void;
+  /** Re-send from a specific message index, discarding later messages. */
+  resendFrom: (messageIndex: number, newContent: string) => void;
   isPending: boolean;
   clearMessages: () => void;
   conversationId: string | null;
@@ -87,6 +89,7 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
           provider: response.provider,
           tokensUsed: response.tokensUsed,
           brainContext: response.brainContext,
+          creationEvents: response.creationEvents,
         },
       ]);
       // Refresh conversation list so sidebar shows updated message counts / ordering
@@ -156,11 +159,50 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     autoCreatedIds.current.clear();
   }, []);
 
+  /**
+   * Truncate the message history to `messageIndex` (exclusive) and resend
+   * `newContent` as a fresh user message.  The edited branch is NOT persisted
+   * to the existing conversation so the stored history stays intact.
+   */
+  const resendFrom = useCallback(
+    (messageIndex: number, newContent: string) => {
+      const trimmed = newContent.trim();
+      if (!trimmed || chatMutation.isPending) return;
+
+      const historyBefore = messages.slice(0, messageIndex);
+      const userMessage: ChatMessage = {
+        role: 'user',
+        content: trimmed,
+        timestamp: Date.now(),
+      };
+
+      setMessages([...historyBefore, userMessage]);
+      setInput('');
+
+      const history = [...historyBefore, userMessage].map((m) => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const memoryOn = options?.memoryEnabled ?? true;
+      chatMutation.mutate({
+        message: trimmed,
+        history: history.slice(0, -1),
+        ...(options?.personalityId ? { personalityId: options.personalityId } : {}),
+        // No conversationId — edited branch stored separately to avoid ghost messages
+        memoryEnabled: memoryOn,
+        saveAsMemory: false,
+      });
+    },
+    [messages, chatMutation, options, setInput]
+  );
+
   return {
     messages,
     input,
     setInput,
     handleSend,
+    resendFrom,
     isPending: chatMutation.isPending,
     clearMessages,
     conversationId: activeConversationId,

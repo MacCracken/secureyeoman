@@ -20,6 +20,7 @@ import {
   PanelLeftOpen,
   ThumbsUp,
   ThumbsDown,
+  Sparkles,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -37,7 +38,7 @@ import { VoiceOverlay } from './VoiceOverlay';
 import { useChat } from '../hooks/useChat';
 import { useVoice } from '../hooks/useVoice';
 import { usePushToTalk } from '../hooks/usePushToTalk';
-import type { Personality, BrainContext, Conversation } from '../types';
+import type { Personality, BrainContext, Conversation, CreationEvent } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
 import { GroupChatPage } from './GroupChatPage';
@@ -95,9 +96,19 @@ export function ChatPage() {
   const [feedbackGiven, setFeedbackGiven] = useState<Map<number, 'positive' | 'negative'>>(
     new Map()
   );
+  // Message editing state — tracks which user message is being edited
+  const [editingMsgIdx, setEditingMsgIdx] = useState<number | null>(null);
 
-  const { messages, input, setInput, handleSend, isPending, clearMessages, conversationId } =
-    useChat({
+  const {
+    messages,
+    input,
+    setInput,
+    handleSend,
+    resendFrom,
+    isPending,
+    clearMessages,
+    conversationId,
+  } = useChat({
       personalityId: effectivePersonalityId,
       conversationId: selectedConversationId,
       memoryEnabled,
@@ -158,6 +169,7 @@ export function ChatPage() {
     clearMessages();
     setRememberedIndices(new Set());
     setExpandedBrainIdx(null);
+    setEditingMsgIdx(null);
   }, [clearMessages]);
 
   const handleSelectConversation = useCallback((conv: Conversation) => {
@@ -250,14 +262,29 @@ export function ChatPage() {
     }
   }, [messages.length, isPending]);
 
+  const handleCancelEdit = useCallback(() => {
+    setEditingMsgIdx(null);
+    setInput('');
+  }, [setInput]);
+
+  /** Unified send: routes to resendFrom when editing, otherwise normal send. */
+  const doSend = useCallback(() => {
+    if (editingMsgIdx !== null) {
+      resendFrom(editingMsgIdx, input);
+      setEditingMsgIdx(null);
+    } else {
+      handleSend();
+    }
+  }, [editingMsgIdx, input, resendFrom, handleSend]);
+
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Enter' && !e.shiftKey) {
         e.preventDefault();
-        handleSend();
+        doSend();
       }
     },
-    [handleSend]
+    [doSend]
   );
 
   return (
@@ -578,15 +605,20 @@ export function ChatPage() {
                   msg.role === 'assistant' &&
                   msg.brainContext &&
                   (msg.brainContext.memoriesUsed > 0 || msg.brainContext.knowledgeUsed > 0);
+                const isBeingEdited = editingMsgIdx === i;
 
                 return (
                   <div
                     key={i}
-                    className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                    className={`flex group ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
                       className={`max-w-[90%] sm:max-w-[75%] rounded-lg px-4 py-3 break-words ${
-                        msg.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                        msg.role === 'user'
+                          ? isBeingEdited
+                            ? 'bg-primary/70 text-primary-foreground ring-2 ring-primary'
+                            : 'bg-primary text-primary-foreground'
+                          : 'bg-muted'
                       }`}
                     >
                       <div className="flex items-center gap-2 mb-1">
@@ -599,6 +631,21 @@ export function ChatPage() {
                           {msg.role === 'user' ? 'You' : (personality?.name ?? 'Assistant')}
                         </span>
                         {msg.model && <span className="text-xs opacity-50">{msg.model}</span>}
+
+                        {/* Edit button on user messages */}
+                        {msg.role === 'user' && !isPending && (
+                          <button
+                            onClick={() => {
+                              setEditingMsgIdx(i);
+                              setInput(msg.content);
+                            }}
+                            className="ml-auto opacity-0 group-hover:opacity-60 hover:!opacity-100 transition-opacity"
+                            title="Edit and resend from here"
+                            data-testid={`edit-msg-${i}`}
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </button>
+                        )}
 
                         {/* Brain context indicator */}
                         {hasBrainContext && (
@@ -646,6 +693,27 @@ export function ChatPage() {
                       ) : (
                         <p className="text-sm whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
                       )}
+
+                      {/* Creation event cards — shown when the AI used creation tools */}
+                      {msg.role === 'assistant' &&
+                        msg.creationEvents &&
+                        msg.creationEvents.length > 0 && (
+                          <div className="mt-2 space-y-1">
+                            {msg.creationEvents.map((ev: CreationEvent, j: number) => (
+                              <div
+                                key={j}
+                                className="flex items-center gap-1.5 text-xs bg-primary/10 text-primary px-2.5 py-1 rounded-md border border-primary/20"
+                                data-testid={`creation-event-${i}-${j}`}
+                              >
+                                <Sparkles className="w-3 h-3 shrink-0" />
+                                <span>
+                                  {ev.label} created:{' '}
+                                  <strong className="font-medium">{sanitizeText(ev.name)}</strong>
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
 
                       <div className="flex items-center gap-2 mt-1">
                         {msg.tokensUsed !== undefined && (
@@ -755,6 +823,22 @@ export function ChatPage() {
 
             {/* Input area */}
             <div className="border-t pt-4">
+              {/* Edit mode indicator */}
+              {editingMsgIdx !== null && (
+                <div className="flex items-center justify-between bg-primary/10 text-primary text-xs px-3 py-1.5 rounded-t-lg border border-b-0 border-primary/20 mb-0">
+                  <div className="flex items-center gap-1.5">
+                    <Pencil className="w-3 h-3" />
+                    <span>Editing message — history from this point will be replaced</span>
+                  </div>
+                  <button
+                    onClick={handleCancelEdit}
+                    className="hover:opacity-80 transition-opacity"
+                    title="Cancel edit"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
               <div className="flex gap-2 sm:gap-3 items-end">
                 {hasVision && (
                   <button
@@ -786,12 +870,15 @@ export function ChatPage() {
                   />
                 )}
                 <button
-                  onClick={handleSend}
+                  onClick={doSend}
                   disabled={!input.trim() || isPending}
                   className="btn-primary px-4 py-3 rounded-lg disabled:opacity-50 h-[52px]"
+                  title={editingMsgIdx !== null ? 'Update and resend' : 'Send message'}
                 >
                   {isPending ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : editingMsgIdx !== null ? (
+                    <Check className="w-4 h-4" />
                   ) : (
                     <Send className="w-4 h-4" />
                   )}

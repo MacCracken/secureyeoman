@@ -23,6 +23,7 @@ import {
   CheckCircle,
   XCircle,
   AlertTriangle,
+  Sparkles,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -41,7 +42,7 @@ import { useVoice } from '../hooks/useVoice';
 import { usePushToTalk } from '../hooks/usePushToTalk';
 import { useTheme } from '../hooks/useTheme';
 import { VoiceOverlay } from './VoiceOverlay';
-import type { Personality, ChatMessage } from '../types';
+import type { Personality, ChatMessage, CreationEvent } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
 
@@ -863,6 +864,27 @@ export function EditorPage() {
                     ) : (
                       <p className="text-xs whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
                     )}
+
+                    {/* Creation event pills */}
+                    {msg.role === 'assistant' &&
+                      msg.creationEvents &&
+                      msg.creationEvents.length > 0 && (
+                        <div className="mt-1.5 space-y-0.5">
+                          {msg.creationEvents.map((ev: CreationEvent, j: number) => (
+                            <div
+                              key={j}
+                              className="flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20"
+                            >
+                              <Sparkles className="w-2.5 h-2.5 shrink-0" />
+                              <span>
+                                {ev.label} created:{' '}
+                                <strong className="font-medium">{sanitizeText(ev.name)}</strong>
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                     {msg.role === 'assistant' && (
                       <button
                         onClick={() => {

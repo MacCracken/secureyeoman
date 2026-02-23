@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
@@ -23,6 +23,9 @@ import {
   AlertCircle,
   Shield,
   GitBranch,
+  Sparkles,
+  Pencil,
+  ArrowRight,
 } from 'lucide-react';
 import {
   fetchSkills,
@@ -156,7 +159,7 @@ export function SkillsPage() {
       {activeTab === 'my-skills' && <MySkillsTab />}
       {activeTab === 'marketplace' && <MarketplaceTab />}
       {activeTab === 'community' && <CommunityTab />}
-      {activeTab === 'installed' && <InstalledSkillsTab />}
+      {activeTab === 'installed' && <InstalledSkillsTab onNavigateTab={setActiveTab} />}
     </div>
   );
 }
@@ -625,7 +628,43 @@ function MySkillsTab() {
 
 // ─── Installed Skills Tab ─────────────────────────────────────────────────────
 
-function InstalledSkillsTab() {
+/** Metadata for each skill source shown in the Installed tab. */
+const SOURCE_SECTIONS: {
+  key: string[];
+  label: string;
+  icon: React.ReactNode;
+  tabTarget?: string;
+  description: string;
+}[] = [
+  {
+    key: ['ai_learned', 'ai_proposed'],
+    label: 'AI Created',
+    icon: <Sparkles className="w-4 h-4 text-primary" />,
+    description: 'Skills learned or proposed by a personality during conversation.',
+  },
+  {
+    key: ['user'],
+    label: 'User Created',
+    icon: <Pencil className="w-4 h-4 text-muted-foreground" />,
+    description: 'Skills you created manually in the Personal tab.',
+  },
+  {
+    key: ['marketplace'],
+    label: 'Marketplace',
+    icon: <Store className="w-4 h-4 text-primary" />,
+    tabTarget: 'marketplace',
+    description: 'Skills installed from the built-in marketplace.',
+  },
+  {
+    key: ['community'],
+    label: 'Community',
+    icon: <GitBranch className="w-4 h-4 text-muted-foreground" />,
+    tabTarget: 'community',
+    description: 'Skills synced from the community repository.',
+  },
+];
+
+function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) => void }) {
   const queryClient = useQueryClient();
   const [filterPersonalityId, setFilterPersonalityId] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
@@ -642,20 +681,15 @@ function InstalledSkillsTab() {
 
   const personalities = personalitiesData?.personalities ?? [];
 
+  // All skills from every source are shown in Installed — not just marketplace/community.
   const allSkills = data?.skills ?? [];
-  const installedSkills = allSkills.filter(
-    (s) => s.source === 'marketplace' || s.source === 'community'
-  );
 
   const filteredSkills =
     filterPersonalityId === '__global__'
-      ? installedSkills.filter((s) => !s.personalityId)
+      ? allSkills.filter((s) => !s.personalityId)
       : filterPersonalityId
-        ? installedSkills.filter((s) => s.personalityId === filterPersonalityId)
-        : installedSkills;
-
-  const marketplaceSkills = filteredSkills.filter((s) => s.source === 'marketplace');
-  const communitySkills = filteredSkills.filter((s) => s.source === 'community');
+        ? allSkills.filter((s) => s.personalityId === filterPersonalityId)
+        : allSkills;
 
   const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['skills'] });
 
@@ -755,9 +789,9 @@ function InstalledSkillsTab() {
             </svg>
           </div>
         </div>
-        {installedSkills.length > 0 && (
+        {allSkills.length > 0 && (
           <span className="text-xs text-muted-foreground">
-            {filteredSkills.length} of {installedSkills.length} installed
+            {filteredSkills.length} of {allSkills.length} skills
           </span>
         )}
       </div>
@@ -766,49 +800,65 @@ function InstalledSkillsTab() {
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      ) : installedSkills.length === 0 ? (
-        <div className="card p-12 text-center space-y-2">
-          <Download className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-          <p className="text-muted-foreground font-medium">No installed skills</p>
-          <p className="text-xs text-muted-foreground">
-            Browse the Marketplace or Community tab to install skills.
+      ) : allSkills.length === 0 ? (
+        /* ── Empty state: show available source cards ──────────────────── */
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            No skills installed yet. Skills can come from any of these sources:
           </p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {SOURCE_SECTIONS.map((section) => (
+              <div
+                key={section.key[0]}
+                className={`card p-4 space-y-2 ${section.tabTarget ? 'cursor-pointer hover:border-primary/50 transition-colors' : ''}`}
+                onClick={
+                  section.tabTarget && onNavigateTab
+                    ? () => onNavigateTab(section.tabTarget as TabType)
+                    : undefined
+                }
+              >
+                <div className="flex items-center gap-2">
+                  {section.icon}
+                  <span className="font-medium text-sm">{section.label}</span>
+                  {section.tabTarget && (
+                    <ArrowRight className="w-3.5 h-3.5 text-muted-foreground ml-auto" />
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">{section.description}</p>
+              </div>
+            ))}
+          </div>
         </div>
       ) : filteredSkills.length === 0 ? (
         <div className="card p-8 text-center">
           <p className="text-sm text-muted-foreground">
-            No installed skills for the selected personality.
+            No skills for the selected filter.
           </p>
         </div>
       ) : (
+        /* ── Grouped by source ─────────────────────────────────────────── */
         <div className="space-y-8">
-          {marketplaceSkills.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 mb-3">
-                <Store className="w-4 h-4 text-primary" />
-                <h3 className="text-sm font-semibold">Marketplace</h3>
-                <span className="text-xs text-muted-foreground">({marketplaceSkills.length})</span>
-              </div>
-              <div className="space-y-2">{marketplaceSkills.map(renderSkill)}</div>
-            </section>
-          )}
-          {communitySkills.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 mb-3">
-                <GitBranch className="w-4 h-4 text-muted-foreground" />
-                <h3 className="text-sm font-semibold">Community</h3>
-                <span className="text-xs text-muted-foreground">({communitySkills.length})</span>
-              </div>
-              <div className="space-y-2">{communitySkills.map(renderSkill)}</div>
-            </section>
-          )}
+          {SOURCE_SECTIONS.map((section) => {
+            const sectionSkills = filteredSkills.filter((s) => section.key.includes(s.source));
+            if (sectionSkills.length === 0) return null;
+            return (
+              <section key={section.key[0]}>
+                <div className="flex items-center gap-2 mb-3">
+                  {section.icon}
+                  <h3 className="text-sm font-semibold">{section.label}</h3>
+                  <span className="text-xs text-muted-foreground">({sectionSkills.length})</span>
+                </div>
+                <div className="space-y-2">{sectionSkills.map(renderSkill)}</div>
+              </section>
+            );
+          })}
         </div>
       )}
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title="Remove Installed Skill"
-        message={`Remove "${deleteTarget?.name}"? This removes it from your active skills. You can reinstall it from the Marketplace or Community tab.`}
+        title="Remove Skill"
+        message={`Remove "${deleteTarget?.name}"? This cannot be undone.`}
         confirmLabel="Remove"
         destructive
         onConfirm={() => {
