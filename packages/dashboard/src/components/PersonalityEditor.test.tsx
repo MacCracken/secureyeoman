@@ -323,18 +323,22 @@ describe('PersonalityEditor', () => {
   });
 });
 
-// ── Resource Creation "Enable all" + A2A/Swarms policy gating ────────
+// ── Resources "Enable all" + A2A/Swarms policy gating ────────────────
+// Opens Body > Resources > Orchestration so both the "Enable all" toggle
+// (at the Resources level) and the Orchestration items are reachable.
 
-async function openResourceCreation(user: ReturnType<typeof userEvent.setup>) {
+async function openResourcesOrchestration(user: ReturnType<typeof userEvent.setup>) {
   const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
   await user.click(editBtn);
   const bodyHeader = await screen.findByText('Body - Endowments');
   await user.click(bodyHeader);
-  const rcHeader = await screen.findByText('Resource Creation');
-  await user.click(rcHeader);
+  const resourcesHeader = await screen.findByText('Resources');
+  await user.click(resourcesHeader);
+  const orchestrationHeader = await screen.findByText('Orchestration');
+  await user.click(orchestrationHeader);
 }
 
-describe('PersonalityEditor — Resource Creation "Enable all" A2A/Swarms gating', () => {
+describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () => {
   it('enables A2A when policy allows it and "Enable all" is clicked', async () => {
     mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
     mockFetchSecurityPolicy.mockResolvedValue({
@@ -358,13 +362,13 @@ describe('PersonalityEditor — Resource Creation "Enable all" A2A/Swarms gating
     });
     const user = userEvent.setup();
     renderComponent();
-    await openResourceCreation(user);
+    await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resource creation/i });
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resources/i });
     await user.click(enableAllToggle);
 
-    // Sub-agents must be enabled before A2A sub-toggle appears
-    const subAgentsToggle = await screen.findByRole('checkbox', { name: /new sub-agents/i });
+    // Sub-Agent Delegation must be enabled before A2A sub-toggle appears
+    const subAgentsToggle = await screen.findByRole('checkbox', { name: /sub-agent delegation/i });
     expect(subAgentsToggle).toBeChecked();
 
     // A2A Networks sub-toggle should now be checked
@@ -395,9 +399,9 @@ describe('PersonalityEditor — Resource Creation "Enable all" A2A/Swarms gating
     });
     const user = userEvent.setup();
     renderComponent();
-    await openResourceCreation(user);
+    await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resource creation/i });
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resources/i });
     await user.click(enableAllToggle);
 
     const swarmsToggle = await screen.findByRole('checkbox', { name: /agent swarms/i });
@@ -427,9 +431,9 @@ describe('PersonalityEditor — Resource Creation "Enable all" A2A/Swarms gating
     });
     const user = userEvent.setup();
     renderComponent();
-    await openResourceCreation(user);
+    await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resource creation/i });
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resources/i });
     await user.click(enableAllToggle);
 
     const a2aToggle = await screen.findByRole('checkbox', { name: /a2a networks/i });
@@ -459,9 +463,9 @@ describe('PersonalityEditor — Resource Creation "Enable all" A2A/Swarms gating
     });
     const user = userEvent.setup();
     renderComponent();
-    await openResourceCreation(user);
+    await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resource creation/i });
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resources/i });
     await user.click(enableAllToggle);
 
     const swarmsToggle = await screen.findByRole('checkbox', { name: /agent swarms/i });

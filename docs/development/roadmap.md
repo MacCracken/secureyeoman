@@ -35,7 +35,8 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 ### Improvements
 - [ ] YEOMAN MCP show QUICKBOOKS Skills
 - [ ] CLI updates for the added toolsets
-- [x] Personality editor Body section: replaced flat "Resource Creation" with two-level "Resources" section (Resource Creation + Orchestration sub-sections) — ADR 108
+- [x] Personality editor Body section: replaced flat "Resource Creation" with two-level "Resources" section (Creation + Orchestration sub-sections) — ADR 108
+- [x] Delegation managers (SubAgent/Swarm/Workflow) now bootstrap from persisted Security Settings, eliminating "Manager not available" errors when orchestration features are enabled via UI — ADR 109
 
 
 ---

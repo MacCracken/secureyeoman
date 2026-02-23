@@ -828,8 +828,19 @@ export class SecureYeoman {
       this.chatConversationStorage = new ConversationStorage();
       this.logger.debug('Conversation storage initialized');
 
-      // Step 6.11: Initialize sub-agent delegation (if enabled)
-      if (this.config.delegation?.enabled) {
+      // Step 6.11: Initialize sub-agent delegation.
+      // Boot the delegation chain when any of three conditions are true:
+      //   1. config.delegation.enabled is set in the YAML/env config, OR
+      //   2. The persisted security policy (loaded from DB at Step 2.2) has
+      //      allowSubAgents, allowSwarms, or allowWorkflows enabled — meaning
+      //      the operator turned these on via Security Settings and expects
+      //      the infrastructure to be running.
+      const delegationNeeded =
+        this.config.delegation?.enabled ||
+        this.config.security?.allowSubAgents ||
+        this.config.security?.allowSwarms ||
+        this.config.security?.allowWorkflows;
+      if (delegationNeeded) {
         try {
           this.subAgentStorage = new SubAgentStorage();
           this.subAgentManager = new SubAgentManager(this.config.delegation, {
