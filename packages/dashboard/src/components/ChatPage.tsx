@@ -35,7 +35,8 @@ import {
 import { ModelWidget } from './ModelWidget';
 import { VoiceToggle } from './VoiceToggle';
 import { VoiceOverlay } from './VoiceOverlay';
-import { useChat } from '../hooks/useChat';
+import { useChatStream } from '../hooks/useChat';
+import { ThinkingBlock } from './ThinkingBlock';
 import { useVoice } from '../hooks/useVoice';
 import { usePushToTalk } from '../hooks/usePushToTalk';
 import type { Personality, BrainContext, Conversation, CreationEvent } from '../types';
@@ -104,11 +105,13 @@ export function ChatPage() {
     input,
     setInput,
     handleSend,
-    resendFrom,
     isPending,
     clearMessages,
     conversationId,
-  } = useChat({
+    streamingThinking,
+    streamingContent,
+    activeToolCalls,
+  } = useChatStream({
       personalityId: effectivePersonalityId,
       conversationId: selectedConversationId,
       memoryEnabled,
@@ -267,15 +270,11 @@ export function ChatPage() {
     setInput('');
   }, [setInput]);
 
-  /** Unified send: routes to resendFrom when editing, otherwise normal send. */
+  /** Unified send: clears edit state and sends via streaming hook. */
   const doSend = useCallback(() => {
-    if (editingMsgIdx !== null) {
-      resendFrom(editingMsgIdx, input);
-      setEditingMsgIdx(null);
-    } else {
-      handleSend();
-    }
-  }, [editingMsgIdx, input, resendFrom, handleSend]);
+    setEditingMsgIdx(null);
+    handleSend();
+  }, [handleSend]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -688,6 +687,11 @@ export function ChatPage() {
                         </div>
                       )}
 
+                      {/* Thinking block for historical assistant messages */}
+                      {msg.role === 'assistant' && msg.thinkingContent && (
+                        <ThinkingBlock thinking={msg.thinkingContent} />
+                      )}
+
                       {msg.role === 'assistant' ? (
                         <ChatMarkdown content={sanitizeText(msg.content)} size="sm" />
                       ) : (
@@ -789,31 +793,48 @@ export function ChatPage() {
                 );
               })}
 
-              {/* Thinking indicator */}
+              {/* Live streaming response */}
               {isPending && (
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-lg px-4 py-3 max-w-[90%] sm:max-w-[75%] break-words">
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mb-1">
                       <Bot className="w-3 h-3" />
                       <span className="text-xs opacity-70">{personality?.name ?? 'Assistant'}</span>
                     </div>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span className="text-xs text-muted-foreground animate-pulse">Thinking</span>
-                      <div className="flex gap-1">
-                        <span
-                          className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
-                          style={{ animationDelay: '0ms' }}
-                        />
-                        <span
-                          className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
-                          style={{ animationDelay: '150ms' }}
-                        />
-                        <span
-                          className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce"
-                          style={{ animationDelay: '300ms' }}
-                        />
+
+                    {/* Live thinking block */}
+                    {streamingThinking && (
+                      <ThinkingBlock thinking={streamingThinking} live={true} />
+                    )}
+
+                    {/* Active tool call badges */}
+                    {activeToolCalls.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {activeToolCalls.map((tc) => (
+                          <span
+                            key={tc.toolName}
+                            className="inline-flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full animate-pulse"
+                          >
+                            <Sparkles className="w-2.5 h-2.5" />
+                            {tc.isMcp ? `${tc.serverName}: ${tc.toolName}` : tc.label}
+                          </span>
+                        ))}
                       </div>
-                    </div>
+                    )}
+
+                    {/* Live content stream */}
+                    {streamingContent ? (
+                      <div className="text-sm whitespace-pre-wrap">{streamingContent}</div>
+                    ) : !streamingThinking && activeToolCalls.length === 0 && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <span className="text-xs text-muted-foreground animate-pulse">Thinking</span>
+                        <div className="flex gap-1">
+                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

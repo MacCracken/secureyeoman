@@ -332,6 +332,7 @@ export class ModelRouter {
       outputTokens: Math.ceil(outputTokens),
       cachedTokens: 0,
       totalTokens: Math.ceil(inputTokens + outputTokens),
+      thinkingTokens: 0,
     });
   }
 
@@ -343,6 +344,7 @@ export class ModelRouter {
       outputTokens,
       cachedTokens: 0,
       totalTokens: inputTokens + outputTokens,
+      thinkingTokens: 0,
     });
   }
 

@@ -165,6 +165,7 @@ export class MessageRouter {
         const metadata: Record<string, unknown> = {
           taskId: task.id,
           replyToMessageId: message.platformMessageId,
+          thinkingContent: (task.result as any)?.thinkingContent,
         };
 
         // Synthesize TTS audio if multimodal manager is available

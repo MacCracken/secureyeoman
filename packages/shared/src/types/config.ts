@@ -191,6 +191,10 @@ const RateLimitingConfigSchema = z
     enabled: z.boolean().default(true),
     defaultWindowMs: z.number().int().positive().max(3600000).default(60000),
     defaultMaxRequests: z.number().int().positive().max(10000).default(100),
+    /** Max login attempts per IP within the login window (default: 5). Set higher in dev. */
+    authLoginMaxAttempts: z.number().int().positive().max(1000).default(5),
+    /** Login rate-limit window in ms (default: 900000 = 15 min). */
+    authLoginWindowMs: z.number().int().positive().max(86400000).default(900000),
     redisUrl: z.string().url().optional(),
     redisPrefix: z.string().max(64).default('secureyeoman:rl').optional(),
   })

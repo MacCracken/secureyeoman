@@ -136,6 +136,7 @@ const MOCK_PERSONALITY = {
   },
   createdAt: Date.now(),
   updatedAt: Date.now(),
+  deletionProtected: false,
 };
 
 const DEFAULT_SKILL = {

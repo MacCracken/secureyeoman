@@ -195,6 +195,10 @@ export interface Personality {
       daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
       timezone?: string;
     };
+    thinkingConfig?: {
+      enabled?: boolean;
+      budgetTokens?: number;
+    };
   };
   createdAt: number;
   updatedAt: number;
@@ -211,6 +215,7 @@ export interface PersonalityCreate {
   defaultModel?: DefaultModel | null;
   modelFallbacks?: { provider: string; model: string }[];
   includeArchetypes?: boolean;
+  deletionProtected?: boolean;
   body?: {
     enabled?: boolean;
     capabilities?: string[];
@@ -259,6 +264,10 @@ export interface PersonalityCreate {
       end?: string;
       daysOfWeek?: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
       timezone?: string;
+    };
+    thinkingConfig?: {
+      enabled?: boolean;
+      budgetTokens?: number;
     };
   };
 }
@@ -502,6 +511,7 @@ export interface ChatMessage {
   tokensUsed?: number;
   brainContext?: BrainContext;
   creationEvents?: CreationEvent[];
+  thinkingContent?: string;
 }
 
 export interface ChatResponse {
@@ -513,6 +523,7 @@ export interface ChatResponse {
   brainContext?: BrainContext;
   conversationId?: string;
   creationEvents?: CreationEvent[];
+  thinkingContent?: string;
 }
 
 // ─── Code Session Types ─────────────────────────────────────

@@ -94,6 +94,7 @@ interface ChatMessage {
   role: 'user' | 'assistant' | 'system' | 'error';
   content: string;
   timestamp: string;
+  thinkingContent?: string;
 }
 
 // ── Status data ───────────────────────────────────────────────────────────────
@@ -281,6 +282,19 @@ class TuiRenderer {
             : 'System';
 
     lines.push(`${roleColor}${A.bold}${roleLabel}${A.reset}${A.dim}  ${msg.timestamp}${A.reset}`);
+
+    // Render thinking box for assistant messages
+    if (msg.thinkingContent && msg.role === 'assistant') {
+      const words = msg.thinkingContent.trim().split(/\s+/).filter(Boolean).length;
+      const border = '─'.repeat(Math.min(maxWidth - 4, 40));
+      lines.push(`${A.dim}┌─ Thinking (${words} words) ─${border.slice(0, Math.max(0, maxWidth - 22 - String(words).length))}┐${A.reset}`);
+      const thinkLines = msg.thinkingContent.split('\n').slice(0, 6);
+      for (const tl of thinkLines) {
+        const truncated = tl.length > maxWidth - 4 ? tl.slice(0, maxWidth - 5) + '…' : tl;
+        lines.push(`${A.dim}│ ${truncated}${A.reset}`);
+      }
+      lines.push(`${A.dim}└${'─'.repeat(Math.min(maxWidth - 2, 44))}┘${A.reset}`);
+    }
 
     // Word-wrap content
     const words = msg.content.split('\n');
@@ -485,41 +499,80 @@ Options:
       }
     };
 
-    // ── Chat send ─────────────────────────────────────────────────────────────
+    // ── Chat send (streaming) ─────────────────────────────────────────────────
 
     const sendChat = async (message: string): Promise<void> => {
       renderer.addMessage({ role: 'user', content: message, timestamp: now() });
       renderer.setThinking(true);
       renderer.render();
 
+      let thinkingAcc = '';
+      let contentAcc = '';
+
       try {
         const body: Record<string, unknown> = { message };
         if (conversationId) body.conversationId = conversationId;
 
-        const res = await apiCall(baseUrl, '/api/v1/chat', {
+        const res = await fetch(`${baseUrl}/api/v1/chat/stream`, {
           method: 'POST',
-          body,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
         });
 
-        renderer.setThinking(false);
-
-        if (!res?.ok) {
-          renderer.addMessage({
-            role: 'error',
-            content: `Request failed: ${JSON.stringify(res?.data ?? 'No response')}`,
-            timestamp: now(),
-          });
+        if (!res.ok || !res.body) {
+          renderer.setThinking(false);
+          renderer.addMessage({ role: 'error', content: `Request failed: ${res.status}`, timestamp: now() });
           return;
         }
 
-        const data = res.data as Record<string, unknown>;
-        if (data.conversationId) conversationId = data.conversationId as string;
+        const reader = res.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
 
-        renderer.addMessage({
-          role: 'assistant',
-          content: (data.content as string) ?? '',
-          timestamp: now(),
-        });
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buf += decoder.decode(value, { stream: true });
+          const lines = buf.split('\n');
+          buf = lines.pop() ?? '';
+
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const json = line.slice(6).trim();
+            if (!json) continue;
+            let event: Record<string, unknown>;
+            try { event = JSON.parse(json); } catch { continue; }
+
+            const type = event.type as string;
+            if (type === 'thinking_delta') {
+              thinkingAcc += event.thinking as string;
+            } else if (type === 'content_delta') {
+              contentAcc += event.content as string;
+              renderer.setThinking(false);
+            } else if (type === 'tool_start' || type === 'mcp_tool_start') {
+              const label = type === 'mcp_tool_start'
+                ? `${event.serverName as string}: ${event.toolName as string}`
+                : (event.label as string) ?? (event.toolName as string);
+              renderer.addMessage({ role: 'system', content: `  ⚙ Using ${label}…`, timestamp: now() });
+              renderer.render();
+            } else if (type === 'done') {
+              const data = event as Record<string, unknown>;
+              if (data.conversationId) conversationId = data.conversationId as string;
+              renderer.setThinking(false);
+              renderer.addMessage({
+                role: 'assistant',
+                content: (data.content as string) ?? contentAcc,
+                timestamp: now(),
+                thinkingContent: thinkingAcc || undefined,
+              });
+              renderer.render();
+            } else if (type === 'error') {
+              renderer.setThinking(false);
+              renderer.addMessage({ role: 'error', content: `Error: ${event.message as string}`, timestamp: now() });
+              renderer.render();
+            }
+          }
+        }
       } catch (err) {
         renderer.setThinking(false);
         renderer.addMessage({ role: 'error', content: String(err), timestamp: now() });

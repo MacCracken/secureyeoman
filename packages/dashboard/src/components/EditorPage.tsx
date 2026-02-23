@@ -38,7 +38,8 @@ import {
   fetchExecutionConfig,
   fetchSecurityPolicy,
 } from '../api/client';
-import { useChat } from '../hooks/useChat';
+import { useChatStream } from '../hooks/useChat';
+import { ThinkingBlock } from './ThinkingBlock';
 import { useVoice } from '../hooks/useVoice';
 import { usePushToTalk } from '../hooks/usePushToTalk';
 import { useTheme } from '../hooks/useTheme';
@@ -503,7 +504,10 @@ export function EditorPage() {
   const effectivePersonalityId = selectedPersonalityId ?? activePersonality?.id ?? null;
   const currentPersonality = personalities.find((p) => p.id === effectivePersonalityId);
 
-  const { messages, input, setInput, handleSend, isPending } = useChat({
+  const {
+    messages, input, setInput, handleSend, isPending,
+    streamingThinking, streamingContent, activeToolCalls,
+  } = useChatStream({
     personalityId: effectivePersonalityId,
   });
   const voice = useVoice();
@@ -1130,6 +1134,11 @@ export function EditorPage() {
                         {msg.role === 'user' ? 'You' : (currentPersonality?.name ?? 'Assistant')}
                       </span>
                     </div>
+                    {/* Thinking block for historical messages */}
+                    {msg.role === 'assistant' && msg.thinkingContent && (
+                      <ThinkingBlock thinking={msg.thinkingContent} />
+                    )}
+
                     {msg.role === 'assistant' ? (
                       <ChatMarkdown content={sanitizeText(msg.content)} size="xs" />
                     ) : (
@@ -1172,35 +1181,47 @@ export function EditorPage() {
                 </div>
               ))}
 
-              {/* Thinking indicator */}
+              {/* Live streaming response */}
               {isPending && (
                 <div className="flex justify-start">
                   <div className="bg-muted rounded-lg px-3 py-2">
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 mb-1">
                       <Bot className="w-3 h-3" />
                       <span className="text-[10px] opacity-70">
                         {currentPersonality?.name ?? 'Assistant'}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 mt-1.5">
-                      <span className="text-[10px] text-muted-foreground animate-pulse">
-                        Thinking
-                      </span>
-                      <div className="flex gap-1">
-                        <span
-                          className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
-                          style={{ animationDelay: '0ms' }}
-                        />
-                        <span
-                          className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
-                          style={{ animationDelay: '150ms' }}
-                        />
-                        <span
-                          className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce"
-                          style={{ animationDelay: '300ms' }}
-                        />
+
+                    {/* Live thinking */}
+                    {streamingThinking && (
+                      <ThinkingBlock thinking={streamingThinking} live={true} />
+                    )}
+
+                    {/* Active tool calls */}
+                    {activeToolCalls.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-1">
+                        {activeToolCalls.map((tc) => (
+                          <span key={tc.toolName} className="inline-flex items-center gap-0.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full animate-pulse">
+                            <Sparkles className="w-2 h-2" />
+                            {tc.isMcp ? `${tc.serverName}: ${tc.toolName}` : tc.label}
+                          </span>
+                        ))}
                       </div>
-                    </div>
+                    )}
+
+                    {/* Live content */}
+                    {streamingContent ? (
+                      <p className="text-xs whitespace-pre-wrap">{streamingContent}</p>
+                    ) : !streamingThinking && activeToolCalls.length === 0 && (
+                      <div className="flex items-center gap-1.5 mt-1.5">
+                        <span className="text-[10px] text-muted-foreground animate-pulse">Thinking</span>
+                        <div className="flex gap-1">
+                          <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                          <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                          <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

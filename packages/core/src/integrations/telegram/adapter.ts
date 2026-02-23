@@ -302,9 +302,16 @@ export class TelegramIntegration implements Integration {
       }
     }
 
+    // Prepend thinking content if available
+    let outText = text;
+    if (metadata?.thinkingContent && typeof metadata.thinkingContent === 'string') {
+      const thinking = metadata.thinkingContent.slice(0, 1000);
+      outText = `<i>🧠 Thinking…</i>\n<blockquote expandable>${thinking}</blockquote>\n\n${text}`;
+    }
+
     const replyMarkup = metadata?.replyMarkup;
-    const sent = await this.bot.api.sendMessage(Number(chatId), text, {
-      parse_mode: 'Markdown',
+    const sent = await this.bot.api.sendMessage(Number(chatId), outText, {
+      parse_mode: metadata?.thinkingContent ? 'HTML' : 'Markdown',
       ...(replyMarkup !== undefined ? { reply_markup: replyMarkup as any } : {}),
     });
     return String(sent.message_id);

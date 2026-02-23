@@ -1980,6 +1980,67 @@ Send a message to a personality and receive an AI response. When `personalityId`
 }
 ```
 
+#### POST /api/v1/chat/stream
+
+Stream a chat response in real time using Server-Sent Events (SSE). The response is a `text/event-stream` where each event is a JSON-encoded `ChatStreamEvent`. The full agentic loop (AI reasoning, tool calls, re-reasoning) runs inside the stream, emitting progress events as each step completes rather than waiting for the entire chain to finish.
+
+**Required Permissions**: Authenticated
+
+**Request Body** (same shape as `POST /api/v1/chat`)
+
+```json
+{
+  "message": "Research the top 3 open-source vector databases and create a comparison task.",
+  "personalityId": "p-custom-id",
+  "history": [
+    { "role": "user", "content": "Previous message" },
+    { "role": "assistant", "content": "Previous response" }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `message` | string | Yes | The user message |
+| `personalityId` | string | No | Target personality ID (falls back to active) |
+| `history` | array | No | Previous conversation messages (including any `thinkingBlocks` for Anthropic round-tripping) |
+
+**Response**: `text/event-stream`
+
+Each line is `data: <JSON>\n\n` where JSON is one of the following event types:
+
+| Event type | Fields | Description |
+|---|---|---|
+| `thinking_delta` | `thinking: string` | Incremental thinking text while the model reasons (Anthropic extended thinking only) |
+| `content_delta` | `content: string` | Incremental assistant response text |
+| `tool_start` | `toolName: string`, `label: string`, `iteration: number` | AI is about to execute a creation tool |
+| `tool_result` | `toolName: string`, `success: boolean`, `isError: boolean` | Creation tool execution completed |
+| `mcp_tool_start` | `toolName: string`, `serverName: string`, `iteration: number` | AI is about to execute an MCP tool |
+| `mcp_tool_result` | `toolName: string`, `serverName: string`, `success: boolean` | MCP tool execution completed |
+| `creation_event` | `event: { tool, label, action, name, id? }` | A resource was created, updated, or deleted |
+| `done` | `content: string`, `model: string`, `provider: string`, `tokensUsed?: number`, `thinkingContent?: string`, `creationEvents: CreationEvent[]` | Stream complete; carries the full final response |
+| `error` | `message: string` | An unhandled error occurred; the stream will close after this event |
+
+**Example**
+
+```bash
+curl -N -X POST http://localhost:18789/api/v1/chat/stream \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{"message": "Create a skill that summarises Slack threads"}' \
+  --no-buffer
+
+# Sample output (one JSON object per data: line):
+# data: {"type":"thinking_delta","thinking":"The user wants a new skill. I should use create_skill..."}
+# data: {"type":"content_delta","content":"I'll create that skill for you."}
+# data: {"type":"tool_start","toolName":"create_skill","label":"Skill","iteration":1}
+# data: {"type":"creation_event","event":{"tool":"create_skill","label":"Skill","action":"Created","name":"Slack Thread Summariser","id":"skill-abc123"}}
+# data: {"type":"tool_result","toolName":"create_skill","success":true,"isError":false}
+# data: {"type":"done","content":"Done! I've created the 'Slack Thread Summariser' skill.","model":"claude-opus-4-6","provider":"anthropic","tokensUsed":1842,"thinkingContent":"The user wants a new skill...","creationEvents":[{"tool":"create_skill","label":"Skill","action":"Created","name":"Slack Thread Summariser","id":"skill-abc123"}]}
+```
+
+---
+
 #### POST /api/v1/chat/feedback
 
 Submit feedback on an assistant message for adaptive learning.

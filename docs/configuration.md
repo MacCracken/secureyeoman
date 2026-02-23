@@ -97,6 +97,9 @@ security:
     enabled: true
     defaultWindowMs: 60000       # max 3600000 (1 hour)
     defaultMaxRequests: 100      # max 10000
+    # Login-specific rate limit — applied per source IP on POST /auth/login
+    authLoginMaxAttempts: 5      # max attempts before IP is blocked (default: 5)
+    authLoginWindowMs: 900000    # sliding window in ms (default: 900000 = 15 min)
     redisUrl: redis://localhost:6379  # optional — enables distributed rate limiting
     redisPrefix: secureyeoman:rl       # optional — Redis key prefix (max 64 chars)
 
@@ -1017,6 +1020,8 @@ All security-sensitive values are referenced by environment variable name in the
 | `SECUREYEOMAN_PORT` | No | Gateway port override |
 | `SECUREYEOMAN_HOST` | No | Gateway host override |
 | `SECUREYEOMAN_LOG_LEVEL` | No | Log level override |
+| `SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS` | No | Max login attempts per IP before lockout (default: `5`) |
+| `SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS` | No | Login rate-limit window in ms (default: `900000` = 15 min) |
 | `NODE_ENV` | No | Node environment (`development`, `production`) |
 | `MCP_ENABLED` | No | Enable the MCP service (default: `true`) |
 | `MCP_PORT` | No | MCP service port (default: `3001`) |

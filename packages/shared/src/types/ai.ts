@@ -18,6 +18,7 @@ export const TokenUsageSchema = z.object({
   outputTokens: z.number().int().nonnegative(),
   cachedTokens: z.number().int().nonnegative().default(0),
   totalTokens: z.number().int().nonnegative(),
+  thinkingTokens: z.number().int().nonnegative().optional(),
 });
 
 export type TokenUsage = z.infer<typeof TokenUsageSchema>;
@@ -61,6 +62,27 @@ export const ToolResultSchema = z.object({
 
 export type ToolResult = z.infer<typeof ToolResultSchema>;
 
+// ─── Thinking ─────────────────────────────────────────────────
+
+export const ThinkingBlockSchema = z.object({
+  thinking: z.string(),
+  signature: z.string(),
+});
+
+export type ThinkingBlock = z.infer<typeof ThinkingBlockSchema>;
+
+// ─── Creation Events ──────────────────────────────────────────
+
+export const CreationEventSchema = z.object({
+  tool: z.string(),
+  label: z.string(),
+  action: z.string(),
+  name: z.string(),
+  id: z.string().optional(),
+});
+
+export type CreationEvent = z.infer<typeof CreationEventSchema>;
+
 // ─── Messages ─────────────────────────────────────────────────
 
 export const AIMessageRoleSchema = z.enum(['system', 'user', 'assistant', 'tool']);
@@ -71,6 +93,7 @@ export const AIMessageSchema = z.object({
   content: z.string().optional(),
   toolCalls: z.array(ToolCallSchema).optional(),
   toolResult: ToolResultSchema.optional(),
+  thinkingBlocks: z.array(ThinkingBlockSchema).optional(),
 });
 
 export type AIMessage = z.infer<typeof AIMessageSchema>;
@@ -85,6 +108,7 @@ export const AIRequestSchema = z.object({
   stream: z.boolean().default(false),
   stopSequences: z.array(z.string()).optional(),
   model: z.string().optional(),
+  thinkingBudgetTokens: z.number().int().min(1024).optional(),
 });
 
 export type AIRequest = z.infer<typeof AIRequestSchema>;
@@ -109,6 +133,8 @@ export const AIResponseSchema = z.object({
   stopReason: StopReasonSchema,
   model: z.string(),
   provider: z.string(),
+  thinkingContent: z.string().optional(),
+  thinkingBlocks: z.array(ThinkingBlockSchema).optional(),
 });
 
 export type AIResponse = z.infer<typeof AIResponseSchema>;
@@ -116,6 +142,10 @@ export type AIResponse = z.infer<typeof AIResponseSchema>;
 // ─── Streaming ────────────────────────────────────────────────
 
 export const AIStreamChunkSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('thinking_delta'),
+    thinking: z.string(),
+  }),
   z.object({
     type: z.literal('content_delta'),
     content: z.string(),
@@ -135,10 +165,56 @@ export const AIStreamChunkSchema = z.discriminatedUnion('type', [
     type: z.literal('done'),
     stopReason: StopReasonSchema,
     usage: TokenUsageSchema.optional(),
+    toolCalls: z.array(ToolCallSchema).optional(),
+    thinkingBlocks: z.array(ThinkingBlockSchema).optional(),
   }),
 ]);
 
 export type AIStreamChunk = z.infer<typeof AIStreamChunkSchema>;
+
+// ─── Chat Stream Events (SSE) ──────────────────────────────────
+
+export const ChatStreamEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('thinking_delta'), thinking: z.string() }),
+  z.object({ type: z.literal('content_delta'), content: z.string() }),
+  z.object({
+    type: z.literal('tool_start'),
+    toolName: z.string(),
+    label: z.string(),
+    iteration: z.number(),
+  }),
+  z.object({
+    type: z.literal('tool_result'),
+    toolName: z.string(),
+    success: z.boolean(),
+    isError: z.boolean(),
+  }),
+  z.object({
+    type: z.literal('mcp_tool_start'),
+    toolName: z.string(),
+    serverName: z.string(),
+    iteration: z.number(),
+  }),
+  z.object({
+    type: z.literal('mcp_tool_result'),
+    toolName: z.string(),
+    serverName: z.string(),
+    success: z.boolean(),
+  }),
+  z.object({ type: z.literal('creation_event'), event: CreationEventSchema }),
+  z.object({
+    type: z.literal('done'),
+    content: z.string(),
+    model: z.string(),
+    provider: z.string(),
+    tokensUsed: z.number().optional(),
+    thinkingContent: z.string().optional(),
+    creationEvents: z.array(CreationEventSchema),
+  }),
+  z.object({ type: z.literal('error'), message: z.string() }),
+]);
+
+export type ChatStreamEvent = z.infer<typeof ChatStreamEventSchema>;
 
 // ─── Provider Enum ────────────────────────────────────────────
 

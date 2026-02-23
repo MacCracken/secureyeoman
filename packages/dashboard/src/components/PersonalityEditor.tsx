@@ -423,6 +423,8 @@ function BrainSection({
   personalityId,
   activeHours,
   onActiveHoursChange,
+  thinkingConfig,
+  onThinkingConfigChange,
 }: {
   personalityId: string | null;
   activeHours: {
@@ -439,6 +441,8 @@ function BrainSection({
     daysOfWeek: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
     timezone: string;
   }) => void;
+  thinkingConfig: { enabled: boolean; budgetTokens: number };
+  onThinkingConfigChange: (config: { enabled: boolean; budgetTokens: number }) => void;
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -992,6 +996,49 @@ function BrainSection({
                   <option value="Europe/Berlin">Europe/Berlin (CET)</option>
                   <option value="Asia/Tokyo">Asia/Tokyo (JST)</option>
                 </select>
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
+      {/* Thinking config */}
+      <CollapsibleSection title="Extended Thinking" defaultOpen={false}>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Lets the model reason before responding. Anthropic only. Higher budgets = more thorough
+            reasoning but more tokens.
+          </p>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={thinkingConfig.enabled}
+              onChange={(e) => {
+                onThinkingConfigChange({ ...thinkingConfig, enabled: e.target.checked });
+              }}
+              className="rounded border-muted-foreground"
+            />
+            <span className="text-sm">Enable extended thinking</span>
+          </label>
+          {thinkingConfig.enabled && (
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground block">
+                Token budget: {thinkingConfig.budgetTokens.toLocaleString()} tokens
+              </label>
+              <input
+                type="range"
+                min={1024}
+                max={32000}
+                step={256}
+                value={thinkingConfig.budgetTokens}
+                onChange={(e) => {
+                  onThinkingConfigChange({ ...thinkingConfig, budgetTokens: Number(e.target.value) });
+                }}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>1,024</span>
+                <span>32,000</span>
               </div>
             </div>
           )}
@@ -2273,6 +2320,8 @@ export function PersonalityEditor() {
     timezone: 'UTC',
   });
 
+  const [thinkingConfig, setThinkingConfig] = useState({ enabled: false, budgetTokens: 10000 });
+
   // Collaborative editing — active when an existing personality is open for editing
   const collabDocId = editing && editing !== 'new' ? `personality:${editing}` : null;
   const {
@@ -2442,6 +2491,10 @@ export function PersonalityEditor() {
       daysOfWeek: body.activeHours?.daysOfWeek ?? ['mon', 'tue', 'wed', 'thu', 'fri'],
       timezone: body.activeHours?.timezone ?? 'UTC',
     });
+    setThinkingConfig({
+      enabled: body.thinkingConfig?.enabled ?? false,
+      budgetTokens: body.thinkingConfig?.budgetTokens ?? 10000,
+    });
     setSetActiveOnSave(false);
     setEditing(p.id);
   };
@@ -2524,6 +2577,7 @@ export function PersonalityEditor() {
       daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
       timezone: 'UTC',
     });
+    setThinkingConfig({ enabled: false, budgetTokens: 10000 });
     setSetActiveOnSave(false);
     setEditing('new');
   };
@@ -2545,6 +2599,7 @@ export function PersonalityEditor() {
         mcpFeatures,
         proactiveConfig,
         activeHours,
+        thinkingConfig,
       },
     };
     if (editing === 'new') {
@@ -2963,6 +3018,8 @@ export function PersonalityEditor() {
             personalityId={editing !== 'new' ? editing : null}
             activeHours={activeHours}
             onActiveHoursChange={setActiveHours}
+            thinkingConfig={thinkingConfig}
+            onThinkingConfigChange={setThinkingConfig}
           />
 
           {/* Body Section */}

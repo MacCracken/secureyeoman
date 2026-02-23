@@ -324,7 +324,14 @@ export class DiscordIntegration implements Integration {
       throw new Error(`Channel ${targetChannelId} not found or not a text channel`);
     }
 
-    const embed = new EmbedBuilder().setDescription(text).setColor(0x5865f2).setTimestamp();
+    // Prepend thinking content to embed description if available
+    let embedDescription = text;
+    if (metadata?.thinkingContent && typeof metadata.thinkingContent === 'string') {
+      const thinking = metadata.thinkingContent.slice(0, 300);
+      embedDescription = `> 🧠 **Thinking**\n> ||${thinking}||\n\n${text}`;
+    }
+
+    const embed = new EmbedBuilder().setDescription(embedDescription).setColor(0x5865f2).setTimestamp();
 
     const sendOpts: Record<string, unknown> = { embeds: [embed] };
 

@@ -16,6 +16,7 @@ import type {
   TokenUsage,
   Tool,
   AIProviderName,
+  ThinkingBlock,
 } from '@secureyeoman/shared';
 import { BaseProvider, type ProviderConfig } from './base.js';
 import {
@@ -69,6 +70,12 @@ export class AnthropicProvider extends BaseProvider {
     }
   }
 
+  protected override resolveTemperature(request: AIRequest): number {
+    // Anthropic requires temperature === 1 when extended thinking is enabled
+    if (request.thinkingBudgetTokens) return 1;
+    return request.temperature ?? this.modelConfig.temperature;
+  }
+
   protected async doChat(request: AIRequest): Promise<AIResponse> {
     try {
       const { system, messages } = this.mapMessages(request.messages);
@@ -82,6 +89,9 @@ export class AnthropicProvider extends BaseProvider {
         ...(system ? { system } : {}),
         ...(request.tools?.length ? { tools: this.mapTools(request.tools) } : {}),
         ...(request.stopSequences?.length ? { stop_sequences: request.stopSequences } : {}),
+        ...(request.thinkingBudgetTokens
+          ? { thinking: { type: 'enabled' as const, budget_tokens: request.thinkingBudgetTokens } }
+          : {}),
       };
 
       const response = await this.client.messages.create(params);
@@ -105,6 +115,9 @@ export class AnthropicProvider extends BaseProvider {
       ...(system ? { system } : {}),
       ...(request.tools?.length ? { tools: this.mapTools(request.tools) } : {}),
       ...(request.stopSequences?.length ? { stop_sequences: request.stopSequences } : {}),
+      ...(request.thinkingBudgetTokens
+        ? { thinking: { type: 'enabled' as const, budget_tokens: request.thinkingBudgetTokens } }
+        : {}),
     };
 
     try {
@@ -113,36 +126,69 @@ export class AnthropicProvider extends BaseProvider {
       let currentToolId = '';
       let currentToolName = '';
       let currentToolArgs = '';
+      let inThinkingBlock = false;
 
       for await (const event of stream) {
-        if (event.type === 'content_block_delta') {
-          const delta = event.delta;
-          if ('text' in delta && delta.type === 'text_delta') {
-            yield { type: 'content_delta', content: delta.text };
-          } else if ('partial_json' in delta && delta.type === 'input_json_delta') {
-            currentToolArgs += delta.partial_json;
+        if (event.type === 'content_block_start') {
+          const block = event.content_block as unknown as Record<string, unknown>;
+          if (block['type'] === 'tool_use') {
+            currentToolId = block['id'] as string;
+            currentToolName = block['name'] as string;
+            currentToolArgs = '';
+            inThinkingBlock = false;
+          } else if (block['type'] === 'thinking') {
+            inThinkingBlock = true;
+          } else {
+            inThinkingBlock = false;
+          }
+        } else if (event.type === 'content_block_delta') {
+          const delta = event.delta as unknown as Record<string, unknown>;
+          if (delta['type'] === 'thinking_delta') {
+            yield { type: 'thinking_delta', thinking: (delta['thinking'] as string) ?? '' };
+          } else if (delta['type'] === 'text_delta') {
+            inThinkingBlock = false;
+            yield { type: 'content_delta', content: (delta['text'] as string) ?? '' };
+          } else if (delta['type'] === 'input_json_delta') {
+            currentToolArgs += (delta['partial_json'] as string) ?? '';
             yield {
               type: 'tool_call_delta',
               toolCall: { id: currentToolId, name: currentToolName },
             };
           }
-        } else if (event.type === 'content_block_start') {
-          const block = event.content_block;
-          if (block.type === 'tool_use') {
-            currentToolId = block.id;
-            currentToolName = block.name;
-            currentToolArgs = '';
-          }
+        } else if (event.type === 'content_block_stop') {
+          inThinkingBlock = false;
         } else if (event.type === 'message_delta') {
           const finalMessage = await stream.finalMessage();
           const usage = this.mapUsage(finalMessage.usage);
+
+          // Extract complete tool calls and thinking blocks from the final message
+          const doneToolCalls: ToolCall[] = [];
+          const doneThinkingBlocks: ThinkingBlock[] = [];
+          for (const rawFinalBlock of finalMessage.content) {
+            const fb = rawFinalBlock as unknown as Record<string, unknown>;
+            if (fb['type'] === 'tool_use') {
+              doneToolCalls.push({
+                id: fb['id'] as string,
+                name: fb['name'] as string,
+                arguments: fb['input'] as Record<string, unknown>,
+              });
+            } else if (fb['type'] === 'thinking') {
+              const thinking = fb['thinking'] as string;
+              const signature = (fb['signature'] as string | undefined) ?? '';
+              doneThinkingBlocks.push({ thinking, signature });
+            }
+          }
+
           yield {
             type: 'done',
             stopReason: this.mapStopReason(finalMessage.stop_reason),
             usage,
+            ...(doneToolCalls.length > 0 ? { toolCalls: doneToolCalls } : {}),
+            ...(doneThinkingBlocks.length > 0 ? { thinkingBlocks: doneThinkingBlocks } : {}),
           };
         }
       }
+      void inThinkingBlock; // suppress unused warning
     } catch (error) {
       throw this.mapError(error);
     }
@@ -178,19 +224,28 @@ export class AnthropicProvider extends BaseProvider {
         continue;
       }
 
-      if (msg.role === 'assistant' && msg.toolCalls?.length) {
-        const content: Anthropic.ContentBlock[] = [];
-        if (msg.content) {
-          content.push({ type: 'text', text: msg.content });
-        }
-        for (const tc of msg.toolCalls) {
-          content.push({
-            type: 'tool_use',
-            id: tc.id,
-            name: tc.name,
-            input: tc.arguments,
-          });
-        }
+      if (msg.role === 'assistant' && (msg.toolCalls?.length || msg.thinkingBlocks?.length)) {
+        // Anthropic requires thinking blocks BEFORE text and tool_use blocks
+        const content: Anthropic.ContentBlock[] = [
+          ...(msg.thinkingBlocks ?? []).map(
+            (tb) =>
+              ({
+                type: 'thinking',
+                thinking: tb.thinking,
+                signature: tb.signature,
+              }) as unknown as Anthropic.ContentBlock
+          ),
+          ...(msg.content ? [{ type: 'text' as const, text: msg.content }] : []),
+          ...(msg.toolCalls ?? []).map(
+            (tc) =>
+              ({
+                type: 'tool_use',
+                id: tc.id,
+                name: tc.name,
+                input: tc.arguments,
+              }) as unknown as Anthropic.ContentBlock
+          ),
+        ];
         mapped.push({ role: 'assistant', content });
         continue;
       }
@@ -214,17 +269,25 @@ export class AnthropicProvider extends BaseProvider {
 
   private mapResponse(response: Anthropic.Message, model: string): AIResponse {
     let content = '';
+    let thinkingText = '';
     const toolCalls: ToolCall[] = [];
+    const thinkingBlocks: ThinkingBlock[] = [];
 
-    for (const block of response.content) {
-      if (block.type === 'text') {
-        content += block.text;
-      } else if (block.type === 'tool_use') {
+    for (const rawBlock of response.content) {
+      const block = rawBlock as unknown as Record<string, unknown>;
+      if (block['type'] === 'text') {
+        content += block['text'] as string;
+      } else if (block['type'] === 'tool_use') {
         toolCalls.push({
-          id: block.id,
-          name: block.name,
-          arguments: block.input as Record<string, unknown>,
+          id: block['id'] as string,
+          name: block['name'] as string,
+          arguments: block['input'] as Record<string, unknown>,
         });
+      } else if (block['type'] === 'thinking') {
+        const thinking = block['thinking'] as string;
+        const signature = (block['signature'] as string | undefined) ?? '';
+        thinkingText += thinking;
+        thinkingBlocks.push({ thinking, signature });
       }
     }
 
@@ -236,17 +299,21 @@ export class AnthropicProvider extends BaseProvider {
       stopReason: this.mapStopReason(response.stop_reason),
       model,
       provider: 'anthropic',
+      ...(thinkingText ? { thinkingContent: thinkingText } : {}),
+      ...(thinkingBlocks.length > 0 ? { thinkingBlocks } : {}),
     };
   }
 
   private mapUsage(usage: Anthropic.Usage): TokenUsage {
     const usageRecord = usage as unknown as Record<string, unknown>;
     const cached = usageRecord.cache_read_input_tokens as number | undefined;
+    const thinking = usageRecord.thinking_input_tokens as number | undefined;
     return {
       inputTokens: usage.input_tokens,
       outputTokens: usage.output_tokens,
       cachedTokens: cached ?? 0,
       totalTokens: usage.input_tokens + usage.output_tokens,
+      thinkingTokens: thinking ?? 0,
     };
   }
 

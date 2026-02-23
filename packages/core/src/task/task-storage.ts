@@ -281,7 +281,7 @@ export class TaskStorage extends PgBaseStorage {
       running: string;
       timeout_count: string;
       cancelled: string;
-      avg_duration: number | null;
+      avg_duration: string | null;
     }>(
       `SELECT
         COUNT(*) as total,
@@ -327,7 +327,7 @@ export class TaskStorage extends PgBaseStorage {
       byStatus,
       byType: Object.fromEntries(typeRows.map((r) => [r.type, parseInt(r.count, 10)])),
       successRate: finishedCount > 0 ? completed / finishedCount : 0,
-      avgDurationMs: statsRow.avg_duration ?? 0,
+      avgDurationMs: statsRow.avg_duration !== null ? parseFloat(String(statsRow.avg_duration)) : 0,
     };
   }
 }

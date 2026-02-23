@@ -331,10 +331,29 @@ export class SlackIntegration implements Integration {
     const threadTs = metadata?.threadTs as string | undefined;
     const blocks = metadata?.blocks as any[] | undefined;
 
+    // Build blocks array — prepend thinking context block if available
+    const thinkingContent = metadata?.thinkingContent;
+    const baseBlocks = blocks ?? [];
+    const allBlocks =
+      thinkingContent && typeof thinkingContent === 'string'
+        ? [
+            {
+              type: 'context',
+              elements: [
+                {
+                  type: 'mrkdwn',
+                  text: `:brain: _Thinking…_ ${thinkingContent.slice(0, 500)}`,
+                },
+              ],
+            },
+            ...baseBlocks,
+          ]
+        : baseBlocks;
+
     const result = await this.app.client.chat.postMessage({
       channel: chatId,
       text,
-      ...(blocks ? { blocks } : {}),
+      ...(allBlocks.length > 0 ? { blocks: allBlocks } : {}),
       thread_ts: threadTs,
     });
 

@@ -157,6 +157,7 @@ export async function executeCreationTool(
           defaultModel: null,
           modelFallbacks: [],
           includeArchetypes: false,
+          deletionProtected: false,
           body: {} as any,
         });
         return { output: { personality }, isError: false };

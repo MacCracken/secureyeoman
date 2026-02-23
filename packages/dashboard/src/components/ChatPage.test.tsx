@@ -76,6 +76,7 @@ const defaultPersonality = {
   isActive: true,
   createdAt: Date.now(),
   updatedAt: Date.now(),
+  deletionProtected: false,
 };
 
 // ── Tests ────────────────────────────────────────────────────────
@@ -296,6 +297,7 @@ describe('ChatPage', () => {
           isActive: false,
           createdAt: Date.now(),
           updatedAt: Date.now(),
+          deletionProtected: false,
         },
       ],
     });

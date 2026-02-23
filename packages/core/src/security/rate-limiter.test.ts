@@ -222,5 +222,54 @@ describe('RateLimiter', () => {
 
       rl.stop();
     });
+
+    it('should apply custom authLoginMaxAttempts to auth_attempts rule', () => {
+      const rl = createRateLimiter({
+        rateLimiting: {
+          defaultWindowMs: 60000,
+          defaultMaxRequests: 100,
+          authLoginMaxAttempts: 3,
+          authLoginWindowMs: 60000,
+        },
+        inputValidation: {
+          maxInputLength: 10000,
+          maxFileSize: 1048576,
+          enableInjectionDetection: true,
+        },
+      } as any);
+
+      // First 3 should be allowed
+      expect(rl.check('auth_attempts', '1.2.3.4').allowed).toBe(true);
+      expect(rl.check('auth_attempts', '1.2.3.4').allowed).toBe(true);
+      expect(rl.check('auth_attempts', '1.2.3.4').allowed).toBe(true);
+      // 4th should be blocked
+      expect(rl.check('auth_attempts', '1.2.3.4').allowed).toBe(false);
+
+      rl.stop();
+    });
+
+    it('should use default strict auth limits when no override is provided', () => {
+      const rl = createRateLimiter({
+        rateLimiting: {
+          defaultWindowMs: 60000,
+          defaultMaxRequests: 100,
+          // authLoginMaxAttempts omitted — schema default of 5 applies
+        },
+        inputValidation: {
+          maxInputLength: 10000,
+          maxFileSize: 1048576,
+          enableInjectionDetection: true,
+        },
+      } as any);
+
+      // 5 attempts allowed
+      for (let i = 0; i < 5; i++) {
+        expect(rl.check('auth_attempts', '10.0.0.1').allowed).toBe(true);
+      }
+      // 6th blocked
+      expect(rl.check('auth_attempts', '10.0.0.1').allowed).toBe(false);
+
+      rl.stop();
+    });
   });
 });

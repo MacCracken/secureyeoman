@@ -115,7 +115,7 @@ secureyeoman/
 - Audit logging and integrity verification
 
 **Key Modules**:
-- `ai/` - AI provider abstraction (Anthropic, OpenAI, Gemini, Ollama) with configurable fallback chain on rate limits / provider unavailability
+- `ai/` - AI provider abstraction (Anthropic, OpenAI, Gemini, Ollama) with configurable fallback chain on rate limits / provider unavailability; includes `chat-routes.ts` which exposes both a blocking (`POST /api/v1/chat`) and a streaming (`POST /api/v1/chat/stream`) agentic loop — see [Chat Routes](#chat-routes) below
 - `ai/embeddings/` - Embedding providers (local SentenceTransformers, OpenAI/Gemini API) for vector semantic memory
 - `brain/vector/` - Vector store adapters (FAISS, Qdrant) with VectorMemoryManager orchestrating semantic indexing and search
 - `brain/consolidation/` - LLM-powered memory consolidation with on-save dedup and scheduled deep analysis
@@ -129,6 +129,62 @@ secureyeoman/
 - `task/` - Task queue, execution, and persistence
 - `logging/` - Structured logging with cryptographic audit chain
 - `config/` - Configuration loading and validation
+
+### Chat Routes
+
+**Location**: `packages/core/src/ai/chat-routes.ts`
+
+The chat routes implement the agentic loop — iterating AI calls and tool executions until the model returns a response with no pending tool calls.
+
+**Two endpoints are available:**
+
+| Endpoint | Transport | Use Case |
+|---|---|---|
+| `POST /api/v1/chat` | JSON (blocking) | Programmatic callers, integrations, scripts |
+| `POST /api/v1/chat/stream` | SSE (`text/event-stream`) | Dashboard, TUI, any interactive interface |
+
+**Streaming Agentic Loop (`POST /api/v1/chat/stream`)**
+
+The streaming endpoint emits `ChatStreamEvent` objects as each step of the loop completes. Clients receive live feedback throughout a potentially long tool-execution chain rather than waiting for the final response.
+
+```
+Client                    Gateway                   AI Provider / Tools
+  │                          │                              │
+  │   POST /chat/stream      │                              │
+  ├─────────────────────────►│                              │
+  │                          │   chatStream()               │
+  │                          ├─────────────────────────────►│
+  │  data: thinking_delta    │◄── thinking chunk ───────────┤
+  │◄─────────────────────────┤                              │
+  │  data: content_delta     │◄── text chunk ───────────────┤
+  │◄─────────────────────────┤                              │
+  │                          │◄── tool_use block ───────────┤
+  │  data: tool_start        │                              │
+  │◄─────────────────────────┤                              │
+  │                          │   executeCreationTool()       │
+  │                          │   or mcpClient.callTool()    │
+  │  data: creation_event    │                              │
+  │◄─────────────────────────┤                              │
+  │  data: tool_result       │                              │
+  │◄─────────────────────────┤   [loop until no tool calls] │
+  │  data: done              │                              │
+  │◄─────────────────────────┤                              │
+```
+
+**Tool Routing**
+
+Within the loop, tool names are resolved in this order:
+1. Creation tool registry (`executeCreationTool`) — handles `create_*`, `update_*`, `delete_*`, `assign_*`, `trigger_*`, etc.
+2. MCP client (`mcpClient.callTool`) — forwards to the appropriate connected MCP server
+3. Unknown — returns an error tool result and continues the loop
+
+**Extended Thinking**
+
+When the active personality has `body.thinkingConfig.enabled = true` and the provider is Anthropic, the request includes `thinking: { type: 'enabled', budget_tokens: N }`. The streaming path emits `thinking_delta` events as thinking text arrives. The final `done` event includes `thinkingContent` (concatenated text) for storage and display. Thinking blocks are round-tripped in `history` on subsequent turns.
+
+**`ChatStreamEventSchema`** (defined in `packages/shared/src/types/ai.ts`) is the single source of truth for the event union. Both the server emitter and all clients (dashboard hooks, TUI, integration test harnesses) import the same schema.
+
+---
 
 ### 2. Security Layer
 
@@ -186,7 +242,9 @@ secureyeoman/
 - `TaskHistory` - Historical task browser
 - `SecurityEvents` - Audit log viewer with heartbeat task section (auto-expandable via URL param)
 - `ConnectionManager` - Platform integration UI
-- `ChatPage` - Conversational AI interface with `ChatMarkdown` for rich assistant message rendering
+- `ChatPage` - Conversational AI interface with `ChatMarkdown` for rich assistant message rendering; uses `useChatStream()` hook to consume the SSE streaming endpoint and renders `ThinkingBlock` components and active-tool badges in real time
+- `ThinkingBlock` - Collapsible component displaying the model's extended thinking text; auto-opens while streaming is active, collapses to a summary line when the response completes
+- `useChatStream()` hook - React hook (`useChat.ts`) that opens a `POST /api/v1/chat/stream` SSE connection and accumulates `thinking_delta`, `content_delta`, `tool_start`/`tool_result`, and `done` events into reactive component state
 - `ChatMarkdown` - Markdown renderer for assistant messages: react-markdown + remark-gfm (GFM tables/task-lists/alerts), Prism syntax highlighting (react-syntax-highlighter, dark/light theme-aware), mermaid v11 diagram rendering with error fallback, KaTeX math via remark-math + rehype-katex, GitHub-style alert callouts, and styled tables with overflow handling
 
 ### 5. Soul System
@@ -412,6 +470,31 @@ The active personality is the sole source of identity in the composed prompt. Th
 11. Client Response
 ```
 
+### Streaming Chat Data Flow
+
+```
+1. Client sends POST /api/v1/chat/stream (JSON body)
+   ↓
+2. Gateway Authentication + RBAC
+   ↓
+3. Personality resolved → thinkingConfig read
+   ↓
+4. Provider chatStream() called → SSE connection opened
+   ↓ (per chunk)
+5a. thinking_delta event → client renders thinking text live
+5b. content_delta event → client streams response text live
+   ↓ (on tool_use block)
+6. tool_start event emitted → creation tool or MCP tool executed
+   ↓
+7. creation_event emitted (if resource created/updated/deleted)
+   ↓
+8. tool_result event emitted → result appended to history
+   ↓ (loop back to step 4 with updated history)
+9. done event emitted → final content, thinkingContent, creationEvents
+   ↓
+10. Client closes SSE connection
+```
+
 ### Audit Data Flow
 
 ```
@@ -502,12 +585,12 @@ Dashboard Display (WebSocket)
 
 ### 4. Real-time Communication
 
-**Decision**: WebSocket with SSE fallback
+**Decision**: WebSocket for system broadcasts; SSE for streaming chat responses
 
 **Rationale**:
-- WebSocket: Full-duplex, low latency for real-time updates
-- SSE: Simple fallback for firewall-restricted environments
-- Both standardized and well-supported
+- WebSocket: Full-duplex, low latency for system-level broadcasts (task updates, health, metrics)
+- SSE (`POST /api/v1/chat/stream`): Unidirectional, HTTP/2-compatible, connection-per-request — maps naturally to the streaming agentic loop where the client sends one request and receives a sequence of progress events
+- Both are standardised and well-supported across proxies and firewalls
 
 ### 5. Security Model
 

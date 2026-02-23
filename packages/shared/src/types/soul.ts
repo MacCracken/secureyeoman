@@ -116,6 +116,15 @@ export const PersonalityActiveHoursSchema = z
 
 export type PersonalityActiveHours = z.infer<typeof PersonalityActiveHoursSchema>;
 
+export const ThinkingPersonalityConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    budgetTokens: z.number().int().min(1024).max(32000).default(10000),
+  })
+  .optional();
+
+export type ThinkingPersonalityConfig = z.infer<typeof ThinkingPersonalityConfigSchema>;
+
 export const BodyConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
@@ -127,6 +136,7 @@ export const BodyConfigSchema = z
     mcpFeatures: McpFeaturesSchema.default({}),
     proactiveConfig: ProactivePersonalityConfigSchema.default({}),
     activeHours: PersonalityActiveHoursSchema.default({}),
+    thinkingConfig: ThinkingPersonalityConfigSchema,
   })
   .default({});
 

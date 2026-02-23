@@ -343,9 +343,8 @@ export class RateLimiter {
 }
 
 /** Common rate limit rules added to any limiter instance. */
-const COMMON_RULES: RateLimitRule[] = [
+const STATIC_RULES: RateLimitRule[] = [
   { name: 'api_requests', windowMs: 60000, maxRequests: 100, keyType: 'user', onExceed: 'reject' },
-  { name: 'auth_attempts', windowMs: 900000, maxRequests: 5, keyType: 'ip', onExceed: 'reject' },
   { name: 'task_creation', windowMs: 60000, maxRequests: 20, keyType: 'user', onExceed: 'reject' },
   {
     name: 'expensive_operations',
@@ -361,17 +360,30 @@ const COMMON_RULES: RateLimitRule[] = [
  *
  * When `config.rateLimiting.redisUrl` is set, returns a Redis-backed
  * `RedisRateLimiter`; otherwise returns the in-memory `RateLimiter`.
+ *
+ * The `auth_attempts` rule is configurable via `authLoginMaxAttempts` and
+ * `authLoginWindowMs` so development environments can relax the defaults.
  */
 export function createRateLimiter(config: SecurityConfig): RateLimiterLike {
   const rl = config.rateLimiting;
 
+  const authRule: RateLimitRule = {
+    name: 'auth_attempts',
+    windowMs: rl.authLoginWindowMs ?? 900000,
+    maxRequests: rl.authLoginMaxAttempts ?? 5,
+    keyType: 'ip',
+    onExceed: 'reject',
+  };
+
+  const rules = [...STATIC_RULES, authRule];
+
   if (rl.redisUrl) {
     const limiter = new RedisRateLimiter(rl, rl.redisUrl, rl.redisPrefix ?? 'secureyeoman:rl');
-    for (const rule of COMMON_RULES) limiter.addRule(rule);
+    for (const rule of rules) limiter.addRule(rule);
     return limiter;
   }
 
   const limiter = new RateLimiter(rl);
-  for (const rule of COMMON_RULES) limiter.addRule(rule);
+  for (const rule of rules) limiter.addRule(rule);
   return limiter;
 }

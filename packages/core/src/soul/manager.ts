@@ -141,6 +141,7 @@ export class SoulManager {
       defaultModel: null,
       modelFallbacks: [],
       includeArchetypes: agentName === 'FRIDAY',
+      deletionProtected: false,
       body: {
         enabled: false,
         capabilities: [],

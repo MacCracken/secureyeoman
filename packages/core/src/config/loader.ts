@@ -232,6 +232,26 @@ function loadEnvConfig(): PartialConfig {
     config.externalBrain = externalBrain as PartialConfig['externalBrain'];
   }
 
+  // Build security / rate-limiting settings
+  const rateLimiting: Record<string, unknown> = {};
+  if (process.env.SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS) {
+    const n = parseInt(process.env.SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS, 10);
+    if (!isNaN(n) && n > 0) rateLimiting.authLoginMaxAttempts = n;
+  }
+  if (process.env.SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS) {
+    const n = parseInt(process.env.SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS, 10);
+    if (!isNaN(n) && n > 0) rateLimiting.authLoginWindowMs = n;
+  }
+  if (Object.keys(rateLimiting).length > 0) {
+    config.security = {
+      ...config.security,
+      rateLimiting: {
+        ...(config.security?.rateLimiting as Record<string, unknown> | undefined),
+        ...rateLimiting,
+      },
+    } as PartialConfig['security'];
+  }
+
   return config;
 }
 

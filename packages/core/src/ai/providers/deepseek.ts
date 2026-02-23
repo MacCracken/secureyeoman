@@ -236,6 +236,7 @@ export class DeepSeekProvider extends BaseProvider {
       outputTokens: usage?.completion_tokens ?? 0,
       cachedTokens: 0,
       totalTokens: usage?.total_tokens ?? 0,
+      thinkingTokens: 0,
     };
 
     return {
@@ -255,6 +256,7 @@ export class DeepSeekProvider extends BaseProvider {
       outputTokens: usage.completion_tokens ?? 0,
       cachedTokens: 0,
       totalTokens: usage.total_tokens ?? 0,
+      thinkingTokens: 0,
     };
   }
 

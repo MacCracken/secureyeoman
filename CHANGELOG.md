@@ -4,6 +4,110 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — Configurable Login Rate Limits (2026-02-23)
+
+### Features
+
+**Configurable login attempt rate limiting** — the `auth_attempts` rule is now driven by config rather than being hard-coded at `5 attempts / 15 minutes`. Operators and developers can override both values per environment:
+
+| Env var | Default | Description |
+|---|---|---|
+| `SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS` | `5` | Maximum login attempts before IP is blocked |
+| `SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS` | `900000` (15 min) | Sliding window duration in milliseconds |
+
+`.env.dev` ships with relaxed values (`100` attempts / `60000` ms) so the limit is not hit during local development and testing.  If neither env var is set, the schema defaults apply — production behaviour is unchanged.
+
+### Config Schema
+
+`packages/shared/src/types/config.ts`:
+- `RateLimitingConfigSchema` — added `authLoginMaxAttempts: number` (default `5`) and `authLoginWindowMs: number` (default `900000`)
+
+### Implementation
+
+`packages/core/src/security/rate-limiter.ts`:
+- `COMMON_RULES` renamed to `STATIC_RULES` (the static set of non-auth rules)
+- `createRateLimiter()` now builds the `auth_attempts` rule dynamically from `config.rateLimiting.authLoginMaxAttempts` / `authLoginWindowMs`
+
+`packages/core/src/config/loader.ts`:
+- `loadEnvConfig()` reads `SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS` and `SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS` and merges them into `config.security.rateLimiting`; schema defaults apply when the env vars are absent
+
+### Tests
+
+`packages/core/src/security/rate-limiter.test.ts`:
+- `createRateLimiter() — custom auth limits`: verifies the `auth_attempts` rule respects `authLoginMaxAttempts`
+- `createRateLimiter() — default auth limits are strict`: verifies the default 5-attempt limit applies when no override is provided
+
+---
+
+## [Unreleased] — Extended Thinking + Streaming Agentic Loop (2026-02-23)
+
+### Features
+
+**New `POST /api/v1/chat/stream` SSE endpoint** — full streaming agentic loop that emits real-time events for every meaningful step:
+- `thinking_delta` — incremental thinking text as the model reasons
+- `content_delta` — incremental response text
+- `tool_start` / `tool_result` — creation tool execution progress
+- `mcp_tool_start` / `mcp_tool_result` — MCP tool execution progress
+- `creation_event` — resource created/updated/deleted (sparkle card payload)
+- `done` — final payload with `content`, `model`, `provider`, `tokensUsed`, `thinkingContent`, and `creationEvents`
+- `error` — stream-level error
+
+All four chat surfaces (dashboard chat, editor chat, TUI, integrations) now consume this endpoint.
+
+**Extended thinking — Anthropic provider** — full support for Anthropic extended thinking with correct API contract adherence:
+- `thinkingBudgetTokens` passed via `thinking: { type: 'enabled', budget_tokens: N }` in API params
+- `resolveTemperature()` forces `temperature: 1` when thinking is enabled (Anthropic requirement)
+- `mapMessages()` round-trips `ThinkingBlock[]` before text/tool-use blocks in every assistant turn (required ordering)
+- `ThinkingBlock.signature` preserved verbatim so the API can verify message integrity across turns
+- `thinkingTokens` tracked in `TokenUsage` from `thinking_input_tokens`
+
+**`ThinkingBlock.tsx`** — new collapsible dashboard component that displays the model's reasoning process. Auto-opens while streaming is active; collapses to a summary line when the response is complete.
+
+**`useChatStream()` hook** — new React hook in `useChat.ts` that consumes the SSE stream, accumulating thinking text, content deltas, and tool progress into reactive state consumed by `ChatPage` and `EditorPage`.
+
+**Personality thinking config** — "Extended Thinking" subsection in the Brain tab of `PersonalityEditor`:
+- Enable/disable checkbox
+- Budget tokens slider (range: 1024–32768)
+- Stored as `body.thinkingConfig: { enabled, budgetTokens }` in `BodyConfigSchema`
+
+**TUI streaming** — `tui.ts` switched from the blocking endpoint to SSE; renders the thinking text in an ANSI box-drawing frame and shows `⚙ Using [tool]…` badges during tool execution.
+
+**Integration platform thinking display**:
+- Telegram: thinking as `<blockquote expandable>` HTML (collapsed by default)
+- Discord: thinking as spoiler `||...||` in an embed field
+- Slack: thinking as a context block prepended before the main message
+
+### Bug Fixes
+
+**MCP tool routing in chat routes** — `executeCreationTool` had no MCP routing path; any MCP tool call in the chat path returned `"Unknown tool"`. Both the blocking and streaming chat routes now route unrecognised tool names through `mcpClient.callTool()` before treating them as unknown.
+
+### Shared Types
+
+`packages/shared/src/types/ai.ts`:
+- `ThinkingBlockSchema` — `{ thinking: string, signature: string }`
+- `CreationEventSchema` — Zod schema for creation events
+- `TokenUsageSchema` — added `thinkingTokens?: number`
+- `AIMessageSchema` — added `thinkingBlocks?: ThinkingBlock[]`
+- `AIRequestSchema` — added `thinkingBudgetTokens?: number` (min 1024)
+- `AIResponseSchema` — added `thinkingContent?: string`, `thinkingBlocks?: ThinkingBlock[]`
+- `AIStreamChunkSchema` — new `thinking_delta` variant; `done` variant gains `toolCalls` and `thinkingBlocks`
+- `ChatStreamEventSchema` (NEW) — SSE event union: `thinking_delta`, `content_delta`, `tool_start`, `tool_result`, `mcp_tool_start`, `mcp_tool_result`, `creation_event`, `done`, `error`
+
+`packages/shared/src/types/soul.ts`:
+- `ThinkingPersonalityConfigSchema` — `{ enabled: boolean, budgetTokens: number }`
+- `BodyConfigSchema` — added `thinkingConfig?`
+
+### Documentation
+
+**`docs/adr/112-extended-thinking-streaming-agentic-loop.md`** — new ADR:
+- Explains both problems (discarded thinking blocks, blocking loop) and why they were solved together
+- Documents the SSE event model and agentic loop architecture
+- Records the temperature constraint, thinking block round-trip ordering, and signature preservation requirements
+- Describes the MCP routing fix and its placement in both chat paths
+- Covers integration platform rendering choices and personality config schema
+
+---
+
 ## [Unreleased] — Personality Delete Tools + `deletionProtected` Flag (2026-02-23)
 
 ### Features

@@ -7,7 +7,13 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SecureYeoman } from '../secureyeoman.js';
-import type { AIRequest, Tool, FallbackModelConfig, AIProviderName } from '@secureyeoman/shared';
+import type {
+  AIRequest,
+  Tool,
+  FallbackModelConfig,
+  AIProviderName,
+  ChatStreamEvent,
+} from '@secureyeoman/shared';
 import type { McpToolDef } from '@secureyeoman/shared';
 import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
 import { sendError } from '../utils/errors.js';
@@ -260,10 +266,17 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         }
       }
 
+      // Read thinking config from personality body
+      const thinkingBudgetTokens =
+        personality?.body?.thinkingConfig?.enabled
+          ? (personality.body.thinkingConfig.budgetTokens ?? 10000)
+          : undefined;
+
       const aiRequest: AIRequest = {
         messages,
         stream: false,
         ...(tools.length > 0 ? { tools } : {}),
+        ...(thinkingBudgetTokens ? { thinkingBudgetTokens } : {}),
       };
 
       try {
@@ -278,6 +291,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // hit the iteration cap (prevents infinite loops on misbehaving models).
         const MAX_TOOL_ITERATIONS = 10;
         let iterationCount = 0;
+
+        // Accumulate thinking content across all iterations
+        const thinkingParts: string[] = [];
 
         // Collect resource-action events to surface in the chat UI and task history.
         const creationEvents: Array<{ tool: string; label: string; action: string; name: string; id?: string }> =
@@ -331,6 +347,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           { source: 'dashboard_chat' },
           personalityFallbacks
         );
+        if (rawResponse.thinkingContent) thinkingParts.push(rawResponse.thinkingContent);
 
         while (
           rawResponse.stopReason === 'tool_use' &&
@@ -339,11 +356,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         ) {
           iterationCount++;
 
-          // Append assistant's tool-call turn to the running message list
+          // Append assistant's tool-call turn to the running message list,
+          // including thinking blocks so they are round-tripped to the API
           messages.push({
             role: 'assistant' as const,
             content: rawResponse.content || undefined,
             toolCalls: rawResponse.toolCalls,
+            thinkingBlocks: rawResponse.thinkingBlocks,
           });
 
           // Execute every tool call and collect results
@@ -352,7 +371,27 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             personalityName: personality?.name ?? null,
           };
           for (const toolCall of rawResponse.toolCalls) {
-            const result = await executeCreationTool(toolCall, secureYeoman, executionContext);
+            // Check if this is an MCP tool and route appropriately
+            const mcpTool = mcpClient?.getAllTools().find((t) => t.name === toolCall.name);
+            let result: { output: unknown; isError: boolean };
+
+            if (mcpTool) {
+              try {
+                const mcpResult = await mcpClient!.callTool(
+                  mcpTool.serverId,
+                  toolCall.name,
+                  toolCall.arguments as Record<string, unknown>
+                );
+                result = { output: mcpResult, isError: false };
+              } catch (err) {
+                result = {
+                  output: { error: err instanceof Error ? err.message : String(err) },
+                  isError: true,
+                };
+              }
+            } else {
+              result = await executeCreationTool(toolCall, secureYeoman, executionContext);
+            }
 
             // Record every recognised resource action: sparkle card + task history entry.
             const label = CREATION_TOOL_LABELS[toolCall.name];
@@ -409,6 +448,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             { source: 'dashboard_chat' },
             personalityFallbacks
           );
+          if (rawResponse.thinkingContent) thinkingParts.push(rawResponse.thinkingContent);
         }
 
         // Scan LLM response for credential leaks before returning to caller.
@@ -458,6 +498,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           }
         }
 
+        const thinkingContent = thinkingParts.join('\n\n---\n\n') || undefined;
+
         return {
           role: 'assistant' as const,
           content: response.content,
@@ -467,6 +509,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           brainContext,
           conversationId: conversationId ?? undefined,
           creationEvents: creationEvents.length > 0 ? creationEvents : undefined,
+          thinkingContent,
         };
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'Unknown error';
@@ -526,6 +569,354 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'Brain is not available';
         return sendError(reply, 503, errMsg);
+      }
+    }
+  );
+
+  // ── Streaming chat endpoint ────────────────────────────────────────────────
+
+  app.post(
+    '/api/v1/chat/stream',
+    async (request: FastifyRequest<{ Body: ChatRequestBody }>, reply: FastifyReply) => {
+      const {
+        message,
+        history,
+        personalityId,
+        saveAsMemory,
+        memoryEnabled = true,
+        conversationId,
+      } = request.body;
+
+      if (!message || typeof message !== 'string' || message.trim().length === 0) {
+        reply.code(400).send({ error: 'Message is required' });
+        return;
+      }
+
+      let aiClient;
+      try {
+        aiClient = secureYeoman.getAIClient();
+      } catch {
+        reply.code(503).send({ error: 'AI client is not available.' });
+        return;
+      }
+
+      // Set up SSE headers
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',
+      });
+
+      const emit = (event: ChatStreamEvent): void => {
+        reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
+      };
+
+      try {
+        // ── Setup (mirrors non-streaming path) ────────────────────────
+
+        // Brain context
+        let brainContext: BrainContextMeta = { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
+        if (memoryEnabled) {
+          try {
+            const brainManager = secureYeoman.getBrainManager();
+            const memories = await brainManager.recall({ search: message, limit: 5 });
+            const knowledge = await brainManager.queryKnowledge({ search: message, limit: 5 });
+            const snippets: string[] = [];
+            for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
+            for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
+            brainContext = { memoriesUsed: memories.length, knowledgeUsed: knowledge.length, contextSnippets: snippets };
+          } catch { /* Brain not available */ }
+        }
+
+        const soulManager = secureYeoman.getSoulManager();
+        let systemPrompt = memoryEnabled
+          ? await soulManager.composeSoulPrompt(message, personalityId)
+          : await soulManager.composeSoulPrompt(undefined, personalityId);
+
+        if (memoryEnabled && systemPrompt) {
+          try {
+            const brainManager = secureYeoman.getBrainManager();
+            const learner = new PreferenceLearner(brainManager);
+            systemPrompt = await learner.injectPreferences(systemPrompt);
+          } catch { /* best-effort */ }
+        }
+
+        const messages: AIRequest['messages'] = [];
+        if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+
+        if (history && Array.isArray(history)) {
+          for (const msg of history) {
+            const role = msg.role === 'assistant' ? 'assistant' : 'user';
+            if (msg.content && typeof msg.content === 'string') {
+              messages.push({ role, content: msg.content });
+            }
+          }
+        }
+        messages.push({ role: 'user', content: message.trim() });
+
+        // Tools
+        const tools: Tool[] = [];
+        const personality = personalityId
+          ? ((await soulManager.getPersonality(personalityId)) ?? (await soulManager.getActivePersonality()))
+          : await soulManager.getActivePersonality();
+
+        tools.push(...(await soulManager.getActiveTools(personality?.id ?? null)));
+
+        const mcpClientStream = secureYeoman.getMcpClientManager();
+        const mcpStorageStream = secureYeoman.getMcpStorage();
+
+        if (personality?.body?.enabled && mcpClientStream && mcpStorageStream) {
+          const selectedServers = personality.body.selectedServers ?? [];
+          const perPersonalityFeatures = personality.body.mcpFeatures ?? {
+            exposeGit: false, exposeFilesystem: false, exposeWeb: false,
+            exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false,
+          };
+          const globalConfig = await mcpStorageStream.getConfig();
+          if (selectedServers.length > 0) {
+            const allMcpTools: McpToolDef[] = mcpClientStream.getAllTools();
+            for (const tool of allMcpTools) {
+              if (!selectedServers.includes(tool.serverName)) continue;
+              if (tool.serverName === 'YEOMAN MCP') {
+                const isGitTool = tool.name.startsWith('git_') || tool.name.includes('git');
+                const isFsTool = tool.name.startsWith('fs_') || tool.name.includes('filesystem') || tool.name.includes('file_');
+                if (isGitTool && !(globalConfig.exposeGit && perPersonalityFeatures.exposeGit)) continue;
+                if (isFsTool && !(globalConfig.exposeFilesystem && perPersonalityFeatures.exposeFilesystem)) continue;
+              }
+              tools.push({ name: tool.name, description: tool.description || undefined, parameters: tool.inputSchema as Tool['parameters'] });
+            }
+          }
+        }
+
+        // Compaction
+        const currentModel = personality?.defaultModel?.model ?? 'unknown';
+        if (compactor.needsCompaction(messages, currentModel)) {
+          try {
+            const compactionResult = await compactor.compact(messages, currentModel, async (prompt) => {
+              const summaryResp = await aiClient.chat({ messages: [{ role: 'user', content: prompt }], stream: false }, { source: 'context_compaction' });
+              return summaryResp.content;
+            });
+            if (compactionResult.compacted) {
+              messages.length = 0;
+              messages.push(...compactionResult.messages);
+            }
+          } catch { /* best-effort */ }
+        }
+
+        // Thinking config
+        const streamThinkingBudget = personality?.body?.thinkingConfig?.enabled
+          ? (personality.body.thinkingConfig.budgetTokens ?? 10000)
+          : undefined;
+
+        const personalityFallbacks = personality?.modelFallbacks?.length
+          ? resolvePersonalityFallbacks(personality.modelFallbacks)
+          : undefined;
+        void personalityFallbacks; // streaming path uses default provider
+
+        const aiRequest: AIRequest = {
+          messages,
+          stream: true,
+          ...(tools.length > 0 ? { tools } : {}),
+          ...(streamThinkingBudget ? { thinkingBudgetTokens: streamThinkingBudget } : {}),
+        };
+
+        const { uuidv7, sha256 } = await import('../utils/crypto.js');
+        const { TaskStatus } = await import('@secureyeoman/shared');
+        const taskStorage = secureYeoman.getTaskStorage?.();
+
+        const CREATION_TOOL_LABELS_S: Record<string, string> = {
+          create_skill: 'Skill', update_skill: 'Skill', delete_skill: 'Skill',
+          create_task: 'Task', update_task: 'Task',
+          create_personality: 'Personality', update_personality: 'Personality', delete_personality: 'Personality',
+          create_experiment: 'Experiment', delete_experiment: 'Experiment',
+          create_swarm: 'Swarm', create_custom_role: 'Custom Role', delete_custom_role: 'Custom Role',
+          assign_role: 'Role Assignment', revoke_role: 'Role Assignment',
+          a2a_connect: 'A2A Connection', delegate_task: 'Delegation',
+          create_workflow: 'Workflow', update_workflow: 'Workflow', delete_workflow: 'Workflow',
+          trigger_workflow: 'Workflow Run',
+        };
+
+        const toolActionS = (toolName: string): string => {
+          if (toolName.startsWith('create_')) return 'Created';
+          if (toolName.startsWith('update_')) return 'Updated';
+          if (toolName.startsWith('delete_')) return 'Deleted';
+          if (toolName.startsWith('trigger_')) return 'Triggered';
+          if (toolName.startsWith('assign_')) return 'Assigned';
+          if (toolName.startsWith('revoke_')) return 'Revoked';
+          if (toolName === 'a2a_connect') return 'Connected';
+          if (toolName === 'delegate_task') return 'Delegated';
+          return 'Created';
+        };
+
+        // ── Streaming agentic loop ────────────────────────────────────
+
+        const MAX_TOOL_ITERATIONS_S = 10;
+        let iterationCountS = 0;
+        const thinkingPartsS: string[] = [];
+        const contentPartsS: string[] = [];
+        const creationEventsS: Array<{ tool: string; label: string; action: string; name: string; id?: string }> = [];
+        let totalTokensUsed = 0;
+        let finalModel = '';
+        let finalProvider = '';
+        let stopReason: string = 'end_turn';
+
+        while (iterationCountS <= MAX_TOOL_ITERATIONS_S) {
+          // Collect tool calls and final metadata from this iteration
+          const pendingToolCalls: Map<string, { id: string; name: string; argsJson: string }> = new Map();
+          let currentToolId = '';
+          stopReason = 'end_turn';
+
+          // Stream model response
+          for await (const chunk of aiClient.chatStream({ ...aiRequest, messages })) {
+            if (chunk.type === 'thinking_delta') {
+              thinkingPartsS.push(chunk.thinking);
+              emit({ type: 'thinking_delta', thinking: chunk.thinking });
+            } else if (chunk.type === 'content_delta') {
+              contentPartsS.push(chunk.content);
+              emit({ type: 'content_delta', content: chunk.content });
+            } else if (chunk.type === 'tool_call_delta') {
+              const tc = chunk.toolCall;
+              if (tc.id && tc.name) {
+                currentToolId = tc.id;
+                pendingToolCalls.set(tc.id, { id: tc.id, name: tc.name, argsJson: '' });
+              }
+            } else if (chunk.type === 'done') {
+              stopReason = chunk.stopReason;
+              if (chunk.usage) {
+                totalTokensUsed += chunk.usage.totalTokens;
+              }
+              // Use complete tool calls from the done event (includes full args JSON)
+              if (chunk.toolCalls) {
+                for (const tc of chunk.toolCalls) {
+                  pendingToolCalls.set(tc.id, {
+                    id: tc.id,
+                    name: tc.name,
+                    argsJson: JSON.stringify(tc.arguments ?? {}),
+                  });
+                }
+              }
+            }
+          }
+
+            // Determine model/provider from personality config (once)
+          if (!finalModel) {
+            finalModel = personality?.defaultModel?.model ?? 'unknown';
+            finalProvider = personality?.defaultModel?.provider ?? 'unknown';
+          }
+
+          if (stopReason !== 'tool_use' || pendingToolCalls.size === 0) break;
+
+          // Append assistant turn with tool calls
+          const toolCallsForMsg = Array.from(pendingToolCalls.values()).map((tc) => ({
+            id: tc.id,
+            name: tc.name,
+            arguments: (() => {
+              try { return JSON.parse(tc.argsJson || '{}') as Record<string, unknown>; }
+              catch { return {} as Record<string, unknown>; }
+            })(),
+          }));
+
+          messages.push({
+            role: 'assistant' as const,
+            content: contentPartsS.join('') || undefined,
+            toolCalls: toolCallsForMsg,
+          });
+
+          // Execute tools
+          const executionContextS = { personalityId: personality?.id ?? null, personalityName: personality?.name ?? null };
+          for (const toolCall of toolCallsForMsg) {
+            const mcpToolS = mcpClientStream?.getAllTools().find((t) => t.name === toolCall.name);
+
+            if (mcpToolS) {
+              emit({ type: 'mcp_tool_start', toolName: toolCall.name, serverName: mcpToolS.serverName, iteration: iterationCountS });
+              try {
+                const mcpResult = await mcpClientStream!.callTool(mcpToolS.serverId, toolCall.name, toolCall.arguments);
+                emit({ type: 'mcp_tool_result', toolName: toolCall.name, serverName: mcpToolS.serverName, success: true });
+                messages.push({ role: 'tool' as const, toolResult: { toolCallId: toolCall.id, content: JSON.stringify(mcpResult), isError: false } });
+              } catch (err) {
+                emit({ type: 'mcp_tool_result', toolName: toolCall.name, serverName: mcpToolS.serverName, success: false });
+                messages.push({ role: 'tool' as const, toolResult: { toolCallId: toolCall.id, content: JSON.stringify({ error: String(err) }), isError: true } });
+              }
+            } else {
+              const label = CREATION_TOOL_LABELS_S[toolCall.name] ?? toolCall.name;
+              emit({ type: 'tool_start', toolName: toolCall.name, label, iteration: iterationCountS });
+              const result = await executeCreationTool(toolCall, secureYeoman, executionContextS);
+              emit({ type: 'tool_result', toolName: toolCall.name, success: !result.isError, isError: result.isError });
+
+              if (!result.isError && CREATION_TOOL_LABELS_S[toolCall.name]) {
+                const out = result.output as Record<string, unknown>;
+                const item = (out.skill ?? out.task ?? out.personality ?? out.experiment ?? out.swarm ?? out.workflow ?? out.run) as Record<string, unknown> | undefined;
+                const name = String(item?.name ?? item?.workflowName ?? (toolCall.arguments as Record<string, unknown>)?.name ?? toolCall.name);
+                const action = toolActionS(toolCall.name);
+                const id = typeof item?.id === 'string' ? item.id : undefined;
+                const evt = { tool: toolCall.name, label, action, name, id };
+                creationEventsS.push(evt);
+                emit({ type: 'creation_event', event: evt });
+
+                if (taskStorage) {
+                  const status = typeof item?.status === 'string' ? (item.status as any) : TaskStatus.COMPLETED;
+                  const now = Date.now();
+                  await taskStorage.storeTask({
+                    id: uuidv7(), type: 'execute' as any,
+                    name: `${label} ${action}: ${name}`, description: toolCall.name,
+                    status, createdAt: now,
+                    ...(status === TaskStatus.COMPLETED ? { completedAt: now, durationMs: 0 } : {}),
+                    inputHash: sha256(JSON.stringify(toolCall.arguments ?? {})),
+                    securityContext: { userId: 'ai', role: 'operator', permissionsUsed: [] },
+                    timeoutMs: 0,
+                  });
+                }
+              }
+              messages.push({ role: 'tool' as const, toolResult: { toolCallId: toolCall.id, content: JSON.stringify(result.output), isError: result.isError } });
+            }
+          }
+
+          iterationCountS++;
+        }
+
+        const finalContent = contentPartsS.join('');
+        const finalThinking = thinkingPartsS.join('') || undefined;
+
+        // Credential scan
+        const scanResult = scanner.scan(finalContent, 'llm_response');
+        const safeContent = scanResult.redacted ? scanResult.text : finalContent;
+
+        // Persist conversation
+        if (conversationId) {
+          try {
+            const convStorage = secureYeoman.getConversationStorage();
+            if (convStorage) {
+              await convStorage.addMessage({ conversationId, role: 'user', content: message.trim() });
+              await convStorage.addMessage({
+                conversationId, role: 'assistant', content: safeContent,
+                model: finalModel, provider: finalProvider,
+                tokensUsed: totalTokensUsed, brainContext,
+                creationEvents: creationEventsS.length > 0 ? creationEventsS : null,
+              });
+            }
+          } catch { /* best-effort */ }
+        }
+
+        if (memoryEnabled && saveAsMemory) {
+          try {
+            const brainManager = secureYeoman.getBrainManager();
+            await brainManager.remember('episodic', `User: ${message.trim()}\nAssistant: ${safeContent}`, 'dashboard_chat', { personalityId: personalityId ?? 'default' });
+          } catch { /* best-effort */ }
+        }
+
+        emit({
+          type: 'done',
+          content: safeContent,
+          model: finalModel,
+          provider: finalProvider,
+          tokensUsed: totalTokensUsed,
+          thinkingContent: finalThinking,
+          creationEvents: creationEventsS,
+        });
+      } catch (err) {
+        emit({ type: 'error', message: err instanceof Error ? err.message : String(err) });
+      } finally {
+        reply.raw.end();
       }
     }
   );

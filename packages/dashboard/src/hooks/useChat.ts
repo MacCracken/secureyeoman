@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendChatMessage, createConversation, fetchConversation } from '../api/client';
-import type { ChatMessage } from '../types';
+import type { ChatMessage, CreationEvent } from '../types';
 
 export interface UseChatOptions {
   personalityId?: string | null;
@@ -208,5 +208,217 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
     clearMessages,
     conversationId: activeConversationId,
     isLoadingConversation,
+  };
+}
+
+// ── useChatStream ──────────────────────────────────────────────────────────────
+
+export interface ActiveToolCall {
+  toolName: string;
+  label: string;
+  serverName?: string;
+  isMcp: boolean;
+}
+
+export interface UseChatStreamOptions {
+  personalityId?: string | null;
+  conversationId?: string | null;
+  memoryEnabled?: boolean;
+}
+
+export interface UseChatStreamReturn {
+  messages: ChatMessage[];
+  input: string;
+  setInput: React.Dispatch<React.SetStateAction<string>>;
+  handleSend: () => void;
+  isPending: boolean;
+  clearMessages: () => void;
+  conversationId: string | null;
+  streamingThinking: string;
+  streamingContent: string;
+  activeToolCalls: ActiveToolCall[];
+}
+
+export function useChatStream(options?: UseChatStreamOptions): UseChatStreamReturn {
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [input, setInput] = useState('');
+  const [isPending, setIsPending] = useState(false);
+  const [activeConversationId, setActiveConversationId] = useState<string | null>(
+    options?.conversationId ?? null
+  );
+  const [streamingThinking, setStreamingThinking] = useState('');
+  const [streamingContent, setStreamingContent] = useState('');
+  const [activeToolCalls, setActiveToolCalls] = useState<ActiveToolCall[]>([]);
+  const abortRef = useRef<AbortController | null>(null);
+  const queryClient = useQueryClient();
+
+  const clearMessages = useCallback(() => {
+    setMessages([]);
+    setActiveConversationId(null);
+    setStreamingThinking('');
+    setStreamingContent('');
+    setActiveToolCalls([]);
+  }, []);
+
+  const handleSend = useCallback(async () => {
+    const trimmed = input.trim();
+    if (!trimmed || isPending) return;
+
+    // Cancel any in-flight request
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
+
+    const userMessage: ChatMessage = {
+      role: 'user',
+      content: trimmed,
+      timestamp: Date.now(),
+    };
+
+    setMessages((prev) => [...prev, userMessage]);
+    setInput('');
+    setIsPending(true);
+    setStreamingThinking('');
+    setStreamingContent('');
+    setActiveToolCalls([]);
+
+    // Auto-create conversation on first send
+    let convId = activeConversationId;
+    if (!convId) {
+      try {
+        const title = trimmed.length > 60 ? trimmed.slice(0, 57) + '...' : trimmed;
+        const conv = await createConversation(title, options?.personalityId ?? undefined);
+        convId = conv.id;
+        setActiveConversationId(convId);
+        queryClient.invalidateQueries({ queryKey: ['conversations'] });
+      } catch {
+        // Continue without persistence
+      }
+    }
+
+    const history = [...messages, userMessage].map((m) => ({
+      role: m.role,
+      content: m.content,
+    }));
+
+    const memoryOn = options?.memoryEnabled ?? true;
+
+    try {
+      const res = await fetch('/api/v1/chat/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: abortRef.current.signal,
+        body: JSON.stringify({
+          message: trimmed,
+          history: history.slice(0, -1),
+          ...(options?.personalityId ? { personalityId: options.personalityId } : {}),
+          ...(convId ? { conversationId: convId } : {}),
+          memoryEnabled: memoryOn,
+          saveAsMemory: memoryOn,
+        }),
+      });
+
+      if (!res.body) throw new Error('No response body');
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let thinkingAcc = '';
+      let contentAcc = '';
+      const pendingEvents: CreationEvent[] = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          const json = line.slice(6).trim();
+          if (!json) continue;
+          let event: Record<string, unknown>;
+          try { event = JSON.parse(json); } catch { continue; }
+
+          const type = event.type as string;
+
+          if (type === 'thinking_delta') {
+            thinkingAcc += event.thinking as string;
+            setStreamingThinking(thinkingAcc);
+          } else if (type === 'content_delta') {
+            contentAcc += event.content as string;
+            setStreamingContent(contentAcc);
+          } else if (type === 'tool_start') {
+            setActiveToolCalls((prev) => [
+              ...prev,
+              { toolName: event.toolName as string, label: event.label as string, isMcp: false },
+            ]);
+          } else if (type === 'tool_result') {
+            setActiveToolCalls((prev) => prev.filter((t) => t.toolName !== (event.toolName as string)));
+          } else if (type === 'mcp_tool_start') {
+            setActiveToolCalls((prev) => [
+              ...prev,
+              { toolName: event.toolName as string, label: event.toolName as string, serverName: event.serverName as string, isMcp: true },
+            ]);
+          } else if (type === 'mcp_tool_result') {
+            setActiveToolCalls((prev) => prev.filter((t) => t.toolName !== (event.toolName as string)));
+          } else if (type === 'creation_event') {
+            pendingEvents.push(event.event as CreationEvent);
+          } else if (type === 'done') {
+            const doneEvent = event as {
+              content: string; model: string; provider: string;
+              tokensUsed?: number; thinkingContent?: string; creationEvents: CreationEvent[];
+            };
+            setMessages((prev) => [
+              ...prev,
+              {
+                role: 'assistant',
+                content: doneEvent.content,
+                timestamp: Date.now(),
+                model: doneEvent.model,
+                provider: doneEvent.provider,
+                tokensUsed: doneEvent.tokensUsed,
+                thinkingContent: doneEvent.thinkingContent,
+                creationEvents: doneEvent.creationEvents.length > 0 ? doneEvent.creationEvents : undefined,
+              },
+            ]);
+            setStreamingThinking('');
+            setStreamingContent('');
+            setActiveToolCalls([]);
+            queryClient.invalidateQueries({ queryKey: ['conversations'] });
+          } else if (type === 'error') {
+            setMessages((prev) => [
+              ...prev,
+              { role: 'assistant', content: `Error: ${event.message as string}`, timestamp: Date.now() },
+            ]);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      setMessages((prev) => [
+        ...prev,
+        { role: 'assistant', content: `Error: ${err instanceof Error ? err.message : String(err)}`, timestamp: Date.now() },
+      ]);
+    } finally {
+      setIsPending(false);
+      setStreamingThinking('');
+      setStreamingContent('');
+      setActiveToolCalls([]);
+    }
+  }, [input, isPending, messages, activeConversationId, options, queryClient]);
+
+  return {
+    messages,
+    input,
+    setInput,
+    handleSend,
+    isPending,
+    clearMessages,
+    conversationId: activeConversationId,
+    streamingThinking,
+    streamingContent,
+    activeToolCalls,
   };
 }
