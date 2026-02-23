@@ -70,6 +70,8 @@ const BASE_POLICY = {
   sandboxGvisor: false,
   sandboxWasm: false,
   sandboxCredentialProxy: false,
+  allowWorkflows: false,
+  allowCommunityGitFetch: false,
 };
 
 function renderSidebar() {
@@ -139,5 +141,49 @@ describe('Sidebar nav order', () => {
     renderSidebar();
 
     expect(await screen.findByRole('link', { name: /developers/i })).toBeInTheDocument();
+  });
+
+  it('shows a Tasks nav link pointing to /tasks', async () => {
+    renderSidebar();
+    const link = await screen.findByRole('link', { name: /tasks/i });
+    expect(link).toHaveAttribute('href', '/tasks');
+  });
+
+  it('Workflows is hidden when allowWorkflows is false (default)', async () => {
+    renderSidebar();
+    await screen.findByRole('link', { name: /metrics/i });
+    expect(screen.queryByRole('link', { name: /^workflows$/i })).not.toBeInTheDocument();
+  });
+
+  it('shows a Workflows nav link pointing to /workflows when allowWorkflows is true', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      ...BASE_POLICY,
+      allowWorkflows: true,
+    } as any);
+    renderSidebar();
+    const link = await screen.findByRole('link', { name: /^workflows$/i });
+    expect(link).toHaveAttribute('href', '/workflows');
+  });
+
+  it('Skills link appears before Workflows in nav order', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({
+      ...BASE_POLICY,
+      allowWorkflows: true,
+    } as any);
+    renderSidebar();
+    const skillsLink = await screen.findByRole('link', { name: /skills/i });
+    const workflowsLink = await screen.findByRole('link', { name: /^workflows$/i });
+    const links = Array.from(document.querySelectorAll('a')) as HTMLElement[];
+    expect(links.indexOf(skillsLink)).toBeLessThan(links.indexOf(workflowsLink));
+  });
+
+  it('Tasks link appears after Security and before Skills in nav order', async () => {
+    renderSidebar();
+    const securityLink = await screen.findByRole('link', { name: /security/i });
+    const tasksLink = await screen.findByRole('link', { name: /tasks/i });
+    const skillsLink = await screen.findByRole('link', { name: /skills/i });
+    const links = Array.from(document.querySelectorAll('a')) as HTMLElement[];
+    expect(links.indexOf(securityLink)).toBeLessThan(links.indexOf(tasksLink));
+    expect(links.indexOf(tasksLink)).toBeLessThan(links.indexOf(skillsLink));
   });
 });

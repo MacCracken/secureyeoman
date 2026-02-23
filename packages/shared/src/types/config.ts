@@ -225,6 +225,8 @@ export const SecurityConfigSchema = z.object({
   allowExecution: z.boolean().default(true),
   /** Allow proactive assistance triggers and suggestions. */
   allowProactive: z.boolean().default(false),
+  /** Allow workflow orchestration (DAG builder, run history, workflow page). Disabled by default. */
+  allowWorkflows: z.boolean().default(false),
   /** Allow A/B experiments. Must be explicitly enabled after initialization. */
   allowExperiments: z.boolean().default(false),
   /** Allow Storybook component development environment in dashboard. */

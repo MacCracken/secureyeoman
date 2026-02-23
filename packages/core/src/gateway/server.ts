@@ -52,6 +52,7 @@ import { registerTerminalRoutes } from './terminal-routes.js';
 import { registerConversationRoutes } from '../chat/conversation-routes.js';
 import { registerAgentRoutes } from '../agents/agent-routes.js';
 import { registerSwarmRoutes } from '../agents/swarm-routes.js';
+import { registerWorkflowRoutes } from '../workflow/workflow-routes.js';
 import { registerExtensionRoutes } from '../extensions/extension-routes.js';
 import { registerExecutionRoutes } from '../execution/execution-routes.js';
 import { registerA2ARoutes } from '../a2a/a2a-routes.js';
@@ -98,6 +99,7 @@ const CHANNEL_PERMISSIONS: Record<string, { resource: string; action: string }> 
   tasks: { resource: 'tasks', action: 'read' },
   security: { resource: 'security_events', action: 'read' },
   proactive: { resource: 'proactive', action: 'read' },
+  workflows: { resource: 'workflows', action: 'read' },
   soul: { resource: 'soul', action: 'read' },
   group_chat: { resource: 'integrations', action: 'read' },
 };
@@ -536,6 +538,19 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Swarm routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Workflow routes
+    try {
+      const workflowManager = this.secureYeoman.getWorkflowManager();
+      if (workflowManager) {
+        registerWorkflowRoutes(this.app, { workflowManager });
+        this.getLogger().info('Workflow routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Workflow routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }
@@ -1106,6 +1121,7 @@ export class GatewayServer {
         allowExtensions: config.security.allowExtensions,
         allowExecution: config.security.allowExecution,
         allowProactive: config.security.allowProactive,
+        allowWorkflows: config.security.allowWorkflows,
         allowExperiments: config.security.allowExperiments,
         allowStorybook: config.security.allowStorybook,
         allowMultimodal: config.security.allowMultimodal,
@@ -1132,6 +1148,7 @@ export class GatewayServer {
             allowExtensions?: boolean;
             allowExecution?: boolean;
             allowProactive?: boolean;
+            allowWorkflows?: boolean;
             allowExperiments?: boolean;
             allowStorybook?: boolean;
             allowMultimodal?: boolean;
@@ -1155,6 +1172,7 @@ export class GatewayServer {
             allowExtensions,
             allowExecution,
             allowProactive,
+            allowWorkflows,
             allowExperiments,
             allowStorybook,
             allowMultimodal,
@@ -1174,6 +1192,7 @@ export class GatewayServer {
             allowExtensions === undefined &&
             allowExecution === undefined &&
             allowProactive === undefined &&
+            allowWorkflows === undefined &&
             allowExperiments === undefined &&
             allowStorybook === undefined &&
             allowMultimodal === undefined &&
@@ -1195,6 +1214,7 @@ export class GatewayServer {
             allowExtensions,
             allowExecution,
             allowProactive,
+            allowWorkflows,
             allowExperiments,
             allowStorybook,
             allowMultimodal,
@@ -1215,6 +1235,7 @@ export class GatewayServer {
             allowExtensions: config.security.allowExtensions,
             allowExecution: config.security.allowExecution,
             allowProactive: config.security.allowProactive,
+            allowWorkflows: config.security.allowWorkflows,
             allowExperiments: config.security.allowExperiments,
             allowStorybook: config.security.allowStorybook,
             allowMultimodal: config.security.allowMultimodal,

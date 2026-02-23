@@ -81,7 +81,7 @@ describe('GroupChatPage', () => {
     renderPage();
 
     await waitFor(() => {
-      expect(screen.getByText(/No conversations yet/i)).toBeTruthy();
+      expect(screen.getByText(/No active conversations/i)).toBeTruthy();
     });
   });
 

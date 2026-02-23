@@ -118,6 +118,12 @@ export const McpServiceConfigSchema = z.object({
   agnosticEmail: z.string().optional(),
   agnosticPassword: z.string().optional(),
   agnosticApiKey: z.string().optional(),
+  exposeQuickBooksTools: z.boolean().default(false),
+  quickBooksEnvironment: z.enum(['sandbox', 'production']).default('sandbox'),
+  quickBooksClientId: z.string().optional(),
+  quickBooksClientSecret: z.string().optional(),
+  quickBooksRealmId: z.string().optional(),
+  quickBooksRefreshToken: z.string().optional(),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

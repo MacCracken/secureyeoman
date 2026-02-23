@@ -513,3 +513,28 @@ export {
   type MultimodalJob,
   type MultimodalConfig,
 } from './multimodal.js';
+
+export {
+  WorkflowStepTypeSchema,
+  WorkflowStepSchema,
+  WorkflowEdgeSchema,
+  WorkflowTriggerSchema,
+  WorkflowDefinitionSchema,
+  WorkflowDefinitionCreateSchema,
+  WorkflowDefinitionUpdateSchema,
+  WorkflowRunStatusSchema,
+  WorkflowStepRunStatusSchema,
+  WorkflowRunSchema,
+  WorkflowStepRunSchema,
+  type WorkflowStepType,
+  type WorkflowStep,
+  type WorkflowEdge,
+  type WorkflowTrigger,
+  type WorkflowDefinition,
+  type WorkflowDefinitionCreate,
+  type WorkflowDefinitionUpdate,
+  type WorkflowRunStatus,
+  type WorkflowStepRunStatus,
+  type WorkflowRun,
+  type WorkflowStepRun,
+} from './workflow.js';

@@ -15,6 +15,10 @@ vi.mock('./SecurityPage', () => ({
   SecurityPage: () => <div>SecurityPage</div>,
 }));
 
+vi.mock('./TaskHistory', () => ({
+  TaskHistory: () => <div data-testid="task-history-page">TaskHistory</div>,
+}));
+
 vi.mock('./PersonalityEditor', () => ({
   PersonalityEditor: () => <div>PersonalityEditor</div>,
 }));
@@ -45,6 +49,18 @@ vi.mock('./AgentsPage', () => ({
 
 vi.mock('./ExperimentsPage', () => ({
   ExperimentsPage: () => <div>ExperimentsPage</div>,
+}));
+
+vi.mock('../pages/WorkflowsPage', () => ({
+  WorkflowsPage: () => <div>WorkflowsPage</div>,
+}));
+
+vi.mock('../pages/WorkflowBuilder', () => ({
+  WorkflowBuilder: () => <div>WorkflowBuilder</div>,
+}));
+
+vi.mock('../pages/WorkflowRunDetail', () => ({
+  WorkflowRunDetail: () => <div>WorkflowRunDetail</div>,
 }));
 
 // ── Mock hooks and layout components ─────────────────────────────────
@@ -157,5 +173,10 @@ describe('DashboardLayout routing', () => {
   it('renders the sidebar', async () => {
     renderAt('/metrics');
     expect(await screen.findByTestId('sidebar')).toBeInTheDocument();
+  });
+
+  it('renders TaskHistory at /tasks', async () => {
+    renderAt('/tasks');
+    expect(await screen.findByTestId('task-history-page')).toBeInTheDocument();
   });
 });

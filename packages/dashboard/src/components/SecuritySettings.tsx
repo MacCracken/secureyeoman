@@ -33,6 +33,8 @@ import {
   Wrench,
   Brain,
   Cpu,
+  GitMerge,
+  GitBranch,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -385,6 +387,8 @@ export function SecuritySettings() {
   const extensionsAllowed = securityPolicy?.allowExtensions ?? false;
   const executionAllowed = securityPolicy?.allowExecution ?? true;
   const proactiveAllowed = securityPolicy?.allowProactive ?? false;
+  const workflowsAllowed = securityPolicy?.allowWorkflows ?? false;
+  const communityGitFetchAllowed = securityPolicy?.allowCommunityGitFetch ?? false;
   const multimodalAllowed = securityPolicy?.allowMultimodal ?? false;
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
@@ -594,6 +598,29 @@ export function SecuritySettings() {
               proactiveAllowed
                 ? 'Proactive assistance is enabled. Personalities can autonomously suggest actions, reminders, and follow-ups based on their configuration.'
                 : 'Proactive assistance is disabled at the security level. No personality can initiate proactive actions regardless of its configuration.'
+            }
+          />
+        </div>
+      </div>
+
+      {/* Workflow Orchestration Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <GitMerge className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Workflow Orchestration</h3>
+        </div>
+        <div className="p-4">
+          <PolicyToggle
+            label="Workflow Orchestration"
+            enabled={workflowsAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowWorkflows: !workflowsAllowed });
+            }}
+            description={
+              workflowsAllowed
+                ? 'Workflow orchestration is enabled. Users can build and run DAG-based automation workflows from the Workflows page.'
+                : 'Workflow orchestration is disabled at the security level. The Workflows page is hidden and no workflow runs can be triggered.'
             }
           />
         </div>
@@ -819,6 +846,29 @@ export function SecuritySettings() {
               }
             />
           </div>
+        </div>
+      </div>
+
+      {/* Community Skills Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <GitBranch className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Community Skills</h3>
+        </div>
+        <div className="p-4">
+          <PolicyToggle
+            label="Community Skills"
+            enabled={communityGitFetchAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowCommunityGitFetch: !communityGitFetchAllowed });
+            }}
+            description={
+              communityGitFetchAllowed
+                ? 'Community Skills are enabled. The Community tab is visible in Skills and users can browse and install skills from the community repository.'
+                : 'Community Skills are disabled. The Community tab is hidden in Skills and no community repository installs can be triggered.'
+            }
+          />
         </div>
       </div>
     </div>

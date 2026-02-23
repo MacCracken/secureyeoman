@@ -11,6 +11,7 @@
 | | **Tag 2026.2.22** | **2026-02-22** | **Tagged** |
 | | **Release 2026.2.22** | **2026-02-22** | **Released** |
 | 38 | Beta Manual Review | — | In Progress |
+| 39 | Workflow Engine | — | In Progress |
 
 ---
 
@@ -32,6 +33,9 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 - [ ] Connect CLI when DisplayName entered and connected -Integration undefined not found
 - [ ] Chat needs responsive design in the response window to not blow up the view
  
+### Improvements
+- [ ] Ability for the admin to toggle on or off the Community Skills from the Settings > Security view
+
 
 ---
 

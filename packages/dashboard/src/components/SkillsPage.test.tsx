@@ -33,6 +33,7 @@ vi.mock('../api/client', () => ({
   syncCommunitySkills: vi.fn(),
   fetchCommunityStatus: vi.fn(),
   fetchPersonalities: vi.fn(),
+  fetchSecurityPolicy: vi.fn(),
   getAccessToken: vi.fn().mockReturnValue(null),
 }));
 
@@ -62,6 +63,7 @@ const mockFetchMarketplaceSkills = vi.mocked(api.fetchMarketplaceSkills);
 const mockFetchCommunityStatus = vi.mocked(api.fetchCommunityStatus);
 const mockCreateSkill = vi.mocked(api.createSkill);
 const mockSyncCommunitySkills = vi.mocked(api.syncCommunitySkills);
+const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 
 // ── Helpers ─────────────────────────────────────────────────────────
 
@@ -113,6 +115,7 @@ beforeEach(() => {
     skillCount: 0,
     lastSyncedAt: null,
   });
+  mockFetchSecurityPolicy.mockResolvedValue({ allowCommunityGitFetch: false } as never);
 });
 
 // ── Tests ───────────────────────────────────────────────────────────
@@ -142,11 +145,34 @@ describe('SkillsPage', () => {
     });
   });
 
-  it('renders community tab when location.state.initialTab is community', async () => {
+  it('renders community tab when location.state.initialTab is community and policy is enabled', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({ allowCommunityGitFetch: true } as never);
     renderComponent([{ pathname: '/skills', state: { initialTab: 'community' } }]);
 
     // Community tab content should be visible
     expect(await screen.findByText(/Sync Community Skills/i)).toBeInTheDocument();
+  });
+
+  it('Community tab button is hidden by default (allowCommunityGitFetch: false)', async () => {
+    renderComponent();
+    await screen.findByText('Skills');
+    expect(screen.queryByRole('button', { name: /^community$/i })).not.toBeInTheDocument();
+  });
+
+  it('Community tab button is visible when allowCommunityGitFetch is true', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({ allowCommunityGitFetch: true } as never);
+    renderComponent();
+    expect(await screen.findByRole('button', { name: /^community$/i })).toBeInTheDocument();
+  });
+
+  it('falls back to Personal tab when navigating to /skills/community with policy disabled', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({ allowCommunityGitFetch: false } as never);
+    // Navigate directly to community path — getInitialTab returns 'community', but useEffect redirects
+    renderComponent(['/skills/community']);
+    // Personal tab content loads (Add Skill button is present)
+    expect(await screen.findByRole('button', { name: /add skill/i })).toBeInTheDocument();
+    // Community tab button itself is not rendered
+    expect(screen.queryByRole('button', { name: /^community$/i })).not.toBeInTheDocument();
   });
 
   it('renders Import button next to Add Skill button on Personal tab', async () => {
@@ -189,6 +215,7 @@ describe('SkillsPage', () => {
   });
 
   it('shows removed count in sync result when community skills were pruned', async () => {
+    mockFetchSecurityPolicy.mockResolvedValue({ allowCommunityGitFetch: true } as never);
     mockSyncCommunitySkills.mockResolvedValue({
       added: 0,
       updated: 5,
@@ -196,10 +223,14 @@ describe('SkillsPage', () => {
       removed: 2,
       errors: [],
     });
-    renderComponent([{ pathname: '/skills', state: { initialTab: 'community' } }]);
-    await screen.findByText(/Sync Community Skills/i);
+    renderComponent();
 
-    const syncBtn = screen.getByRole('button', { name: /sync/i });
+    // Wait for the Community tab to appear (gated by allowCommunityGitFetch policy)
+    const communityTab = await screen.findByRole('button', { name: /community/i });
+    fireEvent.click(communityTab);
+
+    // Sync button is now visible in the Community tab
+    const syncBtn = await screen.findByRole('button', { name: /^sync$/i });
     fireEvent.click(syncBtn);
 
     expect(await screen.findByText(/removed.*2|2.*removed/i)).toBeInTheDocument();

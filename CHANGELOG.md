@@ -4,6 +4,230 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## Phase 54 — Security Policy Toggles: Workflows & Community Skills (2026-02-22)
+
+### New Feature: Workflow Orchestration Security Toggle
+
+A new `allowWorkflows` security policy flag gates the Workflows page and all DAG-based workflow
+features. Disabled by default on fresh install; an admin enables it once in Settings > Security.
+
+**`packages/shared/src/types/config.ts`**:
+- Added `allowWorkflows: z.boolean().default(false)` to `SecurityConfigSchema`
+
+**`packages/core/src/gateway/server.ts`**:
+- `GET /api/v1/security/policy` — returns `allowWorkflows`
+- `PATCH /api/v1/security/policy` — accepts `allowWorkflows?: boolean`
+
+**`packages/core/src/secureyeoman.ts`**:
+- `updateSecurityPolicy()` handles `allowWorkflows`
+- `loadSecurityPolicyFromDb()` key allowlist includes `allowWorkflows`
+
+**`packages/core/src/cli/commands/policy.ts`**:
+- `allowWorkflows` added to `ALL_POLICY_FLAGS`; usable via `secureyeoman policy set allowWorkflows true`
+
+**`packages/dashboard/src/api/client.ts`**:
+- `allowWorkflows: boolean` added to `SecurityPolicy` interface; fallback value `false`
+
+**`packages/dashboard/src/components/SecuritySettings.tsx`**:
+- Imported `GitMerge` icon
+- New **Workflow Orchestration** `PolicyToggle` card added after the Proactive Assistance section
+
+**`packages/dashboard/src/components/Sidebar.tsx`**:
+- `workflowsEnabled = securityPolicy?.allowWorkflows ?? false`
+- `/workflows` nav item filtered out when disabled
+
+### New Feature: Community Skills Security Toggle
+
+The existing `allowCommunityGitFetch` backend flag (which already blocked the sync API) is now also
+enforced in the dashboard UI. The Community tab in Skills is hidden when the policy is off, and a new
+toggle card in Settings > Security gives admins one-click control.
+
+**`packages/dashboard/src/api/client.ts`**:
+- `allowCommunityGitFetch: boolean` added to `SecurityPolicy` interface; fallback value `false`
+
+**`packages/dashboard/src/components/SkillsPage.tsx`**:
+- Imports `fetchSecurityPolicy`
+- `useQuery` fetches the security policy on mount (staleTime 30 s, shared key `security-policy`)
+- `communityEnabled = securityPolicy?.allowCommunityGitFetch ?? false`
+- Community tab button wrapped in `{communityEnabled && ...}`
+- `<CommunityTab />` guarded by `communityEnabled`
+- `useEffect` falls back to Personal tab if the policy is disabled while Community tab is active
+
+**`packages/dashboard/src/components/SecuritySettings.tsx`**:
+- Imported `GitBranch` icon
+- `communityGitFetchAllowed` extracted from policy
+- New **Community Skills** `PolicyToggle` card added at the end of the policy list
+
+### Tests
+
+**`packages/dashboard/src/components/SecuritySettings.test.tsx`**:
+- All 9 inline policy mock objects updated to include `allowWorkflows: false, allowCommunityGitFetch: false`
+- 4 new tests: Workflow Orchestration toggle renders/off-by-default + calls updateSecurityPolicy; Community Skills toggle renders/off-by-default + calls updateSecurityPolicy
+
+**`packages/dashboard/src/components/Sidebar.test.tsx`**:
+- `BASE_POLICY.allowWorkflows` changed to `false` (matches fresh-install default)
+- `BASE_POLICY.allowCommunityGitFetch: false` added
+- "shows a Workflows nav link" test now overrides policy with `allowWorkflows: true`
+- "Skills link appears before Workflows" test similarly updated
+- New test: "Workflows is hidden when allowWorkflows is false (default)"
+
+**`packages/dashboard/src/components/SkillsPage.test.tsx`**:
+- `fetchSecurityPolicy` added to module mock and typed reference
+- `beforeEach` sets `mockFetchSecurityPolicy.mockResolvedValue({ allowCommunityGitFetch: false })`
+- "renders community tab" test updated to explicitly enable `allowCommunityGitFetch: true`
+- "shows removed count" test updated: mocks policy with `allowCommunityGitFetch: true`, navigates to Community tab via button click rather than initial state
+- 3 new tests: Community tab hidden by default; visible when policy enabled; falls back to Personal when policy disabled while on Community path
+
+Total: +11 new tests, 61 passing.
+
+---
+
+## Phase 53 — Workflow Engine + Navigation (2026-02-22)
+
+### New Feature: DAG-Based Workflow Orchestration Engine
+
+A complete workflow engine — distinct from Proactive triggers — for user-defined deterministic
+automation. Supports 9 step types, Mustache-style data-flow templates, topological execution,
+retry policies, and a ReactFlow visual builder in the dashboard.
+
+**`packages/shared/src/types/workflow.ts`** (new):
+- `WorkflowStepTypeSchema` — 9 types: `agent`, `tool`, `mcp`, `condition`, `transform`, `resource`, `webhook`, `subworkflow`, `swarm`
+- `WorkflowStepSchema` with `dependsOn`, `retryPolicy`, `onError` (fail/continue/skip/fallback), `fallbackStepId`, `condition`
+- `WorkflowTriggerSchema` — 5 types: `manual`, `schedule`, `event`, `webhook`, `skill`
+- `WorkflowDefinitionSchema`, `WorkflowRunSchema`, `WorkflowStepRunSchema` + create/update variants
+
+**`packages/core/src/storage/migrations/034_workflow_schema.sql`** (new):
+- `workflow.definitions`, `workflow.runs`, `workflow.step_runs` tables with indexes
+
+**`packages/core/src/workflow/workflow-storage.ts`** (new):
+- `PgBaseStorage` extension; full CRUD for definitions, runs, step runs; `seedBuiltinWorkflows`
+
+**`packages/core/src/workflow/workflow-engine.ts`** (new):
+- Kahn's algorithm topological sort with cycle detection
+- Tier-based parallel execution via `Promise.all`
+- `dispatchStep` for all 9 types; `resolveTemplate` for `{{steps.id.output}}` tokens; `evaluateCondition` via `new Function` (closed scope: only `steps` and `input`)
+
+**`packages/core/src/workflow/workflow-templates.ts`** (new):
+- 3 built-in templates: Research Report Pipeline, Code Review + Webhook, Parallel Intelligence Gather
+
+**`packages/core/src/workflow/workflow-manager.ts`** (new):
+- `triggerRun()` creates run record then `setImmediate(() => engine.execute(...))` — returns 202 immediately; `initialize()` seeds built-in templates
+
+**`packages/core/src/workflow/workflow-routes.ts`** (new):
+- 9 REST endpoints; `/runs/:runId` registered before `/:id` to avoid Fastify route collision
+
+**`packages/core/src/secureyeoman.ts`**:
+- `WorkflowStorage` + `WorkflowManager` initialized after swarm manager; `getWorkflowManager()` accessor; cleanup in shutdown
+
+**`packages/core/src/gateway/server.ts`**:
+- `registerWorkflowRoutes()` called after swarm routes; `workflows` channel added to `CHANNEL_PERMISSIONS`
+
+**`packages/mcp/src/tools/workflow-tools.ts`** (new):
+- 5 tools: `workflow_list`, `workflow_get`, `workflow_run`, `workflow_run_status`, `workflow_cancel`
+
+**`packages/dashboard/src/api/client.ts`**:
+- `WorkflowDefinition`, `WorkflowStep`, `WorkflowEdge`, `WorkflowTrigger`, `WorkflowRun`, `WorkflowStepRun` interfaces
+- `fetchWorkflows`, `fetchWorkflow`, `createWorkflow`, `updateWorkflow`, `deleteWorkflow`, `triggerWorkflow`, `fetchWorkflowRuns`, `fetchWorkflowRun`, `cancelWorkflowRun`
+
+**`packages/dashboard/src/pages/WorkflowsPage.tsx`** (new):
+- Stat cards (total/enabled/disabled), definition table with Run/Edit/Delete; toast with run ID on trigger
+
+**`packages/dashboard/src/pages/WorkflowBuilder.tsx`** (new):
+- ReactFlow DAG editor; left step-type palette (9 types), center canvas, right config panel per node type; `definitionToFlow` / `flowToDefinition` converters; dagre auto-layout
+
+**`packages/dashboard/src/pages/WorkflowRunDetail.tsx`** (new):
+- Polls every 2 s while running; step timeline with status icons, duration, collapsible input/output JSON
+
+### New Feature: Tasks Page + Navigation Order
+
+**`packages/dashboard/src/components/Sidebar.tsx`**:
+- Added Tasks nav item (after Security) and Workflows nav item (after Proactive)
+- Nav order: Metrics → Security → Tasks → Chat → Editor → Personality → Skills → Proactive → Workflows → Connections → Developers → Settings
+
+**`packages/dashboard/src/components/DashboardLayout.tsx`**:
+- `/tasks` route now renders `<TaskHistory />` instead of `<SecurityPage />`
+- Added `/workflows`, `/workflows/:id/builder`, `/workflows/runs/:runId` routes with lazy imports
+
+**`packages/dashboard/src/components/Sidebar.test.tsx`**:
+- 4 new tests: Tasks link to /tasks; Workflows link to /workflows; Skills before Workflows; Tasks between Security and Skills
+
+**`packages/dashboard/src/components/DashboardLayout.test.tsx`**:
+- Updated `/tasks` routing test to assert `TaskHistory` renders
+
+### New Feature: "+ New" Button — Memory Form
+
+The Memory option in the `+ New` dialog now opens an inline form instead of navigating away.
+
+**`packages/dashboard/src/components/NewEntityDialog.tsx`**:
+- Memory CONFIG_ITEM changed from `kind: 'nav'` to `kind: 'form', step: 'memory'`
+- `renderMemory()` — two-tab switcher: **Vector Memory** (type, content, source, importance slider) and **Knowledge Base** (topic, content textarea)
+- `addMemoryMut` calls `addMemory()`; `learnKnowledgeMut` calls `learnKnowledge()`; both invalidate their query cache on success
+
+---
+
+## Phase 52 — QuickBooks Online MCP Integration (2026-02-22)
+
+### New Feature: Native `qbo_*` MCP Tools for QuickBooks Online
+
+YEOMAN MCP now ships 59 native QuickBooks Online tools covering the full accounting lifecycle —
+invoices, customers, vendors, bills, expenses, chart of accounts, reports, and more.
+
+**`packages/mcp/src/tools/quickbooks-tools.ts`** (new):
+
+**CRUD tools for 11 core QBO entities** (prefix `qbo_`):
+
+| Entity | Create | Get | Search | Update | Delete |
+|--------|--------|-----|--------|--------|--------|
+| Account | ✓ | ✓ | ✓ | ✓ | — (deactivate) |
+| Bill | ✓ | ✓ | ✓ | ✓ | ✓ |
+| BillPayment | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Customer | ✓ | ✓ | ✓ | ✓ | — (deactivate) |
+| Employee | ✓ | ✓ | ✓ | ✓ | — (deactivate) |
+| Estimate | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Invoice | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Item | ✓ | ✓ | ✓ | ✓ | — (deactivate) |
+| JournalEntry | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Purchase | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Vendor | ✓ | ✓ | ✓ | ✓ | — (deactivate) |
+
+**Additional tools**:
+- `qbo_health` — verify credentials and connectivity; returns company name
+- `qbo_get_company_info` — full company settings (address, phone, fiscal year, country)
+- `qbo_report_profit_loss` — P&L report for any date range with Cash or Accrual accounting
+- `qbo_report_balance_sheet` — Balance Sheet as-of any date
+
+**Authentication**: OAuth 2.0 refresh-token flow. Access tokens are refreshed automatically and
+cached for their 3 600 s lifetime. Configurable via env vars or through the Dashboard.
+
+**Configuration**:
+
+| Env Var | Purpose | Default |
+|---------|---------|---------|
+| `MCP_EXPOSE_QUICKBOOKS_TOOLS` | Enable all `qbo_*` tools | `false` |
+| `QUICKBOOKS_CLIENT_ID` | Intuit app Client ID | — |
+| `QUICKBOOKS_CLIENT_SECRET` | Intuit app Client Secret | — |
+| `QUICKBOOKS_REALM_ID` | Company / Realm ID | — |
+| `QUICKBOOKS_REFRESH_TOKEN` | OAuth 2.0 refresh token | — |
+| `QUICKBOOKS_ENVIRONMENT` | `sandbox` or `production` | `sandbox` |
+
+Obtain credentials at [https://developer.intuit.com/](https://developer.intuit.com/). Get an initial
+refresh token via the [Intuit OAuth 2.0 Playground](https://developer.intuit.com/app/developer/playground).
+
+**Dashboard — QuickBooks Online prebuilt** (`packages/dashboard/src/components/McpPrebuilts.tsx`):
+- QuickBooks Online added to the one-click prebuilt server list in the Connections page
+- Connects via `npx -y quickbooks-online-mcp-server` (official Intuit npm package) as an
+  alternative to the built-in native `qbo_*` tools
+- Credential form: Client ID, Client Secret, Realm ID, Refresh Token, Environment
+
+**`packages/shared/src/types/mcp.ts`**:
+- Six new fields added to `McpServiceConfigSchema`: `exposeQuickBooksTools`, `quickBooksEnvironment`,
+  `quickBooksClientId`, `quickBooksClientSecret`, `quickBooksRealmId`, `quickBooksRefreshToken`
+
+**`packages/mcp/src/config/config.ts`**:
+- All six QuickBooks config fields parsed from environment variables
+
+---
+
 ## Phase 51 — Skills Import, Delete Refresh Fix & Community Sync Prune (2026-02-22)
 
 ### New Feature: Import Skills from JSON

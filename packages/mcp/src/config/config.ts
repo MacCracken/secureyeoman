@@ -66,6 +66,12 @@ export function loadConfig(
     agnosticEmail: env.AGNOSTIC_EMAIL,
     agnosticPassword: env.AGNOSTIC_PASSWORD,
     agnosticApiKey: env.AGNOSTIC_API_KEY,
+    exposeQuickBooksTools: parseBool(env.MCP_EXPOSE_QUICKBOOKS_TOOLS, false),
+    quickBooksEnvironment: (env.QUICKBOOKS_ENVIRONMENT ?? 'sandbox') as 'sandbox' | 'production',
+    quickBooksClientId: env.QUICKBOOKS_CLIENT_ID,
+    quickBooksClientSecret: env.QUICKBOOKS_CLIENT_SECRET,
+    quickBooksRealmId: env.QUICKBOOKS_REALM_ID,
+    quickBooksRefreshToken: env.QUICKBOOKS_REFRESH_TOKEN,
   };
 
   return McpServiceConfigSchema.parse(raw);

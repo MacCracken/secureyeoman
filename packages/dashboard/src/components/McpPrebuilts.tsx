@@ -181,6 +181,26 @@ const PREBUILT_SERVERS: PrebuiltServer[] = [
     requiredEnvVars: [{ key: 'ELEVENLABS_API_KEY', label: 'ElevenLabs API Key' }],
   },
   {
+    icon: <CreditCard className="w-5 h-5" />,
+    name: 'QuickBooks Online',
+    description:
+      'Manage invoices, customers, vendors, bills, expenses, and run P&L / Balance Sheet reports ' +
+      'via the official Intuit QuickBooks Online MCP server',
+    command: 'npx -y quickbooks-online-mcp-server',
+    note:
+      'Requires a QuickBooks Online account and an Intuit developer app. ' +
+      'Register at https://developer.intuit.com/ · Get a Refresh Token via the OAuth 2.0 Playground. ' +
+      'Alternatively, enable the built-in qbo_* tools with MCP_EXPOSE_QUICKBOOKS_TOOLS=true.',
+    urlKeys: [],
+    requiredEnvVars: [
+      { key: 'QUICKBOOKS_CLIENT_ID', label: 'Client ID' },
+      { key: 'QUICKBOOKS_CLIENT_SECRET', label: 'Client Secret' },
+      { key: 'QUICKBOOKS_REALM_ID', label: 'Realm ID (Company ID)' },
+      { key: 'QUICKBOOKS_REFRESH_TOKEN', label: 'OAuth Refresh Token' },
+      { key: 'QUICKBOOKS_ENVIRONMENT', label: 'Environment (sandbox or production)' },
+    ],
+  },
+  {
     icon: <Server className="w-5 h-5" />,
     name: 'Coolify (MetaMCP)',
     description:

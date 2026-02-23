@@ -27,6 +27,8 @@ describe('switchModel validation', () => {
   });
 });
 
+const BASE_RESPONSE_CACHE = { enabled: false, ttlMs: 300_000, maxEntries: 500 };
+
 // Test the AIClient constructor behavior with different providers
 describe('AIClient creation for model switch', () => {
   // Mock getSecret
@@ -84,6 +86,7 @@ describe('AIClient creation for model switch', () => {
         maxRetries: 2,
         retryDelayMs: 100,
         fallbacks: [],
+        responseCache: BASE_RESPONSE_CACHE,
       },
     });
     expect(client.getProviderName()).toBe('anthropic');
@@ -103,6 +106,7 @@ describe('AIClient creation for model switch', () => {
         maxRetries: 2,
         retryDelayMs: 100,
         fallbacks: [],
+        responseCache: BASE_RESPONSE_CACHE,
       },
     });
     expect(client.getProviderName()).toBe('openai');
@@ -122,6 +126,7 @@ describe('AIClient creation for model switch', () => {
         maxRetries: 2,
         retryDelayMs: 100,
         fallbacks: [],
+        responseCache: BASE_RESPONSE_CACHE,
       },
     });
     expect(client.getProviderName()).toBe('gemini');
@@ -141,6 +146,7 @@ describe('AIClient creation for model switch', () => {
         maxRetries: 2,
         retryDelayMs: 100,
         fallbacks: [],
+        responseCache: BASE_RESPONSE_CACHE,
       },
     });
     expect(client.getProviderName()).toBe('ollama');
@@ -162,6 +168,7 @@ describe('AIClient creation for model switch', () => {
             maxRetries: 2,
             retryDelayMs: 100,
             fallbacks: [],
+            responseCache: BASE_RESPONSE_CACHE,
           },
         })
     ).toThrow('Unknown AI provider');

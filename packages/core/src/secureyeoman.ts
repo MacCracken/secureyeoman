@@ -116,6 +116,8 @@ import { SubAgentStorage } from './agents/storage.js';
 import { SubAgentManager } from './agents/manager.js';
 import { SwarmStorage } from './agents/swarm-storage.js';
 import { SwarmManager } from './agents/swarm-manager.js';
+import { WorkflowStorage } from './workflow/workflow-storage.js';
+import { WorkflowManager } from './workflow/workflow-manager.js';
 import { ExtensionStorage } from './extensions/storage.js';
 import { ExtensionManager } from './extensions/manager.js';
 import { ExecutionStorage } from './execution/storage.js';
@@ -209,6 +211,8 @@ export class SecureYeoman {
   private subAgentManager: SubAgentManager | null = null;
   private swarmStorage: SwarmStorage | null = null;
   private swarmManager: SwarmManager | null = null;
+  private workflowStorage: WorkflowStorage | null = null;
+  private workflowManager: WorkflowManager | null = null;
   private extensionStorage: ExtensionStorage | null = null;
   private extensionManager: ExtensionManager | null = null;
   private executionStorage: ExecutionStorage | null = null;
@@ -863,6 +867,23 @@ export class SecureYeoman {
           } catch (swarmError) {
             this.logger.warn('Swarm manager initialization failed (non-fatal)', {
               error: swarmError instanceof Error ? swarmError.message : 'Unknown error',
+            });
+          }
+
+          // Step 6.11c: Initialize workflow manager (requires subAgentManager + swarmManager)
+          try {
+            this.workflowStorage = new WorkflowStorage();
+            this.workflowManager = new WorkflowManager({
+              storage: this.workflowStorage,
+              subAgentManager: this.subAgentManager,
+              swarmManager: this.swarmManager,
+              logger: this.logger.child({ component: 'WorkflowManager' }),
+            });
+            await this.workflowManager.initialize();
+            this.logger.debug('Workflow manager initialized');
+          } catch (workflowError) {
+            this.logger.warn('Workflow manager initialization failed (non-fatal)', {
+              error: workflowError instanceof Error ? workflowError.message : 'Unknown error',
             });
           }
         } catch (error) {
@@ -1613,6 +1634,14 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the workflow manager instance (may be null if not initialized)
+   */
+  getWorkflowManager(): WorkflowManager | null {
+    this.ensureInitialized();
+    return this.workflowManager;
+  }
+
+  /**
    * Get the extension manager instance (may be null if extensions are disabled)
    */
   getExtensionManager(): ExtensionManager | null {
@@ -1838,6 +1867,7 @@ export class SecureYeoman {
     allowExtensions?: boolean;
     allowExecution?: boolean;
     allowProactive?: boolean;
+    allowWorkflows?: boolean;
     allowExperiments?: boolean;
     allowStorybook?: boolean;
     allowMultimodal?: boolean;
@@ -1869,6 +1899,9 @@ export class SecureYeoman {
     }
     if (updates.allowProactive !== undefined) {
       this.config!.security.allowProactive = updates.allowProactive;
+    }
+    if (updates.allowWorkflows !== undefined) {
+      this.config!.security.allowWorkflows = updates.allowWorkflows;
     }
     if (updates.allowExperiments !== undefined) {
       this.config!.security.allowExperiments = updates.allowExperiments;
@@ -1956,6 +1989,7 @@ export class SecureYeoman {
         'allowExtensions',
         'allowExecution',
         'allowProactive',
+        'allowWorkflows',
         'allowExperiments',
         'allowStorybook',
         'allowMultimodal',
@@ -2241,6 +2275,11 @@ export class SecureYeoman {
       this.swarmStorage.close();
       this.swarmStorage = null;
       this.swarmManager = null;
+    }
+    if (this.workflowStorage) {
+      this.workflowStorage.close();
+      this.workflowStorage = null;
+      this.workflowManager = null;
     }
     if (this.extensionStorage) {
       this.extensionStorage.close();

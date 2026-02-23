@@ -23,6 +23,8 @@ import { registerMultimodalTools } from './multimodal-tools.js';
 import { registerSecurityTools } from './security-tools.js';
 import { registerAgnosticTools } from './agnostic-tools.js';
 import { registerTradingTools } from './trading-tools.js';
+import { registerWorkflowTools } from './workflow-tools.js';
+import { registerQuickBooksTools } from './quickbooks-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -56,4 +58,6 @@ export async function registerAllTools(
   await registerSecurityTools(server, config, middleware);
   registerAgnosticTools(server, config, middleware);
   registerTradingTools(server, middleware);
+  registerWorkflowTools(server, client, middleware);
+  registerQuickBooksTools(server, config, middleware);
 }

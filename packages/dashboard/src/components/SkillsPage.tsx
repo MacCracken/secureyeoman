@@ -43,6 +43,7 @@ import {
   syncCommunitySkills,
   fetchCommunityStatus,
   fetchPersonalities,
+  fetchSecurityPolicy,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { Skill, SkillCreate, Personality, MarketplaceSkill } from '../types';
@@ -97,6 +98,13 @@ export function SkillsPage() {
   const location = useLocation();
   const navigate = useNavigate();
 
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+    staleTime: 30000,
+  });
+  const communityEnabled = securityPolicy?.allowCommunityGitFetch ?? false;
+
   const getInitialTab = (): TabType => {
     const path = location.pathname;
     if (path.includes('/community')) return 'community';
@@ -108,6 +116,13 @@ export function SkillsPage() {
   };
 
   const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
+
+  // If community is disabled while on that tab, fall back to Personal
+  useEffect(() => {
+    if (!communityEnabled && activeTab === 'community') {
+      setActiveTab('my-skills');
+    }
+  }, [communityEnabled, activeTab]);
 
   useEffect(() => {
     if ((location.state as { initialTab?: string } | null)?.initialTab) {
@@ -156,19 +171,21 @@ export function SkillsPage() {
           <Store className="w-4 h-4" />
           Marketplace
         </button>
-        <button
-          onClick={() => {
-            setActiveTab('community');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
-            activeTab === 'community'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Users className="w-4 h-4" />
-          Community
-        </button>
+        {communityEnabled && (
+          <button
+            onClick={() => {
+              setActiveTab('community');
+            }}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === 'community'
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            Community
+          </button>
+        )}
         <button
           onClick={() => {
             setActiveTab('installed');
@@ -186,7 +203,7 @@ export function SkillsPage() {
 
       {activeTab === 'my-skills' && <MySkillsTab />}
       {activeTab === 'marketplace' && <MarketplaceTab />}
-      {activeTab === 'community' && <CommunityTab />}
+      {activeTab === 'community' && communityEnabled && <CommunityTab />}
       {activeTab === 'installed' && <InstalledSkillsTab onNavigateTab={setActiveTab} />}
     </div>
   );

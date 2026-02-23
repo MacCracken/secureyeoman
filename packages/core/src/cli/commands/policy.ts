@@ -20,6 +20,7 @@ const ALL_POLICY_FLAGS = [
   'allowExtensions',
   'allowExecution',
   'allowProactive',
+  'allowWorkflows',
   'allowExperiments',
   'allowStorybook',
   'allowMultimodal',

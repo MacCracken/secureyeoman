@@ -115,6 +115,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
@@ -132,6 +134,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: null, model: null });
@@ -179,6 +183,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -280,6 +286,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -313,6 +321,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -336,6 +346,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -453,6 +465,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -476,6 +490,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -509,6 +525,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -557,6 +575,46 @@ describe('SecuritySettings', () => {
     await waitFor(() => {
       expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
       expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ sandboxWasm: true });
+    });
+  });
+
+  // ── Workflow Orchestration ─────────────────────────────────────────
+
+  it('renders Workflow Orchestration toggle (off by default)', async () => {
+    renderComponent();
+    expect(await screen.findByText('Workflow Orchestration')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Workflow Orchestration');
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy when toggling Workflow Orchestration', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Workflow Orchestration');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowWorkflows: true });
+    });
+  });
+
+  // ── Community Skills ───────────────────────────────────────────────
+
+  it('renders Community Skills toggle (off by default)', async () => {
+    renderComponent();
+    expect(await screen.findByText('Community Skills')).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Community Skills');
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy when toggling Community Skills', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Community Skills');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowCommunityGitFetch: true });
     });
   });
 });

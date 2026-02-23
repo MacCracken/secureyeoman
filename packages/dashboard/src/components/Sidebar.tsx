@@ -26,6 +26,8 @@ import {
   Info,
   X,
   MessagesSquare,
+  ClipboardList,
+  GitMerge,
 } from 'lucide-react';
 import { useSidebar } from '../hooks/useSidebar';
 import { useTheme } from '../hooks/useTheme';
@@ -56,11 +58,13 @@ const NAV_ITEMS_WITHOUT_AGENTS: {
 }[] = [
   { to: '/metrics', label: 'Metrics', icon: <BarChart2 className="w-5 h-5" /> },
   { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
+  { to: '/tasks', label: 'Tasks', icon: <ClipboardList className="w-5 h-5" /> },
   { to: '/chat', label: 'Chat', icon: <MessagesSquare className="w-5 h-5" /> },
   { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> },
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
   { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
   { to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" />, enabled: true },
+  { to: '/workflows', label: 'Workflows', icon: <GitMerge className="w-5 h-5" /> },
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
   { to: '/developers', label: 'Developers', icon: <Code2 className="w-5 h-5" />, enabled: true },
   { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
@@ -139,13 +143,14 @@ export function Sidebar({
     (securityPolicy?.allowExtensions ?? false) || extensionConfig?.config?.enabled === true;
   const proactiveEnabled =
     (securityPolicy?.allowProactive ?? false) || (proactiveConfig?.config as any)?.enabled === true;
+  const workflowsEnabled = securityPolicy?.allowWorkflows ?? false;
   const experimentsEnabled = securityPolicy?.allowExperiments ?? false;
   const storybookEnabled = securityPolicy?.allowStorybook ?? false;
 
   const NAV_ITEMS = useMemo(() => {
     const items = [...NAV_ITEMS_WITHOUT_AGENTS];
     if (hasAgents) {
-      items.splice(7, 0, {
+      items.splice(8, 0, {
         to: '/agents',
         label: 'Agents',
         icon: <Users className="w-5 h-5" />,
@@ -155,9 +160,10 @@ export function Sidebar({
       if (item.to === '/developers')
         return extensionsEnabled || experimentsEnabled || storybookEnabled;
       if (item.to === '/proactive') return proactiveEnabled;
+      if (item.to === '/workflows') return workflowsEnabled;
       return true;
     });
-  }, [hasAgents, extensionsEnabled, proactiveEnabled, experimentsEnabled, storybookEnabled]);
+  }, [hasAgents, extensionsEnabled, proactiveEnabled, workflowsEnabled, experimentsEnabled, storybookEnabled]);
 
   useEffect(() => {
     setMobileOpen(false);

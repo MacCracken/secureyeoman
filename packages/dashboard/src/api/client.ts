@@ -1836,6 +1836,8 @@ export interface SecurityPolicy {
   allowExtensions: boolean;
   allowExecution: boolean;
   allowProactive: boolean;
+  allowWorkflows: boolean;
+  allowCommunityGitFetch: boolean;
   allowExperiments: boolean;
   allowStorybook: boolean;
   allowMultimodal: boolean;
@@ -1858,6 +1860,8 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowExtensions: false,
       allowExecution: true,
       allowProactive: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
@@ -2958,4 +2962,147 @@ export async function removeWorkspaceMember(
   userId: string
 ): Promise<void> {
   await request(`/workspaces/${workspaceId}/members/${userId}`, { method: 'DELETE' });
+}
+
+// ─── Workflow Engine API ─────────────────────────────────────────────
+
+export interface WorkflowStep {
+  id: string;
+  type: string;
+  name: string;
+  description?: string;
+  config: Record<string, unknown>;
+  dependsOn: string[];
+  onError: string;
+  retryPolicy?: { maxAttempts: number; backoffMs: number };
+  fallbackStepId?: string;
+  condition?: string;
+}
+
+export interface WorkflowEdge {
+  source: string;
+  target: string;
+  label?: string;
+}
+
+export interface WorkflowTrigger {
+  type: string;
+  config: Record<string, unknown>;
+}
+
+export interface WorkflowDefinition {
+  id: string;
+  name: string;
+  description?: string;
+  steps: WorkflowStep[];
+  edges: WorkflowEdge[];
+  triggers: WorkflowTrigger[];
+  isEnabled: boolean;
+  version: number;
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface WorkflowStepRun {
+  id: string;
+  runId: string;
+  stepId: string;
+  stepName: string;
+  stepType: string;
+  status: string;
+  input?: Record<string, unknown> | null;
+  output?: Record<string, unknown> | null;
+  error?: string | null;
+  startedAt?: number | null;
+  completedAt?: number | null;
+  durationMs?: number | null;
+}
+
+export interface WorkflowRun {
+  id: string;
+  workflowId: string;
+  workflowName: string;
+  status: string;
+  input?: Record<string, unknown> | null;
+  output?: Record<string, unknown> | null;
+  error?: string | null;
+  triggeredBy: string;
+  createdAt: number;
+  startedAt?: number | null;
+  completedAt?: number | null;
+  stepRuns?: WorkflowStepRun[];
+}
+
+export async function fetchWorkflows(opts?: {
+  limit?: number;
+  offset?: number;
+}): Promise<{ definitions: WorkflowDefinition[]; total: number }> {
+  try {
+    const query = new URLSearchParams();
+    if (opts?.limit) query.set('limit', String(opts.limit));
+    if (opts?.offset) query.set('offset', String(opts.offset));
+    const qs = query.toString();
+    return await request(`/workflows${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { definitions: [], total: 0 };
+  }
+}
+
+export async function fetchWorkflow(id: string): Promise<{ definition: WorkflowDefinition }> {
+  return request(`/workflows/${id}`);
+}
+
+export async function createWorkflow(
+  data: Partial<WorkflowDefinition>
+): Promise<{ definition: WorkflowDefinition }> {
+  return request('/workflows', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateWorkflow(
+  id: string,
+  data: Partial<WorkflowDefinition>
+): Promise<{ definition: WorkflowDefinition }> {
+  return request(`/workflows/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export async function deleteWorkflow(id: string): Promise<void> {
+  await request(`/workflows/${id}`, { method: 'DELETE' });
+}
+
+export async function triggerWorkflow(
+  id: string,
+  input?: Record<string, unknown>
+): Promise<{ run: WorkflowRun }> {
+  return request(`/workflows/${id}/run`, {
+    method: 'POST',
+    body: JSON.stringify({ input }),
+  });
+}
+
+export async function fetchWorkflowRuns(
+  workflowId: string,
+  opts?: { limit?: number; offset?: number }
+): Promise<{ runs: WorkflowRun[]; total: number }> {
+  try {
+    const query = new URLSearchParams();
+    if (opts?.limit) query.set('limit', String(opts.limit));
+    if (opts?.offset) query.set('offset', String(opts.offset));
+    const qs = query.toString();
+    return await request(`/workflows/${workflowId}/runs${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { runs: [], total: 0 };
+  }
+}
+
+export async function fetchWorkflowRun(
+  runId: string
+): Promise<{ run: WorkflowRun & { stepRuns: WorkflowStepRun[] } }> {
+  return request(`/workflows/runs/${runId}`);
+}
+
+export async function cancelWorkflowRun(
+  runId: string
+): Promise<{ run: WorkflowRun }> {
+  return request(`/workflows/runs/${runId}`, { method: 'DELETE' });
 }
