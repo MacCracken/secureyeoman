@@ -37,7 +37,7 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 - [ ] YEOMAN MCP show QUICKBOOKS Skills
 - [ ] CLI updates for the added toolsets
 - [ ] FRIDAY's suggestions - [suggestions](friday_suggestions.md)
-
+- [ ] Cast Deletion actions into another Resource Section (Personality > Body) - gate them per-personality; select style of auto, request, manual. (see friday_requests.md mentions something simliar)
 
 ---
 

@@ -862,6 +862,246 @@ describe('Chat Routes — context compaction', () => {
   });
 });
 
+// ── Resource action recording ──────────────────────────────────────────────────
+//
+// When the agentic loop executes a recognised creation tool successfully, the
+// chat route should:
+//   1. Push a sparkle CreationEvent to the response (visible in the chat bubble)
+//   2. Write a task history entry via taskStorage.storeTask()
+//
+// Status in the history entry comes from the result item (e.g. 'pending' for a
+// newly created task); everything else defaults to 'completed'.
+//
+// chat-routes owns ALL persistence — creation-tool-executor never calls storeTask.
+
+describe('Chat Routes — resource action recording', () => {
+  let app: ReturnType<typeof Fastify>;
+
+  beforeEach(() => {
+    app = Fastify();
+  });
+
+  /** Mock AI that emits one tool call then a normal end_turn response. */
+  function makeAgentAiClient(toolName: string, toolArgs: Record<string, unknown>) {
+    const toolResponse = {
+      id: 'resp-tool',
+      content: '',
+      toolCalls: [{ id: 'tc-1', name: toolName, arguments: toolArgs }],
+      usage: { inputTokens: 50, outputTokens: 30, cachedTokens: 0, totalTokens: 80 },
+      stopReason: 'tool_use',
+      model: 'claude-sonnet-4-20250514',
+      provider: 'anthropic',
+    };
+    const finalResponse = {
+      id: 'resp-final',
+      content: 'Done.',
+      toolCalls: [],
+      usage: { inputTokens: 50, outputTokens: 30, cachedTokens: 0, totalTokens: 80 },
+      stopReason: 'end_turn',
+      model: 'claude-sonnet-4-20250514',
+      provider: 'anthropic',
+    };
+    return { chat: vi.fn().mockResolvedValueOnce(toolResponse).mockResolvedValueOnce(finalResponse) };
+  }
+
+  /** Extend a base SecureYeoman mock with the extra managers needed by the executor. */
+  function withExecutorManagers(
+    baseMock: ReturnType<typeof createMockSecureYeoman>['mock'],
+    extras: {
+      taskStorage?: { storeTask: ReturnType<typeof vi.fn> } | null;
+      taskExecutor?: unknown;
+      soulManagerExtras?: Record<string, unknown>;
+    } = {}
+  ) {
+    const mock = baseMock as any;
+    mock.getTaskStorage = vi.fn().mockReturnValue(extras.taskStorage ?? null);
+    mock.getTaskExecutor = vi.fn().mockReturnValue(extras.taskExecutor ?? null);
+    mock.getSubAgentManager = vi.fn().mockReturnValue(null);
+    mock.getSwarmManager = vi.fn().mockReturnValue(null);
+    mock.getExperimentManager = vi.fn().mockReturnValue(null);
+    mock.getA2AManager = vi.fn().mockReturnValue(null);
+    mock.getWorkflowManager = vi.fn().mockReturnValue(null);
+    mock.getDynamicToolManager = vi.fn().mockReturnValue(null);
+    // Merge any extra soul manager methods (e.g. createSkill)
+    if (extras.soulManagerExtras) {
+      const sm = mock.getSoulManager();
+      Object.assign(sm, extras.soulManagerExtras);
+    }
+    return mock;
+  }
+
+  it('emits a sparkle CreationEvent for create_skill', async () => {
+    const mockSkill = { id: 'sk-1', name: 'Test Skill' };
+    const aiClient = makeAgentAiClient('create_skill', {
+      name: 'test_skill',
+      description: 'A skill',
+      instructions: 'Do stuff',
+    });
+    const { mock: baseMock } = createMockSecureYeoman({ aiClient });
+    const mock = withExecutorManagers(baseMock, {
+      soulManagerExtras: { createSkill: vi.fn().mockResolvedValue(mockSkill) },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'create a skill' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.creationEvents).toHaveLength(1);
+    expect(body.creationEvents[0]).toMatchObject({
+      tool: 'create_skill',
+      label: 'Skill',
+      action: 'Created',
+      name: 'Test Skill',
+      id: 'sk-1',
+    });
+  });
+
+  it('writes a COMPLETED task history entry for create_skill', async () => {
+    const mockTaskStorage = { storeTask: vi.fn().mockResolvedValue(undefined) };
+    const mockSkill = { id: 'sk-1', name: 'My Skill' };
+    const aiClient = makeAgentAiClient('create_skill', {
+      name: 'my_skill',
+      description: '',
+      instructions: '',
+    });
+    const { mock: baseMock } = createMockSecureYeoman({ aiClient });
+    const mock = withExecutorManagers(baseMock, {
+      taskStorage: mockTaskStorage,
+      soulManagerExtras: { createSkill: vi.fn().mockResolvedValue(mockSkill) },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'create a skill' },
+    });
+
+    expect(mockTaskStorage.storeTask).toHaveBeenCalledTimes(1);
+    expect(mockTaskStorage.storeTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Skill Created: My Skill',
+        description: 'create_skill',
+        status: 'completed',
+        completedAt: expect.any(Number),
+      })
+    );
+  });
+
+  it('writes a PENDING task history entry for create_task — status from result item', async () => {
+    // No taskExecutor → executor falls back, returns { task: { status: 'pending', ... } }
+    const mockTaskStorage = { storeTask: vi.fn().mockResolvedValue(undefined) };
+    const aiClient = makeAgentAiClient('create_task', {
+      name: 'My New Task',
+      type: 'execute',
+    });
+    const { mock: baseMock } = createMockSecureYeoman({ aiClient });
+    const mock = withExecutorManagers(baseMock, { taskStorage: mockTaskStorage });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'create a task' },
+    });
+
+    expect(mockTaskStorage.storeTask).toHaveBeenCalledTimes(1);
+    expect(mockTaskStorage.storeTask).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: 'Task Created: My New Task',
+        description: 'create_task',
+        status: 'pending',
+      })
+    );
+    // completedAt should NOT be present for a pending entry
+    const call = mockTaskStorage.storeTask.mock.calls[0][0];
+    expect(call.completedAt).toBeUndefined();
+  });
+
+  it('records delete_skill with action "Deleted"', async () => {
+    const mockTaskStorage = { storeTask: vi.fn().mockResolvedValue(undefined) };
+    const aiClient = makeAgentAiClient('delete_skill', { id: 'sk-99' });
+    const { mock: baseMock } = createMockSecureYeoman({ aiClient });
+    const mock = withExecutorManagers(baseMock, {
+      taskStorage: mockTaskStorage,
+      soulManagerExtras: { deleteSkill: vi.fn().mockResolvedValue(undefined) },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'delete that skill' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.creationEvents[0]).toMatchObject({ action: 'Deleted', label: 'Skill' });
+    expect(mockTaskStorage.storeTask).toHaveBeenCalledWith(
+      expect.objectContaining({ name: expect.stringContaining('Skill Deleted:') })
+    );
+  });
+
+  it('does not record anything when result is an error', async () => {
+    // createSkill throwing causes the executor to return isError=true
+    const mockTaskStorage = { storeTask: vi.fn().mockResolvedValue(undefined) };
+    const aiClient = makeAgentAiClient('create_skill', { name: 'bad_skill' });
+    const { mock: baseMock } = createMockSecureYeoman({ aiClient });
+    const mock = withExecutorManagers(baseMock, {
+      taskStorage: mockTaskStorage,
+      soulManagerExtras: {
+        createSkill: vi.fn().mockRejectedValue(new Error('name conflict')),
+      },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'create a skill' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    expect(body.creationEvents ?? []).toHaveLength(0);
+    expect(mockTaskStorage.storeTask).not.toHaveBeenCalled();
+  });
+
+  it('emits sparkle but skips storeTask when taskStorage is unavailable', async () => {
+    const mockSkill = { id: 'sk-2', name: 'No Storage Skill' };
+    const aiClient = makeAgentAiClient('create_skill', {
+      name: 'no_storage_skill',
+      description: '',
+      instructions: '',
+    });
+    const { mock: baseMock } = createMockSecureYeoman({ aiClient });
+    // taskStorage: null (unavailable)
+    const mock = withExecutorManagers(baseMock, {
+      taskStorage: null,
+      soulManagerExtras: { createSkill: vi.fn().mockResolvedValue(mockSkill) },
+    });
+    registerChatRoutes(app, { secureYeoman: mock });
+
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/chat',
+      payload: { message: 'create skill' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.payload);
+    // Sparkle still emitted
+    expect(body.creationEvents).toHaveLength(1);
+    // No storeTask — taskStorage was null
+    // (no mock to assert on; test passes if no error thrown)
+  });
+});
+
 // ── Additional branch coverage ─────────────────────────────────────────────────
 
 describe('Chat Routes — additional branch coverage', () => {

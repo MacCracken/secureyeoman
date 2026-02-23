@@ -1148,7 +1148,7 @@ export function EditorPage() {
                             >
                               <Sparkles className="w-2.5 h-2.5 shrink-0" />
                               <span>
-                                {ev.label} created:{' '}
+                                {ev.label} {ev.action ?? 'Created'}:{' '}
                                 <strong className="font-medium">{sanitizeText(ev.name)}</strong>
                               </span>
                             </div>

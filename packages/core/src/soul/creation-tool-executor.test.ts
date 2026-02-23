@@ -1,9 +1,10 @@
 /**
- * Tests for the dynamic-tool portions of creation-tool-executor:
+ * Tests for creation-tool-executor:
+ *   - 'create_task' case — executor executes and returns; does NOT own storage
  *   - 'register_dynamic_tool' case
  *   - default case dynamic-tool dispatch
  *
- * Other cases (create_skill, create_task, etc.) are exercised by integration
+ * Other cases (create_skill, etc.) are exercised by integration
  * tests in soul.test.ts and the per-manager unit tests.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -55,6 +56,117 @@ function makeToolCall(name: string, args: Record<string, unknown> = {}): ToolCal
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
+
+describe('executeCreationTool — create_task', () => {
+  describe('without a taskExecutor', () => {
+    it('returns a pending task object', async () => {
+      const sy = makeSecureYeoman();
+      const result = await executeCreationTool(
+        makeToolCall('create_task', { name: 'My Task', type: 'execute' }),
+        sy as any
+      );
+      expect(result.isError).toBe(false);
+      const task = (result.output as { task: Record<string, unknown> }).task;
+      expect(task.name).toBe('My Task');
+      expect(task.status).toBe('pending');
+    });
+
+    it('does not call getTaskStorage — storage is the caller\'s responsibility', async () => {
+      const sy = makeSecureYeoman();
+      await executeCreationTool(
+        makeToolCall('create_task', { name: 'My Task' }),
+        sy as any
+      );
+      expect(sy.getTaskStorage).not.toHaveBeenCalled();
+    });
+
+    it('includes a generated id in the returned task', async () => {
+      const sy = makeSecureYeoman();
+      const result = await executeCreationTool(
+        makeToolCall('create_task', { name: 'Named Task' }),
+        sy as any
+      );
+      const task = (result.output as { task: Record<string, unknown> }).task;
+      expect(typeof task.id).toBe('string');
+      expect((task.id as string).length).toBeGreaterThan(0);
+    });
+  });
+
+  describe('with taskExecutor that succeeds', () => {
+    it('returns the executorTask from submit()', async () => {
+      const executorTask = { id: 'exec-1', name: 'My Task', status: 'pending' };
+      const sy = {
+        ...makeSecureYeoman(),
+        getTaskExecutor: vi.fn().mockReturnValue({
+          submit: vi.fn().mockResolvedValue(executorTask),
+        }),
+      };
+      const result = await executeCreationTool(
+        makeToolCall('create_task', { name: 'My Task' }),
+        sy as any
+      );
+      expect(result.isError).toBe(false);
+      expect((result.output as { task: unknown }).task).toEqual(executorTask);
+    });
+
+    it('passes name, description, input, and timeoutMs to submit()', async () => {
+      const mockSubmit = vi.fn().mockResolvedValue({ id: 'exec-2', name: 'Typed Task', status: 'pending' });
+      const sy = {
+        ...makeSecureYeoman(),
+        getTaskExecutor: vi.fn().mockReturnValue({ submit: mockSubmit }),
+      };
+      await executeCreationTool(
+        makeToolCall('create_task', {
+          name: 'Typed Task',
+          description: 'does stuff',
+          input: { key: 'value' },
+          timeoutMs: 60000,
+        }),
+        sy as any
+      );
+      expect(mockSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          name: 'Typed Task',
+          description: 'does stuff',
+          input: { key: 'value' },
+          timeoutMs: 60000,
+        }),
+        expect.objectContaining({ userId: 'ai', role: 'operator' })
+      );
+    });
+  });
+
+  describe('with taskExecutor that throws', () => {
+    it('falls back to returning the local pending task', async () => {
+      const sy = {
+        ...makeSecureYeoman(),
+        getTaskExecutor: vi.fn().mockReturnValue({
+          submit: vi.fn().mockRejectedValue(new Error('executor unavailable')),
+        }),
+      };
+      const result = await executeCreationTool(
+        makeToolCall('create_task', { name: 'Fallback Task', type: 'execute' }),
+        sy as any
+      );
+      expect(result.isError).toBe(false);
+      const task = (result.output as { task: Record<string, unknown> }).task;
+      expect(task.name).toBe('Fallback Task');
+      expect(task.status).toBe('pending');
+    });
+
+    it('does not propagate the executor error', async () => {
+      const sy = {
+        ...makeSecureYeoman(),
+        getTaskExecutor: vi.fn().mockReturnValue({
+          submit: vi.fn().mockRejectedValue(new Error('boom')),
+        }),
+      };
+      await expect(
+        executeCreationTool(makeToolCall('create_task', { name: 'Task' }), sy as any)
+      ).resolves.toMatchObject({ isError: false });
+    });
+  });
+});
 
 describe('executeCreationTool — register_dynamic_tool', () => {
   describe('when DynamicToolManager is not available', () => {

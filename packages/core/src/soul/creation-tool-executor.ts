@@ -95,11 +95,7 @@ export async function executeCreationTool(
 
       // ── Tasks ──────────────────────────────────────────────────────────
       case 'create_task': {
-        const taskStorage = secureYeoman.getTaskStorage?.();
         const taskExecutor = secureYeoman.getTaskExecutor?.();
-        if (!taskStorage) {
-          return { output: { error: 'Task storage not available' }, isError: true };
-        }
         const { uuidv7, sha256 } = await import('../utils/crypto.js');
         const { TaskStatus } = await import('@secureyeoman/shared');
         const now = Date.now();
@@ -128,10 +124,9 @@ export async function executeCreationTool(
             );
             return { output: { task: executorTask }, isError: false };
           } catch {
-            // Fall through to store as pending below
+            // Fall through to return as pending below
           }
         }
-        taskStorage.storeTask(task);
         return { output: { task }, isError: false };
       }
 

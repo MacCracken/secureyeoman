@@ -279,11 +279,23 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         const MAX_TOOL_ITERATIONS = 10;
         let iterationCount = 0;
 
-        // Collect resource-creation events to surface in the chat UI.
-        const creationEvents: Array<{ tool: string; label: string; name: string; id?: string }> =
+        // Collect resource-action events to surface in the chat UI and task history.
+        const creationEvents: Array<{ tool: string; label: string; action: string; name: string; id?: string }> =
           [];
 
-        // Map tool names → human-readable labels for the contextual card.
+        // Human-readable action verb derived from the tool name prefix.
+        const toolAction = (toolName: string): string => {
+          if (toolName.startsWith('create_')) return 'Created';
+          if (toolName.startsWith('update_')) return 'Updated';
+          if (toolName.startsWith('delete_')) return 'Deleted';
+          if (toolName.startsWith('trigger_')) return 'Triggered';
+          if (toolName.startsWith('assign_')) return 'Assigned';
+          if (toolName === 'a2a_connect') return 'Connected';
+          if (toolName === 'delegate_task') return 'Delegated';
+          return 'Created';
+        };
+
+        // Map tool names → human-readable resource labels.
         const CREATION_TOOL_LABELS: Record<string, string> = {
           create_skill: 'Skill',
           update_skill: 'Skill',
@@ -298,7 +310,16 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           assign_role: 'Role Assignment',
           a2a_connect: 'A2A Connection',
           delegate_task: 'Delegation',
+          create_workflow: 'Workflow',
+          update_workflow: 'Workflow',
+          delete_workflow: 'Workflow',
+          trigger_workflow: 'Workflow Run',
         };
+
+        // Resolve once — used inside the tool loop to record every resource action.
+        const { uuidv7, sha256 } = await import('../utils/crypto.js');
+        const { TaskStatus } = await import('@secureyeoman/shared');
+        const taskStorage = secureYeoman.getTaskStorage?.();
 
         let rawResponse = await aiClient.chat(
           aiRequest,
@@ -328,25 +349,43 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           for (const toolCall of rawResponse.toolCalls) {
             const result = await executeCreationTool(toolCall, secureYeoman, executionContext);
 
-            // Capture creation metadata for the contextual UI card.
+            // Record every recognised resource action: sparkle card + task history entry.
             const label = CREATION_TOOL_LABELS[toolCall.name];
             if (label && !result.isError) {
               const out = result.output as Record<string, unknown>;
-              const item = (out.skill ??
-                out.task ??
-                out.personality ??
-                out.experiment ??
-                out.swarm) as Record<string, unknown> | undefined;
-              const itemName =
-                item?.name ??
+              const item = (out.skill ?? out.task ?? out.personality ?? out.experiment ??
+                out.swarm ?? out.workflow ?? out.run) as Record<string, unknown> | undefined;
+              const name = String(
+                item?.name ?? item?.workflowName ??
                 (toolCall.arguments as Record<string, unknown>)?.name ??
-                toolCall.name;
-              creationEvents.push({
-                tool: toolCall.name,
-                label,
-                name: typeof itemName === 'string' ? itemName : String(itemName),
-                id: typeof item?.id === 'string' ? item.id : undefined,
-              });
+                toolCall.name
+              );
+              const action = toolAction(toolCall.name);
+              const id = typeof item?.id === 'string' ? item.id : undefined;
+
+              // Sparkle card in the chat bubble
+              creationEvents.push({ tool: toolCall.name, label, action, name, id });
+
+              // Task history entry — status is taken from the result item when
+              // present (e.g. PENDING for a newly created task) or defaults to
+              // COMPLETED for every other resource action.
+              if (taskStorage) {
+                const status =
+                  typeof item?.status === 'string' ? (item.status as any) : TaskStatus.COMPLETED;
+                const now = Date.now();
+                await taskStorage.storeTask({
+                  id: uuidv7(),
+                  type: 'execute' as any,
+                  name: `${label} ${action}: ${name}`,
+                  description: toolCall.name,
+                  status,
+                  createdAt: now,
+                  ...(status === TaskStatus.COMPLETED ? { completedAt: now, durationMs: 0 } : {}),
+                  inputHash: sha256(JSON.stringify(toolCall.arguments ?? {})),
+                  securityContext: { userId: 'ai', role: 'operator', permissionsUsed: [] },
+                  timeoutMs: 0,
+                });
+              }
             }
 
             messages.push({

@@ -4,6 +4,78 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — Resource Action Recording Refactor (2026-02-23)
+
+### Bug Fixes
+
+**`packages/core/src/soul/creation-tool-executor.ts`** — task history entries were silently dropped:
+- `taskStorage.storeTask()` in the `create_task` fallback path was called without `await` — a fire-and-forget write that was lost under any meaningful I/O latency
+- Added `await` and then removed the call entirely as part of the architectural refactor below
+
+**`packages/core/src/ai/chat-routes.ts`** — workflow creation/deletion/trigger operations produced no sparkle card and no task history entry:
+- `create_workflow`, `update_workflow`, `delete_workflow`, and `trigger_workflow` were absent from `CREATION_TOOL_LABELS`; all four are now present
+- `trigger_workflow` result is a `WorkflowRun` which carries `workflowName` (not `name`); added `item?.workflowName` to the name resolution chain
+- Sparkle cards always read "X created:" regardless of the actual operation (delete, update, trigger); fixed by adding an `action` field to `CreationEvent` and a `toolAction()` helper that derives the verb from the tool name prefix (`create_` → "Created", `delete_` → "Deleted", `trigger_` → "Triggered", etc.)
+
+### Refactor
+
+**`packages/core/src/soul/creation-tool-executor.ts`** + **`packages/core/src/ai/chat-routes.ts`** — architectural split where the executor owned storage for `create_task` while the chat route owned it for everything else:
+- **Executor contract simplified**: `creation-tool-executor.ts` now only executes tool calls and returns results. The `create_task` case no longer calls `taskStorage.storeTask()` — it builds the task object, submits it to `taskExecutor` if available, and returns the result.
+- **Chat routes own all persistence**: the `create_task` / `update_task` exclusion is removed. Every recognised resource action — skills, tasks, workflows, personalities, experiments, swarms, role assignments, A2A connections, delegations — goes through the same recording path.
+- **Status from result, not hardcoded**: `TaskStatus.COMPLETED` is used as the default, but `item?.status` is read from the result when present. A newly created task returns `status: 'pending'`; all other resource operations return `status: 'completed'`.
+- **`completedAt` / `durationMs` omitted for non-terminal entries**: the history record for a pending task correctly omits `completedAt` and `durationMs`, mirroring how the task executor would store a real in-flight task.
+
+### Documentation
+
+**`docs/adr/110-resource-action-recording.md`** — new ADR:
+- Documents the before state (split ownership, missing `await`, hardcoded verbs, missing workflow tools)
+- Records the decision to make chat-routes the sole owner of task-history persistence
+- Explains the `item?.status` status-derivation strategy and its trade-offs for the `taskExecutor.submit()` vs. fallback paths
+
+**`packages/core/src/ai/chat-routes.test.ts`** — new test block `Chat Routes — resource action recording` (6 tests):
+- Sparkle `CreationEvent` emitted for `create_skill`
+- `COMPLETED` history entry written for `create_skill`
+- `PENDING` history entry written for `create_task` (status taken from result item; `completedAt` absent)
+- `action: 'Deleted'` emitted for `delete_skill`
+- No event or storeTask call when executor returns `isError: true`
+- Sparkle emitted but `storeTask` skipped when `taskStorage` is unavailable
+
+**`packages/core/src/soul/creation-tool-executor.test.ts`** — new test block `executeCreationTool — create_task` (7 tests):
+- Returns pending task without `taskExecutor`
+- Does not call `getTaskStorage` — caller owns persistence
+- Includes generated id in returned task
+- Returns `executorTask` from `taskExecutor.submit()` on success
+- Passes name, description, input, and timeoutMs to `submit()`
+- Falls back to local pending task when executor throws
+- Does not propagate the executor error
+
+---
+
+## [Unreleased] — Dashboard Login Network Status + /metrics Refresh Fix (2026-02-23)
+
+### Bug Fixes
+
+**`packages/dashboard/src/pages/LoginPage.tsx`** — "Local Network Only" was a static label:
+- Replaced static footer text with a live network-mode indicator that fetches from `/health`
+- Mirrors the logic in the About dialog: "Public (TLS Secured)" (green) / "Network (No TLS)" (amber) / "Local Network Only" (muted)
+- Added `useQuery` + `fetchHealth` imports; query uses `staleTime: 30000` consistent with the rest of the app
+
+**`packages/core/src/gateway/server.ts`** + **`packages/core/src/gateway/auth-middleware.ts`** + **`packages/dashboard/vite.config.ts`** — refreshing `/metrics` returned `401` / `404` instead of the dashboard page:
+- `resolveDashboardDist()` had one extra `../` in its relative path — resolved to `/app/dashboard/dist` instead of `/app/packages/dashboard/dist`, so `distPath` was always `null` and neither `@fastify/static` nor `setNotFoundHandler` were ever registered
+- Renamed the backend Prometheus scrape endpoint from `/metrics` to `/prom/metrics` to remove the route collision with the React Router `/metrics` page
+- Added `'/prom/metrics'` to `PUBLIC_ROUTES` in `auth-middleware.ts` (the endpoint was already commented "unauthenticated" but was never actually exempted)
+- Both `createAuthHook` and `createRbacHook` now skip enforcement for any path outside `/api/` and `/ws/` — browser navigations to SPA routes were being rejected before `setNotFoundHandler` could serve `index.html`
+- `setNotFoundHandler` now serves `index.html` via `readFileSync` + `reply.type('text/html').send()` instead of `reply.sendFile()`, which is unreliable when invoked from within `@fastify/static`'s own not-found path
+- Replaced the `/metrics` Vite dev-server proxy entry with `/prom` — the proxy was the original source of the 401, forwarding every browser navigation at `/metrics` directly to the gateway
+
+### Documentation
+
+**`CONTRIBUTING.md`** — added "Rebuilding After Code Changes" subsection:
+- The `core` Docker image bakes compiled source at build time (no volume mount) and must be rebuilt with `--no-cache` after editing TypeScript source files
+- Documents the correct `docker compose --profile dev build --no-cache core && docker compose --profile dev up -d core` workflow
+
+---
+
 ## [Unreleased] — Security Policy Persistence + Sparkle Icon Fix (2026-02-23)
 
 ### Bug Fixes

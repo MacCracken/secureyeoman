@@ -487,6 +487,7 @@ export interface ConversationDetail extends Conversation {
 export interface CreationEvent {
   tool: string;
   label: string;
+  action: string;
   name: string;
   id?: string;
 }

@@ -707,7 +707,7 @@ export function ChatPage() {
                               >
                                 <Sparkles className="w-3 h-3 shrink-0" />
                                 <span>
-                                  {ev.label} created:{' '}
+                                  {ev.label} {ev.action ?? 'Created'}:{' '}
                                   <strong className="font-medium">{sanitizeText(ev.name)}</strong>
                                 </span>
                               </div>
