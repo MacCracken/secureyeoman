@@ -36,6 +36,44 @@ class ScopeViolationError extends Error {
   }
 }
 
+/**
+ * Check whether a dotted-decimal IPv4 address falls within a CIDR range.
+ * Returns false for any malformed input — fail-closed.
+ * Exported for unit testing.
+ */
+export function isIpInCidr(ip: string, cidr: string): boolean {
+  const [network, bitsStr] = cidr.split('/');
+  if (bitsStr === undefined) return false;
+  const bits = parseInt(bitsStr, 10);
+  if (Number.isNaN(bits) || bits < 0 || bits > 32) return false;
+  // Require well-formed dotted-decimal for both operands
+  const ipv4Re = /^\d{1,3}(\.\d{1,3}){3}$/;
+  if (!ipv4Re.test(ip) || !network || !ipv4Re.test(network)) return false;
+  const toNum = (s: string): number =>
+    s.split('.').reduce((acc, octet) => ((acc << 8) + parseInt(octet, 10)) >>> 0, 0) >>> 0;
+  const mask = bits === 0 ? 0 : ((~0) << (32 - bits)) >>> 0;
+  return (toNum(ip) & mask) === (toNum(network) & mask);
+}
+
+/**
+ * Check whether a resolved target (IP or hostname) matches a single scope entry.
+ * Entry forms:
+ *   - `10.10.10.0/24`  → CIDR range match for IPv4 targets
+ *   - `.example.com`   → domain suffix match (includes the apex)
+ *   - `example.com`    → exact hostname or subdomain
+ *   - `10.10.10.5`     → exact IP
+ * Exported for unit testing.
+ */
+export function matchesScope(target: string, entry: string): boolean {
+  if (entry === target) return true;
+  // CIDR range
+  if (entry.includes('/')) return isIpInCidr(target, entry);
+  // Domain suffix (entry starts with '.')
+  if (entry.startsWith('.')) return target.endsWith(entry) || target === entry.slice(1);
+  // Exact hostname or subdomain of entry
+  return target === entry || target.endsWith(`.${entry}`);
+}
+
 function validateTarget(target: string, config: McpServiceConfig): void {
   const { allowedTargets } = config;
 
@@ -46,10 +84,7 @@ function validateTarget(target: string, config: McpServiceConfig): void {
   // Wildcard — explicit lab/CTF acknowledgement
   if (allowedTargets.includes('*')) return;
 
-  // Substring/prefix match against each allowed entry
-  const ok = allowedTargets.some(
-    (entry) => target === entry || target.startsWith(entry) || entry.startsWith(target)
-  );
+  const ok = allowedTargets.some((entry) => matchesScope(target, entry));
 
   if (!ok) {
     throw new ScopeViolationError(target, allowedTargets);

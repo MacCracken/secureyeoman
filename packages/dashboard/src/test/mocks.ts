@@ -35,6 +35,8 @@ export function createMetricsSnapshot(overrides?: Partial<MetricsSnapshot>): Met
       memoryLimitMb: 1024,
       memoryPercent: 25,
       diskUsedMb: 512,
+      inputTokensToday: 35200,
+      outputTokensToday: 13300,
       tokensUsedToday: 48500,
       tokensCachedToday: 12300,
       costUsdToday: 1.23,

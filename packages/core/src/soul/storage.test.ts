@@ -31,7 +31,6 @@ const personalityRow = {
   model_fallbacks: [],
   include_archetypes: true,
   is_active: false,
-  deletion_protected: false,
   body: null,
   created_at: 1000,
   updated_at: 2000,
@@ -117,16 +116,21 @@ describe('SoulStorage', () => {
       expect(await storage.getPersonality('missing')).toBeNull();
     });
 
-    it('maps deletion_protected false to deletionProtected false', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ ...personalityRow, deletion_protected: false }], rowCount: 1 });
+    it('round-trips resourcePolicy.deletionMode through body JSONB', async () => {
+      const bodyWithPolicy = { resourcePolicy: { deletionMode: 'manual' } };
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...personalityRow, body: bodyWithPolicy }],
+        rowCount: 1,
+      });
       const p = await storage.getPersonality('per-1');
-      expect(p?.deletionProtected).toBe(false);
+      expect(p?.body?.resourcePolicy?.deletionMode).toBe('manual');
     });
 
-    it('maps deletion_protected true to deletionProtected true', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [{ ...personalityRow, deletion_protected: true }], rowCount: 1 });
+    it('defaults resourcePolicy.deletionMode to auto when body has no resourcePolicy', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...personalityRow, body: null }], rowCount: 1 });
       const p = await storage.getPersonality('per-1');
-      expect(p?.deletionProtected).toBe(true);
+      // With no body, resourcePolicy is undefined — manager defaults to 'auto'
+      expect(p?.body?.resourcePolicy?.deletionMode ?? 'auto').toBe('auto');
     });
   });
 

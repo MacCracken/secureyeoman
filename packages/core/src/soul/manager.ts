@@ -141,7 +141,6 @@ export class SoulManager {
       defaultModel: null,
       modelFallbacks: [],
       includeArchetypes: agentName === 'FRIDAY',
-      deletionProtected: false,
       body: {
         enabled: false,
         capabilities: [],
@@ -261,9 +260,13 @@ export class SoulManager {
     if (personality?.isActive) {
       throw new Error('Cannot delete the active personality');
     }
-    if (personality?.deletionProtected) {
-      throw new Error('This personality is protected from deletion. Disable "Protected from deletion" in its settings first.');
+    const mode = personality?.body?.resourcePolicy?.deletionMode ?? 'auto';
+    if (mode === 'manual') {
+      throw new Error(
+        'Deletion is blocked (mode: manual). Change the deletion mode in Body → Resources first.'
+      );
     }
+    // 'request' mode: backend allows deletion; frontend enforces confirmation dialog.
     await this.storage.deletePersonality(id);
   }
 

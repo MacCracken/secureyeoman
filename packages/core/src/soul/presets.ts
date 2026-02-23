@@ -91,7 +91,6 @@ export const PERSONALITY_PRESETS: PersonalityPreset[] = [
       defaultModel: null,
       modelFallbacks: [],
       includeArchetypes: true,
-      deletionProtected: false,
       body: BASE_BODY,
     },
   },
@@ -140,7 +139,6 @@ Terse, factual, and structured. When flagging a concern, state exactly: (a) what
       defaultModel: null,
       modelFallbacks: [],
       includeArchetypes: true,
-      deletionProtected: false,
       body: {
         ...BASE_BODY,
         proactiveConfig: {

@@ -13,6 +13,16 @@
 import type { ToolCall } from '@secureyeoman/shared';
 import type { SecureYeoman } from '../secureyeoman.js';
 
+/** Tool names classified as destructive for semi_auto gating. */
+const DESTRUCTIVE_TOOLS = new Set([
+  'delete_skill',
+  'delete_personality',
+  'delete_custom_role',
+  'delete_experiment',
+  'delete_workflow',
+  'revoke_role',
+]);
+
 export interface ToolExecutionResult {
   output: unknown;
   isError: boolean;
@@ -50,6 +60,56 @@ export async function executeCreationTool(
   context?: ExecutionContext
 ): Promise<ToolExecutionResult> {
   const args = toolCall.arguments as Args;
+
+  // ── Automation-level / emergency-stop gating ──────────────────────────────
+  if (context?.personalityId) {
+    try {
+      const soulManager = secureYeoman.getSoulManager();
+      const personality = await soulManager.getPersonality(context.personalityId);
+      const policy = personality?.body?.resourcePolicy;
+
+      if (policy?.emergencyStop) {
+        return {
+          output: { error: 'Emergency stop is active. All AI-initiated mutations are currently blocked. A human admin must disable the Emergency Stop in Body → Resources.' },
+          isError: true,
+        };
+      }
+
+      const level = policy?.automationLevel ?? 'supervised_auto';
+      const isDestructive = DESTRUCTIVE_TOOLS.has(toolCall.name);
+      const shouldQueue =
+        level === 'full_manual' ||
+        (level === 'semi_auto' && isDestructive);
+
+      if (shouldQueue) {
+        try {
+          const approvalManager = secureYeoman.getApprovalManager();
+          const approval = await approvalManager.createApproval(
+            context.personalityId,
+            toolCall.name,
+            args
+          );
+          return {
+            output: {
+              queued: true,
+              approvalId: approval.id,
+              message: `Action '${toolCall.name}' has been queued for human approval (automation level: ${level}). Approval ID: ${approval.id}. A human operator must review and approve this action in the dashboard.`,
+            },
+            isError: false,
+          };
+        } catch {
+          // Approval store unavailable — fall through and block the action
+          return {
+            output: { error: `Action '${toolCall.name}' requires human approval (automation level: ${level}) but the approval queue is unavailable. Please try again later.` },
+            isError: true,
+          };
+        }
+      }
+    } catch (policyErr) {
+      // If we cannot check the policy, fail safe: allow (don't break non-policy errors)
+      // but only for policy fetch errors, not approval errors
+    }
+  }
 
   try {
     switch (toolCall.name) {
@@ -157,7 +217,6 @@ export async function executeCreationTool(
           defaultModel: null,
           modelFallbacks: [],
           includeArchetypes: false,
-          deletionProtected: false,
           body: {} as any,
         });
         return { output: { personality }, isError: false };
@@ -180,6 +239,21 @@ export async function executeCreationTool(
           };
         }
         const soulManager = secureYeoman.getSoulManager();
+        // Check deletion mode before attempting deletion.
+        const target = await soulManager.getPersonality(targetId);
+        const mode = target?.body?.resourcePolicy?.deletionMode ?? 'auto';
+        if (mode === 'manual') {
+          return {
+            output: { error: 'Deletion is blocked (mode: manual). A human admin must change the deletion mode in Body → Resources before this personality can be deleted.' },
+            isError: true,
+          };
+        }
+        if (mode === 'request') {
+          return {
+            output: { error: 'Deletion requires human confirmation (mode: suggest). AI-initiated deletion is not allowed for this personality. A human must confirm deletion via the dashboard.' },
+            isError: true,
+          };
+        }
         await soulManager.deletePersonality(targetId);
         return { output: { deleted: true, id: targetId }, isError: false };
       }

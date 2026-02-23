@@ -420,6 +420,16 @@ const encryptionConfig = {
 | **Multi-Factor Auth** | Optional 2FA for admin operations | Credential compromise |
 | **Session Management** | Secure cookies, timeout handling | Session hijacking |
 
+### 1.1 CSRF: Not Applicable (Bearer-Token API)
+
+Cross-Site Request Forgery (CSRF) protection is **not required** for the SecureYeoman REST API. The API uses HTTP Bearer tokens (`Authorization: Bearer <jwt>`) and API keys (`X-API-Key: <key>`) exclusively — no session cookies are used.
+
+**Why CSRF does not apply:** CSRF exploits the browser's automatic attachment of cookies to cross-origin requests. Since SecureYeoman's authentication credentials are stored in browser memory/localStorage (not cookies) and cannot be added to cross-origin requests without a CORS preflight, the CSRF attack vector is absent.
+
+**CORS** (via `@fastify/cors`) restricts which origins can make requests with custom headers, providing the appropriate protection.
+
+**Important:** If session cookies are ever introduced (e.g., SSO refresh tokens, persistent login), CSRF protection MUST be added at that point. See [ADR 115](../adr/115-csrf-not-applicable-bearer-token-api.md) for the full analysis and requirements.
+
 ### 2. Authorization Controls
 
 | Control | Implementation | Risk Mitigated |

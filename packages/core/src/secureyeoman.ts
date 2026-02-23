@@ -49,6 +49,7 @@ import { AuthService } from './security/auth.js';
 import { sha256 } from './utils/crypto.js';
 import { SoulStorage } from './soul/storage.js';
 import { SoulManager } from './soul/manager.js';
+import { ApprovalManager } from './soul/approval-manager.js';
 import { BrainStorage } from './brain/storage.js';
 import { BrainManager } from './brain/manager.js';
 import { SpiritStorage } from './spirit/storage.js';
@@ -186,6 +187,7 @@ export class SecureYeoman {
   private spiritManager: SpiritManager | null = null;
   private soulStorage: SoulStorage | null = null;
   private soulManager: SoulManager | null = null;
+  private approvalManager: ApprovalManager | null = null;
   private agentComms: AgentComms | null = null;
   private integrationStorage: IntegrationStorage | null = null;
   private integrationManager: IntegrationManager | null = null;
@@ -516,6 +518,7 @@ export class SecureYeoman {
 
       // Step 5.7b: Initialize soul system (now depends on Brain and Spirit)
       this.soulStorage = new SoulStorage();
+      this.approvalManager = new ApprovalManager();
       this.soulManager = new SoulManager(
         this.soulStorage,
         this.config.soul,
@@ -1254,6 +1257,8 @@ export class SecureYeoman {
         memoryLimitMb: 0,
         memoryPercent: 0,
         diskUsedMb: 0,
+        inputTokensToday: aiStats?.inputTokensToday ?? 0,
+        outputTokensToday: aiStats?.outputTokensToday ?? 0,
         tokensUsedToday: aiStats?.tokensUsedToday ?? 0,
         tokensCachedToday: aiStats?.tokensCachedToday ?? 0,
         costUsdToday: aiStats?.costUsdToday ?? 0,
@@ -1498,6 +1503,17 @@ export class SecureYeoman {
       throw new Error('Soul manager is not available');
     }
     return this.soulManager;
+  }
+
+  /**
+   * Get the approval manager instance (human-in-the-loop queue)
+   */
+  getApprovalManager(): ApprovalManager {
+    this.ensureInitialized();
+    if (!this.approvalManager) {
+      throw new Error('Approval manager is not available');
+    }
+    return this.approvalManager;
   }
 
   /**
@@ -2273,6 +2289,7 @@ export class SecureYeoman {
       this.soulStorage.close();
       this.soulStorage = null;
       this.soulManager = null;
+      this.approvalManager = null;
     }
 
     // Close spirit storage

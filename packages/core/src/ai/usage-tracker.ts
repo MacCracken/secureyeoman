@@ -27,6 +27,8 @@ export interface UsageRecord {
 }
 
 export interface UsageStats {
+  inputTokensToday: number;
+  outputTokensToday: number;
   tokensUsedToday: number;
   tokensCachedToday: number;
   costUsdToday: number;
@@ -40,6 +42,8 @@ export interface UsageStats {
 }
 
 interface ProviderStats {
+  inputTokensUsed: number;
+  outputTokensUsed: number;
   tokensUsed: number;
   costUsd: number;
   calls: number;
@@ -193,6 +197,8 @@ export class UsageTracker {
     const today = dayKey(now);
     const thisMonth = monthKey(now);
 
+    let inputTokensToday = 0;
+    let outputTokensToday = 0;
     let tokensUsedToday = 0;
     let tokensCachedToday = 0;
     let costUsdToday = 0;
@@ -205,14 +211,18 @@ export class UsageTracker {
 
       // Per-provider aggregation
       if (!byProvider[r.provider]) {
-        byProvider[r.provider] = { tokensUsed: 0, costUsd: 0, calls: 0, errors: 0 };
+        byProvider[r.provider] = { inputTokensUsed: 0, outputTokensUsed: 0, tokensUsed: 0, costUsd: 0, calls: 0, errors: 0 };
       }
       const providerStats = byProvider[r.provider]!;
+      providerStats.inputTokensUsed += r.usage.inputTokens;
+      providerStats.outputTokensUsed += r.usage.outputTokens;
       providerStats.tokensUsed += r.usage.totalTokens;
       providerStats.costUsd += r.costUsd;
       providerStats.calls++;
 
       if (rDay === today) {
+        inputTokensToday += r.usage.inputTokens;
+        outputTokensToday += r.usage.outputTokens;
         tokensUsedToday += r.usage.totalTokens;
         tokensCachedToday += r.usage.cachedTokens;
         costUsdToday += r.costUsd;
@@ -224,6 +234,8 @@ export class UsageTracker {
     }
 
     return {
+      inputTokensToday,
+      outputTokensToday,
       tokensUsedToday,
       tokensCachedToday,
       costUsdToday,

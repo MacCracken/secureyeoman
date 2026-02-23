@@ -125,6 +125,25 @@ export const ThinkingPersonalityConfigSchema = z
 
 export type ThinkingPersonalityConfig = z.infer<typeof ThinkingPersonalityConfigSchema>;
 
+export const ResourcePolicySchema = z
+  .object({
+    deletionMode: z.enum(['auto', 'request', 'manual']).default('auto'),
+    /**
+     * Controls how much autonomy the AI has when performing mutations:
+     * - `supervised_auto`  (default) — AI actions proceed immediately
+     * - `semi_auto`        — Destructive AI actions (delete) are queued for approval; creative ones proceed
+     * - `full_manual`      — Every AI-initiated creation/deletion is queued for human approval
+     */
+    automationLevel: z
+      .enum(['full_manual', 'semi_auto', 'supervised_auto'])
+      .default('supervised_auto'),
+    /** Kill-switch: when true, all AI-initiated mutations are blocked regardless of automationLevel. */
+    emergencyStop: z.boolean().default(false),
+  })
+  .default({});
+
+export type ResourcePolicy = z.infer<typeof ResourcePolicySchema>;
+
 export const BodyConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
@@ -137,6 +156,7 @@ export const BodyConfigSchema = z
     proactiveConfig: ProactivePersonalityConfigSchema.default({}),
     activeHours: PersonalityActiveHoursSchema.default({}),
     thinkingConfig: ThinkingPersonalityConfigSchema,
+    resourcePolicy: ResourcePolicySchema.optional(),
   })
   .default({});
 
@@ -157,8 +177,6 @@ export const PersonalitySchema = z.object({
   modelFallbacks: z.array(ModelFallbackEntrySchema).max(5).default([]),
   includeArchetypes: z.boolean().default(true),
   isActive: z.boolean().default(false),
-  /** When true, deletion via any path (UI, API, AI tool) is blocked until cleared. */
-  deletionProtected: z.boolean().default(false),
   body: BodyConfigSchema.default({}),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),

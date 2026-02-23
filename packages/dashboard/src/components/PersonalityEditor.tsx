@@ -1263,6 +1263,16 @@ interface BodySectionProps {
     };
     learning: { enabled: boolean; minConfidence: number };
   }) => void;
+  resourcePolicy: {
+    deletionMode: 'auto' | 'request' | 'manual';
+    automationLevel: 'full_manual' | 'semi_auto' | 'supervised_auto';
+    emergencyStop: boolean;
+  };
+  onResourcePolicyChange: (policy: {
+    deletionMode: 'auto' | 'request' | 'manual';
+    automationLevel: 'full_manual' | 'semi_auto' | 'supervised_auto';
+    emergencyStop: boolean;
+  }) => void;
 }
 
 function BodySection({
@@ -1280,6 +1290,8 @@ function BodySection({
   onCreationConfigChange,
   proactiveConfig,
   onProactiveConfigChange,
+  resourcePolicy,
+  onResourcePolicyChange,
 }: BodySectionProps) {
   const capabilities = ['auditory', 'haptic', 'limb_movement', 'vision', 'vocalization'] as const;
   const { data: serversData, isLoading: serversLoading } = useQuery({
@@ -2187,6 +2199,87 @@ function BodySection({
           </p>
           <div className="space-y-2">{orchestrationItems.map(renderToggleRow)}</div>
         </CollapsibleSection>
+
+        <CollapsibleSection title="Deletion" defaultOpen={false}>
+          <p className="text-xs text-muted-foreground mb-3">
+            Control how this personality can be deleted.
+          </p>
+          <div className="space-y-3">
+            {(
+              [
+                { value: 'auto', label: 'Auto', description: 'Deletion happens immediately with no prompt.' },
+                { value: 'request', label: 'Suggest', description: 'Deletion requires a confirmation step. AI cannot delete this personality.' },
+                { value: 'manual', label: 'Manual', description: 'Deletion is fully blocked. Change this setting to delete.' },
+              ] as const
+            ).map(({ value, label, description }) => (
+              <label key={value} className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="deletionMode"
+                  value={value}
+                  checked={resourcePolicy.deletionMode === value}
+                  onChange={() => { onResourcePolicyChange({ ...resourcePolicy, deletionMode: value }); }}
+                  className="mt-0.5"
+                />
+                <span className="flex flex-col">
+                  <span className="text-sm font-medium">{label}</span>
+                  <span className="text-xs text-muted-foreground">{description}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Automation Level" defaultOpen={false}>
+          <p className="text-xs text-muted-foreground mb-3">
+            Control how much autonomy the AI has when performing mutations (creating or deleting things).
+          </p>
+          <div className="space-y-3">
+            {(
+              [
+                { value: 'supervised_auto', label: 'Supervised Auto', description: 'AI actions proceed immediately. You receive notifications.' },
+                { value: 'semi_auto', label: 'Semi-Auto', description: 'Destructive AI actions (delete) are queued for your approval. Creative actions proceed.' },
+                { value: 'full_manual', label: 'Full Manual', description: 'Every AI-initiated creation or deletion is queued for your approval.' },
+              ] as const
+            ).map(({ value, label, description }) => (
+              <label key={value} className="flex items-start gap-2 cursor-pointer">
+                <input
+                  type="radio"
+                  name="automationLevel"
+                  value={value}
+                  checked={resourcePolicy.automationLevel === value}
+                  onChange={() => { onResourcePolicyChange({ ...resourcePolicy, automationLevel: value }); }}
+                  className="mt-0.5"
+                />
+                <span className="flex flex-col">
+                  <span className="text-sm font-medium">{label}</span>
+                  <span className="text-xs text-muted-foreground">{description}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </CollapsibleSection>
+
+        <CollapsibleSection title="Emergency Stop" defaultOpen={false}>
+          <p className="text-xs text-muted-foreground mb-3">
+            Kill-switch: when enabled, all AI-initiated mutations are immediately blocked regardless of automation level.
+          </p>
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={resourcePolicy.emergencyStop}
+              onChange={(e) => { onResourcePolicyChange({ ...resourcePolicy, emergencyStop: e.target.checked }); }}
+            />
+            <span className="flex flex-col">
+              <span className="text-sm font-medium">Emergency Stop Active</span>
+              <span className="text-xs text-muted-foreground">
+                {resourcePolicy.emergencyStop
+                  ? 'All AI mutations are blocked. Uncheck to resume normal operation.'
+                  : 'Emergency stop is off. AI can perform mutations according to the automation level above.'}
+              </span>
+            </span>
+          </label>
+        </CollapsibleSection>
       </CollapsibleSection>
     </CollapsibleSection>
   );
@@ -2211,6 +2304,7 @@ export function PersonalityEditor() {
   const [editing, setEditing] = useState<string | null>(null);
   const [previewId, setPreviewId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Personality | null>(null);
+  const [deleteLockedMsg, setDeleteLockedMsg] = useState<string | null>(null);
   const [activatingId, setActivatingId] = useState<string | null>(null);
   const [activateError, setActivateError] = useState<string | null>(null);
   const [setActiveOnSave, setSetActiveOnSave] = useState(false);
@@ -2225,7 +2319,6 @@ export function PersonalityEditor() {
     defaultModel: null,
     modelFallbacks: [],
     includeArchetypes: true,
-    deletionProtected: false,
     body: {
       enabled: false,
       capabilities: [],
@@ -2321,6 +2414,16 @@ export function PersonalityEditor() {
   });
 
   const [thinkingConfig, setThinkingConfig] = useState({ enabled: false, budgetTokens: 10000 });
+
+  const [resourcePolicy, setResourcePolicy] = useState<{
+    deletionMode: 'auto' | 'request' | 'manual';
+    automationLevel: 'full_manual' | 'semi_auto' | 'supervised_auto';
+    emergencyStop: boolean;
+  }>({
+    deletionMode: 'auto',
+    automationLevel: 'supervised_auto',
+    emergencyStop: false,
+  });
 
   // Collaborative editing — active when an existing personality is open for editing
   const collabDocId = editing && editing !== 'new' ? `personality:${editing}` : null;
@@ -2434,8 +2537,12 @@ export function PersonalityEditor() {
       defaultModel: p.defaultModel,
       modelFallbacks: p.modelFallbacks ?? [],
       includeArchetypes: p.includeArchetypes,
-      deletionProtected: p.deletionProtected ?? false,
       body,
+    });
+    setResourcePolicy({
+      deletionMode: (p.body?.resourcePolicy?.deletionMode ?? 'auto') as 'auto' | 'request' | 'manual',
+      automationLevel: (p.body?.resourcePolicy?.automationLevel ?? 'supervised_auto') as 'full_manual' | 'semi_auto' | 'supervised_auto',
+      emergencyStop: p.body?.resourcePolicy?.emergencyStop ?? false,
     });
     setCreationConfig({
       skills: body.creationConfig?.skills ?? false,
@@ -2525,9 +2632,9 @@ export function PersonalityEditor() {
       defaultModel: null,
       modelFallbacks: [],
       includeArchetypes: false,
-      deletionProtected: false,
       body,
     });
+    setResourcePolicy({ deletionMode: 'auto', automationLevel: 'supervised_auto', emergencyStop: false });
     setCreationConfig({
       skills: false,
       tasks: false,
@@ -2578,6 +2685,7 @@ export function PersonalityEditor() {
       timezone: 'UTC',
     });
     setThinkingConfig({ enabled: false, budgetTokens: 10000 });
+    setResourcePolicy({ deletionMode: 'auto', automationLevel: 'supervised_auto', emergencyStop: false });
     setSetActiveOnSave(false);
     setEditing('new');
   };
@@ -2600,6 +2708,7 @@ export function PersonalityEditor() {
         proactiveConfig,
         activeHours,
         thinkingConfig,
+        resourcePolicy,
       },
     };
     if (editing === 'new') {
@@ -2623,6 +2732,19 @@ export function PersonalityEditor() {
 
   return (
     <div className="space-y-6 overflow-x-hidden">
+      {/* Delete locked message */}
+      {deleteLockedMsg && (
+        <div className="card p-3 border-warning bg-warning/10 text-warning-foreground text-sm flex items-center justify-between">
+          <span>{deleteLockedMsg}</span>
+          <button
+            onClick={() => { setDeleteLockedMsg(null); }}
+            className="btn-ghost p-1 ml-2"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
+
       {/* Delete confirmation */}
       <ConfirmDialog
         open={!!deleteTarget}
@@ -2757,23 +2879,6 @@ export function PersonalityEditor() {
               </div>
               <span className="text-xs text-muted-foreground ml-6">
                 Preamble is presented in prompt
-              </span>
-            </label>
-
-            <label className="flex flex-col gap-1 cursor-pointer" data-testid="deletion-protected-toggle">
-              <div className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={form.deletionProtected ?? false}
-                  onChange={(e) => {
-                    setForm((f) => ({ ...f, deletionProtected: e.target.checked }));
-                  }}
-                  className="rounded border-muted-foreground"
-                />
-                <span className="text-sm">Protected from deletion</span>
-              </div>
-              <span className="text-xs text-muted-foreground ml-6">
-                Blocks deletion via UI, API, and AI tools until disabled
               </span>
             </label>
 
@@ -3038,6 +3143,8 @@ export function PersonalityEditor() {
             onCreationConfigChange={setCreationConfig}
             proactiveConfig={proactiveConfig}
             onProactiveConfigChange={setProactiveConfig}
+            resourcePolicy={resourcePolicy}
+            onResourcePolicyChange={setResourcePolicy}
           />
 
           {/* Heart Section */}
@@ -3139,14 +3246,21 @@ export function PersonalityEditor() {
                     </button>
                     <button
                       onClick={() => {
-                        setDeleteTarget(p);
+                        const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
+                        if (mode === 'manual') {
+                          setDeleteLockedMsg(`"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`);
+                        } else {
+                          setDeleteTarget(p);
+                        }
                       }}
                       disabled={p.isActive || deleteMut.isPending}
                       className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
                       title={
                         p.isActive
                           ? 'Switch to another personality before deleting'
-                          : `Delete ${p.name}`
+                          : (p.body?.resourcePolicy?.deletionMode === 'manual'
+                              ? 'Deletion locked — change mode in Body → Resources'
+                              : `Delete ${p.name}`)
                       }
                       aria-label={
                         p.isActive

@@ -59,8 +59,10 @@ describe('ResourceMonitor', () => {
     expect(screen.getByText('48,500')).toBeInTheDocument();
   });
 
-  it('renders cached tokens count', () => {
+  it('renders input/output/cached token breakdown', () => {
     renderWithRouter(<ResourceMonitor metrics={createMetricsSnapshot()} />);
+    expect(screen.getByText(/35,200 in/)).toBeInTheDocument();
+    expect(screen.getByText(/13,300 out/)).toBeInTheDocument();
     expect(screen.getByText('12300 cached')).toBeInTheDocument();
   });
 

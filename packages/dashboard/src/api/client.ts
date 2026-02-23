@@ -274,6 +274,8 @@ export async function fetchMetrics(): Promise<MetricsSnapshot> {
         memoryLimitMb: 0,
         memoryPercent: 0,
         diskUsedMb: 0,
+        inputTokensToday: 0,
+        outputTokensToday: 0,
         tokensUsedToday: 0,
         tokensCachedToday: 0,
         costUsdToday: 0,
@@ -2567,7 +2569,7 @@ export interface CostHistoryRow {
 
 export interface CostHistoryResponse {
   records: CostHistoryRow[];
-  totals: { totalTokens: number; costUsd: number; calls: number };
+  totals: { inputTokens: number; outputTokens: number; totalTokens: number; costUsd: number; calls: number };
 }
 
 export interface CostHistoryParams {
@@ -2594,7 +2596,7 @@ export async function fetchCostHistory(
   try {
     return await request<CostHistoryResponse>(`/costs/history${query ? `?${query}` : ''}`);
   } catch {
-    return { records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } };
+    return { records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } };
   }
 }
 
@@ -3105,4 +3107,54 @@ export async function cancelWorkflowRun(
   runId: string
 ): Promise<{ run: WorkflowRun }> {
   return request(`/workflows/runs/${runId}`, { method: 'DELETE' });
+}
+
+// ── Soul Pending Approvals ────────────────────────────────────────────────────
+
+export interface SoulApproval {
+  id: string;
+  personalityId: string;
+  toolName: string;
+  toolArgs: Record<string, unknown>;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: number;
+  resolvedAt?: number;
+  resolvedBy?: string;
+}
+
+export async function fetchSoulApprovals(opts?: {
+  personalityId?: string;
+  status?: 'pending' | 'approved' | 'rejected';
+  limit?: number;
+  offset?: number;
+}): Promise<{ approvals: SoulApproval[]; total: number }> {
+  try {
+    const q = new URLSearchParams();
+    if (opts?.personalityId) q.set('personalityId', opts.personalityId);
+    if (opts?.status) q.set('status', opts.status);
+    if (opts?.limit) q.set('limit', String(opts.limit));
+    if (opts?.offset) q.set('offset', String(opts.offset));
+    const qs = q.toString();
+    return await request(`/soul/approvals${qs ? `?${qs}` : ''}`);
+  } catch {
+    return { approvals: [], total: 0 };
+  }
+}
+
+export async function fetchSoulApprovalCount(personalityId?: string): Promise<number> {
+  try {
+    const q = personalityId ? `?personalityId=${encodeURIComponent(personalityId)}` : '';
+    const res = await request<{ count: number }>(`/soul/approvals/count${q}`);
+    return res.count;
+  } catch {
+    return 0;
+  }
+}
+
+export async function approveSoulAction(approvalId: string): Promise<{ approval: SoulApproval }> {
+  return request(`/soul/approvals/${approvalId}/approve`, { method: 'POST' });
+}
+
+export async function rejectSoulAction(approvalId: string): Promise<{ approval: SoulApproval }> {
+  return request(`/soul/approvals/${approvalId}/reject`, { method: 'POST' });
 }

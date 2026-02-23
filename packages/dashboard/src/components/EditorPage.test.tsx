@@ -23,6 +23,21 @@ vi.mock('../hooks/useChat', () => ({
     handleSend: vi.fn(),
     isPending: false,
     clearMessages: vi.fn(),
+    conversationId: null,
+    isLoadingConversation: false,
+  }),
+  useChatStream: () => ({
+    messages: [],
+    input: '',
+    setInput: vi.fn(),
+    handleSend: vi.fn(),
+    isPending: false,
+    clearMessages: vi.fn(),
+    conversationId: null,
+    isLoadingConversation: false,
+    streamingThinking: '',
+    streamingContent: '',
+    activeToolCalls: [],
   }),
 }));
 

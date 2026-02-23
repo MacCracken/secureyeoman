@@ -3,7 +3,7 @@
  *
  * Unified metrics dashboard with three views:
  *   - Overview: key KPIs, system health, sparklines, and system topology graph
- *   - Costs: cost analytics, provider breakdown, and usage history (formerly CostsPage)
+ *   - Costs: cost analytics, provider breakdown, and usage history
  *   - Full Metrics: deep-dive charts covering tasks, resources, and security
  */
 
@@ -448,8 +448,14 @@ function OverviewTab({
               <p className="text-2xl font-bold">
                 {(metrics?.resources?.tokensUsedToday ?? 0).toLocaleString()}
               </p>
-              <p className="text-xs text-muted-foreground">used today</p>
+              <p className="text-xs text-muted-foreground">total today</p>
               <p className="text-xs text-muted-foreground mt-1">
+                {(metrics?.resources?.inputTokensToday ?? 0).toLocaleString()} in
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {(metrics?.resources?.outputTokensToday ?? 0).toLocaleString()} out
+              </p>
+              <p className="text-xs text-muted-foreground">
                 {(metrics?.resources?.tokensCachedToday ?? 0).toLocaleString()} cached
               </p>
             </div>
@@ -458,7 +464,8 @@ function OverviewTab({
                 <PieChart>
                   <Pie
                     data={[
-                      { name: 'Used', value: metrics?.resources?.tokensUsedToday ?? 0 },
+                      { name: 'Input', value: metrics?.resources?.inputTokensToday ?? 0 },
+                      { name: 'Output', value: metrics?.resources?.outputTokensToday ?? 0 },
                       { name: 'Cached', value: metrics?.resources?.tokensCachedToday ?? 0 },
                     ]}
                     innerRadius={25}
@@ -692,6 +699,10 @@ function CostSummaryTab() {
             ) : (
               (resources?.tokensUsedToday ?? 0).toLocaleString()
             )}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {(resources?.inputTokensToday ?? 0).toLocaleString()} in /{' '}
+            {(resources?.outputTokensToday ?? 0).toLocaleString()} out
           </p>
         </div>
         <div className="p-4 rounded-lg bg-muted/30">
@@ -1155,7 +1166,8 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
 
   // ── Resource data ──────────────────────────────────────────────────
   const tokenData = [
-    { name: 'Used', value: metrics?.resources?.tokensUsedToday ?? 0 },
+    { name: 'Input', value: metrics?.resources?.inputTokensToday ?? 0 },
+    { name: 'Output', value: metrics?.resources?.outputTokensToday ?? 0 },
     { name: 'Cached', value: metrics?.resources?.tokensCachedToday ?? 0 },
   ];
 
@@ -1481,8 +1493,13 @@ function FullMetricsTab({ metrics, history, onViewCosts }: FullMetricsTabProps) 
                 <div className="flex-1 space-y-2">
                   <LegendItem
                     color={C.primary}
-                    label="Used"
-                    value={(metrics?.resources?.tokensUsedToday ?? 0).toLocaleString()}
+                    label="Input"
+                    value={(metrics?.resources?.inputTokensToday ?? 0).toLocaleString()}
+                  />
+                  <LegendItem
+                    color={C.warning}
+                    label="Output"
+                    value={(metrics?.resources?.outputTokensToday ?? 0).toLocaleString()}
                   />
                   <LegendItem
                     color={C.success}

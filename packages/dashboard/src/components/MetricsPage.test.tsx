@@ -135,7 +135,7 @@ describe('MetricsPage — layout and header', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
   });
 
@@ -182,7 +182,7 @@ describe('MetricsPage — Overview tab', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
   });
 
@@ -235,7 +235,7 @@ describe('MetricsPage — tab switching', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
   });
 
@@ -302,7 +302,7 @@ describe('MetricsPage — Overview node click routing', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
   });
 
@@ -371,7 +371,7 @@ describe('MetricsPage — Full Metrics data display', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
   });
 
@@ -427,7 +427,7 @@ describe('MetricsPage — Costs tab', () => {
     mockFetchActiveDelegations.mockResolvedValue({ delegations: [] });
     mockFetchMetrics.mockResolvedValue(createMetricsSnapshot());
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
-    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } });
+    mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
   });
 

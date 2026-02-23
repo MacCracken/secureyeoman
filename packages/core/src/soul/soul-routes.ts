@@ -4,6 +4,7 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SoulManager } from './manager.js';
+import type { ApprovalManager } from './approval-manager.js';
 import type {
   PersonalityCreate,
   PersonalityUpdate,
@@ -17,12 +18,13 @@ import type { HeartbeatManager } from '../body/heartbeat.js';
 
 export interface SoulRoutesOptions {
   soulManager: SoulManager;
+  approvalManager?: ApprovalManager;
   broadcast?: (payload: unknown) => void;
   heartbeatManager?: HeartbeatManager | null;
 }
 
 export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions): void {
-  const { soulManager, broadcast, heartbeatManager } = opts;
+  const { soulManager, approvalManager, broadcast, heartbeatManager } = opts;
 
   // ── Personality ─────────────────────────────────────────────
 
@@ -393,7 +395,6 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
           defaultModel: request.body?.defaultModel ?? null,
           modelFallbacks: request.body?.modelFallbacks ?? [],
           includeArchetypes: request.body?.includeArchetypes ?? agentName === 'FRIDAY',
-          deletionProtected: request.body?.deletionProtected ?? false,
           body: request.body?.body ?? {
             enabled: false,
             capabilities: [],
@@ -453,6 +454,61 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       } catch (err) {
         return sendError(reply, 400, toErrorMessage(err));
       }
+    }
+  );
+
+  // ── Pending Approvals ────────────────────────────────────────
+
+  app.get(
+    '/api/v1/soul/approvals',
+    async (
+      request: FastifyRequest<{
+        Querystring: { personalityId?: string; status?: string; limit?: string; offset?: string };
+      }>
+    ) => {
+      if (!approvalManager) return { approvals: [], total: 0 };
+      const { personalityId, status, limit, offset } = request.query;
+      return approvalManager.listApprovals({
+        personalityId,
+        status: (status as 'pending' | 'approved' | 'rejected') || undefined,
+        limit: limit ? Number(limit) : undefined,
+        offset: offset ? Number(offset) : undefined,
+      });
+    }
+  );
+
+  app.get(
+    '/api/v1/soul/approvals/count',
+    async (request: FastifyRequest<{ Querystring: { personalityId?: string } }>) => {
+      if (!approvalManager) return { count: 0 };
+      const count = await approvalManager.pendingCount(request.query.personalityId);
+      return { count };
+    }
+  );
+
+  app.post(
+    '/api/v1/soul/approvals/:id/approve',
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!approvalManager) return sendError(reply, 503, 'Approval manager not available');
+      const approval = await approvalManager.resolveApproval(request.params.id, 'approved');
+      if (!approval) return sendError(reply, 404, 'Approval not found or already resolved');
+      return { approval };
+    }
+  );
+
+  app.post(
+    '/api/v1/soul/approvals/:id/reject',
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      if (!approvalManager) return sendError(reply, 503, 'Approval manager not available');
+      const approval = await approvalManager.resolveApproval(request.params.id, 'rejected');
+      if (!approval) return sendError(reply, 404, 'Approval not found or already resolved');
+      return { approval };
     }
   );
 }

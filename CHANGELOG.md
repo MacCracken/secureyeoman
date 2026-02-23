@@ -4,6 +4,150 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — Build Fixes (2026-02-23)
+
+### Bug Fixes
+
+**Docker build was broken by four pre-existing TypeScript errors** — `docker compose --profile dev build` failed during the `npm run build` step. All four errors are now resolved:
+
+| File | Error | Fix |
+|---|---|---|
+| `packages/shared/src/types/metrics.ts` | `ResourceMetricsSchema` missing `inputTokensToday` / `outputTokensToday` fields that `secureyeoman.ts` was already writing | Added both fields to the Zod schema |
+| `packages/dashboard/src/api/client.ts` | `fetchCostHistory` catch-block fallback object missing `inputTokens` / `outputTokens` required by `CostHistoryResponse.totals` type | Added `inputTokens: 0, outputTokens: 0` |
+| `packages/dashboard/src/components/ChatPage.test.tsx` | `.find()` return typed as `T \| undefined` but used without null guard (strict null checks) | Added `!` non-null assertion on all four call sites |
+| `packages/dashboard/src/components/MetricsPage.test.tsx` | Six mock `totals` objects missing `inputTokens` / `outputTokens` | Added both fields to all six mock objects |
+
+---
+
+## [Unreleased] — Input/Output Token Breakdown (2026-02-23)
+
+### Features
+
+**Input and output token counts exposed separately** — all token usage surfaces now break down the `totalTokens` figure into `inputTokens` and `outputTokens` so operators can see exactly where tokens are being spent.
+
+Changes:
+- `UsageStats` gains `inputTokensToday` and `outputTokensToday` fields (alongside the existing `tokensUsedToday` total)
+- `ProviderStats` (per-provider breakdown) gains `inputTokensUsed` and `outputTokensUsed`
+- `GET /api/v1/costs/history` totals now include `inputTokens` and `outputTokens` in addition to `totalTokens`
+- `GET /api/v1/metrics` resources now includes `inputTokensToday` and `outputTokensToday`
+- Dashboard `ResourceMetrics` type updated with the two new fields
+- CostsPage, MetricsPage, and ResourceMonitor all display the input / output split inline beneath the total
+- Token pie charts updated to show three slices: Input, Output, Cached
+
+---
+
+## [Unreleased] — QuickBooks MCP CLI (`mcp-quickbooks`) (2026-02-23)
+
+### Features
+
+**`secureyeoman mcp-quickbooks` command** — new CLI entry point for managing the QuickBooks Online MCP toolset without editing environment files manually.
+
+Subcommands:
+- `status` — shows whether `MCP_EXPOSE_QUICKBOOKS_TOOLS` is set, lists all five credential variables with present/missing indicators, and exits non-zero when tools are enabled but credentials are incomplete
+- `enable` — prints the `MCP_EXPOSE_QUICKBOOKS_TOOLS=true` line and all required credential variables to add to `.env`
+- `disable` — prints the `MCP_EXPOSE_QUICKBOOKS_TOOLS=false` line to add to `.env`
+
+Changes:
+- `packages/core/src/cli/commands/mcp-quickbooks.ts` — new command (alias: `mcp-qbo`)
+- `packages/core/src/cli.ts` — registered `mcpQuickbooksCommand`; added entry to header docs
+
+---
+
+## [Unreleased] — CIDR-Aware Scope Validation (2026-02-23)
+
+### Security
+
+**Kali security tool scope enforcement now correctly handles CIDR ranges** — the previous `validateTarget()` implementation used a substring/prefix match that failed to honour CIDR notation (e.g. `10.10.10.0/24` in `MCP_ALLOWED_TARGETS` would not match `10.10.10.5`). Replaced with proper IPv4 CIDR math: a bitmask comparison against the network address.
+
+New matching rules for `MCP_ALLOWED_TARGETS` entries:
+- `10.10.10.0/24` — CIDR range; any IP in the subnet matches
+- `.example.com` — domain suffix; matches apex and all subdomains
+- `example.com` — hostname; matches exact host and any subdomain
+- `*` — wildcard (existing behaviour unchanged)
+
+Changes:
+- `packages/mcp/src/tools/security-tools.ts` — `isIpInCidr()` and `matchesScope()` helpers replace the old substring match in `validateTarget()`; both helpers exported for testing
+- `packages/mcp/src/tools/security-tools.test.ts` — new `isIpInCidr` and `matchesScope` test suites
+- `docs/adr/116-cidr-aware-scope-validation.md` — ADR documenting the decision
+
+---
+
+## [Unreleased] — CSRF Architectural Decision (2026-02-23)
+
+### Security
+
+**CSRF protection not required for Bearer-token API** — documented as ADR 115. The SecureYeoman REST API is stateless and uses `Authorization: Bearer <token>` and `X-API-Key` headers exclusively; no `Set-Cookie` headers are emitted anywhere in the auth flow. Because CSRF exploits browser cookie auto-attachment, it is architecturally inapplicable to this API.
+
+Changes:
+- `docs/adr/115-csrf-not-applicable-bearer-token-api.md` — ADR documenting the decision and future obligations if cookies are ever introduced
+- `docs/security/security-model.md` — section 1.1 added: "CSRF: Not Applicable (Bearer-Token API)"
+- `packages/core/src/gateway/server.ts` — inline comment guard added near auth hook registration; warns future developers to add `@fastify/csrf-protection` if cookies are ever used
+
+---
+
+## [Unreleased] — Human-in-the-Loop Approval Workflow (2026-02-23)
+
+### Features
+
+**Per-personality automation level and emergency stop** — `body.resourcePolicy` now has two new fields:
+
+| Field | Values | Effect |
+|---|---|---|
+| `automationLevel` | `supervised_auto` (default) · `semi_auto` · `full_manual` | Controls which AI-initiated tool calls are queued for human review before execution |
+| `emergencyStop` | `false` (default) · `true` | Kill-switch: when `true`, all AI-initiated mutations are blocked immediately regardless of automation level |
+
+- **Pending Approvals queue** (`soul.pending_approvals`, migration 038): AI tool calls that exceed the configured automation level are queued here instead of executed immediately.
+- **Review Queue API**: `GET /api/v1/soul/approvals`, `GET /api/v1/soul/approvals/count`, `POST /api/v1/soul/approvals/:id/approve`, `POST /api/v1/soul/approvals/:id/reject`
+- **Dashboard**: Automation Level (radio group) and Emergency Stop (checkbox) controls added to PersonalityEditor under **Body → Resources**
+
+Changes:
+- `packages/shared/src/types/soul.ts` — `ResourcePolicySchema` extended with `automationLevel` and `emergencyStop`
+- `packages/core/src/soul/approval-manager.ts` — new `ApprovalManager` class
+- `packages/core/src/soul/soul-routes.ts` — approval CRUD endpoints
+- `packages/core/src/soul/creation-tool-executor.ts` — emergency stop + automation level gating
+- `packages/core/src/secureyeoman.ts` — `getApprovalManager()` method
+- Migration 038: `soul.pending_approvals` table
+
+---
+
+## [Unreleased] — Chat History Regression Fix (2026-02-23)
+
+### Bug Fixes
+
+**Conversation history lost when switching conversations** (`useChatStream`) — switching to an existing conversation in the chat sidebar showed only the empty state instead of loading prior messages. Root cause: the `useChatStream` hook (introduced in the streaming refactor) was missing the `useEffect` that loads conversation history when `conversationId` changes, which `useChat` had. The effect is now ported to `useChatStream` with the same `autoCreatedIds` guard to avoid re-fetching self-created conversations.
+
+**`brainContext` not surfaced from streaming responses** — the `done` SSE event handler in `useChatStream` was not mapping the `brainContext` field into the stored message, so Brain memory context indicators never appeared after a stream response. Fixed by including `brainContext` in the message produced by the `done` handler.
+
+Changes:
+- `packages/dashboard/src/hooks/useChat.ts` — `useChatStream`: added `isLoadingConversation` state, `prevExternalId` / `autoCreatedIds` refs, conversation-loading `useEffect`, `brainContext` in `done` handler
+- Test mocks updated: `EditorPage.test.tsx` now mocks `useChatStream`; `ChatPage.test.tsx` updated to mock `global.fetch` for SSE streaming instead of `sendChatMessage`
+
+---
+
+## [Unreleased] — Deletion Gating Modes (2026-02-23)
+
+### Breaking Changes
+
+- **`deletionProtected` removed** — the boolean `deletion_protected` DB column and `deletionProtected` API field have been replaced by `body.resourcePolicy.deletionMode` (tri-state enum: `auto` | `request` | `manual`). Run migration 037 before deploying. Clients reading `deletionProtected` from the API must switch to `body.resourcePolicy.deletionMode`.
+
+### Features
+
+**Tri-state deletion gating (`auto` / `request` / `manual`)** — personalities now have a three-mode deletion policy stored in `body.resourcePolicy.deletionMode`:
+
+| Mode | Behaviour |
+|---|---|
+| `auto` (default) | Deletion proceeds immediately with no confirmation |
+| `request` (Suggest) | Dashboard shows a confirmation dialog; AI-initiated deletion is blocked |
+| `manual` (Manual) | Deletion is fully blocked at the backend until mode is changed |
+
+- Accessible in PersonalityEditor under **Body → Resources → Deletion**
+- AI tool executor respects both `request` and `manual` gating (blocks silently with a clear error message)
+- Migration 037 upgrades any existing `deletion_protected = true` rows to `deletionMode = 'manual'`
+
+**ADR:** `docs/adr/113-deletion-gating-modes.md`
+
+---
+
 ## [Unreleased] — Configurable Login Rate Limits (2026-02-23)
 
 ### Features

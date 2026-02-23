@@ -29,15 +29,18 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 ### Bugs
 
-- [ ] Tasks status and duration displayed in Task View > Task History still state pending and duration a'-'.
+- [ ] Tasks status and duration displayed in Task View > Task History still state duration as a '-'.
 - [ ] Connect CLI when DisplayName entered and connected -Integration undefined not found
 - [ ] Chat needs responsive design in the response window to not blow up the view
 
 ### Improvements
-- [ ] YEOMAN MCP show QUICKBOOKS Skills
+- [x] YEOMAN MCP show QUICKBOOKS Skills — `secureyeoman mcp-quickbooks status/enable/disable` CLI added; QBO tools surface in MCP catalog when `MCP_EXPOSE_QUICKBOOKS_TOOLS=true`. → **Done**
 - [ ] CLI updates for the added toolsets
 - [ ] FRIDAY's suggestions - [suggestions](friday_suggestions.md)
-- [ ] Cast Deletion actions into another Resource Section (Personality > Body) - gate them per-personality; select style of auto, request, manual. (see friday_requests.md mentions something simliar)
+- [x] Cast Deletion actions into another Resource Section (Personality > Body) - gate them per-personality; select style of auto, request, manual. → **Done** (ADR 113, migration 037)
+- [x] Content approval workflow (automation level + emergency stop + pending approvals queue). → **Done** (ADR 114, migration 038)
+- [x] CSRF architectural decision — Bearer-token API not subject to CSRF; documented in ADR 115, comment guard added to server.ts. → **Done**
+- [x] CIDR-aware scope validation — `validateTarget()` in security tools now handles CIDR ranges correctly (ADR 116). → **Done**
 
 ---
 
@@ -96,7 +99,6 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 *Core implementation shipped (ADR 089). The `sec_*` MCP tools, `secureyeoman security` CLI, and three deployment modes (native/docker-exec/prebuilt) are live. These items are the next tier of improvements, gated on real-world usage.*
 
-- [ ] **CIDR-aware scope validation** — Replace the current substring/prefix match in `validateTarget()` with proper CIDR range parsing using a lightweight library (e.g. `ip-cidr`). Enables accurate enforcement of network ranges like `10.10.10.0/24` without false positives/negatives at subnet boundaries.
 - [ ] **Scope manifest UI** — Dashboard panel for managing `MCP_ALLOWED_TARGETS` — add/remove CIDRs, hostnames, URL prefixes. Wildcard (`*`) mode requires explicit acknowledgement checkbox. Reads/writes the running server's environment or a persisted config table.
 - [ ] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — Publish a versioned Kali-based Docker image as a one-click MCP prebuilt in `McpPrebuilts.tsx` for cloud deployments where `secureyeoman security setup` is not convenient. Targets environments that cannot run `secureyeoman` CLI locally.
 - [ ] **Structured output normalization** — Parse nmap XML (`-oX`), sqlmap JSON (`--output-format=json`), nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining (e.g. nmap port list → gobuster per open port → nuclei per service).
@@ -174,4 +176,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-22
+*Last updated: 2026-02-23

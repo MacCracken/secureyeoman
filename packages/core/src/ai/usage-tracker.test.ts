@@ -28,6 +28,8 @@ describe('UsageTracker', () => {
     });
 
     const stats = tracker.getStats();
+    expect(stats.inputTokensToday).toBe(600);
+    expect(stats.outputTokensToday).toBe(400);
     expect(stats.tokensUsedToday).toBe(1000);
     expect(stats.tokensCachedToday).toBe(200);
     expect(stats.costUsdToday).toBeCloseTo(0.01);
@@ -51,9 +53,15 @@ describe('UsageTracker', () => {
     });
 
     const stats = tracker.getStats();
+    expect(stats.inputTokensToday).toBe(480); // (300 + 180)
+    expect(stats.outputTokensToday).toBe(320); // (200 + 120)
     expect(stats.tokensUsedToday).toBe(800);
     expect(stats.costUsdToday).toBeCloseTo(0.008);
+    expect(stats.byProvider['anthropic']!.inputTokensUsed).toBe(300);
+    expect(stats.byProvider['anthropic']!.outputTokensUsed).toBe(200);
     expect(stats.byProvider['anthropic']!.tokensUsed).toBe(500);
+    expect(stats.byProvider['openai']!.inputTokensUsed).toBe(180);
+    expect(stats.byProvider['openai']!.outputTokensUsed).toBe(120);
     expect(stats.byProvider['openai']!.tokensUsed).toBe(300);
   });
 
@@ -146,6 +154,8 @@ describe('UsageTracker', () => {
     // latency seeded from DB loadStats (not from records array)
     expect(stats.apiLatencyTotalMs).toBe(200);
     expect(stats.apiCallCount).toBe(2);
+    expect(stats.inputTokensToday).toBe(480);
+    expect(stats.outputTokensToday).toBe(320);
     expect(stats.tokensUsedToday).toBe(800);
     expect(stats.costUsdToday).toBeCloseTo(0.008);
   });

@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { registerSecurityTools } from './security-tools.js';
+import { registerSecurityTools, isIpInCidr, matchesScope } from './security-tools.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
 
@@ -136,6 +136,94 @@ describe('security-tools', () => {
       const server = new McpServer({ name: 'test', version: '1.0.0' });
       const config = makeConfig({ shodanApiKey: undefined });
       await expect(registerSecurityTools(server, config, noopMiddleware())).resolves.not.toThrow();
+    });
+  });
+
+  describe('isIpInCidr', () => {
+    it('returns true for IP inside /24 range', () => {
+      expect(isIpInCidr('10.10.10.5', '10.10.10.0/24')).toBe(true);
+    });
+
+    it('returns true for IP at the start of /24 range', () => {
+      expect(isIpInCidr('10.10.10.0', '10.10.10.0/24')).toBe(true);
+    });
+
+    it('returns true for IP at the end of /24 range', () => {
+      expect(isIpInCidr('10.10.10.255', '10.10.10.0/24')).toBe(true);
+    });
+
+    it('returns false for IP outside /24 range', () => {
+      expect(isIpInCidr('10.10.11.5', '10.10.10.0/24')).toBe(false);
+    });
+
+    it('returns true for IP inside /16 range', () => {
+      expect(isIpInCidr('192.168.5.100', '192.168.0.0/16')).toBe(true);
+    });
+
+    it('returns false for IP outside /16 range', () => {
+      expect(isIpInCidr('192.169.5.100', '192.168.0.0/16')).toBe(false);
+    });
+
+    it('returns true for /32 exact match', () => {
+      expect(isIpInCidr('10.0.0.1', '10.0.0.1/32')).toBe(true);
+    });
+
+    it('returns false for /32 mismatch', () => {
+      expect(isIpInCidr('10.0.0.2', '10.0.0.1/32')).toBe(false);
+    });
+
+    it('returns true for /0 (any IP)', () => {
+      expect(isIpInCidr('8.8.8.8', '0.0.0.0/0')).toBe(true);
+    });
+
+    it('returns false for malformed IP', () => {
+      expect(isIpInCidr('not-an-ip', '10.10.10.0/24')).toBe(false);
+    });
+
+    it('returns false for invalid prefix length', () => {
+      expect(isIpInCidr('10.10.10.5', '10.10.10.0/33')).toBe(false);
+    });
+
+    it('returns false when CIDR has no prefix', () => {
+      expect(isIpInCidr('10.10.10.5', '10.10.10.0/')).toBe(false);
+    });
+  });
+
+  describe('matchesScope', () => {
+    it('exact IP match', () => {
+      expect(matchesScope('10.10.10.5', '10.10.10.5')).toBe(true);
+    });
+
+    it('CIDR match — IP inside range', () => {
+      expect(matchesScope('10.10.10.5', '10.10.10.0/24')).toBe(true);
+    });
+
+    it('CIDR match — IP outside range', () => {
+      expect(matchesScope('10.10.11.5', '10.10.10.0/24')).toBe(false);
+    });
+
+    it('exact hostname match', () => {
+      expect(matchesScope('ctf.example.com', 'ctf.example.com')).toBe(true);
+    });
+
+    it('subdomain of allowed hostname', () => {
+      expect(matchesScope('sub.example.com', 'example.com')).toBe(true);
+    });
+
+    it('non-subdomain hostname rejected', () => {
+      expect(matchesScope('notexample.com', 'example.com')).toBe(false);
+    });
+
+    it('domain suffix with leading dot matches apex', () => {
+      expect(matchesScope('example.com', '.example.com')).toBe(true);
+    });
+
+    it('domain suffix with leading dot matches subdomain', () => {
+      expect(matchesScope('sub.example.com', '.example.com')).toBe(true);
+    });
+
+    it('domain suffix with leading dot rejects unrelated domain', () => {
+      expect(matchesScope('other.com', '.example.com')).toBe(false);
     });
   });
 

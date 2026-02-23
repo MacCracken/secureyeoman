@@ -22,7 +22,6 @@ const PERSONALITY = {
   voice: '',
   preferredLanguage: '',
   isActive: false,
-  deletionProtected: false,
   includeArchetypes: true,
   defaultModel: null,
   modelFallbacks: [],
@@ -279,13 +278,45 @@ describe('SoulManager', () => {
       );
     });
 
-    it('deletePersonality throws when personality is deletionProtected', async () => {
+    it('deletePersonality throws when deletionMode is manual', async () => {
       const { manager } = makeManager({
-        getPersonality: vi.fn().mockResolvedValue({ ...PERSONALITY, isActive: false, deletionProtected: true }),
+        getPersonality: vi.fn().mockResolvedValue({
+          ...PERSONALITY,
+          isActive: false,
+          body: { ...PERSONALITY.body, resourcePolicy: { deletionMode: 'manual' } },
+        }),
       });
       await expect(manager.deletePersonality('p-1')).rejects.toThrow(
-        'protected from deletion'
+        'Deletion is blocked (mode: manual)'
       );
+    });
+
+    it('deletePersonality succeeds when deletionMode is request (backend allows, frontend confirms)', async () => {
+      const mockDelete = vi.fn().mockResolvedValue(true);
+      const { manager } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue({
+          ...PERSONALITY,
+          isActive: false,
+          body: { ...PERSONALITY.body, resourcePolicy: { deletionMode: 'request' } },
+        }),
+        deletePersonality: mockDelete,
+      });
+      await manager.deletePersonality('p-1');
+      expect(mockDelete).toHaveBeenCalledWith('p-1');
+    });
+
+    it('deletePersonality succeeds when deletionMode is auto', async () => {
+      const mockDelete = vi.fn().mockResolvedValue(true);
+      const { manager } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue({
+          ...PERSONALITY,
+          isActive: false,
+          body: { ...PERSONALITY.body, resourcePolicy: { deletionMode: 'auto' } },
+        }),
+        deletePersonality: mockDelete,
+      });
+      await manager.deletePersonality('p-1');
+      expect(mockDelete).toHaveBeenCalledWith('p-1');
     });
 
     it('listPersonalities delegates to storage', async () => {

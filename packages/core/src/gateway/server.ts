@@ -252,6 +252,21 @@ export class GatewayServer {
       }
     });
 
+    // ── CSRF guard ────────────────────────────────────────────────────────────
+    // This API is stateless and uses HTTP Bearer tokens (Authorization header)
+    // and X-API-Key exclusively. No Set-Cookie headers are emitted anywhere in
+    // the authentication flow, so CSRF is architecturally not applicable.
+    // See ADR 115 for the full analysis.
+    //
+    // ⚠️  IF YOU ADD COOKIES (e.g. for SSO refresh, remember-me, or session
+    //     management), you MUST also add CSRF protection BEFORE shipping:
+    //       1. SameSite=Strict (or SameSite=Lax) on every session cookie.
+    //       2. @fastify/csrf-protection with a synchronizer token for all
+    //          state-changing endpoints (POST, PUT, DELETE, PATCH).
+    //     Failure to do so will reintroduce the CSRF attack surface that the
+    //     Bearer-token model eliminates.
+    // ─────────────────────────────────────────────────────────────────────────
+
     // Auth + RBAC hooks (after CORS, before routes)
     if (this.authService) {
       const logger = this.getLogger();
@@ -351,8 +366,11 @@ export class GatewayServer {
     // Soul routes
     try {
       const soulManager = this.secureYeoman.getSoulManager();
+      let approvalManager;
+      try { approvalManager = this.secureYeoman.getApprovalManager(); } catch { /* optional */ }
       registerSoulRoutes(this.app, {
         soulManager,
+        approvalManager,
         broadcast: (payload) => {
           this.broadcast('soul', payload);
         },
@@ -762,7 +780,7 @@ export class GatewayServer {
       ) => {
         const usageStorage = this.secureYeoman.getUsageStorage();
         if (!usageStorage) {
-          return { records: [], totals: { totalTokens: 0, costUsd: 0, calls: 0 } };
+          return { records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } };
         }
 
         const q = request.query;
@@ -783,12 +801,14 @@ export class GatewayServer {
 
         const totals = records.reduce(
           (acc, r) => {
+            acc.inputTokens += r.inputTokens;
+            acc.outputTokens += r.outputTokens;
             acc.totalTokens += r.totalTokens;
             acc.costUsd += r.costUsd;
             acc.calls += r.calls;
             return acc;
           },
-          { totalTokens: 0, costUsd: 0, calls: 0 }
+          { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 }
         );
 
         return { records, totals };

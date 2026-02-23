@@ -50,6 +50,8 @@ export const ResourceMetricsSchema = z.object({
   diskLimitMb: z.number().nonnegative().optional(),
 
   // Token usage
+  inputTokensToday: z.number().int().nonnegative(),
+  outputTokensToday: z.number().int().nonnegative(),
   tokensUsedToday: z.number().int().nonnegative(),
   tokensLimitDaily: z.number().int().nonnegative().optional(),
   tokensCachedToday: z.number().int().nonnegative(),

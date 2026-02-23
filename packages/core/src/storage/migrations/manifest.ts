@@ -73,4 +73,6 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '034_workflow_schema', sql: readSql('034_workflow_schema.sql') },
   { id: '035_message_creation_events', sql: readSql('035_message_creation_events.sql') },
   { id: '036_personality_deletion_protected', sql: readSql('036_personality_deletion_protected.sql') },
+  { id: '037_personality_deletion_mode', sql: readSql('037_personality_deletion_mode.sql') },
+  { id: '038_pending_approvals', sql: readSql('038_pending_approvals.sql') },
 ];

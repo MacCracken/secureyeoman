@@ -4,12 +4,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChatPage } from './ChatPage';
-import { createChatResponse, createModelInfoResponse } from '../test/mocks';
+import { createModelInfoResponse } from '../test/mocks';
 
 // ── Mock API client ──────────────────────────────────────────────
 vi.mock('../api/client', () => ({
   fetchPersonalities: vi.fn(),
-  sendChatMessage: vi.fn(),
   fetchModelInfo: vi.fn(),
   switchModel: vi.fn(),
   rememberChatMessage: vi.fn(),
@@ -33,13 +32,43 @@ import * as api from '../api/client';
 
 const mockFetchPersonalities = vi.mocked(api.fetchPersonalities);
 const mockFetchModelInfo = vi.mocked(api.fetchModelInfo);
-const mockSendChatMessage = vi.mocked(api.sendChatMessage);
 const mockRememberChatMessage = vi.mocked(api.rememberChatMessage);
 const mockFetchConversations = vi.mocked(api.fetchConversations);
 const mockFetchConversation = vi.mocked(api.fetchConversation);
 const mockCreateConversation = vi.mocked(api.createConversation);
 const mockDeleteConversation = vi.mocked(api.deleteConversation);
 const mockRenameConversation = vi.mocked(api.renameConversation);
+
+// ── SSE stream helpers ────────────────────────────────────────────
+
+function encodeSse(events: Array<Record<string, unknown>>): ReadableStream<Uint8Array> {
+  return new ReadableStream<Uint8Array>({
+    start(controller) {
+      for (const event of events) {
+        controller.enqueue(new TextEncoder().encode(`data: ${JSON.stringify(event)}\n\n`));
+      }
+      controller.close();
+    },
+  });
+}
+
+function createStreamResponse(events: Array<Record<string, unknown>>): Response {
+  return new Response(encodeSse(events), {
+    status: 200,
+    headers: { 'Content-Type': 'text/event-stream' },
+  });
+}
+
+const DEFAULT_DONE_EVENT = {
+  type: 'done',
+  content: 'Hello! I am FRIDAY, your AI assistant.',
+  model: 'claude-sonnet-4-20250514',
+  provider: 'anthropic',
+  tokensUsed: 150,
+  creationEvents: [],
+};
+
+let mockFetch: ReturnType<typeof vi.fn>;
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -76,7 +105,6 @@ const defaultPersonality = {
   isActive: true,
   createdAt: Date.now(),
   updatedAt: Date.now(),
-  deletionProtected: false,
 };
 
 // ── Tests ────────────────────────────────────────────────────────
@@ -84,10 +112,11 @@ const defaultPersonality = {
 describe('ChatPage', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    mockFetch = vi.fn().mockResolvedValue(createStreamResponse([DEFAULT_DONE_EVENT]));
+    vi.stubGlobal('fetch', mockFetch);
     mockFetchPersonalities.mockResolvedValue({
       personalities: [defaultPersonality],
     });
-    mockSendChatMessage.mockResolvedValue(createChatResponse());
     mockFetchConversations.mockResolvedValue({ conversations: [], total: 0 });
     mockFetchConversation.mockResolvedValue({
       id: 'conv-new',
@@ -181,11 +210,11 @@ describe('ChatPage', () => {
     await user.type(textarea, 'Hello!{enter}');
 
     await waitFor(() => {
-      expect(mockSendChatMessage).toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/chat/stream', expect.objectContaining({ method: 'POST' }));
     });
 
-    const call = mockSendChatMessage.mock.calls[0][0];
-    expect(call.message).toBe('Hello!');
+    const body = JSON.parse(mockFetch.mock.calls.find((c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream')![1].body);
+    expect(body.message).toBe('Hello!');
 
     await waitFor(() => {
       expect(screen.getByText('Hello! I am FRIDAY, your AI assistant.')).toBeInTheDocument();
@@ -203,12 +232,13 @@ describe('ChatPage', () => {
       expect(mockCreateConversation).toHaveBeenCalledWith('Hello!', expect.anything());
     });
 
-    // The sendChatMessage should include the conversationId
+    // The stream request should include the conversationId
     await waitFor(() => {
-      expect(mockSendChatMessage).toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/chat/stream', expect.objectContaining({ method: 'POST' }));
     });
-    const chatCall = mockSendChatMessage.mock.calls[0][0];
-    expect(chatCall.conversationId).toBe('conv-new');
+    const streamCall = mockFetch.mock.calls.find((c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream')!;
+    const body = JSON.parse(streamCall[1].body);
+    expect(body.conversationId).toBe('conv-new');
   });
 
   it('shows the user message in the chat', async () => {
@@ -224,13 +254,23 @@ describe('ChatPage', () => {
   });
 
   it('disables input while loading', async () => {
-    let resolveChat: (value: any) => void;
-    mockSendChatMessage.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveChat = resolve;
-        })
-    );
+    let resolveStream: () => void;
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/v1/chat/stream') {
+        const stream = new ReadableStream<Uint8Array>({
+          start(controller) {
+            resolveStream = () => {
+              controller.enqueue(
+                new TextEncoder().encode(`data: ${JSON.stringify(DEFAULT_DONE_EVENT)}\n\n`)
+              );
+              controller.close();
+            };
+          },
+        });
+        return Promise.resolve(new Response(stream, { status: 200 }));
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
 
     const user = userEvent.setup();
     renderComponent();
@@ -242,8 +282,8 @@ describe('ChatPage', () => {
       expect(textarea).toBeDisabled();
     });
 
-    // Resolve the promise
-    resolveChat!(createChatResponse());
+    // Complete the stream
+    resolveStream!();
 
     await waitFor(() => {
       expect(textarea).not.toBeDisabled();
@@ -265,7 +305,10 @@ describe('ChatPage', () => {
   });
 
   it('displays error message on chat failure', async () => {
-    mockSendChatMessage.mockRejectedValue(new Error('Network error'));
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/v1/chat/stream') return Promise.reject(new Error('Network error'));
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
 
     const user = userEvent.setup();
     renderComponent();
@@ -297,8 +340,7 @@ describe('ChatPage', () => {
           isActive: false,
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          deletionProtected: false,
-        },
+                },
       ],
     });
 
@@ -322,25 +364,30 @@ describe('ChatPage', () => {
     await user.type(textarea, 'Hello JARVIS!{enter}');
 
     await waitFor(() => {
-      expect(mockSendChatMessage).toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/chat/stream', expect.objectContaining({ method: 'POST' }));
     });
 
-    const call = mockSendChatMessage.mock.calls[0][0];
-    expect(call.personalityId).toBe('p-2');
+    const streamCall = mockFetch.mock.calls.find((c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream')!;
+    const body = JSON.parse(streamCall[1].body);
+    expect(body.personalityId).toBe('p-2');
   });
 
   // ── Brain integration tests ─────────────────────────────────
 
   it('shows Brain context indicator when brainContext is present', async () => {
-    mockSendChatMessage.mockResolvedValue(
-      createChatResponse({
-        brainContext: {
-          memoriesUsed: 2,
-          knowledgeUsed: 1,
-          contextSnippets: ['[episodic] User likes TypeScript', '[coding] TS is typed JS'],
-        },
-      })
-    );
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/v1/chat/stream') {
+        return Promise.resolve(createStreamResponse([{
+          ...DEFAULT_DONE_EVENT,
+          brainContext: {
+            memoriesUsed: 2,
+            knowledgeUsed: 1,
+            contextSnippets: ['[episodic] User likes TypeScript', '[coding] TS is typed JS'],
+          },
+        }]));
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
 
     const user = userEvent.setup();
     renderComponent();
@@ -357,15 +404,15 @@ describe('ChatPage', () => {
   });
 
   it('hides Brain context indicator when no context was used', async () => {
-    mockSendChatMessage.mockResolvedValue(
-      createChatResponse({
-        brainContext: {
-          memoriesUsed: 0,
-          knowledgeUsed: 0,
-          contextSnippets: [],
-        },
-      })
-    );
+    mockFetch.mockImplementation((url: string) => {
+      if (url === '/api/v1/chat/stream') {
+        return Promise.resolve(createStreamResponse([{
+          ...DEFAULT_DONE_EVENT,
+          brainContext: { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] },
+        }]));
+      }
+      return Promise.resolve(new Response('{}', { status: 200 }));
+    });
 
     const user = userEvent.setup();
     renderComponent();
@@ -555,9 +602,10 @@ describe('ChatPage', () => {
     await user.type(textarea, 'No memory!{enter}');
 
     await waitFor(() => {
-      expect(mockSendChatMessage).toHaveBeenCalled();
+      expect(mockFetch).toHaveBeenCalledWith('/api/v1/chat/stream', expect.objectContaining({ method: 'POST' }));
     });
-    const call = mockSendChatMessage.mock.calls[0][0];
-    expect(call.memoryEnabled).toBe(false);
+    const streamCall = mockFetch.mock.calls.find((c: unknown[]) => (c[0] as string) === '/api/v1/chat/stream')!;
+    const body = JSON.parse(streamCall[1].body);
+    expect(body.memoryEnabled).toBe(false);
   });
 });

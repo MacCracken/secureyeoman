@@ -1,7 +1,7 @@
 /**
  * Tests for creation-tool-executor:
  *   - 'create_task' case — executor executes and returns; does NOT own storage
- *   - 'delete_personality' case — self-deletion guard + deletionProtected guard
+ *   - 'delete_personality' case — self-deletion guard + deletion mode guards
  *   - 'delete_custom_role' / 'revoke_role' — RBAC delegation
  *   - 'delete_experiment' — experiment manager delegation
  *   - 'register_dynamic_tool' case
@@ -48,6 +48,12 @@ function makeDtm(opts: {
 
 // ── Minimal SecureYeoman mock ─────────────────────────────────────────────────
 
+function makeApprovalManager() {
+  return {
+    createApproval: vi.fn().mockResolvedValue({ id: 'appr-1', status: 'pending' }),
+  };
+}
+
 function makeSecureYeoman(dtm?: ReturnType<typeof makeDtm>) {
   return {
     getDynamicToolManager: vi.fn().mockReturnValue(dtm ?? null),
@@ -57,7 +63,12 @@ function makeSecureYeoman(dtm?: ReturnType<typeof makeDtm>) {
       updateSkill: vi.fn().mockResolvedValue({ id: 's-1' }),
       deleteSkill: vi.fn().mockResolvedValue(undefined),
       deletePersonality: vi.fn().mockResolvedValue(undefined),
+      getPersonality: vi.fn().mockResolvedValue({
+        id: 'p-other',
+        body: { resourcePolicy: { deletionMode: 'auto', automationLevel: 'supervised_auto', emergencyStop: false } },
+      }),
     }),
+    getApprovalManager: vi.fn().mockReturnValue(makeApprovalManager()),
     getTaskStorage: vi.fn().mockReturnValue(null),
     getTaskExecutor: vi.fn().mockReturnValue(null),
     getSubAgentManager: vi.fn().mockReturnValue(null),
@@ -410,11 +421,12 @@ describe('executeCreationTool — delete_personality', () => {
     expect(soulMgr.deletePersonality).not.toHaveBeenCalled();
   });
 
-  it('returns isError true when soulManager.deletePersonality throws (e.g. deletionProtected)', async () => {
+  it('blocks AI deletion when deletionMode is manual', async () => {
     const sy = makeSecureYeoman();
-    sy.getSoulManager().deletePersonality = vi.fn().mockRejectedValue(
-      new Error('This personality is protected from deletion. Disable "Protected from deletion" in its settings first.')
-    );
+    sy.getSoulManager().getPersonality = vi.fn().mockResolvedValue({
+      id: 'p-other',
+      body: { resourcePolicy: { deletionMode: 'manual' } },
+    });
 
     const result = await executeCreationTool(
       makeToolCall('delete_personality', { id: 'p-other' }),
@@ -423,7 +435,26 @@ describe('executeCreationTool — delete_personality', () => {
     );
 
     expect(result.isError).toBe(true);
-    expect((result.output as { error: string }).error).toMatch(/protected from deletion/i);
+    expect((result.output as { error: string }).error).toMatch(/mode: manual/i);
+    expect(sy.getSoulManager().deletePersonality).not.toHaveBeenCalled();
+  });
+
+  it('blocks AI deletion when deletionMode is request (human-only path)', async () => {
+    const sy = makeSecureYeoman();
+    sy.getSoulManager().getPersonality = vi.fn().mockResolvedValue({
+      id: 'p-other',
+      body: { resourcePolicy: { deletionMode: 'request' } },
+    });
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_personality', { id: 'p-other' }),
+      sy as any,
+      { personalityId: 'p-self' }
+    );
+
+    expect(result.isError).toBe(true);
+    expect((result.output as { error: string }).error).toMatch(/mode: suggest/i);
+    expect(sy.getSoulManager().deletePersonality).not.toHaveBeenCalled();
   });
 
   it('returns { deleted: true, id } on success', async () => {
@@ -449,6 +480,101 @@ describe('executeCreationTool — delete_personality', () => {
     );
 
     expect(result.isError).toBe(false);
+  });
+});
+
+// ── Automation Level / Emergency Stop gating ──────────────────────────────────
+
+describe('executeCreationTool — emergencyStop gating', () => {
+  it('blocks all mutations when emergencyStop is true', async () => {
+    const sy = makeSecureYeoman();
+    sy.getSoulManager().getPersonality = vi.fn().mockResolvedValue({
+      id: 'p-caller',
+      body: { resourcePolicy: { emergencyStop: true, automationLevel: 'supervised_auto', deletionMode: 'auto' } },
+    });
+
+    const result = await executeCreationTool(
+      makeToolCall('create_skill', { name: 'Test', description: '', instructions: '' }),
+      sy as any,
+      { personalityId: 'p-caller' }
+    );
+
+    expect(result.isError).toBe(true);
+    expect((result.output as { error: string }).error).toMatch(/emergency stop/i);
+  });
+});
+
+describe('executeCreationTool — automationLevel gating', () => {
+  it('queues create_skill when automationLevel is full_manual', async () => {
+    const sy = makeSecureYeoman();
+    sy.getSoulManager().getPersonality = vi.fn().mockResolvedValue({
+      id: 'p-caller',
+      body: { resourcePolicy: { emergencyStop: false, automationLevel: 'full_manual', deletionMode: 'auto' } },
+    });
+
+    const result = await executeCreationTool(
+      makeToolCall('create_skill', { name: 'Queued Skill', description: '', instructions: '' }),
+      sy as any,
+      { personalityId: 'p-caller' }
+    );
+
+    expect(result.isError).toBe(false);
+    expect((result.output as { queued: boolean }).queued).toBe(true);
+    expect(sy.getApprovalManager().createApproval).toHaveBeenCalledWith(
+      'p-caller',
+      'create_skill',
+      expect.objectContaining({ name: 'Queued Skill' })
+    );
+  });
+
+  it('queues delete_skill when automationLevel is semi_auto', async () => {
+    const sy = makeSecureYeoman();
+    sy.getSoulManager().getPersonality = vi.fn().mockResolvedValue({
+      id: 'p-caller',
+      body: { resourcePolicy: { emergencyStop: false, automationLevel: 'semi_auto', deletionMode: 'auto' } },
+    });
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_skill', { id: 's-1' }),
+      sy as any,
+      { personalityId: 'p-caller' }
+    );
+
+    expect(result.isError).toBe(false);
+    expect((result.output as { queued: boolean }).queued).toBe(true);
+  });
+
+  it('allows create_skill when automationLevel is semi_auto (not destructive)', async () => {
+    const sy = makeSecureYeoman();
+    sy.getSoulManager().getPersonality = vi.fn().mockResolvedValue({
+      id: 'p-caller',
+      body: { resourcePolicy: { emergencyStop: false, automationLevel: 'semi_auto', deletionMode: 'auto' } },
+    });
+
+    const result = await executeCreationTool(
+      makeToolCall('create_skill', { name: 'Allowed Skill', description: '', instructions: '' }),
+      sy as any,
+      { personalityId: 'p-caller' }
+    );
+
+    expect(result.isError).toBe(false);
+    expect((result.output as { queued?: boolean }).queued).toBeUndefined();
+    expect(sy.getSoulManager().createSkill).toHaveBeenCalled();
+  });
+
+  it('proceeds without queuing when automationLevel is supervised_auto', async () => {
+    const sy = makeSecureYeoman();
+    // default mock already has supervised_auto + emergencyStop:false
+
+    const result = await executeCreationTool(
+      makeToolCall('delete_skill', { id: 's-1' }),
+      sy as any,
+      { personalityId: 'p-caller' }
+    );
+
+    expect(result.isError).toBe(false);
+    expect((result.output as { queued?: boolean }).queued).toBeUndefined();
+    expect(sy.getSoulManager().deleteSkill).toHaveBeenCalled();
   });
 });
 

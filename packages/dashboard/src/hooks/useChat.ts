@@ -234,6 +234,7 @@ export interface UseChatStreamReturn {
   isPending: boolean;
   clearMessages: () => void;
   conversationId: string | null;
+  isLoadingConversation: boolean;
   streamingThinking: string;
   streamingContent: string;
   activeToolCalls: ActiveToolCall[];
@@ -249,8 +250,53 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
   const [streamingThinking, setStreamingThinking] = useState('');
   const [streamingContent, setStreamingContent] = useState('');
   const [activeToolCalls, setActiveToolCalls] = useState<ActiveToolCall[]>([]);
+  const [isLoadingConversation, setIsLoadingConversation] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
+  const prevExternalId = useRef<string | null | undefined>(undefined);
+  const autoCreatedIds = useRef(new Set<string>());
   const queryClient = useQueryClient();
+
+  // Load existing conversation when the external conversationId changes
+  useEffect(() => {
+    const newId = options?.conversationId ?? null;
+    if (prevExternalId.current === newId) return;
+    prevExternalId.current = newId;
+
+    setActiveConversationId(newId);
+
+    if (!newId) {
+      setMessages([]);
+      return;
+    }
+
+    // Skip fetch for conversations we just created (messages already in state)
+    if (autoCreatedIds.current.has(newId)) {
+      return;
+    }
+
+    setIsLoadingConversation(true);
+    fetchConversation(newId)
+      .then((detail) => {
+        setMessages(
+          detail.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+            timestamp: m.createdAt,
+            model: m.model ?? undefined,
+            provider: m.provider ?? undefined,
+            tokensUsed: m.tokensUsed ?? undefined,
+            brainContext: m.brainContext ?? undefined,
+            creationEvents: m.creationEvents ?? undefined,
+          }))
+        );
+      })
+      .catch(() => {
+        setMessages([]);
+      })
+      .finally(() => {
+        setIsLoadingConversation(false);
+      });
+  }, [options?.conversationId]);
 
   const clearMessages = useCallback(() => {
     setMessages([]);
@@ -288,6 +334,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
         const title = trimmed.length > 60 ? trimmed.slice(0, 57) + '...' : trimmed;
         const conv = await createConversation(title, options?.personalityId ?? undefined);
         convId = conv.id;
+        autoCreatedIds.current.add(convId);
         setActiveConversationId(convId);
         queryClient.invalidateQueries({ queryKey: ['conversations'] });
       } catch {
@@ -369,6 +416,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
             const doneEvent = event as {
               content: string; model: string; provider: string;
               tokensUsed?: number; thinkingContent?: string; creationEvents: CreationEvent[];
+              brainContext?: ChatMessage['brainContext'];
             };
             setMessages((prev) => [
               ...prev,
@@ -380,6 +428,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
                 provider: doneEvent.provider,
                 tokensUsed: doneEvent.tokensUsed,
                 thinkingContent: doneEvent.thinkingContent,
+                brainContext: doneEvent.brainContext,
                 creationEvents: doneEvent.creationEvents.length > 0 ? doneEvent.creationEvents : undefined,
               },
             ]);
@@ -417,6 +466,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
     isPending,
     clearMessages,
     conversationId: activeConversationId,
+    isLoadingConversation,
     streamingThinking,
     streamingContent,
     activeToolCalls,

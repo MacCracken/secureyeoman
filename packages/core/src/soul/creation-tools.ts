@@ -133,10 +133,6 @@ const CREATE_PERSONALITY_TOOL: Tool = {
         enum: ['male', 'female', 'non-binary', 'unspecified'],
         description: 'Expressed sex of the personality',
       },
-      deletionProtected: {
-        type: 'boolean',
-        description: 'When true, this personality cannot be deleted until the flag is cleared.',
-      },
     },
     required: ['name'],
   },
@@ -153,10 +149,6 @@ const UPDATE_PERSONALITY_TOOL: Tool = {
       description: { type: 'string', description: 'New description' },
       systemPrompt: { type: 'string', description: 'New system prompt' },
       traits: { type: 'object', description: 'Updated trait map' },
-      deletionProtected: {
-        type: 'boolean',
-        description: 'Set to false to remove deletion protection before deleting.',
-      },
     },
     required: ['id'],
   },

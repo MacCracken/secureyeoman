@@ -51,7 +51,8 @@ export function ResourceMonitor({ metrics }: ResourceMonitorProps) {
   }, [metrics?.resources?.memoryUsedMb]);
 
   const tokenData = [
-    { name: 'Used', value: metrics?.resources?.tokensUsedToday ?? 0, color: '#0ea5e9' },
+    { name: 'Input', value: metrics?.resources?.inputTokensToday ?? 0, color: '#0ea5e9' },
+    { name: 'Output', value: metrics?.resources?.outputTokensToday ?? 0, color: '#f59e0b' },
     { name: 'Cached', value: metrics?.resources?.tokensCachedToday ?? 0, color: '#22c55e' },
   ];
 
@@ -138,6 +139,10 @@ export function ResourceMonitor({ metrics }: ResourceMonitorProps) {
             <div>
               <p className="text-2xl font-bold">
                 {(metrics?.resources?.tokensUsedToday ?? 0).toLocaleString()}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {(metrics?.resources?.inputTokensToday ?? 0).toLocaleString()} in /{' '}
+                {(metrics?.resources?.outputTokensToday ?? 0).toLocaleString()} out
               </p>
               <p className="text-xs text-muted-foreground">
                 {metrics?.resources?.tokensCachedToday ?? 0} cached

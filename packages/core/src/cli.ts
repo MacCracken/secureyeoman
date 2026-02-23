@@ -24,6 +24,7 @@
  *   secureyeoman completion           # Generate shell completion scripts (bash, zsh, fish)
  *   secureyeoman plugin               # Manage integration plugins (list, info, add, remove)
  *   secureyeoman security             # Manage Kali security toolkit container (setup, teardown, update, status)
+ *   secureyeoman mcp-quickbooks       # Manage QuickBooks Online MCP toolset (status, enable, disable)
  *   secureyeoman agnostic             # Manage Agnostic QA sub-agent team Docker Compose stack (start, stop, status, logs, pull)
  *   secureyeoman tui                  # Full-screen terminal dashboard (status, chat, memory)
  */
@@ -51,6 +52,7 @@ import { pluginCommand } from './cli/commands/plugin.js';
 import { mcpServerCommand } from './cli/commands/mcp-server.js';
 import { migrateCommand } from './cli/commands/migrate.js';
 import { securityCommand } from './cli/commands/security.js';
+import { mcpQuickbooksCommand } from './cli/commands/mcp-quickbooks.js';
 import { agnosticCommand } from './cli/commands/agnostic.js';
 import { tuiCommand } from './cli/commands/tui.js';
 
@@ -79,6 +81,7 @@ router.register(pluginCommand);
 router.register(mcpServerCommand);
 router.register(migrateCommand);
 router.register(securityCommand);
+router.register(mcpQuickbooksCommand);
 router.register(agnosticCommand);
 router.register(tuiCommand);
 

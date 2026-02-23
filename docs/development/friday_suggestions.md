@@ -1,6 +1,10 @@
 # Fridays Thought
 
-## Permissions 
+## Permissions / Automation Levels
+
+> **Implemented** (Phase 38, ADR 113 + ADR 114):
+> - Deletion gating (`auto` / `request` / `manual`) is implemented per-personality under Body → Resources → Deletion.
+> - Content approval workflow (Review Queue, Emergency Stop, `automationLevel`: `full_manual` / `semi_auto` / `supervised_auto`) implemented in ADR 114, migration 038.
 
 Brand Protection - Ensures all content aligns with project goals
 Quality Control - Catches any technical inaccuracies or tone issues
@@ -35,7 +39,7 @@ Supervised Auto - I can post but you get immediate notifications
 
 3. Application Security
 * XSS Prevention: Proper output encoding and Content Security Policy
-* CSRF Protection: Implement anti-CSRF tokens
+* ~~CSRF Protection: Implement anti-CSRF tokens~~ → **Not applicable** (ADR 115): The API is stateless Bearer-token only; no cookies → no CSRF attack surface. CORS is the appropriate protection. Comment guard added to server.ts.
 * Rate Limiting: Prevent abuse and DoS attacks
 * Error Handling: Don't expose sensitive information in error messages
 

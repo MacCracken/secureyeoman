@@ -34,6 +34,8 @@ export interface ResourceMetrics {
   memoryPercent: number;
   diskUsedMb: number;
   diskLimitMb?: number;
+  inputTokensToday: number;
+  outputTokensToday: number;
   tokensUsedToday: number;
   tokensLimitDaily?: number;
   tokensCachedToday: number;
@@ -145,7 +147,6 @@ export interface Personality {
   modelFallbacks: { provider: string; model: string }[];
   includeArchetypes: boolean;
   isActive: boolean;
-  deletionProtected: boolean;
   body?: {
     enabled?: boolean;
     capabilities?: string[];
@@ -198,6 +199,11 @@ export interface Personality {
     thinkingConfig?: {
       enabled?: boolean;
       budgetTokens?: number;
+    };
+    resourcePolicy?: {
+      deletionMode?: 'auto' | 'request' | 'manual';
+      automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
+      emergencyStop?: boolean;
     };
   };
   createdAt: number;
@@ -215,7 +221,6 @@ export interface PersonalityCreate {
   defaultModel?: DefaultModel | null;
   modelFallbacks?: { provider: string; model: string }[];
   includeArchetypes?: boolean;
-  deletionProtected?: boolean;
   body?: {
     enabled?: boolean;
     capabilities?: string[];
@@ -268,6 +273,11 @@ export interface PersonalityCreate {
     thinkingConfig?: {
       enabled?: boolean;
       budgetTokens?: number;
+    };
+    resourcePolicy?: {
+      deletionMode?: 'auto' | 'request' | 'manual';
+      automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
+      emergencyStop?: boolean;
     };
   };
 }
