@@ -128,6 +128,16 @@ export const McpServiceConfigSchema = z.object({
   quickBooksClientSecret: z.string().optional(),
   quickBooksRealmId: z.string().optional(),
   quickBooksRefreshToken: z.string().optional(),
+  /** Enable network evaluation and protection tools (46.1–46.8). Off by default. */
+  exposeNetworkTools: z.boolean().default(false),
+  /** CIDR/hostname allowlist for active network probing (SSH, ping, traceroute). Empty = deny all active tools. Wildcard '*' disables scope enforcement. */
+  allowedNetworkTargets: z.array(z.string()).default([]),
+  /** NetBox API base URL, e.g. https://netbox.example.com */
+  netboxUrl: z.string().url().optional(),
+  /** NetBox API token (read-only or read-write depending on allowNetBoxWrite). */
+  netboxToken: z.string().optional(),
+  /** NVD API key — optional; raises rate limit from 5 req/30s to 50 req/30s. */
+  nvdApiKey: z.string().optional(),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

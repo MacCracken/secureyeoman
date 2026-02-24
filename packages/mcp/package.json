@@ -37,10 +37,12 @@
     "zod": "^3.23.8"
   },
   "optionalDependencies": {
-    "playwright": "^1.50.0"
+    "playwright": "^1.50.0",
+    "ssh2": "^1.16.0"
   },
   "devDependencies": {
     "@types/node": "^20.14.12",
+    "@types/ssh2": "^1.15.1",
     "tsx": "^4.16.5",
     "typescript": "^5.4.5",
     "vitest": "^4.0.18"

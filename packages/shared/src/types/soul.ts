@@ -69,6 +69,18 @@ export const McpFeaturesSchema = z
     exposeWebSearch: z.boolean().default(false),
     exposeBrowser: z.boolean().default(false),
     exposeDesktopControl: z.boolean().default(false),
+    /** SSH/Telnet device automation, show commands, config push, ping, traceroute. Requires global allowNetworkTools. */
+    exposeNetworkDevices: z.boolean().default(false),
+    /** CDP/LLDP discovery, topology build, ARP/MAC tables, routing table, OSPF, BGP, interfaces, VLANs. Requires global allowNetworkTools. */
+    exposeNetworkDiscovery: z.boolean().default(false),
+    /** ACL audit, AAA config, port security, STP analysis. Requires global allowNetworkTools. */
+    exposeNetworkAudit: z.boolean().default(false),
+    /** NetBox CRUD queries and live-vs-NetBox drift reconciliation. Requires global allowNetworkTools. */
+    exposeNetBox: z.boolean().default(false),
+    /** NVD CVE search, CVEs-by-software, device OS version detection. Requires global allowNetworkTools. */
+    exposeNvd: z.boolean().default(false),
+    /** Subnet/VLSM/wildcard calculators and PCAP analysis (tshark). Requires global allowNetworkTools. */
+    exposeNetworkUtils: z.boolean().default(false),
   })
   .default({});
 

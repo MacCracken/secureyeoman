@@ -129,6 +129,8 @@ beforeEach(() => {
     sandboxGvisor: false,
     sandboxWasm: false,
     sandboxCredentialProxy: false,
+    allowNetworkTools: false,
+    allowNetBoxWrite: false,
     allowWorkflows: false,
     allowCommunityGitFetch: false,
   });
@@ -356,6 +358,8 @@ function enableMlPolicy() {
     sandboxGvisor: false,
     sandboxWasm: false,
     sandboxCredentialProxy: false,
+    allowNetworkTools: false,
+    allowNetBoxWrite: false,
     allowWorkflows: false,
     allowCommunityGitFetch: false,
   });

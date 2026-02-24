@@ -117,6 +117,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -138,6 +140,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -189,6 +193,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -294,6 +300,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -331,6 +339,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -358,6 +368,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -479,6 +491,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -506,6 +520,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -543,6 +559,8 @@ describe('SecuritySettings', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });

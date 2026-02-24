@@ -1338,6 +1338,12 @@ export interface McpConfigResponse {
   exposeWebSearch: boolean;
   exposeBrowser: boolean;
   exposeDesktopControl: boolean;
+  exposeNetworkDevices: boolean;
+  exposeNetworkDiscovery: boolean;
+  exposeNetworkAudit: boolean;
+  exposeNetBox: boolean;
+  exposeNvd: boolean;
+  exposeNetworkUtils: boolean;
   allowedUrls: string[];
   webRateLimitPerMinute: number;
   proxyEnabled: boolean;
@@ -1358,6 +1364,12 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeWebSearch: true,
       exposeBrowser: false,
       exposeDesktopControl: false,
+      exposeNetworkDevices: false,
+      exposeNetworkDiscovery: false,
+      exposeNetworkAudit: false,
+      exposeNetBox: false,
+      exposeNvd: false,
+      exposeNetworkUtils: false,
       allowedUrls: [],
       webRateLimitPerMinute: 10,
       proxyEnabled: false,

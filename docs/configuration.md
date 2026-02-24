@@ -535,6 +535,18 @@ Configuration is via environment variables (not the YAML config file):
 | `MCP_ALLOWED_TARGETS` | *(empty)* | Comma-separated CIDRs, hostnames, and URL prefixes that active tools are permitted to reach. Use `*` for unrestricted lab/CTF mode (skips scope enforcement). Required when `MCP_EXPOSE_SECURITY_TOOLS=true`. |
 | `SHODAN_API_KEY` | *(empty)* | Shodan REST API key. Required to enable the `sec_shodan` tool. |
 
+#### Network Evaluation & Protection
+
+> Exposes network device automation, topology discovery, routing analysis, security auditing, NetBox integration, NVD CVE lookup, subnet utilities, and PCAP analysis. See [Network Tools Guide](guides/network-tools.md) for setup and personality configuration.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_EXPOSE_NETWORK_TOOLS` | `false` | Enable all network evaluation and protection tools. Must be `true` and `security.allowNetworkTools` must be enabled in Security Settings. |
+| `MCP_ALLOWED_NETWORK_TARGETS` | *(empty)* | Comma-separated CIDR ranges and/or hostnames that SSH and active probing tools are permitted to reach. Empty = all active tools blocked. Use `*` for unrestricted lab mode. |
+| `NETBOX_URL` | *(empty)* | NetBox API base URL (e.g. `https://netbox.example.com`). Required for `netbox_*` tools. |
+| `NETBOX_TOKEN` | *(empty)* | NetBox API token (read-only or read-write). Required for `netbox_*` tools. |
+| `NVD_API_KEY` | *(empty)* | NVD REST API key. Optional — without it, rate limited to 5 req/30s; with it, 50 req/30s. Register at https://nvd.nist.gov/developers/request-an-api-key |
+
 #### Agnostic QA Team Bridge
 
 > MCP tools that delegate QA tasks to the [Agnostic](https://github.com/MacCracken/agnostic) 6-agent QA platform. Agnostic must be running separately (see its `docker-compose.yml`).

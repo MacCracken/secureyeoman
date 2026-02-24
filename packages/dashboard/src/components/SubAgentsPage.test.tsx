@@ -138,6 +138,8 @@ describe('SubAgentsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -179,6 +181,8 @@ describe('SubAgentsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -209,6 +213,8 @@ describe('SubAgentsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -239,6 +245,8 @@ describe('SubAgentsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -289,6 +297,8 @@ describe('SubAgentsPage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });

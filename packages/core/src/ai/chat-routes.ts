@@ -301,6 +301,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           exposeWebScraping: false,
           exposeWebSearch: false,
           exposeBrowser: false,
+          exposeNetworkDevices: false,
+          exposeNetworkDiscovery: false,
+          exposeNetworkAudit: false,
+          exposeNetBox: false,
+          exposeNvd: false,
+          exposeNetworkUtils: false,
         };
         const globalConfig = await mcpStorage.getConfig();
         const allMcpTools: McpToolDef[] = mcpClient.getAllTools();
@@ -329,6 +335,37 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             if (isWebSearchTool && !(globalConfig.exposeWeb && perPersonalityFeatures.exposeWebSearch))
               continue;
             if (isBrowserTool && !(globalConfig.exposeBrowser && perPersonalityFeatures.exposeBrowser))
+              continue;
+
+            // Network tools — 6 fine-selectable toolsets, each gated by global allowNetworkTools AND per-personality flag.
+            const globalNetworkOk = (globalConfig as Record<string, unknown>).allowNetworkTools === true;
+
+            const NETWORK_DEVICE_PREFIXES = ['network_device_', 'network_show_', 'network_config_',
+              'network_health_', 'network_ping_', 'network_traceroute'];
+            const NETWORK_DISCOVERY_PREFIXES = ['network_discovery_', 'network_topology_', 'network_arp_',
+              'network_mac_', 'network_routing_', 'network_ospf_', 'network_bgp_',
+              'network_interface_', 'network_vlan_'];
+            const NETWORK_AUDIT_PREFIXES = ['network_acl_', 'network_aaa_', 'network_port_',
+              'network_stp_', 'network_software_'];
+
+            const isNetworkDeviceTool = NETWORK_DEVICE_PREFIXES.some((p) => tool.name.startsWith(p));
+            const isNetworkDiscoveryTool = NETWORK_DISCOVERY_PREFIXES.some((p) => tool.name.startsWith(p));
+            const isNetworkAuditTool = NETWORK_AUDIT_PREFIXES.some((p) => tool.name.startsWith(p));
+            const isNetBoxTool = tool.name.startsWith('netbox_');
+            const isNvdTool = tool.name.startsWith('nvd_');
+            const isNetworkUtilsTool = ['subnet_', 'wildcard_', 'pcap_'].some((p) => tool.name.startsWith(p));
+
+            if (isNetworkDeviceTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetworkDevices))
+              continue;
+            if (isNetworkDiscoveryTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetworkDiscovery))
+              continue;
+            if (isNetworkAuditTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetworkAudit))
+              continue;
+            if (isNetBoxTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetBox))
+              continue;
+            if (isNvdTool && !(globalNetworkOk && perPersonalityFeatures.exposeNvd))
+              continue;
+            if (isNetworkUtilsTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetworkUtils))
               continue;
           } else {
             // External server: only include when explicitly selected

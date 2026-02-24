@@ -20,6 +20,7 @@ import {
   FileText,
   Search,
   Monitor,
+  Network,
   Wrench,
   Star,
   Power,
@@ -1274,6 +1275,12 @@ interface BodySectionProps {
     exposeWebSearch: boolean;
     exposeBrowser: boolean;
     exposeDesktopControl: boolean;
+    exposeNetworkDevices: boolean;
+    exposeNetworkDiscovery: boolean;
+    exposeNetworkAudit: boolean;
+    exposeNetBox: boolean;
+    exposeNvd: boolean;
+    exposeNetworkUtils: boolean;
   };
   onMcpFeaturesChange: (features: {
     exposeGit: boolean;
@@ -1283,6 +1290,12 @@ interface BodySectionProps {
     exposeWebSearch: boolean;
     exposeBrowser: boolean;
     exposeDesktopControl: boolean;
+    exposeNetworkDevices: boolean;
+    exposeNetworkDiscovery: boolean;
+    exposeNetworkAudit: boolean;
+    exposeNetBox: boolean;
+    exposeNvd: boolean;
+    exposeNetworkUtils: boolean;
   }) => void;
   creationConfig: {
     skills: boolean;
@@ -2231,6 +2244,187 @@ function BodySection({
                                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                               />
                             </label>
+                            {/* ── Network Tools ─────────────────────────── */}
+                            <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1">
+                                <Network className="w-3 h-3" />
+                                Network Tools
+                              </p>
+                              {/* Device Automation */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeNetworkDevices
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <span className="text-xs flex-1">
+                                  Device Automation (SSH)
+                                  {!globalMcpConfig?.exposeNetworkDevices && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Network Tools in Security Settings first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeNetworkDevices}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeNetworkDevices: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeNetworkDevices}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                              {/* Discovery & Routing */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeNetworkDiscovery
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <span className="text-xs flex-1">
+                                  Discovery & Routing Analysis
+                                  {!globalMcpConfig?.exposeNetworkDiscovery && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Network Tools in Security Settings first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeNetworkDiscovery}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeNetworkDiscovery: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeNetworkDiscovery}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                              {/* Security Auditing */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeNetworkAudit
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <span className="text-xs flex-1">
+                                  Security Auditing
+                                  {!globalMcpConfig?.exposeNetworkAudit && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Network Tools in Security Settings first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeNetworkAudit}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeNetworkAudit: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeNetworkAudit}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                              {/* NetBox */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeNetBox
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <span className="text-xs flex-1">
+                                  NetBox Integration
+                                  {!globalMcpConfig?.exposeNetBox && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Network Tools in Security Settings first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeNetBox}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeNetBox: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeNetBox}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                              {/* NVD / CVE */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeNvd
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <span className="text-xs flex-1">
+                                  NVD / CVE Assessment
+                                  {!globalMcpConfig?.exposeNvd && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Network Tools in Security Settings first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeNvd}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeNvd: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeNvd}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                              {/* Network Utilities */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeNetworkUtils
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <span className="text-xs flex-1">
+                                  Network Utilities &amp; PCAP Analysis
+                                  {!globalMcpConfig?.exposeNetworkUtils && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Network Tools in Security Settings first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeNetworkUtils}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeNetworkUtils: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeNetworkUtils}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2526,6 +2720,12 @@ export function PersonalityEditor() {
     exposeWebSearch: boolean;
     exposeBrowser: boolean;
     exposeDesktopControl: boolean;
+    exposeNetworkDevices: boolean;
+    exposeNetworkDiscovery: boolean;
+    exposeNetworkAudit: boolean;
+    exposeNetBox: boolean;
+    exposeNvd: boolean;
+    exposeNetworkUtils: boolean;
   }>({
     exposeGit: false,
     exposeFilesystem: false,
@@ -2534,6 +2734,12 @@ export function PersonalityEditor() {
     exposeWebSearch: false,
     exposeBrowser: false,
     exposeDesktopControl: false,
+    exposeNetworkDevices: false,
+    exposeNetworkDiscovery: false,
+    exposeNetworkAudit: false,
+    exposeNetBox: false,
+    exposeNvd: false,
+    exposeNetworkUtils: false,
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
@@ -2784,6 +2990,12 @@ export function PersonalityEditor() {
       exposeWebSearch: body.mcpFeatures?.exposeWebSearch ?? false,
       exposeBrowser: body.mcpFeatures?.exposeBrowser ?? false,
       exposeDesktopControl: body.mcpFeatures?.exposeDesktopControl ?? false,
+      exposeNetworkDevices: body.mcpFeatures?.exposeNetworkDevices ?? false,
+      exposeNetworkDiscovery: body.mcpFeatures?.exposeNetworkDiscovery ?? false,
+      exposeNetworkAudit: body.mcpFeatures?.exposeNetworkAudit ?? false,
+      exposeNetBox: body.mcpFeatures?.exposeNetBox ?? false,
+      exposeNvd: body.mcpFeatures?.exposeNvd ?? false,
+      exposeNetworkUtils: body.mcpFeatures?.exposeNetworkUtils ?? false,
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
@@ -2882,6 +3094,12 @@ export function PersonalityEditor() {
       exposeWebSearch: false,
       exposeBrowser: false,
       exposeDesktopControl: false,
+      exposeNetworkDevices: false,
+      exposeNetworkDiscovery: false,
+      exposeNetworkAudit: false,
+      exposeNetBox: false,
+      exposeNvd: false,
+      exposeNetworkUtils: false,
     });
     setProactiveConfig({
       enabled: false,

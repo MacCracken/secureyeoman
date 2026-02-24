@@ -203,6 +203,8 @@ beforeEach(() => {
     sandboxGvisor: false,
     sandboxWasm: false,
     sandboxCredentialProxy: false,
+    allowNetworkTools: false,
+    allowNetBoxWrite: false,
     allowWorkflows: false,
     allowCommunityGitFetch: false,
   });
@@ -375,6 +377,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+    allowNetworkTools: false,
+    allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -414,6 +418,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+    allowNetworkTools: false,
+    allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -448,6 +454,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+    allowNetworkTools: false,
+    allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -482,6 +490,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+    allowNetworkTools: false,
+    allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });

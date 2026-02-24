@@ -121,6 +121,8 @@ describe('A2APage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -159,6 +161,8 @@ describe('A2APage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });
@@ -192,6 +196,8 @@ describe('A2APage', () => {
       sandboxGvisor: false,
       sandboxWasm: false,
       sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
     });

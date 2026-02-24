@@ -27,6 +27,7 @@ import { registerWorkflowTools } from './workflow-tools.js';
 import { registerQuickBooksTools } from './quickbooks-tools.js';
 import { registerDiagnosticTools } from './diagnostic-tools.js';
 import { registerDesktopTools } from './desktop-tools.js';
+import { registerNetworkTools } from './network-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -64,4 +65,5 @@ export async function registerAllTools(
   registerQuickBooksTools(server, config, middleware);
   registerDiagnosticTools(server, client, middleware);
   registerDesktopTools(server, client, config, middleware);
+  await registerNetworkTools(server, config, middleware);
 }

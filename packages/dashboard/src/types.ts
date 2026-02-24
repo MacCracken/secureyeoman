@@ -177,6 +177,12 @@ export interface Personality {
       exposeWebSearch?: boolean;
       exposeBrowser?: boolean;
       exposeDesktopControl?: boolean;
+      exposeNetworkDevices?: boolean;
+      exposeNetworkDiscovery?: boolean;
+      exposeNetworkAudit?: boolean;
+      exposeNetBox?: boolean;
+      exposeNvd?: boolean;
+      exposeNetworkUtils?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -259,6 +265,12 @@ export interface PersonalityCreate {
       exposeWebSearch?: boolean;
       exposeBrowser?: boolean;
       exposeDesktopControl?: boolean;
+      exposeNetworkDevices?: boolean;
+      exposeNetworkDiscovery?: boolean;
+      exposeNetworkAudit?: boolean;
+      exposeNetBox?: boolean;
+      exposeNvd?: boolean;
+      exposeNetworkUtils?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -636,6 +648,12 @@ export interface McpFeatureConfig {
   exposeWebSearch: boolean;
   exposeBrowser: boolean;
   exposeDesktopControl: boolean;
+  exposeNetworkDevices: boolean;
+  exposeNetworkDiscovery: boolean;
+  exposeNetworkAudit: boolean;
+  exposeNetBox: boolean;
+  exposeNvd: boolean;
+  exposeNetworkUtils: boolean;
 }
 
 export interface McpServerHealth {
