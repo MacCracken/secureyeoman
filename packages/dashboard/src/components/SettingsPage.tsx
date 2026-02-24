@@ -30,7 +30,7 @@ import {
 import type { Personality, SoulConfig } from '../types';
 import { NotificationSettings } from './NotificationSettings';
 import { LogRetentionSettings } from './LogRetentionSettings';
-import { SecuritySettings, RolesSettings } from './SecuritySettings';
+import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySettings';
 import { ApiKeysSettings } from './ApiKeysSettings';
 import { UsersSettings } from './UsersSettings';
 import { WorkspacesSettings } from './WorkspacesSettings';
@@ -153,7 +153,12 @@ export function SettingsPage() {
       </div>
 
       {activeTab === 'general' && <GeneralTab />}
-      {activeTab === 'security' && <SecuritySettings />}
+      {activeTab === 'security' && (
+        <div className="space-y-8">
+          <SecuritySettings />
+          <SecretsPanel />
+        </div>
+      )}
       {activeTab === 'keys' && <ApiKeysSettings />}
       {activeTab === 'workspaces' && <WorkspacesSettings />}
       {activeTab === 'users' && <UsersSettings />}

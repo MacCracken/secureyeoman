@@ -57,6 +57,9 @@ import {
   setModelDefault,
   clearModelDefault,
   fetchModelInfo,
+  fetchSecretKeys,
+  setSecret,
+  deleteSecret,
 } from '../api/client';
 import type { RoleInfo, AssignmentInfo } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
@@ -411,6 +414,8 @@ export function SecuritySettings() {
   const multimodalAllowed = securityPolicy?.allowMultimodal ?? false;
   const desktopControlAllowed = securityPolicy?.allowDesktopControl ?? false;
   const cameraAllowed = securityPolicy?.allowCamera ?? false;
+  const networkToolsAllowed = securityPolicy?.allowNetworkTools ?? false;
+  const netboxWriteAllowed = securityPolicy?.allowNetBoxWrite ?? false;
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
   const dtcAllowed = securityPolicy?.allowDynamicTools ?? false;
@@ -709,6 +714,51 @@ export function SecuritySettings() {
                   cameraAllowed
                     ? 'Camera capture is enabled. The desktop_camera_capture tool can access the system camera via ffmpeg.'
                     : 'Camera capture is disabled. The desktop_camera_capture tool will return a capability_disabled error.'
+                }
+              />
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Network Tools Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Network className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Network Tools</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-2.5 text-xs text-yellow-600 dark:text-yellow-400">
+            ⚠️ Network Tools allow agents to connect to infrastructure devices via SSH, query live routing tables, and run security audits. Only enable when <code>MCP_EXPOSE_NETWORK_TOOLS=true</code> is set and <code>MCP_ALLOWED_NETWORK_TARGETS</code> is scoped to your infrastructure.
+          </div>
+          <PolicyToggle
+            label="Network Tools"
+            enabled={networkToolsAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowNetworkTools: !networkToolsAllowed });
+            }}
+            description={
+              networkToolsAllowed
+                ? 'Network Tools are enabled. Personalities with the relevant toolset flags can access SSH automation, topology discovery, security auditing, NetBox, NVD, and subnet utilities.'
+                : 'Network Tools are disabled. No personality can access any network toolset regardless of their configuration.'
+            }
+          />
+
+          {/* NetBox Write — sub-item, only visible when Network Tools enabled */}
+          {networkToolsAllowed && (
+            <div className="ml-6 pl-4 border-l-2 border-border">
+              <PolicyToggle
+                label="NetBox Write Operations"
+                enabled={netboxWriteAllowed}
+                isPending={policyMutation.isPending}
+                onToggle={() => {
+                  policyMutation.mutate({ allowNetBoxWrite: !netboxWriteAllowed });
+                }}
+                description={
+                  netboxWriteAllowed
+                    ? 'NetBox write operations are enabled. Agents may create, update, or delete NetBox records.'
+                    : 'NetBox write operations are disabled. All NetBox tools are read-only.'
                 }
               />
             </div>
@@ -1356,6 +1406,161 @@ export function RolesSettings() {
         onCancel={() => {
           setConfirmRevoke(null);
         }}
+      />
+    </div>
+  );
+}
+
+// ── SecretsPanel ─────────────────────────────────────────────────────────────
+// Manage named secrets stored in the configured backend (env / keyring / vault).
+// Values are write-only: only key names are displayed.
+
+export function SecretsPanel() {
+  const queryClient = useQueryClient();
+  const [adding, setAdding] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newValue, setNewValue] = useState('');
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['secret-keys'],
+    queryFn: fetchSecretKeys,
+    refetchOnWindowFocus: false,
+  });
+
+  const setMutation = useMutation({
+    mutationFn: ({ name, value }: { name: string; value: string }) => setSecret(name, value),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['secret-keys'] });
+      setAdding(false);
+      setNewName('');
+      setNewValue('');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (name: string) => deleteSecret(name),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['secret-keys'] });
+      setConfirmDelete(null);
+    },
+  });
+
+  const keys = data?.keys ?? [];
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="font-semibold flex items-center gap-2">
+            <Lock className="w-4 h-4" />
+            Secrets
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Stored in the configured backend (env / keyring / file / vault). Values are write-only.
+          </p>
+        </div>
+        <button
+          onClick={() => setAdding((v) => !v)}
+          className="btn btn-primary btn-sm flex items-center gap-1"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Add secret
+        </button>
+      </div>
+
+      {adding && (
+        <form
+          className="card p-4 space-y-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (newName && newValue) setMutation.mutate({ name: newName.toUpperCase(), value: newValue });
+          }}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Name (uppercase)</label>
+              <input
+                className="input w-full font-mono text-sm"
+                placeholder="MY_SECRET_KEY"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">Value</label>
+              <input
+                className="input w-full font-mono text-sm"
+                type="password"
+                placeholder="••••••••"
+                value={newValue}
+                onChange={(e) => setNewValue(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="flex gap-2 justify-end">
+            <button
+              type="button"
+              onClick={() => {
+                setAdding(false);
+                setNewName('');
+                setNewValue('');
+              }}
+              className="btn btn-ghost btn-sm"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!newName || !newValue || setMutation.isPending}
+              className="btn btn-primary btn-sm flex items-center gap-1"
+            >
+              {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+              Save
+            </button>
+          </div>
+        </form>
+      )}
+
+      {isLoading ? (
+        <div className="flex items-center gap-2 text-muted-foreground py-4">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Loading secrets…
+        </div>
+      ) : error ? (
+        <div className="text-sm text-destructive">Failed to load secrets</div>
+      ) : keys.length === 0 ? (
+        <div className="card p-6 text-center text-muted-foreground text-sm">
+          No secrets stored yet.
+        </div>
+      ) : (
+        <div className="divide-y divide-border rounded-lg border border-border">
+          {keys.map((key) => (
+            <div key={key} className="flex items-center justify-between px-4 py-2.5">
+              <span className="font-mono text-sm">{key}</span>
+              <button
+                onClick={() => setConfirmDelete(key)}
+                className="btn btn-ghost btn-xs text-destructive hover:bg-destructive/10"
+                title="Delete secret"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        title="Delete Secret"
+        message={`Delete secret "${confirmDelete}"? This cannot be undone.`}
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (confirmDelete) deleteMutation.mutate(confirmDelete);
+        }}
+        onCancel={() => setConfirmDelete(null)}
       />
     </div>
   );

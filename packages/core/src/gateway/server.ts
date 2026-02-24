@@ -1590,6 +1590,154 @@ export class GatewayServer {
       }
     );
 
+    // ── Phase 41: Secrets Management Routes ─────────────────────────────────
+
+    // GET /api/v1/secrets — list all stored secret names (never values)
+    this.app.get('/api/v1/secrets', async (_request, reply) => {
+      const sm = this.secureYeoman.getSecretsManager();
+      if (!sm) return sendError(reply, 503, 'Secrets manager not available');
+      try {
+        const keys = await sm.keys();
+        return { keys };
+      } catch (err) {
+        this.getLogger().error('Failed to list secrets', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return sendError(reply, 500, 'Failed to list secrets');
+      }
+    });
+
+    // GET /api/v1/secrets/:name — check existence only (value is never returned)
+    this.app.get(
+      '/api/v1/secrets/:name',
+      async (request: FastifyRequest<{ Params: { name: string } }>, reply) => {
+        const sm = this.secureYeoman.getSecretsManager();
+        if (!sm) return sendError(reply, 503, 'Secrets manager not available');
+        const { name } = request.params;
+        if (!name || !/^[A-Z0-9_]+$/.test(name)) {
+          return sendError(reply, 400, 'Secret name must be uppercase alphanumeric/underscore');
+        }
+        try {
+          const exists = await sm.has(name);
+          if (!exists) return sendError(reply, 404, 'Secret not found');
+          return { name, exists: true };
+        } catch (err) {
+          this.getLogger().error('Failed to check secret', {
+            name,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return sendError(reply, 500, 'Failed to check secret');
+        }
+      }
+    );
+
+    // PUT /api/v1/secrets/:name — create or update a secret
+    this.app.put(
+      '/api/v1/secrets/:name',
+      async (
+        request: FastifyRequest<{
+          Params: { name: string };
+          Body: { value: string };
+        }>,
+        reply
+      ) => {
+        const sm = this.secureYeoman.getSecretsManager();
+        if (!sm) return sendError(reply, 503, 'Secrets manager not available');
+        const { name } = request.params;
+        if (!name || !/^[A-Z0-9_]+$/.test(name)) {
+          return sendError(reply, 400, 'Secret name must be uppercase alphanumeric/underscore');
+        }
+        const { value } = request.body ?? {};
+        if (typeof value !== 'string' || value.length === 0) {
+          return sendError(reply, 400, 'Secret value is required');
+        }
+        try {
+          await sm.set(name, value);
+          await this.secureYeoman.getAuditChain().record({
+            event: 'secret_access',
+            level: 'security',
+            message: `Secret '${name}' updated`,
+            metadata: { operation: 'set', name },
+          });
+          reply.code(204);
+          return;
+        } catch (err) {
+          this.getLogger().error('Failed to set secret', {
+            name,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return sendError(reply, 500, 'Failed to set secret');
+        }
+      }
+    );
+
+    // DELETE /api/v1/secrets/:name — remove a secret
+    this.app.delete(
+      '/api/v1/secrets/:name',
+      async (request: FastifyRequest<{ Params: { name: string } }>, reply) => {
+        const sm = this.secureYeoman.getSecretsManager();
+        if (!sm) return sendError(reply, 503, 'Secrets manager not available');
+        const { name } = request.params;
+        if (!name || !/^[A-Z0-9_]+$/.test(name)) {
+          return sendError(reply, 400, 'Secret name must be uppercase alphanumeric/underscore');
+        }
+        try {
+          const deleted = await sm.delete(name);
+          if (!deleted) return sendError(reply, 404, 'Secret not found');
+          await this.secureYeoman.getAuditChain().record({
+            event: 'secret_access',
+            level: 'security',
+            message: `Secret '${name}' deleted`,
+            metadata: { operation: 'delete', name },
+          });
+          reply.code(204);
+          return;
+        } catch (err) {
+          this.getLogger().error('Failed to delete secret', {
+            name,
+            error: err instanceof Error ? err.message : String(err),
+          });
+          return sendError(reply, 500, 'Failed to delete secret');
+        }
+      }
+    );
+
+    // ── Phase 42: TLS Certificate Routes ────────────────────────────────────
+
+    // GET /api/v1/security/tls — TLS cert status for dashboard display
+    this.app.get('/api/v1/security/tls', async (_request, reply) => {
+      const tlsMgr = this.secureYeoman.getTlsManager();
+      if (!tlsMgr) return sendError(reply, 503, 'TLS manager not available');
+      try {
+        const status = await tlsMgr.getCertStatus();
+        return status;
+      } catch (err) {
+        this.getLogger().error('Failed to get TLS status', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return sendError(reply, 500, 'Failed to get TLS status');
+      }
+    });
+
+    // POST /api/v1/security/tls/generate — trigger cert regeneration (dev only)
+    this.app.post('/api/v1/security/tls/generate', async (_request, reply) => {
+      const config = this.secureYeoman.getConfig();
+      if (config.core.environment === 'production') {
+        return sendError(reply, 403, 'Cert auto-generation is not allowed in production');
+      }
+      const tlsMgr = this.secureYeoman.getTlsManager();
+      if (!tlsMgr) return sendError(reply, 503, 'TLS manager not available');
+      try {
+        const paths = await tlsMgr.ensureCerts();
+        return { generated: true, paths };
+      } catch (err) {
+        this.getLogger().error('Failed to generate TLS cert', {
+          error: err instanceof Error ? err.message : String(err),
+        });
+        return sendError(reply, 500, 'Failed to generate TLS certificate');
+      }
+    });
+
     // SPA static serving (must be last — any non-API route falls through to index.html)
     const distPath = this.resolveDashboardDist();
     if (distPath) {
