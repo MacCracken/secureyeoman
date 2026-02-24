@@ -176,9 +176,9 @@ async function openSshSession(
       resolve(sessionId);
     });
 
-    client.on('error', (err: Error) => {
+    client.on('error', (err: unknown) => {
       clearTimeout(timer);
-      reject(new Error(`SSH connection failed: ${err.message}`));
+      reject(new Error(`SSH connection failed: ${err instanceof Error ? err.message : String(err)}`));
     });
 
     const connectOpts: Record<string, unknown> = {
@@ -634,7 +634,7 @@ export async function registerNetworkTools(
       );
       const summary = results.map((r, i) =>
         r.status === 'fulfilled'
-          ? { host: targets[i]!.host, status: 'ok', ...r.value }
+          ? { status: 'ok', ...r.value }
           : { host: targets[i]!.host, status: 'error', error: (r.reason as Error).message }
       );
       return textResponse(summary);
@@ -747,7 +747,7 @@ export async function registerNetworkTools(
 
         for (const n of neighbors) {
           if (n.ip) {
-            nodes.set(n.ip, { hostname: n.deviceId, ip: n.ip, platform: n.platform });
+            nodes.set(n.ip, { hostname: n.deviceId, ip: n.ip, platform: n.platform ?? undefined });
             edges.push({ from: host, to: n.ip, localIface: n.localInterface, remoteIface: n.remoteInterface });
             await discover(n.ip, username, password, depth + 1);
           }
