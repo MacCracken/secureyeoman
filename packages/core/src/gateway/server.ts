@@ -59,6 +59,7 @@ import { registerA2ARoutes } from '../a2a/a2a-routes.js';
 import { registerProactiveRoutes } from '../proactive/proactive-routes.js';
 import { registerDiagnosticRoutes } from '../diagnostics/diagnostic-routes.js';
 import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
+import { registerDesktopRoutes } from '../body/desktop-routes.js';
 import { registerBrowserRoutes } from '../browser/browser-routes.js';
 import { registerGroupChatRoutes } from '../integrations/group-chat-routes.js';
 import { registerRoutingRulesRoutes } from '../integrations/routing-rules-routes.js';
@@ -668,6 +669,20 @@ export class GatewayServer {
       });
     }
 
+    // Desktop Control routes
+    try {
+      registerDesktopRoutes(this.app, {
+        getAllowDesktopControl: () => this.secureYeoman.getConfig().security.allowDesktopControl ?? false,
+        getAllowCamera: () => this.secureYeoman.getConfig().security.allowCamera ?? false,
+        getAllowMultimodal: () => this.secureYeoman.getConfig().security.allowMultimodal ?? false,
+      });
+      this.getLogger().info('Desktop control routes registered');
+    } catch (err) {
+      this.getLogger().debug('Desktop control routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
     // Browser Automation Session routes
     try {
       const browserSessionStorage = this.secureYeoman.getBrowserSessionStorage();
@@ -1173,6 +1188,8 @@ export class GatewayServer {
         allowExperiments: config.security.allowExperiments,
         allowStorybook: config.security.allowStorybook,
         allowMultimodal: config.security.allowMultimodal,
+        allowDesktopControl: config.security.allowDesktopControl,
+        allowCamera: config.security.allowCamera,
         allowDynamicTools: config.security.allowDynamicTools,
         sandboxDynamicTools: config.security.sandboxDynamicTools,
         allowAnomalyDetection: config.security.allowAnomalyDetection,
@@ -1200,6 +1217,8 @@ export class GatewayServer {
             allowExperiments?: boolean;
             allowStorybook?: boolean;
             allowMultimodal?: boolean;
+            allowDesktopControl?: boolean;
+            allowCamera?: boolean;
             allowDynamicTools?: boolean;
             sandboxDynamicTools?: boolean;
             allowAnomalyDetection?: boolean;
@@ -1224,6 +1243,8 @@ export class GatewayServer {
             allowExperiments,
             allowStorybook,
             allowMultimodal,
+            allowDesktopControl,
+            allowCamera,
             allowDynamicTools,
             sandboxDynamicTools,
             allowAnomalyDetection,
@@ -1244,6 +1265,8 @@ export class GatewayServer {
             allowExperiments === undefined &&
             allowStorybook === undefined &&
             allowMultimodal === undefined &&
+            allowDesktopControl === undefined &&
+            allowCamera === undefined &&
             allowDynamicTools === undefined &&
             sandboxDynamicTools === undefined &&
             allowAnomalyDetection === undefined &&
@@ -1266,6 +1289,8 @@ export class GatewayServer {
             allowExperiments,
             allowStorybook,
             allowMultimodal,
+            allowDesktopControl,
+            allowCamera,
             allowDynamicTools,
             sandboxDynamicTools,
             allowAnomalyDetection,
@@ -1303,6 +1328,8 @@ export class GatewayServer {
             allowExperiments: config.security.allowExperiments,
             allowStorybook: config.security.allowStorybook,
             allowMultimodal: config.security.allowMultimodal,
+            allowDesktopControl: config.security.allowDesktopControl,
+            allowCamera: config.security.allowCamera,
             allowDynamicTools: config.security.allowDynamicTools,
             sandboxDynamicTools: config.security.sandboxDynamicTools,
             allowAnomalyDetection: config.security.allowAnomalyDetection,

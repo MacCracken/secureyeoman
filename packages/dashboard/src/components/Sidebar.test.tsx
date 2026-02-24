@@ -59,6 +59,8 @@ const BASE_POLICY = {
   allowSubAgents: false,
   allowA2A: false,
   allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
   allowExtensions: false,
   allowExperiments: false,
   allowStorybook: false,

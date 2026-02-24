@@ -170,6 +170,7 @@ export class PromptGuard {
 
     for (let idx = 0; idx < messages.length; idx++) {
       const msg = messages[idx];
+      if (!msg) continue;
       const role = msg.role;
       const content = typeof msg.content === 'string' ? msg.content : null;
       if (!content) continue;

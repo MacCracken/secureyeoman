@@ -112,6 +112,7 @@ export const MultimodalConfigSchema = z
     vision: z
       .object({
         enabled: z.boolean().default(true),
+        provider: z.enum(['claude', 'openai', 'gemini']).default('claude'),
         maxImageSizeMb: z.number().positive().max(20).default(10),
         maxImagesPerMessage: z.number().int().positive().max(10).default(4),
       })
@@ -119,7 +120,7 @@ export const MultimodalConfigSchema = z
     stt: z
       .object({
         enabled: z.boolean().default(true),
-        provider: z.enum(['openai']).default('openai'),
+        provider: z.enum(['openai', 'voicebox']).default('openai'),
         maxDurationSeconds: z.number().int().positive().max(600).default(120),
         model: z.string().default('whisper-1'),
       })
@@ -127,7 +128,7 @@ export const MultimodalConfigSchema = z
     tts: z
       .object({
         enabled: z.boolean().default(true),
-        provider: z.enum(['openai']).default('openai'),
+        provider: z.enum(['openai', 'voicebox']).default('openai'),
         voice: z.string().default('alloy'),
         model: z.string().default('tts-1'),
       })

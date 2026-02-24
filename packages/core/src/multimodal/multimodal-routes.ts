@@ -27,6 +27,47 @@ export function registerMultimodalRoutes(
 ): void {
   const { multimodalManager } = opts;
 
+  // ── Provider update ───────────────────────────────────────────────
+
+  app.patch(
+    '/api/v1/multimodal/provider',
+    async (
+      request: FastifyRequest<{
+        Body: { type: 'vision' | 'tts' | 'stt'; provider: string };
+      }>,
+      reply: FastifyReply
+    ) => {
+      const { type, provider } = request.body ?? {};
+      if (!type || !provider || !['vision', 'tts', 'stt'].includes(type)) {
+        return sendError(reply, 400, "Body must include 'type' (vision|tts|stt) and 'provider'");
+      }
+
+      // Validate against configured providers
+      const available = await multimodalManager.detectAvailableProviders();
+      const configured =
+        type === 'vision'
+          ? available.vision.configured
+          : type === 'tts'
+            ? available.tts.configured
+            : available.stt.configured;
+
+      if (!configured.includes(provider)) {
+        return sendError(
+          reply,
+          400,
+          `Provider '${provider}' is not configured for ${type}. Configured providers: ${configured.join(', ') || 'none'}`
+        );
+      }
+
+      try {
+        await multimodalManager.setProvider(type, provider);
+        return { ok: true, type, provider };
+      } catch (err) {
+        return reply.code(500).send({ error: sanitizeError(err) });
+      }
+    }
+  );
+
   // ── Vision ────────────────────────────────────────────────────────
 
   app.post(
@@ -181,21 +222,10 @@ export function registerMultimodalRoutes(
 
   app.get('/api/v1/multimodal/config', async () => {
     const config = multimodalManager.getConfig();
-    const voiceboxUrl = process.env.VOICEBOX_URL ?? 'http://localhost:17493';
+    const providers = await multimodalManager.detectAvailableProviders();
     return {
       ...config,
-      providers: {
-        tts: {
-          active: (process.env.TTS_PROVIDER ?? config.tts.provider ?? 'openai').toLowerCase(),
-          available: ['openai', 'voicebox'] as string[],
-          voiceboxUrl,
-        },
-        stt: {
-          active: (process.env.STT_PROVIDER ?? config.stt.provider ?? 'openai').toLowerCase(),
-          available: ['openai', 'voicebox'] as string[],
-          voiceboxUrl,
-        },
-      },
+      providers,
     };
   });
 }

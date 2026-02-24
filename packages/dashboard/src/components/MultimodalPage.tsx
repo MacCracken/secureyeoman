@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Eye,
   Mic,
@@ -15,7 +15,12 @@ import {
   Filter,
   Radio,
 } from 'lucide-react';
-import { fetchMultimodalConfig, fetchMultimodalJobs, fetchSecurityPolicy } from '../api/client';
+import {
+  fetchMultimodalConfig,
+  fetchMultimodalJobs,
+  fetchSecurityPolicy,
+  updateMultimodalProvider,
+} from '../api/client';
 
 type JobType = 'vision' | 'stt' | 'tts' | 'image_gen';
 type JobStatus = 'pending' | 'running' | 'completed' | 'failed';
@@ -60,6 +65,7 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
   const [statusFilter, setStatusFilter] = useState<JobStatus | ''>('');
   const [page, setPage] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const queryClient = useQueryClient();
 
   const { data: securityPolicy } = useQuery({
     queryKey: ['security-policy'],
@@ -71,6 +77,14 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
     queryKey: ['multimodalConfig'],
     queryFn: fetchMultimodalConfig,
     staleTime: 30000,
+  });
+
+  const providerMutation = useMutation({
+    mutationFn: ({ type, provider }: { type: 'vision' | 'tts' | 'stt'; provider: string }) =>
+      updateMultimodalProvider(type, provider),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['multimodalConfig'] });
+    },
   });
 
   const { data, isLoading } = useQuery({
@@ -126,7 +140,13 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
       )}
 
       {/* Provider Configuration */}
-      <ProviderCard config={configData} />
+      <ProviderCard
+        config={configData}
+        onSelectProvider={(type, provider) => {
+          providerMutation.mutate({ type, provider });
+        }}
+        isPending={providerMutation.isPending}
+      />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
@@ -318,71 +338,153 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
 }
 
 const PROVIDER_LABELS: Record<string, string> = {
+  claude: 'Claude',
   openai: 'OpenAI',
+  gemini: 'Gemini',
   voicebox: 'Voicebox (local)',
   browser: 'Browser Native',
 };
 
-function ProviderBadge({ provider, active }: { provider: string; active: boolean }) {
+interface ProviderInfo {
+  active: string;
+  available: string[];
+  configured: string[];
+  voiceboxUrl?: string;
+}
+
+interface ProvidersConfig {
+  vision?: ProviderInfo;
+  tts?: ProviderInfo;
+  stt?: ProviderInfo;
+}
+
+function ProviderBadge({
+  provider,
+  active,
+  configured,
+  onClick,
+  isPending,
+}: {
+  provider: string;
+  active: boolean;
+  configured: boolean;
+  onClick?: () => void;
+  isPending?: boolean;
+}) {
+  const label = PROVIDER_LABELS[provider] ?? provider;
+  const unconfigured = !configured;
+
   return (
-    <span
-      className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border ${
+    <button
+      type="button"
+      disabled={unconfigured || isPending || active}
+      onClick={onClick}
+      title={
+        unconfigured
+          ? 'API key not configured'
+          : active
+            ? 'Currently active'
+            : `Switch to ${label}`
+      }
+      className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border transition-colors ${
         active
-          ? 'border-primary/50 bg-primary/10 text-primary font-medium'
-          : 'border-border bg-muted/30 text-muted-foreground'
+          ? 'border-primary/50 bg-primary/10 text-primary font-medium cursor-default'
+          : unconfigured
+            ? 'border-border bg-muted/20 text-muted-foreground/40 cursor-not-allowed opacity-50'
+            : 'border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-foreground cursor-pointer'
       }`}
     >
       {active && <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />}
-      {PROVIDER_LABELS[provider] ?? provider}
-    </span>
+      {isPending && !active ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : null}
+      {label}
+      {unconfigured && <span className="text-[10px] opacity-60 ml-0.5">—</span>}
+    </button>
   );
 }
 
-function ProviderCard({ config }: { config: Record<string, unknown> | undefined }) {
-  const providers = config?.providers as
-    | {
-        tts: { active: string; available: string[] };
-        stt: { active: string; available: string[] };
-      }
-    | undefined;
+function ProviderSection({
+  type,
+  label,
+  info,
+  onSelect,
+  isPending,
+}: {
+  type: 'vision' | 'tts' | 'stt';
+  label: string;
+  info: ProviderInfo | undefined;
+  onSelect: (type: 'vision' | 'tts' | 'stt', provider: string) => void;
+  isPending: boolean;
+}) {
+  const available = info?.available ?? [];
+  const configured = info?.configured ?? [];
+  const active = info?.active ?? '';
+
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs text-muted-foreground font-medium">{label}</p>
+      <div className="flex flex-wrap gap-1.5">
+        {available.map((p) => (
+          <ProviderBadge
+            key={p}
+            provider={p}
+            active={p === active}
+            configured={configured.includes(p)}
+            isPending={isPending}
+            onClick={() => {
+              if (p !== active && configured.includes(p)) {
+                onSelect(type, p);
+              }
+            }}
+          />
+        ))}
+      </div>
+      {configured.length === 0 && (
+        <p className="text-xs text-muted-foreground/60">No providers configured.</p>
+      )}
+    </div>
+  );
+}
+
+function ProviderCard({
+  config,
+  onSelectProvider,
+  isPending,
+}: {
+  config: Record<string, unknown> | undefined;
+  onSelectProvider: (type: 'vision' | 'tts' | 'stt', provider: string) => void;
+  isPending: boolean;
+}) {
+  const providers = (config?.providers ?? {}) as ProvidersConfig;
 
   return (
     <div className="card p-4">
       <div className="flex items-center gap-2 mb-3">
         <Radio className="w-4 h-4 text-muted-foreground" />
-        <h2 className="text-sm font-medium">Speech Providers</h2>
+        <h2 className="text-sm font-medium">Providers</h2>
+        <span className="text-xs text-muted-foreground ml-auto">Click a configured provider to switch</span>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="space-y-1.5">
-          <p className="text-xs text-muted-foreground font-medium">Text-to-Speech</p>
-          <div className="flex flex-wrap gap-1.5">
-            {(providers?.tts.available ?? ['openai', 'voicebox']).map((p) => (
-              <ProviderBadge
-                key={p}
-                provider={p}
-                active={p === (providers?.tts.active ?? 'openai')}
-              />
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground/60">
-            Switch: <code className="font-mono">TTS_PROVIDER=voicebox</code> in .env
-          </p>
-        </div>
-        <div className="space-y-1.5">
-          <p className="text-xs text-muted-foreground font-medium">Speech-to-Text</p>
-          <div className="flex flex-wrap gap-1.5">
-            {(providers?.stt.available ?? ['openai', 'voicebox']).map((p) => (
-              <ProviderBadge
-                key={p}
-                provider={p}
-                active={p === (providers?.stt.active ?? 'openai')}
-              />
-            ))}
-          </div>
-          <p className="text-xs text-muted-foreground/60">
-            Switch: <code className="font-mono">STT_PROVIDER=voicebox</code> in .env
-          </p>
-        </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <ProviderSection
+          type="vision"
+          label="Vision"
+          info={providers.vision}
+          onSelect={onSelectProvider}
+          isPending={isPending}
+        />
+        <ProviderSection
+          type="tts"
+          label="Text-to-Speech"
+          info={providers.tts}
+          onSelect={onSelectProvider}
+          isPending={isPending}
+        />
+        <ProviderSection
+          type="stt"
+          label="Speech-to-Text"
+          info={providers.stt}
+          onSelect={onSelectProvider}
+          isPending={isPending}
+        />
       </div>
     </div>
   );

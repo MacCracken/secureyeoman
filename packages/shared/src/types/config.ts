@@ -254,6 +254,10 @@ export const SecurityConfigSchema = z.object({
   allowStorybook: z.boolean().default(false),
   /** Allow multimodal I/O (vision, STT, TTS, image generation). */
   allowMultimodal: z.boolean().default(false),
+  /** Allow desktop control capabilities (screen capture, keyboard/mouse). Off by default — prominent warning in UI. */
+  allowDesktopControl: z.boolean().default(false),
+  /** Allow camera capture. Sub-item of desktop control — only effective when allowDesktopControl is true. */
+  allowCamera: z.boolean().default(false),
   /** Allow agents to generate and register tools at runtime. Off by default. */
   allowDynamicTools: z.boolean().default(false),
   /** Require dynamically-created tools to run inside a sandbox. Defaults true; only applies when allowDynamicTools is true. */

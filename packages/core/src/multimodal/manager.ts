@@ -43,6 +43,13 @@ function isAllowedDalleUrl(url: string): boolean {
   }
 }
 
+const FETCH_VOICEBOX_HEALTH_TIMEOUT_MS = 3_000;
+
+export interface SystemPreferencesStorage {
+  get(key: string): Promise<string | null>;
+  set(key: string, value: string): Promise<void>;
+}
+
 export interface MultimodalManagerDeps {
   logger: SecureLogger;
   aiClient: {
@@ -51,6 +58,7 @@ export interface MultimodalManagerDeps {
   extensionManager?: {
     emit: (hookPoint: HookPoint, context: HookContext) => Promise<HookResult>;
   } | null;
+  prefsStorage?: SystemPreferencesStorage | null;
 }
 
 export class MultimodalManager {
@@ -75,6 +83,103 @@ export class MultimodalManager {
   /** Get the base URL for the Voicebox local server (trailing slash stripped). */
   private getVoiceboxUrl(): string {
     return (process.env.VOICEBOX_URL ?? 'http://localhost:17493').replace(/\/$/, '');
+  }
+
+  /** Resolve the active vision provider: env var > DB pref > config default. */
+  private async resolveVisionProvider(): Promise<string> {
+    if (process.env.VISION_PROVIDER) return process.env.VISION_PROVIDER.toLowerCase();
+    const pref = await this.deps.prefsStorage?.get('multimodal.vision.provider');
+    if (pref) return pref.toLowerCase();
+    return (this.config.vision.provider ?? 'claude').toLowerCase();
+  }
+
+  /** Resolve the active TTS provider: env var > DB pref > config default. */
+  private async resolveTTSProvider(): Promise<string> {
+    if (process.env.TTS_PROVIDER) return process.env.TTS_PROVIDER.toLowerCase();
+    const pref = await this.deps.prefsStorage?.get('multimodal.tts.provider');
+    if (pref) return pref.toLowerCase();
+    return (this.config.tts.provider ?? 'openai').toLowerCase();
+  }
+
+  /** Resolve the active STT provider: env var > DB pref > config default. */
+  private async resolveSTTProvider(): Promise<string> {
+    if (process.env.STT_PROVIDER) return process.env.STT_PROVIDER.toLowerCase();
+    const pref = await this.deps.prefsStorage?.get('multimodal.stt.provider');
+    if (pref) return pref.toLowerCase();
+    return (this.config.stt.provider ?? 'openai').toLowerCase();
+  }
+
+  /** Check whether the Voicebox service is reachable. */
+  private async isVoiceboxReachable(): Promise<boolean> {
+    try {
+      const baseUrl = this.getVoiceboxUrl();
+      const res = await fetch(`${baseUrl}/health`, {
+        signal: AbortSignal.timeout(FETCH_VOICEBOX_HEALTH_TIMEOUT_MS),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Detect which providers are configured/reachable for each modality.
+   * Returns { vision: string[], tts: string[], stt: string[] } with configured providers.
+   */
+  async detectAvailableProviders(): Promise<{
+    vision: { available: string[]; configured: string[]; active: string };
+    tts: { available: string[]; configured: string[]; active: string; voiceboxUrl?: string };
+    stt: { available: string[]; configured: string[]; active: string; voiceboxUrl?: string };
+  }> {
+    const hasAnthropic = !!process.env.ANTHROPIC_API_KEY;
+    const hasOpenAI = !!process.env.OPENAI_API_KEY;
+    const hasGemini = !!(process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY);
+    const voiceboxReachable = await this.isVoiceboxReachable();
+    const voiceboxUrl = this.getVoiceboxUrl();
+
+    const visionConfigured: string[] = [];
+    if (hasAnthropic) visionConfigured.push('claude');
+    if (hasOpenAI) visionConfigured.push('openai');
+    if (hasGemini) visionConfigured.push('gemini');
+
+    const ttsConfigured: string[] = [];
+    if (hasOpenAI) ttsConfigured.push('openai');
+    if (voiceboxReachable) ttsConfigured.push('voicebox');
+
+    const sttConfigured: string[] = [];
+    if (hasOpenAI) sttConfigured.push('openai');
+    if (voiceboxReachable) sttConfigured.push('voicebox');
+
+    const [activeVision, activeTTS, activeSTT] = await Promise.all([
+      this.resolveVisionProvider(),
+      this.resolveTTSProvider(),
+      this.resolveSTTProvider(),
+    ]);
+
+    return {
+      vision: {
+        available: ['claude', 'openai', 'gemini'],
+        configured: visionConfigured,
+        active: activeVision,
+      },
+      tts: {
+        available: ['openai', 'voicebox'],
+        configured: ttsConfigured,
+        active: activeTTS,
+        voiceboxUrl,
+      },
+      stt: {
+        available: ['openai', 'voicebox'],
+        configured: sttConfigured,
+        active: activeSTT,
+        voiceboxUrl,
+      },
+    };
+  }
+
+  /** Update the active provider preference in storage. */
+  async setProvider(type: 'vision' | 'tts' | 'stt', provider: string): Promise<void> {
+    await this.deps.prefsStorage?.set(`multimodal.${type}.provider`, provider);
   }
 
   /** Transcribe audio via the Voicebox local Whisper backend. */
@@ -160,21 +265,88 @@ export class MultimodalManager {
     const start = Date.now();
     try {
       const prompt = request.prompt ?? 'Describe this image in detail.';
-      // Send image as part of the message content — AIClient/provider handles multimodal content
-      const response = await this.deps.aiClient.chat({
-        messages: [
-          {
-            role: 'user' as const,
-            content: `[image:${request.mimeType};base64,${request.imageBase64}]\n${prompt}`,
-          },
-        ],
-        maxTokens: 1024,
-        stream: false,
-      });
+      const provider = await this.resolveVisionProvider();
+      let description: string;
+
+      if (provider === 'openai') {
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) throw new Error('OPENAI_API_KEY environment variable is not set');
+        const body = {
+          model: 'gpt-4o',
+          messages: [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'image_url',
+                  image_url: { url: `data:${request.mimeType};base64,${request.imageBase64}` },
+                },
+                { type: 'text', text: prompt },
+              ],
+            },
+          ],
+          max_tokens: 1024,
+        };
+        const res = await fetch('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`OpenAI vision error (${res.status}): ${errBody}`);
+        }
+        const data = (await res.json()) as {
+          choices: { message: { content: string } }[];
+        };
+        description = data.choices[0]?.message?.content ?? '';
+      } else if (provider === 'gemini') {
+        const apiKey = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
+        if (!apiKey) throw new Error('GOOGLE_API_KEY or GEMINI_API_KEY environment variable is not set');
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${apiKey}`;
+        const body = {
+          contents: [
+            {
+              parts: [
+                { inline_data: { mime_type: request.mimeType, data: request.imageBase64 } },
+                { text: prompt },
+              ],
+            },
+          ],
+        };
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
+        if (!res.ok) {
+          const errBody = await res.text();
+          throw new Error(`Gemini vision error (${res.status}): ${errBody}`);
+        }
+        const data = (await res.json()) as {
+          candidates: { content: { parts: { text: string }[] } }[];
+        };
+        description = data.candidates[0]?.content?.parts?.map((p) => p.text).join('') ?? '';
+      } else {
+        // claude (default) — use AIClient
+        const response = await this.deps.aiClient.chat({
+          messages: [
+            {
+              role: 'user' as const,
+              content: `[image:${request.mimeType};base64,${request.imageBase64}]\n${prompt}`,
+            },
+          ],
+          maxTokens: 1024,
+          stream: false,
+        });
+        description = response.content;
+      }
 
       const durationMs = Date.now() - start;
       const result: VisionResult = {
-        description: response.content,
+        description,
         labels: [],
         durationMs,
       };
@@ -219,11 +391,7 @@ export class MultimodalManager {
 
     const start = Date.now();
     try {
-      const provider = (
-        process.env.STT_PROVIDER ??
-        this.config.stt.provider ??
-        'openai'
-      ).toLowerCase();
+      const provider = await this.resolveSTTProvider();
 
       let data: { text: string; language?: string };
 
@@ -295,11 +463,7 @@ export class MultimodalManager {
 
     const start = Date.now();
     try {
-      const provider = (
-        process.env.TTS_PROVIDER ??
-        this.config.tts.provider ??
-        'openai'
-      ).toLowerCase();
+      const provider = await this.resolveTTSProvider();
 
       let audioBase64: string;
       let format: string;

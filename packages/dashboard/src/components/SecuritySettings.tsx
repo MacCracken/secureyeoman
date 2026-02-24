@@ -35,6 +35,8 @@ import {
   Cpu,
   GitMerge,
   GitBranch,
+  Monitor,
+  Camera,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -407,6 +409,8 @@ export function SecuritySettings() {
   const workflowsAllowed = securityPolicy?.allowWorkflows ?? false;
   const communityGitFetchAllowed = securityPolicy?.allowCommunityGitFetch ?? false;
   const multimodalAllowed = securityPolicy?.allowMultimodal ?? false;
+  const desktopControlAllowed = securityPolicy?.allowDesktopControl ?? false;
+  const cameraAllowed = securityPolicy?.allowCamera ?? false;
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
   const dtcAllowed = securityPolicy?.allowDynamicTools ?? false;
@@ -663,6 +667,52 @@ export function SecuritySettings() {
                 : 'Multimodal I/O is disabled at the security level. No vision, audio, or image generation capabilities are active.'
             }
           />
+        </div>
+      </div>
+
+      {/* Desktop Control Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Monitor className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Desktop Control</h3>
+        </div>
+        <div className="p-4 space-y-4">
+          <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-2.5 text-xs text-yellow-600 dark:text-yellow-400">
+            ⚠️ Desktop Control grants agents the ability to capture your screen and control your keyboard and mouse. Only enable on trusted, dedicated machines.
+          </div>
+          <PolicyToggle
+            label="Desktop Control"
+            enabled={desktopControlAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowDesktopControl: !desktopControlAllowed });
+            }}
+            description={
+              desktopControlAllowed
+                ? 'Desktop Control is enabled. Personalities with vision or limb_movement capabilities can capture screens and control input devices.'
+                : 'Desktop Control is disabled. No personality can capture screens or control input devices regardless of their capabilities configuration.'
+            }
+          />
+
+          {/* Camera — sub-item, only visible when Desktop Control enabled */}
+          {desktopControlAllowed && (
+            <div className="ml-6 pl-4 border-l-2 border-border">
+              <PolicyToggle
+                label="Camera Capture"
+                icon={<Camera className="w-4 h-4 text-muted-foreground" />}
+                enabled={cameraAllowed}
+                isPending={policyMutation.isPending}
+                onToggle={() => {
+                  policyMutation.mutate({ allowCamera: !cameraAllowed });
+                }}
+                description={
+                  cameraAllowed
+                    ? 'Camera capture is enabled. The desktop_camera_capture tool can access the system camera via ffmpeg.'
+                    : 'Camera capture is disabled. The desktop_camera_capture tool will return a capability_disabled error.'
+                }
+              />
+            </div>
+          )}
         </div>
       </div>
 

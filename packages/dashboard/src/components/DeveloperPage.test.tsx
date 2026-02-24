@@ -46,6 +46,8 @@ const FULL_POLICY = {
   allowExperiments: true,
   allowStorybook: true,
   allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
   allowDynamicTools: false,
   sandboxDynamicTools: true,
   allowAnomalyDetection: false,

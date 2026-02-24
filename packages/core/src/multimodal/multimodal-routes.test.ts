@@ -19,6 +19,12 @@ function createMockManager(): MultimodalManager {
       listJobs: vi.fn().mockResolvedValue({ jobs: [], total: 0 }),
     }),
     getConfig: vi.fn().mockReturnValue({ enabled: true }),
+    detectAvailableProviders: vi.fn().mockResolvedValue({
+      vision: { available: ['claude', 'openai', 'gemini'], configured: ['claude', 'openai'], active: 'claude' },
+      tts: { available: ['openai', 'voicebox'], configured: ['openai'], active: 'openai' },
+      stt: { available: ['openai', 'voicebox'], configured: ['openai'], active: 'openai' },
+    }),
+    setProvider: vi.fn().mockResolvedValue(undefined),
   } as unknown as MultimodalManager;
 }
 
@@ -236,6 +242,87 @@ describe('Multimodal Routes — validation', () => {
       });
       expect(res.statusCode).toBe(500);
       expect(JSON.parse(res.payload).error).toContain('exceeds maximum');
+    });
+  });
+
+  describe('PATCH /api/v1/multimodal/provider', () => {
+    it('rejects missing type', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/multimodal/provider',
+        payload: { provider: 'openai' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('rejects invalid type value', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/multimodal/provider',
+        payload: { type: 'audio', provider: 'openai' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('rejects missing provider', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/multimodal/provider',
+        payload: { type: 'vision' },
+      });
+      expect(res.statusCode).toBe(400);
+    });
+
+    it('rejects provider not in configured list', async () => {
+      // gemini is in available but not configured in our mock
+      (manager.detectAvailableProviders as ReturnType<typeof vi.fn>).mockResolvedValueOnce({
+        vision: { available: ['claude', 'openai', 'gemini'], configured: ['claude'], active: 'claude' },
+        tts: { available: ['openai'], configured: ['openai'], active: 'openai' },
+        stt: { available: ['openai'], configured: ['openai'], active: 'openai' },
+      });
+
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/multimodal/provider',
+        payload: { type: 'vision', provider: 'gemini' },
+      });
+      expect(res.statusCode).toBe(400);
+      const body = JSON.parse(res.payload);
+      expect(body.message).toContain('not configured');
+    });
+
+    it('accepts valid configured provider and calls setProvider', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/multimodal/provider',
+        payload: { type: 'vision', provider: 'openai' },
+      });
+      expect(res.statusCode).toBe(200);
+      const body = JSON.parse(res.payload);
+      expect(body.ok).toBe(true);
+      expect(body.type).toBe('vision');
+      expect(body.provider).toBe('openai');
+      expect(manager.setProvider).toHaveBeenCalledWith('vision', 'openai');
+    });
+
+    it('accepts tts provider switch', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/multimodal/provider',
+        payload: { type: 'tts', provider: 'openai' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(manager.setProvider).toHaveBeenCalledWith('tts', 'openai');
+    });
+
+    it('accepts stt provider switch', async () => {
+      const res = await app.inject({
+        method: 'PATCH',
+        url: '/api/v1/multimodal/provider',
+        payload: { type: 'stt', provider: 'openai' },
+      });
+      expect(res.statusCode).toBe(200);
+      expect(manager.setProvider).toHaveBeenCalledWith('stt', 'openai');
     });
   });
 

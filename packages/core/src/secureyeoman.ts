@@ -1954,6 +1954,8 @@ export class SecureYeoman {
     allowExperiments?: boolean;
     allowStorybook?: boolean;
     allowMultimodal?: boolean;
+    allowDesktopControl?: boolean;
+    allowCamera?: boolean;
     allowDynamicTools?: boolean;
     sandboxDynamicTools?: boolean;
     allowAnomalyDetection?: boolean;
@@ -2001,6 +2003,12 @@ export class SecureYeoman {
     }
     if (updates.allowMultimodal !== undefined) {
       this.config!.security.allowMultimodal = updates.allowMultimodal;
+    }
+    if (updates.allowDesktopControl !== undefined) {
+      this.config!.security.allowDesktopControl = updates.allowDesktopControl;
+    }
+    if (updates.allowCamera !== undefined) {
+      this.config!.security.allowCamera = updates.allowCamera;
     }
     if (updates.allowDynamicTools !== undefined) {
       this.config!.security.allowDynamicTools = updates.allowDynamicTools;
@@ -2083,6 +2091,8 @@ export class SecureYeoman {
         'allowExperiments',
         'allowStorybook',
         'allowMultimodal',
+        'allowDesktopControl',
+        'allowCamera',
         'allowDynamicTools',
         'sandboxDynamicTools',
         'allowAnomalyDetection',

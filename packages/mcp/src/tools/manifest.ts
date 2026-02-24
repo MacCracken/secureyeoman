@@ -112,5 +112,65 @@ export function getToolManifest(): ToolManifestEntry[] {
       name: 'diag_ping_integrations',
       description: 'Ping all MCP servers and integrations connected to the active personality',
     },
+
+    // Desktop control tools (vision capability — screen observation)
+    {
+      name: 'desktop_screenshot',
+      description: 'Capture a screenshot of the screen, window, or region — returns image + AI description',
+    },
+    {
+      name: 'desktop_window_list',
+      description: 'List all open windows with IDs, titles, and bounds',
+    },
+    {
+      name: 'desktop_display_list',
+      description: 'List all connected monitors/displays with IDs, names, and resolutions',
+    },
+    {
+      name: 'desktop_camera_capture',
+      description: 'Capture a single frame from the system camera (requires allowCamera)',
+    },
+
+    // Desktop control tools (limb_movement capability — input control)
+    {
+      name: 'desktop_window_focus',
+      description: 'Focus (bring to foreground) a window by its ID',
+    },
+    {
+      name: 'desktop_window_resize',
+      description: 'Resize and/or reposition a window by ID',
+    },
+    {
+      name: 'desktop_mouse_move',
+      description: 'Move the mouse cursor to absolute screen coordinates',
+    },
+    {
+      name: 'desktop_click',
+      description: 'Click a mouse button at current or specified coordinates',
+    },
+    {
+      name: 'desktop_scroll',
+      description: 'Scroll the mouse wheel horizontally or vertically',
+    },
+    {
+      name: 'desktop_type',
+      description: 'Type text into the currently focused window',
+    },
+    {
+      name: 'desktop_key',
+      description: "Press or release a key combination (e.g., 'ctrl+c', 'enter')",
+    },
+    {
+      name: 'desktop_clipboard_read',
+      description: 'Read the current clipboard content',
+    },
+    {
+      name: 'desktop_clipboard_write',
+      description: 'Write text to the clipboard',
+    },
+    {
+      name: 'desktop_input_sequence',
+      description: 'Execute an ordered sequence of input actions atomically (max 50 steps)',
+    },
   ];
 }

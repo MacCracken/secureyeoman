@@ -39,6 +39,8 @@ const BASE_POLICY = {
   allowExperiments: false,
   allowStorybook: false,
   allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
   allowDynamicTools: false,
   sandboxDynamicTools: true,
   allowAnomalyDetection: false,

@@ -422,6 +422,7 @@ export {
   type ExecutionConfig,
   type A2AConfig,
   type StorageBackendConfig,
+  type PromptGuardConfig,
 } from './config.js';
 
 // Proactive types

@@ -638,6 +638,70 @@ export class SoulManager {
       }
     }
 
+    // Vision — screen observation via desktop control
+    if (enabledCaps.includes('vision')) {
+      const sec = this.deps.securityConfig;
+      lines.push('');
+      lines.push('### Vision');
+      if (sec?.allowDesktopControl) {
+        lines.push('Screen observation tools (Desktop Control enabled):');
+        lines.push('');
+        lines.push(
+          '- `desktop_screenshot` — capture screen/window/region; returns image + AI interpretation. Use this to observe screen state before acting.'
+        );
+        lines.push('- `desktop_window_list` — list open windows with IDs, titles, and bounds');
+        lines.push('- `desktop_display_list` — list connected monitors');
+        if (sec?.allowCamera) {
+          lines.push('- `desktop_camera_capture` — capture single camera frame + AI interpretation');
+        }
+        lines.push('');
+        lines.push(
+          'Tip: always call `desktop_screenshot` to observe the current screen state before using limb_movement tools.'
+        );
+      } else {
+        lines.push(
+          'vision: disabled (Desktop Control not enabled in Security Settings)'
+        );
+      }
+    }
+
+    // Limb movement — keyboard/mouse/clipboard via desktop control
+    if (enabledCaps.includes('limb_movement')) {
+      const sec = this.deps.securityConfig;
+      lines.push('');
+      lines.push('### Limb Movement');
+      if (sec?.allowDesktopControl) {
+        lines.push('Input control tools (Desktop Control enabled):');
+        lines.push('');
+        lines.push('Window management:');
+        lines.push('- `desktop_window_focus` — focus a window by ID');
+        lines.push('- `desktop_window_resize` — resize/reposition a window');
+        lines.push('');
+        lines.push('Mouse control:');
+        lines.push('- `desktop_mouse_move` — move cursor to coordinates');
+        lines.push('- `desktop_click` — click left/right/middle button (supports double-click)');
+        lines.push('- `desktop_scroll` — scroll mouse wheel');
+        lines.push('');
+        lines.push('Keyboard:');
+        lines.push('- `desktop_type` — type text into focused window');
+        lines.push(
+          "- `desktop_key` — press key combination (e.g., 'ctrl+c', 'shift+tab', 'enter')"
+        );
+        lines.push('');
+        lines.push('Clipboard:');
+        lines.push('- `desktop_clipboard_read` — read clipboard content');
+        lines.push('- `desktop_clipboard_write` — write text to clipboard');
+        lines.push('');
+        lines.push(
+          '- `desktop_input_sequence` — execute ordered list of input actions atomically (max 50 steps)'
+        );
+      } else {
+        lines.push(
+          'limb_movement: disabled (Desktop Control not enabled in Security Settings)'
+        );
+      }
+    }
+
     return lines.join('\n');
   }
 

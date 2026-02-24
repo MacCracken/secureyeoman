@@ -90,6 +90,8 @@ const DEFAULT_POLICY = {
   allowExperiments: false,
   allowStorybook: false,
   allowMultimodal: true,
+      allowDesktopControl: false,
+      allowCamera: false,
   allowDynamicTools: false,
   sandboxDynamicTools: true,
   allowAnomalyDetection: false,
@@ -188,6 +190,8 @@ describe('AgentsPage', () => {
     mockFetchSecurityPolicy.mockResolvedValue({
       ...DEFAULT_POLICY,
       allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
     });
     renderComponent();
     expect(await screen.findByText('Sub-Agents')).toBeInTheDocument();

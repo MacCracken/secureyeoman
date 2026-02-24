@@ -12,175 +12,11 @@
 | | **Release 2026.2.22** | **2026-02-22** | **Released** |
 | 38 | Beta Manual Review | 2026-02-23 | Complete |
 | 39 | Diagnostic Tools (Body Module) | 2026-02-23 | Complete |
-| 40 | Desktop Control (Body Module) | — | Planned |
+| 40 | Desktop Control + Multimodal Provider Selection | 2026-02-23 | Complete |
 | 41 | Secrets Management | — | Planned |
 | 42 | TLS / Certificate Management | — | Planned |
-| 43 | — | — | — |
+| 43 | Network Evaluation & Protection | — | Planned |
 | 44 | Find & Repair (Ongoing) | — | Planned |
-
----
-
-## Phase 38: Beta Manual Review
-
-**Status**: Complete
-
-Full-system manual testing pass. All tracked bugs fixed and security improvements shipped. Ongoing bug discovery continues under Phase 44.
-
----
-
-## Phase 39: Diagnostic Tools (Body Module)
-
-**Status**: Complete
-
-Two-channel diagnostic system: core inspects itself and pushes a live snapshot directly into the system prompt (no round-trip needed), while sub-agents and external agents report status back over MCP — the protocol they already use to communicate. Distinct from the automated Heartbeat (scheduled, writes to memory): this is on-demand, agent-readable context injected at session time plus a tool surface for inter-agent health reporting.
-
-```
-Channel A — Core self-diagnostics:
-  core → composeBodyPrompt() → ### Diagnostics block → agent reads as context
-
-Channel B — Sub-agent / external reporting:
-  sub-agent  →  MCP  →  diag_report_status  →  orchestrator sees it
-  orchestrator  →  MCP  →  diag_query_agent  →  polls a spawned agent
-```
-
-Security gate: add `'diagnostics'` to `BodyCapabilitySchema`. When the capability is enabled on a personality, Channel A is injected into its prompt and Channel B MCP tools are listed as available. When disabled, the `### Diagnostics` block reads `diagnostics: disabled` and the MCP tools are not advertised — same pattern as `vision` and `limb_movement`.
-
-### 39.1 — Schema & Capability Gate
-
-- [x] **`'diagnostics'` capability** — Add `'diagnostics'` to `BodyCapabilitySchema` in `packages/shared/src/types/soul.ts`. No new config schema or database migration needed; it slots into the existing `body.capabilities[]` array like any other capability.
-- [x] **Per-personality toggle in Personality Editor** — The existing Body → Capabilities section in `PersonalityEditor.tsx` renders all `BodyCapabilitySchema` entries automatically. Adding `'diagnostics'` to the enum is sufficient to surface the toggle. Add the entry to `capabilityInfo` with icon `🩺`, label `Diagnostics`, description `"Self-diagnostics snapshot and sub-agent health reporting"`.
-
-### 39.2 — Channel A: Core Diagnostics Prompt Injection
-
-*Core inspects its own internals and injects a live snapshot into the system prompt. No new REST endpoints; no MCP round-trip. Data core already holds is written directly.*
-
-- [x] **`### Diagnostics` block in `composeBodyPrompt()`** — In `packages/core/src/soul/manager.ts`, extend `composeBodyPrompt()` to append a `### Diagnostics` subsection when `'diagnostics'` is in `body.capabilities[]`. Content assembled inline from data already available in core:
-  - **System** — process uptime, memory RSS, CPU load average (from `process.memoryUsage()` and `os.loadavg()`)
-  - **Config summary** — connected MCP server count and integration count; no secret values
-- [x] When `'diagnostics'` is absent from `body.capabilities[]`, the capability simply does not appear in the prompt (disabled state shown in the capabilities list).
-- [x] Snapshot is assembled once per session start and on each prompt rebuild (same lifecycle as the rest of `composeBodyPrompt`).
-
-### 39.3 — Channel B: Sub-agent / External Diagnostic MCP Tools
-
-*MCP is the right transport here because sub-agents are external from core's perspective — this is what MCP is for. Implemented in `packages/mcp/src/tools/diagnostic-tools.ts`.*
-
-| Tool | Direction | Description |
-|------|-----------|-------------|
-| `diag_report_status` | sub-agent → orchestrator | Sub-agent pushes a structured health report: agent id, uptime, task count, last error, memory usage. Orchestrator personality receives it as a tool result and can store it as a memory or surface it in a task. |
-| `diag_query_agent` | orchestrator → sub-agent | Orchestrator requests a status report from a named spawned agent by id. Returns the same structured payload as `diag_report_status` or a timeout error if the agent is unreachable. |
-| `diag_ping_integrations` | any → MCP peers | Ping all MCP servers in the personality's `selectedServers` list; returns reachable / unreachable / latency per server. Useful for an agent to verify its tool connections before starting a long task. |
-
-- [x] Implement all three tools in `packages/mcp/src/tools/diagnostic-tools.ts`. Each checks `'diagnostics'` in the active personality's `body.capabilities[]` via the standard capability guard before executing.
-- [x] Register in `packages/mcp/src/tools/index.ts` and add entries to `packages/mcp/src/tools/manifest.ts`.
-- [x] `diag_report_status` and `diag_query_agent` require `allowSubAgents: true` in `SecurityConfig` in addition to the `'diagnostics'` capability — no sub-agent tools should be callable when delegation is globally off.
-
-### 39.4 — Audit Logging
-
-- [x] All `diag_*` MCP tool calls emit `diagnostic_call` audit events: personality id, tool name, direction (report / query / ping), duration ms, result status. Surfaced in the Security Feed.
-- [x] Add `diagnostic_call` to the Security Feed event type filter dropdown.
-- [x] Channel A prompt injection emits no audit event — it is passive context assembly, not an action.
-
----
-
-## Phase 40: Desktop Control (Body Module)
-
-**Status**: Planned
-
-Implement the agent's physical interface layer — the Body module's `vision` (screen capture) and `limb_movement` (keyboard/mouse) capabilities. These map directly to the existing `BodyCapabilitySchema` entries in `packages/shared/src/types/soul.ts` and are toggled per-personality via the **Body → Capabilities** section of the Personality Editor (already in the UI). This phase provides the runtime implementation behind those toggles.
-
-**Capability gate model**: `BodyConfig.capabilities[]` on the active personality is the authoritative source. When `limb_movement` is absent from that array, all desktop input/mouse/keyboard/window-management tools are hard-blocked at the MCP tool dispatch layer — including calls from remote MCP clients and MCP bridges. No path bypasses this check. The same gate applies to `vision` for all capture tools. A system-level `allowDesktopControl` flag in `SecurityConfig` is an additional outer gate (default `false`) that must also be true before any `desktop_*` tool can execute.
-
-```
-SecurityConfig.allowDesktopControl === true
-  AND personality.body.capabilities.includes('limb_movement')   → input tools available
-  AND personality.body.capabilities.includes('vision')          → capture tools available
-  (either condition false → tool returns capability-disabled error, for ALL callers)
-```
-
-### 40.1 — Capability Enforcement Gate (prerequisite for all other sub-phases)
-
-*Wires the existing `BodyConfig.capabilities[]` toggle into the MCP tool dispatch layer so it enforces for local and remote callers alike.*
-
-- [ ] **`allowDesktopControl` SecurityConfig flag** — Add `allowDesktopControl: z.boolean().default(false)` to `packages/shared/src/types/config.ts` alongside `allowBinaryAgents`. This is the system-level master switch; off by default. Surfaced in Security Settings.
-- [ ] **`allowCamera` SecurityConfig flag** — Add `allowCamera: z.boolean().default(false)` as a secondary flag for `capture.camera` specifically. Requires both `allowDesktopControl` and `allowCamera` to be true.
-- [ ] **MCP tool dispatch capability check** — In `packages/mcp/src/tools/desktop-tools.ts`, each tool handler begins with a guard that resolves the active personality's `body.capabilities[]` via `SoulManager` and checks the relevant capability (`limb_movement` for input tools, `vision` for capture tools). Returns a structured `capability_disabled` error when the capability is absent. This check runs **before** any driver code executes, regardless of whether the call originates from a local agent loop, a remote MCP client over HTTP/SSE, or an MCP bridge.
-- [ ] **Remote MCP surface hardening** — The MCP server already exposes tools to external clients. The capability check above is sufficient to block remote calls, but confirm the check cannot be bypassed by: (a) direct tool invocation over the MCP transport without an active personality session, (b) MCP bridge delegations from sub-agents. Add integration tests covering both paths.
-- [ ] **`composeBodyPrompt` system prompt wiring** — In `packages/core/src/soul/manager.ts`, extend `composeBodyPrompt()` to include desktop tool names under the `limb_movement` and `vision` capability entries when they are enabled. Agent sees what it can do; silently omits the tools when the capability is disabled.
-
-### 40.2 — Screen Capture (`capture.screen`, `capture.camera`)
-
-*Implements `BodyCapability.vision`. Gated by `vision` in `body.capabilities[]` AND `allowDesktopControl`.*
-
-- [ ] **Platform screenshot driver** — Implement `body/capture/screen.ts` using `screenshot-desktop` (cross-platform) as the default backend. Supports `CaptureTargetType`: `display`, `window`, `region`. Returns a `Buffer` in the requested `CaptureFormat` (`png`, `jpeg`, `webp`) at the requested `CaptureResolution`. Falls back to `@napi-rs/screenshot` on Linux/Wayland where X11 APIs are unavailable.
-- [ ] **Window & display enumeration** — Implement `body/capture/windows.ts` to populate `WindowInfo[]` and `DisplayInfo[]`. Linux: `wmctrl` or `xdotool` subprocess. macOS: `@nut-tree/nut-js` `screen.find()`. Windows: Win32 `EnumWindows` via `ffi-napi`. Exposed via `desktop_window_list` and `desktop_display_list` MCP tools.
-- [ ] **Camera/webcam capture** — Implement `capture.camera` via `node-webcam` or a thin `ffmpeg` subprocess wrapper. Single-frame and burst modes. Requires `allowCamera: true` in addition to `vision` capability being enabled.
-- [ ] **`CaptureFilters` application** — Post-process captured images: blur `blurRegions[]`, redact text matching `redactPatterns[]` via regex overlay, exclude windows in `excludeWindows[]` by compositing a black rectangle over their bounds.
-- [ ] **`CaptureRestrictions` enforcement** — Honor `singleUse` (auto-revoke consent token after one capture), `readOnly` (no write to disk), `noNetwork` (block base64 payload over non-loopback socket), `watermark` (stamp with timestamp + agent ID).
-
-### 40.3 — Keyboard & Mouse Control (`limb_movement`)
-
-*Implements `BodyCapability.limb_movement`. Gated by `limb_movement` in `body.capabilities[]` AND `allowDesktopControl`.*
-
-- [ ] **Input driver abstraction** — Implement `body/actuator/input.ts` wrapping `@nut-tree/nut-js` as the primary cross-platform driver (Linux X11/Wayland, macOS, Windows). Exposes: `moveMouse(x, y)`, `click(button, double)`, `scroll(dx, dy)`, `typeText(str, delayMs)`, `pressKey(key, modifiers[])`, `releaseKey(key)`.
-- [ ] **Window management actuators** — `focusWindow(windowId)`, `resizeWindow(windowId, bounds)`, `minimizeWindow(windowId)`. Linux: `wmctrl`/`xdotool`. macOS: AppleScript via `osascript`. Windows: Win32 `SetForegroundWindow` via `ffi-napi`.
-- [ ] **Action sequencing with timing** — `InputSequence` type: ordered list of `{action, delayAfterMs}` steps executed atomically. Prevents interleaved agent inputs from corrupting sequences (e.g. form fill: focus → type → tab → type → enter). Max sequence length configurable (default 50 steps).
-- [ ] **Clipboard actuator** — Implement `body/actuator/clipboard.ts` via `clipboardy`. `read()`, `write(text)`, `clear()`. Gated by `capture.clipboard` RBAC resource as well as `limb_movement` capability.
-
-### 40.4 — MCP Tool Family: `desktop_*`
-
-*Registered in `packages/mcp/src/tools/desktop-tools.ts`. All tools check the capability gate (40.1) first — no exceptions for remote callers.*
-
-| Tool | Capability gate | Description |
-|------|----------------|-------------|
-| `desktop_screenshot` | `vision` | Capture screen/window/region → base64 image or temp path. |
-| `desktop_window_list` | `vision` | List open windows with id, title, app, bounds, visibility. |
-| `desktop_display_list` | `vision` | List monitors with id, name, bounds, scale, primary flag. |
-| `desktop_window_focus` | `limb_movement` | Bring a window to foreground by id. |
-| `desktop_window_resize` | `limb_movement` | Resize/reposition a window by id. |
-| `desktop_mouse_move` | `limb_movement` | Move mouse to absolute or relative coordinates. |
-| `desktop_click` | `limb_movement` | Click at current position or given coordinates. |
-| `desktop_scroll` | `limb_movement` | Scroll at coordinates. Params: `dx`, `dy`. |
-| `desktop_type` | `limb_movement` | Type a string with configurable inter-key delay. |
-| `desktop_key` | `limb_movement` | Press a key combination (e.g. `ctrl+c`, `alt+F4`). |
-| `desktop_clipboard_read` | `limb_movement` + `capture.clipboard` RBAC | Read current clipboard text. |
-| `desktop_clipboard_write` | `limb_movement` | Write text to clipboard. |
-| `desktop_input_sequence` | `limb_movement` | Execute an `InputSequence` atomically. |
-
-- [ ] Implement all tools with capability gate guard at top of each handler
-- [ ] Register in `packages/mcp/src/tools/index.ts` behind `config.allowDesktopControl` outer flag
-- [ ] Add entries to `packages/mcp/src/tools/manifest.ts`
-
-### 40.5 — Vision Integration (Agent "Seeing")
-
-*Pipes captured screenshots through the Claude vision API so agents can interpret screen state.*
-
-- [ ] **`allowMultimodal` prerequisite** — `desktop_screenshot` includes a base64 image block in the MCP result when `allowMultimodal: true`. When multimodal is off, returns a temp file path only (agent aware, no LLM interpretation).
-- [ ] **Screen-grounded task loop** — Standard agent pattern: `desktop_screenshot` → interpret via vision → `desktop_click`/`desktop_type` → repeat. Documented as a workflow recipe in `docs/guides/desktop-control.md`.
-- [ ] **`vision` capability system prompt entry** — When `vision` is in `body.capabilities[]`, `composeBodyPrompt()` injects under the capability entry: `"Use desktop_screenshot to observe screen state before acting."` When absent, the entry reads `vision: disabled` as it does today.
-
-### 40.6 — Consent & Audit
-
-*Builds on the `ConsentManager` and `CaptureScope` framework already defined in `packages/core/src/body/`.*
-
-- [ ] **`ConsentManager` runtime wiring** — Connect the existing `ConsentManager` (framework-only today) to `desktop_screenshot` and `desktop_click` tool dispatch. On first invocation per session, surface a consent prompt via the dashboard notification channel. Cache consent token; revoke on session end or if `singleUse` restriction is set.
-- [ ] **RBAC enforcement** — Map tools to `CaptureResource:CaptureAction` pairs. `desktop_screenshot` → `capture.screen:capture`. `desktop_clipboard_read` → `capture.clipboard:capture`. `desktop_key` → `capture.keystrokes:capture` (highest restriction). Agent role must hold the permission or the call is rejected before the driver runs.
-- [ ] **Audit logging** — All `desktop_*` calls emit audit events: `desktop_capture`, `desktop_input`, `desktop_clipboard`. Fields: agent id, tool name, target description (not pixel data), timestamp, consent token reference. Surfaced in the Security Feed.
-- [ ] **Input rate limiting** — Max N input actions per minute per agent (default 60, configurable via `ResourcePolicy`). Separate bucket from `chat_requests`.
-
-### 40.7 — Dashboard UI
-
-*The Personality Editor Body → Capabilities section already renders `limb_movement` and `vision` toggles (`PersonalityEditor.tsx` lines 1760–1826). This sub-phase wires their disabled state to visible feedback and adds the system-level controls.*
-
-- [ ] **`allowDesktopControl` toggle in Security Settings** — New card: master system switch, `allowCamera` sub-toggle, per-capability RBAC matrix (screen, clipboard, keystrokes, camera). Mirrors existing security settings pattern. When `allowDesktopControl` is off, the Body → Capabilities `limb_movement` and `vision` toggles in the Personality Editor show a "requires Desktop Control to be enabled in Security Settings" tooltip and remain visually disabled.
-- [ ] **Capability status badges on personality cards** — `BodyCapabilityStatus` badges for `vision` and `limb_movement` shown on personality and agent cards when enabled, matching existing badge style.
-- [ ] **Consent history log** — Table in the Desktop Control panel: agent, resource, purpose, timestamp, revoked/active. Manual revocation of active consent tokens.
-- [ ] **Audit feed filter entries** — Add `desktop_capture` and `desktop_input` to the Security Feed event type filter dropdown.
-
-### 40.8 — Configuration Reference & Docs
-
-- [ ] **`docs/guides/desktop-control.md`** — Getting started guide: enabling `allowDesktopControl` in Security Settings, toggling `limb_movement`/`vision` per personality, example screen-grounded agent workflow, platform notes (X11 vs Wayland, macOS Accessibility permissions, Windows UAC), remote MCP client usage.
-- [ ] **Configuration reference update** — Add `allowDesktopControl`, `allowCamera` to `docs/configuration.md` with defaults, security implications, and note that `body.capabilities[]` is the per-personality enforcement layer for both local and remote MCP callers.
-- [ ] **ADR** — Document the Body module actuator architecture, capability gate model (SecurityConfig outer + body.capabilities[] inner), platform driver selection, and consent model. Cross-references ADR 014 (screen capture security) and ADR 015 (RBAC for capture).
 
 ---
 
@@ -239,6 +75,117 @@ Two distinct certificate use cases: (1) **self-signed cert for development** —
 ### 42.3 — Dashboard UI
 
 - [ ] **TLS status card in Security Settings** — Shows current TLS mode (disabled / self-signed / CA-signed), cert subject and expiry, days remaining with a warning badge when < 30 days. Link to the certificate guide.
+
+---
+
+## Phase 43: Network Evaluation & Protection (YeomanMCP)
+
+**Status**: Planned
+
+Add network evaluation and protection tools to YeomanMCP for IT task automation and network security. Based on NetClaw's network automation capabilities.
+
+### 43.1 — Device Automation Tools
+
+- [ ] `network_device_connect` — SSH/Telnet to network devices
+- [ ] `network_show_command` — Execute IOS-XE/NX-OS/IOS-XR show commands
+- [ ] `network_config_push` — Push configuration to devices
+- [ ] `network_health_check` — Fleet-wide health monitoring
+- [ ] `network_ping_test` / `network_traceroute` — Connectivity tests
+
+### 43.2 — Network Discovery & Topology
+
+- [ ] `network_discovery_cdp` / `network_discovery_lldp` — Neighbor discovery
+- [ ] `network_topology_build` — Build topology from CDP/LLDP/ARP
+- [ ] `network_arp_table` / `network_mac_table` — Layer 2/3 tables
+
+### 43.3 — Routing & Switching Analysis
+
+- [ ] `network_routing_table` — IP routing table analysis
+- [ ] `network_ospf_neighbors` / `network_ospf_lsdb` — OSPF state
+- [ ] `network_bgp_peers` — BGP peer status
+- [ ] `network_interface_status` / `network_vlan_list` — Port/VLAN info
+
+### 43.4 — Security Auditing
+
+- [ ] `network_acl_audit` — ACL analysis
+- [ ] `network_aaa_status` — AAA configuration
+- [ ] `network_port_security` — Port security violations
+- [ ] `network_stp_status` — STP analysis
+
+### 43.5 — Source of Truth Integration (NetBox)
+
+- [ ] `netbox_devices_list` — Query NetBox devices
+- [ ] `netbox_interfaces_list` / `netbox_ipam_ips` — Interface/IP data
+- [ ] `netbox_cables` — Cable documentation
+- [ ] `netbox_reconcile` — Live device vs NetBox drift detection
+
+### 43.6 — Vulnerability Assessment
+
+- [ ] `nvd_cve_search` — NVD CVE database search
+- [ ] `nvd_cve_by_software` — CVEs by IOS version
+- [ ] `network_software_version` — Device OS detection
+
+### 43.7 — Network Utilities
+
+- [ ] `subnet_calculator` — IPv4/IPv6 subnet calculator
+- [ ] `subnet_vlsm` — VLSM planning
+- [ ] `wildcard_mask_calc` — Wildcard mask calculator
+
+### 43.8 — Packet Analysis
+
+- [ ] `pcap_upload` — Upload pcap files
+- [ ] `pcap_protocol_hierarchy` — Protocol breakdown
+- [ ] `pcap_conversations` — IP conversations
+- [ ] `pcap_dns_queries` / `pcap_http_requests` — L7 extraction
+
+### 43.9 — Twingate Remote MCP Access
+
+*Twingate's zero-trust network enables private MCP servers to be exposed to remote AI agents without opening inbound firewall ports. Agents connect via the Twingate Client tunnel; access is gated by Twingate's identity + device-posture policies. Reference: https://www.twingate.com/docs/remote-mcp-access*
+
+**Architecture model:**
+
+```
+Remote AI agent (YeomanMCP client)
+    ↓  Twingate Client tunnel (authenticated, device-posture checked)
+Twingate Controller (cloud — identity + policy evaluation)
+    ↓  encrypted split-tunnel
+Twingate Connector (sidecar on same network as MCP server)
+    ↓  loopback / private LAN
+Private MCP server (never exposed to public internet)
+```
+
+**MCP tools — Twingate resource management** (requires `TWINGATE_API_KEY` + `TWINGATE_NETWORK` env vars; calls Twingate GraphQL API at `https://{network}.twingate.com/api/graphql/`):
+
+- [ ] `twingate_resources_list` — List all Twingate Resources in the tenant; returns id, name, address, group access, protocol rules. Useful for an agent to discover which private services (including MCP endpoints) are accessible via the tunnel.
+- [ ] `twingate_resource_get` — Fetch a single Resource by id with full protocol policy, group assignments, and connector affinity.
+- [ ] `twingate_groups_list` — List access groups; shows which identities/service accounts can reach which resources.
+- [ ] `twingate_service_accounts_list` — List service accounts (non-human principals used for agent-to-resource access). Agents and automation workflows use service accounts instead of user credentials.
+- [ ] `twingate_service_account_create` — Create a new service account for a YeomanMCP agent identity, scoped to specific resources. Returns the account id for key generation.
+- [ ] `twingate_service_key_create` — Generate a service key (bearer token) for a service account. Key is used as the Twingate Client credential for headless agent access. Returned once — store in SecretsManager (Phase 41).
+- [ ] `twingate_service_key_revoke` — Revoke a service key by id. Emits a `twingate_key_revoked` audit event.
+- [ ] `twingate_connectors_list` — List Connectors with status (online/offline), remote network, and last heartbeat. Lets an agent verify the Connector serving a private MCP server is healthy before attempting to connect.
+- [ ] `twingate_remote_networks_list` — List Remote Networks (private network segments behind Connectors). Identifies which network a target MCP server lives in.
+
+**MCP tool — remote MCP server proxy** (bridges YeomanMCP to a private MCP server reachable via Twingate tunnel):
+
+- [ ] `twingate_mcp_connect` — Given a `resourceAddress` (the private MCP server hostname/IP registered as a Twingate Resource) and `port`, open a Streamable HTTP or SSE connection to the private MCP server via the local Twingate Client tunnel. Returns a `sessionId` for subsequent tool calls.
+  Implementation: the Twingate Client must already be running on the host; this tool sends HTTP(S) to the resource address, which the Twingate Client intercepts and tunnels. No additional SDK needed — standard `fetch()` to the private address works once the tunnel is up.
+- [ ] `twingate_mcp_list_tools` — List tools exposed by a connected private MCP server (by `sessionId`).
+- [ ] `twingate_mcp_call_tool` — Invoke a tool on a connected private MCP server by `sessionId`, `toolName`, and `args`. Returns the tool result. Audit event: `twingate_mcp_tool_call` with resource address, tool name, agent id.
+- [ ] `twingate_mcp_disconnect` — Close the proxy session.
+
+**Configuration:**
+
+```
+TWINGATE_API_KEY=<tenant API key>   # GraphQL API authentication
+TWINGATE_NETWORK=<tenant-name>      # e.g. "acme" → acme.twingate.com
+```
+
+- [ ] Add `TWINGATE_API_KEY` and `TWINGATE_NETWORK` to the env-var reference in `docs/configuration.md`.
+- [ ] Gate all `twingate_*` tools behind a `allowTwingate: z.boolean().default(false)` flag in `SecurityConfig` (same pattern as `allowDesktopControl`). Add toggle to Security Settings.
+- [ ] Implement in `packages/mcp/src/tools/twingate-tools.ts`; register in `tools/index.ts` and `tools/manifest.ts`.
+- [ ] All `twingate_service_key_create` results stored via `SecretsManager` (Phase 41) — never logged or returned in plaintext after initial creation.
+- [ ] Audit events: `twingate_resource_query`, `twingate_key_create`, `twingate_key_revoke`, `twingate_mcp_tool_call` — surfaced in Security Feed.
 
 ---
 

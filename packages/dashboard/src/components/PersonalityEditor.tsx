@@ -1318,6 +1318,7 @@ function BodySection({
     queryKey: ['security-policy'],
     queryFn: fetchSecurityPolicy,
   });
+  const desktopControlEnabled = securityPolicy?.allowDesktopControl === true;
   const subAgentsBlockedByPolicy = securityPolicy?.allowSubAgents === false;
   const a2aBlockedByPolicy = securityPolicy?.allowA2A === false;
   const swarmsBlockedByPolicy = securityPolicy?.allowSwarms === false;
@@ -1768,6 +1769,8 @@ function BodySection({
             {capabilities.map((cap) => {
               const info = capabilityInfo[cap];
               const isEnabled = enabledCaps[cap] ?? false;
+              const requiresDesktopControl = cap === 'vision' || cap === 'limb_movement';
+              const isDesktopGated = requiresDesktopControl && !desktopControlEnabled;
               const isConfigurable =
                 info.available &&
                 (cap === 'vision' ||
@@ -1799,6 +1802,13 @@ function BodySection({
                     {!info.available ? (
                       <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
                         Not available
+                      </span>
+                    ) : isDesktopGated ? (
+                      <span
+                        className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground/60 cursor-not-allowed opacity-70"
+                        title="Requires Desktop Control to be enabled in Security Settings"
+                      >
+                        Requires Desktop Control
                       </span>
                     ) : isConfigurable ? (
                       <label

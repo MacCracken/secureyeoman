@@ -52,6 +52,8 @@ describe('ProactivePage', () => {
       allowProactive: false,
       allowExperiments: false,
       allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
     });
 
     render(<ProactivePage />, { wrapper: createWrapper() });

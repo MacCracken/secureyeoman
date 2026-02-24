@@ -91,6 +91,8 @@ describe('SettingsPage', () => {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
       allowAnomalyDetection: false,

@@ -4,6 +4,89 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — Phase 40 Desktop Control + Multimodal Provider Selection (2026-02-24)
+
+### Features
+
+**Desktop Control — `vision` + `limb_movement` capability runtime** (Phase 40)
+
+Security gate: `SecurityConfig.allowDesktopControl` (default `false`) is the outer system switch; `body.capabilities[]` on the active personality is the inner per-agent gate. Both must be true for any `desktop_*` tool to execute. `allowCamera` is a secondary flag for camera capture only.
+
+*Capture drivers (`packages/core/src/body/capture/`):*
+- `screen.ts` — cross-platform screenshot via `screenshot-desktop` (X11/macOS/Windows) with `@napi-rs/screenshot` as Wayland fallback. Supports `display`, `window`, and `region` target types; applies `CaptureFilters.blurRegions` (black rectangles) via optional `canvas` package; returns base64 + MIME type + dimensions.
+- `windows.ts` — window and display enumeration platform-dispatched via subprocess: `wmctrl -lG` + `xrandr` (Linux), AppleScript `osascript` (macOS), PowerShell `Get-Process` + `Get-CimInstance` (Windows). Returns typed `WindowInfo[]` and `DisplayInfo[]`.
+- `camera.ts` — single-frame camera capture via `ffmpeg` subprocess with platform-specific device sources (v4l2 / avfoundation / dshow). Requires `allowCamera: true`.
+
+*Actuator drivers (`packages/core/src/body/actuator/`):*
+- `input.ts` — keyboard and mouse control via lazy-loaded `@nut-tree/nut-js` (optional; clear error if absent). Exports `moveMouse`, `clickMouse`, `scrollMouse`, `typeText`, `pressKey`, `releaseKey`. Window management (`focusWindow`, `resizeWindow`, `minimizeWindow`) via subprocess (wmctrl / osascript / PowerShell).
+- `clipboard.ts` — `readClipboard`, `writeClipboard`, `clearClipboard` via `clipboardy`.
+- `sequence.ts` — `executeSequence(steps[])` runs an ordered list of up to 50 `InputAction` steps atomically with configurable per-step delay. Action types: `mouse_move`, `mouse_click`, `mouse_scroll`, `type`, `key_press`, `key_release`, `clipboard_write`, `clipboard_read`, `wait`.
+
+*Core API (`packages/core/src/body/desktop-routes.ts`):* 14 REST endpoints under `/api/v1/desktop/*` wrapping all drivers. Registered in `GatewayServer` when `allowDesktopControl` is enabled. Enables MCP tools to call drivers without importing core directly.
+
+*SecurityConfig additions (`packages/shared/src/types/config.ts`):*
+- `allowDesktopControl: boolean` (default `false`)
+- `allowCamera: boolean` (default `false`)
+Both persisted in `security.policy` DB table; toggleable at runtime via `PATCH /api/v1/security/policy`.
+
+**MCP `desktop_*` tool family** (14 tools in `packages/mcp/src/tools/desktop-tools.ts`)
+
+All tools check `allowDesktopControl` + the relevant capability before executing. Remote MCP clients are subject to the same gate — no bypass path.
+
+| Tool | Capability | Description |
+|------|-----------|-------------|
+| `desktop_screenshot` | `vision` | Capture screen/window/region; returns base64 image |
+| `desktop_window_list` | `vision` | List open windows with id, title, app, bounds |
+| `desktop_display_list` | `vision` | List monitors with bounds, scale, primary flag |
+| `desktop_camera_capture` | `vision` + `allowCamera` | Capture camera frame |
+| `desktop_window_focus` | `limb_movement` | Bring window to foreground |
+| `desktop_window_resize` | `limb_movement` | Resize/reposition window |
+| `desktop_mouse_move` | `limb_movement` | Move cursor |
+| `desktop_click` | `limb_movement` | Click at position |
+| `desktop_scroll` | `limb_movement` | Scroll at coordinates |
+| `desktop_type` | `limb_movement` | Type text with inter-key delay |
+| `desktop_key` | `limb_movement` | Press key combination (e.g. `ctrl+c`) |
+| `desktop_clipboard_read` | `limb_movement` | Read clipboard text |
+| `desktop_clipboard_write` | `limb_movement` | Write to clipboard |
+| `desktop_input_sequence` | `limb_movement` | Execute `InputSequence` atomically (max 50 steps) |
+
+Audit events: `desktop_capture` and `desktop_input` emitted on all tool calls; surfaced in Security Feed.
+
+**Multimodal provider selection** (runtime-switchable vision/TTS/STT providers)
+
+- `MultimodalConfig.vision.provider`: `claude` | `openai` | `gemini` (default `claude`)
+- `MultimodalConfig.stt.provider` and `tts.provider` expanded to include `voicebox`
+- `MultimodalManager.detectAvailableProviders()` — detects configured providers by env var presence (`ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GOOGLE_API_KEY`) and Voicebox health check (`GET ${VOICEBOX_URL}/health`, 3s timeout)
+- `MultimodalManager.analyzeImage()` now routes to OpenAI GPT-4o or Gemini 1.5 Pro in addition to the existing Claude path; provider priority: env var override > DB preference > config default
+- **New endpoint**: `PATCH /api/v1/multimodal/provider` — body `{ type: 'vision'|'tts'|'stt', provider: string }`. Validates provider is in `configured` list (returns 400 with message if not). Stores selection in `system_preferences` table.
+- Provider preferences persisted via `SystemPreferencesStorage` (key-value reads/writes to `system_preferences` table, migration 016)
+
+**Dashboard UI additions**
+
+- `SecuritySettings.tsx` — new **Desktop Control** card: master `allowDesktopControl` toggle with prominent warning banner; `allowCamera` sub-toggle (only active when master is on). Matches existing security card pattern.
+- `MultimodalPage.tsx` — interactive provider selection: vision/TTS/STT provider cards with availability badges. Configured-but-inactive providers are clickable (triggers `PATCH /api/v1/multimodal/provider`). Unconfigured providers shown greyed-out with "API key not configured" tooltip.
+- `PersonalityEditor.tsx` — `vision` and `limb_movement` capability toggles show a "Requires Desktop Control to be enabled in Security Settings" tooltip and disabled state when `allowDesktopControl` is `false`.
+
+**`composeBodyPrompt()` wiring** (`packages/core/src/soul/manager.ts`)
+
+When `vision` is in `body.capabilities[]` and `allowDesktopControl` is true, injects tool list and usage guidance into the system prompt. Same for `limb_movement`. When the gate is off, entries read `vision: disabled` / `limb_movement: disabled`.
+
+### Fixes
+
+- `packages/shared/src/types/index.ts` — `PromptGuardConfig` added to barrel exports (was defined in `config.ts` but missing from re-export; caused Docker build failures)
+- `packages/core/src/security/prompt-guard.ts` — guarded `messages[idx]` array access with `if (!msg) continue` (required by `noUncheckedIndexedAccess`)
+
+### Tests
+
+New test files (57 tests):
+- `packages/mcp/src/tools/desktop-tools.test.ts` — tool registration, security/capability gates, API endpoint routing per tool type, audit logger
+- `packages/core/src/body/actuator/sequence.test.ts` — all 9 action types, execution order, 50-step limit, clipboard read collection
+- `packages/core/src/body/actuator/clipboard.test.ts` — read/write/clear with mocked `clipboardy`
+- `packages/core/src/body/capture/windows.test.ts` — wmctrl/xrandr parsing, error fallback, `WindowInfo`/`DisplayInfo` type shape
+- `packages/core/src/multimodal/multimodal-routes.test.ts` — 7 new tests for `PATCH /api/v1/multimodal/provider` (validation, configured-provider gate, `setProvider` invocation)
+
+---
+
 ## [Unreleased] — Phase 39 Diagnostic Tools (2026-02-23)
 
 ### Features

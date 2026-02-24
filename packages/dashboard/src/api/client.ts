@@ -1855,6 +1855,8 @@ export interface SecurityPolicy {
   allowExperiments: boolean;
   allowStorybook: boolean;
   allowMultimodal: boolean;
+  allowDesktopControl: boolean;
+  allowCamera: boolean;
   allowDynamicTools: boolean;
   sandboxDynamicTools: boolean;
   allowAnomalyDetection: boolean;
@@ -1879,6 +1881,8 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowExperiments: false,
       allowStorybook: false,
       allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
       allowDynamicTools: false,
       sandboxDynamicTools: true,
       allowAnomalyDetection: false,
@@ -2452,6 +2456,16 @@ export async function analyzeImage(data: {
   return request('/multimodal/vision/analyze', {
     method: 'POST',
     body: JSON.stringify(data),
+  });
+}
+
+export async function updateMultimodalProvider(
+  type: 'vision' | 'tts' | 'stt',
+  provider: string
+): Promise<void> {
+  await request('/multimodal/provider', {
+    method: 'PATCH',
+    body: JSON.stringify({ type, provider }),
   });
 }
 
