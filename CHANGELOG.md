@@ -4,6 +4,60 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — Multi-Provider TTS/STT Expansion (2026-02-24)
+
+### Features
+
+**10 TTS providers, 7 STT providers — all detected at runtime, only connected providers shown**
+
+| Provider | TTS | STT | Auth |
+|---|---|---|---|
+| OpenAI | ✓ | ✓ (Whisper) | `OPENAI_API_KEY` |
+| Voicebox (local) | ✓ | ✓ | `VOICEBOX_URL` reachable |
+| ElevenLabs | ✓ | ✓ (Scribe v2) | `ELEVENLABS_API_KEY` |
+| Deepgram | ✓ (Aura-2) | ✓ (Nova-3) | `DEEPGRAM_API_KEY` |
+| Cartesia | ✓ (Sonic-3) | — | `CARTESIA_API_KEY` |
+| Google Cloud | ✓ (Neural2) | ✓ (latest_long) | `GOOGLE_API_KEY` |
+| Azure AI Speech | ✓ | ✓ | `SPEECH_KEY` + `SPEECH_REGION` |
+| Play.ht | ✓ (Play3.0-mini) | — | `PLAYHT_API_KEY` + `PLAYHT_USER_ID` |
+| OpenedAI Speech (local) | ✓ | — | `OPENEDAI_SPEECH_URL` reachable |
+| Kokoro (local, ONNX) | ✓ | — | `kokoro-js` package installed |
+| AssemblyAI | — | ✓ (Universal-2) | `ASSEMBLYAI_API_KEY` |
+
+- **`detectAvailableProviders()`** now returns `metadata: Record<string, { label, category }>` so the dashboard can display human-readable names and group providers by local vs cloud
+- **`sanitizeErrorMessage()`** expanded to redact `sk_…` (ElevenLabs) and `Token …` (Deepgram) patterns
+- **Dashboard `ProviderSection`** redesigned: shows only connected providers (not greyed-out unconfigured), splits cloud and local rows with a `local` label; no more ghost badges
+- All implementations use `fetch()` REST calls — no new required npm packages; `kokoro-js` remains optional
+
+### Environment variables added
+
+| Var | Purpose |
+|---|---|
+| `ELEVENLABS_API_KEY` | ElevenLabs TTS + STT |
+| `ELEVENLABS_VOICE_ID` | Default ElevenLabs voice (optional, default: Rachel) |
+| `ELEVENLABS_MODEL` | ElevenLabs TTS model (optional, default: `eleven_multilingual_v2`) |
+| `ELEVENLABS_STT_MODEL` | ElevenLabs STT model (optional, default: `scribe_v2`) |
+| `DEEPGRAM_API_KEY` | Deepgram TTS + STT |
+| `DEEPGRAM_TTS_MODEL` | Deepgram TTS voice (optional, default: `aura-2-thalia-en`) |
+| `DEEPGRAM_STT_MODEL` | Deepgram STT model (optional, default: `nova-3`) |
+| `CARTESIA_API_KEY` | Cartesia TTS |
+| `CARTESIA_VOICE_ID` | Cartesia voice UUID (optional, has default) |
+| `CARTESIA_MODEL` | Cartesia model (optional, default: `sonic-3`) |
+| `GOOGLE_API_KEY` | Google Cloud TTS + STT (shared with Gemini vision) |
+| `GOOGLE_TTS_VOICE` | Google TTS voice name (optional, default: `en-US-Neural2-C`) |
+| `GOOGLE_STT_MODEL` | Google STT model (optional, default: `latest_long`) |
+| `SPEECH_KEY` | Azure AI Speech TTS + STT |
+| `SPEECH_REGION` | Azure region (e.g. `eastus`) |
+| `AZURE_TTS_VOICE` | Azure voice name (optional, default: `en-US-AvaMultilingualNeural`) |
+| `PLAYHT_API_KEY` | Play.ht TTS |
+| `PLAYHT_USER_ID` | Play.ht user ID |
+| `PLAYHT_VOICE` | Play.ht voice S3 URL (optional, has default) |
+| `OPENEDAI_SPEECH_URL` | OpenedAI Speech local server URL |
+| `KOKORO_VOICE` | Kokoro voice name (optional, default: `af_heart`) |
+| `ASSEMBLYAI_API_KEY` | AssemblyAI STT |
+
+---
+
 ## [Unreleased] — Phase 40 Desktop Control + Multimodal Provider Selection (2026-02-24)
 
 ### Features

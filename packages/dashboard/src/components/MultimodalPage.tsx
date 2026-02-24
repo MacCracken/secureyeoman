@@ -337,19 +337,34 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
   );
 }
 
-const PROVIDER_LABELS: Record<string, string> = {
+// Fallback labels for providers not in server metadata
+const PROVIDER_LABEL_FALLBACK: Record<string, string> = {
   claude: 'Claude',
   openai: 'OpenAI',
   gemini: 'Gemini',
   voicebox: 'Voicebox (local)',
-  browser: 'Browser Native',
+  elevenlabs: 'ElevenLabs',
+  deepgram: 'Deepgram',
+  cartesia: 'Cartesia',
+  google: 'Google Cloud',
+  azure: 'Azure AI Speech',
+  playht: 'Play.ht',
+  openedai: 'OpenedAI Speech (local)',
+  kokoro: 'Kokoro (local)',
+  assemblyai: 'AssemblyAI',
 };
+
+interface ProviderMeta {
+  label: string;
+  category: 'local' | 'cloud';
+}
 
 interface ProviderInfo {
   active: string;
   available: string[];
   configured: string[];
   voiceboxUrl?: string;
+  metadata?: Record<string, ProviderMeta>;
 }
 
 interface ProvidersConfig {
@@ -360,44 +375,32 @@ interface ProvidersConfig {
 
 function ProviderBadge({
   provider,
+  label,
   active,
-  configured,
   onClick,
   isPending,
 }: {
   provider: string;
+  label: string;
   active: boolean;
-  configured: boolean;
   onClick?: () => void;
   isPending?: boolean;
 }) {
-  const label = PROVIDER_LABELS[provider] ?? provider;
-  const unconfigured = !configured;
-
   return (
     <button
       type="button"
-      disabled={unconfigured || isPending || active}
+      disabled={isPending || active}
       onClick={onClick}
-      title={
-        unconfigured
-          ? 'API key not configured'
-          : active
-            ? 'Currently active'
-            : `Switch to ${label}`
-      }
+      title={active ? 'Currently active' : `Switch to ${label}`}
       className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border transition-colors ${
         active
           ? 'border-primary/50 bg-primary/10 text-primary font-medium cursor-default'
-          : unconfigured
-            ? 'border-border bg-muted/20 text-muted-foreground/40 cursor-not-allowed opacity-50'
-            : 'border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-foreground cursor-pointer'
+          : 'border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:text-foreground cursor-pointer'
       }`}
     >
       {active && <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />}
       {isPending && !active ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : null}
       {label}
-      {unconfigured && <span className="text-[10px] opacity-60 ml-0.5">—</span>}
     </button>
   );
 }
@@ -415,31 +418,59 @@ function ProviderSection({
   onSelect: (type: 'vision' | 'tts' | 'stt', provider: string) => void;
   isPending: boolean;
 }) {
-  const available = info?.available ?? [];
   const configured = info?.configured ?? [];
   const active = info?.active ?? '';
+  const metadata = info?.metadata ?? {};
+
+  const getLabel = (p: string): string =>
+    metadata[p]?.label ?? PROVIDER_LABEL_FALLBACK[p] ?? p;
+  const getCategory = (p: string): 'local' | 'cloud' =>
+    metadata[p]?.category ?? 'cloud';
+
+  const cloudProviders = configured.filter((p) => getCategory(p) === 'cloud');
+  const localProviders = configured.filter((p) => getCategory(p) === 'local');
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2">
       <p className="text-xs text-muted-foreground font-medium">{label}</p>
-      <div className="flex flex-wrap gap-1.5">
-        {available.map((p) => (
-          <ProviderBadge
-            key={p}
-            provider={p}
-            active={p === active}
-            configured={configured.includes(p)}
-            isPending={isPending}
-            onClick={() => {
-              if (p !== active && configured.includes(p)) {
-                onSelect(type, p);
-              }
-            }}
-          />
-        ))}
-      </div>
-      {configured.length === 0 && (
-        <p className="text-xs text-muted-foreground/60">No providers configured.</p>
+      {configured.length === 0 ? (
+        <p className="text-xs text-muted-foreground/60">No providers connected.</p>
+      ) : (
+        <div className="space-y-1.5">
+          {cloudProviders.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {cloudProviders.map((p) => (
+                <ProviderBadge
+                  key={p}
+                  provider={p}
+                  label={getLabel(p)}
+                  active={p === active}
+                  isPending={isPending}
+                  onClick={() => {
+                    if (p !== active) onSelect(type, p);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+          {localProviders.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              <span className="text-[10px] text-muted-foreground/50 self-center pr-1">local</span>
+              {localProviders.map((p) => (
+                <ProviderBadge
+                  key={p}
+                  provider={p}
+                  label={getLabel(p)}
+                  active={p === active}
+                  isPending={isPending}
+                  onClick={() => {
+                    if (p !== active) onSelect(type, p);
+                  }}
+                />
+              ))}
+            </div>
+          )}
+        </div>
       )}
     </div>
   );

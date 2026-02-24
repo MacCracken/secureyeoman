@@ -265,9 +265,9 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Multimodal I/O Enhancement
 
-*Voicebox deeper integration (ADR 084). Provider picker shipped in Phase 40 (vision/TTS/STT switching, Voicebox health detection, system_preferences persistence). Remaining items target local voice quality.*
+*Provider picker shipped in Phase 40; expanded to 10 TTS and 7 STT providers. Only connected (API key present / service reachable) providers are shown in the UI. Remaining items target voice quality, streaming, and local models.*
 
-- [ ] **ElevenLabs provider** — Add `elevenlabs` as a selectable TTS provider alongside the existing `openai` and `voicebox`. Detected when ElevenLabs MCP server is connected. Extends the Phase 40 provider picker without new UI work.
+- [x] **Multi-provider TTS/STT** — ElevenLabs, Deepgram, Cartesia, Google Cloud, Azure AI Speech, Play.ht, OpenedAI Speech (local), Kokoro (local) for TTS; Deepgram, ElevenLabs Scribe, AssemblyAI, Google Cloud, Azure for STT. All REST-based, no required npm packages. Detected by env var presence (`ELEVENLABS_API_KEY`, `DEEPGRAM_API_KEY`, etc.) or service reachability. UI shows only connected providers grouped by local vs cloud.
 - [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity — FRIDAY speaks in FRIDAY's voice. Supports multiple reference audio samples, language selection, avatar, and ZIP export/import.
 - [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call. Based on Voicebox's `utils/cache.py` pattern.
 - [ ] **Audio validation before STT** — Validate incoming audio before sending to Whisper: duration 2–30s, RMS > 0.01 (no silence), peak < 0.99 (no clipping). Return a clear error rather than passing bad audio to the API. Based on Voicebox's `utils/validation.py` checks.
