@@ -1,3 +1,21 @@
+## [2026.2.24+5]
+
+### Metrics — Active Agents Count + Heartbeat Multi-Personality Badges
+
+#### Fixed
+
+- **"Active Agents" stat card showed sub-agent delegation count, not personality count** — The KPI card on the Metrics Overview page was wired to `fetchActiveDelegations()` and displayed the number of spawned sub-agents (usually zero). It now fetches personalities and counts those with `isActive = true`, matching the multi-active soul system. The card subtitle shows the default personality name; clicking navigates to `/personality`.
+
+- **Heartbeat tasks only tagged one personality** — `GET /api/v1/brain/heartbeat/tasks` called `soulManager.getActivePersonality()` (the `is_default` row only) and stamped every task with that single personality's id/name. With multiple enabled personalities the extras were invisible. The endpoint now calls `getEnabledPersonalities()` and `getActivePersonality()` in parallel, deduplicates by id, and attaches the full set as a `personalities: [{ id, name }]` array on each task. The legacy `personalityId` / `personalityName` fields are kept for backwards compatibility (pointing at the default personality).
+
+- **`HeartbeatTaskCard` (SecurityPage) renders a badge per personality** — The task card now iterates `task.personalities[]` and renders a distinct `primary/10` badge for each name. Falls back gracefully to the legacy `personalityName` field when talking to an older backend.
+
+#### Types
+
+- `HeartbeatTask` in `types.ts` gains `personalities?: { id: string; name: string }[]`; legacy fields annotated `@deprecated`.
+
+---
+
 ## [2026.2.24+4]
 
 ### Soul — Clearable Default, Chat Fallback, and Empty State
