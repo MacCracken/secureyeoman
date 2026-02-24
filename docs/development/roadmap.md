@@ -9,75 +9,67 @@
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
 | | **Release 2026.2.23** | **2026-02-23** | **Released** |
-| 41 | Secrets Management | — | Planned |
-| 42 | TLS / Certificate Management | — | Planned |
+| 41 | Secrets Management | — | **Complete** |
+| 42 | TLS / Certificate Management | — | **Complete** |
 | 43 | Sub-Agent UX + Bug Fixes | — | Planned |
 | 44 | Skill Routing Quality | — | Planned |
 | 45 | Twingate Remote MCP Access | — | Planned *(depends on 41)* |
-| 46 | Network Evaluation & Protection | — | Planned |
+| 46 | Network Evaluation & Protection | — | **Complete** |
 | 47 | Find & Repair (Ongoing) | — | Ongoing |
 | 48 | Machine Readable Org Intent | — | Planned |
 | 49 | AI Autonomy Level Audit | — | Planned |
 
 --
-## Phase 41: Secrets Management
+## Phase 41: Secrets Management ✅
 
-**Status**: Planned | **Priority**: Critical — foundational; Phase 45 (Twingate) depends on this.
-
-Replace direct environment-variable secret storage with a proper secrets management layer. The `secretBackend` config field exists (`auto | keyring | env | file`) and the keyring infrastructure is built (`packages/core/src/security/keyring/`), but there is no runtime vault abstraction, rotation-aware secret resolution, or operator tooling for secret lifecycle management.
-
-> **Vault backend choice: [OpenBao](https://openbao.org)** (Linux Foundation, MPL-2.0, v2.5.1).
-> HashiCorp Vault moved to BSL in 2023 and is no longer genuinely open source. OpenBao is a community fork of the last MPL-licensed Vault release, maintained under the Linux Foundation with active development (v2.5.1, Feb 2026). Its HTTP API is 100% wire-compatible with pre-BSL Vault. Infisical was evaluated and rejected: secret rotation and RBAC are hard-gated behind a commercial enterprise license on self-hosted deployments (`getDefaultOnPremFeatures()` returns `false` for all advanced features without a paid license key).
+**Status**: Complete | **Priority**: Critical — foundational; Phase 45 (Twingate) depends on this.
 
 ### 41.1 — Vault Abstraction Layer
 
-- [ ] **`SecretsManager` facade** — Unified interface over backend providers: `keyring` (OS keychain via existing `KeyringManager`), `env` (current behaviour), `file` (encrypted file via existing `EncryptionManager`), `vault` (new — OpenBao via KV v2 HTTP API). All backends implement `get(key): Promise<string>`, `set(key, value)`, `delete(key)`, `rotate(key)`. Resolves backend at startup based on `security.secretBackend`.
-- [ ] **`vault` backend** — Connect to an OpenBao instance via its REST API (KV v2, `/v1/secret/data/:key`). AppRole auth: `POST /v1/auth/approle/login` with `VAULT_ROLE_ID` + `VAULT_SECRET_ID` → short-lived client token cached in memory and refreshed on 403. Env vars: `VAULT_ADDR`, `VAULT_ROLE_ID`, `VAULT_SECRET_ID`, `VAULT_MOUNT` (default `secret`). Falls back to `keyring` if OpenBao is unreachable and `security.vaultFallback: true`. No npm vault SDK required — plain `fetch()` against the REST API.
-- [ ] **Replace all `process.env[keyEnv]` reads in core** — All API key and secret reads in `packages/core/src` switch to `await secureYeoman.getSecretsManager().get(keyEnv)`. The env-var names in config remain as references; the `SecretsManager` resolves them.
+- [x] **`SecretsManager` facade** — Unified interface: `env`, `keyring`, `file`, `vault`, `auto`. Process.env mirroring for backwards-compat sync access.
+- [x] **`VaultBackend`** — OpenBao/Vault KV v2, AppRole + static token, token caching with auto-refresh on 403, optional namespace, fallback flag.
+- [x] **Config** — `security.secretBackend` gains `'vault'`; new `security.vault` block added.
+- [x] **Public getters** — `getSecretsManager()`, `getRotationManager()`, `getKeyringManager()`.
 
 ### 41.2 — Rotation Integration
 
-- [ ] **Wire `SecretsManager` into `RotationManager`** — The existing `RotationManager` tracks key expiry but does not perform actual rotation. Connect it to `SecretsManager.rotate(key)` for API tokens and signing keys. On successful rotation, emit a `secret_rotated` audit event.
-- [ ] **Grace period handling** — During rotation, hold both the old and new value for one `checkIntervalMs` window so in-flight requests against the old key can complete.
+- [x] **Wire `SecretsManager` into `onRotate`** — Rotated values persisted to configured backend (vault/file/keyring).
+- [ ] **Grace period handling** — Carry old+new value for one interval (future work).
 
 ### 41.3 — Dashboard UI
 
-- [ ] **Secrets panel in Security Settings** — List all managed secrets (name, backend, last rotated, expiry). Manual rotation trigger per key. Status badges: `ok`, `expiring_soon`, `expired`. Never surfaces secret values — name and metadata only.
+- [x] **Secrets panel** (Settings → Security) — List key names, add (name + value), delete. Values write-only.
 
 ### 41.4 — Docs
 
-- [ ] **`docs/guides/secrets-management.md`** — Backend setup (env, keyring, file, vault), rotation config, migration path from raw env vars, Kubernetes/Docker secrets patterns.
+- [x] **`docs/guides/secrets-management.md`** — Backend setup, Vault/OpenBao AppRole flow, rotation config, dashboard + API reference.
 
 ---
 
-## Phase 42: TLS / Certificate Management
+## Phase 42: TLS / Certificate Management ✅
 
-**Status**: Planned | **Priority**: High — `cert-gen.ts` already built and tested; wiring + CLI is the remaining work.
-
-Two distinct certificate use cases: (1) **self-signed cert for development** — auto-generated, zero-config, allows the browser to connect to the local gateway over HTTPS; (2) **wildcard / CA-signed cert for production** — operator supplies `*.example.com` or single-domain cert, gateway serves it. Both are already structurally supported by `GatewayConfigSchema.tls` (`certPath`, `keyPath`, `caPath`), but there is no tooling, documentation, or auto-generation.
+**Status**: Complete | **Priority**: High
 
 ### 42.1 — Self-Signed Certificate Auto-Generation (Development)
 
-*Zero-config HTTPS for local development. No browser warnings with a one-time CA trust step.*
+- [x] **`TlsManager`** — `ensureCerts()` auto-generates via `generateDevCerts()` when `autoGenerate: true`; reuses cached certs; regenerates on expiry detection (openssl x509).
+- [x] **Gateway wiring** — `startGateway()` calls `ensureCerts()` and injects resolved cert paths; `autoGenerate` flag added to `TlsConfigSchema`.
+- [x] **`getTlsManager()` getter** exposed on `SecureYeoman`.
 
-- [ ] **`cert-gen` integration at startup** — `packages/core/src/security/cert-gen.ts` already exists (unit tests pass). Wire it into `GatewayServer` startup: when `gateway.tls.enabled` is `true` and no `certPath` / `keyPath` is configured, auto-generate a self-signed cert + key in `~/.secureyeoman/certs/` and pass them to Fastify's TLS config. Regenerate if the cert is expired or absent.
-- [ ] **Local CA workflow** — Generate a local CA cert alongside the server cert. Log a one-time instruction at startup: `"Trust ~/.secureyeoman/certs/ca.crt in your browser / system keychain to eliminate TLS warnings."` Include OS-specific commands (macOS `security add-trusted-cert`, Linux `update-ca-certificates`, Windows `certutil`).
-- [ ] **`secureyeoman cert generate`** CLI command — Explicit cert generation without starting the server. Options: `--output-dir`, `--days` (validity period), `--hostname` (defaults to `localhost`). Prints the trust-me instructions after generation.
-- [ ] **`secureyeoman cert trust`** CLI command — Runs the OS trust command for the local CA automatically (requires elevated permissions on some platforms). Prints what it's doing; does not silently modify system trust stores.
+### 42.2 — Production (Configured Certs)
 
-### 42.2 — Wildcard / CA-Signed Certificate (Production)
+- [x] **Config validation** — `ensureCerts()` throws with clear error when `certPath/keyPath` files not found; warns when `autoGenerate=false` and no paths configured.
+- [x] **mTLS** — existing `caPath` support (`requestCert + rejectUnauthorized`) wired through.
+- [ ] **`secureyeoman cert status/generate/trust` CLI** — future work (Phase 42+).
 
-*Operator provides a `*.example.com` or single-domain cert. Gateway serves it. Guide covers cert+key setup and renewal.*
+### 42.3 — Dashboard UI + API
 
-- [ ] **`gateway.tls` config validation** — Validate that `certPath` and `keyPath` exist and are readable at startup; emit a clear error if not (`TLS cert file not found: /path/to/cert.pem`). Validate PEM format. Warn if the cert expires within 30 days.
-- [ ] **`secureyeoman cert status`** CLI command — Parse the configured cert(s) and print: subject, SANs, issuer, expiry, days remaining, whether the hostname matches. Works for both self-signed and CA-signed certs.
-- [ ] **`docs/guides/tls-certificates.md`** — Two-section guide:
-  - *Development*: auto-generated self-signed cert workflow, browser trust steps per OS, curl / Insomnia / Postman tips.
-  - *Production*: placing a wildcard cert (`certPath`, `keyPath`, optional `caPath` for intermediate chain), Caddy/nginx reverse-proxy alternative (terminate TLS at the proxy, run gateway on HTTP internally), Let's Encrypt / Certbot renewal hooks, Kubernetes TLS secret pattern.
+- [x] **`TlsCertStatusCard`** in SecurityPage overview — shows enabled/disabled, expiry countdown, warning/expired states, regenerate button for self-signed.
+- [x] **REST API**: `GET /api/v1/security/tls`, `POST /api/v1/security/tls/generate`.
 
-### 42.3 — Dashboard UI
+### 42.4 — Docs
 
-- [ ] **TLS status card in Security Settings** — Shows current TLS mode (disabled / self-signed / CA-signed), cert subject and expiry, days remaining with a warning badge when < 30 days. Link to the certificate guide.
+- [x] **`docs/guides/tls-certificates.md`** — dev auto-gen, production cert setup, mTLS, browser trust steps.
 
 ---
 
@@ -158,63 +150,114 @@ TWINGATE_NETWORK=<tenant-name>      # e.g. "acme" → acme.twingate.com
 
 ## Phase 46: Network Evaluation & Protection (YeomanMCP)
 
-**Status**: Planned | **Priority**: Medium — large feature set for IT automation; implement after core security phases are stable.
+**Status**: Complete | **Priority**: Medium — large feature set for IT automation; implement after core security phases are stable.
 
 Add network evaluation and protection tools to YeomanMCP for IT task automation and network security. Based on NetClaw's network automation capabilities.
 
-### 46.1 — Device Automation Tools
+### Architecture
 
-- [ ] `network_device_connect` — SSH/Telnet to network devices
-- [ ] `network_show_command` — Execute IOS-XE/NX-OS/IOS-XR show commands
-- [ ] `network_config_push` — Push configuration to devices
-- [ ] `network_health_check` — Fleet-wide health monitoring
-- [ ] `network_ping_test` / `network_traceroute` — Connectivity tests
+**Toolset model** — 6 fine-selectable flags in `McpFeaturesSchema` (same pattern as `exposeWebScraping` / `exposeWebSearch`):
 
-### 46.2 — Network Discovery & Topology
+| Flag | Covers | Sub-phase |
+|------|--------|-----------|
+| `exposeNetworkDevices` | SSH/Telnet automation, show commands, config push, health checks, ping, traceroute | 46.1 |
+| `exposeNetworkDiscovery` | CDP/LLDP, topology, ARP/MAC, routing table, OSPF, BGP, interfaces, VLANs | 46.2 + 46.3 |
+| `exposeNetworkAudit` | ACL, AAA, port security, STP analysis | 46.4 |
+| `exposeNetBox` | NetBox CRUD queries, drift reconciliation | 46.5 |
+| `exposeNvd` | CVE search, CVEs-by-software, OS detection | 46.6 |
+| `exposeNetworkUtils` | Subnet/VLSM/wildcard calculators + PCAP analysis | 46.7 + 46.8 |
 
-- [ ] `network_discovery_cdp` / `network_discovery_lldp` — Neighbor discovery
-- [ ] `network_topology_build` — Build topology from CDP/LLDP/ARP
-- [ ] `network_arp_table` / `network_mac_table` — Layer 2/3 tables
+**Global gate** — `SecurityConfig.allowNetworkTools` (default `false`). Both operator gate AND per-personality flag must be `true` for any network tool to appear (AND logic, consistent with all other toolsets).
 
-### 46.3 — Routing & Switching Analysis
+**Write gate** — `SecurityConfig.allowNetBoxWrite` (default `false`) — NetBox create/update/delete requires this in addition to `allowNetworkTools`.
 
-- [ ] `network_routing_table` — IP routing table analysis
-- [ ] `network_ospf_neighbors` / `network_ospf_lsdb` — OSPF state
-- [ ] `network_bgp_peers` — BGP peer status
-- [ ] `network_interface_status` / `network_vlan_list` — Port/VLAN info
+**Scope enforcement** — `MCP_ALLOWED_NETWORK_TARGETS` env var (comma-separated CIDR list). SSH tools and active probing (`network_ping_test`, `network_traceroute`) check target IP against this list before connecting. Same model as `MCP_ALLOWED_TARGETS` for security tools. Wildcard `*` disables scope enforcement and requires explicit acknowledgement.
 
-### 46.4 — Security Auditing
+**External API env vars:**
+- `NETBOX_URL` + `NETBOX_TOKEN` — NetBox API base URL and token
+- `NVD_API_KEY` — Optional; without it NVD rate-limits to 5 req/30s; with it 50 req/30s
 
-- [ ] `network_acl_audit` — ACL analysis
-- [ ] `network_aaa_status` — AAA configuration
-- [ ] `network_port_security` — Port security violations
-- [ ] `network_stp_status` — STP analysis
+**Dependencies:**
+- `ssh2` npm package — SSH client for device automation (no native binaries)
+- `tshark` system binary — PCAP analysis (detected at startup; clear error if absent, same model as kali tools)
 
-### 46.5 — Source of Truth Integration (NetBox)
+**Phase 41 note:** SSH credentials and API tokens documented as SecretsManager candidates. Until Phase 41 ships, stored as env vars; `SecretsManager.get()` wrappers added from day one so the migration is a config change, not a code change.
 
-- [ ] `netbox_devices_list` — Query NetBox devices
-- [ ] `netbox_interfaces_list` / `netbox_ipam_ips` — Interface/IP data
-- [ ] `netbox_cables` — Cable documentation
-- [ ] `netbox_reconcile` — Live device vs NetBox drift detection
+### 46.1 — Device Automation Tools ✓
 
-### 46.6 — Vulnerability Assessment
+- [x] `network_device_connect` — Open SSH/Telnet session to a network device; returns session ID for subsequent commands. Enforces `MCP_ALLOWED_NETWORK_TARGETS` scope.
+- [x] `network_show_command` — Execute one or more IOS-XE/NX-OS/IOS-XR/EOS `show` commands on a connected device; returns raw output.
+- [x] `network_config_push` — Push configuration lines to a device via SSH config mode; dry-run flag supported.
+- [x] `network_health_check` — Fleet-wide health: run `show version` + `show interfaces` across a list of targets; returns structured summary.
+- [x] `network_ping_test` — Execute `ping` from a device to a target; returns loss %, RTT min/avg/max.
+- [x] `network_traceroute` — Execute `traceroute` from a device; returns hop list with latency.
 
-- [ ] `nvd_cve_search` — NVD CVE database search
-- [ ] `nvd_cve_by_software` — CVEs by IOS version
-- [ ] `network_software_version` — Device OS detection
+### 46.2 — Network Discovery & Topology ✓
 
-### 46.7 — Network Utilities
+- [x] `network_discovery_cdp` — Run `show cdp neighbors detail` on a device; return structured neighbor list (device ID, IP, platform, interface).
+- [x] `network_discovery_lldp` — Run `show lldp neighbors detail`; return structured neighbor list.
+- [x] `network_topology_build` — Seed from a list of devices, recursively discover via CDP/LLDP, build an adjacency graph (nodes = devices, edges = links). Returns JSON graph and Mermaid diagram.
+- [x] `network_arp_table` — Return parsed ARP table (IP → MAC → interface) from a device.
+- [x] `network_mac_table` — Return parsed MAC address table (MAC → VLAN → interface) from a switch.
 
-- [ ] `subnet_calculator` — IPv4/IPv6 subnet calculator
-- [ ] `subnet_vlsm` — VLSM planning
-- [ ] `wildcard_mask_calc` — Wildcard mask calculator
+### 46.3 — Routing & Switching Analysis ✓
 
-### 46.8 — Packet Analysis
+- [x] `network_routing_table` — Parse `show ip route` / `show ipv6 route`; return structured route entries with protocol, prefix, next-hop, AD/metric.
+- [x] `network_ospf_neighbors` — Parse `show ip ospf neighbor`; return neighbor list with state, dead timer, interface.
+- [x] `network_ospf_lsdb` — Parse `show ip ospf database`; return LSA summary by type.
+- [x] `network_bgp_peers` — Parse `show bgp summary`; return peer list with ASN, state, prefix count.
+- [x] `network_interface_status` — Parse `show interfaces` / `show interfaces status`; return per-interface admin/oper state, speed, duplex, errors.
+- [x] `network_vlan_list` — Parse `show vlan brief`; return VLAN ID, name, active ports.
 
-- [ ] `pcap_upload` — Upload pcap files
-- [ ] `pcap_protocol_hierarchy` — Protocol breakdown
-- [ ] `pcap_conversations` — IP conversations
-- [ ] `pcap_dns_queries` / `pcap_http_requests` — L7 extraction
+### 46.4 — Security Auditing ✓
+
+- [x] `network_acl_audit` — Parse `show ip access-lists`; return ACL entries, match counts, implicit deny analysis.
+- [x] `network_aaa_status` — Parse `show aaa servers` and `show running-config | section aaa`; return AAA server list and method config.
+- [x] `network_port_security` — Parse `show port-security`; return per-interface violations, max MAC, sticky config.
+- [x] `network_stp_status` — Parse `show spanning-tree`; return root bridge, port roles/states, topology change count.
+- [x] `network_software_version` — Parse `show version`; return OS family, version string, uptime, platform, serial number.
+
+### 46.5 — Source of Truth Integration (NetBox) ✓
+
+All tools use plain `fetch()` against `NETBOX_URL`. Read operations require only `allowNetworkTools`; write operations additionally require `allowNetBoxWrite`.
+
+- [x] `netbox_devices_list` — Query `/api/dcim/devices/` with optional filters (site, role, tag, status); return structured device list.
+- [x] `netbox_interfaces_list` — Query `/api/dcim/interfaces/` for a device; return interface list with IP assignments.
+- [x] `netbox_ipam_ips` — Query `/api/ipam/ip-addresses/` with prefix/VRF filters; return IP–device assignment map.
+- [x] `netbox_cables` — Query `/api/dcim/cables/`; return cable list with endpoint A/B device and interface.
+- [x] `netbox_reconcile` — Compare live CDP/LLDP topology (from `network_topology_build`) against NetBox cables and interfaces; return structured drift report (missing in NetBox, missing on live, mismatches).
+
+### 46.6 — Vulnerability Assessment ✓
+
+Uses NVD REST API v2.0 (`https://services.nvd.nist.gov/rest/json/cves/2.0`). Rate-limited; `NVD_API_KEY` strongly recommended for production use.
+
+- [x] `nvd_cve_search` — Search NVD CVE database by keyword, CVSS score range, or CPE string; return CVE ID, description, CVSS v3 score, published date.
+- [x] `nvd_cve_by_software` — Lookup CVEs for a specific vendor + product + version (CPE match); targeted use case: IOS XE version from `network_software_version` output.
+- [x] `nvd_cve_get` — Fetch full CVE record by CVE ID; return description, CVSS v3 vector, CWE, references.
+
+### 46.7 — Network Utilities ✓
+
+Pure computation — no external dependencies, no scope enforcement needed.
+
+- [x] `subnet_calculator` — Given an IPv4 or IPv6 prefix, return: network address, broadcast, first/last host, subnet mask, wildcard mask, host count, CIDR notation.
+- [x] `subnet_vlsm` — Given a parent prefix and a list of required host counts, return a VLSM allocation table (subnet per requirement, ordered largest-first).
+- [x] `wildcard_mask_calc` — Given a subnet mask or prefix length, return the wildcard mask (for ACL authoring).
+
+### 46.8 — Packet Analysis ✓
+
+Uses `tshark` CLI (system dependency). Detected at MCP startup; tool registration succeeds but calls return a clear error if `tshark` is absent.
+
+- [x] `pcap_upload` — Accept a pcap/pcapng file (base64-encoded) and store it in a temp directory; return a `pcapId` for subsequent analysis tools.
+- [x] `pcap_protocol_hierarchy` — Run `tshark -r <file> -qz io,phs`; return protocol hierarchy with packet/byte counts.
+- [x] `pcap_conversations` — Run `tshark -r <file> -qz conv,ip`; return IP conversation list with bytes, packets, duration.
+- [x] `pcap_dns_queries` — Extract DNS query/response pairs from pcap; return domain, record type, response, client IP.
+- [x] `pcap_http_requests` — Extract HTTP request/response metadata (method, host, URI, status, content-type); return structured list.
+
+### 46.9 — Dashboard UI
+
+- [x] **Dashboard — personality body config** — Added "Network Tools" section with 6 per-toolset toggles (same pattern as web/browser/desktop toggles); `Network` icon added to `PersonalityEditor.tsx`.
+- [x] **Dashboard — Security Settings** — Added `allowNetworkTools` and `allowNetBoxWrite` operator toggles in Security Settings with warning about SSH scope enforcement.
+- [x] **Dashboard — types / client** — Extended `McpFeatureConfig`, `Personality.body.mcpFeatures`, `PersonalityCreate.body.mcpFeatures`, and `SecurityPolicy` with all new fields.
 
 ---
 
