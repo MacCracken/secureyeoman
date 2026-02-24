@@ -1032,6 +1032,7 @@ function AuditLogTab({
           <option value="task_complete">Task Complete</option>
           <option value="task_fail">Task Fail</option>
           <option value="mcp_tool_call">MCP Tool Call</option>
+          <option value="diagnostic_call">Diagnostic Call</option>
         </select>
         <div className="flex items-center gap-1">
           <label className="text-xs text-muted-foreground">From</label>

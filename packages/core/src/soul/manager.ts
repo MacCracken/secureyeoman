@@ -613,7 +613,7 @@ export class SoulManager {
           ? `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m`
           : `${Math.floor(uptimeSec / 60)}m ${Math.floor(uptimeSec % 60)}s`;
       const memMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
-      const loadAvg = os.loadavg()[0].toFixed(2);
+      const loadAvg = (os.loadavg()[0] ?? 0).toFixed(2);
       const serverCount = personality?.body?.selectedServers?.length ?? 0;
       const integrationCount = personality?.body?.selectedIntegrations?.length ?? 0;
 

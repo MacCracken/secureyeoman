@@ -11,7 +11,7 @@
 | | **Tag 2026.2.22** | **2026-02-22** | **Tagged** |
 | | **Release 2026.2.22** | **2026-02-22** | **Released** |
 | 38 | Beta Manual Review | — | In Progress |
-| 39 | Diagnostic Tools (Body Module) | — | In Progress |
+| 39 | Diagnostic Tools (Body Module) | 2026-02-23 | Complete |
 | 40 | Desktop Control (Body Module) | — | Planned |
 
 ---
@@ -45,7 +45,7 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 ## Phase 39: Diagnostic Tools (Body Module)
 
-**Status**: In Progress
+**Status**: Complete
 
 Two-channel diagnostic system: core inspects itself and pushes a live snapshot directly into the system prompt (no round-trip needed), while sub-agents and external agents report status back over MCP — the protocol they already use to communicate. Distinct from the automated Heartbeat (scheduled, writes to memory): this is on-demand, agent-readable context injected at session time plus a tool surface for inter-agent health reporting.
 
@@ -92,7 +92,7 @@ Security gate: add `'diagnostics'` to `BodyCapabilitySchema`. When the capabilit
 ### 39.4 — Audit Logging
 
 - [x] All `diag_*` MCP tool calls emit `diagnostic_call` audit events: personality id, tool name, direction (report / query / ping), duration ms, result status. Surfaced in the Security Feed.
-- [ ] Add `diagnostic_call` to the Security Feed event type filter dropdown.
+- [x] Add `diagnostic_call` to the Security Feed event type filter dropdown.
 - [x] Channel A prompt injection emits no audit event — it is passive context assembly, not an action.
 
 ---
@@ -337,4 +337,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-23 (Phase 39 Diagnostic Tools implemented; one item open: Security Feed filter entry)*
+*Last updated: 2026-02-23 (Phase 39 Diagnostic Tools complete)*
