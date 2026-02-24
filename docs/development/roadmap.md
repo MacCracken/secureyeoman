@@ -265,13 +265,13 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Multimodal I/O Enhancement
 
-*Phase B and C from the Voicebox integration review (ADR 084). Implement once real-world provider usage confirms demand for deeper local voice integration.*
+*Voicebox deeper integration (ADR 084). Provider picker shipped in Phase 40 (vision/TTS/STT switching, Voicebox health detection, system_preferences persistence). Remaining items target local voice quality.*
 
-- [ ] **Interactive TTS/STT provider picker** — Runtime provider switching from the MultimodalPage UI without a server restart. Detects available providers automatically: is Voicebox server reachable? Is ElevenLabs MCP connected? Is OpenAI API key set? Stores selection in the settings table. See ADR 084.
+- [ ] **ElevenLabs provider** — Add `elevenlabs` as a selectable TTS provider alongside the existing `openai` and `voicebox`. Detected when ElevenLabs MCP server is connected. Extends the Phase 40 provider picker without new UI work.
 - [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity — FRIDAY speaks in FRIDAY's voice. Supports multiple reference audio samples, language selection, avatar, and ZIP export/import.
 - [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call. Based on Voicebox's `utils/cache.py` pattern.
 - [ ] **Audio validation before STT** — Validate incoming audio before sending to Whisper: duration 2–30s, RMS > 0.01 (no silence), peak < 0.99 (no clipping). Return a clear error rather than passing bad audio to the API. Based on Voicebox's `utils/validation.py` checks.
-- [ ] **Whisper model size selection** — Expose `tiny | base | small | medium | large` model size in the multimodal config rather than hardcoding `whisper-1`. Surfaces in the provider card UI as a dropdown.
+- [ ] **Whisper model size selection** — Expose `tiny | base | small | medium | large` model size in the multimodal config rather than hardcoding `whisper-1`. Surfaces in the Phase 40 provider card UI as a dropdown alongside the existing provider selection.
 - [ ] **Streaming TTS via SSE** — Stream audio chunks from the TTS backend to the browser as they're generated, rather than waiting for the full audio buffer. Reduces perceived latency for long text. Uses Server-Sent Events (same pattern as model download progress in Voicebox).
 - [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`. Eliminates the awkward fixed wait and stops recording immediately when the user stops speaking.
 
@@ -317,8 +317,6 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### AI Safety
 
-- [x] **Prompt injection prevention layer** — `PromptGuard` (ADR 124, Phase 38): scans the fully assembled `messages[]` array before the LLM call. Catches indirect injection via brain/memory, skills, spirit, and preferences. Configurable `warn` → `block` mode. Eight pattern families. HTTP-boundary layer remains `InputValidator` (ADR 120).
-
 - [ ] **Sub-agent spin-up from dashboard** — UI flow to create, configure, and launch sub-agent personalities directly from Security Settings and per-personality editor, without requiring manual config changes. Includes status card showing whether delegation is available and a one-click "Enable Sub-Agent Delegation" toggle that provisions the necessary permissions. See current status reporting issue: sub-agents report "Not enabled in current configuration" even when enabled in security settings.
 
 ---
@@ -341,4 +339,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-23 (Phase 38 complete; Phase 44 Find & Repair added as ongoing)*
+*Last updated: 2026-02-24 (Phase 40 complete; Multimodal provider picker shipped; Twingate remote MCP added to Phase 43)*
