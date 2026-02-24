@@ -1,10 +1,10 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.2.22-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.22)
+[![Version](https://img.shields.io/badge/Version-2026.2.23-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.23)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
-[![Tests: 7243](https://img.shields.io/badge/Tests-7243-brightgreen.svg)]()
+[![Tests: 7400](https://img.shields.io/badge/Tests-7400-brightgreen.svg)]()
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.4-blue.svg)](https://www.typescriptlang.org/)
 [![Node.js](https://img.shields.io/badge/Node.js-20%20LTS-green.svg)](https://nodejs.org/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
@@ -68,12 +68,12 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 
 - **Security** — RBAC, JWT + API key auth, mTLS, AES-256-GCM encryption, sandboxed execution, ToolOutputScanner credential redaction, Skill Trust Tiers, Outbound Credential Proxy
 - **AI Integration** — 11 providers with automatic fallback chains; dynamic model discovery and routing
-- **Agent Architecture** — Soul/Spirit/Brain/Body cognitive model; personality presets (F.R.I.D.A.Y., T.Ron); per-personality active hours
+- **Agent Architecture** — Soul/Spirit/Brain/Body cognitive model; personality presets (F.R.I.D.A.Y., T.Ron); per-personality active hours; Diagnostics capability (Channel B health reporting + integration ping); Desktop Control capability (screen capture, keyboard/mouse input, camera, clipboard)
 - **Cognitive Memory** — Vector search (FAISS/Qdrant/ChromaDB), hybrid FTS + RRF, content-chunked indexing, proactive context compaction, self-repairing task loop
 - **Dashboard** — React + Vite + Tailwind; rich Markdown chat, Mermaid diagrams, KaTeX math, real-time collaborative editing (Yjs CRDT), Group Chat, WebGL graph visualization; About panel shows live network mode (Local / LAN / Public)
 - **Multi-Agent** — Sub-agent delegation, Agent Swarms (sequential/parallel/dynamic), A2A protocol, dynamic tool creation, intelligent model routing
 - **Skills & Marketplace** — Skill import/export (portable `.skill.json`), community repo sync (git-fetch or local path), install/uninstall synced to Brain, built-in + published + community source tiers
-- **MCP Protocol** — 58+ tools, 7 resources, 4 prompts; Kali Security Toolkit; Agnostic QA Bridge; BullShift trading tools; streamable HTTP, SSE, and stdio transports
+- **MCP Protocol** — 120+ tools, 7 resources, 4 prompts; Kali Security Toolkit; Agnostic QA Bridge; BullShift trading tools; Diagnostic Tools; Desktop Control (screen/input/clipboard); streamable HTTP, SSE, and stdio transports
 - **Integrations** — 31 platforms: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Google Chat, Gmail, Google Calendar, Email (IMAP/SMTP), Jira, Notion, AWS, Azure DevOps, Linear, Airtable, DingTalk, LINE, QQ, Twitter/X, Spotify, Stripe, YouTube, Zapier, Figma, Todoist, iMessage, CLI, Generic Webhook
 - **Team Collaboration** — Multi-user workspaces, SSO/OIDC (Okta, Azure AD, Auth0), CRDT collaborative editing, presence indicators
 - **Deployment** — Single binary (~80 MB), Docker (~80 MB), Kubernetes Helm chart; Linux x64/arm64 + macOS arm64
@@ -164,7 +164,7 @@ TOKEN=$(curl -s -X POST http://localhost:18789/api/v1/auth/login \
   -d '{"password":"your-admin-password"}' | jq -r '.accessToken')
 
 curl http://localhost:18789/health
-# → {"status":"ok","version":"2026.2.22","uptime":12345,"networkMode":"local",...}
+# → {"status":"ok","version":"2026.2.23","uptime":12345,"networkMode":"local",...}
 
 curl http://localhost:18789/api/v1/audit?limit=50 -H "Authorization: Bearer $TOKEN"
 ```
@@ -224,7 +224,7 @@ Always connect AI providers using official API keys from their developer console
 | **Security Testing** | [Security Testing Guide](docs/guides/security-testing.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
 | **Architecture Overview** | [Architecture](docs/development/architecture.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (108 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (125 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |
