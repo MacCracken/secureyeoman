@@ -32,6 +32,8 @@ interface PersonalityRow {
   model_fallbacks: Personality['modelFallbacks'];
   include_archetypes: boolean;
   is_active: boolean;
+  is_default: boolean;
+  is_archetype: boolean;
   body: Personality['body'];
   created_at: number;
   updated_at: number;
@@ -79,6 +81,8 @@ function rowToPersonality(row: PersonalityRow): Personality {
     modelFallbacks: row.model_fallbacks ?? [],
     includeArchetypes: row.include_archetypes,
     isActive: row.is_active,
+    isDefault: row.is_default ?? false,
+    isArchetype: row.is_archetype ?? false,
     body: row.body ?? {
       enabled: false,
       capabilities: [],
@@ -171,13 +175,16 @@ function rowToSkill(row: SkillRow): Skill {
 export class SoulStorage extends PgBaseStorage {
   // ── Personalities ─────────────────────────────────────────────
 
-  async createPersonality(data: PersonalityCreate): Promise<Personality> {
+  async createPersonality(
+    data: PersonalityCreate,
+    opts?: { isArchetype?: boolean }
+  ): Promise<Personality> {
     const now = Date.now();
     const id = uuidv7();
 
     await this.query(
-      `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, is_active, body, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13::jsonb, $14, $15)`,
+      `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, is_active, is_default, is_archetype, body, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15::jsonb, $16, $17)`,
       [
         id,
         data.name,
@@ -191,6 +198,8 @@ export class SoulStorage extends PgBaseStorage {
         JSON.stringify(data.modelFallbacks ?? []),
         data.includeArchetypes ?? true,
         false,
+        false,
+        opts?.isArchetype ?? false,
         JSON.stringify(
           data.body ?? {
             enabled: false,
@@ -224,7 +233,7 @@ export class SoulStorage extends PgBaseStorage {
 
   async getActivePersonality(): Promise<Personality | null> {
     const row = await this.queryOne<PersonalityRow>(
-      'SELECT * FROM soul.personalities WHERE is_active = true LIMIT 1'
+      'SELECT * FROM soul.personalities WHERE is_default = true LIMIT 1'
     );
     return row ? rowToPersonality(row) : null;
   }
@@ -232,14 +241,55 @@ export class SoulStorage extends PgBaseStorage {
   async setActivePersonality(id: string): Promise<void> {
     await this.withTransaction(async (client) => {
       await client.query('UPDATE soul.personalities SET is_active = false WHERE is_active = true');
+      await client.query('UPDATE soul.personalities SET is_default = false WHERE is_default = true');
       const result = await client.query(
-        'UPDATE soul.personalities SET is_active = true, updated_at = $1 WHERE id = $2',
+        'UPDATE soul.personalities SET is_active = true, is_default = true, updated_at = $1 WHERE id = $2',
         [Date.now(), id]
       );
       if ((result.rowCount ?? 0) === 0) {
         throw new Error(`Personality not found: ${id}`);
       }
     });
+  }
+
+  async enablePersonality(id: string): Promise<void> {
+    const result = await this.execute(
+      'UPDATE soul.personalities SET is_active = true, updated_at = $1 WHERE id = $2',
+      [Date.now(), id]
+    );
+    if (result === 0) {
+      throw new Error(`Personality not found: ${id}`);
+    }
+  }
+
+  async disablePersonality(id: string): Promise<void> {
+    const result = await this.execute(
+      'UPDATE soul.personalities SET is_active = false, updated_at = $1 WHERE id = $2',
+      [Date.now(), id]
+    );
+    if (result === 0) {
+      throw new Error(`Personality not found: ${id}`);
+    }
+  }
+
+  async setDefaultPersonality(id: string): Promise<void> {
+    await this.withTransaction(async (client) => {
+      await client.query('UPDATE soul.personalities SET is_default = false WHERE is_default = true');
+      const result = await client.query(
+        'UPDATE soul.personalities SET is_default = true, updated_at = $1 WHERE id = $2',
+        [Date.now(), id]
+      );
+      if ((result.rowCount ?? 0) === 0) {
+        throw new Error(`Personality not found: ${id}`);
+      }
+    });
+  }
+
+  async getEnabledPersonalities(): Promise<Personality[]> {
+    const rows = await this.queryMany<PersonalityRow>(
+      'SELECT * FROM soul.personalities WHERE is_active = true ORDER BY created_at DESC'
+    );
+    return rows.map(rowToPersonality);
   }
 
   async updatePersonality(id: string, data: PersonalityUpdate): Promise<Personality> {
@@ -308,6 +358,10 @@ export class SoulStorage extends PgBaseStorage {
   }
 
   async deletePersonality(id: string): Promise<boolean> {
+    const existing = await this.getPersonality(id);
+    if (existing?.isArchetype) {
+      throw new Error('Cannot delete a system archetype personality.');
+    }
     const count = await this.execute('DELETE FROM soul.personalities WHERE id = $1', [id]);
     return count > 0;
   }

@@ -32,6 +32,32 @@
   - `delegate_task` tool description in `agents/tools.ts` rewritten: "Leave unset (strongly recommended) — most tasks require 30,000–80,000 tokens to complete properly; values below 20,000 almost always cause premature termination."
   - Hard minimum floor of 20,000 tokens added in `SubAgentManager.delegate()` — `Math.max(20_000, Math.min(...))` — prevents any AI-specified value below 20k from taking effect regardless of what the model passes.
 
+### Soul — Multi-Active Agents, Default Personality, Archetype Protection, Active-Hours Indicator
+
+#### Added
+
+- **Multi-active agents** — `is_active` is now non-exclusive; multiple personalities can be running simultaneously. New endpoints:
+  - `POST /api/v1/soul/personalities/:id/enable` — additively marks a personality active without touching others
+  - `POST /api/v1/soul/personalities/:id/disable` — removes a personality from the active set
+  - Corresponding `SoulManager.enablePersonality()` / `disablePersonality()` + `SoulStorage` methods
+
+- **Default chat personality (`is_default`)** — a new exclusive flag replaces `is_active` as the single "dashboard/new-chat" personality. New endpoint:
+  - `POST /api/v1/soul/personalities/:id/set-default` — atomically moves the default flag; also updates the heartbeat schedule
+  - `getActivePersonality()` (storage + manager) now queries `WHERE is_default = true`
+  - Migration copies the current `is_active = true` row to `is_default = true` so existing deployments need no manual intervention
+
+- **Archetype protection (`is_archetype`)** — preset-seeded personalities gain `is_archetype = true`. Deletion is blocked at both the storage layer and the manager layer regardless of `deletionMode`. Error: `"Cannot delete a system archetype personality."` Seeds updated: `seedAvailablePresets()` and `createDefaultPersonality()` now pass `{ isArchetype: true }` to storage.
+
+- **Active-hours indicator (`isWithinActiveHours`)** — a computed boolean injected by the API layer (not stored) on all personality responses:
+  - `GET /api/v1/soul/personality` and `GET /api/v1/soul/personalities` both include `isWithinActiveHours`
+  - `POST /activate` and `POST /set-default` responses also include it
+  - Logic: exported helper `isPersonalityWithinActiveHours(p)` in `manager.ts` checks timezone-aware day-of-week and HH:MM window against `body.activeHours`; returns `false` when `activeHours.enabled` is `false`
+
+#### Migration
+
+- `040_personality_multi_active.sql` — `ALTER TABLE soul.personalities ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS is_archetype BOOLEAN NOT NULL DEFAULT false; UPDATE ... SET is_default = true WHERE is_active = true`
+- `039_message_thinking_tools.sql` — added to migration manifest (was previously implemented but omitted)
+
 ---
 
 ## [2026.2.23]

@@ -41,6 +41,26 @@ import { applySkillTrustFilter } from './skill-trust.js';
 import { getCreationTools } from './creation-tools.js';
 
 /**
+ * Returns true when the current wall-clock time falls within the personality's
+ * configured activeHours window. Always returns false when activeHours is disabled.
+ */
+export function isPersonalityWithinActiveHours(p: Personality): boolean {
+  const ah = p.body?.activeHours;
+  if (!ah?.enabled) return false;
+  const now = new Date();
+  const tz = ah.timezone ?? 'UTC';
+  const dayAbbr = now
+    .toLocaleDateString('en-US', { timeZone: tz, weekday: 'short' })
+    .toLowerCase()
+    .slice(0, 3); // 'mon', 'tue', ...
+  if (!ah.daysOfWeek.includes(dayAbbr as (typeof ah.daysOfWeek)[number])) return false;
+  const hhmm = now
+    .toLocaleTimeString('en-US', { timeZone: tz, hour12: false })
+    .slice(0, 5); // 'HH:MM'
+  return hhmm >= ah.start && hhmm <= ah.end;
+}
+
+/**
  * Returns true when the user message is relevant to the given skill.
  *
  * Matching priority:
@@ -196,7 +216,7 @@ export class SoulManager {
           timezone: 'UTC',
         },
       },
-    });
+    }, { isArchetype: true });
 
     await this.storage.setActivePersonality(personality.id);
     return (await this.storage.getPersonality(personality.id))!;
@@ -224,12 +244,12 @@ export class SoulManager {
         systemPrompt: `You are ${agentName}, a helpful and security-conscious AI assistant. You are direct, technically precise, and proactive about identifying risks.`,
         includeArchetypes: agentName === 'FRIDAY',
       };
-      const personality = await this.storage.createPersonality(data);
+      const personality = await this.storage.createPersonality(data, { isArchetype: true });
       created.push(personality);
     }
 
     for (const preset of restPresets) {
-      const personality = await this.storage.createPersonality(preset.data);
+      const personality = await this.storage.createPersonality(preset.data, { isArchetype: true });
       created.push(personality);
     }
 
@@ -255,8 +275,11 @@ export class SoulManager {
     await this.storage.setActivePersonality(id);
   }
 
-  async createPersonality(data: PersonalityCreate): Promise<Personality> {
-    return this.storage.createPersonality(data);
+  async createPersonality(
+    data: PersonalityCreate,
+    opts?: { isArchetype?: boolean }
+  ): Promise<Personality> {
+    return this.storage.createPersonality(data, opts);
   }
 
   async updatePersonality(id: string, data: PersonalityUpdate): Promise<Personality> {
@@ -265,6 +288,9 @@ export class SoulManager {
 
   async deletePersonality(id: string): Promise<void> {
     const personality = await this.storage.getPersonality(id);
+    if (personality?.isArchetype) {
+      throw new Error('Cannot delete a system archetype personality.');
+    }
     if (personality?.isActive) {
       throw new Error('Cannot delete the active personality');
     }
@@ -283,6 +309,28 @@ export class SoulManager {
     offset?: number;
   }): Promise<{ personalities: Personality[]; total: number }> {
     return this.storage.listPersonalities(opts);
+  }
+
+  async enablePersonality(id: string): Promise<void> {
+    return this.storage.enablePersonality(id);
+  }
+
+  async disablePersonality(id: string): Promise<void> {
+    return this.storage.disablePersonality(id);
+  }
+
+  async setDefaultPersonality(id: string): Promise<void> {
+    await this.storage.setDefaultPersonality(id);
+    if (this.heartbeat) {
+      const personality = await this.storage.getPersonality(id);
+      if (personality) {
+        this.heartbeat.setPersonalitySchedule(personality.body?.activeHours ?? null);
+      }
+    }
+  }
+
+  async getEnabledPersonalities(): Promise<Personality[]> {
+    return this.storage.getEnabledPersonalities();
   }
 
   // ── Personality Presets ─────────────────────────────────────

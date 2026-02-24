@@ -4,6 +4,8 @@
 
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SoulManager } from './manager.js';
+import { isPersonalityWithinActiveHours } from './manager.js';
+import type { Personality } from './types.js';
 import type { ApprovalManager } from './approval-manager.js';
 import type {
   PersonalityCreate,
@@ -29,6 +31,10 @@ export interface SoulRoutesOptions {
 
 export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions): void {
   const { soulManager, approvalManager, broadcast, heartbeatManager, validator, auditChain } = opts;
+
+  function withActiveHours(p: Personality): Personality & { isWithinActiveHours: boolean } {
+    return { ...p, isWithinActiveHours: isPersonalityWithinActiveHours(p) };
+  }
 
   /** Validate text fields that feed directly into the system prompt. Returns an error message or null. */
   function validateSoulText(
@@ -58,7 +64,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
 
   app.get('/api/v1/soul/personality', async () => {
     const personality = await soulManager.getActivePersonality();
-    return { personality };
+    return { personality: personality ? withActiveHours(personality) : null };
   });
 
   app.get(
@@ -66,7 +72,8 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     async (request: FastifyRequest<{ Querystring: { limit?: string; offset?: string } }>) => {
       const limit = request.query.limit ? Number(request.query.limit) : undefined;
       const offset = request.query.offset ? Number(request.query.offset) : undefined;
-      return soulManager.listPersonalities({ limit, offset });
+      const result = await soulManager.listPersonalities({ limit, offset });
+      return { personalities: result.personalities.map(withActiveHours), total: result.total };
     }
   );
 
@@ -139,7 +146,44 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         if (heartbeatManager && personality) {
           heartbeatManager.setPersonalitySchedule(personality.body?.activeHours ?? null);
         }
-        return { personality };
+        return { personality: personality ? withActiveHours(personality) : null };
+      } catch (err) {
+        return sendError(reply, 404, toErrorMessage(err));
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/soul/personalities/:id/enable',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        await soulManager.enablePersonality(request.params.id);
+        return { success: true };
+      } catch (err) {
+        return sendError(reply, 404, toErrorMessage(err));
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/soul/personalities/:id/disable',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        await soulManager.disablePersonality(request.params.id);
+        return { success: true };
+      } catch (err) {
+        return sendError(reply, 404, toErrorMessage(err));
+      }
+    }
+  );
+
+  app.post(
+    '/api/v1/soul/personalities/:id/set-default',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      try {
+        await soulManager.setDefaultPersonality(request.params.id);
+        const personality = await soulManager.getActivePersonality();
+        return { personality: personality ? withActiveHours(personality) : null };
       } catch (err) {
         return sendError(reply, 404, toErrorMessage(err));
       }

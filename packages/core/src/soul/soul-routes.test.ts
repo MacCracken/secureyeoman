@@ -1,10 +1,20 @@
 import { describe, it, expect, vi } from 'vitest';
 import Fastify from 'fastify';
 import { registerSoulRoutes } from './soul-routes.js';
+import { isPersonalityWithinActiveHours } from './manager.js';
 import type { SoulManager } from './manager.js';
+import type { Personality } from './types.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 
-const PERSONALITY = { id: 'pers-1', name: 'FRIDAY', systemPrompt: 'You are helpful.', traits: {} };
+const PERSONALITY = {
+  id: 'pers-1',
+  name: 'FRIDAY',
+  systemPrompt: 'You are helpful.',
+  traits: {},
+  isDefault: false,
+  isArchetype: false,
+  body: { activeHours: { enabled: false, start: '09:00', end: '17:00', daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'], timezone: 'UTC' } },
+};
 const SKILL = { id: 'skill-1', name: 'Search', status: 'enabled', source: 'builtin' };
 const USER = { id: 'user-1', name: 'Alice', email: 'alice@example.com' };
 
@@ -43,6 +53,10 @@ function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
     getAgentName: vi.fn().mockResolvedValue('FRIDAY'),
     setAgentName: vi.fn().mockResolvedValue(undefined),
     needsOnboarding: vi.fn().mockResolvedValue(false),
+    enablePersonality: vi.fn().mockResolvedValue(undefined),
+    disablePersonality: vi.fn().mockResolvedValue(undefined),
+    setDefaultPersonality: vi.fn().mockResolvedValue(undefined),
+    getEnabledPersonalities: vi.fn().mockResolvedValue([PERSONALITY]),
     ...overrides,
   } as unknown as SoulManager;
 }
@@ -570,5 +584,222 @@ describe('heartbeatManager wiring', () => {
       payload: { name: 'FRIDAY' },
     });
     expect(res.statusCode).toBe(200);
+  });
+});
+
+describe('isWithinActiveHours computed field', () => {
+  it('GET /personality includes isWithinActiveHours boolean', async () => {
+    const app = buildApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/soul/personality' });
+    expect(res.statusCode).toBe(200);
+    expect(typeof res.json().personality.isWithinActiveHours).toBe('boolean');
+  });
+
+  it('GET /personalities injects isWithinActiveHours on each entry', async () => {
+    const app = buildApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/soul/personalities' });
+    expect(res.statusCode).toBe(200);
+    const [first] = res.json().personalities;
+    expect(typeof first.isWithinActiveHours).toBe('boolean');
+  });
+});
+
+describe('POST /api/v1/soul/personalities/:id/enable', () => {
+  it('enables personality and returns success', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/pers-1/enable',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().success).toBe(true);
+  });
+
+  it('returns 404 when personality not found', async () => {
+    const app = buildApp({
+      enablePersonality: vi.fn().mockRejectedValue(new Error('Personality not found: missing')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/missing/enable',
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});
+
+describe('POST /api/v1/soul/personalities/:id/disable', () => {
+  it('disables personality and returns success', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/pers-1/disable',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().success).toBe(true);
+  });
+
+  it('returns 404 when personality not found', async () => {
+    const app = buildApp({
+      disablePersonality: vi.fn().mockRejectedValue(new Error('Personality not found: missing')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/missing/disable',
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});
+
+describe('POST /api/v1/soul/personalities/:id/set-default', () => {
+  it('sets default personality and returns personality', async () => {
+    const app = buildApp();
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/pers-1/set-default',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().personality.id).toBe('pers-1');
+    expect(typeof res.json().personality.isWithinActiveHours).toBe('boolean');
+  });
+
+  it('returns 404 when personality not found', async () => {
+    const app = buildApp({
+      setDefaultPersonality: vi.fn().mockRejectedValue(new Error('Personality not found: missing')),
+    });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/missing/set-default',
+    });
+    expect(res.statusCode).toBe(404);
+  });
+});
+
+describe('DELETE archetype protection', () => {
+  it('returns 400 when trying to delete an archetype personality', async () => {
+    const app = buildApp({
+      deletePersonality: vi
+        .fn()
+        .mockRejectedValue(new Error('Cannot delete a system archetype personality.')),
+    });
+    const res = await app.inject({
+      method: 'DELETE',
+      url: '/api/v1/soul/personalities/pers-1',
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('archetype');
+  });
+});
+
+describe('isPersonalityWithinActiveHours', () => {
+  const basePersonality: Personality = {
+    id: 'p1',
+    name: 'Test',
+    description: '',
+    systemPrompt: '',
+    traits: {},
+    sex: 'unspecified',
+    voice: '',
+    preferredLanguage: '',
+    defaultModel: null,
+    modelFallbacks: [],
+    includeArchetypes: false,
+    isActive: false,
+    isDefault: false,
+    isArchetype: false,
+    body: {
+      enabled: false,
+      capabilities: [],
+      heartEnabled: true,
+      creationConfig: {
+        skills: false,
+        tasks: false,
+        personalities: false,
+        subAgents: false,
+        customRoles: false,
+        roleAssignments: false,
+        experiments: false,
+        allowA2A: false,
+        allowSwarms: false,
+        allowDynamicTools: false,
+        workflows: false,
+      },
+      selectedServers: [],
+      selectedIntegrations: [],
+      mcpFeatures: {
+        exposeGit: false,
+        exposeFilesystem: false,
+        exposeWeb: false,
+        exposeWebScraping: false,
+        exposeWebSearch: false,
+        exposeBrowser: false,
+        exposeDesktopControl: false,
+      },
+      proactiveConfig: {
+        enabled: false,
+        builtins: {
+          dailyStandup: false,
+          weeklySummary: false,
+          contextualFollowup: false,
+          integrationHealthAlert: false,
+          securityAlertDigest: false,
+        },
+        builtinModes: {
+          dailyStandup: 'auto',
+          weeklySummary: 'suggest',
+          contextualFollowup: 'suggest',
+          integrationHealthAlert: 'auto',
+          securityAlertDigest: 'suggest',
+        },
+        learning: { enabled: true, minConfidence: 0.7 },
+      },
+      activeHours: { enabled: false, start: '09:00', end: '17:00', daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'], timezone: 'UTC' },
+    },
+    createdAt: 0,
+    updatedAt: 0,
+  };
+
+  it('returns false when activeHours is disabled', () => {
+    expect(isPersonalityWithinActiveHours(basePersonality)).toBe(false);
+  });
+
+  it('returns false when activeHours.enabled is true but personality has no body', () => {
+    const p = { ...basePersonality, body: undefined as unknown as Personality['body'] };
+    expect(isPersonalityWithinActiveHours(p)).toBe(false);
+  });
+
+  it('returns true when current time falls within active window', () => {
+    // Use a window spanning the full day to guarantee the test always passes
+    const p: Personality = {
+      ...basePersonality,
+      body: {
+        ...basePersonality.body,
+        activeHours: {
+          enabled: true,
+          start: '00:00',
+          end: '23:59',
+          daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+          timezone: 'UTC',
+        },
+      },
+    };
+    expect(isPersonalityWithinActiveHours(p)).toBe(true);
+  });
+
+  it('returns false when current day is not in daysOfWeek', () => {
+    // Provide an empty daysOfWeek list — no day can match
+    const p: Personality = {
+      ...basePersonality,
+      body: {
+        ...basePersonality.body,
+        activeHours: {
+          enabled: true,
+          start: '00:00',
+          end: '23:59',
+          daysOfWeek: [],
+          timezone: 'UTC',
+        },
+      },
+    };
+    expect(isPersonalityWithinActiveHours(p)).toBe(false);
   });
 });

@@ -199,6 +199,9 @@ export const PersonalitySchema = z.object({
   modelFallbacks: z.array(ModelFallbackEntrySchema).max(5).default([]),
   includeArchetypes: z.boolean().default(true),
   isActive: z.boolean().default(false),
+  isDefault: z.boolean().default(false),
+  isArchetype: z.boolean().default(false),
+  isWithinActiveHours: z.boolean().optional(),
   body: BodyConfigSchema.default({}),
   createdAt: z.number().int().nonnegative(),
   updatedAt: z.number().int().nonnegative(),
@@ -211,6 +214,9 @@ export const PersonalityCreateSchema = PersonalitySchema.omit({
   createdAt: true,
   updatedAt: true,
   isActive: true,
+  isDefault: true,
+  isArchetype: true,
+  isWithinActiveHours: true,
 });
 
 export type PersonalityCreate = z.infer<typeof PersonalityCreateSchema>;
