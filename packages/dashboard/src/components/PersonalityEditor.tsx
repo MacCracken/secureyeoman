@@ -1467,7 +1467,13 @@ function BodySection({
             <span className="text-base">{item.icon}</span>
             <span className="font-medium">{item.label}</span>
             {blocked && (
-              <span className="text-xs text-destructive">(disabled by security policy)</span>
+              <a
+                href="/settings?tab=security"
+                className="text-xs text-destructive hover:underline"
+                title="Enable in Settings → Security"
+              >
+                (disabled by security policy)
+              </a>
             )}
           </div>
           <label

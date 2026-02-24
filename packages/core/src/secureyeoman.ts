@@ -1967,6 +1967,13 @@ export class SecureYeoman {
 
     if (updates.allowSubAgents !== undefined) {
       this.config!.security.allowSubAgents = updates.allowSubAgents;
+      // Keep delegation.enabled in sync — enabling the security policy toggle
+      // should be sufficient to activate delegation without requiring a separate
+      // YAML config edit. Disabling does not turn off config (security policy
+      // kill-switch in the manager handles that independently).
+      if (updates.allowSubAgents && this.config!.delegation) {
+        this.config!.delegation.enabled = true;
+      }
     }
     if (updates.allowA2A !== undefined) {
       this.config!.security.allowA2A = updates.allowA2A;

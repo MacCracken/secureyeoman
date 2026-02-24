@@ -45,10 +45,11 @@ export function AgentsPage() {
     staleTime: 30000,
   });
 
-  // Both security policy AND delegation config must be enabled
+  // Show the tab if any delegation signal is true; SubAgentsPage gates the full UI internally
   const subAgentsEnabled =
-    (agentConfig?.allowedBySecurityPolicy === true || securityPolicy?.allowSubAgents === true) &&
-    agentConfig?.config?.enabled === true;
+    agentConfig?.config?.enabled === true ||
+    agentConfig?.allowedBySecurityPolicy === true ||
+    securityPolicy?.allowSubAgents === true;
 
   const a2aEnabled = a2aConfig?.config?.enabled === true || securityPolicy?.allowA2A === true;
 

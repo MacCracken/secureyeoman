@@ -1833,6 +1833,16 @@ export async function fetchAgentConfig(): Promise<{
   }
 }
 
+export async function updateAgentConfig(data: { enabled?: boolean }): Promise<{
+  config: Record<string, unknown>;
+  allowedBySecurityPolicy: boolean;
+}> {
+  return request('/agents/config', {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
 export interface SecurityPolicy {
   allowSubAgents: boolean;
   allowA2A: boolean;

@@ -500,6 +500,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 out.swarm ?? out.workflow ?? out.run) as Record<string, unknown> | undefined;
               const name = String(
                 item?.name ?? item?.workflowName ??
+                (typeof out.name === 'string' ? out.name : undefined) ??
                 (toolCall.arguments as Record<string, unknown>)?.name ??
                 toolCall.name
               );
@@ -1040,7 +1041,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               if (!result.isError && CREATION_TOOL_LABELS_S[toolCall.name]) {
                 const out = result.output as Record<string, unknown>;
                 const item = (out.skill ?? out.task ?? out.personality ?? out.experiment ?? out.swarm ?? out.workflow ?? out.run) as Record<string, unknown> | undefined;
-                const name = String(item?.name ?? item?.workflowName ?? (toolCall.arguments as Record<string, unknown>)?.name ?? toolCall.name);
+                const name = String(item?.name ?? item?.workflowName ?? (typeof out.name === 'string' ? out.name : undefined) ?? (toolCall.arguments as Record<string, unknown>)?.name ?? toolCall.name);
                 const action = toolActionS(toolCall.name);
                 const id = typeof item?.id === 'string' ? item.id : undefined;
                 const evt = { tool: toolCall.name, label, action, name, id };

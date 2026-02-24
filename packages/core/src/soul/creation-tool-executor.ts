@@ -149,8 +149,9 @@ export async function executeCreationTool(
 
       case 'delete_skill': {
         const soulManager = secureYeoman.getSoulManager();
+        const skillToDelete = await soulManager.getSkill(str(args.id));
         await soulManager.deleteSkill(str(args.id));
-        return { output: { deleted: true, id: args.id }, isError: false };
+        return { output: { deleted: true, id: args.id, name: skillToDelete?.name ?? str(args.id) }, isError: false };
       }
 
       // ── Tasks ──────────────────────────────────────────────────────────
@@ -255,7 +256,7 @@ export async function executeCreationTool(
           };
         }
         await soulManager.deletePersonality(targetId);
-        return { output: { deleted: true, id: targetId }, isError: false };
+        return { output: { deleted: true, id: targetId, name: target?.name ?? targetId }, isError: false };
       }
 
       // ── Sub-Agents ─────────────────────────────────────────────────────
@@ -333,7 +334,7 @@ export async function executeCreationTool(
         if (!removed) {
           return { output: { error: `Role '${args.roleId}' not found or cannot be deleted.` }, isError: true };
         }
-        return { output: { deleted: true, roleId: args.roleId }, isError: false };
+        return { output: { deleted: true, roleId: args.roleId, name: str(args.roleId) }, isError: false };
       }
 
       // ── Role Assignments ───────────────────────────────────────────────
@@ -370,8 +371,9 @@ export async function executeCreationTool(
         if (!experimentManager) {
           return { output: { error: 'Experiment manager not available' }, isError: true };
         }
+        const expToDelete = await experimentManager.get(str(args.id));
         await experimentManager.delete(str(args.id));
-        return { output: { deleted: true, id: args.id }, isError: false };
+        return { output: { deleted: true, id: args.id, name: (expToDelete as Record<string, unknown>)?.name ? String((expToDelete as Record<string, unknown>).name) : str(args.id) }, isError: false };
       }
 
       // ── A2A ────────────────────────────────────────────────────────────
@@ -426,8 +428,9 @@ export async function executeCreationTool(
         if (!workflowManager) {
           return { output: { error: 'Workflow manager not available' }, isError: true };
         }
+        const wfToDelete = await workflowManager.getDefinition(str(args.id));
         await workflowManager.deleteDefinition(str(args.id));
-        return { output: { deleted: true, id: args.id }, isError: false };
+        return { output: { deleted: true, id: args.id, name: wfToDelete?.name ?? str(args.id) }, isError: false };
       }
 
       case 'trigger_workflow': {

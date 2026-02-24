@@ -125,16 +125,18 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
     return (
       <div className="space-y-4">
         {!embedded && <h1 className="text-xl font-bold">Sub-Agents</h1>}
-        <div className="card p-8 text-center">
-          <Users className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-          <h2 className="text-lg font-semibold mb-2">Delegation Not Enabled</h2>
-          <p className="text-muted-foreground text-sm">
-            Enable sub-agent delegation in your configuration to use this feature.
-          </p>
-          <pre className="mt-4 text-xs bg-muted p-3 rounded text-left inline-block">
-            {`delegation:
-  enabled: true`}
-          </pre>
+        <div className="card p-8 text-center space-y-4">
+          <Users className="w-12 h-12 mx-auto text-muted-foreground" />
+          <div>
+            <h2 className="text-lg font-semibold mb-2">Delegation Not Enabled</h2>
+            <p className="text-muted-foreground text-sm">
+              Enable sub-agent delegation in{' '}
+              <a href="/settings?tab=security" className="text-primary hover:underline">
+                Settings → Security
+              </a>{' '}
+              to allow personalities to spawn and delegate tasks to sub-agents.
+            </p>
+          </div>
         </div>
       </div>
     );

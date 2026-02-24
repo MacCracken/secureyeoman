@@ -265,6 +265,11 @@ export class SubAgentManager {
     return this.config;
   }
 
+  /** Runtime toggle for delegation.enabled (does not persist to disk). */
+  setEnabled(enabled: boolean): void {
+    this.config.enabled = enabled;
+  }
+
   /** Whether sub-agents are allowed by top-level security policy */
   isAllowedBySecurityPolicy(): boolean {
     return this.deps.securityConfig?.allowSubAgents !== false;

@@ -48,6 +48,8 @@ import {
   fetchMetrics,
   fetchSecurityPolicy,
   updateSecurityPolicy,
+  fetchAgentConfig,
+  updateAgentConfig,
   fetchMcpServers,
   fetchModelDefault,
   setModelDefault,
@@ -272,6 +274,12 @@ export function SecuritySettings() {
     queryFn: fetchSecurityPolicy,
   });
 
+  const { data: agentConfigData } = useQuery({
+    queryKey: ['agentConfig'],
+    queryFn: fetchAgentConfig,
+    staleTime: 10000,
+  });
+
   const { data: mcpData } = useQuery({
     queryKey: ['mcpServers'],
     queryFn: fetchMcpServers,
@@ -296,6 +304,14 @@ export function SecuritySettings() {
     mutationFn: updateSecurityPolicy,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['security-policy'] });
+      void queryClient.invalidateQueries({ queryKey: ['agentConfig'] });
+    },
+  });
+
+  const agentConfigMutation = useMutation({
+    mutationFn: updateAgentConfig,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['agentConfig'] });
     },
   });
 
@@ -382,6 +398,7 @@ export function SecuritySettings() {
   const roles = rolesData?.roles ?? [];
   const assignments = assignmentsData?.assignments ?? [];
   const subAgentsAllowed = securityPolicy?.allowSubAgents ?? false;
+  const delegationEnabled = (agentConfigData?.config?.enabled as boolean | undefined) ?? false;
   const a2aAllowed = securityPolicy?.allowA2A ?? false;
   const swarmsAllowed = securityPolicy?.allowSwarms ?? false;
   const extensionsAllowed = securityPolicy?.allowExtensions ?? false;
@@ -673,6 +690,20 @@ export function SecuritySettings() {
           {/* A2A Networks and Swarms — sub-items of delegation, only visible when sub-agents enabled */}
           {subAgentsAllowed && (
             <div className="ml-6 pl-4 border-l-2 border-border space-y-4">
+              <PolicyToggle
+                label="Delegate Tasks"
+                icon={<Users className="w-4 h-4 text-muted-foreground" />}
+                enabled={delegationEnabled}
+                isPending={agentConfigMutation.isPending}
+                onToggle={() => {
+                  agentConfigMutation.mutate({ enabled: !delegationEnabled });
+                }}
+                description={
+                  delegationEnabled
+                    ? 'Delegation is active. Personalities with Sub-Agent Delegation enabled in their Orchestration config can delegate tasks.'
+                    : 'Delegation is inactive. Enable this to allow personalities to delegate tasks to sub-agent profiles.'
+                }
+              />
               <PolicyToggle
                 label="A2A Networks"
                 icon={<Network className="w-4 h-4 text-muted-foreground" />}

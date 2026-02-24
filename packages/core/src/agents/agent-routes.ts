@@ -217,4 +217,21 @@ export function registerAgentRoutes(
       allowedBySecurityPolicy: subAgentManager.isAllowedBySecurityPolicy(),
     };
   });
+
+  app.patch(
+    '/api/v1/agents/config',
+    async (
+      request: FastifyRequest<{ Body: { enabled?: boolean } }>,
+      reply: FastifyReply
+    ) => {
+      const { enabled } = request.body ?? {};
+      if (enabled !== undefined) {
+        subAgentManager.setEnabled(enabled);
+      }
+      return reply.code(200).send({
+        config: subAgentManager.getConfig(),
+        allowedBySecurityPolicy: subAgentManager.isAllowedBySecurityPolicy(),
+      });
+    }
+  );
 }
