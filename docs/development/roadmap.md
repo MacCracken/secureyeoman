@@ -9,8 +9,6 @@
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
 | | **Release 2026.2.23** | **2026-02-23** | **Released** |
-| 41 | Secrets Management | — | **Complete** |
-| 42 | TLS / Certificate Management | — | **Complete** |
 | 43 | Sub-Agent UX + Bug Fixes | — | Planned |
 | 44 | Skill Routing Quality | — | Planned |
 | 45 | Twingate Remote MCP Access | — | Planned *(depends on 41)* |
@@ -18,58 +16,6 @@
 | 47 | Find & Repair (Ongoing) | — | Ongoing |
 | 48 | Machine Readable Org Intent | — | Planned |
 | 49 | AI Autonomy Level Audit | — | Planned |
-
---
-## Phase 41: Secrets Management ✅
-
-**Status**: Complete | **Priority**: Critical — foundational; Phase 45 (Twingate) depends on this.
-
-### 41.1 — Vault Abstraction Layer
-
-- [x] **`SecretsManager` facade** — Unified interface: `env`, `keyring`, `file`, `vault`, `auto`. Process.env mirroring for backwards-compat sync access.
-- [x] **`VaultBackend`** — OpenBao/Vault KV v2, AppRole + static token, token caching with auto-refresh on 403, optional namespace, fallback flag.
-- [x] **Config** — `security.secretBackend` gains `'vault'`; new `security.vault` block added.
-- [x] **Public getters** — `getSecretsManager()`, `getRotationManager()`, `getKeyringManager()`.
-
-### 41.2 — Rotation Integration
-
-- [x] **Wire `SecretsManager` into `onRotate`** — Rotated values persisted to configured backend (vault/file/keyring).
-- [ ] **Grace period handling** — Carry old+new value for one interval (future work).
-
-### 41.3 — Dashboard UI
-
-- [x] **Secrets panel** (Settings → Security) — List key names, add (name + value), delete. Values write-only.
-
-### 41.4 — Docs
-
-- [x] **`docs/guides/secrets-management.md`** — Backend setup, Vault/OpenBao AppRole flow, rotation config, dashboard + API reference.
-
----
-
-## Phase 42: TLS / Certificate Management ✅
-
-**Status**: Complete | **Priority**: High
-
-### 42.1 — Self-Signed Certificate Auto-Generation (Development)
-
-- [x] **`TlsManager`** — `ensureCerts()` auto-generates via `generateDevCerts()` when `autoGenerate: true`; reuses cached certs; regenerates on expiry detection (openssl x509).
-- [x] **Gateway wiring** — `startGateway()` calls `ensureCerts()` and injects resolved cert paths; `autoGenerate` flag added to `TlsConfigSchema`.
-- [x] **`getTlsManager()` getter** exposed on `SecureYeoman`.
-
-### 42.2 — Production (Configured Certs)
-
-- [x] **Config validation** — `ensureCerts()` throws with clear error when `certPath/keyPath` files not found; warns when `autoGenerate=false` and no paths configured.
-- [x] **mTLS** — existing `caPath` support (`requestCert + rejectUnauthorized`) wired through.
-- [ ] **`secureyeoman cert status/generate/trust` CLI** — future work (Phase 42+).
-
-### 42.3 — Dashboard UI + API
-
-- [x] **`TlsCertStatusCard`** in SecurityPage overview — shows enabled/disabled, expiry countdown, warning/expired states, regenerate button for self-signed.
-- [x] **REST API**: `GET /api/v1/security/tls`, `POST /api/v1/security/tls/generate`.
-
-### 42.4 — Docs
-
-- [x] **`docs/guides/tls-certificates.md`** — dev auto-gen, production cert setup, mTLS, browser trust steps.
 
 ---
 
