@@ -1,12 +1,41 @@
 /**
- * Package version — single source of truth for the compiled binary.
+ * Package version — reads from the root VERSION file at runtime.
  *
- * In dev / Node.js mode the version is also readable from package.json, but
- * in a Bun-compiled standalone binary import.meta.url resolves into the
- * virtual FS (/$bunfs/) and package.json is not bundled.  This file is the
- * authoritative version string for both execution contexts.
- *
- * Updated automatically by scripts/set-version.sh — do not edit by hand.
+ * Falls back to the root package.json for environments where file I/O works
+ * (Node.js, Docker). In a Bun-compiled standalone binary the virtual FS
+ * doesn't include external files, so a compile-time constant is used as a
+ * last resort. Update the root VERSION file and run `set-version.sh` to
+ * keep everything in sync.
  */
 
-export const VERSION = '2026.2.22';
+import { readFileSync } from 'fs';
+import { createRequire } from 'module';
+import { dirname, join } from 'path';
+import { fileURLToPath } from 'url';
+
+function readVersion(): string {
+  const here = dirname(fileURLToPath(import.meta.url));
+
+  // Try root VERSION file first (single source of truth)
+  for (const rel of ['../../../VERSION', '../../VERSION', '../../../../VERSION']) {
+    try {
+      return readFileSync(join(here, rel), 'utf-8').trim();
+    } catch {
+      // try next candidate
+    }
+  }
+
+  // Fallback: read from root package.json
+  try {
+    const require = createRequire(import.meta.url);
+    return (require(join(here, '../../../package.json')) as { version: string }).version;
+  } catch {
+    // Bun compiled binary — use build-time constant injected by set-version.sh
+    return BAKED_VERSION;
+  }
+}
+
+// Updated by set-version.sh for Bun binary builds
+const BAKED_VERSION = '2026.2.23';
+
+export const VERSION = readVersion();

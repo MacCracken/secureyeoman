@@ -1,12 +1,18 @@
 #!/usr/bin/env bash
 # Usage: ./scripts/set-version.sh 2026.3.1
-# Updates version in all package.json files across the monorepo.
+# Updates version across the monorepo: VERSION file, all package.json files,
+# and the BAKED_VERSION constant in packages/core/src/version.ts (Bun binary fallback).
 
 set -euo pipefail
 
-VERSION="${1:?Usage: $0 <version>}"
+NEW_VERSION="${1:?Usage: $0 <version>}"
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 
+# 1. Root VERSION file (single source of truth)
+echo "$NEW_VERSION" > "$ROOT/VERSION"
+echo "  updated VERSION"
+
+# 2. All package.json files
 for pkg in \
   "$ROOT/package.json" \
   "$ROOT/packages/core/package.json" \
@@ -15,27 +21,26 @@ for pkg in \
   "$ROOT/packages/mcp/package.json"
 do
   if [ -f "$pkg" ]; then
-    # Use node for cross-platform JSON editing
     node -e "
       const fs = require('fs');
       const p = JSON.parse(fs.readFileSync('$pkg', 'utf-8'));
-      p.version = '$VERSION';
+      p.version = '$NEW_VERSION';
       fs.writeFileSync('$pkg', JSON.stringify(p, null, 2) + '\n');
     "
     echo "  updated $(realpath --relative-to="$ROOT" "$pkg")"
   fi
 done
 
-# Update the compiled-binary version constant
+# 3. Bun binary fallback constant in version.ts
 VERSION_TS="$ROOT/packages/core/src/version.ts"
 if [ -f "$VERSION_TS" ]; then
   node -e "
     const fs = require('fs');
     let content = fs.readFileSync('$VERSION_TS', 'utf-8');
-    content = content.replace(/export const VERSION = '[^']*';/, \"export const VERSION = '$VERSION';\");
+    content = content.replace(/const BAKED_VERSION = '[^']*';/, \"const BAKED_VERSION = '$NEW_VERSION';\");
     fs.writeFileSync('$VERSION_TS', content);
   "
   echo "  updated packages/core/src/version.ts"
 fi
 
-echo "All packages set to $VERSION"
+echo "All packages set to $NEW_VERSION"
