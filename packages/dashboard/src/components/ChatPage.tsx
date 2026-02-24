@@ -22,6 +22,7 @@ import {
   ThumbsDown,
   Sparkles,
   Wrench,
+  Star,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -48,7 +49,14 @@ import { GroupChatPage } from './GroupChatPage';
 export function ChatPage() {
   const [showModelWidget, setShowModelWidget] = useState(false);
   const [showPersonalityPicker, setShowPersonalityPicker] = useState(false);
-  const [selectedPersonalityId, setSelectedPersonalityId] = useState<string | null>(null);
+  const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(
+    () => localStorage.getItem('soul:chatPersonalityId')
+  );
+  const setSelectedPersonalityId = (id: string | null) => {
+    if (id) localStorage.setItem('soul:chatPersonalityId', id);
+    else localStorage.removeItem('soul:chatPersonalityId');
+    setSelectedPersonalityIdRaw(id);
+  };
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [editingConversationId, setEditingConversationId] = useState<string | null>(null);
@@ -71,10 +79,10 @@ export function ChatPage() {
   });
 
   const personalities = personalitiesData?.personalities ?? [];
-  const activePersonality = personalities.find((p) => p.isActive);
-  const effectivePersonalityId = selectedPersonalityId ?? activePersonality?.id ?? null;
+  const defaultPersonality = personalities.find((p) => p.isDefault);
+  const effectivePersonalityId = selectedPersonalityId ?? defaultPersonality?.id ?? null;
   const personality =
-    personalities.find((p) => p.id === effectivePersonalityId) ?? activePersonality ?? null;
+    personalities.find((p) => p.id === effectivePersonalityId) ?? defaultPersonality ?? null;
 
   const { data: conversationsData, isLoading: conversationsLoading } = useQuery({
     queryKey: ['conversations', effectivePersonalityId],
@@ -494,6 +502,9 @@ export function ChatPage() {
                       <h2 className="text-lg font-semibold">
                         Chat{personality ? ` with ${personality.name}` : ''}
                       </h2>
+                      {personality?.isDefault && (
+                        <Star className="w-3.5 h-3.5 fill-current text-primary flex-shrink-0" title="Default personality" />
+                      )}
                       <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     </div>
                     {personality?.description && (
@@ -540,6 +551,7 @@ export function ChatPage() {
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm font-medium truncate">{p.name}</span>
                             {p.isActive && <span className="text-xs text-success">(active)</span>}
+                            {p.isDefault && <span className="text-xs text-primary">(default)</span>}
                           </div>
                           {p.description && (
                             <p className="text-xs text-muted-foreground truncate">

@@ -265,7 +265,7 @@ export function GroupChatPage() {
                 <Bot className="w-3.5 h-3.5" />
                 <span>Replying as: </span>
                 <span className="text-primary font-medium">
-                  {personalities.find((p) => p.isActive)?.name ??
+                  {personalities.find((p) => p.isDefault)?.name ??
                     personalities[0]?.name ??
                     'Default'}
                 </span>

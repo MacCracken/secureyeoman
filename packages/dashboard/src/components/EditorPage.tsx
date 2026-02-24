@@ -27,6 +27,7 @@ import {
   X,
   Split,
   Wrench,
+  Star,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -428,7 +429,14 @@ export function EditorPage() {
   const [activeTabId, setActiveTabId] = useState<string>(tabs[0].id);
   const [filesPanelOpen, setFilesPanelOpen] = useState(false);
   const [cwd, setCwd] = useState('/tmp');
-  const [selectedPersonalityId, setSelectedPersonalityId] = useState<string | null>(null);
+  const [selectedPersonalityId, setSelectedPersonalityIdRaw] = useState<string | null>(
+    () => localStorage.getItem('soul:editorPersonalityId')
+  );
+  const setSelectedPersonalityId = (id: string | null) => {
+    if (id) localStorage.setItem('soul:editorPersonalityId', id);
+    else localStorage.removeItem('soul:editorPersonalityId');
+    setSelectedPersonalityIdRaw(id);
+  };
   const [terminalInput, setTerminalInput] = useState('');
   const [terminalHistory, setTerminalHistory] = useState<TerminalOutput[]>([]);
   const [activeBottomTab, setActiveBottomTab] = useState<BottomTab>('terminal');
@@ -501,8 +509,8 @@ export function EditorPage() {
   });
 
   const personalities = personalitiesData?.personalities ?? [];
-  const activePersonality = personalities.find((p) => p.isActive);
-  const effectivePersonalityId = selectedPersonalityId ?? activePersonality?.id ?? null;
+  const defaultPersonality = personalities.find((p) => p.isDefault);
+  const effectivePersonalityId = selectedPersonalityId ?? defaultPersonality?.id ?? null;
   const currentPersonality = personalities.find((p) => p.id === effectivePersonalityId);
 
   const {
@@ -1089,6 +1097,9 @@ export function EditorPage() {
             {/* Sidebar header */}
             <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
               <Bot className="w-4 h-4 text-primary flex-shrink-0" />
+              {currentPersonality?.isDefault && (
+                <Star className="w-3 h-3 fill-current text-primary flex-shrink-0" title="Default personality" />
+              )}
 
               {/* Personality selector */}
               <div className="relative flex-1 min-w-0">
@@ -1103,7 +1114,7 @@ export function EditorPage() {
                   {personalities.map((p: Personality) => (
                     <option key={p.id} value={p.id}>
                       {p.name}
-                      {p.isActive ? ' (active)' : ''}
+                      {p.isActive ? ' (active)' : ''}{p.isDefault ? ' (default)' : ''}
                     </option>
                   ))}
                 </select>
