@@ -9,7 +9,7 @@
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
 | | **Release 2026.2.23** | **2026-02-23** | **Released** |
-| 48 | Machine Readable Org Intent | — | Planned |
+| 48 | Machine Readable Org Intent | — | In Progress |
 | 49 | AI Autonomy Level Audit | — | Planned |
 | XX | Find & Repair (Ongoing) | — | Ongoing |
 
@@ -17,47 +17,21 @@
 
 ## Phase 48: Machine Readable Language of Organizational Intent
 
-**Status**: Complete (2026-02-24) | **Priority**: High — architectural layer that elevates SecureYeoman from agent tooling to organizational AI governance. Builds on Phase 44 (Skill Routing) primitives.
+**Status**: In Progress (schema, core engine, prompt injection, MCP tool, enforcement log, guide — complete; pipeline enforcement, policy layer, full dashboard UI — remaining) | **Priority**: High
 
-A structured, machine-interpretable format for expressing what an organization wants its agents to do — active goals agents can act on, the signals that indicate success in *this org's context*, the data sources that carry those signals, what actions the agent is authorized to take to improve them, how to navigate trade-offs, and where the hard limits are. Below all of that: a delegation framework that translates organizational tenants into concrete decision boundaries agents can reason within.
+### 48.2 — Signal Awareness
 
-Today this lives in strategy docs, onboarding wikis, and Slack messages. This phase gives it a formal home.
-
-### 48.1 — Intent Schema
-
-The `OrgIntent` document (`orgIntent.yaml`, loaded via config) is a versioned schema (`apiVersion: secureyeoman.io/v1`) with seven top-level sections. All sections are optional; the schema is incrementally adoptable.
-
-- [x] **`goals[]`** — What the org wants agents to actively pursue. Each goal: `id`, `name`, `description`, `priority` (`critical | high | medium | low`), `activeWhen` (optional condition), `successCriteria`, `ownerRole`, `skills[]` (skill slugs that serve this goal), `signals[]` (signal ids that measure progress toward this goal), `authorizedActions[]` (action ids the agent may take to advance this goal). Goals are not skills — a goal is *what the org wants*; skills are *how agents do things*.
-- [x] **`signals[]`** — Domain-specific indicators of success meaningful in *this org's context*. Not generic metrics — the org declares what customer satisfaction, quality, or throughput actually means here. Each signal: `id`, `name`, `description`, `dataSources[]` (refs to data source registry), `direction` (`higher_is_better | lower_is_better`), `threshold` (value at which the signal is considered healthy), `warningThreshold`. Agents use signals to understand whether they are moving in the right direction.
-- [x] **`dataSources[]`** — Registry of data sources agents can read to evaluate signals. Each source: `id`, `name`, `type` (`api | mcp_tool | database | webhook | feed`), `connection` (URL or MCP tool name), `authSecret` (ref to SecretsManager key), `schema` (shape of what comes back — lets agents interpret the data without trial and error). Phase 41 SecretsManager handles credentials.
-- [x] **`authorizedActions[]`** — What the agent is empowered to do. Distinct from skills (which describe capability) — authorized actions declare *permission scope*. Each action: `id`, `description`, `appliesToGoals[]`, `appliesToSignals[]`, `requiredRole`, `conditions` (optional — e.g. only when signal is below threshold), `mcpTools[]` (specific MCP tool names this action permits). Agents check authorized actions before acting; unauthorized actions are blocked with a structured explanation.
-- [x] **`tradeoffProfiles[]`** — Named stances for navigating trade-offs the org has thought through in advance. Each profile: `id`, `name`, `speedVsThoroughness` (0 = always thorough, 1 = always fast), `costVsQuality` (0 = always quality, 1 = always minimize cost), `autonomyVsConfirmation` (0 = always confirm with human, 1 = always act autonomously), `notes` (plain language rationale). A `default` profile is required; additional named profiles can be activated per role or goal. Agents use the active profile to resolve ambiguous decisions without escalating.
-- [x] **`hardBoundaries[]`** — Inviolable constraints the agent may never cross regardless of goal priority, trade-off profile, or escalation. Distinct from `policies[]` (which support `warn` and can be overridden) — hard boundaries are always-block with no override path. Each boundary: `id`, `rule` (natural language), `rego` (optional machine-evaluable expression), `rationale` (why this line exists). Evaluated before policies, before tool execution.
-- [x] **`delegationFramework`** — Org tenants (core principles like "customer first", "never sacrifice data integrity for speed") translated into concrete decision boundaries agents can reason within. `tenants[]`: each tenant has `id`, `principle` (the value), `decisionBoundaries[]` (specific rules derived from the principle with `id`, `rule`, `examples[]`). This is what makes abstract org values operational — an agent that encounters an ambiguous situation can check whether its proposed action violates a derived decision boundary before acting.
-- [x] **`context[]`** — Stable org facts injected into every session: org name, industry, regulatory environment, key contacts, default language. Background agents should not need to be told repeatedly.
-- [x] **`OrgIntentSchema` Zod definition** in `packages/core/src/intent/` — validate on load, surface structured errors for malformed documents.
-
-### 48.2 — Signal Awareness & Data Source Registry
-
-- [ ] **`SignalMonitor`** — At session start (and on a configurable refresh interval), resolves the current value of active signals by querying their registered data sources. Caches values with TTL. Emits `intent_signal_degraded` when a signal crosses its warning threshold.
-- [ ] **`intent_signal_read` MCP tool** — Agents call this to get the current value of a named signal. Returns value, threshold, direction, and a plain-language status (`healthy | warning | critical`). Lets agents proactively check whether they are having the desired effect.
-- [ ] **Signal context injection** — `composeSoulPrompt` includes a `signals` block summarizing the current state of signals relevant to active goals: e.g. `"CSAT: 78% (warning — below 80% threshold, trending down 3% this week)"`. Agents have live awareness of what's working and what isn't.
 - [ ] **`intent_signal_degraded` audit event** — Emitted when a monitored signal crosses its warning threshold. Surfaced in the Security Feed and optionally triggers a notification.
 
 ### 48.3 — Goal Resolution & Authorized Action Engine
 
-- [ ] **`GoalResolver`** — Loads the active `OrgIntent` and resolves which goals apply to the current agent, role, and session context. Returns an ordered list by priority. Goals with `activeWhen` expressions are evaluated against session context.
-- [ ] **Goal injection into soul prompts** — `composeSoulPrompt` gains a `goals` block: active goals with their success criteria, relevant signals, and a summary of authorized actions available to advance them. The agent knows *what to pursue*, *how to measure progress*, and *what it's allowed to do*.
 - [ ] **Authorized action enforcement** — Before executing a skill or MCP tool call, evaluate whether the action falls within `authorizedActions[]` for the current goal and role. Unauthorized actions return a structured refusal: which action was attempted, why it's not authorized, what alternatives are available.
 - [ ] **Goal-to-skill affinity** — Goals with `skills[]` elevate those skill slugs in the Phase 44 router when the goal is active.
 - [ ] **`intent_goal_activated` / `intent_goal_completed` / `intent_action_blocked` audit events**.
 
-### 48.4 — Trade-off & Delegation Engine
+### 48.4 — Hard Boundary Enforcement
 
-- [ ] **`TradeoffResolver`** — Resolves the active trade-off profile for the current session (default → role override → goal override). Injects the active profile into `composeSoulPrompt` as a `tradeoffs` block: `"Speed vs thoroughness: lean thorough (0.3). Cost vs quality: lean quality (0.2). Autonomous action: confirm for irreversible actions (0.4)."` Agents have a clear stance to reference when a decision could go either way.
-- [ ] **Hard boundary enforcement** — Evaluated as the outermost gate before any policy check or tool execution. Always-block. Returns boundary `id` and `rationale` in the refusal. No escalation path — these are not negotiable.
-- [ ] **`DelegationFrameworkResolver`** — At session start, loads the active `delegationFramework` and injects the relevant tenants and their derived decision boundaries into the agent's operating context. When an agent encounters an ambiguous situation, it can reason: *does this proposed action violate a decision boundary derived from our tenants?* Boundaries are injected as a structured block, not narrative prose, so they are reliably machine-parseable.
-- [ ] **`intent_boundary_violated` audit event** — Emitted on hard boundary enforcement. Includes boundary id, action attempted, agent id, session id.
+- [ ] **Hard boundary enforcement wired into execution pipeline** — `checkHardBoundaries()` exists in `IntentManager` but is not yet called from chat routes or tool dispatch. Must be evaluated as the outermost gate before any policy check or tool execution; always-block with no escalation path.
 
 ### 48.5 — Soft Policy Enforcement
 
@@ -70,11 +44,6 @@ The `OrgIntent` document (`orgIntent.yaml`, loaded via config) is a versioned sc
 - [ ] **Intent editor** — Full CRUD for `OrgIntent` documents. Tabbed sections: Goals, Signals, Data Sources, Authorized Actions, Trade-off Profiles, Hard Boundaries, Delegation Framework, Context. Goal editor wires signals and authorized actions inline. Trade-off profile editor uses sliders with plain-language labels at each end.
 - [ ] **Signal dashboard** — Live view of all monitored signals with current value, threshold, trend sparkline, and status badge. Click-through to the goals and authorized actions connected to each signal.
 - [ ] **Delegation framework editor** — Visual editor for tenants and their derived decision boundaries. Each tenant expands to show its boundaries with inline examples. Drag to reorder priority.
-- [ ] **Enforcement log** — Unified filterable feed: hard boundary violations, policy blocks/warns, unauthorized action attempts. Filterable by type, agent, session, boundary/policy id.
-
-### 48.7 — Docs
-
-- [ ] **`docs/guides/organizational-intent.md`** — Full authoring guide: schema overview, goal vs signal vs authorized action vs policy vs hard boundary, trade-off profiles explained with examples, delegation framework authoring (tenant → decision boundary translation), data source registration, OPA policy guide, migration path from ad-hoc system prompts to structured intent.
 
 ---
 
@@ -292,4 +261,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-24 (Phase 49 added: AI Autonomy Level Audit; Phase 48: Machine Readable Org Intent; Phases 44, 45 complete — see Changelog)*
+*Last updated: 2026-02-24 (Phase 49 added: AI Autonomy Level Audit; Phase 48 in progress — schema, engine, prompt injection, MCP tool, enforcement log, guide complete; pipeline enforcement, policy layer, full dashboard UI remaining; Phases 44, 45 complete — see Changelog)*
