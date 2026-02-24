@@ -10,6 +10,6 @@ export interface KeyringProvider {
   delete(service: string, key: string): void;
 }
 
-export type SecretBackend = 'auto' | 'keyring' | 'env' | 'file';
+export type SecretBackend = 'auto' | 'keyring' | 'env' | 'file' | 'vault';
 
 export const SERVICE_NAME = 'secureyeoman';

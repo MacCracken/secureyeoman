@@ -17,6 +17,8 @@ import {
   type LoadConfigOptions,
 } from './config/loader.js';
 import type { KeyringManager } from './security/keyring/manager.js';
+import { SecretsManager } from './security/secrets-manager.js';
+import { TlsManager } from './security/tls-manager.js';
 import { SecretRotationManager } from './security/rotation/manager.js';
 import { RotationStorage } from './security/rotation/rotation-storage.js';
 import type { SecretMetadata } from './security/rotation/types.js';
@@ -174,6 +176,8 @@ export class SecureYeoman {
   private authService: AuthService | null = null;
   private gateway: GatewayServer | null = null;
   private keyringManager: KeyringManager | null = null;
+  private secretsManager: SecretsManager | null = null;
+  private tlsManager: TlsManager | null = null;
   private rotationManager: SecretRotationManager | null = null;
   private rotationStorage: RotationStorage | null = null;
   private rbacStorage: RBACStorage | null = null;
@@ -271,6 +275,45 @@ export class SecureYeoman {
       this.logger.debug('Keyring initialized', {
         backend: this.keyringManager.getProvider().name,
       });
+
+      // Step 2.05: Initialize SecretsManager (unified secrets facade)
+      {
+        const vaultCfg = this.config.security.vault;
+        const smConfig: import('./security/secrets-manager.js').SecretsManagerConfig = {
+          backend: this.config.security.secretBackend,
+          keyringManager: this.keyringManager,
+          ...(vaultCfg && {
+            vault: {
+              address: vaultCfg.address,
+              mount: vaultCfg.mount,
+              namespace: vaultCfg.namespace,
+              token: vaultCfg.tokenEnv ? process.env[vaultCfg.tokenEnv] : undefined,
+              roleId: vaultCfg.roleIdEnv ? process.env[vaultCfg.roleIdEnv] : undefined,
+              secretId: vaultCfg.secretIdEnv ? process.env[vaultCfg.secretIdEnv] : undefined,
+            },
+            vaultFallback: vaultCfg.fallback,
+          }),
+        };
+        this.secretsManager = new SecretsManager(smConfig);
+        await this.secretsManager.initialize();
+        this.logger.debug('SecretsManager initialized', {
+          backend: this.config.security.secretBackend,
+        });
+      }
+
+      // Step 2.06: Initialize TlsManager (cert lifecycle)
+      {
+        const tlsCfg = this.config.gateway.tls;
+        this.tlsManager = new TlsManager({
+          enabled: tlsCfg.enabled,
+          certPath: tlsCfg.certPath,
+          keyPath: tlsCfg.keyPath,
+          caPath: tlsCfg.caPath,
+          autoGenerate: tlsCfg.autoGenerate,
+          certDir: `${this.config.core.dataDir}/tls`,
+        });
+        this.logger.debug('TlsManager initialized', { tlsEnabled: tlsCfg.enabled });
+      }
 
       // Step 2.1: Initialize PostgreSQL pool and run migrations
       initPoolFromConfig(this.config.core.database);
@@ -413,8 +456,12 @@ export class SecureYeoman {
         const tokenSecretEnv = this.config.gateway.auth.tokenSecret;
         const signingKeyEnv = this.config.logging.audit.signingKeyEnv;
 
+        const secretsMgr = this.secretsManager;
         this.rotationManager.setCallbacks({
           onRotate: async (name, newValue) => {
+            // Persist the new value via SecretsManager so the configured backend
+            // (file, keyring, vault) always holds the latest rotated secret.
+            await secretsMgr?.set(name, newValue);
             if (name === tokenSecretEnv) {
               authSvc.updateTokenSecret(newValue);
             } else if (name === signingKeyEnv) {
@@ -1398,6 +1445,34 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the SecretsManager instance (unified secret storage facade)
+   */
+  getSecretsManager(): SecretsManager | null {
+    return this.secretsManager;
+  }
+
+  /**
+   * Get the TlsManager instance (certificate lifecycle manager)
+   */
+  getTlsManager(): TlsManager | null {
+    return this.tlsManager;
+  }
+
+  /**
+   * Get the SecretRotationManager instance (may be null if rotation is disabled)
+   */
+  getRotationManager(): SecretRotationManager | null {
+    return this.rotationManager;
+  }
+
+  /**
+   * Get the KeyringManager instance
+   */
+  getKeyringManager(): KeyringManager | null {
+    return this.keyringManager;
+  }
+
+  /**
    * Get the auth service instance
    */
   getAuthService(): AuthService {
@@ -2170,8 +2245,25 @@ export class SecureYeoman {
       throw new Error('Gateway is already running');
     }
 
+    // Resolve TLS cert paths (auto-generates dev certs when configured to do so)
+    let gatewayConfig = this.config!.gateway;
+    if (this.tlsManager) {
+      const certPaths = await this.tlsManager.ensureCerts();
+      if (certPaths) {
+        gatewayConfig = {
+          ...gatewayConfig,
+          tls: {
+            ...gatewayConfig.tls,
+            certPath: certPaths.certPath,
+            keyPath: certPaths.keyPath,
+            caPath: certPaths.caPath,
+          },
+        };
+      }
+    }
+
     this.gateway = createGatewayServer({
-      config: this.config!.gateway,
+      config: gatewayConfig,
       secureYeoman: this,
       authService: this.authService ?? undefined,
       dashboardDist: this.options.dashboardDist,

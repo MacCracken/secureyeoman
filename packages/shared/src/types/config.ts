@@ -258,6 +258,10 @@ export const SecurityConfigSchema = z.object({
   allowDesktopControl: z.boolean().default(false),
   /** Allow camera capture. Sub-item of desktop control — only effective when allowDesktopControl is true. */
   allowCamera: z.boolean().default(false),
+  /** Allow network evaluation and protection tools (SSH automation, topology, CVE lookup, PCAP). Off by default. */
+  allowNetworkTools: z.boolean().default(false),
+  /** Allow NetBox write operations (create/update/delete). Sub-item of network tools — only effective when allowNetworkTools is true. */
+  allowNetBoxWrite: z.boolean().default(false),
   /** Allow agents to generate and register tools at runtime. Off by default. */
   allowDynamicTools: z.boolean().default(false),
   /** Require dynamically-created tools to run inside a sandbox. Defaults true; only applies when allowDynamicTools is true. */
@@ -274,7 +278,25 @@ export const SecurityConfigSchema = z.object({
   allowCommunityGitFetch: z.boolean().default(false),
   /** Default git URL for community skills repo when git fetch is enabled. */
   communityGitUrl: z.string().optional(),
-  secretBackend: z.enum(['auto', 'keyring', 'env', 'file']).default('auto'),
+  secretBackend: z.enum(['auto', 'keyring', 'env', 'file', 'vault']).default('auto'),
+  vault: z
+    .object({
+      /** Base URL of the OpenBao / Vault server */
+      address: z.string().default('http://127.0.0.1:8200'),
+      /** KV v2 mount path */
+      mount: z.string().default('secret'),
+      /** Optional namespace (Vault Enterprise / OpenBao) */
+      namespace: z.string().optional(),
+      /** Env-var name holding the AppRole role_id */
+      roleIdEnv: EnvVarRefSchema.default('VAULT_ROLE_ID'),
+      /** Env-var name holding the AppRole secret_id */
+      secretIdEnv: EnvVarRefSchema.default('VAULT_SECRET_ID'),
+      /** Env-var name holding a static token (overrides AppRole when set) */
+      tokenEnv: EnvVarRefSchema.optional(),
+      /** Fall back to env/file backend when Vault is unreachable */
+      fallback: z.boolean().default(true),
+    })
+    .default({}),
   rotation: z
     .object({
       enabled: z.boolean().default(false),
@@ -380,6 +402,8 @@ const TlsConfigSchema = z
     certPath: SafePathSchema.optional(),
     keyPath: SafePathSchema.optional(),
     caPath: SafePathSchema.optional(),
+    /** Auto-generate a self-signed dev cert when no certPath/keyPath are provided */
+    autoGenerate: z.boolean().default(false),
   })
   .default({});
 
