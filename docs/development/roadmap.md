@@ -21,6 +21,13 @@
 ## Phase pre-41:
 
 - [ ] multi-active agents; default chat personality
+- [ ] **Test coverage** — overall at 76.67% stmts / 77.15% lines after test-suite repair pass (2026-02-24). Zero-coverage areas to address:
+  - [ ] `src/workflow/` — `workflow-engine.ts`, `workflow-manager.ts`, `workflow-routes.ts`, `workflow-storage.ts` (0%)
+  - [ ] `src/storage/migrations/` — `manifest.ts`, `runner.ts` (0%)
+  - [ ] `src/task/task-storage.ts` (0%)
+  - [ ] `src/soul/external-soul-manager.ts` (0%)
+  - [ ] `src/auth/sso-storage.ts` (0%)
+  - [ ] Low-coverage: `src/soul/creation-tool-executor.ts` (47%), `src/task/executor.ts` (85%), `src/auth/rbac.ts` (70%)
 
 --
 ## Phase 41: Secrets Management
