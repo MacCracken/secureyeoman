@@ -1,3 +1,25 @@
+## [Phase 45] — Twingate Remote MCP Access (2026-02-24)
+
+### Added
+
+- 13 `twingate_*` MCP tools across two groups: 9 GraphQL tenant management tools and 4 remote MCP proxy tools
+- **Tenant management tools**: `twingate_resources_list`, `twingate_resource_get`, `twingate_groups_list`, `twingate_service_accounts_list`, `twingate_service_account_create`, `twingate_service_key_create`, `twingate_service_key_revoke`, `twingate_connectors_list`, `twingate_remote_networks_list` — GraphQL API calls to `https://{network}.twingate.com/api/graphql/`
+- **Remote MCP proxy tools**: `twingate_mcp_connect`, `twingate_mcp_list_tools`, `twingate_mcp_call_tool`, `twingate_mcp_disconnect` — JSON-RPC 2.0 proxy to private MCP servers reachable via the Twingate Client tunnel
+- `allowTwingate: boolean` to `SecurityConfig` — operator-level kill switch (same pattern as `allowDesktopControl`)
+- `exposeTwingate: boolean` to `McpFeaturesSchema` — per-personality toggle
+- `exposeTwingateTools`, `twingateNetwork`, `twingateApiKey` to `McpServiceConfigSchema` and `McpFeatureConfig`
+- Service key storage via SecretsManager: `TWINGATE_SVC_KEY_{accountId}` — raw token never returned in tool response after storage
+- Supplemental audit events: `twingate_key_create`, `twingate_key_revoke` (warning level); `twingate_mcp_tool_call` (info level)
+- In-memory MCP proxy session store (`Map<sessionId, ProxySession>`) with 30-minute idle TTL and automatic 5-minute pruning
+- Security Settings toggle ("Twingate Remote Access") in dashboard
+- Per-personality Twingate checkbox in Personality Editor MCP Features section (disabled with helper text when global toggle is off)
+- `TWINGATE_API_KEY`, `TWINGATE_NETWORK`, `MCP_EXPOSE_TWINGATE_TOOLS` env vars documented in `docs/configuration.md`
+- ADR 127: `docs/adr/127-twingate-remote-mcp-access.md`
+- Guide: `docs/guides/twingate.md` — prerequisites, configuration, workflow, service key lifecycle, troubleshooting
+- 19 unit tests in `packages/mcp/src/tools/twingate-tools.test.ts`
+
+---
+
 ## [Phase 44] — Skill Routing Quality (2026-02-24)
 
 ### Added
