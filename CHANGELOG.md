@@ -58,6 +58,31 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — exposeDesktopControl MCP Feature Toggle (2026-02-24)
+
+### Features
+
+**Three-level Remote Desktop Control gate in Yeoman MCP**
+
+- `McpServiceConfig.exposeDesktopControl` (default `false`) — MCP service-level toggle; all `desktop_*` tool handlers wrapped in `desktopHandler()` closure that returns a `not enabled` error when the toggle is off. Mirrors the `exposeBrowser` pattern in browser-tools.ts.
+- `McpFeaturesSchema.exposeDesktopControl` — per-personality toggle in `packages/shared/src/types/soul.ts`, following the same schema pattern as `exposeBrowser`.
+- **ConnectionsPage** — Remote Desktop Control row in Feature Toggles grid. Toggle is locked (disabled, opacity-50) when `SecurityPolicy.allowDesktopControl` is false — the env-level gate propagated from Security Settings.
+- **PersonalityEditor** — Remote Desktop Control per-personality toggle in the Yeoman MCP features section, after Browser Automation. Disabled with "enable in Connections first" hint when the global MCP config toggle is off.
+- **`McpFeatureConfig` (storage)** — `exposeDesktopControl` field added to `packages/core/src/mcp/storage.ts` type, defaults, and `PATCH /api/v1/mcp/config` body schema so the toggle is correctly persisted to the DB.
+- **Tools list filter** — `desktop_*` tools hidden from `GET /api/v1/mcp/tools` when `exposeDesktopControl` is false, matching the `browser_*` filter pattern.
+
+### Fixes
+
+- `packages/core/src/mcp/storage.ts` — `exposeDesktopControl` was missing from `McpFeatureConfig` interface and `MCP_CONFIG_DEFAULTS`, causing the toggle to silently fail to save.
+- `packages/core/src/mcp/mcp-routes.ts` — `exposeDesktopControl` was absent from the `PATCH /api/v1/mcp/config` body type, so the field was dropped before reaching storage.
+
+### Tests
+
+- `packages/mcp/src/tools/desktop-tools.test.ts` — complete rewrite: 31 tests covering tool registration (all 14 names), `exposeDesktopControl=false` gate (parametric across all tools), per-tool API endpoint routing, and audit logger wiring. Uses `createMockServer()` handler capture pattern matching `browser-tools.test.ts`.
+- `packages/core/src/multimodal/manager.test.ts` — 16 new tests: ElevenLabs/Deepgram/Cartesia TTS routing, Deepgram/ElevenLabs STT routing, `detectAvailableProviders()` `configured[]` and `metadata` assertions.
+
+---
+
 ## [Unreleased] — Phase 40 Desktop Control + Multimodal Provider Selection (2026-02-24)
 
 ### Features

@@ -31,6 +31,7 @@ const WEB_SCRAPING_TOOLS = [
 ];
 const WEB_SEARCH_TOOLS = ['web_search', 'web_search_batch'];
 const BROWSER_TOOL_PREFIXES = ['browser_'];
+const DESKTOP_TOOL_PREFIXES = ['desktop_'];
 
 export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions): void {
   const { mcpStorage, mcpClient, mcpServer, healthMonitor, credentialManager } = opts;
@@ -171,6 +172,8 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       }
       if (!config.exposeBrowser && BROWSER_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
+      if (!config.exposeDesktopControl && DESKTOP_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
       return true;
     });
 
@@ -224,6 +227,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           exposeWebScraping?: boolean;
           exposeWebSearch?: boolean;
           exposeBrowser?: boolean;
+          exposeDesktopControl?: boolean;
           allowedUrls?: string[];
           webRateLimitPerMinute?: number;
           proxyEnabled?: boolean;

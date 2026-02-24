@@ -18,6 +18,7 @@ export interface McpFeatureConfig {
   exposeWebScraping: boolean;
   exposeWebSearch: boolean;
   exposeBrowser: boolean;
+  exposeDesktopControl: boolean;
   // Web scraper configuration (Phase 13)
   allowedUrls: string[];
   webRateLimitPerMinute: number;
@@ -34,6 +35,7 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   exposeWebScraping: true,
   exposeWebSearch: true,
   exposeBrowser: false,
+  exposeDesktopControl: false,
   allowedUrls: [],
   webRateLimitPerMinute: 10,
   proxyEnabled: false,

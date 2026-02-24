@@ -33,6 +33,7 @@ const CONFIG = {
   exposeWebScraping: false,
   exposeWebSearch: false,
   exposeBrowser: false,
+  exposeDesktopControl: false,
 };
 
 function makeMockStorage(overrides?: Partial<McpStorage>): McpStorage {
