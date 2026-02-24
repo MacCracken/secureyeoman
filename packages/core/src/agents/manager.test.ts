@@ -21,6 +21,7 @@ vi.mock('node:child_process', () => ({ spawn: mockSpawn }));
 // Mock dependencies
 const mockStorage = {
   seedBuiltinProfiles: vi.fn(),
+  getStoredEnabled: vi.fn().mockResolvedValue(null),
   getProfile: vi.fn(),
   getProfileByName: vi.fn(),
   listProfiles: vi.fn().mockResolvedValue([]),

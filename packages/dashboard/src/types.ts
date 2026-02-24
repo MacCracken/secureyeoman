@@ -504,6 +504,8 @@ export interface ConversationMessageResponse {
   role: 'user' | 'assistant';
   content: string;
   model: string | null;
+  thinkingContent?: string | null;
+  toolCalls?: ToolCallRecord[] | null;
   provider: string | null;
   tokensUsed: number | null;
   brainContext: BrainContext | null;
@@ -526,6 +528,14 @@ export interface CreationEvent {
   id?: string;
 }
 
+/** A tool invoked by the AI during a response (persisted in the message record). */
+export interface ToolCallRecord {
+  toolName: string;
+  label: string;
+  serverName?: string;
+  isMcp: boolean;
+}
+
 export interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
@@ -535,6 +545,7 @@ export interface ChatMessage {
   tokensUsed?: number;
   brainContext?: BrainContext;
   creationEvents?: CreationEvent[];
+  toolCalls?: ToolCallRecord[];
   thinkingContent?: string;
 }
 

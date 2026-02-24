@@ -29,6 +29,8 @@ interface MessageRow {
   attachments_json: unknown;
   brain_context_json: unknown | null;
   creation_events_json: unknown | null;
+  thinking_content: string | null;
+  tool_calls_json: unknown | null;
   created_at: number;
 }
 
@@ -49,6 +51,13 @@ export interface BrainContextMeta {
   contextSnippets: string[];
 }
 
+export interface ToolCallRecord {
+  toolName: string;
+  label: string;
+  serverName?: string;
+  isMcp: boolean;
+}
+
 export interface ConversationMessage {
   id: string;
   conversationId: string;
@@ -60,6 +69,8 @@ export interface ConversationMessage {
   attachments: { type: 'image'; data: string; mimeType: string }[];
   brainContext: BrainContextMeta | null;
   creationEvents: { tool: string; label: string; name: string; id?: string }[] | null;
+  thinkingContent: string | null;
+  toolCalls: ToolCallRecord[] | null;
   createdAt: number;
 }
 
@@ -104,6 +115,10 @@ function rowToMessage(row: MessageRow): ConversationMessage {
           row.creation_events_json,
           null
         )
+      : null,
+    thinkingContent: row.thinking_content ?? null,
+    toolCalls: row.tool_calls_json
+      ? safeJsonParse<ToolCallRecord[] | null>(row.tool_calls_json, null)
       : null,
     createdAt: row.created_at,
   };
@@ -215,14 +230,16 @@ export class ConversationStorage extends PgBaseStorage {
     attachments?: { type: 'image'; data: string; mimeType: string }[];
     brainContext?: BrainContextMeta | null;
     creationEvents?: { tool: string; label: string; name: string; id?: string }[] | null;
+    thinkingContent?: string | null;
+    toolCalls?: ToolCallRecord[] | null;
   }): Promise<ConversationMessage> {
     const now = Date.now();
     const id = uuidv7();
 
     await this.withTransaction(async (client) => {
       await client.query(
-        `INSERT INTO chat.messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, creation_events_json, created_at)
-         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+        `INSERT INTO chat.messages (id, conversation_id, role, content, model, provider, tokens_used, attachments_json, brain_context_json, creation_events_json, thinking_content, tool_calls_json, created_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         [
           id,
           data.conversationId,
@@ -235,6 +252,10 @@ export class ConversationStorage extends PgBaseStorage {
           data.brainContext ? JSON.stringify(data.brainContext) : null,
           data.creationEvents && data.creationEvents.length > 0
             ? JSON.stringify(data.creationEvents)
+            : null,
+          data.thinkingContent ?? null,
+          data.toolCalls && data.toolCalls.length > 0
+            ? JSON.stringify(data.toolCalls)
             : null,
           now,
         ]

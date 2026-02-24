@@ -1,5 +1,39 @@
 ## [2026.2.23]
 
+### Phase 43 — Sub-Agent UX + Bug Fixes
+
+#### Fixed
+
+- **MCP tool callthrough — all YEOMAN MCP tools now execute in the direct chat interface**
+  Previously `McpClientManager.callTool()` was a stub returning `{ result: "Tool X called with args", args }` — every call from the AI in the chat interface returned a silent fake acknowledgment instead of executing the tool. Root cause: no call path existed from core → YEOMAN MCP server for tool dispatch.
+
+  Full fix implemented across four layers:
+  - **`packages/mcp/src/tools/tool-utils.ts`** — `wrapToolHandler()` now populates a `globalToolRegistry` module-level `Map<string, handler>` alongside every `server.registerTool()` call. Handlers in the registry are the fully-wrapped versions (rate-limiting, audit logging, secret redaction included).
+  - **`packages/mcp/src/server.ts`** — new `POST /api/v1/internal/tool-call` endpoint on the YEOMAN MCP server. Authenticates with the same `ProxyAuth` JWT. Looks up the tool name in `globalToolRegistry` and calls the handler directly — bypasses the MCP JSON-RPC protocol overhead (no `initialize` handshake required). Returns the `ToolResult` content block.
+  - **`packages/core/src/mcp/client.ts`** — `callTool()` implemented: mints a short-lived service JWT (`jose`, HS256, 5 min expiry), fetches `{server.url}/api/v1/internal/tool-call`, throws on non-2xx. `tokenSecret` added to `McpClientManagerDeps` and passed from `secureyeoman.ts`.
+  - **`MCP_ADVERTISE_URL`** — auto-registration was storing `http://0.0.0.0:3001` as the YEOMAN MCP server's URL (the bind address, not the reachable address). Added `MCP_ADVERTISE_URL` env var (`McpServiceConfig.advertiseUrl`) used in `auto-register.ts` for the registered URL. Set to `http://mcp:3001` in `docker-compose.yml` and `http://127.0.0.1:3001` in `.env.dev`. Upsert in `POST /api/v1/mcp/servers` now updates the URL field on re-registration (`McpStorage.updateServerUrl()`).
+
+- **`diag_ping_integrations` — now reports actual MCP server connectivity**
+  Previously returned only `{ id, type: 'mcp_server' }` — no health check, no tool count, no URL. Now returns `{ id, type, toolCount, reachable, url, latencyMs }` per selected MCP server. Health check: `GET {url}/health` with 3s timeout via `AbortSignal.timeout`. `McpClientManager` passed into `DiagnosticRoutesOptions`.
+
+- **Sub-agent schema error (`tools.X.custom.input_schema.type` issue)** — MCP tools with empty `inputSchema: {}` lost the required `type: "object"` property when passed to the Anthropic API. Fixed in `agents/manager.ts` and both streaming + non-streaming paths in `chat-routes.ts`: if `raw.type` is absent, schema is normalised to `{ type: 'object', properties: {}, ...raw }`.
+
+- **`delegate_task` label showing tool name instead of task content** — name resolution in `chat-routes.ts` used `args.name` but `delegate_task` stores the task description in `args.task`. Fixed: fallback chain now includes `args.task` before `toolCall.name` in both streaming and non-streaming paths.
+
+- **Token budget exhaustion ("1000 tokens")** — `delegate_task` tool description gave no budget guidance; AI consistently picked `maxTokenBudget: 1000`. Description in `agents/tools.ts` rewritten: states system default is 50,000 tokens, typical tasks need 5,000–20,000, and values below 3,000 risk incomplete results.
+
+- **`SubAgentManager` null after runtime toggle** — `updateSecurityPolicy({ allowSubAgents: true })` updated the config flag but left `subAgentManager` null (it was only initialised at startup). Extracted `bootDelegationChain()` private method; called at startup and lazily from `updateSecurityPolicy()` when `allowSubAgents` transitions to `true` and the manager is absent.
+
+- **YEOMAN MCP tools not appearing in direct chat function interface** — `selectedServers.length > 0` gate in `chat-routes.ts` blocked all YEOMAN MCP tool injection when the personality had no external servers configured. Fixed: YEOMAN MCP tools (identified by `serverName === 'YEOMAN MCP'`) are always injected when `body.enabled` is true, filtered only by `mcpFeatures` flags (git, fs, web, browser, desktop gates). External server tools still require `selectedServers`. Applied to both streaming and non-streaming code paths.
+
+#### Changed
+
+- **SecuritySettings — one-click Sub-Agent Delegation provision** — toggling the Sub-Agents security policy on now also enables `agentConfig.enabled` in the same click if delegation config is currently off. Eliminates the two-step "enable policy → enable delegation" flow. "Delegation is active" confirmation badge shown when both are on.
+
+- **PersonalityEditor — delegation status card** — when the `subAgents` capability is toggled on, a status card appears below it: green "Delegation is ready" when the security policy allows it, amber warning with a link to Security Settings when `allowSubAgents` is false.
+
+---
+
 ### Changed
 
 - **Proactive triggers** — removed green background on enabled trigger rows; state is now communicated entirely by the active button color. Enable Assistance and Learning rows also no longer turn green when on.
@@ -205,7 +239,7 @@ New test files (57 tests):
 - **Channel B — MCP tools** (`packages/mcp/src/tools/diagnostic-tools.ts`): three new tools gated by `body.capabilities.includes('diagnostics')`:
   - `diag_report_status` — sub-agent pushes health report (uptime, task count, last error, memory) to orchestrator via `POST /api/v1/diagnostics/agent-report`
   - `diag_query_agent` — orchestrator reads a sub-agent's last report via `GET /api/v1/diagnostics/agent-report/:agentId`; also requires `allowSubAgents`
-  - `diag_ping_integrations` — returns running/healthy status for all integrations + selected MCP server IDs from the active personality
+  - `diag_ping_integrations` — returns running/healthy status for all integrations + MCP server connectivity (`toolCount`, `reachable`, `url`, `latencyMs`) for selected servers from the active personality
 - **Core API** (`packages/core/src/diagnostics/diagnostic-routes.ts`): three new Fastify routes serving Channel B tools. Agent reports stored in ephemeral in-memory Map (lost on restart; intentional for live-status data).
 - **Audit logging**: all three MCP tools emit `diagnostic_call` audit events (in addition to the standard `mcp_tool_call` from `wrapToolHandler`).
 - **Dashboard**: `diagnostics` entry added to `capabilityInfo` map in `PersonalityEditor.tsx` (icon 🩺, description "Self-diagnostics snapshot and sub-agent health reporting"). Toggle appears automatically in Body → Capabilities section.

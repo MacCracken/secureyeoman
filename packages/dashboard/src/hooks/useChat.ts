@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { sendChatMessage, createConversation, fetchConversation, getAccessToken } from '../api/client';
-import type { ChatMessage, CreationEvent } from '../types';
+import type { ChatMessage, CreationEvent, ToolCallRecord } from '../types';
 
 export interface UseChatOptions {
   personalityId?: string | null;
@@ -66,6 +66,8 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
             tokensUsed: m.tokensUsed ?? undefined,
             brainContext: m.brainContext ?? undefined,
             creationEvents: m.creationEvents ?? undefined,
+            thinkingContent: m.thinkingContent ?? undefined,
+            toolCalls: m.toolCalls ?? undefined,
           }))
         );
       })
@@ -295,6 +297,8 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
             tokensUsed: m.tokensUsed ?? undefined,
             brainContext: m.brainContext ?? undefined,
             creationEvents: m.creationEvents ?? undefined,
+            thinkingContent: m.thinkingContent ?? undefined,
+            toolCalls: m.toolCalls ?? undefined,
           }))
         );
       })
@@ -396,6 +400,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
       let thinkingAcc = '';
       let contentAcc = '';
       const pendingEvents: CreationEvent[] = [];
+      const completedToolCalls: ToolCallRecord[] = [];
 
       while (true) {
         const { done, value } = await reader.read();
@@ -421,17 +426,15 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
             contentAcc += event.content as string;
             setStreamingContent(contentAcc);
           } else if (type === 'tool_start') {
-            setActiveToolCalls((prev) => [
-              ...prev,
-              { toolName: event.toolName as string, label: event.label as string, isMcp: false },
-            ]);
+            const tc: ToolCallRecord = { toolName: event.toolName as string, label: event.label as string, isMcp: false };
+            setActiveToolCalls((prev) => [...prev, tc]);
+            completedToolCalls.push(tc);
           } else if (type === 'tool_result') {
             setActiveToolCalls((prev) => prev.filter((t) => t.toolName !== (event.toolName as string)));
           } else if (type === 'mcp_tool_start') {
-            setActiveToolCalls((prev) => [
-              ...prev,
-              { toolName: event.toolName as string, label: event.toolName as string, serverName: event.serverName as string, isMcp: true },
-            ]);
+            const tc: ToolCallRecord = { toolName: event.toolName as string, label: event.toolName as string, serverName: event.serverName as string, isMcp: true };
+            setActiveToolCalls((prev) => [...prev, tc]);
+            completedToolCalls.push(tc);
           } else if (type === 'mcp_tool_result') {
             setActiveToolCalls((prev) => prev.filter((t) => t.toolName !== (event.toolName as string)));
           } else if (type === 'creation_event') {
@@ -454,6 +457,7 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
                 thinkingContent: doneEvent.thinkingContent,
                 brainContext: doneEvent.brainContext,
                 creationEvents: doneEvent.creationEvents.length > 0 ? doneEvent.creationEvents : undefined,
+                toolCalls: completedToolCalls.length > 0 ? [...completedToolCalls] : undefined,
               },
             ]);
             setStreamingThinking('');

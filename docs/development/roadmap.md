@@ -8,11 +8,7 @@
 
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
-| | **Tag 2026.2.22** | **2026-02-22** | **Tagged** |
-| | **Release 2026.2.22** | **2026-02-22** | **Released** |
-| 38 | Beta Manual Review | 2026-02-23 | Complete |
-| 39 | Diagnostic Tools (Body Module) | 2026-02-23 | Complete |
-| 40 | Desktop Control + Multimodal Provider Selection | 2026-02-23 | Complete |
+| | **Release 2026.2.23** | **2026-02-23** | **Released** |
 | 41 | Secrets Management | — | Planned |
 | 42 | TLS / Certificate Management | — | Planned |
 | 43 | Sub-Agent UX + Bug Fixes | — | Planned |
@@ -85,21 +81,6 @@ Two distinct certificate use cases: (1) **self-signed cert for development** —
 ### 42.3 — Dashboard UI
 
 - [ ] **TLS status card in Security Settings** — Shows current TLS mode (disabled / self-signed / CA-signed), cert subject and expiry, days remaining with a warning badge when < 30 days. Link to the certificate guide.
-
----
-
-## Phase 43: Sub-Agent UX + Bug Fixes
-
-**Status**: ✅ Complete (2026-02-24)
-
-### 43.1 — Sub-Agent Spin-Up from Dashboard
-
-- [x] **Delegation status card** — PersonalityEditor shows a ✓ Ready / ⚠ Blocked status card under the Sub-Agent Delegation toggle so users know at a glance whether delegation is operational without leaving the editor.
-- [x] **One-click provision** — Enabling "Sub-Agent Delegation" in Security Settings now simultaneously activates `delegation.enabled`, provisioning both layers in a single toggle click. A "Delegation is active" confirmation badge appears when both are on.
-- [x] **Bug fix: SubAgentManager null on first enable** — Extracted `bootDelegationChain()` private method in `SecureYeoman`; called lazily from `updateSecurityPolicy()` when `allowSubAgents` is enabled at runtime and the manager is null. Eliminates "Sub-agent manager not available" false positives after toggling on without a restart.
-- [x] **Bug fix: AI picks tiny token budget** — Updated `maxTokenBudget` description in `delegate_task` tool to guide the AI: leave unset for the 50k default; typical tasks need 5k–20k; avoid values below 3k.
-- [x] **Bug fix: MCP tools not injected in chat** — Removed the `selectedServers.length > 0` gate; YEOMAN MCP tools are now always available when `body.enabled` is true, filtered by existing `mcpFeatures` flags. External server tools still require explicit selection. Applies to both streaming and non-streaming chat paths. Schema normalisation (`type: 'object'`) also applied here.
-- [x] **Bug fix: Integration/MCP tools missing from agent loop** — YEOMAN MCP tools (integration_*, system_*, audit_*, soul_*, brain_*, task_*, diagnostic_*, desktop_*) are now injected into the chat tool list whenever body is enabled, not just when a server is explicitly selected.
 
 ---
 

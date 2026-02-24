@@ -26,6 +26,7 @@ import {
   Plus,
   X,
   Split,
+  Wrench,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -510,6 +511,15 @@ export function EditorPage() {
   } = useChatStream({
     personalityId: effectivePersonalityId,
   });
+
+  const [hadActiveTools, setHadActiveTools] = useState(false);
+  useEffect(() => {
+    if (activeToolCalls.length > 0) setHadActiveTools(true);
+  }, [activeToolCalls.length]);
+  useEffect(() => {
+    if (!isPending) setHadActiveTools(false);
+  }, [isPending]);
+
   const voice = useVoice();
 
   const ptt = usePushToTalk(
@@ -1134,23 +1144,39 @@ export function EditorPage() {
                         {msg.role === 'user' ? 'You' : (currentPersonality?.name ?? 'Assistant')}
                       </span>
                     </div>
-                    {/* Thinking block for historical messages */}
+                    {/* Phase 1 — Thinking */}
                     {msg.role === 'assistant' && msg.thinkingContent && (
                       <ThinkingBlock thinking={msg.thinkingContent} />
                     )}
 
-                    {msg.role === 'assistant' ? (
-                      <ChatMarkdown content={sanitizeText(msg.content)} size="xs" />
-                    ) : (
-                      <p className="text-xs whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
-                    )}
-
-                    {/* Creation event pills */}
+                    {/* Phase 2 — Tool use (badges + creation outcomes), shown before the response */}
                     {msg.role === 'assistant' &&
-                      msg.creationEvents &&
-                      msg.creationEvents.length > 0 && (
-                        <div className="mt-1.5 space-y-0.5">
-                          {msg.creationEvents.map((ev: CreationEvent, j: number) => (
+                      ((msg.toolCalls?.length ?? 0) > 0 || (msg.creationEvents?.length ?? 0) > 0) && (
+                        <div
+                          className={`space-y-0.5 mb-1.5 ${msg.thinkingContent ? 'border-t border-muted-foreground/15 pt-1.5 mt-1' : ''}`}
+                        >
+                          <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 mb-1">
+                            <Wrench className="w-2.5 h-2.5 shrink-0" />
+                            <span>Tools used</span>
+                          </div>
+                          {/* Tool call badges */}
+                          {msg.toolCalls && msg.toolCalls.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mb-0.5">
+                              {msg.toolCalls.map((tc, j) => (
+                                <span
+                                  key={j}
+                                  className="inline-flex items-center gap-0.5 text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded-full"
+                                >
+                                  <Sparkles className="w-2 h-2" />
+                                  {tc.isMcp && tc.serverName
+                                    ? `${tc.serverName}: ${tc.toolName}`
+                                    : tc.label}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {/* Creation outcomes */}
+                          {msg.creationEvents?.map((ev: CreationEvent, j: number) => (
                             <div
                               key={j}
                               className="flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded border border-primary/20"
@@ -1164,6 +1190,21 @@ export function EditorPage() {
                           ))}
                         </div>
                       )}
+
+                    {/* Phase 3 — Response */}
+                    {msg.role === 'assistant' ? (
+                      <div
+                        className={
+                          msg.thinkingContent || (msg.creationEvents?.length ?? 0) > 0
+                            ? 'border-t border-muted-foreground/15 pt-1.5 mt-1'
+                            : ''
+                        }
+                      >
+                        <ChatMarkdown content={sanitizeText(msg.content)} size="xs" />
+                      </div>
+                    ) : (
+                      <p className="text-xs whitespace-pre-wrap">{sanitizeText(msg.content)}</p>
+                    )}
 
                     {msg.role === 'assistant' && (
                       <button
@@ -1192,26 +1233,45 @@ export function EditorPage() {
                       </span>
                     </div>
 
-                    {/* Live thinking */}
+                    {/* Phase 1 — Live thinking */}
                     {streamingThinking && (
                       <ThinkingBlock thinking={streamingThinking} live={true} />
                     )}
 
-                    {/* Active tool calls */}
+                    {/* Phase 2 — Active tool calls */}
                     {activeToolCalls.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-1">
-                        {activeToolCalls.map((tc) => (
-                          <span key={tc.toolName} className="inline-flex items-center gap-0.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full animate-pulse">
-                            <Sparkles className="w-2 h-2" />
-                            {tc.isMcp ? `${tc.serverName}: ${tc.toolName}` : tc.label}
-                          </span>
-                        ))}
+                      <div
+                        className={`mb-1 ${streamingThinking ? 'border-t border-muted-foreground/15 pt-1.5 mt-1' : ''}`}
+                      >
+                        <div className="flex items-center gap-1 text-[10px] text-muted-foreground/70 mb-1">
+                          <Wrench className="w-2.5 h-2.5 shrink-0" />
+                          <span>Using tools</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {activeToolCalls.map((tc) => (
+                            <span
+                              key={tc.toolName}
+                              className="inline-flex items-center gap-0.5 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full animate-pulse"
+                            >
+                              <Sparkles className="w-2 h-2" />
+                              {tc.isMcp ? `${tc.serverName}: ${tc.toolName}` : tc.label}
+                            </span>
+                          ))}
+                        </div>
                       </div>
                     )}
 
-                    {/* Live content */}
+                    {/* Phase 3 — Response */}
                     {streamingContent ? (
-                      <p className="text-xs whitespace-pre-wrap">{streamingContent}</p>
+                      <div
+                        className={
+                          streamingThinking || hadActiveTools
+                            ? 'border-t border-muted-foreground/15 pt-1.5 mt-1'
+                            : ''
+                        }
+                      >
+                        <p className="text-xs whitespace-pre-wrap">{streamingContent}</p>
+                      </div>
                     ) : !streamingThinking && activeToolCalls.length === 0 && (
                       <div className="flex items-center gap-1.5 mt-1.5">
                         <span className="text-[10px] text-muted-foreground animate-pulse">Thinking</span>

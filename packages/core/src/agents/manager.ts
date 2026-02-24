@@ -119,12 +119,17 @@ export class SubAgentManager {
       throw new Error(`Agent profile not found: ${params.profile}`);
     }
 
-    // Compute token budget
-    const tokenBudget = Math.min(
-      params.maxTokenBudget ?? this.config.tokenBudget.default,
-      profile.maxTokenBudget,
-      this.config.tokenBudget.max,
-      parentContext?.remainingBudget ?? this.config.tokenBudget.max
+    // Compute token budget — clamp between a 20k minimum (prevents AI-specified
+    // values that are too low to complete any real task) and the configured max.
+    const MIN_TOKEN_BUDGET = 20_000;
+    const tokenBudget = Math.max(
+      MIN_TOKEN_BUDGET,
+      Math.min(
+        params.maxTokenBudget ?? this.config.tokenBudget.default,
+        profile.maxTokenBudget,
+        this.config.tokenBudget.max,
+        parentContext?.remainingBudget ?? this.config.tokenBudget.max
+      )
     );
 
     const timeoutMs = params.timeout ?? this.config.defaultTimeout;

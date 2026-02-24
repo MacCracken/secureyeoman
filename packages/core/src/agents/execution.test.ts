@@ -185,12 +185,12 @@ describe('SubAgentManager execution', () => {
     await manager.delegate({
       profile: 'builtin-researcher',
       task: 'Test task',
-      maxTokenBudget: 10000,
+      maxTokenBudget: 25000,
     });
 
     expect(mockStorage.createDelegation).toHaveBeenCalledWith(
       expect.objectContaining({
-        tokenBudget: 10000,
+        tokenBudget: 25000,
       })
     );
   });
@@ -198,12 +198,12 @@ describe('SubAgentManager execution', () => {
   it('respects parent remaining budget', async () => {
     await manager.delegate(
       { profile: 'builtin-researcher', task: 'Test task' },
-      { remainingBudget: 5000 }
+      { remainingBudget: 30000 }
     );
 
     expect(mockStorage.createDelegation).toHaveBeenCalledWith(
       expect.objectContaining({
-        tokenBudget: 5000,
+        tokenBudget: 30000,
       })
     );
   });

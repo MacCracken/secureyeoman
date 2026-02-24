@@ -599,6 +599,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           ? { ...rawResponse, content: scanResult.text }
           : rawResponse;
 
+        // Assemble thinking content now so it's available for both persistence and response.
+        const thinkingContent = thinkingParts.join('\n\n---\n\n') || undefined;
+
         // Persist messages to conversation storage when conversationId is provided
         if (conversationId) {
           try {
@@ -618,6 +621,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 tokensUsed: response.usage.totalTokens,
                 brainContext,
                 creationEvents: creationEvents.length > 0 ? creationEvents : null,
+                thinkingContent: thinkingContent ?? null,
               });
             }
           } catch {
@@ -639,8 +643,6 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             // Brain not available — skip memory storage
           }
         }
-
-        const thinkingContent = thinkingParts.join('\n\n---\n\n') || undefined;
 
         return {
           role: 'assistant' as const,
@@ -1032,6 +1034,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         const thinkingPartsS: string[] = [];
         const contentPartsS: string[] = [];
         const creationEventsS: Array<{ tool: string; label: string; action: string; name: string; id?: string }> = [];
+        const toolCallsS: Array<{ toolName: string; label: string; serverName?: string; isMcp: boolean }> = [];
         let totalTokensUsed = 0;
         let finalModel = '';
         let finalProvider = '';
@@ -1106,6 +1109,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
             if (mcpToolS) {
               emit({ type: 'mcp_tool_start', toolName: toolCall.name, serverName: mcpToolS.serverName, iteration: iterationCountS });
+              toolCallsS.push({ toolName: toolCall.name, label: toolCall.name, serverName: mcpToolS.serverName, isMcp: true });
               try {
                 const mcpResult = await mcpClientStream!.callTool(mcpToolS.serverId, toolCall.name, toolCall.arguments);
                 emit({ type: 'mcp_tool_result', toolName: toolCall.name, serverName: mcpToolS.serverName, success: true });
@@ -1115,8 +1119,14 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 messages.push({ role: 'tool' as const, toolResult: { toolCallId: toolCall.id, content: JSON.stringify({ error: String(err) }), isError: true } });
               }
             } else {
-              const label = CREATION_TOOL_LABELS_S[toolCall.name] ?? toolCall.name;
+              const baseLabel = CREATION_TOOL_LABELS_S[toolCall.name] ?? toolCall.name;
+              // Enrich delegation label with agent profile and task snippet
+              const sArgsS = toolCall.arguments as Record<string, unknown>;
+              const label = toolCall.name === 'delegate_task'
+                ? `Delegation → ${String(sArgsS?.profile ?? 'agent')}: ${String(sArgsS?.task ?? '').slice(0, 50)}`
+                : baseLabel;
               emit({ type: 'tool_start', toolName: toolCall.name, label, iteration: iterationCountS });
+              toolCallsS.push({ toolName: toolCall.name, label, isMcp: false });
               const result = await executeCreationTool(toolCall, secureYeoman, executionContextS);
               emit({ type: 'tool_result', toolName: toolCall.name, success: !result.isError, isError: result.isError });
 
@@ -1170,6 +1180,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 model: finalModel, provider: finalProvider,
                 tokensUsed: totalTokensUsed, brainContext,
                 creationEvents: creationEventsS.length > 0 ? creationEventsS : null,
+                thinkingContent: finalThinking ?? null,
+                toolCalls: toolCallsS.length > 0 ? toolCallsS : null,
               });
             }
           } catch { /* best-effort */ }
