@@ -71,6 +71,7 @@ services:
       MCP_TRANSPORT: "${MCP_TRANSPORT:-streamable-http}"
       MCP_AUTO_REGISTER: "${MCP_AUTO_REGISTER:-true}"
       MCP_CORE_URL: "http://core:18789"
+      MCP_ADVERTISE_URL: "http://mcp:3001"
       MCP_EXPOSE_FILESYSTEM: "${MCP_EXPOSE_FILESYSTEM:-false}"
       MCP_ALLOWED_PATHS: "${MCP_ALLOWED_PATHS:-}"
       MCP_RATE_LIMIT_PER_TOOL: "${MCP_RATE_LIMIT_PER_TOOL:-30}"

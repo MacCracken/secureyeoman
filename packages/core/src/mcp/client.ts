@@ -11,16 +11,31 @@ import type {
 import type { SecureLogger } from '../logging/logger.js';
 import { McpStorage } from './storage.js';
 import type { McpCredentialManager } from './credential-manager.js';
+import { SignJWT } from 'jose';
+import { randomUUID } from 'node:crypto';
 
 export interface McpClientManagerDeps {
   logger: SecureLogger;
   credentialManager?: McpCredentialManager;
+  /** Shared token secret for minting service JWTs when calling back to the MCP server */
+  tokenSecret?: string;
+}
+
+/** Mint a short-lived service JWT for core → MCP callthrough. */
+async function mintCallthruToken(secret: string): Promise<string> {
+  const key = new TextEncoder().encode(secret);
+  return new SignJWT({ sub: 'core-callthru', role: 'admin', permissions: ['*:*'], type: 'access', jti: randomUUID() })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('5m')
+    .sign(key);
 }
 
 export class McpClientManager {
   private storage: McpStorage;
   private logger: SecureLogger;
   private credentialManager?: McpCredentialManager;
+  private tokenSecret?: string;
   private discoveredTools = new Map<string, McpToolDef[]>();
   private discoveredResources = new Map<string, McpResourceDef[]>();
 
@@ -28,6 +43,7 @@ export class McpClientManager {
     this.storage = storage;
     this.logger = deps.logger;
     this.credentialManager = deps.credentialManager;
+    this.tokenSecret = deps.tokenSecret;
   }
 
   /**
@@ -118,16 +134,40 @@ export class McpClientManager {
     if (!server?.enabled) {
       throw new Error(`MCP server ${serverId} not found or disabled`);
     }
-
-    // Inject credentials into server env if credential manager is available
-    let env = server.env;
-    if (this.credentialManager) {
-      env = await this.credentialManager.injectCredentials(serverId, env);
+    if (!server.url) {
+      throw new Error(`MCP server '${server.name}' has no URL configured`);
     }
 
-    this.logger.info('Calling MCP tool', { serverId, toolName });
-    // In production, this would route through the MCP transport
-    return { result: `Tool ${toolName} called with args`, args };
+    if (!this.tokenSecret) {
+      throw new Error('McpClientManager: tokenSecret not configured — cannot call MCP tools');
+    }
+
+    // Inject credentials into server env if credential manager is available
+    if (this.credentialManager) {
+      await this.credentialManager.injectCredentials(serverId, server.env);
+    }
+
+    const token = await mintCallthruToken(this.tokenSecret);
+    const endpoint = `${server.url}/api/v1/internal/tool-call`;
+
+    this.logger.info('Calling MCP tool via internal callthrough', { serverId, toolName, endpoint });
+
+    const res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name: toolName, arguments: args }),
+      signal: AbortSignal.timeout(60_000),
+    });
+
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`MCP tool call failed (${res.status}): ${body}`);
+    }
+
+    return res.json();
   }
 
   async refreshAll(): Promise<void> {

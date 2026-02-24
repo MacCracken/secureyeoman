@@ -70,13 +70,17 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
       try {
         const { tools, ...serverData } = request.body;
 
-        // Upsert: if a server with the same name exists, reuse it
+        // Upsert: if a server with the same name exists, update its URL + transport; else create
         const existing = await mcpStorage.findServerByName(serverData.name);
         let server: typeof existing & {};
         let statusCode = 201;
 
         if (existing) {
-          server = existing;
+          // Update mutable fields (url, transport) so address changes survive restarts
+          if (serverData.url && serverData.url !== existing.url) {
+            await mcpStorage.updateServerUrl(existing.id, serverData.url);
+          }
+          server = { ...existing, url: serverData.url ?? existing.url };
           statusCode = 200;
         } else {
           server = await mcpStorage.addServer(serverData as any);

@@ -13,6 +13,7 @@ import { AutoRegistration } from './registration/auto-register.js';
 import { registerStreamableHttpTransport } from './transport/streamable-http.js';
 import { registerSseTransport } from './transport/sse.js';
 import { registerAllTools } from './tools/index.js';
+import { globalToolRegistry } from './tools/tool-utils.js';
 import { getBrowserPool } from './tools/browser-tools.js';
 import { registerAllResources } from './resources/index.js';
 import { registerAllPrompts } from './prompts/index.js';
@@ -94,6 +95,32 @@ export class McpServiceServer {
 
     // 5. Register dashboard routes
     registerDashboardRoutes(this.app, this.auth, this.mcpServer);
+
+    // 5a. Internal tool-call endpoint — lets core call YEOMAN MCP tools directly
+    // without going through the full MCP protocol (initialize → tools/call → close).
+    // Auth: same ProxyAuth JWT as all other endpoints.
+    this.app.post('/api/v1/internal/tool-call', async (request, reply) => {
+      const token = this.auth.extractToken(request.headers.authorization);
+      if (!token) return reply.code(401).send({ error: 'Unauthorized' });
+      const authResult = await this.auth.verify(token);
+      if (!authResult.valid) return reply.code(401).send({ error: 'Unauthorized' });
+
+      const { name, arguments: args } = request.body as {
+        name?: string;
+        arguments?: Record<string, unknown>;
+      };
+      if (!name) return reply.code(400).send({ error: 'Missing tool name' });
+
+      const handler = globalToolRegistry.get(name);
+      if (!handler) return reply.code(404).send({ error: `Tool not found: ${name}` });
+
+      try {
+        const result = await handler(args ?? {});
+        return result;
+      } catch (err) {
+        return reply.code(500).send({ error: String(err) });
+      }
+    });
 
     // 6. Health endpoint
     this.app.get('/health', async () => ({

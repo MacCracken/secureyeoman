@@ -767,8 +767,12 @@ export class SecureYeoman {
       // Step 6.8: Initialize MCP system (if enabled)
       if (this.config.mcp?.enabled) {
         this.mcpStorage = new McpStorage();
+        const mcpTokenSecret = (() => {
+          try { return requireSecret(this.config.gateway.auth.tokenSecret); } catch { return undefined; }
+        })();
         this.mcpClientManager = new McpClientManager(this.mcpStorage, {
           logger: this.logger.child({ component: 'McpClient' }),
+          tokenSecret: mcpTokenSecret,
         });
         this.mcpServer = new McpServer({
           logger: this.logger.child({ component: 'McpServer' }),

@@ -9,6 +9,17 @@ import { initializeLogger } from '../logging/logger.js';
  */
 function createMockSecureYeoman(overrides?: Record<string, unknown>) {
   return {
+    getConfig: () => ({
+      security: {
+        promptGuard: { mode: 'disabled' },
+        allowSubAgents: false,
+        allowA2A: false,
+        allowMultimodal: false,
+        allowDesktopControl: false,
+        allowCamera: false,
+        allowAnomalyDetection: false,
+      },
+    }),
     getMetrics: () => Promise.resolve({ cpu: 10, mem: 50 }),
     getState: () => ({ healthy: true, startedAt: Date.now() }),
     getRBAC: () => ({

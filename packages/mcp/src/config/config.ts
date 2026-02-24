@@ -14,6 +14,7 @@ export function loadConfig(
     transport: env.MCP_TRANSPORT ?? 'streamable-http',
     autoRegister: parseBool(env.MCP_AUTO_REGISTER, true),
     coreUrl: env.MCP_CORE_URL ?? 'http://127.0.0.1:18789',
+    advertiseUrl: env.MCP_ADVERTISE_URL,
     tokenSecret: env.SECUREYEOMAN_TOKEN_SECRET,
     exposeFilesystem: parseBool(env.MCP_EXPOSE_FILESYSTEM, false),
     allowedPaths: env.MCP_ALLOWED_PATHS

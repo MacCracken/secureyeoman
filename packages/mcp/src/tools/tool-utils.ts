@@ -4,6 +4,16 @@
 
 import type { ToolMiddleware } from './index.js';
 
+/**
+ * Global tool registry — populated by wrapToolHandler so the MCP server can
+ * expose an internal callthrough endpoint without going through the full MCP
+ * protocol (init → tools/call → close). Used by core's McpClientManager.callTool().
+ */
+export const globalToolRegistry = new Map<
+  string,
+  (args: Record<string, unknown>) => Promise<ToolResult>
+>();
+
 export interface ToolResult {
   [key: string]: unknown;
   content: { type: 'text'; text: string }[];
@@ -15,7 +25,7 @@ export function wrapToolHandler<T extends Record<string, unknown>>(
   middleware: ToolMiddleware,
   handler: (args: T) => Promise<ToolResult>
 ): (args: T) => Promise<ToolResult> {
-  return async (args: T): Promise<ToolResult> => {
+  const wrapped = async (args: T): Promise<ToolResult> => {
     // 1. Rate limit check
     const rateResult = middleware.rateLimiter.check(toolName);
     if (!rateResult.allowed) {
@@ -65,4 +75,10 @@ export function wrapToolHandler<T extends Record<string, unknown>>(
       };
     }
   };
+
+  // Register in the global callthrough registry so the internal tool-call
+  // endpoint can invoke handlers without going through the MCP protocol.
+  globalToolRegistry.set(toolName, wrapped as (args: Record<string, unknown>) => Promise<ToolResult>);
+
+  return wrapped;
 }

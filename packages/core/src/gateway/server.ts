@@ -451,7 +451,8 @@ export class GatewayServer {
     try {
       const soulManager = this.secureYeoman.getSoulManager();
       const integrationManager = this.secureYeoman.getIntegrationManager();
-      registerDiagnosticRoutes(this.app, { soulManager, integrationManager });
+      const mcpClientManager = this.secureYeoman.getMcpClientManager() ?? undefined;
+      registerDiagnosticRoutes(this.app, { soulManager, integrationManager, mcpClientManager });
     } catch {
       // Optional — skip if managers unavailable
     }

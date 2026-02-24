@@ -82,6 +82,9 @@ export const McpServiceConfigSchema = z.object({
   transport: McpTransportSchema.default('streamable-http'),
   autoRegister: z.boolean().default(true),
   coreUrl: z.string().url().default('http://127.0.0.1:18789'),
+  /** Externally-reachable URL this MCP server advertises to core during auto-registration.
+   *  Defaults to http://{host}:{port}. In Docker set MCP_ADVERTISE_URL to the service URL. */
+  advertiseUrl: z.string().url().optional(),
   tokenSecret: z.string().min(32).optional(),
   exposeFilesystem: z.boolean().default(false),
   allowedPaths: z.array(z.string()).default([]),

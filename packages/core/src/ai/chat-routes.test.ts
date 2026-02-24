@@ -45,6 +45,7 @@ function createMockSecureYeoman(
     getActiveTools: vi.fn().mockReturnValue([]),
     getPersonality: vi.fn().mockReturnValue(null),
     getActivePersonality: vi.fn().mockReturnValue(null),
+    getSkill: vi.fn().mockResolvedValue(null),
   };
 
   const mockBrainManager = {
@@ -89,6 +90,19 @@ function createMockSecureYeoman(
             throw new Error('Brain manager is not available');
           })
         : vi.fn().mockReturnValue(overrides.brainManager ?? mockBrainManager),
+    getConfig: vi.fn().mockReturnValue({
+      security: { promptGuard: { mode: 'disabled' } },
+    }),
+    getValidator: vi.fn().mockReturnValue({
+      validate: vi.fn().mockReturnValue({ blocked: false }),
+    }),
+    getAuditChain: vi.fn().mockReturnValue({
+      record: vi.fn().mockResolvedValue(undefined),
+    }),
+    getRateLimiter: vi.fn().mockReturnValue({
+      check: vi.fn().mockReturnValue({ allowed: true }),
+      addRule: vi.fn(),
+    }),
     getMcpClientManager: vi.fn().mockReturnValue(overrides.mcpClient ?? null),
     getMcpStorage: vi.fn().mockReturnValue(overrides.mcpStorage ?? null),
     getConversationStorage:
@@ -136,7 +150,7 @@ describe('Chat Routes', () => {
       payload: { message: 'Hi there' },
     });
 
-    expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith('Hi there', undefined);
+    expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith('Hi there', undefined, expect.any(Object));
     const chatCall = mockAiClient.chat.mock.calls[0][0];
     expect(chatCall.messages[0]).toEqual({ role: 'system', content: 'You are FRIDAY.' });
     expect(chatCall.messages[1]).toEqual({ role: 'user', content: 'Hi there' });
@@ -216,7 +230,7 @@ describe('Chat Routes', () => {
       payload: { message: 'Hello!', personalityId: 'p-custom' },
     });
 
-    expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith('Hello!', 'p-custom');
+    expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith('Hello!', 'p-custom', expect.any(Object));
   });
 
   it('POST /api/v1/chat omits personalityId when not provided', async () => {
@@ -229,7 +243,7 @@ describe('Chat Routes', () => {
       payload: { message: 'Hello!' },
     });
 
-    expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith('Hello!', undefined);
+    expect(mockSoulManager.composeSoulPrompt).toHaveBeenCalledWith('Hello!', undefined, expect.any(Object));
   });
 
   it('POST /api/v1/chat returns 502 on AI error', async () => {
@@ -694,18 +708,8 @@ describe('Chat Routes — MCP tool gathering', () => {
     const mockMcpClient = {
       getAllTools: vi.fn().mockReturnValue([
         { name: 'fs_read', serverName: 'YEOMAN MCP', description: 'File read', inputSchema: {} },
-        {
-          name: 'file_write',
-          serverName: 'YEOMAN MCP',
-          description: 'File write',
-          inputSchema: {},
-        },
-        {
-          name: 'filesystem_list',
-          serverName: 'YEOMAN MCP',
-          description: 'List files',
-          inputSchema: {},
-        },
+        { name: 'fs_write', serverName: 'YEOMAN MCP', description: 'File write', inputSchema: {} },
+        { name: 'fs_list', serverName: 'YEOMAN MCP', description: 'List files', inputSchema: {} },
       ]),
     };
     const { mock, mockAiClient } = createMockSecureYeoman({
@@ -729,9 +733,9 @@ describe('Chat Routes — MCP tool gathering', () => {
     const mockMcpClient = {
       getAllTools: vi.fn().mockReturnValue([
         {
-          name: 'web_search',
+          name: 'calendar_list',
           serverName: 'YEOMAN MCP',
-          description: 'Web search',
+          description: 'List calendar events',
           inputSchema: {},
         },
       ]),
@@ -747,7 +751,7 @@ describe('Chat Routes — MCP tool gathering', () => {
     await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'hello' } });
     const chatCall = mockAiClient.chat.mock.calls[0][0];
     expect(chatCall.tools).toHaveLength(1);
-    expect(chatCall.tools[0].name).toBe('web_search');
+    expect(chatCall.tools[0].name).toBe('calendar_list');
   });
 
   it('skips MCP gathering when personality.body.enabled is false', async () => {
@@ -790,14 +794,16 @@ describe('Chat Routes — MCP tool gathering', () => {
         },
       ]),
     };
-    const { mock } = createMockSecureYeoman({
+    const { mock, mockAiClient } = createMockSecureYeoman({
       soulManager: buildMcpSoulManager(noServersPersonality),
       mcpClient: mockMcpClient,
       mcpStorage: { getConfig: vi.fn().mockResolvedValue({}) },
     });
     registerChatRoutes(app, { secureYeoman: mock });
     await app.inject({ method: 'POST', url: '/api/v1/chat', payload: { message: 'hello' } });
-    expect(mockMcpClient.getAllTools).not.toHaveBeenCalled();
+    // External tools from non-selected servers are filtered out; 0 tools sent to the AI
+    const chatCall = mockAiClient.chat.mock.calls[0][0];
+    expect(chatCall.tools ?? []).toHaveLength(0);
   });
 });
 

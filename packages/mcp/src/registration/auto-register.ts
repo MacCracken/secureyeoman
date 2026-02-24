@@ -32,7 +32,7 @@ export class AutoRegistration {
         name: 'YEOMAN MCP',
         description: 'Built-in MCP server exposing YEOMAN tools, resources, and prompts',
         transport: this.config.transport,
-        url: `http://${this.config.host}:${this.config.port}`,
+        url: this.config.advertiseUrl ?? `http://${this.config.host}:${this.config.port}`,
         enabled: true,
         tools: toolManifest,
       });

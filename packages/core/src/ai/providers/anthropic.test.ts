@@ -182,6 +182,7 @@ describe('AnthropicProvider', () => {
   describe('chatStream', () => {
     it('yields content_delta and done chunks', async () => {
       const finalMsg = {
+        content: [],
         usage: { input_tokens: 10, output_tokens: 20 },
         stop_reason: 'end_turn',
       };
@@ -205,6 +206,7 @@ describe('AnthropicProvider', () => {
 
     it('yields tool_call_delta for tool_use blocks', async () => {
       const finalMsg = {
+        content: [{ type: 'tool_use', id: 'tc-1', name: 'search', input: { q: '' } }],
         usage: { input_tokens: 10, output_tokens: 5 },
         stop_reason: 'tool_use',
       };

@@ -13,6 +13,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { IntegrationManager } from '../integrations/manager.js';
 import type { SoulManager } from '../soul/manager.js';
+import type { McpClientManager } from '../mcp/client.js';
 
 interface AgentReport {
   agentId: string;
@@ -30,13 +31,14 @@ const agentReports = new Map<string, AgentReport>();
 export interface DiagnosticRoutesOptions {
   integrationManager: IntegrationManager;
   soulManager: SoulManager;
+  mcpClientManager?: McpClientManager;
 }
 
 export function registerDiagnosticRoutes(
   app: FastifyInstance,
   opts: DiagnosticRoutesOptions
 ): void {
-  const { integrationManager, soulManager } = opts;
+  const { integrationManager, soulManager, mcpClientManager } = opts;
 
   // ── POST /api/v1/diagnostics/agent-report ─────────────────────────────────
 
@@ -97,10 +99,43 @@ export function registerDiagnosticRoutes(
           healthy: integrationManager.isHealthy(id),
         }));
 
+        // Ping MCP servers: check tool count as connectivity proxy, then HTTP health check
+        const mcpServerResults = await Promise.all(
+          selectedServers.map(async (serverId) => {
+            const tools = mcpClientManager
+              ? await mcpClientManager.discoverTools(serverId).catch(() => [])
+              : [];
+            // Attempt health check via the server's stored URL
+            let reachable = false;
+            let url: string | undefined;
+            let latencyMs: number | undefined;
+            if (mcpClientManager) {
+              try {
+                const serverInfo = await (mcpClientManager as any).storage?.getServer?.(serverId);
+                url = serverInfo?.url;
+                if (url) {
+                  const start = Date.now();
+                  const res = await fetch(`${url}/health`, { signal: AbortSignal.timeout(3000) });
+                  latencyMs = Date.now() - start;
+                  reachable = res.ok;
+                }
+              } catch { /* unreachable */ }
+            }
+            return {
+              id: serverId,
+              type: 'mcp_server' as const,
+              toolCount: tools.length,
+              reachable,
+              ...(url ? { url } : {}),
+              ...(latencyMs !== undefined ? { latencyMs } : {}),
+            };
+          })
+        );
+
         return {
           personality: personality?.name ?? 'unknown',
           integrations: integrationResults,
-          mcpServers: selectedServers.map((s) => ({ id: s, type: 'mcp_server' as const })),
+          mcpServers: mcpServerResults,
           checkedAt: new Date().toISOString(),
         };
       } catch (err) {

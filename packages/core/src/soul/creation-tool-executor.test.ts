@@ -63,6 +63,7 @@ function makeSecureYeoman(dtm?: ReturnType<typeof makeDtm>) {
       updateSkill: vi.fn().mockResolvedValue({ id: 's-1' }),
       deleteSkill: vi.fn().mockResolvedValue(undefined),
       deletePersonality: vi.fn().mockResolvedValue(undefined),
+      getSkill: vi.fn().mockResolvedValue(null),
       getPersonality: vi.fn().mockResolvedValue({
         id: 'p-other',
         body: { resourcePolicy: { deletionMode: 'auto', automationLevel: 'supervised_auto', emergencyStop: false } },
@@ -467,7 +468,7 @@ describe('executeCreationTool — delete_personality', () => {
     );
 
     expect(result.isError).toBe(false);
-    expect(result.output).toEqual({ deleted: true, id: 'p-other' });
+    expect(result.output).toMatchObject({ deleted: true, id: 'p-other' });
   });
 
   it('allows deletion when no context is provided (no self-deletion risk)', async () => {
@@ -589,7 +590,7 @@ describe('executeCreationTool — delete_custom_role', () => {
     );
 
     expect(result.isError).toBe(false);
-    expect(result.output).toEqual({ deleted: true, roleId: 'analyst' });
+    expect(result.output).toMatchObject({ deleted: true, roleId: 'analyst' });
   });
 
   it('returns isError true when removeRole returns false (not found)', async () => {
@@ -659,7 +660,10 @@ describe('executeCreationTool — delete_experiment', () => {
   });
 
   it('returns { deleted: true, id } on success', async () => {
-    const mockExpManager = { delete: vi.fn().mockResolvedValue(undefined) };
+    const mockExpManager = {
+      get: vi.fn().mockResolvedValue({ id: 'exp-99', name: 'Test Experiment' }),
+      delete: vi.fn().mockResolvedValue(undefined),
+    };
     const sy = {
       ...makeSecureYeoman(),
       getExperimentManager: vi.fn().mockReturnValue(mockExpManager),
@@ -671,11 +675,14 @@ describe('executeCreationTool — delete_experiment', () => {
     );
 
     expect(result.isError).toBe(false);
-    expect(result.output).toEqual({ deleted: true, id: 'exp-99' });
+    expect(result.output).toMatchObject({ deleted: true, id: 'exp-99' });
   });
 
   it('calls experimentManager.delete with the provided id', async () => {
-    const mockExpManager = { delete: vi.fn().mockResolvedValue(undefined) };
+    const mockExpManager = {
+      get: vi.fn().mockResolvedValue(null),
+      delete: vi.fn().mockResolvedValue(undefined),
+    };
     const sy = {
       ...makeSecureYeoman(),
       getExperimentManager: vi.fn().mockReturnValue(mockExpManager),

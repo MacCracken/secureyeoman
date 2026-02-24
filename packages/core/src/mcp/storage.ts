@@ -149,6 +149,13 @@ export class McpStorage extends PgBaseStorage {
     return rowCount > 0;
   }
 
+  async updateServerUrl(id: string, url: string): Promise<void> {
+    await this.execute(
+      'UPDATE mcp.servers SET url = $1, updated_at = $2 WHERE id = $3',
+      [url, Date.now(), id]
+    );
+  }
+
   async deleteServer(id: string): Promise<boolean> {
     const rowCount = await this.execute('DELETE FROM mcp.servers WHERE id = $1', [id]);
     return rowCount > 0;

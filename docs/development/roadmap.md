@@ -22,17 +22,24 @@
 | 47 | Find & Repair (Ongoing) | — | Ongoing |
 
 ---
+## Phase pre-41:
 
+- [ ] multi-active agents; default chat personality
+
+--
 ## Phase 41: Secrets Management
 
 **Status**: Planned | **Priority**: Critical — foundational; Phase 45 (Twingate) depends on this.
 
 Replace direct environment-variable secret storage with a proper secrets management layer. The `secretBackend` config field exists (`auto | keyring | env | file`) and the keyring infrastructure is built (`packages/core/src/security/keyring/`), but there is no runtime vault abstraction, rotation-aware secret resolution, or operator tooling for secret lifecycle management.
 
+> **Vault backend choice: [OpenBao](https://openbao.org)** (Linux Foundation, MPL-2.0, v2.5.1).
+> HashiCorp Vault moved to BSL in 2023 and is no longer genuinely open source. OpenBao is a community fork of the last MPL-licensed Vault release, maintained under the Linux Foundation with active development (v2.5.1, Feb 2026). Its HTTP API is 100% wire-compatible with pre-BSL Vault. Infisical was evaluated and rejected: secret rotation and RBAC are hard-gated behind a commercial enterprise license on self-hosted deployments (`getDefaultOnPremFeatures()` returns `false` for all advanced features without a paid license key).
+
 ### 41.1 — Vault Abstraction Layer
 
-- [ ] **`SecretsManager` facade** — Unified interface over backend providers: `keyring` (OS keychain via existing `KeyringManager`), `env` (current behaviour), `file` (encrypted file via existing `EncryptionManager`), `vault` (new — HashiCorp Vault / AWS Secrets Manager / Azure Key Vault). All backends implement `get(key): Promise<string>`, `set(key, value)`, `delete(key)`, `rotate(key)`. Resolves backend at startup based on `security.secretBackend`.
-- [ ] **`vault` backend** — Connect to a HashiCorp Vault instance via the official HTTP API. Read path and AppRole auth configured via environment (`VAULT_ADDR`, `VAULT_ROLE_ID`, `VAULT_SECRET_ID`). Falls back to `keyring` if Vault is unreachable and `security.vaultFallback: true`.
+- [ ] **`SecretsManager` facade** — Unified interface over backend providers: `keyring` (OS keychain via existing `KeyringManager`), `env` (current behaviour), `file` (encrypted file via existing `EncryptionManager`), `vault` (new — OpenBao via KV v2 HTTP API). All backends implement `get(key): Promise<string>`, `set(key, value)`, `delete(key)`, `rotate(key)`. Resolves backend at startup based on `security.secretBackend`.
+- [ ] **`vault` backend** — Connect to an OpenBao instance via its REST API (KV v2, `/v1/secret/data/:key`). AppRole auth: `POST /v1/auth/approle/login` with `VAULT_ROLE_ID` + `VAULT_SECRET_ID` → short-lived client token cached in memory and refreshed on 403. Env vars: `VAULT_ADDR`, `VAULT_ROLE_ID`, `VAULT_SECRET_ID`, `VAULT_MOUNT` (default `secret`). Falls back to `keyring` if OpenBao is unreachable and `security.vaultFallback: true`. No npm vault SDK required — plain `fetch()` against the REST API.
 - [ ] **Replace all `process.env[keyEnv]` reads in core** — All API key and secret reads in `packages/core/src` switch to `await secureYeoman.getSecretsManager().get(keyEnv)`. The env-var names in config remain as references; the `SecretsManager` resolves them.
 
 ### 41.2 — Rotation Integration
