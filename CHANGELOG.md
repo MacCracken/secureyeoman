@@ -32,6 +32,20 @@ All notable changes to SecureYeoman are documented in this file.
 
 ### Features
 
+**Prompt-assembly injection guard** (ADR 124)
+
+- `PromptGuard` in `packages/core/src/security/prompt-guard.ts` — stateless scanner that runs immediately before the LLM API call on the fully assembled `messages[]` array. Closes the indirect injection gap not covered by `InputValidator` (ADR 120): injected content arriving via brain/memory retrieval, skill instructions, spirit context, or owner profile notes.
+- Eight pattern families: `context_delimiter` (raw LLM boundary tokens), `authority_claim` (fake `SYSTEM:` / `ADMIN:` headers), `instruction_override` (`new instructions:`), `developer_impersonation`, `instruction_reset` (`from this point on`), `hypothetical_override`, `comment_injection` (HTML/XML comment bypass), `roleplay_override`. Each tagged high or medium severity.
+- System-message scoping: patterns that only make sense in non-system positions (e.g. `authority_claim`) are skipped when scanning `role: 'system'` content — no false positives on legitimate structural headers.
+- Configurable via `security.promptGuard.mode`: `warn` (default — audit-log findings, request proceeds), `block` (high-severity finding aborts with HTTP 400 / SSE error event), `disabled`.
+- Wired into both `/api/v1/chat` and `/api/v1/chat/stream`. Streaming path emits an SSE error event and throws (caught by existing `catch` block) because SSE headers are already sent.
+- Audit events tagged `metadata.source: 'prompt_assembly'` to distinguish from HTTP-boundary `InputValidator` blocks.
+- `PromptGuardConfig` type + `PromptGuardConfigSchema` added to `packages/shared/src/types/config.ts`, field `promptGuard` added to `SecurityConfigSchema`.
+- Sub-agent dashboard: `enabled` logic simplified to `securityPolicy.allowSubAgents` as the single gate (removed redundant `config.enabled` double-check).
+- Unit tests: `packages/core/src/security/prompt-guard.test.ts`
+
+---
+
 **Chat responsive layout + viewport hint** (ADR 119)
 
 - `ChatPage.tsx`: added `min-h-0` to flex containers so `overflow-y-auto` works correctly in nested flex columns; replaced invalid `pl-68` with `sm:pl-64`; added `md:max-w-[70%]` to message bubbles

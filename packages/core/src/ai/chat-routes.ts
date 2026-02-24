@@ -18,6 +18,7 @@ import type { McpToolDef } from '@secureyeoman/shared';
 import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
 import { sendError } from '../utils/errors.js';
 import { ToolOutputScanner } from '../security/tool-output-scanner.js';
+import { PromptGuard } from '../security/prompt-guard.js';
 import { ContextCompactor } from './context-compactor.js';
 import { getLogger } from '../logging/logger.js';
 import { executeCreationTool } from '../soul/creation-tool-executor.js';
@@ -85,6 +86,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
   } catch {
     scanner = new ToolOutputScanner();
   }
+
+  // Prompt-assembly injection guard — scans fully assembled messages before LLM call.
+  const promptGuard = new PromptGuard(secureYeoman.getConfig().security.promptGuard);
 
   // Context compactor — triggers at 80% of the model's context window.
   const compactor = new ContextCompactor();
@@ -377,6 +381,36 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         ...(tools.length > 0 ? { tools } : {}),
         ...(thinkingBudgetTokens ? { thinkingBudgetTokens } : {}),
       };
+
+      // Prompt-assembly injection guard — runs after all context is assembled,
+      // before the LLM call. Catches injection that survived the HTTP boundary
+      // (e.g. planted in brain memory, skill instructions, or spirit context).
+      {
+        const guardResult = promptGuard.scan(messages, {
+          userId: request.authUser?.userId,
+          source: 'chat',
+        });
+        if (guardResult.findings.length > 0) {
+          void secureYeoman.getAuditChain().record({
+            event: 'injection_attempt',
+            level: 'warn',
+            message: 'Prompt-assembly injection pattern detected by PromptGuard',
+            userId: request.authUser?.userId,
+            metadata: {
+              endpoint: '/api/v1/chat',
+              source: 'prompt_assembly',
+              findings: guardResult.findings.map((f) => ({
+                pattern: f.patternName,
+                role: f.messageRole,
+                severity: f.severity,
+              })),
+            },
+          });
+        }
+        if (!guardResult.passed) {
+          return sendError(reply, 400, 'Request blocked: prompt injection pattern detected');
+        }
+      }
 
       try {
         const personalityFallbacks = personality?.modelFallbacks?.length
@@ -942,6 +976,35 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           if (toolName === 'delegate_task') return 'Delegated';
           return 'Created';
         };
+
+        // Prompt-assembly injection guard — same check as non-streaming path.
+        // SSE headers are already sent, so a block emits an error event and exits.
+        {
+          const guardResult = promptGuard.scan(messages, {
+            userId: request.authUser?.userId,
+            source: 'chat_stream',
+          });
+          if (guardResult.findings.length > 0) {
+            void secureYeoman.getAuditChain().record({
+              event: 'injection_attempt',
+              level: 'warn',
+              message: 'Prompt-assembly injection pattern detected by PromptGuard',
+              userId: request.authUser?.userId,
+              metadata: {
+                endpoint: '/api/v1/chat/stream',
+                source: 'prompt_assembly',
+                findings: guardResult.findings.map((f) => ({
+                  pattern: f.patternName,
+                  role: f.messageRole,
+                  severity: f.severity,
+                })),
+              },
+            });
+          }
+          if (!guardResult.passed) {
+            throw new Error('Request blocked: prompt injection pattern detected');
+          }
+        }
 
         // ── Streaming agentic loop ────────────────────────────────────
 

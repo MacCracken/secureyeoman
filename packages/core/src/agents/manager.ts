@@ -82,12 +82,15 @@ export class SubAgentManager {
     params: DelegationParams,
     parentContext?: { delegationId?: string; depth?: number; remainingBudget?: number }
   ): Promise<DelegationResult> {
-    // Top-level security kill-switch — overrides delegation config and per-personality settings
+    // Top-level security kill-switch — the single system-level gate.
+    // SecurityConfig.allowSubAgents is the authoritative enable/disable for the feature;
+    // the internal config.enabled flag is superseded by the security policy.
     if (this.deps.securityConfig && !this.deps.securityConfig.allowSubAgents) {
       throw new Error('Sub-agent delegation is disabled by security policy');
     }
 
-    if (!this.config.enabled) {
+    // If no securityConfig is present (e.g. tests), fall back to config.enabled
+    if (!this.deps.securityConfig && !this.config.enabled) {
       throw new Error('Sub-agent delegation is not enabled');
     }
 

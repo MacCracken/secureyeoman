@@ -208,6 +208,22 @@ const InputValidationConfigSchema = z
   })
   .default({});
 
+// Prompt-assembly injection guard — scans the fully assembled messages array before the LLM call.
+// Catches indirect injection that survived the HTTP boundary (via memory, skills, spirit context, etc.).
+const PromptGuardConfigSchema = z
+  .object({
+    /**
+     * block — high-severity findings abort the request (HTTP 400 / SSE error).
+     * warn  — findings are audit-logged but the request proceeds.
+     * disabled — scanning is skipped entirely.
+     * Default: warn. Raise to block once you have confidence in the pattern set.
+     */
+    mode: z.enum(['block', 'warn', 'disabled']).default('warn'),
+  })
+  .default({});
+
+export type PromptGuardConfig = z.infer<typeof PromptGuardConfigSchema>;
+
 // Security configuration
 export const SecurityConfigSchema = z.object({
   rbac: RbacConfigSchema,
@@ -215,6 +231,7 @@ export const SecurityConfigSchema = z.object({
   sandbox: SandboxConfigSchema,
   rateLimiting: RateLimitingConfigSchema,
   inputValidation: InputValidationConfigSchema,
+  promptGuard: PromptGuardConfigSchema,
   /** Top-level kill switch for sub-agent delegation. When false, no personality can enable sub-agents. */
   allowSubAgents: z.boolean().default(false),
   /** Allow sub-agents with type='binary' to spawn child processes. Off by default. */

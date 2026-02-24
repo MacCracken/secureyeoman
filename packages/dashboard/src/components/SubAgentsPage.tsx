@@ -100,10 +100,9 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
     },
   });
 
-  // Both security policy AND delegation config must be enabled
-  const enabled =
-    (configData?.allowedBySecurityPolicy === true || securityPolicy?.allowSubAgents === true) &&
-    configData?.config?.enabled === true;
+  // Security policy is the single gate — if allowSubAgents is on, delegation is available.
+  // Per-personality delegation is controlled separately via creationConfig.subAgents.
+  const enabled = securityPolicy?.allowSubAgents === true;
 
   const swarmsAllowed = securityPolicy?.allowSwarms ?? false;
 

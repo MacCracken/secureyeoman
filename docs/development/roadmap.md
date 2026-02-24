@@ -10,36 +10,21 @@
 |-------|------|---------|--------|
 | | **Tag 2026.2.22** | **2026-02-22** | **Tagged** |
 | | **Release 2026.2.22** | **2026-02-22** | **Released** |
-| 38 | Beta Manual Review | — | In Progress |
+| 38 | Beta Manual Review | 2026-02-23 | Complete |
 | 39 | Diagnostic Tools (Body Module) | 2026-02-23 | Complete |
 | 40 | Desktop Control (Body Module) | — | Planned |
+| 41 | Secrets Management | — | Planned |
+| 42 | TLS / Certificate Management | — | Planned |
+| 43 | — | — | — |
+| 44 | Find & Repair (Ongoing) | — | Planned |
 
 ---
 
 ## Phase 38: Beta Manual Review
 
-**Status**: In Progress
+**Status**: Complete
 
-Full-system manual testing pass: find real bugs in shipped code and fix them. Every package, every integration path, every edge case.
-
-### Manual Review & Testing
-
-*Add observed bugs here as they are found during manual testing; mark fixed when resolved.*
-
-- [ ] Find and Repair
-
-
-### Bugs
-
-- [x] Chat needs responsive design in the response window to not blow up the view *(fixed: min-h-0 on flex containers, pl-68→sm:pl-64, md:max-w-[70%] message bubbles)*
-
-### Improvements
-
-- [x] Chat viewport hint in AI system prompt (mobile/tablet/desktop)
-- [x] Input validation wired to `/chat`, `/chat/stream`, personality and skill create/update routes
-- [x] Dedicated `chat_requests` rate limit rule (30/min/user); per-personality override via `rateLimitConfig` in `ResourcePolicy`
-- [x] Audit logging: `rate_limit`, `config_change`, `injection_attempt`, `auth_failure` (invalid API key), `ai_request`/`ai_response` in security feed
-- [ ] FRIDAY's suggestions - [suggestions](friday_suggestions.md)
+Full-system manual testing pass. All tracked bugs fixed and security improvements shipped. Ongoing bug discovery continues under Phase 44.
 
 ---
 
@@ -199,6 +184,78 @@ SecurityConfig.allowDesktopControl === true
 
 ---
 
+## Phase 41: Secrets Management
+
+**Status**: Planned
+
+Replace direct environment-variable secret storage with a proper secrets management layer. The `secretBackend` config field exists (`auto | keyring | env | file`) and the keyring infrastructure is built (`packages/core/src/security/keyring/`), but there is no runtime vault abstraction, rotation-aware secret resolution, or operator tooling for secret lifecycle management.
+
+### 41.1 — Vault Abstraction Layer
+
+- [ ] **`SecretsManager` facade** — Unified interface over backend providers: `keyring` (OS keychain via existing `KeyringManager`), `env` (current behaviour), `file` (encrypted file via existing `EncryptionManager`), `vault` (new — HashiCorp Vault / AWS Secrets Manager / Azure Key Vault). All backends implement `get(key): Promise<string>`, `set(key, value)`, `delete(key)`, `rotate(key)`. Resolves backend at startup based on `security.secretBackend`.
+- [ ] **`vault` backend** — Connect to a HashiCorp Vault instance via the official HTTP API. Read path and AppRole auth configured via environment (`VAULT_ADDR`, `VAULT_ROLE_ID`, `VAULT_SECRET_ID`). Falls back to `keyring` if Vault is unreachable and `security.vaultFallback: true`.
+- [ ] **Replace all `process.env[keyEnv]` reads in core** — All API key and secret reads in `packages/core/src` switch to `await secureYeoman.getSecretsManager().get(keyEnv)`. The env-var names in config remain as references; the `SecretsManager` resolves them.
+
+### 41.2 — Rotation Integration
+
+- [ ] **Wire `SecretsManager` into `RotationManager`** — The existing `RotationManager` tracks key expiry but does not perform actual rotation. Connect it to `SecretsManager.rotate(key)` for API tokens and signing keys. On successful rotation, emit a `secret_rotated` audit event.
+- [ ] **Grace period handling** — During rotation, hold both the old and new value for one `checkIntervalMs` window so in-flight requests against the old key can complete.
+
+### 41.3 — Dashboard UI
+
+- [ ] **Secrets panel in Security Settings** — List all managed secrets (name, backend, last rotated, expiry). Manual rotation trigger per key. Status badges: `ok`, `expiring_soon`, `expired`. Never surfaces secret values — name and metadata only.
+
+### 41.4 — Docs
+
+- [ ] **`docs/guides/secrets-management.md`** — Backend setup (env, keyring, file, vault), rotation config, migration path from raw env vars, Kubernetes/Docker secrets patterns.
+
+---
+
+## Phase 42: TLS / Certificate Management
+
+**Status**: Planned
+
+Two distinct certificate use cases: (1) **self-signed cert for development** — auto-generated, zero-config, allows the browser to connect to the local gateway over HTTPS; (2) **wildcard / CA-signed cert for production** — operator supplies `*.example.com` or single-domain cert, gateway serves it. Both are already structurally supported by `GatewayConfigSchema.tls` (`certPath`, `keyPath`, `caPath`), but there is no tooling, documentation, or auto-generation.
+
+### 42.1 — Self-Signed Certificate Auto-Generation (Development)
+
+*Zero-config HTTPS for local development. No browser warnings with a one-time CA trust step.*
+
+- [ ] **`cert-gen` integration at startup** — `packages/core/src/security/cert-gen.ts` already exists (unit tests pass). Wire it into `GatewayServer` startup: when `gateway.tls.enabled` is `true` and no `certPath` / `keyPath` is configured, auto-generate a self-signed cert + key in `~/.secureyeoman/certs/` and pass them to Fastify's TLS config. Regenerate if the cert is expired or absent.
+- [ ] **Local CA workflow** — Generate a local CA cert alongside the server cert. Log a one-time instruction at startup: `"Trust ~/.secureyeoman/certs/ca.crt in your browser / system keychain to eliminate TLS warnings."` Include OS-specific commands (macOS `security add-trusted-cert`, Linux `update-ca-certificates`, Windows `certutil`).
+- [ ] **`secureyeoman cert generate`** CLI command — Explicit cert generation without starting the server. Options: `--output-dir`, `--days` (validity period), `--hostname` (defaults to `localhost`). Prints the trust-me instructions after generation.
+- [ ] **`secureyeoman cert trust`** CLI command — Runs the OS trust command for the local CA automatically (requires elevated permissions on some platforms). Prints what it's doing; does not silently modify system trust stores.
+
+### 42.2 — Wildcard / CA-Signed Certificate (Production)
+
+*Operator provides a `*.example.com` or single-domain cert. Gateway serves it. Guide covers cert+key setup and renewal.*
+
+- [ ] **`gateway.tls` config validation** — Validate that `certPath` and `keyPath` exist and are readable at startup; emit a clear error if not (`TLS cert file not found: /path/to/cert.pem`). Validate PEM format. Warn if the cert expires within 30 days.
+- [ ] **`secureyeoman cert status`** CLI command — Parse the configured cert(s) and print: subject, SANs, issuer, expiry, days remaining, whether the hostname matches. Works for both self-signed and CA-signed certs.
+- [ ] **`docs/guides/tls-certificates.md`** — Two-section guide:
+  - *Development*: auto-generated self-signed cert workflow, browser trust steps per OS, curl / Insomnia / Postman tips.
+  - *Production*: placing a wildcard cert (`certPath`, `keyPath`, optional `caPath` for intermediate chain), Caddy/nginx reverse-proxy alternative (terminate TLS at the proxy, run gateway on HTTP internally), Let's Encrypt / Certbot renewal hooks, Kubernetes TLS secret pattern.
+
+### 42.3 — Dashboard UI
+
+- [ ] **TLS status card in Security Settings** — Shows current TLS mode (disabled / self-signed / CA-signed), cert subject and expiry, days remaining with a warning badge when < 30 days. Link to the certificate guide.
+
+---
+
+## Phase 44: Find & Repair (Ongoing)
+
+**Status**: Planned
+
+Continuous bug discovery and repair pass — no fixed scope. As real-world usage surfaces regressions or rough edges, they are filed here, fixed, and moved to the Changelog. This phase never closes; it rolls forward with the project.
+
+### Open
+
+*Add observed bugs here as they are found; mark fixed when resolved.*
+
+- [ ] (none yet)
+
+---
+
 ## Future Features
 
 *Demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
@@ -313,7 +370,7 @@ SecurityConfig.allowDesktopControl === true
 
 ### AI Safety
 
-- [ ] **Prompt injection prevention layer** — A dedicated server-side guardrail that analyses the fully-assembled prompt immediately before the LLM API call, scanning for adversarial instruction-override patterns. Distinct from `InputValidator` (HTTP boundary) — this layer catches injection that survives validation (e.g. injected via a trusted skill's instructions or a retrieved memory). Gate on evidence from audit logs that `InputValidator`'s patterns are insufficient.
+- [x] **Prompt injection prevention layer** — `PromptGuard` (ADR 124, Phase 38): scans the fully assembled `messages[]` array before the LLM call. Catches indirect injection via brain/memory, skills, spirit, and preferences. Configurable `warn` → `block` mode. Eight pattern families. HTTP-boundary layer remains `InputValidator` (ADR 120).
 
 - [ ] **Sub-agent spin-up from dashboard** — UI flow to create, configure, and launch sub-agent personalities directly from Security Settings and per-personality editor, without requiring manual config changes. Includes status card showing whether delegation is available and a one-click "Enable Sub-Agent Delegation" toggle that provisions the necessary permissions. See current status reporting issue: sub-agents report "Not enabled in current configuration" even when enabled in security settings.
 
@@ -337,4 +394,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-23 (Phase 39 Diagnostic Tools complete)*
+*Last updated: 2026-02-23 (Phase 38 complete; Phase 44 Find & Repair added as ongoing)*
