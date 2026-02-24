@@ -1,3 +1,38 @@
+## [2026.2.24+4]
+
+### Soul — Clearable Default, Chat Fallback, and Empty State
+
+#### Added
+
+- **`POST /api/v1/soul/personalities/clear-default`** — new route that removes the default flag from all personalities without activating a replacement. Complements the existing `set-default` route. RBAC: inherited from soul routes. If a heartbeat schedule was tied to the default personality, it is cleared.
+
+- **`SoulStorage.clearDefaultPersonality()`** — single-query UPDATE that sets `is_default = false` for any personality that currently holds the flag.
+
+- **`SoulManager.clearDefaultPersonality()`** — delegates to storage and additionally calls `heartbeat.setPersonalitySchedule(null)` so the heartbeat loop no longer references a now-default-less personality.
+
+- **`clearDefaultPersonality()` API client function** — dashboard `POST /soul/personalities/clear-default` thin wrapper, consistent with other soul mutations.
+
+- **Chat and EditorChat — alphabetical fallback when no default is set** — `ChatPage` and `EditorPage` previously resolved `undefined` when no personality carried `isDefault = true`, producing a blank selector with no active personality. Both pages now fall back to the alphabetically first personality when no default exists, so the UI always has something loaded without requiring the user to manually select one.
+
+- **Chat and EditorChat — "no personalities" empty state** — when `fetchPersonalities` resolves but returns an empty list (i.e., the user skipped or cleared onboarding), the message area now displays a friendly prompt with a direct link to `/personality` instead of the generic start-conversation hint.
+
+#### Fixed
+
+- **PersonalityEditor — default toggle was locked ON** — the toggle for "Set as default" was unconditionally `disabled` whenever the editing personality already had `isDefault = true`. Users had no way to clear the default without deleting the personality. The lock has been removed: the toggle is now always enabled and fires `clearDefaultPersonality()` when unchecked (or `setDefaultPersonality()` when checked), exactly like any other toggle mutation.
+
+- **PersonalityEditor — new personality "Set as default" not applied on save** — the `createMut.onSuccess` callback called `setEditing(null)` immediately without checking `setActiveOnSave`. If the user ticked "Set as default" before creating a personality, the flag was silently dropped. The callback now calls `setDefaultMut.mutate(result.personality.id)` when `setActiveOnSave` is true before clearing state.
+
+- **SettingsPage — default star is now a toggle button** — the filled star indicator next to the default personality in the soul list was a non-interactive `<span>`. It is now a `<button>` that calls `clearDefaultPersonality()` when clicked, matching the affordance of the empty-star buttons on other personalities which call `setDefaultPersonality()`.
+
+#### Tests
+
+- `soul-routes.test.ts` — added `clearDefaultPersonality` to mock manager; added route test for `POST /api/v1/soul/personalities/clear-default`
+- `storage.test.ts` — added `clearDefaultPersonality` test; fixed `setActivePersonality` mock count (transaction now runs 3 internal queries, not 2, because `is_default` is also cleared); fixed `deletePersonality` mock to include the preceding `getPersonality` SELECT used for archetype guard
+- `PersonalityEditor.test.tsx` — corrected "Enable all resources" → "Enable all orchestration" to match actual `aria-label`; added `aria-label="Default personality"` to the sr-only checkbox; added 3 new default-toggle tests
+- `SettingsPage.test.tsx` — updated learningMode assertion from obsolete `'observe, suggest'` text to `'User Authored'`; changed `maxSkills`/`maxPromptTokens` assertions from `getByText` to `getByDisplayValue` (values live in `<input>` fields, not text nodes)
+
+---
+
 ## [2026.2.24+3]
 
 ### CLI — Lazy Loading, Env-Var URL, and Route Fix
