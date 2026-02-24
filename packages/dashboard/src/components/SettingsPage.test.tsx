@@ -124,9 +124,9 @@ describe('SettingsPage', () => {
     expect(await screen.findByText('Soul System')).toBeInTheDocument();
     const enabledElements = screen.getAllByText('Enabled');
     expect(enabledElements.length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('observe, suggest')).toBeInTheDocument();
-    expect(screen.getByText('50')).toBeInTheDocument();
-    expect(screen.getByText('4,096')).toBeInTheDocument();
+    expect(screen.getByText('User Authored')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('50')).toBeInTheDocument();
+    expect(screen.getByDisplayValue('4096')).toBeInTheDocument();
   });
 
   it('renders Rate Limiting and Audit Chain on General tab', async () => {

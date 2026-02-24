@@ -154,7 +154,8 @@ describe('SoulStorage', () => {
     it('uses a transaction to deactivate all then activate target', async () => {
       mockClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
-        .mockResolvedValueOnce({ rows: [], rowCount: 3 }) // deactivate all
+        .mockResolvedValueOnce({ rows: [], rowCount: 3 }) // deactivate is_active
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // clear is_default
         .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // activate target
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // COMMIT
 
@@ -166,7 +167,8 @@ describe('SoulStorage', () => {
     it('throws in transaction if personality not found', async () => {
       mockClient.query
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
-        .mockResolvedValueOnce({ rows: [], rowCount: 3 }) // deactivate all
+        .mockResolvedValueOnce({ rows: [], rowCount: 3 }) // deactivate is_active
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }) // clear is_default
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // activate: not found → throws
         .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // ROLLBACK
 
@@ -197,12 +199,16 @@ describe('SoulStorage', () => {
 
   describe('deletePersonality', () => {
     it('returns true when deleted', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+      mockQuery
+        .mockResolvedValueOnce({ rows: [personalityRow], rowCount: 1 }) // getPersonality (archetype check)
+        .mockResolvedValueOnce({ rows: [], rowCount: 1 }); // DELETE
       expect(await storage.deletePersonality('per-1')).toBe(true);
     });
 
     it('returns false when not found', async () => {
-      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      mockQuery
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // getPersonality (not found → null)
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // DELETE
       expect(await storage.deletePersonality('missing')).toBe(false);
     });
   });

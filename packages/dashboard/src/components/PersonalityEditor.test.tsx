@@ -382,7 +382,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     renderComponent();
     await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resources/i });
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all orchestration/i });
     await user.click(enableAllToggle);
 
     // Sub-Agent Delegation must be enabled before A2A sub-toggle appears
@@ -421,7 +421,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     renderComponent();
     await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resources/i });
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all orchestration/i });
     await user.click(enableAllToggle);
 
     const swarmsToggle = await screen.findByRole('checkbox', { name: /agent swarms/i });
@@ -455,7 +455,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     renderComponent();
     await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resources/i });
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all orchestration/i });
     await user.click(enableAllToggle);
 
     const a2aToggle = await screen.findByRole('checkbox', { name: /a2a networks/i });
@@ -489,7 +489,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     renderComponent();
     await openResourcesOrchestration(user);
 
-    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all resources/i });
+    const enableAllToggle = await screen.findByRole('checkbox', { name: /enable all orchestration/i });
     await user.click(enableAllToggle);
 
     const swarmsToggle = await screen.findByRole('checkbox', { name: /agent swarms/i });
@@ -530,19 +530,16 @@ describe('PersonalityEditor — default personality toggle', () => {
   it('unchecking default toggle calls clearDefaultPersonality', async () => {
     const defaultPersonality = { ...MOCK_PERSONALITY, isDefault: true };
     mockFetchPersonalities.mockResolvedValue({ personalities: [defaultPersonality] });
-    mockFetchPersonalities.mockResolvedValue({ personalities: [{ ...defaultPersonality, isDefault: false }] });
     mockClearDefaultPersonality.mockResolvedValue({ success: true });
     const user = userEvent.setup();
-    renderComponent();
-
-    // Re-mock to return the default personality for the initial render
-    mockFetchPersonalities.mockResolvedValue({ personalities: [defaultPersonality] });
     renderComponent();
 
     const editBtn = await screen.findByLabelText(`Edit personality ${defaultPersonality.name}`);
     await user.click(editBtn);
 
     const toggle = await screen.findByRole('checkbox', { name: /default personality/i });
+    expect(toggle).toBeChecked();
+
     await user.click(toggle);
 
     await waitFor(() => {

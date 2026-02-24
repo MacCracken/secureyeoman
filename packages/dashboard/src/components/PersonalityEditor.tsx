@@ -3163,6 +3163,7 @@ export function PersonalityEditor() {
                     }
                   }}
                   disabled={setDefaultMut.isPending || clearDefaultMut.isPending}
+                  aria-label="Default personality"
                   className="sr-only peer"
                 />
                 <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-primary rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
