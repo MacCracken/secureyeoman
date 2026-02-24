@@ -49,7 +49,8 @@ function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
     deleteUser: vi.fn().mockResolvedValue(true),
     composeSoulPrompt: vi.fn().mockResolvedValue('You are FRIDAY.'),
     getActiveTools: vi.fn().mockResolvedValue(['search', 'code']),
-    getConfig: vi.fn().mockReturnValue({ enabled: true, maxSkills: 50 }),
+    getConfig: vi.fn().mockReturnValue({ enabled: true, maxSkills: 50, maxPromptTokens: 32000, learningMode: ['user_authored'] }),
+    updateConfig: vi.fn().mockResolvedValue(undefined),
     getAgentName: vi.fn().mockResolvedValue('FRIDAY'),
     setAgentName: vi.fn().mockResolvedValue(undefined),
     needsOnboarding: vi.fn().mockResolvedValue(false),
@@ -801,5 +802,48 @@ describe('isPersonalityWithinActiveHours', () => {
       },
     };
     expect(isPersonalityWithinActiveHours(p)).toBe(false);
+  });
+});
+
+describe('GET /api/v1/soul/config', () => {
+  it('returns soul config', async () => {
+    const app = buildApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/soul/config' });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().config.enabled).toBe(true);
+  });
+});
+
+describe('PATCH /api/v1/soul/config', () => {
+  it('updates config and returns new values', async () => {
+    const updateMock = vi.fn().mockResolvedValue(undefined);
+    const getConfigMock = vi.fn().mockReturnValue({
+      enabled: false,
+      maxSkills: 100,
+      maxPromptTokens: 32000,
+      learningMode: ['user_authored'],
+    });
+    const app = buildApp({ updateConfig: updateMock, getConfig: getConfigMock });
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/soul/config',
+      payload: { enabled: false, maxSkills: 100 },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().config.enabled).toBe(false);
+    expect(updateMock).toHaveBeenCalledWith({ enabled: false, maxSkills: 100 });
+  });
+
+  it('returns 400 when updateConfig throws', async () => {
+    const app = buildApp({
+      updateConfig: vi.fn().mockRejectedValue(new Error('Invalid maxSkills')),
+    });
+    const res = await app.inject({
+      method: 'PATCH',
+      url: '/api/v1/soul/config',
+      payload: { maxSkills: 999 },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().message).toContain('Invalid maxSkills');
   });
 });

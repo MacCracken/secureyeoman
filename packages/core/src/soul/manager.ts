@@ -13,6 +13,7 @@
  */
 
 import os from 'os';
+import { SoulConfigSchema } from '@secureyeoman/shared';
 import { composeArchetypesPreamble } from './archetypes.js';
 import { PERSONALITY_PRESETS, getPersonalityPreset, type PersonalityPreset } from './presets.js';
 import type { SoulStorage } from './storage.js';
@@ -92,7 +93,8 @@ export class SoulManager {
   private readonly storage: SoulStorage;
   private readonly brain: BrainManager | null;
   private readonly spirit: SpiritManager | null;
-  private readonly config: SoulConfig;
+  private readonly baseConfig: SoulConfig;
+  private config: SoulConfig;
   private readonly deps: SoulManagerDeps;
   private heartbeat: HeartbeatManager | null = null;
   private heartManager: HeartManager | null = null;
@@ -119,6 +121,7 @@ export class SoulManager {
     spirit?: SpiritManager
   ) {
     this.storage = storage;
+    this.baseConfig = config;
     this.config = config;
     this.deps = deps;
     this.brain = brain ?? null;
@@ -949,6 +952,18 @@ export class SoulManager {
 
   getConfig(): SoulConfig {
     return this.config;
+  }
+
+  async loadConfigOverrides(): Promise<void> {
+    const overrides = await this.storage.getSoulConfigOverrides();
+    this.config = { ...this.baseConfig, ...overrides };
+  }
+
+  async updateConfig(patch: Partial<SoulConfig>): Promise<void> {
+    const merged = { ...this.config, ...patch };
+    const parsed = SoulConfigSchema.parse(merged);
+    this.config = parsed;
+    await this.storage.setSoulConfigOverrides(parsed);
   }
 
   // ── Brain Access ────────────────────────────────────────────

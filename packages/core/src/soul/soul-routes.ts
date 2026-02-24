@@ -12,6 +12,7 @@ import type {
   PersonalityUpdate,
   SkillCreate,
   SkillUpdate,
+  SoulConfig,
   UserProfileCreate,
   UserProfileUpdate,
 } from './types.js';
@@ -434,6 +435,18 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     const config = soulManager.getConfig();
     return { config };
   });
+
+  app.patch(
+    '/api/v1/soul/config',
+    async (request: FastifyRequest<{ Body: Partial<SoulConfig> }>, reply: FastifyReply) => {
+      try {
+        await soulManager.updateConfig(request.body);
+        return { config: soulManager.getConfig() };
+      } catch (e) {
+        return sendError(reply, 400, toErrorMessage(e));
+      }
+    }
+  );
 
   // ── Agent Name ─────────────────────────────────────────────
 

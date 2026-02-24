@@ -1098,7 +1098,7 @@ export function EditorPage() {
             <div className="flex items-center gap-2 px-3 py-2 border-b bg-muted/30">
               <Bot className="w-4 h-4 text-primary flex-shrink-0" />
               {currentPersonality?.isDefault && (
-                <Star className="w-3 h-3 fill-current text-primary flex-shrink-0" title="Default personality" />
+                <span title="Default personality"><Star className="w-3 h-3 fill-current text-primary flex-shrink-0" /></span>
               )}
 
               {/* Personality selector */}

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation, Link } from 'react-router-dom';
 import {
   Settings,
@@ -18,6 +18,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   fetchSoulConfig,
+  updateSoulConfig,
   fetchAuditStats,
   fetchMetrics,
   fetchPersonalities,
@@ -25,7 +26,7 @@ import {
   disablePersonality,
   setDefaultPersonality,
 } from '../api/client';
-import type { Personality } from '../types';
+import type { Personality, SoulConfig } from '../types';
 import { NotificationSettings } from './NotificationSettings';
 import { LogRetentionSettings } from './LogRetentionSettings';
 import { SecuritySettings, RolesSettings } from './SecuritySettings';
@@ -175,6 +176,30 @@ function GeneralTab() {
     queryFn: fetchSoulConfig,
   });
 
+  // Soul config form state
+  const [formEnabled, setFormEnabled] = useState(soulConfig?.enabled ?? true);
+  const [formLearningMode, setFormLearningMode] = useState<string[]>(
+    soulConfig?.learningMode ?? ['user_authored']
+  );
+  const [formMaxSkills, setFormMaxSkills] = useState(soulConfig?.maxSkills ?? 100);
+  const [formMaxPromptTokens, setFormMaxPromptTokens] = useState(
+    soulConfig?.maxPromptTokens ?? 32000
+  );
+
+  useEffect(() => {
+    if (soulConfig) {
+      setFormEnabled(soulConfig.enabled);
+      setFormLearningMode(soulConfig.learningMode);
+      setFormMaxSkills(soulConfig.maxSkills);
+      setFormMaxPromptTokens(soulConfig.maxPromptTokens);
+    }
+  }, [soulConfig]);
+
+  const configMutation = useMutation({
+    mutationFn: (patch: Partial<SoulConfig>) => updateSoulConfig(patch),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['soulConfig'] }),
+  });
+
   const { data: personalitiesData } = useQuery({
     queryKey: ['personalities'],
     queryFn: fetchPersonalities,
@@ -216,46 +241,119 @@ function GeneralTab() {
 
       {/* ── Soul System ───────────────────────────────────────── */}
       {soulConfig && (
-        <div className="card p-4 space-y-3">
+        <div className="card p-4 space-y-4">
+          <h3 className="font-medium text-sm flex items-center gap-2">
+            <Shield className="w-4 h-4" />
+            Soul System
+          </h3>
+
+          {/* Enabled toggle */}
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-sm flex items-center gap-2">
-              <Shield className="w-4 h-4" />
-              Soul System
-            </h3>
-            <span
-              className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                soulConfig.enabled
-                  ? 'bg-success/15 text-success'
-                  : 'bg-destructive/15 text-destructive'
+            <div>
+              <span className="text-sm font-medium">Enabled</span>
+              <p className="text-xs text-muted-foreground">
+                Allow soul system to influence AI responses
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={formEnabled}
+              onClick={() => setFormEnabled(!formEnabled)}
+              className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ${
+                formEnabled ? 'bg-primary' : 'bg-muted'
               }`}
             >
-              {soulConfig.enabled ? 'Enabled' : 'Disabled'}
-            </span>
+              <span
+                className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                  formEnabled ? 'translate-x-6' : 'translate-x-1'
+                }`}
+              />
+            </button>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+
+          {/* Learning mode */}
+          <div>
+            <span className="text-sm font-medium block mb-2">Learning Mode</span>
+            <div className="space-y-1.5">
+              {(['user_authored', 'ai_proposed', 'autonomous'] as const).map((mode) => (
+                <label key={mode} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formLearningMode.includes(mode)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setFormLearningMode([...formLearningMode, mode]);
+                      } else {
+                        setFormLearningMode(formLearningMode.filter((m) => m !== mode));
+                      }
+                    }}
+                    className="rounded border-border"
+                  />
+                  <span className="text-sm">{LEARNING_MODE_LABELS[mode]}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Numeric limits */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <span className="text-xs text-muted-foreground block mb-1">Learning Mode</span>
-              <div className="flex flex-wrap gap-1">
-                {soulConfig.learningMode.map((mode) => (
-                  <span
-                    key={mode}
-                    className="text-xs px-2 py-0.5 rounded-full bg-primary/10 text-primary font-medium"
-                  >
-                    {LEARNING_MODE_LABELS[mode] ?? mode}
-                  </span>
-                ))}
-              </div>
+              <label className="text-sm font-medium block mb-1">Max Skills</label>
+              <input
+                type="number"
+                min={1}
+                max={200}
+                value={formMaxSkills}
+                onChange={(e) => setFormMaxSkills(Number(e.target.value))}
+                className="input w-full text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Global limit across all souls (1–200)
+              </p>
             </div>
             <div>
-              <span className="text-xs text-muted-foreground block mb-1">Max Skills</span>
-              <span className="font-medium">{soulConfig.maxSkills}</span>
-              <p className="text-[10px] text-muted-foreground mt-0.5">global limit across all souls</p>
+              <label className="text-sm font-medium block mb-1">Default Prompt Budget</label>
+              <input
+                type="number"
+                min={1024}
+                max={32000}
+                step={1024}
+                value={formMaxPromptTokens}
+                onChange={(e) => setFormMaxPromptTokens(Number(e.target.value))}
+                className="input w-full text-sm"
+              />
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                Overridable per soul (1024–32000 tokens)
+              </p>
             </div>
-            <div>
-              <span className="text-xs text-muted-foreground block mb-1">Default Prompt Budget</span>
-              <span className="font-medium">{soulConfig.maxPromptTokens.toLocaleString()} tokens</span>
-              <p className="text-[10px] text-muted-foreground mt-0.5">overridable per soul</p>
-            </div>
+          </div>
+
+          {/* Error + Save */}
+          {configMutation.isError && (
+            <p className="text-xs text-destructive">
+              Failed to save:{' '}
+              {configMutation.error instanceof Error
+                ? configMutation.error.message
+                : 'Unknown error'}
+            </p>
+          )}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() =>
+                configMutation.mutate({
+                  enabled: formEnabled,
+                  learningMode: formLearningMode,
+                  maxSkills: formMaxSkills,
+                  maxPromptTokens: formMaxPromptTokens,
+                })
+              }
+              disabled={configMutation.isPending}
+              className="btn btn-primary btn-sm"
+            >
+              {configMutation.isPending ? 'Saving…' : 'Save'}
+            </button>
           </div>
         </div>
       )}

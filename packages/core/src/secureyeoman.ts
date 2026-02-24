@@ -530,6 +530,7 @@ export class SecureYeoman {
         this.brainManager,
         this.spiritManager
       );
+      await this.soulManager.loadConfigOverrides();
       if (await this.soulManager.needsOnboarding()) {
         if (!(await this.soulManager.getAgentName())) {
           await this.soulManager.setAgentName('FRIDAY');

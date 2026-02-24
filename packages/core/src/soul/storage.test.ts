@@ -340,4 +340,38 @@ describe('SoulStorage', () => {
       expect(sql).toContain('ON CONFLICT(key)');
     });
   });
+
+  describe('getSoulConfigOverrides / setSoulConfigOverrides', () => {
+    it('returns empty object when no row exists', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await storage.getSoulConfigOverrides();
+      expect(result).toEqual({});
+    });
+
+    it('returns parsed JSON when row exists', async () => {
+      const overrides = { maxSkills: 150, enabled: false };
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ value: JSON.stringify(overrides) }],
+        rowCount: 1,
+      });
+      const result = await storage.getSoulConfigOverrides();
+      expect(result).toEqual(overrides);
+    });
+
+    it('returns empty object when JSON is invalid', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ value: 'not-json{' }], rowCount: 1 });
+      const result = await storage.getSoulConfigOverrides();
+      expect(result).toEqual({});
+    });
+
+    it('upserts soul_config with JSON value', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+      const overrides = { maxSkills: 200, maxPromptTokens: 32000 };
+      await storage.setSoulConfigOverrides(overrides);
+      const [sql, params] = mockQuery.mock.calls[0] as [string, unknown[]];
+      expect(sql).toContain('soul_config');
+      expect(sql).toContain('ON CONFLICT(key)');
+      expect(JSON.parse(params[0] as string)).toEqual(overrides);
+    });
+  });
 });

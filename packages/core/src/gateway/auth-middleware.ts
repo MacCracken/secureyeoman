@@ -95,6 +95,7 @@ const ROUTE_PERMISSIONS: Record<string, Record<string, RoutePermission>> = {
   },
   '/api/v1/soul/config': {
     GET: { resource: 'soul', action: 'read' },
+    PATCH: { resource: 'soul', action: 'write' },
   },
   '/api/v1/soul/onboarding/status': {
     GET: { resource: 'soul', action: 'read' },

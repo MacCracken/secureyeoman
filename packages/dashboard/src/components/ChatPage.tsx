@@ -503,7 +503,7 @@ export function ChatPage() {
                         Chat{personality ? ` with ${personality.name}` : ''}
                       </h2>
                       {personality?.isDefault && (
-                        <Star className="w-3.5 h-3.5 fill-current text-primary flex-shrink-0" title="Default personality" />
+                        <span title="Default personality"><Star className="w-3.5 h-3.5 fill-current text-primary flex-shrink-0" /></span>
                       )}
                       <ChevronDown className="w-4 h-4 text-muted-foreground" />
                     </div>

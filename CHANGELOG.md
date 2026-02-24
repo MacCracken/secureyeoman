@@ -1,3 +1,41 @@
+## [2026.2.24+1]
+
+### Soul Config — Runtime Editable via Settings > General
+
+#### Added
+
+- **Soul config is now persisted and editable at runtime** — previously, `enabled`, `learningMode`, `maxSkills`, and `maxPromptTokens` were read-only (loaded from YAML at startup with no write path). Changes now survive restarts via the `soul.meta` table.
+
+- **`PATCH /api/v1/soul/config`** — new endpoint accepts any subset of the four fields, validates with zod, updates the in-memory config, and persists the merged result. RBAC: `soul:write`.
+
+- **Storage persistence** (`soul/storage.ts`):
+  - `getSoulConfigOverrides()` — reads key `soul_config` from `soul.meta`, JSON-parses, returns `{}` if missing or malformed
+  - `setSoulConfigOverrides(overrides)` — upserts key `soul_config` with JSON value; no migration needed (`soul.meta` already exists)
+
+- **Manager override lifecycle** (`soul/manager.ts`):
+  - `loadConfigOverrides()` — called at startup, merges DB overrides over the file-baseline: `this.config = { ...this.baseConfig, ...overrides }`
+  - `updateConfig(patch)` — validates the merged config via `SoulConfigSchema.parse()`, updates in-memory config, persists full config to DB
+  - `baseConfig` (readonly) stores the original YAML config so `loadConfigOverrides` always merges on top of a clean baseline
+
+- **Dashboard — Settings > General → Soul System card is now a form**:
+  - Toggle switch for `enabled`
+  - Three checkboxes for learning modes: User Authored / AI Proposed / Autonomous
+  - Number input for `maxSkills` (1–200)
+  - Number input for `maxPromptTokens` (1024–32000 tokens, step 1024)
+  - Save button with loading state (`useMutation`) and inline error display
+
+#### Changed
+
+- **`SoulConfig` defaults bumped** (schema defaults only; existing deployments with YAML overrides are unaffected):
+  - `maxSkills`: 50 → **100**
+  - `maxPromptTokens`: 16000 → **32000**
+
+#### Fixed
+
+- **Dashboard TS error in `ChatPage` / `EditorPage`** — `title` prop passed directly to a Lucide `<Star>` icon (not a valid prop on Lucide SVG components). Wrapped in `<span title="...">` instead.
+
+---
+
 ## [2026.2.24]
 
 ### Chat UI — Phase Separation + Persistence
@@ -57,6 +95,37 @@
 
 - `040_personality_multi_active.sql` — `ALTER TABLE soul.personalities ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS is_archetype BOOLEAN NOT NULL DEFAULT false; UPDATE ... SET is_default = true WHERE is_active = true`
 - `039_message_thinking_tools.sql` — added to migration manifest (was previously implemented but omitted)
+
+### Soul — Per-Personality Prompt Budget
+
+#### Added
+
+- **Per-personality prompt token budget** — souls can now override the global `maxPromptTokens` server config with their own value. When set, the per-soul budget controls how many tokens are reserved for that soul's composed system prompt (identity, skills, active-hours context). Falls back to the global default when not set.
+  - `BodyConfigSchema` in `packages/shared/src/types/soul.ts` gains `maxPromptTokens?: number` (range 1,024–32,000); stored in the existing `body` JSONB column — no migration required
+  - `SoulManager.composeSystemPrompt()` resolves the budget as `personality?.body?.maxPromptTokens ?? this.config.maxPromptTokens`
+  - `Personality` and `PersonalityCreate` body types in `packages/dashboard/src/types.ts` updated to include `maxPromptTokens?: number`
+
+### Dashboard — Settings General + Soul Edit
+
+#### Changed
+
+- **Agent card removed from Settings > General** — agent name is now managed within the soul edit/create view in the Personality editor, not in Settings.
+
+- **Soul System card** — "Max Prompt Tokens" renamed to "Default Prompt Budget" with subtitle "overridable per soul"; "Max Skills" gains subtitle "global limit across all souls" to clarify that both values are server-config defaults, not per-soul limits.
+
+- **Active Souls — schedule badges corrected**:
+  - Active souls with **no active hours configured** now show an `Always On` badge (green, `Zap` icon) instead of nothing
+  - Active souls with active hours configured but currently **outside the window** show `Off-hours` (amber, `Clock` icon) — previously this badge fired for both cases
+
+- **Active Souls — per-soul token budget badge** — souls with a custom `body.maxPromptTokens` that differs from the global default now show a compact token count badge (e.g. `24,000 tkns`) in their row
+
+#### Added
+
+- **Prompt Budget section in PersonalityEditor — Brain tab** — new collapsible "Prompt Budget" section (between Active Hours and Extended Thinking):
+  - Checkbox: "Override global prompt budget" — when unchecked shows "Using global default (X tokens)"
+  - When checked: range slider 1,024–32,000 tokens (step 256) with live token count label
+  - Value saved into `body.maxPromptTokens`; cleared (`undefined`) when override is disabled
+  - Global default fetched from `GET /soul/config` and shown as reference
 
 ### Dashboard — PersonalityEditor Multi-Active UI
 

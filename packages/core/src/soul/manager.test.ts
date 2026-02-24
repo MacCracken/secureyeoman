@@ -77,6 +77,8 @@ function makeStorage(overrides: any = {}) {
   return {
     getAgentName: vi.fn().mockResolvedValue('FRIDAY'),
     setAgentName: vi.fn().mockResolvedValue(undefined),
+    getSoulConfigOverrides: vi.fn().mockResolvedValue({}),
+    setSoulConfigOverrides: vi.fn().mockResolvedValue(undefined),
     getPersonalityCount: vi.fn().mockResolvedValue(1),
     getPersonality: vi.fn().mockResolvedValue(PERSONALITY),
     getActivePersonality: vi.fn().mockResolvedValue(PERSONALITY),
@@ -1199,6 +1201,53 @@ describe('SoulManager', () => {
       await expect(manager.createPersonalityFromPreset('nope')).rejects.toThrow(
         'Unknown personality preset: nope'
       );
+    });
+  });
+
+  describe('loadConfigOverrides / updateConfig', () => {
+    it('getConfig returns the base config initially', () => {
+      const { manager, config } = makeManager();
+      expect(manager.getConfig()).toEqual(config);
+    });
+
+    it('loadConfigOverrides merges DB overrides over baseConfig', async () => {
+      const { manager, storage } = makeManager();
+      (storage.getSoulConfigOverrides as ReturnType<typeof vi.fn>).mockResolvedValue({
+        maxSkills: 150,
+      });
+      await manager.loadConfigOverrides();
+      expect(manager.getConfig().maxSkills).toBe(150);
+    });
+
+    it('loadConfigOverrides is a no-op when overrides are empty', async () => {
+      const { manager, config } = makeManager();
+      await manager.loadConfigOverrides();
+      expect(manager.getConfig()).toEqual(config);
+    });
+
+    it('updateConfig merges patch and persists', async () => {
+      const { manager, storage } = makeManager();
+      await manager.updateConfig({ maxSkills: 200 });
+      expect(manager.getConfig().maxSkills).toBe(200);
+      expect(storage.setSoulConfigOverrides).toHaveBeenCalled();
+    });
+
+    it('updateConfig preserves unpached fields', async () => {
+      const { manager } = makeManager({}, { maxSkills: 50, maxPromptTokens: 8000 });
+      await manager.updateConfig({ maxSkills: 200 });
+      expect(manager.getConfig().maxPromptTokens).toBe(8000);
+    });
+
+    it('updateConfig throws on invalid maxSkills (> 200)', async () => {
+      const { manager } = makeManager();
+      await expect(manager.updateConfig({ maxSkills: 999 })).rejects.toThrow();
+    });
+
+    it('updateConfig throws on invalid learningMode value', async () => {
+      const { manager } = makeManager();
+      await expect(
+        manager.updateConfig({ learningMode: ['invalid_mode'] as any })
+      ).rejects.toThrow();
     });
   });
 });

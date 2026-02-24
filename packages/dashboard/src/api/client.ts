@@ -658,6 +658,14 @@ export async function fetchSoulConfig(): Promise<SoulConfig> {
   return data.config;
 }
 
+export async function updateSoulConfig(patch: Partial<SoulConfig>): Promise<SoulConfig> {
+  const data = await request<{ config: SoulConfig }>('/soul/config', {
+    method: 'PATCH',
+    body: JSON.stringify(patch),
+  });
+  return data.config;
+}
+
 // ─── Integrations ─────────────────────────────────────────────────────
 
 export async function fetchIntegrations(): Promise<{

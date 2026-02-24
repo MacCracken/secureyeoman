@@ -424,8 +424,8 @@ export const SoulConfigSchema = z
   .object({
     enabled: z.boolean().default(true),
     learningMode: z.array(LearningModeSchema).default(['user_authored']),
-    maxSkills: z.number().int().positive().max(200).default(50),
-    maxPromptTokens: z.number().int().positive().max(32000).default(16000),
+    maxSkills: z.number().int().positive().max(200).default(100),
+    maxPromptTokens: z.number().int().positive().max(32000).default(32000),
   })
   .default({});
 

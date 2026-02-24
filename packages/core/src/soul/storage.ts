@@ -12,6 +12,7 @@ import type {
   Skill,
   SkillCreate,
   SkillUpdate,
+  SoulConfig,
   UserProfile,
   UserProfileCreate,
   UserProfileUpdate,
@@ -548,6 +549,26 @@ export class SoulStorage extends PgBaseStorage {
       `INSERT INTO soul.meta (key, value, updated_at) VALUES ('agent_name', $1, $2)
        ON CONFLICT(key) DO UPDATE SET value = $1, updated_at = $2`,
       [name, Date.now()]
+    );
+  }
+
+  async getSoulConfigOverrides(): Promise<Partial<SoulConfig>> {
+    const row = await this.queryOne<{ value: string }>(
+      "SELECT value FROM soul.meta WHERE key = 'soul_config'"
+    );
+    if (!row?.value) return {};
+    try {
+      return JSON.parse(row.value) as Partial<SoulConfig>;
+    } catch {
+      return {};
+    }
+  }
+
+  async setSoulConfigOverrides(overrides: Partial<SoulConfig>): Promise<void> {
+    await this.execute(
+      `INSERT INTO soul.meta (key, value, updated_at) VALUES ('soul_config', $1, $2)
+       ON CONFLICT(key) DO UPDATE SET value = $1, updated_at = $2`,
+      [JSON.stringify(overrides), Date.now()]
     );
   }
 
