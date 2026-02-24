@@ -30,8 +30,14 @@
 import { z } from 'zod';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
+import type { McpServiceConfig } from '@secureyeoman/shared';
 import type { ToolMiddleware } from './index.js';
 import { wrapToolHandler } from './tool-utils.js';
+
+const NOT_EXPOSED_MSG =
+  'Remote Desktop Control tools are not enabled on this server. ' +
+  'Enable Desktop Control in Connections → Yeoman MCP → Feature Toggles, ' +
+  'then ensure Desktop Control is also enabled in Security Settings.';
 
 // ── Response helpers ─────────────────────────────────────────────────────────
 
@@ -101,8 +107,22 @@ async function hasLimbMovementCapability(client: CoreApiClient): Promise<boolean
 export function registerDesktopTools(
   server: McpServer,
   client: CoreApiClient,
+  config: McpServiceConfig,
   middleware: ToolMiddleware
 ): void {
+  // Gate all desktop tools at the MCP-config level — same pattern as browser/filesystem.
+  // If exposeDesktopControl is false (the default), every tool returns an informational error
+  // rather than being unregistered, so the agent understands why the tool isn't working.
+  const desktopHandler = <T extends Record<string, unknown>>(
+    name: string,
+    fn: (args: T) => Promise<ReturnType<typeof capabilityDisabledResponse>>
+  ) =>
+    wrapToolHandler(name, middleware, async (args: T) => {
+      if (!config.exposeDesktopControl) {
+        return { content: [{ type: 'text' as const, text: NOT_EXPOSED_MSG }], isError: true };
+      }
+      return fn(args);
+    });
   // ── desktop_screenshot ──────────────────────────────────────────────────────
 
   server.registerTool(
@@ -132,7 +152,7 @@ export function registerDesktopTools(
         prompt: z.string().max(1000).optional().describe('Analysis prompt for AI interpretation'),
       },
     },
-    wrapToolHandler('desktop_screenshot', middleware, async (args) => {
+    desktopHandler('desktop_screenshot', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled. Enable it in Security Settings.');
@@ -163,7 +183,7 @@ export function registerDesktopTools(
       description: 'List all open windows with their IDs, titles, and bounds.',
       inputSchema: {},
     },
-    wrapToolHandler('desktop_window_list', middleware, async () => {
+    desktopHandler('desktop_clipboard_read', async () => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -188,7 +208,7 @@ export function registerDesktopTools(
       description: 'List all connected monitors/displays with their IDs, names, and resolutions.',
       inputSchema: {},
     },
-    wrapToolHandler('desktop_display_list', middleware, async () => {
+    desktopHandler('desktop_clipboard_write', async () => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -220,7 +240,7 @@ export function registerDesktopTools(
         prompt: z.string().max(1000).optional().describe('Analysis prompt for AI interpretation'),
       },
     },
-    wrapToolHandler('desktop_camera_capture', middleware, async (args) => {
+    desktopHandler('desktop_window_list', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -256,7 +276,7 @@ export function registerDesktopTools(
         windowId: z.string().describe('Window ID (from desktop_window_list)'),
       },
     },
-    wrapToolHandler('desktop_window_focus', middleware, async (args) => {
+    desktopHandler('desktop_display_list', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -293,7 +313,7 @@ export function registerDesktopTools(
         height: z.number().int().positive().describe('New height'),
       },
     },
-    wrapToolHandler('desktop_window_resize', middleware, async (args) => {
+    desktopHandler('desktop_camera_capture', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -327,7 +347,7 @@ export function registerDesktopTools(
         y: z.number().int().nonnegative().describe('Y coordinate'),
       },
     },
-    wrapToolHandler('desktop_mouse_move', middleware, async (args) => {
+    desktopHandler('desktop_window_focus', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -364,7 +384,7 @@ export function registerDesktopTools(
         double: z.boolean().optional().describe('Double-click (default: false)'),
       },
     },
-    wrapToolHandler('desktop_click', middleware, async (args) => {
+    desktopHandler('desktop_window_resize', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -398,7 +418,7 @@ export function registerDesktopTools(
         dy: z.number().int().describe('Vertical scroll amount (positive = down)'),
       },
     },
-    wrapToolHandler('desktop_scroll', middleware, async (args) => {
+    desktopHandler('desktop_mouse_move', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -432,7 +452,7 @@ export function registerDesktopTools(
         delayMs: z.number().int().nonnegative().max(500).optional().describe('Delay between keystrokes in ms (default: 0)'),
       },
     },
-    wrapToolHandler('desktop_type', middleware, async (args) => {
+    desktopHandler('desktop_click', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -467,7 +487,7 @@ export function registerDesktopTools(
         release: z.boolean().optional().describe('If true, release the key instead of pressing (default: false)'),
       },
     },
-    wrapToolHandler('desktop_key', middleware, async (args) => {
+    desktopHandler('desktop_scroll', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -498,7 +518,7 @@ export function registerDesktopTools(
       description: 'Read the current clipboard content.',
       inputSchema: {},
     },
-    wrapToolHandler('desktop_clipboard_read', middleware, async () => {
+    desktopHandler('desktop_input_sequence', async () => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -531,7 +551,7 @@ export function registerDesktopTools(
         text: z.string().max(100000).describe('Text to write to clipboard'),
       },
     },
-    wrapToolHandler('desktop_clipboard_write', middleware, async (args) => {
+    desktopHandler('desktop_type', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');
@@ -592,7 +612,7 @@ export function registerDesktopTools(
           .describe('Ordered list of input actions'),
       },
     },
-    wrapToolHandler('desktop_input_sequence', middleware, async (args) => {
+    desktopHandler('desktop_key', async (args) => {
       const policy = await getSecurityPolicy(client);
       if (!policy.allowDesktopControl) {
         return capabilityDisabledResponse('Desktop Control is disabled.');

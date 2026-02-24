@@ -477,6 +477,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeWebScraping: false,
               exposeWebSearch: false,
               exposeBrowser: false,
+              exposeDesktopControl: false,
             },
             proactiveConfig: {
               enabled: false,

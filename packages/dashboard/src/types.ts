@@ -173,6 +173,7 @@ export interface Personality {
       exposeWebScraping?: boolean;
       exposeWebSearch?: boolean;
       exposeBrowser?: boolean;
+      exposeDesktopControl?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -247,6 +248,7 @@ export interface PersonalityCreate {
       exposeWebScraping?: boolean;
       exposeWebSearch?: boolean;
       exposeBrowser?: boolean;
+      exposeDesktopControl?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -601,6 +603,7 @@ export interface McpFeatureConfig {
   exposeWebScraping: boolean;
   exposeWebSearch: boolean;
   exposeBrowser: boolean;
+  exposeDesktopControl: boolean;
 }
 
 export interface McpServerHealth {

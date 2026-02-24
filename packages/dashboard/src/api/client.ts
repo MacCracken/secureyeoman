@@ -1313,6 +1313,7 @@ export interface McpConfigResponse {
   exposeWebScraping: boolean;
   exposeWebSearch: boolean;
   exposeBrowser: boolean;
+  exposeDesktopControl: boolean;
   allowedUrls: string[];
   webRateLimitPerMinute: number;
   proxyEnabled: boolean;
@@ -1332,6 +1333,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeWebScraping: true,
       exposeWebSearch: true,
       exposeBrowser: false,
+      exposeDesktopControl: false,
       allowedUrls: [],
       webRateLimitPerMinute: 10,
       proxyEnabled: false,

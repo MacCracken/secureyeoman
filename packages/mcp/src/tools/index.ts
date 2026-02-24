@@ -63,5 +63,5 @@ export async function registerAllTools(
   registerWorkflowTools(server, client, middleware);
   registerQuickBooksTools(server, config, middleware);
   registerDiagnosticTools(server, client, middleware);
-  registerDesktopTools(server, client, middleware);
+  registerDesktopTools(server, client, config, middleware);
 }

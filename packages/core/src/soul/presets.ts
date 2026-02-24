@@ -48,6 +48,7 @@ const BASE_BODY: PersonalityCreate['body'] = {
     exposeWebScraping: false,
     exposeWebSearch: false,
     exposeBrowser: false,
+    exposeDesktopControl: false,
   },
   proactiveConfig: {
     enabled: false,

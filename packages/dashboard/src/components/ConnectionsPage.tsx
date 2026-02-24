@@ -43,6 +43,7 @@ import {
   ListTodo,
   Music2,
   PlayCircle,
+  Monitor,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -60,9 +61,11 @@ import {
   stopIntegration,
   deleteIntegration,
   testIntegration,
+  fetchSecurityPolicy,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo } from '../types';
+import type { SecurityPolicy } from '../api/client';
 import { sanitizeText } from '../utils/sanitize';
 import { McpPrebuilts } from './McpPrebuilts';
 import { RoutingRulesPage } from './RoutingRulesPage';
@@ -1141,6 +1144,12 @@ export function ConnectionsPage() {
     refetchInterval: 30000,
   });
 
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['securityPolicy'],
+    queryFn: fetchSecurityPolicy,
+    refetchInterval: 60000,
+  });
+
   const { data: serversData } = useQuery({
     queryKey: ['mcpServers'],
     queryFn: fetchMcpServers,
@@ -1596,6 +1605,7 @@ export function ConnectionsPage() {
             tools={tools}
             toolsByServer={toolsByServer}
             featureConfig={featureConfig}
+            securityPolicy={securityPolicy}
             showAddForm={showAddMcpForm}
             form={mcpForm}
             toolsExpanded={toolsExpanded}
@@ -2001,6 +2011,7 @@ function McpTab({
   tools,
   toolsByServer,
   featureConfig,
+  securityPolicy,
   showAddForm,
   form,
   toolsExpanded,
@@ -2029,6 +2040,7 @@ function McpTab({
   tools: McpToolDef[];
   toolsByServer: Record<string, McpToolDef[]>;
   featureConfig?: McpFeatureConfig;
+  securityPolicy?: SecurityPolicy;
   showAddForm: boolean;
   form: AddServerForm;
   toolsExpanded: boolean;
@@ -2250,6 +2262,7 @@ function McpTab({
           isDeleting={isDeleting}
           isRestarting={isRestarting}
           featureConfig={featureConfig}
+          securityPolicy={securityPolicy}
           onFeatureToggle={onFeatureToggle}
           isFeatureToggling={isFeatureToggling}
         />
@@ -2359,6 +2372,7 @@ function LocalServerCard({
   isDeleting,
   isRestarting,
   featureConfig,
+  securityPolicy,
   onFeatureToggle,
   isFeatureToggling,
 }: {
@@ -2370,6 +2384,7 @@ function LocalServerCard({
   isDeleting: boolean;
   isRestarting: boolean;
   featureConfig?: McpFeatureConfig;
+  securityPolicy?: SecurityPolicy;
   onFeatureToggle: (data: Partial<McpFeatureConfig>) => void;
   isFeatureToggling: boolean;
 }) {
@@ -2484,6 +2499,38 @@ function LocalServerCard({
                   onFeatureToggle({ exposeBrowser: e.target.checked });
                 }}
                 disabled={isFeatureToggling}
+                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+              />
+            </label>
+            {/* Desktop Control — locked if allowDesktopControl=false in security policy (.env gate) */}
+            <label
+              className={`flex items-center gap-2.5 p-2 rounded-lg transition-colors ${
+                securityPolicy?.allowDesktopControl
+                  ? 'bg-muted/30 cursor-pointer hover:bg-muted/50'
+                  : 'bg-muted/10 cursor-not-allowed opacity-50'
+              }`}
+              title={
+                securityPolicy?.allowDesktopControl
+                  ? 'Remote desktop control — screen capture, keyboard/mouse, clipboard'
+                  : 'Enable Desktop Control in Security Settings first'
+              }
+            >
+              <Monitor className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-medium">Remote Desktop Control</span>
+                {!securityPolicy?.allowDesktopControl && (
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    Enable in Security Settings first
+                  </p>
+                )}
+              </div>
+              <input
+                type="checkbox"
+                checked={featureConfig.exposeDesktopControl}
+                onChange={(e) => {
+                  onFeatureToggle({ exposeDesktopControl: e.target.checked });
+                }}
+                disabled={isFeatureToggling || !securityPolicy?.allowDesktopControl}
                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
               />
             </label>

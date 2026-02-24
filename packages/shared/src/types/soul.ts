@@ -68,6 +68,7 @@ export const McpFeaturesSchema = z
     exposeWebScraping: z.boolean().default(false),
     exposeWebSearch: z.boolean().default(false),
     exposeBrowser: z.boolean().default(false),
+    exposeDesktopControl: z.boolean().default(false),
   })
   .default({});
 

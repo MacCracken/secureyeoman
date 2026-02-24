@@ -94,6 +94,7 @@ export const McpServiceConfigSchema = z.object({
   webSearchApiKey: z.string().optional(),
   exposeBrowser: z.boolean().default(false),
   browserEngine: z.enum(['playwright', 'puppeteer']).default('playwright'),
+  exposeDesktopControl: z.boolean().default(false),
   browserHeadless: z.boolean().default(true),
   browserMaxPages: z.number().int().min(1).max(10).default(3),
   browserTimeoutMs: z.number().int().min(5000).max(120000).default(30000),

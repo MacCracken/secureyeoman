@@ -65,6 +65,7 @@ describe('ConnectionsPage', () => {
       exposeWebScraping: false,
       exposeWebSearch: false,
       exposeBrowser: false,
+      exposeDesktopControl: false,
       allowedUrls: [],
       webRateLimitPerMinute: 10,
       proxyEnabled: false,

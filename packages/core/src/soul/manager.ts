@@ -168,6 +168,7 @@ export class SoulManager {
           exposeWebScraping: false,
           exposeWebSearch: false,
           exposeBrowser: false,
+          exposeDesktopControl: false,
         },
         proactiveConfig: {
           enabled: false,
@@ -517,6 +518,7 @@ export class SoulManager {
       exposeWebScraping: false,
       exposeWebSearch: false,
       exposeBrowser: false,
+      exposeDesktopControl: false,
     };
     if (selectedServers.length > 0) {
       lines.push('');

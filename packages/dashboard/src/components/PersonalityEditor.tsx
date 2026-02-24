@@ -1204,6 +1204,7 @@ interface BodySectionProps {
     exposeWebScraping: boolean;
     exposeWebSearch: boolean;
     exposeBrowser: boolean;
+    exposeDesktopControl: boolean;
   };
   onMcpFeaturesChange: (features: {
     exposeGit: boolean;
@@ -1212,6 +1213,7 @@ interface BodySectionProps {
     exposeWebScraping: boolean;
     exposeWebSearch: boolean;
     exposeBrowser: boolean;
+    exposeDesktopControl: boolean;
   }) => void;
   creationConfig: {
     skills: boolean;
@@ -2119,6 +2121,36 @@ function BodySection({
                                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                               />
                             </label>
+                            {/* Remote Desktop Control — standalone toggle */}
+                            <label
+                              className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                globalMcpConfig?.exposeDesktopControl
+                                  ? 'cursor-pointer hover:bg-muted/50'
+                                  : 'opacity-50 cursor-not-allowed'
+                              }`}
+                            >
+                              <Monitor className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+                              <span className="text-xs flex-1">
+                                Remote Desktop Control
+                                {!globalMcpConfig?.exposeDesktopControl && (
+                                  <span className="text-[10px] text-muted-foreground ml-1">
+                                    — enable in Connections first
+                                  </span>
+                                )}
+                              </span>
+                              <input
+                                type="checkbox"
+                                checked={mcpFeatures.exposeDesktopControl}
+                                onChange={(e) => {
+                                  onMcpFeaturesChange({
+                                    ...mcpFeatures,
+                                    exposeDesktopControl: e.target.checked,
+                                  });
+                                }}
+                                disabled={!globalMcpConfig?.exposeDesktopControl}
+                                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                              />
+                            </label>
                           </div>
                         )}
                       </div>
@@ -2390,6 +2422,7 @@ export function PersonalityEditor() {
     exposeWebScraping: boolean;
     exposeWebSearch: boolean;
     exposeBrowser: boolean;
+    exposeDesktopControl: boolean;
   }>({
     exposeGit: false,
     exposeFilesystem: false,
@@ -2397,6 +2430,7 @@ export function PersonalityEditor() {
     exposeWebScraping: false,
     exposeWebSearch: false,
     exposeBrowser: false,
+    exposeDesktopControl: false,
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
@@ -2597,6 +2631,7 @@ export function PersonalityEditor() {
       exposeWebScraping: body.mcpFeatures?.exposeWebScraping ?? false,
       exposeWebSearch: body.mcpFeatures?.exposeWebSearch ?? false,
       exposeBrowser: body.mcpFeatures?.exposeBrowser ?? false,
+      exposeDesktopControl: body.mcpFeatures?.exposeDesktopControl ?? false,
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
@@ -2686,6 +2721,7 @@ export function PersonalityEditor() {
       exposeWebScraping: false,
       exposeWebSearch: false,
       exposeBrowser: false,
+      exposeDesktopControl: false,
     });
     setProactiveConfig({
       enabled: false,
