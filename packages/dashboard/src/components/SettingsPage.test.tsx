@@ -111,6 +111,8 @@ describe('SettingsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
   });
 

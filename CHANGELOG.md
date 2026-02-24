@@ -1,3 +1,15 @@
+## [Phase 48.1] — Dashboard Type Fixes (2026-02-24)
+
+### Fixed
+
+- **`SecurityPolicy` mocks** in 15 dashboard test files missing `allowTwingate` (Phase 45) and `allowOrgIntent` (Phase 48) fields — added both as `false` after `allowCommunityGitFetch`
+- **`McpConfigResponse`** (`packages/dashboard/src/api/client.ts`) — added `exposeOrgIntentTools: boolean` to interface and default fallback object
+- **`PersonalityEditor.tsx`** — renamed local state field `exposeTwingate` → `exposeTwingateTools` to match the backend `McpFeaturesConfig` field name introduced in Phase 45
+- **`types.ts`** `mcpFeatures` blocks — added `exposeTwingateTools?: boolean` and `exposeOrgIntentTools?: boolean` to optional `mcpFeatures` in `PersonalityBody` and `PersonalityCreate`; added both as required fields on `McpFeaturesConfig`
+- **`ConnectionsPage.test.tsx`** — added `exposeTwingateTools: false` and `exposeOrgIntentTools: false` to `McpConfigResponse` mock; all 15 affected test files now satisfy the full `McpConfigResponse` shape
+
+---
+
 ## [Phase 48] — Machine Readable Organizational Intent (2026-02-24)
 
 ### Added

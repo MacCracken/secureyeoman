@@ -142,6 +142,8 @@ describe('SubAgentsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     mockFetchAgentProfiles.mockResolvedValue(MOCK_PROFILES);
     mockFetchActiveDelegations.mockResolvedValue(MOCK_ACTIVE_DELEGATIONS);
@@ -185,6 +187,8 @@ describe('SubAgentsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent();
     expect(await screen.findByText('Delegation Not Enabled')).toBeInTheDocument();
@@ -217,6 +221,8 @@ describe('SubAgentsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -249,6 +255,8 @@ describe('SubAgentsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent();
     expect(await screen.findByText('Active')).toBeInTheDocument();
@@ -301,6 +309,8 @@ describe('SubAgentsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent();
     const tabs = await screen.findAllByRole('button', { name: /Active|Swarms|History|Profiles/i });

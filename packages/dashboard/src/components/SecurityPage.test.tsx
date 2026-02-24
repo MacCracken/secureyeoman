@@ -133,6 +133,8 @@ beforeEach(() => {
     allowNetBoxWrite: false,
     allowWorkflows: false,
     allowCommunityGitFetch: false,
+    allowTwingate: false,
+    allowOrgIntent: false,
   });
 });
 
@@ -362,6 +364,8 @@ function enableMlPolicy() {
     allowNetBoxWrite: false,
     allowWorkflows: false,
     allowCommunityGitFetch: false,
+    allowTwingate: false,
+    allowOrgIntent: false,
   });
 }
 

@@ -65,6 +65,8 @@ describe('ExperimentsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
 
     renderComponent();
@@ -97,6 +99,8 @@ describe('ExperimentsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
 
     renderComponent();
@@ -128,6 +132,8 @@ describe('ExperimentsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
 
     renderComponent();
@@ -157,6 +163,8 @@ describe('ExperimentsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
 
     renderComponent();

@@ -222,330 +222,167 @@
           </p>
         </div>
         <div class="features-grid">
-          <div class="feature-card">
+
+          <!-- 1. Enterprise Security — primary differentiator, CISO/enterprise buyer first -->
+          <div class="feature-card featured">
             <div class="feature-icon-wrapper">
               <i class="fas fa-shield-alt"></i>
             </div>
             <h3 class="feature-title">Enterprise Security</h3>
             <p class="feature-desc">
-              RBAC with multiple roles, JWT + API key authentication, mTLS, AES-256-GCM encryption
-              at rest, and sandboxed execution.
+              RBAC (Admin/Operator/Auditor/Viewer), JWT + API key auth, mTLS, AES-256-GCM
+              encryption at rest, and five sandboxing modes (Landlock, seccomp, namespaces,
+              gVisor, WASM). Unified SecretsManager — env, keyring, file, Vault/OpenBao, or auto.
+              TLS lifecycle with auto-generated certs and expiry monitoring.
             </p>
             <ul class="feature-list">
-              <li>Role-Based Access Control</li>
-              <li>End-to-end encryption</li>
-              <li>Sandboxed execution</li>
-              <li>Advanced threat protection</li>
+              <li>RBAC + SSO/OIDC (Okta, Azure AD, Auth0)</li>
+              <li>Vault / OpenBao secrets backend</li>
+              <li>Five sandboxing modes</li>
+              <li>18-pattern credential redaction on every response</li>
             </ul>
           </div>
 
-          <div class="feature-card featured">
+          <!-- 2. Audit & Compliance — enterprise governance buyers -->
+          <div class="feature-card">
             <div class="feature-icon-wrapper">
               <i class="fas fa-eye"></i>
             </div>
-            <h3 class="feature-title">Complete Observability</h3>
+            <h3 class="feature-title">Audit & Compliance</h3>
             <p class="feature-desc">
-              Cryptographic audit trails with HMAC-SHA256 chain verification. Every action is
-              logged, monitored, and auditable.
+              HMAC-SHA256 cryptographic audit chain — every tool call, model response, and
+              system event is logged, verifiably chained, and exportable. Prometheus metrics
+              with Grafana dashboards for real-time production monitoring.
             </p>
             <ul class="feature-list">
-              <li>Cryptographic integrity</li>
-              <li>Prometheus metrics</li>
-              <li>Grafana dashboards</li>
-              <li>Immutable audit trails</li>
+              <li>Cryptographic integrity (HMAC-SHA256)</li>
+              <li>Prometheus + Grafana dashboards</li>
+              <li>JSON / HTML / CSV export</li>
+              <li>Immutable, tamper-evident logs</li>
             </ul>
           </div>
 
+          <!-- 3. Security Operations — SecOps / DevSecOps teams, unique differentiator -->
           <div class="feature-card">
             <div class="feature-icon-wrapper">
-              <i class="fas fa-brain"></i>
+              <i class="fas fa-search-location"></i>
             </div>
-            <h3 class="feature-title">Cognitive Architecture</h3>
+            <h3 class="feature-title">Security Operations</h3>
             <p class="feature-desc">
-              Vector semantic memory with FAISS/Qdrant/ChromaDB backends. LLM-powered memory
-              consolidation with 3-tier history compression.
+              37 MCP tools for active network evaluation: device discovery, port scanning, SSH
+              automation, NetBox IPAM, NVD/CVE lookups, and PCAP capture. Twingate zero-trust
+              remote access — reach private MCP servers through an encrypted tunnel with no
+              firewall ports opened. Kali Security Toolkit included.
             </p>
             <ul class="feature-list">
-              <li>Semantic search</li>
-              <li>Memory consolidation</li>
-              <li>Progressive compression</li>
-              <li>Knowledge management</li>
+              <li>37 network evaluation tools</li>
+              <li>Twingate zero-trust tunnel (13 tools)</li>
+              <li>NVD / CVE vulnerability lookups</li>
+              <li>Kali toolkit (nmap, nuclei, sqlmap)</li>
             </ul>
           </div>
 
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-desktop"></i>
-            </div>
-            <h3 class="feature-title">Rich Dashboard</h3>
-            <p class="feature-desc">
-              React + Vite + Tailwind dashboard with real-time WebSocket updates, rich chat
-              rendering, collaborative editing, and a live network mode indicator (Local / LAN / Public).
-            </p>
-            <ul class="feature-list">
-              <li>Real-time updates</li>
-              <li>Markdown + Mermaid + KaTeX</li>
-              <li>Collaborative editing (Yjs)</li>
-              <li>Live network mode badge</li>
-            </ul>
-          </div>
-
+          <!-- 4. MCP Tools & Integrations — breadth appeal, all buyer types -->
           <div class="feature-card">
             <div class="feature-icon-wrapper">
               <i class="fas fa-plug"></i>
             </div>
-            <h3 class="feature-title">Universal Integrations</h3>
+            <h3 class="feature-title">120+ MCP Tools & Integrations</h3>
             <p class="feature-desc">
-              Connect with 31 platforms including Telegram, Discord, Slack, WhatsApp, Signal, MS
-              Teams, GitHub, GitLab, Gmail, Google Calendar, Notion, Jira, Linear, Airtable, AWS,
-              Azure DevOps, and more. MCP protocol support with 120+ built-in tools.
+              31 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams,
+              GitHub, GitLab, Gmail, Google Calendar, Jira, Notion, AWS, Azure DevOps, and more.
+              120+ built-in MCP tools with SSRF protection and encrypted credentials — over
+              streamable HTTP, SSE, and stdio transports.
             </p>
             <ul class="feature-list">
-              <li>Multi-platform support</li>
-              <li>120+ MCP tools</li>
-              <li>Webhook automation</li>
-              <li>Custom integrations</li>
+              <li>31 platform integrations</li>
+              <li>120+ MCP tools built-in</li>
+              <li>SSRF protection + encrypted creds</li>
+              <li>HTTP / SSE / stdio transports</li>
             </ul>
           </div>
 
+          <!-- 5. Multi-Agent & Workflows — power users, automation teams -->
           <div class="feature-card">
             <div class="feature-icon-wrapper">
-              <i class="fas fa-code"></i>
+              <i class="fas fa-sitemap"></i>
             </div>
-            <h3 class="feature-title">Code Execution</h3>
+            <h3 class="feature-title">Multi-Agent & Workflows</h3>
             <p class="feature-desc">
-              Sandboxed code execution in Python, Node.js, and shell with
-              Landlock/seccomp/gVisor/WASM sandboxing and streaming output.
+              A2A protocol with E2E encryption and mDNS peer discovery. Sub-agent delegation
+              with budget and depth controls. Agent swarms (sequential, parallel, dynamic). DAG
+              workflow engine with 9 step types, Mustache data-flow templates, and a ReactFlow
+              visual builder — no other framework in this category ships this.
             </p>
             <ul class="feature-list">
-              <li>Multi-sandbox options</li>
-              <li>Multi-language support</li>
-              <li>Streaming output</li>
-              <li>Approval workflows</li>
+              <li>A2A protocol (E2E encrypted)</li>
+              <li>Agent swarms + sub-agents</li>
+              <li>DAG workflows — 9 step types</li>
+              <li>ReactFlow visual builder</li>
             </ul>
           </div>
 
+          <!-- 6. Cognitive Memory — AI differentiation buyers -->
           <div class="feature-card">
             <div class="feature-icon-wrapper">
-              <i class="fas fa-users"></i>
+              <i class="fas fa-brain"></i>
             </div>
-            <h3 class="feature-title">Agent-to-Agent</h3>
+            <h3 class="feature-title">Cognitive Memory</h3>
             <p class="feature-desc">
-              Cross-instance delegation via E2E encrypted messaging. Peer discovery with capability
-              negotiation.
+              Vector semantic search (FAISS/Qdrant/ChromaDB) fused with tsvector full-text
+              search via Reciprocal Rank Fusion — exact-term recall meets semantic search.
+              800-token overlapping document chunks. Proactive context compaction at 80%
+              window fill. Self-repairing task loop with diagnostic recovery prompts.
             </p>
             <ul class="feature-list">
-              <li>E2E encryption</li>
-              <li>Peer discovery</li>
-              <li>Capability negotiation</li>
-              <li>Trust progression</li>
+              <li>Hybrid FTS + vector (RRF)</li>
+              <li>Content-chunked document indexing</li>
+              <li>Proactive context compaction</li>
+              <li>Self-repairing task loop</li>
             </ul>
           </div>
 
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-robot"></i>
-            </div>
-            <h3 class="feature-title">Multi-Agent Swarms</h3>
-            <p class="feature-desc">
-              Sub-agent delegation with role-based profiles. Agent swarms with sequential, parallel,
-              and dynamic strategies. Dynamic tool creation at runtime.
-            </p>
-            <ul class="feature-list">
-              <li>Swarm templates</li>
-              <li>Dynamic tools</li>
-              <li>Role-based profiles</li>
-              <li>Sequential/parallel/dynamic</li>
-            </ul>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-microphone"></i>
-            </div>
-            <h3 class="feature-title">Voice & Multimodal</h3>
-            <p class="feature-desc">
-              Push-to-talk with 10 TTS and 7 STT providers. Image generation, vision analysis, and
-              voice overlay for seamless interaction. Runtime-switchable providers.
-            </p>
-            <ul class="feature-list">
-              <li>10 TTS + 7 STT providers</li>
-              <li>Image gen + vision analysis</li>
-              <li>Push-to-talk overlay</li>
-              <li>Switchable at runtime</li>
-            </ul>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-mouse-pointer"></i>
-            </div>
-            <h3 class="feature-title">Desktop Control</h3>
-            <p class="feature-desc">
-              Screen capture, keyboard/mouse automation, and camera access across Linux, macOS, and
-              Windows. Gated by an explicit security toggle with consent and audit trails.
-            </p>
-            <ul class="feature-list">
-              <li>Cross-platform screen capture</li>
-              <li>Keyboard &amp; mouse control</li>
-              <li>Clipboard read/write</li>
-              <li>Consent &amp; audit trail</li>
-            </ul>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-chart-bar"></i>
-            </div>
-            <h3 class="feature-title">Reports & Analytics</h3>
-            <p class="feature-desc">
-              Audit report generator with JSON/HTML/CSV export. Cost optimization recommendations
-              and A/B testing framework.
-            </p>
-            <ul class="feature-list">
-              <li>Report generation</li>
-              <li>Cost insights</li>
-              <li>A/B testing</li>
-              <li>Export options</li>
-            </ul>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-user-friends"></i>
-            </div>
-            <h3 class="feature-title">Team Collaboration</h3>
-            <p class="feature-desc">
-              Workspaces with isolation, member management, and workspace-scoped RBAC for team
-              environments.
-            </p>
-            <ul class="feature-list">
-              <li>Workspace isolation</li>
-              <li>Member management</li>
-              <li>Workspace RBAC</li>
-              <li>Team analytics</li>
-            </ul>
-          </div>
-
+          <!-- 7. Developer Experience — builders, platform engineers -->
           <div class="feature-card">
             <div class="feature-icon-wrapper">
               <i class="fas fa-terminal"></i>
             </div>
-            <h3 class="feature-title">CLI & Development</h3>
+            <h3 class="feature-title">Developer Experience</h3>
             <p class="feature-desc">
-              24 CLI commands with shell completions. Integrated Storybook for component development
-              with dark/light theme support.
+              24-command CLI with shell completions and <code>--json</code> scripting output.
+              Full-screen TUI (<code>secureyeoman tui</code>). 38 lifecycle hook points with
+              observe/transform/veto semantics. Sandboxed code execution (Python, Node.js,
+              shell). Desktop control — screen capture, keyboard/mouse, clipboard — gated by
+              explicit consent and audit trail.
             </p>
             <ul class="feature-list">
-              <li>24 CLI commands</li>
-              <li>Shell completions</li>
-              <li>Storybook</li>
-              <li>JSON output</li>
+              <li>24 CLI commands + full-screen TUI</li>
+              <li>38 lifecycle hook points</li>
+              <li>Sandboxed code execution</li>
+              <li>Desktop control (consent-gated)</li>
             </ul>
           </div>
 
+          <!-- 8. Flexible Deployment — ops, IT, infrastructure teams -->
           <div class="feature-card">
             <div class="feature-icon-wrapper">
-              <i class="fas fa-store"></i>
+              <i class="fas fa-cloud-upload-alt"></i>
             </div>
-            <h3 class="feature-title">Skill Marketplace</h3>
+            <h3 class="feature-title">Flexible Deployment</h3>
             <p class="feature-desc">
-              Discover, install, publish, import, and export skills. Portable <code>.skill.json</code>
-              files, community repo sync (git or local path), and admin-controlled community policy.
+              Single ~80 MB binary (Linux x64/arm64, macOS arm64), Docker, or Kubernetes with
+              Helm, HPA, PDB, and NetworkPolicies. Three network modes — Local, LAN, or Public
+              TLS — with a live badge in the dashboard. Multi-user workspaces, voice I/O (10
+              TTS + 7 STT providers), and portable skill marketplace sync.
             </p>
             <ul class="feature-list">
-              <li>Import / export skills</li>
-              <li>Community repo sync</li>
-              <li>Per-personality install</li>
-              <li>Admin security policy</li>
+              <li>Single binary + Docker + K8s Helm</li>
+              <li>Local / LAN / Public TLS modes</li>
+              <li>Multi-user workspaces + SSO</li>
+              <li>Voice I/O + skill marketplace</li>
             </ul>
           </div>
 
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-project-diagram"></i>
-            </div>
-            <h3 class="feature-title">Workflow Orchestration</h3>
-            <p class="feature-desc">
-              DAG-based automation engine with 9 step types, Mustache data-flow templates, parallel
-              tier execution, retry policies, and a ReactFlow visual builder.
-            </p>
-            <ul class="feature-list">
-              <li>9 step types</li>
-              <li>Parallel execution</li>
-              <li>Visual DAG builder</li>
-              <li>Retry &amp; fallback</li>
-            </ul>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-puzzle-piece"></i>
-            </div>
-            <h3 class="feature-title">Extensions & Hooks</h3>
-            <p class="feature-desc">
-              38 lifecycle hook points with observe/transform/veto semantics. TypeScript plugin
-              modules with hot-reload support and webhook dispatch.
-            </p>
-            <ul class="feature-list">
-              <li>38 hook points</li>
-              <li>TypeScript plugins</li>
-              <li>Hot reload</li>
-              <li>Webhook dispatch</li>
-            </ul>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-key"></i>
-            </div>
-            <h3 class="feature-title">Secrets & Vault Management</h3>
-            <p class="feature-desc">
-              Unified SecretsManager with env, keyring, file, Vault/OpenBao, and auto backends.
-              TLS lifecycle management with auto-generated dev certs and expiry monitoring.
-            </p>
-            <ul class="feature-list">
-              <li>Vault / OpenBao integration</li>
-              <li>Keyring (macOS / Linux)</li>
-              <li>TLS auto-generate &amp; expiry alerts</li>
-              <li>Zero secrets in plaintext</li>
-            </ul>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-network-wired"></i>
-            </div>
-            <h3 class="feature-title">Network Security Toolkit</h3>
-            <p class="feature-desc">
-              37 MCP tools for network evaluation and protection — device discovery, port scanning,
-              SSH automation, NetBox IPAM, NVD/CVE lookups, and PCAP packet analysis.
-            </p>
-            <ul class="feature-list">
-              <li>Device &amp; port discovery</li>
-              <li>NVD / CVE lookups</li>
-              <li>NetBox IPAM integration</li>
-              <li>SSH + PCAP capture</li>
-            </ul>
-          </div>
-
-          <div class="feature-card">
-            <div class="feature-icon-wrapper">
-              <i class="fas fa-lock-open"></i>
-            </div>
-            <h3 class="feature-title">Zero-Trust Remote Access</h3>
-            <p class="feature-desc">
-              Twingate integration — 13 MCP tools to manage zero-trust resources and proxy to
-              private MCP servers reachable only through the Twingate Client tunnel. No firewall
-              ports opened.
-            </p>
-            <ul class="feature-list">
-              <li>Twingate GraphQL tenant mgmt</li>
-              <li>Private MCP server proxy</li>
-              <li>Service key lifecycle</li>
-              <li>Audit events per key op</li>
-            </ul>
-          </div>
         </div>
       </div>
     </section>
@@ -555,56 +392,71 @@
       <div class="container">
         <div class="section-header">
           <span class="section-badge">Use Cases</span>
-          <h2 class="section-title">What Will You Build?</h2>
+          <h2 class="section-title">Built for Every Mission</h2>
           <p class="section-subtitle">
-            From personal automation to enterprise workflows, SecureYeoman adapts to your needs.
+            From SOC automation to enterprise workflows, SecureYeoman deploys where security matters most.
           </p>
         </div>
         <div class="use-cases-grid">
           <div class="use-case-card">
             <div class="use-case-image">
-              <i class="fas fa-envelope-open-text"></i>
+              <i class="fas fa-shield-virus"></i>
             </div>
-            <h3>Email Management</h3>
+            <h3>Security Operations</h3>
             <p>
-              Automate inbox organization, draft responses, and manage communications across
-              platforms.
+              Scan networks, detect anomalies, triage CVEs, and automate incident response — 37
+              network security tools built in.
             </p>
           </div>
           <div class="use-case-card">
             <div class="use-case-image">
-              <i class="fas fa-calendar-check"></i>
+              <i class="fas fa-user-shield"></i>
             </div>
-            <h3>Calendar & Scheduling</h3>
-            <p>Schedule meetings, send reminders, and coordinate with your team automatically.</p>
+            <h3>Zero-Trust Access</h3>
+            <p>
+              Provision Twingate service accounts, rotate service keys, and proxy private MCP
+              servers — no VPN required.
+            </p>
           </div>
           <div class="use-case-card">
             <div class="use-case-image">
               <i class="fas fa-code-branch"></i>
             </div>
-            <h3>Development</h3>
-            <p>Run tests, review code, manage PRs, and automate your development workflow.</p>
+            <h3>DevSecOps Pipelines</h3>
+            <p>
+              Review code, run tests, manage PRs, enforce security policies, and automate your
+              entire dev workflow.
+            </p>
+          </div>
+          <div class="use-case-card">
+            <div class="use-case-image">
+              <i class="fas fa-sitemap"></i>
+            </div>
+            <h3>Enterprise Automation</h3>
+            <p>
+              Orchestrate multi-agent DAG workflows across swarms of personalities — approvals,
+              reports, escalations.
+            </p>
           </div>
           <div class="use-case-card">
             <div class="use-case-image">
               <i class="fas fa-chart-line"></i>
             </div>
-            <h3>Data Analysis</h3>
-            <p>Process data, generate reports, and extract insights from your information.</p>
+            <h3>Threat Intelligence</h3>
+            <p>
+              Aggregate data across 31 platforms, enrich findings with NVD CVE lookups, and
+              surface insights your team can act on.
+            </p>
           </div>
           <div class="use-case-card">
             <div class="use-case-image">
-              <i class="fas fa-search"></i>
+              <i class="fas fa-envelope-open-text"></i>
             </div>
-            <h3>Research</h3>
-            <p>Gather information, summarize documents, and build your personal knowledge base.</p>
-          </div>
-          <div class="use-case-card">
-            <div class="use-case-image">
-              <i class="fas fa-shield-virus"></i>
-            </div>
-            <h3>Security Monitoring</h3>
-            <p>Monitor systems, detect anomalies, and respond to security events automatically.</p>
+            <h3>Communications & Productivity</h3>
+            <p>
+              Manage email, schedule meetings, draft reports, and coordinate across platforms —
+              fully automated.
+            </p>
           </div>
         </div>
       </div>

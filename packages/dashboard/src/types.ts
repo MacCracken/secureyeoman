@@ -183,6 +183,8 @@ export interface Personality {
       exposeNetBox?: boolean;
       exposeNvd?: boolean;
       exposeNetworkUtils?: boolean;
+      exposeTwingateTools?: boolean;
+      exposeOrgIntentTools?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -271,6 +273,8 @@ export interface PersonalityCreate {
       exposeNetBox?: boolean;
       exposeNvd?: boolean;
       exposeNetworkUtils?: boolean;
+      exposeTwingateTools?: boolean;
+      exposeOrgIntentTools?: boolean;
     };
     proactiveConfig?: {
       enabled?: boolean;
@@ -669,6 +673,8 @@ export interface McpFeatureConfig {
   exposeNetBox: boolean;
   exposeNvd: boolean;
   exposeNetworkUtils: boolean;
+  exposeTwingateTools: boolean;
+  exposeOrgIntentTools: boolean;
 }
 
 export interface McpServerHealth {

@@ -178,6 +178,8 @@ describe('EditorPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
     mockFetchExecutionHistory.mockResolvedValue({
@@ -246,6 +248,8 @@ describe('EditorPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent();
     await screen.findByText('Terminal');

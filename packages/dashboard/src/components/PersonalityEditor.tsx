@@ -1281,7 +1281,7 @@ interface BodySectionProps {
     exposeNetBox: boolean;
     exposeNvd: boolean;
     exposeNetworkUtils: boolean;
-    exposeTwingate: boolean;
+    exposeTwingateTools: boolean;
   };
   onMcpFeaturesChange: (features: {
     exposeGit: boolean;
@@ -1297,7 +1297,7 @@ interface BodySectionProps {
     exposeNetBox: boolean;
     exposeNvd: boolean;
     exposeNetworkUtils: boolean;
-    exposeTwingate: boolean;
+    exposeTwingateTools: boolean;
   }) => void;
   creationConfig: {
     skills: boolean;
@@ -2450,11 +2450,11 @@ function BodySection({
                                 </span>
                                 <input
                                   type="checkbox"
-                                  checked={mcpFeatures.exposeTwingate}
+                                  checked={mcpFeatures.exposeTwingateTools}
                                   onChange={(e) => {
                                     onMcpFeaturesChange({
                                       ...mcpFeatures,
-                                      exposeTwingate: e.target.checked,
+                                      exposeTwingateTools: e.target.checked,
                                     });
                                   }}
                                   disabled={!globalMcpConfig?.exposeTwingateTools}
@@ -2763,7 +2763,7 @@ export function PersonalityEditor() {
     exposeNetBox: boolean;
     exposeNvd: boolean;
     exposeNetworkUtils: boolean;
-    exposeTwingate: boolean;
+    exposeTwingateTools: boolean;
   }>({
     exposeGit: false,
     exposeFilesystem: false,
@@ -2778,7 +2778,7 @@ export function PersonalityEditor() {
     exposeNetBox: false,
     exposeNvd: false,
     exposeNetworkUtils: false,
-    exposeTwingate: false,
+    exposeTwingateTools: false,
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
@@ -3035,7 +3035,7 @@ export function PersonalityEditor() {
       exposeNetBox: body.mcpFeatures?.exposeNetBox ?? false,
       exposeNvd: body.mcpFeatures?.exposeNvd ?? false,
       exposeNetworkUtils: body.mcpFeatures?.exposeNetworkUtils ?? false,
-      exposeTwingate: body.mcpFeatures?.exposeTwingate ?? false,
+      exposeTwingateTools: body.mcpFeatures?.exposeTwingateTools ?? false,
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
@@ -3140,7 +3140,7 @@ export function PersonalityEditor() {
       exposeNetBox: false,
       exposeNvd: false,
       exposeNetworkUtils: false,
-      exposeTwingate: false,
+      exposeTwingateTools: false,
     });
     setProactiveConfig({
       enabled: false,

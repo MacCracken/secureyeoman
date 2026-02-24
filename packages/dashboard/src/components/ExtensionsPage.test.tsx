@@ -105,6 +105,8 @@ describe('ExtensionsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     mockFetchExtensions.mockResolvedValue(MOCK_EXTENSIONS);
     mockFetchExtensionHooks.mockResolvedValue(MOCK_HOOKS);
@@ -142,6 +144,8 @@ describe('ExtensionsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent();
     expect(await screen.findByText('Extensions Not Enabled')).toBeInTheDocument();
@@ -171,6 +175,8 @@ describe('ExtensionsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();
@@ -201,6 +207,8 @@ describe('ExtensionsPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent();
     expect(await screen.findByText('Discover')).toBeInTheDocument();

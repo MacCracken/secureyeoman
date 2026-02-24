@@ -102,6 +102,8 @@ const DEFAULT_POLICY = {
   allowNetBoxWrite: false,
   allowWorkflows: false,
   allowCommunityGitFetch: false,
+  allowTwingate: false,
+  allowOrgIntent: false,
 };
 
 describe('AgentsPage', () => {

@@ -207,6 +207,8 @@ beforeEach(() => {
     allowNetBoxWrite: false,
     allowWorkflows: false,
     allowCommunityGitFetch: false,
+    allowTwingate: false,
+    allowOrgIntent: false,
   });
 });
 
@@ -381,6 +383,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -422,6 +426,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -458,6 +464,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -494,6 +502,8 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
     allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     const user = userEvent.setup();
     renderComponent();

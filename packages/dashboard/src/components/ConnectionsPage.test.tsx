@@ -72,6 +72,8 @@ describe('ConnectionsPage', () => {
       exposeNetBox: false,
       exposeNvd: false,
       exposeNetworkUtils: false,
+      exposeTwingateTools: false,
+      exposeOrgIntentTools: false,
       allowedUrls: [],
       webRateLimitPerMinute: 10,
       proxyEnabled: false,

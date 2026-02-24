@@ -1345,6 +1345,7 @@ export interface McpConfigResponse {
   exposeNvd: boolean;
   exposeNetworkUtils: boolean;
   exposeTwingateTools: boolean;
+  exposeOrgIntentTools: boolean;
   allowedUrls: string[];
   webRateLimitPerMinute: number;
   proxyEnabled: boolean;
@@ -1372,6 +1373,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeNvd: false,
       exposeNetworkUtils: false,
       exposeTwingateTools: false,
+      exposeOrgIntentTools: false,
       allowedUrls: [],
       webRateLimitPerMinute: 10,
       proxyEnabled: false,

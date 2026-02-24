@@ -58,6 +58,8 @@ const FULL_POLICY = {
   allowNetBoxWrite: false,
   allowWorkflows: false,
   allowCommunityGitFetch: false,
+  allowTwingate: false,
+  allowOrgIntent: false,
 };
 
 describe('DeveloperPage', () => {

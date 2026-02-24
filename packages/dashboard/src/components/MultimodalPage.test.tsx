@@ -105,6 +105,8 @@ describe('MultimodalPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     mockFetchMultimodalJobs.mockResolvedValue(MOCK_JOBS);
   });
@@ -134,6 +136,8 @@ describe('MultimodalPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent();
     expect(
@@ -164,6 +168,8 @@ describe('MultimodalPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent();
     await screen.findByText(/Multimodal processing is currently disabled/);
@@ -206,6 +212,8 @@ describe('MultimodalPage', () => {
       allowNetBoxWrite: false,
       allowWorkflows: false,
       allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
     });
     renderComponent({ embedded: true });
     await screen.findByText(/Multimodal processing is currently disabled/);
