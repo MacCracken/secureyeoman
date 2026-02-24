@@ -73,6 +73,11 @@ export class SubAgentManager {
 
   async initialize(): Promise<void> {
     await this.storage.seedBuiltinProfiles();
+    // Load persisted delegation.enabled state (set via the dashboard toggle)
+    const storedEnabled = await this.storage.getStoredEnabled();
+    if (storedEnabled !== null) {
+      this.config.enabled = storedEnabled;
+    }
     this.deps.logger.debug('SubAgentManager initialized with built-in profiles');
   }
 
@@ -268,9 +273,10 @@ export class SubAgentManager {
     return this.config;
   }
 
-  /** Runtime toggle for delegation.enabled (does not persist to disk). */
-  setEnabled(enabled: boolean): void {
+  /** Toggle delegation.enabled and persist to DB. */
+  async setEnabled(enabled: boolean): Promise<void> {
     this.config.enabled = enabled;
+    await this.storage.storeEnabled(enabled);
   }
 
   /** Whether sub-agents are allowed by top-level security policy */

@@ -529,4 +529,21 @@ export class SubAgentStorage extends PgBaseStorage {
     );
     return rows.map(messageFromRow);
   }
+
+  // ── Persisted config ─────────────────────────────────────────────
+
+  async getStoredEnabled(): Promise<boolean | null> {
+    const row = await this.queryOne<{ value: string }>(
+      `SELECT value FROM system_preferences WHERE key = 'agents.delegation.enabled'`
+    );
+    return row ? row.value === 'true' : null;
+  }
+
+  async storeEnabled(enabled: boolean): Promise<void> {
+    await this.execute(
+      `INSERT INTO system_preferences (key, value, updated_at) VALUES ($1, $2, $3)
+       ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = EXCLUDED.updated_at`,
+      ['agents.delegation.enabled', String(enabled), Date.now()]
+    );
+  }
 }

@@ -226,7 +226,7 @@ export function registerAgentRoutes(
     ) => {
       const { enabled } = request.body ?? {};
       if (enabled !== undefined) {
-        subAgentManager.setEnabled(enabled);
+        await subAgentManager.setEnabled(enabled);
       }
       return reply.code(200).send({
         config: subAgentManager.getConfig(),

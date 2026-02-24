@@ -42,8 +42,8 @@ const PERSONALITY = {
     },
     proactiveConfig: {
       enabled: false,
-      approvalMode: 'suggest',
       builtins: {},
+      builtinModes: {},
       learning: { enabled: true, minConfidence: 0.7 },
     },
   },

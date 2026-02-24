@@ -481,13 +481,19 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
             },
             proactiveConfig: {
               enabled: false,
-              approvalMode: 'suggest',
               builtins: {
                 dailyStandup: false,
                 weeklySummary: false,
                 contextualFollowup: false,
                 integrationHealthAlert: false,
                 securityAlertDigest: false,
+              },
+              builtinModes: {
+                dailyStandup: 'auto',
+                weeklySummary: 'suggest',
+                contextualFollowup: 'suggest',
+                integrationHealthAlert: 'auto',
+                securityAlertDigest: 'suggest',
               },
               learning: { enabled: true, minConfidence: 0.7 },
             },

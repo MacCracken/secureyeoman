@@ -114,24 +114,33 @@ function relativeTime(ts: number): string {
 function CollapsibleSection({
   title,
   defaultOpen,
+  headerRight,
   children,
 }: {
   title: string;
   defaultOpen?: boolean;
+  headerRight?: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(defaultOpen ?? false);
   return (
     <div className="border rounded p-3">
-      <button
-        onClick={() => {
-          setOpen(!open);
-        }}
-        className="flex items-center gap-2 w-full text-left font-medium text-sm"
-      >
-        {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-        {title}
-      </button>
+      <div className="flex items-center justify-between">
+        <button
+          onClick={() => {
+            setOpen(!open);
+          }}
+          className="flex items-center gap-2 flex-1 text-left font-medium text-sm"
+        >
+          {open ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          {title}
+        </button>
+        {headerRight && (
+          <div onClick={(e) => e.stopPropagation()} className="ml-2 shrink-0">
+            {headerRight}
+          </div>
+        )}
+      </div>
       {open && <div className="mt-3 space-y-3">{children}</div>}
     </div>
   );
@@ -1243,7 +1252,6 @@ interface BodySectionProps {
   }) => void;
   proactiveConfig: {
     enabled: boolean;
-    approvalMode: 'auto' | 'suggest' | 'manual';
     builtins: {
       dailyStandup: boolean;
       weeklySummary: boolean;
@@ -1251,17 +1259,30 @@ interface BodySectionProps {
       integrationHealthAlert: boolean;
       securityAlertDigest: boolean;
     };
+    builtinModes: {
+      dailyStandup: 'auto' | 'suggest' | 'manual';
+      weeklySummary: 'auto' | 'suggest' | 'manual';
+      contextualFollowup: 'auto' | 'suggest' | 'manual';
+      integrationHealthAlert: 'auto' | 'suggest' | 'manual';
+      securityAlertDigest: 'auto' | 'suggest' | 'manual';
+    };
     learning: { enabled: boolean; minConfidence: number };
   };
   onProactiveConfigChange: (config: {
     enabled: boolean;
-    approvalMode: 'auto' | 'suggest' | 'manual';
     builtins: {
       dailyStandup: boolean;
       weeklySummary: boolean;
       contextualFollowup: boolean;
       integrationHealthAlert: boolean;
       securityAlertDigest: boolean;
+    };
+    builtinModes: {
+      dailyStandup: 'auto' | 'suggest' | 'manual';
+      weeklySummary: 'auto' | 'suggest' | 'manual';
+      contextualFollowup: 'auto' | 'suggest' | 'manual';
+      integrationHealthAlert: 'auto' | 'suggest' | 'manual';
+      securityAlertDigest: 'auto' | 'suggest' | 'manual';
     };
     learning: { enabled: boolean; minConfidence: number };
   }) => void;
@@ -1357,11 +1378,38 @@ function BodySection({
     },
   ];
 
-  const allCreationItems = [...resourceItems, ...orchestrationItems];
-
-  const allEnabled = allCreationItems
+  const allCreationEnabled = resourceItems
     .filter((item) => !('blockedByPolicy' in item && item.blockedByPolicy))
     .every((item) => creationConfig[item.key]);
+
+  const allOrchestrationEnabled = orchestrationItems
+    .filter((item) => !('blockedByPolicy' in item && item.blockedByPolicy))
+    .every((item) => creationConfig[item.key]);
+
+  const toggleAllCreationItems = () => {
+    const newValue = !allCreationEnabled;
+    onCreationConfigChange({
+      ...creationConfig,
+      skills: newValue,
+      tasks: newValue,
+      personalities: newValue,
+      customRoles: newValue,
+      roleAssignments: newValue,
+      experiments: newValue,
+    });
+  };
+
+  const toggleAllOrchestrationItems = () => {
+    const newValue = !allOrchestrationEnabled;
+    onCreationConfigChange({
+      ...creationConfig,
+      subAgents: subAgentsBlockedByPolicy ? false : newValue,
+      allowA2A: a2aBlockedByPolicy ? false : newValue,
+      allowSwarms: swarmsBlockedByPolicy ? false : newValue,
+      allowDynamicTools: dtcBlockedByPolicy ? false : newValue,
+      workflows: workflowsBlockedByPolicy ? false : newValue,
+    });
+  };
 
   const toggleCreationItem = (
     key:
@@ -1383,25 +1431,6 @@ function BodySection({
     });
   };
 
-  const toggleAllCreation = () => {
-    const newValue = !allEnabled;
-    onCreationConfigChange({
-      skills: newValue,
-      tasks: newValue,
-      personalities: newValue,
-      // Respect top-level security policy — never enable subAgents when blocked
-      subAgents: subAgentsBlockedByPolicy ? false : newValue,
-      customRoles: newValue,
-      roleAssignments: newValue,
-      experiments: newValue,
-      // A2A/Swarms: enable with All when policy permits; disable when toggling off
-      allowA2A: a2aBlockedByPolicy ? false : newValue,
-      allowSwarms: swarmsBlockedByPolicy ? false : newValue,
-      // DTC is independent — respect policy but preserve current value
-      allowDynamicTools: dtcBlockedByPolicy ? false : newValue,
-      workflows: workflowsBlockedByPolicy ? false : newValue,
-    });
-  };
 
   const capabilityInfo: Record<string, { icon: string; description: string; available: boolean }> =
     {
@@ -1581,9 +1610,7 @@ function BodySection({
                 className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
                   proactiveBlockedByPolicy
                     ? 'bg-muted/30 border-border opacity-60'
-                    : proactiveConfig.enabled
-                      ? 'bg-success/5 border-success/30'
-                      : 'bg-muted/50 border-border'
+                    : 'bg-muted/50 border-border'
                 }`}
               >
                 <div className="flex items-center gap-2">
@@ -1622,38 +1649,7 @@ function BodySection({
 
               {proactiveConfig.enabled && !proactiveBlockedByPolicy && (
                 <>
-                  {/* Approval Mode */}
-                  <div>
-                    <h4 className="text-sm font-medium mb-2">Approval Mode</h4>
-                    <div className="flex gap-1">
-                      {(['auto', 'suggest', 'manual'] as const).map((mode) => (
-                        <button
-                          key={mode}
-                          type="button"
-                          onClick={() => {
-                            onProactiveConfigChange({ ...proactiveConfig, approvalMode: mode });
-                          }}
-                          className={`px-3 py-1.5 text-xs rounded-md border transition-colors ${
-                            proactiveConfig.approvalMode === mode
-                              ? 'bg-primary text-primary-foreground border-primary'
-                              : 'bg-muted/50 border-border hover:bg-muted'
-                          }`}
-                        >
-                          {mode.charAt(0).toUpperCase() + mode.slice(1)}
-                        </button>
-                      ))}
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {proactiveConfig.approvalMode === 'auto' &&
-                        'Actions execute automatically without user approval.'}
-                      {proactiveConfig.approvalMode === 'suggest' &&
-                        'Actions are suggested to the user for approval before execution.'}
-                      {proactiveConfig.approvalMode === 'manual' &&
-                        'All proactive actions require explicit manual approval.'}
-                    </p>
-                  </div>
-
-                  {/* Built-in Triggers */}
+                  {/* Built-in Triggers — per-item 3-phase approval switch */}
                   <div>
                     <h4 className="text-sm font-medium mb-2">Built-in Triggers</h4>
                     <div className="space-y-2">
@@ -1661,40 +1657,54 @@ function BodySection({
                         { key: 'dailyStandup' as const, label: 'Daily Standup Reminder' },
                         { key: 'weeklySummary' as const, label: 'Weekly Summary' },
                         { key: 'contextualFollowup' as const, label: 'Contextual Follow-up' },
-                        {
-                          key: 'integrationHealthAlert' as const,
-                          label: 'Integration Health Alert',
-                        },
+                        { key: 'integrationHealthAlert' as const, label: 'Integration Health Alert' },
                         { key: 'securityAlertDigest' as const, label: 'Security Alert Digest' },
-                      ].map((item) => (
-                        <div
-                          key={item.key}
-                          className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
-                            proactiveConfig.builtins[item.key]
-                              ? 'bg-success/5 border-success/30'
-                              : 'bg-muted/50 border-border'
-                          }`}
-                        >
-                          <span className="font-medium">{item.label}</span>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={proactiveConfig.builtins[item.key]}
-                              onChange={() => {
-                                onProactiveConfigChange({
-                                  ...proactiveConfig,
-                                  builtins: {
-                                    ...proactiveConfig.builtins,
-                                    [item.key]: !proactiveConfig.builtins[item.key],
-                                  },
-                                });
-                              }}
-                              className="sr-only peer"
-                            />
-                            <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-                          </label>
-                        </div>
-                      ))}
+                      ].map((item) => {
+                        const isOn = proactiveConfig.builtins[item.key];
+                        const activeMode = proactiveConfig.builtinModes[item.key];
+                        return (
+                          <div
+                            key={item.key}
+                            className="text-sm px-3 py-2 rounded flex items-center justify-between border bg-muted/50 border-border"
+                          >
+                            <span className="font-medium">{item.label}</span>
+                            <div className="flex gap-1">
+                              {(['auto', 'suggest', 'manual'] as const).map((mode) => {
+                                const isActive = isOn && activeMode === mode;
+                                const activeClass = isActive
+                                  ? mode === 'auto'
+                                    ? 'bg-green-600 text-white border-green-600'
+                                    : mode === 'suggest'
+                                      ? 'bg-amber-500 text-white border-amber-500'
+                                      : 'bg-blue-600 text-white border-blue-600'
+                                  : 'bg-muted/50 border-border hover:bg-muted';
+                                return (
+                                  <button
+                                    key={mode}
+                                    type="button"
+                                    onClick={() => {
+                                      onProactiveConfigChange({
+                                        ...proactiveConfig,
+                                        builtins: {
+                                          ...proactiveConfig.builtins,
+                                          [item.key]: !isActive,
+                                        },
+                                        builtinModes: {
+                                          ...proactiveConfig.builtinModes,
+                                          [item.key]: mode,
+                                        },
+                                      });
+                                    }}
+                                    className={`px-2 py-0.5 text-xs rounded border transition-colors ${activeClass}`}
+                                  >
+                                    {mode.charAt(0).toUpperCase() + mode.slice(1)}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
@@ -1702,13 +1712,7 @@ function BodySection({
                   <div>
                     <h4 className="text-sm font-medium mb-2">Learning</h4>
                     <div className="space-y-3">
-                      <div
-                        className={`text-sm px-3 py-2 rounded flex items-center justify-between border ${
-                          proactiveConfig.learning.enabled
-                            ? 'bg-success/5 border-success/30'
-                            : 'bg-muted/50 border-border'
-                        }`}
-                      >
+                      <div className="text-sm px-3 py-2 rounded flex items-center justify-between border bg-muted/50 border-border">
                         <span className="font-medium">Enable Learning</span>
                         <label className="relative inline-flex items-center cursor-pointer">
                           <input
@@ -2219,26 +2223,27 @@ function BodySection({
       </CollapsibleSection>
 
       <CollapsibleSection title="Resources" defaultOpen={false}>
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs text-muted-foreground">
-            Grant this personality autonomous resource and orchestration capabilities.
-          </p>
-          <label className="relative inline-flex items-center cursor-pointer ml-4 shrink-0">
-            <input
-              type="checkbox"
-              checked={allEnabled}
-              onChange={toggleAllCreation}
-              className="sr-only peer"
-              aria-label="Enable all resources"
-            />
-            <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-            <span className="text-xs ml-2 text-muted-foreground peer-checked:text-success">
-              {allEnabled ? 'All enabled' : 'Enable all'}
-            </span>
-          </label>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Grant this personality autonomous resource and orchestration capabilities.
+        </p>
 
-        <CollapsibleSection title="Creation" defaultOpen={false}>
+        <CollapsibleSection
+          title="Creation"
+          defaultOpen={false}
+          headerRight={
+            <label className="relative inline-flex items-center gap-1.5 cursor-pointer">
+              <span className="text-xs text-muted-foreground">All enabled</span>
+              <input
+                type="checkbox"
+                checked={allCreationEnabled}
+                onChange={toggleAllCreationItems}
+                className="sr-only peer"
+                aria-label="Enable all creation"
+              />
+              <div className="relative w-8 h-4 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+            </label>
+          }
+        >
           <p className="text-xs text-muted-foreground mb-3">
             Allow this personality to autonomously create new skills, tasks, roles, experiments, and
             personalities.
@@ -2246,7 +2251,23 @@ function BodySection({
           <div className="space-y-2">{resourceItems.map(renderToggleRow)}</div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Orchestration" defaultOpen={false}>
+        <CollapsibleSection
+          title="Orchestration"
+          defaultOpen={false}
+          headerRight={
+            <label className="relative inline-flex items-center gap-1.5 cursor-pointer">
+              <span className="text-xs text-muted-foreground">All enabled</span>
+              <input
+                type="checkbox"
+                checked={allOrchestrationEnabled}
+                onChange={toggleAllOrchestrationItems}
+                className="sr-only peer"
+                aria-label="Enable all orchestration"
+              />
+              <div className="relative w-8 h-4 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+            </label>
+          }
+        >
           <p className="text-xs text-muted-foreground mb-3">
             Allow this personality to delegate to agents, run workflows, and register dynamic tools.
             Requires the corresponding toggle to be enabled in Settings &gt; Security.
@@ -2254,86 +2275,91 @@ function BodySection({
           <div className="space-y-2">{orchestrationItems.map(renderToggleRow)}</div>
         </CollapsibleSection>
 
-        <CollapsibleSection title="Deletion" defaultOpen={false}>
-          <p className="text-xs text-muted-foreground mb-3">
-            Control how this personality can be deleted.
-          </p>
-          <div className="space-y-3">
-            {(
-              [
-                { value: 'auto', label: 'Auto', description: 'Deletion happens immediately with no prompt.' },
-                { value: 'request', label: 'Suggest', description: 'Deletion requires a confirmation step. AI cannot delete this personality.' },
-                { value: 'manual', label: 'Manual', description: 'Deletion is fully blocked. Change this setting to delete.' },
-              ] as const
-            ).map(({ value, label, description }) => (
-              <label key={value} className="flex items-start gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="deletionMode"
-                  value={value}
-                  checked={resourcePolicy.deletionMode === value}
-                  onChange={() => { onResourcePolicyChange({ ...resourcePolicy, deletionMode: value }); }}
-                  className="mt-0.5"
-                />
-                <span className="flex flex-col">
-                  <span className="text-sm font-medium">{label}</span>
-                  <span className="text-xs text-muted-foreground">{description}</span>
-                </span>
-              </label>
-            ))}
+        <div className="space-y-2 px-1">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Deletion</span>
+            <div className="flex gap-1">
+              {(
+                [
+                  { value: 'auto', label: 'Auto', activeClass: 'bg-green-600 text-white border-green-600' },
+                  { value: 'request', label: 'Suggest', activeClass: 'bg-amber-500 text-white border-amber-500' },
+                  { value: 'manual', label: 'Manual', activeClass: 'bg-blue-600 text-white border-blue-600' },
+                ] as const
+              ).map(({ value, label, activeClass }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => { onResourcePolicyChange({ ...resourcePolicy, deletionMode: value }); }}
+                  className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+                    resourcePolicy.deletionMode === value
+                      ? activeClass
+                      : 'bg-muted/50 border-border hover:bg-muted'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-        </CollapsibleSection>
-
-        <CollapsibleSection title="Automation Level" defaultOpen={false}>
-          <p className="text-xs text-muted-foreground mb-3">
-            Control how much autonomy the AI has when performing mutations (creating or deleting things).
+          <p className="text-xs text-muted-foreground">
+            {resourcePolicy.deletionMode === 'auto' && 'Deletion happens immediately with no prompt.'}
+            {resourcePolicy.deletionMode === 'request' && 'Deletion requires a confirmation step. AI cannot delete this personality.'}
+            {resourcePolicy.deletionMode === 'manual' && 'Deletion is fully blocked. Change this setting to delete.'}
           </p>
-          <div className="space-y-3">
-            {(
-              [
-                { value: 'supervised_auto', label: 'Supervised Auto', description: 'AI actions proceed immediately. You receive notifications.' },
-                { value: 'semi_auto', label: 'Semi-Auto', description: 'Destructive AI actions (delete) are queued for your approval. Creative actions proceed.' },
-                { value: 'full_manual', label: 'Full Manual', description: 'Every AI-initiated creation or deletion is queued for your approval.' },
-              ] as const
-            ).map(({ value, label, description }) => (
-              <label key={value} className="flex items-start gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="automationLevel"
-                  value={value}
-                  checked={resourcePolicy.automationLevel === value}
-                  onChange={() => { onResourcePolicyChange({ ...resourcePolicy, automationLevel: value }); }}
-                  className="mt-0.5"
-                />
-                <span className="flex flex-col">
-                  <span className="text-sm font-medium">{label}</span>
-                  <span className="text-xs text-muted-foreground">{description}</span>
-                </span>
-              </label>
-            ))}
+        </div>
+
+        <div className="space-y-2 px-1">
+          <div className="flex items-center justify-between">
+            <span className="text-sm font-medium">Automation</span>
+            <div className="flex gap-1">
+              {(
+                [
+                  { value: 'supervised_auto', label: 'Supervised', activeClass: 'bg-green-600 text-white border-green-600' },
+                  { value: 'semi_auto', label: 'Semi-Auto', activeClass: 'bg-amber-500 text-white border-amber-500' },
+                  { value: 'full_manual', label: 'Full Manual', activeClass: 'bg-blue-600 text-white border-blue-600' },
+                ] as const
+              ).map(({ value, label, activeClass }) => (
+                <button
+                  key={value}
+                  type="button"
+                  onClick={() => { onResourcePolicyChange({ ...resourcePolicy, automationLevel: value }); }}
+                  className={`px-2.5 py-1 text-xs rounded border transition-colors ${
+                    resourcePolicy.automationLevel === value
+                      ? activeClass
+                      : 'bg-muted/50 border-border hover:bg-muted'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
-        </CollapsibleSection>
-
-        <CollapsibleSection title="Emergency Stop" defaultOpen={false}>
-          <p className="text-xs text-muted-foreground mb-3">
-            Kill-switch: when enabled, all AI-initiated mutations are immediately blocked regardless of automation level.
+          <p className="text-xs text-muted-foreground">
+            {resourcePolicy.automationLevel === 'supervised_auto' && 'AI actions proceed immediately. You receive notifications.'}
+            {resourcePolicy.automationLevel === 'semi_auto' && 'Destructive AI actions (delete) are queued for your approval. Creative actions proceed.'}
+            {resourcePolicy.automationLevel === 'full_manual' && 'Every AI-initiated creation or deletion is queued for your approval.'}
           </p>
-          <label className="flex items-center gap-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={resourcePolicy.emergencyStop}
-              onChange={(e) => { onResourcePolicyChange({ ...resourcePolicy, emergencyStop: e.target.checked }); }}
-            />
-            <span className="flex flex-col">
-              <span className="text-sm font-medium">Emergency Stop Active</span>
-              <span className="text-xs text-muted-foreground">
-                {resourcePolicy.emergencyStop
-                  ? 'All AI mutations are blocked. Uncheck to resume normal operation.'
-                  : 'Emergency stop is off. AI can perform mutations according to the automation level above.'}
-              </span>
+        </div>
+
+        <div className="space-y-1.5 px-1">
+          <div className="flex items-center justify-between">
+            <span className={`text-sm font-medium ${resourcePolicy.emergencyStop ? 'text-destructive' : ''}`}>
+              Emergency Stop
             </span>
-          </label>
-        </CollapsibleSection>
+            <button
+              type="button"
+              onClick={() => { onResourcePolicyChange({ ...resourcePolicy, emergencyStop: !resourcePolicy.emergencyStop }); }}
+              className="px-3 py-1 text-xs font-semibold rounded border transition-colors whitespace-nowrap bg-destructive text-white border-destructive hover:bg-destructive/90"
+            >
+              {resourcePolicy.emergencyStop ? '⏹ Stop Active' : '⏹ Emergency Stop'}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {resourcePolicy.emergencyStop
+              ? 'All AI mutations are blocked. Click to resume normal operation.'
+              : 'Kill-switch: immediately blocks all AI mutations regardless of automation level.'}
+          </p>
+        </div>
       </CollapsibleSection>
     </CollapsibleSection>
   );
@@ -2414,6 +2440,7 @@ export function PersonalityEditor() {
     auditory: false,
     haptic: false,
     vocalization: false,
+    diagnostics: false,
   });
   const [mcpFeatures, setMcpFeatures] = useState<{
     exposeGit: boolean;
@@ -2434,7 +2461,6 @@ export function PersonalityEditor() {
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
-    approvalMode: 'auto' | 'suggest' | 'manual';
     builtins: {
       dailyStandup: boolean;
       weeklySummary: boolean;
@@ -2442,16 +2468,29 @@ export function PersonalityEditor() {
       integrationHealthAlert: boolean;
       securityAlertDigest: boolean;
     };
+    builtinModes: {
+      dailyStandup: 'auto' | 'suggest' | 'manual';
+      weeklySummary: 'auto' | 'suggest' | 'manual';
+      contextualFollowup: 'auto' | 'suggest' | 'manual';
+      integrationHealthAlert: 'auto' | 'suggest' | 'manual';
+      securityAlertDigest: 'auto' | 'suggest' | 'manual';
+    };
     learning: { enabled: boolean; minConfidence: number };
   }>({
     enabled: false,
-    approvalMode: 'suggest',
     builtins: {
       dailyStandup: false,
       weeklySummary: false,
       contextualFollowup: false,
       integrationHealthAlert: false,
       securityAlertDigest: false,
+    },
+    builtinModes: {
+      dailyStandup: 'auto',
+      weeklySummary: 'suggest',
+      contextualFollowup: 'suggest',
+      integrationHealthAlert: 'auto',
+      securityAlertDigest: 'suggest',
     },
     learning: { enabled: true, minConfidence: 0.7 },
   });
@@ -2623,6 +2662,7 @@ export function PersonalityEditor() {
       auditory: caps.includes('auditory'),
       haptic: caps.includes('haptic'),
       vocalization: caps.includes('vocalization'),
+      diagnostics: caps.includes('diagnostics'),
     });
     setMcpFeatures({
       exposeGit: body.mcpFeatures?.exposeGit ?? false,
@@ -2635,13 +2675,19 @@ export function PersonalityEditor() {
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
-      approvalMode: body.proactiveConfig?.approvalMode ?? 'suggest',
       builtins: {
         dailyStandup: body.proactiveConfig?.builtins?.dailyStandup ?? false,
         weeklySummary: body.proactiveConfig?.builtins?.weeklySummary ?? false,
         contextualFollowup: body.proactiveConfig?.builtins?.contextualFollowup ?? false,
         integrationHealthAlert: body.proactiveConfig?.builtins?.integrationHealthAlert ?? false,
         securityAlertDigest: body.proactiveConfig?.builtins?.securityAlertDigest ?? false,
+      },
+      builtinModes: {
+        dailyStandup: body.proactiveConfig?.builtinModes?.dailyStandup ?? 'auto',
+        weeklySummary: body.proactiveConfig?.builtinModes?.weeklySummary ?? 'suggest',
+        contextualFollowup: body.proactiveConfig?.builtinModes?.contextualFollowup ?? 'suggest',
+        integrationHealthAlert: body.proactiveConfig?.builtinModes?.integrationHealthAlert ?? 'auto',
+        securityAlertDigest: body.proactiveConfig?.builtinModes?.securityAlertDigest ?? 'suggest',
       },
       learning: {
         enabled: body.proactiveConfig?.learning?.enabled ?? true,
@@ -2713,6 +2759,7 @@ export function PersonalityEditor() {
       auditory: false,
       haptic: false,
       vocalization: false,
+      diagnostics: false,
     });
     setMcpFeatures({
       exposeGit: false,
@@ -2725,13 +2772,19 @@ export function PersonalityEditor() {
     });
     setProactiveConfig({
       enabled: false,
-      approvalMode: 'suggest',
       builtins: {
         dailyStandup: false,
         weeklySummary: false,
         contextualFollowup: false,
         integrationHealthAlert: false,
         securityAlertDigest: false,
+      },
+      builtinModes: {
+        dailyStandup: 'auto',
+        weeklySummary: 'suggest',
+        contextualFollowup: 'suggest',
+        integrationHealthAlert: 'auto',
+        securityAlertDigest: 'suggest',
       },
       learning: { enabled: true, minConfidence: 0.7 },
     });
@@ -2923,22 +2976,44 @@ export function PersonalityEditor() {
               </p>
             </div>
 
-            <label className="flex flex-col gap-1 cursor-pointer" data-testid="archetype-toggle">
-              <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between" data-testid="archetype-toggle">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm">Include Sacred Archetypes</span>
+                <span className="text-xs text-muted-foreground">Preamble is presented in prompt</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={form.includeArchetypes ?? false}
                   onChange={(e) => {
                     setForm((f) => ({ ...f, includeArchetypes: e.target.checked }));
                   }}
-                  className="rounded border-muted-foreground"
+                  className="sr-only peer"
                 />
-                <span className="text-sm">Include Sacred Archetypes</span>
+                <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm">Protect from deletion</span>
+                <span className="text-xs text-muted-foreground">Blocks AI from deleting this personality</span>
               </div>
-              <span className="text-xs text-muted-foreground ml-6">
-                Preamble is presented in prompt
-              </span>
-            </label>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={resourcePolicy.deletionMode === 'manual'}
+                  onChange={(e) => {
+                    setResourcePolicy((r) => ({
+                      ...r,
+                      deletionMode: e.target.checked ? 'manual' : 'auto',
+                    }));
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+              </label>
+            </div>
 
             <div>
               <label className="block text-sm font-medium mb-2">Traits</label>

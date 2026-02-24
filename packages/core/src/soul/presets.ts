@@ -52,13 +52,19 @@ const BASE_BODY: PersonalityCreate['body'] = {
   },
   proactiveConfig: {
     enabled: false,
-    approvalMode: 'suggest',
     builtins: {
       dailyStandup: false,
       weeklySummary: false,
       contextualFollowup: false,
       integrationHealthAlert: false,
       securityAlertDigest: false,
+    },
+    builtinModes: {
+      dailyStandup: 'auto',
+      weeklySummary: 'suggest',
+      contextualFollowup: 'suggest',
+      integrationHealthAlert: 'auto',
+      securityAlertDigest: 'suggest',
     },
     learning: { enabled: true, minConfidence: 0.7 },
   },
@@ -144,13 +150,19 @@ Terse, factual, and structured. When flagging a concern, state exactly: (a) what
         ...BASE_BODY,
         proactiveConfig: {
           enabled: true,
-          approvalMode: 'suggest',
           builtins: {
             dailyStandup: false,
             weeklySummary: false,
             contextualFollowup: false,
             integrationHealthAlert: true,
             securityAlertDigest: true,
+          },
+          builtinModes: {
+            dailyStandup: 'auto',
+            weeklySummary: 'suggest',
+            contextualFollowup: 'suggest',
+            integrationHealthAlert: 'auto',
+            securityAlertDigest: 'suggest',
           },
           learning: { enabled: false, minConfidence: 0.9 },
         },

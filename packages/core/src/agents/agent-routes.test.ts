@@ -64,6 +64,7 @@ function makeMockManager(overrides?: Partial<SubAgentManager>): SubAgentManager 
     getDelegationTree: vi.fn().mockResolvedValue([DELEGATION]),
     getDelegationMessages: vi.fn().mockResolvedValue([]),
     cancel: vi.fn().mockResolvedValue(undefined),
+    setEnabled: vi.fn().mockResolvedValue(undefined),
     getConfig: vi.fn().mockReturnValue({
       enabled: true,
       maxDepth: 3,

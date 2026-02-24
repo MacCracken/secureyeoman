@@ -77,7 +77,6 @@ export type McpFeatures = z.infer<typeof McpFeaturesSchema>;
 export const ProactivePersonalityConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
-    approvalMode: z.enum(['auto', 'suggest', 'manual']).default('suggest'),
     builtins: z
       .object({
         dailyStandup: z.boolean().default(false),
@@ -85,6 +84,15 @@ export const ProactivePersonalityConfigSchema = z
         contextualFollowup: z.boolean().default(false),
         integrationHealthAlert: z.boolean().default(false),
         securityAlertDigest: z.boolean().default(false),
+      })
+      .default({}),
+    builtinModes: z
+      .object({
+        dailyStandup: z.enum(['auto', 'suggest', 'manual']).default('auto'),
+        weeklySummary: z.enum(['auto', 'suggest', 'manual']).default('suggest'),
+        contextualFollowup: z.enum(['auto', 'suggest', 'manual']).default('suggest'),
+        integrationHealthAlert: z.enum(['auto', 'suggest', 'manual']).default('auto'),
+        securityAlertDigest: z.enum(['auto', 'suggest', 'manual']).default('suggest'),
       })
       .default({}),
     learning: z

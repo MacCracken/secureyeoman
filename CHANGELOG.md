@@ -1,12 +1,44 @@
-# Changelog
+## [2026.2.23]
 
-All notable changes to SecureYeoman are documented in this file.
+### Changed
 
----
+- **Proactive triggers** — removed green background on enabled trigger rows; state is now communicated entirely by the active button color. Enable Assistance and Learning rows also no longer turn green when on.
+- **Approval mode color coding** (Proactive triggers + Deletion): Auto → green, Suggest → amber, Manual → blue.
+- **Automation Level color coding**: Supervised → green, Semi-Auto → amber, Full Manual → blue.
+- **Emergency Stop button** — removed box wrapper; now an inline row matching Deletion/Automation style. Button is always solid red (white text) — active state shows "⏹ Stop Active", inactive shows "⏹ Emergency Stop".
+- **Resources — enable all toggle labels** — "All enabled" text label added alongside the mini toggle in Creation and Orchestration section headers so the control is self-explanatory.
+- **Resources — Creation/Orchestration toggle-all bug fixed** — "Enable all" in the Creation section was incorrectly setting `subAgents` (an Orchestration key), causing the Orchestration toggle to appear linked. Fixed: Creation toggle only affects creation keys; Orchestration toggle now correctly covers `subAgents`, `workflows`, `allowDynamicTools`, `allowA2A`, and `allowSwarms`.
 
-## [Unreleased] — Multi-Provider TTS/STT Expansion (2026-02-24)
+### Resources Section UI Improvements
 
-### Features
+#### Changed
+
+- **Resources — per-section enable toggles** — removed the global "All enabled / Enable all" toggle from the Resources section header. The Creation and Orchestration CollapsibleSections now each have their own small toggle in their header row (click the section label area to expand/collapse; click the toggle to enable/disable all items in that section without affecting the other). `CollapsibleSection` updated to accept an optional `headerRight` slot rendered with `stopPropagation` so the toggle and the expand chevron don't interfere.
+
+### Proactive + Resources UI Redesign
+
+#### Changed
+
+- **Proactive built-in triggers — per-item approval mode** — removed the shared global "Approval Mode" selector. Each built-in trigger (Daily Standup, Weekly Summary, etc.) now has its own 3-phase inline button: `Auto | Suggest | Manual`. Clicking the active mode deactivates the trigger; clicking any inactive mode activates it with that mode. Per-item modes persist via new `builtinModes` field added to `ProactivePersonalityConfigSchema`.
+- **Deletion + Automation Level — inline 3-segment controls** — replaced the CollapsibleSection + radio-group pattern with always-visible segmented button rows. Deletion shows `Auto | Suggest | Manual`; Automation shows `Supervised | Semi-Auto | Full Manual`. The description line updates inline to reflect the active selection.
+- **Emergency Stop — prominent red button** — replaced the CollapsibleSection + checkbox with a flat inline card. When inactive it shows a neutral "⏹ Emergency Stop" button (red hover); when active the whole row is red with a "⏹ Stop Active" button.
+- **`ProactivePersonalityConfigSchema`** — removed `approvalMode` (global); added `builtinModes` object with per-trigger defaults matching each trigger's natural mode (`dailyStandup: auto`, `weeklySummary: suggest`, etc.). All default objects in `manager.ts`, `presets.ts`, `soul-routes.ts`, `storage.ts`, and test fixtures updated.
+
+### Persistence Bug Fixes + UI Toggles
+
+#### Fixed
+
+- **Diagnostics capability not persisting** — `diagnostics` was missing from all three `enabledCaps` state initialisations in `PersonalityEditor.tsx` (initial state, load-from-personality, and reset). Editing a personality and saving with Diagnostics enabled now survives a page refresh.
+- **Delegate Tasks setting not persisting on restart** — `SubAgentManager.setEnabled()` was runtime-only and never written to the database. Added `getStoredEnabled()` / `storeEnabled()` to `SubAgentStorage` using the `system_preferences` table (key: `agents.delegation.enabled`). On startup, `initialize()` now restores the persisted value; on toggle, the value is written to DB before the response is returned.
+
+#### Changed
+
+- **Archetypes checkbox → toggle switch** — "Include Sacred Archetypes" in the Soul section of the personality editor converted from a plain `<input type="checkbox">` to the standard inline toggle style used throughout the editor.
+- **Deletion protection surfaced at Soul level** — new "Protect from deletion" toggle added directly in the Soul — Identity section (no need to open Body → Resources → Deletion). Maps `deletionMode: 'manual'` (on) / `'auto'` (off). The detailed radio group in the Body section is retained for fine-grained control.
+
+### Multi-Provider TTS/STT Expansion
+
+#### Features
 
 **10 TTS providers, 7 STT providers — all detected at runtime, only connected providers shown**
 
@@ -29,7 +61,7 @@ All notable changes to SecureYeoman are documented in this file.
 - **Dashboard `ProviderSection`** redesigned: shows only connected providers (not greyed-out unconfigured), splits cloud and local rows with a `local` label; no more ghost badges
 - All implementations use `fetch()` REST calls — no new required npm packages; `kokoro-js` remains optional
 
-### Environment variables added
+#### Environment variables added
 
 | Var | Purpose |
 |---|---|
@@ -56,11 +88,9 @@ All notable changes to SecureYeoman are documented in this file.
 | `KOKORO_VOICE` | Kokoro voice name (optional, default: `af_heart`) |
 | `ASSEMBLYAI_API_KEY` | AssemblyAI STT |
 
----
+### exposeDesktopControl MCP Feature Toggle
 
-## [Unreleased] — exposeDesktopControl MCP Feature Toggle (2026-02-24)
-
-### Features
+#### Features
 
 **Three-level Remote Desktop Control gate in Yeoman MCP**
 
@@ -71,21 +101,19 @@ All notable changes to SecureYeoman are documented in this file.
 - **`McpFeatureConfig` (storage)** — `exposeDesktopControl` field added to `packages/core/src/mcp/storage.ts` type, defaults, and `PATCH /api/v1/mcp/config` body schema so the toggle is correctly persisted to the DB.
 - **Tools list filter** — `desktop_*` tools hidden from `GET /api/v1/mcp/tools` when `exposeDesktopControl` is false, matching the `browser_*` filter pattern.
 
-### Fixes
+#### Fixes
 
 - `packages/core/src/mcp/storage.ts` — `exposeDesktopControl` was missing from `McpFeatureConfig` interface and `MCP_CONFIG_DEFAULTS`, causing the toggle to silently fail to save.
 - `packages/core/src/mcp/mcp-routes.ts` — `exposeDesktopControl` was absent from the `PATCH /api/v1/mcp/config` body type, so the field was dropped before reaching storage.
 
-### Tests
+#### Tests
 
 - `packages/mcp/src/tools/desktop-tools.test.ts` — complete rewrite: 31 tests covering tool registration (all 14 names), `exposeDesktopControl=false` gate (parametric across all tools), per-tool API endpoint routing, and audit logger wiring. Uses `createMockServer()` handler capture pattern matching `browser-tools.test.ts`.
 - `packages/core/src/multimodal/manager.test.ts` — 16 new tests: ElevenLabs/Deepgram/Cartesia TTS routing, Deepgram/ElevenLabs STT routing, `detectAvailableProviders()` `configured[]` and `metadata` assertions.
 
----
+### Phase 40 — Desktop Control + Multimodal Provider Selection
 
-## [Unreleased] — Phase 40 Desktop Control + Multimodal Provider Selection (2026-02-24)
-
-### Features
+#### Features
 
 **Desktop Control — `vision` + `limb_movement` capability runtime** (Phase 40)
 
@@ -150,12 +178,12 @@ Audit events: `desktop_capture` and `desktop_input` emitted on all tool calls; s
 
 When `vision` is in `body.capabilities[]` and `allowDesktopControl` is true, injects tool list and usage guidance into the system prompt. Same for `limb_movement`. When the gate is off, entries read `vision: disabled` / `limb_movement: disabled`.
 
-### Fixes
+#### Fixes
 
 - `packages/shared/src/types/index.ts` — `PromptGuardConfig` added to barrel exports (was defined in `config.ts` but missing from re-export; caused Docker build failures)
 - `packages/core/src/security/prompt-guard.ts` — guarded `messages[idx]` array access with `if (!msg) continue` (required by `noUncheckedIndexedAccess`)
 
-### Tests
+#### Tests
 
 New test files (57 tests):
 - `packages/mcp/src/tools/desktop-tools.test.ts` — tool registration, security/capability gates, API endpoint routing per tool type, audit logger
@@ -166,9 +194,9 @@ New test files (57 tests):
 
 ---
 
-## [Unreleased] — Phase 39 Diagnostic Tools (2026-02-23)
+### Phase 39 — Diagnostic Tools
 
-### Features
+#### Features
 
 **Diagnostic Tools — two-channel agent self-diagnostics** (ADR 123)
 
@@ -182,17 +210,15 @@ New test files (57 tests):
 - **Audit logging**: all three MCP tools emit `diagnostic_call` audit events (in addition to the standard `mcp_tool_call` from `wrapToolHandler`).
 - **Dashboard**: `diagnostics` entry added to `capabilityInfo` map in `PersonalityEditor.tsx` (icon 🩺, description "Self-diagnostics snapshot and sub-agent health reporting"). Toggle appears automatically in Body → Capabilities section.
 
----
+### Phase 38 — Beta Manual Review
 
-## [Unreleased] — Phase 38 Beta Manual Review (2026-02-23)
-
-### Breaking Changes
+#### Breaking Changes
 
 - **`deletionProtected` removed** — the boolean `deletion_protected` DB column and `deletionProtected` API field have been replaced by `body.resourcePolicy.deletionMode` (tri-state enum: `auto` | `request` | `manual`). Run migration 037 before deploying. Clients reading `deletionProtected` from the API must switch to `body.resourcePolicy.deletionMode`.
 
 ---
 
-### Features
+#### Features
 
 **Prompt-assembly injection guard** (ADR 124)
 
@@ -290,7 +316,7 @@ Changes: `packages/core/src/cli/commands/mcp-quickbooks.ts` (alias: `mcp-qbo`), 
 
 ---
 
-### Bug Fixes
+#### Bug Fixes
 
 **Task History duration always displayed as '-'** — two bugs combined. (1) `executor.submit()` called `taskStorage.storeTask(task)` without `await`, creating a race condition where subsequent `updateTask(RUNNING)` / `updateTask(COMPLETED)` calls could execute before the INSERT was committed. (2) `formatDuration()` in `TaskHistory.tsx` used `if (!ms)` which evaluates to true for `durationMs = 0`, returning `'-'` for any completed task faster than 1 ms. Fixed: `storeTask` is now awaited in `executor.ts`; `formatDuration` uses `if (ms == null)` and displays `<1ms` for sub-millisecond durations. Also fixed three missing `await` on `taskStorage.getTask()`, `updateTaskMetadata()`, and `deleteTask()` calls in the `GET/PUT/DELETE /api/v1/tasks/:id` route handlers — without these awaits the `!task` null guard ran on a Promise (always truthy) and never returned 404.
 
@@ -325,7 +351,7 @@ Changes: `packages/core/src/cli/commands/mcp-quickbooks.ts` (alias: `mcp-qbo`), 
 
 ---
 
-### Security
+#### Security
 
 **CSRF not applicable to Bearer-token API** (ADR 115) — documented. No `Set-Cookie` headers are emitted anywhere in the auth flow; CSRF exploit vector does not apply. Comment guard added to `packages/core/src/gateway/server.ts` requiring future developers to add `@fastify/csrf-protection` if cookies are ever introduced.
 
