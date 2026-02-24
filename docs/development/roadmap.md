@@ -46,81 +46,101 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 **Status**: Planned
 
-Implement the agent's physical interface layer — the Body module's `vision` (screen capture) and `limb_movement` (keyboard/mouse) capabilities. Agents and personalities will be able to see the desktop and interact with native applications, with full consent management, RBAC scoping, and audit logging. All capability types are already defined in `packages/core/src/body/types.ts`; this phase provides the runtime implementation.
+Implement the agent's physical interface layer — the Body module's `vision` (screen capture) and `limb_movement` (keyboard/mouse) capabilities. These map directly to the existing `BodyCapabilitySchema` entries in `packages/shared/src/types/soul.ts` and are toggled per-personality via the **Body → Capabilities** section of the Personality Editor (already in the UI). This phase provides the runtime implementation behind those toggles.
 
-### 39.1 — Screen Capture (`capture.screen`, `capture.camera`)
+**Capability gate model**: `BodyConfig.capabilities[]` on the active personality is the authoritative source. When `limb_movement` is absent from that array, all desktop input/mouse/keyboard/window-management tools are hard-blocked at the MCP tool dispatch layer — including calls from remote MCP clients and MCP bridges. No path bypasses this check. The same gate applies to `vision` for all capture tools. A system-level `allowDesktopControl` flag in `SecurityConfig` is an additional outer gate (default `false`) that must also be true before any `desktop_*` tool can execute.
 
-*Implements `BodyCapability.vision` and the `capture.screen` / `capture.camera` CaptureResources.*
+```
+SecurityConfig.allowDesktopControl === true
+  AND personality.body.capabilities.includes('limb_movement')   → input tools available
+  AND personality.body.capabilities.includes('vision')          → capture tools available
+  (either condition false → tool returns capability-disabled error, for ALL callers)
+```
+
+### 39.1 — Capability Enforcement Gate (prerequisite for all other sub-phases)
+
+*Wires the existing `BodyConfig.capabilities[]` toggle into the MCP tool dispatch layer so it enforces for local and remote callers alike.*
+
+- [ ] **`allowDesktopControl` SecurityConfig flag** — Add `allowDesktopControl: z.boolean().default(false)` to `packages/shared/src/types/config.ts` alongside `allowBinaryAgents`. This is the system-level master switch; off by default. Surfaced in Security Settings.
+- [ ] **`allowCamera` SecurityConfig flag** — Add `allowCamera: z.boolean().default(false)` as a secondary flag for `capture.camera` specifically. Requires both `allowDesktopControl` and `allowCamera` to be true.
+- [ ] **MCP tool dispatch capability check** — In `packages/mcp/src/tools/desktop-tools.ts`, each tool handler begins with a guard that resolves the active personality's `body.capabilities[]` via `SoulManager` and checks the relevant capability (`limb_movement` for input tools, `vision` for capture tools). Returns a structured `capability_disabled` error when the capability is absent. This check runs **before** any driver code executes, regardless of whether the call originates from a local agent loop, a remote MCP client over HTTP/SSE, or an MCP bridge.
+- [ ] **Remote MCP surface hardening** — The MCP server already exposes tools to external clients. The capability check above is sufficient to block remote calls, but confirm the check cannot be bypassed by: (a) direct tool invocation over the MCP transport without an active personality session, (b) MCP bridge delegations from sub-agents. Add integration tests covering both paths.
+- [ ] **`composeBodyPrompt` system prompt wiring** — In `packages/core/src/soul/manager.ts`, extend `composeBodyPrompt()` to include desktop tool names under the `limb_movement` and `vision` capability entries when they are enabled. Agent sees what it can do; silently omits the tools when the capability is disabled.
+
+### 39.2 — Screen Capture (`capture.screen`, `capture.camera`)
+
+*Implements `BodyCapability.vision`. Gated by `vision` in `body.capabilities[]` AND `allowDesktopControl`.*
 
 - [ ] **Platform screenshot driver** — Implement `body/capture/screen.ts` using `screenshot-desktop` (cross-platform) as the default backend. Supports `CaptureTargetType`: `display`, `window`, `region`. Returns a `Buffer` in the requested `CaptureFormat` (`png`, `jpeg`, `webp`) at the requested `CaptureResolution`. Falls back to `@napi-rs/screenshot` on Linux/Wayland where X11 APIs are unavailable.
-- [ ] **Window enumeration** — Implement `body/capture/windows.ts` to populate `WindowInfo[]` and `DisplayInfo[]`. Linux: via `wmctrl` or `xdotool getactivewindow` subprocess. macOS: `@nut-tree/nut-js` `screen.find()`. Windows: Win32 `EnumWindows` via `ffi-napi`. Exposed via `desktop_window_list` and `desktop_display_list` MCP tools.
-- [ ] **Camera/webcam capture** — Implement `capture.camera` via `node-webcam` or a thin `ffmpeg` subprocess wrapper (`ffmpeg -f v4l2 -vframes 1 -o /tmp/frame.jpg`). Single-frame and multi-frame burst modes. Requires explicit `allowCamera: true` in `SecurityConfig`.
-- [ ] **CaptureFilters application** — Post-process captured images to apply `CaptureFilters`: blur regions (`blurRegions[]`), redact text matching `redactPatterns[]` (via regex overlay), exclude windows listed in `excludeWindows[]` by compositing a black rectangle over their bounds.
-- [ ] **`CaptureRestrictions` enforcement** — Honor `singleUse` (auto-revoke consent token after one capture), `readOnly` (no write to disk), `noNetwork` (block MCP tool from returning base64 payload over a non-loopback socket), `watermark` (stamp capture with timestamp + agent ID).
+- [ ] **Window & display enumeration** — Implement `body/capture/windows.ts` to populate `WindowInfo[]` and `DisplayInfo[]`. Linux: `wmctrl` or `xdotool` subprocess. macOS: `@nut-tree/nut-js` `screen.find()`. Windows: Win32 `EnumWindows` via `ffi-napi`. Exposed via `desktop_window_list` and `desktop_display_list` MCP tools.
+- [ ] **Camera/webcam capture** — Implement `capture.camera` via `node-webcam` or a thin `ffmpeg` subprocess wrapper. Single-frame and burst modes. Requires `allowCamera: true` in addition to `vision` capability being enabled.
+- [ ] **`CaptureFilters` application** — Post-process captured images: blur `blurRegions[]`, redact text matching `redactPatterns[]` via regex overlay, exclude windows in `excludeWindows[]` by compositing a black rectangle over their bounds.
+- [ ] **`CaptureRestrictions` enforcement** — Honor `singleUse` (auto-revoke consent token after one capture), `readOnly` (no write to disk), `noNetwork` (block base64 payload over non-loopback socket), `watermark` (stamp with timestamp + agent ID).
 
-### 39.2 — Keyboard & Mouse Control (`limb_movement`)
+### 39.3 — Keyboard & Mouse Control (`limb_movement`)
 
-*Implements `BodyCapability.limb_movement`.*
+*Implements `BodyCapability.limb_movement`. Gated by `limb_movement` in `body.capabilities[]` AND `allowDesktopControl`.*
 
-- [ ] **Input driver abstraction** — Implement `body/actuator/input.ts` wrapping `@nut-tree/nut-js` as the primary cross-platform driver (supports Linux X11/Wayland, macOS, Windows). Exposes: `moveMouse(x, y)`, `click(button, double)`, `scroll(dx, dy)`, `typeText(str, delayMs)`, `pressKey(key, modifiers[])`, `releaseKey(key)`.
-- [ ] **Window management actuators** — `focusWindow(windowId)`, `resizeWindow(windowId, bounds)`, `minimizeWindow(windowId)`. Linux: `wmctrl`/`xdotool` subprocess. macOS: AppleScript via `osascript`. Windows: Win32 `SetForegroundWindow` via `ffi-napi`. Exposed as `desktop_window_focus` and `desktop_window_resize` MCP tools.
-- [ ] **Action sequencing with timing** — `InputSequence` type: ordered list of `{action, delayAfterMs}` steps executed atomically. Prevents interleaved agent inputs from corrupting sequences (e.g. form fill: focus → type → tab → type → enter). Max sequence length configurable in `SecurityConfig` (default 50 steps).
-- [ ] **Clipboard actuator** — Implement `body/actuator/clipboard.ts` via `clipboardy`. `read()` → string, `write(text)` → void, `clear()` → void. Gated by `capture.clipboard` RBAC resource. Exposed as `desktop_clipboard_read` / `desktop_clipboard_write` MCP tools.
+- [ ] **Input driver abstraction** — Implement `body/actuator/input.ts` wrapping `@nut-tree/nut-js` as the primary cross-platform driver (Linux X11/Wayland, macOS, Windows). Exposes: `moveMouse(x, y)`, `click(button, double)`, `scroll(dx, dy)`, `typeText(str, delayMs)`, `pressKey(key, modifiers[])`, `releaseKey(key)`.
+- [ ] **Window management actuators** — `focusWindow(windowId)`, `resizeWindow(windowId, bounds)`, `minimizeWindow(windowId)`. Linux: `wmctrl`/`xdotool`. macOS: AppleScript via `osascript`. Windows: Win32 `SetForegroundWindow` via `ffi-napi`.
+- [ ] **Action sequencing with timing** — `InputSequence` type: ordered list of `{action, delayAfterMs}` steps executed atomically. Prevents interleaved agent inputs from corrupting sequences (e.g. form fill: focus → type → tab → type → enter). Max sequence length configurable (default 50 steps).
+- [ ] **Clipboard actuator** — Implement `body/actuator/clipboard.ts` via `clipboardy`. `read()`, `write(text)`, `clear()`. Gated by `capture.clipboard` RBAC resource as well as `limb_movement` capability.
 
-### 39.3 — MCP Tool Family: `desktop_*`
+### 39.4 — MCP Tool Family: `desktop_*`
 
-*New tools registered in `packages/mcp/src/tools/` alongside `browser-tools.ts`. Gated by `allowDesktopControl: true` in `SecurityConfig`.*
+*Registered in `packages/mcp/src/tools/desktop-tools.ts`. All tools check the capability gate (39.1) first — no exceptions for remote callers.*
 
-| Tool | Description |
-|------|-------------|
-| `desktop_screenshot` | Capture screen/window/region → base64 image (or temp file path). Params: `target_type`, `target_id`, `region`, `format`, `resolution`. |
-| `desktop_window_list` | List open windows with id, title, app, bounds, visibility. |
-| `desktop_display_list` | List monitors with id, name, bounds, scale factor, primary flag. |
-| `desktop_window_focus` | Bring a window to foreground by id. |
-| `desktop_mouse_move` | Move mouse to absolute or relative coordinates. |
-| `desktop_click` | Click at current position or given coordinates. Params: `button` (left/right/middle), `double`. |
-| `desktop_scroll` | Scroll at coordinates. Params: `dx`, `dy`. |
-| `desktop_type` | Type a string with configurable inter-key delay. |
-| `desktop_key` | Press a key combination (e.g. `ctrl+c`, `alt+F4`). |
-| `desktop_clipboard_read` | Read current clipboard text. |
-| `desktop_clipboard_write` | Write text to clipboard. |
-| `desktop_input_sequence` | Execute an `InputSequence` atomically. |
+| Tool | Capability gate | Description |
+|------|----------------|-------------|
+| `desktop_screenshot` | `vision` | Capture screen/window/region → base64 image or temp path. |
+| `desktop_window_list` | `vision` | List open windows with id, title, app, bounds, visibility. |
+| `desktop_display_list` | `vision` | List monitors with id, name, bounds, scale, primary flag. |
+| `desktop_window_focus` | `limb_movement` | Bring a window to foreground by id. |
+| `desktop_window_resize` | `limb_movement` | Resize/reposition a window by id. |
+| `desktop_mouse_move` | `limb_movement` | Move mouse to absolute or relative coordinates. |
+| `desktop_click` | `limb_movement` | Click at current position or given coordinates. |
+| `desktop_scroll` | `limb_movement` | Scroll at coordinates. Params: `dx`, `dy`. |
+| `desktop_type` | `limb_movement` | Type a string with configurable inter-key delay. |
+| `desktop_key` | `limb_movement` | Press a key combination (e.g. `ctrl+c`, `alt+F4`). |
+| `desktop_clipboard_read` | `limb_movement` + `capture.clipboard` RBAC | Read current clipboard text. |
+| `desktop_clipboard_write` | `limb_movement` | Write text to clipboard. |
+| `desktop_input_sequence` | `limb_movement` | Execute an `InputSequence` atomically. |
 
-- [ ] Implement all `desktop_*` tools in `packages/mcp/src/tools/desktop-tools.ts`
-- [ ] Register in `packages/mcp/src/tools/index.ts` behind `config.allowDesktopControl` feature flag
-- [ ] Add tool entries to `packages/mcp/src/tools/manifest.ts`
+- [ ] Implement all tools with capability gate guard at top of each handler
+- [ ] Register in `packages/mcp/src/tools/index.ts` behind `config.allowDesktopControl` outer flag
+- [ ] Add entries to `packages/mcp/src/tools/manifest.ts`
 
-### 39.4 — Vision Integration (Agent "Seeing")
+### 39.5 — Vision Integration (Agent "Seeing")
 
 *Pipes captured screenshots through the Claude vision API so agents can interpret screen state.*
 
-- [ ] **`allowMultimodal` prerequisite** — `desktop_screenshot` tool output includes a base64 image block in the MCP tool result when `allowMultimodal: true`. When multimodal is off, returns only a temp file path for agent awareness without LLM interpretation.
-- [ ] **Screen-grounded task loop** — Agent pattern: `desktop_screenshot` → interpret via vision → `desktop_click`/`desktop_type` → repeat. Documented as an agent workflow recipe in `docs/guides/desktop-control.md`.
-- [ ] **`BodyCapability.vision` system prompt injection** — When `vision` is active for an agent, inject into the Body section of the system prompt: `"You have vision access to the desktop. Use desktop_screenshot to observe screen state before acting."` Follows the existing `BodyCapabilityStatus` pattern.
+- [ ] **`allowMultimodal` prerequisite** — `desktop_screenshot` includes a base64 image block in the MCP result when `allowMultimodal: true`. When multimodal is off, returns a temp file path only (agent aware, no LLM interpretation).
+- [ ] **Screen-grounded task loop** — Standard agent pattern: `desktop_screenshot` → interpret via vision → `desktop_click`/`desktop_type` → repeat. Documented as a workflow recipe in `docs/guides/desktop-control.md`.
+- [ ] **`vision` capability system prompt entry** — When `vision` is in `body.capabilities[]`, `composeBodyPrompt()` injects under the capability entry: `"Use desktop_screenshot to observe screen state before acting."` When absent, the entry reads `vision: disabled` as it does today.
 
-### 39.5 — Security Controls & Consent
+### 39.6 — Consent & Audit
 
 *Builds on the `ConsentManager` and `CaptureScope` framework already defined in `packages/core/src/body/`.*
 
-- [ ] **`allowDesktopControl: boolean` SecurityConfig flag** — Master kill-switch (default: `false`). When false, all `desktop_*` tools return a capability-disabled error. Added to `packages/shared/src/types/config.ts` alongside `allowBinaryAgents`.
-- [ ] **`allowCamera: boolean` SecurityConfig flag** — Secondary flag for `capture.camera` specifically (default: `false`). Camera access requires both `allowDesktopControl` and `allowCamera` to be true.
-- [ ] **`ConsentManager` runtime wiring** — Connect the existing `ConsentManager` (currently framework-only) to `desktop_screenshot` and `desktop_click` tool dispatch. On first invocation per session, surface a consent prompt to the user via the dashboard notification channel. Cache consent token in session; revoke on session end or if `singleUse` restriction is set.
-- [ ] **RBAC enforcement** — Map `desktop_*` tools to `CaptureResource` / `CaptureAction` RBAC pairs. `desktop_screenshot` → `capture.screen:capture`. `desktop_clipboard_read` → `capture.clipboard:capture`. `desktop_key` with keystroke logging → `capture.keystrokes:capture` (highest restriction tier). Agent role must hold the matching permission or the tool call is rejected.
-- [ ] **Audit logging** — All `desktop_*` tool calls emit audit events: `desktop_capture`, `desktop_input`, `desktop_clipboard`. Include: agent id, tool name, target description (not pixel data), timestamp, consent token reference. Surfaced in the Security Feed alongside existing `ai_request` events.
-- [ ] **Input rate limiting** — Maximum N input actions per minute per agent (default 60, configurable). Prevents runaway agents from flooding the input driver. Separate rate limit bucket from `chat_requests`.
+- [ ] **`ConsentManager` runtime wiring** — Connect the existing `ConsentManager` (framework-only today) to `desktop_screenshot` and `desktop_click` tool dispatch. On first invocation per session, surface a consent prompt via the dashboard notification channel. Cache consent token; revoke on session end or if `singleUse` restriction is set.
+- [ ] **RBAC enforcement** — Map tools to `CaptureResource:CaptureAction` pairs. `desktop_screenshot` → `capture.screen:capture`. `desktop_clipboard_read` → `capture.clipboard:capture`. `desktop_key` → `capture.keystrokes:capture` (highest restriction). Agent role must hold the permission or the call is rejected before the driver runs.
+- [ ] **Audit logging** — All `desktop_*` calls emit audit events: `desktop_capture`, `desktop_input`, `desktop_clipboard`. Fields: agent id, tool name, target description (not pixel data), timestamp, consent token reference. Surfaced in the Security Feed.
+- [ ] **Input rate limiting** — Max N input actions per minute per agent (default 60, configurable via `ResourcePolicy`). Separate bucket from `chat_requests`.
 
-### 39.6 — Dashboard UI
+### 39.7 — Dashboard UI
 
-- [ ] **Desktop Control panel in Security Settings** — New card beneath existing capability cards. Shows master `allowDesktopControl` toggle, `allowCamera` sub-toggle, and per-capability RBAC permission matrix (screen, clipboard, keystrokes, camera). Mirrors the existing security settings pattern.
-- [ ] **Capability status in agent/personality cards** — `BodyCapabilityStatus` badges (`vision`, `limb_movement`) shown on personality cards when enabled, matching existing status badge style.
-- [ ] **Consent history log** — Table in the Desktop Control panel showing past consent grants: agent, resource, purpose, timestamp, revoked/active. Allows manual revocation of active consent tokens.
-- [ ] **Desktop Control audit feed filter** — Add `desktop_capture` and `desktop_input` to the Security Feed event type filter dropdown.
+*The Personality Editor Body → Capabilities section already renders `limb_movement` and `vision` toggles (`PersonalityEditor.tsx` lines 1760–1826). This sub-phase wires their disabled state to visible feedback and adds the system-level controls.*
 
-### 39.7 — Configuration Reference & Docs
+- [ ] **`allowDesktopControl` toggle in Security Settings** — New card: master system switch, `allowCamera` sub-toggle, per-capability RBAC matrix (screen, clipboard, keystrokes, camera). Mirrors existing security settings pattern. When `allowDesktopControl` is off, the Body → Capabilities `limb_movement` and `vision` toggles in the Personality Editor show a "requires Desktop Control to be enabled in Security Settings" tooltip and remain visually disabled.
+- [ ] **Capability status badges on personality cards** — `BodyCapabilityStatus` badges for `vision` and `limb_movement` shown on personality and agent cards when enabled, matching existing badge style.
+- [ ] **Consent history log** — Table in the Desktop Control panel: agent, resource, purpose, timestamp, revoked/active. Manual revocation of active consent tokens.
+- [ ] **Audit feed filter entries** — Add `desktop_capture` and `desktop_input` to the Security Feed event type filter dropdown.
 
-- [ ] **`docs/guides/desktop-control.md`** — Getting started guide: enabling `allowDesktopControl`, granting RBAC permissions, example agent workflow (screenshot → interpret → interact), platform notes (X11 vs Wayland, macOS accessibility permissions, Windows UAC).
-- [ ] **Configuration reference update** — Add `allowDesktopControl`, `allowCamera` to `docs/configuration.md` with default values, security implications, and RBAC dependency notes.
-- [ ] **ADR** — Write ADR documenting the Body module actuator architecture, platform driver selection rationale, and consent model. Cross-references ADR 014 (screen capture security) and ADR 015 (RBAC for capture).
+### 39.8 — Configuration Reference & Docs
+
+- [ ] **`docs/guides/desktop-control.md`** — Getting started guide: enabling `allowDesktopControl` in Security Settings, toggling `limb_movement`/`vision` per personality, example screen-grounded agent workflow, platform notes (X11 vs Wayland, macOS Accessibility permissions, Windows UAC), remote MCP client usage.
+- [ ] **Configuration reference update** — Add `allowDesktopControl`, `allowCamera` to `docs/configuration.md` with defaults, security implications, and note that `body.capabilities[]` is the per-personality enforcement layer for both local and remote MCP callers.
+- [ ] **ADR** — Document the Body module actuator architecture, capability gate model (SecurityConfig outer + body.capabilities[] inner), platform driver selection, and consent model. Cross-references ADR 014 (screen capture security) and ADR 015 (RBAC for capture).
 
 ---
 
