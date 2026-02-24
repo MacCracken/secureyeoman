@@ -89,6 +89,19 @@ function isSkillInContext(skill: Skill, message: string): boolean {
   return words.some((w) => msg.includes(w));
 }
 
+/**
+ * Expands the {{output_dir}} template variable in skill instructions.
+ * Resolves to `outputs/{skill-slug}/{iso-date}/`.
+ */
+function expandOutputDir(skill: Skill): string {
+  const slug = skill.name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+  const isoDate = new Date().toISOString().slice(0, 10);
+  return skill.instructions.replace(/\{\{output_dir\}\}/g, `outputs/${slug}/${isoDate}/`);
+}
+
 export class SoulManager {
   private readonly storage: SoulStorage;
   private readonly brain: BrainManager | null;
@@ -198,6 +211,7 @@ export class SoulManager {
           exposeNetBox: false,
           exposeNvd: false,
           exposeNetworkUtils: false,
+          exposeTwingate: false,
         },
         proactiveConfig: {
           enabled: false,
@@ -547,6 +561,10 @@ export class SoulManager {
     await this.storage.incrementUsage(skillId);
   }
 
+  async incrementSkillInvoked(skillId: string): Promise<void> {
+    await this.storage.incrementInvoked(skillId);
+  }
+
   // ── Body / Heart ──────────────────────────────────────────────
 
   setHeart(heart: HeartManager): void {
@@ -879,7 +897,13 @@ export class SoulManager {
       // Always include a compact catalog so the AI knows what skills are available
       const catalogLines = skills.map((s) => {
         const desc = s.description?.trim() || s.name;
-        return `- **${s.name}**: ${desc}`;
+        let entry = `- **${s.name}**: ${desc}`;
+        if (s.useWhen) entry += ` Use when: ${s.useWhen}.`;
+        if (s.doNotUseWhen) entry += ` Don't use when: ${s.doNotUseWhen}.`;
+        if (s.linkedWorkflowId) entry += ` Triggers workflow: ${s.linkedWorkflowId}.`;
+        if (s.routing === 'explicit')
+          entry += ` To perform ${s.name} tasks, use the ${s.name} skill.`;
+        return entry;
       });
       parts.push(
         `## Available Skills\nYou have access to the following skills. Full instructions are activated when the skill is relevant to the conversation.\n${catalogLines.join('\n')}`
@@ -900,10 +924,16 @@ export class SoulManager {
     // Append full instructions for contextually relevant skills —
     // stop before exceeding the cap (never slice mid-skill)
     for (const skill of skillsToExpand) {
-      if (!skill.instructions) continue;
-      const section = `\n\n## Skill: ${skill.name}\n${skill.instructions}`;
+      if (!skill.instructions && !skill.successCriteria) continue;
+      const instructions = expandOutputDir(skill);
+      let section = `\n\n## Skill: ${skill.name}\n${instructions}`;
+      if (skill.mcpToolsAllowed.length > 0)
+        section += `\n\n[MCP tool restriction: only ${skill.mcpToolsAllowed.join(', ')} may be used while this skill is active.]`;
+      if (skill.successCriteria)
+        section += `\n\nSuccess criteria: ${skill.successCriteria}`;
       if (prompt.length + section.length > maxChars) break;
       prompt += section;
+      void this.incrementSkillInvoked(skill.id);
     }
 
     // Viewport hint — appended after skills so it doesn't inflate skill budget

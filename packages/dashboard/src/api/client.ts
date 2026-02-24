@@ -1344,6 +1344,7 @@ export interface McpConfigResponse {
   exposeNetBox: boolean;
   exposeNvd: boolean;
   exposeNetworkUtils: boolean;
+  exposeTwingateTools: boolean;
   allowedUrls: string[];
   webRateLimitPerMinute: number;
   proxyEnabled: boolean;
@@ -1370,6 +1371,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeNetBox: false,
       exposeNvd: false,
       exposeNetworkUtils: false,
+      exposeTwingateTools: false,
       allowedUrls: [],
       webRateLimitPerMinute: 10,
       proxyEnabled: false,
@@ -1903,6 +1905,7 @@ export interface SecurityPolicy {
   sandboxCredentialProxy: boolean;
   allowNetworkTools: boolean;
   allowNetBoxWrite: boolean;
+  allowTwingate: boolean;
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -1931,6 +1934,7 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       sandboxCredentialProxy: false,
       allowNetworkTools: false,
       allowNetBoxWrite: false,
+      allowTwingate: false,
     };
   }
 }

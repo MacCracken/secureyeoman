@@ -1281,6 +1281,7 @@ interface BodySectionProps {
     exposeNetBox: boolean;
     exposeNvd: boolean;
     exposeNetworkUtils: boolean;
+    exposeTwingate: boolean;
   };
   onMcpFeaturesChange: (features: {
     exposeGit: boolean;
@@ -1296,6 +1297,7 @@ interface BodySectionProps {
     exposeNetBox: boolean;
     exposeNvd: boolean;
     exposeNetworkUtils: boolean;
+    exposeTwingate: boolean;
   }) => void;
   creationConfig: {
     skills: boolean;
@@ -2425,6 +2427,41 @@ function BodySection({
                                 />
                               </label>
                             </div>
+                            {/* ── Twingate ───────────────────────────── */}
+                            <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1">
+                                <Globe className="w-3 h-3" />
+                                Twingate Remote Access
+                              </p>
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeTwingateTools
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <span className="text-xs flex-1">
+                                  Twingate Resources &amp; MCP Proxy
+                                  {!globalMcpConfig?.exposeTwingateTools && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Twingate in Security Settings first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeTwingate}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeTwingate: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeTwingateTools}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2726,6 +2763,7 @@ export function PersonalityEditor() {
     exposeNetBox: boolean;
     exposeNvd: boolean;
     exposeNetworkUtils: boolean;
+    exposeTwingate: boolean;
   }>({
     exposeGit: false,
     exposeFilesystem: false,
@@ -2740,6 +2778,7 @@ export function PersonalityEditor() {
     exposeNetBox: false,
     exposeNvd: false,
     exposeNetworkUtils: false,
+    exposeTwingate: false,
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
@@ -2996,6 +3035,7 @@ export function PersonalityEditor() {
       exposeNetBox: body.mcpFeatures?.exposeNetBox ?? false,
       exposeNvd: body.mcpFeatures?.exposeNvd ?? false,
       exposeNetworkUtils: body.mcpFeatures?.exposeNetworkUtils ?? false,
+      exposeTwingate: body.mcpFeatures?.exposeTwingate ?? false,
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
@@ -3100,6 +3140,7 @@ export function PersonalityEditor() {
       exposeNetBox: false,
       exposeNvd: false,
       exposeNetworkUtils: false,
+      exposeTwingate: false,
     });
     setProactiveConfig({
       enabled: false,

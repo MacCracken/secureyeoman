@@ -37,6 +37,7 @@ import {
   GitBranch,
   Monitor,
   Camera,
+  Globe,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -416,6 +417,7 @@ export function SecuritySettings() {
   const cameraAllowed = securityPolicy?.allowCamera ?? false;
   const networkToolsAllowed = securityPolicy?.allowNetworkTools ?? false;
   const netboxWriteAllowed = securityPolicy?.allowNetBoxWrite ?? false;
+  const twingateAllowed = securityPolicy?.allowTwingate ?? false;
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
   const dtcAllowed = securityPolicy?.allowDynamicTools ?? false;
@@ -763,6 +765,20 @@ export function SecuritySettings() {
               />
             </div>
           )}
+          <PolicyToggle
+            label="Twingate Remote Access"
+            icon={<Globe className="w-5 h-5" />}
+            enabled={twingateAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowTwingate: !twingateAllowed });
+            }}
+            description={
+              twingateAllowed
+                ? 'Twingate zero-trust remote access enabled — agents can reach private MCP servers.'
+                : 'Disabled — agents cannot access Twingate resources or private MCP servers via tunnel.'
+            }
+          />
         </div>
       </div>
 

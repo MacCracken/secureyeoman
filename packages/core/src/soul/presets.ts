@@ -55,6 +55,7 @@ const BASE_BODY: PersonalityCreate['body'] = {
     exposeNetBox: false,
     exposeNvd: false,
     exposeNetworkUtils: false,
+    exposeTwingate: false,
   },
   proactiveConfig: {
     enabled: false,

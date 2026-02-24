@@ -54,6 +54,7 @@ export function SkillsManager() {
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterSource, setFilterSource] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
+  const [saveWarnings, setSaveWarnings] = useState<string[]>([]);
   const [form, setForm] = useState<SkillCreate>({
     name: '',
     description: '',
@@ -61,8 +62,15 @@ export function SkillsManager() {
     triggerPatterns: [],
     enabled: true,
     source: 'user',
+    useWhen: '',
+    doNotUseWhen: '',
+    successCriteria: '',
+    mcpToolsAllowed: [],
+    routing: 'fuzzy',
+    linkedWorkflowId: null,
   });
   const [triggerInput, setTriggerInput] = useState('');
+  const [mcpToolsInput, setMcpToolsInput] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['skills', filterStatus, filterSource],
@@ -80,17 +88,19 @@ export function SkillsManager() {
 
   const createMut = useMutation({
     mutationFn: (d: SkillCreate) => createSkill(d),
-    onSuccess: () => {
+    onSuccess: (res) => {
       invalidate();
       setEditing(null);
+      setSaveWarnings((res as { warnings?: string[] }).warnings ?? []);
     },
   });
 
   const updateMut = useMutation({
     mutationFn: ({ id, d }: { id: string; d: Partial<SkillCreate> }) => updateSkill(id, d),
-    onSuccess: () => {
+    onSuccess: (res) => {
       invalidate();
       setEditing(null);
+      setSaveWarnings((res as { warnings?: string[] }).warnings ?? []);
     },
   });
 
@@ -129,6 +139,12 @@ export function SkillsManager() {
         triggerPatterns: pTrigger ? pTrigger.split(',').map((t) => t.trim()) : [],
         enabled: true,
         source: 'user',
+        useWhen: '',
+        doNotUseWhen: '',
+        successCriteria: '',
+        mcpToolsAllowed: [],
+        routing: 'fuzzy',
+        linkedWorkflowId: null,
       });
       setTriggerInput(pTrigger);
       setEditing('new');
@@ -144,8 +160,16 @@ export function SkillsManager() {
       triggerPatterns: s.triggerPatterns,
       enabled: s.enabled,
       source: s.source,
+      useWhen: s.useWhen ?? '',
+      doNotUseWhen: s.doNotUseWhen ?? '',
+      successCriteria: s.successCriteria ?? '',
+      mcpToolsAllowed: s.mcpToolsAllowed ?? [],
+      routing: s.routing ?? 'fuzzy',
+      linkedWorkflowId: s.linkedWorkflowId ?? null,
     });
     setTriggerInput(s.triggerPatterns.join(', '));
+    setMcpToolsInput((s.mcpToolsAllowed ?? []).join(', '));
+    setSaveWarnings([]);
     setEditing(s.id);
   };
 
@@ -157,8 +181,16 @@ export function SkillsManager() {
       triggerPatterns: [],
       enabled: true,
       source: 'user',
+      useWhen: '',
+      doNotUseWhen: '',
+      successCriteria: '',
+      mcpToolsAllowed: [],
+      routing: 'fuzzy',
+      linkedWorkflowId: null,
     });
     setTriggerInput('');
+    setMcpToolsInput('');
+    setSaveWarnings([]);
     setEditing('new');
   };
 
@@ -167,7 +199,11 @@ export function SkillsManager() {
       .split(',')
       .map((s) => s.trim())
       .filter(Boolean);
-    const data = { ...form, triggerPatterns: patterns };
+    const mcpTools = mcpToolsInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const data = { ...form, triggerPatterns: patterns, mcpToolsAllowed: mcpTools };
     if (editing === 'new') {
       createMut.mutate(data);
     } else if (editing) {
@@ -196,6 +232,29 @@ export function SkillsManager() {
           setDeleteTarget(null);
         }}
       />
+
+      {/* Credential warning banner */}
+      {saveWarnings.length > 0 && (
+        <div className="alert alert-warning flex items-start gap-2">
+          <span className="text-lg">⚠</span>
+          <div>
+            <p className="font-medium">Possible credential detected in skill instructions:</p>
+            <ul className="mt-1 text-sm list-disc list-inside">
+              {saveWarnings.map((w, i) => (
+                <li key={i}>{w}</li>
+              ))}
+            </ul>
+            <p className="text-xs mt-1 text-muted-foreground">Use <code>$VAR_NAME</code> references instead of literal credentials.</p>
+          </div>
+          <button
+            className="ml-auto btn-ghost p-1 text-sm"
+            onClick={() => { setSaveWarnings([]); }}
+            aria-label="Dismiss warning"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Header + Filters */}
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -310,6 +369,79 @@ export function SkillsManager() {
             </p>
           </div>
 
+          <div>
+            <label className="block text-sm font-medium mb-1">Use When</label>
+            <input
+              type="text"
+              value={form.useWhen ?? ''}
+              onChange={(e) => { setForm((f) => ({ ...f, useWhen: e.target.value })); }}
+              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              maxLength={500}
+              placeholder="e.g. user asks to review code, analyze a diff"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Don't Use When</label>
+            <input
+              type="text"
+              value={form.doNotUseWhen ?? ''}
+              onChange={(e) => { setForm((f) => ({ ...f, doNotUseWhen: e.target.value })); }}
+              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              maxLength={500}
+              placeholder="e.g. the task is not code-related"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Success Criteria</label>
+            <input
+              type="text"
+              value={form.successCriteria ?? ''}
+              onChange={(e) => { setForm((f) => ({ ...f, successCriteria: e.target.value })); }}
+              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              maxLength={300}
+              placeholder="e.g. PR summary generated and key risks identified"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Routing Mode</label>
+            <select
+              value={form.routing ?? 'fuzzy'}
+              onChange={(e) => { setForm((f) => ({ ...f, routing: e.target.value as 'fuzzy' | 'explicit' })); }}
+              className="px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="fuzzy">Fuzzy (default)</option>
+              <option value="explicit">Explicit (deterministic — for SOPs)</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">MCP Tools Allowed</label>
+            <input
+              type="text"
+              value={mcpToolsInput}
+              onChange={(e) => { setMcpToolsInput(e.target.value); }}
+              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Comma-separated tool names, e.g., read_file, web_search (empty = all allowed)"
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              When non-empty, only these MCP tools are available while this skill is active.
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Linked Workflow ID</label>
+            <input
+              type="text"
+              value={form.linkedWorkflowId ?? ''}
+              onChange={(e) => { setForm((f) => ({ ...f, linkedWorkflowId: e.target.value || null })); }}
+              className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+              placeholder="Workflow ID to trigger when this skill activates (optional)"
+            />
+          </div>
+
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => {
@@ -362,6 +494,12 @@ export function SkillsManager() {
                 )}
                 <div className="flex gap-4 mt-2 text-xs text-muted-foreground flex-wrap">
                   <span>Used {s.usageCount} times</span>
+                  {(s.invokedCount ?? 0) > 0 && (
+                    <span>
+                      Routing precision:{' '}
+                      {Math.round((s.usageCount / (s.invokedCount ?? 1)) * 100)}%
+                    </span>
+                  )}
                   {s.lastUsedAt && <span>Last: {formatDate(s.lastUsedAt)}</span>}
                   <span>Created {formatDate(s.createdAt)}</span>
                 </div>

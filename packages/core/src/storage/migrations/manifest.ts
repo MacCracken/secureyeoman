@@ -77,4 +77,5 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '038_pending_approvals', sql: readSql('038_pending_approvals.sql') },
   { id: '039_message_thinking_tools', sql: readSql('039_message_thinking_tools.sql') },
   { id: '040_personality_multi_active', sql: readSql('040_personality_multi_active.sql') },
+  { id: '041_skill_routing_quality', sql: readSql('041_skill_routing_quality.sql') },
 ];

@@ -47,10 +47,17 @@ interface SkillRow {
   instructions: string;
   tools: unknown[];
   trigger_patterns: string[];
+  use_when: string;
+  do_not_use_when: string;
+  success_criteria: string;
+  mcp_tools_allowed: string[];
+  routing: string;
+  linked_workflow_id: string | null;
   enabled: boolean;
   source: string;
   status: string;
   usage_count: number;
+  invoked_count: number;
   last_used_at: number | null;
   personality_id: string | null;
   created_at: number;
@@ -152,6 +159,13 @@ function rowToSkill(row: SkillRow): Skill {
     instructions: row.instructions,
     tools: (row.tools ?? []) as Skill['tools'],
     triggerPatterns: row.trigger_patterns ?? [],
+    // Routing quality (Phase 44)
+    useWhen: row.use_when ?? '',
+    doNotUseWhen: row.do_not_use_when ?? '',
+    successCriteria: row.success_criteria ?? '',
+    mcpToolsAllowed: (row.mcp_tools_allowed ?? []) as string[],
+    routing: (row.routing ?? 'fuzzy') as Skill['routing'],
+    linkedWorkflowId: row.linked_workflow_id ?? null,
     // ADR 021: Skill Actions
     actions: [],
     // ADR 022: Skill Triggers
@@ -166,6 +180,7 @@ function rowToSkill(row: SkillRow): Skill {
     source: row.source as Skill['source'],
     status: row.status as Skill['status'],
     usageCount: row.usage_count,
+    invokedCount: row.invoked_count ?? 0,
     lastUsedAt: row.last_used_at,
     personalityId: row.personality_id,
     createdAt: row.created_at,
@@ -409,8 +424,8 @@ export class SoulStorage extends PgBaseStorage {
     const id = uuidv7();
 
     await this.query(
-      `INSERT INTO soul.skills (id, name, description, instructions, tools, trigger_patterns, enabled, source, status, personality_id, usage_count, last_used_at, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10, 0, NULL, $11, $12)`,
+      `INSERT INTO soul.skills (id, name, description, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, mcp_tools_allowed, routing, linked_workflow_id, enabled, source, status, personality_id, usage_count, invoked_count, last_used_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15, $16, 0, 0, NULL, $17, $18)`,
       [
         id,
         data.name,
@@ -418,6 +433,12 @@ export class SoulStorage extends PgBaseStorage {
         data.instructions ?? '',
         JSON.stringify(data.tools ?? []),
         JSON.stringify(data.triggerPatterns ?? []),
+        data.useWhen ?? '',
+        data.doNotUseWhen ?? '',
+        data.successCriteria ?? '',
+        JSON.stringify(data.mcpToolsAllowed ?? []),
+        data.routing ?? 'fuzzy',
+        data.linkedWorkflowId ?? null,
         data.enabled ?? true,
         data.source ?? 'user',
         data.status ?? 'active',
@@ -451,17 +472,29 @@ export class SoulStorage extends PgBaseStorage {
          instructions = $3,
          tools = $4::jsonb,
          trigger_patterns = $5::jsonb,
-         enabled = $6,
-         source = $7,
-         status = $8,
-         updated_at = $9
-       WHERE id = $10`,
+         use_when = $6,
+         do_not_use_when = $7,
+         success_criteria = $8,
+         mcp_tools_allowed = $9::jsonb,
+         routing = $10,
+         linked_workflow_id = $11,
+         enabled = $12,
+         source = $13,
+         status = $14,
+         updated_at = $15
+       WHERE id = $16`,
       [
         data.name ?? existing.name,
         data.description ?? existing.description,
         data.instructions ?? existing.instructions,
         JSON.stringify(data.tools ?? existing.tools),
         JSON.stringify(data.triggerPatterns ?? existing.triggerPatterns),
+        data.useWhen !== undefined ? data.useWhen : existing.useWhen,
+        data.doNotUseWhen !== undefined ? data.doNotUseWhen : existing.doNotUseWhen,
+        data.successCriteria !== undefined ? data.successCriteria : existing.successCriteria,
+        JSON.stringify(data.mcpToolsAllowed !== undefined ? data.mcpToolsAllowed : existing.mcpToolsAllowed),
+        data.routing ?? existing.routing,
+        data.linkedWorkflowId !== undefined ? data.linkedWorkflowId : existing.linkedWorkflowId,
         data.enabled !== undefined ? data.enabled : existing.enabled,
         data.source ?? existing.source,
         data.status ?? existing.status,
@@ -533,6 +566,13 @@ export class SoulStorage extends PgBaseStorage {
     await this.execute(
       'UPDATE soul.skills SET usage_count = usage_count + 1, last_used_at = $1 WHERE id = $2',
       [Date.now(), skillId]
+    );
+  }
+
+  async incrementInvoked(skillId: string): Promise<void> {
+    await this.execute(
+      'UPDATE soul.skills SET invoked_count = invoked_count + 1 WHERE id = $1',
+      [skillId]
     );
   }
 

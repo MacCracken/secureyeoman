@@ -547,6 +547,16 @@ Configuration is via environment variables (not the YAML config file):
 | `NETBOX_TOKEN` | *(empty)* | NetBox API token (read-only or read-write). Required for `netbox_*` tools. |
 | `NVD_API_KEY` | *(empty)* | NVD REST API key. Optional — without it, rate limited to 5 req/30s; with it, 50 req/30s. Register at https://nvd.nist.gov/developers/request-an-api-key |
 
+#### Twingate Remote MCP Access
+
+> Zero-trust tunneling for private MCP servers (Phase 45). Requires `security.allowTwingate` enabled in Security Settings and `MCP_EXPOSE_TWINGATE_TOOLS=true`.
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_EXPOSE_TWINGATE_TOOLS` | `false` | Enable Twingate resource management and MCP proxy tools. Must be `true` and `security.allowTwingate` must be enabled in Security Settings. |
+| `TWINGATE_API_KEY` | *(empty)* | Twingate tenant API key for GraphQL management tools. Generate in the Twingate Admin Console under Settings → API. |
+| `TWINGATE_NETWORK` | *(empty)* | Twingate tenant name (e.g. `acme` → calls `acme.twingate.com`). Found in your Twingate Admin Console URL. |
+
 #### Agnostic QA Team Bridge
 
 > MCP tools that delegate QA tasks to the [Agnostic](https://github.com/MacCracken/agnostic) 6-agent QA platform. Agnostic must be running separately (see its `docker-compose.yml`).

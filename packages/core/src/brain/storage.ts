@@ -103,6 +103,13 @@ function rowToSkill(row: SkillRow): Skill {
     instructions: row.instructions,
     tools: (row.tools ?? []) as Skill['tools'],
     triggerPatterns: row.trigger_patterns ?? [],
+    // Routing quality (Phase 44)
+    useWhen: '',
+    doNotUseWhen: '',
+    successCriteria: '',
+    mcpToolsAllowed: [],
+    routing: 'fuzzy',
+    linkedWorkflowId: null,
     // ADR 021: Skill Actions
     actions: [],
     // ADR 022: Skill Triggers
@@ -117,6 +124,7 @@ function rowToSkill(row: SkillRow): Skill {
     source: row.source as Skill['source'],
     status: row.status as Skill['status'],
     usageCount: row.usage_count,
+    invokedCount: (row as unknown as { invoked_count?: number }).invoked_count ?? 0,
     lastUsedAt: row.last_used_at,
     personalityId: row.personality_id,
     createdAt: row.created_at,

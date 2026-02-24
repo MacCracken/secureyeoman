@@ -124,6 +124,12 @@ export async function executeCreationTool(
             ? (args.triggerPatterns as string[])
             : [],
           tools: [],
+          useWhen: '',
+          doNotUseWhen: '',
+          successCriteria: '',
+          mcpToolsAllowed: [],
+          routing: 'fuzzy' as const,
+          linkedWorkflowId: null,
           actions: [],
           triggers: [],
           dependencies: [],

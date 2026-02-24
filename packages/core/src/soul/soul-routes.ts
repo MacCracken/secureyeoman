@@ -30,6 +30,37 @@ export interface SoulRoutesOptions {
   auditChain?: AuditChain;
 }
 
+/**
+ * Scans instruction text for common credential patterns.
+ * Returns a list of warning messages for any matches found.
+ * Skips matches that are $VAR_NAME environment variable references.
+ */
+export function detectCredentials(text: string): string[] {
+  const warnings: string[] = [];
+  const VAR_REF = /^\$[A-Z_][A-Z0-9_]*$/;
+
+  const patterns: Array<{ re: RegExp; label: string }> = [
+    { re: /Bearer\s+([A-Za-z0-9\-._~+/]{20,})/g, label: 'Bearer token' },
+    { re: /\bsk-[A-Za-z0-9]{20,}/g, label: 'API key (sk-)' },
+    { re: /\b(ghp_|gho_|github_pat_)[A-Za-z0-9_]{10,}/g, label: 'GitHub token' },
+    { re: /password\s*[=:]\s*(\S{6,})/gi, label: 'inline password' },
+    { re: /api[_-]?key\s*[=:]\s*(\S{8,})/gi, label: 'inline API key' },
+  ];
+
+  for (const { re, label } of patterns) {
+    let m: RegExpExecArray | null;
+    re.lastIndex = 0;
+    while ((m = re.exec(text)) !== null) {
+      const captured = m[1] ?? m[0];
+      if (VAR_REF.test(captured.trim())) continue;
+      warnings.push(`${label} detected — use a $VAR_NAME reference instead`);
+      break; // one warning per pattern type
+    }
+  }
+
+  return warnings;
+}
+
 export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions): void {
   const { soulManager, approvalManager, broadcast, heartbeatManager, validator, auditChain } = opts;
 
@@ -258,7 +289,10 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       if (err) return sendError(reply, 400, err);
       try {
         const skill = await soulManager.createSkill(b);
-        return await reply.code(201).send({ skill });
+        const warnings = detectCredentials(b.instructions ?? '');
+        const response: { skill: typeof skill; warnings?: string[] } = { skill };
+        if (warnings.length > 0) response.warnings = warnings;
+        return await reply.code(201).send(response);
       } catch (e) {
         return sendError(reply, 400, toErrorMessage(e));
       }
@@ -281,7 +315,10 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       try {
         const skill = await soulManager.updateSkill(request.params.id, b);
         broadcast?.({ event: 'updated', type: 'skill', id: skill.id });
-        return { skill };
+        const warnings = detectCredentials(b.instructions ?? '');
+        const response: { skill: typeof skill; warnings?: string[] } = { skill };
+        if (warnings.length > 0) response.warnings = warnings;
+        return response;
       } catch (e) {
         return sendError(reply, 404, toErrorMessage(e));
       }
@@ -546,6 +583,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeNetBox: false,
               exposeNvd: false,
               exposeNetworkUtils: false,
+              exposeTwingate: false,
             },
             proactiveConfig: {
               enabled: false,

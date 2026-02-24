@@ -32,6 +32,10 @@ export interface McpFeatureConfig {
   netboxUrl?: string;
   netboxToken?: string;
   nvdApiKey?: string;
+  // Twingate (Phase 45)
+  exposeTwingateTools: boolean;
+  twingateNetwork?: string;
+  twingateApiKey?: string;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -50,6 +54,7 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   proxyDefaultCountry: '',
   exposeNetworkTools: false,
   allowedNetworkTargets: [],
+  exposeTwingateTools: false,
 };
 
 export class McpStorage extends PgBaseStorage {

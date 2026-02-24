@@ -381,10 +381,18 @@ export interface Skill {
   instructions: string;
   tools: { name: string; description: string; inputSchema: Record<string, unknown> }[];
   triggerPatterns: string[];
+  // Routing quality (Phase 44)
+  useWhen?: string;
+  doNotUseWhen?: string;
+  successCriteria?: string;
+  mcpToolsAllowed?: string[];
+  routing?: 'fuzzy' | 'explicit';
+  linkedWorkflowId?: string | null;
   enabled: boolean;
   source: 'user' | 'ai_proposed' | 'ai_learned' | 'marketplace' | 'community';
   status: 'active' | 'pending_approval' | 'disabled';
   usageCount: number;
+  invokedCount?: number;
   lastUsedAt: number | null;
   personalityId?: string | null;
   personalityName?: string | null;
@@ -398,6 +406,13 @@ export interface SkillCreate {
   instructions?: string;
   tools?: Skill['tools'];
   triggerPatterns?: string[];
+  // Routing quality (Phase 44)
+  useWhen?: string;
+  doNotUseWhen?: string;
+  successCriteria?: string;
+  mcpToolsAllowed?: string[];
+  routing?: 'fuzzy' | 'explicit';
+  linkedWorkflowId?: string | null;
   enabled?: boolean;
   source?: Skill['source'];
   status?: Skill['status'];

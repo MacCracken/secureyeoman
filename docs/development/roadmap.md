@@ -9,40 +9,17 @@
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
 | | **Release 2026.2.23** | **2026-02-23** | **Released** |
-| 44 | Skill Routing Quality | — | Planned |
-| 45 | Twingate Remote MCP Access | — | Planned *(depends on 41)* |
-| 47 | Find & Repair (Ongoing) | — | Ongoing |
+| 44 | Skill Routing Quality | 2026-02-24 | **Complete** |
+| 45 | Twingate Remote MCP Access | — | **Complete** |
 | 48 | Machine Readable Org Intent | — | Planned |
 | 49 | AI Autonomy Level Audit | — | Planned |
+| XX | Find & Repair (Ongoing) | — | Ongoing |
 
 ---
 
-## Phase 44: Skill Routing Quality
+## Phase 45 (Phase 45): Twingate Remote MCP Access
 
-**Status**: Planned | **Priority**: High — directly improves agent accuracy and reliability for all users.
-
-*Inspired by [OpenAI's Skills + Shell Tips](https://developers.openai.com/blog/skills-shell-tips/). Glean improved skill routing accuracy from 73% → 85% by restructuring descriptions and embedding task templates.*
-
-### 44.1 — Schema Additions
-
-- [ ] **`useWhen` / `doNotUseWhen` on `SkillSchema`** — Add `useWhen: z.string().max(500).default('')` and `doNotUseWhen: z.string().max(500).default('')` alongside `description`. Update `composeSoulPrompt` to emit them in the catalog block: `Use when: {useWhen}. Don't use when: {doNotUseWhen}.` Surface as distinct labelled inputs in the dashboard skill editor.
-- [ ] **`successCriteria` on `SkillSchema`** — `z.string().max(300).default('')`. Injected at the end of the skill's instructions block so the model knows when to declare the skill complete.
-- [ ] **`mcpToolsAllowed` on `SkillSchema`** — `z.array(z.string()).default([])`. When non-empty, only the listed MCP tool names are available while this skill's instructions are active. Zero-config default preserves backward compatibility.
-- [ ] ** resources/workflow ** - intention is same as other, to improve the ability to trigger or create workflows via resources, integrations and orchestrations.
-- [ ] **`routing` on `SkillSchema`** — `z.enum(['fuzzy', 'explicit']).default('fuzzy')`. When `'explicit'`, appends: `"To perform [skill name] tasks, use the [skill name] skill."` Deterministic routing for SOPs and compliance workflows.
-
-### 44.2 — Runtime Improvements
-
-- [ ] **Skill invocation accuracy telemetry** — Add `invokedCount` and `selectedCount` fields. The ratio `selectedCount / invokedCount` surfaces routing precision in the dashboard.
-- [ ] **Credential placeholder enforcement** — Validate `$VAR_NAME` convention in skill instructions; warn in editor and CLI sync when literal credentials are detected.
-- [ ] **Output directory convention** — Skills that produce artifacts write to `outputs/{skill-slug}/{iso-date}/`. Surface as `{{output_dir}}` template variable in skill instructions.
-
-
----
-
-## Phase 45: Twingate Remote MCP Access
-
-**Status**: Planned | **Priority**: High — enables private MCP servers to be accessed by remote agents without opening firewall ports. **Depends on Phase 41** (SecretsManager for service key storage).
+**Status**: **Complete** | **Priority**: High — enables private MCP servers to be accessed by remote agents without opening firewall ports. **Depends on Phase 41** (SecretsManager for service key storage).
 
 *Twingate's zero-trust network enables private MCP servers to be exposed to remote AI agents without opening inbound firewall ports. Agents connect via the Twingate Client tunnel; access is gated by Twingate's identity + device-posture policies. Reference: https://www.twingate.com/docs/remote-mcp-access*
 
@@ -60,23 +37,22 @@ Private MCP server (never exposed to public internet)
 
 **MCP tools — Twingate resource management** (requires `TWINGATE_API_KEY` + `TWINGATE_NETWORK` env vars; calls Twingate GraphQL API at `https://{network}.twingate.com/api/graphql/`):
 
-- [ ] `twingate_resources_list` — List all Twingate Resources in the tenant; returns id, name, address, group access, protocol rules. Useful for an agent to discover which private services (including MCP endpoints) are accessible via the tunnel.
-- [ ] `twingate_resource_get` — Fetch a single Resource by id with full protocol policy, group assignments, and connector affinity.
-- [ ] `twingate_groups_list` — List access groups; shows which identities/service accounts can reach which resources.
-- [ ] `twingate_service_accounts_list` — List service accounts (non-human principals used for agent-to-resource access). Agents and automation workflows use service accounts instead of user credentials.
-- [ ] `twingate_service_account_create` — Create a new service account for a YeomanMCP agent identity, scoped to specific resources. Returns the account id for key generation.
-- [ ] `twingate_service_key_create` — Generate a service key (bearer token) for a service account. Key is used as the Twingate Client credential for headless agent access. Returned once — store in SecretsManager (Phase 41).
-- [ ] `twingate_service_key_revoke` — Revoke a service key by id. Emits a `twingate_key_revoked` audit event.
-- [ ] `twingate_connectors_list` — List Connectors with status (online/offline), remote network, and last heartbeat. Lets an agent verify the Connector serving a private MCP server is healthy before attempting to connect.
-- [ ] `twingate_remote_networks_list` — List Remote Networks (private network segments behind Connectors). Identifies which network a target MCP server lives in.
+- [x] `twingate_resources_list` — List all Twingate Resources in the tenant; returns id, name, address, group access, protocol rules. Useful for an agent to discover which private services (including MCP endpoints) are accessible via the tunnel.
+- [x] `twingate_resource_get` — Fetch a single Resource by id with full protocol policy, group assignments, and connector affinity.
+- [x] `twingate_groups_list` — List access groups; shows which identities/service accounts can reach which resources.
+- [x] `twingate_service_accounts_list` — List service accounts (non-human principals used for agent-to-resource access). Agents and automation workflows use service accounts instead of user credentials.
+- [x] `twingate_service_account_create` — Create a new service account for a YeomanMCP agent identity, scoped to specific resources. Returns the account id for key generation.
+- [x] `twingate_service_key_create` — Generate a service key (bearer token) for a service account. Key is used as the Twingate Client credential for headless agent access. Returned once — store in SecretsManager (Phase 41).
+- [x] `twingate_service_key_revoke` — Revoke a service key by id. Emits a `twingate_key_revoked` audit event.
+- [x] `twingate_connectors_list` — List Connectors with status (online/offline), remote network, and last heartbeat. Lets an agent verify the Connector serving a private MCP server is healthy before attempting to connect.
+- [x] `twingate_remote_networks_list` — List Remote Networks (private network segments behind Connectors). Identifies which network a target MCP server lives in.
 
 **MCP tool — remote MCP server proxy** (bridges YeomanMCP to a private MCP server reachable via Twingate tunnel):
 
-- [ ] `twingate_mcp_connect` — Given a `resourceAddress` (the private MCP server hostname/IP registered as a Twingate Resource) and `port`, open a Streamable HTTP or SSE connection to the private MCP server via the local Twingate Client tunnel. Returns a `sessionId` for subsequent tool calls.
-  Implementation: the Twingate Client must already be running on the host; this tool sends HTTP(S) to the resource address, which the Twingate Client intercepts and tunnels. No additional SDK needed — standard `fetch()` to the private address works once the tunnel is up.
-- [ ] `twingate_mcp_list_tools` — List tools exposed by a connected private MCP server (by `sessionId`).
-- [ ] `twingate_mcp_call_tool` — Invoke a tool on a connected private MCP server by `sessionId`, `toolName`, and `args`. Returns the tool result. Audit event: `twingate_mcp_tool_call` with resource address, tool name, agent id.
-- [ ] `twingate_mcp_disconnect` — Close the proxy session.
+- [x] `twingate_mcp_connect` — Given a `resourceAddress` (the private MCP server hostname/IP registered as a Twingate Resource) and `port`, open a Streamable HTTP connection to the private MCP server via the local Twingate Client tunnel. Returns a `sessionId` for subsequent tool calls.
+- [x] `twingate_mcp_list_tools` — List tools exposed by a connected private MCP server (by `sessionId`).
+- [x] `twingate_mcp_call_tool` — Invoke a tool on a connected private MCP server by `sessionId`, `toolName`, and `args`. Returns the tool result. Audit event: `twingate_mcp_tool_call` with resource address, tool name, agent id.
+- [x] `twingate_mcp_disconnect` — Close the proxy session.
 
 **Configuration:**
 
@@ -85,11 +61,11 @@ TWINGATE_API_KEY=<tenant API key>   # GraphQL API authentication
 TWINGATE_NETWORK=<tenant-name>      # e.g. "acme" → acme.twingate.com
 ```
 
-- [ ] Add `TWINGATE_API_KEY` and `TWINGATE_NETWORK` to the env-var reference in `docs/configuration.md`.
-- [ ] Gate all `twingate_*` tools behind a `allowTwingate: z.boolean().default(false)` flag in `SecurityConfig` (same pattern as `allowDesktopControl`). Add toggle to Security Settings.
-- [ ] Implement in `packages/mcp/src/tools/twingate-tools.ts`; register in `tools/index.ts` and `tools/manifest.ts`.
-- [ ] All `twingate_service_key_create` results stored via `SecretsManager` (Phase 41) — never logged or returned in plaintext after initial creation.
-- [ ] Audit events: `twingate_resource_query`, `twingate_key_create`, `twingate_key_revoke`, `twingate_mcp_tool_call` — surfaced in Security Feed.
+- [x] Add `TWINGATE_API_KEY` and `TWINGATE_NETWORK` to the env-var reference in `docs/configuration.md`.
+- [x] Gate all `twingate_*` tools behind a `allowTwingate: z.boolean().default(false)` flag in `SecurityConfig` (same pattern as `allowDesktopControl`). Add toggle to Security Settings.
+- [x] Implement in `packages/mcp/src/tools/twingate-tools.ts`; register in `tools/index.ts` and `tools/manifest.ts`.
+- [x] All `twingate_service_key_create` results stored via `SecretsManager` (Phase 41) — never logged or returned in plaintext after initial creation.
+- [x] Audit events: `twingate_key_create`, `twingate_key_revoke`, `twingate_mcp_tool_call` — surfaced in Security Feed.
 
 ---
 
@@ -250,7 +226,7 @@ The audit is a structured point-in-time review. Run it before production, after 
 
 ---
 
-## Phase 47: Find & Repair (Ongoing)
+## Phase XX: Find & Repair (Ongoing)
 
 **Status**: Ongoing
 
@@ -370,4 +346,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-24 (Phase 49 added: AI Autonomy Level Audit; Phase 48: Machine Readable Org Intent; Phase 44: Skill Routing Quality; Phase 45: Twingate Remote MCP Access)*
+*Last updated: 2026-02-24 (Phase 49 added: AI Autonomy Level Audit; Phase 48: Machine Readable Org Intent; Phase 44: Skill Routing Quality; Phase 45: Twingate Remote MCP Access — Complete)*

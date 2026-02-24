@@ -226,5 +226,20 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'pcap_conversations', description: 'List IP/TCP/UDP conversations in an uploaded pcap with bytes, packets, duration' },
     { name: 'pcap_dns_queries', description: 'Extract DNS query/response pairs from an uploaded pcap' },
     { name: 'pcap_http_requests', description: 'Extract HTTP request/response metadata from an uploaded pcap' },
+
+    // Twingate tools (Phase 45)
+    { name: 'twingate_resources_list', description: 'List all Twingate Resources; returns id, name, address, group access, protocol rules' },
+    { name: 'twingate_resource_get', description: 'Fetch a single Twingate Resource by id with full protocol policy and group assignments' },
+    { name: 'twingate_groups_list', description: 'List Twingate access groups and which identities/service accounts can reach which resources' },
+    { name: 'twingate_service_accounts_list', description: 'List Twingate service accounts (non-human principals for agent-to-resource access)' },
+    { name: 'twingate_service_account_create', description: 'Create a Twingate service account scoped to specific resources; returns account id for key generation' },
+    { name: 'twingate_service_key_create', description: 'Generate a service key for a service account; stores it in SecretsManager — returned once' },
+    { name: 'twingate_service_key_revoke', description: 'Revoke a Twingate service key by id; emits twingate_key_revoked audit event' },
+    { name: 'twingate_connectors_list', description: 'List Twingate Connectors with online/offline status, remote network, and last heartbeat' },
+    { name: 'twingate_remote_networks_list', description: 'List Twingate Remote Networks (private network segments behind Connectors)' },
+    { name: 'twingate_mcp_connect', description: 'Open a proxy session to a private MCP server reachable via the Twingate Client tunnel; returns sessionId' },
+    { name: 'twingate_mcp_list_tools', description: 'List tools exposed by a private MCP server connected via twingate_mcp_connect' },
+    { name: 'twingate_mcp_call_tool', description: 'Invoke a tool on a connected private MCP server; returns result; emits twingate_mcp_tool_call audit event' },
+    { name: 'twingate_mcp_disconnect', description: 'Close a Twingate MCP proxy session' },
   ];
 }

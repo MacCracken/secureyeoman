@@ -81,6 +81,8 @@ export const McpFeaturesSchema = z
     exposeNvd: z.boolean().default(false),
     /** Subnet/VLSM/wildcard calculators and PCAP analysis (tshark). Requires global allowNetworkTools. */
     exposeNetworkUtils: z.boolean().default(false),
+    /** Twingate resource management + private MCP proxy. Requires global allowTwingate. */
+    exposeTwingate: z.boolean().default(false),
   })
   .default({});
 
@@ -386,6 +388,14 @@ export const SkillSchema = z.object({
   tools: z.array(ToolSchema).default([]),
   triggerPatterns: z.array(z.string().max(500)).default([]),
 
+  // Routing quality (Phase 44)
+  useWhen: z.string().max(500).default(''),
+  doNotUseWhen: z.string().max(500).default(''),
+  successCriteria: z.string().max(300).default(''),
+  mcpToolsAllowed: z.array(z.string()).default([]),
+  routing: z.enum(['fuzzy', 'explicit']).default('fuzzy'),
+  linkedWorkflowId: z.string().nullable().optional(),
+
   // Actions (ADR 021)
   actions: z.array(SkillActionSchema).default([]),
 
@@ -404,6 +414,7 @@ export const SkillSchema = z.object({
   source: SkillSourceSchema.default('user'),
   status: SkillStatusSchema.default('active'),
   usageCount: z.number().int().nonnegative().default(0),
+  invokedCount: z.number().int().nonnegative().default(0),
   lastUsedAt: z.number().int().nonnegative().nullable().default(null),
   personalityId: z.string().nullable().optional(),
   personalityName: z.string().nullable().optional(),
@@ -418,6 +429,7 @@ export const SkillCreateSchema = SkillSchema.omit({
   createdAt: true,
   updatedAt: true,
   usageCount: true,
+  invokedCount: true,
   lastUsedAt: true,
   personalityName: true,
 });

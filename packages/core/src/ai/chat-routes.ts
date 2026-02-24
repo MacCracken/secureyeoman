@@ -367,6 +367,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               continue;
             if (isNetworkUtilsTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetworkUtils))
               continue;
+
+            // Twingate tools — single gate: global exposeTwingateTools AND per-personality exposeTwingate
+            const globalTwingateOk = globalConfig.exposeTwingateTools === true;
+            const isTwingateTool = tool.name.startsWith('twingate_');
+            if (isTwingateTool && !(globalTwingateOk && perPersonalityFeatures.exposeTwingate))
+              continue;
           } else {
             // External server: only include when explicitly selected
             if (!selectedServers.includes(tool.serverName)) continue;

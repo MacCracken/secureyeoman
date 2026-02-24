@@ -1,3 +1,24 @@
+## [Phase 44] — Skill Routing Quality (2026-02-24)
+
+### Added
+- `useWhen` / `doNotUseWhen` on `SkillSchema` — routing intent injected into skill catalog in system prompts
+- `successCriteria` on `SkillSchema` — injected at end of skill instructions so model knows when skill is complete
+- `mcpToolsAllowed` on `SkillSchema` — restrict available MCP tools per skill (prompt-level enforcement)
+- `routing` on `SkillSchema` (`fuzzy` | `explicit`) — explicit mode appends deterministic routing text for SOPs and compliance workflows
+- `linkedWorkflowId` on `SkillSchema` — links skill to a workflow for orchestration routing
+- `invokedCount` telemetry field — tracks how often the router selects each skill; ratio with `usageCount` = routing precision
+- `{{output_dir}}` template variable in skill instructions — expands to `outputs/{skill-slug}/{iso-date}/`
+- Credential placeholder enforcement — warns on literal credentials in skill instructions (suggest `$VAR_NAME`)
+- Routing precision displayed in Skills Manager dashboard (when `invokedCount > 0`)
+- DB migration `041_skill_routing_quality.sql` — 7 new columns on `soul.skills` (all with safe defaults)
+- `detectCredentials()` utility exported from `soul-routes.ts`
+- `expandOutputDir()` helper in `soul/manager.ts`
+- `incrementInvoked()` on `SoulStorage` and `incrementSkillInvoked()` on `SoulManager`
+- ADR 127: `docs/adr/127-skill-routing-quality.md`
+- Guide: `docs/guides/skill-routing.md`
+
+---
+
 ## [2026.2.24]
 
 ### Docker Build Fixes — Phase 46 Type Integration

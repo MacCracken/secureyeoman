@@ -138,6 +138,12 @@ export const McpServiceConfigSchema = z.object({
   netboxToken: z.string().optional(),
   /** NVD API key — optional; raises rate limit from 5 req/30s to 50 req/30s. */
   nvdApiKey: z.string().optional(),
+  /** Enable Twingate resource management + MCP proxy tools. Off by default. */
+  exposeTwingateTools: z.boolean().default(false),
+  /** Twingate tenant name (e.g. "acme" → acme.twingate.com). From env TWINGATE_NETWORK. */
+  twingateNetwork: z.string().optional(),
+  /** Twingate tenant API key. From env TWINGATE_API_KEY. */
+  twingateApiKey: z.string().optional(),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;
