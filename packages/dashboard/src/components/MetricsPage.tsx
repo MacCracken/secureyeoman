@@ -286,15 +286,17 @@ function OverviewTab({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
         <StatCard
           title="Active Agents"
-          value={activePersonalities.length}
+          value={activePersonalities.length + (activeDelegations?.delegations?.length ?? 0)}
           icon={<Bot className="w-4 h-4 sm:w-5 sm:h-5" />}
-          subtitle={
-            defaultPersonality
-              ? `Default: ${defaultPersonality.name}`
-              : activeDelegations?.delegations?.length
-                ? `${activeDelegations.delegations.length} sub-agent${activeDelegations.delegations.length !== 1 ? 's' : ''}`
-                : undefined
-          }
+          subtitle={(() => {
+            const soulPart = `${activePersonalities.length} soul${activePersonalities.length !== 1 ? 's' : ''}`;
+            const subPart = activeDelegations?.delegations?.length
+              ? ` · ${activeDelegations.delegations.length} sub-agent${activeDelegations.delegations.length !== 1 ? 's' : ''}`
+              : '';
+            return defaultPersonality
+              ? `${defaultPersonality.name}${subPart}`
+              : `${soulPart}${subPart}`;
+          })()}
           onClick={() => navigate('/personality')}
         />
         <StatCard
