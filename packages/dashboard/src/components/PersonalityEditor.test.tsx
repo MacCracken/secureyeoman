@@ -116,6 +116,8 @@ const MOCK_PERSONALITY = {
   modelFallbacks: [],
   includeArchetypes: true,
   isActive: false,
+  isDefault: false,
+  isArchetype: false,
   body: {
     enabled: false,
     capabilities: [],

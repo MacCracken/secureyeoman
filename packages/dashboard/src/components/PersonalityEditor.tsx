@@ -21,6 +21,8 @@ import {
   Search,
   Monitor,
   Wrench,
+  Star,
+  Power,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -28,6 +30,9 @@ import {
   updatePersonality,
   deletePersonality,
   activatePersonality,
+  enablePersonality,
+  disablePersonality,
+  setDefaultPersonality,
   fetchPromptPreview,
   fetchModelInfo,
   fetchPassions,
@@ -2576,7 +2581,7 @@ export function PersonalityEditor() {
     onSuccess: (_result, variables) => {
       void queryClient.invalidateQueries({ queryKey: ['personalities'] });
       if (setActiveOnSave && variables.id) {
-        activateMut.mutate(variables.id);
+        setDefaultMut.mutate(variables.id);
       }
       setEditing(null);
       setSetActiveOnSave(false);
@@ -2602,6 +2607,24 @@ export function PersonalityEditor() {
     onError: (err: Error) => {
       setActivatingId(null);
       setActivateError(err.message || 'Failed to activate personality');
+    },
+  });
+
+  const enableMut = useMutation({
+    mutationFn: (id: string) => enablePersonality(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
+  });
+
+  const disableMut = useMutation({
+    mutationFn: (id: string) => disablePersonality(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
+  });
+
+  const setDefaultMut = useMutation({
+    mutationFn: (id: string) => setDefaultPersonality(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['personalities'] });
+      void queryClient.invalidateQueries({ queryKey: ['promptPreview'] });
     },
   });
 
@@ -2854,8 +2877,6 @@ export function PersonalityEditor() {
 
   const editingPersonality =
     editing && editing !== 'new' ? personalities.find((p) => p.id === editing) : null;
-  const showActivateToggle =
-    editing !== 'new' && editingPersonality && !editingPersonality.isActive;
 
   return (
     <div className="space-y-6 overflow-x-hidden">
@@ -2916,9 +2937,21 @@ export function PersonalityEditor() {
       {/* Editor Form */}
       {editing && (
         <div className="card p-3 sm:p-4 space-y-4 border-primary overflow-x-hidden">
-          <h3 className="font-medium">
-            {editing === 'new' ? 'Create Personality' : 'Edit Personality'}
-          </h3>
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h3 className="font-medium truncate">
+                {editing === 'new'
+                  ? 'Create Personality'
+                  : (form.name?.trim() || 'Edit Personality')}
+              </h3>
+              {editingPersonality?.isDefault && (
+                <p className="text-xs text-primary flex items-center gap-1 mt-0.5">
+                  <Star className="w-3 h-3 fill-current flex-shrink-0" />
+                  Default — used for new chats and the dashboard
+                </p>
+              )}
+            </div>
+          </div>
 
           {/* Soul Section */}
           <CollapsibleSection title="Soul — Identity" defaultOpen>
@@ -3028,6 +3061,36 @@ export function PersonalityEditor() {
                   className="sr-only peer"
                 />
                 <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm">Default personality</span>
+                <span className="text-xs text-muted-foreground">
+                  {editing === 'new'
+                    ? 'Make this the default on save'
+                    : 'Used for new chats and the dashboard default'}
+                </span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={editing === 'new' ? setActiveOnSave : (editingPersonality?.isDefault ?? false)}
+                  onChange={(e) => {
+                    if (editing === 'new') {
+                      setSetActiveOnSave(e.target.checked);
+                    } else if (e.target.checked && editingPersonality && !editingPersonality.isDefault) {
+                      setDefaultMut.mutate(editingPersonality.id);
+                    }
+                  }}
+                  disabled={
+                    setDefaultMut.isPending ||
+                    (editing !== 'new' && (editingPersonality?.isDefault ?? false))
+                  }
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-primary rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
               </label>
             </div>
 
@@ -3299,24 +3362,11 @@ export function PersonalityEditor() {
           {/* Heart Section */}
           <HeartSection />
 
-          {showActivateToggle && (
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={setActiveOnSave}
-                onChange={(e) => {
-                  setSetActiveOnSave(e.target.checked);
-                }}
-                className="rounded border-muted-foreground"
-              />
-              <span className="text-sm">Set as active personality on save</span>
-            </label>
-          )}
-
           <div className="flex gap-2 justify-end">
             <button
               onClick={() => {
                 setEditing(null);
+                setSetActiveOnSave(false);
               }}
               className="btn btn-ghost"
             >
@@ -3338,14 +3388,14 @@ export function PersonalityEditor() {
         {personalities.map((p) => (
           <div key={p.id}>
             <div
-              className={`card p-3 sm:p-4 ${p.isActive ? 'border-primary ring-1 ring-primary/20' : ''} hover:shadow-md transition-shadow`}
+              className={`card p-3 sm:p-4 ${p.isDefault ? 'border-primary ring-1 ring-primary/20' : ''} hover:shadow-md transition-shadow`}
             >
               <div className="flex flex-col gap-2">
                 {/* Header with name and actions */}
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${p.isActive ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${p.isDefault ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
                     >
                       <User className="w-4 h-4 sm:w-5 sm:h-5" />
                     </div>
@@ -3353,8 +3403,24 @@ export function PersonalityEditor() {
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <h3 className="font-medium text-sm sm:text-base truncate">{p.name}</h3>
                         {p.isActive && (
-                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400">
                             Active
+                          </span>
+                        )}
+                        {p.isDefault && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-primary/10 text-primary">
+                            <Star className="w-2.5 h-2.5 fill-current" /> Default
+                          </span>
+                        )}
+                        {p.isWithinActiveHours && (
+                          <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-green-500/10 text-green-600 dark:text-green-400" title="Within active hours">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse inline-block" />
+                            Online
+                          </span>
+                        )}
+                        {p.isArchetype && (
+                          <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-muted text-muted-foreground" title="System preset — cannot be deleted">
+                            Preset
                           </span>
                         )}
                       </div>
@@ -3366,21 +3432,48 @@ export function PersonalityEditor() {
 
                   {/* Actions - always visible */}
                   <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
-                    {p.isActive ? (
-                      <span className="p-1.5 sm:p-2 text-success" title="Active personality">
-                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                    {/* Set as default */}
+                    {p.isDefault ? (
+                      <span className="p-1.5 sm:p-2 text-primary" title="Default personality">
+                        <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
                       </span>
                     ) : (
                       <button
-                        onClick={() => {
-                          activateMut.mutate(p.id);
-                        }}
-                        disabled={activatingId === p.id}
-                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-success rounded-lg"
-                        title={`Activate ${p.name}`}
-                        aria-label={`Activate personality ${p.name}`}
+                        onClick={() => { setDefaultMut.mutate(p.id); }}
+                        disabled={setDefaultMut.isPending}
+                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-primary rounded-lg"
+                        title={`Set ${p.name} as default`}
+                        aria-label={`Set ${p.name} as default personality`}
                       >
-                        <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5" />
+                        <Star className="w-4 h-4 sm:w-5 sm:h-5" />
+                      </button>
+                    )}
+                    {/* Enable / disable */}
+                    {p.isActive ? (
+                      p.isDefault ? (
+                        <span className="p-1.5 sm:p-2 text-green-500" title="Active — default personality is always on">
+                          <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => { disableMut.mutate(p.id); }}
+                          disabled={disableMut.isPending}
+                          className="btn-ghost p-1.5 sm:p-2 text-green-500 hover:text-muted-foreground rounded-lg"
+                          title={`Disable ${p.name}`}
+                          aria-label={`Disable personality ${p.name}`}
+                        >
+                          <Power className="w-4 h-4 sm:w-5 sm:h-5" />
+                        </button>
+                      )
+                    ) : (
+                      <button
+                        onClick={() => { enableMut.mutate(p.id); }}
+                        disabled={enableMut.isPending}
+                        className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-green-500 rounded-lg"
+                        title={`Enable ${p.name}`}
+                        aria-label={`Enable personality ${p.name}`}
+                      >
+                        <Power className="w-4 h-4 sm:w-5 sm:h-5" />
                       </button>
                     )}
                     <button
@@ -3395,26 +3488,34 @@ export function PersonalityEditor() {
                     </button>
                     <button
                       onClick={() => {
-                        const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
-                        if (mode === 'manual') {
-                          setDeleteLockedMsg(`"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`);
+                        if (p.isArchetype) {
+                          setDeleteLockedMsg(`"${p.name}" is a system preset and cannot be deleted.`);
                         } else {
-                          setDeleteTarget(p);
+                          const mode = p.body?.resourcePolicy?.deletionMode ?? 'auto';
+                          if (mode === 'manual') {
+                            setDeleteLockedMsg(`"${p.name}" has deletion locked (Manual mode). Change the deletion mode in Body → Resources to delete it.`);
+                          } else {
+                            setDeleteTarget(p);
+                          }
                         }
                       }}
-                      disabled={p.isActive || deleteMut.isPending}
+                      disabled={p.isDefault || p.isArchetype || deleteMut.isPending}
                       className="btn-ghost p-1.5 sm:p-2 text-muted-foreground hover:text-destructive disabled:opacity-30 rounded-lg"
                       title={
-                        p.isActive
-                          ? 'Switch to another personality before deleting'
-                          : (p.body?.resourcePolicy?.deletionMode === 'manual'
-                              ? 'Deletion locked — change mode in Body → Resources'
-                              : `Delete ${p.name}`)
+                        p.isArchetype
+                          ? 'System preset — cannot be deleted'
+                          : p.isDefault
+                            ? 'Switch to another personality before deleting'
+                            : (p.body?.resourcePolicy?.deletionMode === 'manual'
+                                ? 'Deletion locked — change mode in Body → Resources'
+                                : `Delete ${p.name}`)
                       }
                       aria-label={
-                        p.isActive
-                          ? 'Cannot delete active personality — switch first'
-                          : `Delete personality ${p.name}`
+                        p.isArchetype
+                          ? 'Cannot delete system preset'
+                          : p.isDefault
+                            ? 'Cannot delete default personality — switch first'
+                            : `Delete personality ${p.name}`
                       }
                     >
                       <Trash2 className="w-4 h-4 sm:w-5 sm:h-5" />

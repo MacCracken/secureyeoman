@@ -569,6 +569,18 @@ export async function activatePersonality(id: string): Promise<{ personality: Pe
   return request(`/soul/personalities/${id}/activate`, { method: 'POST' });
 }
 
+export async function enablePersonality(id: string): Promise<void> {
+  await request(`/soul/personalities/${id}/enable`, { method: 'POST' });
+}
+
+export async function disablePersonality(id: string): Promise<void> {
+  await request(`/soul/personalities/${id}/disable`, { method: 'POST' });
+}
+
+export async function setDefaultPersonality(id: string): Promise<{ personality: Personality }> {
+  return request(`/soul/personalities/${id}/set-default`, { method: 'POST' });
+}
+
 export async function fetchSkills(params?: {
   status?: string;
   source?: string;

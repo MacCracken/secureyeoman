@@ -19,11 +19,6 @@
 | 48 | Machine Readable Org Intent | — | Planned |
 | 49 | AI Autonomy Level Audit | — | Planned |
 
----
-## Phase pre-41:
-
-- [ ] multi-active agents; default chat personality
-
 --
 ## Phase 41: Secrets Management
 

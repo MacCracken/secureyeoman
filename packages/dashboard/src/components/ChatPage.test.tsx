@@ -103,6 +103,8 @@ const defaultPersonality = {
   modelFallbacks: [] as Array<{ provider: string; model: string }>,
   includeArchetypes: true,
   isActive: true,
+  isDefault: true,
+  isArchetype: false,
   createdAt: Date.now(),
   updatedAt: Date.now(),
 };
@@ -338,6 +340,8 @@ describe('ChatPage', () => {
           modelFallbacks: [] as Array<{ provider: string; model: string }>,
           includeArchetypes: true,
           isActive: false,
+          isDefault: false,
+          isArchetype: false,
           createdAt: Date.now(),
           updatedAt: Date.now(),
                 },
