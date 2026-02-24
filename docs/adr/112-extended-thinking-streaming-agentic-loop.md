@@ -134,6 +134,38 @@ ThinkingPersonalityConfigSchema = z.object({
 
 ---
 
+### 6. Chat Message Phase Separation + Persistence (2026-02-24)
+
+Two follow-on improvements built on the SSE streaming infrastructure:
+
+#### Three-phase visual layout
+
+Assistant messages in `ChatPage` and `EditorPage` (both streaming and historical) are rendered in three visually distinct phases separated by `border-t` dividers:
+
+1. **Thinking** — `ThinkingBlock` (collapsible; auto-opens while streaming, collapses on completion).
+2. **Tools used** — `Wrench` icon section with grey tool-call badges + primary-coloured creation sparkle cards. Creation events are ordered before the response text to match execution order.
+3. **Response** — `ChatMarkdown` / streaming text.
+
+The `border-t` divider before Phase 3 fires when either `toolCalls` or `creationEvents` are present (previously only when `creationEvents` was non-empty).
+
+#### Tool call and thinking persistence
+
+Previously, animated tool-call badges and thinking content disappeared after streaming completed because they were held only in transient component state and never saved to the database. On conversation reload, historical messages showed neither.
+
+**Fix — client-side accumulation**: `completedToolCalls` is accumulated during streaming from `tool_start` / `mcp_tool_start` events and included in the `done`-event message stored in `messages` state. Historical messages restore these as grey (non-animated) badges.
+
+**Fix — database columns** (migration `039_message_thinking_tools.sql`):
+- `tool_calls_json JSONB` — stores the array of tool call objects on each assistant message row.
+- `thinking_content TEXT` — stores the concatenated thinking text (always present in the `done` SSE event but never previously written to the DB).
+
+Both columns are read on conversation load and surfaced to the client as part of the message history.
+
+#### `delegate_task` badge enrichment
+
+The `delegate_task` streaming badge now shows `"Delegation → {profile}: {task…}"` (first 50 characters of the task description) instead of the generic `"Delegation"` label, applied in the streaming path of `chat-routes.ts`.
+
+---
+
 ## Future Work
 
 - **Streaming for integration platforms** — Telegram, Discord, and Slack currently receive thinking as a static block in the final message. Progressive streaming (editing the message as chunks arrive) would require platform-specific polling or edit-message APIs.

@@ -210,6 +210,7 @@ export interface Personality {
       enabled?: boolean;
       budgetTokens?: number;
     };
+    maxPromptTokens?: number;
     resourcePolicy?: {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
@@ -291,6 +292,7 @@ export interface PersonalityCreate {
       enabled?: boolean;
       budgetTokens?: number;
     };
+    maxPromptTokens?: number;
     resourcePolicy?: {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';

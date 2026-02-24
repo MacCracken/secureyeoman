@@ -58,6 +58,33 @@
 - `040_personality_multi_active.sql` — `ALTER TABLE soul.personalities ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT false, ADD COLUMN IF NOT EXISTS is_archetype BOOLEAN NOT NULL DEFAULT false; UPDATE ... SET is_default = true WHERE is_active = true`
 - `039_message_thinking_tools.sql` — added to migration manifest (was previously implemented but omitted)
 
+### Dashboard — PersonalityEditor Multi-Active UI
+
+#### Changed
+
+- **Personality list card badges** — each card now shows a distinct set of status badges:
+  - `Active` (green) — personality is in the active set (`is_active`)
+  - `Default` (star, primary) — the new-chat / dashboard default (`is_default`)
+  - `Online` (pulsing green dot) — currently within active hours (`isWithinActiveHours`)
+  - `Preset` (muted) — system archetype, shown instead of allowing deletion (`isArchetype`)
+
+- **Action buttons replaced** — `CheckCircle2` activate button split into two independent controls:
+  - `Star` button — set a personality as default; filled/primary when already default
+  - `Power` button — toggle enable/disable for non-default personalities; grayed out (non-interactive) when personality is default (default is always on)
+
+- **Card highlight keyed to `isDefault`** — primary border + ring previously tracked `isActive`; now tracks `isDefault` to visually identify the dashboard personality.
+
+- **Editor form "Default personality" toggle** — replaces the old "Set as active personality on save" footer checkbox. For new personalities: sets `setActiveOnSave`; for existing: immediately calls `POST /set-default`. Editor header shows the personality's name (instead of generic "Edit Personality") and a star subtitle when editing the default.
+
+- **Delete button guards** — `disabled` condition updated from `isActive` to `isDefault || isArchetype`; tooltip and aria-label distinguish archetype ("System preset — cannot be deleted") from default ("Switch to another personality before deleting"). Archetype guard fires before deletion-mode check.
+
+- **`setActiveOnSave` reset on cancel** — clicking Cancel in the editor now resets the flag, preventing a stale "set active" intent from carrying over to the next opened personality.
+
+#### Added
+
+- `enablePersonality(id)`, `disablePersonality(id)`, `setDefaultPersonality(id)` — new API client functions in `packages/dashboard/src/api/client.ts`; wired to `useMutation` hooks in `PersonalityEditor`.
+- `isDefault`, `isArchetype`, `isWithinActiveHours` fields added to the `Personality` type in `packages/dashboard/src/types.ts`.
+
 ---
 
 ## [2026.2.23]

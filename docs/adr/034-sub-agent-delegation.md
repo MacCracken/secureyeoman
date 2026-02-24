@@ -138,6 +138,16 @@ agents:
       brainWriteScope: delegated # 'delegated' (tagged) or 'shared' (full access)
 ```
 
+### Token Budget Floor
+
+`SubAgentManager.delegate()` enforces a hard minimum floor of **20,000 tokens** regardless of the caller-supplied `maxTokenBudget`:
+
+```typescript
+const effectiveBudget = Math.max(20_000, Math.min(maxBudget, config.tokenBudget.max));
+```
+
+This floor was introduced after observing that AI models consistently chose very low `maxTokenBudget` values (8,000–10,000) based on misleading tool-description guidance, causing premature task termination on nearly every delegation. The `delegate_task` tool description was also updated: it now states "Leave unset (strongly recommended) — most tasks require 30,000–80,000 tokens to complete properly; values below 20,000 almost always cause premature termination."
+
 ## Consequences
 
 ### Positive

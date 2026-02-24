@@ -179,6 +179,12 @@ export const BodyConfigSchema = z
     activeHours: PersonalityActiveHoursSchema.default({}),
     thinkingConfig: ThinkingPersonalityConfigSchema,
     resourcePolicy: ResourcePolicySchema.optional(),
+    /**
+     * Per-personality prompt token budget override.
+     * When set, replaces the global maxPromptTokens for this soul's system prompt composition.
+     * Stored in the existing body JSONB column — no DB migration required.
+     */
+    maxPromptTokens: z.number().int().min(1024).max(32000).optional(),
   })
   .default({});
 

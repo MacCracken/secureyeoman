@@ -79,5 +79,6 @@ The new preset routes are registered **before** the generic `POST /api/v1/soul/p
 
 - Users can select T.Ron (or FRIDAY) from a personality picker in the dashboard without providing any configuration.
 - New presets are added in `presets.ts` only — no migration, no database change, no route change required.
-- Presets are not enforced; once instantiated the personality is a regular DB row and can be freely edited.
+- **Archetype protection** — personalities created by `seedAvailablePresets()` and `createDefaultPersonality()` are stored with `is_archetype = true` (ADR 125). Deletion is blocked at both the storage layer and manager layer regardless of deletion mode. Operators cannot accidentally destroy the built-in presets; they can still create and delete their own copies. The `POST presets/:id/instantiate` endpoint creates a normal personality without archetype protection — only seeded defaults are protected.
+- Presets are otherwise not enforced; once instantiated the personality is a regular DB row and can be freely edited.
 - The FRIDAY preset duplicates the onboarding default data. This is intentional — presets are the canonical source for new personality instantiation; the onboarding path will be updated to use `createPersonalityFromPreset('friday')` in a follow-up.

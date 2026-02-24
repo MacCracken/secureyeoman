@@ -252,18 +252,27 @@ When the active personality has `body.thinkingConfig.enabled = true` and the pro
 **Location**: `packages/core/src/soul/`
 
 **Responsibilities**:
-- Personality management (create, switch, update, delete active personality)
+- Personality management (create, enable/disable, set-default, update, delete)
 - Prompt composition following the "In Our Image" hierarchy (Soul > Spirit > Brain > Body > Heart)
 - Sacred archetypes cosmological preamble
 - User profile and owner context injection
 - Skill management (delegated to Brain when available)
 - AI-driven resource creation/deletion via capability-gated `creationConfig` tools
 
-The active personality is the sole source of identity in the composed prompt. The agent name is stored separately for display purposes but is not injected into the system prompt — the personality's own `name` and `systemPrompt` fields define the complete identity.
+**Multi-active personality model** (ADR 125) — multiple personalities may run simultaneously. Three personality flags govern lifecycle:
 
-**Personality deletion guards** — two independent protections apply before `SoulStorage.deletePersonality()` is ever called:
-1. **Active personality guard** — `SoulManager.deletePersonality()` throws if the target personality is currently active.
-2. **`deletionProtected` flag** — `SoulManager.deletePersonality()` throws if `personality.deletionProtected` is `true`. Set via the "Protected from deletion" toggle in the dashboard (or the REST API). Applies to UI, REST API, and AI tool calls equally.
+| Flag | Type | Exclusive | Description |
+|------|------|-----------|-------------|
+| `isActive` | `boolean` | No | Personality's heartbeat and proactive checks run; can be toggled independently per personality |
+| `isDefault` | `boolean` | Yes | Used for new chats, `GET /soul/personality`, and the HeartbeatManager schedule; exactly one personality holds this flag |
+| `isArchetype` | `boolean` | — | System preset seeded at startup; deletion permanently blocked |
+
+The default personality is the sole source of identity in the composed prompt for new chat sessions. The agent name is stored separately for display purposes but is not injected into the system prompt — the personality's own `name` and `systemPrompt` fields define the complete identity.
+
+**Personality deletion guards** — three independent protections apply before `SoulStorage.deletePersonality()` is ever called:
+1. **Archetype guard** — `SoulManager.deletePersonality()` throws `"Cannot delete a system archetype personality."` if `isArchetype = true`.
+2. **Default personality guard** — throws if the target personality is the current default (`isDefault = true`).
+3. **`deletionProtected` flag** — throws if `personality.deletionProtected` is `true`. Set via the "Protected from deletion" toggle in the dashboard (or the REST API).
 
 **AI self-deletion guard** — when the AI invokes `delete_personality`, `creation-tool-executor.ts` compares the target ID against the calling personality's context ID. A personality cannot delete itself; this check is in the executor (not the manager) because only the executor has the calling context.
 

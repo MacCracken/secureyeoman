@@ -888,21 +888,32 @@ Update agent name.
 
 #### GET /api/v1/soul/personality
 
-Get active personality.
+Get the default personality (the one used for new chats and the dashboard).
 
 **Required Permissions**: `soul.read`
 
 **Response**
 ```json
 {
-  "id": "personality_123",
-  "name": "FRIDAY",
-  "description": "Friendly and helpful assistant",
-  "system_prompt": "You are a helpful assistant...",
-  "traits": ["friendly", "helpful"],
-  "active": true
+  "personality": {
+    "id": "personality_123",
+    "name": "FRIDAY",
+    "description": "Friendly and helpful assistant",
+    "isActive": true,
+    "isDefault": true,
+    "isArchetype": true,
+    "isWithinActiveHours": true,
+    "createdAt": "2026-02-01T00:00:00.000Z"
+  }
 }
 ```
+
+| Field | Description |
+|-------|-------------|
+| `isActive` | Personality is in the active (running) set — heartbeat and proactive checks run |
+| `isDefault` | Exclusive flag — this personality is used for new chats and the dashboard default |
+| `isArchetype` | System preset seeded at startup; deletion is blocked |
+| `isWithinActiveHours` | Computed at response time — `true` if current time falls within the personality's `body.activeHours` window (or `false` if active hours are disabled) |
 
 #### GET /api/v1/soul/personalities
 
@@ -918,11 +929,127 @@ List all personalities.
       "id": "personality_123",
       "name": "FRIDAY",
       "description": "Friendly and helpful assistant",
-      "active": true
+      "isActive": true,
+      "isDefault": true,
+      "isArchetype": true,
+      "isWithinActiveHours": true,
+      "createdAt": "2026-02-01T00:00:00.000Z"
+    },
+    {
+      "id": "personality_456",
+      "name": "T.Ron",
+      "description": "Tactical Response & Operations Network",
+      "isActive": true,
+      "isDefault": false,
+      "isArchetype": true,
+      "isWithinActiveHours": true,
+      "createdAt": "2026-02-01T00:00:00.000Z"
     }
   ]
 }
 ```
+
+#### GET /api/v1/soul/personalities/:id
+
+Get a single personality by ID.
+
+**Required Permissions**: `soul.read`
+
+**Response** — same shape as a single element from `GET /api/v1/soul/personalities`.
+
+**Error Responses**
+- `404 Not Found` — personality not found
+
+#### PUT /api/v1/soul/personalities/:id
+
+Update a personality. All fields are optional; only supplied fields are changed.
+
+**Required Permissions**: `soul.write`
+
+**Request Body** — any subset of the `POST /api/v1/soul/personalities` fields.
+
+**Response** `200 OK`
+```json
+{
+  "personality": { "id": "...", "name": "...", "..." : "..." }
+}
+```
+
+**Error Responses**
+- `404 Not Found` — personality not found
+
+#### DELETE /api/v1/soul/personalities/:id
+
+Delete a personality.
+
+**Required Permissions**: `soul.write`
+
+**Response** `204 No Content`
+
+**Error Responses**
+- `400 Bad Request` — personality is the current default (`isDefault = true`) or a system archetype (`isArchetype = true`)
+- `404 Not Found` — personality not found
+
+#### POST /api/v1/soul/personalities/:id/activate
+
+Set a personality as the default (alias for `set-default`; kept for backwards compatibility).
+
+**Required Permissions**: `soul.write`
+
+**Response** `200 OK`
+```json
+{
+  "personality": { "id": "...", "isDefault": true, "isWithinActiveHours": true, "..." : "..." }
+}
+```
+
+#### POST /api/v1/soul/personalities/:id/enable
+
+Add a personality to the active (running) set without affecting the default or any other personality.
+
+**Required Permissions**: `soul.write`
+
+**Response** `200 OK`
+```json
+{
+  "personality": { "id": "...", "isActive": true, "isDefault": false, "..." : "..." }
+}
+```
+
+**Error Responses**
+- `404 Not Found` — personality not found
+
+#### POST /api/v1/soul/personalities/:id/disable
+
+Remove a personality from the active set. Has no effect if the personality is the default (`isDefault = true`; the default is always considered active).
+
+**Required Permissions**: `soul.write`
+
+**Response** `200 OK`
+```json
+{
+  "personality": { "id": "...", "isActive": false, "isDefault": false, "..." : "..." }
+}
+```
+
+**Error Responses**
+- `404 Not Found` — personality not found
+
+#### POST /api/v1/soul/personalities/:id/set-default
+
+Atomically move the exclusive `isDefault` flag to this personality. Also pushes the new personality's active-hours schedule to the HeartbeatManager.
+
+**Required Permissions**: `soul.write`
+
+**Response** `200 OK`
+```json
+{
+  "personality": { "id": "...", "isDefault": true, "isWithinActiveHours": true, "..." : "..." }
+}
+```
+
+**Error Responses**
+- `404 Not Found` — personality not found
 
 #### POST /api/v1/soul/personalities
 

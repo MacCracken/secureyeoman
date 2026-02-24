@@ -62,7 +62,7 @@ A new "Active Hours — Brain Schedule" CollapsibleSection is added inside `Body
 
 - **Up to one beat may fire late into a rest window** — The heartbeat polls every 30 s (configurable). A schedule change takes effect on the next call to `beat()`, so up to one beat can fire after the rest window begins.
 - **UTC-only enforcement** — The `timezone` field is stored and displayed but enforcement currently uses UTC arithmetic (matching the existing `shouldRunAccordingToSchedule` implementation). A future ADR can add proper tz conversion via `Temporal` or `date-fns-tz`.
-- **Single active personality** — The push model assumes one active personality at a time, which matches the current architecture. Swarm or multi-active scenarios would require a different approach.
+- **Single schedule in multi-active scenarios** — `setPersonalitySchedule()` pushes only the default personality's schedule (ADR 125). When multiple personalities are active simultaneously, each personality's heartbeat runs against the default's schedule rather than its own. Fanning out beats per enabled personality is deferred to a future enhancement.
 
 ---
 

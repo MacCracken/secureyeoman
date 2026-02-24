@@ -57,6 +57,7 @@ import {
   fetchSkills,
   fetchMcpConfig,
   fetchSecurityPolicy,
+  fetchSoulConfig,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import { useCollabEditor } from '../hooks/useCollabEditor.js';
@@ -439,6 +440,9 @@ function BrainSection({
   onActiveHoursChange,
   thinkingConfig,
   onThinkingConfigChange,
+  maxPromptTokens,
+  onMaxPromptTokensChange,
+  globalMaxPromptTokens,
 }: {
   personalityId: string | null;
   activeHours: {
@@ -457,6 +461,9 @@ function BrainSection({
   }) => void;
   thinkingConfig: { enabled: boolean; budgetTokens: number };
   onThinkingConfigChange: (config: { enabled: boolean; budgetTokens: number }) => void;
+  maxPromptTokens: number | null;
+  onMaxPromptTokensChange: (value: number | null) => void;
+  globalMaxPromptTokens: number;
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -1012,6 +1019,53 @@ function BrainSection({
                 </select>
               </div>
             </div>
+          )}
+        </div>
+      </CollapsibleSection>
+
+      {/* Prompt budget */}
+      <CollapsibleSection title="Prompt Budget" defaultOpen={false}>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Controls how many tokens are reserved for this soul's composed system prompt (identity,
+            skills, context). Overrides the global server default when set.
+          </p>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={maxPromptTokens !== null}
+              onChange={(e) => {
+                onMaxPromptTokensChange(e.target.checked ? globalMaxPromptTokens : null);
+              }}
+              className="rounded border-muted-foreground"
+            />
+            <span className="text-sm">Override global prompt budget</span>
+          </label>
+          {maxPromptTokens !== null ? (
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground block">
+                Budget: {maxPromptTokens.toLocaleString()} tokens
+              </label>
+              <input
+                type="range"
+                min={1024}
+                max={32000}
+                step={256}
+                value={maxPromptTokens}
+                onChange={(e) => {
+                  onMaxPromptTokensChange(Number(e.target.value));
+                }}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>1,024</span>
+                <span>32,000</span>
+              </div>
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Using global default ({globalMaxPromptTokens.toLocaleString()} tokens)
+            </p>
           )}
         </div>
       </CollapsibleSection>
@@ -2530,6 +2584,7 @@ export function PersonalityEditor() {
   });
 
   const [thinkingConfig, setThinkingConfig] = useState({ enabled: false, budgetTokens: 10000 });
+  const [maxPromptTokens, setMaxPromptTokens] = useState<number | null>(null);
 
   const [resourcePolicy, setResourcePolicy] = useState<{
     deletionMode: 'auto' | 'request' | 'manual';
@@ -2563,6 +2618,11 @@ export function PersonalityEditor() {
   const { data: modelData } = useQuery({
     queryKey: ['modelInfo'],
     queryFn: fetchModelInfo,
+  });
+
+  const { data: soulConfig } = useQuery({
+    queryKey: ['soulConfig'],
+    queryFn: fetchSoulConfig,
   });
 
   const personalities = personalitiesData?.personalities ?? [];
@@ -2744,6 +2804,7 @@ export function PersonalityEditor() {
       enabled: body.thinkingConfig?.enabled ?? false,
       budgetTokens: body.thinkingConfig?.budgetTokens ?? 10000,
     });
+    setMaxPromptTokens(body.maxPromptTokens ?? null);
     setSetActiveOnSave(false);
     setEditing(p.id);
   };
@@ -2835,6 +2896,7 @@ export function PersonalityEditor() {
       timezone: 'UTC',
     });
     setThinkingConfig({ enabled: false, budgetTokens: 10000 });
+    setMaxPromptTokens(null);
     setResourcePolicy({ deletionMode: 'auto', automationLevel: 'supervised_auto', emergencyStop: false });
     setSetActiveOnSave(false);
     setEditing('new');
@@ -2858,6 +2920,7 @@ export function PersonalityEditor() {
         proactiveConfig,
         activeHours,
         thinkingConfig,
+        ...(maxPromptTokens !== null ? { maxPromptTokens } : {}),
         resourcePolicy,
       },
     };
@@ -3337,6 +3400,9 @@ export function PersonalityEditor() {
             onActiveHoursChange={setActiveHours}
             thinkingConfig={thinkingConfig}
             onThinkingConfigChange={setThinkingConfig}
+            maxPromptTokens={maxPromptTokens}
+            onMaxPromptTokensChange={setMaxPromptTokens}
+            globalMaxPromptTokens={soulConfig?.maxPromptTokens ?? 16000}
           />
 
           {/* Body Section */}

@@ -855,8 +855,9 @@ export class SoulManager {
       ? await this.brain.getActiveSkills(personality?.id ?? null)
       : await this.storage.getEnabledSkills();
 
-    // Token cap: estimate ~4 chars per token
-    const maxChars = this.config.maxPromptTokens * 4;
+    // Token cap: per-personality override takes precedence over global config
+    const tokenBudget = personality?.body?.maxPromptTokens ?? this.config.maxPromptTokens;
+    const maxChars = tokenBudget * 4;
 
     if (skills.length > 0) {
       // Always include a compact catalog so the AI knows what skills are available
