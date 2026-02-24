@@ -58,6 +58,17 @@ export default defineConfig({
       '/ws': {
         target: GATEWAY_URL.replace('http', 'ws'),
         ws: true,
+        configure: (proxy) => {
+          // Suppress transient ECONNREFUSED / ENOTFOUND errors that occur while
+          // the core container is starting up or being recreated.  Any other
+          // error (unexpected protocol issues, etc.) is still logged.
+          proxy.on('error', (err) => {
+            const code = (err as NodeJS.ErrnoException).code ?? '';
+            if (!['ECONNREFUSED', 'ENOTFOUND', 'ECONNRESET'].includes(code)) {
+              console.error('[vite proxy /ws] error:', err.message);
+            }
+          });
+        },
       },
     },
   },
