@@ -12,9 +12,15 @@ import { createSoulConfig } from '../test/mocks';
 // (SecuritySettings, RolesSettings, ApiKeysSettings, etc.) import.
 vi.mock('../api/client', () => ({
   fetchSoulConfig: vi.fn(),
+  updateSoulConfig: vi.fn(),
   fetchMcpServers: vi.fn(),
   fetchAuditStats: vi.fn(),
   fetchMetrics: vi.fn(),
+  fetchPersonalities: vi.fn(),
+  enablePersonality: vi.fn(),
+  disablePersonality: vi.fn(),
+  setDefaultPersonality: vi.fn(),
+  clearDefaultPersonality: vi.fn(),
   fetchRoles: vi.fn(),
   createRole: vi.fn(),
   updateRole: vi.fn(),
@@ -39,6 +45,7 @@ const mockFetchSoulConfig = vi.mocked(api.fetchSoulConfig);
 const mockFetchMcpServers = vi.mocked(api.fetchMcpServers);
 const mockFetchAuditStats = vi.mocked(api.fetchAuditStats);
 const mockFetchMetrics = vi.mocked(api.fetchMetrics);
+const mockFetchPersonalities = vi.mocked(api.fetchPersonalities);
 const mockFetchRoles = vi.mocked(api.fetchRoles);
 const mockFetchAssignments = vi.mocked(api.fetchAssignments);
 const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
@@ -78,6 +85,7 @@ describe('SettingsPage', () => {
       lastVerification: Date.now(),
     });
     mockFetchMetrics.mockResolvedValue({} as never);
+    mockFetchPersonalities.mockResolvedValue({ personalities: [] });
     mockFetchRoles.mockResolvedValue({ roles: [] });
     mockFetchAssignments.mockResolvedValue({ assignments: [] });
     mockFetchUsers.mockResolvedValue({ users: [] });

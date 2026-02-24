@@ -191,6 +191,11 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
     }
   );
 
+  app.post('/api/v1/soul/personalities/clear-default', async () => {
+    await soulManager.clearDefaultPersonality();
+    return { success: true };
+  });
+
   // ── Personality Presets ─────────────────────────────────────
 
   app.get('/api/v1/soul/personalities/presets', async () => {

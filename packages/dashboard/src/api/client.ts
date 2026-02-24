@@ -581,6 +581,10 @@ export async function setDefaultPersonality(id: string): Promise<{ personality: 
   return request(`/soul/personalities/${id}/set-default`, { method: 'POST' });
 }
 
+export async function clearDefaultPersonality(): Promise<{ success: boolean }> {
+  return request('/soul/personalities/clear-default', { method: 'POST' });
+}
+
 export async function fetchSkills(params?: {
   status?: string;
   source?: string;

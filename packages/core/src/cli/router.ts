@@ -21,8 +21,22 @@ export interface ResolvedCommand {
   rest: string[];
 }
 
+/**
+ * A lazily-loaded command. Only the metadata (name, aliases, description,
+ * usage) is required upfront; the real Command module is imported on demand
+ * when the command is first invoked.
+ */
+export interface LazyCommand {
+  name: string;
+  aliases?: string[];
+  description: string;
+  usage: string;
+  loader: () => Promise<Command>;
+}
+
 export interface Router {
   register(cmd: Command): void;
+  registerLazy(lazy: LazyCommand): void;
   resolve(argv: string[]): ResolvedCommand;
   getCommands(): Command[];
   printHelp(stderr: NodeJS.WritableStream): void;
@@ -39,6 +53,21 @@ export function createRouter(defaultCommand = 'start'): Router {
         aliases.set(alias, cmd.name);
       }
     }
+  }
+
+  function registerLazy(lazy: LazyCommand): void {
+    // Build a thin wrapper whose run() loads the real module on first call.
+    const wrapper: Command = {
+      name: lazy.name,
+      aliases: lazy.aliases,
+      description: lazy.description,
+      usage: lazy.usage,
+      async run(ctx) {
+        const cmd = await lazy.loader();
+        return cmd.run(ctx);
+      },
+    };
+    register(wrapper);
   }
 
   function resolve(argv: string[]): ResolvedCommand {
@@ -113,5 +142,5 @@ export function createRouter(defaultCommand = 'start'): Router {
     stream.write(lines.join('\n'));
   }
 
-  return { register, resolve, getCommands, printHelp };
+  return { register, registerLazy, resolve, getCommands, printHelp };
 }

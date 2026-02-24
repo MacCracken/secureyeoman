@@ -3,9 +3,7 @@
  */
 
 import type { Command } from '../router.js';
-import { extractFlag, extractBoolFlag, formatTable, apiCall } from '../utils.js';
-
-const DEFAULT_URL = 'http://localhost:18789/api/v1';
+import { extractFlag, extractBoolFlag, formatTable, apiCall, defaultBaseUrl } from '../utils.js';
 
 export const roleCommand: Command = {
   name: 'role',
@@ -23,14 +21,14 @@ export const roleCommand: Command = {
     // Extract common flags
     const { value: baseUrl, rest: a1 } = extractFlag(argv, 'url');
     const { value: jsonFlag, rest: a2 } = extractBoolFlag(a1, 'json');
-    const url = baseUrl ?? DEFAULT_URL;
+    const url = baseUrl ?? defaultBaseUrl();
 
     const action = a2[0] ?? 'list';
     const restArgs = a2.slice(1);
 
     switch (action) {
       case 'list': {
-        const { ok, data } = await apiCall(url, '/auth/roles');
+        const { ok, data } = await apiCall(url, '/api/v1/auth/roles');
         if (!ok) {
           stderr.write(`Error: ${JSON.stringify(data)}\n`);
           return 1;
@@ -80,7 +78,7 @@ export const roleCommand: Command = {
               .filter(Boolean)
           : undefined;
 
-        const { ok, data } = await apiCall(url, '/auth/roles', {
+        const { ok, data } = await apiCall(url, '/api/v1/auth/roles', {
           method: 'POST',
           body: { name, description, permissions, inheritFrom },
         });
@@ -101,7 +99,7 @@ export const roleCommand: Command = {
           return 1;
         }
 
-        const { ok, data } = await apiCall(url, `/auth/roles/${encodeURIComponent(roleId)}`, {
+        const { ok, data } = await apiCall(url, `/api/v1/auth/roles/${encodeURIComponent(roleId)}`, {
           method: 'DELETE',
         });
         if (!ok) {
@@ -125,7 +123,7 @@ export const roleCommand: Command = {
           return 1;
         }
 
-        const { ok, data } = await apiCall(url, '/auth/assignments', {
+        const { ok, data } = await apiCall(url, '/api/v1/auth/assignments', {
           method: 'POST',
           body: { userId, roleId },
         });
@@ -144,7 +142,7 @@ export const roleCommand: Command = {
           return 1;
         }
 
-        const { ok, data } = await apiCall(url, `/auth/assignments/${encodeURIComponent(userId)}`, {
+        const { ok, data } = await apiCall(url, `/api/v1/auth/assignments/${encodeURIComponent(userId)}`, {
           method: 'DELETE',
         });
         if (!ok) {
@@ -156,7 +154,7 @@ export const roleCommand: Command = {
       }
 
       case 'assignments': {
-        const { ok, data } = await apiCall(url, '/auth/assignments');
+        const { ok, data } = await apiCall(url, '/api/v1/auth/assignments');
         if (!ok) {
           stderr.write(`Error: ${JSON.stringify(data)}\n`);
           return 1;

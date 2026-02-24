@@ -5,6 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import { PersonalityEditor } from './PersonalityEditor';
+import { createSoulConfig } from '../test/mocks';
 
 // ── Capture navigate calls ──────────────────────────────────────────
 
@@ -25,6 +26,10 @@ vi.mock('../api/client', () => ({
   updatePersonality: vi.fn(),
   deletePersonality: vi.fn(),
   activatePersonality: vi.fn(),
+  enablePersonality: vi.fn(),
+  disablePersonality: vi.fn(),
+  setDefaultPersonality: vi.fn(),
+  clearDefaultPersonality: vi.fn(),
   fetchPromptPreview: vi.fn(),
   fetchModelInfo: vi.fn(),
   fetchPassions: vi.fn(),
@@ -49,6 +54,7 @@ vi.mock('../api/client', () => ({
   fetchSkills: vi.fn(),
   fetchMcpConfig: vi.fn(),
   fetchSecurityPolicy: vi.fn(),
+  fetchSoulConfig: vi.fn(),
   getAccessToken: vi.fn().mockReturnValue(null),
 }));
 
@@ -78,6 +84,9 @@ const mockFetchKnowledge = vi.mocked(api.fetchKnowledge);
 const mockFetchExternalSyncStatus = vi.mocked(api.fetchExternalSyncStatus);
 const mockFetchExternalBrainConfig = vi.mocked(api.fetchExternalBrainConfig);
 const mockFetchPassions = vi.mocked(api.fetchPassions);
+const mockFetchSoulConfig = vi.mocked(api.fetchSoulConfig);
+const mockSetDefaultPersonality = vi.mocked(api.setDefaultPersonality);
+const mockClearDefaultPersonality = vi.mocked(api.clearDefaultPersonality);
 const mockFetchInspirations = vi.mocked(api.fetchInspirations);
 const mockFetchPains = vi.mocked(api.fetchPains);
 const mockFetchHeartbeatTasks = vi.mocked(api.fetchHeartbeatTasks);
@@ -163,6 +172,9 @@ beforeEach(() => {
   vi.resetAllMocks();
   mockNavigate.mockReset();
   mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+  mockFetchSoulConfig.mockResolvedValue(createSoulConfig());
+  mockSetDefaultPersonality.mockResolvedValue({ personality: MOCK_PERSONALITY as never });
+  mockClearDefaultPersonality.mockResolvedValue({ success: true });
   mockFetchSkills.mockResolvedValue({ skills: [] });
   mockFetchKnowledge.mockResolvedValue({ knowledge: [] });
   mockFetchExternalSyncStatus.mockResolvedValue({ configured: false });
@@ -482,5 +494,59 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
 
     const swarmsToggle = await screen.findByRole('checkbox', { name: /agent swarms/i });
     expect(swarmsToggle).not.toBeChecked();
+  });
+});
+
+// ── Default personality toggle ──────────────────────────────────────
+
+describe('PersonalityEditor — default personality toggle', () => {
+  it('default toggle is unchecked and enabled for a non-default personality', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const toggle = await screen.findByRole('checkbox', { name: /default personality/i });
+    expect(toggle).not.toBeChecked();
+    expect(toggle).not.toBeDisabled();
+  });
+
+  it('default toggle is checked and enabled for a default personality (can be unchecked)', async () => {
+    const defaultPersonality = { ...MOCK_PERSONALITY, isDefault: true };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [defaultPersonality] });
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${defaultPersonality.name}`);
+    await user.click(editBtn);
+
+    const toggle = await screen.findByRole('checkbox', { name: /default personality/i });
+    expect(toggle).toBeChecked();
+    expect(toggle).not.toBeDisabled();
+  });
+
+  it('unchecking default toggle calls clearDefaultPersonality', async () => {
+    const defaultPersonality = { ...MOCK_PERSONALITY, isDefault: true };
+    mockFetchPersonalities.mockResolvedValue({ personalities: [defaultPersonality] });
+    mockFetchPersonalities.mockResolvedValue({ personalities: [{ ...defaultPersonality, isDefault: false }] });
+    mockClearDefaultPersonality.mockResolvedValue({ success: true });
+    const user = userEvent.setup();
+    renderComponent();
+
+    // Re-mock to return the default personality for the initial render
+    mockFetchPersonalities.mockResolvedValue({ personalities: [defaultPersonality] });
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${defaultPersonality.name}`);
+    await user.click(editBtn);
+
+    const toggle = await screen.findByRole('checkbox', { name: /default personality/i });
+    await user.click(toggle);
+
+    await waitFor(() => {
+      expect(mockClearDefaultPersonality).toHaveBeenCalled();
+    });
   });
 });

@@ -1,3 +1,21 @@
+## [2026.2.24+3]
+
+### CLI — Lazy Loading, Env-Var URL, and Route Fix
+
+#### Changed
+
+- **All CLI commands now lazy-loaded** — `cli.ts` previously imported all 25+ command modules at startup, pulling in the entire application (including `createSecureYeoman`, `TuiRenderer`, browser automation, etc.) regardless of which command was invoked. Commands are now registered with `router.registerLazy()` and their module is only `import()`-ed when that specific command runs. Running lightweight commands like `secureyeoman health` or `secureyeoman status` no longer loads the full gateway stack.
+
+- **`router.ts` — `LazyCommand` interface + `registerLazy()` method** — the router now accepts lazy command registrations that carry only metadata (name, aliases, description, usage). A thin wrapper `Command` is stored in the registry; the real module is imported on first `.run()` call.
+
+- **`defaultBaseUrl()` helper in `cli/utils.ts`** — all commands can now read the `SECUREYEOMAN_URL` environment variable as the default server address instead of using the hardcoded `http://127.0.0.1:3000`. Useful for scripting against non-default hosts without passing `--url` on every invocation.
+
+#### Fixed
+
+- **`role` command — inconsistent base URL** — `role.ts` was using `http://localhost:18789/api/v1` as its base URL (port 18789, with the `/api/v1` path prefix baked in), differing from every other command (port 3000, root base). All `apiCall` paths have been updated to include the full `/api/v1/` prefix and the command now uses `defaultBaseUrl()` for consistency.
+
+---
+
 ## [2026.2.24+2]
 
 ### Settings — UI Polish and Container Fix

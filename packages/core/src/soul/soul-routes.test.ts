@@ -57,6 +57,7 @@ function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
     enablePersonality: vi.fn().mockResolvedValue(undefined),
     disablePersonality: vi.fn().mockResolvedValue(undefined),
     setDefaultPersonality: vi.fn().mockResolvedValue(undefined),
+    clearDefaultPersonality: vi.fn().mockResolvedValue(undefined),
     getEnabledPersonalities: vi.fn().mockResolvedValue([PERSONALITY]),
     ...overrides,
   } as unknown as SoulManager;
@@ -672,6 +673,20 @@ describe('POST /api/v1/soul/personalities/:id/set-default', () => {
       url: '/api/v1/soul/personalities/missing/set-default',
     });
     expect(res.statusCode).toBe(404);
+  });
+});
+
+describe('POST /api/v1/soul/personalities/clear-default', () => {
+  it('clears the default personality and returns success', async () => {
+    const clearMock = vi.fn().mockResolvedValue(undefined);
+    const app = buildApp({ clearDefaultPersonality: clearMock });
+    const res = await app.inject({
+      method: 'POST',
+      url: '/api/v1/soul/personalities/clear-default',
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().success).toBe(true);
+    expect(clearMock).toHaveBeenCalled();
   });
 });
 

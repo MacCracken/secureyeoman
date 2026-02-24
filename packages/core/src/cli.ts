@@ -2,13 +2,16 @@
 /**
  * SecureYeoman CLI — Modular command router entry point.
  *
+ * Commands are registered lazily: their module is only imported when that
+ * command is actually invoked, keeping startup memory low.
+ *
  * Usage:
  *   secureyeoman                      # Start with defaults
  *   secureyeoman start --port 3001    # Custom port
  *   secureyeoman health               # Health check
  *   secureyeoman status               # Server overview
- *   secureyeoman init                 # Interactive onboarding (Phase 18)
- *   secureyeoman config               # Show config
+ *   secureyeoman init                 # Interactive onboarding
+ *   secureyeoman config               # Validate config / check secrets
  *   secureyeoman integration          # Manage integrations
  *   secureyeoman role                 # Manage RBAC roles & assignments
  *   secureyeoman extension            # Manage lifecycle hooks
@@ -19,75 +22,238 @@
  *   secureyeoman memory               # Vector memory operations
  *   secureyeoman scraper              # Web scraper configuration
  *   secureyeoman multimodal           # Multimodal I/O operations
- *   secureyeoman model                # AI model management (info, list, switch, default)
- *   secureyeoman policy               # Security policy management (get, set, dynamic-tools)
- *   secureyeoman completion           # Generate shell completion scripts (bash, zsh, fish)
- *   secureyeoman plugin               # Manage integration plugins (list, info, add, remove)
- *   secureyeoman security             # Manage Kali security toolkit container (setup, teardown, update, status)
- *   secureyeoman mcp-quickbooks       # Manage QuickBooks Online MCP toolset (status, enable, disable)
- *   secureyeoman agnostic             # Manage Agnostic QA sub-agent team Docker Compose stack (start, stop, status, logs, pull)
- *   secureyeoman tui                  # Full-screen terminal dashboard (status, chat, memory)
+ *   secureyeoman model                # AI model management
+ *   secureyeoman policy               # Security policy management
+ *   secureyeoman completion           # Generate shell completion scripts
+ *   secureyeoman plugin               # Manage integration plugins
+ *   secureyeoman security             # Manage Kali security toolkit container
+ *   secureyeoman mcp-server           # Start the MCP server
+ *   secureyeoman mcp-quickbooks       # Manage QuickBooks Online MCP toolset
+ *   secureyeoman agnostic             # Manage Agnostic QA Docker Compose stack
+ *   secureyeoman tui                  # Full-screen terminal dashboard
+ *   secureyeoman agents               # View/toggle agent feature flags
+ *   secureyeoman migrate              # Run database migrations
  */
 
 import { createRouter } from './cli/router.js';
-import { startCommand } from './cli/commands/start.js';
-import { healthCommand } from './cli/commands/health.js';
-import { configCommand } from './cli/commands/config.js';
-import { integrationCommand } from './cli/commands/integration.js';
-import { replCommand } from './cli/commands/repl.js';
-import { initCommand } from './cli/commands/init.js';
-import { statusCommand } from './cli/commands/status.js';
-import { roleCommand } from './cli/commands/role.js';
-import { extensionCommand } from './cli/commands/extension.js';
-import { executeCommand } from './cli/commands/execute.js';
-import { a2aCommand } from './cli/commands/a2a.js';
-import { browserCommand } from './cli/commands/browser.js';
-import { memoryCommand } from './cli/commands/memory.js';
-import { scraperCommand } from './cli/commands/scraper.js';
-import { multimodalCommand } from './cli/commands/multimodal.js';
-import { modelCommand } from './cli/commands/model.js';
-import { policyCommand } from './cli/commands/policy.js';
-import { completionCommand } from './cli/commands/completion.js';
-import { pluginCommand } from './cli/commands/plugin.js';
-import { mcpServerCommand } from './cli/commands/mcp-server.js';
-import { migrateCommand } from './cli/commands/migrate.js';
-import { securityCommand } from './cli/commands/security.js';
-import { mcpQuickbooksCommand } from './cli/commands/mcp-quickbooks.js';
-import { agnosticCommand } from './cli/commands/agnostic.js';
-import { tuiCommand } from './cli/commands/tui.js';
-import { agentsCommand } from './cli/commands/agents.js';
 
 const router = createRouter('start');
 
-// Register all commands
-router.register(startCommand);
-router.register(healthCommand);
-router.register(configCommand);
-router.register(integrationCommand);
-router.register(replCommand);
-router.register(initCommand);
-router.register(statusCommand);
-router.register(roleCommand);
-router.register(extensionCommand);
-router.register(executeCommand);
-router.register(a2aCommand);
-router.register(browserCommand);
-router.register(memoryCommand);
-router.register(scraperCommand);
-router.register(multimodalCommand);
-router.register(modelCommand);
-router.register(policyCommand);
-router.register(completionCommand);
-router.register(pluginCommand);
-router.register(mcpServerCommand);
-router.register(migrateCommand);
-router.register(securityCommand);
-router.register(mcpQuickbooksCommand);
-router.register(agnosticCommand);
-router.register(tuiCommand);
-router.register(agentsCommand);
+// ── Lazily-registered commands ─────────────────────────────────────────────
+// Each entry holds only lightweight metadata. The actual module (and all its
+// transitive imports) is loaded by Node.js only when the command is invoked.
 
-// Help command
+router.registerLazy({
+  name: 'start',
+  description: 'Start the gateway server (default)',
+  usage: 'secureyeoman [start] [options]',
+  loader: () => import('./cli/commands/start.js').then((m) => m.startCommand),
+});
+
+router.registerLazy({
+  name: 'health',
+  description: 'Check health of a running instance',
+  usage: 'secureyeoman health [--url URL] [--json]',
+  loader: () => import('./cli/commands/health.js').then((m) => m.healthCommand),
+});
+
+router.registerLazy({
+  name: 'status',
+  description: 'Show server status overview',
+  usage: 'secureyeoman status [--url URL] [--json]',
+  loader: () => import('./cli/commands/status.js').then((m) => m.statusCommand),
+});
+
+router.registerLazy({
+  name: 'config',
+  aliases: ['cfg'],
+  description: 'Validate configuration and check secrets',
+  usage: 'secureyeoman config [validate] [--config PATH]',
+  loader: () => import('./cli/commands/config.js').then((m) => m.configCommand),
+});
+
+router.registerLazy({
+  name: 'init',
+  description: 'Interactive onboarding wizard',
+  usage: 'secureyeoman init [--url URL] [--non-interactive] [--env-only]',
+  loader: () => import('./cli/commands/init.js').then((m) => m.initCommand),
+});
+
+router.registerLazy({
+  name: 'integration',
+  aliases: ['int'],
+  description: 'Manage integrations',
+  usage: 'secureyeoman integration <action> [options]',
+  loader: () =>
+    import('./cli/commands/integration.js').then((m) => m.integrationCommand),
+});
+
+router.registerLazy({
+  name: 'role',
+  description: 'Manage RBAC roles and user assignments',
+  usage: 'secureyeoman role <list|create|delete|assign|revoke|assignments>',
+  loader: () => import('./cli/commands/role.js').then((m) => m.roleCommand),
+});
+
+router.registerLazy({
+  name: 'extension',
+  description: 'Manage lifecycle extension hooks',
+  usage: 'secureyeoman extension <subcommand> [options]',
+  loader: () =>
+    import('./cli/commands/extension.js').then((m) => m.extensionCommand),
+});
+
+router.registerLazy({
+  name: 'execute',
+  description: 'Sandboxed code execution',
+  usage: 'secureyeoman execute <subcommand> [options]',
+  loader: () =>
+    import('./cli/commands/execute.js').then((m) => m.executeCommand),
+});
+
+router.registerLazy({
+  name: 'a2a',
+  description: 'Agent-to-Agent protocol management',
+  usage: 'secureyeoman a2a <subcommand> [options]',
+  loader: () => import('./cli/commands/a2a.js').then((m) => m.a2aCommand),
+});
+
+router.registerLazy({
+  name: 'repl',
+  aliases: ['shell'],
+  description: 'Interactive REPL',
+  usage: 'secureyeoman repl [--url URL]',
+  loader: () => import('./cli/commands/repl.js').then((m) => m.replCommand),
+});
+
+router.registerLazy({
+  name: 'browser',
+  aliases: ['br'],
+  description: 'Manage browser automation sessions',
+  usage: 'secureyeoman browser <list|stats|config|session ID>',
+  loader: () =>
+    import('./cli/commands/browser.js').then((m) => m.browserCommand),
+});
+
+router.registerLazy({
+  name: 'memory',
+  aliases: ['mem'],
+  description: 'Manage vector memory and brain operations',
+  usage: 'secureyeoman memory <search|memories|knowledge|stats|consolidate>',
+  loader: () =>
+    import('./cli/commands/memory.js').then((m) => m.memoryCommand),
+});
+
+router.registerLazy({
+  name: 'scraper',
+  aliases: ['sc'],
+  description: 'Manage web scraping and MCP web tools',
+  usage: 'secureyeoman scraper <config|tools|servers>',
+  loader: () =>
+    import('./cli/commands/scraper.js').then((m) => m.scraperCommand),
+});
+
+router.registerLazy({
+  name: 'multimodal',
+  aliases: ['mm'],
+  description: 'Manage multimodal I/O operations (vision, audio, image generation)',
+  usage: 'secureyeoman multimodal <config|jobs>',
+  loader: () =>
+    import('./cli/commands/multimodal.js').then((m) => m.multimodalCommand),
+});
+
+router.registerLazy({
+  name: 'model',
+  description: 'View and manage AI model configuration',
+  usage: 'secureyeoman model <action> [options]',
+  loader: () => import('./cli/commands/model.js').then((m) => m.modelCommand),
+});
+
+router.registerLazy({
+  name: 'policy',
+  description: 'View and manage the global security policy',
+  usage: 'secureyeoman policy <action> [options]',
+  loader: () =>
+    import('./cli/commands/policy.js').then((m) => m.policyCommand),
+});
+
+router.registerLazy({
+  name: 'completion',
+  description: 'Generate shell completion scripts',
+  usage: 'secureyeoman completion <bash|zsh|fish>',
+  loader: () =>
+    import('./cli/commands/completion.js').then((m) => m.completionCommand),
+});
+
+router.registerLazy({
+  name: 'plugin',
+  description: 'Manage integration plugins',
+  usage: 'secureyeoman plugin <action> [options]',
+  loader: () =>
+    import('./cli/commands/plugin.js').then((m) => m.pluginCommand),
+});
+
+router.registerLazy({
+  name: 'mcp-server',
+  description: 'Start the MCP (Model Context Protocol) server',
+  usage: 'secureyeoman mcp-server [options]',
+  loader: () =>
+    import('./cli/commands/mcp-server.js').then((m) => m.mcpServerCommand),
+});
+
+router.registerLazy({
+  name: 'migrate',
+  description: 'Run database migrations and exit',
+  usage: 'secureyeoman migrate [--help]',
+  loader: () =>
+    import('./cli/commands/migrate.js').then((m) => m.migrateCommand),
+});
+
+router.registerLazy({
+  name: 'security',
+  aliases: ['sec'],
+  description: 'Manage the Kali security toolkit container',
+  usage: 'secureyeoman security <setup|teardown|update|status>',
+  loader: () =>
+    import('./cli/commands/security.js').then((m) => m.securityCommand),
+});
+
+router.registerLazy({
+  name: 'mcp-quickbooks',
+  aliases: ['mcp-qbo'],
+  description: 'Manage the QuickBooks Online MCP toolset',
+  usage: 'secureyeoman mcp-quickbooks <status|enable|disable>',
+  loader: () =>
+    import('./cli/commands/mcp-quickbooks.js').then((m) => m.mcpQuickbooksCommand),
+});
+
+router.registerLazy({
+  name: 'agnostic',
+  aliases: ['ag'],
+  description: 'Manage the Agnostic QA sub-agent team Docker Compose stack',
+  usage: 'secureyeoman agnostic <start|stop|status|logs|pull> [options]',
+  loader: () =>
+    import('./cli/commands/agnostic.js').then((m) => m.agnosticCommand),
+});
+
+router.registerLazy({
+  name: 'tui',
+  aliases: ['dashboard'],
+  description: 'Full-screen terminal dashboard',
+  usage: 'secureyeoman tui [--url URL]',
+  loader: () => import('./cli/commands/tui.js').then((m) => m.tuiCommand),
+});
+
+router.registerLazy({
+  name: 'agents',
+  description: 'View and toggle agent feature flags (sub-agents, A2A, swarms)',
+  usage: 'secureyeoman agents <status|enable|disable> [feature] [options]',
+  loader: () =>
+    import('./cli/commands/agents.js').then((m) => m.agentsCommand),
+});
+
+// ── Help command (eager — uses router directly) ────────────────────────────
+
 router.register({
   name: 'help',
   description: 'Show available commands',
@@ -98,7 +264,8 @@ router.register({
   },
 });
 
-// Resolve and run
+// ── Resolve and run ────────────────────────────────────────────────────────
+
 const { command, rest } = router.resolve(process.argv);
 
 command

@@ -45,6 +45,7 @@ import type { Personality, BrainContext, Conversation, CreationEvent } from '../
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
 import { GroupChatPage } from './GroupChatPage';
+import { Link } from 'react-router-dom';
 
 export function ChatPage() {
   const [showModelWidget, setShowModelWidget] = useState(false);
@@ -79,7 +80,8 @@ export function ChatPage() {
   });
 
   const personalities = personalitiesData?.personalities ?? [];
-  const defaultPersonality = personalities.find((p) => p.isDefault);
+  const defaultPersonality = personalities.find((p) => p.isDefault)
+    ?? [...personalities].sort((a, b) => a.name.localeCompare(b.name))[0];
   const effectivePersonalityId = selectedPersonalityId ?? defaultPersonality?.id ?? null;
   const personality =
     personalities.find((p) => p.id === effectivePersonalityId) ?? defaultPersonality ?? null;
@@ -611,13 +613,27 @@ export function ChatPage() {
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <div className="text-center">
                     <Bot className="w-12 h-12 mx-auto mb-3 opacity-30" />
-                    <p className="text-sm">
-                      Start a conversation{personality ? ` with ${personality.name}` : ''}.
-                    </p>
-                    {currentModel && (
-                      <p className="text-xs mt-1 text-primary/70">Using Model: {currentModel}</p>
+                    {personalitiesData && personalities.length === 0 ? (
+                      <>
+                        <p className="text-sm font-medium">No personalities configured.</p>
+                        <p className="text-xs mt-1">
+                          <Link to="/personality" className="text-primary hover:underline">
+                            Create a personality
+                          </Link>{' '}
+                          to start chatting.
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="text-sm">
+                          Start a conversation{personality ? ` with ${personality.name}` : ''}.
+                        </p>
+                        {currentModel && (
+                          <p className="text-xs mt-1 text-primary/70">Using Model: {currentModel}</p>
+                        )}
+                        <p className="text-xs mt-1">Conversations are automatically saved.</p>
+                      </>
                     )}
-                    <p className="text-xs mt-1">Conversations are automatically saved.</p>
                   </div>
                 </div>
               )}

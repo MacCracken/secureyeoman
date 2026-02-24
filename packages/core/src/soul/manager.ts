@@ -332,6 +332,13 @@ export class SoulManager {
     }
   }
 
+  async clearDefaultPersonality(): Promise<void> {
+    await this.storage.clearDefaultPersonality();
+    if (this.heartbeat) {
+      this.heartbeat.setPersonalitySchedule(null);
+    }
+  }
+
   async getEnabledPersonalities(): Promise<Personality[]> {
     return this.storage.getEnabledPersonalities();
   }

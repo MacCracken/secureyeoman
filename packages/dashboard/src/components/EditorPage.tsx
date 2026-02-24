@@ -49,6 +49,7 @@ import { VoiceOverlay } from './VoiceOverlay';
 import type { Personality, ChatMessage, CreationEvent } from '../types';
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
+import { Link } from 'react-router-dom';
 
 type MonacoEditor = Parameters<OnMount>[0];
 
@@ -509,7 +510,8 @@ export function EditorPage() {
   });
 
   const personalities = personalitiesData?.personalities ?? [];
-  const defaultPersonality = personalities.find((p) => p.isDefault);
+  const defaultPersonality = personalities.find((p) => p.isDefault)
+    ?? [...personalities].sort((a, b) => a.name.localeCompare(b.name))[0];
   const effectivePersonalityId = selectedPersonalityId ?? defaultPersonality?.id ?? null;
   const currentPersonality = personalities.find((p) => p.id === effectivePersonalityId);
 
@@ -1128,9 +1130,21 @@ export function EditorPage() {
                 <div className="flex items-center justify-center h-full text-muted-foreground">
                   <div className="text-center">
                     <Bot className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                    <p className="text-xs">
-                      Chat with {currentPersonality?.name ?? 'the assistant'} about your code.
-                    </p>
+                    {personalitiesData && personalities.length === 0 ? (
+                      <>
+                        <p className="text-xs font-medium">No personalities configured.</p>
+                        <p className="text-xs mt-1">
+                          <Link to="/personality" className="text-primary hover:underline">
+                            Create a personality
+                          </Link>{' '}
+                          to start chatting.
+                        </p>
+                      </>
+                    ) : (
+                      <p className="text-xs">
+                        Chat with {currentPersonality?.name ?? 'the assistant'} about your code.
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

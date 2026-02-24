@@ -25,6 +25,7 @@ import {
   enablePersonality,
   disablePersonality,
   setDefaultPersonality,
+  clearDefaultPersonality,
 } from '../api/client';
 import type { Personality, SoulConfig } from '../types';
 import { NotificationSettings } from './NotificationSettings';
@@ -228,6 +229,11 @@ function GeneralTab() {
 
   const setDefaultMut = useMutation({
     mutationFn: (id: string) => setDefaultPersonality(id),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
+  });
+
+  const clearDefaultMut = useMutation({
+    mutationFn: () => clearDefaultPersonality(),
     onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['personalities'] }),
   });
 
@@ -449,8 +455,9 @@ function GeneralTab() {
                 onEnable={() => enableMut.mutate(p.id)}
                 onDisable={() => disableMut.mutate(p.id)}
                 onSetDefault={() => setDefaultMut.mutate(p.id)}
+                onClearDefault={() => clearDefaultMut.mutate()}
                 isMutating={
-                  enableMut.isPending || disableMut.isPending || setDefaultMut.isPending
+                  enableMut.isPending || disableMut.isPending || setDefaultMut.isPending || clearDefaultMut.isPending
                 }
               />
             ))}
@@ -498,6 +505,7 @@ interface SoulRowProps {
   onEnable: () => void;
   onDisable: () => void;
   onSetDefault: () => void;
+  onClearDefault: () => void;
   isMutating: boolean;
 }
 
@@ -507,6 +515,7 @@ function SoulRow({
   onEnable,
   onDisable,
   onSetDefault,
+  onClearDefault,
   isMutating,
 }: SoulRowProps) {
   const activeHoursEnabled = p.body?.activeHours?.enabled;
@@ -562,8 +571,17 @@ function SoulRow({
 
       {/* Actions */}
       <div className="flex items-center gap-1 shrink-0">
-        {/* Set default — only for active non-default personalities */}
-        {!p.isDefault && p.isActive && (
+        {/* Default star — set or clear */}
+        {p.isDefault ? (
+          <button
+            className="btn btn-ghost btn-xs p-1 text-primary hover:text-muted-foreground"
+            onClick={onClearDefault}
+            disabled={isMutating}
+            title="Remove as default"
+          >
+            <Star className="w-3.5 h-3.5 fill-current" />
+          </button>
+        ) : p.isActive ? (
           <button
             className="btn btn-ghost btn-xs p-1 text-muted-foreground hover:text-primary"
             onClick={onSetDefault}
@@ -572,19 +590,17 @@ function SoulRow({
           >
             <Star className="w-3.5 h-3.5" />
           </button>
-        )}
+        ) : null}
 
-        {/* Enable / Disable toggle — default can't be disabled */}
-        {!p.isDefault && (
-          <button
-            className={`btn btn-ghost btn-xs p-1 ${p.isActive ? 'text-success hover:text-destructive' : 'text-muted-foreground hover:text-success'}`}
-            onClick={p.isActive ? onDisable : onEnable}
-            disabled={isMutating}
-            title={p.isActive ? 'Disable soul' : 'Enable soul'}
-          >
-            <Power className="w-3.5 h-3.5" />
-          </button>
-        )}
+        {/* Enable / Disable toggle */}
+        <button
+          className={`btn btn-ghost btn-xs p-1 ${p.isActive ? 'text-success hover:text-destructive' : 'text-muted-foreground hover:text-success'}`}
+          onClick={p.isActive ? onDisable : onEnable}
+          disabled={isMutating}
+          title={p.isActive ? 'Disable soul' : 'Enable soul'}
+        >
+          <Power className="w-3.5 h-3.5" />
+        </button>
       </div>
     </div>
   );

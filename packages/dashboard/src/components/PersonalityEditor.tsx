@@ -33,6 +33,7 @@ import {
   enablePersonality,
   disablePersonality,
   setDefaultPersonality,
+  clearDefaultPersonality,
   fetchPromptPreview,
   fetchModelInfo,
   fetchPassions,
@@ -2629,9 +2630,13 @@ export function PersonalityEditor() {
 
   const createMut = useMutation({
     mutationFn: (data: PersonalityCreate) => createPersonality(data),
-    onSuccess: () => {
+    onSuccess: (result) => {
       void queryClient.invalidateQueries({ queryKey: ['personalities'] });
+      if (setActiveOnSave) {
+        setDefaultMut.mutate(result.personality.id);
+      }
       setEditing(null);
+      setSetActiveOnSave(false);
     },
   });
 
@@ -2682,6 +2687,14 @@ export function PersonalityEditor() {
 
   const setDefaultMut = useMutation({
     mutationFn: (id: string) => setDefaultPersonality(id),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['personalities'] });
+      void queryClient.invalidateQueries({ queryKey: ['promptPreview'] });
+    },
+  });
+
+  const clearDefaultMut = useMutation({
+    mutationFn: () => clearDefaultPersonality(),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['personalities'] });
       void queryClient.invalidateQueries({ queryKey: ['promptPreview'] });
@@ -3145,12 +3158,11 @@ export function PersonalityEditor() {
                       setSetActiveOnSave(e.target.checked);
                     } else if (e.target.checked && editingPersonality && !editingPersonality.isDefault) {
                       setDefaultMut.mutate(editingPersonality.id);
+                    } else if (!e.target.checked && editingPersonality?.isDefault) {
+                      clearDefaultMut.mutate();
                     }
                   }}
-                  disabled={
-                    setDefaultMut.isPending ||
-                    (editing !== 'new' && (editingPersonality?.isDefault ?? false))
-                  }
+                  disabled={setDefaultMut.isPending || clearDefaultMut.isPending}
                   className="sr-only peer"
                 />
                 <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-primary rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>

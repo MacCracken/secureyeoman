@@ -286,6 +286,12 @@ export class SoulStorage extends PgBaseStorage {
     });
   }
 
+  async clearDefaultPersonality(): Promise<void> {
+    await this.execute(
+      'UPDATE soul.personalities SET is_default = false WHERE is_default = true'
+    );
+  }
+
   async getEnabledPersonalities(): Promise<Personality[]> {
     const rows = await this.queryMany<PersonalityRow>(
       'SELECT * FROM soul.personalities WHERE is_active = true ORDER BY created_at DESC'

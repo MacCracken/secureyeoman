@@ -198,6 +198,15 @@ export function promptChoice(
   });
 }
 
+/**
+ * Returns the base URL for SecureYeoman API calls.
+ * Reads the SECUREYEOMAN_URL environment variable first, falling back to
+ * the provided default (http://127.0.0.1:3000 if not specified).
+ */
+export function defaultBaseUrl(fallback = 'http://127.0.0.1:3000'): string {
+  return process.env.SECUREYEOMAN_URL ?? fallback;
+}
+
 /** Wrapper around fetch for CLI HTTP calls. */
 export async function apiCall(
   baseUrl: string,

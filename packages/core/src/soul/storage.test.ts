@@ -207,6 +207,17 @@ describe('SoulStorage', () => {
     });
   });
 
+  describe('clearDefaultPersonality', () => {
+    it('clears is_default flag on all personalities', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 1 });
+      await storage.clearDefaultPersonality();
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('is_default = false'),
+        undefined
+      );
+    });
+  });
+
   describe('listPersonalities', () => {
     it('returns personalities with total count', async () => {
       mockQuery
