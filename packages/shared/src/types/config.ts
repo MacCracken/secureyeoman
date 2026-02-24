@@ -264,6 +264,8 @@ export const SecurityConfigSchema = z.object({
   allowNetBoxWrite: z.boolean().default(false),
   /** Allow Twingate zero-trust remote access and private MCP proxy. Off by default. */
   allowTwingate: z.boolean().default(false),
+  /** Allow organizational intent documents (goals, signals, hard boundaries, trade-off profiles). */
+  allowOrgIntent: z.boolean().default(false),
   /** Allow agents to generate and register tools at runtime. Off by default. */
   allowDynamicTools: z.boolean().default(false),
   /** Require dynamically-created tools to run inside a sandbox. Defaults true; only applies when allowDynamicTools is true. */
@@ -532,6 +534,18 @@ export const StorageBackendConfigSchema = z
 
 export type StorageBackendConfig = z.infer<typeof StorageBackendConfigSchema>;
 
+// Intent config
+export const IntentFileConfigSchema = z
+  .object({
+    /** Path to an orgIntent.yaml/json for file-based bootstrap */
+    filePath: z.string().optional(),
+    /** How often (ms) to refresh signal values from data sources. Default: 5 min. */
+    signalRefreshIntervalMs: z.number().int().positive().default(300_000),
+  })
+  .default({});
+
+export type IntentFileConfig = z.infer<typeof IntentFileConfigSchema>;
+
 // Complete configuration schema
 export const ConfigSchema = z.object({
   version: z.string().default('1.0'),
@@ -557,6 +571,7 @@ export const ConfigSchema = z.object({
   proactive: ProactiveConfigSchema,
   multimodal: MultimodalConfigSchema,
   storage: StorageBackendConfigSchema,
+  intent: IntentFileConfigSchema,
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

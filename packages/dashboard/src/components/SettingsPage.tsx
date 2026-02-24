@@ -34,8 +34,9 @@ import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySetting
 import { ApiKeysSettings } from './ApiKeysSettings';
 import { UsersSettings } from './UsersSettings';
 import { WorkspacesSettings } from './WorkspacesSettings';
+import { IntentEditor } from './IntentEditor';
 
-type TabType = 'general' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'logs';
+type TabType = 'general' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'logs' | 'intent';
 
 export function SettingsPage() {
   const location = useLocation();
@@ -150,6 +151,19 @@ export function SettingsPage() {
           <Archive className="w-4 h-4" />
           Logs
         </button>
+        <button
+          onClick={() => {
+            setActiveTab('intent');
+          }}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'intent'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Zap className="w-4 h-4" />
+          Intent
+        </button>
       </div>
 
       {activeTab === 'general' && <GeneralTab />}
@@ -164,6 +178,7 @@ export function SettingsPage() {
       {activeTab === 'users' && <UsersSettings />}
       {activeTab === 'roles' && <RolesSettings />}
       {activeTab === 'logs' && <LogsTab />}
+      {activeTab === 'intent' && <IntentEditor />}
     </div>
   );
 }

@@ -241,5 +241,8 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'twingate_mcp_list_tools', description: 'List tools exposed by a private MCP server connected via twingate_mcp_connect' },
     { name: 'twingate_mcp_call_tool', description: 'Invoke a tool on a connected private MCP server; returns result; emits twingate_mcp_tool_call audit event' },
     { name: 'twingate_mcp_disconnect', description: 'Close a Twingate MCP proxy session' },
+
+    // Organizational Intent tools (Phase 48)
+    { name: 'intent_signal_read', description: 'Read the current value of a named signal from the active organizational intent document' },
   ];
 }

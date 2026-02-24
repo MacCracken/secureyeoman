@@ -1,3 +1,29 @@
+## [Phase 48] — Machine Readable Organizational Intent (2026-02-24)
+
+### Added
+
+- **`OrgIntentSchema`** (`packages/core/src/intent/schema.ts`) — Zod schema for all 8 top-level sections: `goals`, `signals`, `dataSources`, `authorizedActions`, `tradeoffProfiles`, `hardBoundaries`, `delegationFramework`, `context`
+- **`IntentStorage`** (`packages/core/src/intent/storage.ts`) — PostgreSQL CRUD for `org_intents` + `intent_enforcement_log` tables
+- **`IntentManager`** (`packages/core/src/intent/manager.ts`) — GoalResolver, SignalMonitor (HTTP fetch + TTL cache), TradeoffResolver, DelegationFrameworkResolver, HardBoundaryEnforcer (deny:/tool: rules), AuthorizedActionChecker, `composeSoulContext()` for prompt injection
+- **DB migration** `042_org_intent.sql` — `org_intents` + `intent_enforcement_log` tables with indexes; unique partial index enforces single-active constraint
+- **REST routes** (`packages/core/src/intent/routes.ts`) — full CRUD (`/api/v1/intent`), activation (`/activate`), signal read (`/signals/:id/value`), enforcement log query
+- **`allowOrgIntent: boolean`** to `SecurityConfigSchema` — operator kill switch
+- **`intent` config block** to `ConfigSchema` — `filePath` (file-based bootstrap) + `signalRefreshIntervalMs` (default 5 min)
+- **Step 2.07** in `SecureYeoman.initialize()` — IntentManager init after DB pool (when `allowOrgIntent: true`)
+- **`getIntentManager()`** public getter on `SecureYeoman`
+- **Soul prompt injection** — `composeSoulPrompt` appends `## Organizational Goals`, `## Organizational Context`, `## Trade-off Profile`, `## Decision Boundaries` blocks when an active intent doc exists
+- **`SoulManager.setIntentManager()`** — wired from SecureYeoman after SoulManager construction
+- **`intent_signal_read` MCP tool** (`packages/mcp/src/tools/intent-tools.ts`) — reads live signal value from active intent; gated by `exposeOrgIntentTools` in `McpServiceConfig`
+- **`exposeOrgIntentTools: boolean`** to `McpServiceConfigSchema`
+- **IntentEditor dashboard component** (`packages/dashboard/src/components/IntentEditor.tsx`) — intent doc list with activate/delete, enforcement log feed with event-type filter
+- **Settings → Intent tab** in SettingsPage
+- Intent API functions in dashboard API client: `fetchIntents`, `fetchActiveIntent`, `fetchIntent`, `createIntent`, `updateIntent`, `deleteIntent`, `activateIntent`, `fetchEnforcementLog`, `readSignal`
+- Audit events: `intent_doc_created`, `intent_doc_activated`
+- **53 unit tests** across `intent-schema.test.ts` (16), `intent-manager.test.ts` (25), `intent-routes.test.ts` (18)
+- Guide: `docs/guides/organizational-intent.md`
+
+---
+
 ## [Phase 45] — Twingate Remote MCP Access (2026-02-24)
 
 ### Added

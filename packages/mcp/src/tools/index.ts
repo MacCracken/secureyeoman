@@ -29,6 +29,7 @@ import { registerDiagnosticTools } from './diagnostic-tools.js';
 import { registerDesktopTools } from './desktop-tools.js';
 import { registerNetworkTools } from './network-tools.js';
 import { registerTwingateTools } from './twingate-tools.js';
+import { registerIntentTools } from './intent-tools.js';
 
 export interface ToolMiddleware {
   rateLimiter: RateLimiterMiddleware;
@@ -68,4 +69,5 @@ export async function registerAllTools(
   registerDesktopTools(server, client, config, middleware);
   await registerNetworkTools(server, config, middleware);
   registerTwingateTools(server, client, config, middleware);
+  registerIntentTools(server, client, config, middleware);
 }

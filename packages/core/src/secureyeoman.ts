@@ -130,6 +130,8 @@ import { A2AManager } from './a2a/manager.js';
 import { RemoteDelegationTransport } from './a2a/transport.js';
 import { DynamicToolStorage } from './soul/dynamic-tool-storage.js';
 import { DynamicToolManager } from './soul/dynamic-tool-manager.js';
+import { IntentStorage } from './intent/storage.js';
+import { IntentManager } from './intent/manager.js';
 import { SystemPreferencesStorage } from './config/system-preferences-storage.js';
 import { GroupChatStorage } from './integrations/group-chat-storage.js';
 import { RoutingRulesStorage } from './integrations/routing-rules-storage.js';
@@ -229,6 +231,8 @@ export class SecureYeoman {
   private a2aManager: A2AManager | null = null;
   private dynamicToolStorage: DynamicToolStorage | null = null;
   private dynamicToolManager: DynamicToolManager | null = null;
+  private intentStorage: IntentStorage | null = null;
+  private intentManager: IntentManager | null = null;
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
@@ -322,6 +326,17 @@ export class SecureYeoman {
 
       // Step 2.2: Load persisted security policy from DB (overrides YAML defaults)
       await this.loadSecurityPolicyFromDb();
+
+      // Step 2.07: Initialize IntentManager (org intent documents, if enabled)
+      if (this.config.security.allowOrgIntent) {
+        this.intentStorage = new IntentStorage();
+        this.intentManager = new IntentManager({
+          storage: this.intentStorage,
+          signalRefreshIntervalMs: this.config.intent?.signalRefreshIntervalMs,
+        });
+        await this.intentManager.initialize();
+        this.logger.debug('IntentManager initialized');
+      }
 
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
@@ -594,6 +609,11 @@ export class SecureYeoman {
       // Wire SoulManager into AIClient for personality_id tracking
       if (this.aiClient && this.soulManager) {
         this.aiClient.setSoulManager(this.soulManager);
+      }
+
+      // Wire IntentManager into SoulManager if available
+      if (this.soulManager && this.intentManager) {
+        this.soulManager.setIntentManager(this.intentManager);
       }
 
       // Step 5.7c: Initialize agent comms (if enabled)
@@ -1773,6 +1793,14 @@ export class SecureYeoman {
     return this.proactiveManager;
   }
 
+  /**
+   * Get the intent manager instance (null when allowOrgIntent is disabled).
+   */
+  getIntentManager(): IntentManager | null {
+    this.ensureInitialized();
+    return this.intentManager;
+  }
+
   getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null {
     this.ensureInitialized();
     return this.multimodalManager;
@@ -2061,6 +2089,7 @@ export class SecureYeoman {
     sandboxCredentialProxy?: boolean;
     allowCommunityGitFetch?: boolean;
     communityGitUrl?: string;
+    allowOrgIntent?: boolean;
   }): void {
     this.ensureInitialized();
 
@@ -2140,6 +2169,9 @@ export class SecureYeoman {
       this.config!.security.communityGitUrl = updates.communityGitUrl;
       this.marketplaceManager?.updatePolicy({ communityGitUrl: updates.communityGitUrl });
     }
+    if (updates.allowOrgIntent !== undefined) {
+      this.config!.security.allowOrgIntent = updates.allowOrgIntent;
+    }
 
     this.logger?.info('Security policy updated', updates);
 
@@ -2202,6 +2234,7 @@ export class SecureYeoman {
         'sandboxWasm',
         'sandboxCredentialProxy',
         'allowCommunityGitFetch',
+        'allowOrgIntent',
       ] as const;
       for (const row of result.rows) {
         if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {
@@ -2501,6 +2534,11 @@ export class SecureYeoman {
       this.workflowStorage.close();
       this.workflowStorage = null;
       this.workflowManager = null;
+    }
+    if (this.intentManager) {
+      this.intentManager.destroy();
+      this.intentManager = null;
+      this.intentStorage = null;
     }
     if (this.extensionStorage) {
       this.extensionStorage.close();

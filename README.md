@@ -66,14 +66,14 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 
 ## Key Features
 
-- **Security** — RBAC, JWT + API key auth, mTLS, AES-256-GCM encryption, sandboxed execution, ToolOutputScanner credential redaction, Skill Trust Tiers, Outbound Credential Proxy
-- **AI Integration** — 11 providers with automatic fallback chains; dynamic model discovery and routing
+- **Security** — RBAC, JWT + API key auth, mTLS, AES-256-GCM encryption, sandboxed execution (Landlock/seccomp/gVisor/WASM), ToolOutputScanner credential redaction, Skill Trust Tiers, Outbound Credential Proxy; SecretsManager (env/keyring/file/Vault/OpenBao backends); TLS lifecycle management with auto-generated dev certs and expiry monitoring
+- **AI Integration** — 11 providers with automatic fallback chains; dynamic model discovery and routing (Anthropic, OpenAI, Gemini, Ollama, LM Studio, LocalAI, DeepSeek, Mistral, Grok, Letta, and more)
 - **Agent Architecture** — Soul/Spirit/Brain/Body cognitive model; personality presets (F.R.I.D.A.Y., T.Ron); per-personality active hours; Diagnostics capability (Channel B health reporting + integration ping); Desktop Control capability (screen capture, keyboard/mouse input, camera, clipboard)
-- **Cognitive Memory** — Vector search (FAISS/Qdrant/ChromaDB), hybrid FTS + RRF, content-chunked indexing, proactive context compaction, self-repairing task loop
-- **Dashboard** — React + Vite + Tailwind; rich Markdown chat, Mermaid diagrams, KaTeX math, real-time collaborative editing (Yjs CRDT), Group Chat, WebGL graph visualization; About panel shows live network mode (Local / LAN / Public)
-- **Multi-Agent** — Sub-agent delegation, Agent Swarms (sequential/parallel/dynamic), A2A protocol, dynamic tool creation, intelligent model routing
-- **Skills & Marketplace** — Skill import/export (portable `.skill.json`), community repo sync (git-fetch or local path), install/uninstall synced to Brain, built-in + published + community source tiers
-- **MCP Protocol** — 120+ tools, 7 resources, 4 prompts; Kali Security Toolkit; Agnostic QA Bridge; BullShift trading tools; Diagnostic Tools; Desktop Control (screen/input/clipboard); streamable HTTP, SSE, and stdio transports
+- **Cognitive Memory** — Vector search (FAISS/Qdrant/ChromaDB), hybrid FTS + RRF (Reciprocal Rank Fusion), content-chunked indexing, proactive context compaction, self-repairing task loop
+- **Dashboard** — React + Vite + Tailwind; rich Markdown chat, Mermaid diagrams, KaTeX math, real-time collaborative editing (Yjs CRDT), Group Chat, WebGL graph visualization; live network mode badge (Local / LAN / Public)
+- **Multi-Agent** — Sub-agent delegation, Agent Swarms (sequential/parallel/dynamic), A2A protocol, dynamic tool creation, intelligent model routing, DAG Workflow Orchestration (9 step types, visual ReactFlow builder)
+- **Skills & Marketplace** — Skill routing quality (`useWhen`/`doNotUseWhen`/`successCriteria`), import/export (portable `.skill.json`), community repo sync, install pipeline with trust tiers
+- **MCP Protocol** — 120+ tools, 7 resources, 4 prompts; Kali Security Toolkit; Network Security Toolkit (37 tools: device discovery, port scanning, SSH, NetBox, NVD/CVE); Twingate zero-trust remote MCP proxy; Agnostic QA Bridge; Desktop Control; Diagnostic Tools; streamable HTTP, SSE, and stdio transports
 - **Integrations** — 31 platforms: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Google Chat, Gmail, Google Calendar, Email (IMAP/SMTP), Jira, Notion, AWS, Azure DevOps, Linear, Airtable, DingTalk, LINE, QQ, Twitter/X, Spotify, Stripe, YouTube, Zapier, Figma, Todoist, iMessage, CLI, Generic Webhook
 - **Team Collaboration** — Multi-user workspaces, SSO/OIDC (Okta, Azure AD, Auth0), CRDT collaborative editing, presence indicators
 - **Deployment** — Single binary (~80 MB), Docker (~80 MB), Kubernetes Helm chart; Linux x64/arm64 + macOS arm64
@@ -224,7 +224,7 @@ Always connect AI providers using official API keys from their developer console
 | **Security Testing** | [Security Testing Guide](docs/guides/security-testing.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
 | **Architecture Overview** | [Architecture](docs/development/architecture.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (125 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (127 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |

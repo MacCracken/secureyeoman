@@ -1667,3 +1667,269 @@ button:focus-visible {
     display: none;
   }
 }
+
+/* ============================================================
+   HERO — Ghost Button
+   ============================================================ */
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border-light);
+  color: var(--text-secondary);
+}
+.btn-ghost:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: rgba(14, 165, 233, 0.06);
+}
+
+/* ============================================================
+   COMPARISON SECTION
+   ============================================================ */
+.comparison {
+  padding: var(--space-24) 0;
+  background: var(--bg-secondary);
+  position: relative;
+  overflow: hidden;
+}
+.comparison::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border-light), transparent);
+}
+
+/* Alert callout */
+.compare-alert-box {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: var(--space-6);
+  background: rgba(239, 68, 68, 0.06);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6) var(--space-8);
+  margin-bottom: var(--space-12);
+}
+.compare-alert-icon {
+  width: 48px; height: 48px;
+  border-radius: 50%;
+  background: rgba(239, 68, 68, 0.12);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--error);
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+.compare-alert-body strong {
+  display: block;
+  color: var(--text-primary);
+  font-weight: 600;
+  margin-bottom: var(--space-2);
+  font-size: 0.95rem;
+}
+.compare-alert-body p {
+  color: var(--text-tertiary);
+  font-size: 0.875rem;
+  line-height: 1.6;
+  margin: 0;
+}
+.compare-alert-counter {
+  text-align: center;
+  flex-shrink: 0;
+  padding: var(--space-4) var(--space-6);
+  background: rgba(34, 197, 94, 0.08);
+  border: 1px solid rgba(34, 197, 94, 0.2);
+  border-radius: var(--radius-lg);
+}
+.counter-value {
+  display: block;
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: var(--success);
+  line-height: 1;
+  font-family: var(--font-mono);
+}
+.counter-label {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-top: var(--space-1);
+  white-space: nowrap;
+}
+
+/* Comparison table */
+.compare-table {
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+  margin-bottom: var(--space-16);
+  overflow-x: auto;
+}
+.compare-header-row,
+.compare-row {
+  display: grid;
+  grid-template-columns: 2fr 1.4fr 1fr 1fr 1fr 1fr;
+  min-width: 680px;
+}
+.compare-header-row {
+  background: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border-color);
+}
+.compare-header-row > div {
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--text-tertiary);
+}
+.compare-row {
+  border-bottom: 1px solid var(--border-color);
+  transition: background 0.15s;
+}
+.compare-row:last-child { border-bottom: none; }
+.compare-row:hover { background: var(--bg-hover); }
+.compare-row-alt { background: rgba(255,255,255,0.02); }
+.compare-row-alt:hover { background: var(--bg-hover); }
+
+.compare-feature-col {
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: 500;
+}
+.compare-feature-col i {
+  color: var(--text-muted);
+  width: 16px;
+  text-align: center;
+  font-size: 0.8rem;
+}
+.compare-col {
+  padding: var(--space-3) var(--space-4);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+}
+.compare-col-sy {
+  background: rgba(14, 165, 233, 0.05);
+  border-left: 2px solid rgba(14, 165, 233, 0.3);
+}
+.compare-header-row .compare-col-sy {
+  color: var(--primary);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+/* Cell states */
+.cmp-yes {
+  color: var(--success);
+  display: flex; align-items: center; gap: 5px;
+  font-weight: 500;
+}
+.cmp-no {
+  color: var(--text-muted);
+  display: flex; align-items: center; gap: 5px;
+}
+.cmp-danger {
+  color: var(--error) !important;
+  font-weight: 600;
+}
+.cmp-partial {
+  color: var(--warning);
+  display: flex; align-items: center; gap: 5px;
+  font-weight: 500;
+}
+.cmp-warn {
+  color: var(--warning);
+  font-weight: 500;
+}
+.cmp-neutral {
+  color: var(--text-tertiary);
+}
+
+/* Differentiators */
+.diff-section {
+  margin-top: var(--space-4);
+}
+.diff-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+.diff-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-6);
+}
+.diff-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  padding: var(--space-6);
+  transition: border-color 0.2s, transform 0.2s;
+}
+.diff-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-2px);
+}
+.diff-icon {
+  width: 40px; height: 40px;
+  border-radius: var(--radius-lg);
+  background: rgba(14, 165, 233, 0.1);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--primary);
+  font-size: 1rem;
+  margin-bottom: var(--space-4);
+}
+.diff-card h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: var(--space-2);
+}
+.diff-card p {
+  font-size: 0.825rem;
+  color: var(--text-tertiary);
+  line-height: 1.6;
+  margin: 0;
+}
+.diff-card p code {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background: rgba(255,255,255,0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--primary-light);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .compare-alert-box {
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+  }
+  .compare-alert-counter {
+    grid-column: 2;
+    justify-self: start;
+  }
+  .diff-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 600px) {
+  .compare-alert-box {
+    grid-template-columns: 1fr;
+  }
+  .compare-alert-icon { display: none; }
+  .compare-alert-counter { grid-column: 1; }
+  .diff-grid {
+    grid-template-columns: 1fr;
+  }
+}

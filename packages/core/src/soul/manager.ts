@@ -20,6 +20,7 @@ import type { SoulStorage } from './storage.js';
 import type { BrainManager } from '../brain/manager.js';
 import type { MarketplaceManager } from '../marketplace/manager.js';
 import type { DynamicToolManager } from './dynamic-tool-manager.js';
+import type { IntentManager } from '../intent/manager.js';
 import type { SpiritManager } from '../spirit/manager.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 import { HeartManager } from '../body/heart.js';
@@ -113,6 +114,7 @@ export class SoulManager {
   private heartManager: HeartManager | null = null;
   private marketplace: MarketplaceManager | null = null;
   private dynamicToolManager: DynamicToolManager | null = null;
+  private intentManager: IntentManager | null = null;
 
   setMarketplaceManager(manager: MarketplaceManager): void {
     this.marketplace = manager;
@@ -124,6 +126,10 @@ export class SoulManager {
    */
   setDynamicToolManager(manager: DynamicToolManager): void {
     this.dynamicToolManager = manager;
+  }
+
+  setIntentManager(manager: IntentManager): void {
+    this.intentManager = manager;
   }
 
   constructor(
@@ -908,6 +914,14 @@ export class SoulManager {
       parts.push(
         `## Available Skills\nYou have access to the following skills. Full instructions are activated when the skill is relevant to the conversation.\n${catalogLines.join('\n')}`
       );
+    }
+
+    // Organizational Intent injection (Phase 48)
+    if (this.intentManager) {
+      const intentCtx = await this.intentManager.composeSoulContext();
+      if (intentCtx) {
+        parts.push(intentCtx);
+      }
     }
 
     // Build the base prompt (archetypes + soul + context + catalog)

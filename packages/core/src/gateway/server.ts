@@ -63,6 +63,7 @@ import { registerDesktopRoutes } from '../body/desktop-routes.js';
 import { registerBrowserRoutes } from '../browser/browser-routes.js';
 import { registerGroupChatRoutes } from '../integrations/group-chat-routes.js';
 import { registerRoutingRulesRoutes } from '../integrations/routing-rules-routes.js';
+import { registerIntentRoutes } from '../intent/routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -587,6 +588,21 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Workflow routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Intent routes (org intent documents — Phase 48)
+    try {
+      const intentManager = this.secureYeoman.getIntentManager();
+      if (intentManager) {
+        let intentAuditChain;
+        try { intentAuditChain = this.secureYeoman.getAuditChain(); } catch { /* optional */ }
+        registerIntentRoutes(this.app, { intentManager, auditChain: intentAuditChain });
+        this.getLogger().info('Intent routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Intent routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

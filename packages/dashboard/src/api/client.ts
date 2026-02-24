@@ -1906,6 +1906,7 @@ export interface SecurityPolicy {
   allowNetworkTools: boolean;
   allowNetBoxWrite: boolean;
   allowTwingate: boolean;
+  allowOrgIntent: boolean;
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -1935,6 +1936,7 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowNetworkTools: false,
       allowNetBoxWrite: false,
       allowTwingate: false,
+      allowOrgIntent: false,
     };
   }
 }
@@ -3272,4 +3274,96 @@ export async function fetchTlsStatus(): Promise<TlsCertStatus> {
 
 export async function generateTlsCert(): Promise<{ generated: boolean; paths: unknown }> {
   return request('/security/tls/generate', { method: 'POST' });
+}
+
+// ─── Organizational Intent API (Phase 48) ──────────────────────────────────
+
+export interface OrgIntentMeta {
+  id: string;
+  name: string;
+  apiVersion: string;
+  isActive: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface OrgIntentDoc extends OrgIntentMeta {
+  goals: unknown[];
+  signals: unknown[];
+  dataSources: unknown[];
+  authorizedActions: unknown[];
+  tradeoffProfiles: unknown[];
+  hardBoundaries: unknown[];
+  delegationFramework: unknown;
+  context: { key: string; value: string }[];
+}
+
+export interface SignalReadResult {
+  signalId: string;
+  value: number | null;
+  threshold: number;
+  direction: 'above' | 'below';
+  status: 'healthy' | 'warning' | 'critical';
+  message: string;
+}
+
+export interface EnforcementLogEntry {
+  id: string;
+  eventType: string;
+  itemId?: string;
+  rule: string;
+  rationale?: string;
+  actionAttempted?: string;
+  agentId?: string;
+  sessionId?: string;
+  personalityId?: string;
+  metadata?: Record<string, unknown>;
+  createdAt: number;
+}
+
+export async function fetchIntents(): Promise<{ intents: OrgIntentMeta[] }> {
+  return request('/intent');
+}
+
+export async function fetchActiveIntent(): Promise<{ intent: OrgIntentDoc }> {
+  return request('/intent/active');
+}
+
+export async function fetchIntent(id: string): Promise<{ intent: OrgIntentDoc }> {
+  return request(`/intent/${encodeURIComponent(id)}`);
+}
+
+export async function createIntent(doc: Record<string, unknown>): Promise<{ intent: OrgIntentDoc }> {
+  return request('/intent', { method: 'POST', body: JSON.stringify(doc) });
+}
+
+export async function updateIntent(id: string, patch: Record<string, unknown>): Promise<{ intent: OrgIntentDoc }> {
+  return request(`/intent/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(patch) });
+}
+
+export async function deleteIntent(id: string): Promise<void> {
+  return request(`/intent/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export async function activateIntent(id: string): Promise<{ success: boolean }> {
+  return request(`/intent/${encodeURIComponent(id)}/activate`, { method: 'POST' });
+}
+
+export async function fetchEnforcementLog(opts?: {
+  eventType?: string;
+  agentId?: string;
+  since?: number;
+  limit?: number;
+}): Promise<{ entries: EnforcementLogEntry[] }> {
+  const params = new URLSearchParams();
+  if (opts?.eventType) params.set('eventType', opts.eventType);
+  if (opts?.agentId) params.set('agentId', opts.agentId);
+  if (opts?.since) params.set('since', String(opts.since));
+  if (opts?.limit) params.set('limit', String(opts.limit));
+  const qs = params.toString();
+  return request(`/intent/enforcement-log${qs ? `?${qs}` : ''}`);
+}
+
+export async function readSignal(signalId: string): Promise<SignalReadResult> {
+  return request(`/intent/signals/${encodeURIComponent(signalId)}/value`);
 }

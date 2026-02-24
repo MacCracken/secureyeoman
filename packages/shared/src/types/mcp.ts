@@ -144,6 +144,8 @@ export const McpServiceConfigSchema = z.object({
   twingateNetwork: z.string().optional(),
   /** Twingate tenant API key. From env TWINGATE_API_KEY. */
   twingateApiKey: z.string().optional(),
+  /** Enable organizational intent tools (signal read). Off by default — requires allowOrgIntent in Security Settings. */
+  exposeOrgIntentTools: z.boolean().default(false),
 });
 
 export type McpServiceConfig = z.infer<typeof McpServiceConfigSchema>;

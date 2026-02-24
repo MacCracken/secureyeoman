@@ -55,6 +55,7 @@
           <a href="#features" class="nav-link">Features</a>
           <a href="#use-cases" class="nav-link">Use Cases</a>
           <a href="#architecture" class="nav-link">Architecture</a>
+          <a href="#compare" class="nav-link">Compare</a>
           <a href="#getting-started" class="nav-link">Docs</a>
           <a href="https://github.com/MacCracken/secureyeoman" class="nav-link" target="_blank">
             <i class="fab fa-github"></i>
@@ -126,6 +127,10 @@
           >
             <i class="fab fa-github"></i>
             View on GitHub
+          </a>
+          <a href="#compare" class="btn btn-ghost btn-lg">
+            <i class="fas fa-balance-scale"></i>
+            See How We Compare
           </a>
         </div>
           <div class="hero-stats">
@@ -489,6 +494,58 @@
               <li>Webhook dispatch</li>
             </ul>
           </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-key"></i>
+            </div>
+            <h3 class="feature-title">Secrets & Vault Management</h3>
+            <p class="feature-desc">
+              Unified SecretsManager with env, keyring, file, Vault/OpenBao, and auto backends.
+              TLS lifecycle management with auto-generated dev certs and expiry monitoring.
+            </p>
+            <ul class="feature-list">
+              <li>Vault / OpenBao integration</li>
+              <li>Keyring (macOS / Linux)</li>
+              <li>TLS auto-generate &amp; expiry alerts</li>
+              <li>Zero secrets in plaintext</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-network-wired"></i>
+            </div>
+            <h3 class="feature-title">Network Security Toolkit</h3>
+            <p class="feature-desc">
+              37 MCP tools for network evaluation and protection — device discovery, port scanning,
+              SSH automation, NetBox IPAM, NVD/CVE lookups, and PCAP packet analysis.
+            </p>
+            <ul class="feature-list">
+              <li>Device &amp; port discovery</li>
+              <li>NVD / CVE lookups</li>
+              <li>NetBox IPAM integration</li>
+              <li>SSH + PCAP capture</li>
+            </ul>
+          </div>
+
+          <div class="feature-card">
+            <div class="feature-icon-wrapper">
+              <i class="fas fa-lock-open"></i>
+            </div>
+            <h3 class="feature-title">Zero-Trust Remote Access</h3>
+            <p class="feature-desc">
+              Twingate integration — 13 MCP tools to manage zero-trust resources and proxy to
+              private MCP servers reachable only through the Twingate Client tunnel. No firewall
+              ports opened.
+            </p>
+            <ul class="feature-list">
+              <li>Twingate GraphQL tenant mgmt</li>
+              <li>Private MCP server proxy</li>
+              <li>Service key lifecycle</li>
+              <li>Audit events per key op</li>
+            </ul>
+          </div>
         </div>
       </div>
     </section>
@@ -548,6 +605,173 @@
             </div>
             <h3>Security Monitoring</h3>
             <p>Monitor systems, detect anomalies, and respond to security events automatically.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section class="comparison" id="compare">
+      <div class="container">
+        <div class="section-header">
+          <span class="section-badge">Why SecureYeoman</span>
+          <h2 class="section-title">Security by Design,<br /><span class="gradient-text">Not Afterthought</span></h2>
+          <p class="section-subtitle">
+            We studied every major self-hosted AI agent framework. Here's where we stand.
+          </p>
+        </div>
+
+        <!-- Security alert callout -->
+        <div class="compare-alert-box">
+          <div class="compare-alert-icon">
+            <i class="fas fa-exclamation-triangle"></i>
+          </div>
+          <div class="compare-alert-body">
+            <strong>The OpenClaw security crisis — 2026</strong>
+            <p>9+ CVEs including a CVSS 8.8 one-click RCE. 341 malicious marketplace skills in a coordinated supply-chain attack. Gartner issued an enterprise ban. Palo Alto Networks called it "the potential biggest insider threat of 2026." The framework runs with unrestricted host-machine access by default.</p>
+          </div>
+          <div class="compare-alert-counter">
+            <span class="counter-value">0</span>
+            <span class="counter-label">SecureYeoman CVEs</span>
+          </div>
+        </div>
+
+        <!-- Comparison grid table -->
+        <div class="compare-table">
+          <div class="compare-header-row">
+            <div class="compare-feature-col">Feature</div>
+            <div class="compare-col compare-col-sy">SecureYeoman</div>
+            <div class="compare-col">OpenClaw</div>
+            <div class="compare-col">Agent Zero</div>
+            <div class="compare-col">PicoClaw</div>
+            <div class="compare-col">Ironclaw</div>
+          </div>
+
+          <div class="compare-row">
+            <div class="compare-feature-col"><i class="fas fa-users-cog"></i> RBAC &amp; SSO/OIDC</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> Full</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+          </div>
+
+          <div class="compare-row compare-row-alt">
+            <div class="compare-feature-col"><i class="fas fa-key"></i> Secrets / Vault</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> SecretsManager</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> TEE vault</span></div>
+          </div>
+
+          <div class="compare-row">
+            <div class="compare-feature-col"><i class="fas fa-link"></i> Cryptographic Audit</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> HMAC-SHA256</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Local DB only</span></div>
+          </div>
+
+          <div class="compare-row compare-row-alt">
+            <div class="compare-feature-col"><i class="fas fa-tools"></i> MCP Tools</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 120+</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Limited</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> External</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Via path</span></div>
+          </div>
+
+          <div class="compare-row">
+            <div class="compare-feature-col"><i class="fas fa-bug"></i> CVEs (2026)</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 0</span></div>
+            <div class="compare-col"><span class="cmp-no cmp-danger"><i class="fas fa-skull-crossbones"></i> 9+</span></div>
+            <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> 0</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Pre-prod</span></div>
+            <div class="compare-col"><span class="cmp-yes"><i class="fas fa-check"></i> 0</span></div>
+          </div>
+
+          <div class="compare-row compare-row-alt">
+            <div class="compare-feature-col"><i class="fas fa-network-wired"></i> Network Security Tools</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 37 tools</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+          </div>
+
+          <div class="compare-row">
+            <div class="compare-feature-col"><i class="fas fa-project-diagram"></i> Workflow Orchestration</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> DAG + Visual</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+          </div>
+
+          <div class="compare-row compare-row-alt">
+            <div class="compare-feature-col"><i class="fas fa-dharmachakra"></i> Kubernetes / Helm</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> Full</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> Community</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i></span></div>
+          </div>
+
+          <div class="compare-row">
+            <div class="compare-feature-col"><i class="fas fa-plug"></i> Integrations</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-yes"><i class="fas fa-check"></i> 31 platforms</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 23+</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> CLI / Web</span></div>
+            <div class="compare-col"><span class="cmp-partial"><i class="fas fa-minus"></i> 10+</span></div>
+            <div class="compare-col"><span class="cmp-no"><i class="fas fa-times"></i> ~2</span></div>
+          </div>
+
+          <div class="compare-row compare-row-alt">
+            <div class="compare-feature-col"><i class="fas fa-memory"></i> RAM Footprint</div>
+            <div class="compare-col compare-col-sy"><span class="cmp-neutral">~1 GB</span></div>
+            <div class="compare-col"><span class="cmp-warn">~1.5 GB+</span></div>
+            <div class="compare-col"><span class="cmp-warn">4 GB min</span></div>
+            <div class="compare-col"><span class="cmp-yes"><i class="fas fa-star"></i> &lt;10 MB</span></div>
+            <div class="compare-col"><span class="cmp-neutral">Not published</span></div>
+          </div>
+        </div>
+
+        <!-- Unique differentiators -->
+        <div class="diff-section">
+          <h3 class="diff-title">Only in SecureYeoman</h3>
+          <div class="diff-grid">
+            <div class="diff-card">
+              <div class="diff-icon"><i class="fas fa-shield-alt"></i></div>
+              <h4>Enterprise Auth Stack</h4>
+              <p>RBAC · SSO/OIDC (Okta, Azure AD, Auth0) · mTLS · HMAC-SHA256 audit chain. No competitor has all five.</p>
+            </div>
+            <div class="diff-card">
+              <div class="diff-icon"><i class="fas fa-eye-slash"></i></div>
+              <h4>Credential Redaction</h4>
+              <p>ToolOutputScanner scans every LLM response for 18 credential patterns — API keys, JWTs, PEM certs, DB strings — and replaces them with <code>[REDACTED:&lt;type&gt;]</code> before they reach the UI.</p>
+            </div>
+            <div class="diff-card">
+              <div class="diff-icon"><i class="fas fa-project-diagram"></i></div>
+              <h4>DAG Workflow Builder</h4>
+              <p>9 step types including sub-workflows and swarms. Mustache data-flow templates. ReactFlow visual builder. No other framework in this category ships this.</p>
+            </div>
+            <div class="diff-card">
+              <div class="diff-icon"><i class="fas fa-search"></i></div>
+              <h4>Hybrid FTS + Vector (RRF)</h4>
+              <p>tsvector GIN index fused with pgvector via Reciprocal Rank Fusion. Exact-term recall meets semantic search — without choosing one or the other.</p>
+            </div>
+            <div class="diff-card">
+              <div class="diff-icon"><i class="fas fa-network-wired"></i></div>
+              <h4>Network Security Toolkit</h4>
+              <p>37 MCP tools for active network evaluation — device discovery, port scanning, SSH, NetBox IPAM, NVD/CVE lookups, and PCAP. No other AI agent platform ships this.</p>
+            </div>
+            <div class="diff-card">
+              <div class="diff-icon"><i class="fas fa-lock-open"></i></div>
+              <h4>Zero-Trust Remote Access</h4>
+              <p>Twingate integration lets agents reach private MCP servers through an encrypted zero-trust tunnel — no firewall ports opened. 13 dedicated tools for tenant management and proxy sessions.</p>
+            </div>
           </div>
         </div>
       </div>
