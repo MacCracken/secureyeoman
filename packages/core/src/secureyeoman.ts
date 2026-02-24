@@ -849,67 +849,7 @@ export class SecureYeoman {
         this.config.security?.allowSwarms ||
         this.config.security?.allowWorkflows;
       if (delegationNeeded) {
-        try {
-          this.subAgentStorage = new SubAgentStorage();
-          this.subAgentManager = new SubAgentManager(this.config.delegation, {
-            storage: this.subAgentStorage,
-            aiClientConfig: {
-              model: this.config.model,
-              retryConfig: {
-                maxRetries: this.config.model.maxRetries,
-                baseDelayMs: this.config.model.retryDelayMs,
-              },
-            },
-            aiClientDeps: {
-              auditChain: this.auditChain ?? undefined,
-              logger: this.logger.child({ component: 'SubAgentAI' }),
-            },
-            mcpClient: this.mcpClientManager ?? undefined,
-            auditChain: this.auditChain,
-            logger: this.logger.child({ component: 'SubAgentManager' }),
-            brainManager: this.brainManager ?? undefined,
-            securityConfig: this.config.security,
-          });
-          await this.subAgentManager.initialize();
-          this.logger.debug('Sub-agent delegation system initialized');
-
-          // Step 6.11b: Initialize swarm manager (requires subAgentManager)
-          try {
-            this.swarmStorage = new SwarmStorage();
-            this.swarmManager = new SwarmManager({
-              storage: this.swarmStorage,
-              subAgentManager: this.subAgentManager,
-              logger: this.logger.child({ component: 'SwarmManager' }),
-            });
-            await this.swarmManager.initialize();
-            this.logger.debug('Swarm manager initialized');
-          } catch (swarmError) {
-            this.logger.warn('Swarm manager initialization failed (non-fatal)', {
-              error: swarmError instanceof Error ? swarmError.message : 'Unknown error',
-            });
-          }
-
-          // Step 6.11c: Initialize workflow manager (requires subAgentManager + swarmManager)
-          try {
-            this.workflowStorage = new WorkflowStorage();
-            this.workflowManager = new WorkflowManager({
-              storage: this.workflowStorage,
-              subAgentManager: this.subAgentManager,
-              swarmManager: this.swarmManager,
-              logger: this.logger.child({ component: 'WorkflowManager' }),
-            });
-            await this.workflowManager.initialize();
-            this.logger.debug('Workflow manager initialized');
-          } catch (workflowError) {
-            this.logger.warn('Workflow manager initialization failed (non-fatal)', {
-              error: workflowError instanceof Error ? workflowError.message : 'Unknown error',
-            });
-          }
-        } catch (error) {
-          this.logger.warn('Sub-agent delegation initialization failed (non-fatal)', {
-            error: error instanceof Error ? error.message : 'Unknown error',
-          });
-        }
+        await this.bootDelegationChain();
       }
 
       // Step 6.12: Initialize extension hooks (if enabled)
@@ -1940,6 +1880,83 @@ export class SecureYeoman {
   }
 
   /**
+   * Boot (or re-boot) the sub-agent delegation chain at runtime.
+   * Called at startup when delegation is needed, and lazily when the
+   * security policy is toggled on via updateSecurityPolicy().
+   */
+  private async bootDelegationChain(): Promise<void> {
+    try {
+      if (!this.subAgentStorage) {
+        this.subAgentStorage = new SubAgentStorage();
+      }
+      this.subAgentManager = new SubAgentManager(this.config!.delegation, {
+        storage: this.subAgentStorage,
+        aiClientConfig: {
+          model: this.config!.model,
+          retryConfig: {
+            maxRetries: this.config!.model.maxRetries,
+            baseDelayMs: this.config!.model.retryDelayMs,
+          },
+        },
+        aiClientDeps: {
+          auditChain: this.auditChain ?? undefined,
+          logger: this.logger!.child({ component: 'SubAgentAI' }),
+        },
+        mcpClient: this.mcpClientManager ?? undefined,
+        auditChain: this.auditChain!,
+        logger: this.logger!.child({ component: 'SubAgentManager' }),
+        brainManager: this.brainManager ?? undefined,
+        securityConfig: this.config!.security,
+      });
+      await this.subAgentManager.initialize();
+      this.logger!.debug('Sub-agent delegation system initialized');
+
+      // Swarm manager (requires subAgentManager)
+      try {
+        if (!this.swarmStorage) {
+          this.swarmStorage = new SwarmStorage();
+        }
+        const subMgr = this.subAgentManager;
+        this.swarmManager = new SwarmManager({
+          storage: this.swarmStorage,
+          subAgentManager: subMgr,
+          logger: this.logger!.child({ component: 'SwarmManager' }),
+        });
+        await this.swarmManager.initialize();
+        this.logger!.debug('Swarm manager initialized');
+      } catch (swarmError) {
+        this.logger!.warn('Swarm manager initialization failed (non-fatal)', {
+          error: swarmError instanceof Error ? swarmError.message : 'Unknown error',
+        });
+      }
+
+      // Workflow manager (requires subAgentManager + swarmManager)
+      try {
+        if (!this.workflowStorage) {
+          this.workflowStorage = new WorkflowStorage();
+        }
+        const subMgr2 = this.subAgentManager;
+        this.workflowManager = new WorkflowManager({
+          storage: this.workflowStorage,
+          subAgentManager: subMgr2,
+          swarmManager: this.swarmManager,
+          logger: this.logger!.child({ component: 'WorkflowManager' }),
+        });
+        await this.workflowManager.initialize();
+        this.logger!.debug('Workflow manager initialized');
+      } catch (workflowError) {
+        this.logger!.warn('Workflow manager initialization failed (non-fatal)', {
+          error: workflowError instanceof Error ? workflowError.message : 'Unknown error',
+        });
+      }
+    } catch (error) {
+      this.logger!.warn('Sub-agent delegation initialization failed (non-fatal)', {
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
    * Update security policy toggles at runtime.
    * Boolean toggles are persisted to the security.policy DB table and reloaded on startup.
    */
@@ -1975,6 +1992,11 @@ export class SecureYeoman {
       // kill-switch in the manager handles that independently).
       if (updates.allowSubAgents && this.config!.delegation) {
         this.config!.delegation.enabled = true;
+      }
+      // Lazy-boot the delegation chain when toggled ON at runtime if it was
+      // not initialized at startup (because allowSubAgents was false at boot).
+      if (updates.allowSubAgents && !this.subAgentManager) {
+        void this.bootDelegationChain();
       }
     }
     if (updates.allowA2A !== undefined) {

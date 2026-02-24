@@ -388,11 +388,16 @@ export class SubAgentManager {
             .filter(
               (t) => profile.allowedTools.length === 0 || profile.allowedTools.includes(t.name)
             )
-            .map((t) => ({
-              name: t.name,
-              description: t.description || undefined,
-              parameters: t.inputSchema as Tool['parameters'],
-            }))
+            .map((t) => {
+              // Ensure the schema always has type:'object' — the Anthropic API
+              // rejects tool input_schemas that are missing the type property,
+              // which happens when inputSchema is registered as an empty {} object.
+              const raw = (t.inputSchema ?? {}) as Record<string, unknown>;
+              const parameters: Tool['parameters'] = raw.type
+                ? (raw as Tool['parameters'])
+                : { type: 'object', properties: {}, ...(raw as object) };
+              return { name: t.name, description: t.description || undefined, parameters };
+            })
         : [];
       const tools: Tool[] = [...delegationTools, ...mcpTools];
 

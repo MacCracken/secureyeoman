@@ -1533,6 +1533,22 @@ function BodySection({
           </label>
         </div>
 
+        {/* Delegation status — shown when Sub-Agent Delegation toggle is on */}
+        {item.key === 'subAgents' && creationConfig.subAgents && (
+          <div className={`mx-1 px-3 py-2 rounded text-xs flex items-start gap-2 ${
+            subAgentsBlockedByPolicy
+              ? 'bg-destructive/5 border border-destructive/20 text-destructive'
+              : 'bg-success/5 border border-success/20 text-success'
+          }`}>
+            <span className="mt-0.5 shrink-0">{subAgentsBlockedByPolicy ? '⚠' : '✓'}</span>
+            <span>
+              {subAgentsBlockedByPolicy
+                ? 'Sub-agent delegation is blocked by the security policy. Enable it in Security Settings → Sub-Agent Delegation.'
+                : 'Delegation is ready. This personality can use delegate_task, list_sub_agents, and get_delegation_result.'}
+            </span>
+          </div>
+        )}
+
         {/* A2A and Swarms sub-settings — only visible when Sub-Agent Delegation is enabled */}
         {item.key === 'subAgents' && creationConfig.subAgents && (
           <div className="ml-6 pl-4 border-l-2 border-border space-y-2">

@@ -303,37 +303,43 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           exposeBrowser: false,
         };
         const globalConfig = await mcpStorage.getConfig();
+        const allMcpTools: McpToolDef[] = mcpClient.getAllTools();
 
-        if (selectedServers.length > 0) {
-          const allMcpTools: McpToolDef[] = mcpClient.getAllTools();
+        for (const tool of allMcpTools) {
+          const isYeoman = tool.serverName === 'YEOMAN MCP';
 
-          for (const tool of allMcpTools) {
-            // Only include tools from servers the personality has selected
+          // Always include YEOMAN MCP tools when body is enabled — the
+          // selectedServers list gates external third-party servers only.
+          // Integrations (integration_*) are always included; other YEOMAN
+          // tools are filtered by the per-personality mcpFeatures flags.
+          if (isYeoman) {
+            const isGitTool = tool.name.startsWith('git_') || tool.name.startsWith('github_');
+            const isFsTool = tool.name.startsWith('fs_');
+            const isWebScrapeTool =
+              tool.name.startsWith('web_scrape') || tool.name === 'web_extract_structured';
+            const isWebSearchTool = tool.name.startsWith('web_search');
+            const isBrowserTool = tool.name.startsWith('browser_');
+
+            if (isGitTool && !(globalConfig.exposeGit && perPersonalityFeatures.exposeGit))
+              continue;
+            if (isFsTool && !(globalConfig.exposeFilesystem && perPersonalityFeatures.exposeFilesystem))
+              continue;
+            if (isWebScrapeTool && !(globalConfig.exposeWebScraping ?? globalConfig.exposeWeb) && !perPersonalityFeatures.exposeWebScraping)
+              continue;
+            if (isWebSearchTool && !(globalConfig.exposeWeb && perPersonalityFeatures.exposeWebSearch))
+              continue;
+            if (isBrowserTool && !(globalConfig.exposeBrowser && perPersonalityFeatures.exposeBrowser))
+              continue;
+          } else {
+            // External server: only include when explicitly selected
             if (!selectedServers.includes(tool.serverName)) continue;
-
-            // For YEOMAN MCP tools, apply per-personality AND global feature gates
-            if (tool.serverName === 'YEOMAN MCP') {
-              const isGitTool = tool.name.startsWith('git_') || tool.name.includes('git');
-              const isFsTool =
-                tool.name.startsWith('fs_') ||
-                tool.name.includes('filesystem') ||
-                tool.name.includes('file_');
-
-              if (isGitTool && !(globalConfig.exposeGit && perPersonalityFeatures.exposeGit))
-                continue;
-              if (
-                isFsTool &&
-                !(globalConfig.exposeFilesystem && perPersonalityFeatures.exposeFilesystem)
-              )
-                continue;
-            }
-
-            tools.push({
-              name: tool.name,
-              description: tool.description || undefined,
-              parameters: tool.inputSchema as Tool['parameters'],
-            });
           }
+
+          const raw = (tool.inputSchema ?? {}) as Record<string, unknown>;
+          const parameters: Tool['parameters'] = raw.type
+            ? (raw as Tool['parameters'])
+            : { type: 'object', properties: {}, ...(raw as object) };
+          tools.push({ name: tool.name, description: tool.description || undefined, parameters });
         }
       }
 
@@ -532,10 +538,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               const out = result.output as Record<string, unknown>;
               const item = (out.skill ?? out.task ?? out.personality ?? out.experiment ??
                 out.swarm ?? out.workflow ?? out.run) as Record<string, unknown> | undefined;
+              const args = toolCall.arguments as Record<string, unknown>;
               const name = String(
                 item?.name ?? item?.workflowName ??
                 (typeof out.name === 'string' ? out.name : undefined) ??
-                (toolCall.arguments as Record<string, unknown>)?.name ??
+                (typeof args?.name === 'string' ? args.name : undefined) ??
+                (typeof args?.task === 'string' ? args.task : undefined) ??
                 toolCall.name
               );
               const action = toolAction(toolCall.name);
@@ -896,24 +904,35 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         const mcpStorageStream = secureYeoman.getMcpStorage();
 
         if (personality?.body?.enabled && mcpClientStream && mcpStorageStream) {
-          const selectedServers = personality.body.selectedServers ?? [];
-          const perPersonalityFeatures = personality.body.mcpFeatures ?? {
+          const selectedServersS = personality.body.selectedServers ?? [];
+          const perPersonalityFeaturesS = personality.body.mcpFeatures ?? {
             exposeGit: false, exposeFilesystem: false, exposeWeb: false,
             exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false,
           };
-          const globalConfig = await mcpStorageStream.getConfig();
-          if (selectedServers.length > 0) {
-            const allMcpTools: McpToolDef[] = mcpClientStream.getAllTools();
-            for (const tool of allMcpTools) {
-              if (!selectedServers.includes(tool.serverName)) continue;
-              if (tool.serverName === 'YEOMAN MCP') {
-                const isGitTool = tool.name.startsWith('git_') || tool.name.includes('git');
-                const isFsTool = tool.name.startsWith('fs_') || tool.name.includes('filesystem') || tool.name.includes('file_');
-                if (isGitTool && !(globalConfig.exposeGit && perPersonalityFeatures.exposeGit)) continue;
-                if (isFsTool && !(globalConfig.exposeFilesystem && perPersonalityFeatures.exposeFilesystem)) continue;
-              }
-              tools.push({ name: tool.name, description: tool.description || undefined, parameters: tool.inputSchema as Tool['parameters'] });
+          const globalConfigS = await mcpStorageStream.getConfig();
+          const allMcpToolsS: McpToolDef[] = mcpClientStream.getAllTools();
+
+          for (const tool of allMcpToolsS) {
+            const isYeomanS = tool.serverName === 'YEOMAN MCP';
+            if (isYeomanS) {
+              const isGitS = tool.name.startsWith('git_') || tool.name.startsWith('github_');
+              const isFsS = tool.name.startsWith('fs_');
+              const isWebScrapeS = tool.name.startsWith('web_scrape') || tool.name === 'web_extract_structured';
+              const isWebSearchS = tool.name.startsWith('web_search');
+              const isBrowserS = tool.name.startsWith('browser_');
+              if (isGitS && !(globalConfigS.exposeGit && perPersonalityFeaturesS.exposeGit)) continue;
+              if (isFsS && !(globalConfigS.exposeFilesystem && perPersonalityFeaturesS.exposeFilesystem)) continue;
+              if (isWebScrapeS && !(globalConfigS.exposeWebScraping ?? globalConfigS.exposeWeb) && !perPersonalityFeaturesS.exposeWebScraping) continue;
+              if (isWebSearchS && !(globalConfigS.exposeWeb && perPersonalityFeaturesS.exposeWebSearch)) continue;
+              if (isBrowserS && !(globalConfigS.exposeBrowser && perPersonalityFeaturesS.exposeBrowser)) continue;
+            } else {
+              if (!selectedServersS.includes(tool.serverName)) continue;
             }
+            const rawS = (tool.inputSchema ?? {}) as Record<string, unknown>;
+            const parametersS: Tool['parameters'] = rawS.type
+              ? (rawS as Tool['parameters'])
+              : { type: 'object', properties: {}, ...(rawS as object) };
+            tools.push({ name: tool.name, description: tool.description || undefined, parameters: parametersS });
           }
         }
 
@@ -1104,7 +1123,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               if (!result.isError && CREATION_TOOL_LABELS_S[toolCall.name]) {
                 const out = result.output as Record<string, unknown>;
                 const item = (out.skill ?? out.task ?? out.personality ?? out.experiment ?? out.swarm ?? out.workflow ?? out.run) as Record<string, unknown> | undefined;
-                const name = String(item?.name ?? item?.workflowName ?? (typeof out.name === 'string' ? out.name : undefined) ?? (toolCall.arguments as Record<string, unknown>)?.name ?? toolCall.name);
+                const sArgs = toolCall.arguments as Record<string, unknown>;
+                const name = String(item?.name ?? item?.workflowName ?? (typeof out.name === 'string' ? out.name : undefined) ?? (typeof sArgs?.name === 'string' ? sArgs.name : undefined) ?? (typeof sArgs?.task === 'string' ? sArgs.task : undefined) ?? toolCall.name);
                 const action = toolActionS(toolCall.name);
                 const id = typeof item?.id === 'string' ? item.id : undefined;
                 const evt = { tool: toolCall.name, label, action, name, id };

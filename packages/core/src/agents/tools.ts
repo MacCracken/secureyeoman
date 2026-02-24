@@ -29,7 +29,8 @@ const DELEGATE_TASK_TOOL: Tool = {
       },
       maxTokenBudget: {
         type: 'number',
-        description: 'Optional maximum token budget for this delegation',
+        description:
+          'Optional token budget cap for this delegation. Leave unset to use the system default (50,000 tokens). Typical tasks need 5,000–20,000 tokens. Setting this below 3,000 risks incomplete results.',
       },
     },
     required: ['profile', 'task'],

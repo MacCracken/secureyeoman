@@ -726,16 +726,32 @@ export function SecuritySettings() {
           <PolicyToggle
             label="Sub-Agent Delegation"
             enabled={subAgentsAllowed}
-            isPending={policyMutation.isPending}
+            isPending={policyMutation.isPending || agentConfigMutation.isPending}
             onToggle={() => {
-              policyMutation.mutate({ allowSubAgents: !subAgentsAllowed });
+              const enabling = !subAgentsAllowed;
+              policyMutation.mutate({ allowSubAgents: enabling });
+              // One-click provision: enabling sub-agents also activates delegation
+              // so the user doesn't need a separate second toggle.
+              if (enabling && !delegationEnabled) {
+                agentConfigMutation.mutate({ enabled: true });
+              }
             }}
             description={
               subAgentsAllowed
-                ? 'Sub-agent delegation is allowed. Individual personalities can enable or disable it via their creation config.'
+                ? delegationEnabled
+                  ? 'Sub-agent delegation is active. Personalities with the Sub-Agent Delegation toggle enabled in their Orchestration config can delegate tasks.'
+                  : 'Sub-agent delegation is allowed by policy but delegation is inactive. Enable "Delegate Tasks" below to activate.'
                 : 'Sub-agent delegation is disabled at the security level. No personality can spawn sub-agents regardless of its creation config.'
             }
           />
+
+          {/* Status badge — shown when delegation is ready */}
+          {subAgentsAllowed && delegationEnabled && (
+            <div className="flex items-center gap-2 text-xs text-success bg-success/5 border border-success/20 rounded px-3 py-2">
+              <span>✓</span>
+              <span>Delegation is active — personalities with Sub-Agent Delegation enabled can use <code>delegate_task</code>.</span>
+            </div>
+          )}
 
           {/* A2A Networks and Swarms — sub-items of delegation, only visible when sub-agents enabled */}
           {subAgentsAllowed && (
