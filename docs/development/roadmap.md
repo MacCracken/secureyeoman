@@ -15,14 +15,17 @@
 | 40 | Desktop Control + Multimodal Provider Selection | 2026-02-23 | Complete |
 | 41 | Secrets Management | — | Planned |
 | 42 | TLS / Certificate Management | — | Planned |
-| 43 | Network Evaluation & Protection | — | Planned |
-| 44 | Find & Repair (Ongoing) | — | Planned |
+| 43 | Sub-Agent UX + Bug Fixes | — | Planned |
+| 44 | Skill Routing Quality | — | Planned |
+| 45 | Twingate Remote MCP Access | — | Planned *(depends on 41)* |
+| 46 | Network Evaluation & Protection | — | Planned |
+| 47 | Find & Repair (Ongoing) | — | Ongoing |
 
 ---
 
 ## Phase 41: Secrets Management
 
-**Status**: Planned
+**Status**: Planned | **Priority**: Critical — foundational; Phase 45 (Twingate) depends on this.
 
 Replace direct environment-variable secret storage with a proper secrets management layer. The `secretBackend` config field exists (`auto | keyring | env | file`) and the keyring infrastructure is built (`packages/core/src/security/keyring/`), but there is no runtime vault abstraction, rotation-aware secret resolution, or operator tooling for secret lifecycle management.
 
@@ -49,7 +52,7 @@ Replace direct environment-variable secret storage with a proper secrets managem
 
 ## Phase 42: TLS / Certificate Management
 
-**Status**: Planned
+**Status**: Planned | **Priority**: High — `cert-gen.ts` already built and tested; wiring + CLI is the remaining work.
 
 Two distinct certificate use cases: (1) **self-signed cert for development** — auto-generated, zero-config, allows the browser to connect to the local gateway over HTTPS; (2) **wildcard / CA-signed cert for production** — operator supplies `*.example.com` or single-domain cert, gateway serves it. Both are already structurally supported by `GatewayConfigSchema.tls` (`certPath`, `keyPath`, `caPath`), but there is no tooling, documentation, or auto-generation.
 
@@ -78,67 +81,41 @@ Two distinct certificate use cases: (1) **self-signed cert for development** —
 
 ---
 
-## Phase 43: Network Evaluation & Protection (YeomanMCP)
+## Phase 43: Sub-Agent UX + Bug Fixes
 
-**Status**: Planned
+**Status**: Planned | **Priority**: High — active bug blocking real functionality; UX gap for a shipped feature.
 
-Add network evaluation and protection tools to YeomanMCP for IT task automation and network security. Based on NetClaw's network automation capabilities.
+### 43.1 — Sub-Agent Spin-Up from Dashboard
 
-### 43.1 — Device Automation Tools
+- [ ] **Sub-agent creation UI** — Flow to create, configure, and launch sub-agent personalities directly from Security Settings and per-personality editor, without requiring manual config changes. Includes status card showing whether delegation is available and a one-click "Enable Sub-Agent Delegation" toggle that provisions the necessary permissions.
+- [ ] **Bug fix: "Not enabled" false positive** — Sub-agents report "Not enabled in current configuration" even when `allowSubAgents: true` is set in security settings. Trace the capability check path and fix the mismatch between the security policy gate and the body capability check.
 
-- [ ] `network_device_connect` — SSH/Telnet to network devices
-- [ ] `network_show_command` — Execute IOS-XE/NX-OS/IOS-XR show commands
-- [ ] `network_config_push` — Push configuration to devices
-- [ ] `network_health_check` — Fleet-wide health monitoring
-- [ ] `network_ping_test` / `network_traceroute` — Connectivity tests
+---
 
-### 43.2 — Network Discovery & Topology
+## Phase 44: Skill Routing Quality
 
-- [ ] `network_discovery_cdp` / `network_discovery_lldp` — Neighbor discovery
-- [ ] `network_topology_build` — Build topology from CDP/LLDP/ARP
-- [ ] `network_arp_table` / `network_mac_table` — Layer 2/3 tables
+**Status**: Planned | **Priority**: High — directly improves agent accuracy and reliability for all users.
 
-### 43.3 — Routing & Switching Analysis
+*Inspired by [OpenAI's Skills + Shell Tips](https://developers.openai.com/blog/skills-shell-tips/). Glean improved skill routing accuracy from 73% → 85% by restructuring descriptions and embedding task templates.*
 
-- [ ] `network_routing_table` — IP routing table analysis
-- [ ] `network_ospf_neighbors` / `network_ospf_lsdb` — OSPF state
-- [ ] `network_bgp_peers` — BGP peer status
-- [ ] `network_interface_status` / `network_vlan_list` — Port/VLAN info
+### 44.1 — Schema Additions
 
-### 43.4 — Security Auditing
+- [ ] **`useWhen` / `doNotUseWhen` on `SkillSchema`** — Add `useWhen: z.string().max(500).default('')` and `doNotUseWhen: z.string().max(500).default('')` alongside `description`. Update `composeSoulPrompt` to emit them in the catalog block: `Use when: {useWhen}. Don't use when: {doNotUseWhen}.` Surface as distinct labelled inputs in the dashboard skill editor.
+- [ ] **`successCriteria` on `SkillSchema`** — `z.string().max(300).default('')`. Injected at the end of the skill's instructions block so the model knows when to declare the skill complete.
+- [ ] **`mcpToolsAllowed` on `SkillSchema`** — `z.array(z.string()).default([])`. When non-empty, only the listed MCP tool names are available while this skill's instructions are active. Zero-config default preserves backward compatibility.
+- [ ] **`routing` on `SkillSchema`** — `z.enum(['fuzzy', 'explicit']).default('fuzzy')`. When `'explicit'`, appends: `"To perform [skill name] tasks, use the [skill name] skill."` Deterministic routing for SOPs and compliance workflows.
 
-- [ ] `network_acl_audit` — ACL analysis
-- [ ] `network_aaa_status` — AAA configuration
-- [ ] `network_port_security` — Port security violations
-- [ ] `network_stp_status` — STP analysis
+### 44.2 — Runtime Improvements
 
-### 43.5 — Source of Truth Integration (NetBox)
+- [ ] **Skill invocation accuracy telemetry** — Add `invokedCount` and `selectedCount` fields. The ratio `selectedCount / invokedCount` surfaces routing precision in the dashboard.
+- [ ] **Credential placeholder enforcement** — Validate `$VAR_NAME` convention in skill instructions; warn in editor and CLI sync when literal credentials are detected.
+- [ ] **Output directory convention** — Skills that produce artifacts write to `outputs/{skill-slug}/{iso-date}/`. Surface as `{{output_dir}}` template variable in skill instructions.
 
-- [ ] `netbox_devices_list` — Query NetBox devices
-- [ ] `netbox_interfaces_list` / `netbox_ipam_ips` — Interface/IP data
-- [ ] `netbox_cables` — Cable documentation
-- [ ] `netbox_reconcile` — Live device vs NetBox drift detection
+---
 
-### 43.6 — Vulnerability Assessment
+## Phase 45: Twingate Remote MCP Access
 
-- [ ] `nvd_cve_search` — NVD CVE database search
-- [ ] `nvd_cve_by_software` — CVEs by IOS version
-- [ ] `network_software_version` — Device OS detection
-
-### 43.7 — Network Utilities
-
-- [ ] `subnet_calculator` — IPv4/IPv6 subnet calculator
-- [ ] `subnet_vlsm` — VLSM planning
-- [ ] `wildcard_mask_calc` — Wildcard mask calculator
-
-### 43.8 — Packet Analysis
-
-- [ ] `pcap_upload` — Upload pcap files
-- [ ] `pcap_protocol_hierarchy` — Protocol breakdown
-- [ ] `pcap_conversations` — IP conversations
-- [ ] `pcap_dns_queries` / `pcap_http_requests` — L7 extraction
-
-### 43.9 — Twingate Remote MCP Access
+**Status**: Planned | **Priority**: High — enables private MCP servers to be accessed by remote agents without opening firewall ports. **Depends on Phase 41** (SecretsManager for service key storage).
 
 *Twingate's zero-trust network enables private MCP servers to be exposed to remote AI agents without opening inbound firewall ports. Agents connect via the Twingate Client tunnel; access is gated by Twingate's identity + device-posture policies. Reference: https://www.twingate.com/docs/remote-mcp-access*
 
@@ -189,9 +166,71 @@ TWINGATE_NETWORK=<tenant-name>      # e.g. "acme" → acme.twingate.com
 
 ---
 
-## Phase 44: Find & Repair (Ongoing)
+## Phase 46: Network Evaluation & Protection (YeomanMCP)
 
-**Status**: Planned
+**Status**: Planned | **Priority**: Medium — large feature set for IT automation; implement after core security phases are stable.
+
+Add network evaluation and protection tools to YeomanMCP for IT task automation and network security. Based on NetClaw's network automation capabilities.
+
+### 46.1 — Device Automation Tools
+
+- [ ] `network_device_connect` — SSH/Telnet to network devices
+- [ ] `network_show_command` — Execute IOS-XE/NX-OS/IOS-XR show commands
+- [ ] `network_config_push` — Push configuration to devices
+- [ ] `network_health_check` — Fleet-wide health monitoring
+- [ ] `network_ping_test` / `network_traceroute` — Connectivity tests
+
+### 46.2 — Network Discovery & Topology
+
+- [ ] `network_discovery_cdp` / `network_discovery_lldp` — Neighbor discovery
+- [ ] `network_topology_build` — Build topology from CDP/LLDP/ARP
+- [ ] `network_arp_table` / `network_mac_table` — Layer 2/3 tables
+
+### 46.3 — Routing & Switching Analysis
+
+- [ ] `network_routing_table` — IP routing table analysis
+- [ ] `network_ospf_neighbors` / `network_ospf_lsdb` — OSPF state
+- [ ] `network_bgp_peers` — BGP peer status
+- [ ] `network_interface_status` / `network_vlan_list` — Port/VLAN info
+
+### 46.4 — Security Auditing
+
+- [ ] `network_acl_audit` — ACL analysis
+- [ ] `network_aaa_status` — AAA configuration
+- [ ] `network_port_security` — Port security violations
+- [ ] `network_stp_status` — STP analysis
+
+### 46.5 — Source of Truth Integration (NetBox)
+
+- [ ] `netbox_devices_list` — Query NetBox devices
+- [ ] `netbox_interfaces_list` / `netbox_ipam_ips` — Interface/IP data
+- [ ] `netbox_cables` — Cable documentation
+- [ ] `netbox_reconcile` — Live device vs NetBox drift detection
+
+### 46.6 — Vulnerability Assessment
+
+- [ ] `nvd_cve_search` — NVD CVE database search
+- [ ] `nvd_cve_by_software` — CVEs by IOS version
+- [ ] `network_software_version` — Device OS detection
+
+### 46.7 — Network Utilities
+
+- [ ] `subnet_calculator` — IPv4/IPv6 subnet calculator
+- [ ] `subnet_vlsm` — VLSM planning
+- [ ] `wildcard_mask_calc` — Wildcard mask calculator
+
+### 46.8 — Packet Analysis
+
+- [ ] `pcap_upload` — Upload pcap files
+- [ ] `pcap_protocol_hierarchy` — Protocol breakdown
+- [ ] `pcap_conversations` — IP conversations
+- [ ] `pcap_dns_queries` / `pcap_http_requests` — L7 extraction
+
+---
+
+## Phase 47: Find & Repair (Ongoing)
+
+**Status**: Ongoing
 
 Continuous bug discovery and repair pass — no fixed scope. As real-world usage surfaces regressions or rough edges, they are filed here, fixed, and moved to the Changelog. This phase never closes; it rolls forward with the project.
 
@@ -205,119 +244,89 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ## Future Features
 
-*Demand-gated — implement only once real-world usage confirms the need. Premature build is bloat.*
+*Demand-gated — implement only once real-world usage confirms the need. Ordered by priority within each tier.*
 
+---
 
-### Skill Routing Quality (OpenAI Skills + Shell Tips)
+### Tier 1 — Near Term
 
-*Inspired by [OpenAI's Skills + Shell Tips](https://developers.openai.com/blog/skills-shell-tips/). The blog post documents how Glean improved skill routing accuracy from 73% → 85% by restructuring descriptions to include explicit "Use when / Don't use when" guidance and embedding task templates inside skills rather than the system prompt. Several improvements are actionable in YEOMAN without schema changes; others require new schema fields.*
+#### Kali Security Toolkit Enhancements
 
-**Schema additions (`packages/shared/src/types/soul.ts`):**
+*Core implementation shipped (ADR 089). The `sec_*` MCP tools, `secureyeoman security` CLI, and three deployment modes (native/docker-exec/prebuilt) are live.*
 
-- [ ] **`useWhen` / `doNotUseWhen` structured fields on `SkillSchema`** — Add `useWhen: z.string().max(500).default('')` and `doNotUseWhen: z.string().max(500).default('')` as first-class schema fields alongside `description`. Update `composeSoulPrompt` to emit them in the catalog block when non-empty: `Use when: {useWhen}. Don't use when: {doNotUseWhen}.` Makes routing guidance machine-readable and surfaceable in the dashboard skill editor as distinct labelled inputs.
+- [ ] **Scope manifest UI** — Dashboard panel for managing `MCP_ALLOWED_TARGETS` — add/remove CIDRs, hostnames, URL prefixes. Wildcard (`*`) mode requires explicit acknowledgement checkbox. Reads/writes the running server's environment or a persisted config table.
+- [ ] **Structured output normalization** — Parse nmap XML (`-oX`), sqlmap JSON (`--output-format=json`), nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining (e.g. nmap port list → gobuster per open port → nuclei per service).
+- [ ] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — Publish a versioned Kali-based Docker image as a one-click MCP prebuilt in `McpPrebuilts.tsx` for cloud deployments where `secureyeoman security setup` is not convenient.
+- [ ] **Hydra live brute-force** — Credential testing against authorized targets. Requires scope enforcement proven stable and an additional per-tool authorization flag beyond `MCP_ALLOWED_TARGETS`.
 
-- [ ] **`successCriteria` field on `SkillSchema`** — `z.string().max(300).default('')`. What does a successful invocation look like? Injected at the end of the skill's instructions block so the model knows when to declare the skill complete. Borrowed directly from the blog post's recommendation to "define success criteria" in skill descriptions.
+#### Multimodal I/O Enhancement
 
-- [ ] **`mcpToolsAllowed` field on `SkillSchema`** — `z.array(z.string()).default([])`. When non-empty, only the listed MCP tool names are available to the LLM while this skill's instructions are active. Implements the blog's security recommendation: "Combining skills with open network access creates a high-risk path for data exfiltration — restrict allowlists." Zero-config default (empty = all tools available) preserves backward compatibility.
+*Provider picker shipped in Phase 40; expanded to 10 TTS and 7 STT providers.*
 
-- [ ] **`routing` field on `SkillSchema`** — `z.enum(['fuzzy', 'explicit']).default('fuzzy')`. When `'explicit'`, the system prompt appends: `"To perform [skill name] tasks, use the [skill name] skill."` Replaces fuzzy pattern matching with a deterministic instruction for workflows where routing reliability matters (e.g. SOPs, compliance workflows). Analogous to the blog's "explicitly instruct: Use the [skill name] skill" pattern.
+- [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`.
+- [ ] **Streaming TTS via SSE** — Stream audio chunks from the TTS backend to the browser as they're generated. Uses Server-Sent Events. Reduces perceived latency for long text.
+- [ ] **Audio validation before STT** — Validate duration 2–30s, RMS > 0.01, peak < 0.99. Return a clear error rather than passing bad audio to the API.
+- [ ] **Whisper model size selection** — Expose `tiny | base | small | medium | large` in multimodal config. Surface as dropdown in the provider card UI alongside provider selection.
+- [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity.
+- [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call.
 
-**Runtime improvements:**
+---
 
-- [ ] **Skill invocation accuracy telemetry** — `usageCount` tracks install count but not routing accuracy. Add `invokedCount: number` (incremented when the skill's instructions are actually injected into a prompt) and `selectedCount: number` (incremented when the model cites the skill name in its response). The ratio `selectedCount / invokedCount` surfaces routing precision — the same metric Glean used to measure the 73% → 85% improvement.
+### Tier 2 — Medium Term
 
-- [ ] **Credential placeholder convention enforcement** — Skills that reference external services should use `$VAR_NAME` placeholders (e.g. `$JIRA_API_KEY`) rather than embedding literal credentials. Add a validation warning in the skill editor and CLI sync when `instructions` matches known credential patterns (emails with passwords, long alphanumeric strings, JWT prefixes). Mirrors the blog's `domain_secrets` model where models see placeholders and the runtime injects real values.
+#### Markdown for Agents (MCP Content Negotiation)
 
-- [ ] **Output directory convention for file-creating skills** — Skills that produce artifacts (reports, datasets, formatted files) should write to a conventional path. Proposed: `outputs/{skill-slug}/{iso-date}/`. Document this convention in `community-skills/README.md` and surface it in skill instructions as a template variable `{{output_dir}}`. Analogous to the blog's `/mnt/data` standard artifact location.
-
-### Markdown for Agents (MCP Content Negotiation)
-
-*[Cloudflare's Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/) uses HTTP content negotiation (`Accept: text/markdown`) to deliver clean, LLM-optimized markdown instead of raw HTML — achieving up to 80% token reduction. YEOMAN's MCP layer should support this as both a **consumer** (web-fetch tools) and a **producer** (MCP resource endpoints for personalities and skills).*
+*[Cloudflare's Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/) achieves up to 80% token reduction via `Accept: text/markdown` content negotiation.*
 
 **Consumer — smarter web fetching in `web-tools.ts`:**
 
-- [ ] **`Accept: text/markdown` content negotiation in `web_scrape_markdown`** — Before falling back to HTML fetch + `node-html-markdown` conversion, send `Accept: text/markdown, text/html;q=0.9` on the initial request. If the server responds `Content-Type: text/markdown`, use the body directly — no conversion needed, no noise from nav/footer/ads. Fall back to the existing HTML→markdown pipeline when the server ignores or rejects the header.
-
-- [ ] **Token savings telemetry in tool output** — Surface the `x-markdown-tokens` response header (native markdown token count) in the tool's text output alongside the content. When the server does not support markdown, estimate token count from the converted markdown byte length (`chars / 4`). Include a one-line summary: `"Source: native markdown — 3,150 tokens (est. 80% saving vs HTML)"` so agents can factor cost into decisions.
-
-- [ ] **`Content-Signal` header enforcement** — Parse `Content-Signal: ai-input=no` (or `ai-train=no`) on any web response. When `ai-input=no` is set, return an error response rather than feeding the content to the agent: `"Content owner has indicated this page is not for AI input (Content-Signal: ai-input=no)."` Configurable opt-out via `MCP_RESPECT_CONTENT_SIGNAL=false` for private-network URLs.
-
-- [ ] **YAML front matter extraction from markdown responses** — When a markdown response includes YAML front matter (triple-dash fenced block), parse it and return title, description, and any other metadata fields as a structured preamble before the body. Enables agents to use page metadata without reading the full content (e.g. `web_extract_structured` can be replaced with a cheap front-matter-only fetch).
-
-- [ ] **`web_fetch_markdown` dedicated tool** — A leaner, single-purpose tool: fetch one URL, return clean markdown, report token count and `Content-Signal`. Distinct from `web_scrape_markdown` (no selector filtering, no batch mode). Optimised for the common agent pattern of "read this page, summarise it" — minimal overhead, maximum clarity. Exposes `prefer_native: boolean` (default `true`) to control whether `Accept: text/markdown` is sent.
+- [ ] **`Accept: text/markdown` in `web_scrape_markdown`** — Send `Accept: text/markdown, text/html;q=0.9` before falling back to HTML→markdown conversion.
+- [ ] **Token savings telemetry in tool output** — Surface `x-markdown-tokens` header (or estimate) alongside content.
+- [ ] **`Content-Signal` header enforcement** — Parse `Content-Signal: ai-input=no` and return an error rather than feeding the content to the agent. Configurable opt-out via `MCP_RESPECT_CONTENT_SIGNAL=false`.
+- [ ] **YAML front matter extraction** — Parse YAML front matter from markdown responses and return metadata as structured preamble.
+- [ ] **`web_fetch_markdown` dedicated tool** — Leaner, single-purpose: fetch one URL, return clean markdown, report token count and `Content-Signal`.
 
 **Producer — serving YEOMAN content to external agents:**
 
-- [ ] **Personality system prompts as `text/markdown` MCP resources** — Register each active personality's system prompt as an MCP resource with URI `yeoman://personalities/{id}/prompt`. Serve with `Content-Type: text/markdown` and YAML front matter: `name`, `description`, `version`, `capabilities[]`, `created_at`. Allows external agents consuming YEOMAN via MCP to read personality context at minimal token cost without calling the REST API.
+- [ ] **Personality system prompts as `text/markdown` MCP resources** — URI `yeoman://personalities/{id}/prompt` with YAML front matter.
+- [ ] **Skill definitions as `text/markdown` MCP resources** — URI `yeoman://skills/{id}` with front matter for agent-to-agent skill discovery.
+- [ ] **`x-markdown-tokens` response header on all markdown MCP endpoints**.
 
-- [ ] **Skill definitions as `text/markdown` MCP resources** — Register each enabled skill as `yeoman://skills/{id}` with front matter: `name`, `description`, `triggers[]`, `author`, `version`. The markdown body is the skill's instruction block. Enables agent-to-agent skill discovery: an agent can list YEOMAN's skills and read their instructions as markdown before deciding whether to delegate.
+---
 
-- [ ] **`x-markdown-tokens` response header on all markdown MCP endpoints** — Add a middleware layer (or per-route header) to any MCP HTTP endpoint returning `text/markdown` content. Compute token estimate (`content.length / 4`) and attach as `x-markdown-tokens`. Follows the Cloudflare spec so any agent-side markdown-aware client can report savings automatically.
+### Tier 3 — Long Term / Demand-Gated
 
-### Kali Security Toolkit — Future Enhancements
+#### Encryption
 
-*Core implementation shipped (ADR 089). The `sec_*` MCP tools, `secureyeoman security` CLI, and three deployment modes (native/docker-exec/prebuilt) are live. These items are the next tier of improvements, gated on real-world usage.*
+- [ ] **HSM Integration** — Hardware Security Module integration for key management.
 
-- [ ] **Scope manifest UI** — Dashboard panel for managing `MCP_ALLOWED_TARGETS` — add/remove CIDRs, hostnames, URL prefixes. Wildcard (`*`) mode requires explicit acknowledgement checkbox. Reads/writes the running server's environment or a persisted config table.
-- [ ] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — Publish a versioned Kali-based Docker image as a one-click MCP prebuilt in `McpPrebuilts.tsx` for cloud deployments where `secureyeoman security setup` is not convenient. Targets environments that cannot run `secureyeoman` CLI locally.
-- [ ] **Structured output normalization** — Parse nmap XML (`-oX`), sqlmap JSON (`--output-format=json`), nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining (e.g. nmap port list → gobuster per open port → nuclei per service).
-- [ ] **Hydra live brute-force** — Credential testing against authorized targets. Requires scope enforcement proven stable and an additional per-tool authorization flag beyond `MCP_ALLOWED_TARGETS`.
+#### Marketplace Evolution
 
-### Multimodal I/O Enhancement
-
-*Provider picker shipped in Phase 40; expanded to 10 TTS and 7 STT providers. Only connected (API key present / service reachable) providers are shown in the UI. Remaining items target voice quality, streaming, and local models.*
-
-- [x] **Multi-provider TTS/STT** — ElevenLabs, Deepgram, Cartesia, Google Cloud, Azure AI Speech, Play.ht, OpenedAI Speech (local), Kokoro (local) for TTS; Deepgram, ElevenLabs Scribe, AssemblyAI, Google Cloud, Azure for STT. All REST-based, no required npm packages. Detected by env var presence (`ELEVENLABS_API_KEY`, `DEEPGRAM_API_KEY`, etc.) or service reachability. UI shows only connected providers grouped by local vs cloud.
-- [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity — FRIDAY speaks in FRIDAY's voice. Supports multiple reference audio samples, language selection, avatar, and ZIP export/import.
-- [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call. Based on Voicebox's `utils/cache.py` pattern.
-- [ ] **Audio validation before STT** — Validate incoming audio before sending to Whisper: duration 2–30s, RMS > 0.01 (no silence), peak < 0.99 (no clipping). Return a clear error rather than passing bad audio to the API. Based on Voicebox's `utils/validation.py` checks.
-- [ ] **Whisper model size selection** — Expose `tiny | base | small | medium | large` model size in the multimodal config rather than hardcoding `whisper-1`. Surfaces in the Phase 40 provider card UI as a dropdown alongside the existing provider selection.
-- [ ] **Streaming TTS via SSE** — Stream audio chunks from the TTS backend to the browser as they're generated, rather than waiting for the full audio buffer. Reduces perceived latency for long text. Uses Server-Sent Events (same pattern as model download progress in Voicebox).
-- [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`. Eliminates the awkward fixed wait and stops recording immediately when the user stops speaking.
-
-### Encryption
-
-- [ ] **HSM Integration** — Hardware Security Module integration for key management
-
-### Layout Algorithms
-
-*Revisit once delegation trees and peer networks grow beyond a few dozen nodes and Dagre's static layout proves limiting.*
-
-- [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based layouts (layered, force, tree, orthogonal routing). ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
-
-### Marketplace Evolution
-
-*Revisit after community responds to the Phase 18 local-path-sync approach — see [ADR 063](../adr/063-community-skills-registry.md).*
-
-- [ ] **Scheduled Auto-Sync** — Optional cron-style background sync from the configured community repo (configurable interval, off by default)
-- [ ] **Hosted Discovery API** — A lightweight read-only API for browsing available community skills without cloning. Community repo publishes a generated `index.json` via CI.
+- [ ] **Scheduled Auto-Sync** — Optional cron-style background sync from the configured community repo (configurable interval, off by default).
+- [ ] **Hosted Discovery API** — A lightweight read-only API for browsing available community skills without cloning.
 - [ ] **Cryptographic Skill Signing** — Authors sign skills with a keypair; SecureYeoman verifies signatures before installing. Reject unsigned skills in strict mode.
-- [ ] **Skill Ratings & Downloads** — Community feedback mechanism (stars, download counts) surfaced in the marketplace UI
+- [ ] **Skill Ratings & Downloads** — Community feedback mechanism (stars, download counts) surfaced in the marketplace UI.
 
-### Real-time Collaboration
-
-*Revisit once multi-workspace/multi-user usage data shows concurrent editing is a real pain point.*
+#### Real-time Collaboration
 
 - [ ] **Optimistic Locking** — `version` field on personalities and skills; API returns `409 Conflict` on stale saves; dashboard shows "Someone else edited this — reload?" banner.
 
-### Mobile Application
+#### Layout Algorithms
 
-*Revisit after Group Chat view ships — it has shipped (Phase 31, ADR 087). The mobile app mirrors that surface.*
+*Revisit once delegation trees and peer networks grow beyond a few dozen nodes and Dagre's static layout proves limiting.*
 
-- [ ] **Mobile app** — Native iOS/Android companion app. Primary view: chat interface (mirrors Group Chat view) + at-a-glance overview stats (task count, heartbeat, recent activity). Connects to the existing SecureYeoman REST + WebSocket API; no separate backend required.
-- [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across desktop dashboard, mobile app, and any connected messaging integration via the existing CRDT + WebSocket infrastructure.
+- [ ] **ELK Integration** — Eclipse Layout Kernel for advanced constraint-based layouts. ~2 MB WASM bundle — justified only when graph complexity outgrows Dagre.
 
-### Desktop Application
+#### Mobile Application
 
-*Companion to the mobile app (see above). Targets power users and operators who want a native experience beyond the browser-based dashboard.*
+- [ ] **Mobile app** — Native iOS/Android companion app. Primary view: chat interface + at-a-glance overview stats. Connects to existing REST + WebSocket API.
+- [ ] **Cross-device sync** — Conversation history, personality state, and notification preferences synced across devices.
 
-- [ ] **Desktop app** — Native desktop client (Electron or Tauri) wrapping the existing dashboard SPA. Adds OS-level features: system tray with badge count for unread messages, native notifications, global keyboard shortcut to focus the app, and auto-launch on login. Connects to a local or remote SecureYeoman instance via the existing REST + WebSocket API.
-- [ ] **Offline indicator** — Detect when the connected SecureYeoman instance is unreachable and surface a reconnecting banner in the native shell.
-- [ ] **Auto-update** — In-app update flow via the platform's native update mechanism (Squirrel on Windows/macOS, AppImage delta updates on Linux).
+#### Desktop Application
 
-### AI Safety
-
-- [ ] **Sub-agent spin-up from dashboard** — UI flow to create, configure, and launch sub-agent personalities directly from Security Settings and per-personality editor, without requiring manual config changes. Includes status card showing whether delegation is available and a one-click "Enable Sub-Agent Delegation" toggle that provisions the necessary permissions. See current status reporting issue: sub-agents report "Not enabled in current configuration" even when enabled in security settings.
+- [ ] **Desktop app** — Native desktop client (Electron or Tauri) wrapping the existing dashboard SPA. Adds system tray, native notifications, global keyboard shortcut, and auto-launch on login.
+- [ ] **Offline indicator** — Detect when the connected SecureYeoman instance is unreachable.
+- [ ] **Auto-update** — In-app update flow via the platform's native update mechanism.
 
 ---
 
@@ -339,4 +348,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-24 (Phase 40 complete; Multimodal provider picker shipped; Twingate remote MCP added to Phase 43)*
+*Last updated: 2026-02-24 (Roadmap re-prioritized; Twingate promoted to Phase 45; sub-agent bug fix Phase 43; skill routing Phase 44; Network tools Phase 46)*
