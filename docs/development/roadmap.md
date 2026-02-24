@@ -17,6 +17,7 @@
 | 46 | Network Evaluation & Protection | — | Planned |
 | 47 | Find & Repair (Ongoing) | — | Ongoing |
 | 48 | Machine Readable Org Intent | — | Planned |
+| 49 | AI Autonomy Level Audit | — | Planned |
 
 ---
 ## Phase pre-41:
