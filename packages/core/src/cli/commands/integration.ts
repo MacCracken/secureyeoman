@@ -21,7 +21,7 @@ Options:
       --token <token>      Auth token
       --json               Output raw JSON
       --platform <name>    Platform (for create)
-      --name <name>        Name (for create)
+      --name <name>        Display name (for create)
       --config <json>      Config JSON (for create)
   -h, --help               Show this help
 `;
@@ -194,7 +194,7 @@ async function createIntegration(
 
   const body: Record<string, unknown> = {
     platform: platformResult.value,
-    name: nameResult.value,
+    displayName: nameResult.value,
   };
 
   if (configResult.value) {

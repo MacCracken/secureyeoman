@@ -55,6 +55,7 @@ import { securityCommand } from './cli/commands/security.js';
 import { mcpQuickbooksCommand } from './cli/commands/mcp-quickbooks.js';
 import { agnosticCommand } from './cli/commands/agnostic.js';
 import { tuiCommand } from './cli/commands/tui.js';
+import { agentsCommand } from './cli/commands/agents.js';
 
 const router = createRouter('start');
 
@@ -84,6 +85,7 @@ router.register(securityCommand);
 router.register(mcpQuickbooksCommand);
 router.register(agnosticCommand);
 router.register(tuiCommand);
+router.register(agentsCommand);
 
 // Help command
 router.register({

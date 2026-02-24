@@ -29,13 +29,10 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 ### Bugs
 
-- [ ] Tasks status and duration displayed in Task View > Task History still state duration as a '-'.
-- [ ] Connect CLI when DisplayName entered and connected -Integration undefined not found
 - [ ] Chat needs responsive design in the response window to not blow up the view
 
 ### Improvements
 
-- [ ] CLI updates for the added toolsets
 - [ ] FRIDAY's suggestions - [suggestions](friday_suggestions.md)
 
 ---

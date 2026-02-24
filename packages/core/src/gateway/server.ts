@@ -883,7 +883,7 @@ export class GatewayServer {
       ) => {
         try {
           const taskStorage = this.secureYeoman.getTaskStorage();
-          const task = taskStorage.getTask(request.params.id);
+          const task = await taskStorage.getTask(request.params.id);
           if (!task) {
             return sendError(reply, 404, 'Task not found');
           }
@@ -906,12 +906,12 @@ export class GatewayServer {
       ) => {
         try {
           const taskStorage = this.secureYeoman.getTaskStorage();
-          const task = taskStorage.getTask(request.params.id);
+          const task = await taskStorage.getTask(request.params.id);
           if (!task) {
             return sendError(reply, 404, 'Task not found');
           }
           const { name, type, description } = request.body;
-          taskStorage.updateTaskMetadata(request.params.id, { name, type, description });
+          await taskStorage.updateTaskMetadata(request.params.id, { name, type, description });
           return taskStorage.getTask(request.params.id);
         } catch {
           return sendError(reply, 500, 'Failed to update task');
@@ -930,11 +930,11 @@ export class GatewayServer {
       ) => {
         try {
           const taskStorage = this.secureYeoman.getTaskStorage();
-          const task = taskStorage.getTask(request.params.id);
+          const task = await taskStorage.getTask(request.params.id);
           if (!task) {
             return sendError(reply, 404, 'Task not found');
           }
-          taskStorage.deleteTask(request.params.id);
+          await taskStorage.deleteTask(request.params.id);
           return { success: true };
         } catch {
           return sendError(reply, 500, 'Failed to delete task');

@@ -674,10 +674,11 @@ export async function createIntegration(data: {
   enabled: boolean;
   config: Record<string, unknown>;
 }): Promise<IntegrationInfo> {
-  return request('/integrations', {
+  const result = await request<{ integration: IntegrationInfo }>('/integrations', {
     method: 'POST',
     body: JSON.stringify(data),
   });
+  return result.integration;
 }
 
 export async function updateIntegration(

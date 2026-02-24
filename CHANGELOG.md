@@ -37,6 +37,17 @@ All notable changes to SecureYeoman are documented in this file.
 - **Review Queue API**: `GET /api/v1/soul/approvals`, `GET /api/v1/soul/approvals/count`, `POST /api/v1/soul/approvals/:id/approve`, `POST /api/v1/soul/approvals/:id/reject`
 - **Dashboard**: Automation Level (radio group) and Emergency Stop (checkbox) controls added to PersonalityEditor under **Body → Resources**
 
+**`secureyeoman agents` command** (ADR 118) — new CLI entry point for viewing and toggling agent feature flags at runtime without restarting the server.
+
+Subcommands:
+- `status` — show all four feature flags (`sub-agents`, `a2a`, `swarms`, `binary-agents`) with enabled/disabled indicators and descriptions
+- `enable <feature>` — enable the named feature via `PATCH /api/v1/security/policy`
+- `disable <feature>` — disable the named feature
+
+All changes take effect immediately in the running process; they are not persisted to `secureyeoman.yaml`. Use `--json` for script-friendly output.
+
+Changes: `packages/core/src/cli/commands/agents.ts`, registered in `packages/core/src/cli.ts`.
+
 **`secureyeoman mcp-quickbooks` command** (ADR 117) — new CLI entry point for managing the QuickBooks Online MCP toolset without editing environment files manually.
 
 Subcommands:
@@ -57,6 +68,14 @@ Changes: `packages/core/src/cli/commands/mcp-quickbooks.ts` (alias: `mcp-qbo`), 
 ---
 
 ### Bug Fixes
+
+**Task History duration always displayed as '-'** — two bugs combined. (1) `executor.submit()` called `taskStorage.storeTask(task)` without `await`, creating a race condition where subsequent `updateTask(RUNNING)` / `updateTask(COMPLETED)` calls could execute before the INSERT was committed. (2) `formatDuration()` in `TaskHistory.tsx` used `if (!ms)` which evaluates to true for `durationMs = 0`, returning `'-'` for any completed task faster than 1 ms. Fixed: `storeTask` is now awaited in `executor.ts`; `formatDuration` uses `if (ms == null)` and displays `<1ms` for sub-millisecond durations. Also fixed three missing `await` on `taskStorage.getTask()`, `updateTaskMetadata()`, and `deleteTask()` calls in the `GET/PUT/DELETE /api/v1/tasks/:id` route handlers — without these awaits the `!task` null guard ran on a Promise (always truthy) and never returned 404.
+
+**CLI `integration create` sent wrong field name; dashboard didn't unwrap server response** — the `secureyeoman integration create` command sent `name: <value>` but the backend schema expects `displayName`. Separately, `createIntegration()` in the dashboard API client returned the raw `{ integration: {...} }` wrapper object instead of the inner `IntegrationInfo`, causing `integration.id` to be `undefined` and the "Integration undefined not found" error. Fixed: CLI now sends `displayName`; `client.ts` unwraps the response.
+
+**Dynamic tool "entry is not defined" gave no context** — when a dynamic tool's sandboxed implementation code threw a `ReferenceError` (e.g. using an undeclared variable like `entry`), `DynamicToolManager.execute()` forwarded the raw VM exception message with no indication it came from the tool's own code. Fixed: error message now reads `Dynamic tool "<name>" implementation error: <message>. Check the tool's implementation code for undefined variables or logic errors.`
+
+**Chat stream responses never appeared after streaming** — `useChatStream.handleSend` used a raw `fetch('/api/v1/chat/stream', ...)` call with no `Authorization` header. The backend returned 401 Unauthorized; the frontend did not check `res.ok`, so it silently tried to parse the 401 error body as SSE, found no `data:` events, and finished with nothing added to the message list. The "Thinking…" indicator would vanish and the conversation remained empty. Fixed by reading the token via `getAccessToken()` and injecting `Authorization: Bearer <token>` into the stream request headers. Also added a `res.ok` guard that throws a descriptive error (surfaced in the chat as an error message) for any non-2xx response.
 
 **Docker build broken by TypeScript errors** — `docker compose --profile dev build` failed during `npm run build`. Four errors resolved:
 

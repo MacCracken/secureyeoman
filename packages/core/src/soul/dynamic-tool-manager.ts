@@ -268,8 +268,11 @@ export class DynamicToolManager {
 
       return { output: result, isError: false };
     } catch (err) {
+      const raw = err instanceof Error ? err.message : String(err);
       return {
-        output: { error: err instanceof Error ? err.message : String(err) },
+        output: {
+          error: `Dynamic tool "${toolName}" implementation error: ${raw}. Check the tool's implementation code for undefined variables or logic errors.`,
+        },
         isError: true,
       };
     }

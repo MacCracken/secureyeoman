@@ -232,8 +232,9 @@ export class TaskExecutor {
       },
     });
 
-    // Persist task
-    this.taskStorage?.storeTask(task);
+    // Persist task — must await before queuing so that any updateTask calls
+    // in executeTask cannot race against an uncommitted INSERT.
+    await this.taskStorage?.storeTask(task);
 
     // Queue for execution
     return new Promise((resolve, reject) => {
