@@ -262,11 +262,30 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
         return sendError(reply, 503, 'Heartbeat system not available');
       }
       const status = heartbeatManager.getStatus();
-      const activePersonality = (await soulManager?.getActivePersonality()) ?? null;
+
+      // Collect all personalities the heartbeat currently serves:
+      // every enabled (is_active) personality plus the default (is_default),
+      // deduplicated by id.
+      const [enabledPersonalities, defaultPersonality] = await Promise.all([
+        soulManager?.getEnabledPersonalities() ?? Promise.resolve([]),
+        soulManager?.getActivePersonality() ?? Promise.resolve(null),
+      ]);
+      const seen = new Set<string>();
+      const allPersonalities: { id: string; name: string }[] = [];
+      for (const p of enabledPersonalities) {
+        if (!seen.has(p.id)) { seen.add(p.id); allPersonalities.push({ id: p.id, name: p.name }); }
+      }
+      if (defaultPersonality && !seen.has(defaultPersonality.id)) {
+        allPersonalities.push({ id: defaultPersonality.id, name: defaultPersonality.name });
+      }
+
       const tasks = status.tasks.map((t) => ({
         ...t,
-        personalityId: activePersonality?.id ?? null,
-        personalityName: activePersonality?.name ?? null,
+        // Legacy single fields kept for backwards compat — point at the default
+        personalityId: defaultPersonality?.id ?? null,
+        personalityName: defaultPersonality?.name ?? null,
+        // Multi-active: all personalities this heartbeat currently serves
+        personalities: allPersonalities,
       }));
       return { tasks };
     }

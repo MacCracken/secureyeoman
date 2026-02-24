@@ -147,6 +147,12 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
     refetchInterval: 10_000,
   });
 
+  const { data: personalitiesData } = useQuery({
+    queryKey: ['personalities'],
+    queryFn: fetchPersonalities,
+    refetchInterval: 30_000,
+  });
+
   // Accumulate CPU + memory for time-series charts
   const historyRef = useRef<HistoryPoint[]>([]);
   const [history, setHistory] = useState<HistoryPoint[]>([]);
@@ -166,6 +172,9 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
   const mcpServers: McpServerConfig[] = mcpData?.servers ?? [];
   const enabledMcp = mcpServers.filter((s) => s.enabled).length;
   const enabledHb = heartbeatTasks.filter((t: { enabled: boolean }) => t.enabled).length;
+  const personalities = personalitiesData?.personalities ?? [];
+  const activePersonalities = personalities.filter((p: Personality) => p.isActive);
+  const defaultPersonality = personalities.find((p: Personality) => p.isDefault);
 
   const TAB_LABELS: Record<Tab, string> = {
     overview: 'Overview',
@@ -217,6 +226,8 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           enabledHb={enabledHb}
           heartbeatTasks={heartbeatTasks}
           activeDelegations={activeDelegations}
+          activePersonalities={activePersonalities}
+          defaultPersonality={defaultPersonality}
           navigate={navigate}
           onViewCosts={() => setActiveTab('costs')}
         />
@@ -246,6 +257,8 @@ interface OverviewTabProps {
   enabledHb: number;
   heartbeatTasks: { enabled: boolean }[];
   activeDelegations: { delegations?: { depth: number }[] } | undefined;
+  activePersonalities: Personality[];
+  defaultPersonality: Personality | undefined;
   navigate: ReturnType<typeof useNavigate>;
   onViewCosts: () => void;
 }
@@ -260,6 +273,8 @@ function OverviewTab({
   enabledHb,
   heartbeatTasks,
   activeDelegations,
+  activePersonalities,
+  defaultPersonality,
   navigate,
   onViewCosts,
 }: OverviewTabProps) {
@@ -271,14 +286,16 @@ function OverviewTab({
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
         <StatCard
           title="Active Agents"
-          value={activeDelegations?.delegations?.length ?? 0}
+          value={activePersonalities.length}
           icon={<Bot className="w-4 h-4 sm:w-5 sm:h-5" />}
           subtitle={
-            activeDelegations?.delegations?.length
-              ? `Depth: ${Math.max(...(activeDelegations.delegations.map((d) => d.depth) || [0]))}`
-              : undefined
+            defaultPersonality
+              ? `Default: ${defaultPersonality.name}`
+              : activeDelegations?.delegations?.length
+                ? `${activeDelegations.delegations.length} sub-agent${activeDelegations.delegations.length !== 1 ? 's' : ''}`
+                : undefined
           }
-          onClick={() => navigate('/agents')}
+          onClick={() => navigate('/personality')}
         />
         <StatCard
           title="Heartbeat"

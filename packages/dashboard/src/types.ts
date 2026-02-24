@@ -399,8 +399,12 @@ export interface HeartbeatTask {
   intervalMs?: number;
   lastRunAt: number | null;
   config: Record<string, unknown>;
+  /** @deprecated use personalities[] */
   personalityId?: string | null;
+  /** @deprecated use personalities[] */
   personalityName?: string | null;
+  /** All personalities currently served by this heartbeat task */
+  personalities?: { id: string; name: string }[];
 }
 
 export interface HeartbeatLogEntry {

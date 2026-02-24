@@ -592,9 +592,16 @@ function HeartbeatTaskCard({ task }: { task: HeartbeatTask }) {
               ) : (
                 <span className="text-xs text-muted-foreground">never run</span>
               )}
-              {task.personalityName && (
-                <span className="text-xs text-muted-foreground">{task.personalityName}</span>
-              )}
+              {(task.personalities && task.personalities.length > 0
+                ? task.personalities
+                : task.personalityName
+                  ? [{ id: task.personalityId ?? task.personalityName, name: task.personalityName }]
+                  : []
+              ).map((p) => (
+                <span key={p.id} className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-medium">
+                  {p.name}
+                </span>
+              ))}
             </div>
           </div>
         </div>
