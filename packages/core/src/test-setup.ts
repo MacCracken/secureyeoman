@@ -63,6 +63,7 @@ export async function truncateAllTables(): Promise<void> {
     'rotation',
     'rbac',
     'proactive',
+    'workflow',
   ];
 
   for (const schema of schemas) {
@@ -80,6 +81,20 @@ export async function truncateAllTables(): Promise<void> {
   );
   for (const row of publicRes.rows) {
     await pool.query(`TRUNCATE public."${row.tablename}" CASCADE`);
+  }
+}
+
+/**
+ * Truncate only workflow schema tables (definitions, runs, step_runs).
+ * Lighter alternative to truncateAllTables for workflow-specific test suites.
+ */
+export async function truncateWorkflowTables(): Promise<void> {
+  const pool = getPool();
+  const res = await pool.query(
+    `SELECT tablename FROM pg_tables WHERE schemaname = 'workflow'`
+  );
+  for (const row of res.rows) {
+    await pool.query(`TRUNCATE workflow."${row.tablename}" CASCADE`);
   }
 }
 
