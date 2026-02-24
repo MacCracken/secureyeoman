@@ -1,3 +1,15 @@
+## [2026.2.24+2]
+
+### Settings — UI Polish and Container Fix
+
+#### Fixed
+
+- **Soul config save — "Not found" error** — `docker compose --profile dev build` rebuilds the image but leaves old containers running. Containers are now force-recreated (`up -d --force-recreate`) after builds so the new `PATCH /api/v1/soul/config` route is actually served.
+
+- **Save error banner visibility in dark mode** — the inline error on the Soul System card was a plain `text-destructive` text line, nearly invisible on dark backgrounds. Replaced with a banner that has `bg-destructive/10` fill, `border-destructive/40` border, and a `✕` icon glyph for clear visibility in both themes.
+
+---
+
 ## [2026.2.24+1]
 
 ### Soul Config — Runtime Editable via Settings > General

@@ -237,6 +237,58 @@ function GeneralTab() {
 
   return (
     <div className="space-y-6">
+      {/* ── Audit Chain ───────────────────────────────────────── */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Shield className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Audit Chain</h3>
+        </div>
+        <div className="p-4">
+          {auditLoading ? (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Clock className="w-4 h-4 animate-spin" /> Loading audit stats...
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-muted-foreground">Chain Status</p>
+                <div className="flex items-center gap-2 mt-1">
+                  {auditStats?.chainValid ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-success" />
+                      <span className="font-medium text-success">Valid</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-destructive" />
+                      <span className="font-medium text-destructive">Invalid</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total Entries</p>
+                <p className="text-xl font-bold">{auditStats?.totalEntries ?? 0}</p>
+              </div>
+              {auditStats?.lastVerification && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Last Verification</p>
+                  <p className="text-sm">
+                    {new Date(auditStats.lastVerification).toLocaleString()}
+                  </p>
+                </div>
+              )}
+              {auditStats?.dbSizeEstimateMb !== undefined && (
+                <div>
+                  <p className="text-sm text-muted-foreground">Database Size</p>
+                  <p className="text-sm">{auditStats.dbSizeEstimateMb.toFixed(1)} MB</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
       <NotificationSettings />
 
       {/* ── Soul System ───────────────────────────────────────── */}
@@ -306,7 +358,7 @@ function GeneralTab() {
                 max={200}
                 value={formMaxSkills}
                 onChange={(e) => setFormMaxSkills(Number(e.target.value))}
-                className="input w-full text-sm"
+                className="w-full px-2 py-1.5 text-sm rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 Global limit across all souls (1–200)
@@ -321,7 +373,7 @@ function GeneralTab() {
                 step={1024}
                 value={formMaxPromptTokens}
                 onChange={(e) => setFormMaxPromptTokens(Number(e.target.value))}
-                className="input w-full text-sm"
+                className="w-full px-2 py-1.5 text-sm rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-[10px] text-muted-foreground mt-0.5">
                 Overridable per soul (1024–32000 tokens)
@@ -331,12 +383,15 @@ function GeneralTab() {
 
           {/* Error + Save */}
           {configMutation.isError && (
-            <p className="text-xs text-destructive">
-              Failed to save:{' '}
-              {configMutation.error instanceof Error
-                ? configMutation.error.message
-                : 'Unknown error'}
-            </p>
+            <div className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive">
+              <span className="mt-0.5 shrink-0">✕</span>
+              <span>
+                Failed to save:{' '}
+                {configMutation.error instanceof Error
+                  ? configMutation.error.message
+                  : 'Unknown error'}
+              </span>
+            </div>
           )}
           <div className="flex justify-end">
             <button
@@ -433,57 +488,6 @@ function GeneralTab() {
         </div>
       </div>
 
-      {/* ── Audit Chain ───────────────────────────────────────── */}
-      <div className="card">
-        <div className="p-4 border-b flex items-center gap-2">
-          <Shield className="w-5 h-5 text-primary" />
-          <h3 className="font-medium">Audit Chain</h3>
-        </div>
-        <div className="p-4">
-          {auditLoading ? (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="w-4 h-4 animate-spin" /> Loading audit stats...
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Chain Status</p>
-                <div className="flex items-center gap-2 mt-1">
-                  {auditStats?.chainValid ? (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-success" />
-                      <span className="font-medium text-success">Valid</span>
-                    </>
-                  ) : (
-                    <>
-                      <span className="w-2 h-2 rounded-full bg-destructive" />
-                      <span className="font-medium text-destructive">Invalid</span>
-                    </>
-                  )}
-                </div>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Entries</p>
-                <p className="text-xl font-bold">{auditStats?.totalEntries ?? 0}</p>
-              </div>
-              {auditStats?.lastVerification && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Last Verification</p>
-                  <p className="text-sm">
-                    {new Date(auditStats.lastVerification).toLocaleString()}
-                  </p>
-                </div>
-              )}
-              {auditStats?.dbSizeEstimateMb !== undefined && (
-                <div>
-                  <p className="text-sm text-muted-foreground">Database Size</p>
-                  <p className="text-sm">{auditStats.dbSizeEstimateMb.toFixed(1)} MB</p>
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
