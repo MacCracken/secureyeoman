@@ -544,3 +544,293 @@ describe('MultimodalManager', () => {
     });
   });
 });
+
+// ── New provider routing tests ─────────────────────────────────────────────────
+
+describe('MultimodalManager — new TTS providers', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+  let manager: MultimodalManager;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    manager = new MultimodalManager(storage, deps, {
+      ...defaultConfig,
+      tts: { enabled: true, provider: 'openai' as const, voice: 'alloy', model: 'tts-1' },
+    });
+    await manager.initialize();
+  });
+
+  it('routes to ElevenLabs TTS when TTS_PROVIDER=elevenlabs', async () => {
+    process.env.TTS_PROVIDER = 'elevenlabs';
+    process.env.ELEVENLABS_API_KEY = 'sk_test_elevenlabs_key';
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => Buffer.from('fake-audio').buffer,
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await manager.synthesizeSpeech({
+      text: 'Hello ElevenLabs',
+      voice: 'alloy',
+      model: 'eleven_monolingual_v1',
+      responseFormat: 'mp3',
+    });
+
+    expect(result.audioBase64).toBeDefined();
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('api.elevenlabs.io'),
+      expect.objectContaining({ method: 'POST' })
+    );
+
+    vi.unstubAllGlobals();
+    delete process.env.TTS_PROVIDER;
+    delete process.env.ELEVENLABS_API_KEY;
+  });
+
+  it('throws when TTS_PROVIDER=elevenlabs without ELEVENLABS_API_KEY', async () => {
+    process.env.TTS_PROVIDER = 'elevenlabs';
+    delete process.env.ELEVENLABS_API_KEY;
+
+    await expect(
+      manager.synthesizeSpeech({ text: 'Hi', voice: 'alloy', model: 'tts-1', responseFormat: 'mp3' })
+    ).rejects.toThrow('ELEVENLABS_API_KEY');
+
+    delete process.env.TTS_PROVIDER;
+  });
+
+  it('routes to Deepgram TTS when TTS_PROVIDER=deepgram', async () => {
+    process.env.TTS_PROVIDER = 'deepgram';
+    process.env.DEEPGRAM_API_KEY = 'dg_test_key';
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => Buffer.from('dg-audio').buffer,
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await manager.synthesizeSpeech({
+      text: 'Hello Deepgram',
+      voice: 'alloy',
+      model: 'tts-1',
+      responseFormat: 'mp3',
+    });
+
+    expect(result.audioBase64).toBeDefined();
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('deepgram.com'),
+      expect.objectContaining({ method: 'POST' })
+    );
+
+    vi.unstubAllGlobals();
+    delete process.env.TTS_PROVIDER;
+    delete process.env.DEEPGRAM_API_KEY;
+  });
+
+  it('throws when TTS_PROVIDER=deepgram without DEEPGRAM_API_KEY', async () => {
+    process.env.TTS_PROVIDER = 'deepgram';
+    delete process.env.DEEPGRAM_API_KEY;
+
+    await expect(
+      manager.synthesizeSpeech({ text: 'Hi', voice: 'alloy', model: 'tts-1', responseFormat: 'mp3' })
+    ).rejects.toThrow('DEEPGRAM_API_KEY');
+
+    delete process.env.TTS_PROVIDER;
+  });
+
+  it('routes to Cartesia TTS when TTS_PROVIDER=cartesia', async () => {
+    process.env.TTS_PROVIDER = 'cartesia';
+    process.env.CARTESIA_API_KEY = 'cartesia_test_key';
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => Buffer.from('cartesia-audio').buffer,
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await manager.synthesizeSpeech({
+      text: 'Hello Cartesia',
+      voice: 'alloy',
+      model: 'tts-1',
+      responseFormat: 'mp3',
+    });
+
+    expect(result.audioBase64).toBeDefined();
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('cartesia.ai'),
+      expect.objectContaining({ method: 'POST' })
+    );
+
+    vi.unstubAllGlobals();
+    delete process.env.TTS_PROVIDER;
+    delete process.env.CARTESIA_API_KEY;
+  });
+});
+
+describe('MultimodalManager — new STT providers', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+  let manager: MultimodalManager;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+  });
+
+  it('routes to Deepgram STT when STT_PROVIDER=deepgram', async () => {
+    process.env.STT_PROVIDER = 'deepgram';
+    process.env.DEEPGRAM_API_KEY = 'dg_test_key';
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        results: { channels: [{ alternatives: [{ transcript: 'hello deepgram', confidence: 0.99 }] }] },
+      }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' });
+
+    expect(result.text).toBe('hello deepgram');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('deepgram.com'),
+      expect.objectContaining({ method: 'POST' })
+    );
+
+    vi.unstubAllGlobals();
+    delete process.env.STT_PROVIDER;
+    delete process.env.DEEPGRAM_API_KEY;
+  });
+
+  it('throws when STT_PROVIDER=deepgram without DEEPGRAM_API_KEY', async () => {
+    process.env.STT_PROVIDER = 'deepgram';
+    delete process.env.DEEPGRAM_API_KEY;
+
+    await expect(
+      manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' })
+    ).rejects.toThrow('DEEPGRAM_API_KEY');
+
+    delete process.env.STT_PROVIDER;
+  });
+
+  it('routes to ElevenLabs STT when STT_PROVIDER=elevenlabs', async () => {
+    process.env.STT_PROVIDER = 'elevenlabs';
+    process.env.ELEVENLABS_API_KEY = 'sk_test_key';
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ text: 'hello elevenlabs', language_code: 'en' }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const result = await manager.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' });
+
+    expect(result.text).toBe('hello elevenlabs');
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.stringContaining('api.elevenlabs.io'),
+      expect.any(Object)
+    );
+
+    vi.unstubAllGlobals();
+    delete process.env.STT_PROVIDER;
+    delete process.env.ELEVENLABS_API_KEY;
+  });
+});
+
+describe('MultimodalManager — detectAvailableProviders', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+  let manager: MultimodalManager;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+  });
+
+  it('includes elevenlabs in tts and stt when ELEVENLABS_API_KEY is set', async () => {
+    process.env.ELEVENLABS_API_KEY = 'sk_test_key';
+    const providers = await manager.detectAvailableProviders();
+    expect(providers.tts.configured).toContain('elevenlabs');
+    expect(providers.stt.configured).toContain('elevenlabs');
+    delete process.env.ELEVENLABS_API_KEY;
+  });
+
+  it('includes deepgram in tts and stt when DEEPGRAM_API_KEY is set', async () => {
+    process.env.DEEPGRAM_API_KEY = 'dg_test';
+    const providers = await manager.detectAvailableProviders();
+    expect(providers.tts.configured).toContain('deepgram');
+    expect(providers.stt.configured).toContain('deepgram');
+    delete process.env.DEEPGRAM_API_KEY;
+  });
+
+  it('includes cartesia in tts when CARTESIA_API_KEY is set', async () => {
+    process.env.CARTESIA_API_KEY = 'ct_test';
+    const providers = await manager.detectAvailableProviders();
+    expect(providers.tts.configured).toContain('cartesia');
+    delete process.env.CARTESIA_API_KEY;
+  });
+
+  it('includes assemblyai in stt when ASSEMBLYAI_API_KEY is set', async () => {
+    process.env.ASSEMBLYAI_API_KEY = 'aa_test';
+    const providers = await manager.detectAvailableProviders();
+    expect(providers.stt.configured).toContain('assemblyai');
+    delete process.env.ASSEMBLYAI_API_KEY;
+  });
+
+  it('includes openai in tts and stt when OPENAI_API_KEY is set', async () => {
+    process.env.OPENAI_API_KEY = 'sk-test-openai';
+    const providers = await manager.detectAvailableProviders();
+    expect(providers.tts.configured).toContain('openai');
+    expect(providers.stt.configured).toContain('openai');
+    delete process.env.OPENAI_API_KEY;
+  });
+
+  it('returns tts.metadata with label and category for each configured provider', async () => {
+    process.env.ELEVENLABS_API_KEY = 'sk_test';
+    const providers = await manager.detectAvailableProviders();
+    expect(providers.tts.metadata).toBeDefined();
+    expect(providers.tts.metadata['elevenlabs']).toMatchObject({
+      label: expect.any(String),
+      category: 'cloud',
+    });
+    delete process.env.ELEVENLABS_API_KEY;
+  });
+
+  it('returns available[] list with all possible providers regardless of keys', async () => {
+    const providers = await manager.detectAvailableProviders();
+    expect(providers.tts.available).toContain('elevenlabs');
+    expect(providers.tts.available).toContain('deepgram');
+    expect(providers.stt.available).toContain('assemblyai');
+  });
+
+  it('does not include providers in configured[] without API keys', async () => {
+    // Clean slate — remove any provider env vars that might be set
+    const savedKeys: Record<string, string | undefined> = {};
+    for (const k of ['ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY', 'CARTESIA_API_KEY',
+                     'ASSEMBLYAI_API_KEY', 'GOOGLE_API_KEY', 'AZURE_SPEECH_KEY',
+                     'PLAYHT_API_KEY', 'OPENAI_API_KEY', 'ANTHROPIC_API_KEY',
+                     'SPEECH_KEY', 'SPEECH_REGION', 'PLAYHT_USER_ID']) {
+      savedKeys[k] = process.env[k];
+      delete process.env[k];
+    }
+
+    const providers = await manager.detectAvailableProviders();
+    expect(providers.tts.configured).not.toContain('elevenlabs');
+    expect(providers.tts.configured).not.toContain('deepgram');
+    expect(providers.stt.configured).not.toContain('assemblyai');
+
+    // Restore
+    for (const [k, v] of Object.entries(savedKeys)) {
+      if (v !== undefined) process.env[k] = v;
+    }
+  });
+});
