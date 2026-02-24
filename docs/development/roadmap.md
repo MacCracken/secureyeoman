@@ -9,10 +9,8 @@
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
 | | **Release 2026.2.23** | **2026-02-23** | **Released** |
-| 43 | Sub-Agent UX + Bug Fixes | — | Planned |
 | 44 | Skill Routing Quality | — | Planned |
 | 45 | Twingate Remote MCP Access | — | Planned *(depends on 41)* |
-| 46 | Network Evaluation & Protection | — | **Complete** |
 | 47 | Find & Repair (Ongoing) | — | Ongoing |
 | 48 | Machine Readable Org Intent | — | Planned |
 | 49 | AI Autonomy Level Audit | — | Planned |
@@ -38,6 +36,7 @@
 - [ ] **Skill invocation accuracy telemetry** — Add `invokedCount` and `selectedCount` fields. The ratio `selectedCount / invokedCount` surfaces routing precision in the dashboard.
 - [ ] **Credential placeholder enforcement** — Validate `$VAR_NAME` convention in skill instructions; warn in editor and CLI sync when literal credentials are detected.
 - [ ] **Output directory convention** — Skills that produce artifacts write to `outputs/{skill-slug}/{iso-date}/`. Surface as `{{output_dir}}` template variable in skill instructions.
+
 
 ---
 
@@ -91,119 +90,6 @@ TWINGATE_NETWORK=<tenant-name>      # e.g. "acme" → acme.twingate.com
 - [ ] Implement in `packages/mcp/src/tools/twingate-tools.ts`; register in `tools/index.ts` and `tools/manifest.ts`.
 - [ ] All `twingate_service_key_create` results stored via `SecretsManager` (Phase 41) — never logged or returned in plaintext after initial creation.
 - [ ] Audit events: `twingate_resource_query`, `twingate_key_create`, `twingate_key_revoke`, `twingate_mcp_tool_call` — surfaced in Security Feed.
-
----
-
-## Phase 46: Network Evaluation & Protection (YeomanMCP)
-
-**Status**: Complete | **Priority**: Medium — large feature set for IT automation; implement after core security phases are stable.
-
-Add network evaluation and protection tools to YeomanMCP for IT task automation and network security. Based on NetClaw's network automation capabilities.
-
-### Architecture
-
-**Toolset model** — 6 fine-selectable flags in `McpFeaturesSchema` (same pattern as `exposeWebScraping` / `exposeWebSearch`):
-
-| Flag | Covers | Sub-phase |
-|------|--------|-----------|
-| `exposeNetworkDevices` | SSH/Telnet automation, show commands, config push, health checks, ping, traceroute | 46.1 |
-| `exposeNetworkDiscovery` | CDP/LLDP, topology, ARP/MAC, routing table, OSPF, BGP, interfaces, VLANs | 46.2 + 46.3 |
-| `exposeNetworkAudit` | ACL, AAA, port security, STP analysis | 46.4 |
-| `exposeNetBox` | NetBox CRUD queries, drift reconciliation | 46.5 |
-| `exposeNvd` | CVE search, CVEs-by-software, OS detection | 46.6 |
-| `exposeNetworkUtils` | Subnet/VLSM/wildcard calculators + PCAP analysis | 46.7 + 46.8 |
-
-**Global gate** — `SecurityConfig.allowNetworkTools` (default `false`). Both operator gate AND per-personality flag must be `true` for any network tool to appear (AND logic, consistent with all other toolsets).
-
-**Write gate** — `SecurityConfig.allowNetBoxWrite` (default `false`) — NetBox create/update/delete requires this in addition to `allowNetworkTools`.
-
-**Scope enforcement** — `MCP_ALLOWED_NETWORK_TARGETS` env var (comma-separated CIDR list). SSH tools and active probing (`network_ping_test`, `network_traceroute`) check target IP against this list before connecting. Same model as `MCP_ALLOWED_TARGETS` for security tools. Wildcard `*` disables scope enforcement and requires explicit acknowledgement.
-
-**External API env vars:**
-- `NETBOX_URL` + `NETBOX_TOKEN` — NetBox API base URL and token
-- `NVD_API_KEY` — Optional; without it NVD rate-limits to 5 req/30s; with it 50 req/30s
-
-**Dependencies:**
-- `ssh2` npm package — SSH client for device automation (no native binaries)
-- `tshark` system binary — PCAP analysis (detected at startup; clear error if absent, same model as kali tools)
-
-**Phase 41 note:** SSH credentials and API tokens documented as SecretsManager candidates. Until Phase 41 ships, stored as env vars; `SecretsManager.get()` wrappers added from day one so the migration is a config change, not a code change.
-
-### 46.1 — Device Automation Tools ✓
-
-- [x] `network_device_connect` — Open SSH/Telnet session to a network device; returns session ID for subsequent commands. Enforces `MCP_ALLOWED_NETWORK_TARGETS` scope.
-- [x] `network_show_command` — Execute one or more IOS-XE/NX-OS/IOS-XR/EOS `show` commands on a connected device; returns raw output.
-- [x] `network_config_push` — Push configuration lines to a device via SSH config mode; dry-run flag supported.
-- [x] `network_health_check` — Fleet-wide health: run `show version` + `show interfaces` across a list of targets; returns structured summary.
-- [x] `network_ping_test` — Execute `ping` from a device to a target; returns loss %, RTT min/avg/max.
-- [x] `network_traceroute` — Execute `traceroute` from a device; returns hop list with latency.
-
-### 46.2 — Network Discovery & Topology ✓
-
-- [x] `network_discovery_cdp` — Run `show cdp neighbors detail` on a device; return structured neighbor list (device ID, IP, platform, interface).
-- [x] `network_discovery_lldp` — Run `show lldp neighbors detail`; return structured neighbor list.
-- [x] `network_topology_build` — Seed from a list of devices, recursively discover via CDP/LLDP, build an adjacency graph (nodes = devices, edges = links). Returns JSON graph and Mermaid diagram.
-- [x] `network_arp_table` — Return parsed ARP table (IP → MAC → interface) from a device.
-- [x] `network_mac_table` — Return parsed MAC address table (MAC → VLAN → interface) from a switch.
-
-### 46.3 — Routing & Switching Analysis ✓
-
-- [x] `network_routing_table` — Parse `show ip route` / `show ipv6 route`; return structured route entries with protocol, prefix, next-hop, AD/metric.
-- [x] `network_ospf_neighbors` — Parse `show ip ospf neighbor`; return neighbor list with state, dead timer, interface.
-- [x] `network_ospf_lsdb` — Parse `show ip ospf database`; return LSA summary by type.
-- [x] `network_bgp_peers` — Parse `show bgp summary`; return peer list with ASN, state, prefix count.
-- [x] `network_interface_status` — Parse `show interfaces` / `show interfaces status`; return per-interface admin/oper state, speed, duplex, errors.
-- [x] `network_vlan_list` — Parse `show vlan brief`; return VLAN ID, name, active ports.
-
-### 46.4 — Security Auditing ✓
-
-- [x] `network_acl_audit` — Parse `show ip access-lists`; return ACL entries, match counts, implicit deny analysis.
-- [x] `network_aaa_status` — Parse `show aaa servers` and `show running-config | section aaa`; return AAA server list and method config.
-- [x] `network_port_security` — Parse `show port-security`; return per-interface violations, max MAC, sticky config.
-- [x] `network_stp_status` — Parse `show spanning-tree`; return root bridge, port roles/states, topology change count.
-- [x] `network_software_version` — Parse `show version`; return OS family, version string, uptime, platform, serial number.
-
-### 46.5 — Source of Truth Integration (NetBox) ✓
-
-All tools use plain `fetch()` against `NETBOX_URL`. Read operations require only `allowNetworkTools`; write operations additionally require `allowNetBoxWrite`.
-
-- [x] `netbox_devices_list` — Query `/api/dcim/devices/` with optional filters (site, role, tag, status); return structured device list.
-- [x] `netbox_interfaces_list` — Query `/api/dcim/interfaces/` for a device; return interface list with IP assignments.
-- [x] `netbox_ipam_ips` — Query `/api/ipam/ip-addresses/` with prefix/VRF filters; return IP–device assignment map.
-- [x] `netbox_cables` — Query `/api/dcim/cables/`; return cable list with endpoint A/B device and interface.
-- [x] `netbox_reconcile` — Compare live CDP/LLDP topology (from `network_topology_build`) against NetBox cables and interfaces; return structured drift report (missing in NetBox, missing on live, mismatches).
-
-### 46.6 — Vulnerability Assessment ✓
-
-Uses NVD REST API v2.0 (`https://services.nvd.nist.gov/rest/json/cves/2.0`). Rate-limited; `NVD_API_KEY` strongly recommended for production use.
-
-- [x] `nvd_cve_search` — Search NVD CVE database by keyword, CVSS score range, or CPE string; return CVE ID, description, CVSS v3 score, published date.
-- [x] `nvd_cve_by_software` — Lookup CVEs for a specific vendor + product + version (CPE match); targeted use case: IOS XE version from `network_software_version` output.
-- [x] `nvd_cve_get` — Fetch full CVE record by CVE ID; return description, CVSS v3 vector, CWE, references.
-
-### 46.7 — Network Utilities ✓
-
-Pure computation — no external dependencies, no scope enforcement needed.
-
-- [x] `subnet_calculator` — Given an IPv4 or IPv6 prefix, return: network address, broadcast, first/last host, subnet mask, wildcard mask, host count, CIDR notation.
-- [x] `subnet_vlsm` — Given a parent prefix and a list of required host counts, return a VLSM allocation table (subnet per requirement, ordered largest-first).
-- [x] `wildcard_mask_calc` — Given a subnet mask or prefix length, return the wildcard mask (for ACL authoring).
-
-### 46.8 — Packet Analysis ✓
-
-Uses `tshark` CLI (system dependency). Detected at MCP startup; tool registration succeeds but calls return a clear error if `tshark` is absent.
-
-- [x] `pcap_upload` — Accept a pcap/pcapng file (base64-encoded) and store it in a temp directory; return a `pcapId` for subsequent analysis tools.
-- [x] `pcap_protocol_hierarchy` — Run `tshark -r <file> -qz io,phs`; return protocol hierarchy with packet/byte counts.
-- [x] `pcap_conversations` — Run `tshark -r <file> -qz conv,ip`; return IP conversation list with bytes, packets, duration.
-- [x] `pcap_dns_queries` — Extract DNS query/response pairs from pcap; return domain, record type, response, client IP.
-- [x] `pcap_http_requests` — Extract HTTP request/response metadata (method, host, URI, status, content-type); return structured list.
-
-### 46.9 — Dashboard UI
-
-- [x] **Dashboard — personality body config** — Added "Network Tools" section with 6 per-toolset toggles (same pattern as web/browser/desktop toggles); `Network` icon added to `PersonalityEditor.tsx`.
-- [x] **Dashboard — Security Settings** — Added `allowNetworkTools` and `allowNetBoxWrite` operator toggles in Security Settings with warning about SSH scope enforcement.
-- [x] **Dashboard — types / client** — Extended `McpFeatureConfig`, `Personality.body.mcpFeatures`, `PersonalityCreate.body.mcpFeatures`, and `SecurityPolicy` with all new fields.
 
 ---
 
@@ -484,4 +370,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-24 (Phase 49 added: AI Autonomy Level Audit — five-level framework review, project role mapping, human/AI role audit checklist, and dashboard tooling; Twingate promoted to Phase 45; sub-agent bug fix Phase 43; skill routing Phase 44; Network tools Phase 46; Phase 48: Machine Readable Language of Organizational Intent)*
+*Last updated: 2026-02-24 (Phase 49 added: AI Autonomy Level Audit; Phase 48: Machine Readable Org Intent; Phase 44: Skill Routing Quality; Phase 45: Twingate Remote MCP Access)*

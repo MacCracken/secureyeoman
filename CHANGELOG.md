@@ -1,4 +1,18 @@
-## [2026.2.24+6]
+## [2026.2.24]
+
+### Docker Build Fixes — Phase 46 Type Integration
+
+#### Fixed
+
+- **`initializeKeyring` signature** (`packages/core/src/config/loader.ts`) — parameter type now includes `'vault'`; vault backend is passed through as `'env'` for keyring init (vault secrets handled separately by `SecretsManager`). Resolves `TS2345` when `security.secretBackend = 'vault'`.
+
+- **`McpFeatureConfig` interface** (`packages/core/src/mcp/storage.ts`) — added Phase 46 network fields: `exposeNetworkTools`, `allowedNetworkTargets`, `netboxUrl?`, `netboxToken?`, `nvdApiKey?`; updated `MCP_CONFIG_DEFAULTS` accordingly. Resolves `TS2339` when `chat-routes.ts` referenced `globalConfig.exposeNetworkTools`.
+
+- **`chat-routes.ts`** — replaced `(globalConfig as Record<string, unknown>).allowNetworkTools` with `globalConfig.exposeNetworkTools` (correct typed field, no cast needed). Resolves `TS2352`.
+
+- **Inline `mcpFeatures` default objects** — added all 6 network flags (`exposeNetworkDevices`, `exposeNetworkDiscovery`, `exposeNetworkAudit`, `exposeNetBox`, `exposeNvd`, `exposeNetworkUtils`) to the fallback literal objects in `soul/manager.ts`, `soul/presets.ts`, and `soul/soul-routes.ts`. Resolves `TS2740` (missing required fields on `McpFeatures`).
+
+---
 
 ### Phase 41: Secrets Management + Phase 42: TLS Certificates
 
@@ -59,11 +73,9 @@
 
 ---
 
-## [Unreleased] — Phase 46: Network Evaluation & Protection
+### Phase 46 — Network Evaluation & Protection (YeomanMCP)
 
-### Added
-
-#### Network Evaluation & Protection — YeomanMCP (Phase 46)
+#### Added
 
 37 new MCP tools in 6 fine-selectable toolsets, each controlled by a per-personality `mcpFeatures` flag AND a global `security.allowNetworkTools` operator gate (same AND logic as `exposeWebScraping`/`exposeWebSearch`).
 
@@ -94,8 +106,6 @@
 
 ---
 
-## [2026.2.24+5]
-
 ### Metrics — Active Agents Count + Heartbeat Multi-Personality Badges
 
 #### Fixed
@@ -111,8 +121,6 @@
 - `HeartbeatTask` in `types.ts` gains `personalities?: { id: string; name: string }[]`; legacy fields annotated `@deprecated`.
 
 ---
-
-## [2026.2.24+4]
 
 ### Soul — Clearable Default, Chat Fallback, and Empty State
 
@@ -147,8 +155,6 @@
 
 ---
 
-## [2026.2.24+3]
-
 ### CLI — Lazy Loading, Env-Var URL, and Route Fix
 
 #### Changed
@@ -165,8 +171,6 @@
 
 ---
 
-## [2026.2.24+2]
-
 ### Settings — UI Polish and Container Fix
 
 #### Fixed
@@ -176,8 +180,6 @@
 - **Save error banner visibility in dark mode** — the inline error on the Soul System card was a plain `text-destructive` text line, nearly invisible on dark backgrounds. Replaced with a banner that has `bg-destructive/10` fill, `border-destructive/40` border, and a `✕` icon glyph for clear visibility in both themes.
 
 ---
-
-## [2026.2.24+1]
 
 ### Soul Config — Runtime Editable via Settings > General
 
@@ -214,8 +216,6 @@
 - **Dashboard TS error in `ChatPage` / `EditorPage`** — `title` prop passed directly to a Lucide `<Star>` icon (not a valid prop on Lucide SVG components). Wrapped in `<span title="...">` instead.
 
 ---
-
-## [2026.2.24]
 
 ### Chat UI — Phase Separation + Persistence
 

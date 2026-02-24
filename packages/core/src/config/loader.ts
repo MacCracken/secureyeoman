@@ -369,11 +369,13 @@ export function loadConfig(options: LoadConfigOptions = {}): Config {
  * Must be called before validateSecrets().
  */
 export function initializeKeyring(
-  backend: 'auto' | 'keyring' | 'env' | 'file',
+  backend: 'auto' | 'keyring' | 'env' | 'file' | 'vault',
   knownKeys: string[]
 ): KeyringManager {
   const manager = new KeyringManager();
-  manager.initialize(backend, knownKeys);
+  // vault backend is handled by SecretsManager; fall back to env for keyring init
+  const keyringBackend = backend === 'vault' ? 'env' : backend;
+  manager.initialize(keyringBackend, knownKeys);
   return manager;
 }
 

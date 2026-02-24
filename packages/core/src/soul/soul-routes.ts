@@ -540,6 +540,12 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               exposeWebSearch: false,
               exposeBrowser: false,
               exposeDesktopControl: false,
+              exposeNetworkDevices: false,
+              exposeNetworkDiscovery: false,
+              exposeNetworkAudit: false,
+              exposeNetBox: false,
+              exposeNvd: false,
+              exposeNetworkUtils: false,
             },
             proactiveConfig: {
               enabled: false,

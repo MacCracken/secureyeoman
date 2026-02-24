@@ -26,6 +26,12 @@ export interface McpFeatureConfig {
   proxyProviders: string[];
   proxyStrategy: string;
   proxyDefaultCountry: string;
+  // Network tools (Phase 46)
+  exposeNetworkTools: boolean;
+  allowedNetworkTargets: string[];
+  netboxUrl?: string;
+  netboxToken?: string;
+  nvdApiKey?: string;
 }
 
 const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
@@ -42,6 +48,8 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
   proxyProviders: [],
   proxyStrategy: 'round-robin',
   proxyDefaultCountry: '',
+  exposeNetworkTools: false,
+  allowedNetworkTargets: [],
 };
 
 export class McpStorage extends PgBaseStorage {

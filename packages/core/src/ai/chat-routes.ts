@@ -337,8 +337,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             if (isBrowserTool && !(globalConfig.exposeBrowser && perPersonalityFeatures.exposeBrowser))
               continue;
 
-            // Network tools — 6 fine-selectable toolsets, each gated by global allowNetworkTools AND per-personality flag.
-            const globalNetworkOk = (globalConfig as Record<string, unknown>).allowNetworkTools === true;
+            // Network tools — 6 fine-selectable toolsets, each gated by global exposeNetworkTools AND per-personality flag.
+            const globalNetworkOk = globalConfig.exposeNetworkTools === true;
 
             const NETWORK_DEVICE_PREFIXES = ['network_device_', 'network_show_', 'network_config_',
               'network_health_', 'network_ping_', 'network_traceroute'];
