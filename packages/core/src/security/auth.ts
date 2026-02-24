@@ -335,6 +335,8 @@ export class AuthService {
     const row = await this.deps.storage.findApiKeyByHash(keyHash);
 
     if (!row) {
+      this.authFailuresTotal++;
+      await this.audit('auth_failure', 'Invalid API key presented', { reason: 'invalid_api_key' });
       throw new AuthError('Invalid API key', 401);
     }
 

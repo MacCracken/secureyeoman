@@ -54,6 +54,7 @@ interface ChatRequestBody {
   saveAsMemory?: boolean;
   memoryEnabled?: boolean;
   conversationId?: string;
+  clientContext?: { viewportHint?: 'mobile' | 'tablet' | 'desktop' };
 }
 
 interface RememberRequestBody {
@@ -98,11 +99,51 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         saveAsMemory,
         memoryEnabled = true,
         conversationId,
+        clientContext,
       } = request.body;
 
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
         return sendError(reply, 400, 'Message is required');
       }
+
+      // Input validation — check message and history for injection patterns
+      const validator = secureYeoman.getValidator();
+      const msgValidation = validator.validate(message, { source: 'chat' });
+      if (msgValidation.blocked) {
+        void secureYeoman.getAuditChain().record({
+          event: 'injection_attempt',
+          level: 'warn',
+          message: 'Chat message blocked by input validator',
+          userId: (request as FastifyRequest & { user?: { id?: string } }).user?.id,
+          metadata: { endpoint: '/api/v1/chat', reason: msgValidation.blockReason },
+        });
+        return sendError(reply, 400, 'Message blocked: invalid content');
+      }
+      if (history && Array.isArray(history)) {
+        for (const entry of history) {
+          if (typeof entry.content === 'string') {
+            const hv = validator.validate(entry.content, { source: 'chat_history' });
+            if (hv.blocked) {
+              void secureYeoman.getAuditChain().record({
+                event: 'injection_attempt',
+                level: 'warn',
+                message: 'Chat history entry blocked by input validator',
+                userId: (request as FastifyRequest & { user?: { id?: string } }).user?.id,
+                metadata: { endpoint: '/api/v1/chat', reason: hv.blockReason },
+              });
+              return sendError(reply, 400, 'Message blocked: invalid content in history');
+            }
+          }
+        }
+      }
+
+      // Validate viewportHint if present
+      const VALID_VIEWPORTS = ['mobile', 'tablet', 'desktop'] as const;
+      const viewportHint =
+        clientContext?.viewportHint &&
+        (VALID_VIEWPORTS as readonly string[]).includes(clientContext.viewportHint)
+          ? (clientContext.viewportHint as 'mobile' | 'tablet' | 'desktop')
+          : undefined;
 
       let aiClient;
       try {
@@ -141,8 +182,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
       const soulManager = secureYeoman.getSoulManager();
       let systemPrompt = memoryEnabled
-        ? await soulManager.composeSoulPrompt(message, personalityId)
-        : await soulManager.composeSoulPrompt(undefined, personalityId);
+        ? await soulManager.composeSoulPrompt(message, personalityId, { viewportHint })
+        : await soulManager.composeSoulPrompt(undefined, personalityId, { viewportHint });
 
       // Inject learned preferences into system prompt
       if (memoryEnabled && systemPrompt) {
@@ -182,6 +223,64 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         ? ((await soulManager.getPersonality(personalityId)) ??
           (await soulManager.getActivePersonality()))
         : await soulManager.getActivePersonality();
+
+      // Rate limiting — global chat_requests rule + optional per-personality override
+      {
+        const rateLimiter = secureYeoman.getRateLimiter();
+        const userId = request.authUser?.userId ?? request.ip ?? 'anonymous';
+        const rlCtx = { userId: request.authUser?.userId, ipAddress: request.ip };
+
+        const rateLimitConfig = personality?.body?.resourcePolicy?.rateLimitConfig;
+        const rlEnabled = rateLimitConfig?.enabled ?? true;
+
+        if (rlEnabled) {
+          // Check global rule first
+          const globalResult = await Promise.resolve(
+            rateLimiter.check('chat_requests', userId, rlCtx)
+          );
+          if (!globalResult.allowed) {
+            void secureYeoman.getAuditChain().record({
+              event: 'rate_limit',
+              level: 'warn',
+              message: 'Chat rate limit exceeded (global)',
+              userId: request.authUser?.userId,
+              metadata: { rule: 'chat_requests', endpoint: '/api/v1/chat' },
+            });
+            return reply.code(429).send({
+              error: 'Too many requests. Please slow down.',
+              retryAfter: globalResult.retryAfter,
+            });
+          }
+
+          // Per-personality override
+          if (rateLimitConfig?.chatRequestsPerMinute !== undefined) {
+            const ruleName = `chat_personality_${personality!.id}`;
+            rateLimiter.addRule({
+              name: ruleName,
+              windowMs: 60000,
+              maxRequests: rateLimitConfig.chatRequestsPerMinute,
+              keyType: 'user',
+              onExceed: 'reject',
+            });
+            const perResult = await Promise.resolve(
+              rateLimiter.check(ruleName, userId, rlCtx)
+            );
+            if (!perResult.allowed) {
+              void secureYeoman.getAuditChain().record({
+                event: 'rate_limit',
+                level: 'warn',
+                message: 'Chat rate limit exceeded (per-personality)',
+                userId: request.authUser?.userId,
+                metadata: { rule: ruleName, endpoint: '/api/v1/chat', personalityId: personality!.id },
+              });
+              return reply.code(429).send({
+                error: 'Too many requests for this personality.',
+                retryAfter: perResult.retryAfter,
+              });
+            }
+          }
+        }
+      }
 
       // Skill-based tools — scoped to this personality + global skills
       tools.push(...(await soulManager.getActiveTools(personality?.id ?? null)));
@@ -585,12 +684,54 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         saveAsMemory,
         memoryEnabled = true,
         conversationId,
+        clientContext,
       } = request.body;
 
       if (!message || typeof message !== 'string' || message.trim().length === 0) {
         reply.code(400).send({ error: 'Message is required' });
         return;
       }
+
+      // Input validation — check message and history for injection patterns
+      const validator = secureYeoman.getValidator();
+      const msgValidation = validator.validate(message, { source: 'chat_stream' });
+      if (msgValidation.blocked) {
+        void secureYeoman.getAuditChain().record({
+          event: 'injection_attempt',
+          level: 'warn',
+          message: 'Stream chat message blocked by input validator',
+          userId: (request as FastifyRequest & { user?: { id?: string } }).user?.id,
+          metadata: { endpoint: '/api/v1/chat/stream', reason: msgValidation.blockReason },
+        });
+        reply.code(400).send({ error: 'Message blocked: invalid content' });
+        return;
+      }
+      if (history && Array.isArray(history)) {
+        for (const entry of history) {
+          if (typeof entry.content === 'string') {
+            const hv = validator.validate(entry.content, { source: 'chat_stream_history' });
+            if (hv.blocked) {
+              void secureYeoman.getAuditChain().record({
+                event: 'injection_attempt',
+                level: 'warn',
+                message: 'Stream chat history entry blocked by input validator',
+                userId: (request as FastifyRequest & { user?: { id?: string } }).user?.id,
+                metadata: { endpoint: '/api/v1/chat/stream', reason: hv.blockReason },
+              });
+              reply.code(400).send({ error: 'Message blocked: invalid content in history' });
+              return;
+            }
+          }
+        }
+      }
+
+      // Validate viewportHint if present
+      const VALID_VIEWPORTS_S = ['mobile', 'tablet', 'desktop'] as const;
+      const viewportHintS =
+        clientContext?.viewportHint &&
+        (VALID_VIEWPORTS_S as readonly string[]).includes(clientContext.viewportHint)
+          ? (clientContext.viewportHint as 'mobile' | 'tablet' | 'desktop')
+          : undefined;
 
       let aiClient;
       try {
@@ -631,8 +772,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
         const soulManager = secureYeoman.getSoulManager();
         let systemPrompt = memoryEnabled
-          ? await soulManager.composeSoulPrompt(message, personalityId)
-          : await soulManager.composeSoulPrompt(undefined, personalityId);
+          ? await soulManager.composeSoulPrompt(message, personalityId, { viewportHint: viewportHintS })
+          : await soulManager.composeSoulPrompt(undefined, personalityId, { viewportHint: viewportHintS });
 
         if (memoryEnabled && systemPrompt) {
           try {
@@ -660,6 +801,59 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         const personality = personalityId
           ? ((await soulManager.getPersonality(personalityId)) ?? (await soulManager.getActivePersonality()))
           : await soulManager.getActivePersonality();
+
+        // Rate limiting — global chat_requests rule + optional per-personality override
+        {
+          const rateLimiter = secureYeoman.getRateLimiter();
+          const userId = request.authUser?.userId ?? request.ip ?? 'anonymous';
+          const rlCtx = { userId: request.authUser?.userId, ipAddress: request.ip };
+          const rateLimitConfig = personality?.body?.resourcePolicy?.rateLimitConfig;
+          const rlEnabled = rateLimitConfig?.enabled ?? true;
+
+          if (rlEnabled) {
+            const globalResult = await Promise.resolve(
+              rateLimiter.check('chat_requests', userId, rlCtx)
+            );
+            if (!globalResult.allowed) {
+              void secureYeoman.getAuditChain().record({
+                event: 'rate_limit',
+                level: 'warn',
+                message: 'Stream chat rate limit exceeded (global)',
+                userId: request.authUser?.userId,
+                metadata: { rule: 'chat_requests', endpoint: '/api/v1/chat/stream' },
+              });
+              emit({ type: 'error', message: 'Rate limit exceeded. Please slow down.' });
+              reply.raw.end();
+              return;
+            }
+
+            if (rateLimitConfig?.chatRequestsPerMinute !== undefined) {
+              const ruleName = `chat_personality_${personality!.id}`;
+              rateLimiter.addRule({
+                name: ruleName,
+                windowMs: 60000,
+                maxRequests: rateLimitConfig.chatRequestsPerMinute,
+                keyType: 'user',
+                onExceed: 'reject',
+              });
+              const perResult = await Promise.resolve(
+                rateLimiter.check(ruleName, userId, rlCtx)
+              );
+              if (!perResult.allowed) {
+                void secureYeoman.getAuditChain().record({
+                  event: 'rate_limit',
+                  level: 'warn',
+                  message: 'Stream chat rate limit exceeded (per-personality)',
+                  userId: request.authUser?.userId,
+                  metadata: { rule: ruleName, endpoint: '/api/v1/chat/stream', personalityId: personality!.id },
+                });
+                emit({ type: 'error', message: 'Rate limit exceeded for this personality.' });
+                reply.raw.end();
+                return;
+              }
+            }
+          }
+        }
 
         tools.push(...(await soulManager.getActiveTools(personality?.id ?? null)));
 

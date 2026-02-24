@@ -14,6 +14,35 @@ All notable changes to SecureYeoman are documented in this file.
 
 ### Features
 
+**Chat responsive layout + viewport hint** (ADR 119)
+
+- `ChatPage.tsx`: added `min-h-0` to flex containers so `overflow-y-auto` works correctly in nested flex columns; replaced invalid `pl-68` with `sm:pl-64`; added `md:max-w-[70%]` to message bubbles
+- `useChat` / `useChatStream`: read `window.innerWidth` at send time and pass `clientContext.viewportHint` (`mobile` | `tablet` | `desktop`) in the POST body
+- `composeSoulPrompt()`: appends a single bracketed viewport hint line after skills (e.g. `[Interface: mobile — prefer concise responses; avoid wide tables and long code blocks.]`)
+- No DB migration required — `clientContext` is transient
+
+**Input sanitization wired to HTTP entry points** (ADR 120)
+
+- `InputValidator.validateObject()`: new helper that validates all string values in a nested object recursively; fixes the MCP tool-utils type mismatch
+- `/api/v1/chat` and `/api/v1/chat/stream`: validate `message` and `history[].content`; blocked inputs return 400 and record `injection_attempt` audit event
+- `/api/v1/soul/personalities` (POST/PUT) and `/api/v1/soul/skills` (POST/PUT): validate `name`, `systemPrompt`/`instructions`, `description`; highest-risk fields since they compose the LLM system prompt
+- `SecureYeoman.getValidator()`: new public getter exposing the shared `InputValidator` instance
+
+**Per-personality rate limit config + dedicated chat rule** (ADR 121)
+
+- `STATIC_RULES` gains `chat_requests` (30/min/user) applied to both `/chat` and `/chat/stream`
+- `ResourcePolicySchema.rateLimitConfig`: new optional field (`chatRequestsPerMinute?: number`, `enabled?: boolean`) stored in existing `body` JSONB — no migration
+- Chat routes enforce per-personality override: dynamically registers `chat_personality_<id>` rule; `enabled: false` bypasses rate limiting entirely for that personality
+- 429 responses include `retryAfter` seconds
+
+**Security audit logging completeness** (ADR 122)
+
+- Rate limit exceeded on chat: records `rate_limit` event to audit chain (previously only `logger.warn`)
+- `PATCH /api/v1/security/policy`: records `config_change` event with changed field names and `updatedBy` userId
+- Invalid API key in `validateApiKey()`: now records `auth_failure` event (previously only incremented counter for JWT failures)
+- Input validation failures in chat/soul routes: `injection_attempt` events (see ADR 120)
+- `GET /api/v1/security/events`: `ai_request` and `ai_response` added to `SECURITY_EVENT_TYPES` so they appear in the dashboard security feed
+
 **Tri-state deletion gating (`auto` / `request` / `manual`)** (ADR 113) — personalities now have a three-mode deletion policy stored in `body.resourcePolicy.deletionMode`:
 
 | Mode | Behaviour |

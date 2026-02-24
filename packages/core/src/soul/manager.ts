@@ -552,8 +552,16 @@ export class SoulManager {
         allowDynamicTools: ['register_dynamic_tool'],
       };
 
+      const sec = this.deps.securityConfig;
       const enabledLines: string[] = [];
       for (const [key, toolNames] of Object.entries(TOOL_MAP)) {
+        // Gate against top-level security policy — if security policy disables a
+        // capability, don't tell the AI it has the tools (avoids false reports).
+        if (key === 'subAgents' && sec && !sec.allowSubAgents) continue;
+        if (key === 'allowA2A' && sec && !sec.allowA2A) continue;
+        if (key === 'allowSwarms' && sec && !sec.allowSwarms) continue;
+        if (key === 'allowDynamicTools' && sec && !sec.allowDynamicTools) continue;
+
         if ((creation as Record<string, boolean>)[key]) {
           enabledLines.push(`- **${key}**: use ${toolNames.map((t) => `\`${t}\``).join(', ')}`);
         }
@@ -601,7 +609,11 @@ export class SoulManager {
 
   // ── Composition ─────────────────────────────────────────────
 
-  async composeSoulPrompt(input?: string, personalityId?: string): Promise<string> {
+  async composeSoulPrompt(
+    input?: string,
+    personalityId?: string,
+    clientContext?: { viewportHint?: 'mobile' | 'tablet' | 'desktop' }
+  ): Promise<string> {
     if (!this.config.enabled) {
       return '';
     }
@@ -721,6 +733,17 @@ export class SoulManager {
       const section = `\n\n## Skill: ${skill.name}\n${skill.instructions}`;
       if (prompt.length + section.length > maxChars) break;
       prompt += section;
+    }
+
+    // Viewport hint — appended after skills so it doesn't inflate skill budget
+    if (clientContext?.viewportHint) {
+      const VIEWPORT_HINTS: Record<string, string> = {
+        mobile: '[Interface: mobile — prefer concise responses; avoid wide tables and long code blocks.]',
+        tablet: '[Interface: tablet — use moderate formatting width.]',
+        desktop: '[Interface: desktop — wide formatting is available; tables and code blocks render well.]',
+      };
+      const hint = VIEWPORT_HINTS[clientContext.viewportHint];
+      if (hint) prompt += `\n\n${hint}`;
     }
 
     return prompt;

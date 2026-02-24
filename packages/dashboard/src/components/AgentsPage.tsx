@@ -45,10 +45,10 @@ export function AgentsPage() {
     staleTime: 30000,
   });
 
+  // Both security policy AND delegation config must be enabled
   const subAgentsEnabled =
-    agentConfig?.config?.enabled === true ||
-    agentConfig?.allowedBySecurityPolicy === true ||
-    securityPolicy?.allowSubAgents === true;
+    (agentConfig?.allowedBySecurityPolicy === true || securityPolicy?.allowSubAgents === true) &&
+    agentConfig?.config?.enabled === true;
 
   const a2aEnabled = a2aConfig?.config?.enabled === true || securityPolicy?.allowA2A === true;
 

@@ -31,10 +31,13 @@ export type { Tool } from '@secureyeoman/shared';
 import type { AuditChain } from '../logging/audit-chain.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
+import type { SecurityConfig } from '@secureyeoman/shared';
 
 export interface SoulManagerDeps {
   auditChain: AuditChain;
   logger: SecureLogger;
+  /** Top-level security config; used by composeBodyPrompt() to gate creation tools against policy */
+  securityConfig?: SecurityConfig;
 }
 
 export interface SoulManagerWithBrainDeps extends SoulManagerDeps {

@@ -139,6 +139,18 @@ export const ResourcePolicySchema = z
       .default('supervised_auto'),
     /** Kill-switch: when true, all AI-initiated mutations are blocked regardless of automationLevel. */
     emergencyStop: z.boolean().default(false),
+    /**
+     * Per-personality rate limiting overrides.
+     * Stored in the existing body JSONB column — no DB migration required.
+     */
+    rateLimitConfig: z
+      .object({
+        /** Max chat requests per minute for this personality. Overrides global default when set. */
+        chatRequestsPerMinute: z.number().int().min(1).max(1000).optional(),
+        /** Set to false to disable rate limiting entirely for this personality. Defaults to true. */
+        enabled: z.boolean().default(true),
+      })
+      .optional(),
   })
   .default({});
 

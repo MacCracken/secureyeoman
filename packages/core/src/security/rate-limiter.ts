@@ -353,6 +353,8 @@ const STATIC_RULES: RateLimitRule[] = [
     keyType: 'user',
     onExceed: 'reject',
   },
+  /** Dedicated limit for chat endpoint — lower ceiling than api_requests. */
+  { name: 'chat_requests', windowMs: 60000, maxRequests: 30, keyType: 'user', onExceed: 'reject' },
 ];
 
 /**

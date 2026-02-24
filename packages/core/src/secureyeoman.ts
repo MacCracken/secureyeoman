@@ -525,6 +525,7 @@ export class SecureYeoman {
         {
           auditChain: this.auditChain,
           logger: this.logger.child({ component: 'SoulManager' }),
+          securityConfig: this.config.security,
         },
         this.brainManager,
         this.spiritManager
@@ -1433,6 +1434,14 @@ export class SecureYeoman {
       order: 'asc' as const,
     });
     return result.entries;
+  }
+
+  /**
+   * Get the input validator instance
+   */
+  getValidator(): InputValidator {
+    this.ensureInitialized();
+    return this.validator!;
   }
 
   /**

@@ -151,6 +151,14 @@ export function useChat(options?: UseChatOptions): UseChatReturn {
       ...(convId ? { conversationId: convId } : {}),
       memoryEnabled: memoryOn,
       saveAsMemory: memoryOn,
+      clientContext: {
+        viewportHint:
+          window.innerWidth < 768
+            ? 'mobile'
+            : window.innerWidth < 1024
+              ? 'tablet'
+              : 'desktop',
+      },
     });
   }, [input, messages, chatMutation, options, activeConversationId, queryClient]);
 
@@ -365,6 +373,14 @@ export function useChatStream(options?: UseChatStreamOptions): UseChatStreamRetu
           ...(convId ? { conversationId: convId } : {}),
           memoryEnabled: memoryOn,
           saveAsMemory: memoryOn,
+          clientContext: {
+            viewportHint:
+              window.innerWidth < 768
+                ? 'mobile'
+                : window.innerWidth < 1024
+                  ? 'tablet'
+                  : 'desktop',
+          },
         }),
       });
 

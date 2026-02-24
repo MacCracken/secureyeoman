@@ -29,10 +29,14 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 ### Bugs
 
-- [ ] Chat needs responsive design in the response window to not blow up the view
+- [x] Chat needs responsive design in the response window to not blow up the view *(fixed: min-h-0 on flex containers, pl-68→sm:pl-64, md:max-w-[70%] message bubbles)*
 
 ### Improvements
 
+- [x] Chat viewport hint in AI system prompt (mobile/tablet/desktop)
+- [x] Input validation wired to `/chat`, `/chat/stream`, personality and skill create/update routes
+- [x] Dedicated `chat_requests` rate limit rule (30/min/user); per-personality override via `rateLimitConfig` in `ResourcePolicy`
+- [x] Audit logging: `rate_limit`, `config_change`, `injection_attempt`, `auth_failure` (invalid API key), `ai_request`/`ai_response` in security feed
 - [ ] FRIDAY's suggestions - [suggestions](friday_suggestions.md)
 
 ---
@@ -149,6 +153,12 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 - [ ] **Offline indicator** — Detect when the connected SecureYeoman instance is unreachable and surface a reconnecting banner in the native shell.
 - [ ] **Auto-update** — In-app update flow via the platform's native update mechanism (Squirrel on Windows/macOS, AppImage delta updates on Linux).
 
+### AI Safety
+
+- [ ] **Prompt injection prevention layer** — A dedicated server-side guardrail that analyses the fully-assembled prompt immediately before the LLM API call, scanning for adversarial instruction-override patterns. Distinct from `InputValidator` (HTTP boundary) — this layer catches injection that survives validation (e.g. injected via a trusted skill's instructions or a retrieved memory). Gate on evidence from audit logs that `InputValidator`'s patterns are insufficient.
+
+- [ ] **Sub-agent spin-up from dashboard** — UI flow to create, configure, and launch sub-agent personalities directly from Security Settings and per-personality editor, without requiring manual config changes. Includes status card showing whether delegation is available and a one-click "Enable Sub-Agent Delegation" toggle that provisions the necessary permissions. See current status reporting issue: sub-agents report "Not enabled in current configuration" even when enabled in security settings.
+
 ---
 
 ## Dependency Watch
@@ -169,4 +179,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-23
+*Last updated: 2026-02-23 (Phase 38 security hardening complete)*

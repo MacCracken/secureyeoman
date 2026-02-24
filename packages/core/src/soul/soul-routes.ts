@@ -15,16 +15,44 @@ import type {
 } from './types.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
+import type { InputValidator } from '../security/input-validator.js';
+import type { AuditChain } from '../logging/audit-chain.js';
 
 export interface SoulRoutesOptions {
   soulManager: SoulManager;
   approvalManager?: ApprovalManager;
   broadcast?: (payload: unknown) => void;
   heartbeatManager?: HeartbeatManager | null;
+  validator?: InputValidator;
+  auditChain?: AuditChain;
 }
 
 export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions): void {
-  const { soulManager, approvalManager, broadcast, heartbeatManager } = opts;
+  const { soulManager, approvalManager, broadcast, heartbeatManager, validator, auditChain } = opts;
+
+  /** Validate text fields that feed directly into the system prompt. Returns an error message or null. */
+  function validateSoulText(
+    fields: Record<string, string | undefined>,
+    source: string,
+    userId?: string
+  ): string | null {
+    if (!validator) return null;
+    for (const [, value] of Object.entries(fields)) {
+      if (typeof value !== 'string') continue;
+      const result = validator.validate(value, { source });
+      if (result.blocked) {
+        void auditChain?.record({
+          event: 'injection_attempt',
+          level: 'warn',
+          message: `Soul route input blocked (${source})`,
+          userId,
+          metadata: { source, reason: result.blockReason },
+        });
+        return 'Input blocked: invalid content';
+      }
+    }
+    return null;
+  }
 
   // ── Personality ─────────────────────────────────────────────
 
@@ -45,11 +73,18 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
   app.post(
     '/api/v1/soul/personalities',
     async (request: FastifyRequest<{ Body: PersonalityCreate }>, reply: FastifyReply) => {
+      const b = request.body;
+      const err = validateSoulText(
+        { name: b.name, systemPrompt: b.systemPrompt, description: b.description },
+        'personality_create',
+        request.authUser?.userId
+      );
+      if (err) return sendError(reply, 400, err);
       try {
-        const personality = await soulManager.createPersonality(request.body);
+        const personality = await soulManager.createPersonality(b);
         return await reply.code(201).send({ personality });
-      } catch (err) {
-        return sendError(reply, 400, toErrorMessage(err));
+      } catch (e) {
+        return sendError(reply, 400, toErrorMessage(e));
       }
     }
   );
@@ -60,8 +95,15 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       request: FastifyRequest<{ Params: { id: string }; Body: PersonalityUpdate }>,
       reply: FastifyReply
     ) => {
+      const b = request.body;
+      const err = validateSoulText(
+        { name: b.name, systemPrompt: b.systemPrompt, description: b.description },
+        'personality_update',
+        request.authUser?.userId
+      );
+      if (err) return sendError(reply, 400, err);
       try {
-        const personality = await soulManager.updatePersonality(request.params.id, request.body);
+        const personality = await soulManager.updatePersonality(request.params.id, b);
         broadcast?.({ event: 'updated', type: 'personality', id: personality.id });
         if (heartbeatManager) {
           const active = await soulManager.getActivePersonality();
@@ -70,8 +112,8 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
           }
         }
         return { personality };
-      } catch (err) {
-        return sendError(reply, 404, toErrorMessage(err));
+      } catch (e) {
+        return sendError(reply, 404, toErrorMessage(e));
       }
     }
   );
@@ -157,11 +199,18 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
   app.post(
     '/api/v1/soul/skills',
     async (request: FastifyRequest<{ Body: SkillCreate }>, reply: FastifyReply) => {
+      const b = request.body;
+      const err = validateSoulText(
+        { name: b.name, description: b.description, instructions: b.instructions },
+        'skill_create',
+        request.authUser?.userId
+      );
+      if (err) return sendError(reply, 400, err);
       try {
-        const skill = await soulManager.createSkill(request.body);
+        const skill = await soulManager.createSkill(b);
         return await reply.code(201).send({ skill });
-      } catch (err) {
-        return sendError(reply, 400, toErrorMessage(err));
+      } catch (e) {
+        return sendError(reply, 400, toErrorMessage(e));
       }
     }
   );
@@ -172,12 +221,19 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       request: FastifyRequest<{ Params: { id: string }; Body: SkillUpdate }>,
       reply: FastifyReply
     ) => {
+      const b = request.body;
+      const err = validateSoulText(
+        { name: b.name, description: b.description, instructions: b.instructions },
+        'skill_update',
+        request.authUser?.userId
+      );
+      if (err) return sendError(reply, 400, err);
       try {
-        const skill = await soulManager.updateSkill(request.params.id, request.body);
+        const skill = await soulManager.updateSkill(request.params.id, b);
         broadcast?.({ event: 'updated', type: 'skill', id: skill.id });
         return { skill };
-      } catch (err) {
-        return sendError(reply, 404, toErrorMessage(err));
+      } catch (e) {
+        return sendError(reply, 404, toErrorMessage(e));
       }
     }
   );

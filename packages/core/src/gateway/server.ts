@@ -368,6 +368,10 @@ export class GatewayServer {
       const soulManager = this.secureYeoman.getSoulManager();
       let approvalManager;
       try { approvalManager = this.secureYeoman.getApprovalManager(); } catch { /* optional */ }
+      let soulValidator;
+      try { soulValidator = this.secureYeoman.getValidator(); } catch { /* optional */ }
+      let soulAuditChain;
+      try { soulAuditChain = this.secureYeoman.getAuditChain(); } catch { /* optional */ }
       registerSoulRoutes(this.app, {
         soulManager,
         approvalManager,
@@ -375,6 +379,8 @@ export class GatewayServer {
           this.broadcast('soul', payload);
         },
         heartbeatManager: this.secureYeoman.getHeartbeatManager(),
+        validator: soulValidator,
+        auditChain: soulAuditChain,
       });
     } catch {
       // Soul manager may not be available — skip routes
@@ -1096,6 +1102,8 @@ export class GatewayServer {
             'sandbox_violation',
             'config_change',
             'secret_access',
+            'ai_request',
+            'ai_response',
           ];
 
           // Allow the caller to narrow by specific event types; fall back to
@@ -1257,6 +1265,22 @@ export class GatewayServer {
             allowCommunityGitFetch,
             communityGitUrl,
           });
+
+          // Audit the policy change
+          try {
+            const changedKeys = Object.keys(request.body).filter(
+              (k) => (request.body as Record<string, unknown>)[k] !== undefined
+            );
+            void this.secureYeoman.getAuditChain().record({
+              event: 'config_change',
+              level: 'info',
+              message: 'Security policy updated via dashboard',
+              userId: request.authUser?.userId,
+              metadata: { changes: changedKeys },
+            });
+          } catch {
+            // Audit is best-effort
+          }
           const config = this.secureYeoman.getConfig();
           return {
             allowSubAgents: config.security.allowSubAgents,

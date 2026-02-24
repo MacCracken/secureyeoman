@@ -14,7 +14,6 @@ import {
   Plus,
   ChevronRight,
   ChevronDown,
-  Eye,
   GitBranch,
   X,
   Layers,
@@ -92,7 +91,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
   const delegateMut = useMutation({
     mutationFn: delegateTask,
     onSuccess: () => {
-      setDelegateProfile('researcher');
+      setDelegateProfile(profiles[0]?.name ?? 'researcher');
       setDelegateTaskText('');
       setDelegateContext('');
       setShowDelegate(false);
@@ -101,10 +100,10 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
     },
   });
 
+  // Both security policy AND delegation config must be enabled
   const enabled =
-    configData?.config?.enabled === true ||
-    configData?.allowedBySecurityPolicy === true ||
-    securityPolicy?.allowSubAgents === true;
+    (configData?.allowedBySecurityPolicy === true || securityPolicy?.allowSubAgents === true) &&
+    configData?.config?.enabled === true;
 
   const swarmsAllowed = securityPolicy?.allowSwarms ?? false;
 
@@ -114,6 +113,13 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
       setActiveTab('active');
     }
   }, [activeTab, swarmsAllowed]);
+
+  // Sync selected profile to first available when profiles load (e.g. if 'researcher' was deleted)
+  useEffect(() => {
+    if (profiles.length > 0 && !profiles.find((p) => p.name === delegateProfile)) {
+      setDelegateProfile(profiles[0].name);
+    }
+  }, [profiles, delegateProfile]);
 
   if (!enabled) {
     return (
@@ -187,9 +193,16 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
               {profiles.map((p: AgentProfileInfo) => (
                 <option key={p.id} value={p.name}>
                   {p.name}
+                  {p.isBuiltin ? ' (built-in)' : ''}
                 </option>
               ))}
             </select>
+            {(() => {
+              const sel = profiles.find((p) => p.name === delegateProfile);
+              return sel?.description ? (
+                <p className="text-xs text-muted-foreground mt-1">{sel.description}</p>
+              ) : null;
+            })()}
           </div>
           <div>
             <label className="text-sm font-medium block mb-1">Task</label>
@@ -249,7 +262,15 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
         ))}
       </div>
 
-      {activeTab === 'active' && <ActiveDelegationsTab />}
+      {activeTab === 'active' && (
+        <ActiveDelegationsTab
+          profiles={profiles}
+          onDelegate={(profileName) => {
+            setDelegateProfile(profileName);
+            setShowDelegate(true);
+          }}
+        />
+      )}
       {activeTab === 'history' && <HistoryTab />}
       {activeTab === 'profiles' && (
         <ProfilesTab
@@ -269,7 +290,13 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
 
 // ── Active Delegations Tab ────────────────────────────────────────
 
-function ActiveDelegationsTab() {
+function ActiveDelegationsTab({
+  profiles,
+  onDelegate,
+}: {
+  profiles: AgentProfileInfo[];
+  onDelegate: (profileName: string) => void;
+}) {
   const queryClient = useQueryClient();
   const { data, isLoading } = useQuery({
     queryKey: ['activeDelegations'],
@@ -296,8 +323,32 @@ function ActiveDelegationsTab() {
 
   if (delegations.length === 0) {
     return (
-      <div className="card p-8 text-center">
-        <p className="text-muted-foreground text-sm">No active delegations</p>
+      <div className="card p-6 text-center space-y-4">
+        <Users className="w-10 h-10 mx-auto text-muted-foreground" />
+        <div>
+          <p className="text-sm font-medium mb-1">No active delegations</p>
+          <p className="text-xs text-muted-foreground">
+            Spin up a sub-agent by delegating a task to one of the{' '}
+            {profiles.length > 0 ? `${profiles.length} available` : ''} profiles below.
+          </p>
+        </div>
+        {profiles.length > 0 && (
+          <div className="flex flex-wrap justify-center gap-2">
+            {profiles.slice(0, 4).map((p) => (
+              <button
+                key={p.id}
+                onClick={() => {
+                  onDelegate(p.name);
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs border rounded-lg hover:bg-muted/50 transition-colors"
+                title={p.description}
+              >
+                <Play className="w-3 h-3" />
+                {p.name}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
     );
   }

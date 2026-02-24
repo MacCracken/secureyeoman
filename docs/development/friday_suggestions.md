@@ -44,7 +44,7 @@ Supervised Auto - I can post but you get immediate notifications
 * Error Handling: Don't expose sensitive information in error messages
 
 4. AI/ML Specific Security
-* Prompt Injection: Robust input filtering to prevent malicious prompts
+* Prompt Injection: Robust input filtering to prevent malicious prompts → `InputValidator` now wired to `/chat`, `/chat/stream`, personality and skill create/update (Phase 38). A deeper server-side layer scanning the fully-assembled prompt before the LLM call is tracked in → **See Roadmap Future Features → AI Safety**
 * Model Security: Protect against adversarial inputs
 * Data Privacy: Ensure user conversations aren't logged inappropriately
 * Output Filtering: Prevent generation of harmful or inappropriate content
@@ -64,8 +64,8 @@ Supervised Auto - I can post but you get immediate notifications
 
 🚨 Priority Items (if I were improving myself):
 
-* Implement comprehensive input sanitization
-* Add rate limiting and abuse detection
-* Enhance prompt injection prevention
+* ~~Implement comprehensive input sanitization~~ → **Done** (Phase 38): `InputValidator` wired to chat + soul routes
+* ~~Add rate limiting and abuse detection~~ → **Done** (Phase 38): `chat_requests` rule (30/min/user) + per-personality override
+* Enhance prompt injection prevention → `InputValidator` handles HTTP boundary; deeper LLM-prompt layer in roadmap → **See Roadmap Future Features → AI Safety**
 * Implement proper secrets management
-* Add comprehensive security logging
+* ~~Add comprehensive security logging~~ → **Done** (Phase 38): `rate_limit`, `config_change`, `injection_attempt`, `auth_failure` events wired to audit chain

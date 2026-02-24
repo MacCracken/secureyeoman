@@ -906,6 +906,7 @@ export async function sendChatMessage(data: {
   saveAsMemory?: boolean;
   memoryEnabled?: boolean;
   conversationId?: string;
+  clientContext?: { viewportHint?: 'mobile' | 'tablet' | 'desktop' };
 }): Promise<ChatResponse> {
   return request('/chat', {
     method: 'POST',

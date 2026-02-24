@@ -410,6 +410,35 @@ export class InputValidator {
   }
 
   /**
+   * Validate all string values in an object recursively.
+   * Returns the first failure found, or a passing result if all strings are clean.
+   * Used by HTTP entry points that receive structured request bodies.
+   */
+  validateObject(
+    obj: Record<string, unknown>,
+    context: ValidationContext = {}
+  ): ValidationResult {
+    const stack: unknown[] = [obj];
+
+    while (stack.length > 0) {
+      const current = stack.pop();
+
+      if (typeof current === 'string') {
+        const result = this.validate(current, context);
+        if (result.blocked) return result;
+      } else if (Array.isArray(current)) {
+        for (const item of current) stack.push(item);
+      } else if (current !== null && typeof current === 'object') {
+        for (const value of Object.values(current as Record<string, unknown>)) {
+          stack.push(value);
+        }
+      }
+    }
+
+    return { valid: true, sanitized: '', warnings: [], blocked: false };
+  }
+
+  /**
    * Check if content is likely text
    */
   private isLikelyText(content: Buffer): boolean {
