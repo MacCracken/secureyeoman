@@ -1293,7 +1293,7 @@ function BodySection({
   resourcePolicy,
   onResourcePolicyChange,
 }: BodySectionProps) {
-  const capabilities = ['auditory', 'haptic', 'limb_movement', 'vision', 'vocalization'] as const;
+  const capabilities = ['auditory', 'diagnostics', 'haptic', 'limb_movement', 'vision', 'vocalization'] as const;
   const { data: serversData, isLoading: serversLoading } = useQuery({
     queryKey: ['mcpServers'],
     queryFn: () => fetch('/api/v1/mcp/servers').then((r) => r.json()),
@@ -1405,6 +1405,11 @@ function BodySection({
       auditory: {
         icon: '👂',
         description: 'Microphone input and audio output',
+        available: true,
+      },
+      diagnostics: {
+        icon: '🩺',
+        description: 'Self-diagnostics snapshot and sub-agent health reporting',
         available: true,
       },
       haptic: {
@@ -1767,6 +1772,7 @@ function BodySection({
                 info.available &&
                 (cap === 'vision' ||
                   cap === 'auditory' ||
+                  cap === 'diagnostics' ||
                   cap === 'limb_movement' ||
                   cap === 'vocalization' ||
                   cap === 'haptic');

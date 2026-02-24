@@ -69,3 +69,4 @@ Supervised Auto - I can post but you get immediate notifications
 * Enhance prompt injection prevention → `InputValidator` handles HTTP boundary; deeper LLM-prompt layer in roadmap → **See Roadmap Future Features → AI Safety**
 * Implement proper secrets management
 * ~~Add comprehensive security logging~~ → **Done** (Phase 38): `rate_limit`, `config_change`, `injection_attempt`, `auth_failure` events wired to audit chain
+* ~~Implement some sort of tool set for the agent/personality to run diagnostics on itself and the system~~ → **Done** (Phase 39, ADR 123): Two-channel diagnostic system — Channel A injects live runtime snapshot (uptime, memory, CPU, connection counts) directly into `composeBodyPrompt()`; Channel B provides `diag_report_status`, `diag_query_agent`, `diag_ping_integrations` MCP tools for sub-agent health reporting. Per-personality toggle in Body → Capabilities (`diagnostics` capability).

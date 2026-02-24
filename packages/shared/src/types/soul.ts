@@ -30,6 +30,7 @@ export type ModelFallbackEntry = z.infer<typeof ModelFallbackEntrySchema>;
 
 export const BodyCapabilitySchema = z.enum([
   'auditory',
+  'diagnostics',
   'haptic',
   'limb_movement',
   'vision',

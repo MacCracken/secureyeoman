@@ -12,6 +12,7 @@
  * and relevant context is injected into the composed prompt.
  */
 
+import os from 'os';
 import { composeArchetypesPreamble } from './archetypes.js';
 import { PERSONALITY_PRESETS, getPersonalityPreset, type PersonalityPreset } from './presets.js';
 import type { SoulStorage } from './storage.js';
@@ -496,7 +497,7 @@ export class SoulManager {
     ];
 
     // Capabilities — show enabled/disabled from personality config
-    const allCapabilities = ['vision', 'limb_movement', 'auditory', 'haptic'] as const;
+    const allCapabilities = ['vision', 'limb_movement', 'auditory', 'haptic', 'diagnostics'] as const;
     const enabledCaps = personality?.body?.capabilities ?? [];
     const capLines: string[] = [];
     for (const cap of allCapabilities) {
@@ -601,6 +602,39 @@ export class SoulManager {
           const tag = check.status === 'ok' ? 'ok' : check.status === 'warning' ? 'WARN' : 'ERR';
           lines.push(`- ${check.name}: [${tag}] ${check.message}`);
         }
+      }
+    }
+
+    // Diagnostics — Channel A: live runtime snapshot injected when capability is enabled
+    if (enabledCaps.includes('diagnostics')) {
+      const uptimeSec = process.uptime();
+      const uptimeStr =
+        uptimeSec >= 3600
+          ? `${Math.floor(uptimeSec / 3600)}h ${Math.floor((uptimeSec % 3600) / 60)}m`
+          : `${Math.floor(uptimeSec / 60)}m ${Math.floor(uptimeSec % 60)}s`;
+      const memMb = Math.round(process.memoryUsage().rss / 1024 / 1024);
+      const loadAvg = os.loadavg()[0].toFixed(2);
+      const serverCount = personality?.body?.selectedServers?.length ?? 0;
+      const integrationCount = personality?.body?.selectedIntegrations?.length ?? 0;
+
+      lines.push('');
+      lines.push('### Diagnostics');
+      lines.push('Live snapshot of your runtime state (assembled at session start):');
+      lines.push('');
+      lines.push(`- **uptime**: ${uptimeStr}`);
+      lines.push(`- **memory**: ${memMb} MB RSS`);
+      lines.push(`- **cpu**: ${loadAvg} (1m load avg)`);
+      lines.push(`- **mcp servers**: ${serverCount} connected`);
+      lines.push(`- **integrations**: ${integrationCount} connected`);
+
+      const sec = this.deps.securityConfig;
+      lines.push('');
+      if (sec?.allowSubAgents) {
+        lines.push(
+          'Sub-agent diagnostic tools: `diag_report_status`, `diag_query_agent`, `diag_ping_integrations`'
+        );
+      } else {
+        lines.push('Integration diagnostic tool: `diag_ping_integrations`');
       }
     }
 

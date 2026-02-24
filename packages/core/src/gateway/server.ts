@@ -57,6 +57,7 @@ import { registerExtensionRoutes } from '../extensions/extension-routes.js';
 import { registerExecutionRoutes } from '../execution/execution-routes.js';
 import { registerA2ARoutes } from '../a2a/a2a-routes.js';
 import { registerProactiveRoutes } from '../proactive/proactive-routes.js';
+import { registerDiagnosticRoutes } from '../diagnostics/diagnostic-routes.js';
 import { registerMultimodalRoutes } from '../multimodal/multimodal-routes.js';
 import { registerBrowserRoutes } from '../browser/browser-routes.js';
 import { registerGroupChatRoutes } from '../integrations/group-chat-routes.js';
@@ -443,6 +444,15 @@ export class GatewayServer {
       });
     } catch {
       // Integration manager may not be available — skip routes
+    }
+
+    // Diagnostic routes (Phase 39 — Channel B: sub-agent reporting + integration ping)
+    try {
+      const soulManager = this.secureYeoman.getSoulManager();
+      const integrationManager = this.secureYeoman.getIntegrationManager();
+      registerDiagnosticRoutes(this.app, { soulManager, integrationManager });
+    } catch {
+      // Optional — skip if managers unavailable
     }
 
     // Chat routes

@@ -4,6 +4,24 @@ All notable changes to SecureYeoman are documented in this file.
 
 ---
 
+## [Unreleased] — Phase 39 Diagnostic Tools (2026-02-23)
+
+### Features
+
+**Diagnostic Tools — two-channel agent self-diagnostics** (ADR 123)
+
+- `'diagnostics'` added to `BodyCapabilitySchema` in `packages/shared/src/types/soul.ts` — single capability toggle, no DB migration required
+- **Channel A — prompt injection**: `composeBodyPrompt()` in `SoulManager` now appends a `### Diagnostics` block when the capability is enabled. Inline data: process uptime, memory RSS, 1-minute CPU load average, connected MCP server count, integration count. Sourced directly from `process` and `os` — no REST round-trip.
+- **Channel B — MCP tools** (`packages/mcp/src/tools/diagnostic-tools.ts`): three new tools gated by `body.capabilities.includes('diagnostics')`:
+  - `diag_report_status` — sub-agent pushes health report (uptime, task count, last error, memory) to orchestrator via `POST /api/v1/diagnostics/agent-report`
+  - `diag_query_agent` — orchestrator reads a sub-agent's last report via `GET /api/v1/diagnostics/agent-report/:agentId`; also requires `allowSubAgents`
+  - `diag_ping_integrations` — returns running/healthy status for all integrations + selected MCP server IDs from the active personality
+- **Core API** (`packages/core/src/diagnostics/diagnostic-routes.ts`): three new Fastify routes serving Channel B tools. Agent reports stored in ephemeral in-memory Map (lost on restart; intentional for live-status data).
+- **Audit logging**: all three MCP tools emit `diagnostic_call` audit events (in addition to the standard `mcp_tool_call` from `wrapToolHandler`).
+- **Dashboard**: `diagnostics` entry added to `capabilityInfo` map in `PersonalityEditor.tsx` (icon 🩺, description "Self-diagnostics snapshot and sub-agent health reporting"). Toggle appears automatically in Body → Capabilities section.
+
+---
+
 ## [Unreleased] — Phase 38 Beta Manual Review (2026-02-23)
 
 ### Breaking Changes

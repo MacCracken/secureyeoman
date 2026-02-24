@@ -98,5 +98,19 @@ export function getToolManifest(): ToolManifestEntry[] {
     { name: 'browser_fill', description: 'Fill in a form field on a page' },
     { name: 'browser_evaluate', description: 'Execute JavaScript in the browser context' },
     { name: 'browser_pdf', description: 'Generate a PDF from a webpage' },
+
+    // Diagnostic tools — Channel B (sub-agent/external reporting)
+    {
+      name: 'diag_report_status',
+      description: "Push this sub-agent's health status (uptime, task count, errors) to the orchestrator",
+    },
+    {
+      name: 'diag_query_agent',
+      description: "Retrieve the most recent health report from a spawned sub-agent by personality ID",
+    },
+    {
+      name: 'diag_ping_integrations',
+      description: 'Ping all MCP servers and integrations connected to the active personality',
+    },
   ];
 }

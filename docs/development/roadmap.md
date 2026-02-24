@@ -11,7 +11,8 @@
 | | **Tag 2026.2.22** | **2026-02-22** | **Tagged** |
 | | **Release 2026.2.22** | **2026-02-22** | **Released** |
 | 38 | Beta Manual Review | — | In Progress |
-| 39 | Desktop Control (Body Module) | — | Planned |
+| 39 | Diagnostic Tools (Body Module) | — | In Progress |
+| 40 | Desktop Control (Body Module) | — | Planned |
 
 ---
 
@@ -42,7 +43,61 @@ Full-system manual testing pass: find real bugs in shipped code and fix them. Ev
 
 ---
 
-## Phase 39: Desktop Control (Body Module)
+## Phase 39: Diagnostic Tools (Body Module)
+
+**Status**: In Progress
+
+Two-channel diagnostic system: core inspects itself and pushes a live snapshot directly into the system prompt (no round-trip needed), while sub-agents and external agents report status back over MCP — the protocol they already use to communicate. Distinct from the automated Heartbeat (scheduled, writes to memory): this is on-demand, agent-readable context injected at session time plus a tool surface for inter-agent health reporting.
+
+```
+Channel A — Core self-diagnostics:
+  core → composeBodyPrompt() → ### Diagnostics block → agent reads as context
+
+Channel B — Sub-agent / external reporting:
+  sub-agent  →  MCP  →  diag_report_status  →  orchestrator sees it
+  orchestrator  →  MCP  →  diag_query_agent  →  polls a spawned agent
+```
+
+Security gate: add `'diagnostics'` to `BodyCapabilitySchema`. When the capability is enabled on a personality, Channel A is injected into its prompt and Channel B MCP tools are listed as available. When disabled, the `### Diagnostics` block reads `diagnostics: disabled` and the MCP tools are not advertised — same pattern as `vision` and `limb_movement`.
+
+### 39.1 — Schema & Capability Gate
+
+- [x] **`'diagnostics'` capability** — Add `'diagnostics'` to `BodyCapabilitySchema` in `packages/shared/src/types/soul.ts`. No new config schema or database migration needed; it slots into the existing `body.capabilities[]` array like any other capability.
+- [x] **Per-personality toggle in Personality Editor** — The existing Body → Capabilities section in `PersonalityEditor.tsx` renders all `BodyCapabilitySchema` entries automatically. Adding `'diagnostics'` to the enum is sufficient to surface the toggle. Add the entry to `capabilityInfo` with icon `🩺`, label `Diagnostics`, description `"Self-diagnostics snapshot and sub-agent health reporting"`.
+
+### 39.2 — Channel A: Core Diagnostics Prompt Injection
+
+*Core inspects its own internals and injects a live snapshot into the system prompt. No new REST endpoints; no MCP round-trip. Data core already holds is written directly.*
+
+- [x] **`### Diagnostics` block in `composeBodyPrompt()`** — In `packages/core/src/soul/manager.ts`, extend `composeBodyPrompt()` to append a `### Diagnostics` subsection when `'diagnostics'` is in `body.capabilities[]`. Content assembled inline from data already available in core:
+  - **System** — process uptime, memory RSS, CPU load average (from `process.memoryUsage()` and `os.loadavg()`)
+  - **Config summary** — connected MCP server count and integration count; no secret values
+- [x] When `'diagnostics'` is absent from `body.capabilities[]`, the capability simply does not appear in the prompt (disabled state shown in the capabilities list).
+- [x] Snapshot is assembled once per session start and on each prompt rebuild (same lifecycle as the rest of `composeBodyPrompt`).
+
+### 39.3 — Channel B: Sub-agent / External Diagnostic MCP Tools
+
+*MCP is the right transport here because sub-agents are external from core's perspective — this is what MCP is for. Implemented in `packages/mcp/src/tools/diagnostic-tools.ts`.*
+
+| Tool | Direction | Description |
+|------|-----------|-------------|
+| `diag_report_status` | sub-agent → orchestrator | Sub-agent pushes a structured health report: agent id, uptime, task count, last error, memory usage. Orchestrator personality receives it as a tool result and can store it as a memory or surface it in a task. |
+| `diag_query_agent` | orchestrator → sub-agent | Orchestrator requests a status report from a named spawned agent by id. Returns the same structured payload as `diag_report_status` or a timeout error if the agent is unreachable. |
+| `diag_ping_integrations` | any → MCP peers | Ping all MCP servers in the personality's `selectedServers` list; returns reachable / unreachable / latency per server. Useful for an agent to verify its tool connections before starting a long task. |
+
+- [x] Implement all three tools in `packages/mcp/src/tools/diagnostic-tools.ts`. Each checks `'diagnostics'` in the active personality's `body.capabilities[]` via the standard capability guard before executing.
+- [x] Register in `packages/mcp/src/tools/index.ts` and add entries to `packages/mcp/src/tools/manifest.ts`.
+- [x] `diag_report_status` and `diag_query_agent` require `allowSubAgents: true` in `SecurityConfig` in addition to the `'diagnostics'` capability — no sub-agent tools should be callable when delegation is globally off.
+
+### 39.4 — Audit Logging
+
+- [x] All `diag_*` MCP tool calls emit `diagnostic_call` audit events: personality id, tool name, direction (report / query / ping), duration ms, result status. Surfaced in the Security Feed.
+- [ ] Add `diagnostic_call` to the Security Feed event type filter dropdown.
+- [x] Channel A prompt injection emits no audit event — it is passive context assembly, not an action.
+
+---
+
+## Phase 40: Desktop Control (Body Module)
 
 **Status**: Planned
 
@@ -57,7 +112,7 @@ SecurityConfig.allowDesktopControl === true
   (either condition false → tool returns capability-disabled error, for ALL callers)
 ```
 
-### 39.1 — Capability Enforcement Gate (prerequisite for all other sub-phases)
+### 40.1 — Capability Enforcement Gate (prerequisite for all other sub-phases)
 
 *Wires the existing `BodyConfig.capabilities[]` toggle into the MCP tool dispatch layer so it enforces for local and remote callers alike.*
 
@@ -67,7 +122,7 @@ SecurityConfig.allowDesktopControl === true
 - [ ] **Remote MCP surface hardening** — The MCP server already exposes tools to external clients. The capability check above is sufficient to block remote calls, but confirm the check cannot be bypassed by: (a) direct tool invocation over the MCP transport without an active personality session, (b) MCP bridge delegations from sub-agents. Add integration tests covering both paths.
 - [ ] **`composeBodyPrompt` system prompt wiring** — In `packages/core/src/soul/manager.ts`, extend `composeBodyPrompt()` to include desktop tool names under the `limb_movement` and `vision` capability entries when they are enabled. Agent sees what it can do; silently omits the tools when the capability is disabled.
 
-### 39.2 — Screen Capture (`capture.screen`, `capture.camera`)
+### 40.2 — Screen Capture (`capture.screen`, `capture.camera`)
 
 *Implements `BodyCapability.vision`. Gated by `vision` in `body.capabilities[]` AND `allowDesktopControl`.*
 
@@ -77,7 +132,7 @@ SecurityConfig.allowDesktopControl === true
 - [ ] **`CaptureFilters` application** — Post-process captured images: blur `blurRegions[]`, redact text matching `redactPatterns[]` via regex overlay, exclude windows in `excludeWindows[]` by compositing a black rectangle over their bounds.
 - [ ] **`CaptureRestrictions` enforcement** — Honor `singleUse` (auto-revoke consent token after one capture), `readOnly` (no write to disk), `noNetwork` (block base64 payload over non-loopback socket), `watermark` (stamp with timestamp + agent ID).
 
-### 39.3 — Keyboard & Mouse Control (`limb_movement`)
+### 40.3 — Keyboard & Mouse Control (`limb_movement`)
 
 *Implements `BodyCapability.limb_movement`. Gated by `limb_movement` in `body.capabilities[]` AND `allowDesktopControl`.*
 
@@ -86,9 +141,9 @@ SecurityConfig.allowDesktopControl === true
 - [ ] **Action sequencing with timing** — `InputSequence` type: ordered list of `{action, delayAfterMs}` steps executed atomically. Prevents interleaved agent inputs from corrupting sequences (e.g. form fill: focus → type → tab → type → enter). Max sequence length configurable (default 50 steps).
 - [ ] **Clipboard actuator** — Implement `body/actuator/clipboard.ts` via `clipboardy`. `read()`, `write(text)`, `clear()`. Gated by `capture.clipboard` RBAC resource as well as `limb_movement` capability.
 
-### 39.4 — MCP Tool Family: `desktop_*`
+### 40.4 — MCP Tool Family: `desktop_*`
 
-*Registered in `packages/mcp/src/tools/desktop-tools.ts`. All tools check the capability gate (39.1) first — no exceptions for remote callers.*
+*Registered in `packages/mcp/src/tools/desktop-tools.ts`. All tools check the capability gate (40.1) first — no exceptions for remote callers.*
 
 | Tool | Capability gate | Description |
 |------|----------------|-------------|
@@ -110,7 +165,7 @@ SecurityConfig.allowDesktopControl === true
 - [ ] Register in `packages/mcp/src/tools/index.ts` behind `config.allowDesktopControl` outer flag
 - [ ] Add entries to `packages/mcp/src/tools/manifest.ts`
 
-### 39.5 — Vision Integration (Agent "Seeing")
+### 40.5 — Vision Integration (Agent "Seeing")
 
 *Pipes captured screenshots through the Claude vision API so agents can interpret screen state.*
 
@@ -118,7 +173,7 @@ SecurityConfig.allowDesktopControl === true
 - [ ] **Screen-grounded task loop** — Standard agent pattern: `desktop_screenshot` → interpret via vision → `desktop_click`/`desktop_type` → repeat. Documented as a workflow recipe in `docs/guides/desktop-control.md`.
 - [ ] **`vision` capability system prompt entry** — When `vision` is in `body.capabilities[]`, `composeBodyPrompt()` injects under the capability entry: `"Use desktop_screenshot to observe screen state before acting."` When absent, the entry reads `vision: disabled` as it does today.
 
-### 39.6 — Consent & Audit
+### 40.6 — Consent & Audit
 
 *Builds on the `ConsentManager` and `CaptureScope` framework already defined in `packages/core/src/body/`.*
 
@@ -127,7 +182,7 @@ SecurityConfig.allowDesktopControl === true
 - [ ] **Audit logging** — All `desktop_*` calls emit audit events: `desktop_capture`, `desktop_input`, `desktop_clipboard`. Fields: agent id, tool name, target description (not pixel data), timestamp, consent token reference. Surfaced in the Security Feed.
 - [ ] **Input rate limiting** — Max N input actions per minute per agent (default 60, configurable via `ResourcePolicy`). Separate bucket from `chat_requests`.
 
-### 39.7 — Dashboard UI
+### 40.7 — Dashboard UI
 
 *The Personality Editor Body → Capabilities section already renders `limb_movement` and `vision` toggles (`PersonalityEditor.tsx` lines 1760–1826). This sub-phase wires their disabled state to visible feedback and adds the system-level controls.*
 
@@ -136,7 +191,7 @@ SecurityConfig.allowDesktopControl === true
 - [ ] **Consent history log** — Table in the Desktop Control panel: agent, resource, purpose, timestamp, revoked/active. Manual revocation of active consent tokens.
 - [ ] **Audit feed filter entries** — Add `desktop_capture` and `desktop_input` to the Security Feed event type filter dropdown.
 
-### 39.8 — Configuration Reference & Docs
+### 40.8 — Configuration Reference & Docs
 
 - [ ] **`docs/guides/desktop-control.md`** — Getting started guide: enabling `allowDesktopControl` in Security Settings, toggling `limb_movement`/`vision` per personality, example screen-grounded agent workflow, platform notes (X11 vs Wayland, macOS Accessibility permissions, Windows UAC), remote MCP client usage.
 - [ ] **Configuration reference update** — Add `allowDesktopControl`, `allowCamera` to `docs/configuration.md` with defaults, security implications, and note that `body.capabilities[]` is the per-personality enforcement layer for both local and remote MCP callers.
@@ -282,4 +337,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-23 (Phase 38 security hardening complete)*
+*Last updated: 2026-02-23 (Phase 39 Diagnostic Tools implemented; one item open: Security Feed filter entry)*
