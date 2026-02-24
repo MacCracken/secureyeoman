@@ -22,7 +22,7 @@ const mockCredentialManager = {
   injectCredentials: vi.fn(),
 };
 
-const enabledServer = { id: 'srv-1', name: 'Test Server', enabled: true, env: { KEY: 'val' } };
+const enabledServer = { id: 'srv-1', name: 'Test Server', enabled: true, env: { KEY: 'val' }, url: 'http://localhost:3001' };
 const disabledServer = { id: 'srv-2', name: 'Disabled', enabled: false };
 
 const toolManifests = [
@@ -60,8 +60,14 @@ describe('McpClientManager', () => {
     mockStorage.deleteTools.mockResolvedValue(undefined);
     mockStorage.listServers.mockResolvedValue({ servers: [] });
 
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: vi.fn().mockResolvedValue({ result: 'called tool_a successfully' }),
+    }));
+
     manager = new McpClientManager(mockStorage as any, {
       logger: mockLogger as any,
+      tokenSecret: 'test-secret',
     });
   });
 
@@ -172,6 +178,7 @@ describe('McpClientManager', () => {
       const mgr = new McpClientManager(mockStorage as any, {
         logger: mockLogger as any,
         credentialManager: mockCredentialManager as any,
+        tokenSecret: 'test-secret',
       });
 
       await mgr.callTool('srv-1', 'tool_a', {});

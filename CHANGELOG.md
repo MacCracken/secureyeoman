@@ -1,3 +1,39 @@
+## [2026.2.24]
+
+### Chat UI — Phase Separation + Persistence
+
+#### Changed
+
+- **Chat messages now show three visually distinct phases** in both `ChatPage` and `EditorPage` (and their historical message records):
+  - **Phase 1 — Thinking**: `ThinkingBlock` (collapsible, auto-open while live, auto-close on completion)
+  - **Phase 2 — Tools used**: `Wrench` icon section with grey tool-call badges + primary-coloured creation sparkle cards; thin `border-t` divider after thinking
+  - **Phase 3 — Response**: `ChatMarkdown` / streaming text; thin `border-t` divider after thinking or tools
+  - Creation events (sparkle cards) moved **before** the response text — tools run before the response, and the display now reflects that ordering
+
+- **Tool call badges persist in historical messages** — previously the animated "Using tools" badges cleared after streaming completed and were invisible in history. Tool calls are now:
+  - Accumulated client-side into `completedToolCalls` during streaming
+  - Included in the `done`-event message stored in `messages` state
+  - Saved to DB via new `tool_calls_json JSONB` column (migration `039_message_thinking_tools.sql`)
+  - Restored as grey (non-animated) badges when a conversation is reloaded
+
+- **Thinking content persists in historical messages** — `thinkingContent` was always sent in the `done` SSE event but never written to the DB, so it disappeared after a page reload. Now saved to `thinking_content TEXT` column (same migration `039`) and restored on conversation load.
+
+- **Delegation sparkle badge enriched** — `delegate_task` streaming badge now shows `"Delegation → {profile}: {task…}"` (first 50 chars of task) instead of the generic `"Delegation"` label. Applied in the streaming path of `chat-routes.ts`.
+
+#### Fixed
+
+- Phase 3 `border-t` divider now also fires when `toolCalls` exist but `creationEvents` do not (divider was previously conditional on `creationEvents` only).
+
+### Sub-Agent Token Budget
+
+#### Fixed
+
+- **Token budget exhaustion on every delegation** — AI was consistently specifying low values (`maxTokenBudget: 8000–10000`) based on misleading tool description guidance ("typical tasks need 5,000–20,000 tokens"). Two-part fix:
+  - `delegate_task` tool description in `agents/tools.ts` rewritten: "Leave unset (strongly recommended) — most tasks require 30,000–80,000 tokens to complete properly; values below 20,000 almost always cause premature termination."
+  - Hard minimum floor of 20,000 tokens added in `SubAgentManager.delegate()` — `Math.max(20_000, Math.min(...))` — prevents any AI-specified value below 20k from taking effect regardless of what the model passes.
+
+---
+
 ## [2026.2.23]
 
 ### Phase 43 — Sub-Agent UX + Bug Fixes

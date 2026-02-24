@@ -1195,7 +1195,9 @@ export function EditorPage() {
                     {msg.role === 'assistant' ? (
                       <div
                         className={
-                          msg.thinkingContent || (msg.creationEvents?.length ?? 0) > 0
+                          msg.thinkingContent ||
+                          (msg.toolCalls?.length ?? 0) > 0 ||
+                          (msg.creationEvents?.length ?? 0) > 0
                             ? 'border-t border-muted-foreground/15 pt-1.5 mt-1'
                             : ''
                         }
