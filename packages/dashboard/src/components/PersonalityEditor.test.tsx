@@ -523,7 +523,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
   });
 });
 
-// ── Default personality toggle ──────────────────────────────────────
+// ── Protostasis toggle ───────────────────────────────────────────────
 
 describe('PersonalityEditor — default personality toggle', () => {
   it('default toggle is unchecked and enabled for a non-default personality', async () => {

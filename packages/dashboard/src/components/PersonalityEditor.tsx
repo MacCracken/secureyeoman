@@ -3364,10 +3364,10 @@ export function PersonalityEditor() {
           </div>
 
           {/* Soul Section */}
-          <CollapsibleSection title="Soul — Identity" defaultOpen>
+          <CollapsibleSection title="Soul — Essence" defaultOpen>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Name</label>
+                <label className="block text-sm font-medium mb-1">Identity</label>
                 <input
                   type="text"
                   value={form.name}
@@ -3379,7 +3379,7 @@ export function PersonalityEditor() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Sex</label>
+                <label className="block text-sm font-medium mb-1">Physiognomy (Gender)</label>
                 <select
                   value={form.sex}
                   onChange={(e) => {
@@ -3397,7 +3397,7 @@ export function PersonalityEditor() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">Description</label>
+              <label className="block text-sm font-medium mb-1">Identity Abstract</label>
               <input
                 type="text"
                 value={form.description}
@@ -3410,7 +3410,7 @@ export function PersonalityEditor() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">System Prompt</label>
+              <label className="block text-sm font-medium mb-1">Core Heuristics</label>
               <PresenceBanner users={systemPromptPresence} />
               <textarea
                 value={collabDocId ? collabSystemPrompt : form.systemPrompt}
@@ -3437,8 +3437,8 @@ export function PersonalityEditor() {
 
             <div className="flex items-center justify-between" data-testid="archetype-toggle">
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm">Include Sacred Archetypes</span>
-                <span className="text-xs text-muted-foreground">Preamble is presented in prompt</span>
+                <span className="text-sm">Morphogenesis</span>
+                <span className="text-xs text-muted-foreground">Weaves the Sacred Archetypes into the system prompt — these are the foundational patterns that give this personality its actual shape and character</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -3473,8 +3473,8 @@ export function PersonalityEditor() {
 
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm">Protect from deletion</span>
-                <span className="text-xs text-muted-foreground">Blocks AI from deleting this personality</span>
+                <span className="text-sm">Ontostasis</span>
+                <span className="text-xs text-muted-foreground">Locks this personality's existence — prevents any AI-initiated deletion. Only a human admin can remove it from the dashboard</span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
@@ -3494,11 +3494,11 @@ export function PersonalityEditor() {
 
             <div className="flex items-center justify-between">
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm">Default personality</span>
+                <span className="text-sm">Protostasis</span>
                 <span className="text-xs text-muted-foreground">
                   {editing === 'new'
-                    ? 'Make this the default on save'
-                    : 'Used for new chats and the dashboard default'}
+                    ? 'Make this personality the first presence — the one that greets every new chat and anchors the dashboard'
+                    : 'This personality is the first presence — it anchors every new chat and the dashboard default'}
                 </span>
               </div>
               <label className="relative inline-flex items-center cursor-pointer">
@@ -3523,7 +3523,7 @@ export function PersonalityEditor() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Traits</label>
+              <label className="block text-sm font-medium mb-2">Disposition</label>
               <div className="space-y-2">
                 {Object.entries(TRAIT_OPTIONS).map(([trait, options]) => (
                   <div

@@ -671,7 +671,8 @@ export function ChatPage() {
                         {msg.model && <span className="text-xs opacity-50">{msg.model}</span>}
                         {msg.timestamp != null && (
                           <span className="text-xs opacity-40 ml-auto">
-                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {new Date(msg.timestamp).toLocaleDateString([], { year: 'numeric', month: 'short', day: 'numeric' })}{' '}
+                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                           </span>
                         )}
 

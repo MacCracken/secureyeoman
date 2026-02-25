@@ -272,7 +272,7 @@ The default personality is the sole source of identity in the composed prompt fo
 **Personality deletion guards** — three independent protections apply before `SoulStorage.deletePersonality()` is ever called:
 1. **Archetype guard** — `SoulManager.deletePersonality()` throws `"Cannot delete a system archetype personality."` if `isArchetype = true`.
 2. **Default personality guard** — throws if the target personality is the current default (`isDefault = true`).
-3. **`deletionProtected` flag** — throws if `personality.deletionProtected` is `true`. Set via the "Protected from deletion" toggle in the dashboard (or the REST API).
+3. **`deletionProtected` flag** — throws if `personality.deletionProtected` is `true`. Set via the **Ontostasis** toggle in the dashboard (or the REST API).
 
 **AI self-deletion guard** — when the AI invokes `delete_personality`, `creation-tool-executor.ts` compares the target ID against the calling personality's context ID. A personality cannot delete itself; this check is in the executor (not the manager) because only the executor has the calling context.
 

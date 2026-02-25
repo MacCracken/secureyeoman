@@ -1,6 +1,6 @@
 # Functionality Audit: SecureYeoman vs Competitors
 
-> Comparative analysis as of **2026-02-24** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, and Ironclaw.
+> Comparative analysis as of **2026-02-25** — SecureYeoman against OpenClaw, Agent Zero, PicoClaw, and Ironclaw.
 
 ---
 
@@ -15,7 +15,7 @@
 | **RAM** | ~1 GB | ~1.5 GB baseline (2 GB min; 8 GB for browser skills) | 4 GB recommended | **< 10 MB** | Not published |
 | **Startup** | ~30 s | ~6 s | > 30 s | **< 1 s** | Not published |
 | **Security** | ✅ RBAC · encryption · audit chain · sandboxing · SecretsManager/Vault · TLS lifecycle | ⚠️ CVE-2026-25253 RCE (CVSS 8.8) + 8 more CVEs; 341 malicious ClawHub skills; Gartner: "unacceptable enterprise risk" | Basic (Docker isolation) | Experimental; unresolved network security issues (self-disclosed) | ✅ TEE · WASM sandbox · AES-256-GCM · credential vault |
-| **MCP** | ✅ Full server + client (120+ tools) | Limited client integration | ✅ Client + server (FastA2A) | ❌ (issue #77 open) | ✅ As tool implementation path |
+| **MCP** | ✅ Full server + client (170+ tools) | Limited client integration | ✅ Client + server (FastA2A) | ❌ (issue #77 open) | ✅ As tool implementation path |
 | **Enterprise-ready** | ✅ RBAC · SSO/OIDC · K8s · Prometheus | ❌ | ❌ | ❌ | ❌ |
 
 ---
@@ -23,18 +23,20 @@
 ## Competitor Profiles
 
 ### OpenClaw
-Open-source AI agent at ~400,000+ users and 100,000+ GitHub stars. Written in TypeScript (~430,000 lines). Active development, but significant security and governance concerns emerged in early 2026:
+Open-source AI agent at ~400,000+ users and **160,000–180,000 GitHub stars** (as of Feb 2026). Written in TypeScript (~430,000 lines). Active development, but significant security and governance concerns emerged in early 2026:
 
 - **CVE-2026-25253** (CVSS 8.8) — one-click RCE. The Control UI trusted `gatewayUrl` from query strings without validation and forwarded auth tokens over WebSocket. Clicking a single link fully compromises the instance. Patched in `2026.1.29`.
 - **CVE-2026-25157** and **CVE-2026-24763** — two additional command injection CVEs published the same week. A subsequent Endor Labs audit found **6 more** issues (SSRF, missing auth, path traversal).
 - **ClawHavoc supply chain attack** — Koi Security found 341 malicious skills in ClawHub marketplace, 335 traced to a single coordinated campaign.
 - **Gartner rating**: "unacceptable cybersecurity risk" — immediate enterprise ban recommended.
 - **Palo Alto Networks**: called it "the potential biggest insider threat of 2026."
-- **Creator departure**: primary author moved to OpenAI; governance uncertain.
+- **Creator departure**: primary author Peter Steinberger moved to OpenAI (announced Feb 14, 2026); project being transitioned to a foundation.
+- **40,000+ exposed instances** detected in the wild (Feb 2026).
 - **Cost**: $300–750/month in API tokens for the Claude Opus "proactive assistant" experience.
 - ~1.5 GB baseline RAM; hard floor 2 GB (crashes during onboarding below this); 8 GB for browser automation skills.
 - Runs with **unrestricted host-machine access** by default; Docker sandbox is opt-in only.
 - ~2,857 ClawHub community skills.
+- Additional security analyses published by **ExtraHop**, **Kaspersky**, **Jamf Threat Labs**, and **Immersive Labs** (Feb 2026), all highlighting enterprise risk.
 
 ### Agent Zero
 Python-based general-purpose agent framework. Key 2026 state:
@@ -42,6 +44,8 @@ Python-based general-purpose agent framework. Key 2026 state:
 - Supports OpenAI, Anthropic, Grok, OpenRouter, GitHub Copilot, and local models via Ollama.
 - Full **MCP client + server** and **FastA2A** protocol for multi-agent orchestration.
 - TTS/STT speech capabilities added; web UI and Docker-based deployment.
+- **Projects feature** — isolated workspaces with their own prompts, files, memory, and secrets (Feb 2026).
+- **Skills System** and **Git-based projects** for version control integration.
 - No RBAC, SSO, or persistent encryption — experimental status.
 - Docker recommended with **4 GB RAM** minimum.
 
@@ -60,6 +64,8 @@ NEAR AI's Rust-based privacy-first agent runtime, **v0.7.0**, announced at **NEA
 
 - Deployed inside encrypted **TEEs (Trusted Execution Environments)** on NEAR AI Cloud; also self-hostable.
 - All tools run in **WASM containers** with capability-based permissions (HTTP, secrets, tool invocation each require explicit opt-in); endpoint allowlisting enforced.
+- **NVIDIA Inception program** membership (joined early 2026) for enhanced hardware isolation and privacy verification.
+- Announced alongside a **decentralized GPU marketplace** for compute access.
 - RAM and startup benchmarks not published; Rust static binary expected well below 200 MB.
 - Local PostgreSQL encrypted with **AES-256-GCM**; credentials isolated in an encrypted vault; secrets never passed to the model.
 - Continuous activity monitoring for prompt injection and resource abuse.
@@ -120,7 +126,7 @@ NEAR AI's Rust-based privacy-first agent runtime, **v0.7.0**, announced at **NEA
 
 | Feature | SecureYeoman | OpenClaw | Agent Zero | PicoClaw | Ironclaw |
 |---------|:---:|:---:|:---:|:---:|:---:|
-| MCP tool count | ✅ **120+** | Limited | External via MCP | ❌ | Via MCP path |
+| MCP tool count | ✅ **170+** | Limited | External via MCP | ❌ | Via MCP path |
 | Browser automation | ✅ Playwright | ✅ Built-in | ✅ browser-use (Playwright) | ❌ | ❌ |
 | Shell execution | ✅ Sandboxed | ✅ | ✅ | ✅ Restricted | ✅ Sandboxed |
 | Code execution | ✅ Python / Node.js / shell, sandboxed | ✅ | ✅ | ❌ | ✅ Docker (3 isolation policies) |
@@ -185,7 +191,7 @@ NEAR AI's Rust-based privacy-first agent runtime, **v0.7.0**, announced at **NEA
 | Single binary | ✅ ~80 MB | ❌ | ❌ | ✅ < 10 MB | ✅ Rust static |
 | Docker | ✅ ~80 MB | ✅ | ✅ | ❌ | ✅ |
 | Dual DB backend | ✅ PostgreSQL + SQLite | ❌ | ❌ | ❌ | ✅ PostgreSQL + libSQL |
-| CLI | ✅ 24 commands; completions; `--json` | ✅ | ✅ | ✅ | ✅ REPL |
+| CLI | ✅ 26 commands; completions; `--json` | ✅ | ✅ | ✅ | ✅ REPL |
 | Lite binary (edge/IoT) | ✅ SQLite tier | ❌ | ❌ | ✅ (standard binary is already <10 MB) | ✅ libSQL backend |
 
 ### 8 · Testing & Quality
@@ -270,4 +276,4 @@ NEAR AI's Rust-based privacy-first agent runtime, **v0.7.0**, announced at **NEA
 
 ---
 
-*Updated: 2026-02-24 — Phase 44 (Skill Routing), Phase 45 (Twingate), Phase 46 (Network Toolkit), Phase 41/42 (Secrets + TLS) reflected. Competitor data refreshed from live sources.*
+*Updated: 2026-02-25 — Research updates: OpenClaw 160K-180K stars, creator departure to OpenAI, 40K+ exposed instances, new security analyses (ExtraHop, Kaspersky, Jamf, Immersive Labs); Agent Zero Projects feature; Ironclaw NVIDIA Inception program membership. SecureYeoman MCP tools updated to 170+, CLI to 26 commands.*

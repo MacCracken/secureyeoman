@@ -1,3 +1,49 @@
+## [2026.2.25-marketplace-skill-preview] — 2026-02-25
+
+### Marketplace & Community — Skill Preview Before Installation
+
+### Added
+
+- **Skill preview modal** — Every skill card in the Marketplace and Community tabs now has a **Preview** button (eye icon). Clicking it opens a full-detail modal before the user commits to installing. The modal shows:
+  - Name, version badge, source badge (YEOMAN / Community), category, install count
+  - Author name with clickable GitHub and website links (when present) and license
+  - Full description
+  - Complete **Instructions** (the system prompt injected when the skill is active) in a scrollable monospace block
+  - **Trigger Patterns** — each regex pattern that activates the skill, displayed as code blocks
+  - **MCP Tools** — names of any MCP tools the skill requires, as chips
+  - Tags
+  - Last-updated date
+  - Install / Uninstall / Close actions in the footer — the user can install directly from the preview without closing first
+  - Closes on Escape key or clicking the backdrop
+
+### Changed
+
+- **`SkillCard` footer layout** — The single full-width Install/Uninstall button is now accompanied by a small **Preview** ghost button to its left. The install CTA retains visual priority (`flex-1`).
+- **`MarketplaceSkill` dashboard type** (`types.ts`) — Added `authorInfo?: { name, github?, website?, license? }`, `tools: { name, description }[]`, and `triggerPatterns: string[]` to match the fields already present in the shared Zod schema and returned by the API.
+
+---
+
+## [2026.2.25-personality-editor-relabelling] — 2026-02-25
+
+### Personality Editor — Language & Label Overhaul
+
+Renamed labels throughout the Personality Editor's Soul tab to better reflect the platform's ontological vocabulary. No functional changes — purely cosmetic.
+
+### Changed
+
+- **Section header** `Soul — Identity` → `Soul — Essence`
+- **Name** → `Identity`
+- **Description** → `Identity Abstract`
+- **System Prompt** → `Core Heuristics`
+- **Traits** → `Disposition`
+- **Sex** → `Physiognomy (Gender)` *(dropdown options unchanged: unspecified / male / female / non-binary)*
+- **FRIDAY preset Core Heuristics** updated — removed generic "helpful assistant" framing; now reads: *"You are FRIDAY, a security-first assistant specializing in infrastructure hardening, code vulnerability analysis, and operational resilience. You combine technical precision with proactive threat mitigation, catching security flaws before they reach production."*
+- **Morphogenesis** toggle (formerly "Include Sacred Archetypes") — description updated to *"Weaves the Sacred Archetypes into the system prompt — these are the foundational patterns that give this personality its actual shape and character"*
+- **Ontostasis** toggle (formerly "Protect from deletion") — description updated to *"Locks this personality's existence — prevents any AI-initiated deletion. Only a human admin can remove it from the dashboard"*
+- **Protostasis** toggle (formerly "Default personality") — description updated to reflect first-presence framing for both create and edit states
+
+---
+
 ## [2026.2.25-chronoception-and-coverage] — 2026-02-25
 
 ### Chronoception, Chat Bubble Timestamps & Test Coverage
@@ -10,7 +56,7 @@
   - `composeSoulPrompt()` — injects a `## Current Date & Time` section when enabled, locale-formatted with the personality's timezone
   - `PersonalityEditor.tsx` — "Chronoception" toggle with description "Injects the current date and time into the system prompt so the personality always knows when it is"
 
-- **Chat bubble timestamps** — Every message bubble (user and assistant) now shows the time it was sent/received (`HH:MM`) in the bubble header, derived from the existing `ChatMessage.timestamp` field. No schema changes required.
+- **Chat bubble timestamps** — Every message bubble (user and assistant) now shows the date and time it was sent/received (`Mon DD YYYY HH:MM:SS`) in the bubble header, derived from the existing `ChatMessage.timestamp` field. The date is included for historical conversation reference. No schema changes required.
 
 ### Improved
 
@@ -922,8 +968,8 @@ A comprehensive audit of memory leaks, performance bottlenecks, and code duplica
 
 #### Changed
 
-- **Archetypes checkbox → toggle switch** — "Include Sacred Archetypes" in the Soul section of the personality editor converted from a plain `<input type="checkbox">` to the standard inline toggle style used throughout the editor.
-- **Deletion protection surfaced at Soul level** — new "Protect from deletion" toggle added directly in the Soul — Identity section (no need to open Body → Resources → Deletion). Maps `deletionMode: 'manual'` (on) / `'auto'` (off). The detailed radio group in the Body section is retained for fine-grained control.
+- **Archetypes checkbox → toggle switch** — Morphogenesis (formerly "Include Sacred Archetypes") in the Soul — Essence section of the personality editor converted from a plain `<input type="checkbox">` to the standard inline toggle style used throughout the editor.
+- **Deletion protection surfaced at Soul level** — Ontostasis (formerly "Protect from deletion") toggle added directly in the Soul — Essence section (no need to open Body → Resources → Deletion). Maps `deletionMode: 'manual'` (on) / `'auto'` (off). The detailed radio group in the Body section is retained for fine-grained control.
 
 ### Multi-Provider TTS/STT Expansion
 

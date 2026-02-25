@@ -370,17 +370,27 @@ export interface KnowledgeEntry {
   updatedAt: number;
 }
 
+export interface MarketplaceSkillAuthorInfo {
+  name: string;
+  github?: string;
+  website?: string;
+  license?: string;
+}
+
 export interface MarketplaceSkill {
   id: string;
   name: string;
   description: string;
   version: string;
   author: string;
+  authorInfo?: MarketplaceSkillAuthorInfo;
   category: string;
   tags: string[];
   downloadCount: number;
   rating: number;
   instructions: string;
+  tools: { name: string; description: string }[];
+  triggerPatterns: string[];
   installed: boolean;
   installedGlobally: boolean;
   source: 'builtin' | 'community' | 'published';

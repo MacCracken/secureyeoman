@@ -27,17 +27,26 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Open
 
-- [ ] Marketplace / Community Skills - user should be able to preview/review a skill before installation.
+- [x] Marketplace / Community Skills - user should be able to preview/review a skill before installation.
+- [ ] Investigtion into notifications, not seeing any items... lets do a test sweep.
 
 ### Improvements
 
-- [ ] Marketplace and Community - add the ability to review the full skill before installation.  Lets give the user the ability to review all necessary items of the skill.
 - [ ] Security Dashboard - re-org tab view; Overview, Audit Log, Autonomy, ML, Reports, System, Tasks
 - [ ] Tasks History, separation of task and heartbeats into their own subviews.
 - [ ] Tasks and History needs consolidation; remove from Security Dashboard.
 - [ ] after Tasks consolidation - insure each personality is associated
 - [ ] Agents > Sub-Agents > Profile shoud be first tab, but keep default as Active.
 - [ ] dashboard - Allow for personality image to recieve an image
+
+### Personality Editor — Ontological Restructure
+
+Reorganise the Soul tab fields so each section truly reflects its metaphor. Three targeted moves plus two new capability toggles:
+
+- [ ] **Spirit — Pathos**: Relocate the Morphogenesis toggle (Sacred Archetypes) into the Spirit section. This is the "soul" of the character — the foundational archetypes that give it form belong here, not in a generic settings list. Add an **Empathy Resonance** toggle that controls how strongly the personality mirrors and adapts to the user's detected emotional register.
+- [ ] **Brain — Intellect**: Move Default Model and Model Fallbacks from the Soul tab into the Brain section. These are the "grey matter" decisions — which model thinks for this personality and what it falls back to. Add an **Analytical Depth** control (maps to reasoning effort / extended thinking budget) so cognitive intensity is configured alongside the model itself.
+- [ ] **Body — Endowments**: Relocate Voice and Preferred Language from the Soul tab into the Body section. These are the physical expression layer — how the AI speaks and in what tongue. Body → Endowments is the natural home for anything that governs the sensory/physical interface with the world.
+- [ ] **Brain — Intellect (Chronoception)**: Move the Chronoception (date/time injection) toggle from the Soul — Essence section into Brain — Intellect. Knowing the current time is a cognitive/analytical concern, not an identity one.
 
 ---
 

@@ -28,6 +28,7 @@ import {
   Pencil,
   ArrowRight,
   Globe,
+  Eye,
 } from 'lucide-react';
 import {
   fetchSkills,
@@ -1097,6 +1098,7 @@ function SkillCard({
   skill,
   onInstall,
   onUninstall,
+  onPreview,
   installing,
   uninstalling,
   badge,
@@ -1104,6 +1106,7 @@ function SkillCard({
   skill: MarketplaceSkill;
   onInstall: () => void;
   onUninstall: () => void;
+  onPreview: () => void;
   installing: boolean;
   uninstalling: boolean;
   badge?: React.ReactNode;
@@ -1138,34 +1141,239 @@ function SkillCard({
           </span>
         </div>
 
-        {skill.installed ? (
+        <div className="flex items-center gap-1.5">
           <button
-            onClick={onUninstall}
-            disabled={uninstalling}
-            className="btn btn-ghost text-destructive flex items-center gap-2 w-full justify-center text-xs py-2"
+            onClick={onPreview}
+            className="btn btn-ghost flex items-center gap-1 text-xs px-2 py-2 text-muted-foreground hover:text-foreground shrink-0"
+            title="Preview skill"
           >
-            {uninstalling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-            Uninstall
+            <Eye className="w-3.5 h-3.5" />
+            Preview
           </button>
-        ) : skill.installedGlobally ? (
-          <div className="flex items-center gap-2 w-full justify-center text-xs py-2 text-muted-foreground">
-            <Globe className="w-3.5 h-3.5 shrink-0" />
-            <span>Installed globally</span>
-          </div>
-        ) : (
-          <button
-            onClick={onInstall}
-            disabled={installing}
-            className="btn btn-primary flex items-center gap-2 w-full justify-center text-xs py-2"
-          >
-            {installing ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+
+          <div className="flex-1">
+            {skill.installed ? (
+              <button
+                onClick={onUninstall}
+                disabled={uninstalling}
+                className="btn btn-ghost text-destructive flex items-center gap-2 w-full justify-center text-xs py-2"
+              >
+                {uninstalling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                Uninstall
+              </button>
+            ) : skill.installedGlobally ? (
+              <div className="flex items-center gap-2 w-full justify-center text-xs py-2 text-muted-foreground">
+                <Globe className="w-3.5 h-3.5 shrink-0" />
+                <span>Installed globally</span>
+              </div>
             ) : (
-              <Download className="w-3.5 h-3.5" />
+              <button
+                onClick={onInstall}
+                disabled={installing}
+                className="btn btn-primary flex items-center gap-2 w-full justify-center text-xs py-2"
+              >
+                {installing ? (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                ) : (
+                  <Download className="w-3.5 h-3.5" />
+                )}
+                Install
+              </button>
             )}
-            Install
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Skill Preview Modal ───────────────────────────────────────────────────────
+
+function SkillPreviewModal({
+  skill,
+  onClose,
+  onInstall,
+  onUninstall,
+  installing,
+  uninstalling,
+}: {
+  skill: MarketplaceSkill;
+  onClose: () => void;
+  onInstall: () => void;
+  onUninstall: () => void;
+  installing: boolean;
+  uninstalling: boolean;
+}) {
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div className="bg-card border border-border rounded-xl w-full max-w-2xl max-h-[90vh] flex flex-col shadow-xl">
+        {/* Header */}
+        <div className="flex items-start justify-between gap-4 p-5 border-b border-border">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base font-semibold">{skill.name}</h2>
+              <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded text-muted-foreground">
+                v{skill.version}
+              </span>
+              {skill.source === 'builtin' && (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                  <Shield className="w-2.5 h-2.5" />
+                  YEOMAN
+                </span>
+              )}
+              {skill.source === 'community' && (
+                <span className="inline-flex items-center gap-1 text-[10px] bg-green-500/10 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded">
+                  <GitBranch className="w-2.5 h-2.5" />
+                  Community
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground flex-wrap">
+              <span>{skill.author}</span>
+              {skill.authorInfo?.github && (
+                <a
+                  href={`https://github.com/${skill.authorInfo.github}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors underline underline-offset-2"
+                >
+                  GitHub
+                </a>
+              )}
+              {skill.authorInfo?.website && (
+                <a
+                  href={skill.authorInfo.website}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground transition-colors underline underline-offset-2"
+                >
+                  Website
+                </a>
+              )}
+              {skill.authorInfo?.license && <span>{skill.authorInfo.license}</span>}
+              <span className="capitalize">{skill.category}</span>
+              <span>{skill.downloadCount.toLocaleString()} installs</span>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="btn btn-ghost p-1.5 shrink-0"
+            aria-label="Close preview"
+          >
+            <X className="w-4 h-4" />
           </button>
-        )}
+        </div>
+
+        {/* Scrollable body */}
+        <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {/* Tags */}
+          {skill.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {skill.tags.map((tag) => (
+                <span key={tag} className="text-[10px] bg-muted px-2 py-0.5 rounded text-muted-foreground">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Description */}
+          {skill.description && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Description</h3>
+              <p className="text-sm text-foreground leading-relaxed">{sanitizeText(skill.description)}</p>
+            </div>
+          )}
+
+          {/* Instructions */}
+          {skill.instructions && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">Instructions</h3>
+              <pre className="text-xs bg-muted rounded-lg p-3 whitespace-pre-wrap break-words font-mono leading-relaxed max-h-64 overflow-y-auto">
+                {skill.instructions}
+              </pre>
+            </div>
+          )}
+
+          {/* Trigger Patterns */}
+          {skill.triggerPatterns.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                Trigger Patterns
+              </h3>
+              <div className="space-y-1">
+                {skill.triggerPatterns.map((pattern, i) => (
+                  <code key={i} className="block text-xs bg-muted rounded px-2 py-1 font-mono text-foreground">
+                    {pattern}
+                  </code>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* MCP Tools */}
+          {skill.tools.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5">
+                MCP Tools ({skill.tools.length})
+              </h3>
+              <div className="flex flex-wrap gap-1.5">
+                {skill.tools.map((tool) => (
+                  <span key={tool.name} className="text-[10px] bg-muted px-2 py-0.5 rounded font-mono text-foreground">
+                    {tool.name}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-5 border-t border-border flex items-center justify-between gap-3">
+          <div className="text-xs text-muted-foreground">
+            Updated {new Date(skill.updatedAt).toLocaleDateString()}
+          </div>
+          <div className="flex items-center gap-2">
+            <button onClick={onClose} className="btn btn-ghost text-sm px-4">
+              Close
+            </button>
+            {skill.installed ? (
+              <button
+                onClick={onUninstall}
+                disabled={uninstalling}
+                className="btn btn-ghost text-destructive flex items-center gap-2 text-sm px-4"
+              >
+                {uninstalling ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Uninstall
+              </button>
+            ) : skill.installedGlobally ? (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground px-4">
+                <Globe className="w-4 h-4 shrink-0" />
+                Installed globally
+              </div>
+            ) : (
+              <button
+                onClick={onInstall}
+                disabled={installing}
+                className="btn btn-primary flex items-center gap-2 text-sm px-4"
+              >
+                {installing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                Install
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -1228,6 +1436,7 @@ function MarketplaceTab() {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
+  const [previewSkill, setPreviewSkill] = useState<MarketplaceSkill | null>(null);
 
   // Fetch all non-community skills — keyed on personalityId so results refresh when selection changes
   const { data, isLoading } = useQuery({
@@ -1297,6 +1506,7 @@ function MarketplaceTab() {
           badge={badgeFn?.(skill)}
           installing={installingId === skill.id && installMut.isPending}
           uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
+          onPreview={() => setPreviewSkill(skill)}
           onInstall={() => {
             setInstallingId(skill.id);
             installMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
@@ -1311,6 +1521,25 @@ function MarketplaceTab() {
   );
 
   return (
+    <>
+    {previewSkill && (
+      <SkillPreviewModal
+        skill={previewSkill}
+        onClose={() => setPreviewSkill(null)}
+        installing={installingId === previewSkill.id && installMut.isPending}
+        uninstalling={uninstallingId === previewSkill.id && uninstallMut.isPending}
+        onInstall={() => {
+          setInstallingId(previewSkill.id);
+          installMut.mutate({ id: previewSkill.id, personalityId: selectedPersonalityId || undefined });
+          setPreviewSkill(null);
+        }}
+        onUninstall={() => {
+          setUninstallingId(previewSkill.id);
+          uninstallMut.mutate({ id: previewSkill.id, personalityId: selectedPersonalityId || undefined });
+          setPreviewSkill(null);
+        }}
+      />
+    )}
     <div className="space-y-6">
       {/* Toolbar */}
       <div className="flex flex-col lg:flex-row gap-4">
@@ -1376,6 +1605,7 @@ function MarketplaceTab() {
         </div>
       )}
     </div>
+    </>
   );
 }
 
@@ -1388,6 +1618,7 @@ function CommunityTab() {
   const [hasInitialized, setHasInitialized] = useState(false);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
+  const [previewSkill, setPreviewSkill] = useState<MarketplaceSkill | null>(null);
   const [syncResult, setSyncResult] = useState<{
     added: number;
     updated: number;
@@ -1469,6 +1700,26 @@ function CommunityTab() {
     : null;
 
   return (
+    <>
+    {previewSkill && (
+      <SkillPreviewModal
+        skill={previewSkill}
+        onClose={() => setPreviewSkill(null)}
+        installing={installingId === previewSkill.id && installMut.isPending}
+        uninstalling={uninstallingId === previewSkill.id && uninstallMut.isPending}
+        onInstall={() => {
+          if (!canInstall) return;
+          setInstallingId(previewSkill.id);
+          installMut.mutate({ id: previewSkill.id, personalityId: selectedPersonalityId });
+          setPreviewSkill(null);
+        }}
+        onUninstall={() => {
+          setUninstallingId(previewSkill.id);
+          uninstallMut.mutate({ id: previewSkill.id, personalityId: selectedPersonalityId || undefined });
+          setPreviewSkill(null);
+        }}
+      />
+    )}
     <div className="space-y-6">
       {/* Header bar */}
       <div className="flex flex-col lg:flex-row gap-4">
@@ -1602,6 +1853,7 @@ function CommunityTab() {
                 }
                 installing={installingId === skill.id && installMut.isPending}
                 uninstalling={uninstallingId === skill.id && uninstallMut.isPending}
+                onPreview={() => setPreviewSkill(skill)}
                 onInstall={() => {
                   if (!canInstall) return;
                   setInstallingId(skill.id);
@@ -1617,5 +1869,6 @@ function CommunityTab() {
         </div>
       )}
     </div>
+    </>
   );
 }

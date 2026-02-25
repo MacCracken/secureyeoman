@@ -39,7 +39,7 @@ When a chat request arrives at `POST /api/v1/chat`, the chat route resolves the 
 ### UI
 
 - `PersonalityEditor` exposes a dropdown to add models (excluding the current default model and already-added fallbacks) and numbered rows with removal buttons (max 5).
-- The archetypes toggle is repositioned immediately after the System Prompt field, before Traits.
+- The Morphogenesis toggle is repositioned immediately after the Core Heuristics field, before Disposition.
 
 ### CLI
 
