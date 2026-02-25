@@ -1581,6 +1581,11 @@ img {
     grid-template-columns: repeat(3, 1fr);
   }
 
+  /* Shift bg image slightly down on medium screens */
+  .hero-bg {
+    background-position: center 70%;
+  }
+
   /* Tighten hero layout on medium screens */
   .hero-layout {
     gap: var(--space-8);
@@ -1600,6 +1605,11 @@ img {
 }
 
 @media (max-width: 768px) {
+  /* Shift bg image further down on mobile — shows ground/street level */
+  .hero-bg {
+    background-position: center 82%;
+  }
+
   .nav-menu,
   .nav-cta {
     display: none;
@@ -1621,7 +1631,7 @@ img {
   }
 
   .hero-visual {
-    order: 2;
+    display: none;
   }
 
   .hero-subtitle {
@@ -1630,9 +1640,47 @@ img {
   }
 
   .hero-badges,
-  .hero-cta,
   .hero-stats {
     justify-content: center;
+  }
+
+  /* Two primary buttons side-by-side; ghost link below as a subtle text row */
+  .hero-cta {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-3);
+    justify-content: unset;
+  }
+
+  /* Ghost "See How We Compare" spans full width, styled as a quiet text link */
+  .hero-cta .btn-ghost {
+    grid-column: 1 / -1;
+    font-size: 0.8125rem;
+    padding: var(--space-2) var(--space-4);
+    border-color: transparent;
+    color: var(--text-muted);
+  }
+
+  .hero-cta .btn-ghost:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+  }
+
+  /* Comfortable touch targets */
+  .hero-cta .btn-lg {
+    min-height: 48px;
+    font-size: 0.9375rem;
+    padding: var(--space-3) var(--space-4);
+  }
+
+  /* Compact tag row */
+  .hero-badges {
+    gap: var(--space-2);
+  }
+
+  .tag {
+    font-size: 0.8125rem;
+    padding: var(--space-1) var(--space-3);
   }
 
   .mascot-img {
@@ -1688,13 +1736,18 @@ img {
 }
 
 @media (max-width: 480px) {
-  .hero-cta {
-    flex-direction: column;
-    align-items: stretch;
+  /* At narrowest — show the deep street/ground of the alley */
+  .hero-bg {
+    background-position: center 95%;
   }
 
-  .btn-lg {
-    width: 100%;
+  /* At very small widths collapse to single column */
+  .hero-cta {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-cta .btn-ghost {
+    grid-column: auto;
   }
 
   .core-modules {
