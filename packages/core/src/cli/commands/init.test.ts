@@ -239,6 +239,21 @@ describe('initCommand', () => {
       await initCommand.run(ctx as any);
       expect(ctx.out.join('')).toContain('Setup complete');
     });
+
+    it('prints next steps after config file write', async () => {
+      const ctx = makeCtx(['--non-interactive']);
+      await initCommand.run(ctx as any);
+      expect(ctx.out.join('')).toContain('Next steps');
+    });
+
+    it('prints next steps after successful API onboarding', async () => {
+      mockApiCall
+        .mockResolvedValueOnce({ ok: true }) // health check
+        .mockResolvedValueOnce({ ok: true }); // onboarding
+      const ctx = makeCtx(['--non-interactive']);
+      await initCommand.run(ctx as any);
+      expect(ctx.out.join('')).toContain('Next steps');
+    });
   });
 
   describe('--env-only', () => {

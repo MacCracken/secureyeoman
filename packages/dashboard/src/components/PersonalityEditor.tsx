@@ -445,6 +445,9 @@ function BrainSection({
   maxPromptTokens,
   onMaxPromptTokensChange,
   globalMaxPromptTokens,
+  exposeOrgIntentTools,
+  onExposeOrgIntentToolsChange,
+  orgIntentMcpEnabled,
 }: {
   personalityId: string | null;
   activeHours: {
@@ -466,6 +469,9 @@ function BrainSection({
   maxPromptTokens: number | null;
   onMaxPromptTokensChange: (value: number | null) => void;
   globalMaxPromptTokens: number;
+  exposeOrgIntentTools: boolean;
+  onExposeOrgIntentToolsChange: (v: boolean) => void;
+  orgIntentMcpEnabled: boolean;
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -566,6 +572,31 @@ function BrainSection({
 
   return (
     <CollapsibleSection title="Brain - Intellect">
+      {/* Organizational Intent Signal */}
+      <div className="border-b pb-3 mb-3">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-medium">Organizational Intent</span>
+            <span className="text-xs text-muted-foreground">
+              {!orgIntentMcpEnabled
+                ? 'Enable Org Intent in Connections first'
+                : 'Allow this personality to read live org intent signals'}
+            </span>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer">
+            <input
+              type="checkbox"
+              checked={exposeOrgIntentTools}
+              onChange={(e) => onExposeOrgIntentToolsChange(e.target.checked)}
+              disabled={!orgIntentMcpEnabled}
+              aria-label="Organizational Intent Signal"
+              className="sr-only peer"
+            />
+            <div className={`w-9 h-5 rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4 ${orgIntentMcpEnabled ? 'bg-muted-foreground/30 peer-checked:bg-primary' : 'bg-muted-foreground/20 opacity-50 cursor-not-allowed'}`}></div>
+          </label>
+        </div>
+      </div>
+
       {/* 1. External Knowledge Base — moved to top */}
       <div className="border-b pb-3 mb-1">
         <h4 className="text-sm font-medium mb-2">External Knowledge Base</h4>
@@ -2196,9 +2227,6 @@ function BodySection({
                               <Monitor className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
                               <span className="text-xs flex-1">
                                 Browser Automation
-                                <span className="text-[10px] text-muted-foreground ml-1">
-                                  (preview)
-                                </span>
                                 {!globalMcpConfig?.exposeBrowser && (
                                   <span className="text-[10px] text-muted-foreground ml-1">
                                     — enable in Connections first
@@ -2341,35 +2369,6 @@ function BodySection({
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
-                              {/* NetBox */}
-                              <label
-                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
-                                  globalMcpConfig?.exposeNetworkTools
-                                    ? 'cursor-pointer hover:bg-muted/50'
-                                    : 'opacity-50 cursor-not-allowed'
-                                }`}
-                              >
-                                <span className="text-xs flex-1">
-                                  NetBox Integration
-                                  {!globalMcpConfig?.exposeNetworkTools && (
-                                    <span className="text-[10px] text-muted-foreground ml-1">
-                                      — enable Network Tools in Security Settings first
-                                    </span>
-                                  )}
-                                </span>
-                                <input
-                                  type="checkbox"
-                                  checked={mcpFeatures.exposeNetBox}
-                                  onChange={(e) => {
-                                    onMcpFeaturesChange({
-                                      ...mcpFeatures,
-                                      exposeNetBox: e.target.checked,
-                                    });
-                                  }}
-                                  disabled={!globalMcpConfig?.exposeNetworkTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
-                                />
-                              </label>
                               {/* NVD / CVE */}
                               <label
                                 className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
@@ -2428,6 +2427,40 @@ function BodySection({
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
+                              {/* NetBox */}
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeNetworkTools && securityPolicy?.allowNetBoxWrite
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <span className="text-xs flex-1">
+                                  NetBox Integration
+                                  {!globalMcpConfig?.exposeNetworkTools && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Network Tools in Connections first
+                                    </span>
+                                  )}
+                                  {globalMcpConfig?.exposeNetworkTools && !securityPolicy?.allowNetBoxWrite && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable NetBox Write in Connections first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeNetBox}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeNetBox: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeNetworkTools || !securityPolicy?.allowNetBoxWrite}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
                             </div>
                             {/* ── Twingate ───────────────────────────── */}
                             <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
@@ -2465,41 +2498,6 @@ function BodySection({
                               </label>
                             </div>
 
-                            {/* ── Organizational Intent ───────────────── */}
-                            <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
-                              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1">
-                                <Globe className="w-3 h-3" />
-                                Organizational Intent
-                              </p>
-                              <label
-                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
-                                  globalMcpConfig?.exposeOrgIntentTools
-                                    ? 'cursor-pointer hover:bg-muted/50'
-                                    : 'opacity-50 cursor-not-allowed'
-                                }`}
-                              >
-                                <span className="text-xs flex-1">
-                                  Intent Signal Read Tool
-                                  {!globalMcpConfig?.exposeOrgIntentTools && (
-                                    <span className="text-[10px] text-muted-foreground ml-1">
-                                      — enable Org Intent in Security Settings first
-                                    </span>
-                                  )}
-                                </span>
-                                <input
-                                  type="checkbox"
-                                  checked={mcpFeatures.exposeOrgIntentTools}
-                                  onChange={(e) => {
-                                    onMcpFeaturesChange({
-                                      ...mcpFeatures,
-                                      exposeOrgIntentTools: e.target.checked,
-                                    });
-                                  }}
-                                  disabled={!globalMcpConfig?.exposeOrgIntentTools}
-                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
-                                />
-                              </label>
-                            </div>
                           </div>
                         )}
                       </div>
@@ -2909,6 +2907,16 @@ export function PersonalityEditor() {
   const { data: soulConfig } = useQuery({
     queryKey: ['soulConfig'],
     queryFn: fetchSoulConfig,
+  });
+
+  const { data: globalMcpConfig } = useQuery({
+    queryKey: ['mcpConfig'],
+    queryFn: fetchMcpConfig,
+  });
+
+  const { data: securityPolicy } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
   });
 
   const personalities = personalitiesData?.personalities ?? [];
@@ -3467,7 +3475,7 @@ export function PersonalityEditor() {
                   aria-label="Default personality"
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-primary rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+                <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-green-500 rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
               </label>
             </div>
 
@@ -3717,6 +3725,9 @@ export function PersonalityEditor() {
             maxPromptTokens={maxPromptTokens}
             onMaxPromptTokensChange={setMaxPromptTokens}
             globalMaxPromptTokens={soulConfig?.maxPromptTokens ?? 16000}
+            exposeOrgIntentTools={mcpFeatures.exposeOrgIntentTools}
+            onExposeOrgIntentToolsChange={(v) => setMcpFeatures((f) => ({ ...f, exposeOrgIntentTools: v }))}
+            orgIntentMcpEnabled={(securityPolicy?.allowOrgIntent ?? false) && (globalMcpConfig?.exposeOrgIntentTools ?? false)}
           />
 
           {/* Body Section */}

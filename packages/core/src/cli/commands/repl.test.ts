@@ -270,6 +270,68 @@ describe('repl command — interactive (TTY)', () => {
     expect(ctx.err.join('')).toContain('connection refused');
   });
 
+  it('config command calls /api/v1/config and prints model/env/gateway', async () => {
+    mockApiCall.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      data: {
+        model: { provider: 'anthropic', model: 'claude-sonnet-4-6' },
+        core: { environment: 'production' },
+        gateway: { host: '0.0.0.0', port: 3000 },
+      },
+    });
+    const ctx = makeCtx();
+    const p = replCommand.run(ctx as any);
+    await flush();
+    mockRL.emit('line', 'config');
+    await flush();
+    mockRL.emit('close');
+    await p;
+    expect(mockApiCall).toHaveBeenCalledWith(expect.any(String), '/api/v1/config');
+    expect(ctx.out.join('')).toContain('anthropic/claude-sonnet-4-6');
+    expect(ctx.out.join('')).toContain('production');
+    expect(ctx.out.join('')).toContain('3000');
+  });
+
+  it('config command shows error on HTTP failure', async () => {
+    mockApiCall.mockResolvedValueOnce({ ok: false, status: 500, data: {} });
+    const ctx = makeCtx();
+    const p = replCommand.run(ctx as any);
+    await flush();
+    mockRL.emit('line', 'config');
+    await flush();
+    mockRL.emit('close');
+    await p;
+    expect(ctx.err.join('')).toContain('500');
+  });
+
+  it('config command falls back to JSON dump when no known sections', async () => {
+    mockApiCall.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      data: { customKey: 'customValue' },
+    });
+    const ctx = makeCtx();
+    const p = replCommand.run(ctx as any);
+    await flush();
+    mockRL.emit('line', 'config');
+    await flush();
+    mockRL.emit('close');
+    await p;
+    expect(ctx.out.join('')).toContain('customKey');
+  });
+
+  it('help text mentions config command', async () => {
+    const ctx = makeCtx();
+    const p = replCommand.run(ctx as any);
+    await flush();
+    mockRL.emit('line', 'help');
+    await flush();
+    mockRL.emit('close');
+    await p;
+    expect(ctx.out.join('')).toContain('config');
+  });
+
   it('integration list formats table', async () => {
     mockApiCall.mockResolvedValueOnce({
       ok: true,

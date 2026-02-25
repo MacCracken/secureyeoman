@@ -1,4 +1,66 @@
-## [Phase XX.3] — MCP Tool Visibility Fixes (2026-02-24)
+## [2026.2.24] — 2026-02-24
+
+### Phase XX.7 — Settings Active Souls Polish
+
+### Changed
+
+- **Active Souls badge order** — Badges in Settings → General → Active Souls now render in priority order: **Active** → **Always On** → **Default** → Preset → Off-hours → token budget. Previously Default appeared before Active/Always On.
+- **Active Souls read-only** — Removed the enable/disable power button and default-star action buttons from each soul row. The section is now informational only; all soul management is done via the existing **Manage Souls** link. Simplified `SoulRow` props accordingly (`onEnable`, `onDisable`, `onSetDefault`, `onClearDefault`, `isMutating` removed).
+
+---
+
+### Phase XX.6 — Personality Editor Brain / Org Intent Scope Fix
+
+### Fixed
+
+- **Org Intent toggle scope error** — `securityPolicy` and `globalMcpConfig` were only queried inside `BodySection` but `BrainSection` is rendered by the top-level `PersonalityEditor`. Added the same two `useQuery` calls (`['mcpConfig']` and `['security-policy']`) to `PersonalityEditor` so that `orgIntentMcpEnabled` is correctly computed when wiring `BrainSection` props — resolves `TS2304: Cannot find name 'securityPolicy'` / `'globalMcpConfig'`.
+- **Org Intent moved from MCP tools to Brain section** — The Organizational Intent toggle no longer lives in Body → MCP Tools. It is now the first item in Brain → Intellect, rendered as a proper toggle (matching the style of other Brain toggles) gated on `securityPolicy.allowOrgIntent && globalMcpConfig.exposeOrgIntentTools`.
+
+### Tests
+
+- **2 new tests in `PersonalityEditor.test.tsx`** — Cover Org Intent toggle disabled when policy is off (default) and enabled when both `allowOrgIntent` and `exposeOrgIntentTools` are `true`.
+- **2 new tests in `SecuritySettings.test.tsx`** — Cover Twingate card heading render and `updateSecurityPolicy({ allowTwingate: true })` call. Fixed pre-existing gap: added `fetchAgentConfig` and `updateAgentConfig` to the mock (required by new Security Settings agent-config feature).
+- **2 new tests in `ConnectionsPage.test.tsx`** — Cover Twingate row hint text ("Enable Twingate in Security settings first") when `allowTwingate: false`, and row description ("Agents can reach private MCP servers…") when `allowTwingate: true`. Added missing `fetchSecurityPolicy` mock.
+
+---
+
+### Phase XX.5 — Onboarding Improvements
+
+### Changed
+
+- **`init` wizard step numbering** — Interactive prompts now show `[n/totalSteps]` step indicators (e.g. `[1/8] Agent identity`). Full mode shows 8 steps; `--env-only` shows 5.
+- **Updated AI provider model defaults** — `anthropic` default updated from `claude-sonnet-4-20250514` → `claude-sonnet-4-6`; `gemini` updated from `gemini-1.5-pro` → `gemini-2.0-flash`.
+- **Post-setup next steps panel** — Both the API-onboarding success path and the config-file fallback path now print a `Next steps:` block listing the four most common follow-up commands (`start`, `health`, `repl`, `integration`). Replaces the old single-line "Start the server with: secureyeoman start" message.
+- **Setup banner updated** — Added "Configure your AI agent in under 2 minutes." tagline to the welcome box.
+
+### Tests
+
+- 2 new tests in `init.test.ts` — cover `Next steps` output in the config-file fallback path and the API-onboarding success path. Total CLI tests: **392 passing**.
+
+---
+
+### Phase XX.4 — CLI Polish
+
+### Fixed
+
+- **Wrong default port in `model` and `policy` commands** — Both commands used `DEFAULT_URL = 'http://127.0.0.1:18789'` instead of the correct `3000`. Corrected.
+- **`config` in REPL tab-completion but unimplemented** — The `REPL_COMMANDS` array (used for `<Tab>` completion) included `'config'` but `handleLine` had no matching case and `HELP_TEXT` didn't document it. Removed `'config'` from tab completion while the full implementation was pending, then implemented it fully (see Added below).
+
+### Added
+
+- **`extractCommonFlags()` helper in `utils.ts`** — Extracts `--url`, `--token`, and `--json` from `argv` in one call, returning `{ baseUrl, token, json, rest }`. The resolved `baseUrl` now respects the `SECUREYEOMAN_URL` environment variable (previously each command only fell back to its hard-coded default). Refactored 16 CLI command files to use the helper, removing ~100 lines of boilerplate.
+- **`--json` on `agnostic status`** — Outputs `{ containers, running, total }` as JSON. Useful for scripting and CI pipelines.
+- **`--json` on `security status`** — Outputs `{ container, state, tools, config }` as JSON. Tool availability is checked per-tool (same as the human-readable view).
+- **Shell completion for `agents`, `mcp-server`, `tui`, `security`, `agnostic`, and `migrate`** — Added all 6 missing commands to `COMMANDS` array in `completion.ts` and wrote bash `case`, zsh `_arguments`, and fish `complete` blocks for each, including their subcommands (`setup/teardown/update/status`, `start/stop/status/logs/pull`, `status/enable/disable`) and flags (`--path`, `--follow`, `--tail`, `--json`, `--port`).
+- **REPL `config` command** — `config` in the REPL session now calls `GET /api/v1/config` on the connected server and prints `Model`, `Environment`, and `Gateway` from the runtime configuration. Falls back to raw JSON dump if the response omits the known sections. Documented in `HELP_TEXT`, included in tab-completion.
+
+### Tests
+
+- 7 new tests across `agnostic.test.ts` (2) and `security.test.ts` (2) for `--json`; `completion.test.ts` (+3) for missing commands; `repl.test.ts` (+5) for `config` command and help text. `repl.test.ts` and `init.test.ts` updated to include `mockExtractCommonFlags` in their `vi.mock('../utils.js', ...)` blocks. Total CLI tests: **390 passing**.
+
+---
+
+### Phase XX.3 — MCP Tool Visibility Fixes
 
 ### Fixed
 
@@ -13,7 +75,7 @@
 
 ---
 
-## [Phase 50] — Intent Goal Lifecycle Events (2026-02-24)
+### Phase 50 — Intent Goal Lifecycle Events
 
 ### Added
 
@@ -45,7 +107,7 @@
 
 ---
 
-## [Phase 49.1] — Autonomy Level Build Fixes (2026-02-24)
+### Phase 49.1 — Autonomy Level Build Fixes
 
 ### Fixed
 
@@ -56,7 +118,7 @@
 
 ---
 
-## [Phase 49] — AI Autonomy Level Audit (2026-02-24)
+### Phase 49 — AI Autonomy Level Audit
 
 ### Added
 
@@ -86,7 +148,7 @@
 
 ---
 
-## [Phase Tier2-MA.2] — Docker Build Fix (2026-02-24)
+### Phase Tier2-MA.2 — Docker Build Fix
 
 ### Fixed
 
@@ -95,7 +157,7 @@
 
 ---
 
-## [Phase Tier2-MA.1] — Dashboard Type Fixes (2026-02-24)
+### Phase Tier2-MA.1 — Dashboard Type Fixes
 
 ### Fixed
 
@@ -109,7 +171,7 @@
 
 ---
 
-## [Phase 48.6] — Intent Document Editor (Developer Preview) (2026-02-24)
+### Phase 48.6 — Intent Document Editor (Developer Preview)
 
 ### Added
 
@@ -125,7 +187,7 @@
 
 ---
 
-## [Phase Tier2-MA] — Markdown for Agents: MCP Content Negotiation (2026-02-24)
+### Phase Tier2-MA — Markdown for Agents: MCP Content Negotiation
 
 ### Added
 
@@ -146,7 +208,7 @@
 
 ---
 
-## [Phase 48.2] — Intent Pipeline Enforcement & Dashboard (2026-02-24)
+### Phase 48.2 — Intent Pipeline Enforcement & Dashboard
 
 ### Added
 
@@ -168,7 +230,7 @@
 
 ---
 
-## [Phase 48.1] — Dashboard Type Fixes (2026-02-24)
+### Phase 48.1 — Dashboard Type Fixes
 
 ### Fixed
 
@@ -180,7 +242,7 @@
 
 ---
 
-## [Phase 48] — Machine Readable Organizational Intent (2026-02-24)
+### Phase 48 — Machine Readable Organizational Intent
 
 ### Added
 
@@ -206,7 +268,7 @@
 
 ---
 
-## [Phase 45] — Twingate Remote MCP Access (2026-02-24)
+### Phase 45 — Twingate Remote MCP Access
 
 ### Added
 
@@ -228,7 +290,7 @@
 
 ---
 
-## [Phase 44] — Skill Routing Quality (2026-02-24)
+### Phase 44 — Skill Routing Quality
 
 ### Added
 - `useWhen` / `doNotUseWhen` on `SkillSchema` — routing intent injected into skill catalog in system prompts
@@ -249,7 +311,6 @@
 
 ---
 
-## [2026.2.24]
 
 ### Docker Build Fixes — Phase 46 Type Integration
 

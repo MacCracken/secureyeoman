@@ -23,6 +23,8 @@ vi.mock('../api/client', () => ({
   setModelDefault: vi.fn(),
   clearModelDefault: vi.fn(),
   fetchModelInfo: vi.fn(),
+  fetchAgentConfig: vi.fn(),
+  updateAgentConfig: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -153,6 +155,7 @@ describe('SecuritySettings', () => {
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: null, model: null });
+    vi.mocked(api.fetchAgentConfig).mockResolvedValue({ config: { enabled: false } } as never);
     vi.mocked(api.fetchModelInfo).mockResolvedValue({
       current: {
         provider: 'anthropic',
@@ -678,6 +681,27 @@ describe('SecuritySettings', () => {
     await waitFor(() => {
       expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
       expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowCommunityGitFetch: true });
+    });
+  });
+
+  // ── Twingate ───────────────────────────────────────────────────────
+
+  it('renders Twingate card and toggle (off by default)', async () => {
+    renderComponent();
+    // The card heading "Twingate" is always rendered
+    expect(await screen.findByRole('heading', { name: /^twingate$/i })).toBeInTheDocument();
+    const toggle = screen.getByLabelText('Toggle Allow Twingate');
+    expect(toggle).toBeInTheDocument();
+    expect(toggle.getAttribute('aria-checked')).toBe('false');
+  });
+
+  it('calls updateSecurityPolicy when toggling Allow Twingate', async () => {
+    renderComponent();
+    const toggle = await screen.findByLabelText('Toggle Allow Twingate');
+    fireEvent.click(toggle);
+    await waitFor(() => {
+      expect(mockUpdateSecurityPolicy).toHaveBeenCalled();
+      expect(mockUpdateSecurityPolicy.mock.calls[0][0]).toEqual({ allowTwingate: true });
     });
   });
 });

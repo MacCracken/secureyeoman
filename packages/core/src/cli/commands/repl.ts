@@ -9,12 +9,13 @@ import { mkdirSync, existsSync, readFileSync, appendFileSync } from 'node:fs';
 import type { Command, CommandContext } from '../router.js';
 import { extractBoolFlag, extractCommonFlags, formatUptime, apiCall, formatTable } from '../utils.js';
 
-const REPL_COMMANDS = ['health', 'integration', 'help', 'exit', 'quit'];
+const REPL_COMMANDS = ['health', 'config', 'integration', 'help', 'exit', 'quit'];
 const INTEGRATION_ACTIONS = ['list', 'show', 'create', 'delete', 'start', 'stop'];
 
 const HELP_TEXT = `
 Available commands:
   health                          Check server health
+  config                          Show server runtime configuration
   integration list                List integrations
   integration show <id>           Show integration details
   integration start <id>          Start an integration
@@ -143,6 +144,10 @@ async function handleLine(line: string, ctx: CommandContext, baseUrl: string): P
       await replHealth(ctx, baseUrl);
       break;
 
+    case 'config':
+      await replConfig(ctx, baseUrl);
+      break;
+
     case 'integration':
       await replIntegration(ctx, baseUrl, parts.slice(1));
       break;
@@ -163,6 +168,38 @@ async function replHealth(ctx: CommandContext, baseUrl: string): Promise<void> {
     ctx.stdout.write(
       `  Status: ${String(data.status)}  Version: ${String(data.version)}  Uptime: ${formatUptime(data.uptime as number)}\n`
     );
+  } catch (err) {
+    ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
+  }
+}
+
+async function replConfig(ctx: CommandContext, baseUrl: string): Promise<void> {
+  try {
+    const result = await apiCall(baseUrl, '/api/v1/config');
+    if (!result.ok) {
+      ctx.stderr.write(`Config fetch failed (HTTP ${String(result.status)})\n`);
+      return;
+    }
+    const data = result.data as Record<string, unknown>;
+
+    // Surface the most useful runtime values
+    const modelCfg = data.model as Record<string, unknown> | undefined;
+    const coreCfg = data.core as Record<string, unknown> | undefined;
+    const gatewayCfg = data.gateway as Record<string, unknown> | undefined;
+
+    if (modelCfg?.provider || modelCfg?.model) {
+      ctx.stdout.write(`  Model:       ${String(modelCfg.provider ?? '')}/${String(modelCfg.model ?? '')}\n`);
+    }
+    if (coreCfg?.environment) {
+      ctx.stdout.write(`  Environment: ${String(coreCfg.environment)}\n`);
+    }
+    if (gatewayCfg?.port) {
+      ctx.stdout.write(`  Gateway:     ${String(gatewayCfg.host ?? '0.0.0.0')}:${String(gatewayCfg.port)}\n`);
+    }
+    if (!modelCfg && !coreCfg && !gatewayCfg) {
+      // Fallback: dump the whole config as JSON
+      ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
+    }
   } catch (err) {
     ctx.stderr.write(`${err instanceof Error ? err.message : String(err)}\n`);
   }

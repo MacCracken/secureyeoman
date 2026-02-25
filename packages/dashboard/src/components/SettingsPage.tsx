@@ -458,13 +458,6 @@ function GeneralTab() {
                 key={p.id}
                 personality={p}
                 globalMaxPromptTokens={globalMaxPromptTokens}
-                onEnable={() => enableMut.mutate(p.id)}
-                onDisable={() => disableMut.mutate(p.id)}
-                onSetDefault={() => setDefaultMut.mutate(p.id)}
-                onClearDefault={() => clearDefaultMut.mutate()}
-                isMutating={
-                  enableMut.isPending || disableMut.isPending || setDefaultMut.isPending || clearDefaultMut.isPending
-                }
               />
             ))}
           </div>
@@ -510,21 +503,11 @@ function GeneralTab() {
 interface SoulRowProps {
   personality: Personality;
   globalMaxPromptTokens: number;
-  onEnable: () => void;
-  onDisable: () => void;
-  onSetDefault: () => void;
-  onClearDefault: () => void;
-  isMutating: boolean;
 }
 
 function SoulRow({
   personality: p,
   globalMaxPromptTokens,
-  onEnable,
-  onDisable,
-  onSetDefault,
-  onClearDefault,
-  isMutating,
 }: SoulRowProps) {
   const activeHoursEnabled = p.body?.activeHours?.enabled;
   const alwaysOn = p.isActive && !activeHoursEnabled;
@@ -543,6 +526,17 @@ function SoulRow({
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-sm font-medium truncate">{p.name}</span>
+          {p.isActive && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-success/10 text-success font-medium">
+              Active
+            </span>
+          )}
+          {alwaysOn && (
+            <span className="text-xs px-1.5 py-0.5 rounded-full bg-success/10 text-success font-medium flex items-center gap-1">
+              <Zap className="w-2.5 h-2.5" />
+              Always On
+            </span>
+          )}
           {p.isDefault && (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-primary/10 text-primary font-medium flex items-center gap-1">
               <Star className="w-2.5 h-2.5" />
@@ -552,12 +546,6 @@ function SoulRow({
           {p.isArchetype && (
             <span className="text-xs px-1.5 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
               Preset
-            </span>
-          )}
-          {alwaysOn && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full bg-success/10 text-success font-medium flex items-center gap-1">
-              <Zap className="w-2.5 h-2.5" />
-              Always On
             </span>
           )}
           {offHours && (
@@ -577,39 +565,6 @@ function SoulRow({
         )}
       </div>
 
-      {/* Actions */}
-      <div className="flex items-center gap-1 shrink-0">
-        {/* Default star — set or clear */}
-        {p.isDefault ? (
-          <button
-            className="btn btn-ghost btn-xs p-1 text-primary hover:text-muted-foreground"
-            onClick={onClearDefault}
-            disabled={isMutating}
-            title="Remove as default"
-          >
-            <Star className="w-3.5 h-3.5 fill-current" />
-          </button>
-        ) : p.isActive ? (
-          <button
-            className="btn btn-ghost btn-xs p-1 text-muted-foreground hover:text-primary"
-            onClick={onSetDefault}
-            disabled={isMutating}
-            title="Set as default"
-          >
-            <Star className="w-3.5 h-3.5" />
-          </button>
-        ) : null}
-
-        {/* Enable / Disable toggle */}
-        <button
-          className={`btn btn-ghost btn-xs p-1 ${p.isActive ? 'text-success hover:text-destructive' : 'text-muted-foreground hover:text-success'}`}
-          onClick={p.isActive ? onDisable : onEnable}
-          disabled={isMutating}
-          title={p.isActive ? 'Disable soul' : 'Enable soul'}
-        >
-          <Power className="w-3.5 h-3.5" />
-        </button>
-      </div>
     </div>
   );
 }

@@ -22,11 +22,6 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 *Add observed bugs here as they are found; mark fixed when resolved.*
 
-- [x] MCP tool count not updating when Network Tools / Twingate toggled — backend GET /api/v1/mcp/tools was missing network and Twingate prefix filters (fixed Phase XX.3)
-- [x] NetBox tools not removed from count when NetBox Write toggled — `allowNetBoxWrite` (SecurityPolicy) was not threaded to the tools route; added `getNetBoxWriteAllowed` callback (fixed Phase XX.3)
-- [x] Twingate toggle visual grey-out absent in Connections MCP card (fixed Phase XX.3)
-- [x] "Allow Twingate" master gate missing from Security settings (fixed Phase XX.3)
-
 ---
 
 ## Future Features
@@ -144,4 +139,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-24 (Phase 50 complete — goal lifecycle snapshot table, goal_activated/goal_completed events, completionCondition schema field, GoalTimeline dashboard component)*
+*Last updated: 2026-02-24 (Phase XX.7 — completed bugs cleared from Find & Repair)*

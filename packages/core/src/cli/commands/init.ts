@@ -29,12 +29,12 @@ const PROVIDER_DEFAULTS: Record<
   { model: string; apiKeyEnv: string; needsBaseUrl: boolean }
 > = {
   anthropic: {
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     apiKeyEnv: 'ANTHROPIC_API_KEY',
     needsBaseUrl: false,
   },
   openai: { model: 'gpt-4o', apiKeyEnv: 'OPENAI_API_KEY', needsBaseUrl: false },
-  gemini: { model: 'gemini-1.5-pro', apiKeyEnv: 'GEMINI_API_KEY', needsBaseUrl: false },
+  gemini: { model: 'gemini-2.0-flash', apiKeyEnv: 'GEMINI_API_KEY', needsBaseUrl: false },
   ollama: { model: 'llama3.2', apiKeyEnv: '', needsBaseUrl: true },
   deepseek: { model: 'deepseek-chat', apiKeyEnv: 'DEEPSEEK_API_KEY', needsBaseUrl: false },
   mistral: { model: 'mistral-large-latest', apiKeyEnv: 'MISTRAL_API_KEY', needsBaseUrl: false },
@@ -75,9 +75,10 @@ Options:
     const envOnly = extractBoolFlag(argv, 'env-only');
 
     ctx.stdout.write(`
-  ╔═══════════════════════════════════════════╗
-  ║       SecureYeoman Setup Wizard           ║
-  ╚═══════════════════════════════════════════╝
+  ╔════════════════════════════════════════════════╗
+  ║         SecureYeoman Setup Wizard              ║
+  ║  Configure your AI agent in under 2 minutes.  ║
+  ╚════════════════════════════════════════════════╝
 \n`);
 
     // ── Defaults ─────────────────────────────────────────────────────────────
@@ -103,15 +104,23 @@ Options:
         output: process.stdout,
       });
 
+      const totalSteps = envOnly.value ? 5 : 8;
+      const step = (n: number, label: string) => {
+        ctx.stdout.write(`\n  [${String(n)}/${String(totalSteps)}] ${label}\n`);
+      };
+
       try {
-        // ── 1. Agent name ─────────────────────────────────────────────────────
+        // ── Step 1: Agent name ────────────────────────────────────────────────
+        step(1, 'Agent identity');
         const nameInput = await prompt(rl, '  Agent name', 'FRIDAY');
         agentName = nameInput.slice(0, 50);
 
         if (!envOnly.value) {
-          // ── 2. Personality ──────────────────────────────────────────────────
+          // ── Step 2–4: Personality ─────────────────────────────────────────
+          step(2, 'Personality — description');
           description = await prompt(rl, '  Description', description);
 
+          step(3, 'Personality — style');
           const formalityChoices = ['casual', 'balanced', 'formal'];
           formality = (await promptChoice(
             rl,
@@ -132,29 +141,30 @@ Options:
           )) as typeof verbosity;
         }
 
-        // ── 3. AI Provider ────────────────────────────────────────────────────
-        ctx.stdout.write('\n');
+        // ── Step (env-only:2, full:5): AI Provider ────────────────────────────
+        step(envOnly.value ? 2 : 5, 'AI provider & model');
         provider = (await promptChoice(rl, '  AI provider?', [...PROVIDERS], 0)) as Provider;
 
         const pDef = PROVIDER_DEFAULTS[provider];
 
-        // ── 4. Model name ─────────────────────────────────────────────────────
         const modelInput = await prompt(rl, '  Model name', pDef.model);
         modelName = modelInput || pDef.model;
 
-        // ── 5. API key / base URL ─────────────────────────────────────────────
-        if (pDef.needsBaseUrl) {
-          ollamaBaseUrl = await prompt(rl, '  Ollama base URL', ollamaBaseUrl);
-        } else if (pDef.apiKeyEnv) {
-          apiKey = await prompt(rl, `  ${pDef.apiKeyEnv} (leave blank to skip)`, '');
+        // ── Step (env-only:3, full:6): API key / base URL ─────────────────────
+        if (pDef.needsBaseUrl || pDef.apiKeyEnv) {
+          step(envOnly.value ? 3 : 6, 'Authentication');
+          if (pDef.needsBaseUrl) {
+            ollamaBaseUrl = await prompt(rl, '  Ollama base URL', ollamaBaseUrl);
+          } else if (pDef.apiKeyEnv) {
+            apiKey = await prompt(rl, `  ${pDef.apiKeyEnv} (leave blank to skip)`, '');
+          }
         }
 
-        // ── 6. Gateway port ───────────────────────────────────────────────────
-        ctx.stdout.write('\n');
+        // ── Step (env-only:4, full:7): Gateway port & database ───────────────
+        step(envOnly.value ? 4 : 7, 'Server & database');
         const portInput = await prompt(rl, '  Gateway port', '3000');
         gatewayPort = Math.max(1024, Math.min(65535, parseInt(portInput, 10) || 3000));
 
-        // ── 7. Database backend ───────────────────────────────────────────────
         const dbChoices = ['sqlite', 'postgresql'];
         dbBackend = (await promptChoice(rl, '  Database backend?', dbChoices, 0)) as
           | 'sqlite'
@@ -168,8 +178,8 @@ Options:
           );
         }
 
-        // ── 8. Security keys ──────────────────────────────────────────────────
-        ctx.stdout.write('\n');
+        // ── Step (env-only:5, full:8): Security keys ──────────────────────────
+        step(envOnly.value ? 5 : 8, 'Security keys');
         const keysAnswer = await prompt(rl, '  Generate security keys? (y/n)', 'y');
         generateKeys = keysAnswer.toLowerCase() !== 'n';
 
@@ -257,7 +267,8 @@ Options:
 
           if (result.ok) {
             ctx.stdout.write(`\n  Onboarding completed via API.\n`);
-            ctx.stdout.write(`  Agent "${agentName}" is ready.\n\n`);
+            ctx.stdout.write(`  Agent "${agentName}" is ready.\n`);
+            printNextSteps(ctx);
             return 0;
           }
         }
@@ -309,7 +320,19 @@ Options:
       }
     }
 
-    ctx.stdout.write(`\n  Setup complete! Start the server with: secureyeoman start\n\n`);
+    ctx.stdout.write(`\n  Setup complete! Agent "${agentName}" is configured.\n`);
+    printNextSteps(ctx);
     return 0;
   },
 };
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function printNextSteps(ctx: CommandContext): void {
+  ctx.stdout.write('\n  Next steps:\n');
+  ctx.stdout.write('    secureyeoman start         — start the gateway server\n');
+  ctx.stdout.write('    secureyeoman health        — verify the server is healthy\n');
+  ctx.stdout.write('    secureyeoman repl          — interactive REPL shell\n');
+  ctx.stdout.write('    secureyeoman integration   — manage integrations\n');
+  ctx.stdout.write('\n');
+}

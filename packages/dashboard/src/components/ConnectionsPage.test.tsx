@@ -15,6 +15,7 @@ vi.mock('../api/client', () => ({
   fetchMcpTools: vi.fn(),
   fetchMcpConfig: vi.fn(),
   updateMcpConfig: vi.fn(),
+  fetchSecurityPolicy: vi.fn(),
   fetchIntegrations: vi.fn(),
   fetchAvailablePlatforms: vi.fn(),
   createIntegration: vi.fn(),
@@ -29,6 +30,7 @@ import * as api from '../api/client';
 const mockFetchMcpServers = vi.mocked(api.fetchMcpServers);
 const mockFetchMcpTools = vi.mocked(api.fetchMcpTools);
 const mockFetchMcpConfig = vi.mocked(api.fetchMcpConfig);
+const mockFetchSecurityPolicy = vi.mocked(api.fetchSecurityPolicy);
 const mockFetchIntegrations = vi.mocked(api.fetchIntegrations);
 const mockFetchAvailablePlatforms = vi.mocked(api.fetchAvailablePlatforms);
 const mockTestIntegration = vi.mocked(api.testIntegration);
@@ -79,6 +81,32 @@ describe('ConnectionsPage', () => {
     });
     mockFetchIntegrations.mockResolvedValue({ integrations: [], total: 0, running: 0 });
     mockFetchAvailablePlatforms.mockResolvedValue({ platforms: [] });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: false,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: false,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: false,
+      allowIntentEditor: false,
+    } as never);
   });
 
   it('renders the Connections header', async () => {
@@ -584,5 +612,71 @@ describe('ConnectionsPage', () => {
     const addBtn = await screen.findByText('Add Integration');
     await user.click(addBtn);
     expect(screen.getByText('YouTube')).toBeInTheDocument();
+  });
+
+  // ── Twingate gating ────────────────────────────────────────────────
+
+  it('shows Twingate gate hint when allowTwingate is false', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        {
+          id: 'local',
+          name: 'YEOMAN MCP',
+          transport: 'stdio',
+          enabled: true,
+          command: 'secureyeoman',
+          args: ['mcp-server'],
+          description: 'Local MCP',
+          url: null,
+          env: {},
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowTwingate: false,
+      allowNetBoxWrite: false,
+      allowNetworkTools: false,
+      allowOrgIntent: false,
+      allowIntentEditor: false,
+    } as never);
+
+    renderComponent();
+    expect(await screen.findByText('Enable Twingate in Security settings first')).toBeInTheDocument();
+  });
+
+  it('shows Twingate description when allowTwingate is true', async () => {
+    mockFetchMcpServers.mockResolvedValue({
+      servers: [
+        {
+          id: 'local',
+          name: 'YEOMAN MCP',
+          transport: 'stdio',
+          enabled: true,
+          command: 'secureyeoman',
+          args: ['mcp-server'],
+          description: 'Local MCP',
+          url: null,
+          env: {},
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        },
+      ],
+      total: 1,
+    });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowTwingate: true,
+      allowNetBoxWrite: false,
+      allowNetworkTools: false,
+      allowOrgIntent: false,
+      allowIntentEditor: false,
+    } as never);
+
+    renderComponent();
+    expect(
+      await screen.findByText('Agents can reach private MCP servers and resources via Twingate')
+    ).toBeInTheDocument();
   });
 });

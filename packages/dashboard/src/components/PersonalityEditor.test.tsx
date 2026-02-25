@@ -572,3 +572,69 @@ describe('PersonalityEditor — default personality toggle', () => {
     });
   });
 });
+
+// ── Org Intent toggle in Brain section ──────────────────────────────
+
+describe('PersonalityEditor — Organizational Intent toggle', () => {
+  it('Org Intent toggle is visible and disabled when policy is off', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    // Default beforeEach: allowOrgIntent: false, mockFetchMcpConfig: {} → disabled
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    const toggle = await screen.findByRole('checkbox', { name: /organizational intent signal/i });
+    expect(toggle).toBeInTheDocument();
+    expect(toggle).toBeDisabled();
+    expect(screen.getByText('Enable Org Intent in Connections first')).toBeInTheDocument();
+  });
+
+  it('Org Intent toggle is enabled when both allowOrgIntent and exposeOrgIntentTools are true', async () => {
+    mockFetchPersonalities.mockResolvedValue({ personalities: [MOCK_PERSONALITY] });
+    mockFetchSecurityPolicy.mockResolvedValue({
+      allowSubAgents: false,
+      allowA2A: false,
+      allowSwarms: false,
+      allowExtensions: false,
+      allowExecution: false,
+      allowProactive: false,
+      allowExperiments: false,
+      allowStorybook: false,
+      allowMultimodal: false,
+      allowDesktopControl: false,
+      allowCamera: false,
+      allowDynamicTools: false,
+      sandboxDynamicTools: false,
+      allowAnomalyDetection: false,
+      sandboxGvisor: false,
+      sandboxWasm: false,
+      sandboxCredentialProxy: false,
+      allowNetworkTools: false,
+      allowNetBoxWrite: false,
+      allowWorkflows: false,
+      allowCommunityGitFetch: false,
+      allowTwingate: false,
+      allowOrgIntent: true,
+      allowIntentEditor: false,
+    });
+    mockFetchMcpConfig.mockResolvedValue({ exposeOrgIntentTools: true } as any);
+
+    const user = userEvent.setup();
+    renderComponent();
+
+    const editBtn = await screen.findByLabelText(`Edit personality ${MOCK_PERSONALITY.name}`);
+    await user.click(editBtn);
+
+    const brainHeader = await screen.findByText('Brain - Intellect');
+    await user.click(brainHeader);
+
+    const toggle = await screen.findByRole('checkbox', { name: /organizational intent signal/i });
+    expect(toggle).not.toBeDisabled();
+    expect(screen.getByText('Allow this personality to read live org intent signals')).toBeInTheDocument();
+  });
+});
