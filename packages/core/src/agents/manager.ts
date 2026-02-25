@@ -30,6 +30,29 @@ import type {
   Tool,
 } from '@secureyeoman/shared';
 
+/**
+ * Check whether a tool name is permitted by a profile's allowedTools list.
+ *
+ * Pattern rules (evaluated in order):
+ *   []          — empty list means all tools are allowed (backwards-compatible default)
+ *   '*'         — wildcard: allow everything
+ *   'prefix_*'  — allow any tool whose name starts with 'prefix_'
+ *   'exact'     — exact name match
+ *
+ * Examples:
+ *   ['web_*', 'memory_recall']  → all web_ tools + memory_recall
+ *   ['fs_*', 'git_*']           → filesystem + git tools only
+ *   []                          → all tools (no restriction)
+ */
+function toolMatchesProfile(toolName: string, allowedTools: string[]): boolean {
+  if (allowedTools.length === 0) return true;
+  return allowedTools.some((pattern) => {
+    if (pattern === '*') return true;
+    if (pattern.endsWith('_*')) return toolName.startsWith(pattern.slice(0, -1));
+    return toolName === pattern;
+  });
+}
+
 export interface SubAgentManagerDeps {
   storage: SubAgentStorage;
   aiClientConfig: AIClientConfig;
@@ -390,9 +413,7 @@ export class SubAgentManager {
       const mcpTools: Tool[] = this.deps.mcpClient
         ? this.deps.mcpClient
             .getAllTools()
-            .filter(
-              (t) => profile.allowedTools.length === 0 || profile.allowedTools.includes(t.name)
-            )
+            .filter((t) => toolMatchesProfile(t.name, profile.allowedTools))
             .map((t) => {
               // Ensure the schema always has type:'object' — the Anthropic API
               // rejects tool input_schemas that are missing the type property,

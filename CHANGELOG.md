@@ -14,9 +14,23 @@
 - **Soul prompt token budget raised** — `maxPromptTokens` schema max lifted 32,000 → 100,000 (both global `SoulConfigSchema` and per-personality `BodySchema`). Global default raised 32,000 → 64,000. With many skills, large knowledge bases, and memories, 32 k was insufficient for power users. Settings pages updated to reflect new ranges (1,024–100,000 tokens).
 - **Thinking token budget raised** — `ThinkingPersonalityConfigSchema.budgetTokens` max lifted 32,000 → 64,000 to match Claude's extended-thinking ceiling. Slider in PersonalityEditor updated accordingly.
 
+- **Metrics page stale after personality enable/disable** — Global `QueryClient` has `staleTime: 30_000`, so navigating away and back within 30 seconds served cached heartbeat/personality counts without re-fetching. Added `staleTime: 0` override to `heartbeatStatus` and `personalities` queries in `MetricsPage` so they always fetch fresh data on mount.
+- **Org intent toggle greyed out in personality editor** — Toggle was gated on `allowOrgIntent` (a server-side security policy with no dashboard UI control) instead of `allowIntentEditor` (the user-facing toggle in Settings → Security → Developers). Fixed gate condition and updated help text.
+
 ### Investigation
 
-- **Sub-agent overhead root-cause documented** — Identified that the primary driver of the 30 K–50 K per-delegation overhead is unconditional injection of all registered MCP tools into every sub-agent call (~10,000–15,000 tokens across 20–30 tools). The `MIN_TOKEN_BUDGET = 20_000` hard floor adds a further baseline. No soul prompt or brain context is injected into sub-agents (good). Filed as a Tier 1 improvement: task-aware tool pruning for delegation profiles. See roadmap.
+- **Sub-agent overhead root-cause documented** — Identified that the primary driver of the 30 K–50 K per-delegation overhead is unconditional injection of all registered MCP tools into every sub-agent call (~10,000–15,000 tokens across 20–30 tools). The `MIN_TOKEN_BUDGET = 20_000` hard floor adds a further baseline. No soul prompt or brain context is injected into sub-agents (good).
+
+### Sub-agent tool pruning
+
+- **`toolMatchesProfile()` helper in `manager.ts`** — Wildcard-aware tool filter that runs on every sub-agent delegation. Supports `[]` (all tools, backwards-compatible), `*` (all), `prefix_*` (prefix match, e.g. `web_*`, `fs_*`), and exact names. Empty `allowedTools` on user-created profiles is unchanged — all tools remain accessible by default.
+- **Built-in profiles focused** (`profiles.ts`) — Each of the four built-in profiles now carries a focused `allowedTools` list rather than `[]`:
+  - **researcher** — `web_*`, `memory_recall`, `knowledge_search`, `knowledge_get`, `knowledge_store` (~8–10 tools, was 200+)
+  - **coder** — `fs_*`, `git_*`, `memory_recall`, `knowledge_search`, `knowledge_get` (~20 tools, was 200+)
+  - **analyst** — 14 specific tools: targeted web search, memory, knowledge, system metrics, audit, task queries
+  - **summarizer** — 3 tools: memory recall + knowledge lookup only
+  - Profile changes auto-apply on next restart via `ON CONFLICT DO UPDATE` seed.
+- **`allowedTools` input in Sub-Agents profile form** — New textarea in the Create Profile panel accepts tool patterns (one per line, blank = all tools). Parsed and passed to the API on create. Profile cards now display the pattern count ("3 tool patterns") or "All tools" when unconstrained.
 
 ---
 

@@ -726,6 +726,7 @@ function ProfilesTab({
   const [profileDesc, setProfileDesc] = useState('');
   const [profilePrompt, setProfilePrompt] = useState('');
   const [profileBudget, setProfileBudget] = useState(50000);
+  const [profileTools, setProfileTools] = useState('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['agentProfiles'],
@@ -746,6 +747,7 @@ function ProfilesTab({
       setProfileDesc('');
       setProfilePrompt('');
       setProfileBudget(50000);
+      setProfileTools('');
       onCloseNewProfile();
       void queryClient.invalidateQueries({ queryKey: ['agentProfiles'] });
     },
@@ -776,6 +778,7 @@ function ProfilesTab({
                 setProfileDesc('');
                 setProfilePrompt('');
                 setProfileBudget(50000);
+                setProfileTools('');
               }}
               className="btn-ghost p-1 rounded"
             >
@@ -828,15 +831,30 @@ function ProfilesTab({
               max={500000}
             />
           </div>
+          <div>
+            <label className="text-sm font-medium block mb-1">Allowed Tools</label>
+            <textarea
+              value={profileTools}
+              onChange={(e) => setProfileTools(e.target.value)}
+              className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm min-h-[60px] resize-y font-mono text-xs"
+              placeholder={'Leave blank for all tools\nOr enter patterns, one per line:\n  web_*\n  fs_*\n  memory_recall'}
+            />
+            <p className="text-[10px] text-muted-foreground mt-0.5">Blank = all tools. Supports prefix wildcards (web_*) and exact names.</p>
+          </div>
           <button
             className="btn btn-primary"
             disabled={!profileName.trim() || !profilePrompt.trim() || createMut.isPending}
             onClick={() => {
+              const allowedTools = profileTools
+                .split(/[\n,]/)
+                .map((s) => s.trim())
+                .filter(Boolean);
               createMut.mutate({
                 name: profileName,
                 description: profileDesc,
                 systemPrompt: profilePrompt,
                 maxTokenBudget: profileBudget,
+                allowedTools,
               });
             }}
           >
@@ -880,7 +898,10 @@ function ProfilesTab({
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <span>{p.maxTokenBudget.toLocaleString()} tokens</span>
               {p.defaultModel && <span>Model: {p.defaultModel}</span>}
-              {p.allowedTools.length > 0 && <span>{p.allowedTools.length} tools</span>}
+              {p.allowedTools.length > 0
+                ? <span title={p.allowedTools.join(', ')}>{p.allowedTools.length} tool pattern{p.allowedTools.length !== 1 ? 's' : ''}</span>
+                : <span className="opacity-50">All tools</span>
+              }
             </div>
           </div>
         ))}

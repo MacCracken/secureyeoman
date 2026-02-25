@@ -25,7 +25,9 @@ Guidelines:
 - Summarize key findings at the end of your response
 - Do not make changes to code or systems — only research and report`,
     maxTokenBudget: 50000,
-    allowedTools: [],
+    // Web search/scraping + memory + knowledge base — no filesystem, git, or
+    // security tools needed for research tasks (~8–10 tools vs 200+).
+    allowedTools: ['web_*', 'memory_recall', 'knowledge_search', 'knowledge_get', 'knowledge_store'],
     defaultModel: null,
     isBuiltin: true,
   },
@@ -45,7 +47,8 @@ Guidelines:
 - Keep changes minimal and focused on the task
 - Return complete code blocks, not partial snippets`,
     maxTokenBudget: 80000,
-    allowedTools: [],
+    // Filesystem + git + memory + knowledge — no web scraping or security tools.
+    allowedTools: ['fs_*', 'git_*', 'memory_recall', 'knowledge_search', 'knowledge_get'],
     defaultModel: null,
     isBuiltin: true,
   },
@@ -65,7 +68,15 @@ Guidelines:
 - Provide a clear recommendation with supporting reasoning
 - Use tables or lists for structured comparisons`,
     maxTokenBudget: 60000,
-    allowedTools: [],
+    // Targeted web lookup + memory + knowledge + system/audit metrics.
+    // No filesystem writes, git, or security tools.
+    allowedTools: [
+      'web_search', 'web_search_batch', 'web_fetch_markdown', 'web_extract_structured',
+      'memory_recall', 'knowledge_search', 'knowledge_get', 'knowledge_store',
+      'system_health', 'system_metrics',
+      'audit_query', 'audit_stats',
+      'task_list', 'task_get',
+    ],
     defaultModel: null,
     isBuiltin: true,
   },
@@ -85,7 +96,9 @@ Guidelines:
 - Highlight action items or key decisions separately
 - Preserve critical nuances that affect understanding`,
     maxTokenBudget: 30000,
-    allowedTools: [],
+    // Summarizer works primarily on provided text; only memory/knowledge
+    // lookup needed in case context must be retrieved.
+    allowedTools: ['memory_recall', 'knowledge_search', 'knowledge_get'],
     defaultModel: null,
     isBuiltin: true,
   },
