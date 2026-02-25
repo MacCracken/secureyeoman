@@ -54,5 +54,8 @@ pino-*.log
 # Email data
 .emails/
 
+# Certs
+certs/
+
 # Community skills — managed via bind mount in Docker; lives in secureyeoman-community-skills repo
 community-skills/

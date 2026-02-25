@@ -25,6 +25,9 @@ export default defineConfig({
     host: process.env.VITE_HOST || '0.0.0.0',
     port: 3000,
     strictPort: true,
+    allowedHosts: process.env.VITE_ALLOWED_HOSTS
+      ? process.env.VITE_ALLOWED_HOSTS.split(',')
+      : [],
     // Proxy API requests to the gateway
     proxy: {
       '/api': {
