@@ -300,23 +300,23 @@ img {
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  /* Cybercity photo — focus on the upper skyline/moon area */
+  /* Cybercity photo — contained/smaller, anchored top-left behind the mascot */
   background-image: url('../images/background_cybercity.jpg');
-  background-size: cover;
-  background-position: center 18%;
+  background-size: 480px auto;
+  background-position: 6% 0%;
   background-repeat: no-repeat;
 }
 
-/* Dark tint layer — solid page-bg at the top (behind navbar), fades into
-   the dark photo tint right where the release badge sits (~160px down) */
+/* Dark tint layer — solid page-bg behind the navbar (~116px), then fades
+   to dark tint by the badge so the photo is visible from the badge down */
 .hero-overlay {
   position: absolute;
   inset: 0;
   background: linear-gradient(
     to bottom,
     var(--bg-primary) 0px,
-    var(--bg-primary) 130px,
-    rgba(8, 12, 24, 0.62) 210px
+    var(--bg-primary) 100px,
+    rgba(8, 12, 24, 0.62) 165px
   );
 }
 
@@ -420,8 +420,8 @@ img {
 /* Soft radial glow behind the mascot */
 .mascot-glow {
   position: absolute;
-  width: 320px;
-  height: 320px;
+  width: 500px;
+  height: 500px;
   border-radius: 50%;
   background: radial-gradient(
     circle,
@@ -448,15 +448,15 @@ img {
 }
 
 .mascot-ring-1 {
-  width: 220px;
-  height: 220px;
+  width: 340px;
+  height: 340px;
   border-color: rgba(14, 165, 233, 0.22);
   animation: ring-spin 30s linear infinite;
 }
 
 .mascot-ring-2 {
-  width: 290px;
-  height: 290px;
+  width: 430px;
+  height: 430px;
   border-color: rgba(139, 92, 246, 0.14);
   animation: ring-spin 50s linear infinite reverse;
 }
@@ -471,7 +471,7 @@ img {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 240px;
+  max-width: 360px;
   /* drop-shadow traces the alpha silhouette — three layers for depth */
   filter:
     drop-shadow(0 0 10px rgba(14, 165, 233, 0.9))
@@ -1587,16 +1587,16 @@ img {
   }
 
   .mascot-img {
-    max-width: 220px;
+    max-width: 320px;
   }
 
   .mascot-glow {
-    width: 280px;
-    height: 280px;
+    width: 420px;
+    height: 420px;
   }
 
-  .mascot-ring-1 { width: 200px; height: 200px; }
-  .mascot-ring-2 { width: 260px; height: 260px; }
+  .mascot-ring-1 { width: 300px; height: 300px; }
+  .mascot-ring-2 { width: 380px; height: 380px; }
 }
 
 @media (max-width: 768px) {
