@@ -1605,9 +1605,9 @@ img {
 }
 
 @media (max-width: 768px) {
-  /* Shift bg image further down on mobile — shows ground/street level */
+  /* Modest shift — layout collapse makes container taller so keep % small */
   .hero-bg {
-    background-position: center 82%;
+    background-position: center 72%;
   }
 
   .nav-menu,
@@ -1735,10 +1735,17 @@ img {
   }
 }
 
-@media (max-width: 480px) {
-  /* At narrowest — show the deep street/ground of the alley */
+@media (max-width: 540px) {
+  /* Single-column layout is now taller — nudge image down only slightly */
   .hero-bg {
-    background-position: center 95%;
+    background-position: center 76%;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Narrowest viewports — show street level */
+  .hero-bg {
+    background-position: center 80%;
   }
 
   /* At very small widths collapse to single column */
