@@ -190,7 +190,7 @@ function GeneralTab() {
   );
   const [formMaxSkills, setFormMaxSkills] = useState(soulConfig?.maxSkills ?? 100);
   const [formMaxPromptTokens, setFormMaxPromptTokens] = useState(
-    soulConfig?.maxPromptTokens ?? 32000
+    soulConfig?.maxPromptTokens ?? 64000
   );
 
   useEffect(() => {
@@ -381,14 +381,14 @@ function GeneralTab() {
               <input
                 type="number"
                 min={1024}
-                max={32000}
+                max={100000}
                 step={1024}
                 value={formMaxPromptTokens}
                 onChange={(e) => setFormMaxPromptTokens(Number(e.target.value))}
                 className="w-full px-2 py-1.5 text-sm rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <p className="text-[10px] text-muted-foreground mt-0.5">
-                Overridable per soul (1024–32000 tokens)
+                Overridable per soul (1,024–100,000 tokens)
               </p>
             </div>
           </div>

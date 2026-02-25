@@ -25,17 +25,22 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 - [x] Metrics dashboard - Heartbeat task does not display accurate count of base task count.
 - [x] Metrics dashboard - Tasks today displays all completed tasks not those on the current day.
 - [x] Security dashboard - Task History, historical items for Heartbeat task and regular tasks do not include the personality associated.  User need to understand which personality is generating the log for security & diagnostics purposes.
+- [x] Chat stream — agent output repeats response preamble after every tool call (cumulative content bug in streaming agentic loop).
+- [x] Chat stream — personality appears to "die" / terminate during long multi-tool responses (MAX_TOOL_ITERATIONS = 10 cap hit; SSE keepalive missing).
+- [x] Sub-agent token budget UI allowed profiles as low as 1,000 tokens despite server-side MIN_TOKEN_BUDGET = 20,000 enforcement.
+- [x] Soul prompt token budget capped at 32 k — raised to 100 k max / 64 k default; thinking budget raised to 64 k max.
 
 
 ### Improvements
 
-- [ ] Marketplace and Community - add the ability to review the full skill before installation.  Lets give the user the ability to review all necessary items of the skill. 
+- [ ] Marketplace and Community - add the ability to review the full skill before installation.  Lets give the user the ability to review all necessary items of the skill.
 - [ ] Security Dashboard - re-org tab view; Overview, Audit Log, Autonomy, ML, Reports, System, Tasks
 - [ ] Tasks History, separation of task and heartbeats into their own subviews.
 - [ ] Tasks and History needs consolidation; remove from Security Dashboard.
 - [ ] Chat (any context) with personality; need to provide time date awareness to the conversasion. Without asking personality to check the time/data for response accuracy.
 - [ ] Agents > Sub-Agents > Profile shoud be first tab, but keep default as Active.
-- [ ] Improvements to token usage per personality and at the top level
+- [x] Improvements to token usage per personality and at the top level
+- [ ] **Sub-agent task-aware tool pruning** — Root-cause of 30 K–50 K overhead per delegation: all registered MCP tools (~20–30, ~10,000–15,000 tokens) are injected unconditionally into every sub-agent call regardless of relevance. Implement tool filtering based on the profile's `allowedTools` list or a task-type classifier so simple delegations don't carry the full tool catalog. See `packages/core/src/agents/manager.ts` lines 390–407.
 
 ---
 

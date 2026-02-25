@@ -143,7 +143,7 @@ export type PersonalityActiveHours = z.infer<typeof PersonalityActiveHoursSchema
 export const ThinkingPersonalityConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
-    budgetTokens: z.number().int().min(1024).max(32000).default(10000),
+    budgetTokens: z.number().int().min(1024).max(64000).default(10000),
   })
   .optional();
 
@@ -198,7 +198,7 @@ export const BodyConfigSchema = z
      * When set, replaces the global maxPromptTokens for this soul's system prompt composition.
      * Stored in the existing body JSONB column — no DB migration required.
      */
-    maxPromptTokens: z.number().int().min(1024).max(32000).optional(),
+    maxPromptTokens: z.number().int().min(1024).max(100000).optional(),
   })
   .default({});
 
@@ -468,7 +468,7 @@ export const SoulConfigSchema = z
     enabled: z.boolean().default(true),
     learningMode: z.array(LearningModeSchema).default(['user_authored']),
     maxSkills: z.number().int().positive().max(200).default(100),
-    maxPromptTokens: z.number().int().positive().max(32000).default(32000),
+    maxPromptTokens: z.number().int().positive().max(100000).default(64000),
   })
   .default({});
 

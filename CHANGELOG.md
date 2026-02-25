@@ -1,3 +1,25 @@
+## [2026.2.25-agent-quality] — 2026-02-25
+
+### Agent Quality & Chat Stream Reliability
+
+### Fixed
+
+- **Chat response duplication in agentic tool loops** — The streaming route was passing the cumulative content from *all* previous iterations as the `content` field of each assistant turn pushed to the messages array. This caused the model to re-state the full response preamble on every continuation turn after a tool call, producing exponentially growing duplicate output. Fixed by tracking `iterContentStart` (the index into `contentPartsS` where the current iteration begins) and only including that iteration's text in the assistant push message. The `done` event still sends the full accumulated content as before.
+- **Personality "dying" during long tool chains** — `MAX_TOOL_ITERATIONS` raised from 10 → 20 in both the streaming and non-streaming routes. Comprehensive multi-tool tasks (system tests, diagnostics) were hitting the 10-iteration cap and terminating mid-response.
+- **Sub-agent profile token budget floor mismatch** — The dashboard Sub-Agents profile form allowed `maxTokenBudget` as low as 1,000 (`min={1000}`), but `manager.ts` enforces a hard `MIN_TOKEN_BUDGET = 20_000`. Changed the UI minimum to 20,000 to match, preventing profiles that store a misleadingly low budget in the DB.
+
+### Improved
+
+- **SSE keepalive during long tool chains** — Streaming route now emits an SSE comment line (`: keepalive`) between tool execution iterations. This resets connection timeout timers on proxies and browsers without triggering the client-side data handler, preventing stream disconnects on multi-tool tasks.
+- **Soul prompt token budget raised** — `maxPromptTokens` schema max lifted 32,000 → 100,000 (both global `SoulConfigSchema` and per-personality `BodySchema`). Global default raised 32,000 → 64,000. With many skills, large knowledge bases, and memories, 32 k was insufficient for power users. Settings pages updated to reflect new ranges (1,024–100,000 tokens).
+- **Thinking token budget raised** — `ThinkingPersonalityConfigSchema.budgetTokens` max lifted 32,000 → 64,000 to match Claude's extended-thinking ceiling. Slider in PersonalityEditor updated accordingly.
+
+### Investigation
+
+- **Sub-agent overhead root-cause documented** — Identified that the primary driver of the 30 K–50 K per-delegation overhead is unconditional injection of all registered MCP tools into every sub-agent call (~10,000–15,000 tokens across 20–30 tools). The `MIN_TOKEN_BUDGET = 20_000` hard floor adds a further baseline. No soul prompt or brain context is injected into sub-agents (good). Filed as a Tier 1 improvement: task-aware tool pruning for delegation profiles. See roadmap.
+
+---
+
 ## [2026.2.25-tls2] — 2026-02-25
 
 ### TLS via Env Vars, MCP HTTPS Fix, Dashboard Local-Network Guard Removed

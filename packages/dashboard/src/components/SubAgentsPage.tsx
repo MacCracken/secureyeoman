@@ -824,7 +824,7 @@ function ProfilesTab({
                 setProfileBudget(Number(e.target.value));
               }}
               className="w-full bg-card border border-border rounded-lg px-3 py-2 text-sm"
-              min={1000}
+              min={20000}
               max={500000}
             />
           </div>

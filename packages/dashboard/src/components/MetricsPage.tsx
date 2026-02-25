@@ -133,6 +133,10 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
     queryKey: ['heartbeatStatus'],
     queryFn: fetchHeartbeatStatus,
     refetchInterval: 10_000,
+    // Always refetch on mount so navigating away and back immediately reflects
+    // personality enable/disable changes (global staleTime: 30s would otherwise
+    // serve cached data for up to 30 seconds after a config change).
+    staleTime: 0,
   });
 
   const { data: mcpData } = useQuery({
@@ -151,6 +155,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
     queryKey: ['personalities'],
     queryFn: fetchPersonalities,
     refetchInterval: 30_000,
+    staleTime: 0,
   });
 
   // Accumulate CPU + memory for time-series charts

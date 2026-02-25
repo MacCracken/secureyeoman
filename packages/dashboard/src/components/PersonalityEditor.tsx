@@ -1105,8 +1105,8 @@ function BrainSection({
               <input
                 type="range"
                 min={1024}
-                max={32000}
-                step={256}
+                max={100000}
+                step={1024}
                 value={maxPromptTokens}
                 onChange={(e) => {
                   onMaxPromptTokensChange(Number(e.target.value));
@@ -1115,7 +1115,7 @@ function BrainSection({
               />
               <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>1,024</span>
-                <span>32,000</span>
+                <span>100,000</span>
               </div>
             </div>
           ) : (
@@ -1152,7 +1152,7 @@ function BrainSection({
               <input
                 type="range"
                 min={1024}
-                max={32000}
+                max={64000}
                 step={256}
                 value={thinkingConfig.budgetTokens}
                 onChange={(e) => {
@@ -1162,7 +1162,7 @@ function BrainSection({
               />
               <div className="flex justify-between text-[10px] text-muted-foreground">
                 <span>1,024</span>
-                <span>32,000</span>
+                <span>64,000</span>
               </div>
             </div>
           )}

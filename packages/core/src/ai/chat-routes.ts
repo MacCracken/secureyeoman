@@ -498,7 +498,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // append the results as tool-role messages, and call the model again.
         // This repeats until the model produces a final text response or we
         // hit the iteration cap (prevents infinite loops on misbehaving models).
-        const MAX_TOOL_ITERATIONS = 10;
+        const MAX_TOOL_ITERATIONS = 20;
         let iterationCount = 0;
 
         // Accumulate thinking content across all iterations
@@ -1079,10 +1079,15 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
         // ── Streaming agentic loop ────────────────────────────────────
 
-        const MAX_TOOL_ITERATIONS_S = 10;
+        const MAX_TOOL_ITERATIONS_S = 20;
         let iterationCountS = 0;
         const thinkingPartsS: string[] = [];
         const contentPartsS: string[] = [];
+        // Track where the current iteration's content starts in contentPartsS,
+        // so we only push THIS iteration's text (not all accumulated) to the
+        // messages array.  Sending cumulative text caused the model to
+        // re-generate the full response preamble on every continuation turn.
+        let iterContentStart = 0;
         const creationEventsS: Array<{ tool: string; label: string; action: string; name: string; id?: string }> = [];
         const toolCallsS: Array<{ toolName: string; label: string; serverName?: string; isMcp: boolean }> = [];
         let totalTokensUsed = 0;
@@ -1095,6 +1100,8 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
           const pendingToolCalls: Map<string, { id: string; name: string; argsJson: string }> = new Map();
           let currentToolId = '';
           stopReason = 'end_turn';
+          // Mark start of this iteration's content so we can slice it out later
+          iterContentStart = contentPartsS.length;
 
           // Stream model response
           for await (const chunk of aiClient.chatStream({ ...aiRequest, messages })) {
@@ -1136,7 +1143,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
           if (stopReason !== 'tool_use' || pendingToolCalls.size === 0) break;
 
-          // Append assistant turn with tool calls
+          // Append assistant turn with tool calls.
+          // Use only THIS iteration's text (slice from iterContentStart), not the
+          // full accumulated content — passing cumulative text caused the model to
+          // re-state the entire response preamble on every continuation turn.
           const toolCallsForMsg = Array.from(pendingToolCalls.values()).map((tc) => ({
             id: tc.id,
             name: tc.name,
@@ -1146,11 +1156,17 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             })(),
           }));
 
+          const iterContent = contentPartsS.slice(iterContentStart).join('');
           messages.push({
             role: 'assistant' as const,
-            content: contentPartsS.join('') || undefined,
+            content: iterContent || undefined,
             toolCalls: toolCallsForMsg,
           });
+
+          // SSE keepalive — prevents proxy/browser from closing a long-running
+          // tool chain.  The colon prefix makes this a comment in SSE protocol
+          // (ignored by EventSource but resets the connection timeout).
+          reply.raw.write(': keepalive\n\n');
 
           // Execute tools
           const executionContextS = { personalityId: personality?.id ?? null, personalityName: personality?.name ?? null };
