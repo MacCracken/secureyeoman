@@ -290,7 +290,7 @@ img {
   align-items: center;
   justify-content: center;
   position: relative;
-  padding: 120px var(--space-6) var(--space-24);
+  padding: 160px var(--space-6) var(--space-24);
   overflow: hidden;
 }
 
@@ -452,9 +452,12 @@ img {
   z-index: 1;
   width: 100%;
   max-width: 420px;
+  /* drop-shadow traces the alpha silhouette, not the bounding box */
   filter:
-    drop-shadow(0 0 32px rgba(14, 165, 233, 0.35))
-    drop-shadow(0 0 80px rgba(139, 92, 246, 0.2));
+    drop-shadow(0 0 28px rgba(14, 165, 233, 0.4))
+    drop-shadow(0 0 72px rgba(139, 92, 246, 0.25));
+  /* lighten blends the warrior naturally into the dark background */
+  mix-blend-mode: lighten;
   animation: mascot-float 6s ease-in-out infinite;
   transform-origin: center bottom;
 }
@@ -488,6 +491,11 @@ img {
   color: var(--text-secondary);
   margin-bottom: var(--space-8);
   transition: var(--transition-fast);
+  /* Center the release badge even in the left-aligned hero column */
+  display: flex;
+  width: fit-content;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .hero-badge:hover {
@@ -1589,11 +1597,11 @@ img {
 
   .hero-content {
     text-align: center;
-    order: 2;
+    order: 1;
   }
 
   .hero-visual {
-    order: 1;
+    order: 2;
   }
 
   .hero-subtitle {
