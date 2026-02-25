@@ -1,3 +1,33 @@
+## [Phase 49] — AI Autonomy Level Audit (2026-02-24)
+
+### Added
+
+- **`autonomyLevel` field on skills and workflows** — New `AutonomyLevelSchema` enum (`L1`–`L5`) added to `SkillSchema` (default `'L1'`) and `WorkflowDefinitionSchema` (default `'L2'`). Documents the intended human oversight tier for governance purposes; orthogonal to the runtime `automationLevel` field on personality body config.
+- **`emergencyStopProcedure` field on skills and workflows** — Optional text field (max 1000 chars) surfaced in the Emergency Stop Registry for L4/L5 items. Describes exactly how to disable the item in an emergency.
+- **`autonomy_audit_runs` table** (migration `043_autonomy_audit.sql`) — Persisted audit runs with a JSONB `items` array (16 checklist items across four sections: Inventory, Level Assignment Review, Authority & Accountability, Gap Remediation). Each item tracks `status` (`pending | pass | fail | deferred`) and a free-text note.
+- **`AutonomyAuditStorage`** (`packages/core/src/security/autonomy-audit.ts`) — `PgBaseStorage` subclass: `createAuditRun`, `updateAuditItem`, `finalizeRun`, `listAuditRuns`, `getAuditRun`, `getOverview`. `getOverview` queries `soul.skills` and `workflow.definitions` and returns items grouped by autonomy level.
+- **`AutonomyAuditManager`** — Wraps storage with business logic: deep-clones `DEFAULT_CHECKLIST_ITEMS` on run creation, generates structured Markdown + JSON reports on finalization, `emergencyStop(type, id, actor)` disables the target and records an `autonomy_emergency_stop` audit event (severity: warning).
+- **REST API** (`packages/core/src/security/autonomy-routes.ts`) — Seven endpoints at `/api/v1/autonomy/`:
+  - `GET /overview` — skills + workflows grouped by autonomy level
+  - `GET /audits` — list all runs
+  - `POST /audits` — create a run
+  - `GET /audits/:id` — get a run
+  - `PUT /audits/:id/items/:itemId` — mark an item pass / fail / deferred
+  - `POST /audits/:id/finalize` — generate report
+  - `POST /emergency-stop/:type/:id` — disable skill or workflow (requires `admin` role)
+- **Level escalation warning** — PUT skill or workflow now compares `autonomyLevel` before and after. If the level rises (e.g. L2 → L4), the response includes a `warnings[]` array. The dashboard intercepts this and shows a `ConfirmDialog` before the operator proceeds.
+- **Security → Autonomy tab** in `SecurityPage.tsx` — three panels:
+  - **Overview panel** — filterable table of all skills and workflows with colour-coded level badges (L1=green → L5=red). Displays emergency stop procedure text.
+  - **Audit wizard** — step-through form for Sections A–D. Each item has pass / fail / deferred buttons and a note field. Step 5 finalizes and renders the Markdown report.
+  - **Emergency Stop Registry** — L5 items only; red "Emergency Stop" button (disabled unless `role === 'admin'`); confirmation modal before execution.
+- **`autonomyLevel` select + `emergencyStopProcedure` textarea** in `SkillsManager.tsx` form — `emergencyStopProcedure` field is revealed only for L4 and L5.
+- **`AutonomyAuditManager` lazy getter** in `SecureYeoman` — storage is initialized at Step 2.08; the manager is wired lazily on first `getAutonomyAuditManager()` call (after `soulManager` and `workflowManager` are available).
+- **30 unit + route tests** in `packages/core/src/security/autonomy-audit.test.ts` — covers `DEFAULT_CHECKLIST_ITEMS` structure, deep-clone on run creation, `updateAuditItem`, `finalizeRun` report content, `emergencyStop` skill + workflow, and all 7 REST endpoints including 403 for non-admin emergency stop.
+- **`docs/guides/ai-autonomy-audit.md`** — Operator guide: framework overview table, level definitions with SecureYeoman examples, step-by-step audit procedure (Sections A–D), escalation warning model, emergency stop setup, quarterly cadence recommendation.
+- **`docs/adr/130-ai-autonomy-level-audit.md`** — ADR: Status Accepted; context (Phase 48 governance gap), decision (L1–L5 on skills + workflows + audit run system + dashboard), consequences, alternatives considered.
+
+---
+
 ## [Phase Tier2-MA.2] — Docker Build Fix (2026-02-24)
 
 ### Fixed
