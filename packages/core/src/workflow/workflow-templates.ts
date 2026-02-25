@@ -72,6 +72,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreate[] = [
     isEnabled: true,
     version: 1,
     createdBy: 'system',
+    autonomyLevel: 'L2' as const,
   },
 
   // ── 2. Code Review + Webhook Notification ────────────────────
@@ -142,6 +143,7 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreate[] = [
     isEnabled: true,
     version: 1,
     createdBy: 'system',
+    autonomyLevel: 'L2' as const,
   },
 
   // ── 3. Parallel Intelligence Gather ──────────────────────────
@@ -222,5 +224,6 @@ export const BUILTIN_WORKFLOW_TEMPLATES: WorkflowDefinitionCreate[] = [
     isEnabled: true,
     version: 1,
     createdBy: 'system',
+    autonomyLevel: 'L2' as const,
   },
 ];

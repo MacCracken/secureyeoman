@@ -1,3 +1,14 @@
+## [Phase 49.1] — Autonomy Level Build Fixes (2026-02-24)
+
+### Fixed
+
+- **`brain/storage.ts` `rowToSkill` missing `autonomyLevel`** — The brain module's local `rowToSkill` mapper was not updated when `autonomyLevel` was added to `SkillSchema` in Phase 49, causing a `TS2741` compile error. Added `autonomyLevel: 'L1'` default to match the schema default.
+- **`creation-tool-executor.ts` `createSkill` call missing `autonomyLevel`** — The AI skill-creation tool passed an object literal without `autonomyLevel`, triggering `TS2345`. Added `autonomyLevel: 'L1'` so AI-created skills default to the lowest oversight tier.
+- **`workflow-routes.ts` `createDefinition` call missing `autonomyLevel`** — The POST workflow handler passed a creation payload without `autonomyLevel`, triggering `TS2345`. Added `autonomyLevel: 'L2'` matching the schema default for workflows.
+- **`workflow-templates.ts` three template definitions missing `autonomyLevel`** — All three built-in workflow template objects lacked `autonomyLevel`, causing `TS2741` on each. Added `autonomyLevel: 'L2' as const` to each template.
+
+---
+
 ## [Phase 49] — AI Autonomy Level Audit (2026-02-24)
 
 ### Added

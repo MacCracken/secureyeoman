@@ -139,6 +139,7 @@ export async function executeCreationTool(
           enabled: true,
           source: 'ai_learned',
           status: 'active',
+          autonomyLevel: 'L1',
           // Scope to the calling personality so the UI shows the personality name
           // rather than "Global". personalityName is derived by storage from personalityId.
           personalityId: context?.personalityId ?? null,

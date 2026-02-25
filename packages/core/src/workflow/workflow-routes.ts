@@ -74,6 +74,7 @@ export function registerWorkflowRoutes(
           isEnabled: request.body.isEnabled ?? true,
           version: 1,
           createdBy: 'system',
+          autonomyLevel: 'L2',
         });
         return reply.code(201).send({ definition });
       } catch (err) {

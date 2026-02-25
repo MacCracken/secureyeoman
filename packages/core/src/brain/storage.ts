@@ -129,6 +129,8 @@ function rowToSkill(row: SkillRow): Skill {
     personalityId: row.personality_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    // Autonomy classification (Phase 49)
+    autonomyLevel: 'L1',
   };
 }
 
