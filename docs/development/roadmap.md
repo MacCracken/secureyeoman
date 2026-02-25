@@ -20,7 +20,21 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Open
 
-*Add observed bugs here as they are found; mark fixed when resolved.*
+- [ ] Organization intent - still not togglable - edit/create personality
+- [ ] Marketplace and Community - Install displays as installed once it is installed to one personality; user should be able to install to any agent without being confused by the buttons state when user switch 'install to' agent.  This should be dynamic in that if not on global, only items installed to the agent should be displayed as installed.
+- [x] Metrics dashboard - Heartbeat task does not display accurate count of base task count.
+- [x] Metrics dashboard - Tasks today displays all completed tasks not those on the current day.
+- [x] Security dashboard - Task History, historical items for Heartbeat task and regular tasks do not include the personality associated.  User need to understand which personality is generating the log for security & diagnostics purposes.
+
+
+### Improvements
+
+- [ ] Marketplace and Community - add the ability to review the full skill before installation.  Lets give the user the ability to review all necessary items of the skill. 
+- [ ] Security Dashboard - re-org tab view; Overview, Audit Log, Autonomy, ML, Reports, System, Tasks
+- [ ] Tasks History, separation of task and heartbeats into their own subviews.
+- [ ] Tasks and History needs consolidation; remove from Security Dashboard.
+- [ ] Chat (any context) with personality; need to provide time date awareness to the conversasion. Without asking personality to check the time/data for response accuracy.
+
 
 ---
 

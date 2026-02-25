@@ -88,6 +88,8 @@ export const SecurityContextSchema = z.object({
   permissionsUsed: z.array(z.string()),
   ipAddress: z.string().ip().optional(),
   userAgent: z.string().max(512).optional(),
+  personalityId: z.string().optional(),
+  personalityName: z.string().optional(),
 });
 
 export type SecurityContext = z.infer<typeof SecurityContextSchema>;

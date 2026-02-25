@@ -671,7 +671,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                   createdAt: now,
                   ...(status === TaskStatus.COMPLETED ? { completedAt: now, durationMs: 0 } : {}),
                   inputHash: sha256(JSON.stringify(toolCall.arguments ?? {})),
-                  securityContext: { userId: 'ai', role: 'operator', permissionsUsed: [] },
+                  securityContext: {
+                    userId: 'ai',
+                    role: 'operator',
+                    permissionsUsed: [],
+                    personalityId: executionContext.personalityId ?? undefined,
+                    personalityName: executionContext.personalityName ?? undefined,
+                  },
                   timeoutMs: 0,
                 });
               }
@@ -1194,7 +1200,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                     status, createdAt: now,
                     ...(status === TaskStatus.COMPLETED ? { completedAt: now, durationMs: 0 } : {}),
                     inputHash: sha256(JSON.stringify(toolCall.arguments ?? {})),
-                    securityContext: { userId: 'ai', role: 'operator', permissionsUsed: [] },
+                    securityContext: {
+                      userId: 'ai',
+                      role: 'operator',
+                      permissionsUsed: [],
+                      personalityId: executionContextS.personalityId ?? undefined,
+                      personalityName: executionContextS.personalityName ?? undefined,
+                    },
                     timeoutMs: 0,
                   });
                 }

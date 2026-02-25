@@ -1257,6 +1257,7 @@ export class SecureYeoman {
       timestamp: Date.now(),
       tasks: {
         total: taskStats?.total ?? 0,
+        tasksToday: taskStats?.tasksToday ?? 0,
         byStatus: taskStats?.byStatus ?? {},
         byType: taskStats?.byType ?? {},
         successRate: taskStats?.successRate ?? 0,

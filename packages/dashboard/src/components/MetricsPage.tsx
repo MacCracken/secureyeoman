@@ -301,7 +301,7 @@ function OverviewTab({
         />
         <StatCard
           title="Heartbeat"
-          value={heartbeatStatus?.beatCount ?? 0}
+          value={heartbeatTasks.length}
           icon={<Heart className="w-4 h-4 sm:w-5 sm:h-5" />}
           subtitle={`${enabledHb}/${heartbeatTasks.length} tasks`}
           trend={heartbeatRunning ? 'Running' : 'Stopped'}
@@ -316,7 +316,7 @@ function OverviewTab({
         />
         <StatCard
           title="Tasks Today"
-          value={metrics?.tasks?.total ?? 0}
+          value={metrics?.tasks?.tasksToday ?? 0}
           icon={<Activity className="w-4 h-4 sm:w-5 sm:h-5" />}
           trend={
             metrics?.tasks?.successRate

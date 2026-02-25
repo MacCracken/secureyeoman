@@ -188,7 +188,12 @@ export async function executeCreationTool(
                 input: args.input,
                 timeoutMs: task.timeoutMs,
               },
-              { userId: 'ai', role: 'operator' }
+              {
+                userId: 'ai',
+                role: 'operator',
+                personalityId: context?.personalityId ?? undefined,
+                personalityName: context?.personalityName ?? undefined,
+              }
             );
             return { output: { task: executorTask }, isError: false };
           } catch {

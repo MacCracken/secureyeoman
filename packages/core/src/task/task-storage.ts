@@ -73,6 +73,7 @@ export interface TaskFilter {
 
 export interface TaskStats {
   total: number;
+  tasksToday: number;
   byStatus: Record<string, number>;
   byType: Record<string, number>;
   successRate: number;
@@ -273,31 +274,42 @@ export class TaskStorage extends PgBaseStorage {
   // ─── Stats ─────────────────────────────────────────────────
 
   async getStats(): Promise<TaskStats> {
-    const statsRow = await this.queryOne<{
-      total: string;
-      completed: string;
-      failed: string;
-      pending: string;
-      running: string;
-      timeout_count: string;
-      cancelled: string;
-      avg_duration: string | null;
-    }>(
-      `SELECT
-        COUNT(*) as total,
-        SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
-        SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
-        SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
-        SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as running,
-        SUM(CASE WHEN status = 'timeout' THEN 1 ELSE 0 END) as timeout_count,
-        SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
-        AVG(CASE WHEN duration_ms IS NOT NULL THEN duration_ms END) as avg_duration
-      FROM task.tasks`
-    );
+    // Start of today in UTC milliseconds
+    const startOfToday = new Date().setUTCHours(0, 0, 0, 0);
+
+    const [statsRow, todayRow] = await Promise.all([
+      this.queryOne<{
+        total: string;
+        completed: string;
+        failed: string;
+        pending: string;
+        running: string;
+        timeout_count: string;
+        cancelled: string;
+        avg_duration: string | null;
+      }>(
+        `SELECT
+          COUNT(*) as total,
+          SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END) as completed,
+          SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+          SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
+          SUM(CASE WHEN status = 'running' THEN 1 ELSE 0 END) as running,
+          SUM(CASE WHEN status = 'timeout' THEN 1 ELSE 0 END) as timeout_count,
+          SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END) as cancelled,
+          AVG(CASE WHEN duration_ms IS NOT NULL THEN duration_ms END) as avg_duration
+        FROM task.tasks`
+      ),
+      this.queryOne<{ count: string }>(
+        'SELECT COUNT(*) as count FROM task.tasks WHERE created_at >= $1',
+        [startOfToday]
+      ),
+    ]);
 
     if (!statsRow) {
-      return { total: 0, byStatus: {}, byType: {}, successRate: 0, avgDurationMs: 0 };
+      return { total: 0, tasksToday: 0, byStatus: {}, byType: {}, successRate: 0, avgDurationMs: 0 };
     }
+
+    const tasksToday = parseInt(todayRow?.count ?? '0', 10);
 
     const total = parseInt(statsRow.total, 10);
     const completed = parseInt(statsRow.completed, 10);
@@ -324,6 +336,7 @@ export class TaskStorage extends PgBaseStorage {
 
     return {
       total,
+      tasksToday,
       byStatus,
       byType: Object.fromEntries(typeRows.map((r) => [r.type, parseInt(r.count, 10)])),
       successRate: finishedCount > 0 ? completed / finishedCount : 0,

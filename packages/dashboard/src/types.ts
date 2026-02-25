@@ -13,6 +13,7 @@ export interface MetricsSnapshot {
 
 export interface TaskMetrics {
   total: number;
+  tasksToday?: number;
   byStatus: Record<string, number>;
   byType: Record<string, number>;
   successRate: number;
@@ -80,6 +81,12 @@ export interface Task {
       code: string;
       message: string;
     };
+  };
+  securityContext?: {
+    userId?: string;
+    role?: string;
+    personalityId?: string;
+    personalityName?: string;
   };
 }
 

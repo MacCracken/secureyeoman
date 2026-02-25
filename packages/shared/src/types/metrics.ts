@@ -15,6 +15,7 @@ import { SeveritySchema, SecurityEventTypeSchema } from './security.js';
 export const TaskMetricsSchema = z.object({
   // Counters
   total: z.number().int().nonnegative(),
+  tasksToday: z.number().int().nonnegative().optional(),
   byStatus: z.record(TaskStatusSchema, z.number().int().nonnegative()),
   byType: z.record(TaskTypeSchema, z.number().int().nonnegative()),
 

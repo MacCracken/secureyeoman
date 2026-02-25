@@ -638,13 +638,16 @@ export function TaskHistory() {
                 <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">
                   Created
                 </th>
+                <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">
+                  Agent
+                </th>
                 <th className="px-2 py-2 text-left font-medium text-xs w-20">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-2 py-8 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-2 py-8 text-center text-muted-foreground">
                     <Loader2 className="w-6 h-6 mx-auto animate-spin" />
                     <p className="mt-2">Loading tasks...</p>
                   </td>
@@ -653,7 +656,7 @@ export function TaskHistory() {
                 <>
                   {tasks.length === 0 && !heartbeatData?.tasks?.length && (
                     <tr>
-                      <td colSpan={7} className="px-2 py-8 text-center text-muted-foreground">
+                      <td colSpan={8} className="px-2 py-8 text-center text-muted-foreground">
                         No tasks found
                       </td>
                     </tr>
@@ -672,7 +675,7 @@ export function TaskHistory() {
                     <>
                       <tr className="bg-muted/30">
                         <td
-                          colSpan={7}
+                          colSpan={8}
                           className="px-2 py-2 text-xs font-medium text-muted-foreground"
                         >
                           Heartbeat Tasks
@@ -790,6 +793,15 @@ function TaskRow({
       </td>
       <td className="px-2 py-3 text-muted-foreground text-xs hidden sm:table-cell">
         {formatTime(task.createdAt)}
+      </td>
+      <td className="px-2 py-3 text-xs hidden md:table-cell">
+        {task.securityContext?.personalityName ? (
+          <span className="text-muted-foreground">{task.securityContext.personalityName}</span>
+        ) : task.securityContext?.userId && task.securityContext.userId !== 'api' ? (
+          <span className="text-muted-foreground font-mono">{task.securityContext.userId}</span>
+        ) : (
+          <span className="text-muted-foreground/40">—</span>
+        )}
       </td>
       <td className="px-2 py-3">
         <div className="flex items-center gap-1">
@@ -934,15 +946,16 @@ function HeartbeatTaskRow({ task }: { task: HeartbeatTask }) {
         <td className="px-2 py-3 text-muted-foreground text-xs hidden sm:table-cell">
           {formatTime(task.lastRunAt)}
         </td>
-        <td className="px-2 py-3">
-          <span className="text-xs text-muted-foreground italic">
-            {task.personalityName ? `Managed by ${task.personalityName}` : 'Managed by Personality'}
+        <td className="px-2 py-3 hidden md:table-cell">
+          <span className="text-xs text-muted-foreground">
+            {task.personalityName ?? task.personalities?.[0]?.name ?? '—'}
           </span>
         </td>
+        <td className="px-2 py-3" />
       </tr>
       {expanded && (
         <tr className="bg-muted/10">
-          <td colSpan={7} className="px-4 pb-3 pt-1">
+          <td colSpan={8} className="px-4 pb-3 pt-1">
             <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
               Recent Executions
             </div>

@@ -45,6 +45,8 @@ export interface ExecutionContext {
   ipAddress?: string;
   userAgent?: string;
   aiClient?: import('../ai/client.js').AIClient;
+  personalityId?: string;
+  personalityName?: string;
 }
 
 export interface TaskHandler {
@@ -208,6 +210,8 @@ export class TaskExecutor {
         permissionsUsed: handler.requiredPermissions.map((p) => `${p.resource}:${p.action}`),
         ipAddress: context.ipAddress,
         userAgent: context.userAgent,
+        personalityId: context.personalityId,
+        personalityName: context.personalityName,
       },
     };
 
