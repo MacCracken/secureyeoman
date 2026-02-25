@@ -1,3 +1,67 @@
+## [2026.2.25-tls2] — 2026-02-25
+
+### TLS via Env Vars, MCP HTTPS Fix, Dashboard Local-Network Guard Removed
+
+### Added
+
+- **TLS gateway config via env vars** — All gateway TLS settings are now controllable through environment variables, eliminating the need for a `secureyeoman.yaml` file for the common TLS dev setup. New vars: `SECUREYEOMAN_TLS_ENABLED`, `SECUREYEOMAN_TLS_CERT_PATH`, `SECUREYEOMAN_TLS_KEY_PATH`, `SECUREYEOMAN_TLS_CA_PATH`, `SECUREYEOMAN_TLS_AUTO_GENERATE`, `SECUREYEOMAN_ALLOW_REMOTE_ACCESS`, `SECUREYEOMAN_CORS_ORIGINS`. Env vars override yaml config; yaml still works for advanced use.
+- **MCP `CoreApiClient` HTTPS dispatcher** — `core-client.ts` now creates a per-connection undici `Agent` with `rejectUnauthorized: false` specifically for MCP→core HTTPS traffic. This allows MCP to reach the core when the TLS cert is for a public hostname (e.g. `dev.example.com`) without needing `NODE_TLS_REJECT_UNAUTHORIZED=0` globally. All other HTTPS calls (web tools, external APIs) still verify certificates normally.
+
+### Fixed
+
+- **Dashboard client-side `isLocalNetwork` guard removed** — `DashboardLayout.tsx` had a frontend hostname check that blocked access from any hostname not in a hardcoded RFC 1918 / `localhost` list (e.g. `dev.secureyeoman.ai` or any custom hostname). This was redundant with the server-side guard and incorrectly blocked valid `allowRemoteAccess` deployments. Removed. Access control is now entirely server-side.
+
+### Changed
+
+- **`secureyeoman.yaml` no longer required for TLS dev setup** — The `./secureyeoman.yaml:/app/secureyeoman.yaml:ro` bind mount removed from `docker-compose.yml`. All TLS, remote-access, and CORS config now flows via `.env.dev`. The yaml file still works for advanced/production config if present at any of the standard search paths.
+- **`NODE_TLS_REJECT_UNAUTHORIZED=0` removed** — No longer needed in `.env.dev` or `docker-compose.yml` environment section. The MCP client handles this internally per-connection.
+
+---
+
+## [2026.2.25-tls] — 2026-02-25
+
+### Remote Access, Dual HTTP/HTTPS & IPv6-mapped IP Fix
+
+### Added
+
+- **`gateway.allowRemoteAccess`** — New boolean config option (default `false`). When `true`, bypasses the local-network-only guard so the gateway is reachable from public/routable IPs. Intended for enterprise deployments with a wildcard or CA-signed TLS cert. Without TLS, the default remains local-only. SecureYeoman stays **local-first** — this is an explicit opt-in only.
+- **`VITE_GATEWAY_URL` / `MCP_CORE_URL` in `.env.dev`** — Gateway URLs are set directly in `.env.dev` (e.g. `https://core:18789`) rather than via a `GATEWAY_SCHEME` interpolation variable. Docker Compose variable substitution only reads from the host shell or root `.env`, not from `env_file:` — setting the full URLs directly avoids this footgun.
+- **Dual-protocol Docker healthcheck** — `core` container healthcheck tries HTTPS first (`NODE_TLS_REJECT_UNAUTHORIZED=0 node … health --url https://...`), falls back to HTTP. Works in both plain and TLS configurations without changes.
+- **`secureyeoman.yaml` local config file** — Documented pattern for machine-specific config (TLS paths, remote access, CORS origins) via a gitignored `secureyeoman.yaml` at the repo root, bind-mounted into the `core` container.
+- **`certs/` bind mount in docker-compose** — `core` service mounts `./certs:/app/certs:ro` and `./secureyeoman.yaml:/app/secureyeoman.yaml:ro` so cert files and local config are available at runtime without baking them into the image.
+- **`NODE_TLS_REJECT_UNAUTHORIZED=0` for MCP container** — MCP service uses Node.js native `fetch()` to reach core; when core serves HTTPS with a hostname-specific cert (e.g. `dev.secureyeoman.ai`), inter-container traffic to `https://core:18789` fails hostname validation. Dev-only workaround in `docker-compose.yml`. Does not affect production where the cert hostname matches or where the MCP service reaches core via a matching hostname.
+
+### Fixed
+
+- **IPv6-mapped IPv4 addresses blocked by local-network guard** — `isPrivateIP()` in `gateway/server.ts` did not handle `::ffff:`-prefixed addresses (e.g. `::ffff:172.20.0.3`), causing Docker inter-container requests to be rejected as non-local. Strips the `::ffff:` prefix before the RFC 1918 range checks.
+- **Duplicate `MCP_CORE_URL` in `.env.dev`** — The URL was declared twice (once for HTTPS at the top, once for HTTP in the MCP section). The later value always won, silently reverting to HTTP. Removed the duplicate; a single `MCP_CORE_URL` now lives at the top of the file.
+
+---
+
+
+
+### Dev HTTPS & Wildcard Certificate Support
+
+### Added
+
+- **Vite dev server HTTPS** — `vite.config.ts` now reads `VITE_TLS_CERT` and `VITE_TLS_KEY` from `.env.dev` (via `loadEnv`) to serve the dashboard over HTTPS in development. Cert paths are resolved relative to the repo root.
+- **`VITE_ALLOWED_HOSTS` support** — Vite's `allowedHosts` is driven by `VITE_ALLOWED_HOSTS` (comma-separated) in `.env.dev`, keeping custom hostnames out of version control.
+- **Gateway TLS config** — `gateway.tls.certPath`, `keyPath`, `caPath` documented for wildcard/ACM cert use. `certs/` directory gitignored.
+
+### Fixed
+
+- **Encrypted ACM private key** — AWS ACM exports private keys with a passphrase. The dev server would fail with `bad decrypt` if the encrypted key was passed directly. Documented `openssl rsa` decrypt step; `.env.dev` now points to `certs/private_key_decrypted.txt`.
+- **`loadEnv` not reading `.env.dev` in container** — `vite.config.ts` previously used `process.env` directly, missing file-based env vars inside the Docker `dashboard-dev` container. Switched to `loadEnv(mode, repoRoot, '')` merged with `process.env` (process env takes priority, preserving Docker-injected `VITE_GATEWAY_URL`).
+- **Duplicate `buildFrontMatter` export in MCP** — `web-tools.ts` exported `buildFrontMatter` both via `export { buildFrontMatter }` (re-export from utils) and in the bottom `export {}` block, causing `TS2300` and breaking the MCP build.
+
+### Documentation
+
+- `docs/guides/tls-certificates.md` — Added AWS ACM wildcard cert setup, encrypted key decrypt instructions, and Vite dev server HTTPS section.
+- `docs/configuration.md` — Added `VITE_GATEWAY_URL`, `VITE_HOST`, `VITE_ALLOWED_HOSTS`, `VITE_TLS_CERT`, `VITE_TLS_KEY` env var reference.
+- `.env.dev.example` / `.env.example` — Added `VITE_ALLOWED_HOSTS`, `VITE_TLS_CERT`, `VITE_TLS_KEY` with placeholder values.
+
+---
+
 ## [2026.2.25] — 2026-02-25
 
 ### Phase XX.8 — Memory, Performance & Code Quality Sprint

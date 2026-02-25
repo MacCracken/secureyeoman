@@ -105,10 +105,20 @@ SecureYeoman supports three network modes, selectable via `config.yml`. The **Ab
 | **LAN** | `0.0.0.0` | `false` | Network (No TLS) ⚠️ | Trusted internal network |
 | **Public** | `0.0.0.0` | `true` | Public (TLS Secured) | Internet / remote team |
 
-**Enabling public access** (`config.yml`):
+**Enabling public access** (via environment variables):
+```bash
+SECUREYEOMAN_TLS_ENABLED=true
+SECUREYEOMAN_TLS_CERT_PATH=/etc/ssl/certs/server.crt
+SECUREYEOMAN_TLS_KEY_PATH=/etc/ssl/private/server.key
+SECUREYEOMAN_ALLOW_REMOTE_ACCESS=true
+SECUREYEOMAN_CORS_ORIGINS=https://your-domain.example.com
+```
+
+Or via `secureyeoman.yaml`:
 ```yaml
 gateway:
   host: "0.0.0.0"
+  allowRemoteAccess: true
   tls:
     enabled: true
     certPath: "/etc/ssl/certs/server.crt"

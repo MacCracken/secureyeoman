@@ -1,7 +1,7 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Lock, Loader2, Menu } from 'lucide-react';
+import { Loader2, Menu } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useSidebar } from '../hooks/useSidebar';
 import { useWebSocket } from '../hooks/useWebSocket';
@@ -57,19 +57,8 @@ export function DashboardLayout() {
   const { logout } = useAuth();
   const { collapsed, setMobileOpen } = useSidebar();
 
-  // Local network check
-  const [isLocalNetwork, setIsLocalNetwork] = useState(true);
-  useEffect(() => {
-    const hostname = window.location.hostname;
-    const isLocal =
-      hostname === 'localhost' ||
-      hostname === '127.0.0.1' ||
-      hostname.startsWith('192.168.') ||
-      hostname.startsWith('10.') ||
-      hostname.startsWith('172.16.') ||
-      hostname.endsWith('.local');
-    setIsLocalNetwork(isLocal);
-  }, []);
+  // Network access is enforced server-side by the gateway (allowRemoteAccess config).
+  // No client-side hostname check — it can't know about gateway config or custom hostnames.
 
   // Data queries
   const { data: health, error: healthError } = useQuery({
@@ -99,20 +88,6 @@ export function DashboardLayout() {
           void refetchOnboarding();
         }}
       />
-    );
-  }
-
-  if (!isLocalNetwork) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="card max-w-md p-8 text-center">
-          <Lock className="w-16 h-16 mx-auto text-destructive mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Access Denied</h1>
-          <p className="text-muted-foreground">
-            The SecureYeoman Dashboard is only accessible from the local network.
-          </p>
-        </div>
-      </div>
     );
   }
 

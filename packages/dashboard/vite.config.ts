@@ -4,7 +4,7 @@ import { resolve } from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  const env = loadEnv(mode, resolve(__dirname, '../..'), '');
+  const env = { ...loadEnv(mode, resolve(__dirname, '../..'), ''), ...process.env };
   const GATEWAY_URL = env.VITE_GATEWAY_URL || 'http://127.0.0.1:18789';
   const allowedHosts = env.VITE_ALLOWED_HOSTS ? env.VITE_ALLOWED_HOSTS.split(',') : [];
 
@@ -38,6 +38,7 @@ export default defineConfig(({ mode }) => {
         '/api': {
           target: GATEWAY_URL,
           changeOrigin: true,
+          secure: false,
           configure: (proxy) => {
             proxy.on('error', (err, _req, res) => {
               console.error('[vite proxy /api] error:', err.message);
@@ -53,19 +54,23 @@ export default defineConfig(({ mode }) => {
         '/terminal': {
           target: `${GATEWAY_URL}/api/v1/terminal`,
           changeOrigin: true,
+          secure: false,
           rewrite: (path) => path.replace(/^\/terminal/, ''),
         },
         '/health': {
           target: GATEWAY_URL,
           changeOrigin: true,
+          secure: false,
         },
         '/prom': {
           target: GATEWAY_URL,
           changeOrigin: true,
+          secure: false,
         },
         '/ws': {
-          target: GATEWAY_URL.replace('http', 'ws'),
+          target: GATEWAY_URL.replace('https', 'wss').replace('http', 'ws'),
           ws: true,
+          secure: false,
           configure: (proxy) => {
             // Suppress transient ECONNREFUSED / ENOTFOUND errors that occur while
             // the core container is starting up or being recreated.  Any other

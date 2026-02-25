@@ -185,6 +185,38 @@ function loadEnvConfig(): PartialConfig {
       gateway.port = port;
     }
   }
+  if (process.env.SECUREYEOMAN_ALLOW_REMOTE_ACCESS) {
+    gateway.allowRemoteAccess = process.env.SECUREYEOMAN_ALLOW_REMOTE_ACCESS === 'true';
+  }
+
+  // TLS gateway settings
+  const tls: Record<string, unknown> = {};
+  if (process.env.SECUREYEOMAN_TLS_ENABLED) {
+    tls.enabled = process.env.SECUREYEOMAN_TLS_ENABLED === 'true';
+  }
+  if (process.env.SECUREYEOMAN_TLS_CERT_PATH) {
+    tls.certPath = process.env.SECUREYEOMAN_TLS_CERT_PATH;
+  }
+  if (process.env.SECUREYEOMAN_TLS_KEY_PATH) {
+    tls.keyPath = process.env.SECUREYEOMAN_TLS_KEY_PATH;
+  }
+  if (process.env.SECUREYEOMAN_TLS_CA_PATH) {
+    tls.caPath = process.env.SECUREYEOMAN_TLS_CA_PATH;
+  }
+  if (process.env.SECUREYEOMAN_TLS_AUTO_GENERATE) {
+    tls.autoGenerate = process.env.SECUREYEOMAN_TLS_AUTO_GENERATE === 'true';
+  }
+  if (Object.keys(tls).length > 0) {
+    gateway.tls = tls;
+  }
+
+  // CORS origins (comma-separated)
+  if (process.env.SECUREYEOMAN_CORS_ORIGINS) {
+    gateway.cors = {
+      origins: process.env.SECUREYEOMAN_CORS_ORIGINS.split(',').map((o) => o.trim()),
+    };
+  }
+
   if (Object.keys(gateway).length > 0) {
     config.gateway = gateway as PartialConfig['gateway'];
   }

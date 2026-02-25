@@ -57,5 +57,8 @@ pino-*.log
 # Certs
 certs/
 
+# Local config (machine-specific TLS paths etc.)
+secureyeoman.yaml
+
 # Community skills — managed via bind mount in Docker; lives in secureyeoman-community-skills repo
 community-skills/

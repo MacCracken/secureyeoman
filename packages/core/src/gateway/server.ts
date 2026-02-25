@@ -76,12 +76,15 @@ import { VERSION } from '../version.js';
  * Covers 127.0.0.0/8, ::1, 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16.
  */
 function isPrivateIP(ip: string): boolean {
-  if (ip === '127.0.0.1' || ip === '::1' || ip === 'localhost') return true;
-  if (ip.startsWith('10.') || ip.startsWith('192.168.')) return true;
+  // Strip IPv6-mapped IPv4 prefix (e.g. ::ffff:172.20.0.3 → 172.20.0.3)
+  const addr = ip.startsWith('::ffff:') ? ip.slice(7) : ip;
+
+  if (addr === '127.0.0.1' || addr === '::1' || addr === 'localhost') return true;
+  if (addr.startsWith('10.') || addr.startsWith('192.168.')) return true;
 
   // 172.16.0.0/12 → second octet 16–31
-  if (ip.startsWith('172.')) {
-    const secondOctet = Number(ip.split('.')[1]);
+  if (addr.startsWith('172.')) {
+    const secondOctet = Number(addr.split('.')[1]);
     if (secondOctet >= 16 && secondOctet <= 31) return true;
   }
 
@@ -202,6 +205,9 @@ export class GatewayServer {
 
     // Local network check middleware
     this.app.addHook('onRequest', async (request, reply) => {
+      // Skip check entirely when remote access is explicitly allowed (e.g. enterprise TLS deployment)
+      if (this.config.allowRemoteAccess) return;
+
       const ip = request.ip;
 
       // Allow localhost and private network ranges (RFC 1918 + loopback)

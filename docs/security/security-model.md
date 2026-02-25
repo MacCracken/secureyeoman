@@ -249,6 +249,21 @@ rate_limiting:
       on_exceed: block_30m
 ```
 
+#### Local Network Guard
+
+By default the gateway rejects all requests from non-private IP addresses with `403 Access Denied`. Permitted ranges are RFC 1918 (`10.x`, `172.16–31.x`, `192.168.x`) and loopback (`127.0.0.1`, `::1`). IPv6-mapped IPv4 addresses (`::ffff:x.x.x.x`) are unwrapped before the range check.
+
+To allow access from public/routable IPs (e.g. enterprise deployments with a wildcard cert), set:
+
+```yaml
+gateway:
+  allowRemoteAccess: true
+  tls:
+    enabled: true
+```
+
+> **Never enable `allowRemoteAccess` without TLS.** Accepting credentials over plain HTTP on a public network exposes session tokens to interception.
+
 #### HTTP Security Headers
 
 The gateway sets the following headers on every response automatically:

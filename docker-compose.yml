@@ -30,6 +30,7 @@ services:
     volumes:
       - data:/home/secureyeoman/.secureyeoman
       - community-skills:/usr/share/secureyeoman/community-skills
+      - ./certs:/app/certs:ro
     env_file: .env.dev
     environment:
       SECUREYEOMAN_HOST: "0.0.0.0"
@@ -45,7 +46,7 @@ services:
       GMAIL_OAUTH_CLIENT_ID: ${GMAIL_OAUTH_CLIENT_ID:-}
       GMAIL_OAUTH_CLIENT_SECRET: ${GMAIL_OAUTH_CLIENT_SECRET:-}
     healthcheck:
-      test: ["CMD", "node", "/app/packages/core/dist/cli.js", "health", "--url", "http://127.0.0.1:18789", "--json"]
+      test: ["CMD-SHELL", "NODE_TLS_REJECT_UNAUTHORIZED=0 node /app/packages/core/dist/cli.js health --url https://127.0.0.1:18789 --json 2>/dev/null || node /app/packages/core/dist/cli.js health --url http://127.0.0.1:18789 --json"]
       interval: 30s
       timeout: 5s
       retries: 3
@@ -70,7 +71,7 @@ services:
       MCP_HOST: "0.0.0.0"
       MCP_TRANSPORT: "${MCP_TRANSPORT:-streamable-http}"
       MCP_AUTO_REGISTER: "${MCP_AUTO_REGISTER:-true}"
-      MCP_CORE_URL: "http://core:18789"
+      # MCP_CORE_URL set via env_file (.env.dev) — defaults to http, override to https when TLS enabled
       MCP_ADVERTISE_URL: "http://mcp:3001"
       MCP_EXPOSE_FILESYSTEM: "${MCP_EXPOSE_FILESYSTEM:-false}"
       MCP_ALLOWED_PATHS: "${MCP_ALLOWED_PATHS:-}"
@@ -104,8 +105,9 @@ services:
       - .:/app
       - node-modules:/app/node_modules
       - dashboard-node-modules:/app/packages/dashboard/node_modules
+    env_file: .env.dev
     environment:
-      VITE_GATEWAY_URL: "http://core:18789"
+      # VITE_GATEWAY_URL set via env_file (.env.dev) — defaults to http, override to https when TLS enabled
       VITE_HOST: "0.0.0.0"
     depends_on:
       core:

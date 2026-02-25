@@ -417,9 +417,10 @@ Policy toggles are managed via the Security Settings page in the dashboard or th
 |-------|------|---------|-------------|
 | `host` | string | `"127.0.0.1"` | Bind address (local-only by default) |
 | `port` | number | `18789` | HTTP port (1024–65535) |
+| `allowRemoteAccess` | boolean | `false` | Allow access from non-local (public/routable) IP addresses. Disabled by default — the gateway only accepts RFC 1918 private ranges and loopback. Enable when TLS is active and the gateway is reachable via a proper hostname/cert (e.g. enterprise wildcard cert). **Always pair with `tls.enabled: true`.** |
 | `tls.enabled` | boolean | `false` | Enable TLS/HTTPS |
 | `tls.certPath` | string | — | Path to server certificate PEM |
-| `tls.keyPath` | string | — | Path to server private key PEM |
+| `tls.keyPath` | string | — | Path to **unencrypted** server private key PEM. AWS ACM keys must be decrypted with `openssl rsa` before use. |
 | `tls.caPath` | string | — | Path to CA certificate PEM (enables mTLS when set) |
 | `tls.autoGenerate` | boolean | `false` | Auto-generate a self-signed CA + server certificate in `~/.secureyeoman/dev-certs/` when `tls.enabled` is `true` and no cert files exist. Equivalent to the `--tls` CLI flag. Not for production use. |
 | `auth.tokenExpirySeconds` | number | `3600` | JWT access token lifetime |
@@ -1130,8 +1131,15 @@ All security-sensitive values are referenced by environment variable name in the
 | `OLLAMA_BASE_URL` | Optional | Ollama server URL (default: `http://localhost:11434`) |
 | `OPENCODE_API_KEY` | One AI key required | OpenCode Zen API key |
 | `SECUREYEOMAN_PORT` | No | Gateway port override |
-| `SECUREYEOMAN_HOST` | No | Gateway host override |
+| `SECUREYEOMAN_HOST` | No | Gateway bind address override |
 | `SECUREYEOMAN_LOG_LEVEL` | No | Log level override |
+| `SECUREYEOMAN_TLS_ENABLED` | No | Enable HTTPS on the gateway (`true`/`false`, default `false`) |
+| `SECUREYEOMAN_TLS_CERT_PATH` | No | Path to TLS certificate file (PEM) |
+| `SECUREYEOMAN_TLS_KEY_PATH` | No | Path to TLS private key file (unencrypted PEM) |
+| `SECUREYEOMAN_TLS_CA_PATH` | No | Path to CA cert for mTLS client verification (use with care — enables mutual TLS) |
+| `SECUREYEOMAN_TLS_AUTO_GENERATE` | No | Auto-generate a self-signed dev cert if no cert/key are provided (`true`/`false`) |
+| `SECUREYEOMAN_ALLOW_REMOTE_ACCESS` | No | Allow connections from non-RFC-1918 IPs (`true`/`false`, default `false`); always pair with TLS |
+| `SECUREYEOMAN_CORS_ORIGINS` | No | Comma-separated list of allowed CORS origins (e.g. `https://app.example.com`) |
 | `SECUREYEOMAN_AUTH_LOGIN_MAX_ATTEMPTS` | No | Max login attempts per IP before lockout (default: `5`) |
 | `SECUREYEOMAN_AUTH_LOGIN_WINDOW_MS` | No | Login rate-limit window in ms (default: `900000` = 15 min) |
 | `NODE_ENV` | No | Node environment (`development`, `production`) |
@@ -1191,3 +1199,10 @@ All security-sensitive values are referenced by environment variable name in the
 | `AGNOSTIC_EMAIL` | No | Agnostic email for JWT auth (fallback when `AGNOSTIC_API_KEY` is not set) |
 | `AGNOSTIC_PASSWORD` | No | Agnostic password for JWT auth (fallback when `AGNOSTIC_API_KEY` is not set) |
 | `AGNOSTIC_PATH` | No | Absolute path to the Agnostic Docker Compose project directory (auto-detected when not set) |
+| **Dashboard Dev Server** | | |
+| `VITE_GATEWAY_URL` | No | Gateway URL for Vite dev server proxy (default: `http://127.0.0.1:18789`). Set to `https://core:18789` in `.env.dev` when TLS is enabled. |
+| `MCP_CORE_URL` | No | URL the MCP service uses to reach the core gateway (default: `http://127.0.0.1:18789`). Set to `https://core:18789` in `.env.dev` when TLS is enabled. The MCP client skips hostname verification for HTTPS core connections automatically. |
+| `VITE_HOST` | No | Host the Vite dev server binds to (default: `0.0.0.0`) |
+| `VITE_ALLOWED_HOSTS` | No | Comma-separated hostnames the Vite dev server accepts (e.g. `dev.yourdomain.com`). Set in `.env.dev` (gitignored). |
+| `VITE_TLS_CERT` | No | Path to PEM cert for Vite dev server HTTPS, relative to repo root (e.g. `certs/certificate.txt`). Set in `.env.dev`. |
+| `VITE_TLS_KEY` | No | Path to **unencrypted** PEM private key for Vite dev server HTTPS, relative to repo root. Set in `.env.dev`. |

@@ -786,7 +786,6 @@ export {
   stripHtmlTags,
   safeFetch,
   parseFrontMatter,
-  buildFrontMatter,
   ContentSignalBlockedError,
   estimateTokens,
 };

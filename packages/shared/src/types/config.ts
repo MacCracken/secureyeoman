@@ -438,6 +438,13 @@ export const GatewayConfigSchema = z.object({
   auth: AuthConfigSchema,
   /** Maximum simultaneous WebSocket connections. Oldest idle client is evicted when exceeded. */
   maxWsClients: z.number().int().min(1).default(100),
+  /**
+   * Allow access from non-local (public/routable) IP addresses.
+   * Disabled by default — the gateway only accepts connections from RFC 1918
+   * private ranges and loopback. Enable when TLS is active and the gateway is
+   * reachable via a proper hostname/cert (e.g. enterprise wildcard cert).
+   */
+  allowRemoteAccess: z.boolean().default(false),
 });
 
 export type GatewayConfig = z.infer<typeof GatewayConfigSchema>;
