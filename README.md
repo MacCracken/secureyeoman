@@ -10,7 +10,11 @@
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 [![Kubernetes](https://img.shields.io/badge/Kubernetes-Helm-326CE5.svg)](https://helm.sh/)
 
-> Your AI Security Yeoman — a secure, privacy-first AI assistant with enterprise-grade protection and comprehensive observability. Runs locally by default; configurable for LAN or public deployment.
+> Cloud AI made intelligence cheap. It also made everyone a tenant.
+>
+> SecureYeoman inverts the model: a sovereign AI that runs on your infrastructure, under your governance, with your data going nowhere. No cloud rent. No behavioral extraction. No AI that answers to someone else.
+>
+> A yeoman owns their land. So should you.
 
 Ships with the default Agent Personality **F.R.I.D.A.Y.**:
 

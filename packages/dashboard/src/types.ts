@@ -378,6 +378,43 @@ export interface MarketplaceSkill {
   updatedAt: number;
 }
 
+// ─── Autonomy Level (Phase 49) ──────────────────────────────
+export type AutonomyLevel = 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
+export type AuditItemStatus = 'pending' | 'pass' | 'fail' | 'deferred';
+
+export interface AutonomyOverviewItem {
+  id: string;
+  name: string;
+  type: 'skill' | 'workflow';
+  autonomyLevel: AutonomyLevel;
+  emergencyStopProcedure?: string;
+}
+
+export interface AutonomyOverview {
+  byLevel: Record<AutonomyLevel, AutonomyOverviewItem[]>;
+  totals: Record<AutonomyLevel, number>;
+}
+
+export interface ChecklistItem {
+  id: string;
+  section: 'A' | 'B' | 'C' | 'D';
+  text: string;
+  status: AuditItemStatus;
+  note: string;
+}
+
+export interface AuditRun {
+  id: string;
+  name: string;
+  status: string;
+  items: ChecklistItem[];
+  reportMarkdown?: string;
+  reportJson?: unknown;
+  createdBy?: string;
+  createdAt: number;
+  completedAt?: number;
+}
+
 export interface Skill {
   id: string;
   name: string;
@@ -392,6 +429,9 @@ export interface Skill {
   mcpToolsAllowed?: string[];
   routing?: 'fuzzy' | 'explicit';
   linkedWorkflowId?: string | null;
+  // Autonomy (Phase 49)
+  autonomyLevel?: AutonomyLevel;
+  emergencyStopProcedure?: string;
   enabled: boolean;
   source: 'user' | 'ai_proposed' | 'ai_learned' | 'marketplace' | 'community';
   status: 'active' | 'pending_approval' | 'disabled';
@@ -417,6 +457,9 @@ export interface SkillCreate {
   mcpToolsAllowed?: string[];
   routing?: 'fuzzy' | 'explicit';
   linkedWorkflowId?: string | null;
+  // Autonomy (Phase 49)
+  autonomyLevel?: AutonomyLevel;
+  emergencyStopProcedure?: string;
   enabled?: boolean;
   source?: Skill['source'];
   status?: Skill['status'];

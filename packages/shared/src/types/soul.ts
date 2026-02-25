@@ -366,6 +366,21 @@ export type CodeAction = z.infer<typeof CodeActionSchema>;
 export type HttpAction = z.infer<typeof HttpActionSchema>;
 export type ShellAction = z.infer<typeof ShellActionSchema>;
 
+// ─── Autonomy Level ───────────────────────────────────────────
+
+/**
+ * L1–L5 autonomy classification (governance/documentation only).
+ * Separate from automationLevel (runtime queue behavior).
+ *
+ * L1 Human does — AI only assists on request
+ * L2 Collaborative — AI proposes, human decides
+ * L3 Supervised — AI acts, human reviews results
+ * L4 Delegated — AI acts autonomously, human audits periodically
+ * L5 Fully autonomous — AI acts; humans receive notifications only
+ */
+export const AutonomyLevelSchema = z.enum(['L1', 'L2', 'L3', 'L4', 'L5']);
+export type AutonomyLevel = z.infer<typeof AutonomyLevelSchema>;
+
 // ─── Skill ────────────────────────────────────────────────────
 
 export const SkillSourceSchema = z.enum([
@@ -395,6 +410,10 @@ export const SkillSchema = z.object({
   mcpToolsAllowed: z.array(z.string()).default([]),
   routing: z.enum(['fuzzy', 'explicit']).default('fuzzy'),
   linkedWorkflowId: z.string().nullable().optional(),
+
+  // Autonomy classification (Phase 49)
+  autonomyLevel: AutonomyLevelSchema.default('L1'),
+  emergencyStopProcedure: z.string().max(1000).optional(),
 
   // Actions (ADR 021)
   actions: z.array(SkillActionSchema).default([]),

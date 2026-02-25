@@ -132,6 +132,7 @@ import { DynamicToolStorage } from './soul/dynamic-tool-storage.js';
 import { DynamicToolManager } from './soul/dynamic-tool-manager.js';
 import { IntentStorage } from './intent/storage.js';
 import { IntentManager } from './intent/manager.js';
+import { AutonomyAuditStorage, AutonomyAuditManager } from './security/autonomy-audit.js';
 import { SystemPreferencesStorage } from './config/system-preferences-storage.js';
 import { GroupChatStorage } from './integrations/group-chat-storage.js';
 import { RoutingRulesStorage } from './integrations/routing-rules-storage.js';
@@ -233,6 +234,8 @@ export class SecureYeoman {
   private dynamicToolManager: DynamicToolManager | null = null;
   private intentStorage: IntentStorage | null = null;
   private intentManager: IntentManager | null = null;
+  private autonomyAuditStorage: AutonomyAuditStorage | null = null;
+  private autonomyAuditManager: AutonomyAuditManager | null = null;
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
@@ -337,6 +340,9 @@ export class SecureYeoman {
         await this.intentManager.initialize();
         this.logger.debug('IntentManager initialized');
       }
+
+      // Step 2.08: Initialize AutonomyAuditStorage (manager is wired lazily via getter)
+      this.autonomyAuditStorage = new AutonomyAuditStorage();
 
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
@@ -1799,6 +1805,24 @@ export class SecureYeoman {
   getIntentManager(): IntentManager | null {
     this.ensureInitialized();
     return this.intentManager;
+  }
+
+  /**
+   * Get the autonomy audit manager (always available when initialized).
+   * Manager is wired lazily so all dependencies (soul, workflow, audit) are available.
+   */
+  getAutonomyAuditManager(): AutonomyAuditManager | null {
+    this.ensureInitialized();
+    if (!this.autonomyAuditStorage) return null;
+    if (!this.autonomyAuditManager) {
+      this.autonomyAuditManager = new AutonomyAuditManager(
+        this.autonomyAuditStorage,
+        this.soulManager,
+        this.workflowManager,
+        this.auditChain
+      );
+    }
+    return this.autonomyAuditManager;
   }
 
   getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null {

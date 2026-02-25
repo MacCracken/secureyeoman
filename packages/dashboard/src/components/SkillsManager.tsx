@@ -55,6 +55,7 @@ export function SkillsManager() {
   const [filterSource, setFilterSource] = useState<string>('');
   const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
   const [saveWarnings, setSaveWarnings] = useState<string[]>([]);
+  const [escalationWarning, setEscalationWarning] = useState<string | null>(null);
   const [form, setForm] = useState<SkillCreate>({
     name: '',
     description: '',
@@ -68,6 +69,8 @@ export function SkillsManager() {
     mcpToolsAllowed: [],
     routing: 'fuzzy',
     linkedWorkflowId: null,
+    autonomyLevel: 'L1',
+    emergencyStopProcedure: '',
   });
   const [triggerInput, setTriggerInput] = useState('');
   const [mcpToolsInput, setMcpToolsInput] = useState('');
@@ -91,7 +94,10 @@ export function SkillsManager() {
     onSuccess: (res) => {
       invalidate();
       setEditing(null);
-      setSaveWarnings((res as { warnings?: string[] }).warnings ?? []);
+      const allWarnings = (res as { warnings?: string[] }).warnings ?? [];
+      const escalation = allWarnings.find((w) => w.includes('Autonomy escalated'));
+      setSaveWarnings(allWarnings.filter((w) => !w.includes('Autonomy escalated')));
+      if (escalation) setEscalationWarning(escalation);
     },
   });
 
@@ -100,7 +106,10 @@ export function SkillsManager() {
     onSuccess: (res) => {
       invalidate();
       setEditing(null);
-      setSaveWarnings((res as { warnings?: string[] }).warnings ?? []);
+      const allWarnings = (res as { warnings?: string[] }).warnings ?? [];
+      const escalation = allWarnings.find((w) => w.includes('Autonomy escalated'));
+      setSaveWarnings(allWarnings.filter((w) => !w.includes('Autonomy escalated')));
+      if (escalation) setEscalationWarning(escalation);
     },
   });
 
@@ -166,10 +175,13 @@ export function SkillsManager() {
       mcpToolsAllowed: s.mcpToolsAllowed ?? [],
       routing: s.routing ?? 'fuzzy',
       linkedWorkflowId: s.linkedWorkflowId ?? null,
+      autonomyLevel: s.autonomyLevel ?? 'L1',
+      emergencyStopProcedure: s.emergencyStopProcedure ?? '',
     });
     setTriggerInput(s.triggerPatterns.join(', '));
     setMcpToolsInput((s.mcpToolsAllowed ?? []).join(', '));
     setSaveWarnings([]);
+    setEscalationWarning(null);
     setEditing(s.id);
   };
 
@@ -231,6 +243,16 @@ export function SkillsManager() {
         onCancel={() => {
           setDeleteTarget(null);
         }}
+      />
+
+      {/* Escalation warning modal */}
+      <ConfirmDialog
+        open={!!escalationWarning}
+        title="Autonomy Level Escalated"
+        message={escalationWarning ?? ''}
+        confirmLabel="Understood"
+        onConfirm={() => setEscalationWarning(null)}
+        onCancel={() => setEscalationWarning(null)}
       />
 
       {/* Credential warning banner */}
@@ -441,6 +463,38 @@ export function SkillsManager() {
               placeholder="Workflow ID to trigger when this skill activates (optional)"
             />
           </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">Autonomy Level</label>
+            <select
+              value={form.autonomyLevel ?? 'L1'}
+              onChange={(e) => { setForm((f) => ({ ...f, autonomyLevel: e.target.value as any })); }}
+              className="px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="L1">L1 — Human does (AI assists only)</option>
+              <option value="L2">L2 — Collaborative (AI proposes, human decides)</option>
+              <option value="L3">L3 — Supervised (AI acts, human reviews)</option>
+              <option value="L4">L4 — Delegated (AI acts, human audits periodically)</option>
+              <option value="L5">L5 — Fully autonomous (notifications only)</option>
+            </select>
+            <p className="text-xs text-muted-foreground mt-1">
+              Governance classification for audit purposes. Does not affect runtime behavior.
+            </p>
+          </div>
+
+          {(form.autonomyLevel === 'L4' || form.autonomyLevel === 'L5') && (
+            <div>
+              <label className="block text-sm font-medium mb-1">Emergency Stop Procedure</label>
+              <textarea
+                value={form.emergencyStopProcedure ?? ''}
+                onChange={(e) => { setForm((f) => ({ ...f, emergencyStopProcedure: e.target.value })); }}
+                className="w-full px-3 py-2 rounded border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+                rows={2}
+                maxLength={1000}
+                placeholder="How to disable this skill in an emergency (required for L4/L5)"
+              />
+            </div>
+          )}
 
           <div className="flex gap-2 justify-end">
             <button

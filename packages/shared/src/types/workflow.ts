@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { AutonomyLevelSchema } from './soul.js';
 
 // ─── Step Types ─────────────────────────────────────────────────────
 
@@ -72,6 +73,9 @@ export const WorkflowDefinitionSchema = z.object({
   isEnabled: z.boolean().default(true),
   version: z.number().int().default(1),
   createdBy: z.string().default('system'),
+  // Autonomy classification (Phase 49)
+  autonomyLevel: AutonomyLevelSchema.default('L2'),
+  emergencyStopProcedure: z.string().max(1000).optional(),
   createdAt: z.number(),
   updatedAt: z.number(),
 });

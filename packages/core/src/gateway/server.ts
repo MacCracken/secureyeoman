@@ -64,6 +64,7 @@ import { registerBrowserRoutes } from '../browser/browser-routes.js';
 import { registerGroupChatRoutes } from '../integrations/group-chat-routes.js';
 import { registerRoutingRulesRoutes } from '../integrations/routing-rules-routes.js';
 import { registerIntentRoutes } from '../intent/routes.js';
+import { registerAutonomyRoutes } from '../security/autonomy-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -603,6 +604,21 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Intent routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Autonomy audit routes (Phase 49)
+    try {
+      const autonomyAuditManager = this.secureYeoman.getAutonomyAuditManager();
+      if (autonomyAuditManager) {
+        let autonomyAuditChain;
+        try { autonomyAuditChain = this.secureYeoman.getAuditChain(); } catch { /* optional */ }
+        registerAutonomyRoutes(this.app, { autonomyAuditManager, auditChain: autonomyAuditChain });
+        this.getLogger().info('Autonomy audit routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Autonomy audit routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

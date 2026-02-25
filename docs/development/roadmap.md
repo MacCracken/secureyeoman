@@ -21,7 +21,7 @@
 
 ## Phase 49: AI Autonomy Level Audit
 
-**Status**: Planned | **Priority**: High — governance review that informs how Phase 48 `tradeoffProfiles` and `authorizedActions` are configured. Should be run before any production deployment and periodically thereafter.
+**Status**: In Progress | **Priority**: High — governance review that informs how Phase 48 `tradeoffProfiles` and `authorizedActions` are configured. Should be run before any production deployment and periodically thereafter.
 
 Structured review of every human and AI role in a SecureYeoman deployment against the five-level autonomy framework. Ensures each agent, skill, and workflow is operating at an explicitly chosen and documented autonomy level — not by accident.
 
@@ -100,16 +100,16 @@ The audit is a structured point-in-time review. Run it before production, after 
 
 ### 49.3 — Dashboard UI
 
-- [ ] **Autonomy level overview panel** — Table of all active skills and workflows with their current autonomy level badge (L1–L5, colour-coded). Filterable by level. Click-through to the skill/workflow editor.
-- [ ] **Audit run wizard** — Step-through checklist UI for sections A–D of the audit. Each item can be marked `pass`, `fail`, or `deferred` with a note. Generates a timestamped audit report (JSON + human-readable markdown).
-- [ ] **Level escalation warning** — When a skill or workflow is saved with a higher autonomy level than its previous value, surface a confirmation modal: *"You are escalating [skill name] from L2 (Collaborator) to L4 (Approver). This removes the human confirmation step for [action]. Continue?"*
-- [ ] **Emergency stop registry** — List of all L5 agents with their stop procedure documented inline. One-click emergency stop button per agent (requires `admin` role).
+- [x] **Autonomy level overview panel** — Table of all active skills and workflows with their current autonomy level badge (L1–L5, colour-coded). Filterable by level. Click-through to the skill/workflow editor.
+- [x] **Audit run wizard** — Step-through checklist UI for sections A–D of the audit. Each item can be marked `pass`, `fail`, or `deferred` with a note. Generates a timestamped audit report (JSON + human-readable markdown).
+- [x] **Level escalation warning** — When a skill or workflow is saved with a higher autonomy level than its previous value, surface a confirmation modal: *"You are escalating [skill name] from L2 (Collaborator) to L4 (Approver). This removes the human confirmation step for [action]. Continue?"*
+- [x] **Emergency stop registry** — List of all L5 agents with their stop procedure documented inline. One-click emergency stop button per agent (requires `admin` role).
 
 ---
 
 ### 49.4 — Docs
 
-- [ ] **`docs/guides/ai-autonomy-audit.md`** — Full audit guide: framework overview, level definitions with SecureYeoman examples, step-by-step audit procedure, remediation patterns, and quarterly review cadence. Link to `OrgIntent` authoring guide.
+- [x] **`docs/guides/ai-autonomy-audit.md`** — Full audit guide: framework overview, level definitions with SecureYeoman examples, step-by-step audit procedure, remediation patterns, and quarterly review cadence. Link to `OrgIntent` authoring guide.
 
 ---
 
@@ -264,4 +264,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-24 (Phase 48 complete — pipeline enforcement, policy layer, signal degradation, goal-to-skill affinity, full field-level intent editor, allowIntentEditor flag; Tier2-MA complete — Markdown for Agents MCP content negotiation; Tier2-MA.1 — dashboard type fixes, 0 tsc errors; Tier2-MA.2 — Docker build fix; Phase 49 and 50 planned)*
+*Last updated: 2026-02-24 (Phase 48 complete — pipeline enforcement, policy layer, signal degradation, goal-to-skill affinity, full field-level intent editor, allowIntentEditor flag; Tier2-MA complete — Markdown for Agents MCP content negotiation; Tier2-MA.1 — dashboard type fixes, 0 tsc errors; Tier2-MA.2 — Docker build fix; Phase 49 in progress — autonomy level schema, audit run system, escalation warnings, emergency stop, dashboard UI, docs; Phase 50 planned)*

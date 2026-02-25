@@ -29,6 +29,8 @@ interface WorkflowDefinitionRow {
   is_enabled: boolean;
   version: number;
   created_by: string;
+  autonomy_level: string | null;
+  emergency_stop_procedure: string | null;
   created_at: string | number;
   updated_at: string | number;
 }
@@ -81,6 +83,8 @@ function definitionFromRow(row: WorkflowDefinitionRow): WorkflowDefinition {
     isEnabled: row.is_enabled,
     version: row.version,
     createdBy: row.created_by,
+    autonomyLevel: (row.autonomy_level ?? 'L2') as WorkflowDefinition['autonomyLevel'],
+    emergencyStopProcedure: row.emergency_stop_procedure ?? undefined,
     createdAt: toTs(row.created_at) ?? Date.now(),
     updatedAt: toTs(row.updated_at) ?? Date.now(),
   };
@@ -129,8 +133,8 @@ export class WorkflowStorage extends PgBaseStorage {
     for (const tmpl of templates) {
       await this.query(
         `INSERT INTO workflow.definitions
-           (id, name, description, steps_json, edges_json, triggers_json, is_enabled, version, created_by, created_at, updated_at)
-         VALUES (gen_random_uuid(), $1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6, $7, $8, $9, $10)
+           (id, name, description, steps_json, edges_json, triggers_json, is_enabled, version, created_by, autonomy_level, emergency_stop_procedure, created_at, updated_at)
+         VALUES (gen_random_uuid(), $1, $2, $3::jsonb, $4::jsonb, $5::jsonb, $6, $7, $8, $9, $10, $11, $12)
          ON CONFLICT (name) DO NOTHING`,
         [
           tmpl.name,
@@ -141,6 +145,8 @@ export class WorkflowStorage extends PgBaseStorage {
           tmpl.isEnabled ?? true,
           tmpl.version ?? 1,
           tmpl.createdBy ?? 'system',
+          tmpl.autonomyLevel ?? 'L2',
+          tmpl.emergencyStopProcedure ?? null,
           now,
           now,
         ]
@@ -153,8 +159,8 @@ export class WorkflowStorage extends PgBaseStorage {
     const now = Date.now();
     const row = await this.queryOne<WorkflowDefinitionRow>(
       `INSERT INTO workflow.definitions
-         (id, name, description, steps_json, edges_json, triggers_json, is_enabled, version, created_by, created_at, updated_at)
-       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7, $8, $9, $10, $11)
+         (id, name, description, steps_json, edges_json, triggers_json, is_enabled, version, created_by, autonomy_level, emergency_stop_procedure, created_at, updated_at)
+       VALUES ($1, $2, $3, $4::jsonb, $5::jsonb, $6::jsonb, $7, $8, $9, $10, $11, $12, $13)
        RETURNING *`,
       [
         id,
@@ -166,6 +172,8 @@ export class WorkflowStorage extends PgBaseStorage {
         data.isEnabled ?? true,
         data.version ?? 1,
         data.createdBy ?? 'system',
+        data.autonomyLevel ?? 'L2',
+        data.emergencyStopProcedure ?? null,
         now,
         now,
       ]
@@ -238,6 +246,14 @@ export class WorkflowStorage extends PgBaseStorage {
     if (data.version !== undefined) {
       updates.push(`version = $${p++}`);
       values.push(data.version);
+    }
+    if (data.autonomyLevel !== undefined) {
+      updates.push(`autonomy_level = $${p++}`);
+      values.push(data.autonomyLevel);
+    }
+    if (data.emergencyStopProcedure !== undefined) {
+      updates.push(`emergency_stop_procedure = $${p++}`);
+      values.push(data.emergencyStopProcedure ?? null);
     }
 
     if (updates.length === 0) return this.getDefinition(id);

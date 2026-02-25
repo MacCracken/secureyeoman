@@ -313,9 +313,26 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       );
       if (err) return sendError(reply, 400, err);
       try {
+        // Capture previous level before update for escalation detection
+        let prevLevel: string | undefined;
+        try {
+          const prevSkill = await soulManager.getSkill(request.params.id);
+          prevLevel = prevSkill?.autonomyLevel;
+        } catch { /* ignore — escalation warning is best-effort */ }
+
         const skill = await soulManager.updateSkill(request.params.id, b);
         broadcast?.({ event: 'updated', type: 'skill', id: skill.id });
-        const warnings = detectCredentials(b.instructions ?? '');
+        const credentialWarnings = detectCredentials(b.instructions ?? '');
+        const escalationWarnings: string[] = [];
+        if (prevLevel && b.autonomyLevel && b.autonomyLevel !== prevLevel) {
+          const levelNum = (l: string) => Number(l.replace('L', ''));
+          if (levelNum(b.autonomyLevel) > levelNum(prevLevel)) {
+            escalationWarnings.push(
+              `Autonomy escalated from ${prevLevel} to ${b.autonomyLevel} — confirm this changes the human oversight level`
+            );
+          }
+        }
+        const warnings = [...credentialWarnings, ...escalationWarnings];
         const response: { skill: typeof skill; warnings?: string[] } = { skill };
         if (warnings.length > 0) response.warnings = warnings;
         return response;

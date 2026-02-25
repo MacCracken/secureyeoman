@@ -53,6 +53,8 @@ interface SkillRow {
   mcp_tools_allowed: string[];
   routing: string;
   linked_workflow_id: string | null;
+  autonomy_level: string;
+  emergency_stop_procedure: string | null;
   enabled: boolean;
   source: string;
   status: string;
@@ -166,6 +168,9 @@ function rowToSkill(row: SkillRow): Skill {
     mcpToolsAllowed: (row.mcp_tools_allowed ?? []) as string[],
     routing: (row.routing ?? 'fuzzy') as Skill['routing'],
     linkedWorkflowId: row.linked_workflow_id ?? null,
+    // Autonomy classification (Phase 49)
+    autonomyLevel: (row.autonomy_level ?? 'L1') as Skill['autonomyLevel'],
+    emergencyStopProcedure: row.emergency_stop_procedure ?? undefined,
     // ADR 021: Skill Actions
     actions: [],
     // ADR 022: Skill Triggers
@@ -424,8 +429,8 @@ export class SoulStorage extends PgBaseStorage {
     const id = uuidv7();
 
     await this.query(
-      `INSERT INTO soul.skills (id, name, description, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, mcp_tools_allowed, routing, linked_workflow_id, enabled, source, status, personality_id, usage_count, invoked_count, last_used_at, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15, $16, 0, 0, NULL, $17, $18)`,
+      `INSERT INTO soul.skills (id, name, description, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, mcp_tools_allowed, routing, linked_workflow_id, autonomy_level, emergency_stop_procedure, enabled, source, status, personality_id, usage_count, invoked_count, last_used_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15, $16, $17, $18, 0, 0, NULL, $19, $20)`,
       [
         id,
         data.name,
@@ -439,6 +444,8 @@ export class SoulStorage extends PgBaseStorage {
         JSON.stringify(data.mcpToolsAllowed ?? []),
         data.routing ?? 'fuzzy',
         data.linkedWorkflowId ?? null,
+        data.autonomyLevel ?? 'L1',
+        data.emergencyStopProcedure ?? null,
         data.enabled ?? true,
         data.source ?? 'user',
         data.status ?? 'active',
@@ -478,11 +485,13 @@ export class SoulStorage extends PgBaseStorage {
          mcp_tools_allowed = $9::jsonb,
          routing = $10,
          linked_workflow_id = $11,
-         enabled = $12,
-         source = $13,
-         status = $14,
-         updated_at = $15
-       WHERE id = $16`,
+         autonomy_level = $12,
+         emergency_stop_procedure = $13,
+         enabled = $14,
+         source = $15,
+         status = $16,
+         updated_at = $17
+       WHERE id = $18`,
       [
         data.name ?? existing.name,
         data.description ?? existing.description,
@@ -495,6 +504,8 @@ export class SoulStorage extends PgBaseStorage {
         JSON.stringify(data.mcpToolsAllowed !== undefined ? data.mcpToolsAllowed : existing.mcpToolsAllowed),
         data.routing ?? existing.routing,
         data.linkedWorkflowId !== undefined ? data.linkedWorkflowId : existing.linkedWorkflowId,
+        data.autonomyLevel !== undefined ? data.autonomyLevel : (existing.autonomyLevel ?? 'L1'),
+        data.emergencyStopProcedure !== undefined ? (data.emergencyStopProcedure ?? null) : (existing.emergencyStopProcedure ?? null),
         data.enabled !== undefined ? data.enabled : existing.enabled,
         data.source ?? existing.source,
         data.status ?? existing.status,

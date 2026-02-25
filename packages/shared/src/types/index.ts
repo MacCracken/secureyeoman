@@ -106,6 +106,8 @@ export {
 
 // Soul types
 export {
+  AutonomyLevelSchema,
+  type AutonomyLevel,
   ModelFallbackEntrySchema,
   type ModelFallbackEntry,
   PersonalitySchema,

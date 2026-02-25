@@ -33,6 +33,9 @@ import type {
   HeartbeatStatus,
   HeartbeatLogEntry,
   Memory,
+  AutonomyOverview,
+  AuditRun,
+  AuditItemStatus,
 } from '../types.js';
 
 const API_BASE = '/api/v1';
@@ -3082,6 +3085,8 @@ export interface WorkflowDefinition {
   isEnabled: boolean;
   version: number;
   createdBy: string;
+  autonomyLevel?: string;
+  emergencyStopProcedure?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -3446,4 +3451,53 @@ export async function fetchEnforcementLog(opts?: {
 
 export async function readSignal(signalId: string): Promise<SignalReadResult> {
   return request(`/intent/signals/${encodeURIComponent(signalId)}/value`);
+}
+
+// ─── Autonomy Audit API (Phase 49) ──────────────────────────────────────────
+
+export async function fetchAutonomyOverview(): Promise<AutonomyOverview> {
+  const res = await request<{ overview: AutonomyOverview }>('/autonomy/overview');
+  return res.overview;
+}
+
+export async function fetchAuditRuns(): Promise<AuditRun[]> {
+  const res = await request<{ runs: AuditRun[] }>('/autonomy/audits');
+  return res.runs;
+}
+
+export async function createAuditRun(name: string): Promise<AuditRun> {
+  const res = await request<{ run: AuditRun }>('/autonomy/audits', {
+    method: 'POST',
+    body: JSON.stringify({ name }),
+  });
+  return res.run;
+}
+
+export async function fetchAuditRun(id: string): Promise<AuditRun> {
+  const res = await request<{ run: AuditRun }>(`/autonomy/audits/${encodeURIComponent(id)}`);
+  return res.run;
+}
+
+export async function updateAuditItem(
+  runId: string,
+  itemId: string,
+  update: { status: AuditItemStatus; note: string }
+): Promise<AuditRun> {
+  const res = await request<{ run: AuditRun }>(
+    `/autonomy/audits/${encodeURIComponent(runId)}/items/${encodeURIComponent(itemId)}`,
+    { method: 'PUT', body: JSON.stringify(update) }
+  );
+  return res.run;
+}
+
+export async function finalizeAuditRun(id: string): Promise<AuditRun> {
+  const res = await request<{ run: AuditRun }>(
+    `/autonomy/audits/${encodeURIComponent(id)}/finalize`,
+    { method: 'POST' }
+  );
+  return res.run;
+}
+
+export async function emergencyStop(type: 'skill' | 'workflow', id: string): Promise<void> {
+  await request(`/autonomy/emergency-stop/${type}/${encodeURIComponent(id)}`, { method: 'POST' });
 }

@@ -100,9 +100,30 @@ export function registerWorkflowRoutes(
       }>,
       reply: FastifyReply
     ) => {
+      // Capture previous level for escalation detection
+      let prevLevel: string | undefined;
+      try {
+        const prev = await workflowManager.getDefinition(request.params.id);
+        prevLevel = prev?.autonomyLevel;
+      } catch { /* best-effort */ }
+
       const definition = await workflowManager.updateDefinition(request.params.id, request.body as any);
       if (!definition) return sendError(reply, 404, 'Workflow not found');
-      return { definition };
+
+      const warnings: string[] = [];
+      const newLevel = (request.body as any).autonomyLevel;
+      if (prevLevel && newLevel && newLevel !== prevLevel) {
+        const levelNum = (l: string) => Number(l.replace('L', ''));
+        if (levelNum(newLevel) > levelNum(prevLevel)) {
+          warnings.push(
+            `Autonomy escalated from ${prevLevel} to ${newLevel} — confirm this changes the human oversight level`
+          );
+        }
+      }
+
+      const response: { definition: typeof definition; warnings?: string[] } = { definition };
+      if (warnings.length > 0) response.warnings = warnings;
+      return response;
     }
   );
 
