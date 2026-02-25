@@ -305,48 +305,98 @@ img {
 .gradient-orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(80px);
-  opacity: 0.4;
+  filter: blur(90px);
   animation: float 20s infinite ease-in-out;
 }
 
+/* Blue — top right, sky glow */
 .orb-1 {
-  width: 600px;
-  height: 600px;
+  width: 700px;
+  height: 700px;
   background: var(--primary);
-  top: -200px;
-  right: -100px;
+  opacity: 0.35;
+  top: -250px;
+  right: -150px;
   animation-delay: 0s;
 }
 
+/* Purple — bottom left, ground shadow */
 .orb-2 {
-  width: 500px;
-  height: 500px;
+  width: 600px;
+  height: 600px;
   background: var(--secondary);
-  bottom: -150px;
-  left: -100px;
+  opacity: 0.3;
+  bottom: -200px;
+  left: -150px;
   animation-delay: -7s;
 }
 
+/* Pink — top left, backlights the mascot */
 .orb-3 {
-  width: 400px;
-  height: 400px;
+  width: 450px;
+  height: 450px;
   background: #ec4899;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  opacity: 0.2;
+  opacity: 0.18;
+  top: -80px;
+  left: -80px;
   animation-delay: -14s;
 }
 
-.grid-pattern {
+/* Teal — mid right, depth accent behind text */
+.orb-4 {
+  width: 350px;
+  height: 350px;
+  background: var(--accent);
+  opacity: 0.12;
+  top: 40%;
+  right: 8%;
+  animation-delay: -10s;
+}
+
+/* Dot grid — fine texture across the whole hero */
+.dot-grid {
   position: absolute;
   inset: 0;
+  background-image: radial-gradient(circle, rgba(14, 165, 233, 0.18) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse at 60% 40%, black 30%, transparent 72%);
+}
+
+/* Perspective floor grid — cyberpunk neon floor effect */
+.grid-floor {
+  position: absolute;
+  bottom: 0;
+  left: -30%;
+  right: -30%;
+  height: 55%;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-  background-size: 60px 60px;
-  mask-image: radial-gradient(ellipse at center, black 40%, transparent 70%);
+    linear-gradient(rgba(14, 165, 233, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 92, 246, 0.07) 1px, transparent 1px);
+  background-size: 70px 70px;
+  transform: perspective(400px) rotateX(55deg);
+  transform-origin: center bottom;
+  mask-image: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 65%);
+}
+
+/* Very subtle CRT scanlines for cyberpunk texture */
+.scanlines {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(0, 0, 0, 0.04) 3px,
+    rgba(0, 0, 0, 0.04) 4px
+  );
+  pointer-events: none;
+}
+
+/* Vignette — darkens edges, focuses eye on center content */
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 55% 45%, transparent 35%, rgba(0, 0, 0, 0.55) 100%);
 }
 
 @keyframes float {
@@ -362,13 +412,13 @@ img {
   }
 }
 
-/* Hero two-column layout */
+/* Hero two-column layout — text gets ~60%, mascot ~40% */
 .hero-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-16);
+  grid-template-columns: 2fr 3fr;
+  gap: var(--space-12);
   align-items: center;
-  max-width: 1200px;
+  max-width: 1280px;
   width: 100%;
 }
 
@@ -383,7 +433,8 @@ img {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
+  /* Push mascot toward the text (right edge of its column) */
+  justify-content: flex-end;
   animation: fadeInRight 1s ease 0.2s both;
 }
 
