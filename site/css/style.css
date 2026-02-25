@@ -300,10 +300,10 @@ img {
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  /* Cybercity photo — contained/smaller, anchored top-left behind the mascot */
+  /* Cybercity photo — full cover, focal point shifted to upper portion */
   background-image: url('../images/background_cybercity.jpg');
-  background-size: 480px auto;
-  background-position: 6% 0%;
+  background-size: cover;
+  background-position: center top;
   background-repeat: no-repeat;
 }
 
