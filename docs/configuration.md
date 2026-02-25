@@ -108,7 +108,29 @@ security:
     maxFileSize: 10485760        # bytes, max 100 MB
     enableInjectionDetection: true
 
-  secretBackend: auto            # auto | keyring | env | file
+  secretBackend: auto            # auto | keyring | env | file | vault
+
+  vault:                         # Only read when secretBackend: vault
+    address: https://vault.example.com
+    mount: secret                # KV v2 mount path
+    namespace: ""                # Vault Enterprise namespace (optional)
+    roleIdEnv: VAULT_ROLE_ID     # AppRole role_id env var
+    secretIdEnv: VAULT_SECRET_ID # AppRole secret_id env var
+    tokenEnv: VAULT_TOKEN        # Static token env var (alternative to AppRole)
+    fallback: false              # Fall back to 'auto' backend if Vault is unreachable
+
+  # Feature policy toggles (managed via Security Settings in the dashboard)
+  allowSubAgents: false
+  allowA2A: false
+  allowSwarms: false
+  allowExtensions: false
+  allowMultimodal: false
+  allowExecution: true
+  allowNetworkTools: false       # Phase 46: Network Evaluation & Protection MCP tools
+  allowNetBoxWrite: false        # Phase 46: Allow NetBox write operations
+  allowTwingate: false           # Phase 45: Twingate zero-trust MCP proxy
+  allowOrgIntent: false          # Phase 48: Organizational Intent system
+  allowIntentEditor: false       # Phase 48.6: Full field-level intent editor (developer preview)
 
   # Sub-agent security policy
   allowBinaryAgents: false       # allow 'binary' profile type (spawn external processes)
@@ -162,6 +184,7 @@ gateway:
     certPath: /path/to/cert.pem
     keyPath: /path/to/key.pem
     caPath: /path/to/ca.pem
+    autoGenerate: false          # Auto-generate self-signed dev certs when enabled=true and no cert files exist
   cors:
     enabled: true
     origins:
@@ -315,6 +338,10 @@ externalBrain:
   includeFrontmatter: true
   tagPrefix: "secureyeoman/"
 
+intent:
+  filePath: ""                   # Optional: path to an OrgIntent JSON file to seed on startup
+  signalRefreshIntervalMs: 60000 # How often to re-evaluate monitored signals (min 5000 ms)
+
 storage:
   backend: auto                  # auto | pg | sqlite
                                  # auto: uses pg when DATABASE_URL is set, sqlite otherwise
@@ -345,6 +372,8 @@ storage:
 
 ### security (policy toggles)
 
+Policy toggles are managed via the Security Settings page in the dashboard or the `PATCH /api/v1/security/policy` API. They are stored in the database and take effect immediately without a restart.
+
 | Field | Type | Default | Description |
 |-------|------|---------|-------------|
 | `allowSubAgents` | boolean | `false` | Allow sub-agent delegation |
@@ -353,6 +382,11 @@ storage:
 | `allowSwarms` | boolean | `false` | Allow agent swarms / multi-agent orchestration (requires sub-agents enabled) |
 | `allowExtensions` | boolean | `false` | Allow lifecycle extension hooks |
 | `allowExecution` | boolean | `true` | Allow sandboxed code execution |
+| `allowNetworkTools` | boolean | `false` | Enable Phase 46 Network Evaluation & Protection MCP tools |
+| `allowNetBoxWrite` | boolean | `false` | Allow NetBox write operations (device/IP/VLAN mutations) within network tools |
+| `allowTwingate` | boolean | `false` | Enable Phase 45 Twingate zero-trust remote MCP proxy and management tools |
+| `allowOrgIntent` | boolean | `false` | Enable the Phase 48 Organizational Intent system (pipeline enforcement, signal monitoring, policy evaluation) |
+| `allowIntentEditor` | boolean | `false` | Enable the full field-level intent editor in the dashboard (Settings → Security → Developers). Developer preview — gated separately from `allowOrgIntent`. |
 
 ### security.sandbox
 
@@ -387,6 +421,7 @@ storage:
 | `tls.certPath` | string | — | Path to server certificate PEM |
 | `tls.keyPath` | string | — | Path to server private key PEM |
 | `tls.caPath` | string | — | Path to CA certificate PEM (enables mTLS when set) |
+| `tls.autoGenerate` | boolean | `false` | Auto-generate a self-signed CA + server certificate in `~/.secureyeoman/dev-certs/` when `tls.enabled` is `true` and no cert files exist. Equivalent to the `--tls` CLI flag. Not for production use. |
 | `auth.tokenExpirySeconds` | number | `3600` | JWT access token lifetime |
 | `auth.refreshTokenExpirySeconds` | number | `86400` | Refresh token lifetime |
 
@@ -930,6 +965,53 @@ storage:
     path: ~/.secureyeoman/data.db
 ```
 
+### security.secretBackend
+
+Controls where SecureYeoman reads and writes named secrets (API keys, service credentials).
+
+| Value | Description |
+|-------|-------------|
+| `auto` | Tries `keyring` first, then `env`, then `file`. Use for development. |
+| `keyring` | OS native keyring (macOS Keychain, Linux Secret Service / GNOME Keyring). Best for single-user desktop installs. |
+| `env` | Reads secrets from environment variables. Simple but leaks secrets into process environment. |
+| `file` | Reads secrets from `~/.secureyeoman/secrets.json`. Encrypted at rest using `SECUREYEOMAN_ENCRYPTION_KEY`. |
+| `vault` | HashiCorp Vault (or OpenBao) KV v2. Requires `security.vault` to be configured. |
+
+### security.vault
+
+Required when `secretBackend: vault`. Supports AppRole authentication (recommended for production) or a static token (simpler but less secure).
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `address` | string | — | Vault server address (e.g. `https://vault.example.com:8200`) |
+| `mount` | string | `"secret"` | KV v2 mount path |
+| `namespace` | string | `""` | Vault Enterprise namespace. Leave blank for Community Edition. |
+| `roleIdEnv` | string | `"VAULT_ROLE_ID"` | Env var holding the AppRole `role_id`. Used when `tokenEnv` is not set. |
+| `secretIdEnv` | string | `"VAULT_SECRET_ID"` | Env var holding the AppRole `secret_id`. |
+| `tokenEnv` | string | `"VAULT_TOKEN"` | Env var holding a static Vault token. Takes precedence over AppRole if set. |
+| `fallback` | boolean | `false` | If `true`, fall back to the `auto` backend when Vault is unreachable rather than failing hard. |
+
+See the [Secrets Management Guide](guides/secrets-management.md) for AppRole setup and rotation configuration.
+
+### intent
+
+Machine-readable Organizational Intent configuration (Phase 48). The intent system is only active when `security.allowOrgIntent: true`.
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `filePath` | string | `""` | Optional path to an OrgIntent JSON file to seed on first startup (creates a draft intent doc; does not overwrite an existing active intent). |
+| `signalRefreshIntervalMs` | number | `60000` | How often the background signal monitor re-evaluates all data-source signals and logs degradation events (minimum: 5000 ms). |
+
+The intent system is managed primarily via the dashboard (Settings → Intent) or the REST API at `/api/v1/intent`. See the [Organizational Intent Guide](guides/organizational-intent.md) for authoring and pipeline enforcement details.
+
+**OPA Policy Integration**
+
+When `policies[]` in an OrgIntent document includes entries with a `rego` field, `checkPolicies()` evaluates them against a running OPA sidecar:
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `OPA_ADDR` | *(empty)* | Base URL of the OPA sidecar (e.g. `http://localhost:8181`). When set, policies with a `rego` field are evaluated via `POST ${OPA_ADDR}/v1/data/secureyeoman/allow`. Natural-language rule matching is used as a fallback when OPA is unavailable or returns an error. |
+
 ---
 
 ### SSO / OIDC
@@ -1080,3 +1162,32 @@ All security-sensitive values are referenced by environment variable name in the
 | `DATABASE_USER` | No | PostgreSQL user |
 | `DATABASE_NAME` | No | PostgreSQL database name |
 | `SECUREYEOMAN_DASHBOARD_DIST` | No | Path to pre-built dashboard SPA dist (overridden by `--dashboard-dist` CLI flag) |
+| **Security Toolkit** | | |
+| `MCP_EXPOSE_SECURITY_TOOLS` | No | Enable Kali `sec_*` MCP tools (default: `false`) |
+| `MCP_ALLOWED_TARGETS` | No | Comma-separated CIDRs/hostnames/URLs permitted for security tools. Required when security tools enabled; use `*` for unrestricted CTF/lab mode. |
+| `SHODAN_API_KEY` | No | Shodan REST API key — required to enable the `sec_shodan` tool |
+| **Network Tools (Phase 46)** | | |
+| `MCP_EXPOSE_NETWORK_TOOLS` | No | Enable network evaluation & protection tools (default: `false`; also requires `security.allowNetworkTools`) |
+| `MCP_ALLOWED_NETWORK_TARGETS` | No | Comma-separated CIDRs/hostnames for SSH and active probing tools. Empty = active tools blocked. |
+| `NETBOX_URL` | No | NetBox API base URL (e.g. `https://netbox.example.com`) — required for `netbox_*` tools |
+| `NETBOX_TOKEN` | No | NetBox API token — required for `netbox_*` tools |
+| `NVD_API_KEY` | No | NVD REST API key — optional but increases rate limit from 5 to 50 req/30s |
+| **Twingate (Phase 45)** | | |
+| `MCP_EXPOSE_TWINGATE_TOOLS` | No | Enable Twingate MCP tools (default: `false`; also requires `security.allowTwingate`) |
+| `TWINGATE_API_KEY` | No | Twingate tenant API key for GraphQL management tools |
+| `TWINGATE_NETWORK` | No | Twingate tenant name (e.g. `acme` → calls `acme.twingate.com`) |
+| **Markdown for Agents (Phase Tier2-MA)** | | |
+| `MCP_RESPECT_CONTENT_SIGNAL` | No | Refuse content from URLs returning `Content-Signal: ai-input=no` (default: `true`). Set `false` to disable. |
+| **Vault / Secrets (Phase 41-42)** | | |
+| `VAULT_ROLE_ID` | No | HashiCorp Vault AppRole `role_id` — read when `security.vault.roleIdEnv` is `VAULT_ROLE_ID` |
+| `VAULT_SECRET_ID` | No | HashiCorp Vault AppRole `secret_id` |
+| `VAULT_TOKEN` | No | Static Vault token (takes precedence over AppRole when set) |
+| **Organizational Intent (Phase 48)** | | |
+| `OPA_ADDR` | No | OPA sidecar base URL (e.g. `http://localhost:8181`). When set, OrgIntent `policies[]` with a `rego` field are evaluated via the OPA sidecar. Falls back to natural-language rule matching on error. |
+| **Agnostic QA Bridge** | | |
+| `MCP_EXPOSE_AGNOSTIC_TOOLS` | No | Enable `agnostic_*` MCP tools (default: `false`) |
+| `AGNOSTIC_URL` | No | Agnostic platform base URL (default: `http://127.0.0.1:8000`) |
+| `AGNOSTIC_API_KEY` | No | Agnostic static API key (`X-API-Key` header) — preferred over email/password |
+| `AGNOSTIC_EMAIL` | No | Agnostic email for JWT auth (fallback when `AGNOSTIC_API_KEY` is not set) |
+| `AGNOSTIC_PASSWORD` | No | Agnostic password for JWT auth (fallback when `AGNOSTIC_API_KEY` is not set) |
+| `AGNOSTIC_PATH` | No | Absolute path to the Agnostic Docker Compose project directory (auto-detected when not set) |

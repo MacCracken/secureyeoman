@@ -83,7 +83,7 @@
       <div class="hero-content">
         <div class="hero-badge">
           <span class="badge-dot"></span>
-          <span>v2026.2.23 Now Available</span>
+          <span>v2026.2.24 Now Available</span>
           <a
             href="https://github.com/MacCracken/secureyeoman/releases"
             target="_blank"
@@ -233,13 +233,16 @@
               RBAC (Admin/Operator/Auditor/Viewer), JWT + API key auth, mTLS, AES-256-GCM
               encryption at rest, and five sandboxing modes (Landlock, seccomp, namespaces,
               gVisor, WASM). Unified SecretsManager — env, keyring, file, Vault/OpenBao, or auto.
-              TLS lifecycle with auto-generated certs and expiry monitoring.
+              TLS lifecycle with auto-generated certs and expiry monitoring. Organizational Intent
+              enforces hard boundaries, soft policies, and authorized actions at the pipeline level —
+              with optional OPA sidecar integration.
             </p>
             <ul class="feature-list">
               <li>RBAC + SSO/OIDC (Okta, Azure AD, Auth0)</li>
               <li>Vault / OpenBao secrets backend</li>
               <li>Five sandboxing modes</li>
               <li>18-pattern credential redaction on every response</li>
+              <li>Organizational Intent — hard boundaries &amp; OPA policies</li>
             </ul>
           </div>
 
@@ -291,14 +294,15 @@
             <p class="feature-desc">
               31 platform integrations: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams,
               GitHub, GitLab, Gmail, Google Calendar, Jira, Notion, AWS, Azure DevOps, and more.
-              120+ built-in MCP tools with SSRF protection and encrypted credentials — over
-              streamable HTTP, SSE, and stdio transports.
+              120+ built-in MCP tools, 9 resources, and 4 prompts — with SSRF protection,
+              encrypted credentials, and Markdown-for-Agents content negotiation
+              (<code>Accept: text/markdown</code>, <code>Content-Signal</code> enforcement).
             </p>
             <ul class="feature-list">
               <li>31 platform integrations</li>
-              <li>120+ MCP tools built-in</li>
+              <li>120+ tools · 9 resources · 4 prompts</li>
               <li>SSRF protection + encrypted creds</li>
-              <li>HTTP / SSE / stdio transports</li>
+              <li>Markdown-for-Agents content negotiation</li>
             </ul>
           </div>
 
@@ -623,6 +627,11 @@
               <div class="diff-icon"><i class="fas fa-lock-open"></i></div>
               <h4>Zero-Trust Remote Access</h4>
               <p>Twingate integration lets agents reach private MCP servers through an encrypted zero-trust tunnel — no firewall ports opened. 13 dedicated tools for tenant management and proxy sessions.</p>
+            </div>
+            <div class="diff-card">
+              <div class="diff-icon"><i class="fas fa-file-contract"></i></div>
+              <h4>Organizational Intent</h4>
+              <p>Machine-readable governance layer: define hard boundaries, authorized tool sets, soft policies (with OPA sidecar), signal monitoring, and goal-to-skill affinity — all enforced in the execution pipeline before any tool fires.</p>
             </div>
           </div>
         </div>

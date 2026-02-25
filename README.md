@@ -239,6 +239,18 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development setup, test database conf
 
 ---
 
+## Getting Help
+
+| Channel | Use it for |
+|---------|------------|
+| [GitHub Discussions](https://github.com/MacCracken/secureyeoman/discussions) | Questions, ideas, show-and-tell |
+| [Troubleshooting Guide](docs/troubleshooting.md) | Common problems and fixes |
+| [Configuration Reference](docs/configuration.md) | All YAML fields and env vars |
+| [GitHub Issues](https://github.com/MacCracken/secureyeoman/issues) | Bug reports (include logs + OS/version) |
+| security@secureyeoman.ai | Security vulnerabilities — **do not** open a public issue |
+
+---
+
 ## Contributing
 
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for:
