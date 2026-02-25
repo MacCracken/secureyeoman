@@ -303,7 +303,7 @@ img {
   /* Cybercity photo — full cover, focal point shifted to upper portion */
   background-image: url('../images/background_cybercity.jpg');
   background-size: cover;
-  background-position: center top;
+  background-position: center 60%;
   background-repeat: no-repeat;
 }
 
@@ -315,8 +315,8 @@ img {
   background: linear-gradient(
     to bottom,
     var(--bg-primary) 0px,
-    var(--bg-primary) 100px,
-    rgba(8, 12, 24, 0.62) 165px
+    var(--bg-primary) 110px,
+    rgba(8, 12, 24, 0.62) 130px
   );
 }
 
