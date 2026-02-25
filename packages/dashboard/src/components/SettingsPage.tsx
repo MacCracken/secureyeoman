@@ -7,7 +7,6 @@ import {
   UserCircle,
   Users,
   Clock,
-  Archive,
   Building2,
   Star,
   Power,
@@ -36,7 +35,7 @@ import { UsersSettings } from './UsersSettings';
 import { WorkspacesSettings } from './WorkspacesSettings';
 import { IntentEditor } from './IntentEditor';
 
-type TabType = 'general' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'logs' | 'intent';
+type TabType = 'general' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'intent';
 
 export function SettingsPage() {
   const location = useLocation();
@@ -97,7 +96,7 @@ export function SettingsPage() {
           }`}
         >
           <Key className="w-4 h-4" />
-          Keys
+          Secrets
         </button>
         <button
           onClick={() => {
@@ -140,19 +139,6 @@ export function SettingsPage() {
         </button>
         <button
           onClick={() => {
-            setActiveTab('logs');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'logs'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Archive className="w-4 h-4" />
-          Logs
-        </button>
-        <button
-          onClick={() => {
             setActiveTab('intent');
           }}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
@@ -164,20 +150,20 @@ export function SettingsPage() {
           <Zap className="w-4 h-4" />
           Intent
         </button>
+
       </div>
 
       {activeTab === 'general' && <GeneralTab />}
-      {activeTab === 'security' && (
+      {activeTab === 'security' && <SecuritySettings />}
+      {activeTab === 'keys' && (
         <div className="space-y-8">
-          <SecuritySettings />
+          <ApiKeysSettings />
           <SecretsPanel />
         </div>
       )}
-      {activeTab === 'keys' && <ApiKeysSettings />}
       {activeTab === 'workspaces' && <WorkspacesSettings />}
       {activeTab === 'users' && <UsersSettings />}
       {activeTab === 'roles' && <RolesSettings />}
-      {activeTab === 'logs' && <LogsTab />}
       {activeTab === 'intent' && <IntentEditor />}
     </div>
   );
@@ -515,6 +501,8 @@ function GeneralTab() {
         </div>
       </div>
 
+      <LogRetentionSettings />
+
     </div>
   );
 }
@@ -626,10 +614,3 @@ function SoulRow({
   );
 }
 
-function LogsTab() {
-  return (
-    <div className="space-y-6">
-      <LogRetentionSettings />
-    </div>
-  );
-}

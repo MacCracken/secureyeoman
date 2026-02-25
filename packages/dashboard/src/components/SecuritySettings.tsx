@@ -417,8 +417,6 @@ export function SecuritySettings() {
   const desktopControlAllowed = securityPolicy?.allowDesktopControl ?? false;
   const cameraAllowed = securityPolicy?.allowCamera ?? false;
   const networkToolsAllowed = securityPolicy?.allowNetworkTools ?? false;
-  const netboxWriteAllowed = securityPolicy?.allowNetBoxWrite ?? false;
-  const twingateAllowed = securityPolicy?.allowTwingate ?? false;
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
   const intentEditorAllowed = securityPolicy?.allowIntentEditor ?? false;
@@ -731,12 +729,9 @@ export function SecuritySettings() {
           <Network className="w-5 h-5 text-primary" />
           <h3 className="font-medium">Network Tools</h3>
         </div>
-        <div className="p-4 space-y-4">
-          <div className="border border-yellow-500/30 bg-yellow-500/10 rounded-lg p-2.5 text-xs text-yellow-600 dark:text-yellow-400">
-            ⚠️ Network Tools allow agents to connect to infrastructure devices via SSH, query live routing tables, and run security audits. Only enable when <code>MCP_EXPOSE_NETWORK_TOOLS=true</code> is set and <code>MCP_ALLOWED_NETWORK_TARGETS</code> is scoped to your infrastructure.
-          </div>
+        <div className="p-4">
           <PolicyToggle
-            label="Network Tools"
+            label="Allow Network Tools"
             enabled={networkToolsAllowed}
             isPending={policyMutation.isPending}
             onToggle={() => {
@@ -744,41 +739,8 @@ export function SecuritySettings() {
             }}
             description={
               networkToolsAllowed
-                ? 'Network Tools are enabled. Personalities with the relevant toolset flags can access SSH automation, topology discovery, security auditing, NetBox, NVD, and subnet utilities.'
-                : 'Network Tools are disabled. No personality can access any network toolset regardless of their configuration.'
-            }
-          />
-
-          {/* NetBox Write — sub-item, only visible when Network Tools enabled */}
-          {networkToolsAllowed && (
-            <div className="ml-6 pl-4 border-l-2 border-border">
-              <PolicyToggle
-                label="NetBox Write Operations"
-                enabled={netboxWriteAllowed}
-                isPending={policyMutation.isPending}
-                onToggle={() => {
-                  policyMutation.mutate({ allowNetBoxWrite: !netboxWriteAllowed });
-                }}
-                description={
-                  netboxWriteAllowed
-                    ? 'NetBox write operations are enabled. Agents may create, update, or delete NetBox records.'
-                    : 'NetBox write operations are disabled. All NetBox tools are read-only.'
-                }
-              />
-            </div>
-          )}
-          <PolicyToggle
-            label="Twingate Remote Access"
-            icon={<Globe className="w-5 h-5" />}
-            enabled={twingateAllowed}
-            isPending={policyMutation.isPending}
-            onToggle={() => {
-              policyMutation.mutate({ allowTwingate: !twingateAllowed });
-            }}
-            description={
-              twingateAllowed
-                ? 'Twingate zero-trust remote access enabled — agents can reach private MCP servers.'
-                : 'Disabled — agents cannot access Twingate resources or private MCP servers via tunnel.'
+                ? 'Network access is enabled. Individual tool categories (SSH, NetBox, NVD, etc.) can be activated per MCP server in Connections.'
+                : 'Network access is denied globally — MCP network tools and any other network-based access will be blocked regardless of tool configuration.'
             }
           />
         </div>

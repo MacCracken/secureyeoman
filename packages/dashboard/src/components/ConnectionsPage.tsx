@@ -44,6 +44,7 @@ import {
   Music2,
   PlayCircle,
   Monitor,
+  Network,
 } from 'lucide-react';
 import {
   fetchMcpServers,
@@ -62,6 +63,7 @@ import {
   deleteIntegration,
   testIntegration,
   fetchSecurityPolicy,
+  updateSecurityPolicy,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { McpServerConfig, McpToolDef, McpFeatureConfig, IntegrationInfo } from '../types';
@@ -2388,6 +2390,12 @@ function LocalServerCard({
   onFeatureToggle: (data: Partial<McpFeatureConfig>) => void;
   isFeatureToggling: boolean;
 }) {
+  const queryClient = useQueryClient();
+  const policyMut = useMutation({
+    mutationFn: (patch: Parameters<typeof updateSecurityPolicy>[0]) => updateSecurityPolicy(patch),
+    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['securityPolicy'] }),
+  });
+
   return (
     <div className={`card p-3 sm:p-4 ${!server.enabled ? 'opacity-60' : ''}`}>
       <div className="flex items-start gap-2 sm:gap-3">
@@ -2534,6 +2542,88 @@ function LocalServerCard({
                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
               />
             </label>
+            {/* Network Tools — gated on allowNetworkTools security policy */}
+            <label
+              className={`flex items-center gap-2.5 p-2 rounded-lg transition-colors ${
+                securityPolicy?.allowNetworkTools
+                  ? 'bg-muted/30 cursor-pointer hover:bg-muted/50'
+                  : 'bg-muted/10 cursor-not-allowed opacity-50'
+              }`}
+              title={
+                securityPolicy?.allowNetworkTools
+                  ? 'SSH automation, topology discovery, security auditing, NetBox, NVD'
+                  : 'Enable Network Tools in Security Settings first'
+              }
+            >
+              <Network className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-medium">Network Tools</span>
+                {!securityPolicy?.allowNetworkTools && (
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    Enable in Security Settings first
+                  </p>
+                )}
+              </div>
+              <input
+                type="checkbox"
+                checked={
+                  !!(
+                    featureConfig.exposeNetworkDevices ||
+                    featureConfig.exposeNetworkDiscovery ||
+                    featureConfig.exposeNetworkAudit ||
+                    featureConfig.exposeNetBox ||
+                    featureConfig.exposeNvd ||
+                    featureConfig.exposeNetworkUtils
+                  )
+                }
+                onChange={(e) => {
+                  onFeatureToggle({
+                    exposeNetworkDevices: e.target.checked,
+                    exposeNetworkDiscovery: e.target.checked,
+                    exposeNetworkAudit: e.target.checked,
+                    exposeNetBox: e.target.checked,
+                    exposeNvd: e.target.checked,
+                    exposeNetworkUtils: e.target.checked,
+                  });
+                }}
+                disabled={isFeatureToggling || !securityPolicy?.allowNetworkTools}
+                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+              />
+            </label>
+            {/* NetBox Write — sub-gate, only meaningful when Network Tools enabled */}
+            <label
+              className={`flex items-center gap-2.5 p-2 rounded-lg transition-colors ${
+                securityPolicy?.allowNetworkTools && featureConfig.exposeNetBox
+                  ? 'bg-muted/30 cursor-pointer hover:bg-muted/50'
+                  : 'bg-muted/10 cursor-not-allowed opacity-50'
+              }`}
+              title={
+                securityPolicy?.allowNetworkTools
+                  ? 'Allow agents to create, update, or delete NetBox records'
+                  : 'Enable Network Tools first'
+              }
+            >
+              <Database className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-medium">NetBox Write</span>
+                {(!securityPolicy?.allowNetworkTools || !featureConfig.exposeNetBox) && (
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    Enable Network Tools first
+                  </p>
+                )}
+              </div>
+              <input
+                type="checkbox"
+                checked={securityPolicy?.allowNetBoxWrite ?? false}
+                onChange={(e) => policyMut.mutate({ allowNetBoxWrite: e.target.checked })}
+                disabled={
+                  policyMut.isPending ||
+                  !securityPolicy?.allowNetworkTools ||
+                  !featureConfig.exposeNetBox
+                }
+                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+              />
+            </label>
           </div>
 
           {/* Markdown for Agents — Content-Signal enforcement policy */}
@@ -2560,6 +2650,33 @@ function LocalServerCard({
                   onFeatureToggle({ respectContentSignal: e.target.checked });
                 }}
                 disabled={isFeatureToggling}
+                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+              />
+            </label>
+          </div>
+
+          {/* Twingate Remote Access */}
+          <div className="mt-3 pt-2 border-t border-border/50">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1">
+              <Network className="w-3 h-3" />
+              Twingate Remote Access
+            </p>
+            <label
+              className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+              title="Zero-trust tunnel — agents can reach private MCP servers and resources"
+            >
+              <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-medium">Twingate Zero-Trust Tunnel</span>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  Agents can reach private MCP servers and resources via Twingate
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={securityPolicy?.allowTwingate ?? false}
+                onChange={(e) => policyMut.mutate({ allowTwingate: e.target.checked })}
+                disabled={policyMut.isPending}
                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
               />
             </label>

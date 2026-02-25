@@ -8,93 +8,8 @@
 
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
-| | **Release 2026.2.23** | **2026-02-23** | **Released** |
-| 48 | Machine Readable Org Intent | 2026-02-24 | **Complete** |
-| Tier2-MA | Markdown for Agents: MCP Content Negotiation | 2026-02-24 | **Complete** |
-| Tier2-MA.1 | Dashboard Type Fixes (allowIntentEditor, respectContentSignal UI) | 2026-02-24 | **Complete** |
-| Tier2-MA.2 | Docker Build Fix (personality-resources.ts cast, shared rebuild) | 2026-02-24 | **Complete** |
-| 49 | AI Autonomy Level Audit | 2026-02-24 | **Complete** |
 | 50 | Intent Goal Lifecycle Events | — | Planned |
 | XX | Find & Repair (Ongoing) | — | Ongoing |
-
----
-
-## Phase 49: AI Autonomy Level Audit
-
-**Status**: Complete | **Priority**: High — governance review that informs how Phase 48 `tradeoffProfiles` and `authorizedActions` are configured. Should be run before any production deployment and periodically thereafter.
-
-Structured review of every human and AI role in a SecureYeoman deployment against the five-level autonomy framework. Ensures each agent, skill, and workflow is operating at an explicitly chosen and documented autonomy level — not by accident.
-
-> **Framework source:** *"Levels of Autonomy for AI Agents"* — Knight First Amendment Institute (arXiv:2506.12469, 2025). Companion framing: *"Intelligent AI Delegation"* — Google DeepMind (arXiv:2602.11865, Feb 2026), which addresses task allocation, authority transfer, and accountability in mixed human-AI delegation networks. Together they define both the autonomy scale and the governance obligations at each level.
-
----
-
-### The Five Levels
-
-Autonomy is defined as the extent to which an agent is designed to act without user involvement. As the level rises, the *human role* shifts from active driver to passive monitor.
-
-| Level | Human Role | Agent Behaviour | Control Mechanism | Representative Example |
-|-------|------------|-----------------|-------------------|------------------------|
-| **L1** | **Operator** | Executes on direct command only; no independent initiative | Human issues every instruction | MCP tool called explicitly by user |
-| **L2** | **Collaborator** | Shares planning and execution; fluid handoffs between human and agent | Either party can steer; human retakes control at will | Sub-agent working alongside user through a task breakdown |
-| **L3** | **Consultant** | Agent leads; pauses to request human expertise or preferences | Agent asks targeted questions; human provides context | Deep-research skill that runs autonomously but checks in on ambiguous scope |
-| **L4** | **Approver** | Agent operates independently; surfaces high-risk or pre-defined decisions for sign-off | Explicit approval gate before irreversible actions | Authorized-action engine with `autonomyVsConfirmation` set to 0.4–0.6 |
-| **L5** | **Observer** | Agent acts fully autonomously within constraints; human monitors and can trigger emergency stop | Audit feed + hard boundaries + emergency stop only | Fully autonomous background agent bounded by Phase 48 hard boundaries |
-
----
-
-### 49.1 — Project Role Mapping
-
-Current SecureYeoman capabilities mapped to their default and maximum autonomy levels. The gap between *current default* and *maximum possible* is the risk surface the audit is designed to surface and govern.
-
-| Feature / Component | Current Default Level | Max Possible Level | Governing Control |
-|---------------------|-----------------------|--------------------|-------------------|
-| MCP tool call (user-initiated) | **L1** | L1 | Explicit user command |
-| Skill invocation via chat | **L1** | L2 | Soul prompt + user intent |
-| Sub-agent task execution (Phase 43) | **L2** | L3 | Task breakdown; human retakes at any step |
-| Workflow engine (workflow-engine.ts) | **L2** | L4 | Workflow definition; human approval nodes |
-| Goal-driven skill routing (Phase 44/48) | **L3** | L4 | `authorizedActions[]` + `useWhen` guards |
-| Authorized action engine (Phase 48) | **L3–L4** | L4 | `autonomyVsConfirmation` trade-off profile |
-| Signal-triggered actions (Phase 48.2) | **L4** | L5 | Signal threshold + hard boundaries |
-| Background autonomous agent | **L4** | L5 | Hard boundaries + `intent_boundary_violated` audit |
-| Twingate service key rotation (Phase 41/45) | **L4** | L4 | Rotation policy; SecretsManager gates |
-| Network config push (Phase 46) | **L4** | L4 | Scope manifest + `MCP_ALLOWED_TARGETS` |
-
-**Design principle:** No feature should silently operate at a higher level than its documented default. Escalation to a higher level requires explicit configuration and produces audit events.
-
----
-
-### 49.2 — Audit Checklist
-
-The audit is a structured point-in-time review. Run it before production, after major capability additions (new skills, new MCP tools, new autonomous workflows), and at least quarterly for L4/L5 deployments.
-
-#### A. Inventory
-
-- [ ] List every active skill and classify its autonomy level (L1–L5) based on how it behaves when invoked without additional user input.
-- [ ] List every active workflow and identify all nodes where human approval is required vs. absent.
-- [ ] List all background agents and confirm each has an associated hard boundary set in `OrgIntent.hardBoundaries[]`.
-- [ ] List all signal-triggered actions and confirm each maps to an `authorizedActions[]` entry with `conditions` set.
-
-#### B. Level Assignment Review
-
-- [ ] For each L3 item: confirm there is a documented `useWhen` / `doNotUseWhen` and a defined escalation path when the agent's consultation question goes unanswered.
-- [ ] For each L4 item: confirm the approval gate is reachable (not buried or auto-dismissed) and that the `autonomyVsConfirmation` value in the active trade-off profile is deliberately chosen.
-- [ ] For each L5 item: confirm a hard boundary (`hardBoundaries[]`) and an emergency stop path exist. Document the exact stop procedure for each L5 agent.
-- [ ] Verify no item is *de facto* operating at a higher level than its documented classification (e.g. a workflow classified L3 that in practice never pauses for input).
-
-#### C. Authority & Accountability (DeepMind Delegation Lens)
-
-- [ ] **Task allocation** — Each delegated task has a clear owner (human role or agent id). No orphaned tasks where accountability is ambiguous.
-- [ ] **Authority transfer** — Escalation from L3 → L4 or L4 → L5 requires an explicit configuration change, not drift. Document who is authorized to approve that change.
-- [ ] **Accountability mechanisms** — Every L4/L5 action produces an audit event (`intent_action_blocked`, `intent_boundary_violated`, or skill invocation log). Confirm the Security Feed surfaces them.
-- [ ] **Intent communication** — The active `OrgIntent` document is current. Goals, authorized actions, and hard boundaries reflect the organization's current intent — not a stale first draft.
-- [ ] **Trust calibration** — Trade-off profiles (`autonomyVsConfirmation`) are reviewed with the stakeholders who will be the human Approver or Observer for each agent.
-
-#### D. Gap Remediation
-
-- [ ] For any item where current default level > desired level: add an approval gate, restrict `authorizedActions[]`, or lower `autonomyVsConfirmation`.
-- [ ] For any L5 item missing an emergency stop path: block promotion to L5 until the stop mechanism is implemented and tested.
-- [ ] Document the agreed level for each item in `OrgIntent.context[]` as a stable org fact so future agents and operators have a shared reference point.
 
 ---
 
@@ -249,4 +164,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-24 (Phase 48 complete — pipeline enforcement, policy layer, signal degradation, goal-to-skill affinity, full field-level intent editor, allowIntentEditor flag; Tier2-MA complete — Markdown for Agents MCP content negotiation; Tier2-MA.1 — dashboard type fixes, 0 tsc errors; Tier2-MA.2 — Docker build fix; Phase 49 complete — L1–L5 autonomy classification on skills + workflows, audit run system, escalation warnings, emergency stop registry, dashboard UI, docs; Phase 50 planned)*
+*Last updated: 2026-02-24 (Phase 50 planned — Intent Goal Lifecycle Events)*
