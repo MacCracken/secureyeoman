@@ -506,6 +506,12 @@ export interface HeartbeatStatus {
   beatCount: number;
   lastBeat: { timestamp: number; results: Record<string, unknown> } | null;
   tasks: HeartbeatTask[];
+  /** Number of currently enabled personalities this heartbeat serves */
+  activePersonalityCount?: number;
+  /** Total heartbeat task slots = tasks.length × activePersonalityCount */
+  totalTasks?: number;
+  /** Enabled task slots = enabled tasks × activePersonalityCount */
+  enabledTasks?: number;
 }
 
 export interface OnboardingStatus {

@@ -24,6 +24,9 @@ import {
   Wrench,
   Star,
   Power,
+  Target,
+  Lock,
+  ExternalLink,
 } from 'lucide-react';
 import {
   fetchPersonalities,
@@ -574,27 +577,47 @@ function BrainSection({
     <CollapsibleSection title="Brain - Intellect">
       {/* Organizational Intent Signal */}
       <div className="border-b pb-3 mb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex flex-col gap-0.5">
-            <span className="text-sm font-medium">Organizational Intent</span>
-            <span className="text-xs text-muted-foreground">
-              {!orgIntentMcpEnabled
-                ? 'Enable Org Intent in Connections first'
-                : 'Allow this personality to read live org intent signals'}
-            </span>
+        {orgIntentMcpEnabled ? (
+          <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-primary/20 bg-primary/5">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Target className="w-4 h-4 text-primary shrink-0" />
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="text-sm font-medium">Organizational Intent</span>
+                <span className="text-xs text-muted-foreground">
+                  Allow this personality to read live org intent signals
+                </span>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={exposeOrgIntentTools}
+                onChange={(e) => onExposeOrgIntentToolsChange(e.target.checked)}
+                aria-label="Organizational Intent Signal"
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-green-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+            </label>
           </div>
-          <label className="relative inline-flex items-center cursor-pointer">
-            <input
-              type="checkbox"
-              checked={exposeOrgIntentTools}
-              onChange={(e) => onExposeOrgIntentToolsChange(e.target.checked)}
-              disabled={!orgIntentMcpEnabled}
-              aria-label="Organizational Intent Signal"
-              className="sr-only peer"
-            />
-            <div className={`w-9 h-5 rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4 ${orgIntentMcpEnabled ? 'bg-muted-foreground/30 peer-checked:bg-primary' : 'bg-muted-foreground/20 opacity-50 cursor-not-allowed'}`}></div>
-          </label>
-        </div>
+        ) : (
+          <div className="flex items-start gap-2.5 p-3 rounded-lg border border-amber-500/30 bg-amber-500/5">
+            <Lock className="w-4 h-4 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex flex-col gap-1 min-w-0">
+              <span className="text-sm font-medium text-amber-700 dark:text-amber-400">Organizational Intent — Not Enabled</span>
+              <span className="text-xs text-muted-foreground">
+                Intent Document Editor must be active before assigning org intent access to a personality.
+              </span>
+              <button
+                type="button"
+                onClick={() => navigate('/security-settings')}
+                className="mt-1 inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 hover:underline self-start"
+              >
+                <ExternalLink className="w-3 h-3" />
+                Security → Developers → Intent Document Editor
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* 1. External Knowledge Base — moved to top */}
@@ -3727,7 +3750,7 @@ export function PersonalityEditor() {
             globalMaxPromptTokens={soulConfig?.maxPromptTokens ?? 16000}
             exposeOrgIntentTools={mcpFeatures.exposeOrgIntentTools}
             onExposeOrgIntentToolsChange={(v) => setMcpFeatures((f) => ({ ...f, exposeOrgIntentTools: v }))}
-            orgIntentMcpEnabled={(securityPolicy?.allowOrgIntent ?? false) && (globalMcpConfig?.exposeOrgIntentTools ?? false)}
+            orgIntentMcpEnabled={securityPolicy?.allowIntentEditor ?? false}
           />
 
           {/* Body Section */}

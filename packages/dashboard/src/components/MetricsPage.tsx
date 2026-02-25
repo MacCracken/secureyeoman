@@ -171,7 +171,9 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
   const heartbeatTasks = heartbeatStatus?.tasks ?? [];
   const mcpServers: McpServerConfig[] = mcpData?.servers ?? [];
   const enabledMcp = mcpServers.filter((s) => s.enabled).length;
-  const enabledHb = heartbeatTasks.filter((t: { enabled: boolean }) => t.enabled).length;
+  // Use server-computed totals (personality-aware) when available, fall back to base counts
+  const totalHbTasks = heartbeatStatus?.totalTasks ?? heartbeatTasks.length;
+  const enabledHb = heartbeatStatus?.enabledTasks ?? heartbeatTasks.filter((t: { enabled: boolean }) => t.enabled).length;
   const personalities = personalitiesData?.personalities ?? [];
   const activePersonalities = personalities.filter((p: Personality) => p.isActive);
   const defaultPersonality = personalities.find((p: Personality) => p.isDefault);
@@ -224,6 +226,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           mcpServers={mcpServers}
           enabledMcp={enabledMcp}
           enabledHb={enabledHb}
+          totalHbTasks={totalHbTasks}
           heartbeatTasks={heartbeatTasks}
           activeDelegations={activeDelegations}
           activePersonalities={activePersonalities}
@@ -255,6 +258,7 @@ interface OverviewTabProps {
   mcpServers: McpServerConfig[];
   enabledMcp: number;
   enabledHb: number;
+  totalHbTasks: number;
   heartbeatTasks: { enabled: boolean }[];
   activeDelegations: { delegations?: { depth: number }[] } | undefined;
   activePersonalities: Personality[];
@@ -271,6 +275,7 @@ function OverviewTab({
   mcpServers,
   enabledMcp,
   enabledHb,
+  totalHbTasks,
   heartbeatTasks,
   activeDelegations,
   activePersonalities,
@@ -301,9 +306,9 @@ function OverviewTab({
         />
         <StatCard
           title="Heartbeat"
-          value={heartbeatTasks.length}
+          value={totalHbTasks}
           icon={<Heart className="w-4 h-4 sm:w-5 sm:h-5" />}
-          subtitle={`${enabledHb}/${heartbeatTasks.length} tasks`}
+          subtitle={`${enabledHb}/${totalHbTasks} tasks`}
           trend={heartbeatRunning ? 'Running' : 'Stopped'}
           trendUp={heartbeatRunning}
           onClick={() => navigate('/security?tab=tasks&heartbeat=1')}

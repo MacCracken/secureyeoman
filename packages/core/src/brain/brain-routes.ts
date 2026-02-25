@@ -236,7 +236,15 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (!heartbeatManager) {
         return sendError(reply, 503, 'Heartbeat system not available');
       }
-      return heartbeatManager.getStatus();
+      const status = heartbeatManager.getStatus();
+      const enabledPersonalities = await (soulManager?.getEnabledPersonalities() ?? Promise.resolve([]));
+      const activePersonalityCount = Math.max(1, enabledPersonalities.length);
+      return {
+        ...status,
+        activePersonalityCount,
+        totalTasks: status.tasks.length * activePersonalityCount,
+        enabledTasks: status.tasks.filter((t) => t.enabled).length * activePersonalityCount,
+      };
     }
   );
 
