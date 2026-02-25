@@ -13,7 +13,7 @@
  *   composeSoulContext()   — markdown block for prompt injection
  */
 
-import type { IntentStorage, EnforcementLogQueryOpts } from './storage.js';
+import type { IntentStorage, EnforcementLogQueryOpts, GoalSnapshotRecord } from './storage.js';
 import type {
   OrgIntentRecord,
   Goal,
@@ -70,6 +70,8 @@ export class IntentManager {
   private activeIntent: OrgIntentRecord | null = null;
   private signalCache = new Map<string, CachedSignal>();
   private refreshTimer: ReturnType<typeof setInterval> | null = null;
+  /** In-memory snapshot of last-known goal active states. goalId → isActive */
+  private goalSnapshot = new Map<string, boolean>();
 
   constructor(deps: IntentManagerDeps) {
     this.storage = deps.storage;
@@ -79,12 +81,102 @@ export class IntentManager {
   /** Load active intent and start background signal refresh. */
   async initialize(): Promise<void> {
     this.activeIntent = await this.storage.getActiveIntent();
+    await this._seedGoalSnapshot();
     this._startSignalRefresh();
   }
 
   /** Reload the active intent from the DB (called after activation changes). */
   async reloadActiveIntent(): Promise<void> {
     this.activeIntent = await this.storage.getActiveIntent();
+    await this._diffGoals();
+  }
+
+  /**
+   * Seeds the in-memory goal snapshot from the DB without firing any events.
+   * Called once during initialize() so that the first refresh cycle sees the
+   * correct prior state rather than treating all goals as newly activated.
+   */
+  private async _seedGoalSnapshot(): Promise<void> {
+    const intent = this.activeIntent;
+    if (!intent) return;
+
+    const dbSnapshot = await this.storage.getGoalSnapshots(intent.id);
+    const currentGoals = this.resolveActiveGoals();
+    const currentActive = new Set(currentGoals.map((g) => g.id));
+
+    // Prefer DB snapshot for goals that already have a record; fall back to
+    // current evaluation for goals we have never seen before.
+    for (const goal of intent.goals ?? []) {
+      const dbRecord = dbSnapshot.get(goal.id);
+      if (dbRecord) {
+        this.goalSnapshot.set(goal.id, dbRecord.isActive);
+      } else {
+        // First time we've seen this goal — seed from current eval, no event.
+        const isActive = currentActive.has(goal.id);
+        this.goalSnapshot.set(goal.id, isActive);
+        await this.storage.upsertGoalSnapshot(
+          intent.id, goal.id, isActive, Date.now(),
+          /* setActivatedAt */ isActive,
+          /* setCompletedAt */ false
+        );
+      }
+    }
+  }
+
+  /**
+   * Diffs current goal evaluation against the in-memory snapshot.
+   * Emits `goal_activated` or `goal_completed` enforcement log entries on
+   * transitions, then updates both the in-memory snapshot and the DB record.
+   */
+  private async _diffGoals(ctx: Record<string, string> = {}): Promise<void> {
+    const intent = this.activeIntent;
+    if (!intent) return;
+
+    const currentGoals = this.resolveActiveGoals(ctx);
+    const currentActive = new Set(currentGoals.map((g) => g.id));
+    const now = Date.now();
+
+    for (const goal of intent.goals ?? []) {
+      const wasActive = this.goalSnapshot.get(goal.id) ?? false;
+      const isActive = currentActive.has(goal.id);
+
+      if (wasActive === isActive) continue;
+
+      if (!wasActive && isActive) {
+        // inactive → active
+        await this.storage.logEnforcement({
+          eventType: 'goal_activated',
+          itemId: goal.id,
+          rule: goal.activeWhen ?? 'unconditional',
+          rationale: goal.description || goal.name,
+          metadata: { intentId: intent.id, goalName: goal.name, priority: goal.priority },
+        });
+        await this.storage.upsertGoalSnapshot(
+          intent.id, goal.id, true, now,
+          /* setActivatedAt */ true,
+          /* setCompletedAt */ false
+        );
+      } else {
+        // active → inactive
+        const eventType = goal.completionCondition ? 'goal_completed' : undefined;
+        if (eventType) {
+          await this.storage.logEnforcement({
+            eventType,
+            itemId: goal.id,
+            rule: goal.completionCondition!,
+            rationale: goal.successCriteria || goal.description || goal.name,
+            metadata: { intentId: intent.id, goalName: goal.name, priority: goal.priority },
+          });
+        }
+        await this.storage.upsertGoalSnapshot(
+          intent.id, goal.id, false, now,
+          /* setActivatedAt */ false,
+          /* setCompletedAt */ !!goal.completionCondition
+        );
+      }
+
+      this.goalSnapshot.set(goal.id, isActive);
+    }
   }
 
   // ── GoalResolver ─────────────────────────────────────────────────────────────
@@ -220,14 +312,22 @@ export class IntentManager {
     if (this.refreshTimer) return;
     this.refreshTimer = setInterval(async () => {
       const intent = this.activeIntent;
-      if (!intent?.signals?.length) return;
-      for (const signal of intent.signals) {
+      if (!intent) return;
+
+      // 50 — Diff goal active states once per refresh cycle
+      try {
+        await this._diffGoals();
+      } catch {
+        // Non-fatal
+      }
+
+      // 48.2 — Refresh signal values and log degradation transitions
+      for (const signal of intent.signals ?? []) {
         try {
           const prevStatus = this.signalCache.get(signal.id)?.result.status;
           const result = await this._fetchSignalValue(signal, intent);
           this.signalCache.set(signal.id, { result, fetchedAt: Date.now() });
 
-          // 48.2 — Log signal degradation transitions
           const isDegraded =
             (prevStatus === 'healthy' && (result.status === 'warning' || result.status === 'critical')) ||
             (prevStatus === 'warning' && result.status === 'critical');
@@ -485,6 +585,14 @@ export class IntentManager {
 
   async queryEnforcementLog(opts: EnforcementLogQueryOpts): Promise<EnforcementLogEntry[]> {
     return this.storage.queryEnforcementLog(opts);
+  }
+
+  /**
+   * Returns the lifecycle event timeline (goal_activated + goal_completed) for
+   * a specific goal within an intent doc. Used by the dashboard signals tab.
+   */
+  async getGoalTimeline(intentId: string, goalId: string): Promise<EnforcementLogEntry[]> {
+    return this.storage.getGoalTimeline(intentId, goalId);
   }
 
   // ── composeSoulContext ────────────────────────────────────────────────────────

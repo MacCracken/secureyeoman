@@ -130,6 +130,7 @@ Options:
                     (default: AGNOSTIC_PATH env var or auto-detected)
   --follow, -f      Follow log output (logs subcommand only)
   --tail <n>        Number of log lines to show (default: 50)
+  --json            Output raw JSON (status subcommand only)
   -h, --help        Show this help
 
 Agent names for 'logs':
@@ -215,7 +216,9 @@ Environment variables (set after start to wire MCP tools):
     // ── status ───────────────────────────────────────────────────────────────
 
     if (subcommand === 'status') {
-      ctx.stdout.write(`\nAgnostic QA team status (${projectDir})\n\n`);
+      const jsonResult = extractBoolFlag(argv, '--json');
+      argv = jsonResult.rest;
+      const jsonOutput = jsonResult.value;
 
       // docker compose ps --format json gives structured output
       const result = await compose(projectDir, ['ps', '--format', 'json']);
@@ -226,7 +229,11 @@ Environment variables (set after start to wire MCP tools):
       }
 
       if (!result.stdout) {
-        ctx.stdout.write('No containers running. Run: secureyeoman agnostic start\n');
+        if (jsonOutput) {
+          ctx.stdout.write(JSON.stringify({ containers: [], running: 0, total: 0 }, null, 2) + '\n');
+        } else {
+          ctx.stdout.write('No containers running. Run: secureyeoman agnostic start\n');
+        }
         return 0;
       }
 
@@ -260,6 +267,15 @@ Environment variables (set after start to wire MCP tools):
         }
       }
 
+      if (jsonOutput) {
+        const running = containers.filter((c) => c.State === 'running').length;
+        ctx.stdout.write(
+          JSON.stringify({ containers, running, total: containers.length }, null, 2) + '\n'
+        );
+        return 0;
+      }
+
+      ctx.stdout.write(`\nAgnostic QA team status (${projectDir})\n\n`);
       if (containers.length > 0) {
         const colW = 35;
         ctx.stdout.write(`${'Service'.padEnd(colW)} ${'State'.padEnd(12)} Status\n`);

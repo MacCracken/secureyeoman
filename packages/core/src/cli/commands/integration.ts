@@ -3,7 +3,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatTable, apiCall } from '../utils.js';
+import { extractFlag, extractBoolFlag, extractCommonFlags, formatTable, apiCall } from '../utils.js';
 
 const USAGE = `
 Usage: secureyeoman integration <action> [options]
@@ -43,16 +43,8 @@ export const integrationCommand: Command = {
     argv = helpResult.rest;
 
     // Extract shared flags
-    const urlResult = extractFlag(argv, 'url');
-    argv = urlResult.rest;
-    const tokenResult = extractFlag(argv, 'token');
-    argv = tokenResult.rest;
-    const jsonResult = extractBoolFlag(argv, 'json');
-    argv = jsonResult.rest;
-
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
-    const token = tokenResult.value;
-    const jsonOutput = jsonResult.value;
+    const { baseUrl, token, json: jsonOutput, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
 
     const action = argv[0];
     const actionArgs = argv.slice(1);

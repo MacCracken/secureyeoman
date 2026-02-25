@@ -3,7 +3,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatTable, apiCall, Spinner } from '../utils.js';
+import { extractFlag, extractBoolFlag, extractCommonFlags, formatTable, apiCall, Spinner } from '../utils.js';
 
 export const memoryCommand: Command = {
   name: 'memory',
@@ -37,16 +37,12 @@ Options:
     }
     argv = helpResult.rest;
 
-    const urlResult = extractFlag(argv, 'url');
-    argv = urlResult.rest;
+    const { baseUrl, json, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
     const limitResult = extractFlag(argv, 'limit');
     argv = limitResult.rest;
-    const jsonResult = extractBoolFlag(argv, 'json');
-    argv = jsonResult.rest;
 
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
     const limit = limitResult.value ? Number(limitResult.value) : 10;
-    const json = jsonResult.value;
     const subcommand = argv[0];
 
     try {

@@ -2257,14 +2257,14 @@ function BodySection({
                               {/* Device Automation */}
                               <label
                                 className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
-                                  globalMcpConfig?.exposeNetworkDevices
+                                  globalMcpConfig?.exposeNetworkTools
                                     ? 'cursor-pointer hover:bg-muted/50'
                                     : 'opacity-50 cursor-not-allowed'
                                 }`}
                               >
                                 <span className="text-xs flex-1">
                                   Device Automation (SSH)
-                                  {!globalMcpConfig?.exposeNetworkDevices && (
+                                  {!globalMcpConfig?.exposeNetworkTools && (
                                     <span className="text-[10px] text-muted-foreground ml-1">
                                       — enable Network Tools in Security Settings first
                                     </span>
@@ -2279,21 +2279,21 @@ function BodySection({
                                       exposeNetworkDevices: e.target.checked,
                                     });
                                   }}
-                                  disabled={!globalMcpConfig?.exposeNetworkDevices}
+                                  disabled={!globalMcpConfig?.exposeNetworkTools}
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
                               {/* Discovery & Routing */}
                               <label
                                 className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
-                                  globalMcpConfig?.exposeNetworkDiscovery
+                                  globalMcpConfig?.exposeNetworkTools
                                     ? 'cursor-pointer hover:bg-muted/50'
                                     : 'opacity-50 cursor-not-allowed'
                                 }`}
                               >
                                 <span className="text-xs flex-1">
                                   Discovery & Routing Analysis
-                                  {!globalMcpConfig?.exposeNetworkDiscovery && (
+                                  {!globalMcpConfig?.exposeNetworkTools && (
                                     <span className="text-[10px] text-muted-foreground ml-1">
                                       — enable Network Tools in Security Settings first
                                     </span>
@@ -2308,21 +2308,21 @@ function BodySection({
                                       exposeNetworkDiscovery: e.target.checked,
                                     });
                                   }}
-                                  disabled={!globalMcpConfig?.exposeNetworkDiscovery}
+                                  disabled={!globalMcpConfig?.exposeNetworkTools}
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
                               {/* Security Auditing */}
                               <label
                                 className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
-                                  globalMcpConfig?.exposeNetworkAudit
+                                  globalMcpConfig?.exposeNetworkTools
                                     ? 'cursor-pointer hover:bg-muted/50'
                                     : 'opacity-50 cursor-not-allowed'
                                 }`}
                               >
                                 <span className="text-xs flex-1">
                                   Security Auditing
-                                  {!globalMcpConfig?.exposeNetworkAudit && (
+                                  {!globalMcpConfig?.exposeNetworkTools && (
                                     <span className="text-[10px] text-muted-foreground ml-1">
                                       — enable Network Tools in Security Settings first
                                     </span>
@@ -2337,21 +2337,21 @@ function BodySection({
                                       exposeNetworkAudit: e.target.checked,
                                     });
                                   }}
-                                  disabled={!globalMcpConfig?.exposeNetworkAudit}
+                                  disabled={!globalMcpConfig?.exposeNetworkTools}
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
                               {/* NetBox */}
                               <label
                                 className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
-                                  globalMcpConfig?.exposeNetBox
+                                  globalMcpConfig?.exposeNetworkTools
                                     ? 'cursor-pointer hover:bg-muted/50'
                                     : 'opacity-50 cursor-not-allowed'
                                 }`}
                               >
                                 <span className="text-xs flex-1">
                                   NetBox Integration
-                                  {!globalMcpConfig?.exposeNetBox && (
+                                  {!globalMcpConfig?.exposeNetworkTools && (
                                     <span className="text-[10px] text-muted-foreground ml-1">
                                       — enable Network Tools in Security Settings first
                                     </span>
@@ -2366,21 +2366,21 @@ function BodySection({
                                       exposeNetBox: e.target.checked,
                                     });
                                   }}
-                                  disabled={!globalMcpConfig?.exposeNetBox}
+                                  disabled={!globalMcpConfig?.exposeNetworkTools}
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
                               {/* NVD / CVE */}
                               <label
                                 className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
-                                  globalMcpConfig?.exposeNvd
+                                  globalMcpConfig?.exposeNetworkTools
                                     ? 'cursor-pointer hover:bg-muted/50'
                                     : 'opacity-50 cursor-not-allowed'
                                 }`}
                               >
                                 <span className="text-xs flex-1">
                                   NVD / CVE Assessment
-                                  {!globalMcpConfig?.exposeNvd && (
+                                  {!globalMcpConfig?.exposeNetworkTools && (
                                     <span className="text-[10px] text-muted-foreground ml-1">
                                       — enable Network Tools in Security Settings first
                                     </span>
@@ -2395,21 +2395,21 @@ function BodySection({
                                       exposeNvd: e.target.checked,
                                     });
                                   }}
-                                  disabled={!globalMcpConfig?.exposeNvd}
+                                  disabled={!globalMcpConfig?.exposeNetworkTools}
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>
                               {/* Network Utilities */}
                               <label
                                 className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
-                                  globalMcpConfig?.exposeNetworkUtils
+                                  globalMcpConfig?.exposeNetworkTools
                                     ? 'cursor-pointer hover:bg-muted/50'
                                     : 'opacity-50 cursor-not-allowed'
                                 }`}
                               >
                                 <span className="text-xs flex-1">
                                   Network Utilities &amp; PCAP Analysis
-                                  {!globalMcpConfig?.exposeNetworkUtils && (
+                                  {!globalMcpConfig?.exposeNetworkTools && (
                                     <span className="text-[10px] text-muted-foreground ml-1">
                                       — enable Network Tools in Security Settings first
                                     </span>
@@ -2424,7 +2424,7 @@ function BodySection({
                                       exposeNetworkUtils: e.target.checked,
                                     });
                                   }}
-                                  disabled={!globalMcpConfig?.exposeNetworkUtils}
+                                  disabled={!globalMcpConfig?.exposeNetworkTools}
                                   className="w-3.5 h-3.5 rounded accent-primary shrink-0"
                                 />
                               </label>

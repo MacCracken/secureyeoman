@@ -233,6 +233,45 @@ describe('agnostic command', () => {
       expect(code).toBe(1);
       expect(getStderr()).toContain('docker compose ps failed');
     });
+
+    it('--json outputs structured JSON with container list', async () => {
+      const fs = await getFsMock();
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
+
+      const execFile = await getExecFileMock();
+      const ndjson = [
+        JSON.stringify({ Name: 'agnostic-qa-manager-1', State: 'running', Status: 'Up 1 minute' }),
+        JSON.stringify({ Name: 'agnostic-redis-1', State: 'exited', Status: 'Exited (0)' }),
+      ].join('\n');
+      execFile.mockImplementation(makeComposeSuccess(ndjson));
+
+      const { stdout, stderr, getStdout } = createStreams();
+      const code = await agnosticCommand.run({ argv: ['status', '--json'], stdout, stderr });
+      expect(code).toBe(0);
+      const parsed = JSON.parse(getStdout()) as {
+        containers: { Name: string; State: string }[];
+        running: number;
+        total: number;
+      };
+      expect(parsed.total).toBe(2);
+      expect(parsed.running).toBe(1);
+      expect(parsed.containers[0]?.Name).toBe('agnostic-qa-manager-1');
+    });
+
+    it('--json outputs empty containers when stack is down', async () => {
+      const fs = await getFsMock();
+      fs.mockImplementation((p: string) => p.endsWith('docker-compose.yml'));
+
+      const execFile = await getExecFileMock();
+      execFile.mockImplementation(makeComposeSuccess('')); // empty = no containers
+
+      const { stdout, stderr, getStdout } = createStreams();
+      const code = await agnosticCommand.run({ argv: ['status', '--json'], stdout, stderr });
+      expect(code).toBe(0);
+      const parsed = JSON.parse(getStdout()) as { containers: unknown[]; running: number };
+      expect(parsed.containers).toEqual([]);
+      expect(parsed.running).toBe(0);
+    });
   });
 
   describe('logs', () => {

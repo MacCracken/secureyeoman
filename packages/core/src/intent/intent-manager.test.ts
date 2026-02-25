@@ -44,6 +44,9 @@ function makeStorage(overrides: Partial<IntentStorage> = {}): IntentStorage {
     setActiveIntent: vi.fn(),
     logEnforcement: vi.fn().mockResolvedValue(undefined),
     queryEnforcementLog: vi.fn().mockResolvedValue([]),
+    getGoalSnapshots: vi.fn().mockResolvedValue(new Map()),
+    upsertGoalSnapshot: vi.fn().mockResolvedValue(undefined),
+    getGoalTimeline: vi.fn().mockResolvedValue([]),
     ...overrides,
   } as unknown as IntentStorage;
 }
@@ -523,6 +526,220 @@ describe('Signal degradation tracking', () => {
 
     expect(isDegraded).toBe(false);
     expect(logSpy).not.toHaveBeenCalled();
+  });
+});
+
+// ── Goal Lifecycle — _diffGoals via reloadActiveIntent ────────────────────────
+
+describe('Goal lifecycle — goal_activated event', () => {
+  it('emits goal_activated when an inactive goal becomes active', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+    const upsertSpy = vi.fn().mockResolvedValue(undefined);
+
+    // Initial intent: goal has activeWhen that won't match on initialize (empty ctx)
+    const initialIntent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Q1 Goal', priority: 1, activeWhen: 'quarter=Q1', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+    // Reload intent: goal has no activeWhen (always active)
+    const reloadedIntent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Q1 Goal', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+
+    const getActiveIntentSpy = vi.fn()
+      .mockResolvedValueOnce(initialIntent)  // initialize()
+      .mockResolvedValueOnce(reloadedIntent); // reloadActiveIntent()
+
+    const mgr = new IntentManager({
+      storage: makeStorage({
+        getActiveIntent: getActiveIntentSpy,
+        logEnforcement: logSpy,
+        upsertGoalSnapshot: upsertSpy,
+      }),
+    });
+    await mgr.initialize();
+    // After initialize: g1 is inactive (activeWhen='quarter=Q1', ctx={}) → snapshot: false
+
+    await mgr.reloadActiveIntent();
+    // After reload: g1 has no activeWhen → always active → transition inactive→active
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'goal_activated', itemId: 'g1' })
+    );
+  });
+
+  it('does not emit goal_activated when goal was already active', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+
+    const intent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Always Active', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+
+    const mgr = new IntentManager({
+      storage: makeStorage({
+        getActiveIntent: vi.fn().mockResolvedValue(intent),
+        logEnforcement: logSpy,
+      }),
+    });
+    await mgr.initialize();
+    logSpy.mockClear(); // ignore any calls from initialize
+
+    await mgr.reloadActiveIntent();
+    // g1 is still active — no transition
+
+    expect(logSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'goal_activated' })
+    );
+  });
+});
+
+describe('Goal lifecycle — goal_completed event', () => {
+  it('emits goal_completed when active goal becomes inactive and has completionCondition', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+
+    // Initial: g1 is always active (no activeWhen)
+    const initialIntent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Revenue Goal', priority: 1, completionCondition: 'signal:revenue crosses 1M', successCriteria: 'ARR > 1M', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+    // Reload: g1 is conditionally active but condition won't match (empty ctx)
+    const reloadedIntent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Revenue Goal', priority: 1, activeWhen: 'phase=growth', completionCondition: 'signal:revenue crosses 1M', successCriteria: 'ARR > 1M', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+
+    const getActiveIntentSpy = vi.fn()
+      .mockResolvedValueOnce(initialIntent)
+      .mockResolvedValueOnce(reloadedIntent);
+
+    const mgr = new IntentManager({
+      storage: makeStorage({
+        getActiveIntent: getActiveIntentSpy,
+        logEnforcement: logSpy,
+      }),
+    });
+    await mgr.initialize();
+    // After initialize: g1 is active
+
+    logSpy.mockClear();
+    await mgr.reloadActiveIntent();
+    // g1 goes inactive (activeWhen='phase=growth', ctx={}) + has completionCondition → goal_completed
+
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'goal_completed', itemId: 'g1' })
+    );
+  });
+
+  it('does NOT emit goal_completed when goal goes inactive without completionCondition', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+
+    const initialIntent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Simple Goal', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+    const reloadedIntent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Simple Goal', priority: 1, activeWhen: 'env=never', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+
+    const getActiveIntentSpy = vi.fn()
+      .mockResolvedValueOnce(initialIntent)
+      .mockResolvedValueOnce(reloadedIntent);
+
+    const mgr = new IntentManager({
+      storage: makeStorage({
+        getActiveIntent: getActiveIntentSpy,
+        logEnforcement: logSpy,
+      }),
+    });
+    await mgr.initialize();
+    logSpy.mockClear();
+    await mgr.reloadActiveIntent();
+
+    expect(logSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'goal_completed' })
+    );
+  });
+});
+
+describe('Goal lifecycle — initialize seeds snapshot without events', () => {
+  it('does not emit goal_activated for goals active at startup', async () => {
+    const logSpy = vi.fn().mockResolvedValue(undefined);
+
+    const intent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Bootstrap Goal', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+
+    const mgr = new IntentManager({
+      storage: makeStorage({
+        getActiveIntent: vi.fn().mockResolvedValue(intent),
+        logEnforcement: logSpy,
+      }),
+    });
+    await mgr.initialize();
+
+    expect(logSpy).not.toHaveBeenCalledWith(
+      expect.objectContaining({ eventType: 'goal_activated' })
+    );
+  });
+
+  it('seeds from DB snapshot when goal record already exists', async () => {
+    const upsertSpy = vi.fn().mockResolvedValue(undefined);
+
+    const intent = makeIntent({
+      id: 'intent-db',
+      goals: [
+        { id: 'g1', name: 'DB Goal', priority: 1, successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+
+    // DB snapshot already records g1 as active
+    const dbSnapshot = new Map([
+      ['g1', { intentId: 'intent-db', goalId: 'g1', isActive: true, activatedAt: NOW, completedAt: null }],
+    ]);
+
+    const mgr = new IntentManager({
+      storage: makeStorage({
+        getActiveIntent: vi.fn().mockResolvedValue(intent),
+        getGoalSnapshots: vi.fn().mockResolvedValue(dbSnapshot),
+        upsertGoalSnapshot: upsertSpy,
+      }),
+    });
+    await mgr.initialize();
+
+    // Should not call upsertGoalSnapshot for g1 since it's already in DB
+    expect(upsertSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe('Goal lifecycle — getGoalTimeline passthrough', () => {
+  it('delegates to storage.getGoalTimeline', async () => {
+    const timelineSpy = vi.fn().mockResolvedValue([
+      { id: 'e1', eventType: 'goal_activated', itemId: 'g1', rule: 'unconditional', createdAt: NOW },
+    ]);
+    const mgr = new IntentManager({
+      storage: makeStorage({
+        getActiveIntent: vi.fn().mockResolvedValue(makeIntent()),
+        getGoalTimeline: timelineSpy,
+      }),
+    });
+    await mgr.initialize();
+
+    const entries = await mgr.getGoalTimeline('intent-1', 'g1');
+    expect(timelineSpy).toHaveBeenCalledWith('intent-1', 'g1');
+    expect(entries).toHaveLength(1);
+    expect(entries[0].eventType).toBe('goal_activated');
   });
 });
 

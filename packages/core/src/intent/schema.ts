@@ -49,6 +49,13 @@ export const GoalSchema = z.object({
   /** Optional CEL/boolean expression — goal is only active when this evaluates truthy against ctx */
   activeWhen: z.string().optional(),
   successCriteria: z.string().default(''),
+  /**
+   * Optional condition that marks this goal as completed when met.
+   * Uses the same deny:/tool: prefix matching as hard boundaries, or a free-text
+   * description evaluated against context. When a goal transitions from active →
+   * inactive and this field is present, an `intent_goal_completed` event is emitted.
+   */
+  completionCondition: z.string().optional(),
   ownerRole: z.string().default('admin'),
   skills: z.array(z.string()).default([]),
   signals: z.array(z.string()).default([]), // references Signal.id
@@ -172,6 +179,7 @@ export const EnforcementEventTypeSchema = z.enum([
   'action_blocked',
   'action_allowed',
   'goal_activated',
+  'goal_completed',
   'intent_signal_degraded',
   'policy_warn',
   'policy_block',

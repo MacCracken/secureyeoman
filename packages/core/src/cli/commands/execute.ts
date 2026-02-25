@@ -3,7 +3,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatTable, apiCall } from '../utils.js';
+import { extractFlag, extractBoolFlag, extractCommonFlags, formatTable, apiCall } from '../utils.js';
 
 export const executeCommand: Command = {
   name: 'execute',
@@ -41,12 +41,8 @@ Options:
     const subcommand = argv[0];
     argv = argv.slice(1);
 
-    const urlResult = extractFlag(argv, 'url');
-    argv = urlResult.rest;
-    const jsonResult = extractBoolFlag(argv, 'json');
-    argv = jsonResult.rest;
-
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
+    const { baseUrl, json: jsonOutput, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
 
     try {
       switch (subcommand) {
@@ -82,7 +78,7 @@ Options:
             stderr: string;
             duration: number;
           };
-          if (jsonResult.value) {
+          if (jsonOutput) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
             if (data.stdout) ctx.stdout.write(data.stdout);
@@ -101,7 +97,7 @@ Options:
           const data = res.data as {
             sessions: { id: string; runtime: string; status: string; createdAt: number }[];
           };
-          if (jsonResult.value) {
+          if (jsonOutput) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
             const rows = (data.sessions ?? []).map((s) => ({
@@ -132,7 +128,7 @@ Options:
             }[];
             total: number;
           };
-          if (jsonResult.value) {
+          if (jsonOutput) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
             const rows = (data.executions ?? []).map((e) => ({

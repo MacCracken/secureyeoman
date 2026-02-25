@@ -27,6 +27,7 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  History,
 } from 'lucide-react';
 import {
   fetchIntents,
@@ -37,6 +38,7 @@ import {
   fetchSecurityPolicy,
   createIntent,
   readSignal,
+  fetchGoalTimeline,
   type OrgIntentMeta,
   type EnforcementLogEntry,
 } from '../api/client';
@@ -152,6 +154,7 @@ function EnforcementLogFeed() {
     action_blocked: 'text-orange-600 bg-orange-50',
     action_allowed: 'text-green-600 bg-green-50',
     goal_activated: 'text-blue-600 bg-blue-50',
+    goal_completed: 'text-emerald-600 bg-emerald-50',
     intent_signal_degraded: 'text-yellow-600 bg-yellow-50',
     policy_warn: 'text-yellow-600 bg-yellow-50',
     policy_block: 'text-red-600 bg-red-50',
@@ -171,6 +174,7 @@ function EnforcementLogFeed() {
           <option value="action_blocked">action_blocked</option>
           <option value="action_allowed">action_allowed</option>
           <option value="goal_activated">goal_activated</option>
+          <option value="goal_completed">goal_completed</option>
           <option value="intent_signal_degraded">intent_signal_degraded</option>
           <option value="policy_warn">policy_warn</option>
           <option value="policy_block">policy_block</option>
@@ -257,6 +261,75 @@ function SignalCard({ signalId, signalName }: { signalId: string; signalName: st
   );
 }
 
+function GoalTimeline({
+  intentId,
+  goalId,
+  goalName,
+}: {
+  intentId: string;
+  goalId: string;
+  goalName: string;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['goalTimeline', intentId, goalId],
+    queryFn: () => fetchGoalTimeline(intentId, goalId),
+    enabled: open,
+  });
+
+  const entries = data?.entries ?? [];
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-accent/50 transition-colors"
+      >
+        <div className="flex items-center gap-2">
+          <History className="w-3.5 h-3.5 text-muted-foreground" />
+          <span className="text-sm font-medium">{goalName}</span>
+        </div>
+        {open ? (
+          <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+        ) : (
+          <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+        )}
+      </button>
+
+      {open && (
+        <div className="border-t border-border px-4 py-3 space-y-2">
+          {isLoading && <p className="text-xs text-muted-foreground">Loading…</p>}
+          {!isLoading && entries.length === 0 && (
+            <p className="text-xs text-muted-foreground italic">No lifecycle events yet.</p>
+          )}
+          {entries.map((entry) => (
+            <div key={entry.id} className="flex items-start gap-3 text-xs">
+              <span
+                className={`mt-0.5 inline-flex items-center px-1.5 py-0.5 rounded-full font-medium shrink-0 ${
+                  entry.eventType === 'goal_activated'
+                    ? 'text-blue-600 bg-blue-50'
+                    : 'text-emerald-600 bg-emerald-50'
+                }`}
+              >
+                {entry.eventType === 'goal_activated' ? 'Activated' : 'Completed'}
+              </span>
+              <div className="min-w-0">
+                <p className="text-muted-foreground">
+                  {new Date(entry.createdAt).toLocaleString()}
+                </p>
+                {entry.rationale && (
+                  <p className="text-muted-foreground italic truncate">{entry.rationale}</p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SignalDashboard() {
   const { data: activeIntentData, isLoading } = useQuery({
     queryKey: ['activeIntent'],
@@ -264,11 +337,13 @@ function SignalDashboard() {
     refetchInterval: 60_000,
   });
 
-  const signals = activeIntentData?.intent?.signals ?? [];
+  const intent = activeIntentData?.intent;
+  const signals = intent?.signals ?? [];
+  const goals = intent?.goals ?? [];
 
   if (isLoading) return <p className="text-xs text-muted-foreground">Loading…</p>;
 
-  if (signals.length === 0) {
+  if (signals.length === 0 && goals.length === 0) {
     return (
       <div className="text-center py-8 border border-dashed border-border rounded-lg">
         <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
@@ -278,15 +353,40 @@ function SignalDashboard() {
   }
 
   return (
-    <div className="space-y-3">
-      <p className="text-xs text-muted-foreground">
-        Signal values auto-refresh every 60 seconds.
-      </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        {signals.map((s) => (
-          <SignalCard key={s.id} signalId={s.id} signalName={s.name} />
-        ))}
-      </div>
+    <div className="space-y-6">
+      {signals.length > 0 && (
+        <div className="space-y-3">
+          <h3 className="text-sm font-medium">Signal Health</h3>
+          <p className="text-xs text-muted-foreground">Auto-refresh every 60 seconds.</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {signals.map((s) => (
+              <SignalCard key={s.id} signalId={s.id} signalName={s.name} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {goals.length > 0 && intent && (
+        <div className="space-y-3">
+          <div className="flex items-center gap-2">
+            <History className="w-4 h-4 text-muted-foreground" />
+            <h3 className="text-sm font-medium">Goal History</h3>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Activation and completion events per goal.
+          </p>
+          <div className="space-y-2">
+            {goals.map((g) => (
+              <GoalTimeline
+                key={g.id}
+                intentId={intent.id}
+                goalId={g.id}
+                goalName={g.name}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

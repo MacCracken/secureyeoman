@@ -17,6 +17,8 @@ export interface McpRoutesOptions {
   mcpServer: McpServer;
   healthMonitor?: McpHealthMonitor;
   credentialManager?: McpCredentialManager;
+  /** Returns whether NetBox write (and access) is permitted per the security policy. */
+  getNetBoxWriteAllowed?: () => boolean;
 }
 
 const LOCAL_MCP_NAME = 'YEOMAN MCP';
@@ -32,9 +34,12 @@ const WEB_SCRAPING_TOOLS = [
 const WEB_SEARCH_TOOLS = ['web_search', 'web_search_batch'];
 const BROWSER_TOOL_PREFIXES = ['browser_'];
 const DESKTOP_TOOL_PREFIXES = ['desktop_'];
+const NETWORK_TOOL_PREFIXES = ['network_', 'netbox_', 'nvd_', 'subnet_', 'wildcard_', 'pcap_'];
+const NETBOX_TOOL_PREFIXES = ['netbox_'];
+const TWINGATE_TOOL_PREFIXES = ['twingate_'];
 
 export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions): void {
-  const { mcpStorage, mcpClient, mcpServer, healthMonitor, credentialManager } = opts;
+  const { mcpStorage, mcpClient, mcpServer, healthMonitor, credentialManager, getNetBoxWriteAllowed } = opts;
 
   // List configured MCP servers
   app.get(
@@ -178,6 +183,16 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
         return false;
       if (!config.exposeDesktopControl && DESKTOP_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
         return false;
+      if (!config.exposeNetworkTools && NETWORK_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
+      if (
+        getNetBoxWriteAllowed &&
+        !getNetBoxWriteAllowed() &&
+        NETBOX_TOOL_PREFIXES.some((p) => tool.name.startsWith(p))
+      )
+        return false;
+      if (!config.exposeTwingateTools && TWINGATE_TOOL_PREFIXES.some((p) => tool.name.startsWith(p)))
+        return false;
       return true;
     });
 
@@ -232,6 +247,8 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           exposeWebSearch?: boolean;
           exposeBrowser?: boolean;
           exposeDesktopControl?: boolean;
+          exposeNetworkTools?: boolean;
+          exposeTwingateTools?: boolean;
           allowedUrls?: string[];
           webRateLimitPerMinute?: number;
           proxyEnabled?: boolean;

@@ -8,30 +8,7 @@
 
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
-| 50 | Intent Goal Lifecycle Events | — | Planned |
 | XX | Find & Repair (Ongoing) | — | Ongoing |
-
----
-
-## Phase 50: Intent Goal Lifecycle Events
-
-**Status**: Planned | **Priority**: Medium — requires persistent goal-state snapshot infrastructure before goal activation/completion can be detected reliably.
-
-Adds deterministic audit events for the goal lifecycle inside an active `OrgIntent` document. Phase 48 shipped the goal engine (resolver, affinity, authorized actions) but deferred the lifecycle events because detecting a goal's transition to "active" or "completed" requires a persistent snapshot of prior goal state — none exists yet.
-
-### 50.1 — Goal State Persistence
-
-- [ ] **Active goal snapshot** — Store a per-intent snapshot of which goals are currently active (evaluated against their `conditions[]`) in the DB (new column or separate table). On each `reloadActiveIntent()` / signal refresh cycle, diff the new evaluation against the snapshot to detect transitions.
-- [ ] **`intent_goal_activated` enforcement log event** — Emitted when a goal transitions from inactive → active (condition newly satisfied). Logs `goalId`, `rule` (the condition text), and `agentId` if available.
-- [ ] **`intent_goal_completed` enforcement log event** — Emitted when a goal transitions from active → inactive and a completion marker is present (e.g. `goal.completionCondition` string or external signal crossing threshold in the opposite direction). Deferred until `completionCondition` field is defined in `GoalSchema`.
-
-### 50.2 — Schema Extension
-
-- [ ] **`completionCondition` on `GoalSchema`** — Optional string field (same deny:/tool: pattern as boundaries) describing what constitutes goal completion. When a signal or context fact matches, goal is marked completed and `intent_goal_completed` fires.
-
-### 50.3 — Dashboard
-
-- [ ] **Goal lifecycle timeline** — In the intent editor / signals tab, surface a timeline of `intent_goal_activated` and `intent_goal_completed` events from the enforcement log per goal, so operators can see when goals activate and whether they resolve.
 
 ---
 
@@ -45,7 +22,10 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 *Add observed bugs here as they are found; mark fixed when resolved.*
 
-- [ ] (none yet)
+- [x] MCP tool count not updating when Network Tools / Twingate toggled — backend GET /api/v1/mcp/tools was missing network and Twingate prefix filters (fixed Phase XX.3)
+- [x] NetBox tools not removed from count when NetBox Write toggled — `allowNetBoxWrite` (SecurityPolicy) was not threaded to the tools route; added `getNetBoxWriteAllowed` callback (fixed Phase XX.3)
+- [x] Twingate toggle visual grey-out absent in Connections MCP card (fixed Phase XX.3)
+- [x] "Allow Twingate" master gate missing from Security settings (fixed Phase XX.3)
 
 ---
 
@@ -164,4 +144,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-24 (Phase 50 planned — Intent Goal Lifecycle Events)*
+*Last updated: 2026-02-24 (Phase 50 complete — goal lifecycle snapshot table, goal_activated/goal_completed events, completionCondition schema field, GoalTimeline dashboard component)*

@@ -9,6 +9,7 @@ const {
   mockGenerateSecretKey,
   mockExtractFlag,
   mockExtractBoolFlag,
+  mockExtractCommonFlags,
   mockApiCall,
   mockPrompt,
   mockPromptChoice,
@@ -21,6 +22,12 @@ const {
     mockReadFileSync: vi.fn().mockReturnValue(''),
     mockWriteFileSync: vi.fn(),
     mockGenerateSecretKey: vi.fn().mockImplementation((n: number) => `key-${n}`),
+    mockExtractCommonFlags: vi.fn().mockImplementation((argv: string[]) => ({
+      baseUrl: 'http://127.0.0.1:3000',
+      token: undefined,
+      json: false,
+      rest: argv,
+    })),
     mockExtractFlag: vi.fn().mockImplementation((argv: string[], long: string, _short?: string) => {
       const idx = argv.findIndex((a) => a === `--${long}`);
       if (idx !== -1 && argv[idx + 1]) {
@@ -65,6 +72,7 @@ vi.mock('node:fs', () => ({
 vi.mock('../utils.js', () => ({
   extractFlag: mockExtractFlag,
   extractBoolFlag: mockExtractBoolFlag,
+  extractCommonFlags: mockExtractCommonFlags,
   generateSecretKey: mockGenerateSecretKey,
   prompt: mockPrompt,
   promptChoice: mockPromptChoice,

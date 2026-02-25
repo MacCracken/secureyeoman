@@ -219,6 +219,36 @@ describe('security command', () => {
       expect(getStdout()).toContain('MCP_EXPOSE_SECURITY_TOOLS');
       expect(getStdout()).toContain('MCP_ALLOWED_TARGETS');
     });
+
+    it('--json outputs structured JSON when container not found', async () => {
+      const execFile = await getExecFileMock();
+      execFile.mockImplementationOnce(makeDockerFailure(1)); // docker inspect fails
+
+      const { stdout, stderr, getStdout } = createStreams();
+      const code = await securityCommand.run({ argv: ['status', '--json'], stdout, stderr });
+      expect(code).toBe(0);
+      const parsed = JSON.parse(getStdout()) as { container: string; state: string; tools: Record<string, boolean>; config: Record<string, string> };
+      expect(parsed.container).toBe('kali-sy-toolkit');
+      expect(parsed.state).toBe('not found');
+      expect(parsed.tools).toEqual({});
+    });
+
+    it('--json outputs tool availability when container is running', async () => {
+      const execFile = await getExecFileMock();
+      execFile
+        .mockImplementationOnce(makeDockerSuccess('{}'))       // inspect (exists)
+        .mockImplementationOnce(makeDockerSuccess('true'))     // Running
+        .mockImplementation(makeDockerSuccess('/usr/bin/nmap')); // all tool which checks
+
+      const { stdout, stderr, getStdout } = createStreams();
+      const code = await securityCommand.run({ argv: ['status', '--json'], stdout, stderr });
+      expect(code).toBe(0);
+      const parsed = JSON.parse(getStdout()) as { state: string; tools: Record<string, boolean>; config: Record<string, string> };
+      expect(parsed.state).toBe('running');
+      expect(parsed.tools).toBeDefined();
+      expect(Object.keys(parsed.tools).length).toBeGreaterThan(0);
+      expect(parsed.config).toHaveProperty('MCP_EXPOSE_SECURITY_TOOLS');
+    });
   });
 
   describe('command metadata', () => {

@@ -1,3 +1,50 @@
+## [Phase XX.3] — MCP Tool Visibility Fixes (2026-02-24)
+
+### Fixed
+
+- **`GET /api/v1/mcp/tools` not filtering `network_*` / `netbox_*` / `nvd_*` / `subnet_*` / `wildcard_*` / `pcap_*` tools** — The endpoint already filtered git, filesystem, web, browser, and desktop tools by `McpFeatureConfig`, but the network and Twingate tool groups were missing from the filter. Added `NETWORK_TOOL_PREFIXES` and `TWINGATE_TOOL_PREFIXES` checks so toggling **Network Tools** or **Twingate** in Connections → MCP now correctly removes those tools from the Discovered Tools list and counts.
+- **`netbox_*` tools not updating when NetBox Write is toggled** — `allowNetBoxWrite` lives in `SecurityPolicy`, which the tools route couldn't access. Added `getNetBoxWriteAllowed?: () => boolean` to `McpRoutesOptions`; `GatewayServer` wires it to `config.security.allowNetBoxWrite`. When the callback returns `false`, all `netbox_*` tools are excluded from the response, matching user expectation that enabling write access is a prerequisite for NetBox tool availability. The frontend `toolCount` filter in `ConnectionsPage` mirrors this logic using `securityPolicy?.allowNetBoxWrite`.
+- **Twingate toggle visual grey-out** — The Twingate Zero-Trust Tunnel row in Connections → MCP now applies the same `opacity-50 / cursor-not-allowed` disabled styling as NetBox Write does when its parent gate is off. When `securityPolicy.allowTwingate` is `false` the row is greyed and the checkbox is disabled with a tooltip reading "Enable Twingate in Security settings first".
+- **"Allow Twingate" master gate missing from Security settings** — Removed in a previous session when the Twingate card was relocated to Connections. Restored as a lean `PolicyToggle` card (below Network Tools) that controls `allowTwingate` in `SecurityPolicy`, keeping it consistent with the `allowNetworkTools` pattern.
+
+### Tests
+
+- **7 new unit tests in `mcp-routes.test.ts`** — Cover `exposeNetworkTools` on/off, `exposeTwingateTools` on/off, `getNetBoxWriteAllowed` returning false/true/absent for `netbox_*` tools. All 37 route tests pass.
+
+---
+
+## [Phase 50] — Intent Goal Lifecycle Events (2026-02-24)
+
+### Added
+
+- **`completionCondition` field on `GoalSchema`** — Optional string describing what constitutes goal completion. Uses the same deny:/tool: prefix matching as hard boundaries. When a goal transitions from active → inactive and this field is present, a `goal_completed` enforcement log event is emitted.
+- **`'goal_completed'` in `EnforcementEventTypeSchema`** — Joins the existing `'goal_activated'` event; both are now surfaced in the dashboard enforcement log filter and the new `GoalTimeline` component.
+- **`intent_goal_snapshots` table** (migration `044_goal_lifecycle.sql`) — Persists per-intent goal active-state snapshots (`intent_id`, `goal_id`, `is_active`, `activated_at`, `completed_at`). Enables transition detection across process restarts.
+- **`IntentStorage` snapshot + timeline methods**:
+  - `getGoalSnapshots(intentId)` — loads DB snapshot into a `Map<goalId, GoalSnapshotRecord>`
+  - `upsertGoalSnapshot(intentId, goalId, isActive, now, setActivatedAt, setCompletedAt)` — INSERT … ON CONFLICT DO UPDATE
+  - `getGoalTimeline(intentId, goalId)` — enforcement log entries for a single goal (`goal_activated` + `goal_completed` events, oldest-first)
+- **`itemId` filter on `queryEnforcementLog`** — Enables per-goal timeline queries via `?itemId=goalId` on `GET /api/v1/intent/enforcement-log`.
+- **`IntentManager._diffGoals(ctx)`** — Compares current `resolveActiveGoals(ctx)` evaluation against the in-memory snapshot. On inactive→active: emits `goal_activated` and upserts snapshot with `activatedAt`. On active→inactive with `completionCondition`: emits `goal_completed` and sets `completedAt`. Updates both in-memory and DB snapshots.
+- **`IntentManager._seedGoalSnapshot()`** — Called once during `initialize()`. Loads DB snapshot and seeds the in-memory map without firing events (correct prior state for new processes).
+- **`_diffGoals` wired into three call sites**:
+  - `initialize()` — seeds via `_seedGoalSnapshot()` then starts refresh timer
+  - `reloadActiveIntent()` — diffs immediately when the active intent changes (doc swap, activation, update)
+  - `_startSignalRefresh()` — diffs once per refresh cycle (outside signal loop)
+- **`IntentManager.getGoalTimeline(intentId, goalId)`** — public passthrough to storage
+- **`GET /api/v1/intent/:id/goals/:goalId/timeline`** — new endpoint; returns `{ entries: EnforcementLogEntry[] }` for a goal's lifecycle events; 404s if intent doc not found
+- **`fetchGoalTimeline(intentId, goalId)`** in dashboard API client
+- **`completionCondition?: string`** on `OrgIntentGoal` dashboard interface
+- **`GoalTimeline` component** in `IntentEditor.tsx` — collapsible per-goal card in the Signals tab showing `Activated` / `Completed` event chips with timestamps; lazy-loaded on expand via `useQuery`
+- **Goal History section** in `SignalDashboard` — appears below Signal Health cards when the active intent has goals; renders one `GoalTimeline` per goal
+- **`goal_completed` colour** added to `EnforcementLogFeed` event type map (emerald) and dropdown filter
+- **25 new tests** (82 total across 3 intent test files):
+  - `intent-schema.test.ts` — `completionCondition` present/absent parsing (+2)
+  - `intent-manager.test.ts` — `goal_activated` emission, no duplicate events, `goal_completed` with/without `completionCondition`, `initialize()` seed-without-events, DB snapshot seeding, `getGoalTimeline` passthrough (+15)
+  - `intent-routes.test.ts` — `itemId` filter passthrough, `GET /:id/goals/:goalId/timeline` success + 404 (+5), `makeStorage`/`makeManager` updated with new methods (+3 runner changes)
+
+---
+
 ## [Phase 49.1] — Autonomy Level Build Fixes (2026-02-24)
 
 ### Fixed

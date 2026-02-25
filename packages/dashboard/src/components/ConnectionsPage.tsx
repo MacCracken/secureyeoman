@@ -2253,7 +2253,19 @@ function McpTab({
       {localServer && (
         <LocalServerCard
           server={localServer}
-          toolCount={tools.filter((t) => t.serverName === LOCAL_MCP_NAME).length}
+          toolCount={tools
+            .filter((t) => t.serverName === LOCAL_MCP_NAME)
+            .filter((t) => {
+              const NETWORK_PREFIXES = ['network_', 'netbox_', 'nvd_', 'subnet_', 'wildcard_', 'pcap_'];
+              if (NETWORK_PREFIXES.some((p) => t.name.startsWith(p)) && !featureConfig?.exposeNetworkTools)
+                return false;
+              if (t.name.startsWith('netbox_') && !securityPolicy?.allowNetBoxWrite)
+                return false;
+              if (t.name.startsWith('twingate_') && !featureConfig?.exposeTwingateTools)
+                return false;
+              return true;
+            })
+            .length}
           onDelete={() => {
             onDelete(localServer.id);
           }}
@@ -2393,7 +2405,12 @@ function LocalServerCard({
   const queryClient = useQueryClient();
   const policyMut = useMutation({
     mutationFn: (patch: Parameters<typeof updateSecurityPolicy>[0]) => updateSecurityPolicy(patch),
-    onSuccess: () => void queryClient.invalidateQueries({ queryKey: ['securityPolicy'] }),
+    onSuccess: () =>
+      void Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['securityPolicy'] }),
+        queryClient.invalidateQueries({ queryKey: ['mcpTools'] }),
+        queryClient.invalidateQueries({ queryKey: ['mcpServers'] }),
+      ]),
   });
 
   return (
@@ -2566,25 +2583,9 @@ function LocalServerCard({
               </div>
               <input
                 type="checkbox"
-                checked={
-                  !!(
-                    featureConfig.exposeNetworkDevices ||
-                    featureConfig.exposeNetworkDiscovery ||
-                    featureConfig.exposeNetworkAudit ||
-                    featureConfig.exposeNetBox ||
-                    featureConfig.exposeNvd ||
-                    featureConfig.exposeNetworkUtils
-                  )
-                }
+                checked={featureConfig.exposeNetworkTools}
                 onChange={(e) => {
-                  onFeatureToggle({
-                    exposeNetworkDevices: e.target.checked,
-                    exposeNetworkDiscovery: e.target.checked,
-                    exposeNetworkAudit: e.target.checked,
-                    exposeNetBox: e.target.checked,
-                    exposeNvd: e.target.checked,
-                    exposeNetworkUtils: e.target.checked,
-                  });
+                  onFeatureToggle({ exposeNetworkTools: e.target.checked });
                 }}
                 disabled={isFeatureToggling || !securityPolicy?.allowNetworkTools}
                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
@@ -2593,12 +2594,12 @@ function LocalServerCard({
             {/* NetBox Write — sub-gate, only meaningful when Network Tools enabled */}
             <label
               className={`flex items-center gap-2.5 p-2 rounded-lg transition-colors ${
-                securityPolicy?.allowNetworkTools && featureConfig.exposeNetBox
+                featureConfig.exposeNetworkTools
                   ? 'bg-muted/30 cursor-pointer hover:bg-muted/50'
                   : 'bg-muted/10 cursor-not-allowed opacity-50'
               }`}
               title={
-                securityPolicy?.allowNetworkTools
+                featureConfig.exposeNetworkTools
                   ? 'Allow agents to create, update, or delete NetBox records'
                   : 'Enable Network Tools first'
               }
@@ -2606,7 +2607,7 @@ function LocalServerCard({
               <Database className="w-4 h-4 text-muted-foreground shrink-0" />
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-medium">NetBox Write</span>
-                {(!securityPolicy?.allowNetworkTools || !featureConfig.exposeNetBox) && (
+                {!featureConfig.exposeNetworkTools && (
                   <p className="text-[10px] text-muted-foreground truncate">
                     Enable Network Tools first
                   </p>
@@ -2616,11 +2617,7 @@ function LocalServerCard({
                 type="checkbox"
                 checked={securityPolicy?.allowNetBoxWrite ?? false}
                 onChange={(e) => policyMut.mutate({ allowNetBoxWrite: e.target.checked })}
-                disabled={
-                  policyMut.isPending ||
-                  !securityPolicy?.allowNetworkTools ||
-                  !featureConfig.exposeNetBox
-                }
+                disabled={policyMut.isPending || !featureConfig.exposeNetworkTools}
                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
               />
             </label>
@@ -2662,21 +2659,35 @@ function LocalServerCard({
               Twingate Remote Access
             </p>
             <label
-              className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
-              title="Zero-trust tunnel — agents can reach private MCP servers and resources"
+              className={`flex items-center gap-2.5 p-2 rounded-lg transition-colors ${
+                securityPolicy?.allowTwingate
+                  ? 'bg-muted/30 cursor-pointer hover:bg-muted/50'
+                  : 'bg-muted/10 cursor-not-allowed opacity-50'
+              }`}
+              title={
+                securityPolicy?.allowTwingate
+                  ? 'Zero-trust tunnel — agents can reach private MCP servers and resources'
+                  : 'Enable Twingate in Security settings first'
+              }
             >
               <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
               <div className="flex-1 min-w-0">
                 <span className="text-xs font-medium">Twingate Zero-Trust Tunnel</span>
-                <p className="text-[10px] text-muted-foreground truncate">
-                  Agents can reach private MCP servers and resources via Twingate
-                </p>
+                {!securityPolicy?.allowTwingate ? (
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    Enable Twingate in Security settings first
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground truncate">
+                    Agents can reach private MCP servers and resources via Twingate
+                  </p>
+                )}
               </div>
               <input
                 type="checkbox"
-                checked={securityPolicy?.allowTwingate ?? false}
-                onChange={(e) => policyMut.mutate({ allowTwingate: e.target.checked })}
-                disabled={policyMut.isPending}
+                checked={featureConfig?.exposeTwingateTools ?? false}
+                onChange={(e) => onFeatureToggle({ exposeTwingateTools: e.target.checked })}
+                disabled={isFeatureToggling || !securityPolicy?.allowTwingate}
                 className="w-3.5 h-3.5 rounded accent-primary shrink-0"
               />
             </label>

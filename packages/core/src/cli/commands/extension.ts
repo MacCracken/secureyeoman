@@ -3,7 +3,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatTable, apiCall } from '../utils.js';
+import { extractBoolFlag, extractCommonFlags, formatTable, apiCall } from '../utils.js';
 
 export const extensionCommand: Command = {
   name: 'extension',
@@ -37,12 +37,8 @@ Options:
     const subcommand = argv[0];
     argv = argv.slice(1);
 
-    const urlResult = extractFlag(argv, 'url');
-    argv = urlResult.rest;
-    const jsonResult = extractBoolFlag(argv, 'json');
-    argv = jsonResult.rest;
-
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
+    const { baseUrl, json: jsonOutput, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
 
     try {
       switch (subcommand) {
@@ -55,7 +51,7 @@ Options:
           const data = res.data as {
             extensions: { id: string; name: string; version: string; enabled: boolean }[];
           };
-          if (jsonResult.value) {
+          if (jsonOutput) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
             const rows = (data.extensions ?? []).map((e) => ({
@@ -84,7 +80,7 @@ Options:
               enabled: boolean;
             }[];
           };
-          if (jsonResult.value) {
+          if (jsonOutput) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
             const rows = (data.hooks ?? []).map((h) => ({
@@ -108,7 +104,7 @@ Options:
           const data = res.data as {
             webhooks: { id: string; url: string; hookPoints: string[]; enabled: boolean }[];
           };
-          if (jsonResult.value) {
+          if (jsonOutput) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
             const rows = (data.webhooks ?? []).map((w) => ({

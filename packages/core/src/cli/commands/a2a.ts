@@ -3,7 +3,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatTable, apiCall } from '../utils.js';
+import { extractFlag, extractBoolFlag, extractCommonFlags, formatTable, apiCall } from '../utils.js';
 
 export const a2aCommand: Command = {
   name: 'a2a',
@@ -39,12 +39,8 @@ Options:
     const subcommand = argv[0];
     argv = argv.slice(1);
 
-    const urlResult = extractFlag(argv, 'url');
-    argv = urlResult.rest;
-    const jsonResult = extractBoolFlag(argv, 'json');
-    argv = jsonResult.rest;
-
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
+    const { baseUrl, json: jsonOutput, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
 
     try {
       switch (subcommand) {
@@ -63,7 +59,7 @@ Options:
               status: string;
             }[];
           };
-          if (jsonResult.value) {
+          if (jsonOutput) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
             const rows = (data.peers ?? []).map((p) => ({
@@ -196,7 +192,7 @@ Options:
             }[];
             total: number;
           };
-          if (jsonResult.value) {
+          if (jsonOutput) {
             ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
           } else {
             const rows = (data.messages ?? []).map((m) => ({

@@ -44,6 +44,9 @@ function makeStorage(overrides: Partial<IntentStorage> = {}): IntentStorage {
     setActiveIntent: vi.fn().mockResolvedValue(undefined),
     logEnforcement: vi.fn().mockResolvedValue(undefined),
     queryEnforcementLog: vi.fn().mockResolvedValue([]),
+    getGoalSnapshots: vi.fn().mockResolvedValue(new Map()),
+    upsertGoalSnapshot: vi.fn().mockResolvedValue(undefined),
+    getGoalTimeline: vi.fn().mockResolvedValue([]),
     ...overrides,
   } as unknown as IntentStorage;
 }
@@ -61,6 +64,9 @@ function makeManager(storageOverrides: Partial<IntentStorage> = {}): IntentManag
       status: 'healthy',
       message: 'Error Rate is healthy (3.2)',
     }),
+    getGoalTimeline: vi.fn().mockResolvedValue([
+      { id: 'e1', eventType: 'goal_activated', itemId: 'g1', rule: 'unconditional', createdAt: NOW },
+    ]),
   } as unknown as IntentManager;
 }
 
@@ -268,5 +274,51 @@ describe('GET /api/v1/intent/enforcement-log', () => {
     expect(querySpy).toHaveBeenCalledWith(
       expect.objectContaining({ eventType: 'boundary_violated', limit: 10 })
     );
+  });
+
+  it('passes itemId filter through', async () => {
+    const querySpy = vi.fn().mockResolvedValue([]);
+    const app = Fastify({ logger: false });
+    const storage = makeStorage({ queryEnforcementLog: querySpy });
+    const mgr = makeManager();
+    mgr.getStorage = vi.fn().mockReturnValue(storage);
+    registerIntentRoutes(app, { intentManager: mgr });
+
+    await app.inject({
+      method: 'GET',
+      url: '/api/v1/intent/enforcement-log?itemId=g1',
+    });
+    expect(querySpy).toHaveBeenCalledWith(
+      expect.objectContaining({ itemId: 'g1' })
+    );
+  });
+});
+
+// ── GET /api/v1/intent/:id/goals/:goalId/timeline ─────────────────────────────
+
+describe('GET /api/v1/intent/:id/goals/:goalId/timeline', () => {
+  it('returns goal lifecycle events', async () => {
+    const res = await buildApp().inject({
+      method: 'GET',
+      url: '/api/v1/intent/intent-1/goals/g1/timeline',
+    });
+    expect(res.statusCode).toBe(200);
+    const body = res.json();
+    expect(body.entries).toHaveLength(1);
+    expect(body.entries[0].eventType).toBe('goal_activated');
+  });
+
+  it('returns 404 when intent not found', async () => {
+    const app = Fastify({ logger: false });
+    const storage = makeStorage({ getIntentDoc: vi.fn().mockResolvedValue(null) });
+    const mgr = makeManager();
+    mgr.getStorage = vi.fn().mockReturnValue(storage);
+    registerIntentRoutes(app, { intentManager: mgr });
+
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/intent/missing/goals/g1/timeline',
+    });
+    expect(res.statusCode).toBe(404);
   });
 });

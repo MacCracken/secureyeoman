@@ -45,6 +45,20 @@ describe('GoalSchema', () => {
     expect(result.activeWhen).toBe('quarter=Q1');
   });
 
+  it('parses completionCondition when present', () => {
+    const result = GoalSchema.parse({
+      id: 'g1',
+      name: 'Reach Milestone',
+      completionCondition: 'signal:revenue_signal crosses 1000000',
+    });
+    expect(result.completionCondition).toBe('signal:revenue_signal crosses 1000000');
+  });
+
+  it('completionCondition is undefined when omitted', () => {
+    const result = GoalSchema.parse({ id: 'g1', name: 'Minimal Goal' });
+    expect(result.completionCondition).toBeUndefined();
+  });
+
   it('rejects a goal without required id', () => {
     const result = GoalSchema.safeParse({ name: 'No ID' });
     expect(result.success).toBe(false);

@@ -14,6 +14,14 @@ import type {
 
 // ─── Row types ────────────────────────────────────────────────────────────────
 
+interface GoalSnapshotRow {
+  intent_id: string;
+  goal_id: string;
+  is_active: boolean;
+  activated_at: string | null;
+  completed_at: string | null;
+}
+
 interface IntentRow {
   id: string;
   name: string;
@@ -80,9 +88,18 @@ function rowToLogEntry(row: EnforcementLogRow): EnforcementLogEntry {
 
 // ─── IntentStorage ────────────────────────────────────────────────────────────
 
+export interface GoalSnapshotRecord {
+  intentId: string;
+  goalId: string;
+  isActive: boolean;
+  activatedAt: number | null;
+  completedAt: number | null;
+}
+
 export interface EnforcementLogQueryOpts {
   eventType?: EnforcementEventType;
   agentId?: string;
+  itemId?: string; // filter by goal/action/signal id
   since?: number; // unix ms
   limit?: number;
 }
@@ -179,6 +196,72 @@ export class IntentStorage extends PgBaseStorage {
     });
   }
 
+  // ── Goal snapshots ───────────────────────────────────────────────────────────
+
+  /** Returns all goal snapshots for an intent, keyed by goalId. */
+  async getGoalSnapshots(intentId: string): Promise<Map<string, GoalSnapshotRecord>> {
+    const rows = await this.queryMany<GoalSnapshotRow>(
+      'SELECT * FROM intent_goal_snapshots WHERE intent_id = $1',
+      [intentId]
+    );
+    const map = new Map<string, GoalSnapshotRecord>();
+    for (const row of rows) {
+      map.set(row.goal_id, {
+        intentId: row.intent_id,
+        goalId: row.goal_id,
+        isActive: row.is_active,
+        activatedAt: row.activated_at !== null ? Number(row.activated_at) : null,
+        completedAt: row.completed_at !== null ? Number(row.completed_at) : null,
+      });
+    }
+    return map;
+  }
+
+  /** Upserts a goal's active state in the snapshot table. */
+  async upsertGoalSnapshot(
+    intentId: string,
+    goalId: string,
+    isActive: boolean,
+    now: number,
+    setActivatedAt: boolean,
+    setCompletedAt: boolean
+  ): Promise<void> {
+    await this.execute(
+      `INSERT INTO intent_goal_snapshots (intent_id, goal_id, is_active, activated_at, completed_at)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (intent_id, goal_id) DO UPDATE
+         SET is_active    = EXCLUDED.is_active,
+             activated_at = CASE WHEN $6 THEN EXCLUDED.activated_at ELSE intent_goal_snapshots.activated_at END,
+             completed_at = CASE WHEN $7 THEN EXCLUDED.completed_at ELSE intent_goal_snapshots.completed_at END`,
+      [
+        intentId,
+        goalId,
+        isActive,
+        setActivatedAt ? now : null,
+        setCompletedAt ? now : null,
+        setActivatedAt,
+        setCompletedAt,
+      ]
+    );
+  }
+
+  /**
+   * Returns enforcement log entries for a specific goal's lifecycle events
+   * (goal_activated + goal_completed), ordered oldest-first for timeline display.
+   */
+  async getGoalTimeline(intentId: string, goalId: string): Promise<EnforcementLogEntry[]> {
+    const rows = await this.queryMany<EnforcementLogRow>(
+      `SELECT * FROM intent_enforcement_log
+       WHERE item_id = $1
+         AND event_type IN ('goal_activated', 'goal_completed')
+         AND metadata->>'intentId' = $2
+       ORDER BY created_at ASC
+       LIMIT 200`,
+      [goalId, intentId]
+    );
+    return rows.map(rowToLogEntry);
+  }
+
   // ── Enforcement log ──────────────────────────────────────────────────────────
 
   async logEnforcement(entry: EnforcementLogEntry): Promise<void> {
@@ -217,6 +300,10 @@ export class IntentStorage extends PgBaseStorage {
     if (opts.agentId) {
       conditions.push(`agent_id = $${idx++}`);
       values.push(opts.agentId);
+    }
+    if (opts.itemId) {
+      conditions.push(`item_id = $${idx++}`);
+      values.push(opts.itemId);
     }
     if (opts.since) {
       conditions.push(`created_at >= $${idx++}`);

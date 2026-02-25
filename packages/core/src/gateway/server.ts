@@ -477,7 +477,14 @@ export class GatewayServer {
           this.getLogger(),
           tokenSecret
         );
-        registerMcpRoutes(this.app, { mcpStorage, mcpClient, mcpServer, credentialManager });
+        registerMcpRoutes(this.app, {
+          mcpStorage,
+          mcpClient,
+          mcpServer,
+          credentialManager,
+          getNetBoxWriteAllowed: () =>
+            this.secureYeoman.getConfig().security.allowNetBoxWrite ?? false,
+        });
         this.getLogger().info('MCP routes registered');
       } else {
         this.getLogger().warn('MCP routes skipped — MCP system not initialized');

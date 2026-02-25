@@ -8,6 +8,7 @@ const {
   mockFormatTable,
   mockExtractFlag,
   mockExtractBoolFlag,
+  mockExtractCommonFlags,
   mockMkdirSync,
   mockExistsSync,
   mockReadFileSync,
@@ -21,6 +22,12 @@ const {
   const mockFormatTable = vi.fn().mockReturnValue('id | name\n');
   const mockExtractFlag = vi.fn().mockReturnValue({ value: undefined, rest: [] });
   const mockExtractBoolFlag = vi.fn().mockReturnValue({ value: false, rest: [] });
+  const mockExtractCommonFlags = vi.fn().mockReturnValue({
+    baseUrl: 'http://127.0.0.1:3000',
+    token: undefined,
+    json: false,
+    rest: [],
+  });
 
   const mockMkdirSync = vi.fn();
   const mockExistsSync = vi.fn().mockReturnValue(false);
@@ -52,6 +59,7 @@ const {
     mockFormatTable,
     mockExtractFlag,
     mockExtractBoolFlag,
+    mockExtractCommonFlags,
     mockMkdirSync,
     mockExistsSync,
     mockReadFileSync,
@@ -70,6 +78,7 @@ vi.mock('../utils.js', () => ({
   formatTable: mockFormatTable,
   extractFlag: mockExtractFlag,
   extractBoolFlag: mockExtractBoolFlag,
+  extractCommonFlags: mockExtractCommonFlags,
 }));
 
 vi.mock('node:fs', () => ({
@@ -136,6 +145,12 @@ describe('repl command — interactive (TTY)', () => {
     vi.clearAllMocks();
     mockExtractBoolFlag.mockReturnValue({ value: false, rest: [] });
     mockExtractFlag.mockReturnValue({ value: undefined, rest: [] });
+    mockExtractCommonFlags.mockReturnValue({
+      baseUrl: 'http://127.0.0.1:3000',
+      token: undefined,
+      json: false,
+      rest: [],
+    });
     mockExistsSync.mockReturnValue(false);
     mockRL = createMockRL();
     savedIsTTY = process.stdin.isTTY;
@@ -478,7 +493,12 @@ describe('repl command — interactive (TTY)', () => {
   });
 
   it('uses --url flag when provided', async () => {
-    mockExtractFlag.mockReturnValueOnce({ value: 'http://myserver:4000', rest: [] });
+    mockExtractCommonFlags.mockReturnValueOnce({
+      baseUrl: 'http://myserver:4000',
+      token: undefined,
+      json: false,
+      rest: [],
+    });
     mockApiCall.mockResolvedValueOnce({
       ok: true,
       status: 200,

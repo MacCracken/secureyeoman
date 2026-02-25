@@ -89,6 +89,9 @@ Subcommands:
   update    Update packages inside the running container
   status    Show container state and per-tool availability
 
+Options:
+  --json    Output raw JSON (status subcommand only)
+
 Environment variables set after setup:
   MCP_EXPOSE_SECURITY_TOOLS=true
   MCP_SECURITY_TOOLS_MODE=docker-exec
@@ -211,10 +214,39 @@ Environment variables set after setup:
     }
 
     if (subcommand === 'status') {
-      ctx.stdout.write(`\nContainer: ${CONTAINER}\n`);
+      const jsonOutput = argv.includes('--json');
+
       const exists = await containerExists();
       const running = exists && (await isContainerRunning());
-      ctx.stdout.write(`State: ${!exists ? 'not found' : running ? 'running' : 'stopped'}\n`);
+      const state = !exists ? 'not found' : running ? 'running' : 'stopped';
+
+      const envVars = [
+        'MCP_EXPOSE_SECURITY_TOOLS',
+        'MCP_SECURITY_TOOLS_MODE',
+        'MCP_SECURITY_TOOLS_CONTAINER',
+        'MCP_ALLOWED_TARGETS',
+        'SHODAN_API_KEY',
+      ];
+
+      if (jsonOutput) {
+        const tools: Record<string, boolean> = {};
+        if (running) {
+          for (const tool of SECURITY_TOOLS) {
+            tools[tool] = await checkToolInContainer(tool);
+          }
+        }
+        const config: Record<string, string> = {};
+        for (const v of envVars) {
+          config[v] = v === 'SHODAN_API_KEY' && process.env[v] ? '[set]' : (process.env[v] ?? '');
+        }
+        ctx.stdout.write(
+          JSON.stringify({ container: CONTAINER, state, tools, config }, null, 2) + '\n'
+        );
+        return 0;
+      }
+
+      ctx.stdout.write(`\nContainer: ${CONTAINER}\n`);
+      ctx.stdout.write(`State: ${state}\n`);
 
       if (running) {
         ctx.stdout.write('\nTool availability:\n');
@@ -230,14 +262,7 @@ Environment variables set after setup:
       }
 
       ctx.stdout.write('\nCurrent config (from environment):\n');
-      const vars = [
-        'MCP_EXPOSE_SECURITY_TOOLS',
-        'MCP_SECURITY_TOOLS_MODE',
-        'MCP_SECURITY_TOOLS_CONTAINER',
-        'MCP_ALLOWED_TARGETS',
-        'SHODAN_API_KEY',
-      ];
-      for (const v of vars) {
+      for (const v of envVars) {
         const val = process.env[v];
         const display = v === 'SHODAN_API_KEY' && val ? '[set]' : (val ?? '(not set)');
         ctx.stdout.write(`  ${v}=${display}\n`);

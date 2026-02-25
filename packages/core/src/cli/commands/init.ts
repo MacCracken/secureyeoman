@@ -11,8 +11,8 @@ import { createInterface } from 'node:readline';
 import { writeFileSync, readFileSync, existsSync } from 'node:fs';
 import type { Command, CommandContext } from '../router.js';
 import {
-  extractFlag,
   extractBoolFlag,
+  extractCommonFlags,
   generateSecretKey,
   prompt,
   promptChoice,
@@ -68,13 +68,11 @@ Options:
     }
     argv = helpResult.rest;
 
-    const urlResult = extractFlag(argv, 'url');
-    argv = urlResult.rest;
+    const { baseUrl, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
     const nonInteractive = extractBoolFlag(argv, 'non-interactive');
     argv = nonInteractive.rest;
     const envOnly = extractBoolFlag(argv, 'env-only');
-
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
 
     ctx.stdout.write(`
   ╔═══════════════════════════════════════════╗

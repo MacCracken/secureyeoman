@@ -1341,12 +1341,7 @@ export interface McpConfigResponse {
   exposeWebSearch: boolean;
   exposeBrowser: boolean;
   exposeDesktopControl: boolean;
-  exposeNetworkDevices: boolean;
-  exposeNetworkDiscovery: boolean;
-  exposeNetworkAudit: boolean;
-  exposeNetBox: boolean;
-  exposeNvd: boolean;
-  exposeNetworkUtils: boolean;
+  exposeNetworkTools: boolean;
   exposeTwingateTools: boolean;
   exposeOrgIntentTools: boolean;
   respectContentSignal: boolean;
@@ -1370,12 +1365,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeWebSearch: true,
       exposeBrowser: false,
       exposeDesktopControl: false,
-      exposeNetworkDevices: false,
-      exposeNetworkDiscovery: false,
-      exposeNetworkAudit: false,
-      exposeNetBox: false,
-      exposeNvd: false,
-      exposeNetworkUtils: false,
+      exposeNetworkTools: false,
       exposeTwingateTools: false,
       exposeOrgIntentTools: false,
       respectContentSignal: true,
@@ -3305,6 +3295,7 @@ export interface OrgIntentGoal {
   priority: number;
   activeWhen?: string;
   successCriteria: string;
+  completionCondition?: string;
   ownerRole: string;
   skills: string[];
   signals: string[];
@@ -3451,6 +3442,15 @@ export async function fetchEnforcementLog(opts?: {
 
 export async function readSignal(signalId: string): Promise<SignalReadResult> {
   return request(`/intent/signals/${encodeURIComponent(signalId)}/value`);
+}
+
+export async function fetchGoalTimeline(
+  intentId: string,
+  goalId: string
+): Promise<{ entries: EnforcementLogEntry[] }> {
+  return request(
+    `/intent/${encodeURIComponent(intentId)}/goals/${encodeURIComponent(goalId)}/timeline`
+  );
 }
 
 // ─── Autonomy Audit API (Phase 49) ──────────────────────────────────────────

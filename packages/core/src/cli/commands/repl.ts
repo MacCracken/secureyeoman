@@ -7,9 +7,9 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import { mkdirSync, existsSync, readFileSync, appendFileSync } from 'node:fs';
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatUptime, apiCall, formatTable } from '../utils.js';
+import { extractBoolFlag, extractCommonFlags, formatUptime, apiCall, formatTable } from '../utils.js';
 
-const REPL_COMMANDS = ['health', 'config', 'integration', 'help', 'exit', 'quit'];
+const REPL_COMMANDS = ['health', 'integration', 'help', 'exit', 'quit'];
 const INTEGRATION_ACTIONS = ['list', 'show', 'create', 'delete', 'start', 'stop'];
 
 const HELP_TEXT = `
@@ -51,8 +51,8 @@ Options:
       return 1;
     }
 
-    const urlResult = extractFlag(argv, 'url');
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
+    const { baseUrl, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
 
     // History file
     const historyDir = path.join(os.homedir(), '.secureyeoman');

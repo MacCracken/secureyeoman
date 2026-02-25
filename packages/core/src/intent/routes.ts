@@ -70,6 +70,7 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
       const entries = await storage.queryEnforcementLog({
         eventType: q.eventType as EnforcementEventType | undefined,
         agentId: q.agentId,
+        itemId: q.itemId,
         since: q.since ? Number(q.since) : undefined,
         limit: q.limit ? Number(q.limit) : 100,
       });
@@ -151,6 +152,19 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
       const result = await intentManager.readSignal(id);
       if (!result) return sendError(reply, 404, `Signal '${id}' not found in active intent`);
       return reply.send(result);
+    } catch (err) {
+      return sendError(reply, 500, toErrorMessage(err));
+    }
+  });
+
+  // ── GET /api/v1/intent/:id/goals/:goalId/timeline — goal lifecycle events ─
+  app.get('/api/v1/intent/:id/goals/:goalId/timeline', async (req, reply) => {
+    const { id, goalId } = req.params as { id: string; goalId: string };
+    try {
+      const record = await storage.getIntentDoc(id);
+      if (!record) return sendError(reply, 404, 'Intent document not found');
+      const entries = await intentManager.getGoalTimeline(id, goalId);
+      return reply.send({ entries });
     } catch (err) {
       return sendError(reply, 500, toErrorMessage(err));
     }

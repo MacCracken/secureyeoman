@@ -18,7 +18,7 @@
 
 import * as readline from 'node:readline';
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, apiCall, formatUptime } from '../utils.js';
+import { extractBoolFlag, extractCommonFlags, apiCall, formatUptime } from '../utils.js';
 
 // ── ANSI helpers ──────────────────────────────────────────────────────────────
 
@@ -421,8 +421,8 @@ Options:
       return 1;
     }
 
-    const urlResult = extractFlag(argv, 'url');
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
+    const { baseUrl, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
 
     const out = process.stdout as NodeJS.WriteStream;
     const renderer = new TuiRenderer(out);

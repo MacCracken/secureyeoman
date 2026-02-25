@@ -25,6 +25,12 @@ const COMMANDS = [
   'policy',
   'completion',
   'plugin',
+  'security',
+  'agnostic',
+  'tui',
+  'agents',
+  'mcp-server',
+  'migrate',
   'help',
 ];
 
@@ -35,6 +41,9 @@ const EXTENSION_SUBCOMMANDS = ['list', 'show', 'create', 'delete', 'enable', 'di
 const MODEL_SUBCOMMANDS = ['info', 'list', 'switch', 'default'];
 const POLICY_SUBCOMMANDS = ['get', 'set', 'dynamic-tools'];
 const PLUGIN_SUBCOMMANDS = ['list', 'info', 'add', 'remove'];
+const SECURITY_SUBCOMMANDS = ['setup', 'teardown', 'update', 'status'];
+const AGNOSTIC_SUBCOMMANDS = ['start', 'stop', 'status', 'logs', 'pull'];
+const AGENTS_SUBCOMMANDS = ['status', 'enable', 'disable'];
 const COMPLETION_SHELLS = ['bash', 'zsh', 'fish'];
 
 function bashScript(): string {
@@ -83,6 +92,27 @@ _secureyeoman_completions() {
       ;;
     completion)
       COMPREPLY=($(compgen -W "${COMPLETION_SHELLS.join(' ')} --help" -- "$cur"))
+      ;;
+    security|sec)
+      COMPREPLY=($(compgen -W "${SECURITY_SUBCOMMANDS.join(' ')} --json --help" -- "$cur"))
+      ;;
+    agnostic|ag)
+      COMPREPLY=($(compgen -W "${AGNOSTIC_SUBCOMMANDS.join(' ')} --path --follow --tail --json --help" -- "$cur"))
+      ;;
+    agents)
+      COMPREPLY=($(compgen -W "${AGENTS_SUBCOMMANDS.join(' ')} --url --token --json --help" -- "$cur"))
+      ;;
+    tui|dashboard)
+      COMPREPLY=($(compgen -W "--url --help" -- "$cur"))
+      ;;
+    repl|shell)
+      COMPREPLY=($(compgen -W "--url --help" -- "$cur"))
+      ;;
+    mcp-server)
+      COMPREPLY=($(compgen -W "--port --help" -- "$cur"))
+      ;;
+    migrate)
+      COMPREPLY=($(compgen -W "--help" -- "$cur"))
       ;;
     health|h)
       COMPREPLY=($(compgen -W "--url --token --json --help" -- "$cur"))
@@ -185,6 +215,48 @@ _secureyeoman() {
             '1: :(${COMPLETION_SHELLS.join(' ')})' \\
             '--help[Show help]'
           ;;
+        security|sec)
+          _arguments \\
+            '1: :(${SECURITY_SUBCOMMANDS.join(' ')})' \\
+            '--json[Output raw JSON (status only)]' \\
+            '--help[Show help]'
+          ;;
+        agnostic|ag)
+          _arguments \\
+            '1: :(${AGNOSTIC_SUBCOMMANDS.join(' ')})' \\
+            '--path[Agnostic project directory]:dir:_files -/' \\
+            '--follow[Follow log output]' \\
+            '--tail[Number of log lines]:n:' \\
+            '--json[Output raw JSON (status only)]' \\
+            '--help[Show help]'
+          ;;
+        agents)
+          _arguments \\
+            '1: :(${AGENTS_SUBCOMMANDS.join(' ')})' \\
+            '--url[Server URL]:url:' \\
+            '--token[Auth token]:token:' \\
+            '--json[Output raw JSON]' \\
+            '--help[Show help]'
+          ;;
+        tui|dashboard)
+          _arguments \\
+            '--url[Server URL]:url:' \\
+            '--help[Show help]'
+          ;;
+        repl|shell)
+          _arguments \\
+            '--url[Server URL]:url:' \\
+            '--help[Show help]'
+          ;;
+        mcp-server)
+          _arguments \\
+            '--port[Port number]:port:' \\
+            '--help[Show help]'
+          ;;
+        migrate)
+          _arguments \\
+            '--help[Show help]'
+          ;;
         health|h)
           _arguments \\
             '--url[Server URL]:url:' \\
@@ -274,6 +346,32 @@ complete -c secureyeoman -f -n '__fish_seen_subcommand_from model' -a '${MODEL_S
 
 # policy subcommands
 complete -c secureyeoman -f -n '__fish_seen_subcommand_from policy pol' -a '${POLICY_SUBCOMMANDS.join(' ')}'
+
+# security subcommands
+complete -c secureyeoman -f -n '__fish_seen_subcommand_from security sec' -a '${SECURITY_SUBCOMMANDS.join(' ')}'
+complete -c secureyeoman -n '__fish_seen_subcommand_from security sec' -l json -d 'Output raw JSON (status only)'
+
+# agnostic subcommands
+complete -c secureyeoman -f -n '__fish_seen_subcommand_from agnostic ag' -a '${AGNOSTIC_SUBCOMMANDS.join(' ')}'
+complete -c secureyeoman -n '__fish_seen_subcommand_from agnostic ag' -l path -d 'Agnostic project directory'
+complete -c secureyeoman -n '__fish_seen_subcommand_from agnostic ag' -l follow -s f -d 'Follow log output'
+complete -c secureyeoman -n '__fish_seen_subcommand_from agnostic ag' -l tail -d 'Number of log lines'
+complete -c secureyeoman -n '__fish_seen_subcommand_from agnostic ag' -l json -d 'Output raw JSON (status only)'
+
+# agents subcommands
+complete -c secureyeoman -f -n '__fish_seen_subcommand_from agents' -a '${AGENTS_SUBCOMMANDS.join(' ')}'
+complete -c secureyeoman -n '__fish_seen_subcommand_from agents' -l url -d 'Server URL'
+complete -c secureyeoman -n '__fish_seen_subcommand_from agents' -l token -d 'Auth token'
+complete -c secureyeoman -n '__fish_seen_subcommand_from agents' -l json -d 'Output raw JSON'
+
+# tui flags
+complete -c secureyeoman -n '__fish_seen_subcommand_from tui dashboard' -l url -d 'Server URL'
+
+# repl flags
+complete -c secureyeoman -n '__fish_seen_subcommand_from repl shell' -l url -d 'Server URL'
+
+# mcp-server flags
+complete -c secureyeoman -n '__fish_seen_subcommand_from mcp-server' -l port -d 'Port number'
 
 # health flags
 complete -c secureyeoman -n '__fish_seen_subcommand_from health h' -l url -d 'Server URL'

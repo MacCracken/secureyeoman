@@ -96,7 +96,8 @@ function buildApp(
   storageOverrides?: Partial<McpStorage>,
   clientOverrides?: Partial<McpClientManager>,
   serverOverrides?: Partial<McpServer>,
-  withOptional = true
+  withOptional = true,
+  getNetBoxWriteAllowed?: () => boolean
 ) {
   const app = Fastify();
   registerMcpRoutes(app, {
@@ -105,6 +106,7 @@ function buildApp(
     mcpServer: makeMockServer(serverOverrides),
     healthMonitor: withOptional ? makeMockHealthMonitor() : undefined,
     credentialManager: withOptional ? makeMockCredentialManager() : undefined,
+    getNetBoxWriteAllowed,
   });
   return app;
 }
@@ -229,6 +231,82 @@ describe('GET /api/v1/mcp/tools', () => {
     const app = buildApp(undefined, { getAllTools: vi.fn().mockReturnValue([localTool]) });
     const res = await app.inject({ method: 'GET', url: '/api/v1/mcp/tools' });
     expect(res.json().tools).toHaveLength(0); // git disabled by default
+  });
+
+  it('filters network_ tools when exposeNetworkTools is false', async () => {
+    const networkTool = { ...TOOL, serverName: 'YEOMAN MCP', name: 'network_ping_test' };
+    const app = buildApp(
+      { getConfig: vi.fn().mockResolvedValue({ ...CONFIG, exposeNetworkTools: false }) },
+      { getAllTools: vi.fn().mockReturnValue([networkTool]) }
+    );
+    const res = await app.inject({ method: 'GET', url: '/api/v1/mcp/tools' });
+    expect(res.json().tools).toHaveLength(0);
+  });
+
+  it('passes network_ tools when exposeNetworkTools is true', async () => {
+    const networkTool = { ...TOOL, serverName: 'YEOMAN MCP', name: 'network_ping_test' };
+    const app = buildApp(
+      { getConfig: vi.fn().mockResolvedValue({ ...CONFIG, exposeNetworkTools: true }) },
+      { getAllTools: vi.fn().mockReturnValue([networkTool]) }
+    );
+    const res = await app.inject({ method: 'GET', url: '/api/v1/mcp/tools' });
+    expect(res.json().tools).toHaveLength(1);
+  });
+
+  it('filters netbox_ tools when getNetBoxWriteAllowed returns false', async () => {
+    const netboxTool = { ...TOOL, serverName: 'YEOMAN MCP', name: 'netbox_devices_list' };
+    const app = buildApp(
+      { getConfig: vi.fn().mockResolvedValue({ ...CONFIG, exposeNetworkTools: true }) },
+      { getAllTools: vi.fn().mockReturnValue([netboxTool]) },
+      undefined,
+      true,
+      () => false
+    );
+    const res = await app.inject({ method: 'GET', url: '/api/v1/mcp/tools' });
+    expect(res.json().tools).toHaveLength(0);
+  });
+
+  it('passes netbox_ tools when getNetBoxWriteAllowed returns true', async () => {
+    const netboxTool = { ...TOOL, serverName: 'YEOMAN MCP', name: 'netbox_devices_list' };
+    const app = buildApp(
+      { getConfig: vi.fn().mockResolvedValue({ ...CONFIG, exposeNetworkTools: true }) },
+      { getAllTools: vi.fn().mockReturnValue([netboxTool]) },
+      undefined,
+      true,
+      () => true
+    );
+    const res = await app.inject({ method: 'GET', url: '/api/v1/mcp/tools' });
+    expect(res.json().tools).toHaveLength(1);
+  });
+
+  it('passes netbox_ tools when getNetBoxWriteAllowed is not provided', async () => {
+    const netboxTool = { ...TOOL, serverName: 'YEOMAN MCP', name: 'netbox_devices_list' };
+    const app = buildApp(
+      { getConfig: vi.fn().mockResolvedValue({ ...CONFIG, exposeNetworkTools: true }) },
+      { getAllTools: vi.fn().mockReturnValue([netboxTool]) }
+    );
+    const res = await app.inject({ method: 'GET', url: '/api/v1/mcp/tools' });
+    expect(res.json().tools).toHaveLength(1);
+  });
+
+  it('filters twingate_ tools when exposeTwingateTools is false', async () => {
+    const twingateTool = { ...TOOL, serverName: 'YEOMAN MCP', name: 'twingate_resource_list' };
+    const app = buildApp(
+      { getConfig: vi.fn().mockResolvedValue({ ...CONFIG, exposeTwingateTools: false }) },
+      { getAllTools: vi.fn().mockReturnValue([twingateTool]) }
+    );
+    const res = await app.inject({ method: 'GET', url: '/api/v1/mcp/tools' });
+    expect(res.json().tools).toHaveLength(0);
+  });
+
+  it('passes twingate_ tools when exposeTwingateTools is true', async () => {
+    const twingateTool = { ...TOOL, serverName: 'YEOMAN MCP', name: 'twingate_resource_list' };
+    const app = buildApp(
+      { getConfig: vi.fn().mockResolvedValue({ ...CONFIG, exposeTwingateTools: true }) },
+      { getAllTools: vi.fn().mockReturnValue([twingateTool]) }
+    );
+    const res = await app.inject({ method: 'GET', url: '/api/v1/mcp/tools' });
+    expect(res.json().tools).toHaveLength(1);
   });
 });
 

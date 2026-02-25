@@ -3,7 +3,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatTable, apiCall } from '../utils.js';
+import { extractBoolFlag, extractCommonFlags, formatTable, apiCall } from '../utils.js';
 
 export const browserCommand: Command = {
   name: 'browser',
@@ -34,13 +34,8 @@ Options:
     }
     argv = helpResult.rest;
 
-    const urlResult = extractFlag(argv, 'url');
-    argv = urlResult.rest;
-    const jsonResult = extractBoolFlag(argv, 'json');
-    argv = jsonResult.rest;
-
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
-    const json = jsonResult.value;
+    const { baseUrl, json, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
     const subcommand = argv[0];
 
     try {

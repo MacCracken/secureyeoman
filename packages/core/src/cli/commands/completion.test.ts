@@ -97,4 +97,35 @@ describe('completion command', () => {
       expect(out).toContain(cmd);
     }
   });
+
+  it('should include agents, mcp-server, tui, security, agnostic, and migrate in bash script', async () => {
+    const { stdout, stderr, getStdout } = createStreams();
+    await completionCommand.run({ argv: ['bash'], stdout, stderr });
+    const out = getStdout();
+    for (const cmd of ['agents', 'mcp-server', 'tui', 'security', 'agnostic', 'migrate']) {
+      expect(out, `expected bash script to contain "${cmd}"`).toContain(cmd);
+    }
+  });
+
+  it('should include agents, mcp-server, and security subcommands in zsh script', async () => {
+    const { stdout, stderr, getStdout } = createStreams();
+    await completionCommand.run({ argv: ['zsh'], stdout, stderr });
+    const out = getStdout();
+    expect(out).toContain('setup');     // security subcommand
+    expect(out).toContain('teardown');  // security subcommand
+    expect(out).toContain('agnostic');
+    expect(out).toContain('agents');
+    expect(out).toContain('mcp-server');
+  });
+
+  it('should include agents, security, and agnostic completions in fish script', async () => {
+    const { stdout, stderr, getStdout } = createStreams();
+    await completionCommand.run({ argv: ['fish'], stdout, stderr });
+    const out = getStdout();
+    expect(out).toContain('security');
+    expect(out).toContain('agnostic');
+    expect(out).toContain('agents');
+    expect(out).toContain('mcp-server');
+    expect(out).toContain('tui');
+  });
 });

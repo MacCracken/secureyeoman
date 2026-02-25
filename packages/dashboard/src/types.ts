@@ -710,12 +710,7 @@ export interface McpFeatureConfig {
   exposeWebSearch: boolean;
   exposeBrowser: boolean;
   exposeDesktopControl: boolean;
-  exposeNetworkDevices: boolean;
-  exposeNetworkDiscovery: boolean;
-  exposeNetworkAudit: boolean;
-  exposeNetBox: boolean;
-  exposeNvd: boolean;
-  exposeNetworkUtils: boolean;
+  exposeNetworkTools: boolean;
   exposeTwingateTools: boolean;
   exposeOrgIntentTools: boolean;
   respectContentSignal: boolean;

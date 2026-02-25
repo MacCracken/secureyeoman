@@ -3,7 +3,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, formatUptime, apiCall, colorContext } from '../utils.js';
+import { extractBoolFlag, extractCommonFlags, formatUptime, apiCall, colorContext } from '../utils.js';
 
 export const healthCommand: Command = {
   name: 'health',
@@ -27,11 +27,8 @@ Options:
     }
     argv = helpResult.rest;
 
-    const urlResult = extractFlag(argv, 'url');
-    argv = urlResult.rest;
-    const jsonResult = extractBoolFlag(argv, 'json');
-
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
+    const { baseUrl, json: jsonOutput, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
 
     try {
       const result = await apiCall(baseUrl, '/health');
@@ -43,7 +40,7 @@ Options:
 
       const data = result.data as Record<string, unknown>;
 
-      if (jsonResult.value) {
+      if (jsonOutput) {
         ctx.stdout.write(JSON.stringify(data, null, 2) + '\n');
         return data.status === 'ok' ? 0 : 1;
       }

@@ -3,9 +3,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, apiCall } from '../utils.js';
-
-const DEFAULT_URL = 'http://127.0.0.1:18789';
+import { extractFlag, extractBoolFlag, extractCommonFlags, apiCall } from '../utils.js';
 
 const USAGE = `
 Usage: secureyeoman model [--url URL] [--token TOKEN] [--json] <action> [args]
@@ -22,7 +20,7 @@ Actions:
   personality-fallbacks clear [--personality-id ID]                  Clear fallback list
 
 Options:
-  --url <url>              Server URL (default: ${DEFAULT_URL})
+  --url <url>              Server URL (default: http://127.0.0.1:3000)
   --token <token>          Auth token
   --json                   Output raw JSON
   --provider <prov>        Filter provider (for list)
@@ -46,20 +44,13 @@ export const modelCommand: Command = {
     argv = helpResult.rest;
 
     // Extract shared flags
-    const urlResult = extractFlag(argv, 'url');
-    argv = urlResult.rest;
-    const tokenResult = extractFlag(argv, 'token');
-    argv = tokenResult.rest;
-    const jsonResult = extractBoolFlag(argv, 'json');
-    argv = jsonResult.rest;
+    const { baseUrl, token, json: jsonOutput, rest: argvRest } = extractCommonFlags(argv);
+    argv = argvRest;
     const providerResult = extractFlag(argv, 'provider');
     argv = providerResult.rest;
     const personalityIdResult = extractFlag(argv, 'personality-id');
     argv = personalityIdResult.rest;
 
-    const baseUrl = urlResult.value ?? DEFAULT_URL;
-    const token = tokenResult.value;
-    const jsonOutput = jsonResult.value;
     const filterProvider = providerResult.value;
     const personalityId = personalityIdResult.value;
 

@@ -417,6 +417,7 @@ export function SecuritySettings() {
   const desktopControlAllowed = securityPolicy?.allowDesktopControl ?? false;
   const cameraAllowed = securityPolicy?.allowCamera ?? false;
   const networkToolsAllowed = securityPolicy?.allowNetworkTools ?? false;
+  const twingateAllowed = securityPolicy?.allowTwingate ?? false;
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
   const intentEditorAllowed = securityPolicy?.allowIntentEditor ?? false;
@@ -741,6 +742,29 @@ export function SecuritySettings() {
               networkToolsAllowed
                 ? 'Network access is enabled. Individual tool categories (SSH, NetBox, NVD, etc.) can be activated per MCP server in Connections.'
                 : 'Network access is denied globally — MCP network tools and any other network-based access will be blocked regardless of tool configuration.'
+            }
+          />
+        </div>
+      </div>
+
+      {/* Twingate Policy */}
+      <div className="card">
+        <div className="p-4 border-b flex items-center gap-2">
+          <Globe className="w-5 h-5 text-primary" />
+          <h3 className="font-medium">Twingate</h3>
+        </div>
+        <div className="p-4">
+          <PolicyToggle
+            label="Allow Twingate"
+            enabled={twingateAllowed}
+            isPending={policyMutation.isPending}
+            onToggle={() => {
+              policyMutation.mutate({ allowTwingate: !twingateAllowed });
+            }}
+            description={
+              twingateAllowed
+                ? 'Twingate zero-trust access is enabled. Agents can reach private MCP servers and resources via Twingate tunnels.'
+                : 'Twingate access is denied globally — zero-trust tunnels and private MCP proxy are blocked regardless of connection configuration.'
             }
           />
         </div>

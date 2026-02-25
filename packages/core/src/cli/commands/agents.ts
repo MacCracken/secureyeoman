@@ -13,7 +13,7 @@
  */
 
 import type { Command, CommandContext } from '../router.js';
-import { extractFlag, extractBoolFlag, colorContext, apiCall } from '../utils.js';
+import { extractBoolFlag, extractCommonFlags, colorContext, apiCall } from '../utils.js';
 
 const FEATURES = ['sub-agents', 'a2a', 'swarms', 'binary-agents'] as const;
 type Feature = (typeof FEATURES)[number];
@@ -73,16 +73,8 @@ export const agentsCommand: Command = {
     }
     argv = helpResult.rest;
 
-    const urlResult = extractFlag(argv, 'url');
-    argv = urlResult.rest;
-    const tokenResult = extractFlag(argv, 'token');
-    argv = tokenResult.rest;
-    const jsonResult = extractBoolFlag(argv, 'json');
-    argv = jsonResult.rest;
-
-    const baseUrl = urlResult.value ?? 'http://127.0.0.1:3000';
-    const token = tokenResult.value;
-    const jsonOutput = jsonResult.value;
+    const { baseUrl, token, json: jsonOutput, rest: argvAfterFlags } = extractCommonFlags(argv);
+    argv = argvAfterFlags;
 
     const sub = argv[0];
     const featureArg = argv[1] as Feature | undefined;

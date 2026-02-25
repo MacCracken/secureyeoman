@@ -207,6 +207,34 @@ export function defaultBaseUrl(fallback = 'http://127.0.0.1:3000'): string {
   return process.env.SECUREYEOMAN_URL ?? fallback;
 }
 
+/**
+ * Extract the common set of CLI flags (--url, --token, --json) from argv in a
+ * single call, returning the resolved base URL, optional auth token, json flag,
+ * and the remaining argv after all three flags have been consumed.
+ *
+ * The resolved baseUrl prefers --url, then SECUREYEOMAN_URL env var, then the
+ * built-in fallback (http://127.0.0.1:3000).  Commands that do not use --token
+ * or --json simply ignore those fields in the return value.
+ */
+export function extractCommonFlags(
+  argv: string[],
+  fallbackUrl = 'http://127.0.0.1:3000'
+): { baseUrl: string; token: string | undefined; json: boolean; rest: string[] } {
+  let rest = argv;
+  const urlResult = extractFlag(rest, 'url');
+  rest = urlResult.rest;
+  const tokenResult = extractFlag(rest, 'token');
+  rest = tokenResult.rest;
+  const jsonResult = extractBoolFlag(rest, 'json');
+  rest = jsonResult.rest;
+  return {
+    baseUrl: urlResult.value ?? defaultBaseUrl(fallbackUrl),
+    token: tokenResult.value,
+    json: jsonResult.value,
+    rest,
+  };
+}
+
 /** Wrapper around fetch for CLI HTTP calls. */
 export async function apiCall(
   baseUrl: string,
