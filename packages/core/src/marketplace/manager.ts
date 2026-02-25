@@ -59,9 +59,10 @@ export class MarketplaceManager {
     category?: string,
     limit?: number,
     offset?: number,
-    source?: string
+    source?: string,
+    personalityId?: string
   ) {
-    return await this.storage.search(query, category, limit, offset, source);
+    return await this.storage.search(query, category, limit, offset, source, personalityId);
   }
 
   async getSkill(id: string): Promise<MarketplaceSkill | null> {
@@ -71,13 +72,20 @@ export class MarketplaceManager {
   async install(id: string, personalityId?: string): Promise<boolean> {
     const skill = await this.storage.getSkill(id);
     if (!skill) return false;
-    if (skill.installed) return true;
-    const ok = await this.storage.setInstalled(id, true);
-    if (ok) {
-      this.logger.info('Marketplace skill installed', { id });
-      if (this.brainManager) {
+
+    if (this.brainManager) {
+      const brainSource = skill.source === 'community' ? 'community' : 'marketplace';
+      const existing = await this.brainManager.listSkills({ source: brainSource });
+      // Skip creating a brain skill if this exact context is already covered:
+      // - personality-specific record already exists for this personality
+      // - OR a global record already exists (covers all personalities)
+      const alreadyCovered = existing.some(
+        (s) =>
+          s.name === skill.name &&
+          (s.personalityId === (personalityId ?? null) || s.personalityId === null)
+      );
+      if (!alreadyCovered) {
         try {
-          const brainSource = skill.source === 'community' ? 'community' : 'marketplace';
           await this.brainManager.createSkill(
             SkillCreateSchema.parse({
               name: skill.name,
@@ -101,39 +109,72 @@ export class MarketplaceManager {
             id,
             error: err instanceof Error ? err.message : 'Unknown error',
           });
+          return false;
         }
       }
     }
-    return ok;
+
+    // Ensure the marketplace catalog flag is set
+    if (!skill.installed) {
+      await this.storage.setInstalled(id, true);
+    }
+    this.logger.info('Marketplace skill installed', { id, personalityId: personalityId ?? null });
+    return true;
   }
 
-  async uninstall(id: string): Promise<boolean> {
+  async uninstall(id: string, personalityId?: string): Promise<boolean> {
     const skill = await this.storage.getSkill(id);
-    const ok = await this.storage.setInstalled(id, false);
-    if (ok) {
-      this.logger.info('Marketplace skill uninstalled', { id });
-      if (this.brainManager && skill) {
-        try {
-          const brainSource = skill.source === 'community' ? 'community' : 'marketplace';
-          const brainSkills = await this.brainManager.listSkills({ source: brainSource });
-          // Delete ALL brain skill records for this marketplace skill (global + per-personality)
-          const matches = brainSkills.filter((s) => s.name === skill.name);
-          for (const match of matches) {
-            await this.brainManager.deleteSkill(match.id);
+    if (!skill) return false;
+
+    if (this.brainManager) {
+      try {
+        const brainSource = skill.source === 'community' ? 'community' : 'marketplace';
+        const brainSkills = await this.brainManager.listSkills({ source: brainSource });
+        const matches = brainSkills.filter((s) => s.name === skill.name);
+
+        if (personalityId !== undefined) {
+          // Remove only the record for this specific personality context
+          const target = matches.find((s) => s.personalityId === personalityId);
+          if (target) {
+            await this.brainManager.deleteSkill(target.id);
             this.logger.info('Brain skill removed (marketplace uninstall)', {
               id,
-              brainSkillId: match.id,
+              brainSkillId: target.id,
+              personalityId,
             });
           }
-        } catch (err) {
-          this.logger.error('Failed to remove brain skill on marketplace uninstall', {
-            id,
-            error: err instanceof Error ? err.message : 'Unknown error',
-          });
+        } else {
+          // No personality context: remove the global record (personality_id IS NULL)
+          const globalMatch = matches.find((s) => s.personalityId === null);
+          if (globalMatch) {
+            await this.brainManager.deleteSkill(globalMatch.id);
+            this.logger.info('Brain skill removed (marketplace uninstall, global)', {
+              id,
+              brainSkillId: globalMatch.id,
+            });
+          }
         }
+
+        // Reset marketplace installed flag only if no brain skills remain for this skill
+        const remaining = (await this.brainManager.listSkills({ source: brainSource })).filter(
+          (s) => s.name === skill.name
+        );
+        if (remaining.length === 0) {
+          await this.storage.setInstalled(id, false);
+        }
+      } catch (err) {
+        this.logger.error('Failed to remove brain skill on marketplace uninstall', {
+          id,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+        return false;
       }
+    } else {
+      await this.storage.setInstalled(id, false);
     }
-    return ok;
+
+    this.logger.info('Marketplace skill uninstalled', { id, personalityId: personalityId ?? null });
+    return true;
   }
 
   /**

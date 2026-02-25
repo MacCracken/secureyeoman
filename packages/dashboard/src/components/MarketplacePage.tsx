@@ -34,7 +34,7 @@ export function MarketplacePage() {
     onSuccess: invalidate,
   });
   const uninstallMut = useMutation({
-    mutationFn: uninstallMarketplaceSkill,
+    mutationFn: (id: string) => uninstallMarketplaceSkill(id),
     onSuccess: invalidate,
   });
 

@@ -380,6 +380,7 @@ export interface MarketplaceSkill {
   rating: number;
   instructions: string;
   installed: boolean;
+  installedGlobally: boolean;
   source: 'builtin' | 'community' | 'published';
   publishedAt: number;
   updatedAt: number;

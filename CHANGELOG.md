@@ -1,3 +1,28 @@
+## [2026.2.25-marketplace-install-state] — 2026-02-25
+
+### Marketplace & Community — Contextual Install State
+
+### Fixed
+
+- **Install button shows as "installed" across all personalities** — `marketplace.skills.installed` was a single global boolean set to `true` the moment any personality installed a skill. Switching to a different personality continued to show "Uninstall" even though that personality had no installation. Fixed by computing `installed` contextually from `brain.skills` per the selected personality (or global) context.
+
+### Changed
+
+- **GET `/api/v1/marketplace`** now accepts an optional `personalityId` query param:
+  - `personalityId=` (empty string) → **Global context**: `installed = true` only if a `personality_id IS NULL` brain skill record exists for this skill.
+  - `personalityId=<uuid>` → **Personality context**: `installed = true` only if a personality-specific brain skill record exists; `installedGlobally = true` if a global record also exists.
+  - Omitted → backward-compatible: uses the stored boolean (for existing API callers).
+- **`MarketplaceSkill`** gains an `installedGlobally: boolean` field — `true` when the skill has a global (`personality_id IS NULL`) brain skill record.
+- **POST `/api/v1/marketplace/:id/uninstall`** now accepts `personalityId` in the body. Removes only the matching brain skill record (personality-specific or global). The marketplace catalog `installed` flag is only reset to `false` when no brain skill records remain for that skill across all contexts.
+- **POST `/api/v1/marketplace/:id/install`** no longer exits early on `skill.installed`. Checks whether the target context (personality or global) already has a brain skill record before creating one, preventing duplicates.
+- **Marketplace & Community tabs**: query key includes `selectedPersonalityId` so the installed state re-evaluates when the user switches the "Install to" dropdown. Queries are gated on `hasInitialized` to avoid a flash of stored-boolean data before personality list loads.
+- **SkillCard** renders three states:
+  - `installed = true` → **Uninstall** button (personality-specific installation)
+  - `installed = false`, `installedGlobally = true` → **"Installed globally"** label with globe icon (managed from Global context)
+  - neither → **Install** button
+
+---
+
 ## [2026.2.25-agent-quality] — 2026-02-25
 
 ### Agent Quality & Chat Stream Reliability

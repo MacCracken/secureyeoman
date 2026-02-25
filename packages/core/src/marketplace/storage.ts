@@ -37,6 +37,7 @@ export class MarketplaceStorage extends PgBaseStorage {
       tools: data.tools ?? [],
       triggerPatterns: data.triggerPatterns ?? [],
       installed: data.installed ?? false,
+      installedGlobally: data.installed ?? false,
       source: data.source ?? 'published',
       publishedAt: data.publishedAt ?? now,
       updatedAt: data.updatedAt ?? now,
@@ -121,7 +122,8 @@ export class MarketplaceStorage extends PgBaseStorage {
     category?: string,
     limit = 20,
     offset = 0,
-    source?: string
+    source?: string,
+    personalityId?: string
   ): Promise<{ skills: MarketplaceSkill[]; total: number }> {
     let paramIdx = 1;
     let where = ' WHERE 1=1';
@@ -153,7 +155,77 @@ export class MarketplaceStorage extends PgBaseStorage {
     params.push(limit, offset);
 
     const rows = await this.queryMany<Record<string, unknown>>(fullSql, params);
-    return { skills: rows.map((r) => this.rowToSkill(r)), total };
+    const skills = rows.map((r) => this.rowToSkill(r));
+
+    if (personalityId !== undefined) {
+      const installState = await this.getContextualInstallState(
+        skills.map((s) => s.name),
+        personalityId
+      );
+      return {
+        skills: skills.map((s) => {
+          const state = installState.get(s.name) ?? { installed: false, installedGlobally: false };
+          return { ...s, installed: state.installed, installedGlobally: state.installedGlobally };
+        }),
+        total,
+      };
+    }
+
+    // No personalityId: use stored boolean, installedGlobally mirrors installed
+    return { skills: skills.map((s) => ({ ...s, installedGlobally: s.installed })), total };
+  }
+
+  /**
+   * Compute contextual install state from brain.skills for a set of skill names.
+   * - personalityId = '' (empty): global context — installed only if a personality_id IS NULL record exists.
+   * - personalityId = 'X': personality context — installed if a personality_id = X record exists;
+   *   installedGlobally if a personality_id IS NULL record exists.
+   */
+  private async getContextualInstallState(
+    skillNames: string[],
+    personalityId: string
+  ): Promise<Map<string, { installed: boolean; installedGlobally: boolean }>> {
+    const result = new Map<string, { installed: boolean; installedGlobally: boolean }>();
+    if (skillNames.length === 0) return result;
+
+    if (personalityId === '') {
+      // Global context: installed = has a global brain.skills record
+      const rows = await this.queryMany<{ name: string }>(
+        `SELECT DISTINCT name FROM brain.skills
+         WHERE source IN ('marketplace', 'community')
+           AND personality_id IS NULL
+           AND name = ANY($1)`,
+        [skillNames]
+      );
+      const globalNames = new Set(rows.map((r) => r.name));
+      for (const name of skillNames) {
+        result.set(name, { installed: globalNames.has(name), installedGlobally: globalNames.has(name) });
+      }
+    } else {
+      // Personality context: installed = has personality-specific record; installedGlobally = has global record
+      const rows = await this.queryMany<{ name: string; is_global: boolean }>(
+        `SELECT DISTINCT name, (personality_id IS NULL) AS is_global
+         FROM brain.skills
+         WHERE source IN ('marketplace', 'community')
+           AND (personality_id IS NULL OR personality_id = $1)
+           AND name = ANY($2)`,
+        [personalityId, skillNames]
+      );
+      const globalNames = new Set<string>();
+      const personalityNames = new Set<string>();
+      for (const row of rows) {
+        if (row.is_global) globalNames.add(row.name);
+        else personalityNames.add(row.name);
+      }
+      for (const name of skillNames) {
+        result.set(name, {
+          installed: personalityNames.has(name),
+          installedGlobally: globalNames.has(name),
+        });
+      }
+    }
+
+    return result;
   }
 
   async setInstalled(id: string, installed: boolean): Promise<boolean> {
@@ -194,6 +266,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         ? (row.trigger_patterns as string[])
         : [],
       installed: row.installed as boolean,
+      installedGlobally: (row.installed as boolean) ?? false,
       source: ((row.source as string) ?? 'published') as MarketplaceSkill['source'],
       publishedAt: row.published_at as number,
       updatedAt: row.updated_at as number,

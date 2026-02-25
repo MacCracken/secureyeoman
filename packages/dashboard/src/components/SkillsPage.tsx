@@ -27,6 +27,7 @@ import {
   Sparkles,
   Pencil,
   ArrowRight,
+  Globe,
 } from 'lucide-react';
 import {
   fetchSkills,
@@ -1143,9 +1144,14 @@ function SkillCard({
             disabled={uninstalling}
             className="btn btn-ghost text-destructive flex items-center gap-2 w-full justify-center text-xs py-2"
           >
-            <Trash2 className="w-3.5 h-3.5" />
+            {uninstalling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
             Uninstall
           </button>
+        ) : skill.installedGlobally ? (
+          <div className="flex items-center gap-2 w-full justify-center text-xs py-2 text-muted-foreground">
+            <Globe className="w-3.5 h-3.5 shrink-0" />
+            <span>Installed globally</span>
+          </div>
         ) : (
           <button
             onClick={onInstall}
@@ -1223,10 +1229,11 @@ function MarketplaceTab() {
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
 
-  // Fetch all non-community skills
+  // Fetch all non-community skills — keyed on personalityId so results refresh when selection changes
   const { data, isLoading } = useQuery({
-    queryKey: ['marketplace', query],
-    queryFn: () => fetchMarketplaceSkills(query || undefined),
+    queryKey: ['marketplace', query, selectedPersonalityId],
+    queryFn: () => fetchMarketplaceSkills(query || undefined, undefined, selectedPersonalityId),
+    enabled: hasInitialized,
   });
 
   const { data: personalitiesData } = useQuery({
@@ -1262,7 +1269,8 @@ function MarketplaceTab() {
   });
 
   const uninstallMut = useMutation({
-    mutationFn: uninstallMarketplaceSkill,
+    mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
+      uninstallMarketplaceSkill(id, personalityId),
     onSuccess: () => {
       invalidate();
       setUninstallingId(null);
@@ -1295,7 +1303,7 @@ function MarketplaceTab() {
           }}
           onUninstall={() => {
             setUninstallingId(skill.id);
-            uninstallMut.mutate(skill.id);
+            uninstallMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
           }}
         />
       ))}
@@ -1389,8 +1397,9 @@ function CommunityTab() {
   } | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['marketplace-community', query],
-    queryFn: () => fetchMarketplaceSkills(query || undefined, 'community'),
+    queryKey: ['marketplace-community', query, selectedPersonalityId],
+    queryFn: () => fetchMarketplaceSkills(query || undefined, 'community', selectedPersonalityId),
+    enabled: hasInitialized,
   });
 
   const { data: statusData } = useQuery({
@@ -1441,7 +1450,8 @@ function CommunityTab() {
   });
 
   const uninstallMut = useMutation({
-    mutationFn: uninstallMarketplaceSkill,
+    mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
+      uninstallMarketplaceSkill(id, personalityId),
     onSuccess: () => {
       invalidate();
       setUninstallingId(null);
@@ -1599,7 +1609,7 @@ function CommunityTab() {
                 }}
                 onUninstall={() => {
                   setUninstallingId(skill.id);
-                  uninstallMut.mutate(skill.id);
+                  uninstallMut.mutate({ id: skill.id, personalityId: selectedPersonalityId || undefined });
                 }}
               />
             ))}

@@ -28,6 +28,7 @@ export function registerMarketplaceRoutes(
           limit?: string;
           offset?: string;
           source?: string;
+          personalityId?: string;
         };
       }>
     ) => {
@@ -37,7 +38,8 @@ export function registerMarketplaceRoutes(
         q.category,
         q.limit ? Number(q.limit) : undefined,
         q.offset ? Number(q.offset) : undefined,
-        q.source
+        q.source,
+        q.personalityId  // undefined when not provided → stored boolean fallback
       );
     }
   );
@@ -66,8 +68,12 @@ export function registerMarketplaceRoutes(
 
   app.post(
     '/api/v1/marketplace/:id/uninstall',
-    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-      if (!(await marketplaceManager.uninstall(request.params.id)))
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: { personalityId?: string } }>,
+      reply: FastifyReply
+    ) => {
+      const personalityId = request.body?.personalityId;
+      if (!(await marketplaceManager.uninstall(request.params.id, personalityId)))
         return sendError(reply, 404, 'Skill not found');
       return { message: 'Skill uninstalled' };
     }
