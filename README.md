@@ -77,12 +77,12 @@ SECUREYEOMAN is a **secure autonomous agent system** built around the **SecureYe
 - **Dashboard** — React + Vite + Tailwind; rich Markdown chat, Mermaid diagrams, KaTeX math, real-time collaborative editing (Yjs CRDT), Group Chat, WebGL graph visualization; live network mode badge (Local / LAN / Public)
 - **Multi-Agent** — Sub-agent delegation, Agent Swarms (sequential/parallel/dynamic), A2A protocol, dynamic tool creation, intelligent model routing, DAG Workflow Orchestration (9 step types, visual ReactFlow builder)
 - **Skills & Marketplace** — Skill routing quality (`useWhen`/`doNotUseWhen`/`successCriteria`), import/export (portable `.skill.json`), community repo sync, install pipeline with trust tiers
-- **MCP Protocol** — 120+ tools, 9 resources, 4 prompts; Kali Security Toolkit; Network Security Toolkit (37 tools: device discovery, port scanning, SSH, NetBox, NVD/CVE); Twingate zero-trust remote MCP proxy; Agnostic QA Bridge; Desktop Control; Diagnostic Tools; Markdown-for-Agents content negotiation (`Accept: text/markdown`, `Content-Signal` enforcement); streamable HTTP, SSE, and stdio transports
+- **MCP Protocol** — 170+ tools, 9 resources, 4 prompts; Kali Security Toolkit; Network Security Toolkit (37 tools: device discovery, port scanning, SSH, NetBox, NVD/CVE); Twingate zero-trust remote MCP proxy; Agnostic QA Bridge; Desktop Control; Diagnostic Tools; Markdown-for-Agents content negotiation (`Accept: text/markdown`, `Content-Signal` enforcement); streamable HTTP, SSE, and stdio transports
 - **Integrations** — 31 platforms: Telegram, Discord, Slack, WhatsApp, Signal, MS Teams, GitHub, GitLab, Google Chat, Gmail, Google Calendar, Email (IMAP/SMTP), Jira, Notion, AWS, Azure DevOps, Linear, Airtable, DingTalk, LINE, QQ, Twitter/X, Spotify, Stripe, YouTube, Zapier, Figma, Todoist, iMessage, CLI, Generic Webhook
 - **Team Collaboration** — Multi-user workspaces, SSO/OIDC (Okta, Azure AD, Auth0), CRDT collaborative editing, presence indicators
 - **Deployment** — Single binary (~80 MB), Docker (~80 MB), Kubernetes Helm chart; Linux x64/arm64 + macOS arm64
 - **Extensions** — 38 lifecycle hook points, TypeScript plugin modules, hot-reload support
-- **CLI** — 24 commands, full-screen TUI (`secureyeoman tui`), shell completions, `--json` scripting output
+- **CLI** — 26 commands, full-screen TUI (`secureyeoman tui`), shell completions, `--json` scripting output
 
 See the [Feature Reference](docs/features.md) for the complete breakdown.
 
@@ -228,7 +228,7 @@ Always connect AI providers using official API keys from their developer console
 | **Security Testing** | [Security Testing Guide](docs/guides/security-testing.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
 | **Architecture Overview** | [Architecture](docs/development/architecture.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (131 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (132 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |
