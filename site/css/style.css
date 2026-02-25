@@ -300,6 +300,18 @@ img {
   inset: 0;
   z-index: -1;
   overflow: hidden;
+  /* Cybercity photo — focus on the upper skyline/moon area */
+  background-image: url('../images/background_cybercity.jpg');
+  background-size: cover;
+  background-position: center 18%;
+  background-repeat: no-repeat;
+}
+
+/* Dark tint layer — keeps text readable over the photo */
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(8, 12, 24, 0.62);
 }
 
 .gradient-orb {
@@ -309,94 +321,44 @@ img {
   animation: float 20s infinite ease-in-out;
 }
 
-/* Blue — top right, sky glow */
+/* Blue — top right, reinforces the sky/moon in the photo */
 .orb-1 {
   width: 700px;
   height: 700px;
   background: var(--primary);
-  opacity: 0.35;
+  opacity: 0.18;
   top: -250px;
   right: -150px;
   animation-delay: 0s;
 }
 
-/* Purple — bottom left, ground shadow */
+/* Purple — bottom left, echoes neon ground reflections */
 .orb-2 {
   width: 600px;
   height: 600px;
   background: var(--secondary);
-  opacity: 0.3;
+  opacity: 0.15;
   bottom: -200px;
   left: -150px;
   animation-delay: -7s;
 }
 
-/* Pink — top left, backlights the mascot */
+/* Pink — mid left, backlights the mascot silhouette */
 .orb-3 {
   width: 450px;
   height: 450px;
   background: #ec4899;
-  opacity: 0.18;
-  top: -80px;
+  opacity: 0.10;
+  top: 20%;
   left: -80px;
   animation-delay: -14s;
 }
 
-/* Teal — mid right, depth accent behind text */
-.orb-4 {
-  width: 350px;
-  height: 350px;
-  background: var(--accent);
-  opacity: 0.12;
-  top: 40%;
-  right: 8%;
-  animation-delay: -10s;
-}
-
-/* Dot grid — fine texture across the whole hero */
-.dot-grid {
-  position: absolute;
-  inset: 0;
-  background-image: radial-gradient(circle, rgba(14, 165, 233, 0.18) 1px, transparent 1px);
-  background-size: 28px 28px;
-  mask-image: radial-gradient(ellipse at 60% 40%, black 30%, transparent 72%);
-}
-
-/* Perspective floor grid — cyberpunk neon floor effect */
-.grid-floor {
-  position: absolute;
-  bottom: 0;
-  left: -30%;
-  right: -30%;
-  height: 55%;
-  background-image:
-    linear-gradient(rgba(14, 165, 233, 0.09) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(139, 92, 246, 0.07) 1px, transparent 1px);
-  background-size: 70px 70px;
-  transform: perspective(400px) rotateX(55deg);
-  transform-origin: center bottom;
-  mask-image: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 65%);
-}
-
-/* Very subtle CRT scanlines for cyberpunk texture */
-.scanlines {
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 3px,
-    rgba(0, 0, 0, 0.04) 3px,
-    rgba(0, 0, 0, 0.04) 4px
-  );
-  pointer-events: none;
-}
-
-/* Vignette — darkens edges, focuses eye on center content */
+/* Vignette — heavy edge darkening to frame the photo and bleed into page bg */
 .vignette {
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse at 55% 45%, transparent 35%, rgba(0, 0, 0, 0.55) 100%);
+  background: radial-gradient(ellipse at 50% 42%, transparent 28%, rgba(4, 6, 14, 0.72) 80%);
 }
 
 @keyframes float {
