@@ -1,6 +1,6 @@
 # SECUREYEOMAN
 
-[![Version](https://img.shields.io/badge/Version-2026.2.24-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.24)
+[![Version](https://img.shields.io/badge/Version-2026.2.25-blue.svg)](https://github.com/MacCracken/secureyeoman/releases/tag/v2026.2.25)
 [![CI](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml/badge.svg)](https://github.com/MacCracken/secureyeoman/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Security: Enterprise-Grade](https://img.shields.io/badge/Security-Enterprise--Grade-green.svg)]()
@@ -238,7 +238,7 @@ Always connect AI providers using official API keys from their developer console
 | **Security Testing** | [Security Testing Guide](docs/guides/security-testing.md) |
 | **Troubleshooting** | [Troubleshooting Guide](docs/troubleshooting.md) |
 | **Architecture Overview** | [Architecture](docs/development/architecture.md) |
-| **Architecture Decisions** | [ADRs](docs/adr/) (132 records) |
+| **Architecture Decisions** | [ADRs](docs/adr/) (133 records) |
 | **Roadmap** | [Development Roadmap](docs/development/roadmap.md) |
 | **Changelog** | [CHANGELOG.md](CHANGELOG.md) |
 | **Contributing** | [Contributing Guide](CONTRIBUTING.md) |

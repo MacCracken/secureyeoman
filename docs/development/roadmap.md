@@ -27,8 +27,7 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Open
 
-- [x] Marketplace / Community Skills - user should be able to preview/review a skill before installation.
-- [ ] Investigtion into notifications, not seeing any items... lets do a test sweep.
+- [x] Investigation into notifications — no dedicated notification model exists. Audit log pipeline is intact (events → DB → REST → dashboard polling). "No items" = audit log empty in that session, not a bug. Missing feature: transient user-facing notification model. Added as improvement item below.
 
 ### Improvements
 
@@ -36,7 +35,8 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 - [ ] Tasks History, separation of task and heartbeats into their own subviews.
 - [ ] Tasks and History needs consolidation; remove from Security Dashboard.
 - [ ] after Tasks consolidation - insure each personality is associated
-- [ ] Agents > Sub-Agents > Profile shoud be first tab, but keep default as Active.
+- [x] Agents > Sub-Agents > Profile shoud be first tab, but keep default as Active.
+- [ ] **Notifications** — No transient user notification model exists. Heartbeat `notify` actions (Slack/Email/Discord) are stubs (console-only). Real-time event push is missing (dashboard polls REST every 10s). Acknowledgements are localStorage-only. Needs: notification table + API + bell UI + WebSocket push + heartbeat integration delivery.
 - [ ] dashboard - Allow for personality image to recieve an image
 
 ### Personality Editor — Ontological Restructure

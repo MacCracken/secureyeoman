@@ -142,12 +142,12 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
   }
 
   const tabs: { id: TabId; label: string; icon?: React.ReactNode }[] = [
+    { id: 'profiles', label: 'Profiles' },
     { id: 'active', label: 'Active' },
     ...(swarmsAllowed
       ? [{ id: 'swarms' as TabId, label: 'Swarms', icon: <Layers className="w-3.5 h-3.5" /> }]
       : []),
     { id: 'history', label: 'History' },
-    { id: 'profiles', label: 'Profiles' },
   ];
 
   return (

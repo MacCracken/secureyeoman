@@ -1,3 +1,13 @@
+## [2026.2.25-sub-agents-tab-order] — 2026-02-25
+
+### Sub-Agents — Profiles Tab First
+
+### Changed
+
+- **Sub-Agents tab order** — Profiles is now the first tab (`Profiles → Active → Swarms → History`). Default selected tab on open remains `Active`. The change makes the profile library immediately discoverable without affecting the runtime-focused default view.
+
+---
+
 ## [2026.2.25-marketplace-skill-preview] — 2026-02-25
 
 ### Marketplace & Community — Skill Preview Before Installation
