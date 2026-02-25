@@ -567,6 +567,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
           defaultModel: request.body?.defaultModel ?? null,
           modelFallbacks: request.body?.modelFallbacks ?? [],
           includeArchetypes: request.body?.includeArchetypes ?? agentName === 'FRIDAY',
+          injectDateTime: request.body?.injectDateTime ?? false,
           body: request.body?.body ?? {
             enabled: false,
             capabilities: [],

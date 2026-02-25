@@ -32,6 +32,7 @@ interface PersonalityRow {
   default_model: Personality['defaultModel'] | null;
   model_fallbacks: Personality['modelFallbacks'];
   include_archetypes: boolean;
+  inject_date_time: boolean;
   is_active: boolean;
   is_default: boolean;
   is_archetype: boolean;
@@ -90,6 +91,7 @@ function rowToPersonality(row: PersonalityRow): Personality {
     defaultModel: row.default_model ?? null,
     modelFallbacks: row.model_fallbacks ?? [],
     includeArchetypes: row.include_archetypes,
+    injectDateTime: row.inject_date_time ?? false,
     isActive: row.is_active,
     isDefault: row.is_default ?? false,
     isArchetype: row.is_archetype ?? false,
@@ -204,8 +206,8 @@ export class SoulStorage extends PgBaseStorage {
     const id = uuidv7();
 
     await this.query(
-      `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, is_active, is_default, is_archetype, body, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15::jsonb, $16, $17)`,
+      `INSERT INTO soul.personalities (id, name, description, system_prompt, traits, sex, voice, preferred_language, default_model, model_fallbacks, include_archetypes, inject_date_time, is_active, is_default, is_archetype, body, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6, $7, $8, $9::jsonb, $10::jsonb, $11, $12, $13, $14, $15, $16::jsonb, $17, $18)`,
       [
         id,
         data.name,
@@ -218,6 +220,7 @@ export class SoulStorage extends PgBaseStorage {
         data.defaultModel ? JSON.stringify(data.defaultModel) : null,
         JSON.stringify(data.modelFallbacks ?? []),
         data.includeArchetypes ?? true,
+        data.injectDateTime ?? false,
         false,
         false,
         opts?.isArchetype ?? false,
@@ -338,9 +341,10 @@ export class SoulStorage extends PgBaseStorage {
          default_model = $8::jsonb,
          model_fallbacks = $9::jsonb,
          include_archetypes = $10,
-         body = $11::jsonb,
-         updated_at = $12
-       WHERE id = $13`,
+         inject_date_time = $11,
+         body = $12::jsonb,
+         updated_at = $13
+       WHERE id = $14`,
       [
         data.name ?? existing.name,
         data.description ?? existing.description,
@@ -360,6 +364,7 @@ export class SoulStorage extends PgBaseStorage {
           data.modelFallbacks !== undefined ? data.modelFallbacks : existing.modelFallbacks
         ),
         data.includeArchetypes !== undefined ? data.includeArchetypes : existing.includeArchetypes,
+        data.injectDateTime !== undefined ? data.injectDateTime : existing.injectDateTime,
         JSON.stringify(
           data.body ??
             existing.body ?? {

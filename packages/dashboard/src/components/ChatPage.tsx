@@ -669,6 +669,11 @@ export function ChatPage() {
                           {msg.role === 'user' ? 'You' : (personality?.name ?? 'Assistant')}
                         </span>
                         {msg.model && <span className="text-xs opacity-50">{msg.model}</span>}
+                        {msg.timestamp != null && (
+                          <span className="text-xs opacity-40 ml-auto">
+                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        )}
 
                         {/* Edit button on user messages */}
                         {msg.role === 'user' && !isPending && (

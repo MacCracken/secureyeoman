@@ -2765,6 +2765,7 @@ export function PersonalityEditor() {
     defaultModel: null,
     modelFallbacks: [],
     includeArchetypes: true,
+    injectDateTime: false,
     body: {
       enabled: false,
       capabilities: [],
@@ -3060,6 +3061,7 @@ export function PersonalityEditor() {
       defaultModel: p.defaultModel,
       modelFallbacks: p.modelFallbacks ?? [],
       includeArchetypes: p.includeArchetypes,
+      injectDateTime: p.injectDateTime ?? false,
       body,
     });
     setResourcePolicy({
@@ -3444,6 +3446,24 @@ export function PersonalityEditor() {
                   checked={form.includeArchetypes ?? false}
                   onChange={(e) => {
                     setForm((f) => ({ ...f, includeArchetypes: e.target.checked }));
+                  }}
+                  className="sr-only peer"
+                />
+                <div className="w-9 h-5 bg-muted-foreground/30 peer-checked:bg-success rounded-full after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+              </label>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm">Chronoception</span>
+                <span className="text-xs text-muted-foreground">Injects the current date and time into the system prompt so the personality always knows when it is</span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.injectDateTime ?? false}
+                  onChange={(e) => {
+                    setForm((f) => ({ ...f, injectDateTime: e.target.checked }));
                   }}
                   className="sr-only peer"
                 />

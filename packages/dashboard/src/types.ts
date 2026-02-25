@@ -153,6 +153,7 @@ export interface Personality {
   defaultModel: DefaultModel | null;
   modelFallbacks: { provider: string; model: string }[];
   includeArchetypes: boolean;
+  injectDateTime: boolean;
   isActive: boolean;
   isDefault: boolean;
   isArchetype: boolean;
@@ -247,6 +248,7 @@ export interface PersonalityCreate {
   defaultModel?: DefaultModel | null;
   modelFallbacks?: { provider: string; model: string }[];
   includeArchetypes?: boolean;
+  injectDateTime?: boolean;
   body?: {
     enabled?: boolean;
     capabilities?: string[];

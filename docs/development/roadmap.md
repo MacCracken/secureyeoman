@@ -27,7 +27,7 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Open
 
-- [x] Marketplace and Community - Install displays as installed once it is installed to one personality; user should be able to install to any agent without being confused by the buttons state when user switch 'install to' agent.  This should be dynamic in that if not on global, only items installed to the agent should be displayed as installed.
+- [ ] Marketplace / Community Skills - user should be able to preview/review a skill before installation.
 - [x] Chat stream — agent output repeats response preamble after every tool call (cumulative content bug in streaming agentic loop).
 - [x] Chat stream — personality appears to "die" / terminate during long multi-tool responses (MAX_TOOL_ITERATIONS = 10 cap hit; SSE keepalive missing).
 

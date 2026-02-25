@@ -196,6 +196,7 @@ export class SoulManager {
       defaultModel: null,
       modelFallbacks: [],
       includeArchetypes: agentName === 'FRIDAY',
+      injectDateTime: false,
       body: {
         enabled: false,
         capabilities: [],
@@ -284,6 +285,7 @@ export class SoulManager {
         name: agentName,
         systemPrompt: `You are ${agentName}, a helpful and security-conscious AI assistant. You are direct, technically precise, and proactive about identifying risks.`,
         includeArchetypes: agentName === 'FRIDAY',
+      injectDateTime: false,
       };
       const personality = await this.storage.createPersonality(data, { isArchetype: true });
       created.push(personality);
@@ -865,6 +867,24 @@ export class SoulManager {
       }
 
       parts.push(soulLines.join('\n'));
+    }
+
+    // Date/time context injection (per-personality opt-in)
+    if (personality?.injectDateTime) {
+      const tz = personality.body?.activeHours?.timezone || 'UTC';
+      const now = new Date();
+      const dateTimeStr = now.toLocaleString('en-US', {
+        timeZone: tz,
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+        timeZoneName: 'short',
+      });
+      parts.push(`## Current Date & Time\n${dateTimeStr}`);
     }
 
     // User context injection
