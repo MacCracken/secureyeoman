@@ -29,6 +29,10 @@ export default defineConfig(({ mode }) => {
       port: 3000,
       strictPort: true,
       allowedHosts,
+      https: env.VITE_TLS_CERT && env.VITE_TLS_KEY ? {
+        cert: resolve(__dirname, '../..', env.VITE_TLS_CERT),
+        key: resolve(__dirname, '../..', env.VITE_TLS_KEY),
+      } : undefined,
       // Proxy API requests to the gateway
       proxy: {
         '/api': {
