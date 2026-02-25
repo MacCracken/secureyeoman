@@ -1,3 +1,53 @@
+## [2026.2.25] — 2026-02-25
+
+### Phase XX.8 — Memory, Performance & Code Quality Sprint
+
+A comprehensive audit of memory leaks, performance bottlenecks, and code duplication. 27 items found across three categories; all resolved without behavioral changes.
+
+### Security
+
+- **Streaming tool-filter security gap closed** — The `/api/v1/chat/stream` handler previously skipped the network-tool and Twingate-tool gate checks that the non-streaming path enforced. All MCP tool categories (git, fs, web, browser, network, Twingate) are now filtered via a shared `filterMcpTools()` function applied identically to both paths (`chat-routes.ts`).
+
+### Fixed
+
+- **`nextCronRun()` was a stub** — `SkillScheduler.nextCronRun()` returned `from + checkIntervalMs` for all cron expressions (a placeholder). Replaced with a full 5-field cron parser supporting `*`, `*/N`, `a-b`, `a-b/N`, and comma-separated lists. Skills now fire at their actual scheduled times.
+- **`signalCache` leaked stale signals on intent reload** — `IntentManager.reloadActiveIntent()` rebuilt the goal index without clearing `signalCache`, so stale signal evaluations persisted. Added `this.signalCache.clear()` at the top of `reloadActiveIntent()`.
+- **`skill-resources` loaded all skills to serve one** — The `yeoman://skills/{id}` MCP resource fetched all skills from `GET /api/v1/soul/skills` and searched locally. Changed to `GET /api/v1/soul/skills/:id` — O(n) → O(1).
+
+### Performance
+
+- **Parallel brain recall** — `brainManager.recall()` and `brainManager.queryKnowledge()` were sequential awaits in both streaming and non-streaming handlers. Wrapped in `Promise.all([...])` in both paths.
+- **Batch memory fetch** — `BrainManager` hybrid search issued N individual `getMemory(id)` calls after RRF ranking. Replaced with a single `WHERE id = ANY($1)` batch query.
+- **`mcpStorage.getConfig()` cache** — `McpStorage.getConfig()` made a DB round-trip on every tool-filter check (once per chat request). Added a 5-second in-process cache; `setConfig()` invalidates it immediately.
+- **DB indexes** — Added three missing indexes via migration `045_performance_indexes.sql`: `soul.skills (enabled, status, usage_count DESC)`, `autonomy_audit_runs (status)`, `intent_enforcement_log (personality_id)`.
+- **`listSkills` window function** — `SoulStorage.listSkills()` ran separate `COUNT(*)` and `SELECT` queries. Replaced with `COUNT(*) OVER ()` window function in a single query.
+- **`ResponseCache` auto-eviction** — `ResponseCache` exposed `evictExpired()` but had no background timer; expired entries only left when the FIFO limit was hit. Added a `setInterval` timer (period = TTL) so stale entries are proactively purged.
+- **Pre-compiled trigger RegExp** — `isSkillInContext()` called `new RegExp(pattern, 'i')` on every invocation. Added a module-level `Map<string, RegExp | null>` cache (`triggerPatternCache`) so each pattern string compiles once.
+
+### Memory
+
+- **`UsageTracker` unbounded growth** — `UsageTracker` loaded up to 90 days of usage records into a `records[]` array on startup and kept them forever. Replaced with `todayRecords[]` (today only, typically <100 entries) plus DB-aggregated `monthCostUsd` and `providerStats` accumulators seeded at init. `UsageStorage` gained `loadToday()`, `loadMonthCostUsd()`, `loadProviderStats()`, and `getTotalCallCount()` helpers.
+- **`tokenCache` unbounded** — The module-level `tokenCache: Map<string, number>` in `token-counter.ts` grew without bound. Capped at 2 000 entries with FIFO eviction.
+- **`agentReports` ephemeral store** — The `agentReports` Map in `diagnostic-routes.ts` had no TTL. Added a background `setInterval` that evicts reports older than 10 minutes every 5 minutes (timer `.unref()`'d).
+
+### Refactoring
+
+- **`buildFrontMatter` shared utility** — The function was copy-pasted in three files (`web-tools.ts`, `personality-resources.ts`, `skill-resources.ts`). Extracted to `packages/mcp/src/utils/front-matter.ts`; all three import from there.
+- **Brain context helpers** — The brain recall + preference-injection block was duplicated verbatim in the non-streaming and streaming chat handlers (~30 lines each). Extracted to `gatherBrainContext()` and `applyPreferenceInjection()` module-level helpers.
+- **`AbortSignal.timeout()` in twingate-tools** — `twingateQuery()` and `mcpJsonRpc()` used the verbose `AbortController + setTimeout + try/finally clearTimeout` pattern. The rest of the codebase already uses `AbortSignal.timeout()` (available since Node.js 17, required ≥20). Both functions updated to match.
+- **`SkillScheduler` uses `setInterval`** — The scheduler used recursive `setTimeout` (a new timer object each cycle). Replaced with a single `setInterval` instance, cleaned up in `stop()`.
+
+### Tests
+
+- **`skill-scheduler.test.ts`** — 4 new cron-expression tests covering `*/5 * * * *` (step fields), `0 9 * * *` (specific hour), `0 0 1 * *` (day-of-month), and `5,35 * * * *` (comma-separated values).
+- **`response-cache.test.ts`** — 2 new tests verifying the background auto-eviction timer fires and evicts expired entries, and that `clear()` stops the timer.
+
+### Documentation
+
+- **ADR 131** — `docs/adr/131-memory-performance-code-quality-sprint.md` documents all 18 changes, their root causes, and the resolution approach.
+
+---
+
 ## [2026.2.24] — 2026-02-24
 
 ### Phase XX.7 — Settings Active Souls Polish

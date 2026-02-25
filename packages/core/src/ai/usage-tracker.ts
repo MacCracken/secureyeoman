@@ -5,6 +5,12 @@
  * Persists records to PostgreSQL via UsageStorage so data survives restarts.
  * Enforces configurable daily token limits.
  *
+ * Memory design:
+ *   - Only today's records are kept in memory (`todayRecords`).
+ *   - Monthly cost and per-provider breakdowns are pre-seeded from the DB
+ *     on init() and updated as new records arrive — no 90-day array in RAM.
+ *   - Day-rollover is detected in record() so the in-memory slice stays bounded.
+ *
  * Counter persistence across restarts:
  *   - apiCallsTotal    — seeded from usage_records count on init
  *   - apiErrorsTotal   — seeded from usage_error_records count (since last reset) on init
@@ -54,12 +60,9 @@ function dayKey(ts: number): string {
   return new Date(ts).toISOString().slice(0, 10);
 }
 
-function monthKey(ts: number): string {
-  return new Date(ts).toISOString().slice(0, 7);
-}
-
 export class UsageTracker {
-  private readonly records: UsageRecord[] = [];
+  /** In-memory records for today only — kept bounded by day-rollover trimming. */
+  private readonly todayRecords: UsageRecord[] = [];
   private readonly maxTokensPerDay: number | undefined;
   private readonly storage: UsageStorage | undefined;
 
@@ -69,17 +72,25 @@ export class UsageTracker {
   private apiLatencyTotalMs = 0;
   private latencyCallCount = 0;
 
+  // Pre-aggregated stats seeded from DB on init() and kept up-to-date via record()
+  private monthCostUsd = 0;
+  private providerStats: Record<string, ProviderStats> = {};
+
   // Reset timestamps — loaded from DB so counters start from the right baseline
   private errorsResetAt = 0;
   private latencyResetAt = 0;
 
+  // Day key for today — used to detect midnight rollover
+  private currentDayKey = '';
+
   constructor(maxTokensPerDay?: number, storage?: UsageStorage) {
     this.maxTokensPerDay = maxTokensPerDay;
     this.storage = storage;
+    this.currentDayKey = dayKey(Date.now());
   }
 
   /**
-   * Load historical records from the database and seed all counters.
+   * Load today's records from the database and seed all counters.
    * Call once during startup before any record() calls.
    */
   async init(): Promise<void> {
@@ -89,12 +100,13 @@ export class UsageTracker {
     this.errorsResetAt = await this.storage.getResetAt('errors');
     this.latencyResetAt = await this.storage.getResetAt('latency');
 
-    const historical = await this.storage.loadRecent();
-    this.records.push(...historical);
+    // Only load today's records — avoids pulling 90 days of history into RAM
+    const todayRows = await this.storage.loadToday();
+    this.todayRecords.push(...todayRows);
+    this.currentDayKey = dayKey(Date.now());
 
-    // Seed call counter from DB records (only successful calls are in usage_records;
-    // error counts from previous sessions are recovered via usage_error_records)
-    this.apiCallsTotal = historical.length;
+    // Seed total call counter from all records in the DB
+    this.apiCallsTotal = await this.storage.getTotalCallCount();
 
     // Seed error count and latency from DB using reset timestamps as lower bounds
     const stats = await this.storage.loadStats(this.errorsResetAt, this.latencyResetAt);
@@ -102,6 +114,10 @@ export class UsageTracker {
     this.apiCallsTotal += stats.errorCount; // total = success + errors
     this.apiLatencyTotalMs = stats.latencyTotalMs;
     this.latencyCallCount = stats.latencyCallCount;
+
+    // Seed monthly cost and per-provider breakdown from DB
+    this.monthCostUsd = await this.storage.loadMonthCostUsd();
+    this.providerStats = await this.storage.loadProviderStats();
   }
 
   /**
@@ -110,8 +126,33 @@ export class UsageTracker {
    * and used to seed apiLatencyAvgMs across restarts.
    */
   record(record: UsageRecord): void {
-    this.records.push(record);
+    // Trim yesterday's records when the calendar day rolls over
+    const today = dayKey(Date.now());
+    if (today !== this.currentDayKey) {
+      this.todayRecords.length = 0;
+      this.currentDayKey = today;
+    }
+
+    this.todayRecords.push(record);
     this.apiCallsTotal++;
+
+    // Update month cost accumulator
+    this.monthCostUsd += record.costUsd;
+
+    // Update per-provider accumulator
+    if (!this.providerStats[record.provider]) {
+      this.providerStats[record.provider] = {
+        inputTokensUsed: 0, outputTokensUsed: 0, tokensUsed: 0,
+        costUsd: 0, calls: 0, errors: 0,
+      };
+    }
+    const ps = this.providerStats[record.provider]!;
+    ps.inputTokensUsed += record.usage.inputTokens;
+    ps.outputTokensUsed += record.usage.outputTokens;
+    ps.tokensUsed += record.usage.totalTokens;
+    ps.costUsd += record.costUsd;
+    ps.calls++;
+
     if (record.latencyMs !== undefined) {
       this.apiLatencyTotalMs += record.latencyMs;
       this.latencyCallCount++;
@@ -153,10 +194,8 @@ export class UsageTracker {
   async resetErrors(): Promise<void> {
     const now = Date.now();
     this.errorsResetAt = now;
+    this.apiCallsTotal = Math.max(0, this.apiCallsTotal - this.apiErrorsTotal);
     this.apiErrorsTotal = 0;
-    // Recalculate apiCallsTotal to exclude the now-reset errors
-    // (re-count from records so we don't under-count successes)
-    this.apiCallsTotal = this.records.length;
     await this.storage?.setResetAt('errors', now);
   }
 
@@ -193,43 +232,21 @@ export class UsageTracker {
    * Get aggregated usage statistics.
    */
   getStats(): UsageStats {
-    const now = Date.now();
-    const today = dayKey(now);
-    const thisMonth = monthKey(now);
+    const today = dayKey(Date.now());
 
     let inputTokensToday = 0;
     let outputTokensToday = 0;
     let tokensUsedToday = 0;
     let tokensCachedToday = 0;
     let costUsdToday = 0;
-    let costUsdMonth = 0;
-    const byProvider: Record<string, ProviderStats> = {};
 
-    for (const r of this.records) {
-      const rDay = dayKey(r.timestamp);
-      const rMonth = monthKey(r.timestamp);
-
-      // Per-provider aggregation
-      if (!byProvider[r.provider]) {
-        byProvider[r.provider] = { inputTokensUsed: 0, outputTokensUsed: 0, tokensUsed: 0, costUsd: 0, calls: 0, errors: 0 };
-      }
-      const providerStats = byProvider[r.provider]!;
-      providerStats.inputTokensUsed += r.usage.inputTokens;
-      providerStats.outputTokensUsed += r.usage.outputTokens;
-      providerStats.tokensUsed += r.usage.totalTokens;
-      providerStats.costUsd += r.costUsd;
-      providerStats.calls++;
-
-      if (rDay === today) {
+    for (const r of this.todayRecords) {
+      if (dayKey(r.timestamp) === today) {
         inputTokensToday += r.usage.inputTokens;
         outputTokensToday += r.usage.outputTokens;
         tokensUsedToday += r.usage.totalTokens;
         tokensCachedToday += r.usage.cachedTokens;
         costUsdToday += r.costUsd;
-      }
-
-      if (rMonth === thisMonth) {
-        costUsdMonth += r.costUsd;
       }
     }
 
@@ -239,19 +256,19 @@ export class UsageTracker {
       tokensUsedToday,
       tokensCachedToday,
       costUsdToday,
-      costUsdMonth,
+      costUsdMonth: this.monthCostUsd,
       apiCallsTotal: this.apiCallsTotal,
       apiErrorsTotal: this.apiErrorsTotal,
       apiLatencyTotalMs: this.apiLatencyTotalMs,
       apiCallCount: this.latencyCallCount,
-      byProvider,
+      byProvider: this.providerStats,
     };
   }
 
   private getTokensToday(): number {
     const today = dayKey(Date.now());
     let total = 0;
-    for (const r of this.records) {
+    for (const r of this.todayRecords) {
       if (dayKey(r.timestamp) === today) {
         total += r.usage.totalTokens;
       }

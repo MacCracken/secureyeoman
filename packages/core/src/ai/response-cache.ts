@@ -34,9 +34,17 @@ export class ResponseCache {
   private hits = 0;
   private misses = 0;
   private readonly config: ResponseCacheConfig;
+  private readonly evictTimer?: ReturnType<typeof setInterval>;
 
   constructor(config: ResponseCacheConfig) {
     this.config = config;
+    if (config.enabled && config.ttlMs > 0) {
+      // Evict expired entries once per TTL cycle so stale entries don't linger
+      // until the store reaches maxEntries. .unref() prevents this timer from
+      // keeping the process alive after all other work is done.
+      this.evictTimer = setInterval(() => this.evictExpired(), config.ttlMs);
+      this.evictTimer.unref?.();
+    }
   }
 
   /**
@@ -127,8 +135,9 @@ export class ResponseCache {
     };
   }
 
-  /** Clear all cached entries and reset counters. */
+  /** Clear all cached entries, reset counters, and stop the background eviction timer. */
   clear(): void {
+    if (this.evictTimer) clearInterval(this.evictTimer);
     this.store.clear();
     this.hits = 0;
     this.misses = 0;

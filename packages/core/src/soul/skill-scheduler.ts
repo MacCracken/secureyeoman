@@ -107,7 +107,7 @@ export class SkillScheduler {
   private eventHandlers = new Set<ScheduleEventHandler>();
   private isRunning = false;
   private checkIntervalMs = 60000;
-  private checkTimer?: NodeJS.Timeout;
+  private checkInterval?: ReturnType<typeof setInterval>;
 
   constructor(
     private config: {
@@ -130,9 +130,9 @@ export class SkillScheduler {
 
   stop(): void {
     this.isRunning = false;
-    if (this.checkTimer) {
-      clearTimeout(this.checkTimer);
-      this.checkTimer = undefined;
+    if (this.checkInterval) {
+      clearInterval(this.checkInterval);
+      this.checkInterval = undefined;
     }
     for (const timer of this.timers.values()) {
       clearTimeout(timer);
@@ -266,17 +266,78 @@ export class SkillScheduler {
   }
 
   private nextCronRun(expression: string, from: number): number {
-    const parts = expression.split(' ');
-    if (parts.length < 5) {
-      return from + this.checkIntervalMs;
+    const parts = expression.trim().split(/\s+/);
+    if (parts.length < 5) return from + this.checkIntervalMs;
+
+    const [minuteStr, hourStr, domStr, monthStr, dowStr] = parts as [string, string, string, string, string];
+
+    /** Expand a cron field into the set of matching integer values. */
+    const parseField = (field: string, min: number, max: number): Set<number> => {
+      const result = new Set<number>();
+      for (const part of field.split(',')) {
+        if (part === '*') {
+          for (let i = min; i <= max; i++) result.add(i);
+        } else if (part.startsWith('*/')) {
+          const step = parseInt(part.slice(2), 10);
+          if (!isNaN(step) && step > 0) {
+            for (let i = min; i <= max; i += step) result.add(i);
+          }
+        } else if (part.includes('-')) {
+          const [lo, rest] = part.split('-') as [string, string];
+          const [hi, stepRaw] = rest.split('/') as [string, string | undefined];
+          const step = stepRaw ? parseInt(stepRaw, 10) : 1;
+          const loN = parseInt(lo, 10);
+          const hiN = parseInt(hi, 10);
+          if (!isNaN(loN) && !isNaN(hiN)) {
+            for (let i = loN; i <= hiN; i += step) result.add(i);
+          }
+        } else {
+          const v = parseInt(part, 10);
+          if (!isNaN(v)) result.add(v);
+        }
+      }
+      return result;
+    };
+
+    const minutes = parseField(minuteStr, 0, 59);
+    const hours   = parseField(hourStr,   0, 23);
+    const doms    = parseField(domStr,    1, 31);
+    const months  = parseField(monthStr,  1, 12);
+    const dows    = parseField(dowStr,    0, 6);
+    const domWild = domStr === '*';
+    const dowWild = dowStr === '*';
+
+    // Advance by 1 minute from `from` and walk forward looking for the next match.
+    const d = new Date(from + 60_000);
+    d.setSeconds(0, 0);
+
+    const limit = from + 366 * 24 * 60 * 60 * 1000; // give up after 1 year
+    while (d.getTime() < limit) {
+      const month = d.getMonth() + 1; // 1-12
+      if (!months.has(month)) {
+        d.setDate(1);
+        d.setHours(0, 0, 0, 0);
+        d.setMonth(d.getMonth() + 1);
+        continue;
+      }
+      const domOk = domWild || doms.has(d.getDate());
+      const dowOk = dowWild || dows.has(d.getDay());
+      // Standard cron: if both DOM and DOW are restricted, either matching qualifies.
+      const dayOk = domWild ? dowOk : dowWild ? domOk : domOk || dowOk;
+      if (!dayOk) {
+        d.setDate(d.getDate() + 1);
+        d.setHours(0, 0, 0, 0);
+        continue;
+      }
+      if (!hours.has(d.getHours())) {
+        d.setHours(d.getHours() + 1, 0, 0, 0);
+        continue;
+      }
+      if (minutes.has(d.getMinutes())) return d.getTime();
+      d.setMinutes(d.getMinutes() + 1);
     }
 
-    const date = new Date(from);
-    date.setMinutes(date.getMinutes() + 1);
-    date.setSeconds(0);
-    date.setMilliseconds(0);
-
-    return date.getTime();
+    return from + this.checkIntervalMs;
   }
 
   private checkConditions(conditions?: ScheduleConditions): boolean {
@@ -383,9 +444,8 @@ export class SkillScheduler {
   }
 
   private startCheckTimer(): void {
-    this.checkTimer = setTimeout(() => {
+    this.checkInterval = setInterval(() => {
       if (!this.isRunning) return;
-
       for (const skill of this.scheduledSkills.values()) {
         if (skill.enabled && skill.nextRunAt) {
           if (!this.checkConditions(skill.conditions)) {
@@ -393,8 +453,6 @@ export class SkillScheduler {
           }
         }
       }
-
-      this.startCheckTimer();
     }, this.checkIntervalMs);
   }
 

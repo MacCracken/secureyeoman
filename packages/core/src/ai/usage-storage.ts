@@ -58,6 +58,23 @@ export interface LoadedStats {
 // Keep 90 days of history — enough for monthly rollups with headroom.
 const RETENTION_MS = 90 * 24 * 60 * 60 * 1000;
 
+function rowToUsageRecord(row: UsageRow): UsageRecord {
+  return {
+    provider: row.provider as AIProviderName,
+    model: row.model,
+    usage: {
+      inputTokens: row.input_tokens,
+      outputTokens: row.output_tokens,
+      cachedTokens: row.cached_tokens,
+      totalTokens: row.total_tokens,
+    },
+    costUsd: row.cost_usd,
+    timestamp: Number(row.recorded_at),
+    personalityId: row.personality_id ?? undefined,
+    latencyMs: row.latency_ms,
+  };
+}
+
 export class UsageStorage extends PgBaseStorage {
   async init(): Promise<void> {
     await this.execute(`
@@ -136,7 +153,70 @@ export class UsageStorage extends PgBaseStorage {
     );
   }
 
-  /** Load all records within the retention window. */
+  /** Load only today's records (midnight UTC → now). Keeps the in-memory footprint small. */
+  async loadToday(): Promise<UsageRecord[]> {
+    const now = Date.now();
+    const todayStart = now - (now % 86_400_000); // midnight UTC
+    const rows = await this.queryMany<UsageRow>(
+      `SELECT provider, model, input_tokens, output_tokens, cached_tokens, total_tokens, cost_usd, recorded_at, personality_id, latency_ms
+         FROM usage_records
+        WHERE recorded_at >= $1
+        ORDER BY recorded_at ASC`,
+      [todayStart]
+    );
+    return rows.map(rowToUsageRecord);
+  }
+
+  /** Return the total cost (USD) incurred since the start of the current calendar month (UTC). */
+  async loadMonthCostUsd(): Promise<number> {
+    const now = new Date();
+    const monthStart = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1);
+    const row = await this.queryOne<{ total: string | null }>(
+      'SELECT SUM(cost_usd) AS total FROM usage_records WHERE recorded_at >= $1',
+      [monthStart]
+    );
+    return Number(row?.total ?? 0);
+  }
+
+  /** Return per-provider aggregates over the retention window, pre-aggregated in the DB. */
+  async loadProviderStats(): Promise<Record<string, { inputTokensUsed: number; outputTokensUsed: number; tokensUsed: number; costUsd: number; calls: number; errors: number }>> {
+    const since = Date.now() - RETENTION_MS;
+    const rows = await this.queryMany<{
+      provider: string;
+      input: string; output: string; total: string; cost: string; calls: string;
+    }>(
+      `SELECT provider,
+              SUM(input_tokens)  AS input,
+              SUM(output_tokens) AS output,
+              SUM(total_tokens)  AS total,
+              SUM(cost_usd)      AS cost,
+              COUNT(*)           AS calls
+         FROM usage_records
+        WHERE recorded_at >= $1
+        GROUP BY provider`,
+      [since]
+    );
+    const result: Record<string, { inputTokensUsed: number; outputTokensUsed: number; tokensUsed: number; costUsd: number; calls: number; errors: number }> = {};
+    for (const row of rows) {
+      result[row.provider] = {
+        inputTokensUsed: Number(row.input),
+        outputTokensUsed: Number(row.output),
+        tokensUsed: Number(row.total),
+        costUsd: Number(row.cost),
+        calls: Number(row.calls),
+        errors: 0,
+      };
+    }
+    return result;
+  }
+
+  /** Return the total number of successful call records in the DB (for seeding apiCallsTotal). */
+  async getTotalCallCount(): Promise<number> {
+    const row = await this.queryOne<{ count: string }>('SELECT COUNT(*) AS count FROM usage_records');
+    return Number(row?.count ?? 0);
+  }
+
+  /** @deprecated Use loadToday() — kept for test compatibility only. */
   async loadRecent(): Promise<UsageRecord[]> {
     const since = Date.now() - RETENTION_MS;
     const rows = await this.queryMany<UsageRow>(
@@ -146,21 +226,7 @@ export class UsageStorage extends PgBaseStorage {
         ORDER BY recorded_at ASC`,
       [since]
     );
-
-    return rows.map((row) => ({
-      provider: row.provider as AIProviderName,
-      model: row.model,
-      usage: {
-        inputTokens: row.input_tokens,
-        outputTokens: row.output_tokens,
-        cachedTokens: row.cached_tokens,
-        totalTokens: row.total_tokens,
-      },
-      costUsd: row.cost_usd,
-      timestamp: Number(row.recorded_at),
-      personalityId: row.personality_id ?? undefined,
-      latencyMs: row.latency_ms,
-    }));
+    return rows.map(rowToUsageRecord);
   }
 
   /**

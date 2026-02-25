@@ -200,6 +200,50 @@ describe('SkillScheduler', () => {
       const next = scheduler.getNextRun(s.id);
       expect(next).toBeGreaterThan(Date.now());
     });
+
+    it('*/5 * * * * — next run is within 5 minutes', () => {
+      const s = makeScheduledSkill({ schedule: { type: 'cron', expression: '*/5 * * * *' } });
+      scheduler.schedule(s);
+      scheduler.start();
+      const next = scheduler.getNextRun(s.id)!;
+      // Must be in the future, and at most 5 minutes away
+      expect(next).toBeGreaterThan(Date.now());
+      expect(next).toBeLessThanOrEqual(Date.now() + 5 * 60 * 1000 + 5000);
+    });
+
+    it('0 9 * * * — next run falls at :00 minutes and hour 9 (or later)', () => {
+      const s = makeScheduledSkill({ schedule: { type: 'cron', expression: '0 9 * * *' } });
+      scheduler.schedule(s);
+      scheduler.start();
+      const next = scheduler.getNextRun(s.id)!;
+      expect(next).toBeGreaterThan(Date.now());
+      const d = new Date(next);
+      // Hour must be 9 and minute must be 0
+      expect(d.getHours()).toBe(9);
+      expect(d.getMinutes()).toBe(0);
+    });
+
+    it('0 0 1 * * — next run falls on the 1st of some month at midnight', () => {
+      const s = makeScheduledSkill({ schedule: { type: 'cron', expression: '0 0 1 * *' } });
+      scheduler.schedule(s);
+      scheduler.start();
+      const next = scheduler.getNextRun(s.id)!;
+      expect(next).toBeGreaterThan(Date.now());
+      const d = new Date(next);
+      expect(d.getDate()).toBe(1);
+      expect(d.getHours()).toBe(0);
+      expect(d.getMinutes()).toBe(0);
+    });
+
+    it('5,35 * * * * — next run is at minute 5 or 35', () => {
+      const s = makeScheduledSkill({ schedule: { type: 'cron', expression: '5,35 * * * *' } });
+      scheduler.schedule(s);
+      scheduler.start();
+      const next = scheduler.getNextRun(s.id)!;
+      expect(next).toBeGreaterThan(Date.now());
+      const d = new Date(next);
+      expect([5, 35]).toContain(d.getMinutes());
+    });
   });
 
   describe('event emission on execution', () => {

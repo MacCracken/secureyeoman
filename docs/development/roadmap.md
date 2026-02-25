@@ -24,6 +24,12 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ---
 
+## 2026.2.25 Improvement Thoughs
+
+- [ ] dashboard - Allow for personality image to recieve an image
+
+
+---
 ## Future Features
 
 *Demand-gated — implement only once real-world usage confirms the need. Ordered by priority within each tier.*

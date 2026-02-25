@@ -75,23 +75,15 @@ async function twingateQuery(
   variables?: Record<string, unknown>
 ): Promise<unknown> {
   const url = `https://${network}.twingate.com/api/graphql/`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), GRAPHQL_TIMEOUT_MS);
-
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
-      },
-      body: JSON.stringify({ query, variables }),
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(GRAPHQL_TIMEOUT_MS),
+  });
 
   if (!res.ok) {
     throw new Error(`Twingate API error ${res.status}: ${await res.text()}`);
@@ -111,20 +103,12 @@ async function mcpJsonRpc(
   params?: unknown
 ): Promise<unknown> {
   const url = `http://${addr}:${port}`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), MCP_PROXY_TIMEOUT_MS);
-
-  let res: Response;
-  try {
-    res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ jsonrpc: '2.0', method, params: params ?? {}, id: randomUUID() }),
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timer);
-  }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ jsonrpc: '2.0', method, params: params ?? {}, id: randomUUID() }),
+    signal: AbortSignal.timeout(MCP_PROXY_TIMEOUT_MS),
+  });
 
   if (!res.ok) {
     throw new Error(`MCP server HTTP error ${res.status}`);

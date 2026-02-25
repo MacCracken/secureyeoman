@@ -177,11 +177,11 @@ export class BrainManager {
 
         if (combined.size > 0) {
           const sorted = [...combined.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
-          const memories: Memory[] = [];
-          for (const [id] of sorted) {
-            const memory = await this.storage.getMemory(id);
-            if (memory) memories.push(memory);
-          }
+          const sortedIds = sorted.map(([id]) => id);
+          const fetched = await this.storage.getMemoryBatch(sortedIds);
+          // Preserve RRF rank order
+          const byId = new Map(fetched.map((m) => [m.id, m]));
+          const memories = sortedIds.map((id) => byId.get(id)).filter((m): m is Memory => m !== undefined);
           if (memories.length > 0) {
             await this.storage.touchMemories(memories.map((m) => m.id));
             return memories;

@@ -87,6 +87,8 @@ export class IntentManager {
 
   /** Reload the active intent from the DB (called after activation changes). */
   async reloadActiveIntent(): Promise<void> {
+    // Clear cached signals so stale data from the previous intent doesn't linger
+    this.signalCache.clear();
     this.activeIntent = await this.storage.getActiveIntent();
     await this._diffGoals();
   }

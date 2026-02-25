@@ -221,6 +221,42 @@ describe('ResponseCache', () => {
     });
   });
 
+  describe('background eviction timer', () => {
+    it('auto-evicts expired entries without manual evictExpired() call', () => {
+      vi.useFakeTimers();
+      // TTL = 100ms → timer fires every 100ms
+      const cache = new ResponseCache({ enabled: true, ttlMs: 100, maxEntries: 100 });
+      cache.set('x', baseResponse);
+      cache.set('y', baseResponse);
+      expect(cache.getStats().entries).toBe(2);
+
+      // Advance past TTL so entries expire, then past TTL again so the timer fires
+      vi.advanceTimersByTime(250);
+
+      // The background interval should have evicted both entries automatically
+      expect(cache.getStats().entries).toBe(0);
+
+      cache.clear();
+      vi.useRealTimers();
+    });
+
+    it('clear() stops the background timer (no further eviction after clear)', () => {
+      vi.useFakeTimers();
+      const cache = new ResponseCache({ enabled: true, ttlMs: 100, maxEntries: 100 });
+      cache.set('a', baseResponse);
+      cache.clear();
+
+      // Store a new entry after clear — the timer was stopped so it won't evict
+      cache.set('b', baseResponse);
+      vi.advanceTimersByTime(500);
+      // No timer running → entry stays (evictExpired is never auto-called)
+      // The entry was added after clear() which also stops the timer, so it persists
+      expect(cache.getStats().entries).toBe(1);
+
+      vi.useRealTimers();
+    });
+  });
+
   describe('disabled cache stats', () => {
     beforeEach(() => {
       vi.useFakeTimers();

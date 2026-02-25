@@ -170,6 +170,15 @@ export class BrainStorage extends PgBaseStorage {
     return row ? rowToMemory(row) : null;
   }
 
+  async getMemoryBatch(ids: string[]): Promise<Memory[]> {
+    if (ids.length === 0) return [];
+    const rows = await this.queryMany<MemoryRow>(
+      'SELECT * FROM brain.memories WHERE id = ANY($1)',
+      [ids]
+    );
+    return rows.map(rowToMemory);
+  }
+
   async deleteMemory(id: string): Promise<boolean> {
     const count = await this.execute('DELETE FROM brain.memories WHERE id = $1', [id]);
     return count > 0;

@@ -8,21 +8,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import type { CoreApiClient } from '../core-client.js';
 
-function buildFrontMatter(
-  fields: Record<string, string | number | boolean | undefined>
-): string {
-  const lines = ['---'];
-  for (const [key, value] of Object.entries(fields)) {
-    if (value === undefined || value === null || value === '') continue;
-    const str = String(value);
-    const escaped = str.includes(':')
-      ? `"${str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
-      : str;
-    lines.push(`${key}: ${escaped}`);
-  }
-  lines.push('---');
-  return lines.join('\n') + '\n\n';
-}
+import { buildFrontMatter } from '../utils/front-matter.js';
 
 export function registerSkillResources(server: McpServer, client: CoreApiClient): void {
   server.resource(
@@ -35,9 +21,7 @@ export function registerSkillResources(server: McpServer, client: CoreApiClient)
     },
     async (uri: URL) => {
       const id = uri.pathname.split('/').pop() ?? '';
-      const result = (await client.get('/api/v1/soul/skills')) as { skills?: unknown[] };
-      const skills = (result?.skills ?? []) as Array<Record<string, unknown>>;
-      const skill = skills.find((s) => s.id === id);
+      const skill = (await client.get(`/api/v1/soul/skills/${id}`)) as Record<string, unknown> | null;
       if (!skill) throw new Error(`Skill ${id} not found`);
 
       const instructions = (skill.instructions as string) ?? '';

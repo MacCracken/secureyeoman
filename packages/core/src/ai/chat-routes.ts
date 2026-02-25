@@ -13,8 +13,10 @@ import type {
   FallbackModelConfig,
   AIProviderName,
   ChatStreamEvent,
+  McpToolDef,
+  McpFeatures,
 } from '@secureyeoman/shared';
-import type { McpToolDef } from '@secureyeoman/shared';
+import type { McpFeatureConfig } from '../mcp/storage.js';
 import { PreferenceLearner, type FeedbackType } from '../brain/preference-learner.js';
 import { sendError } from '../utils/errors.js';
 import { ToolOutputScanner } from '../security/tool-output-scanner.js';
@@ -48,6 +50,106 @@ export interface ChatRoutesOptions {
   secureYeoman: SecureYeoman;
 }
 
+// ─── Module-level constants shared by both chat handlers ────────────────────
+
+const CREATION_TOOL_LABELS: Record<string, string> = {
+  create_skill: 'Skill',
+  update_skill: 'Skill',
+  delete_skill: 'Skill',
+  create_task: 'Task',
+  update_task: 'Task',
+  create_personality: 'Personality',
+  update_personality: 'Personality',
+  delete_personality: 'Personality',
+  create_experiment: 'Experiment',
+  delete_experiment: 'Experiment',
+  create_swarm: 'Swarm',
+  create_custom_role: 'Custom Role',
+  delete_custom_role: 'Custom Role',
+  assign_role: 'Role Assignment',
+  revoke_role: 'Role Assignment',
+  a2a_connect: 'A2A Connection',
+  delegate_task: 'Delegation',
+  create_workflow: 'Workflow',
+  update_workflow: 'Workflow',
+  delete_workflow: 'Workflow',
+  trigger_workflow: 'Workflow Run',
+};
+
+function toolAction(toolName: string): string {
+  if (toolName.startsWith('create_')) return 'Created';
+  if (toolName.startsWith('update_')) return 'Updated';
+  if (toolName.startsWith('delete_')) return 'Deleted';
+  if (toolName.startsWith('trigger_')) return 'Triggered';
+  if (toolName.startsWith('assign_')) return 'Assigned';
+  if (toolName.startsWith('revoke_')) return 'Revoked';
+  if (toolName === 'a2a_connect') return 'Connected';
+  if (toolName === 'delegate_task') return 'Delegated';
+  return 'Created';
+}
+
+// Prefix lists compiled once at module load — used inside filterMcpTools.
+const NETWORK_DEVICE_PREFIXES = [
+  'network_device_', 'network_show_', 'network_config_',
+  'network_health_', 'network_ping_', 'network_traceroute',
+];
+const NETWORK_DISCOVERY_PREFIXES = [
+  'network_discovery_', 'network_topology_', 'network_arp_', 'network_mac_',
+  'network_routing_', 'network_ospf_', 'network_bgp_',
+  'network_interface_', 'network_vlan_',
+];
+const NETWORK_AUDIT_PREFIXES = [
+  'network_acl_', 'network_aaa_', 'network_port_',
+  'network_stp_', 'network_software_',
+];
+const NETWORK_UTIL_PREFIXES = ['subnet_', 'wildcard_', 'pcap_'];
+
+/**
+ * Filter all available MCP tools down to those the current personality is
+ * permitted to access. Applied identically to both the streaming and
+ * non-streaming chat handlers so gating logic stays consistent.
+ */
+function filterMcpTools(
+  allMcpTools: McpToolDef[],
+  selectedServers: string[],
+  globalConfig: McpFeatureConfig,
+  perPersonality: Partial<McpFeatures>
+): Tool[] {
+  const globalNetworkOk = globalConfig.exposeNetworkTools === true;
+  const globalTwingateOk = globalConfig.exposeTwingateTools === true;
+  const tools: Tool[] = [];
+
+  for (const tool of allMcpTools) {
+    if (tool.serverName === 'YEOMAN MCP') {
+      const n = tool.name;
+
+      if ((n.startsWith('git_') || n.startsWith('github_')) && !(globalConfig.exposeGit && perPersonality.exposeGit)) continue;
+      if (n.startsWith('fs_') && !(globalConfig.exposeFilesystem && perPersonality.exposeFilesystem)) continue;
+      if ((n.startsWith('web_scrape') || n === 'web_extract_structured' || n === 'web_fetch_markdown') && !(globalConfig.exposeWebScraping ?? globalConfig.exposeWeb) && !perPersonality.exposeWebScraping) continue;
+      if (n.startsWith('web_search') && !(globalConfig.exposeWeb && perPersonality.exposeWebSearch)) continue;
+      if (n.startsWith('browser_') && !(globalConfig.exposeBrowser && perPersonality.exposeBrowser)) continue;
+
+      if (NETWORK_DEVICE_PREFIXES.some((p) => n.startsWith(p)) && !(globalNetworkOk && perPersonality.exposeNetworkDevices)) continue;
+      if (NETWORK_DISCOVERY_PREFIXES.some((p) => n.startsWith(p)) && !(globalNetworkOk && perPersonality.exposeNetworkDiscovery)) continue;
+      if (NETWORK_AUDIT_PREFIXES.some((p) => n.startsWith(p)) && !(globalNetworkOk && perPersonality.exposeNetworkAudit)) continue;
+      if (n.startsWith('netbox_') && !(globalNetworkOk && perPersonality.exposeNetBox)) continue;
+      if (n.startsWith('nvd_') && !(globalNetworkOk && perPersonality.exposeNvd)) continue;
+      if (NETWORK_UTIL_PREFIXES.some((p) => n.startsWith(p)) && !(globalNetworkOk && perPersonality.exposeNetworkUtils)) continue;
+      if (n.startsWith('twingate_') && !(globalTwingateOk && perPersonality.exposeTwingate)) continue;
+    } else {
+      if (!selectedServers.includes(tool.serverName)) continue;
+    }
+
+    const raw = (tool.inputSchema ?? {}) as Record<string, unknown>;
+    const parameters: Tool['parameters'] = raw.type
+      ? (raw as Tool['parameters'])
+      : { type: 'object', properties: {}, ...(raw as object) };
+    tools.push({ name: tool.name, description: tool.description || undefined, parameters });
+  }
+
+  return tools;
+}
+
 interface ChatRequestBody {
   message: string;
   history?: { role: string; content: string }[];
@@ -74,6 +176,40 @@ interface BrainContextMeta {
   memoriesUsed: number;
   knowledgeUsed: number;
   contextSnippets: string[];
+}
+
+// ── Brain context helpers (shared by streaming and non-streaming paths) ───────
+
+async function gatherBrainContext(
+  secureYeoman: SecureYeoman,
+  message: string
+): Promise<BrainContextMeta> {
+  try {
+    const brainManager = secureYeoman.getBrainManager();
+    const [memories, knowledge] = await Promise.all([
+      brainManager.recall({ search: message, limit: 5 }),
+      brainManager.queryKnowledge({ search: message, limit: 5 }),
+    ]);
+    const snippets: string[] = [];
+    for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
+    for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
+    return { memoriesUsed: memories.length, knowledgeUsed: knowledge.length, contextSnippets: snippets };
+  } catch {
+    return { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
+  }
+}
+
+async function applyPreferenceInjection(
+  secureYeoman: SecureYeoman,
+  prompt: string
+): Promise<string> {
+  try {
+    const brainManager = secureYeoman.getBrainManager();
+    const learner = new PreferenceLearner(brainManager);
+    return await learner.injectPreferences(prompt);
+  } catch {
+    return prompt;
+  }
 }
 
 export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions): void {
@@ -161,43 +297,18 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       }
 
       // Gather Brain context metadata (best-effort — Brain may not be available)
-      let brainContext: BrainContextMeta = {
-        memoriesUsed: 0,
-        knowledgeUsed: 0,
-        contextSnippets: [],
-      };
-      if (memoryEnabled) {
-        try {
-          const brainManager = secureYeoman.getBrainManager();
-          const memories = await brainManager.recall({ search: message, limit: 5 });
-          const knowledge = await brainManager.queryKnowledge({ search: message, limit: 5 });
-          const snippets: string[] = [];
-          for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
-          for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
-          brainContext = {
-            memoriesUsed: memories.length,
-            knowledgeUsed: knowledge.length,
-            contextSnippets: snippets,
-          };
-        } catch {
-          // Brain not available — brainContext stays empty
-        }
-      }
+      const brainContext: BrainContextMeta = memoryEnabled
+        ? await gatherBrainContext(secureYeoman, message)
+        : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
       const soulManager = secureYeoman.getSoulManager();
       let systemPrompt = memoryEnabled
         ? await soulManager.composeSoulPrompt(message, personalityId, { viewportHint })
         : await soulManager.composeSoulPrompt(undefined, personalityId, { viewportHint });
 
-      // Inject learned preferences into system prompt
+      // Inject learned preferences into system prompt (best-effort)
       if (memoryEnabled && systemPrompt) {
-        try {
-          const brainManager = secureYeoman.getBrainManager();
-          const learner = new PreferenceLearner(brainManager);
-          systemPrompt = await learner.injectPreferences(systemPrompt);
-        } catch {
-          // Preference injection is best-effort
-        }
+        systemPrompt = await applyPreferenceInjection(secureYeoman, systemPrompt);
       }
 
       const messages: AIRequest['messages'] = [];
@@ -293,99 +404,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       const mcpStorage = secureYeoman.getMcpStorage();
 
       if (personality?.body?.enabled && mcpClient && mcpStorage) {
-        const selectedServers = personality.body.selectedServers ?? [];
-        const perPersonalityFeatures = personality.body.mcpFeatures ?? {
-          exposeGit: false,
-          exposeFilesystem: false,
-          exposeWeb: false,
-          exposeWebScraping: false,
-          exposeWebSearch: false,
-          exposeBrowser: false,
-          exposeNetworkDevices: false,
-          exposeNetworkDiscovery: false,
-          exposeNetworkAudit: false,
-          exposeNetBox: false,
-          exposeNvd: false,
-          exposeNetworkUtils: false,
-        };
         const globalConfig = await mcpStorage.getConfig();
-        const allMcpTools: McpToolDef[] = mcpClient.getAllTools();
-
-        for (const tool of allMcpTools) {
-          const isYeoman = tool.serverName === 'YEOMAN MCP';
-
-          // Always include YEOMAN MCP tools when body is enabled — the
-          // selectedServers list gates external third-party servers only.
-          // Integrations (integration_*) are always included; other YEOMAN
-          // tools are filtered by the per-personality mcpFeatures flags.
-          if (isYeoman) {
-            const isGitTool = tool.name.startsWith('git_') || tool.name.startsWith('github_');
-            const isFsTool = tool.name.startsWith('fs_');
-            const isWebScrapeTool =
-              tool.name.startsWith('web_scrape') ||
-              tool.name === 'web_extract_structured' ||
-              tool.name === 'web_fetch_markdown';
-            const isWebSearchTool = tool.name.startsWith('web_search');
-            const isBrowserTool = tool.name.startsWith('browser_');
-
-            if (isGitTool && !(globalConfig.exposeGit && perPersonalityFeatures.exposeGit))
-              continue;
-            if (isFsTool && !(globalConfig.exposeFilesystem && perPersonalityFeatures.exposeFilesystem))
-              continue;
-            if (isWebScrapeTool && !(globalConfig.exposeWebScraping ?? globalConfig.exposeWeb) && !perPersonalityFeatures.exposeWebScraping)
-              continue;
-            if (isWebSearchTool && !(globalConfig.exposeWeb && perPersonalityFeatures.exposeWebSearch))
-              continue;
-            if (isBrowserTool && !(globalConfig.exposeBrowser && perPersonalityFeatures.exposeBrowser))
-              continue;
-
-            // Network tools — 6 fine-selectable toolsets, each gated by global exposeNetworkTools AND per-personality flag.
-            const globalNetworkOk = globalConfig.exposeNetworkTools === true;
-
-            const NETWORK_DEVICE_PREFIXES = ['network_device_', 'network_show_', 'network_config_',
-              'network_health_', 'network_ping_', 'network_traceroute'];
-            const NETWORK_DISCOVERY_PREFIXES = ['network_discovery_', 'network_topology_', 'network_arp_',
-              'network_mac_', 'network_routing_', 'network_ospf_', 'network_bgp_',
-              'network_interface_', 'network_vlan_'];
-            const NETWORK_AUDIT_PREFIXES = ['network_acl_', 'network_aaa_', 'network_port_',
-              'network_stp_', 'network_software_'];
-
-            const isNetworkDeviceTool = NETWORK_DEVICE_PREFIXES.some((p) => tool.name.startsWith(p));
-            const isNetworkDiscoveryTool = NETWORK_DISCOVERY_PREFIXES.some((p) => tool.name.startsWith(p));
-            const isNetworkAuditTool = NETWORK_AUDIT_PREFIXES.some((p) => tool.name.startsWith(p));
-            const isNetBoxTool = tool.name.startsWith('netbox_');
-            const isNvdTool = tool.name.startsWith('nvd_');
-            const isNetworkUtilsTool = ['subnet_', 'wildcard_', 'pcap_'].some((p) => tool.name.startsWith(p));
-
-            if (isNetworkDeviceTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetworkDevices))
-              continue;
-            if (isNetworkDiscoveryTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetworkDiscovery))
-              continue;
-            if (isNetworkAuditTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetworkAudit))
-              continue;
-            if (isNetBoxTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetBox))
-              continue;
-            if (isNvdTool && !(globalNetworkOk && perPersonalityFeatures.exposeNvd))
-              continue;
-            if (isNetworkUtilsTool && !(globalNetworkOk && perPersonalityFeatures.exposeNetworkUtils))
-              continue;
-
-            // Twingate tools — single gate: global exposeTwingateTools AND per-personality exposeTwingate
-            const globalTwingateOk = globalConfig.exposeTwingateTools === true;
-            const isTwingateTool = tool.name.startsWith('twingate_');
-            if (isTwingateTool && !(globalTwingateOk && perPersonalityFeatures.exposeTwingate))
-              continue;
-          } else {
-            // External server: only include when explicitly selected
-            if (!selectedServers.includes(tool.serverName)) continue;
-          }
-
-          const raw = (tool.inputSchema ?? {}) as Record<string, unknown>;
-          const parameters: Tool['parameters'] = raw.type
-            ? (raw as Tool['parameters'])
-            : { type: 'object', properties: {}, ...(raw as object) };
-          tools.push({ name: tool.name, description: tool.description || undefined, parameters });
-        }
+        tools.push(...filterMcpTools(
+          mcpClient.getAllTools(),
+          personality.body.selectedServers ?? [],
+          globalConfig,
+          personality.body.mcpFeatures ?? {}
+        ));
       }
 
       // Proactive context compaction — summarise older turns before the API
@@ -482,44 +507,6 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // Collect resource-action events to surface in the chat UI and task history.
         const creationEvents: Array<{ tool: string; label: string; action: string; name: string; id?: string }> =
           [];
-
-        // Human-readable action verb derived from the tool name prefix.
-        const toolAction = (toolName: string): string => {
-          if (toolName.startsWith('create_')) return 'Created';
-          if (toolName.startsWith('update_')) return 'Updated';
-          if (toolName.startsWith('delete_')) return 'Deleted';
-          if (toolName.startsWith('trigger_')) return 'Triggered';
-          if (toolName.startsWith('assign_')) return 'Assigned';
-          if (toolName.startsWith('revoke_')) return 'Revoked';
-          if (toolName === 'a2a_connect') return 'Connected';
-          if (toolName === 'delegate_task') return 'Delegated';
-          return 'Created';
-        };
-
-        // Map tool names → human-readable resource labels.
-        const CREATION_TOOL_LABELS: Record<string, string> = {
-          create_skill: 'Skill',
-          update_skill: 'Skill',
-          delete_skill: 'Skill',
-          create_task: 'Task',
-          update_task: 'Task',
-          create_personality: 'Personality',
-          update_personality: 'Personality',
-          delete_personality: 'Personality',
-          create_experiment: 'Experiment',
-          delete_experiment: 'Experiment',
-          create_swarm: 'Swarm',
-          create_custom_role: 'Custom Role',
-          delete_custom_role: 'Custom Role',
-          assign_role: 'Role Assignment',
-          revoke_role: 'Role Assignment',
-          a2a_connect: 'A2A Connection',
-          delegate_task: 'Delegation',
-          create_workflow: 'Workflow',
-          update_workflow: 'Workflow',
-          delete_workflow: 'Workflow',
-          trigger_workflow: 'Workflow Run',
-        };
 
         // Resolve once — used inside the tool loop to record every resource action.
         const { uuidv7, sha256 } = await import('../utils/crypto.js');
@@ -918,30 +905,18 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // ── Setup (mirrors non-streaming path) ────────────────────────
 
         // Brain context
-        let brainContext: BrainContextMeta = { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
-        if (memoryEnabled) {
-          try {
-            const brainManager = secureYeoman.getBrainManager();
-            const memories = await brainManager.recall({ search: message, limit: 5 });
-            const knowledge = await brainManager.queryKnowledge({ search: message, limit: 5 });
-            const snippets: string[] = [];
-            for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
-            for (const k of knowledge) snippets.push(`[${k.topic}] ${k.content}`);
-            brainContext = { memoriesUsed: memories.length, knowledgeUsed: knowledge.length, contextSnippets: snippets };
-          } catch { /* Brain not available */ }
-        }
+        const brainContext: BrainContextMeta = memoryEnabled
+          ? await gatherBrainContext(secureYeoman, message)
+          : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
         const soulManager = secureYeoman.getSoulManager();
         let systemPrompt = memoryEnabled
           ? await soulManager.composeSoulPrompt(message, personalityId, { viewportHint: viewportHintS })
           : await soulManager.composeSoulPrompt(undefined, personalityId, { viewportHint: viewportHintS });
 
+        // Inject learned preferences into system prompt (best-effort)
         if (memoryEnabled && systemPrompt) {
-          try {
-            const brainManager = secureYeoman.getBrainManager();
-            const learner = new PreferenceLearner(brainManager);
-            systemPrompt = await learner.injectPreferences(systemPrompt);
-          } catch { /* best-effort */ }
+          systemPrompt = await applyPreferenceInjection(secureYeoman, systemPrompt);
         }
 
         const messages: AIRequest['messages'] = [];
@@ -1022,39 +997,13 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         const mcpStorageStream = secureYeoman.getMcpStorage();
 
         if (personality?.body?.enabled && mcpClientStream && mcpStorageStream) {
-          const selectedServersS = personality.body.selectedServers ?? [];
-          const perPersonalityFeaturesS = personality.body.mcpFeatures ?? {
-            exposeGit: false, exposeFilesystem: false, exposeWeb: false,
-            exposeWebScraping: false, exposeWebSearch: false, exposeBrowser: false,
-          };
           const globalConfigS = await mcpStorageStream.getConfig();
-          const allMcpToolsS: McpToolDef[] = mcpClientStream.getAllTools();
-
-          for (const tool of allMcpToolsS) {
-            const isYeomanS = tool.serverName === 'YEOMAN MCP';
-            if (isYeomanS) {
-              const isGitS = tool.name.startsWith('git_') || tool.name.startsWith('github_');
-              const isFsS = tool.name.startsWith('fs_');
-              const isWebScrapeS =
-                tool.name.startsWith('web_scrape') ||
-                tool.name === 'web_extract_structured' ||
-                tool.name === 'web_fetch_markdown';
-              const isWebSearchS = tool.name.startsWith('web_search');
-              const isBrowserS = tool.name.startsWith('browser_');
-              if (isGitS && !(globalConfigS.exposeGit && perPersonalityFeaturesS.exposeGit)) continue;
-              if (isFsS && !(globalConfigS.exposeFilesystem && perPersonalityFeaturesS.exposeFilesystem)) continue;
-              if (isWebScrapeS && !(globalConfigS.exposeWebScraping ?? globalConfigS.exposeWeb) && !perPersonalityFeaturesS.exposeWebScraping) continue;
-              if (isWebSearchS && !(globalConfigS.exposeWeb && perPersonalityFeaturesS.exposeWebSearch)) continue;
-              if (isBrowserS && !(globalConfigS.exposeBrowser && perPersonalityFeaturesS.exposeBrowser)) continue;
-            } else {
-              if (!selectedServersS.includes(tool.serverName)) continue;
-            }
-            const rawS = (tool.inputSchema ?? {}) as Record<string, unknown>;
-            const parametersS: Tool['parameters'] = rawS.type
-              ? (rawS as Tool['parameters'])
-              : { type: 'object', properties: {}, ...(rawS as object) };
-            tools.push({ name: tool.name, description: tool.description || undefined, parameters: parametersS });
-          }
+          tools.push(...filterMcpTools(
+            mcpClientStream.getAllTools(),
+            personality.body.selectedServers ?? [],
+            globalConfigS,
+            personality.body.mcpFeatures ?? {}
+          ));
         }
 
         // Compaction
@@ -1092,30 +1041,6 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         const { uuidv7, sha256 } = await import('../utils/crypto.js');
         const { TaskStatus } = await import('@secureyeoman/shared');
         const taskStorage = secureYeoman.getTaskStorage?.();
-
-        const CREATION_TOOL_LABELS_S: Record<string, string> = {
-          create_skill: 'Skill', update_skill: 'Skill', delete_skill: 'Skill',
-          create_task: 'Task', update_task: 'Task',
-          create_personality: 'Personality', update_personality: 'Personality', delete_personality: 'Personality',
-          create_experiment: 'Experiment', delete_experiment: 'Experiment',
-          create_swarm: 'Swarm', create_custom_role: 'Custom Role', delete_custom_role: 'Custom Role',
-          assign_role: 'Role Assignment', revoke_role: 'Role Assignment',
-          a2a_connect: 'A2A Connection', delegate_task: 'Delegation',
-          create_workflow: 'Workflow', update_workflow: 'Workflow', delete_workflow: 'Workflow',
-          trigger_workflow: 'Workflow Run',
-        };
-
-        const toolActionS = (toolName: string): string => {
-          if (toolName.startsWith('create_')) return 'Created';
-          if (toolName.startsWith('update_')) return 'Updated';
-          if (toolName.startsWith('delete_')) return 'Deleted';
-          if (toolName.startsWith('trigger_')) return 'Triggered';
-          if (toolName.startsWith('assign_')) return 'Assigned';
-          if (toolName.startsWith('revoke_')) return 'Revoked';
-          if (toolName === 'a2a_connect') return 'Connected';
-          if (toolName === 'delegate_task') return 'Delegated';
-          return 'Created';
-        };
 
         // Prompt-assembly injection guard — same check as non-streaming path.
         // SSE headers are already sent, so a block emits an error event and exits.
@@ -1238,7 +1163,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
                 messages.push({ role: 'tool' as const, toolResult: { toolCallId: toolCall.id, content: JSON.stringify({ error: String(err) }), isError: true } });
               }
             } else {
-              const baseLabel = CREATION_TOOL_LABELS_S[toolCall.name] ?? toolCall.name;
+              const baseLabel = CREATION_TOOL_LABELS[toolCall.name] ?? toolCall.name;
               // Enrich delegation label with agent profile and task snippet
               const sArgsS = toolCall.arguments as Record<string, unknown>;
               const label = toolCall.name === 'delegate_task'
@@ -1249,12 +1174,12 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               const result = await executeCreationTool(toolCall, secureYeoman, executionContextS);
               emit({ type: 'tool_result', toolName: toolCall.name, success: !result.isError, isError: result.isError });
 
-              if (!result.isError && CREATION_TOOL_LABELS_S[toolCall.name]) {
+              if (!result.isError && CREATION_TOOL_LABELS[toolCall.name]) {
                 const out = result.output as Record<string, unknown>;
                 const item = (out.skill ?? out.task ?? out.personality ?? out.experiment ?? out.swarm ?? out.workflow ?? out.run) as Record<string, unknown> | undefined;
                 const sArgs = toolCall.arguments as Record<string, unknown>;
                 const name = String(item?.name ?? item?.workflowName ?? (typeof out.name === 'string' ? out.name : undefined) ?? (typeof sArgs?.name === 'string' ? sArgs.name : undefined) ?? (typeof sArgs?.task === 'string' ? sArgs.task : undefined) ?? toolCall.name);
-                const action = toolActionS(toolCall.name);
+                const action = toolAction(toolCall.name);
                 const id = typeof item?.id === 'string' ? item.id : undefined;
                 const evt = { tool: toolCall.name, label, action, name, id };
                 creationEventsS.push(evt);

@@ -73,21 +73,8 @@ function parseFrontMatter(content: string): { metadata: Record<string, string>; 
   return { metadata, body };
 }
 
-function buildFrontMatter(
-  fields: Record<string, string | number | boolean | undefined>
-): string {
-  const lines = ['---'];
-  for (const [key, value] of Object.entries(fields)) {
-    if (value === undefined || value === null || value === '') continue;
-    const str = String(value);
-    const escaped = str.includes(':')
-      ? `"${str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
-      : str;
-    lines.push(`${key}: ${escaped}`);
-  }
-  lines.push('---');
-  return lines.join('\n') + '\n\n';
-}
+import { buildFrontMatter } from '../utils/front-matter.js';
+export { buildFrontMatter };
 
 function validateUrl(urlStr: string, config: McpServiceConfig): URL {
   let parsed: URL;

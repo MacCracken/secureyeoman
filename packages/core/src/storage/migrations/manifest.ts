@@ -81,4 +81,5 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '042_org_intent', sql: readSql('042_org_intent.sql') },
   { id: '043_autonomy_audit', sql: readSql('043_autonomy_audit.sql') },
   { id: '044_goal_lifecycle', sql: readSql('044_goal_lifecycle.sql') },
+  { id: '045_performance_indexes', sql: readSql('045_performance_indexes.sql') },
 ];

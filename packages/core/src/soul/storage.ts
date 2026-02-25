@@ -527,35 +527,41 @@ export class SoulStorage extends PgBaseStorage {
   async listSkills(
     filter?: SkillFilter & { limit?: number; offset?: number }
   ): Promise<{ skills: Skill[]; total: number }> {
-    let sql = 'SELECT * FROM soul.skills WHERE 1=1';
+    let where = '1=1';
     const params: unknown[] = [];
     let idx = 1;
 
     if (filter?.status) {
-      sql += ` AND status = $${idx++}`;
+      where += ` AND status = $${idx++}`;
       params.push(filter.status);
     }
     if (filter?.source) {
-      sql += ` AND source = $${idx++}`;
+      where += ` AND source = $${idx++}`;
       params.push(filter.source);
     }
     if (filter?.enabled !== undefined) {
-      sql += ` AND enabled = $${idx++}`;
+      where += ` AND enabled = $${idx++}`;
       params.push(filter.enabled);
     }
-
-    const countSql = sql.replace('SELECT * FROM', 'SELECT COUNT(*) as count FROM');
-    const countResult = await this.queryOne<{ count: string }>(countSql, params);
 
     const limit = filter?.limit ?? 50;
     const offset = filter?.offset ?? 0;
 
-    sql += ` ORDER BY usage_count DESC, created_at DESC LIMIT $${idx++} OFFSET $${idx++}`;
+    // Single query using a window function avoids a separate COUNT round-trip.
+    const sql = `
+      SELECT *, COUNT(*) OVER () AS total_count
+        FROM soul.skills
+       WHERE ${where}
+       ORDER BY usage_count DESC, created_at DESC
+       LIMIT $${idx++} OFFSET $${idx++}`;
 
-    const rows = await this.queryMany<SkillRow>(sql, [...params, limit, offset]);
+    const rows = await this.queryMany<SkillRow & { total_count: string }>(
+      sql,
+      [...params, limit, offset]
+    );
     return {
       skills: rows.map(rowToSkill),
-      total: parseInt(countResult?.count ?? '0', 10),
+      total: rows.length > 0 ? parseInt(rows[0]!.total_count, 10) : 0,
     };
   }
 

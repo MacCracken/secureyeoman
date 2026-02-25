@@ -62,6 +62,21 @@ export function isPersonalityWithinActiveHours(p: Personality): boolean {
   return hhmm >= ah.start && hhmm <= ah.end;
 }
 
+// Compiled RegExp cache — patterns are stable after DB load, so we compile once.
+const triggerPatternCache = new Map<string, RegExp | null>();
+
+function compileTriggerPattern(pattern: string): RegExp | null {
+  if (triggerPatternCache.has(pattern)) return triggerPatternCache.get(pattern)!;
+  let re: RegExp | null;
+  try {
+    re = new RegExp(pattern, 'i');
+  } catch {
+    re = null;
+  }
+  triggerPatternCache.set(pattern, re);
+  return re;
+}
+
 /**
  * Returns true when the user message is relevant to the given skill.
  *
@@ -74,11 +89,8 @@ export function isPersonalityWithinActiveHours(p: Personality): boolean {
 function isSkillInContext(skill: Skill, message: string): boolean {
   if (skill.triggerPatterns.length > 0) {
     return skill.triggerPatterns.some((pattern) => {
-      try {
-        return new RegExp(pattern, 'i').test(message);
-      } catch {
-        return message.toLowerCase().includes(pattern.toLowerCase());
-      }
+      const re = compileTriggerPattern(pattern);
+      return re ? re.test(message) : message.toLowerCase().includes(pattern.toLowerCase());
     });
   }
   // Keyword fallback: significant words from the skill name

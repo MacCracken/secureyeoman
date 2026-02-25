@@ -61,8 +61,16 @@ const MCP_CONFIG_DEFAULTS: McpFeatureConfig = {
 };
 
 export class McpStorage extends PgBaseStorage {
+  /** Short-lived in-memory cache for getConfig() — config rarely changes. */
+  private configCache: { value: McpFeatureConfig; expiresAt: number } | null = null;
+  private static readonly CONFIG_CACHE_TTL_MS = 5_000;
+
   constructor() {
     super();
+  }
+
+  invalidateConfigCache(): void {
+    this.configCache = null;
   }
 
   async addServer(create: McpServerCreate): Promise<McpServerConfig> {
@@ -239,6 +247,10 @@ export class McpStorage extends PgBaseStorage {
   }
 
   async getConfig(): Promise<McpFeatureConfig> {
+    const now = Date.now();
+    if (this.configCache && now < this.configCache.expiresAt) {
+      return this.configCache.value;
+    }
     const rows = await this.queryMany<{ key: string; value: string }>(
       'SELECT key, value FROM mcp.config'
     );
@@ -248,6 +260,7 @@ export class McpStorage extends PgBaseStorage {
         (config as Record<string, unknown>)[row.key] = JSON.parse(row.value);
       }
     }
+    this.configCache = { value: config, expiresAt: now + McpStorage.CONFIG_CACHE_TTL_MS };
     return config;
   }
 
@@ -263,6 +276,7 @@ export class McpStorage extends PgBaseStorage {
         }
       }
     });
+    this.invalidateConfigCache();
     return this.getConfig();
   }
 

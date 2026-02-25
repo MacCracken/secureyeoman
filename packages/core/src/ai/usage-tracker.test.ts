@@ -138,7 +138,10 @@ describe('UsageTracker', () => {
       },
     ];
     const mockStorage = {
-      loadRecent: async () => historicalRecords,
+      loadToday: async () => historicalRecords,
+      getTotalCallCount: async () => historicalRecords.length,
+      loadMonthCostUsd: async () => historicalRecords.reduce((s, r) => s + r.costUsd, 0),
+      loadProviderStats: async () => ({}),
       insert: async () => {},
       getResetAt: async () => 0,
       loadStats: async () => ({ errorCount: 3, latencyTotalMs: 200, latencyCallCount: 2 }),
