@@ -307,11 +307,17 @@ img {
   background-repeat: no-repeat;
 }
 
-/* Dark tint layer — keeps text readable over the photo */
+/* Dark tint layer — solid page-bg at the top (behind navbar), fades into
+   the dark photo tint right where the release badge sits (~160px down) */
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(8, 12, 24, 0.62);
+  background: linear-gradient(
+    to bottom,
+    var(--bg-primary) 0px,
+    var(--bg-primary) 130px,
+    rgba(8, 12, 24, 0.62) 210px
+  );
 }
 
 .gradient-orb {
@@ -379,7 +385,7 @@ img {
   display: grid;
   grid-template-columns: 2fr 3fr;
   gap: var(--space-12);
-  align-items: center;
+  align-items: end;
   max-width: 1280px;
   width: 100%;
 }
@@ -394,7 +400,7 @@ img {
 .hero-visual {
   position: relative;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   /* Push mascot toward the text (right edge of its column) */
   justify-content: flex-end;
   animation: fadeInRight 1s ease 0.2s both;
@@ -414,8 +420,8 @@ img {
 /* Soft radial glow behind the mascot */
 .mascot-glow {
   position: absolute;
-  width: 480px;
-  height: 480px;
+  width: 320px;
+  height: 320px;
   border-radius: 50%;
   background: radial-gradient(
     circle,
@@ -423,7 +429,7 @@ img {
     rgba(139, 92, 246, 0.14) 45%,
     transparent 70%
   );
-  filter: blur(48px);
+  filter: blur(40px);
   z-index: 0;
   animation: glow-pulse 4s ease-in-out infinite;
 }
@@ -442,15 +448,15 @@ img {
 }
 
 .mascot-ring-1 {
-  width: 320px;
-  height: 320px;
+  width: 220px;
+  height: 220px;
   border-color: rgba(14, 165, 233, 0.22);
   animation: ring-spin 30s linear infinite;
 }
 
 .mascot-ring-2 {
-  width: 400px;
-  height: 400px;
+  width: 290px;
+  height: 290px;
   border-color: rgba(139, 92, 246, 0.14);
   animation: ring-spin 50s linear infinite reverse;
 }
@@ -465,12 +471,12 @@ img {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 340px;
+  max-width: 240px;
   /* drop-shadow traces the alpha silhouette — three layers for depth */
   filter:
-    drop-shadow(0 0 12px rgba(14, 165, 233, 0.9))
-    drop-shadow(0 0 40px rgba(14, 165, 233, 0.55))
-    drop-shadow(0 0 80px rgba(139, 92, 246, 0.45));
+    drop-shadow(0 0 10px rgba(14, 165, 233, 0.9))
+    drop-shadow(0 0 30px rgba(14, 165, 233, 0.55))
+    drop-shadow(0 0 60px rgba(139, 92, 246, 0.45));
   /* lighten blends the warrior naturally into the dark background */
   mix-blend-mode: lighten;
   animation: mascot-float 10s ease-in-out infinite;
@@ -1581,16 +1587,16 @@ img {
   }
 
   .mascot-img {
-    max-width: 340px;
+    max-width: 220px;
   }
 
   .mascot-glow {
-    width: 360px;
-    height: 360px;
+    width: 280px;
+    height: 280px;
   }
 
-  .mascot-ring-1 { width: 300px; height: 300px; }
-  .mascot-ring-2 { width: 370px; height: 370px; }
+  .mascot-ring-1 { width: 200px; height: 200px; }
+  .mascot-ring-2 { width: 260px; height: 260px; }
 }
 
 @media (max-width: 768px) {
@@ -1630,16 +1636,16 @@ img {
   }
 
   .mascot-img {
-    max-width: 260px;
+    max-width: 180px;
   }
 
   .mascot-glow {
-    width: 280px;
-    height: 280px;
+    width: 200px;
+    height: 200px;
   }
 
-  .mascot-ring-1 { width: 240px; height: 240px; }
-  .mascot-ring-2 { width: 290px; height: 290px; }
+  .mascot-ring-1 { width: 170px; height: 170px; }
+  .mascot-ring-2 { width: 210px; height: 210px; }
 
   .hero-title {
     font-size: 2.5rem;
