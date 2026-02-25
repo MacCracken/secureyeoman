@@ -67,6 +67,7 @@ describe('ExperimentsPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
 
     renderComponent();
@@ -101,6 +102,7 @@ describe('ExperimentsPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
 
     renderComponent();
@@ -134,6 +136,7 @@ describe('ExperimentsPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
 
     renderComponent();
@@ -165,6 +168,7 @@ describe('ExperimentsPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
 
     renderComponent();

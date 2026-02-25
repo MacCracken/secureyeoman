@@ -107,6 +107,7 @@ describe('MultimodalPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     mockFetchMultimodalJobs.mockResolvedValue(MOCK_JOBS);
   });
@@ -138,6 +139,7 @@ describe('MultimodalPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     expect(
@@ -170,6 +172,7 @@ describe('MultimodalPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     await screen.findByText(/Multimodal processing is currently disabled/);
@@ -214,6 +217,7 @@ describe('MultimodalPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent({ embedded: true });
     await screen.findByText(/Multimodal processing is currently disabled/);

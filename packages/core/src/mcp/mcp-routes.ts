@@ -238,6 +238,7 @@ export function registerMcpRoutes(app: FastifyInstance, opts: McpRoutesOptions):
           proxyProviders?: string[];
           proxyStrategy?: string;
           proxyDefaultCountry?: string;
+          respectContentSignal?: boolean;
         };
       }>
     ) => {

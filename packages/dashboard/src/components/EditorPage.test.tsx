@@ -180,6 +180,7 @@ describe('EditorPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     mockFetchExecutionSessions.mockResolvedValue(MOCK_SESSIONS);
     mockFetchExecutionHistory.mockResolvedValue({
@@ -250,6 +251,7 @@ describe('EditorPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     await screen.findByText('Terminal');

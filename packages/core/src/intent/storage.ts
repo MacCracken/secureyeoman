@@ -55,6 +55,7 @@ function rowToRecord(row: IntentRow): OrgIntentRecord {
     authorizedActions: doc.authorizedActions ?? [],
     tradeoffProfiles: doc.tradeoffProfiles ?? [],
     hardBoundaries: doc.hardBoundaries ?? [],
+    policies: doc.policies ?? [],
     delegationFramework: doc.delegationFramework ?? { tenants: [] },
     context: doc.context ?? [],
   };

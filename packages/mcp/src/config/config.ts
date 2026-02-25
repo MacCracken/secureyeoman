@@ -73,6 +73,7 @@ export function loadConfig(
     quickBooksClientSecret: env.QUICKBOOKS_CLIENT_SECRET,
     quickBooksRealmId: env.QUICKBOOKS_REALM_ID,
     quickBooksRefreshToken: env.QUICKBOOKS_REFRESH_TOKEN,
+    respectContentSignal: parseBool(env.MCP_RESPECT_CONTENT_SIGNAL, true),
   };
 
   return McpServiceConfigSchema.parse(raw);

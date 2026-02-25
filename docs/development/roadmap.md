@@ -9,41 +9,13 @@
 | Phase | Name | Release | Status |
 |-------|------|---------|--------|
 | | **Release 2026.2.23** | **2026-02-23** | **Released** |
-| 48 | Machine Readable Org Intent | — | In Progress |
+| 48 | Machine Readable Org Intent | 2026-02-24 | **Complete** |
+| Tier2-MA | Markdown for Agents: MCP Content Negotiation | 2026-02-24 | **Complete** |
+| Tier2-MA.1 | Dashboard Type Fixes (allowIntentEditor, respectContentSignal UI) | 2026-02-24 | **Complete** |
+| Tier2-MA.2 | Docker Build Fix (personality-resources.ts cast, shared rebuild) | 2026-02-24 | **Complete** |
 | 49 | AI Autonomy Level Audit | — | Planned |
+| 50 | Intent Goal Lifecycle Events | — | Planned |
 | XX | Find & Repair (Ongoing) | — | Ongoing |
-
----
-
-## Phase 48: Machine Readable Language of Organizational Intent
-
-**Status**: In Progress (schema, core engine, prompt injection, MCP tool, enforcement log, guide — complete; pipeline enforcement, policy layer, full dashboard UI — remaining) | **Priority**: High
-
-### 48.2 — Signal Awareness
-
-- [ ] **`intent_signal_degraded` audit event** — Emitted when a monitored signal crosses its warning threshold. Surfaced in the Security Feed and optionally triggers a notification.
-
-### 48.3 — Goal Resolution & Authorized Action Engine
-
-- [ ] **Authorized action enforcement** — Before executing a skill or MCP tool call, evaluate whether the action falls within `authorizedActions[]` for the current goal and role. Unauthorized actions return a structured refusal: which action was attempted, why it's not authorized, what alternatives are available.
-- [ ] **Goal-to-skill affinity** — Goals with `skills[]` elevate those skill slugs in the Phase 44 router when the goal is active.
-- [ ] **`intent_goal_activated` / `intent_goal_completed` / `intent_action_blocked` audit events**.
-
-### 48.4 — Hard Boundary Enforcement
-
-- [ ] **Hard boundary enforcement wired into execution pipeline** — `checkHardBoundaries()` exists in `IntentManager` but is not yet called from chat routes or tool dispatch. Must be evaluated as the outermost gate before any policy check or tool execution; always-block with no escalation path.
-
-### 48.5 — Soft Policy Enforcement
-
-- [ ] **Runtime policy evaluation** — Evaluated after hard boundaries, before tool execution. `warn` enforcement logs and proceeds; `block` halts with a structured refusal including policy id and rule.
-- [ ] **`rego` policy evaluation** — Policies with a `rego` field evaluate via embedded OPA WASM bundle or sidecar OPA instance (`OPA_ADDR` env var). Falls back to natural-language-only if OPA is unavailable.
-- [ ] **`intent_policy_warn` / `intent_policy_block` audit events**.
-
-### 48.6 — Dashboard UI
-
-- [ ] **Intent editor** — Full CRUD for `OrgIntent` documents. Tabbed sections: Goals, Signals, Data Sources, Authorized Actions, Trade-off Profiles, Hard Boundaries, Delegation Framework, Context. Goal editor wires signals and authorized actions inline. Trade-off profile editor uses sliders with plain-language labels at each end.
-- [ ] **Signal dashboard** — Live view of all monitored signals with current value, threshold, trend sparkline, and status badge. Click-through to the goals and authorized actions connected to each signal.
-- [ ] **Delegation framework editor** — Visual editor for tenants and their derived decision boundaries. Each tenant expands to show its boundaries with inline examples. Drag to reorder priority.
 
 ---
 
@@ -137,7 +109,29 @@ The audit is a structured point-in-time review. Run it before production, after 
 
 ### 49.4 — Docs
 
-- [ ] **`docs/guides/ai-autonomy-audit.md`** — Full audit guide: framework overview, level definitions with SecureYeoman examples, step-by-step audit procedure, remediation patterns, and quarterly review cadence. Link to `OrgIntent` authoring guide (Phase 48.7).
+- [ ] **`docs/guides/ai-autonomy-audit.md`** — Full audit guide: framework overview, level definitions with SecureYeoman examples, step-by-step audit procedure, remediation patterns, and quarterly review cadence. Link to `OrgIntent` authoring guide.
+
+---
+
+## Phase 50: Intent Goal Lifecycle Events
+
+**Status**: Planned | **Priority**: Medium — requires persistent goal-state snapshot infrastructure before goal activation/completion can be detected reliably.
+
+Adds deterministic audit events for the goal lifecycle inside an active `OrgIntent` document. Phase 48 shipped the goal engine (resolver, affinity, authorized actions) but deferred the lifecycle events because detecting a goal's transition to "active" or "completed" requires a persistent snapshot of prior goal state — none exists yet.
+
+### 50.1 — Goal State Persistence
+
+- [ ] **Active goal snapshot** — Store a per-intent snapshot of which goals are currently active (evaluated against their `conditions[]`) in the DB (new column or separate table). On each `reloadActiveIntent()` / signal refresh cycle, diff the new evaluation against the snapshot to detect transitions.
+- [ ] **`intent_goal_activated` enforcement log event** — Emitted when a goal transitions from inactive → active (condition newly satisfied). Logs `goalId`, `rule` (the condition text), and `agentId` if available.
+- [ ] **`intent_goal_completed` enforcement log event** — Emitted when a goal transitions from active → inactive and a completion marker is present (e.g. `goal.completionCondition` string or external signal crossing threshold in the opposite direction). Deferred until `completionCondition` field is defined in `GoalSchema`.
+
+### 50.2 — Schema Extension
+
+- [ ] **`completionCondition` on `GoalSchema`** — Optional string field (same deny:/tool: pattern as boundaries) describing what constitutes goal completion. When a signal or context fact matches, goal is marked completed and `intent_goal_completed` fires.
+
+### 50.3 — Dashboard
+
+- [ ] **Goal lifecycle timeline** — In the intent editor / signals tab, surface a timeline of `intent_goal_activated` and `intent_goal_completed` events from the enforcement log per goal, so operators can see when goals activate and whether they resolve.
 
 ---
 
@@ -187,23 +181,32 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Tier 2 — Medium Term
 
-#### Markdown for Agents (MCP Content Negotiation)
+#### Localized Neural Networks
 
-*[Cloudflare's Markdown for Agents](https://blog.cloudflare.com/markdown-for-agents/) achieves up to 80% token reduction via `Accept: text/markdown` content negotiation.*
+*Privacy-first, offline-capable AI processing via on-device models.*
 
-**Consumer — smarter web fetching in `web-tools.ts`:**
+**Feature toggle in `config.yml`:**
 
-- [ ] **`Accept: text/markdown` in `web_scrape_markdown`** — Send `Accept: text/markdown, text/html;q=0.9` before falling back to HTML→markdown conversion.
-- [ ] **Token savings telemetry in tool output** — Surface `x-markdown-tokens` header (or estimate) alongside content.
-- [ ] **`Content-Signal` header enforcement** — Parse `Content-Signal: ai-input=no` and return an error rather than feeding the content to the agent. Configurable opt-out via `MCP_RESPECT_CONTENT_SIGNAL=false`.
-- [ ] **YAML front matter extraction** — Parse YAML front matter from markdown responses and return metadata as structured preamble.
-- [ ] **`web_fetch_markdown` dedicated tool** — Leaner, single-purpose: fetch one URL, return clean markdown, report token count and `Content-Signal`.
+```yaml
+ai:
+  localMode:
+    enabled: true                    # Switch: local vs cloud
+    provider: "ollama"               # ollama | lmstudio | localai
+    model: "llama3.1:8b-instruct-q4_K_M"
+    embeddingModel: "nomic-embed-text"
+    fallbackToCloud: false           # If local fails, fail or use cloud
+```
 
-**Producer — serving YEOMAN content to external agents:**
+**Components:**
 
-- [ ] **Personality system prompts as `text/markdown` MCP resources** — URI `yeoman://personalities/{id}/prompt` with YAML front matter.
-- [ ] **Skill definitions as `text/markdown` MCP resources** — URI `yeoman://skills/{id}` with front matter for agent-to-agent skill discovery.
-- [ ] **`x-markdown-tokens` response header on all markdown MCP endpoints**.
+- [ ] **Local model inference** — When `ai.localMode.enabled: true`, route LLM requests to the configured local provider instead of cloud APIs. Swap provider/model at runtime via `ai.localMode` config reload.
+- [ ] **Local embedding generation** — Use `nomic-embed-text` (or configured `embeddingModel`) for vectorizing memories, knowledge, and document chunks. Eliminates external embedding API calls.
+- [ ] **Hybrid cloud/local switch** — Runtime toggle between local-only, cloud-only, or local-first-with-cloud-fallback. Expose in dashboard settings alongside the existing model picker.
+- [ ] **Offline detection** — When `ai.localMode.enabled: true` and the local provider is unreachable, surface a clear "Local AI Unavailable" state in the dashboard — don't silently fall back to cloud unless `fallbackToCloud: true`.
+- [ ] **Model lifecycle management** — MCP tools for pulling, listing, and removing local models (`ollama pull`, `ollama list`, `ollama rm`). Surface model disk usage in dashboard.
+- [ ] **Quantization awareness** — Document recommended model quantizations (Q4_K_M, Q5_K_S, etc.) for different hardware tiers. Auto-detect available RAM and suggest appropriate model size.
+
+**Why this matters:** Privacy-sensitive deployments can process all AI requests locally. Reduces API costs for high-volume usage. Enables fully offline operation.
 
 ---
 
@@ -261,4 +264,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-24 (Phase 49 added: AI Autonomy Level Audit; Phase 48 in progress — schema, engine, prompt injection, MCP tool, enforcement log, guide complete; pipeline enforcement, policy layer, full dashboard UI remaining; Phases 44, 45 complete — see Changelog)*
+*Last updated: 2026-02-24 (Phase 48 complete — pipeline enforcement, policy layer, signal degradation, goal-to-skill affinity, full field-level intent editor, allowIntentEditor flag; Tier2-MA complete — Markdown for Agents MCP content negotiation; Tier2-MA.1 — dashboard type fixes, 0 tsc errors; Tier2-MA.2 — Docker build fix; Phase 49 and 50 planned)*

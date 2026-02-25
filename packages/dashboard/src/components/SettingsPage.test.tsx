@@ -113,6 +113,7 @@ describe('SettingsPage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
   });
 

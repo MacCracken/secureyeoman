@@ -123,6 +123,19 @@ export const OrgContextSchema = z.object({
 
 export type OrgContext = z.infer<typeof OrgContextSchema>;
 
+// ─── Policy ───────────────────────────────────────────────────────────────────
+
+export const PolicySchema = z.object({
+  id: z.string().min(1),
+  rule: z.string().min(1),
+  /** Optional OPA Rego expression — evaluated when OPA_ADDR env is set */
+  rego: z.string().optional(),
+  enforcement: z.enum(['warn', 'block']).default('block'),
+  rationale: z.string().default(''),
+});
+
+export type Policy = z.infer<typeof PolicySchema>;
+
 // ─── Top-level OrgIntentDoc ───────────────────────────────────────────────────
 
 export const OrgIntentDocSchema = z.object({
@@ -134,6 +147,7 @@ export const OrgIntentDocSchema = z.object({
   authorizedActions: z.array(AuthorizedActionSchema).default([]),
   tradeoffProfiles: z.array(TradeoffProfileSchema).default([]),
   hardBoundaries: z.array(HardBoundarySchema).default([]),
+  policies: z.array(PolicySchema).default([]),
   delegationFramework: DelegationFrameworkSchema.default({}),
   context: z.array(OrgContextSchema).default([]),
 });
@@ -158,6 +172,7 @@ export const EnforcementEventTypeSchema = z.enum([
   'action_blocked',
   'action_allowed',
   'goal_activated',
+  'intent_signal_degraded',
   'policy_warn',
   'policy_block',
 ]);

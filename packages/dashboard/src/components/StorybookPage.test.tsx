@@ -53,6 +53,7 @@ const BASE_POLICY = {
   allowCommunityGitFetch: false,
   allowTwingate: false,
   allowOrgIntent: false,
+  allowIntentEditor: false,
 };
 
 describe('StorybookPage', () => {

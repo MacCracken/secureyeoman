@@ -2535,6 +2535,35 @@ function LocalServerCard({
               />
             </label>
           </div>
+
+          {/* Markdown for Agents — Content-Signal enforcement policy */}
+          <div className="mt-3 pt-2 border-t border-border/50">
+            <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1.5 flex items-center gap-1">
+              <Info className="w-3 h-3" />
+              Content Negotiation
+            </p>
+            <label
+              className="flex items-center gap-2.5 p-2 rounded-lg bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+              title="Refuse content from URLs that respond with Content-Signal: ai-input=no"
+            >
+              <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+              <div className="flex-1 min-w-0">
+                <span className="text-xs font-medium">Respect Content-Signal</span>
+                <p className="text-[10px] text-muted-foreground truncate">
+                  Block pages that opt out of AI indexing (Content-Signal: ai-input=no)
+                </p>
+              </div>
+              <input
+                type="checkbox"
+                checked={featureConfig?.respectContentSignal ?? true}
+                onChange={(e) => {
+                  onFeatureToggle({ respectContentSignal: e.target.checked });
+                }}
+                disabled={isFeatureToggling}
+                className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+              />
+            </label>
+          </div>
         </div>
       )}
 

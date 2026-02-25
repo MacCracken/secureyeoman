@@ -123,6 +123,7 @@ describe('SecuritySettings', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     mockUpdateSecurityPolicy.mockResolvedValue({
       allowSubAgents: true,
@@ -148,6 +149,7 @@ describe('SecuritySettings', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     mockFetchMcpServers.mockResolvedValue({ servers: [], total: 0 });
     vi.mocked(api.fetchModelDefault).mockResolvedValue({ provider: null, model: null });
@@ -203,6 +205,7 @@ describe('SecuritySettings', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -312,6 +315,7 @@ describe('SecuritySettings', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle A2A Networks');
@@ -353,6 +357,7 @@ describe('SecuritySettings', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -384,6 +389,7 @@ describe('SecuritySettings', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     const toggle = await screen.findByLabelText('Toggle Agent Swarms');
@@ -509,6 +515,7 @@ describe('SecuritySettings', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -540,6 +547,7 @@ describe('SecuritySettings', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');
@@ -581,6 +589,7 @@ describe('SecuritySettings', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     const sandboxToggle = await screen.findByLabelText('Toggle Sandboxed Execution');

@@ -15,7 +15,6 @@ import {
   Target,
   Activity,
   ShieldAlert,
-  Sliders,
   Users2,
   Globe,
   AlertTriangle,
@@ -25,6 +24,9 @@ import {
   Trash2,
   ChevronDown,
   ChevronUp,
+  TrendingUp,
+  TrendingDown,
+  Minus,
 } from 'lucide-react';
 import {
   fetchIntents,
@@ -32,11 +34,15 @@ import {
   activateIntent,
   deleteIntent,
   fetchEnforcementLog,
+  fetchSecurityPolicy,
+  createIntent,
+  readSignal,
   type OrgIntentMeta,
   type EnforcementLogEntry,
 } from '../api/client';
+import { IntentDocEditor } from './IntentDocEditor';
 
-type IntentTab = 'docs' | 'enforcement';
+type IntentTab = 'docs' | 'signals' | 'delegation' | 'enforcement' | 'editor';
 
 function StatusBadge({ status }: { status: 'healthy' | 'warning' | 'critical' }) {
   if (status === 'healthy') {
@@ -68,11 +74,13 @@ function IntentDocCard({
   isActive,
   onActivate,
   onDelete,
+  onEdit,
 }: {
   intent: OrgIntentMeta;
   isActive: boolean;
   onActivate: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit?: (id: string) => void;
 }) {
   return (
     <div
@@ -94,6 +102,14 @@ function IntentDocCard({
           </p>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          {onEdit && (
+            <button
+              onClick={() => onEdit(intent.id)}
+              className="text-xs px-2 py-1 border border-border rounded hover:bg-accent transition-colors"
+            >
+              Edit
+            </button>
+          )}
           {!isActive && (
             <button
               onClick={() => onActivate(intent.id)}
@@ -136,6 +152,7 @@ function EnforcementLogFeed() {
     action_blocked: 'text-orange-600 bg-orange-50',
     action_allowed: 'text-green-600 bg-green-50',
     goal_activated: 'text-blue-600 bg-blue-50',
+    intent_signal_degraded: 'text-yellow-600 bg-yellow-50',
     policy_warn: 'text-yellow-600 bg-yellow-50',
     policy_block: 'text-red-600 bg-red-50',
   };
@@ -154,6 +171,7 @@ function EnforcementLogFeed() {
           <option value="action_blocked">action_blocked</option>
           <option value="action_allowed">action_allowed</option>
           <option value="goal_activated">goal_activated</option>
+          <option value="intent_signal_degraded">intent_signal_degraded</option>
           <option value="policy_warn">policy_warn</option>
           <option value="policy_block">policy_block</option>
         </select>
@@ -206,9 +224,181 @@ function EnforcementLogFeed() {
   );
 }
 
+function SignalCard({ signalId, signalName }: { signalId: string; signalName: string }) {
+  const { data, isLoading } = useQuery({
+    queryKey: ['signal', signalId],
+    queryFn: () => readSignal(signalId),
+    refetchInterval: 60_000,
+  });
+
+  const DirectionIcon =
+    data?.direction === 'above' ? TrendingUp : data?.direction === 'below' ? TrendingDown : Minus;
+
+  return (
+    <div className="border border-border rounded-lg p-4 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-sm font-medium truncate">{signalName}</span>
+        {data && <StatusBadge status={data.status} />}
+      </div>
+      {isLoading && <p className="text-xs text-muted-foreground">Loading…</p>}
+      {data && (
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <DirectionIcon className="w-3 h-3" />
+            <span>
+              Value: <strong className="text-foreground">{data.value ?? 'N/A'}</strong>
+            </span>
+            <span>/ threshold: {data.threshold}</span>
+          </div>
+          <p className="italic">{data.message}</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SignalDashboard() {
+  const { data: activeIntentData, isLoading } = useQuery({
+    queryKey: ['activeIntent'],
+    queryFn: () => fetchActiveIntent().catch(() => null),
+    refetchInterval: 60_000,
+  });
+
+  const signals = activeIntentData?.intent?.signals ?? [];
+
+  if (isLoading) return <p className="text-xs text-muted-foreground">Loading…</p>;
+
+  if (signals.length === 0) {
+    return (
+      <div className="text-center py-8 border border-dashed border-border rounded-lg">
+        <Activity className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground">No signals defined in the active intent.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      <p className="text-xs text-muted-foreground">
+        Signal values auto-refresh every 60 seconds.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {signals.map((s) => (
+          <SignalCard key={s.id} signalId={s.id} signalName={s.name} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DelegationFrameworkView() {
+  const [openTenants, setOpenTenants] = useState<Set<string>>(new Set());
+  const { data: activeIntentData, isLoading } = useQuery({
+    queryKey: ['activeIntent'],
+    queryFn: () => fetchActiveIntent().catch(() => null),
+  });
+
+  const tenants = activeIntentData?.intent?.delegationFramework?.tenants ?? [];
+
+  const toggle = (id: string) =>
+    setOpenTenants((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+
+  if (isLoading) return <p className="text-xs text-muted-foreground">Loading…</p>;
+
+  if (tenants.length === 0) {
+    return (
+      <div className="text-center py-8 border border-dashed border-border rounded-lg">
+        <Users2 className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground">No delegation framework defined.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      {tenants.map((tenant) => (
+        <div key={tenant.id} className="border border-border rounded-lg">
+          <button
+            onClick={() => toggle(tenant.id)}
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-accent/50 transition-colors"
+          >
+            <div>
+              <span className="text-sm font-medium">{tenant.principle}</span>
+              <span className="ml-2 text-xs text-muted-foreground">[{tenant.id}]</span>
+            </div>
+            {openTenants.has(tenant.id) ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground shrink-0" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground shrink-0" />
+            )}
+          </button>
+          {openTenants.has(tenant.id) && tenant.decisionBoundaries.length > 0 && (
+            <ul className="px-4 pb-3 space-y-1">
+              {tenant.decisionBoundaries.map((b, i) => (
+                <li key={i} className="text-xs text-muted-foreground flex gap-2">
+                  <span className="text-muted-foreground/50">–</span>
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {openTenants.has(tenant.id) && tenant.decisionBoundaries.length === 0 && (
+            <p className="px-4 pb-3 text-xs text-muted-foreground italic">
+              No decision boundaries specified.
+            </p>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+const STARTER_INTENT_YAML = `{
+  "name": "My Organization Intent",
+  "goals": [
+    {
+      "id": "goal-1",
+      "name": "Example Goal",
+      "description": "Describe what you want the agent to focus on.",
+      "priority": 50,
+      "successCriteria": "Define what success looks like.",
+      "skills": [],
+      "signals": [],
+      "authorizedActions": []
+    }
+  ],
+  "hardBoundaries": [
+    {
+      "id": "hb-1",
+      "rule": "deny: drop production",
+      "rationale": "Never allow destructive operations on production systems."
+    }
+  ],
+  "signals": [],
+  "dataSources": [],
+  "authorizedActions": [],
+  "tradeoffProfiles": [],
+  "delegationFramework": { "tenants": [] },
+  "context": []
+}`;
+
 export function IntentEditor() {
   const [activeTab, setActiveTab] = useState<IntentTab>('docs');
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createJson, setCreateJson] = useState(STARTER_INTENT_YAML);
+  const [createError, setCreateError] = useState('');
+  const [editingIntentId, setEditingIntentId] = useState<string | null>(null);
   const queryClient = useQueryClient();
+
+  const { data: securityPolicyData } = useQuery({
+    queryKey: ['security-policy'],
+    queryFn: fetchSecurityPolicy,
+  });
+  const intentEditorEnabled = securityPolicyData?.allowIntentEditor ?? false;
 
   const { data: intentsData } = useQuery({
     queryKey: ['intents'],
@@ -236,12 +426,37 @@ export function IntentEditor() {
     },
   });
 
+  const createMutation = useMutation({
+    mutationFn: (doc: Record<string, unknown>) => createIntent(doc),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['intents'] });
+      setShowCreateModal(false);
+      setCreateJson(STARTER_INTENT_YAML);
+      setCreateError('');
+    },
+  });
+
+  const handleCreate = () => {
+    try {
+      const parsed = JSON.parse(createJson) as Record<string, unknown>;
+      setCreateError('');
+      createMutation.mutate(parsed);
+    } catch {
+      setCreateError('Invalid JSON. Please check your input.');
+    }
+  };
+
   const intents = intentsData?.intents ?? [];
   const activeIntentId = activeIntentData?.intent?.id;
 
-  const tabs: { id: IntentTab; label: string; icon: React.ReactNode }[] = [
+  const tabs: { id: IntentTab; label: string; icon: React.ReactNode; devOnly?: boolean }[] = [
     { id: 'docs', label: 'Intent Documents', icon: <Target className="w-4 h-4" /> },
+    { id: 'signals', label: 'Signals', icon: <Activity className="w-4 h-4" /> },
+    { id: 'delegation', label: 'Delegation', icon: <Users2 className="w-4 h-4" /> },
     { id: 'enforcement', label: 'Enforcement Log', icon: <ShieldAlert className="w-4 h-4" /> },
+    ...(intentEditorEnabled
+      ? [{ id: 'editor' as const, label: 'Editor', icon: <Plus className="w-4 h-4" />, devOnly: true }]
+      : []),
   ];
 
   return (
@@ -269,18 +484,33 @@ export function IntentEditor() {
           >
             {tab.icon}
             {tab.label}
+            {tab.devOnly && (
+              <span className="text-xs bg-yellow-100 text-yellow-800 px-1 py-0.5 rounded font-medium leading-none">
+                dev
+              </span>
+            )}
           </button>
         ))}
       </div>
 
       {activeTab === 'docs' && (
         <div className="space-y-4">
+          <div className="flex justify-end">
+            <button
+              onClick={() => setShowCreateModal(true)}
+              className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              Create Intent
+            </button>
+          </div>
+
           {intents.length === 0 && (
             <div className="text-center py-8 border border-dashed border-border rounded-lg">
               <Globe className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">No intent documents yet.</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Create one via the API or POST to /api/v1/intent
+                Click "Create Intent" or POST to /api/v1/intent
               </p>
             </div>
           )}
@@ -296,12 +526,76 @@ export function IntentEditor() {
                   deleteMutation.mutate(id);
                 }
               }}
+              onEdit={intentEditorEnabled ? (id) => { setEditingIntentId(id); setActiveTab('editor'); } : undefined}
             />
           ))}
         </div>
       )}
 
+      {activeTab === 'signals' && <SignalDashboard />}
+      {activeTab === 'delegation' && <DelegationFrameworkView />}
       {activeTab === 'enforcement' && <EnforcementLogFeed />}
+      {activeTab === 'editor' && intentEditorEnabled && (
+        editingIntentId ? (
+          <IntentDocEditor intentId={editingIntentId} />
+        ) : (
+          <div className="text-center py-8 border border-dashed border-border rounded-lg">
+            <Target className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-sm text-muted-foreground">No document selected.</p>
+            <p className="text-xs text-muted-foreground mt-1">Go to Intent Documents and click Edit on a document.</p>
+          </div>
+        )
+      )}
+
+      {/* Create Intent Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-background border border-border rounded-lg w-full max-w-2xl shadow-xl">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+              <h3 className="text-sm font-semibold">Create Intent Document</h3>
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setCreateError('');
+                }}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <XCircle className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Enter a JSON document matching the OrgIntentDoc schema. Edit the template below.
+              </p>
+              <textarea
+                value={createJson}
+                onChange={(e) => setCreateJson(e.target.value)}
+                rows={18}
+                className="w-full text-xs font-mono border border-border rounded p-2 bg-muted/30 resize-y focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              {createError && <p className="text-xs text-destructive">{createError}</p>}
+            </div>
+            <div className="flex justify-end gap-2 px-4 py-3 border-t border-border">
+              <button
+                onClick={() => {
+                  setShowCreateModal(false);
+                  setCreateError('');
+                }}
+                className="text-xs px-3 py-1.5 border border-border rounded hover:bg-accent transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={createMutation.isPending}
+                className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 transition-colors"
+              >
+                {createMutation.isPending ? 'Creating…' : 'Create'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -322,7 +322,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             const isGitTool = tool.name.startsWith('git_') || tool.name.startsWith('github_');
             const isFsTool = tool.name.startsWith('fs_');
             const isWebScrapeTool =
-              tool.name.startsWith('web_scrape') || tool.name === 'web_extract_structured';
+              tool.name.startsWith('web_scrape') ||
+              tool.name === 'web_extract_structured' ||
+              tool.name === 'web_fetch_markdown';
             const isWebSearchTool = tool.name.startsWith('web_search');
             const isBrowserTool = tool.name.startsWith('browser_');
 
@@ -553,6 +555,77 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             personalityName: personality?.name ?? null,
           };
           for (const toolCall of rawResponse.toolCalls) {
+            // ── Intent enforcement (Phase 48) ────────────────────────────────
+            const intentMgr = secureYeoman.getIntentManager?.();
+            if (intentMgr) {
+              // 1. Hard boundary check — always-block, outermost gate
+              const boundaryResult = await intentMgr.checkHardBoundaries(
+                `call tool: ${toolCall.name}`,
+                toolCall.name
+              );
+              if (!boundaryResult.allowed) {
+                messages.push({
+                  role: 'tool' as const,
+                  toolResult: {
+                    toolCallId: toolCall.id,
+                    content: JSON.stringify({
+                      error: `[BLOCKED] Hard boundary violated: ${boundaryResult.violated?.rationale ?? boundaryResult.violated?.rule ?? 'boundary rule'}`,
+                    }),
+                    isError: true,
+                  },
+                });
+                void secureYeoman.getAuditChain().record({
+                  event: 'intent_boundary_violated',
+                  level: 'warn',
+                  message: `Hard boundary blocked tool: ${toolCall.name}`,
+                  metadata: { boundaryId: boundaryResult.violated?.id, tool: toolCall.name },
+                });
+                continue;
+              }
+
+              // 2. Policy check — warn logs and proceeds; block halts
+              const policyResult = await intentMgr.checkPolicies(
+                `call tool: ${toolCall.name}`,
+                toolCall.name
+              );
+              if (policyResult.action === 'block') {
+                messages.push({
+                  role: 'tool' as const,
+                  toolResult: {
+                    toolCallId: toolCall.id,
+                    content: JSON.stringify({
+                      error: `[BLOCKED] Policy: ${policyResult.violated?.rule ?? 'policy rule'}`,
+                    }),
+                    isError: true,
+                  },
+                });
+                continue;
+              }
+              // 'warn' — already logged to enforcement log inside checkPolicies; continue dispatch
+
+              // 3. Authorized tool check — if active intent restricts mcpTools
+              const permitted = intentMgr.getPermittedMcpTools();
+              if (permitted !== null && !permitted.has(toolCall.name)) {
+                messages.push({
+                  role: 'tool' as const,
+                  toolResult: {
+                    toolCallId: toolCall.id,
+                    content: JSON.stringify({
+                      error: `[BLOCKED] Tool '${toolCall.name}' is not in the authorized actions list for active goals.`,
+                    }),
+                    isError: true,
+                  },
+                });
+                void secureYeoman.getAuditChain().record({
+                  event: 'intent_action_blocked',
+                  level: 'warn',
+                  message: `Unauthorized tool call blocked: ${toolCall.name}`,
+                  metadata: { tool: toolCall.name },
+                });
+                continue;
+              }
+            }
+
             // Check if this is an MCP tool and route appropriately
             const mcpTool = mcpClient?.getAllTools().find((t) => t.name === toolCall.name);
             let result: { output: unknown; isError: boolean };
@@ -962,7 +1035,10 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             if (isYeomanS) {
               const isGitS = tool.name.startsWith('git_') || tool.name.startsWith('github_');
               const isFsS = tool.name.startsWith('fs_');
-              const isWebScrapeS = tool.name.startsWith('web_scrape') || tool.name === 'web_extract_structured';
+              const isWebScrapeS =
+                tool.name.startsWith('web_scrape') ||
+                tool.name === 'web_extract_structured' ||
+                tool.name === 'web_fetch_markdown';
               const isWebSearchS = tool.name.startsWith('web_search');
               const isBrowserS = tool.name.startsWith('browser_');
               if (isGitS && !(globalConfigS.exposeGit && perPersonalityFeaturesS.exposeGit)) continue;

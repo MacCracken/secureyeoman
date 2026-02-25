@@ -127,6 +127,7 @@ describe('A2APage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     mockFetchA2APeers.mockResolvedValue(MOCK_PEERS);
     mockFetchA2ACapabilities.mockResolvedValue(MOCK_CAPABILITIES);
@@ -169,6 +170,7 @@ describe('A2APage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     expect(await screen.findByText('A2A Protocol Not Enabled')).toBeInTheDocument();
@@ -206,6 +208,7 @@ describe('A2APage', () => {
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     renderComponent();
     expect(await screen.findByText('Peers')).toBeInTheDocument();

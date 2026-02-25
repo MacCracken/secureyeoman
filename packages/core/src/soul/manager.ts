@@ -935,6 +935,18 @@ export class SoulManager {
     // - Without a message: all skills (can't be selective without input)
     const skillsToExpand = input ? skills.filter((s) => isSkillInContext(s, input)) : skills;
 
+    // 48.3: Elevate skills linked to active goals — inject full instructions even without keyword match
+    if (this.intentManager) {
+      const goalSkillSlugs = this.intentManager.getGoalSkillSlugs();
+      if (goalSkillSlugs.size > 0) {
+        for (const s of skills) {
+          if (goalSkillSlugs.has(s.name) && !skillsToExpand.includes(s)) {
+            skillsToExpand.push(s);
+          }
+        }
+      }
+    }
+
     // Append full instructions for contextually relevant skills —
     // stop before exceeding the cap (never slice mid-skill)
     for (const skill of skillsToExpand) {

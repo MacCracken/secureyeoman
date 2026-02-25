@@ -8,10 +8,12 @@ import { registerKnowledgeResources } from './knowledge-resources.js';
 import { registerPersonalityResources } from './personality-resources.js';
 import { registerConfigResources } from './config-resources.js';
 import { registerAuditResources } from './audit-resources.js';
+import { registerSkillResources } from './skill-resources.js';
 
 export function registerAllResources(server: McpServer, client: CoreApiClient): void {
   registerKnowledgeResources(server, client);
   registerPersonalityResources(server, client);
   registerConfigResources(server, client);
   registerAuditResources(server, client);
+  registerSkillResources(server, client);
 }

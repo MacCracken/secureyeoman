@@ -1282,6 +1282,7 @@ interface BodySectionProps {
     exposeNvd: boolean;
     exposeNetworkUtils: boolean;
     exposeTwingateTools: boolean;
+    exposeOrgIntentTools: boolean;
   };
   onMcpFeaturesChange: (features: {
     exposeGit: boolean;
@@ -1298,6 +1299,7 @@ interface BodySectionProps {
     exposeNvd: boolean;
     exposeNetworkUtils: boolean;
     exposeTwingateTools: boolean;
+    exposeOrgIntentTools: boolean;
   }) => void;
   creationConfig: {
     skills: boolean;
@@ -2462,6 +2464,42 @@ function BodySection({
                                 />
                               </label>
                             </div>
+
+                            {/* ── Organizational Intent ───────────────── */}
+                            <div className="mt-2 pt-2 border-t border-border/50 space-y-1">
+                              <p className="text-[10px] text-muted-foreground uppercase tracking-wide mb-1 flex items-center gap-1">
+                                <Globe className="w-3 h-3" />
+                                Organizational Intent
+                              </p>
+                              <label
+                                className={`flex items-center gap-2 p-1.5 rounded bg-muted/30 transition-colors ${
+                                  globalMcpConfig?.exposeOrgIntentTools
+                                    ? 'cursor-pointer hover:bg-muted/50'
+                                    : 'opacity-50 cursor-not-allowed'
+                                }`}
+                              >
+                                <span className="text-xs flex-1">
+                                  Intent Signal Read Tool
+                                  {!globalMcpConfig?.exposeOrgIntentTools && (
+                                    <span className="text-[10px] text-muted-foreground ml-1">
+                                      — enable Org Intent in Security Settings first
+                                    </span>
+                                  )}
+                                </span>
+                                <input
+                                  type="checkbox"
+                                  checked={mcpFeatures.exposeOrgIntentTools}
+                                  onChange={(e) => {
+                                    onMcpFeaturesChange({
+                                      ...mcpFeatures,
+                                      exposeOrgIntentTools: e.target.checked,
+                                    });
+                                  }}
+                                  disabled={!globalMcpConfig?.exposeOrgIntentTools}
+                                  className="w-3.5 h-3.5 rounded accent-primary shrink-0"
+                                />
+                              </label>
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2764,6 +2802,7 @@ export function PersonalityEditor() {
     exposeNvd: boolean;
     exposeNetworkUtils: boolean;
     exposeTwingateTools: boolean;
+    exposeOrgIntentTools: boolean;
   }>({
     exposeGit: false,
     exposeFilesystem: false,
@@ -2779,6 +2818,7 @@ export function PersonalityEditor() {
     exposeNvd: false,
     exposeNetworkUtils: false,
     exposeTwingateTools: false,
+    exposeOrgIntentTools: false,
   });
   const [proactiveConfig, setProactiveConfig] = useState<{
     enabled: boolean;
@@ -3036,6 +3076,7 @@ export function PersonalityEditor() {
       exposeNvd: body.mcpFeatures?.exposeNvd ?? false,
       exposeNetworkUtils: body.mcpFeatures?.exposeNetworkUtils ?? false,
       exposeTwingateTools: body.mcpFeatures?.exposeTwingateTools ?? false,
+      exposeOrgIntentTools: body.mcpFeatures?.exposeOrgIntentTools ?? false,
     });
     setProactiveConfig({
       enabled: body.proactiveConfig?.enabled ?? false,
@@ -3141,6 +3182,7 @@ export function PersonalityEditor() {
       exposeNvd: false,
       exposeNetworkUtils: false,
       exposeTwingateTools: false,
+      exposeOrgIntentTools: false,
     });
     setProactiveConfig({
       enabled: false,

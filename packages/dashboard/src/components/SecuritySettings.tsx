@@ -38,6 +38,7 @@ import {
   Monitor,
   Camera,
   Globe,
+  Target,
 } from 'lucide-react';
 import {
   fetchRoles,
@@ -420,6 +421,7 @@ export function SecuritySettings() {
   const twingateAllowed = securityPolicy?.allowTwingate ?? false;
   const experimentsAllowed = securityPolicy?.allowExperiments ?? false;
   const storybookAllowed = securityPolicy?.allowStorybook ?? false;
+  const intentEditorAllowed = securityPolicy?.allowIntentEditor ?? false;
   const dtcAllowed = securityPolicy?.allowDynamicTools ?? false;
   const sandboxDtcAllowed = securityPolicy?.sandboxDynamicTools ?? true;
   const anomalyDetectionAllowed = securityPolicy?.allowAnomalyDetection ?? false;
@@ -1006,6 +1008,22 @@ export function SecuritySettings() {
                 storybookAllowed
                   ? 'Storybook component development environment is enabled. Access the component gallery from the Developers section.'
                   : 'Storybook is disabled. Enable this setting to access the component development environment in the Developers section.'
+              }
+            />
+          </div>
+          <div className="border-t border-border pt-4">
+            <PolicyToggle
+              label="Intent Document Editor"
+              icon={<Target className="w-4 h-4 text-muted-foreground" />}
+              enabled={intentEditorAllowed}
+              isPending={policyMutation.isPending}
+              onToggle={() => {
+                policyMutation.mutate({ allowIntentEditor: !intentEditorAllowed });
+              }}
+              description={
+                intentEditorAllowed
+                  ? 'Full field-level intent editor is enabled. Edit organizational intent documents directly from the Settings → Intent tab. Developer mode — not ready for production use.'
+                  : 'Intent editor is disabled. Enable to access the structured editor for goals, signals, boundaries, policies, and delegation framework. Requires Organizational Intent to be enabled above.'
               }
             />
           </div>

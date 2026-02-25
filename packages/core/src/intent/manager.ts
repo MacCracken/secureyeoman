@@ -19,6 +19,7 @@ import type {
   Goal,
   Signal,
   HardBoundary,
+  Policy,
   TradeoffProfile,
   SignalReadResult,
   SignalStatus,
@@ -51,6 +52,13 @@ export interface ActionCheckResult {
   allowed: boolean;
   reason?: string;
   action?: AuthorizedAction;
+}
+
+// ─── Policy check result ──────────────────────────────────────────────────────
+
+export interface PolicyCheckResult {
+  action: 'allow' | 'warn' | 'block';
+  violated?: Policy;
 }
 
 // ─── IntentManager ────────────────────────────────────────────────────────────
@@ -215,8 +223,23 @@ export class IntentManager {
       if (!intent?.signals?.length) return;
       for (const signal of intent.signals) {
         try {
+          const prevStatus = this.signalCache.get(signal.id)?.result.status;
           const result = await this._fetchSignalValue(signal, intent);
           this.signalCache.set(signal.id, { result, fetchedAt: Date.now() });
+
+          // 48.2 — Log signal degradation transitions
+          const isDegraded =
+            (prevStatus === 'healthy' && (result.status === 'warning' || result.status === 'critical')) ||
+            (prevStatus === 'warning' && result.status === 'critical');
+          if (isDegraded) {
+            await this.storage.logEnforcement({
+              eventType: 'intent_signal_degraded',
+              itemId: signal.id,
+              rule: `signal:${signal.id}`,
+              rationale: result.message,
+              metadata: { from: prevStatus, to: result.status },
+            });
+          }
         } catch {
           // Non-fatal
         }
@@ -340,6 +363,118 @@ export class IntentManager {
     }
 
     return { allowed: true, action };
+  }
+
+  // ── getPermittedMcpTools (48.3) ───────────────────────────────────────────────
+
+  /**
+   * Returns a Set of permitted MCP tool names derived from authorizedActions that
+   * explicitly list mcpTools. Returns null when no authorized actions restrict tools
+   * (i.e. no restriction mode — all tools are permitted).
+   */
+  getPermittedMcpTools(): Set<string> | null {
+    if (!this.activeIntent) return null;
+    const actions = this.activeIntent.authorizedActions ?? [];
+    const restricted = actions.filter((a) => a.mcpTools && a.mcpTools.length > 0);
+    if (restricted.length === 0) return null;
+    const permitted = new Set<string>();
+    for (const action of restricted) {
+      for (const tool of action.mcpTools) {
+        permitted.add(tool);
+      }
+    }
+    return permitted;
+  }
+
+  // ── getGoalSkillSlugs (48.3) ──────────────────────────────────────────────────
+
+  /**
+   * Returns a Set of skill slugs from all currently active goals' `skills[]` arrays.
+   * Used by soul/manager.ts to elevate goal-linked skills in prompt injection.
+   */
+  getGoalSkillSlugs(): Set<string> {
+    const goals = this.resolveActiveGoals();
+    const slugs = new Set<string>();
+    for (const goal of goals) {
+      for (const slug of goal.skills ?? []) {
+        slugs.add(slug);
+      }
+    }
+    return slugs;
+  }
+
+  // ── checkPolicies (48.5) ──────────────────────────────────────────────────────
+
+  /**
+   * Checks the action description against the active intent's `policies[]`.
+   * Same natural-language matching as `checkHardBoundaries()`.
+   * When OPA_ADDR env is set and the policy has a `rego` field, evaluates via OPA;
+   * falls back to natural-language rule on fetch error.
+   */
+  async checkPolicies(
+    actionDescription: string,
+    mcpTool?: string
+  ): Promise<PolicyCheckResult> {
+    if (!this.activeIntent) return { action: 'allow' };
+
+    const policies = this.activeIntent.policies ?? [];
+    for (const policy of policies) {
+      const violated = await this._matchesPolicy(policy, actionDescription, mcpTool);
+      if (!violated) continue;
+
+      if (policy.enforcement === 'warn') {
+        await this.storage.logEnforcement({
+          eventType: 'policy_warn',
+          itemId: policy.id,
+          rule: policy.rule,
+          rationale: policy.rationale,
+          actionAttempted: actionDescription,
+        });
+        return { action: 'warn', violated: policy };
+      } else {
+        await this.storage.logEnforcement({
+          eventType: 'policy_block',
+          itemId: policy.id,
+          rule: policy.rule,
+          rationale: policy.rationale,
+          actionAttempted: actionDescription,
+        });
+        return { action: 'block', violated: policy };
+      }
+    }
+    return { action: 'allow' };
+  }
+
+  /**
+   * Returns true if the policy matches the given action/tool.
+   * Tries OPA first (if configured and policy has rego), then falls back to
+   * the same deny:/tool: prefix substring matching as hard boundaries.
+   */
+  private async _matchesPolicy(
+    policy: Policy,
+    actionDescription: string,
+    mcpTool?: string
+  ): Promise<boolean> {
+    const opaAddr = process.env.OPA_ADDR;
+    if (opaAddr && policy.rego) {
+      try {
+        const resp = await fetch(`${opaAddr}/v1/data/secureyeoman/allow`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ input: { action: actionDescription, tool: mcpTool ?? null } }),
+          signal: AbortSignal.timeout(5_000),
+        });
+        if (resp.ok) {
+          const body = (await resp.json()) as { result?: boolean };
+          // OPA allow=false means the policy blocks the action
+          if (body.result === false) return true;
+          return false;
+        }
+      } catch {
+        // Fall through to natural-language rule on OPA error
+      }
+    }
+    return this._matchesBoundary(policy.rule, actionDescription, mcpTool);
   }
 
   // ── Enforcement log passthrough ───────────────────────────────────────────────

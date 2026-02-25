@@ -557,6 +557,14 @@ Configuration is via environment variables (not the YAML config file):
 | `TWINGATE_API_KEY` | *(empty)* | Twingate tenant API key for GraphQL management tools. Generate in the Twingate Admin Console under Settings → API. |
 | `TWINGATE_NETWORK` | *(empty)* | Twingate tenant name (e.g. `acme` → calls `acme.twingate.com`). Found in your Twingate Admin Console URL. |
 
+#### Markdown for Agents (Content Negotiation)
+
+> Native markdown fetching and publisher opt-out enforcement (Phase Tier2-MA). See [Markdown for Agents guide](guides/markdown-for-agents.md).
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `MCP_RESPECT_CONTENT_SIGNAL` | `true` | When enabled, requests to URLs that respond with `Content-Signal: ai-input=no` are refused rather than passed to the agent. Set to `false` to disable enforcement (e.g. for internal scraping where you control the servers). |
+
 #### Agnostic QA Team Bridge
 
 > MCP tools that delegate QA tasks to the [Agnostic](https://github.com/MacCracken/agnostic) 6-agent QA platform. Agnostic must be running separately (see its `docker-compose.yml`).

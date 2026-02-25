@@ -209,6 +209,7 @@ beforeEach(() => {
     allowCommunityGitFetch: false,
     allowTwingate: false,
     allowOrgIntent: false,
+    allowIntentEditor: false,
   });
 });
 
@@ -385,6 +386,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -428,6 +430,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -466,6 +469,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     const user = userEvent.setup();
     renderComponent();
@@ -504,6 +508,7 @@ describe('PersonalityEditor — Resources "Enable all" A2A/Swarms gating', () =>
       allowCommunityGitFetch: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     });
     const user = userEvent.setup();
     renderComponent();

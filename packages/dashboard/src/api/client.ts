@@ -1346,6 +1346,7 @@ export interface McpConfigResponse {
   exposeNetworkUtils: boolean;
   exposeTwingateTools: boolean;
   exposeOrgIntentTools: boolean;
+  respectContentSignal: boolean;
   allowedUrls: string[];
   webRateLimitPerMinute: number;
   proxyEnabled: boolean;
@@ -1374,6 +1375,7 @@ export async function fetchMcpConfig(): Promise<McpConfigResponse> {
       exposeNetworkUtils: false,
       exposeTwingateTools: false,
       exposeOrgIntentTools: false,
+      respectContentSignal: true,
       allowedUrls: [],
       webRateLimitPerMinute: 10,
       proxyEnabled: false,
@@ -1909,6 +1911,7 @@ export interface SecurityPolicy {
   allowNetBoxWrite: boolean;
   allowTwingate: boolean;
   allowOrgIntent: boolean;
+  allowIntentEditor: boolean;
 }
 
 export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
@@ -1939,6 +1942,7 @@ export async function fetchSecurityPolicy(): Promise<SecurityPolicy> {
       allowNetBoxWrite: false,
       allowTwingate: false,
       allowOrgIntent: false,
+      allowIntentEditor: false,
     };
   }
 }
@@ -3289,14 +3293,88 @@ export interface OrgIntentMeta {
   updatedAt: number;
 }
 
+export interface OrgIntentGoal {
+  id: string;
+  name: string;
+  description: string;
+  priority: number;
+  activeWhen?: string;
+  successCriteria: string;
+  ownerRole: string;
+  skills: string[];
+  signals: string[];
+  authorizedActions: string[];
+}
+
+export interface OrgIntentSignal {
+  id: string;
+  name: string;
+  description: string;
+  direction: 'above' | 'below';
+  threshold: number;
+  warningThreshold?: number;
+  dataSources: string[];
+}
+
+export interface OrgIntentDataSource {
+  id: string;
+  name: string;
+  type: 'http' | 'mcp_tool' | 'postgres' | 'prometheus' | 'custom';
+  connection: string;
+  authSecret?: string;
+  schema?: string;
+}
+
+export interface OrgIntentAuthorizedAction {
+  id: string;
+  description: string;
+  appliesToGoals: string[];
+  appliesToSignals: string[];
+  requiredRole?: string;
+  conditions?: string;
+  mcpTools: string[];
+}
+
+export interface OrgIntentTradeoffProfile {
+  id: string;
+  name: string;
+  speedVsThoroughness: number;
+  costVsQuality: number;
+  autonomyVsConfirmation: number;
+  notes?: string;
+  isDefault: boolean;
+}
+
+export interface OrgIntentHardBoundary {
+  id: string;
+  rule: string;
+  rego?: string;
+  rationale: string;
+}
+
+export interface OrgIntentPolicy {
+  id: string;
+  rule: string;
+  rego?: string;
+  enforcement: 'warn' | 'block';
+  rationale: string;
+}
+
+export interface OrgIntentDelegationTenant {
+  id: string;
+  principle: string;
+  decisionBoundaries: string[];
+}
+
 export interface OrgIntentDoc extends OrgIntentMeta {
-  goals: unknown[];
-  signals: unknown[];
-  dataSources: unknown[];
-  authorizedActions: unknown[];
-  tradeoffProfiles: unknown[];
-  hardBoundaries: unknown[];
-  delegationFramework: unknown;
+  goals: OrgIntentGoal[];
+  signals: OrgIntentSignal[];
+  dataSources: OrgIntentDataSource[];
+  authorizedActions: OrgIntentAuthorizedAction[];
+  tradeoffProfiles: OrgIntentTradeoffProfile[];
+  hardBoundaries: OrgIntentHardBoundary[];
+  policies: OrgIntentPolicy[];
+  delegationFramework: { tenants: OrgIntentDelegationTenant[] };
   context: { key: string; value: string }[];
 }
 

@@ -25,6 +25,11 @@ const ALL_POLICY_FLAGS = [
   'allowStorybook',
   'allowMultimodal',
   'allowCommunityGitFetch',
+  'allowNetworkTools',
+  'allowNetBoxWrite',
+  'allowTwingate',
+  'allowOrgIntent',
+  'allowIntentEditor',
 ] as const;
 
 type PolicyFlag = (typeof ALL_POLICY_FLAGS)[number];

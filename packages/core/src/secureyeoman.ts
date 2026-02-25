@@ -2089,7 +2089,11 @@ export class SecureYeoman {
     sandboxCredentialProxy?: boolean;
     allowCommunityGitFetch?: boolean;
     communityGitUrl?: string;
+    allowNetworkTools?: boolean;
+    allowNetBoxWrite?: boolean;
+    allowTwingate?: boolean;
     allowOrgIntent?: boolean;
+    allowIntentEditor?: boolean;
   }): void {
     this.ensureInitialized();
 
@@ -2169,8 +2173,20 @@ export class SecureYeoman {
       this.config!.security.communityGitUrl = updates.communityGitUrl;
       this.marketplaceManager?.updatePolicy({ communityGitUrl: updates.communityGitUrl });
     }
+    if (updates.allowNetworkTools !== undefined) {
+      this.config!.security.allowNetworkTools = updates.allowNetworkTools;
+    }
+    if (updates.allowNetBoxWrite !== undefined) {
+      this.config!.security.allowNetBoxWrite = updates.allowNetBoxWrite;
+    }
+    if (updates.allowTwingate !== undefined) {
+      this.config!.security.allowTwingate = updates.allowTwingate;
+    }
     if (updates.allowOrgIntent !== undefined) {
       this.config!.security.allowOrgIntent = updates.allowOrgIntent;
+    }
+    if (updates.allowIntentEditor !== undefined) {
+      this.config!.security.allowIntentEditor = updates.allowIntentEditor;
     }
 
     this.logger?.info('Security policy updated', updates);
@@ -2234,7 +2250,11 @@ export class SecureYeoman {
         'sandboxWasm',
         'sandboxCredentialProxy',
         'allowCommunityGitFetch',
+        'allowNetworkTools',
+        'allowNetBoxWrite',
+        'allowTwingate',
         'allowOrgIntent',
+        'allowIntentEditor',
       ] as const;
       for (const row of result.rows) {
         if (policyKeys.includes(row.key as (typeof policyKeys)[number])) {

@@ -135,6 +135,7 @@ beforeEach(() => {
     allowCommunityGitFetch: false,
     allowTwingate: false,
     allowOrgIntent: false,
+    allowIntentEditor: false,
   });
 });
 
@@ -366,6 +367,7 @@ function enableMlPolicy() {
     allowCommunityGitFetch: false,
     allowTwingate: false,
     allowOrgIntent: false,
+    allowIntentEditor: false,
   });
 }
 

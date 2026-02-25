@@ -1,3 +1,85 @@
+## [Phase Tier2-MA.2] — Docker Build Fix (2026-02-24)
+
+### Fixed
+
+- **`personality-resources.ts` TypeScript cast error** — `(result as Record<string, unknown>)?.personality ?? (result as Record<string, unknown>)` was typed as `{}` by the TypeScript compiler (the `??` expression narrows to `NonNullable<unknown>`), causing `Property 'systemPrompt' does not exist on type '{}'` and breaking `docker compose --profile dev build`. Fixed by splitting into `const raw = result as Record<string, unknown>; const p = (raw.personality ?? raw) as Record<string, unknown>;`
+- **Shared package rebuild** — `respectContentSignal` added to `McpServiceConfigSchema` in `packages/shared` requires `npm run build` there before dependent packages (`mcp`, `core`, `dashboard`) can typecheck. The Docker multi-stage build handles this automatically via the workspace build order; documented for local development.
+
+---
+
+## [Phase Tier2-MA.1] — Dashboard Type Fixes (2026-02-24)
+
+### Fixed
+
+- **`allowIntentEditor` missing from all `SecurityPolicy` mocks** — Added `allowIntentEditor: false` to 43 mock objects across 14 test files and the `client.ts` fallback object; eliminates all 53 pre-existing `TS2741` errors
+- **`IntentDocEditor.tsx` cast error** — `localDoc as Record<string, unknown>` changed to `localDoc as unknown as Record<string, unknown>` to satisfy TypeScript's strict overlap check between `OrgIntentDoc` and `Record<string, unknown>`
+- **`exposeOrgIntentTools` in `PersonalityEditor`** — Added checkbox to the MCP features section (was defined in types but missing from UI); gated by `globalMcpConfig?.exposeOrgIntentTools`
+- **`respectContentSignal` global toggle** in ConnectionsPage "Content Negotiation" section — persisted via `PATCH /api/v1/mcp/config`
+- **`web_fetch_markdown` gated by `exposeWebScraping`** in both filtering loops in `chat-routes.ts`
+- **`McpFeatureConfig` and `McpConfigResponse`** updated with `respectContentSignal: boolean` (default `true`) across `storage.ts`, `mcp-routes.ts`, `types.ts`, `client.ts`
+- `tsc --noEmit` now passes with **0 errors** on the dashboard package
+
+---
+
+## [Phase 48.6] — Intent Document Editor (Developer Preview) (2026-02-24)
+
+### Added
+
+- **`IntentDocEditor` component** (`packages/dashboard/src/components/IntentDocEditor.tsx`) — Full field-level CRUD editor for `OrgIntentDoc` documents. Nine section editors with sidebar navigation: Goals, Signals, Data Sources, Authorized Actions, Trade-off Profiles, Hard Boundaries, Policies, Delegation Framework, Context. Each section supports inline add / edit / delete with typed form fields and sliders. Local dirty state tracking with a single "Save All Changes" mutation via `PATCH /api/v1/intent/:id`.
+- **`allowIntentEditor` security policy flag** — New boolean flag (default `false`) gating the editor in the dashboard. Wired through `packages/shared/src/types/config.ts` → `secureyeoman.ts` `updateSecurityPolicy()` → `server.ts` GET/PATCH `/api/v1/security/policy` → CLI `policy` command `ALL_POLICY_FLAGS` → `SecurityPolicy` interface in dashboard `client.ts`.
+- **PolicyToggle "Intent Document Editor"** in SecuritySettings.tsx Developers section — enables/disables the editor tab. Gated under `allowOrgIntent` (editor only appears when the intent system itself is also enabled).
+- **Editor tab in `IntentEditor`** — `editor` added to `IntentTab` union; tab shown only when `allowIntentEditor` is `true`; marked with a `dev` badge. "Edit" button on each intent doc card switches to the editor tab pre-loaded with that doc.
+
+### Fixed
+
+- **Security policy API missing flags** (`packages/core/src/gateway/server.ts`) — `allowNetworkTools`, `allowNetBoxWrite`, `allowTwingate`, and `allowOrgIntent` were not included in the GET `/api/v1/security/policy` response or PATCH body, meaning the dashboard could attempt to read/write them but the server silently discarded the values. All four flags now correctly flow in both directions.
+- **Same omission in `secureyeoman.ts`** — `updateSecurityPolicy()` signature and the `persistSecurityPolicyToDb` allowed-keys list were missing the same four flags; corrected as part of the same fix.
+
+---
+
+## [Phase Tier2-MA] — Markdown for Agents: MCP Content Negotiation (2026-02-24)
+
+### Added
+
+- **`ContentSignalBlockedError`** — thrown by `safeFetch` when a server responds with `Content-Signal: ai-input=no` and `config.respectContentSignal` is `true`; includes override instruction
+- **`parseFrontMatter`** — zero-dependency YAML front matter parser (regex-based, flat key/value)
+- **`buildFrontMatter`** — flat key→value front matter serialiser; quotes values containing colons
+- **`estimateTokens`** — `Math.ceil(length / 4)` token estimate helper
+- **`Accept: text/markdown` negotiation** in `web_scrape_markdown` and `web_fetch_markdown` — requests markdown natively; falls back to `htmlToMarkdown` when server responds with HTML
+- **Token count telemetry** — `x-markdown-tokens` response header surfaced as `markdownTokens`; falls back to `estimateTokens`; output includes `*Token estimate: N*` line
+- **`Content-Signal: ai-input=no` enforcement** — gated by `MCP_RESPECT_CONTENT_SIGNAL` (default `true`); set `false` to disable
+- **`web_fetch_markdown` tool** (tool #7) — lean single-URL markdown fetch; reassembles YAML front matter from upstream metadata + `source` + `tokens`; no proxy, no batch, no selector
+- **`yeoman://personalities/{id}/prompt`** MCP resource — personality system prompt as `text/markdown` with YAML front matter (`name`, `description`, `isDefault`, `isArchetype`, `model`, `tokens`)
+- **`yeoman://skills/{id}`** MCP resource (`skill-resources.ts`) — skill instructions as `text/markdown` with YAML front matter (`name`, `description`, `source`, `status`, `routing`, `useWhen`, `doNotUseWhen`, `successCriteria`, `tokens`)
+- **`respectContentSignal`** field on `McpServiceConfigSchema` (default `true`) and `MCP_RESPECT_CONTENT_SIGNAL` env var in `config.ts`
+- ~19 new unit tests across `web-tools.test.ts`, `personality-resources.test.ts`, `skill-resources.test.ts`
+- ADR 129: `docs/adr/129-markdown-for-agents-mcp-content-negotiation.md`
+- Guide: `docs/guides/markdown-for-agents.md`
+
+---
+
+## [Phase 48.2] — Intent Pipeline Enforcement & Dashboard (2026-02-24)
+
+### Added
+
+- **`PolicySchema`** (`packages/core/src/intent/schema.ts`) — `id`, `rule`, `rego?`, `enforcement: 'warn'|'block'`, `rationale`; stored as JSONB in the existing `org_intents` doc (no migration needed)
+- **`policies[]`** field on `OrgIntentDocSchema` — soft-policy layer evaluated after hard boundaries
+- **`intent_signal_degraded`** added to `EnforcementEventTypeSchema` — emitted when a monitored signal transitions healthy→warning, healthy→critical, or warning→critical during background refresh
+- **`IntentManager.getPermittedMcpTools()`** — returns `Set<string>` of permitted tool names derived from `authorizedActions[].mcpTools`; returns `null` when no restriction applies
+- **`IntentManager.getGoalSkillSlugs()`** — returns `Set<string>` of skill slugs from all currently active goals; consumed by `SoulManager` for affinity elevation
+- **`IntentManager.checkPolicies(actionDescription, mcpTool?)`** — evaluates `policies[]` using the same deny:/tool: prefix matching as hard boundaries; supports OPA sidecar evaluation via `OPA_ADDR` env + `policy.rego` field with natural-language fallback; logs `policy_warn`/`policy_block` to enforcement log
+- **Pipeline enforcement in `ai/chat-routes.ts`** — three ordered gates before each tool dispatch: (1) hard boundary check → blocked tool result + audit event; (2) policy check → warn continues, block halts; (3) authorized tool check → blocks tools not in `authorizedActions[].mcpTools` when any action restricts tools
+- **Goal-to-skill affinity** (`soul/manager.ts`) — after `skillsToExpand` is built, skills linked to active goals via `goals[].skills[]` are merged in unconditionally, ensuring full instruction injection regardless of keyword match
+- **Signal degradation tracking** in `IntentManager._startSignalRefresh()` — captures prior cache status per signal and logs `intent_signal_degraded` on status regressions
+- **Signals tab** in `IntentEditor` dashboard component — live signal cards showing current value, threshold, status badge, and direction icon; auto-refreshes every 60 s
+- **Delegation tab** in `IntentEditor` — collapsible view of `delegationFramework.tenants[]` with principle and decision boundaries; read-only
+- **Create Intent flow** in `IntentEditor` docs tab — "Create Intent" button opens a modal with a JSON editor pre-filled with a starter template; submits via `POST /api/v1/intent`
+- `OrgIntentSignal` and `OrgIntentDelegationTenant` interfaces in dashboard `client.ts` for typed rendering
+- Enforcement log filter updated with `intent_signal_degraded` option and colour coding
+- **13 new unit tests** in `intent-manager.test.ts` covering `getPermittedMcpTools` (3), `getGoalSkillSlugs` (2), `checkPolicies` (5), signal degradation tracking (2)
+
+---
+
 ## [Phase 48.1] — Dashboard Type Fixes (2026-02-24)
 
 ### Fixed

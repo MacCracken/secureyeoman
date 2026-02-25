@@ -1215,6 +1215,11 @@ export class GatewayServer {
         sandboxCredentialProxy: config.security.sandboxCredentialProxy,
         allowCommunityGitFetch: config.security.allowCommunityGitFetch,
         communityGitUrl: config.security.communityGitUrl,
+        allowNetworkTools: config.security.allowNetworkTools,
+        allowNetBoxWrite: config.security.allowNetBoxWrite,
+        allowTwingate: config.security.allowTwingate,
+        allowOrgIntent: config.security.allowOrgIntent,
+        allowIntentEditor: config.security.allowIntentEditor,
       };
     });
 
@@ -1244,6 +1249,11 @@ export class GatewayServer {
             sandboxCredentialProxy?: boolean;
             allowCommunityGitFetch?: boolean;
             communityGitUrl?: string;
+            allowNetworkTools?: boolean;
+            allowNetBoxWrite?: boolean;
+            allowTwingate?: boolean;
+            allowOrgIntent?: boolean;
+            allowIntentEditor?: boolean;
           };
         }>,
         reply: FastifyReply
@@ -1270,6 +1280,11 @@ export class GatewayServer {
             sandboxCredentialProxy,
             allowCommunityGitFetch,
             communityGitUrl,
+            allowNetworkTools,
+            allowNetBoxWrite,
+            allowTwingate,
+            allowOrgIntent,
+            allowIntentEditor,
           } = request.body;
           if (
             allowSubAgents === undefined &&
@@ -1291,7 +1306,12 @@ export class GatewayServer {
             sandboxWasm === undefined &&
             sandboxCredentialProxy === undefined &&
             allowCommunityGitFetch === undefined &&
-            communityGitUrl === undefined
+            communityGitUrl === undefined &&
+            allowNetworkTools === undefined &&
+            allowNetBoxWrite === undefined &&
+            allowTwingate === undefined &&
+            allowOrgIntent === undefined &&
+            allowIntentEditor === undefined
           ) {
             return sendError(reply, 400, 'No valid fields provided');
           }
@@ -1316,6 +1336,11 @@ export class GatewayServer {
             sandboxCredentialProxy,
             allowCommunityGitFetch,
             communityGitUrl,
+            allowNetworkTools,
+            allowNetBoxWrite,
+            allowTwingate,
+            allowOrgIntent,
+            allowIntentEditor,
           });
 
           // Audit the policy change
@@ -1355,6 +1380,11 @@ export class GatewayServer {
             sandboxCredentialProxy: config.security.sandboxCredentialProxy,
             allowCommunityGitFetch: config.security.allowCommunityGitFetch,
             communityGitUrl: config.security.communityGitUrl,
+            allowNetworkTools: config.security.allowNetworkTools,
+            allowNetBoxWrite: config.security.allowNetBoxWrite,
+            allowTwingate: config.security.allowTwingate,
+            allowOrgIntent: config.security.allowOrgIntent,
+            allowIntentEditor: config.security.allowIntentEditor,
           };
         } catch (err) {
           this.getLogger().error('Failed to update security policy', {

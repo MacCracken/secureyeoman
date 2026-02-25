@@ -42,6 +42,53 @@ class UrlValidationError extends Error {
   }
 }
 
+class ContentSignalBlockedError extends Error {
+  constructor(url: string) {
+    super(
+      `Content-Signal: ai-input=no — "${url}" signals this content is not intended for AI input. ` +
+      `Set MCP_RESPECT_CONTENT_SIGNAL=false to override.`
+    );
+    this.name = 'ContentSignalBlockedError';
+  }
+}
+
+// ─── YAML Front Matter Helpers ───────────────────────────────
+
+function parseFrontMatter(content: string): { metadata: Record<string, string>; body: string } {
+  if (!content.startsWith('---\n')) return { metadata: {}, body: content };
+  const end = content.indexOf('\n---\n', 4);
+  if (end === -1) return { metadata: {}, body: content };
+  const block = content.slice(4, end);
+  // Strip the single blank line that conventionally separates front matter from body
+  const rawBody = content.slice(end + 5);
+  const body = rawBody.startsWith('\n') ? rawBody.slice(1) : rawBody;
+  const metadata: Record<string, string> = {};
+  for (const line of block.split('\n')) {
+    const colonIdx = line.indexOf(':');
+    if (colonIdx === -1) continue;
+    const key = line.slice(0, colonIdx).trim();
+    const value = line.slice(colonIdx + 1).trim().replace(/^["']|["']$/g, '');
+    if (key) metadata[key] = value;
+  }
+  return { metadata, body };
+}
+
+function buildFrontMatter(
+  fields: Record<string, string | number | boolean | undefined>
+): string {
+  const lines = ['---'];
+  for (const [key, value] of Object.entries(fields)) {
+    if (value === undefined || value === null || value === '') continue;
+    const str = String(value);
+    const escaped = str.includes(':')
+      ? `"${str.replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`
+      : str;
+    lines.push(`${key}: ${escaped}`);
+  }
+  lines.push('---');
+  return lines.join('\n') + '\n\n';
+}
+
 function validateUrl(urlStr: string, config: McpServiceConfig): URL {
   let parsed: URL;
   try {
@@ -120,8 +167,8 @@ async function safeFetch(
   config: McpServiceConfig,
   webLimiter: WebRateLimiter,
   proxyManager: ProxyManager | null = null,
-  options?: { country?: string }
-): Promise<{ body: string; finalUrl: string; contentType: string }> {
+  options?: { country?: string; acceptMarkdown?: boolean }
+): Promise<{ body: string; finalUrl: string; contentType: string; markdownTokens: number | null }> {
   const rate = webLimiter.check();
   if (!rate.allowed) {
     throw new Error(
@@ -129,7 +176,7 @@ async function safeFetch(
     );
   }
 
-  const doFetch = async (): Promise<{ body: string; finalUrl: string; contentType: string }> => {
+  const doFetch = async (): Promise<{ body: string; finalUrl: string; contentType: string; markdownTokens: number | null }> => {
     let currentUrl = urlStr;
     let redirectCount = 0;
 
@@ -150,12 +197,16 @@ async function safeFetch(
         }
       }
 
+      const acceptHeader = options?.acceptMarkdown
+        ? 'text/markdown, text/html;q=0.9, */*;q=0.8'
+        : 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8';
+
       const response = await fetch(fetchUrl, {
         redirect: 'manual',
         signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
         headers: {
           'User-Agent': 'SecureYeoman-WebMCP/1.0 (bot)',
-          Accept: 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          Accept: acceptHeader,
           ...extraHeaders,
         },
       });
@@ -170,6 +221,17 @@ async function safeFetch(
       }
 
       const contentType = response.headers.get('content-type') ?? 'text/html';
+
+      // Content-Signal enforcement
+      const contentSignal = response.headers.get('content-signal') ?? '';
+      if (config.respectContentSignal && contentSignal.includes('ai-input=no')) {
+        throw new ContentSignalBlockedError(currentUrl);
+      }
+
+      // Token count telemetry from upstream markdown publisher
+      const tokenHeader = response.headers.get('x-markdown-tokens');
+      const markdownTokens = tokenHeader ? parseInt(tokenHeader, 10) || null : null;
+
       const body = await response.text();
 
       // CAPTCHA detection when proxy is active
@@ -181,7 +243,7 @@ async function safeFetch(
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
-      return { body, finalUrl: currentUrl, contentType };
+      return { body, finalUrl: currentUrl, contentType, markdownTokens };
     }
 
     throw new Error(`Too many redirects (max ${MAX_REDIRECTS})`);
@@ -222,6 +284,12 @@ async function safeFetch(
   }
 
   return doFetch();
+}
+
+// ─── Token count estimate ────────────────────────────────────
+
+function estimateTokens(text: string): number {
+  return Math.ceil(text.length / 4);
 }
 
 function truncateOutput(text: string): string {
@@ -446,11 +514,23 @@ export function registerWebTools(
       },
     },
     wrapToolHandler('web_scrape_markdown', middleware, async (args) => {
-      const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, {
-        country: args.country,
-      });
-      const markdown = htmlToMarkdown(body);
-      const output = truncateOutput(`# Scraped: ${finalUrl}\n\n${markdown}`);
+      const { body, finalUrl, contentType, markdownTokens } = await safeFetch(
+        args.url,
+        config,
+        webLimiter,
+        proxyManager,
+        { country: args.country, acceptMarkdown: true }
+      );
+      // Use body as-is if the server already sent markdown; otherwise convert
+      const rawMd = contentType.includes('text/markdown') ? body : htmlToMarkdown(body);
+      const { metadata, body: mdBody } = parseFrontMatter(rawMd);
+      const tokenCount = markdownTokens ?? estimateTokens(mdBody);
+
+      let header = `# Scraped: ${finalUrl}\n\n`;
+      if (Object.keys(metadata).length > 0) {
+        header += `**Page metadata:** ${JSON.stringify(metadata)}\n\n`;
+      }
+      const output = truncateOutput(`${header}${mdBody}\n\n*Token estimate: ${tokenCount}*`);
       return { content: [{ type: 'text' as const, text: output }] };
     })
   );
@@ -477,6 +557,7 @@ export function registerWebTools(
     wrapToolHandler('web_scrape_html', middleware, async (args) => {
       const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, {
         country: args.country,
+        acceptMarkdown: false,
       });
       const html = args.selector ? extractWithSelector(body, args.selector) : body;
       const output = truncateOutput(html);
@@ -506,6 +587,7 @@ export function registerWebTools(
         args.urls.map(async (url: string) => {
           const { body, finalUrl } = await safeFetch(url, config, webLimiter, proxyManager, {
             country: args.country,
+            acceptMarkdown: false,
           });
           const markdown = htmlToMarkdown(body);
           return { url: finalUrl, markdown };
@@ -552,6 +634,7 @@ export function registerWebTools(
     wrapToolHandler('web_extract_structured', middleware, async (args) => {
       const { body, finalUrl } = await safeFetch(args.url, config, webLimiter, proxyManager, {
         country: args.country,
+        acceptMarkdown: false,
       });
       const text = stripHtmlTags(body);
 
@@ -621,6 +704,38 @@ export function registerWebTools(
     })
   );
 
+  // 7. web_fetch_markdown — dedicated lean markdown fetch with front matter passthrough
+  server.registerTool(
+    'web_fetch_markdown',
+    {
+      description:
+        'Fetch a single URL as markdown, honouring Content-Signal and surfacing YAML front matter and token counts (requires MCP_EXPOSE_WEB=true)',
+      inputSchema: {
+        url: z.string().describe('URL to fetch as markdown'),
+      },
+    },
+    wrapToolHandler('web_fetch_markdown', middleware, async (args) => {
+      const { body, finalUrl, contentType, markdownTokens } = await safeFetch(
+        args.url,
+        config,
+        webLimiter,
+        null,
+        { acceptMarkdown: true }
+      );
+      const rawMd = contentType.includes('text/markdown') ? body : htmlToMarkdown(body);
+      const { metadata: upstreamMeta, body: mdBody } = parseFrontMatter(rawMd);
+      const tokenCount = markdownTokens ?? estimateTokens(mdBody);
+
+      const frontMatter = buildFrontMatter({
+        source: finalUrl,
+        tokens: tokenCount,
+        ...upstreamMeta,
+      });
+      const output = truncateOutput(frontMatter + mdBody);
+      return { content: [{ type: 'text' as const, text: output }] };
+    })
+  );
+
   // 6. web_search_batch — batch search for research tasks
   server.registerTool(
     'web_search_batch',
@@ -676,4 +791,15 @@ export function registerWebTools(
 }
 
 // Exported for testing
-export { validateUrl, WebRateLimiter, truncateOutput, htmlToMarkdown, stripHtmlTags, safeFetch };
+export {
+  validateUrl,
+  WebRateLimiter,
+  truncateOutput,
+  htmlToMarkdown,
+  stripHtmlTags,
+  safeFetch,
+  parseFrontMatter,
+  buildFrontMatter,
+  ContentSignalBlockedError,
+  estimateTokens,
+};

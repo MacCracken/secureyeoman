@@ -104,6 +104,7 @@ const DEFAULT_POLICY = {
   allowCommunityGitFetch: false,
   allowTwingate: false,
   allowOrgIntent: false,
+  allowIntentEditor: false,
 };
 
 describe('AgentsPage', () => {

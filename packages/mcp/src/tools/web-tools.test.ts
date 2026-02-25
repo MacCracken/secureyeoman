@@ -2,14 +2,20 @@
  * Web Tools — unit tests for URL validation, SSRF blocking, output truncation, and rate limiting.
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   validateUrl,
   WebRateLimiter,
   truncateOutput,
   stripHtmlTags,
   safeFetch,
+  parseFrontMatter,
+  buildFrontMatter,
+  ContentSignalBlockedError,
+  estimateTokens,
 } from './web-tools.js';
+import { registerWebTools } from './web-tools.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { ProxyManager } from './proxy-manager.js';
 import type { McpServiceConfig } from '@secureyeoman/shared';
 
@@ -155,6 +161,177 @@ describe('stripHtmlTags', () => {
   it('strips regular tags', () => {
     expect(stripHtmlTags('<p>hello <b>world</b></p>')).toContain('hello');
     expect(stripHtmlTags('<p>hello <b>world</b></p>')).toContain('world');
+  });
+});
+
+describe('parseFrontMatter', () => {
+  it('parses well-formed YAML front matter block', () => {
+    const content = '---\ntitle: Hello\nauthor: World\n---\n\nBody text here.';
+    const { metadata, body } = parseFrontMatter(content);
+    expect(metadata.title).toBe('Hello');
+    expect(metadata.author).toBe('World');
+    expect(body).toBe('Body text here.');
+  });
+
+  it('returns full content as body when no front matter', () => {
+    const content = 'Just plain text with no front matter.';
+    const { metadata, body } = parseFrontMatter(content);
+    expect(metadata).toEqual({});
+    expect(body).toBe(content);
+  });
+
+  it('returns empty metadata for unclosed front matter (no closing ---)', () => {
+    const content = '---\ntitle: Unclosed\nno closing block here';
+    const { metadata, body } = parseFrontMatter(content);
+    expect(metadata).toEqual({});
+    expect(body).toBe(content);
+  });
+
+  it('strips surrounding quotes from values', () => {
+    const content = '---\nname: "quoted value"\nother: \'single quoted\'\n---\n\nBody.';
+    const { metadata } = parseFrontMatter(content);
+    expect(metadata.name).toBe('quoted value');
+    expect(metadata.other).toBe('single quoted');
+  });
+});
+
+describe('buildFrontMatter', () => {
+  it('produces --- delimited block with correct key: value lines', () => {
+    const result = buildFrontMatter({ title: 'Test', author: 'Alice' });
+    expect(result).toContain('---');
+    expect(result).toContain('title: Test');
+    expect(result).toContain('author: Alice');
+  });
+
+  it('skips undefined and empty-string fields', () => {
+    const result = buildFrontMatter({ title: 'Test', empty: '', missing: undefined });
+    expect(result).not.toContain('empty:');
+    expect(result).not.toContain('missing:');
+  });
+
+  it('wraps values containing colons in double quotes', () => {
+    const result = buildFrontMatter({ url: 'https://example.com/path' });
+    expect(result).toContain('"https://example.com/path"');
+  });
+});
+
+describe('ContentSignalBlockedError', () => {
+  it('is instanceof Error with correct name', () => {
+    const err = new ContentSignalBlockedError('https://example.com');
+    expect(err).toBeInstanceOf(Error);
+    expect(err.name).toBe('ContentSignalBlockedError');
+    expect(err.message).toContain('ai-input=no');
+    expect(err.message).toContain('MCP_RESPECT_CONTENT_SIGNAL=false');
+  });
+});
+
+describe('estimateTokens', () => {
+  it('returns ceil(length / 4)', () => {
+    expect(estimateTokens('1234')).toBe(1);
+    expect(estimateTokens('12345')).toBe(2);
+    expect(estimateTokens('')).toBe(0);
+  });
+});
+
+describe('safeFetch Content-Signal handling', () => {
+  beforeEach(() => {
+    vi.stubGlobal('fetch', vi.fn());
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('throws ContentSignalBlockedError when Content-Signal: ai-input=no and respectContentSignal is true', async () => {
+    const mockHeaders = new Headers({
+      'content-type': 'text/html',
+      'content-signal': 'ai-input=no',
+    });
+    const mockResponse = {
+      status: 200,
+      ok: true,
+      headers: mockHeaders,
+      text: vi.fn().mockResolvedValue('<html>blocked</html>'),
+    };
+    vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
+
+    const config = makeConfig({ respectContentSignal: true });
+    const limiter = new WebRateLimiter(100);
+    await expect(
+      safeFetch('https://example.com', config, limiter, null, { acceptMarkdown: true })
+    ).rejects.toThrow(ContentSignalBlockedError);
+  });
+
+  it('does NOT throw when respectContentSignal is false', async () => {
+    const mockHeaders = new Headers({
+      'content-type': 'text/html',
+      'content-signal': 'ai-input=no',
+    });
+    const mockResponse = {
+      status: 200,
+      ok: true,
+      headers: mockHeaders,
+      text: vi.fn().mockResolvedValue('<html>content</html>'),
+    };
+    vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
+
+    const config = makeConfig({ respectContentSignal: false });
+    const limiter = new WebRateLimiter(100);
+    const result = await safeFetch('https://example.com', config, limiter, null, {
+      acceptMarkdown: true,
+    });
+    expect(result.body).toBe('<html>content</html>');
+  });
+
+  it('surfaces markdownTokens from x-markdown-tokens header', async () => {
+    const mockHeaders = new Headers({
+      'content-type': 'text/markdown',
+      'x-markdown-tokens': '42',
+    });
+    const mockResponse = {
+      status: 200,
+      ok: true,
+      headers: mockHeaders,
+      text: vi.fn().mockResolvedValue('# Hello\n\nBody.'),
+    };
+    vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
+
+    const config = makeConfig();
+    const limiter = new WebRateLimiter(100);
+    const result = await safeFetch('https://example.com', config, limiter, null, {
+      acceptMarkdown: true,
+    });
+    expect(result.markdownTokens).toBe(42);
+  });
+
+  it('returns null markdownTokens when header is absent', async () => {
+    const mockHeaders = new Headers({ 'content-type': 'text/html' });
+    const mockResponse = {
+      status: 200,
+      ok: true,
+      headers: mockHeaders,
+      text: vi.fn().mockResolvedValue('<p>Hi</p>'),
+    };
+    vi.mocked(fetch).mockResolvedValue(mockResponse as unknown as Response);
+
+    const config = makeConfig();
+    const limiter = new WebRateLimiter(100);
+    const result = await safeFetch('https://example.com', config, limiter, null);
+    expect(result.markdownTokens).toBeNull();
+  });
+});
+
+describe('web_fetch_markdown registration', () => {
+  it('registers web_fetch_markdown tool without error', () => {
+    const server = new McpServer({ name: 'test', version: '1.0.0' });
+    const config = makeConfig();
+    const middleware = {
+      rateLimiter: { check: vi.fn().mockReturnValue({ allowed: true, retryAfterMs: 0 }) },
+      inputValidator: { validate: vi.fn().mockReturnValue({ blocked: false }) },
+      auditLogger: { wrap: vi.fn().mockImplementation((_n, _a, fn) => fn()) },
+      secretRedactor: { redact: vi.fn().mockImplementation((r) => r) },
+    } as unknown as import('./index.js').ToolMiddleware;
+    expect(() => registerWebTools(server, config, middleware)).not.toThrow();
   });
 });
 

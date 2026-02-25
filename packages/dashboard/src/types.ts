@@ -675,6 +675,7 @@ export interface McpFeatureConfig {
   exposeNetworkUtils: boolean;
   exposeTwingateTools: boolean;
   exposeOrgIntentTools: boolean;
+  respectContentSignal: boolean;
 }
 
 export interface McpServerHealth {
