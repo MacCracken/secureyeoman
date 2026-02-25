@@ -28,6 +28,8 @@ import {
   TrendingDown,
   Minus,
   History,
+  FileWarning,
+  Code2,
 } from 'lucide-react';
 import {
   fetchIntents,
@@ -40,11 +42,12 @@ import {
   readSignal,
   fetchGoalTimeline,
   type OrgIntentMeta,
+  type OrgIntentPolicy,
   type EnforcementLogEntry,
 } from '../api/client';
 import { IntentDocEditor } from './IntentDocEditor';
 
-type IntentTab = 'docs' | 'signals' | 'delegation' | 'enforcement' | 'editor';
+type IntentTab = 'docs' | 'signals' | 'policies' | 'delegation' | 'enforcement' | 'editor';
 
 function StatusBadge({ status }: { status: 'healthy' | 'warning' | 'critical' }) {
   if (status === 'healthy') {
@@ -391,6 +394,141 @@ function SignalDashboard() {
   );
 }
 
+function PolicyCard({ policy }: { policy: OrgIntentPolicy }) {
+  const [showRego, setShowRego] = useState(false);
+
+  const enforcementColors = {
+    block: 'text-red-600 bg-red-50 border-red-200',
+    warn: 'text-yellow-600 bg-yellow-50 border-yellow-200',
+  };
+  const enforcementLabel = { block: 'Block', warn: 'Warn' };
+
+  return (
+    <div className="border border-border rounded-lg p-4 space-y-2">
+      <div className="flex items-start justify-between gap-3">
+        <div className="flex-1 min-w-0 space-y-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs text-muted-foreground font-mono">{policy.id}</span>
+            <span
+              className={`text-xs font-medium px-1.5 py-0.5 rounded border ${
+                enforcementColors[policy.enforcement]
+              }`}
+            >
+              {enforcementLabel[policy.enforcement]}
+            </span>
+            {policy.rego && (
+              <span className="text-xs font-medium px-1.5 py-0.5 rounded border text-violet-600 bg-violet-50 border-violet-200 flex items-center gap-1">
+                <Code2 className="w-3 h-3" />
+                OPA Rego
+              </span>
+            )}
+          </div>
+          <p className="text-sm font-medium">{policy.rule}</p>
+          {policy.rationale && (
+            <p className="text-xs text-muted-foreground">{policy.rationale}</p>
+          )}
+        </div>
+      </div>
+
+      {policy.rego && (
+        <div>
+          <button
+            onClick={() => setShowRego((v) => !v)}
+            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+          >
+            {showRego ? (
+              <ChevronUp className="w-3 h-3" />
+            ) : (
+              <ChevronDown className="w-3 h-3" />
+            )}
+            {showRego ? 'Hide Rego' : 'View Rego policy'}
+          </button>
+          {showRego && (
+            <pre className="mt-2 text-xs font-mono bg-muted/50 rounded p-3 overflow-x-auto whitespace-pre border border-border">
+              {policy.rego}
+            </pre>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function PoliciesView() {
+  const { data: activeIntentData, isLoading } = useQuery({
+    queryKey: ['activeIntent'],
+    queryFn: () => fetchActiveIntent().catch(() => null),
+    refetchInterval: 60_000,
+  });
+
+  const policies = activeIntentData?.intent?.policies ?? [];
+
+  if (isLoading) return <p className="text-xs text-muted-foreground">Loading…</p>;
+
+  if (policies.length === 0) {
+    return (
+      <div className="text-center py-8 border border-dashed border-border rounded-lg">
+        <FileWarning className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+        <p className="text-sm text-muted-foreground">No policies defined in the active intent.</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Add <code className="font-mono bg-muted px-1 rounded">policies[]</code> to your intent
+          document to enforce soft governance rules.
+        </p>
+      </div>
+    );
+  }
+
+  const blockPolicies = policies.filter((p) => p.enforcement === 'block');
+  const warnPolicies = policies.filter((p) => p.enforcement === 'warn');
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-red-500 inline-block" />
+          {blockPolicies.length} blocking
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="w-2 h-2 rounded-full bg-yellow-400 inline-block" />
+          {warnPolicies.length} warning
+        </span>
+      </div>
+
+      {blockPolicies.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4 text-red-500" />
+            Blocking Policies
+          </h3>
+          {blockPolicies.map((p) => (
+            <PolicyCard key={p.id} policy={p} />
+          ))}
+        </div>
+      )}
+
+      {warnPolicies.length > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-medium flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-yellow-500" />
+            Warning Policies
+          </h3>
+          {warnPolicies.map((p) => (
+            <PolicyCard key={p.id} policy={p} />
+          ))}
+        </div>
+      )}
+
+      <p className="text-xs text-muted-foreground border-t border-border pt-4">
+        Policies are evaluated on every agent action. <em>Block</em> policies halt the action and
+        log a <code className="font-mono bg-muted px-1 rounded">policy_block</code> event.{' '}
+        <em>Warn</em> policies log a{' '}
+        <code className="font-mono bg-muted px-1 rounded">policy_warn</code> event and continue.
+        {process.env.OPA_ADDR && ' OPA Rego policies are evaluated by the sidecar.'}
+      </p>
+    </div>
+  );
+}
+
 function DelegationFrameworkView() {
   const [openTenants, setOpenTenants] = useState<Set<string>>(new Set());
   const { data: activeIntentData, isLoading } = useQuery({
@@ -552,6 +690,7 @@ export function IntentEditor() {
   const tabs: { id: IntentTab; label: string; icon: React.ReactNode; devOnly?: boolean }[] = [
     { id: 'docs', label: 'Intent Documents', icon: <Target className="w-4 h-4" /> },
     { id: 'signals', label: 'Signals', icon: <Activity className="w-4 h-4" /> },
+    { id: 'policies', label: 'Policies', icon: <FileWarning className="w-4 h-4" /> },
     { id: 'delegation', label: 'Delegation', icon: <Users2 className="w-4 h-4" /> },
     { id: 'enforcement', label: 'Enforcement Log', icon: <ShieldAlert className="w-4 h-4" /> },
     ...(intentEditorEnabled
@@ -633,6 +772,7 @@ export function IntentEditor() {
       )}
 
       {activeTab === 'signals' && <SignalDashboard />}
+      {activeTab === 'policies' && <PoliciesView />}
       {activeTab === 'delegation' && <DelegationFrameworkView />}
       {activeTab === 'enforcement' && <EnforcementLogFeed />}
       {activeTab === 'editor' && intentEditorEnabled && (

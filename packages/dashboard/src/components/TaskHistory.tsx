@@ -1,7 +1,9 @@
 /**
  * Task History Component
  *
- * Displays historical task execution with filtering, date range, pagination, and export
+ * Displays tasks and heartbeat monitors in separate sub-tabs.
+ * Tasks sub-tab: historical task execution with filtering, date range, pagination, and export.
+ * Heartbeats sub-tab: recurring heartbeat monitors with per-personality association and execution history.
  */
 
 import { useState, useCallback, useEffect } from 'react';
@@ -24,6 +26,9 @@ import {
   X,
   Edit2,
   Trash2,
+  Heart,
+  Play,
+  Pause,
 } from 'lucide-react';
 import {
   fetchTasks,
@@ -53,6 +58,18 @@ const STATUS_COLORS: Record<string, string> = {
   running: 'badge-info',
   pending: 'badge',
   cancelled: 'badge',
+};
+
+const HEARTBEAT_STATUS_ICON: Record<'ok' | 'warning' | 'error', React.ReactNode> = {
+  ok: <CheckCircle className="w-4 h-4 text-success" />,
+  warning: <AlertTriangle className="w-4 h-4 text-warning" />,
+  error: <XCircle className="w-4 h-4 text-destructive" />,
+};
+
+const HEARTBEAT_STATUS_COLOR: Record<'ok' | 'warning' | 'error', string> = {
+  ok: 'text-success',
+  warning: 'text-warning',
+  error: 'text-destructive',
 };
 
 const TYPE_OPTIONS = ['execute', 'query', 'file', 'network', 'system'] as const;
@@ -102,6 +119,27 @@ export function TaskHistory() {
   const [datePreset, setDatePreset] = useState<string>('');
   const pageSize = 10;
 
+  // Sub-tab state — preserved in URL so browser back works
+  const [subTab, setSubTab] = useState<'tasks' | 'heartbeats'>(
+    searchParams.get('view') === 'heartbeats' ? 'heartbeats' : 'tasks'
+  );
+
+  const switchTab = (tab: 'tasks' | 'heartbeats') => {
+    setSubTab(tab);
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (tab === 'heartbeats') {
+          next.set('view', 'heartbeats');
+        } else {
+          next.delete('view');
+        }
+        return next;
+      },
+      { replace: true }
+    );
+  };
+
   // Create task dialog state
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newTask, setNewTask] = useState({
@@ -147,7 +185,7 @@ export function TaskHistory() {
     },
   });
 
-  const { data: heartbeatData } = useQuery({
+  const { data: heartbeatData, isLoading: heartbeatLoading } = useQuery({
     queryKey: ['heartbeat-tasks'],
     queryFn: fetchHeartbeatTasks,
     staleTime: 30000,
@@ -218,6 +256,8 @@ export function TaskHistory() {
   const tasks = data?.tasks ?? [];
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / pageSize);
+  const heartbeatTasks = heartbeatData?.tasks ?? [];
+  const activeHeartbeats = heartbeatTasks.filter((t) => t.enabled).length;
 
   const resetFilters = () => {
     setSearchParams({});
@@ -495,242 +535,286 @@ export function TaskHistory() {
         </div>
       )}
 
-      {/* Header + Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-lg font-semibold">Task History</h2>
-          <button
-            onClick={() => {
-              setShowCreateDialog(true);
-            }}
-            className="btn btn-primary text-sm px-3 py-1.5 flex items-center gap-1"
-          >
-            <Plus className="w-4 h-4" />
-            New Task
-          </button>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Filter className="w-4 h-4 text-muted-foreground" />
-
-          {/* Status filter */}
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              updateParams({ status: e.target.value });
-              setPage(0);
-            }}
-            className="px-3 py-1.5 text-sm border rounded-md bg-background"
-            aria-label="Filter by status"
-          >
-            <option value="">All Status</option>
-            <option value="completed">Completed</option>
-            <option value="failed">Failed</option>
-            <option value="running">Running</option>
-            <option value="pending">Pending</option>
-            <option value="timeout">Timeout</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-
-          {/* Type filter */}
-          <select
-            value={typeFilter}
-            onChange={(e) => {
-              updateParams({ type: e.target.value });
-              setPage(0);
-            }}
-            className="px-3 py-1.5 text-sm border rounded-md bg-background"
-            aria-label="Filter by type"
-          >
-            <option value="">All Types</option>
-            {TYPE_OPTIONS.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
-
-          {/* Clear filters */}
-          {hasFilters && (
-            <button
-              onClick={resetFilters}
-              className="text-xs text-muted-foreground hover:text-foreground underline"
-            >
-              Clear
-            </button>
+      {/* Sub-tab navigation */}
+      <div className="flex gap-1 border-b border-border">
+        <button
+          onClick={() => switchTab('tasks')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            subTab === 'tasks'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          Tasks
+          {total > 0 && (
+            <span className="text-xs text-muted-foreground">({total})</span>
           )}
-        </div>
+        </button>
+        <button
+          onClick={() => switchTab('heartbeats')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            subTab === 'heartbeats'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Heart className="w-4 h-4" />
+          Heartbeats
+          {heartbeatTasks.length > 0 && (
+            <span className="text-xs text-muted-foreground">
+              ({activeHeartbeats}/{heartbeatTasks.length})
+            </span>
+          )}
+        </button>
       </div>
 
-      {/* Date Range Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-muted-foreground" />
-          {DATE_PRESETS.map((preset) => (
-            <button
-              key={preset.label}
-              onClick={() => {
-                handleDatePreset(preset);
-              }}
-              className={`px-2 py-1 text-xs rounded-md border transition-colors ${
-                datePreset === preset.label
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'bg-background hover:bg-muted border-border'
-              }`}
-            >
-              {preset.label}
-            </button>
-          ))}
-        </div>
-        <div className="flex items-center gap-2">
-          <input
-            type="date"
-            value={dateFrom ? dateFrom.slice(0, 10) : ''}
-            onChange={(e) => {
-              handleCustomDate('from', e.target.value);
-            }}
-            className="px-2 py-1 text-xs border rounded-md bg-background"
-            aria-label="From date"
-          />
-          <span className="text-xs text-muted-foreground">to</span>
-          <input
-            type="date"
-            value={dateTo ? dateTo.slice(0, 10) : ''}
-            onChange={(e) => {
-              handleCustomDate('to', e.target.value);
-            }}
-            className="px-2 py-1 text-xs border rounded-md bg-background"
-            aria-label="To date"
-          />
-        </div>
-        <div className="flex items-center gap-2 ml-auto">
-          <button
-            onClick={() => void exportData('csv')}
-            className="btn-ghost px-2 py-1 text-xs flex items-center gap-1"
-            aria-label="Export CSV"
-          >
-            <Download className="w-3 h-3" /> CSV
-          </button>
-          <button
-            onClick={() => void exportData('json')}
-            className="btn-ghost px-2 py-1 text-xs flex items-center gap-1"
-            aria-label="Export JSON"
-          >
-            <Download className="w-3 h-3" /> JSON
-          </button>
-        </div>
-      </div>
+      {/* ── Tasks sub-tab ──────────────────────────────────────── */}
+      {subTab === 'tasks' && (
+        <>
+          {/* Header + Filters */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <h2 className="text-lg font-semibold">Task History</h2>
+              <button
+                onClick={() => {
+                  setShowCreateDialog(true);
+                }}
+                className="btn btn-primary text-sm px-3 py-1.5 flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" />
+                New Task
+              </button>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Filter className="w-4 h-4 text-muted-foreground" />
 
-      {/* Task Table */}
-      <div className="card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/50">
-              <tr>
-                <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">ID</th>
-                <th className="px-2 py-2 text-left font-medium text-xs">Name</th>
-                <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">
-                  Type
-                </th>
-                <th className="px-2 py-2 text-left font-medium text-xs">Status</th>
-                <th className="px-2 py-2 text-left font-medium text-xs hidden lg:table-cell">
-                  Duration
-                </th>
-                <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">
-                  Created
-                </th>
-                <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">
-                  Agent
-                </th>
-                <th className="px-2 py-2 text-left font-medium text-xs w-20">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={8} className="px-2 py-8 text-center text-muted-foreground">
-                    <Loader2 className="w-6 h-6 mx-auto animate-spin" />
-                    <p className="mt-2">Loading tasks...</p>
-                  </td>
-                </tr>
-              ) : (
-                <>
-                  {tasks.length === 0 && !heartbeatData?.tasks?.length && (
+              {/* Status filter */}
+              <select
+                value={statusFilter}
+                onChange={(e) => {
+                  updateParams({ status: e.target.value });
+                  setPage(0);
+                }}
+                className="px-3 py-1.5 text-sm border rounded-md bg-background"
+                aria-label="Filter by status"
+              >
+                <option value="">All Status</option>
+                <option value="completed">Completed</option>
+                <option value="failed">Failed</option>
+                <option value="running">Running</option>
+                <option value="pending">Pending</option>
+                <option value="timeout">Timeout</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+
+              {/* Type filter */}
+              <select
+                value={typeFilter}
+                onChange={(e) => {
+                  updateParams({ type: e.target.value });
+                  setPage(0);
+                }}
+                className="px-3 py-1.5 text-sm border rounded-md bg-background"
+                aria-label="Filter by type"
+              >
+                <option value="">All Types</option>
+                {TYPE_OPTIONS.map((t) => (
+                  <option key={t} value={t}>
+                    {t}
+                  </option>
+                ))}
+              </select>
+
+              {/* Clear filters */}
+              {hasFilters && (
+                <button
+                  onClick={resetFilters}
+                  className="text-xs text-muted-foreground hover:text-foreground underline"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Date Range Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-muted-foreground" />
+              {DATE_PRESETS.map((preset) => (
+                <button
+                  key={preset.label}
+                  onClick={() => {
+                    handleDatePreset(preset);
+                  }}
+                  className={`px-2 py-1 text-xs rounded-md border transition-colors ${
+                    datePreset === preset.label
+                      ? 'bg-primary text-primary-foreground border-primary'
+                      : 'bg-background hover:bg-muted border-border'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={dateFrom ? dateFrom.slice(0, 10) : ''}
+                onChange={(e) => {
+                  handleCustomDate('from', e.target.value);
+                }}
+                className="px-2 py-1 text-xs border rounded-md bg-background"
+                aria-label="From date"
+              />
+              <span className="text-xs text-muted-foreground">to</span>
+              <input
+                type="date"
+                value={dateTo ? dateTo.slice(0, 10) : ''}
+                onChange={(e) => {
+                  handleCustomDate('to', e.target.value);
+                }}
+                className="px-2 py-1 text-xs border rounded-md bg-background"
+                aria-label="To date"
+              />
+            </div>
+            <div className="flex items-center gap-2 ml-auto">
+              <button
+                onClick={() => void exportData('csv')}
+                className="btn-ghost px-2 py-1 text-xs flex items-center gap-1"
+                aria-label="Export CSV"
+              >
+                <Download className="w-3 h-3" /> CSV
+              </button>
+              <button
+                onClick={() => void exportData('json')}
+                className="btn-ghost px-2 py-1 text-xs flex items-center gap-1"
+                aria-label="Export JSON"
+              >
+                <Download className="w-3 h-3" /> JSON
+              </button>
+            </div>
+          </div>
+
+          {/* Task Table */}
+          <div className="card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/50">
+                  <tr>
+                    <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">ID</th>
+                    <th className="px-2 py-2 text-left font-medium text-xs">Name</th>
+                    <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">
+                      Type
+                    </th>
+                    <th className="px-2 py-2 text-left font-medium text-xs">Status</th>
+                    <th className="px-2 py-2 text-left font-medium text-xs hidden lg:table-cell">
+                      Duration
+                    </th>
+                    <th className="px-2 py-2 text-left font-medium text-xs hidden sm:table-cell">
+                      Created
+                    </th>
+                    <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">
+                      Agent
+                    </th>
+                    <th className="px-2 py-2 text-left font-medium text-xs w-20">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y">
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={8} className="px-2 py-8 text-center text-muted-foreground">
+                        <Loader2 className="w-6 h-6 mx-auto animate-spin" />
+                        <p className="mt-2">Loading tasks...</p>
+                      </td>
+                    </tr>
+                  ) : tasks.length === 0 ? (
                     <tr>
                       <td colSpan={8} className="px-2 py-8 text-center text-muted-foreground">
                         No tasks found
                       </td>
                     </tr>
+                  ) : (
+                    tasks.map((task) => (
+                      <TaskRow
+                        key={task.id}
+                        task={task}
+                        onEdit={setEditTask}
+                        onDelete={(t) => {
+                          setDeleteTarget(t);
+                        }}
+                      />
+                    ))
                   )}
-                  {tasks.map((task) => (
-                    <TaskRow
-                      key={task.id}
-                      task={task}
-                      onEdit={setEditTask}
-                      onDelete={(t) => {
-                        setDeleteTarget(t);
-                      }}
-                    />
-                  ))}
-                  {heartbeatData?.tasks && heartbeatData.tasks.length > 0 && (
-                    <>
-                      <tr className="bg-muted/30">
-                        <td
-                          colSpan={8}
-                          className="px-2 py-2 text-xs font-medium text-muted-foreground"
-                        >
-                          Heartbeat Tasks
-                          {heartbeatData.tasks[0]?.personalityName && (
-                            <span className="ml-1 font-normal">
-                              — {heartbeatData.tasks[0].personalityName}
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                      {heartbeatData.tasks.map((task) => (
-                        <HeartbeatTaskRow key={task.name} task={task} />
-                      ))}
-                    </>
-                  )}
-                </>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30">
-            <p className="text-sm text-muted-foreground">
-              Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, total)} of {total}
-            </p>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => {
-                  setPage((p) => Math.max(0, p - 1));
-                }}
-                disabled={page === 0}
-                className="btn-ghost p-2 disabled:opacity-50"
-                aria-label="Previous page"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="text-sm">
-                Page {page + 1} of {totalPages}
-              </span>
-              <button
-                onClick={() => {
-                  setPage((p) => Math.min(totalPages - 1, p + 1));
-                }}
-                disabled={page >= totalPages - 1}
-                className="btn-ghost p-2 disabled:opacity-50"
-                aria-label="Next page"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                </tbody>
+              </table>
             </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="flex items-center justify-between px-4 py-3 border-t bg-muted/30">
+                <p className="text-sm text-muted-foreground">
+                  Showing {page * pageSize + 1} to {Math.min((page + 1) * pageSize, total)} of{' '}
+                  {total}
+                </p>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => {
+                      setPage((p) => Math.max(0, p - 1));
+                    }}
+                    disabled={page === 0}
+                    className="btn-ghost p-2 disabled:opacity-50"
+                    aria-label="Previous page"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <span className="text-sm">
+                    Page {page + 1} of {totalPages}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setPage((p) => Math.min(totalPages - 1, p + 1));
+                    }}
+                    disabled={page >= totalPages - 1}
+                    className="btn-ghost p-2 disabled:opacity-50"
+                    aria-label="Next page"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
+
+      {/* ── Heartbeats sub-tab ─────────────────────────────────── */}
+      {subTab === 'heartbeats' && (
+        <div className="space-y-3">
+          {heartbeatLoading ? (
+            <div className="card p-12 flex flex-col items-center gap-3 text-muted-foreground">
+              <Loader2 className="w-8 h-8 animate-spin" />
+              <p className="text-sm">Loading heartbeat monitors…</p>
+            </div>
+          ) : heartbeatTasks.length === 0 ? (
+            <div className="card p-12 text-center">
+              <Heart className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+              <p className="font-medium text-sm mb-1">No heartbeat monitors configured</p>
+              <p className="text-xs text-muted-foreground">
+                Heartbeat tasks are defined in the agent configuration and run on a recurring
+                schedule.
+              </p>
+            </div>
+          ) : (
+            <div className="card divide-y divide-border overflow-hidden">
+              {heartbeatTasks.map((task) => (
+                <HeartbeatCard key={task.name} task={task} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -796,7 +880,9 @@ function TaskRow({
       </td>
       <td className="px-2 py-3 text-xs hidden md:table-cell">
         {task.securityContext?.personalityName ? (
-          <span className="text-muted-foreground">{task.securityContext.personalityName}</span>
+          <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs">
+            {task.securityContext.personalityName}
+          </span>
         ) : task.securityContext?.userId && task.securityContext.userId !== 'api' ? (
           <span className="text-muted-foreground font-mono">{task.securityContext.userId}</span>
         ) : (
@@ -833,153 +919,161 @@ function TaskRow({
   );
 }
 
-const HEARTBEAT_STATUS_ICON: Record<'ok' | 'warning' | 'error', React.ReactNode> = {
-  ok: <CheckCircle className="w-4 h-4 text-success" />,
-  warning: <AlertTriangle className="w-4 h-4 text-warning" />,
-  error: <XCircle className="w-4 h-4 text-destructive" />,
-};
-
-const HEARTBEAT_STATUS_COLOR: Record<'ok' | 'warning' | 'error', string> = {
-  ok: 'text-success',
-  warning: 'text-warning',
-  error: 'text-destructive',
-};
-
-function HeartbeatTaskRow({ task }: { task: HeartbeatTask }) {
+function HeartbeatCard({ task }: { task: HeartbeatTask }) {
   const [expanded, setExpanded] = useState(false);
 
-  const { data: logData } = useQuery({
+  // Always fetch latest entry for the status badge when collapsed.
+  const { data: latestData } = useQuery({
+    queryKey: ['heartbeat-log-latest', task.name],
+    queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 1 }),
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+  });
+
+  // Full history — lazy loaded only when expanded.
+  const { data: logData, isLoading: logLoading } = useQuery({
     queryKey: ['heartbeat-log', task.name],
     queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 10 }),
     enabled: expanded,
     staleTime: 30_000,
+    refetchInterval: expanded ? 30_000 : false,
   });
 
-  const formatTime = (timestamp: number | null) => {
-    if (!timestamp) return 'Never';
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
+  const lastEntry: HeartbeatLogEntry | null =
+    (expanded ? logData?.entries[0] : latestData?.entries[0]) ?? null;
 
-    if (diffMs < 60000) return 'Just now';
-    if (diffMs < 3600000) return `${Math.floor(diffMs / 60000)}m ago`;
-    if (diffMs < 86400000) return `${Math.floor(diffMs / 3600000)}h ago`;
-    return date.toLocaleDateString();
+  const formatTime = (ts: number | null) => {
+    if (!ts) return 'Never';
+    const d = new Date(ts);
+    const diff = Date.now() - d.getTime();
+    if (diff < 60000) return 'Just now';
+    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+    if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
+    return d.toLocaleDateString();
   };
 
-  const formatInterval = (ms: number) => {
+  const fmt = (ms: number) => {
     if (ms < 60000) return `${Math.floor(ms / 1000)}s`;
     if (ms < 3600000) return `${Math.floor(ms / 60000)}m`;
     return `${Math.floor(ms / 3600000)}h`;
   };
 
-  const formatDurationMs = (ms: number) => {
-    if (ms < 1000) return `${ms}ms`;
-    return `${(ms / 1000).toFixed(1)}s`;
-  };
+  const fmtDuration = (ms: number) => (ms < 1000 ? `${ms}ms` : `${(ms / 1000).toFixed(1)}s`);
 
-  // Use the most recent log entry's status as the last-result badge.
-  // Fall back to enabled/disabled when no log data is available yet.
-  const lastEntry: HeartbeatLogEntry | null = logData?.entries[0] ?? null;
+  // Normalise personality list — support both deprecated single-personality and new array field.
+  const personalities: { id: string; name: string }[] =
+    task.personalities && task.personalities.length > 0
+      ? task.personalities
+      : task.personalityName
+        ? [{ id: task.personalityId ?? '', name: task.personalityName }]
+        : [];
+
+  // Lookup map for resolving personalityId → name in log entries.
+  const personalityMap = new Map(personalities.map((p) => [p.id, p.name]));
 
   return (
-    <>
-      <tr className="hover:bg-muted/30 transition-colors bg-muted/20">
-        <td className="px-2 py-3 font-mono text-xs hidden sm:table-cell text-muted-foreground">
-          heartbeat
-        </td>
-        <td className="px-2 py-3">
-          <div className="font-medium text-sm flex items-center gap-2">
-            {task.name}
-            <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">
-              Heartbeat
-            </span>
+    <div className={`border-l-4 ${task.enabled ? 'border-l-success' : 'border-l-muted-foreground/30'}`}>
+      {/* Header row */}
+      <div className="p-4 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3 min-w-0">
+          {task.enabled ? (
+            <Play className="w-4 h-4 text-success flex-shrink-0" />
+          ) : (
+            <Pause className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+          )}
+          <div className="min-w-0">
+            <p className="font-medium text-sm">{task.name}</p>
+            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+              <span className="badge text-xs">{task.type}</span>
+              {task.intervalMs && (
+                <span className="text-xs text-muted-foreground">every {fmt(task.intervalMs)}</span>
+              )}
+              <span className="text-xs text-muted-foreground">
+                {task.lastRunAt ? `last run ${formatTime(task.lastRunAt)}` : 'never run'}
+              </span>
+            </div>
+            {personalities.length > 0 && (
+              <div className="flex items-center gap-1 mt-1.5 flex-wrap">
+                {personalities.map((p) => (
+                  <span
+                    key={p.id || p.name}
+                    className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded"
+                  >
+                    {p.name}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-          <div className="text-xs text-muted-foreground">
-            Every {formatInterval(task.intervalMs || 60000)}
-          </div>
-        </td>
-        <td className="px-2 py-3 hidden md:table-cell">
-          <span className="px-1.5 py-0.5 text-xs bg-muted rounded">{task.type}</span>
-        </td>
-        <td className="px-2 py-3">
+        </div>
+
+        <div className="flex items-center gap-2 shrink-0">
+          {lastEntry ? (
+            <div className="flex items-center gap-1.5">
+              {HEARTBEAT_STATUS_ICON[lastEntry.status]}
+              <span className={`text-xs ${HEARTBEAT_STATUS_COLOR[lastEntry.status]}`}>
+                {lastEntry.status}
+              </span>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1.5">
+              {task.enabled ? (
+                <CheckCircle className="w-4 h-4 text-success" />
+              ) : (
+                <XCircle className="w-4 h-4 text-muted-foreground" />
+              )}
+              <span
+                className={`text-xs ${task.enabled ? 'text-success' : 'text-muted-foreground'}`}
+              >
+                {task.enabled ? 'Active' : 'Disabled'}
+              </span>
+            </div>
+          )}
           <button
             onClick={() => {
               setExpanded((e) => !e);
             }}
-            className="flex items-center gap-1 hover:opacity-80 transition-opacity"
+            className="btn-ghost p-1 rounded"
             title="Toggle execution history"
           >
-            <div className="flex items-center gap-1.5">
-              {lastEntry ? (
-                <>
-                  {HEARTBEAT_STATUS_ICON[lastEntry.status]}
-                  <span className={`text-xs ${HEARTBEAT_STATUS_COLOR[lastEntry.status]}`}>
-                    {lastEntry.status}
-                  </span>
-                </>
-              ) : (
-                <>
-                  {task.enabled ? (
-                    <CheckCircle className="w-4 h-4 text-success" />
-                  ) : (
-                    <XCircle className="w-4 h-4 text-muted-foreground" />
-                  )}
-                  <span
-                    className={`text-xs ${task.enabled ? 'text-success' : 'text-muted-foreground'}`}
-                  >
-                    {task.enabled ? 'Active' : 'Disabled'}
-                  </span>
-                </>
-              )}
-            </div>
             {expanded ? (
-              <ChevronUp className="w-3 h-3 text-muted-foreground ml-1" />
+              <ChevronUp className="w-4 h-4" />
             ) : (
-              <ChevronDown className="w-3 h-3 text-muted-foreground ml-1" />
+              <ChevronDown className="w-4 h-4" />
             )}
           </button>
-        </td>
-        <td className="px-2 py-3 font-mono text-xs hidden lg:table-cell text-muted-foreground">
-          {formatInterval(task.intervalMs || 60000)}
-        </td>
-        <td className="px-2 py-3 text-muted-foreground text-xs hidden sm:table-cell">
-          {formatTime(task.lastRunAt)}
-        </td>
-        <td className="px-2 py-3 hidden md:table-cell">
-          <span className="text-xs text-muted-foreground">
-            {task.personalityName ?? task.personalities?.[0]?.name ?? '—'}
-          </span>
-        </td>
-        <td className="px-2 py-3" />
-      </tr>
+        </div>
+      </div>
+
+      {/* Execution history — expanded */}
       {expanded && (
-        <tr className="bg-muted/10">
-          <td colSpan={8} className="px-4 pb-3 pt-1">
-            <div className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-              Recent Executions
+        <div className="px-4 pb-4 border-t border-border">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-3 mb-2">
+            Recent Executions
+          </p>
+          {logLoading ? (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
+              <Loader2 className="w-3 h-3 animate-spin" /> Loading…
             </div>
-            {!logData ? (
-              <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-                <Loader2 className="w-3 h-3 animate-spin" />
-                Loading history…
-              </div>
-            ) : logData.entries.length === 0 ? (
-              <div className="text-xs text-muted-foreground py-1">No executions recorded yet.</div>
-            ) : (
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-muted-foreground">
-                    <th className="text-left pb-1 pr-4 font-normal">Status</th>
-                    <th className="text-left pb-1 pr-4 font-normal hidden sm:table-cell">Ran at</th>
-                    <th className="text-left pb-1 pr-4 font-normal hidden lg:table-cell">
-                      Duration
-                    </th>
-                    <th className="text-left pb-1 font-normal">Message</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {logData.entries.map((entry) => (
+          ) : !logData?.entries.length ? (
+            <p className="text-xs text-muted-foreground py-1">No executions recorded yet.</p>
+          ) : (
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-muted-foreground">
+                  <th className="text-left pb-1 pr-4 font-normal">Status</th>
+                  <th className="text-left pb-1 pr-4 font-normal">Agent</th>
+                  <th className="text-left pb-1 pr-4 font-normal hidden sm:table-cell">Ran at</th>
+                  <th className="text-left pb-1 pr-4 font-normal hidden lg:table-cell">Duration</th>
+                  <th className="text-left pb-1 font-normal">Message</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logData.entries.map((entry) => {
+                  const agentName = entry.personalityId
+                    ? (personalityMap.get(entry.personalityId) ?? entry.personalityId)
+                    : null;
+                  return (
                     <tr key={entry.id} className="border-t border-border/30">
                       <td className="py-1 pr-4">
                         <div className="flex items-center gap-1">
@@ -989,11 +1083,20 @@ function HeartbeatTaskRow({ task }: { task: HeartbeatTask }) {
                           </span>
                         </div>
                       </td>
+                      <td className="py-1 pr-4">
+                        {agentName ? (
+                          <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded whitespace-nowrap">
+                            {agentName}
+                          </span>
+                        ) : (
+                          <span className="text-muted-foreground/50">system</span>
+                        )}
+                      </td>
                       <td className="py-1 pr-4 text-muted-foreground hidden sm:table-cell">
                         {formatTime(entry.ranAt)}
                       </td>
                       <td className="py-1 pr-4 font-mono text-muted-foreground hidden lg:table-cell">
-                        {formatDurationMs(entry.durationMs)}
+                        {fmtDuration(entry.durationMs)}
                       </td>
                       <td className="py-1 text-muted-foreground max-w-xs truncate">
                         {entry.message}
@@ -1004,13 +1107,13 @@ function HeartbeatTaskRow({ task }: { task: HeartbeatTask }) {
                         )}
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </td>
-        </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )}
+        </div>
       )}
-    </>
+    </div>
   );
 }

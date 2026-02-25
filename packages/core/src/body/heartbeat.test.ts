@@ -1043,6 +1043,51 @@ describe('HeartbeatManager', () => {
       const result = await hb.beat();
       expect(result.checks).toHaveLength(3);
     });
+
+    it('persists log entry with null personalityId when setActivePersonalityId not called', async () => {
+      const logStorage = mockLogStorage();
+      const config = defaultConfig({
+        checks: [
+          { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      await hb.beat();
+      expect(logStorage.persist).toHaveBeenCalledWith(
+        expect.objectContaining({ personalityId: null })
+      );
+    });
+
+    it('persists log entry with personalityId after setActivePersonalityId', async () => {
+      const logStorage = mockLogStorage();
+      const config = defaultConfig({
+        checks: [
+          { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      hb.setActivePersonalityId('pers-42');
+      await hb.beat();
+      expect(logStorage.persist).toHaveBeenCalledWith(
+        expect.objectContaining({ personalityId: 'pers-42' })
+      );
+    });
+
+    it('reverts to null personalityId after setActivePersonalityId(null)', async () => {
+      const logStorage = mockLogStorage();
+      const config = defaultConfig({
+        checks: [
+          { name: 'system_health', type: 'system_health', enabled: true, intervalMs: 0, config: {} },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, config as any, undefined, logStorage as any);
+      hb.setActivePersonalityId('pers-42');
+      hb.setActivePersonalityId(null);
+      await hb.beat();
+      expect(logStorage.persist).toHaveBeenCalledWith(
+        expect.objectContaining({ personalityId: null })
+      );
+    });
   });
 
   describe('personality active hours', () => {

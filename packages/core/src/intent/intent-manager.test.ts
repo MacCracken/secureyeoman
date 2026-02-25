@@ -8,6 +8,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { IntentManager } from './manager.js';
+import { OpaClient } from './opa-client.js';
 import type { IntentStorage } from './storage.js';
 import type { OrgIntentRecord } from './schema.js';
 
@@ -821,5 +822,276 @@ describe('composeSoulContext', () => {
     expect(result).toContain('## Decision Boundaries');
     expect(result).toContain('Least privilege');
     expect(result).toContain('No production writes');
+  });
+});
+
+// ── Phase 50: CEL activeWhen evaluation ───────────────────────────────────────
+
+describe('Phase 50 — CEL activeWhen evaluation', () => {
+  it('evaluates CEL == operator in activeWhen', async () => {
+    const intent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Prod Goal', priority: 1, activeWhen: 'env == "prod"', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    await mgr.initialize();
+
+    expect(mgr.resolveActiveGoals({ env: 'prod' })).toHaveLength(1);
+    expect(mgr.resolveActiveGoals({ env: 'dev' })).toHaveLength(0);
+  });
+
+  it('evaluates CEL && conjunction in activeWhen', async () => {
+    const intent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Combo Goal', priority: 1, activeWhen: 'env == "prod" && region == "us"', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    await mgr.initialize();
+
+    expect(mgr.resolveActiveGoals({ env: 'prod', region: 'us' })).toHaveLength(1);
+    expect(mgr.resolveActiveGoals({ env: 'prod', region: 'eu' })).toHaveLength(0);
+  });
+
+  it('evaluates CEL || disjunction in activeWhen', async () => {
+    const intent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Multi-env Goal', priority: 1, activeWhen: 'env == "prod" || env == "staging"', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    await mgr.initialize();
+
+    expect(mgr.resolveActiveGoals({ env: 'staging' })).toHaveLength(1);
+    expect(mgr.resolveActiveGoals({ env: 'dev' })).toHaveLength(0);
+  });
+
+  it('backward-compatible with legacy key=value AND format', async () => {
+    const intent = makeIntent({
+      goals: [
+        { id: 'g1', name: 'Legacy Goal', priority: 1, activeWhen: 'env=prod AND quarter=Q1', successCriteria: '', description: '', ownerRole: 'admin', skills: [], signals: [], authorizedActions: [] },
+      ],
+    });
+    const mgr = new IntentManager({ storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }) });
+    await mgr.initialize();
+
+    expect(mgr.resolveActiveGoals({ env: 'prod', quarter: 'Q1' })).toHaveLength(1);
+    expect(mgr.resolveActiveGoals({ env: 'prod', quarter: 'Q2' })).toHaveLength(0);
+  });
+});
+
+// ── Phase 50: OPA hard boundary evaluation ────────────────────────────────────
+
+describe('Phase 50 — OPA hard boundary evaluation', () => {
+  it('uses OPA when boundary has rego and OPA is configured', async () => {
+    const evaluateSpy = vi.spyOn(OpaClient.prototype, 'evaluate').mockResolvedValue(false);
+
+    const intent = makeIntent({
+      hardBoundaries: [
+        { id: 'hb1', rule: 'deny: drop tables', rego: 'package boundary_hb1\nallow = false', rationale: 'test' },
+      ],
+    });
+    const opa = new OpaClient('http://opa:8181');
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: opa,
+    });
+    await mgr.initialize();
+
+    const result = await mgr.checkHardBoundaries('some action', 'some_tool');
+    expect(evaluateSpy).toHaveBeenCalledWith('boundary_hb1/allow', { action: 'some action', tool: 'some_tool' });
+    // OPA returned false (deny), so allowed=false
+    expect(result.allowed).toBe(false);
+    evaluateSpy.mockRestore();
+  });
+
+  it('falls back to substring matching when OPA returns null (unavailable)', async () => {
+    const evaluateSpy = vi.spyOn(OpaClient.prototype, 'evaluate').mockResolvedValue(null);
+
+    const intent = makeIntent({
+      hardBoundaries: [
+        { id: 'hb1', rule: 'deny: delete prod', rego: 'package boundary_hb1\nallow = true', rationale: '' },
+      ],
+    });
+    const opa = new OpaClient('http://opa:8181');
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: opa,
+    });
+    await mgr.initialize();
+
+    // OPA null → fall back → "delete prod" substring match
+    const blocked = await mgr.checkHardBoundaries('action: delete prod db');
+    expect(blocked.allowed).toBe(false);
+
+    evaluateSpy.mockRestore();
+  });
+
+  it('uses substring matching when no OPA client configured', async () => {
+    const intent = makeIntent({
+      hardBoundaries: [
+        { id: 'hb1', rule: 'deny: shutdown', rationale: '', rego: 'package p\nallow=true' },
+      ],
+    });
+    // opaClient: null disables OPA
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+
+    const blocked = await mgr.checkHardBoundaries('action: shutdown all services');
+    expect(blocked.allowed).toBe(false);
+  });
+
+  it('allows when boundary has no rego and action does not match rule', async () => {
+    const intent = makeIntent({
+      hardBoundaries: [
+        { id: 'hb1', rule: 'deny: drop tables', rationale: '' },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      opaClient: null,
+    });
+    await mgr.initialize();
+
+    const result = await mgr.checkHardBoundaries('action: read data');
+    expect(result.allowed).toBe(true);
+  });
+});
+
+// ── Phase 50: MCP tool signal dispatch ───────────────────────────────────────
+
+describe('Phase 50 — MCP tool signal dispatch', () => {
+  it('calls callMcpTool for mcp_tool data sources', async () => {
+    const callMcpTool = vi.fn().mockResolvedValue(42);
+
+    const intent = makeIntent({
+      signals: [
+        { id: 's1', name: 'Error Rate', direction: 'above', threshold: 10, dataSources: ['ds1'] },
+      ],
+      dataSources: [
+        { id: 'ds1', name: 'Error Rate Tool', type: 'mcp_tool', connection: 'get_error_rate' },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      callMcpTool,
+    });
+    await mgr.initialize();
+
+    const result = await mgr.readSignal('s1');
+    expect(callMcpTool).toHaveBeenCalledWith('get_error_rate', {});
+    expect(result?.value).toBe(42);
+    expect(result?.status).toBe('critical'); // 42 > threshold 10 = critical
+  });
+
+  it('returns null value when callMcpTool is not configured', async () => {
+    const intent = makeIntent({
+      signals: [
+        { id: 's1', name: 'Error Rate', direction: 'above', threshold: 10, dataSources: ['ds1'] },
+      ],
+      dataSources: [
+        { id: 'ds1', name: 'Error Rate Tool', type: 'mcp_tool', connection: 'get_error_rate' },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+    });
+    await mgr.initialize();
+
+    const result = await mgr.readSignal('s1');
+    expect(result?.value).toBeNull();
+    expect(result?.status).toBe('healthy');
+  });
+
+  it('passes schema hint in callMcpTool input', async () => {
+    const callMcpTool = vi.fn().mockResolvedValue(5);
+
+    const intent = makeIntent({
+      signals: [
+        { id: 's1', name: 'Latency', direction: 'above', threshold: 100, dataSources: ['ds1'] },
+      ],
+      dataSources: [
+        { id: 'ds1', name: 'Latency Tool', type: 'mcp_tool', connection: 'get_latency', schema: '$.p99' },
+      ],
+    });
+    const mgr = new IntentManager({
+      storage: makeStorage({ getActiveIntent: vi.fn().mockResolvedValue(intent) }),
+      callMcpTool,
+    });
+    await mgr.initialize();
+
+    await mgr.readSignal('s1');
+    expect(callMcpTool).toHaveBeenCalledWith('get_latency', { schema: '$.p99' });
+  });
+});
+
+// ── Phase 50: syncPoliciesWithOpa ─────────────────────────────────────────────
+
+describe('Phase 50 — syncPoliciesWithOpa', () => {
+  it('uploads hard boundary rego policies to OPA', async () => {
+    const uploadSpy = vi.spyOn(OpaClient.prototype, 'uploadPolicy').mockResolvedValue(undefined);
+
+    const opa = new OpaClient('http://opa:8181');
+    const mgr = new IntentManager({
+      storage: makeStorage(),
+      opaClient: opa,
+    });
+
+    const record = makeIntent({
+      hardBoundaries: [
+        { id: 'hb1', rule: 'deny: drop', rego: 'package boundary_hb1\nallow = false', rationale: '' },
+        { id: 'hb2', rule: 'deny: delete', rationale: '' }, // no rego — skip
+      ],
+      policies: [
+        { id: 'p1', rule: 'no pii', rego: 'package policy_p1\nallow = false', enforcement: 'block', rationale: '' },
+      ],
+    });
+
+    await mgr.syncPoliciesWithOpa(record);
+
+    expect(uploadSpy).toHaveBeenCalledTimes(2);
+    expect(uploadSpy).toHaveBeenCalledWith('boundary_hb1', expect.stringContaining('allow'));
+    expect(uploadSpy).toHaveBeenCalledWith('policy_p1', expect.stringContaining('allow'));
+    // hb2 has no rego → should NOT be uploaded
+    expect(uploadSpy).not.toHaveBeenCalledWith('boundary_hb2', expect.anything());
+
+    uploadSpy.mockRestore();
+  });
+
+  it('is a no-op when OPA is not configured', async () => {
+    const mgr = new IntentManager({
+      storage: makeStorage(),
+      opaClient: null,
+    });
+
+    const record = makeIntent({
+      policies: [
+        { id: 'p1', rule: 'no pii', rego: 'package p\nallow=false', enforcement: 'block', rationale: '' },
+      ],
+    });
+
+    // Should not throw even with no OPA
+    await expect(mgr.syncPoliciesWithOpa(record)).resolves.toBeUndefined();
+  });
+
+  it('does not throw when uploadPolicy fails (non-fatal)', async () => {
+    vi.spyOn(OpaClient.prototype, 'uploadPolicy').mockRejectedValue(new Error('OPA unreachable'));
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true);
+
+    const opa = new OpaClient('http://opa:8181');
+    const mgr = new IntentManager({ storage: makeStorage(), opaClient: opa });
+
+    const record = makeIntent({
+      policies: [
+        { id: 'p1', rule: 'test', rego: 'package p\nallow=false', enforcement: 'warn', rationale: '' },
+      ],
+    });
+
+    await expect(mgr.syncPoliciesWithOpa(record)).resolves.toBeUndefined();
+    vi.restoreAllMocks();
   });
 });

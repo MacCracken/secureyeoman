@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.27.3",
+    "@open-policy-agent/opa": "^2.0.0",
     "@fastify/compress": "^8.0.1",
     "@fastify/static": "^8.0.0",
     "@fastify/websocket": "^11.2.0",

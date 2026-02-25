@@ -45,6 +45,9 @@ services:
       GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
       GMAIL_OAUTH_CLIENT_ID: ${GMAIL_OAUTH_CLIENT_ID:-}
       GMAIL_OAUTH_CLIENT_SECRET: ${GMAIL_OAUTH_CLIENT_SECRET:-}
+      # OPA sidecar for Rego policy evaluation (Phase 50).
+      # Unset to disable OPA; core falls back to natural-language rule matching.
+      OPA_ADDR: ${OPA_ADDR:-}
     healthcheck:
       test: ["CMD-SHELL", "NODE_TLS_REJECT_UNAUTHORIZED=0 node /app/packages/core/dist/cli.js health --url https://127.0.0.1:18789 --json 2>/dev/null || node /app/packages/core/dist/cli.js health --url http://127.0.0.1:18789 --json"]
       interval: 30s
@@ -91,6 +94,33 @@ services:
       - mcp
       - full
       - dev
+    restart: unless-stopped
+
+  # OPA sidecar — used by IntentManager for Rego policy evaluation (Phase 50).
+  # Capabilities are restricted to block SSRF: http.send and net.lookup_ip_addr
+  # are disabled before accepting user-authored Rego policies.
+  opa:
+    image: openpolicyagent/opa:latest
+    command:
+      - "run"
+      - "--server"
+      - "--addr=0.0.0.0:8181"
+      - "--log-level=warn"
+      - "--set=decision_logs.console=false"
+      - "--capabilities=/capabilities.json"
+    volumes:
+      - ./opa/capabilities.json:/capabilities.json:ro
+    ports:
+      - "8181:8181"
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8181/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    profiles:
+      - opa
+      - full
     restart: unless-stopped
 
   # Dashboard is now served by the core gateway (SPA serving via @fastify/static).

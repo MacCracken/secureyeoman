@@ -13,21 +13,14 @@ import {
   Eye,
   Check,
   Settings,
-  Clock,
   Loader2,
   ChevronLeft,
   ChevronRight,
   Filter,
   Download,
-  Calendar,
   Plus,
   X,
-  Edit2,
-  Trash2,
   FileText,
-  Heart,
-  Play,
-  Pause,
   ChevronDown,
   ChevronUp,
   Server,
@@ -47,12 +40,6 @@ import {
   fetchSecurityEvents,
   fetchAuditEntries,
   verifyAuditChain,
-  fetchTasks,
-  createTask,
-  deleteTask,
-  updateTask,
-  fetchHeartbeatTasks,
-  fetchHeartbeatLog,
   fetchReports,
   generateReport,
   downloadReport,
@@ -78,9 +65,6 @@ import type {
   HealthStatus,
   SecurityEvent,
   AuditEntry,
-  Task,
-  HeartbeatTask,
-  HeartbeatLogEntry,
   McpServerConfig,
   AutonomyOverview,
   AutonomyOverviewItem,
@@ -90,7 +74,7 @@ import type {
   AutonomyLevel,
 } from '../types';
 
-type TabType = 'overview' | 'audit' | 'ml' | 'tasks' | 'reports' | 'nodes' | 'autonomy';
+type TabType = 'overview' | 'audit' | 'ml' | 'reports' | 'nodes' | 'autonomy';
 
 const SEVERITY_ICONS: Record<string, React.ReactNode> = {
   info: <Info className="w-4 h-4 text-info" />,
@@ -121,23 +105,6 @@ function saveAcknowledged(ids: Set<string>): void {
   localStorage.setItem(ACK_STORAGE_KEY, JSON.stringify(Array.from(ids)));
 }
 
-const STATUS_ICONS: Record<string, React.ReactNode> = {
-  completed: <CheckCircle className="w-4 h-4 text-success" />,
-  failed: <XCircle className="w-4 h-4 text-destructive" />,
-  timeout: <AlertTriangle className="w-4 h-4 text-warning" />,
-  running: <Loader2 className="w-4 h-4 text-info animate-spin" />,
-  pending: <Clock className="w-4 h-4 text-muted-foreground" />,
-  cancelled: <XCircle className="w-4 h-4 text-muted-foreground" />,
-};
-
-const STATUS_COLORS: Record<string, string> = {
-  completed: 'badge-success',
-  failed: 'badge-error',
-  timeout: 'badge-warning',
-  running: 'badge-info',
-  pending: 'badge',
-  cancelled: 'badge',
-};
 
 export function SecurityPage() {
   const location = useLocation();
@@ -147,7 +114,6 @@ export function SecurityPage() {
     const tabParam = params.get('tab');
     if (tabParam === 'audit') return 'audit';
     if (tabParam === 'ml') return 'ml';
-    if (tabParam === 'tasks' || path.includes('/tasks')) return 'tasks';
     if (tabParam === 'reports' || path.includes('/reports')) return 'reports';
     if (tabParam === 'nodes') return 'nodes';
     if (tabParam === 'autonomy') return 'autonomy';
@@ -249,7 +215,7 @@ export function SecurityPage() {
             Security
           </h2>
           <p className="text-xs sm:text-sm text-muted-foreground mt-1">
-            Monitor security events, manage tasks, and generate reports
+            Monitor security events, audit logs, and system health
           </p>
         </div>
       </div>
@@ -267,17 +233,6 @@ export function SecurityPage() {
           Overview
         </button>
         <button
-          onClick={() => setActiveTab('tasks')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'tasks'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Clock className="w-4 h-4" />
-          Tasks
-        </button>
-        <button
           onClick={() => setActiveTab('audit')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'audit'
@@ -287,6 +242,17 @@ export function SecurityPage() {
         >
           <FileText className="w-4 h-4" />
           Audit Log
+        </button>
+        <button
+          onClick={() => setActiveTab('autonomy')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'autonomy'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Lock className="w-4 h-4" />
+          Autonomy
         </button>
         {mlEnabled && (
           <button
@@ -324,17 +290,6 @@ export function SecurityPage() {
           <Server className="w-4 h-4" />
           System
         </button>
-        <button
-          onClick={() => setActiveTab('autonomy')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'autonomy'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Lock className="w-4 h-4" />
-          Autonomy
-        </button>
       </div>
 
       {activeTab === 'overview' && (
@@ -362,8 +317,6 @@ export function SecurityPage() {
       )}
 
       {activeTab === 'ml' && <MLSecurityTab />}
-
-      {activeTab === 'tasks' && <TasksTab />}
 
       {activeTab === 'reports' && <ReportsTab />}
 
@@ -931,26 +884,6 @@ function SecurityOverviewTab({
   );
 }
 
-function formatInterval(ms: number): string {
-  if (ms < 60_000) return `${Math.round(ms / 1000)}s`;
-  if (ms < 3_600_000) return `${Math.round(ms / 60_000)}m`;
-  return `${(ms / 3_600_000).toFixed(1)}h`;
-}
-
-// ── Heartbeat log status helpers ──────────────────────────────────────
-
-const HB_STATUS_ICON: Record<'ok' | 'warning' | 'error', React.ReactNode> = {
-  ok: <CheckCircle className="w-3.5 h-3.5 text-success" />,
-  warning: <AlertTriangle className="w-3.5 h-3.5 text-warning" />,
-  error: <XCircle className="w-3.5 h-3.5 text-destructive" />,
-};
-
-const HB_STATUS_COLOR: Record<'ok' | 'warning' | 'error', string> = {
-  ok: 'text-success',
-  warning: 'text-warning',
-  error: 'text-destructive',
-};
-
 // ── TlsCertStatusCard ─────────────────────────────────────────────────
 // Shows TLS certificate status: enabled/disabled, expiry, auto-gen badge.
 
@@ -1039,333 +972,6 @@ function TlsCertStatusCard() {
             )}
             Regen
           </button>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// ── HeartbeatTaskCard ─────────────────────────────────────────────────
-// Shows heartbeat task configuration + expandable execution history.
-
-function HeartbeatTaskCard({ task }: { task: HeartbeatTask }) {
-  const [expanded, setExpanded] = useState(false);
-
-  // Always fetch the most recent entry so the status badge is visible in collapsed state.
-  const { data: latestData } = useQuery({
-    queryKey: ['heartbeat-log-latest', task.name],
-    queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 1 }),
-    staleTime: 30_000,
-    refetchInterval: 30_000,
-  });
-
-  // Full history — only when expanded.
-  const { data: logData, isLoading: logLoading } = useQuery({
-    queryKey: ['heartbeat-log', task.name],
-    queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 10 }),
-    enabled: expanded,
-    staleTime: 30_000,
-    refetchInterval: expanded ? 30_000 : false,
-  });
-
-  const lastEntry: HeartbeatLogEntry | null =
-    (expanded ? logData?.entries[0] : latestData?.entries[0]) ?? null;
-
-  return (
-    <div className={`border-l-4 ${task.enabled ? 'border-l-success' : 'border-l-muted-foreground/30'}`}>
-      {/* Task header row */}
-      <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0">
-          {task.enabled ? (
-            <Play className="w-4 h-4 text-success flex-shrink-0" />
-          ) : (
-            <Pause className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-          )}
-          <div className="min-w-0">
-            <p className="font-medium text-sm">{task.name}</p>
-            <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-              <span className="badge text-xs">{task.type}</span>
-              {task.intervalMs && (
-                <span className="text-xs text-muted-foreground">
-                  every {formatInterval(task.intervalMs)}
-                </span>
-              )}
-              {task.lastRunAt ? (
-                <span className="text-xs text-muted-foreground">
-                  last run {new Date(task.lastRunAt).toLocaleString()}
-                </span>
-              ) : (
-                <span className="text-xs text-muted-foreground">never run</span>
-              )}
-              {(task.personalities && task.personalities.length > 0
-                ? task.personalities
-                : task.personalityName
-                  ? [{ id: task.personalityId ?? task.personalityName, name: task.personalityName }]
-                  : []
-              ).map((p) => (
-                <span key={p.id} className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary/80 font-medium">
-                  {p.name}
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-        <div className="flex items-center gap-3 flex-shrink-0">
-          {/* Last result badge — from log if available */}
-          {lastEntry ? (
-            <div className="flex items-center gap-1">
-              {HB_STATUS_ICON[lastEntry.status]}
-              <span className={`text-xs ${HB_STATUS_COLOR[lastEntry.status]}`}>
-                {lastEntry.status}
-              </span>
-            </div>
-          ) : (
-            <span className={`badge ${task.enabled ? 'badge-success' : 'badge'}`}>
-              {task.enabled ? 'enabled' : 'disabled'}
-            </span>
-          )}
-          {/* Expand / collapse history toggle */}
-          <button
-            onClick={() => { setExpanded((v) => !v); }}
-            className="btn-ghost p-1 rounded text-muted-foreground hover:text-foreground"
-            aria-label={expanded ? 'Hide execution history' : 'Show execution history'}
-            title={expanded ? 'Hide history' : 'Show history'}
-          >
-            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-          </button>
-        </div>
-      </div>
-
-      {/* Expandable execution history */}
-      {expanded && (
-        <div className="border-t border-border px-4 pb-4 pt-3 bg-muted/20">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">
-            Recent Executions
-          </p>
-          {logLoading ? (
-            <div className="flex items-center gap-2 text-xs text-muted-foreground py-1">
-              <Loader2 className="w-3 h-3 animate-spin" />
-              Loading history…
-            </div>
-          ) : !logData?.entries.length ? (
-            <p className="text-xs text-muted-foreground py-1">No executions recorded yet.</p>
-          ) : (
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="text-muted-foreground">
-                  <th className="text-left pb-1 pr-4 font-normal">Status</th>
-                  <th className="text-left pb-1 pr-4 font-normal">Ran at</th>
-                  <th className="text-left pb-1 pr-4 font-normal hidden sm:table-cell">Duration</th>
-                  <th className="text-left pb-1 font-normal">Message</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logData.entries.map((entry) => (
-                  <tr key={entry.id} className="border-t border-border/30">
-                    <td className="py-1 pr-4">
-                      <div className="flex items-center gap-1">
-                        {HB_STATUS_ICON[entry.status]}
-                        <span className={HB_STATUS_COLOR[entry.status]}>{entry.status}</span>
-                      </div>
-                    </td>
-                    <td className="py-1 pr-4 text-muted-foreground">
-                      {new Date(entry.ranAt).toLocaleString()}
-                    </td>
-                    <td className="py-1 pr-4 font-mono text-muted-foreground hidden sm:table-cell">
-                      {entry.durationMs < 1000
-                        ? `${entry.durationMs}ms`
-                        : `${(entry.durationMs / 1000).toFixed(1)}s`}
-                    </td>
-                    <td className="py-1 text-muted-foreground max-w-xs truncate">
-                      {entry.message}
-                      {entry.errorDetail && (
-                        <span className="text-destructive ml-1">
-                          ({entry.errorDetail.split('\n')[0]})
-                        </span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
-function TasksTab() {
-  const [searchParams, setSearchParams] = useState({ offset: '0', status: '', type: '' });
-  const { data: tasksData, isLoading: tasksLoading } = useQuery({
-    queryKey: ['tasks', searchParams],
-    queryFn: () =>
-      fetchTasks({
-        offset: Number(searchParams.offset),
-        limit: 10,
-        status: searchParams.status || undefined,
-        type: searchParams.type || undefined,
-      }),
-    refetchInterval: 10000,
-  });
-
-  const { data: heartbeatData, isLoading: heartbeatLoading } = useQuery({
-    queryKey: ['heartbeat-tasks'],
-    queryFn: fetchHeartbeatTasks,
-    refetchInterval: 10000,
-  });
-
-  const heartbeatTasks = heartbeatData?.tasks ?? [];
-  const [heartbeatOpen, setHeartbeatOpen] = useState(true);
-  const activeCount = heartbeatTasks.filter((t) => t.enabled).length;
-
-  return (
-    <div className="space-y-6">
-      {/* Heartbeat Tasks Section — collapsible */}
-      <div className="card">
-        <button
-          onClick={() => {
-            setHeartbeatOpen((prev) => !prev);
-          }}
-          className="w-full flex items-center justify-between p-4 text-left hover:bg-muted/30 transition-colors"
-        >
-          <div className="flex items-center gap-2">
-            <Heart className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold text-sm">Heartbeat Tasks</h3>
-            {heartbeatTasks.length > 0 && (
-              <span className="text-xs text-muted-foreground">
-                {activeCount}/{heartbeatTasks.length} active
-              </span>
-            )}
-          </div>
-          <ChevronDown
-            className={`w-4 h-4 text-muted-foreground transition-transform ${heartbeatOpen ? '' : '-rotate-90'}`}
-          />
-        </button>
-
-        {heartbeatOpen && (
-          <div className="border-t border-border">
-            {heartbeatLoading ? (
-              <div className="flex justify-center py-6">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : heartbeatTasks.length === 0 ? (
-              <div className="p-6 text-center">
-                <Heart className="w-8 h-8 mx-auto text-muted-foreground mb-2" />
-                <p className="text-sm text-muted-foreground">No heartbeat tasks configured</p>
-              </div>
-            ) : (
-              <div className="divide-y divide-border">
-                {heartbeatTasks.map((task) => (
-                  <HeartbeatTaskCard key={task.name} task={task} />
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Regular Tasks Section */}
-      <div>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
-          <div className="flex items-center gap-2">
-            <Clock className="w-4 h-4 text-primary" />
-            <h3 className="font-semibold">Task History</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <select
-              value={searchParams.status}
-              onChange={(e) => {
-                setSearchParams({ ...searchParams, status: e.target.value, offset: '0' });
-              }}
-              className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="">All Status</option>
-              <option value="completed">Completed</option>
-              <option value="failed">Failed</option>
-              <option value="running">Running</option>
-              <option value="pending">Pending</option>
-            </select>
-            <select
-              value={searchParams.type}
-              onChange={(e) => {
-                setSearchParams({ ...searchParams, type: e.target.value, offset: '0' });
-              }}
-              className="bg-card border border-border rounded-lg px-3 py-2 text-sm"
-            >
-              <option value="">All Types</option>
-              <option value="execute">Execute</option>
-              <option value="query">Query</option>
-              <option value="file">File</option>
-              <option value="network">Network</option>
-              <option value="system">System</option>
-            </select>
-          </div>
-        </div>
-
-        {tasksLoading ? (
-          <div className="flex justify-center py-12">
-            <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
-          </div>
-        ) : !tasksData?.tasks.length ? (
-          <div className="card p-12 text-center">
-            <Clock className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-            <p className="text-muted-foreground">No tasks found</p>
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {tasksData.tasks.map((task) => (
-              <div key={task.id} className="card p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {STATUS_ICONS[task.status] || <Clock className="w-4 h-4" />}
-                    <div>
-                      <p className="font-medium text-sm">{task.name || task.id}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {task.type} • {new Date(task.createdAt).toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
-                  <span className={`badge ${STATUS_COLORS[task.status] || 'badge'}`}>
-                    {task.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {tasksData && tasksData.total > 10 && (
-          <div className="flex items-center justify-center gap-2">
-            <button
-              onClick={() => {
-                setSearchParams({
-                  ...searchParams,
-                  offset: String(Math.max(0, Number(searchParams.offset) - 10)),
-                });
-              }}
-              disabled={Number(searchParams.offset) <= 0}
-              className="btn btn-ghost"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <span className="text-sm text-muted-foreground">
-              {Number(searchParams.offset) + 1}-
-              {Math.min(Number(searchParams.offset) + 10, tasksData.total)} of {tasksData.total}
-            </span>
-            <button
-              onClick={() => {
-                setSearchParams({
-                  ...searchParams,
-                  offset: String(Number(searchParams.offset) + 10),
-                });
-              }}
-              disabled={Number(searchParams.offset) + 10 >= tasksData.total}
-              className="btn btn-ghost"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
         )}
       </div>
     </div>

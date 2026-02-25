@@ -66,6 +66,7 @@ function makeMockManager(overrides?: Partial<SoulManager>): SoulManager {
 function mockHeartbeatManager(): HeartbeatManager {
   return {
     setPersonalitySchedule: vi.fn(),
+    setActivePersonalityId: vi.fn(),
   } as unknown as HeartbeatManager;
 }
 
@@ -586,6 +587,52 @@ describe('heartbeatManager wiring', () => {
       payload: { name: 'FRIDAY' },
     });
     expect(res.statusCode).toBe(200);
+  });
+
+  it('POST activate → calls setActivePersonalityId with personality.id', async () => {
+    const hbm = mockHeartbeatManager();
+    const app = buildApp(
+      { getActivePersonality: vi.fn().mockResolvedValue(PERSONALITY_WITH_HOURS) },
+      hbm
+    );
+    await app.inject({ method: 'POST', url: '/api/v1/soul/personalities/pers-1/activate' });
+    expect(hbm.setActivePersonalityId).toHaveBeenCalledWith(PERSONALITY_WITH_HOURS.id);
+  });
+
+  it('PUT update → calls setActivePersonalityId when updated personality is active', async () => {
+    const hbm = mockHeartbeatManager();
+    const updatedPersonality = { ...PERSONALITY_WITH_HOURS, id: 'pers-1' };
+    const app = buildApp(
+      {
+        updatePersonality: vi.fn().mockResolvedValue(updatedPersonality),
+        getActivePersonality: vi.fn().mockResolvedValue(updatedPersonality),
+      },
+      hbm
+    );
+    await app.inject({
+      method: 'PUT',
+      url: '/api/v1/soul/personalities/pers-1',
+      payload: { name: 'FRIDAY' },
+    });
+    expect(hbm.setActivePersonalityId).toHaveBeenCalledWith('pers-1');
+  });
+
+  it('PUT update → does NOT call setActivePersonalityId when updated personality is not active', async () => {
+    const hbm = mockHeartbeatManager();
+    const updatedPersonality = { ...PERSONALITY_WITH_HOURS, id: 'pers-2' };
+    const app = buildApp(
+      {
+        updatePersonality: vi.fn().mockResolvedValue(updatedPersonality),
+        getActivePersonality: vi.fn().mockResolvedValue({ ...PERSONALITY, id: 'pers-1' }),
+      },
+      hbm
+    );
+    await app.inject({
+      method: 'PUT',
+      url: '/api/v1/soul/personalities/pers-2',
+      payload: { name: 'Alt' },
+    });
+    expect(hbm.setActivePersonalityId).not.toHaveBeenCalled();
   });
 });
 

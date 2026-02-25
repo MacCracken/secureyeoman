@@ -1,3 +1,64 @@
+## [2026.2.25-heartbeat-personality-attribution] — 2026-02-25
+
+### Fix — Heartbeat Log Entries Now Record the Active Personality
+
+#### Fixed
+
+- **Heartbeat log entries always showed "system"** — `HeartbeatManager.beat()` was hardcoding `personalityId: null` on every `logStorage.persist()` call. Log entries are now tagged with the currently active personality's ID.
+- **`HeartbeatManager.setActivePersonalityId(id)`** — new method (mirrors `setPersonalitySchedule`) stores the active personality ID and stamps it on all subsequent log entries.
+- **Startup wiring** (`secureyeoman.ts` Step 6.6) — after resolving the active personality's schedule, its ID is also passed to `setActivePersonalityId` so the first beat after server start is already attributed.
+- **`soul-routes.ts` — `POST /activate` and `PUT /:id`** — both routes now call `setActivePersonalityId` alongside the existing `setPersonalitySchedule` call whenever the active personality changes.
+- **`SoulManager.setDefaultPersonality` / `clearDefaultPersonality`** — both methods now call `setActivePersonalityId` to keep attribution in sync when the default personality changes via the manager layer.
+
+#### Tests
+
+- `heartbeat.test.ts` — 3 new tests in `heartbeat log storage`: null personalityId before `setActivePersonalityId`, correct ID after calling it, revert to null after `setActivePersonalityId(null)`.
+- `soul-routes.test.ts` — 3 new tests in `heartbeatManager wiring`: POST activate calls `setActivePersonalityId`, PUT update calls it for the active personality, PUT update does NOT call it for a non-active personality. `mockHeartbeatManager()` updated to include `setActivePersonalityId: vi.fn()`.
+
+---
+
+## [2026.2.25-task-consolidation] — 2026-02-25
+
+### Dashboard — Security Dashboard Re-org + Task Consolidation
+
+#### Changed
+
+- **Security Dashboard tab order** — tabs are now: Overview, Audit Log, Autonomy, ML *(conditional)*, Reports, System. Tasks tab removed from Security Dashboard.
+- **Tasks page consolidated** — `/tasks` is the single source of truth for all task management. Two sub-tabs: **Tasks** (paginated history, CRUD, filters, date range, CSV/JSON export) and **Heartbeats** (card view with expandable execution history and per-personality association). Sub-tab selection preserved in URL (`?view=heartbeats`).
+- **Heartbeat cards** — Heartbeats sub-tab shows a card per monitor: enabled/disabled indicator, type badge, interval, last-run time, personality pills, live status badge (ok/warning/error from last execution), expandable execution history table.
+- **Personality association** — Agent/Personality column in the Tasks table now renders personality names as styled pill badges (`.bg-primary/10`) instead of plain text.
+- **Security page subtitle** updated: "Monitor security events, manage tasks, and generate reports" → "Monitor security events, audit logs, and system health".
+
+---
+
+## [2026.2.25-governance-hardening] — 2026-02-25
+
+### Phase 50: Governance Hardening
+
+Closes the deferred items from Phase 48 (Organizational Intent) and Phase 49 (AI Autonomy Audit). ADR 132.
+
+### Added
+
+- **OPA sidecar service** — `opa` Docker Compose service (`opa` and `full` profiles) using `openpolicyagent/opa:latest`. SSRF-blocking capabilities config (`opa/capabilities.json`) disables `http.send` and `net.lookup_ip_addr` before accepting user-authored Rego.
+- **`OpaClient` module** (`src/intent/opa-client.ts`) — typed wrapper for the OPA REST API: `uploadPolicy`, `deletePolicy`, `evaluate`, `isHealthy`. `fromEnv()` factory auto-detects `OPA_ADDR`. All operations are non-fatal (fall back on network error).
+- **`CelEvaluator` module** (`src/intent/cel-evaluator.ts`) — CEL expression evaluator supporting `==`, `!=`, `<`, `>`, `<=`, `>=`, `&&`, `||`, `!`, parentheses, string/number/boolean literals, and `ctx.key` field access. Legacy `key=value AND key=value` format is auto-detected and remains fully backward-compatible.
+- **`IntentManager.syncPoliciesWithOpa(record)`** — uploads `rego` fields from `hardBoundaries[]` and `policies[]` to OPA on every create/update. Called automatically by intent routes.
+- **Hard boundary OPA evaluation** — `checkHardBoundaries()` now evaluates `boundary_{id}/allow` via OPA when configured and boundary has a `rego` field. Falls back to substring matching on OPA error or when OPA is not configured.
+- **MCP tool signal dispatch** — `_fetchMcpToolSignal()` handles `mcp_tool`-typed data sources via optional `callMcpTool` callback injected into `IntentManagerDeps`.
+- **Dashboard Policies tab** — New **Policies** tab in `IntentEditor.tsx` shows the active intent's policies grouped by enforcement mode (block/warn), with OPA Rego badge and expandable Rego source viewer.
+- **96 tests** — 24 new CEL evaluator tests, 15 new OPA client tests, 32 new IntentManager tests (CEL, OPA boundary, MCP signal, syncPoliciesWithOpa). All pass.
+- **Docs** — `docs/adr/132-governance-hardening.md`, `docs/guides/governance-hardening.md`.
+
+### Changed
+
+- `_evalActiveWhen()` in `IntentManager` — delegates to `evalCel()` instead of the inline simple parser.
+- `_matchesPolicy()` in `IntentManager` — uses injected `OpaClient` instance instead of ad-hoc `fetch(process.env.OPA_ADDR)`.
+- `IntentManagerDeps` — adds `opaClient?: OpaClient | null` and `callMcpTool?` optional fields.
+- `POST /api/v1/intent` and `PUT /api/v1/intent/:id` — call `syncPoliciesWithOpa()` after save.
+- `packages/core/package.json` — added `@open-policy-agent/opa: ^2.0.0`.
+
+---
+
 ## [2026.2.25-sub-agents-tab-order] — 2026-02-25
 
 ### Sub-Agents — Profiles Tab First

@@ -369,6 +369,7 @@ export class SoulManager {
       if (personality) {
         this.heartbeat.setPersonalitySchedule(personality.body?.activeHours ?? null);
       }
+      this.heartbeat.setActivePersonalityId(id);
     }
   }
 
@@ -376,6 +377,7 @@ export class SoulManager {
     await this.storage.clearDefaultPersonality();
     if (this.heartbeat) {
       this.heartbeat.setPersonalitySchedule(null);
+      this.heartbeat.setActivePersonalityId(null);
     }
   }
 
@@ -594,6 +596,10 @@ export class SoulManager {
   setHeartbeat(hb: HeartbeatManager): void {
     this.heartbeat = hb;
     this.heartManager = new HeartManager(hb);
+    // Sync current default personality ID so log entries are attributed correctly
+    this.storage.getActivePersonality().then((p) => {
+      if (p) hb.setActivePersonalityId(p.id);
+    }).catch(() => { /* non-fatal */ });
   }
 
   private composeBodyPrompt(personality: Personality | null): string {

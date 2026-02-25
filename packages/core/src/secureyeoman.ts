@@ -816,6 +816,9 @@ export class SecureYeoman {
             if (active?.body?.activeHours) {
               hbmRef.setPersonalitySchedule(active.body.activeHours);
             }
+            if (active?.id) {
+              hbmRef.setActivePersonalityId(active.id);
+            }
           })
           .catch((err: unknown) => {
             this.logger?.warn('Failed to seed personality active hours for heartbeat', {

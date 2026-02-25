@@ -56,6 +56,7 @@ function makeManager(storageOverrides: Partial<IntentStorage> = {}): IntentManag
   return {
     getStorage: vi.fn().mockReturnValue(storage),
     reloadActiveIntent: vi.fn().mockResolvedValue(undefined),
+    syncPoliciesWithOpa: vi.fn().mockResolvedValue(undefined),
     readSignal: vi.fn().mockResolvedValue({
       signalId: 's1',
       value: 3.2,

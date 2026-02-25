@@ -26,10 +26,24 @@ import type {
   EnforcementLogEntry,
   AuthorizedAction,
 } from './schema.js';
+import { OpaClient } from './opa-client.js';
+import { evalCel } from './cel-evaluator.js';
 
 export interface IntentManagerDeps {
   storage: IntentStorage;
   signalRefreshIntervalMs?: number;
+  /**
+   * Optional OPA client override (defaults to OpaClient.fromEnv()).
+   * Pass null to explicitly disable OPA even if OPA_ADDR is set (useful in tests).
+   */
+  opaClient?: OpaClient | null;
+  /**
+   * Optional callback for dispatching MCP tool calls from signal data sources.
+   * When provided, mcp_tool-typed data sources will invoke this to fetch signal values.
+   * The callback receives the tool name (ds.connection) and an optional input object.
+   * It should return a numeric value or null on failure.
+   */
+  callMcpTool?: (toolName: string, input?: Record<string, unknown>) => Promise<number | null>;
 }
 
 // ─── Signal cache ─────────────────────────────────────────────────────────────
@@ -66,6 +80,8 @@ export interface PolicyCheckResult {
 export class IntentManager {
   private readonly storage: IntentStorage;
   private readonly signalRefreshIntervalMs: number;
+  private readonly opa: OpaClient | null;
+  private readonly callMcpTool: ((toolName: string, input?: Record<string, unknown>) => Promise<number | null>) | null;
 
   private activeIntent: OrgIntentRecord | null = null;
   private signalCache = new Map<string, CachedSignal>();
@@ -76,6 +92,9 @@ export class IntentManager {
   constructor(deps: IntentManagerDeps) {
     this.storage = deps.storage;
     this.signalRefreshIntervalMs = deps.signalRefreshIntervalMs ?? 300_000; // 5 min default
+    // opaClient: undefined → auto-detect from env; null → disabled; instance → use it
+    this.opa = deps.opaClient === undefined ? OpaClient.fromEnv() : (deps.opaClient ?? null);
+    this.callMcpTool = deps.callMcpTool ?? null;
   }
 
   /** Load active intent and start background signal refresh. */
@@ -197,19 +216,13 @@ export class IntentManager {
   }
 
   /**
-   * Evaluates an `activeWhen` expression against ctx.
-   * Supports simple "key=value" conjunctions separated by " AND ".
-   * An undefined/empty expression always returns true.
+   * Evaluates an `activeWhen` CEL expression against ctx.
+   * Supports full CEL subset (comparisons, logical ops, grouping) plus the
+   * legacy "key=value AND key=value" format for backward compatibility.
+   * An undefined/empty expression always returns true (unconditional goal).
    */
   private _evalActiveWhen(expr: string | undefined, ctx: Record<string, string>): boolean {
-    if (!expr || expr.trim() === '') return true;
-    const clauses = expr.split(/\s+AND\s+/i);
-    return clauses.every((clause) => {
-      const [key, val] = clause.split('=').map((s) => s.trim());
-      if (!key) return true;
-      if (!val) return key in ctx;
-      return ctx[key] === val;
-    });
+    return evalCel(expr, ctx);
   }
 
   // ── SignalMonitor ─────────────────────────────────────────────────────────────
@@ -247,30 +260,55 @@ export class IntentManager {
     const sourceId = signal.dataSources?.[0];
     if (sourceId) {
       const ds = intent.dataSources?.find((d) => d.id === sourceId);
-      if (ds && ds.type === 'http') {
-        try {
-          const resp = await fetch(ds.connection, { signal: AbortSignal.timeout(10_000) });
-          if (resp.ok) {
-            const body = await resp.json() as unknown;
-            // Accept numeric root value or { value: number }
-            if (typeof body === 'number') {
-              value = body;
-            } else if (
-              typeof body === 'object' &&
-              body !== null &&
-              'value' in body &&
-              typeof (body as Record<string, unknown>).value === 'number'
-            ) {
-              value = (body as { value: number }).value;
-            }
-          }
-        } catch {
-          // Network error — leave value null
+      if (ds) {
+        if (ds.type === 'http') {
+          value = await this._fetchHttpSignal(ds.connection);
+        } else if (ds.type === 'mcp_tool') {
+          value = await this._fetchMcpToolSignal(ds.connection, ds.schema);
         }
       }
     }
 
     return this._buildSignalResult(signal, value);
+  }
+
+  /** Fetch a numeric signal value via HTTP GET. */
+  private async _fetchHttpSignal(url: string): Promise<number | null> {
+    try {
+      const resp = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+      if (!resp.ok) return null;
+      const body = await resp.json() as unknown;
+      if (typeof body === 'number') return body;
+      if (
+        typeof body === 'object' && body !== null &&
+        'value' in body && typeof (body as Record<string, unknown>).value === 'number'
+      ) {
+        return (body as { value: number }).value;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Fetch a numeric signal value by dispatching an MCP tool call.
+   * Uses the `callMcpTool` callback injected into the constructor.
+   * The `schema` hint (optional) is passed as `{ schema }` in the tool input
+   * so the MCP tool knows how to parse its response.
+   */
+  private async _fetchMcpToolSignal(
+    toolName: string,
+    schema?: string
+  ): Promise<number | null> {
+    if (!this.callMcpTool) return null;
+    try {
+      const input: Record<string, unknown> = {};
+      if (schema) input.schema = schema;
+      return await this.callMcpTool(toolName, input);
+    } catch {
+      return null;
+    }
   }
 
   private _buildSignalResult(signal: Signal, value: number | null): SignalReadResult {
@@ -386,7 +424,7 @@ export class IntentManager {
 
     const boundaries = this.activeIntent.hardBoundaries ?? [];
     for (const boundary of boundaries) {
-      const violated = this._matchesBoundary(boundary.rule, actionDescription, mcpTool);
+      const violated = await this._matchesBoundaryWithOpa(boundary, actionDescription, mcpTool);
       if (violated) {
         await this.storage.logEnforcement({
           eventType: 'boundary_violated',
@@ -399,6 +437,32 @@ export class IntentManager {
       }
     }
     return { allowed: true };
+  }
+
+  /**
+   * Checks whether a hard boundary is violated.
+   * When OPA is available and the boundary has a `rego` field, evaluates via
+   * OPA (`boundary_{id}/allow`). Falls back to natural-language substring
+   * matching on OPA error or when OPA is not configured.
+   */
+  private async _matchesBoundaryWithOpa(
+    boundary: HardBoundary,
+    actionDescription: string,
+    mcpTool?: string
+  ): Promise<boolean> {
+    if (this.opa && boundary.rego) {
+      try {
+        const result = await this.opa.evaluate(`boundary_${boundary.id}/allow`, {
+          action: actionDescription,
+          tool: mcpTool ?? null,
+        });
+        // OPA allow=false means the boundary is violated
+        if (result !== null) return result === false;
+      } catch {
+        // Fall through to natural-language matching on OPA error
+      }
+    }
+    return this._matchesBoundary(boundary.rule, actionDescription, mcpTool);
   }
 
   /**
@@ -557,26 +621,53 @@ export class IntentManager {
     actionDescription: string,
     mcpTool?: string
   ): Promise<boolean> {
-    const opaAddr = process.env.OPA_ADDR;
-    if (opaAddr && policy.rego) {
+    if (this.opa && policy.rego) {
       try {
-        const resp = await fetch(`${opaAddr}/v1/data/secureyeoman/allow`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ input: { action: actionDescription, tool: mcpTool ?? null } }),
-          signal: AbortSignal.timeout(5_000),
+        const result = await this.opa.evaluate(`policy_${policy.id}/allow`, {
+          action: actionDescription,
+          tool: mcpTool ?? null,
         });
-        if (resp.ok) {
-          const body = (await resp.json()) as { result?: boolean };
-          // OPA allow=false means the policy blocks the action
-          if (body.result === false) return true;
-          return false;
-        }
+        // OPA allow=false means the policy matches (is violated)
+        if (result !== null) return result === false;
       } catch {
         // Fall through to natural-language rule on OPA error
       }
     }
     return this._matchesBoundary(policy.rule, actionDescription, mcpTool);
+  }
+
+  // ── OPA policy sync ───────────────────────────────────────────────────────────
+
+  /**
+   * Synchronises the `hardBoundaries[]` and `policies[]` from the given intent
+   * record with the OPA sidecar service.
+   *
+   * - Any boundary/policy with a `rego` field is uploaded via `PUT /v1/policies/{id}`.
+   * - Any previously-known ID that is no longer in the document is deleted via
+   *   `DELETE /v1/policies/{id}`.
+   *
+   * No-op if OPA is not configured. Safe to call on every intent save.
+   */
+  async syncPoliciesWithOpa(record: OrgIntentRecord): Promise<void> {
+    if (!this.opa) return;
+
+    const toUpload: { id: string; rego: string }[] = [];
+
+    for (const b of record.hardBoundaries ?? []) {
+      if (b.rego) toUpload.push({ id: `boundary_${b.id}`, rego: b.rego });
+    }
+    for (const p of record.policies ?? []) {
+      if (p.rego) toUpload.push({ id: `policy_${p.id}`, rego: p.rego });
+    }
+
+    // Upload all policies with rego (errors are non-fatal — logged to stderr)
+    await Promise.all(
+      toUpload.map(({ id, rego }) =>
+        this.opa!.uploadPolicy(id, rego).catch((err: unknown) => {
+          process.stderr.write(`[intent] OPA uploadPolicy(${id}) error: ${String(err)}\n`);
+        })
+      )
+    );
   }
 
   // ── Enforcement log passthrough ───────────────────────────────────────────────

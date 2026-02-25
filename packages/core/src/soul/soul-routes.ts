@@ -148,6 +148,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
           const active = await soulManager.getActivePersonality();
           if (active?.id === personality.id) {
             heartbeatManager.setPersonalitySchedule(personality.body?.activeHours ?? null);
+            heartbeatManager.setActivePersonalityId(personality.id);
           }
         }
         return { personality };
@@ -177,6 +178,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const personality = await soulManager.getActivePersonality();
         if (heartbeatManager && personality) {
           heartbeatManager.setPersonalitySchedule(personality.body?.activeHours ?? null);
+          heartbeatManager.setActivePersonalityId(personality.id);
         }
         return { personality: personality ? withActiveHours(personality) : null };
       } catch (err) {

@@ -40,6 +40,8 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
     }
     try {
       const record = await storage.createIntent(parsed.data);
+      // Sync any rego policies to OPA sidecar on creation
+      await intentManager.syncPoliciesWithOpa(record);
       await auditChain?.record({
         event: 'intent_doc_created',
         level: 'info',
@@ -102,6 +104,8 @@ export function registerIntentRoutes(app: FastifyInstance, opts: IntentRoutesOpt
     try {
       const record = await storage.updateIntent(id, parsed.data);
       if (!record) return sendError(reply, 404, 'Intent document not found');
+      // Sync rego policies to OPA sidecar (no-op if OPA not configured)
+      await intentManager.syncPoliciesWithOpa(record);
       // If this is the active intent, reload in manager
       if (record.isActive) {
         await intentManager.reloadActiveIntent();

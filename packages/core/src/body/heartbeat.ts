@@ -92,6 +92,7 @@ export class HeartbeatManager {
   private running = false;
   private taskLastRun = new Map<string, number>();
   private actionHistory = new Map<string, number>(); // Track last action execution per check
+  private activePersonalityId: string | null = null;
   private personalitySchedule: {
     enabled: boolean;
     start: string;
@@ -544,6 +545,11 @@ export class HeartbeatManager {
     this.logger.info('Heartbeat stopped');
   }
 
+  setActivePersonalityId(id: string | null): void {
+    this.activePersonalityId = id;
+    this.logger.debug('Active personality ID updated', { personalityId: id });
+  }
+
   setPersonalitySchedule(
     schedule: {
       enabled: boolean;
@@ -607,7 +613,7 @@ export class HeartbeatManager {
         try {
           await this.logStorage.persist({
             checkName: check.name,
-            personalityId: null,
+            personalityId: this.activePersonalityId,
             ranAt: checkStart,
             status: result.status,
             message: result.message,
