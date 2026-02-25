@@ -28,8 +28,6 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 ### Open
 
 - [ ] Marketplace / Community Skills - user should be able to preview/review a skill before installation.
-- [x] Chat stream — agent output repeats response preamble after every tool call (cumulative content bug in streaming agentic loop).
-- [x] Chat stream — personality appears to "die" / terminate during long multi-tool responses (MAX_TOOL_ITERATIONS = 10 cap hit; SSE keepalive missing).
 
 ### Improvements
 
@@ -38,9 +36,7 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 - [ ] Tasks History, separation of task and heartbeats into their own subviews.
 - [ ] Tasks and History needs consolidation; remove from Security Dashboard.
 - [ ] after Tasks consolidation - insure each personality is associated
-- [ ] Chat (any context) with personality; need to provide time date awareness to the conversasion. Without asking personality to check the time/data for response accuracy.
 - [ ] Agents > Sub-Agents > Profile shoud be first tab, but keep default as Active.
-- [x] **Sub-agent task-aware tool pruning** — Root-cause of 30 K–50 K overhead per delegation: all registered MCP tools (~20–30, ~10,000–15,000 tokens) are injected unconditionally into every sub-agent call regardless of relevance. Implement tool filtering based on the profile's `allowedTools` list or a task-type classifier so simple delegations don't carry the full tool catalog. See `packages/core/src/agents/manager.ts` lines 390–407.
 - [ ] dashboard - Allow for personality image to recieve an image
 
 ---
@@ -185,4 +181,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-25 (Reorganized into phases 50–56; removed Tier system)*
+*Last updated: 2026-02-25 (Removed completed items: chat stream fixes, sub-agent tool pruning, datetime awareness)*

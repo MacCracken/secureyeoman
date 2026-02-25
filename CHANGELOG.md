@@ -1,3 +1,34 @@
+## [2026.2.25-chronoception-and-coverage] — 2026-02-25
+
+### Chronoception, Chat Bubble Timestamps & Test Coverage
+
+### Added
+
+- **Chronoception — per-personality date/time injection** — New `injectDateTime` toggle (labelled "Chronoception") in the Personality Editor. When enabled, the current date and time are injected into the personality's system prompt on every conversation turn so the AI always knows when it is without being asked. The timestamp is formatted using the personality's configured active-hours timezone. Backed by:
+  - DB migration `046_personality_inject_datetime.sql` (`inject_date_time BOOLEAN DEFAULT false`)
+  - `PersonalitySchema` — `injectDateTime: z.boolean().default(false)`
+  - `composeSoulPrompt()` — injects a `## Current Date & Time` section when enabled, locale-formatted with the personality's timezone
+  - `PersonalityEditor.tsx` — "Chronoception" toggle with description "Injects the current date and time into the system prompt so the personality always knows when it is"
+
+- **Chat bubble timestamps** — Every message bubble (user and assistant) now shows the time it was sent/received (`HH:MM`) in the bubble header, derived from the existing `ChatMessage.timestamp` field. No schema changes required.
+
+### Improved
+
+- **`creation-tool-executor.ts` test coverage** — Test suite expanded from 40 → 82 tests, covering all previously untested tool branches:
+  - `create_skill` — success path, `normalizeSkillName()` snake_case and kebab-case normalisation, personality scoping, error catch
+  - `update_skill`, `delete_skill` (including name-fallback when skill not found)
+  - `update_task` — with/without task storage
+  - `create_personality` (including sex defaulting), `update_personality`
+  - `delegate_task`, `list_sub_agents`, `get_delegation_result` — with/without sub-agent manager
+  - `create_swarm` — with/without swarm manager
+  - `create_custom_role` — including `action` (singular) vs `actions` (plural) permissions normalisation; `assign_role`
+  - `create_experiment` — with/without experiment manager
+  - `a2a_connect`, `a2a_send` — with/without A2A manager
+  - `create_workflow`, `update_workflow`, `delete_workflow`, `trigger_workflow` — with/without workflow manager
+  - Gating edge cases: policy-fetch error falls through (fail-safe allow), approval store unavailable returns error, no `personalityId` skips policy check entirely
+
+---
+
 ## [2026.2.25-marketplace-install-state] — 2026-02-25
 
 ### Marketplace & Community — Contextual Install State
