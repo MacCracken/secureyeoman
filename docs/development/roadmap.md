@@ -36,6 +36,7 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 - [x] Tasks and History needs consolidation; remove from Security Dashboard.
 - [x] after Tasks consolidation - insure each personality is associated — heartbeat log entries now carry `personalityId` via `HeartbeatManager.setActivePersonalityId()`. Wired at startup, on activate, on update, and on set-default.
 - [x] Agents > Sub-Agents > Profile shoud be first tab, but keep default as Active.
+- [ ] **Advanced Editor Mode** — Add toggle in Settings > Security > Developers. When enabled, replaces the current EditView with an advanced coding workspace featuring: (1) Canvas with movable terminal prompt windows; (2) Clean file manager as a sidebar column or popout; (3) Task list panel with Jira-style priorities, supporting internal task management or external integrations (Trello, GitHub Projects, etc.).
 - [ ] **Notifications** — No transient user notification model exists. Heartbeat `notify` actions (Slack/Email/Discord) are stubs (console-only). Real-time event push is missing (dashboard polls REST every 10s). Acknowledgements are localStorage-only. Needs: notification table + API + bell UI + WebSocket push + heartbeat integration delivery.
 - [ ] dashboard - Allow for personality image to recieve an image
 - [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. Consider CSS variable-based theming for user extensibility or a larger built-in preset library.
