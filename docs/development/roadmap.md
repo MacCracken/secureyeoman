@@ -47,6 +47,23 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Tier 1 — Near Term
 
+#### Governance Hardening (Phase 48.5)
+
+*Closes the deferred items from Phase 48 (ADR 128) and Phase 49 (ADR 130). The schema, `OPA_ADDR` hook, and `rego` storage fields are already in place — this phase wires them together and adds the OPA service.*
+
+**Architecture decision (from investigation):** `@open-policy-agent/opa-wasm` is ruled out — it requires Rego to be pre-compiled to `.wasm` at build time and cannot evaluate user-defined policies stored as source text at runtime. The correct approach is the **OPA sidecar** pattern: OPA runs as a Docker/k8s sidecar service, and policies are `PUT` as raw Rego source via `PUT /v1/policies/{id}` — OPA compiles and installs them instantly. TypeScript client: `@open-policy-agent/opa` v2.0.0.
+
+**Security note:** User-defined Rego can contain `http.send` and `net.lookup_ip_addr`, enabling SSRF and data exfiltration. OPA's capabilities config must disable these built-ins before accepting user-authored policy input.
+
+- [ ] **OPA sidecar service** — Add `opa` service to `docker-compose.yml` using `openpolicyagent/opa:latest`. Configure `capabilities` to disable `http.send` and `net.lookup_ip_addr`. Set `OPA_ADDR=http://opa:8181` in core service env. Add `@open-policy-agent/opa` v2.0.0 to `packages/core/package.json`.
+- [ ] **Wire `checkHardBoundaries()` to OPA** — `HardBoundarySchema` already has a `rego` field (stored, never evaluated). When `OPA_ADDR` is set and a boundary has `rego`, upload it as `PUT /v1/policies/boundary_{id}` on intent save and call `POST /v1/data/boundary_{id}/allow` during enforcement. Fall back to substring matching on OPA error. (`checkPolicies()` already does this pattern — hard boundaries need the same treatment.)
+- [ ] **Policy upload on save** — When an intent doc is saved via `PUT /api/v1/intent/:id`, iterate its `hardBoundaries[]` and `policies[]` and `PUT` any `rego` snippets to OPA. Delete removed policies from OPA via `DELETE /v1/policies/{id}`. `IntentStorage` already persists the `rego` field; the upload step is missing.
+- [ ] **CEL expression evaluation for `activeWhen`** — Replace the simple `key=value AND key=value` conjunction parser in `_evalActiveWhen()` with CEL. Add `cel-js` or equivalent library. The `GoalSchema.activeWhen` and `AuthorizedActionSchema.conditions` fields are already annotated "CEL expression" in comments — they just use substring evaluation today.
+- [ ] **Soft policies surface in dashboard** — `policies[]`, `PolicySchema`, `checkPolicies()`, and `policy_warn`/`policy_block` enforcement log events are all implemented. The `IntentEditor.tsx` dashboard component does not yet expose policy management (only hard boundaries). Add a Policies tab/section to `IntentEditor` with rule, `rego`, enforcement mode, and rationale fields.
+- [ ] **MCP-tool-dispatch signal sources** — `DataSourceSchema` already declares `type: 'mcp_tool'` but `_fetchSignalValue()` only handles `type: 'http'`. Wire MCP-type data sources to call the appropriate MCP tool and parse the numeric result.
+
+---
+
 #### Kali Security Toolkit Enhancements
 
 *Core implementation shipped (ADR 089). The `sec_*` MCP tools, `secureyeoman security` CLI, and three deployment modes (native/docker-exec/prebuilt) are live.*
@@ -154,4 +171,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-24 (Phase XX.7 — completed bugs cleared from Find & Repair)*
+*Last updated: 2026-02-25 (Added Governance Hardening / Phase 48.5 to Tier 1 based on OPA sidecar investigation)*
