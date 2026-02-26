@@ -149,7 +149,7 @@ function MembersPanel({ workspaceId }: { workspaceId: string }) {
           <button
             disabled={!addUserId || addMut.isPending}
             onClick={() => addMut.mutate()}
-            className="px-3 py-1.5 text-sm btn btn-primary"
+            className="px-3 py-1.5 text-sm btn btn-ghost"
           >
             {addMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Add'}
           </button>
@@ -278,7 +278,7 @@ export function WorkspacesSettings() {
         </div>
         <button
           onClick={() => setShowCreate((v) => !v)}
-          className="flex items-center gap-2 btn btn-primary text-sm px-3 py-1.5"
+          className="btn btn-ghost text-sm flex items-center gap-1"
         >
           <Plus className="w-4 h-4" />
           New Workspace
@@ -326,7 +326,7 @@ export function WorkspacesSettings() {
                   description: createForm.description.trim() || undefined,
                 })
               }
-              className="btn btn-primary text-sm"
+              className="btn btn-ghost text-sm"
             >
               {createMut.isPending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : 'Create'}
             </button>
@@ -386,7 +386,7 @@ export function WorkspacesSettings() {
                             description: editForm.description.trim() || undefined,
                           })
                         }
-                        className="btn btn-primary text-xs px-2 py-1"
+                        className="btn btn-ghost text-xs px-2 py-1"
                       >
                         {updateMut.isPending ? (
                           <Loader2 className="w-3 h-3 animate-spin" />

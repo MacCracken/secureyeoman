@@ -1761,7 +1761,7 @@ function MessagingTab({
               <button
                 type="submit"
                 disabled={!formData.displayName || isCreating}
-                className="btn btn-primary text-xs px-3 py-1.5"
+                className="btn btn-ghost text-xs px-3 py-1.5"
               >
                 {isCreating ? 'Connecting...' : 'Connect'}
               </button>
@@ -1790,7 +1790,7 @@ function MessagingTab({
                 onClick={() => {
                   setShowAddPicker(!showAddPicker);
                 }}
-                className="btn btn-primary text-xs px-3 py-1.5 flex items-center gap-1"
+                className="btn btn-ghost text-xs px-3 py-1.5 flex items-center gap-1"
               >
                 <Plus className="w-3.5 h-3.5" />
                 Add
@@ -1824,7 +1824,7 @@ function MessagingTab({
               onClick={() => {
                 setShowAddPicker(true);
               }}
-              className="btn btn-primary text-xs px-4 py-2 inline-flex items-center gap-1.5"
+              className="btn btn-ghost text-xs px-4 py-2 inline-flex items-center gap-1.5"
             >
               <Plus className="w-3.5 h-3.5" />
               Add Integration
@@ -2072,7 +2072,7 @@ function McpTab({
           {servers.filter((s) => s.enabled).length} enabled / {servers.length} configured
         </span>
         <button
-          className="btn btn-primary text-sm px-3 py-1.5 flex items-center gap-1 whitespace-nowrap"
+          className="btn btn-ghost text-sm px-3 py-1.5 flex items-center gap-1 whitespace-nowrap"
           onClick={() => {
             onShowAddForm(!showAddForm);
           }}
@@ -2232,7 +2232,7 @@ function McpTab({
               <button
                 type="submit"
                 disabled={!form.name.trim() || isAdding}
-                className="btn btn-primary text-sm px-3 py-1.5"
+                className="btn btn-ghost text-sm px-3 py-1.5"
               >
                 {isAdding ? 'Adding...' : 'Add Server'}
               </button>
@@ -3117,7 +3117,7 @@ function EmailTab({
               <button
                 type="submit"
                 disabled={!gmailForm.displayName || claimMut.isPending}
-                className="btn btn-primary text-xs px-3 py-1.5"
+                className="btn btn-ghost text-xs px-3 py-1.5"
               >
                 {claimMut.isPending ? (
                   <span className="flex items-center gap-1">
@@ -3188,7 +3188,7 @@ function EmailTab({
                     onClick={() => {
                       window.location.href = '/api/v1/auth/oauth/gmail';
                     }}
-                    className="btn btn-primary text-xs px-3 py-1.5 mt-3 flex items-center gap-1.5"
+                    className="btn btn-ghost text-xs px-3 py-1.5 mt-3 flex items-center gap-1.5"
                   >
                     <Globe className="w-3.5 h-3.5" />
                     Connect with Google
@@ -3395,7 +3395,7 @@ function EmailTab({
                         !imapForm.password ||
                         imapCreateMut.isPending
                       }
-                      className="btn btn-primary text-xs px-3 py-1.5"
+                      className="btn btn-ghost text-xs px-3 py-1.5"
                     >
                       {imapCreateMut.isPending ? (
                         <span className="flex items-center gap-1">
@@ -3441,7 +3441,7 @@ function EmailTab({
                         onClick={() => {
                           setShowImapForm(true);
                         }}
-                        className="btn btn-primary text-xs px-3 py-1.5 mt-3"
+                        className="btn btn-ghost text-xs px-3 py-1.5 mt-3"
                       >
                         Connect
                       </button>
@@ -3556,7 +3556,7 @@ function OAuthTab({
                         onClick={() => {
                           handleOAuthConnect(provider.oauthUrl);
                         }}
-                        className="btn btn-primary text-xs px-3 py-1.5 mt-2"
+                        className="btn btn-ghost text-xs px-3 py-1.5 mt-2"
                       >
                         Connect
                       </button>

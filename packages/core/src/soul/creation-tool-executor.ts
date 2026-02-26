@@ -231,6 +231,7 @@ export async function executeCreationTool(
           modelFallbacks: [],
           includeArchetypes: false,
           injectDateTime: false,
+          empathyResonance: false,
           body: {} as any,
         });
         return { output: { personality }, isError: false };

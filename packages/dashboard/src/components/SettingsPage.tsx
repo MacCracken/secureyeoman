@@ -417,7 +417,7 @@ function GeneralTab() {
                 })
               }
               disabled={configMutation.isPending}
-              className="btn btn-primary btn-sm"
+              className="btn btn-ghost btn-sm"
             >
               {configMutation.isPending ? 'Saving…' : 'Save'}
             </button>

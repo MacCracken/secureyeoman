@@ -758,7 +758,7 @@ export function IntentEditor() {
               {createError && <p className="text-xs text-destructive">{createError}</p>}
               <div className="flex gap-2">
                 <button
-                  className="btn btn-primary text-sm px-3 py-1"
+                  className="btn btn-ghost text-sm px-3 py-1"
                   onClick={handleCreate}
                   disabled={createMutation.isPending}
                 >

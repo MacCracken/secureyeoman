@@ -527,7 +527,7 @@ export function ConnectionManager() {
                       <button
                         type="submit"
                         disabled={!formData.displayName || createMut.isPending}
-                        className="btn btn-primary text-xs px-3 py-1.5"
+                        className="btn btn-ghost text-xs px-3 py-1.5"
                       >
                         {createMut.isPending ? 'Connecting...' : 'Connect'}
                       </button>
@@ -570,7 +570,7 @@ export function ConnectionManager() {
                         onClick={() => {
                           handleStartConnect(platformId);
                         }}
-                        className="btn btn-primary text-xs px-3 py-1.5 mt-2"
+                        className="btn btn-ghost text-xs px-3 py-1.5 mt-2"
                       >
                         Connect
                       </button>

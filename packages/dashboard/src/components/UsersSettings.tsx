@@ -149,7 +149,7 @@ export function UsersSettings() {
                 <button
                   onClick={() => createMutation.mutate(createForm)}
                   disabled={createMutation.isPending}
-                  className="btn btn-primary text-sm px-3 py-1"
+                  className="btn btn-ghost text-sm px-3 py-1"
                 >
                   {createMutation.isPending ? (
                     <Loader2 className="w-3 h-3 animate-spin" />
@@ -228,7 +228,7 @@ export function UsersSettings() {
                           })
                         }
                         disabled={updateMutation.isPending}
-                        className="btn btn-primary text-sm px-3 py-1"
+                        className="btn btn-ghost text-sm px-3 py-1"
                       >
                         {updateMutation.isPending ? (
                           <Loader2 className="w-3 h-3 animate-spin" />

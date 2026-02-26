@@ -190,7 +190,7 @@ export function ApiKeysSettings() {
             </div>
             <div className="flex gap-2">
               <button
-                className="btn btn-primary text-sm px-3 py-1"
+                className="btn btn-ghost text-sm px-3 py-1"
                 onClick={() => {
                   createKeyMutation.mutate(newKeyForm);
                 }}

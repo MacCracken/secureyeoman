@@ -96,7 +96,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={!password.trim() || isSubmitting}
-            className="btn btn-primary w-full flex items-center justify-center gap-2"
+            className="btn btn-ghost w-full flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <>

@@ -125,6 +125,7 @@ const MOCK_PERSONALITY = {
   modelFallbacks: [],
   includeArchetypes: true,
   injectDateTime: false,
+  empathyResonance: false,
   isActive: false,
   isDefault: false,
   isArchetype: false,

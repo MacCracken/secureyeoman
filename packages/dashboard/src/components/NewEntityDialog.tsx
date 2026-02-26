@@ -369,7 +369,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
         <button
           disabled={!personality.name.trim()}
-          className="btn btn-primary"
+          className="btn btn-ghost"
           onClick={() =>
             navigateTo(
               `/personality?create=true&name=${encodeURIComponent(personality.name)}&description=${encodeURIComponent(personality.description)}&model=${encodeURIComponent(personality.model)}`
@@ -438,7 +438,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
         <button
           disabled={!task.name.trim()}
-          className="btn btn-primary"
+          className="btn btn-ghost"
           onClick={() =>
             navigateTo(
               `/tasks?create=true&name=${encodeURIComponent(task.name)}&type=${encodeURIComponent(task.type)}&description=${encodeURIComponent(task.description)}&input=${encodeURIComponent(task.input)}`
@@ -503,7 +503,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
         <button
           disabled={!skill.name.trim()}
-          className="btn btn-primary"
+          className="btn btn-ghost"
           onClick={() =>
             navigateTo(
               `/skills?create=true&name=${encodeURIComponent(skill.name)}&description=${encodeURIComponent(skill.description)}&trigger=${encodeURIComponent(skill.trigger)}&action=${encodeURIComponent(skill.action)}`
@@ -551,7 +551,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
         <button
           disabled={!experiment.name.trim()}
-          className="btn btn-primary"
+          className="btn btn-ghost"
           onClick={() =>
             navigateTo(
               `/experiments?create=true&name=${encodeURIComponent(experiment.name)}&description=${encodeURIComponent(experiment.description)}`
@@ -599,7 +599,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
         <button
           disabled={!subAgent.name.trim()}
-          className="btn btn-primary"
+          className="btn btn-ghost"
           onClick={() =>
             navigateTo(
               `/agents?create=true&tab=profiles&name=${encodeURIComponent(subAgent.name)}&description=${encodeURIComponent(subAgent.description)}`
@@ -647,7 +647,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
         <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
         <button
           disabled={!customRole.name.trim()}
-          className="btn btn-primary"
+          className="btn btn-ghost"
           onClick={() =>
             navigateTo(
               `/settings?tab=security&create=true&name=${encodeURIComponent(customRole.name)}&description=${encodeURIComponent(customRole.description)}`
@@ -796,7 +796,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
           <button
             disabled={!canSubmit || createTriggerMut.isPending}
-            className="btn btn-primary"
+            className="btn btn-ghost"
             onClick={handleSubmit}
           >
             {createTriggerMut.isPending ? 'Creating...' : 'Create Trigger'}
@@ -891,7 +891,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
           <button
             disabled={!canSubmit || registerExtensionMut.isPending}
-            className="btn btn-primary"
+            className="btn btn-ghost"
             onClick={handleSubmit}
           >
             {registerExtensionMut.isPending ? 'Registering...' : 'Register Extension'}
@@ -974,7 +974,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
           <button
             disabled={!canSubmit || createUserMut.isPending}
-            className="btn btn-primary"
+            className="btn btn-ghost"
             onClick={handleSubmit}
           >
             {createUserMut.isPending ? 'Creating...' : 'Create User'}
@@ -1027,7 +1027,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
           <button
             disabled={!canSubmit || createWorkspaceMut.isPending}
-            className="btn btn-primary"
+            className="btn btn-ghost"
             onClick={() =>
               createWorkspaceMut.mutate({
                 name: workspace.name.trim(),
@@ -1177,7 +1177,7 @@ export function NewEntityDialog({ open, onClose }: NewEntityDialogProps) {
           <button onClick={handleClose} className="btn btn-ghost">Cancel</button>
           <button
             disabled={!canSubmit || isPending}
-            className="btn btn-primary"
+            className="btn btn-ghost"
             onClick={handleSubmit}
           >
             {isPending ? 'Saving...' : isMemory ? 'Add to Memory' : 'Save to Knowledge Base'}

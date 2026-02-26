@@ -228,7 +228,7 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
             />
           </div>
           <button
-            className="btn btn-primary"
+            className="btn btn-ghost"
             disabled={!delegateTaskText.trim() || delegateMut.isPending}
             onClick={() => {
               delegateMut.mutate({
@@ -842,7 +842,7 @@ function ProfilesTab({
             <p className="text-[10px] text-muted-foreground mt-0.5">Blank = all tools. Supports prefix wildcards (web_*) and exact names.</p>
           </div>
           <button
-            className="btn btn-primary"
+            className="btn btn-ghost"
             disabled={!profileName.trim() || !profilePrompt.trim() || createMut.isPending}
             onClick={() => {
               const allowedTools = profileTools

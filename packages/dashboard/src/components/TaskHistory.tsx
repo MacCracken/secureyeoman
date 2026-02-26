@@ -35,8 +35,9 @@ import {
   createTask,
   deleteTask,
   updateTask,
-  fetchHeartbeatTasks,
+  fetchHeartbeatStatus,
   fetchHeartbeatLog,
+  fetchPersonalities,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import type { Task, HeartbeatTask, HeartbeatLogEntry } from '../types';
@@ -186,11 +187,20 @@ export function TaskHistory() {
   });
 
   const { data: heartbeatData, isLoading: heartbeatLoading } = useQuery({
-    queryKey: ['heartbeat-tasks'],
-    queryFn: fetchHeartbeatTasks,
+    queryKey: ['heartbeat-status'],
+    queryFn: fetchHeartbeatStatus,
     staleTime: 0,
     refetchOnMount: true,
   });
+
+  const { data: personalitiesData } = useQuery({
+    queryKey: ['personalities'],
+    queryFn: fetchPersonalities,
+    staleTime: 60000,
+  });
+  const personalityMap = new Map<string, string>(
+    (personalitiesData?.personalities ?? []).map((p) => [p.id, p.name])
+  );
 
   const createTaskMutation = useMutation({
     mutationFn: (data: { name: string; type?: string; description?: string; input?: unknown }) =>
@@ -258,7 +268,8 @@ export function TaskHistory() {
   const total = data?.total ?? 0;
   const totalPages = Math.ceil(total / pageSize);
   const heartbeatTasks = heartbeatData?.tasks ?? [];
-  const activeHeartbeats = heartbeatTasks.filter((t) => t.enabled).length;
+  const activeHeartbeats = heartbeatData?.enabledTasks ?? heartbeatTasks.filter((t) => t.enabled).length;
+  const totalHeartbeats = heartbeatData?.totalTasks ?? heartbeatTasks.length;
 
   const resetFilters = () => {
     setSearchParams({});
@@ -425,7 +436,7 @@ export function TaskHistory() {
                     });
                   }}
                   disabled={!newTask.name.trim() || createTaskMutation.isPending}
-                  className="btn btn-primary"
+                  className="btn btn-ghost"
                 >
                   {createTaskMutation.isPending ? 'Creating...' : 'Create Task'}
                 </button>
@@ -526,7 +537,7 @@ export function TaskHistory() {
                     });
                   }}
                   disabled={!editTask.name.trim() || updateTaskMutation.isPending}
-                  className="btn btn-primary"
+                  className="btn btn-ghost"
                 >
                   {updateTaskMutation.isPending ? 'Saving...' : 'Save'}
                 </button>
@@ -564,7 +575,7 @@ export function TaskHistory() {
           Heartbeats
           {heartbeatTasks.length > 0 && (
             <span className="text-xs text-muted-foreground">
-              ({activeHeartbeats}/{heartbeatTasks.length})
+              ({activeHeartbeats}/{totalHeartbeats})
             </span>
           )}
         </button>
@@ -581,7 +592,7 @@ export function TaskHistory() {
                 onClick={() => {
                   setShowCreateDialog(true);
                 }}
-                className="btn btn-primary text-sm px-3 py-1.5 flex items-center gap-1"
+                className="btn btn-ghost text-sm px-3 py-1.5 flex items-center gap-1"
               >
                 <Plus className="w-4 h-4" />
                 New Task
@@ -719,6 +730,9 @@ export function TaskHistory() {
                     <th className="px-2 py-2 text-left font-medium text-xs hidden md:table-cell">
                       Agent
                     </th>
+                    <th className="px-2 py-2 text-left font-medium text-xs hidden xl:table-cell">
+                      Agent ID
+                    </th>
                     <th className="px-2 py-2 text-left font-medium text-xs w-20">Actions</th>
                   </tr>
                 </thead>
@@ -741,6 +755,7 @@ export function TaskHistory() {
                       <TaskRow
                         key={task.id}
                         task={task}
+                        personalityMap={personalityMap}
                         onEdit={setEditTask}
                         onDelete={(t) => {
                           setDeleteTarget(t);
@@ -810,7 +825,7 @@ export function TaskHistory() {
           ) : (
             <div className="card divide-y divide-border overflow-hidden">
               {heartbeatTasks.map((task) => (
-                <HeartbeatCard key={task.name} task={task} />
+                <HeartbeatCard key={task.name} task={task} globalPersonalityMap={personalityMap} />
               ))}
             </div>
           )}
@@ -822,10 +837,12 @@ export function TaskHistory() {
 
 function TaskRow({
   task,
+  personalityMap,
   onEdit,
   onDelete,
 }: {
   task: Task;
+  personalityMap: Map<string, string>;
   onEdit?: (task: Task) => void;
   onDelete?: (task: Task) => void;
 }) {
@@ -880,12 +897,26 @@ function TaskRow({
         {formatTime(task.createdAt)}
       </td>
       <td className="px-2 py-3 text-xs hidden md:table-cell">
-        {task.securityContext?.personalityName ? (
-          <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs">
-            {task.securityContext.personalityName}
+        {(() => {
+          const pId = task.securityContext?.personalityId;
+          const pName =
+            task.securityContext?.personalityName ??
+            (pId ? (personalityMap.get(pId) ?? null) : null);
+          if (pName) {
+            return (
+              <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded text-xs">
+                {pName}
+              </span>
+            );
+          }
+          return <span className="text-muted-foreground/40">—</span>;
+        })()}
+      </td>
+      <td className="px-2 py-3 text-xs hidden xl:table-cell font-mono text-muted-foreground">
+        {task.securityContext?.personalityId ? (
+          <span title={task.securityContext.personalityId}>
+            {task.securityContext.personalityId.slice(0, 8)}…
           </span>
-        ) : task.securityContext?.userId && task.securityContext.userId !== 'api' ? (
-          <span className="text-muted-foreground font-mono">{task.securityContext.userId}</span>
         ) : (
           <span className="text-muted-foreground/40">—</span>
         )}
@@ -920,7 +951,7 @@ function TaskRow({
   );
 }
 
-function HeartbeatCard({ task }: { task: HeartbeatTask }) {
+function HeartbeatCard({ task, globalPersonalityMap }: { task: HeartbeatTask; globalPersonalityMap: Map<string, string> }) {
   const [expanded, setExpanded] = useState(false);
 
   // Always fetch latest entry for the status badge when collapsed.
@@ -969,7 +1000,8 @@ function HeartbeatCard({ task }: { task: HeartbeatTask }) {
         ? [{ id: task.personalityId ?? '', name: task.personalityName }]
         : [];
   // Lookup map for resolving personalityId → name in log entries.
-  const personalityMap = new Map(personalities.map((p) => [p.id, p.name]));
+  // Merge global map first so task-local entries (if any) take precedence.
+  const personalityMap = new Map([...globalPersonalityMap, ...personalities.map((p): [string, string] => [p.id, p.name])]);
 
   return (
     <div className={`border-l-4 ${task.enabled ? 'border-l-success' : 'border-l-muted-foreground/30'}`}>

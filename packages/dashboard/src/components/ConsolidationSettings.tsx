@@ -250,7 +250,7 @@ export default function ConsolidationSettings() {
             <button
               onClick={handleCustomSave}
               disabled={scheduleMutation.isPending}
-              className="btn btn-primary text-sm"
+              className="btn btn-ghost text-sm"
             >
               Save
             </button>
@@ -288,7 +288,7 @@ export default function ConsolidationSettings() {
               runMutation.mutate();
             }}
             disabled={runMutation.isPending}
-            className="flex items-center gap-2 btn btn-primary text-sm"
+            className="flex items-center gap-2 btn btn-ghost text-sm"
           >
             {runMutation.isPending ? (
               <Loader2 className="w-4 h-4 animate-spin" />

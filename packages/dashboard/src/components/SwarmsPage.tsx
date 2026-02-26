@@ -170,7 +170,7 @@ export function SwarmsPage({ allowSubAgents }: { allowSubAgents: boolean }) {
           </div>
           <div className="flex items-center gap-2">
             <button
-              className="btn btn-primary"
+              className="btn btn-ghost"
               disabled={!task.trim() || executeMut.isPending}
               onClick={() => {
                 executeMut.mutate({

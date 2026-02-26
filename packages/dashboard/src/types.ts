@@ -154,6 +154,7 @@ export interface Personality {
   modelFallbacks: { provider: string; model: string }[];
   includeArchetypes: boolean;
   injectDateTime: boolean;
+  empathyResonance: boolean;
   isActive: boolean;
   isDefault: boolean;
   isArchetype: boolean;
@@ -250,6 +251,7 @@ export interface PersonalityCreate {
   modelFallbacks?: { provider: string; model: string }[];
   includeArchetypes?: boolean;
   injectDateTime?: boolean;
+  empathyResonance?: boolean;
   body?: {
     enabled?: boolean;
     capabilities?: string[];

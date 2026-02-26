@@ -4,6 +4,7 @@ export interface TalkModeConfig {
   maxDurationMs: number;
   silenceTimeoutMs: number;
   restartOnResponse?: boolean;
+  vadThreshold: number;
 }
 
 interface SpeechRecognitionEvent {
@@ -50,6 +51,7 @@ const DEFAULT_CONFIG: TalkModeConfig = {
   maxDurationMs: 300000, // 5 minutes
   silenceTimeoutMs: 1500,
   restartOnResponse: true,
+  vadThreshold: 0.015,
 };
 
 function getRecognitionConstructor() {
@@ -76,9 +78,12 @@ export function useTalkMode(
   const audioContextRef = useRef<AudioContext | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>(0);
-  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const maxDurationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const lastVoiceActivityRef = useRef<number>(0);
+  const hasVoicedRef = useRef<boolean>(false);
+  const interimTranscriptRef = useRef<string>('');
+  const finalTranscriptRef = useRef<string>('');
 
   const isSupported = typeof window !== 'undefined' && !!getRecognitionConstructor();
 
@@ -90,11 +95,6 @@ export function useTalkMode(
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
       durationIntervalRef.current = null;
-    }
-
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current);
-      silenceTimeoutRef.current = null;
     }
 
     if (maxDurationTimeoutRef.current) {
@@ -137,6 +137,8 @@ export function useTalkMode(
     setTranscript('');
     setInterimTranscript('');
     setDuration(0);
+    interimTranscriptRef.current = '';
+    finalTranscriptRef.current = '';
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -158,14 +160,42 @@ export function useTalkMode(
       source.connect(analyser);
       analyserRef.current = analyser;
 
+      // Initialise VAD state — grace period before silence detection kicks in
+      lastVoiceActivityRef.current = Date.now();
+      hasVoicedRef.current = false;
+
+      const { silenceTimeoutMs, vadThreshold } = resolvedConfig;
+
       const updateAudioLevel = () => {
         if (!analyserRef.current) return;
 
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-        analyserRef.current.getByteFrequencyData(dataArray);
+        const timeDomainData = new Uint8Array(analyserRef.current.fftSize);
+        analyserRef.current.getByteTimeDomainData(timeDomainData);
 
-        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-        setAudioLevel(average / 255);
+        // RMS from time-domain samples (centred around 128)
+        const rms =
+          Math.sqrt(
+            timeDomainData.reduce((sum, v) => sum + (v - 128) * (v - 128), 0) /
+              timeDomainData.length
+          ) / 128;
+
+        setAudioLevel(rms);
+
+        const now = Date.now();
+        if (rms > vadThreshold) {
+          hasVoicedRef.current = true;
+          lastVoiceActivityRef.current = now;
+        } else if (hasVoicedRef.current && now - lastVoiceActivityRef.current > silenceTimeoutMs) {
+          // Flush any accumulated interim transcript before stopping
+          if (interimTranscriptRef.current.trim()) {
+            finalTranscriptRef.current += interimTranscriptRef.current;
+            setTranscript(finalTranscriptRef.current.trim());
+            setInterimTranscript('');
+            onTranscript?.(finalTranscriptRef.current.trim(), true);
+          }
+          cleanup();
+          return;
+        }
 
         animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
       };
@@ -190,8 +220,6 @@ export function useTalkMode(
       recognition.interimResults = true;
       recognition.lang = 'en-US';
 
-      let finalTranscript = '';
-
       recognition.onresult = (event: SpeechRecognitionEvent) => {
         let interim = '';
         let final = '';
@@ -206,41 +234,16 @@ export function useTalkMode(
         }
 
         if (interim) {
+          interimTranscriptRef.current = interim;
           setInterimTranscript(interim);
         }
 
         if (final) {
-          finalTranscript += final;
-          setTranscript(finalTranscript.trim());
+          finalTranscriptRef.current += final;
+          interimTranscriptRef.current = '';
+          setTranscript(finalTranscriptRef.current.trim());
           setInterimTranscript('');
-
-          onTranscript?.(finalTranscript.trim(), true);
-
-          // Reset silence timeout
-          if (silenceTimeoutRef.current) {
-            clearTimeout(silenceTimeoutRef.current);
-          }
-
-          silenceTimeoutRef.current = setTimeout(() => {
-            if (finalTranscript.trim()) {
-              cleanup();
-            }
-          }, resolvedConfig.silenceTimeoutMs);
-        } else {
-          // Interim results - reset silence timeout
-          if (silenceTimeoutRef.current) {
-            clearTimeout(silenceTimeoutRef.current);
-          }
-
-          silenceTimeoutRef.current = setTimeout(() => {
-            if (interimTranscript.trim()) {
-              finalTranscript += interimTranscript;
-              setTranscript(finalTranscript.trim());
-              setInterimTranscript('');
-              onTranscript?.(finalTranscript.trim(), true);
-            }
-            cleanup();
-          }, resolvedConfig.silenceTimeoutMs);
+          onTranscript?.(finalTranscriptRef.current.trim(), true);
         }
       };
 
@@ -274,6 +277,7 @@ export function useTalkMode(
     isSupported,
     resolvedConfig.maxDurationMs,
     resolvedConfig.silenceTimeoutMs,
+    resolvedConfig.vadThreshold,
     cleanup,
     onTranscript,
     isActive,

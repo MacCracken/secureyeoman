@@ -521,7 +521,7 @@ function AutonomyTab() {
                 onChange={(e) => setWizardName(e.target.value)}
               />
               <button
-                className="btn btn-primary"
+                className="btn btn-ghost"
                 disabled={!wizardName.trim() || createRunMut.isPending}
                 onClick={() => createRunMut.mutate(wizardName.trim())}
               >
@@ -605,14 +605,14 @@ function AutonomyTab() {
                 </button>
                 {wizardStep !== 'D' ? (
                   <button
-                    className="btn btn-primary text-sm"
+                    className="btn btn-ghost text-sm"
                     onClick={() => setWizardStep(nextSection(wizardStep as 'A' | 'B' | 'C' | 'D'))}
                   >
                     Next section →
                   </button>
                 ) : (
                   <button
-                    className="btn btn-primary text-sm"
+                    className="btn btn-ghost text-sm"
                     disabled={finalizeMut.isPending}
                     onClick={() => finalizeMut.mutate()}
                   >
@@ -1850,7 +1850,7 @@ function ReportsTab() {
             <option value="csv">CSV</option>
           </select>
           <button
-            className="btn btn-primary flex items-center gap-2"
+            className="btn btn-ghost flex items-center gap-2"
             onClick={() => {
               mutation.mutate({
                 title: `Audit Report - ${new Date().toLocaleDateString()}`,

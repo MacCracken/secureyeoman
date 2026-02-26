@@ -172,7 +172,7 @@ export function McpManager() {
             </span>
           )}
           <button
-            className="btn btn-primary text-sm px-3 py-1.5 flex items-center gap-1 whitespace-nowrap"
+            className="btn btn-ghost text-sm px-3 py-1.5 flex items-center gap-1 whitespace-nowrap"
             onClick={() => {
               setShowAddForm(!showAddForm);
               setForm(EMPTY_FORM);
@@ -332,7 +332,7 @@ export function McpManager() {
               <button
                 type="submit"
                 disabled={!form.name.trim() || addMut.isPending}
-                className="btn btn-primary text-sm px-3 py-1.5"
+                className="btn btn-ghost text-sm px-3 py-1.5"
               >
                 {addMut.isPending ? 'Adding...' : 'Add Server'}
               </button>

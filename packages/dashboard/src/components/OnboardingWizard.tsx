@@ -362,7 +362,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 setStep(steps[stepIndex + 1]);
               }}
               disabled={!agentName.trim()}
-              className="btn btn-primary flex items-center gap-1"
+              className="btn btn-ghost flex items-center gap-1"
             >
               Next <ArrowRight className="w-4 h-4" />
             </button>
@@ -372,7 +372,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
                 mutation.mutate();
               }}
               disabled={mutation.isPending}
-              className="btn btn-primary flex items-center gap-1"
+              className="btn btn-ghost flex items-center gap-1"
             >
               {mutation.isPending ? (
                 'Creating...'

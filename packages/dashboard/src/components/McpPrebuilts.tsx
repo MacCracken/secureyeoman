@@ -296,7 +296,7 @@ export function McpPrebuilts() {
         {addableServers.length > 0 && !expandedServer && (
           <button
             onClick={() => setShowPicker((v) => !v)}
-            className="btn btn-primary text-xs px-3 py-1.5 flex items-center gap-1"
+            className="btn btn-ghost text-xs px-3 py-1.5 flex items-center gap-1"
           >
             <Plus className="w-3.5 h-3.5" />
             Add Featured MCP
@@ -401,7 +401,7 @@ export function McpPrebuilts() {
               <button
                 onClick={() => connectMut.mutate(activeServer)}
                 disabled={connectMut.isPending && connectMut.variables?.name === activeServer.name}
-                className="btn btn-primary text-xs px-3 py-1.5"
+                className="btn btn-ghost text-xs px-3 py-1.5"
               >
                 {connectMut.isPending && connectMut.variables?.name === activeServer.name ? (
                   <Loader2 className="w-3 h-3 animate-spin" />

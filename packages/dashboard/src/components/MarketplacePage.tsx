@@ -99,7 +99,7 @@ export function MarketplacePage() {
                   </button>
                 ) : (
                   <button
-                    className="btn btn-primary flex items-center gap-2 w-full justify-center"
+                    className="btn btn-ghost flex items-center gap-2 w-full justify-center"
                     onClick={() => {
                       installMut.mutate(skill.id);
                     }}

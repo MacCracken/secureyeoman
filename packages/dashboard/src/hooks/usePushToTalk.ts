@@ -4,6 +4,7 @@ export interface PushToTalkConfig {
   hotkey: string;
   maxDurationMs: number;
   silenceTimeoutMs: number;
+  vadThreshold: number;
 }
 
 interface SpeechRecognitionEvent {
@@ -47,6 +48,7 @@ const DEFAULT_CONFIG: PushToTalkConfig = {
   hotkey: 'ctrl+shift+v',
   maxDurationMs: 60000,
   silenceTimeoutMs: 2000,
+  vadThreshold: 0.015,
 };
 
 function getRecognitionConstructor() {
@@ -73,8 +75,9 @@ export function usePushToTalk(
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const animationFrameRef = useRef<number>(0);
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const silenceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const maxDurationTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastVoiceActivityRef = useRef<number>(0);
+  const hasVoicedRef = useRef<boolean>(false);
 
   const isSupported = typeof window !== 'undefined' && !!getRecognitionConstructor();
 
@@ -85,11 +88,6 @@ export function usePushToTalk(
     if (durationIntervalRef.current) {
       clearInterval(durationIntervalRef.current);
       durationIntervalRef.current = null;
-    }
-
-    if (silenceTimeoutRef.current) {
-      clearTimeout(silenceTimeoutRef.current);
-      silenceTimeoutRef.current = null;
     }
 
     if (maxDurationTimeoutRef.current) {
@@ -152,14 +150,35 @@ export function usePushToTalk(
       source.connect(analyser);
       analyserRef.current = analyser;
 
+      // Initialise VAD state — grace period before silence detection kicks in
+      lastVoiceActivityRef.current = Date.now();
+      hasVoicedRef.current = false;
+
+      const { silenceTimeoutMs, vadThreshold } = resolvedConfig;
+
       const updateAudioLevel = () => {
         if (!analyserRef.current) return;
 
-        const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-        analyserRef.current.getByteFrequencyData(dataArray);
+        const timeDomainData = new Uint8Array(analyserRef.current.fftSize);
+        analyserRef.current.getByteTimeDomainData(timeDomainData);
 
-        const average = dataArray.reduce((a, b) => a + b, 0) / dataArray.length;
-        setAudioLevel(average / 255);
+        // RMS from time-domain samples (centred around 128)
+        const rms =
+          Math.sqrt(
+            timeDomainData.reduce((sum, v) => sum + (v - 128) * (v - 128), 0) /
+              timeDomainData.length
+          ) / 128;
+
+        setAudioLevel(rms);
+
+        const now = Date.now();
+        if (rms > vadThreshold) {
+          hasVoicedRef.current = true;
+          lastVoiceActivityRef.current = now;
+        } else if (hasVoicedRef.current && now - lastVoiceActivityRef.current > silenceTimeoutMs) {
+          stopCapture();
+          return;
+        }
 
         animationFrameRef.current = requestAnimationFrame(updateAudioLevel);
       };
@@ -187,10 +206,6 @@ export function usePushToTalk(
       let finalTranscript = '';
 
       recognition.onresult = (event: SpeechRecognitionEvent) => {
-        if (silenceTimeoutRef.current) {
-          clearTimeout(silenceTimeoutRef.current);
-        }
-
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
           if (result.isFinal) {
@@ -202,10 +217,6 @@ export function usePushToTalk(
           setTranscript(finalTranscript.trim());
           onTranscript?.(finalTranscript.trim());
         }
-
-        silenceTimeoutRef.current = setTimeout(() => {
-          stopCapture();
-        }, resolvedConfig.silenceTimeoutMs);
       };
 
       recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
@@ -233,6 +244,7 @@ export function usePushToTalk(
     isSupported,
     resolvedConfig.maxDurationMs,
     resolvedConfig.silenceTimeoutMs,
+    resolvedConfig.vadThreshold,
     onTranscript,
     stopCapture,
     isActive,

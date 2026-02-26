@@ -107,6 +107,7 @@ export const PERSONALITY_PRESETS: PersonalityPreset[] = [
       modelFallbacks: [],
       includeArchetypes: true,
       injectDateTime: false,
+      empathyResonance: false,
       body: BASE_BODY,
     },
   },
@@ -156,6 +157,7 @@ Terse, factual, and structured. When flagging a concern, state exactly: (a) what
       modelFallbacks: [],
       includeArchetypes: true,
       injectDateTime: false,
+      empathyResonance: false,
       body: {
         ...BASE_BODY,
         proactiveConfig: {

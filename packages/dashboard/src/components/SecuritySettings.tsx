@@ -150,7 +150,7 @@ function RoleForm({
       </div>
       <div className="flex gap-2 pt-1">
         <button
-          className="btn btn-primary text-sm px-3 py-1"
+          className="btn btn-ghost text-sm px-3 py-1"
           disabled={isPending || !form.name.trim() || !form.permissions.trim()}
           onClick={() => {
             onSubmit(form);
@@ -530,7 +530,7 @@ export function SecuritySettings() {
             </select>
           </div>
           <button
-            className="btn btn-primary text-sm h-8"
+            className="btn btn-ghost text-sm h-8"
             disabled={!draftProvider || !draftModel || setDefaultMutation.isPending}
             onClick={() => {
               if (draftProvider && draftModel) {
@@ -1322,7 +1322,7 @@ export function RolesSettings() {
               </div>
               <div className="flex gap-2 pt-1">
                 <button
-                  className="btn btn-primary text-sm"
+                  className="btn btn-ghost text-sm"
                   disabled={assignRoleMutation.isPending || !assignUserId.trim() || !assignRoleId}
                   onClick={() => {
                     assignRoleMutation.mutate({
@@ -1534,7 +1534,7 @@ export function SecretsPanel() {
             </div>
             <div className="flex gap-2">
               <button
-                className="btn btn-primary text-sm px-3 py-1 flex items-center gap-1"
+                className="btn btn-ghost text-sm px-3 py-1 flex items-center gap-1"
                 onClick={() => {
                   if (newName && newValue) setMutation.mutate({ name: newName, value: newValue });
                 }}

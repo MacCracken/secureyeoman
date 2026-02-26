@@ -500,7 +500,7 @@ function MySkillsTab() {
               personalityId: activePersonality?.id ?? null,
             });
           }}
-          className="btn btn-primary"
+          className="btn btn-ghost"
         >
           <Plus className="w-4 h-4 mr-1" /> Add Skill
         </button>
@@ -672,7 +672,7 @@ function MySkillsTab() {
               <button
                 onClick={handleSubmit}
                 disabled={createMut.isPending || updateMut.isPending}
-                className="btn btn-primary"
+                className="btn btn-ghost"
               >
                 {createMut.isPending || updateMut.isPending ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
@@ -1170,7 +1170,7 @@ function SkillCard({
               <button
                 onClick={onInstall}
                 disabled={installing}
-                className="btn btn-primary flex items-center gap-2 w-full justify-center text-xs py-2"
+                className="btn btn-ghost flex items-center gap-2 w-full justify-center text-xs py-2"
               >
                 {installing ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -1366,7 +1366,7 @@ function SkillPreviewModal({
               <button
                 onClick={onInstall}
                 disabled={installing}
-                className="btn btn-primary flex items-center gap-2 text-sm px-4"
+                className="btn btn-ghost flex items-center gap-2 text-sm px-4"
               >
                 {installing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
                 Install

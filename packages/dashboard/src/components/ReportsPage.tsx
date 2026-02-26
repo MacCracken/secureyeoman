@@ -51,7 +51,7 @@ export function ReportsPage() {
             <option value="csv">CSV</option>
           </select>
           <button
-            className="btn btn-primary flex items-center gap-2"
+            className="btn btn-ghost flex items-center gap-2"
             onClick={() => {
               mutation.mutate({
                 title: `Security Report - ${new Date().toLocaleDateString()}`,

@@ -319,7 +319,7 @@ function ExtensionsTab() {
           </div>
           {extError && <p className="text-xs text-destructive">{extError}</p>}
           <button
-            className="btn btn-primary"
+            className="btn btn-ghost"
             disabled={!extId.trim() || !extName.trim() || registerMut.isPending}
             onClick={handleRegister}
           >
@@ -528,7 +528,7 @@ function HooksTab() {
           </div>
           {hookError && <p className="text-xs text-destructive">{hookError}</p>}
           <button
-            className="btn btn-primary"
+            className="btn btn-ghost"
             disabled={!hookExtId.trim() || !hookPoint.trim() || registerMut.isPending}
             onClick={() => {
               setHookError('');
@@ -708,7 +708,7 @@ function WebhooksTab() {
           </div>
           {whError && <p className="text-xs text-destructive">{whError}</p>}
           <button
-            className="btn btn-primary"
+            className="btn btn-ghost"
             disabled={!whUrl.trim() || !whHookPointsText.trim() || registerMut.isPending}
             onClick={() => {
               const hookPoints = whHookPointsText

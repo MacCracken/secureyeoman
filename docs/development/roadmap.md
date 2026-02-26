@@ -27,8 +27,9 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 ### Open Items
 
 - [x] **Coverage thresholds** — `packages/core` v8 coverage now meets all four thresholds (statements ≥ 87%, functions ≥ 87%, lines ≥ 87%, branches ≥ 75%). *(Closed 2026-02-25)*
-- [ ] **Bug**: Dashboard Tasks > Heartbeat Task count at the top still displays 4/4 when more than 1 personality is active; update like metrics page.
+- [x] **Bug**: Dashboard Tasks > Heartbeat Task count now uses server-computed personality-aware `enabledTasks`/`totalTasks` from the status endpoint, matching MetricsPage. *(Closed 2026-02-26)*
 - [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 133. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(New feature — no automated DB integration test yet)*
+- [ ] **Bug**: https issues with storybook - Framing 'http://localhost:6006/' violates the following Content Security Policy directive: "default-src 'self'". The request has been blocked. Note that 'frame-src' was not explicitly set, so 'default-src' is used as a fallback. - probably need a cleaner way to .env the http/https switch.
 
 ---
 
@@ -51,6 +52,7 @@ Consolidates major UX surface work: Mission Control as the new default landing p
   Personality
   Skills
   Proactive
+  Intent                          ← promoted from Settings > Intent
   ┌ Automation (collapsible)
   │   ├ Tasks
   │   └ Workflows
@@ -68,12 +70,7 @@ Consolidates major UX surface work: Mission Control as the new default landing p
 
 ### Personality Editor — Ontological Restructure
 
-Reorganise the Soul tab fields so each section truly reflects its metaphor. Three targeted moves plus two new capability toggles:
-
-- [ ] **Spirit — Pathos**: Relocate the Morphogenesis toggle (Sacred Archetypes) into the Spirit section. Add an **Empathy Resonance** toggle that controls how strongly the personality mirrors and adapts to the user's detected emotional register.
-- [ ] **Brain — Intellect**: Move Default Model and Model Fallbacks into the Brain section. Add an **Analytical Depth** control (maps to reasoning effort / extended thinking budget) so cognitive intensity is configured alongside the model itself.
-- [ ] **Body — Endowments**: Relocate Voice and Preferred Language from the Soul tab into the Body section. These are the physical expression layer — how the AI speaks and in what tongue.
-- [ ] **Brain — Intellect (Chronoception)**: Move the Chronoception (date/time injection) toggle from Soul — Essence into Brain — Intellect. Knowing the current time is a cognitive/analytical concern, not an identity one.
+- [x] **Ontological restructure complete** — Spirit-Pathos: Morphogenesis + new Empathy Resonance toggle. Brain-Intellect: Chronoception, Default Model, Model Fallbacks, Analytical Depth (5-level pill selector over thinkingConfig), Extended Thinking — all grouped in a "Thinking" sub-section. Body-Endowments: Voice + Preferred Language at the top. Soul-Essence: stripped to identity-only fields. Migration `048_personality_empathy_resonance.sql` adds `empathy_resonance BOOLEAN` to DB. *(Closed 2026-02-26)*
 
 ### Advanced Editor Mode
 
@@ -81,7 +78,7 @@ Reorganise the Soul tab fields so each section truly reflects its metaphor. Thre
 
 ### Voice Activity Detection
 
-- [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`. *(Quick win — AnalyserNode already wired)*
+- [x] **Energy-based VAD** — Replaced fixed silence timers with RMS-threshold VAD using `getByteTimeDomainData`. `hasVoicedRef` guards against premature stop. `vadThreshold: 0.015` default added to both hook configs. *(Closed 2026-02-26)*
 
 ### Visual Polish
 
@@ -225,4 +222,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-25 (Roadmap reorganization: removed completed phases 50–51; consolidated 8 open phases into 5 (52–57); merged Security Toolkit + Audio + Notification Delivery into Phase 53; moved Energy-based VAD and Advanced Editor Mode into Phase 52; merged Marketplace Evolution into Phase 55 with Voice Profiles; renumbered demand-gated phases)*
+*Last updated: 2026-02-26 (Sidebar reorg: promoted Intent to top-level nav item; Tailwind config updated for multi-theme CSS variable prep; TaskHistory agent name resolution fix)*

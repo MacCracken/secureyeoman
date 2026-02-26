@@ -197,6 +197,7 @@ export class SoulManager {
       modelFallbacks: [],
       includeArchetypes: agentName === 'FRIDAY',
       injectDateTime: false,
+      empathyResonance: false,
       body: {
         enabled: false,
         capabilities: [],

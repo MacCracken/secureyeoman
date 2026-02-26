@@ -216,7 +216,7 @@ export function A2APage({ embedded }: { embedded?: boolean } = {}) {
           )}
           {!delegateResult && (
             <button
-              className="btn btn-primary"
+              className="btn btn-ghost"
               disabled={!delegatePeerId || !delegateTask.trim() || delegateMut.isPending}
               onClick={() => {
                 setDelegateError('');
@@ -370,7 +370,7 @@ function PeersTab() {
           </div>
           {peerError && <p className="text-xs text-destructive">{peerError}</p>}
           <button
-            className="btn btn-primary"
+            className="btn btn-ghost"
             disabled={!peerUrl.trim() || addPeerMut.isPending}
             onClick={() => {
               setPeerError('');

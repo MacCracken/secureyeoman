@@ -286,7 +286,7 @@ export function SkillsManager() {
             <span className="badge badge-warning">{pendingCount} pending approval</span>
           )}
         </div>
-        <button onClick={startCreate} className="btn btn-primary flex items-center gap-1">
+        <button onClick={startCreate} className="btn btn-ghost flex items-center gap-1">
           <Plus className="w-4 h-4" /> New Skill
         </button>
       </div>
@@ -508,7 +508,7 @@ export function SkillsManager() {
             <button
               onClick={handleSave}
               disabled={!form.name?.trim() || createMut.isPending || updateMut.isPending}
-              className="btn btn-primary"
+              className="btn btn-ghost"
             >
               {createMut.isPending || updateMut.isPending ? 'Saving...' : 'Save'}
             </button>
