@@ -14,4 +14,9 @@ export const summarizeTextSkill: Partial<MarketplaceSkill> = {
   instructions:
     'When the user asks you to summarize text, produce a concise summary that captures the key points. Structure the summary with bullet points for clarity. Keep the summary under 20% of the original length.',
   tags: ['summarize', 'text', 'utility'],
+  useWhen: 'User asks to summarize, condense, or shorten a piece of text',
+  doNotUseWhen: 'User wants the full original text preserved or is asking for expansion or elaboration',
+  successCriteria: 'A concise summary under 20% of the original length that captures all key points',
+  routing: 'fuzzy',
+  autonomyLevel: 'L1',
 };

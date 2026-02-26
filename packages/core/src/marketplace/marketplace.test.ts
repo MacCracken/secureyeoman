@@ -105,11 +105,41 @@ describe('MarketplaceStorage', () => {
     expect(designerSkill!.category).toBe('design');
   });
 
+  it('should seed builtin skills with routing quality fields', async () => {
+    await storage.seedBuiltinSkills();
+    const { skills } = await storage.search();
+    for (const skill of skills) {
+      expect(typeof skill.useWhen).toBe('string');
+      expect(skill.useWhen.length).toBeGreaterThan(0);
+      expect(typeof skill.doNotUseWhen).toBe('string');
+      expect(skill.doNotUseWhen.length).toBeGreaterThan(0);
+      expect(typeof skill.successCriteria).toBe('string');
+      expect(skill.successCriteria.length).toBeGreaterThan(0);
+      expect(['fuzzy', 'explicit']).toContain(skill.routing);
+      expect(['L1', 'L2', 'L3', 'L4', 'L5']).toContain(skill.autonomyLevel);
+    }
+  });
+
   it('should be idempotent when seeding builtin skills', async () => {
     await storage.seedBuiltinSkills();
     await storage.seedBuiltinSkills();
     const { skills } = await storage.search('Summarize');
     expect(skills).toHaveLength(1);
+  });
+
+  it('should update routing quality fields on re-seed of existing skills', async () => {
+    // First seed
+    await storage.seedBuiltinSkills();
+    const { skills: first } = await storage.search('Summarize');
+    expect(first[0].useWhen).toBeTruthy();
+
+    // Manually blank out useWhen to simulate a stale row
+    await storage.updateSkill(first[0].id, { useWhen: '' });
+    expect((await storage.getSkill(first[0].id))!.useWhen).toBe('');
+
+    // Re-seed should restore the value
+    await storage.seedBuiltinSkills();
+    expect((await storage.getSkill(first[0].id))!.useWhen).toBeTruthy();
   });
 });
 
@@ -180,6 +210,27 @@ describe('MarketplaceManager with BrainManager', () => {
     expect(brainSkills[0].name).toBe('Test Marketplace Skill');
     expect(brainSkills[0].source).toBe('marketplace');
     expect(brainSkills[0].instructions).toBe('Do the thing');
+  });
+
+  it('should carry routing quality fields through install to brain skill', async () => {
+    const skill = await manager.publish({
+      name: 'Routed Marketplace Skill',
+      instructions: 'Do the thing',
+      useWhen: 'User wants routing',
+      doNotUseWhen: 'Never',
+      successCriteria: 'Routing done',
+      routing: 'explicit',
+      autonomyLevel: 'L2',
+    });
+    await manager.install(skill.id);
+
+    const brainSkills = await brainManager.listSkills({ source: 'marketplace' });
+    expect(brainSkills).toHaveLength(1);
+    expect(brainSkills[0].useWhen).toBe('User wants routing');
+    expect(brainSkills[0].doNotUseWhen).toBe('Never');
+    expect(brainSkills[0].successCriteria).toBe('Routing done');
+    expect(brainSkills[0].routing).toBe('explicit');
+    expect(brainSkills[0].autonomyLevel).toBe('L2');
   });
 
   it('should remove the brain skill on uninstall', async () => {
@@ -373,6 +424,27 @@ describe('Community Skill Sync', () => {
     const communityBrainSkills = await brainManager.listSkills({ source: 'community' });
     expect(communityBrainSkills).toHaveLength(1);
     expect(communityBrainSkills[0].name).toBe('Community Helper');
+  });
+
+  it('should propagate routing quality fields from JSON through sync → marketplace DB', async () => {
+    writeSkill('skills/development/routed-skill.json', {
+      name: 'Routed Skill',
+      instructions: 'Has routing metadata',
+      useWhen: 'User asks for routing help',
+      doNotUseWhen: 'User wants something else',
+      successCriteria: 'Routing is clear',
+      routing: 'explicit',
+      autonomyLevel: 'L2',
+    });
+
+    await manager.syncFromCommunity();
+    const { skills } = await manager.search(undefined, undefined, 20, 0, 'community');
+    expect(skills).toHaveLength(1);
+    expect(skills[0].useWhen).toBe('User asks for routing help');
+    expect(skills[0].doNotUseWhen).toBe('User wants something else');
+    expect(skills[0].successCriteria).toBe('Routing is clear');
+    expect(skills[0].routing).toBe('explicit');
+    expect(skills[0].autonomyLevel).toBe('L2');
   });
 
   it('should propagate triggerPatterns from JSON through sync → marketplace DB → brain skill on install', async () => {

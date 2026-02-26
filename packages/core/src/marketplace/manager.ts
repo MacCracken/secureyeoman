@@ -93,6 +93,11 @@ export class MarketplaceManager {
               instructions: skill.instructions,
               tools: skill.tools,
               triggerPatterns: skill.triggerPatterns,
+              useWhen: skill.useWhen ?? '',
+              doNotUseWhen: skill.doNotUseWhen ?? '',
+              successCriteria: skill.successCriteria ?? '',
+              routing: skill.routing ?? 'fuzzy',
+              autonomyLevel: skill.autonomyLevel ?? 'L1',
               source: brainSource,
               enabled: true,
               personalityId: personalityId ?? null,
@@ -307,6 +312,13 @@ export class MarketplaceManager {
           triggerPatterns: Array.isArray(data.triggerPatterns)
             ? (data.triggerPatterns as string[])
             : [],
+          useWhen: typeof data.useWhen === 'string' ? data.useWhen : '',
+          doNotUseWhen: typeof data.doNotUseWhen === 'string' ? data.doNotUseWhen : '',
+          successCriteria: typeof data.successCriteria === 'string' ? data.successCriteria : '',
+          routing: (data.routing === 'explicit' ? 'explicit' : 'fuzzy') as 'fuzzy' | 'explicit',
+          autonomyLevel: (['L1','L2','L3','L4','L5'].includes(data.autonomyLevel as string)
+            ? data.autonomyLevel
+            : 'L1') as 'L1' | 'L2' | 'L3' | 'L4' | 'L5',
           source: 'community',
         };
 

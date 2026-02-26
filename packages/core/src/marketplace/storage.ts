@@ -36,6 +36,11 @@ export class MarketplaceStorage extends PgBaseStorage {
       instructions: data.instructions ?? '',
       tools: data.tools ?? [],
       triggerPatterns: data.triggerPatterns ?? [],
+      useWhen: data.useWhen ?? '',
+      doNotUseWhen: data.doNotUseWhen ?? '',
+      successCriteria: data.successCriteria ?? '',
+      routing: data.routing ?? 'fuzzy',
+      autonomyLevel: data.autonomyLevel ?? 'L1',
       installed: data.installed ?? false,
       installedGlobally: data.installed ?? false,
       source: data.source ?? 'published',
@@ -44,8 +49,8 @@ export class MarketplaceStorage extends PgBaseStorage {
     };
     await this.execute(
       `INSERT INTO marketplace.skills
-        (id, name, description, version, author, author_info, category, tags, download_count, rating, instructions, tools, trigger_patterns, installed, source, published_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)`,
+        (id, name, description, version, author, author_info, category, tags, download_count, rating, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, routing, autonomy_level, installed, source, published_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
       [
         id,
         skill.name,
@@ -60,6 +65,11 @@ export class MarketplaceStorage extends PgBaseStorage {
         skill.instructions,
         JSON.stringify(skill.tools),
         JSON.stringify(skill.triggerPatterns),
+        skill.useWhen,
+        skill.doNotUseWhen,
+        skill.successCriteria,
+        skill.routing,
+        skill.autonomyLevel,
         skill.installed,
         skill.source,
         skill.publishedAt,
@@ -98,8 +108,13 @@ export class MarketplaceStorage extends PgBaseStorage {
         tags = COALESCE($7, tags),
         instructions = COALESCE($8, instructions),
         trigger_patterns = COALESCE($9, trigger_patterns),
-        updated_at = $10
-       WHERE id = $11`,
+        use_when = COALESCE($10, use_when),
+        do_not_use_when = COALESCE($11, do_not_use_when),
+        success_criteria = COALESCE($12, success_criteria),
+        routing = COALESCE($13, routing),
+        autonomy_level = COALESCE($14, autonomy_level),
+        updated_at = $15
+       WHERE id = $16`,
       [
         data.name ?? null,
         data.description ?? null,
@@ -110,6 +125,11 @@ export class MarketplaceStorage extends PgBaseStorage {
         data.tags ? JSON.stringify(data.tags) : null,
         data.instructions ?? null,
         data.triggerPatterns ? JSON.stringify(data.triggerPatterns) : null,
+        data.useWhen ?? null,
+        data.doNotUseWhen ?? null,
+        data.successCriteria ?? null,
+        data.routing ?? null,
+        data.autonomyLevel ?? null,
         now,
         id,
       ]
@@ -265,6 +285,11 @@ export class MarketplaceStorage extends PgBaseStorage {
       triggerPatterns: Array.isArray(row.trigger_patterns)
         ? (row.trigger_patterns as string[])
         : [],
+      useWhen: (row.use_when as string) ?? '',
+      doNotUseWhen: (row.do_not_use_when as string) ?? '',
+      successCriteria: (row.success_criteria as string) ?? '',
+      routing: ((row.routing as string) ?? 'fuzzy') as MarketplaceSkill['routing'],
+      autonomyLevel: ((row.autonomy_level as string) ?? 'L1') as MarketplaceSkill['autonomyLevel'],
       installed: row.installed as boolean,
       installedGlobally: (row.installed as boolean) ?? false,
       source: ((row.source as string) ?? 'published') as MarketplaceSkill['source'],
@@ -284,11 +309,14 @@ export class MarketplaceStorage extends PgBaseStorage {
     ];
     for (const skill of BUILTIN_SKILLS) {
       if (!skill.name) continue;
-      const exists = await this.queryOne(
-        'SELECT 1 FROM marketplace.skills WHERE name = $1 AND author = $2',
+      const existing = await this.queryOne<{ id: string }>(
+        'SELECT id FROM marketplace.skills WHERE name = $1 AND author = $2',
         [skill.name, skill.author]
       );
-      if (!exists) {
+      if (existing) {
+        // Update routing quality fields on existing rows so re-deploys pick up changes
+        await this.updateSkill(existing.id, { ...skill, source: 'builtin' });
+      } else {
         await this.addSkill({ ...skill, source: 'builtin' });
       }
     }

@@ -62,4 +62,9 @@ export const seniorSoftwareEngineerAuditSkill: Partial<MarketplaceSkill> = {
     '- When in doubt about intent, ask clarifying questions rather than assuming the worst.',
   ].join('\n'),
   tags: ['development', 'code-review', 'audit', 'security', 'quality', 'best-practices'],
+  useWhen: 'User asks for a code review, audit, or quality assessment of existing code',
+  doNotUseWhen: 'User needs new code written or architecture designed — use the Senior Software Engineer skill instead',
+  successCriteria: 'Structured review with severity-rated findings (HIGH/MEDIUM/LOW), suggested fixes, and a summary checklist',
+  routing: 'fuzzy',
+  autonomyLevel: 'L1',
 };

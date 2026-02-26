@@ -85,4 +85,6 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '046_personality_inject_datetime', sql: readSql('046_personality_inject_datetime.sql') },
   { id: '047_notifications', sql: readSql('047_notifications.sql') },
   { id: '048_personality_empathy_resonance', sql: readSql('048_personality_empathy_resonance.sql') },
+  { id: '049_marketplace_routing_quality', sql: readSql('049_marketplace_routing_quality.sql') },
+  { id: '050_brain_skills_routing_quality', sql: readSql('050_brain_skills_routing_quality.sql') },
 ];

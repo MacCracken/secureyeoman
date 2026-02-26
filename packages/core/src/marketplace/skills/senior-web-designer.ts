@@ -52,4 +52,9 @@ export const seniorWebDesignerSkill: Partial<MarketplaceSkill> = {
     'Wait for answers before providing your final critique.',
   ].join('\n'),
   tags: ['design', 'ui', 'ux', 'cro', 'accessibility', 'mobile-first', 'web-design', 'conversion'],
+  useWhen: 'User needs UI/UX design review, CRO advice, accessibility guidance, or web design critique',
+  doNotUseWhen: 'User needs backend, infrastructure, or business logic work — use an engineering skill instead',
+  successCriteria: 'Actionable critique covering visual hierarchy, user friction, technical feasibility, and accessibility compliance',
+  routing: 'fuzzy',
+  autonomyLevel: 'L1',
 };

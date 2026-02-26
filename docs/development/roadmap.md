@@ -30,6 +30,7 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 - [x] **Bug**: Dashboard Tasks > Heartbeat Task count now uses server-computed personality-aware `enabledTasks`/`totalTasks` from the status endpoint, matching MetricsPage. *(Closed 2026-02-26)*
 - [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 133. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(New feature — no automated DB integration test yet)*
 - [ ] **Bug**: https issues with storybook - Framing 'http://localhost:6006/' violates the following Content Security Policy directive: "default-src 'self'". The request has been blocked. Note that 'frame-src' was not explicitly set, so 'default-src' is used as a fallback. - probably need a cleaner way to .env the http/https switch.
+- [ ] **Bug: CPU usage always shows 0%** — Dashboard CPU gauge reports zero. Investigate: (1) what `GET /api/v1/metrics/system` returns for `cpu`; (2) whether the runtime exposes CPU usage (`process.cpuUsage()`, `/proc/stat` poll, or a library); (3) add a rolling-window CPU sampler and wire it into the metrics response.
 
 ---
 
@@ -222,4 +223,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 (Sidebar reorg: promoted Intent to top-level nav item; Tailwind config updated for multi-theme CSS variable prep; TaskHistory agent name resolution fix)*
+*Last updated: 2026-02-26 (Marketplace routing quality schema alignment: useWhen/doNotUseWhen/successCriteria/routing/autonomyLevel added to MarketplaceSkillSchema and all 6 builtin skills; migration 049; install→brain carry-through; community JSON parity. CPU 0% bug added to Phase XX.)*

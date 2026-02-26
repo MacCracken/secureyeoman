@@ -1,3 +1,40 @@
+## [2026.2.26] — 2026-02-26
+
+### Fixed
+
+- **Heartbeat tasks agent name** — `HeartbeatCard` now receives the global `personalityMap` fetched from `GET /api/v1/soul/personalities` and merges it with the task-local list, so log entry agent cells display personality names instead of raw UUIDs.
+- **`empathyResonance` missing from default personality objects** — Added `empathyResonance: false` to the inline `PersonalityCreate` objects in `creation-tool-executor.ts`, `manager.ts`, `presets.ts` (×2), and `soul-routes.ts` so `npm run build` succeeds after migration `048` added the required field.
+
+### Changed
+
+- **`btn btn-primary` → `btn btn-ghost`** — All 78 occurrences across 25 dashboard `.tsx` files updated for visual consistency and multi-theme readiness.
+- **Tailwind config — CSS variable theming** — All colour tokens (`primary`, `secondary`, `muted`, `accent`, `destructive`, `success`, `warning`, `info`, `error`, `background`, `foreground`, `border`, `input`, `ring`, `card`, `popover`) now use `hsl(var(--X) / <alpha-value>)` format, enabling opacity utilities (`bg-primary/10`) and `peer-checked:` variants to respond to CSS variable theme switches. Old hardcoded shades (`primary-50` … `primary-950`) removed — no usages existed.
+- **`peer-checked:bg-green-500` → `peer-checked:bg-success`** — 4 instances in `PersonalityEditor.tsx` updated to use the theme-aware token.
+- **Dark mode semantic colours** — Added `--success`, `--warning`, `--info` CSS variable overrides to `.dark` block in `index.css`.
+- **PersonalityEditor — ontological restructure**
+  - Org Intent card: removed redundant outer `<div className="border-b pb-3 mb-3">` wrapper.
+  - Added `Globe` icon to Omnipresent Mind toggle, `Clock` icon to Chronoception toggle.
+  - Active Hours moved to immediately after the Thinking section.
+  - Prompt Budget consolidated inside the Thinking `CollapsibleSection`.
+  - External KB renamed to "External Brain Sync" and relocated as the last item in the Brain-Intellect section.
+- **Task History — agent name resolution** — `TaskRow` now resolves `personalityName` from a global `fetchPersonalities` query map, falling back to the UUID only when the personality is unknown. Added "Agent ID" column (hidden on `< xl` viewports) showing the truncated UUID with full value on hover.
+- **Workspaces `+ New Workspace` button** — Changed to `btn btn-ghost` to match the Users page pattern.
+- **Roadmap** — Sidebar Reorganization updated to show Intent promoted to top-level nav item.
+
+### Added
+
+#### Marketplace — Routing Quality Schema Alignment
+
+- **`MarketplaceSkillSchema`** gains five Phase 44/49 fields: `useWhen`, `doNotUseWhen`, `successCriteria`, `routing` (`fuzzy | explicit`, default `fuzzy`), `autonomyLevel` (`L1`–`L5`, default `L1`).
+- **Migration `049_marketplace_routing_quality.sql`** — adds the five columns to `marketplace.skills` with appropriate defaults.
+- **Migration `050_brain_skills_routing_quality.sql`** — adds the same five columns to `brain.skills` so installed skills persist routing metadata.
+- **All 6 builtin marketplace skills** populated with meaningful `useWhen`, `doNotUseWhen`, `successCriteria`, `routing`, and `autonomyLevel` values.
+- **`MarketplaceStorage.addSkill` / `updateSkill` / `rowToSkill`** — read/write the five new columns.
+- **`MarketplaceStorage.seedBuiltinSkills`** — changed from insert-only to upsert so re-deploys propagate updated routing fields to existing rows.
+- **`MarketplaceManager.install()`** — passes all five routing quality fields through to `SkillCreateSchema` when creating the brain skill, ensuring installed marketplace skills carry their routing metadata.
+- **`MarketplaceManager.syncFromCommunity()`** — parses `useWhen`, `doNotUseWhen`, `successCriteria`, `routing`, and `autonomyLevel` from community JSON files (format parity with builtin skills).
+- Tests: 4 new tests covering builtin skill routing fields, upsert re-seed, community JSON propagation, and install→brain carry-through (marketplace.test.ts).
+
 ## [2026.2.25] — 2026-02-25
 
 ### Added

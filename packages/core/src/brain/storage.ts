@@ -63,6 +63,13 @@ interface SkillRow {
   personality_id: string | null;
   created_at: number;
   updated_at: number;
+  // Routing quality (Phase 44/49) — columns added by migration 049
+  use_when?: string;
+  do_not_use_when?: string;
+  success_criteria?: string;
+  routing?: string;
+  autonomy_level?: string;
+  invoked_count?: number;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -104,12 +111,12 @@ function rowToSkill(row: SkillRow): Skill {
     instructions: row.instructions,
     tools: (row.tools ?? []) as Skill['tools'],
     triggerPatterns: row.trigger_patterns ?? [],
-    // Routing quality (Phase 44)
-    useWhen: '',
-    doNotUseWhen: '',
-    successCriteria: '',
+    // Routing quality (Phase 44/49)
+    useWhen: row.use_when ?? '',
+    doNotUseWhen: row.do_not_use_when ?? '',
+    successCriteria: row.success_criteria ?? '',
     mcpToolsAllowed: [],
-    routing: 'fuzzy',
+    routing: (row.routing ?? 'fuzzy') as Skill['routing'],
     linkedWorkflowId: null,
     // ADR 021: Skill Actions
     actions: [],
@@ -131,7 +138,7 @@ function rowToSkill(row: SkillRow): Skill {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     // Autonomy classification (Phase 49)
-    autonomyLevel: 'L1',
+    autonomyLevel: (row.autonomy_level ?? 'L1') as Skill['autonomyLevel'],
   };
 }
 
@@ -443,8 +450,8 @@ export class BrainStorage extends PgBaseStorage {
     const id = uuidv7();
 
     await this.query(
-      `INSERT INTO brain.skills (id, name, description, instructions, tools, trigger_patterns, enabled, source, status, personality_id, usage_count, last_used_at, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10, 0, NULL, $11, $12)`,
+      `INSERT INTO brain.skills (id, name, description, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, routing, autonomy_level, enabled, source, status, personality_id, usage_count, last_used_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10, $11, $12, $13, $14, $15, 0, NULL, $16, $17)`,
       [
         id,
         data.name,
@@ -452,6 +459,11 @@ export class BrainStorage extends PgBaseStorage {
         data.instructions ?? '',
         JSON.stringify(data.tools ?? []),
         JSON.stringify(data.triggerPatterns ?? []),
+        data.useWhen ?? '',
+        data.doNotUseWhen ?? '',
+        data.successCriteria ?? '',
+        data.routing ?? 'fuzzy',
+        data.autonomyLevel ?? 'L1',
         data.enabled ?? true,
         data.source ?? 'user',
         data.status ?? 'active',
@@ -483,17 +495,27 @@ export class BrainStorage extends PgBaseStorage {
          instructions = $3,
          tools = $4::jsonb,
          trigger_patterns = $5::jsonb,
-         enabled = $6,
-         source = $7,
-         status = $8,
-         updated_at = $9
-       WHERE id = $10`,
+         use_when = $6,
+         do_not_use_when = $7,
+         success_criteria = $8,
+         routing = $9,
+         autonomy_level = $10,
+         enabled = $11,
+         source = $12,
+         status = $13,
+         updated_at = $14
+       WHERE id = $15`,
       [
         data.name ?? existing.name,
         data.description ?? existing.description,
         data.instructions ?? existing.instructions,
         JSON.stringify(data.tools ?? existing.tools),
         JSON.stringify(data.triggerPatterns ?? existing.triggerPatterns),
+        data.useWhen ?? existing.useWhen,
+        data.doNotUseWhen ?? existing.doNotUseWhen,
+        data.successCriteria ?? existing.successCriteria,
+        data.routing ?? existing.routing,
+        data.autonomyLevel ?? existing.autonomyLevel,
         data.enabled !== undefined ? data.enabled : existing.enabled,
         data.source ?? existing.source,
         data.status ?? existing.status,

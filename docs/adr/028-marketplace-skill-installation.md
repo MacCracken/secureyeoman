@@ -39,3 +39,25 @@ ADR 007 introduced the Skill Marketplace concept with search, browse, and instal
 - The `marketplace` source type allows users to distinguish marketplace-installed skills from user-created or AI-proposed ones.
 - Uninstalling a marketplace skill cleanly removes it from both the marketplace registry and Brain storage.
 - The seeded built-in skills provide immediate value on first launch across utility, development, finance, and design categories.
+
+---
+
+## Amendment (2026-02-26): Routing Quality Schema Alignment
+
+### Context
+
+Phase 44 added routing quality fields (`useWhen`, `doNotUseWhen`, `successCriteria`, `routing`, `linkedWorkflowId`, `invokedCount`) to `brain.skills`. Phase 49 added `autonomyLevel`. These fields were missing from `MarketplaceSkillSchema` and the builtin skill definitions, creating a format gap between marketplace and brain skills.
+
+### Decision
+
+- **`MarketplaceSkillSchema`** gains `useWhen`, `doNotUseWhen`, `successCriteria`, `routing` (`fuzzy | explicit`), and `autonomyLevel` (`L1`–`L5`).
+- **Migration `049_marketplace_routing_quality.sql`** adds the five columns to `marketplace.skills`.
+- **Migration `050_brain_skills_routing_quality.sql`** adds the same five columns to `brain.skills`.
+- **All 6 builtin skills** populated with meaningful values for all five fields.
+- **`MarketplaceStorage.seedBuiltinSkills()`** changed to upsert so re-deploys propagate updated routing metadata to existing DB rows.
+- **`MarketplaceManager.install()`** passes the five routing fields through to `SkillCreateSchema` when creating the brain skill.
+- **`MarketplaceManager.syncFromCommunity()`** parses the five fields from community JSON files (format parity with builtin skills).
+
+### One Schema
+
+Marketplace skills and brain skills now share the same core routing quality contract. The `MarketplaceSkill` type carries authoring/distribution metadata (version, author, category, tags, downloadCount, rating) on top of the shared routing fields, but nothing is lost in the install translation.

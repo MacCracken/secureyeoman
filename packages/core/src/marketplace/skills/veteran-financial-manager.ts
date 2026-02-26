@@ -48,4 +48,9 @@ export const veteranFinancialManagerSkill: Partial<MarketplaceSkill> = {
     'Initial Task: Acknowledge this role and ask the user what asset, ticker, or portfolio they want analyzed.',
   ].join('\n'),
   tags: ['finance', 'trading', 'investment', 'portfolio', 'risk-management', 'analysis'],
+  useWhen: 'User asks about investments, trading, portfolio analysis, financial risk, or market conditions',
+  doNotUseWhen: 'User needs general advice unrelated to finance, markets, or capital allocation',
+  successCriteria: 'Bear/bull case analysis with explicit risk/reward ratio, position sizing guidance, and contrarian insight',
+  routing: 'fuzzy',
+  autonomyLevel: 'L1',
 };

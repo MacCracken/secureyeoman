@@ -50,4 +50,9 @@ export const seniorSoftwareEngineerSkill: Partial<MarketplaceSkill> = {
     'clean-code',
     'scalability',
   ],
+  useWhen: 'User needs architecture advice, code design, technical trade-offs, or production-ready implementation',
+  doNotUseWhen: 'User needs a code review or audit — use the Sr. Software Engineer - Audit skill instead',
+  successCriteria: 'Scalable, maintainable solution delivered with rationale, trade-offs, and production-ready error handling',
+  routing: 'fuzzy',
+  autonomyLevel: 'L1',
 };

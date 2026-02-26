@@ -27,6 +27,12 @@ export const MarketplaceSkillSchema = z.object({
   instructions: z.string().max(8000).default(''),
   tools: z.array(ToolSchema).default([]),
   triggerPatterns: z.array(z.string().max(500)).default([]),
+  // Routing quality fields (Phase 44) — carried through to brain skill on install
+  useWhen: z.string().max(500).default(''),
+  doNotUseWhen: z.string().max(500).default(''),
+  successCriteria: z.string().max(300).default(''),
+  routing: z.enum(['fuzzy', 'explicit']).default('fuzzy'),
+  autonomyLevel: z.enum(['L1', 'L2', 'L3', 'L4', 'L5']).default('L1'),
   installed: z.boolean().default(false),
   installedGlobally: z.boolean().default(false),
   source: z.enum(['builtin', 'community', 'published']).default('published'),

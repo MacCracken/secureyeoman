@@ -58,4 +58,9 @@ export const devopsSreSkill: Partial<MarketplaceSkill> = {
     'reliability',
     'automation',
   ],
+  useWhen: 'User needs infrastructure design, IaC code, Kubernetes/Terraform help, or reliability/SRE guidance',
+  doNotUseWhen: 'User needs application-level code or business logic — use the Senior Software Engineer skill instead',
+  successCriteria: 'Reliable, observable infrastructure solution with risk assessment, rollback plan, and IaC snippets',
+  routing: 'fuzzy',
+  autonomyLevel: 'L1',
 };
