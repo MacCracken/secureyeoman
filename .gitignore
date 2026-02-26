@@ -62,3 +62,7 @@ secureyeoman.yaml
 
 # Community skills — managed via bind mount in Docker; lives in secureyeoman-community-skills repo
 community-skills/
+
+# Runtime data directory — personality avatars, TLS certs, vector indices, etc.
+# This lives in ~/.secureyeoman or $SECUREYEOMAN_DATA_DIR at runtime, never in the repo
+data/

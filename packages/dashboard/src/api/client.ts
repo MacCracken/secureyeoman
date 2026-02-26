@@ -595,6 +595,31 @@ export async function clearDefaultPersonality(): Promise<{ success: boolean }> {
   return request('/soul/personalities/clear-default', { method: 'POST' });
 }
 
+export async function uploadPersonalityAvatar(
+  id: string,
+  file: File
+): Promise<{ personality: Personality }> {
+  const formData = new FormData();
+  formData.append('avatar', file);
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE}/soul/personalities/${id}/avatar`, {
+    method: 'POST',
+    body: formData,
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ message: 'Upload failed' }));
+    throw new Error(err.message ?? 'Upload failed');
+  }
+  return response.json();
+}
+
+export async function deletePersonalityAvatar(
+  id: string
+): Promise<{ personality: Personality }> {
+  return request(`/soul/personalities/${id}/avatar`, { method: 'DELETE' });
+}
+
 export async function fetchSkills(params?: {
   status?: string;
   source?: string;

@@ -126,6 +126,7 @@ const MOCK_PERSONALITY = {
   includeArchetypes: true,
   injectDateTime: false,
   empathyResonance: false,
+  avatarUrl: null,
   isActive: false,
   isDefault: false,
   isArchetype: false,

@@ -17,6 +17,7 @@ import { A2APage } from './A2APage';
 import { MultimodalPage } from './MultimodalPage';
 import { WebPage } from './WebPage';
 import { VectorMemoryExplorerPage } from './VectorMemoryExplorerPage';
+import { PersonalityAvatar } from './PersonalityEditor';
 
 type SectionId = 'multimodal' | 'web' | 'vectorMemory' | 'delegation' | 'a2a';
 
@@ -148,7 +149,13 @@ export function AgentsPage() {
   return (
     <div className="space-y-3 sm:space-y-4 min-w-0 overflow-hidden">
       <div className="flex items-center gap-2 sm:gap-3">
-        <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
+        {personalityData?.personality ? (
+          <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full overflow-hidden shrink-0 flex items-center justify-center bg-muted text-primary">
+            <PersonalityAvatar personality={personalityData.personality} size={24} />
+          </div>
+        ) : (
+          <Users className="w-5 h-5 sm:w-6 sm:h-6 text-primary shrink-0" />
+        )}
         <h1 className="text-xl sm:text-2xl font-bold truncate">Agents</h1>
       </div>
 

@@ -45,6 +45,7 @@ import type { Personality, BrainContext, Conversation, CreationEvent } from '../
 import { sanitizeText } from '../utils/sanitize';
 import { ChatMarkdown } from './ChatMarkdown';
 import { GroupChatPage } from './GroupChatPage';
+import { PersonalityAvatar } from './PersonalityEditor';
 import { Link } from 'react-router-dom';
 
 export function ChatPage() {
@@ -498,7 +499,13 @@ export function ChatPage() {
                   className="flex items-center gap-3 hover:bg-muted/50 rounded-lg px-2 py-1.5 transition-colors"
                   data-testid="personality-selector"
                 >
-                  <Bot className="w-6 h-6 text-primary flex-shrink-0" />
+                  {personality ? (
+                    <div className="w-6 h-6 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center bg-muted text-primary">
+                      <PersonalityAvatar personality={personality} size={24} />
+                    </div>
+                  ) : (
+                    <Bot className="w-6 h-6 text-primary flex-shrink-0" />
+                  )}
                   <div className="text-left">
                     <div className="flex items-center gap-1.5">
                       <h2 className="text-lg font-semibold">
@@ -548,7 +555,9 @@ export function ChatPage() {
                         }`}
                         data-testid={`personality-option-${p.id}`}
                       >
-                        <Bot className="w-5 h-5 text-primary flex-shrink-0" />
+                        <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0 flex items-center justify-center bg-muted text-primary">
+                          <PersonalityAvatar personality={p} size={20} />
+                        </div>
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-1.5">
                             <span className="text-sm font-medium truncate">{p.name}</span>
@@ -662,6 +671,8 @@ export function ChatPage() {
                       <div className="flex items-center gap-2 mb-1">
                         {msg.role === 'user' ? (
                           <User className="w-3 h-3" />
+                        ) : personality ? (
+                          <PersonalityAvatar personality={personality} size={12} />
                         ) : (
                           <Bot className="w-3 h-3" />
                         )}

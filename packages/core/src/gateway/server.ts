@@ -391,6 +391,8 @@ export class GatewayServer {
       try { soulValidator = this.secureYeoman.getValidator(); } catch { /* optional */ }
       let soulAuditChain;
       try { soulAuditChain = this.secureYeoman.getAuditChain(); } catch { /* optional */ }
+      let soulDataDir: string | undefined;
+      try { soulDataDir = this.secureYeoman.getDataDir(); } catch { /* optional */ }
       registerSoulRoutes(this.app, {
         soulManager,
         approvalManager,
@@ -400,6 +402,7 @@ export class GatewayServer {
         heartbeatManager: this.secureYeoman.getHeartbeatManager(),
         validator: soulValidator,
         auditChain: soulAuditChain,
+        dataDir: soulDataDir,
       });
     } catch {
       // Soul manager may not be available — skip routes

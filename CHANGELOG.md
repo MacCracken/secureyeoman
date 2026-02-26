@@ -1,3 +1,21 @@
+## [2026.2.26c] — 2026-02-26
+
+### Added
+
+#### Phase 53 — Personality Avatar Upload
+
+- **Avatar upload route** (`POST /api/v1/soul/personalities/:id/avatar`) — accepts `multipart/form-data` with a single `avatar` file field. Validates MIME type (jpeg/png/gif/webp/svg+xml) and enforces a 2 MB cap via `@fastify/multipart`. Stores the file at `{dataDir}/avatars/{id}{ext}`, removing any prior file for the same personality. Updates `avatar_url` in the DB and returns the full updated personality.
+- **Avatar delete route** (`DELETE /api/v1/soul/personalities/:id/avatar`) — removes the file from disk and nulls `avatar_url`.
+- **Avatar serve route** (`GET /api/v1/soul/personalities/:id/avatar`) — streams the file with correct `Content-Type` and `Cache-Control: public, max-age=31536000`.
+- **Migration `054_personality_avatar.sql`** — `ALTER TABLE soul.personalities ADD COLUMN IF NOT EXISTS avatar_url TEXT`.
+- **`@fastify/multipart`** registered globally in the gateway with a 2 MB per-file limit.
+- **Dashboard: `AvatarUpload` component** — shown at the top of the Soul section in `PersonalityEditor` when editing an existing personality. Displays a 96×96 px circle avatar or User placeholder, an "Upload Photo" button with hidden file input, a "Remove" button when an avatar exists, and inline error messages for oversized/wrong-type files.
+- **Dashboard: `PersonalityAvatar` helper** — exported from `PersonalityEditor.tsx`; renders `<img>` with cache-busted URL or `<User />` fallback; reused in personality card headers, chat header, personality picker, and agents page.
+- **Avatar display** across the dashboard: personality list cards (PersonalityEditor), chat header + message bubbles (ChatPage), personality picker dropdown (ChatPage), agents page header (AgentsPage).
+- **`data/` directory gitignored** — runtime data including avatars, TLS certs, and vector indices should not be committed.
+- **ADR 136** (`docs/adr/136-personality-avatar-upload.md`) and **guide** (`docs/guides/personality-avatars.md`).
+- **19 tests** in `src/soul/avatar-routes.test.ts` covering all three routes, MIME validation, 404/503 error cases, filesystem assertions, and cache headers.
+
 ## [2026.2.26b] — 2026-02-26
 
 ### Changed

@@ -76,7 +76,7 @@ Sidebar structural reorganization as the foundation, then Mission Control as the
 
 ### Visual Polish
 
-- [ ] **Personality image upload** — Allow a personality to receive a custom avatar image.
+- [x] **Personality image upload** — Allow a personality to receive a custom avatar image. ✅ Phase 53 (ADR 136)
 - [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. Consider CSS variable-based theming for user extensibility.
 
 ---

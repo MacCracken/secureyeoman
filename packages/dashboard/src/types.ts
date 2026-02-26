@@ -155,6 +155,7 @@ export interface Personality {
   includeArchetypes: boolean;
   injectDateTime: boolean;
   empathyResonance: boolean;
+  avatarUrl: string | null;
   isActive: boolean;
   isDefault: boolean;
   isArchetype: boolean;

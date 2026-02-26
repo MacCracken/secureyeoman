@@ -63,6 +63,8 @@ import {
   fetchMcpConfig,
   fetchSecurityPolicy,
   fetchSoulConfig,
+  uploadPersonalityAvatar,
+  deletePersonalityAvatar,
 } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import { useCollabEditor } from '../hooks/useCollabEditor.js';
@@ -88,6 +90,120 @@ const TRAIT_OPTIONS: Record<string, string[]> = {
 };
 
 const SEX_OPTIONS = ['unspecified', 'male', 'female', 'non-binary'] as const;
+
+const API_BASE = '/api/v1';
+
+/** Renders a personality avatar as a circle image, or falls back to the User icon. */
+export function PersonalityAvatar({
+  personality,
+  size = 24,
+}: {
+  personality: Personality;
+  size?: number;
+}) {
+  if (!personality.avatarUrl) {
+    return <User style={{ width: size, height: size }} />;
+  }
+  return (
+    <img
+      src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
+      alt={personality.name}
+      style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }}
+    />
+  );
+}
+
+/** Upload/remove avatar UI shown inside the Soul section of PersonalityEditor. */
+function AvatarUpload({
+  personality,
+  onUpdated,
+}: {
+  personality: Personality;
+  onUpdated: (updated: Personality) => void;
+}) {
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const MAX_SIZE = 2 * 1024 * 1024;
+  const ACCEPTED_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml'];
+
+  async function handleFile(file: File) {
+    setError(null);
+    if (!ACCEPTED_TYPES.includes(file.type)) {
+      setError('Unsupported type. Use JPEG, PNG, GIF, WebP or SVG.');
+      return;
+    }
+    if (file.size > MAX_SIZE) {
+      setError('File too large (max 2 MB).');
+      return;
+    }
+    setUploading(true);
+    try {
+      const result = await uploadPersonalityAvatar(personality.id, file);
+      onUpdated(result.personality);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Upload failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleRemove() {
+    setError(null);
+    setUploading(true);
+    try {
+      const result = await deletePersonalityAvatar(personality.id);
+      onUpdated(result.personality);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Remove failed');
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-4 mb-4">
+      <div className="w-24 h-24 rounded-full overflow-hidden border-2 border-border flex items-center justify-center bg-muted flex-shrink-0">
+        {personality.avatarUrl ? (
+          <img
+            src={`${API_BASE}${personality.avatarUrl}?v=${personality.updatedAt}`}
+            alt={personality.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <User className="w-10 h-10 text-muted-foreground" />
+        )}
+      </div>
+      <div className="flex flex-col gap-2">
+        <label className={`btn btn-sm btn-outline cursor-pointer${uploading ? ' opacity-50 pointer-events-none' : ''}`}>
+          {uploading ? 'Uploading…' : 'Upload Photo'}
+          <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            disabled={uploading}
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void handleFile(file);
+              e.target.value = '';
+            }}
+          />
+        </label>
+        {personality.avatarUrl && (
+          <button
+            type="button"
+            className="btn btn-sm btn-ghost text-muted-foreground"
+            disabled={uploading}
+            onClick={() => void handleRemove()}
+          >
+            Remove
+          </button>
+        )}
+        {error && <p className="text-xs text-destructive">{error}</p>}
+      </div>
+    </div>
+  );
+}
 
 const PRIMARY_TOPICS = ['self-identity', 'hierarchy', 'purpose', 'interaction'];
 
@@ -3677,6 +3793,14 @@ export function PersonalityEditor() {
 
           {/* Soul Section */}
           <CollapsibleSection title="Soul — Essence" defaultOpen>
+            {editingPersonality && editing !== 'new' && (
+              <AvatarUpload
+                personality={editingPersonality}
+                onUpdated={() => {
+                  void queryClient.invalidateQueries({ queryKey: ['personalities'] });
+                }}
+              />
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Identity</label>
@@ -3925,9 +4049,9 @@ export function PersonalityEditor() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-2 min-w-0 flex-1">
                     <div
-                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${p.isDefault ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
+                      className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden ${p.isDefault ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}
                     >
-                      <User className="w-4 h-4 sm:w-5 sm:h-5" />
+                      <PersonalityAvatar personality={p} size={20} />
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-1.5 flex-wrap">
