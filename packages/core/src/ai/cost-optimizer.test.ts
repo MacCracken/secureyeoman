@@ -75,4 +75,24 @@ describe('CostOptimizer', () => {
     const batch = analysis.recommendations.find((r) => r.category === 'batching');
     expect(batch).toBeTruthy();
   });
+
+  it('should set caching recommendation priority to high when cost exceeds $10/day', () => {
+    const optimizer = new CostOptimizer({
+      logger: createNoopLogger(),
+      usageTracker: createMockTracker({ costUsdToday: 15, costUsdMonth: 150, apiCallsTotal: 200 }),
+    });
+    const analysis = optimizer.analyze();
+    const caching = analysis.recommendations.find((r) => r.category === 'caching');
+    expect(caching).toBeTruthy();
+    expect(caching!.priority).toBe('high');
+  });
+
+  it('returns totalCostUsd from costUsdMonth', () => {
+    const optimizer = new CostOptimizer({
+      logger: createNoopLogger(),
+      usageTracker: createMockTracker({ costUsdMonth: 99 }),
+    });
+    const analysis = optimizer.analyze();
+    expect(analysis.totalCostUsd).toBe(99);
+  });
 });

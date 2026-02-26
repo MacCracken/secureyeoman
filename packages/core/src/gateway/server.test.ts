@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach, beforeAll } from 'vitest';
+import { describe, it, expect, afterEach, afterAll, beforeAll } from 'vitest';
 import { GatewayServer } from './server.js';
 import { WebSocket } from 'ws';
 import { initializeLogger } from '../logging/logger.js';
@@ -320,6 +320,199 @@ describe('GatewayServer', () => {
       });
 
       expect(code).toBe(4401);
+    });
+  });
+
+  describe('inline API routes', () => {
+    let apiServer: GatewayServer | null = null;
+    const apiPort = 19550;
+    const apiBase = `http://127.0.0.1:${apiPort}`;
+
+    beforeAll(async () => {
+      apiServer = new GatewayServer({
+        config: createMinimalConfig({ port: apiPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getAiUsageStats: () => null,
+          getUsageStorage: () => null,
+          updateSecurityPolicy: () => {},
+          enforceAuditRetention: () => 0,
+          exportAuditLog: async () => [],
+          getSecretsManager: () => null,
+          getTlsManager: () => null,
+          resetUsageStat: async () => {},
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+            },
+          }),
+        }) as any,
+      });
+      await apiServer.start();
+    });
+
+    afterAll(async () => {
+      if (apiServer) {
+        await apiServer.stop();
+        apiServer = null;
+      }
+    });
+
+    it('GET /prom/metrics returns prometheus text', async () => {
+      const res = await fetch(`${apiBase}/prom/metrics`);
+      expect(res.status).toBe(200);
+      const ct = res.headers.get('content-type') ?? '';
+      expect(ct).toContain('text/plain');
+    });
+
+    it('GET /api/v1/metrics returns metrics object', async () => {
+      const res = await fetch(`${apiBase}/api/v1/metrics`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toMatchObject({ cpu: 10, mem: 50 });
+    });
+
+    it('GET /api/v1/costs/breakdown returns byProvider object', async () => {
+      const res = await fetch(`${apiBase}/api/v1/costs/breakdown`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('byProvider');
+    });
+
+    it('GET /api/v1/costs/history returns empty records when storage unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/costs/history`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('records');
+    });
+
+    it('GET /api/v1/sandbox/status returns disabled when manager unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/sandbox/status`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json.enabled).toBe(false);
+    });
+
+    it('GET /api/v1/security/events returns events list', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/events`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(Array.isArray(json.events)).toBe(true);
+    });
+
+    it('GET /api/v1/security/events accepts query params', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/events?severity=warn&type=auth_failure`);
+      expect(res.status).toBe(200);
+    });
+
+    it('GET /api/v1/security/policy returns policy fields', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/policy`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('allowSubAgents', false);
+    });
+
+    it('PATCH /api/v1/security/policy with valid field returns 200', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/policy`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ allowSubAgents: true }),
+      });
+      expect(res.status).toBe(200);
+    });
+
+    it('PATCH /api/v1/security/policy with empty body returns 400', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/policy`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('GET /api/v1/security/ml/summary returns risk summary', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/ml/summary`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('riskScore');
+      expect(json).toHaveProperty('detections');
+    });
+
+    it('GET /api/v1/security/ml/summary with period=24h', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/ml/summary?period=24h`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json.period).toBe('24h');
+    });
+
+    it('GET /api/v1/audit returns audit entries', async () => {
+      const res = await fetch(`${apiBase}/api/v1/audit`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('entries');
+    });
+
+    it('POST /api/v1/audit/verify returns chain status', async () => {
+      const res = await fetch(`${apiBase}/api/v1/audit/verify`, { method: 'POST' });
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('valid', true);
+    });
+
+    it('GET /api/v1/audit/stats returns stats', async () => {
+      const res = await fetch(`${apiBase}/api/v1/audit/stats`);
+      expect(res.status).toBe(200);
+    });
+
+    it('POST /api/v1/audit/retention returns 400 for invalid maxAgeDays', async () => {
+      const res = await fetch(`${apiBase}/api/v1/audit/retention`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxAgeDays: 0 }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('POST /api/v1/audit/retention with valid params returns 200', async () => {
+      const res = await fetch(`${apiBase}/api/v1/audit/retention`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxAgeDays: 30 }),
+      });
+      expect(res.status).toBe(200);
+    });
+
+    it('GET /api/v1/audit/export returns JSON download', async () => {
+      const res = await fetch(`${apiBase}/api/v1/audit/export`);
+      expect(res.status).toBe(200);
+      const ct = res.headers.get('content-type') ?? '';
+      expect(ct).toContain('application/json');
+    });
+
+    it('GET /api/v1/secrets returns 503 when secrets manager unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/secrets`);
+      expect(res.status).toBe(503);
+    });
+
+    it('GET /api/v1/security/tls returns 503 when TLS manager unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/tls`);
+      expect(res.status).toBe(503);
+    });
+
+    it('POST /api/v1/security/tls/generate returns 503 when TLS manager unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/tls/generate`, { method: 'POST' });
+      expect(res.status).toBe(503);
+    });
+
+    it('OPTIONS preflight request returns 204', async () => {
+      const res = await fetch(`${apiBase}/health`, { method: 'OPTIONS' });
+      expect(res.status).toBe(204);
     });
   });
 });

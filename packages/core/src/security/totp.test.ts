@@ -82,4 +82,35 @@ describe('buildTOTPUri', () => {
     expect(uri).toContain('SecureYeoman');
     expect(uri).toContain('admin%40secureyeoman');
   });
+
+  it('uses custom issuer when provided', () => {
+    const secret = generateTOTPSecret();
+    const uri = buildTOTPUri(secret, 'user@example.com', 'MyApp');
+    expect(uri).toContain('MyApp');
+    expect(uri).not.toContain('SecureYeoman');
+  });
+});
+
+describe('generateTOTPSecret', () => {
+  it('generates secret with custom byte length', () => {
+    const short = generateTOTPSecret(5);
+    const long = generateTOTPSecret(40);
+    // Base32 expands 5 bytes → ~8 chars, 40 bytes → ~64 chars
+    expect(short.length).toBeLessThan(long.length);
+  });
+});
+
+describe('base32 edge cases', () => {
+  it('throws when decoding a secret with invalid base32 characters', () => {
+    // '!' is not in A-Z or 2-7
+    expect(() => generateTOTP('INVALID!SECRET', Date.now())).toThrow('Invalid base32 character');
+  });
+});
+
+describe('constantTimeEqual (via verifyTOTP)', () => {
+  it('returns false for code with different length than expected 6 digits', () => {
+    const secret = generateTOTPSecret();
+    // A 5-digit code will never match a 6-digit expected code
+    expect(verifyTOTP(secret, '12345')).toBe(false);
+  });
 });

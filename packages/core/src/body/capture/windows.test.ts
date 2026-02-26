@@ -2,7 +2,7 @@
  * Tests for window/display enumeration (windows.ts) — Phase 40.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 // Hoist the mock so it's available when vi.mock factory runs
 const mockExecFile = vi.hoisted(() => vi.fn());
@@ -161,6 +161,119 @@ describe('windows.ts', () => {
       }
 
       Object.defineProperty(process, 'platform', { value: originalPlatform, configurable: true });
+    });
+  });
+
+  describe('macOS (darwin) branch', () => {
+    const savedPlatform = process.platform;
+
+    beforeEach(() => {
+      Object.defineProperty(process, 'platform', { value: 'darwin', configurable: true });
+    });
+
+    afterEach(() => {
+      Object.defineProperty(process, 'platform', { value: savedPlatform, configurable: true });
+    });
+
+    it('listWindows returns windows from osascript output', async () => {
+      setupMockExec('Firefox|Tab Title|100|200|1280|720\nTerminal|bash|50|50|800|600\nShort|line\n\n');
+      const windows = await listWindows();
+      expect(windows).toHaveLength(2);
+      expect(windows[0]).toMatchObject({
+        title: 'Tab Title',
+        appName: 'Firefox',
+        bounds: { x: 100, y: 200, width: 1280, height: 720 },
+        isVisible: true,
+        isSystemWindow: false,
+      });
+    });
+
+    it('listWindows returns empty array on osascript failure', async () => {
+      setupMockExecError();
+      const windows = await listWindows();
+      expect(windows).toEqual([]);
+    });
+
+    it('listDisplays returns displays from system_profiler JSON', async () => {
+      const json = JSON.stringify({
+        SPDisplaysDataType: [
+          {
+            spdisplays_ndrvs: [
+              { _name: 'iMac', spdisplays_resolution: '2560 x 1440' },
+              { _name: 'LG Ultrafine', spdisplays_resolution: '3840 x 2160' },
+            ],
+          },
+        ],
+      });
+      setupMockExec(json);
+      const displays = await listDisplays();
+      expect(displays).toHaveLength(2);
+      expect(displays[0]).toMatchObject({ name: 'iMac', isPrimary: true, scaleFactor: 1 });
+      expect(displays[1]).toMatchObject({ name: 'LG Ultrafine', isPrimary: false });
+    });
+
+    it('listDisplays returns empty array on system_profiler failure', async () => {
+      setupMockExecError();
+      const displays = await listDisplays();
+      expect(displays).toEqual([]);
+    });
+
+    it('listDisplays returns empty when SPDisplaysDataType missing', async () => {
+      setupMockExec(JSON.stringify({}));
+      const displays = await listDisplays();
+      expect(displays).toEqual([]);
+    });
+  });
+
+  describe('Windows (win32) branch', () => {
+    const savedPlatform = process.platform;
+
+    beforeEach(() => {
+      Object.defineProperty(process, 'platform', { value: 'win32', configurable: true });
+    });
+
+    afterEach(() => {
+      Object.defineProperty(process, 'platform', { value: savedPlatform, configurable: true });
+    });
+
+    it('listWindows returns windows from powershell output', async () => {
+      setupMockExec('1234|Visual Studio Code|0|0|800|600\n5678|Terminal|0|0|800|600\nbad\n');
+      const windows = await listWindows();
+      expect(windows).toHaveLength(2);
+      expect(windows[0]).toMatchObject({
+        id: '1234',
+        title: 'Visual Studio Code',
+        isVisible: true,
+        isSystemWindow: false,
+      });
+    });
+
+    it('listWindows returns empty array on powershell failure', async () => {
+      setupMockExecError();
+      const windows = await listWindows();
+      expect(windows).toEqual([]);
+    });
+
+    it('listDisplays returns displays from powershell output', async () => {
+      setupMockExec('Monitor\\Display1|Generic PnP Monitor|1920|1080\nMonitor\\Display2|LG|3840|2160\nbad\n');
+      const displays = await listDisplays();
+      expect(displays).toHaveLength(2);
+      expect(displays[0]).toMatchObject({
+        name: 'Generic PnP Monitor',
+        bounds: { width: 1920, height: 1080 },
+        isPrimary: true,
+        scaleFactor: 1,
+      });
+      expect(displays[1]).toMatchObject({
+        name: 'LG',
+        isPrimary: false,
+      });
+    });
+
+    it('listDisplays returns empty array on powershell failure', async () => {
+      setupMockExecError();
+      const displays = await listDisplays();
+      expect(displays).toEqual([]);
     });
   });
 });

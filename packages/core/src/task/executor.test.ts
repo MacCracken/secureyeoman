@@ -292,4 +292,161 @@ describe('TaskExecutor', () => {
       rl.stop();
     });
   });
+
+  describe('sandbox execution', () => {
+    async function createSandboxExecutor(mockSandbox: any) {
+      const { auditChain: ac, rateLimiter: rl, validator } = await createTestSetup();
+      await ac.initialize();
+      const exec = createTaskExecutor(validator, rl, ac, {}, mockSandbox);
+      return { exec, rl };
+    }
+
+    it('executes task through sandbox when sandbox is provided', async () => {
+      const mockSandbox = {
+        run: vi.fn().mockResolvedValue({
+          success: true,
+          result: { answer: 42 },
+          violations: [],
+          resourceUsage: { memoryPeakMb: 10, cpuTimeMs: 100 },
+        }),
+        getCapabilities: vi.fn(),
+        isAvailable: vi.fn().mockReturnValue(true),
+      };
+      const { exec, rl } = await createSandboxExecutor(mockSandbox);
+      exec.registerHandler(createHandler({ execute: async () => ({ answer: 42 }) }));
+
+      const task = await exec.submit(
+        { type: TaskType.CODE_REVIEW, name: 'Sandbox Task', input: { code: 'x' } },
+        defaultContext
+      );
+      expect(task.status).toBe('completed');
+      expect(mockSandbox.run).toHaveBeenCalledOnce();
+      rl.stop();
+    });
+
+    it('logs sandbox violations but still succeeds', async () => {
+      const mockSandbox = {
+        run: vi.fn().mockResolvedValue({
+          success: true,
+          result: { ok: true },
+          violations: [{ type: 'filesystem', description: 'read /etc/passwd', timestamp: Date.now() }],
+          resourceUsage: { memoryPeakMb: 5, cpuTimeMs: 50 },
+        }),
+        getCapabilities: vi.fn(),
+        isAvailable: vi.fn().mockReturnValue(true),
+      };
+      const { exec, rl } = await createSandboxExecutor(mockSandbox);
+      exec.registerHandler(createHandler({ execute: async () => ({ ok: true }) }));
+
+      const task = await exec.submit(
+        { type: TaskType.CODE_REVIEW, name: 'Violating Task', input: { code: 'y' } },
+        defaultContext
+      );
+      expect(task.status).toBe('completed');
+      rl.stop();
+    });
+
+    it('marks task failed when sandbox returns success=false', async () => {
+      const sandboxErr = new Error('Sandbox blocked execution');
+      const mockSandbox = {
+        run: vi.fn().mockResolvedValue({
+          success: false,
+          error: sandboxErr,
+          violations: [],
+          resourceUsage: { memoryPeakMb: 0, cpuTimeMs: 0 },
+        }),
+        getCapabilities: vi.fn(),
+        isAvailable: vi.fn().mockReturnValue(true),
+      };
+      const { exec, rl } = await createSandboxExecutor(mockSandbox);
+      exec.registerHandler(createHandler({ execute: async () => ({ ok: true }) }));
+
+      const task = await exec.submit(
+        { type: TaskType.CODE_REVIEW, name: 'Blocked Task', input: { code: 'z' } },
+        defaultContext
+      );
+      expect(task.status).toBe('failed');
+      expect(JSON.stringify(task.result)).toContain('Sandbox blocked execution');
+      rl.stop();
+    });
+
+    it('throws generic error when sandbox returns success=false with no error', async () => {
+      const mockSandbox = {
+        run: vi.fn().mockResolvedValue({
+          success: false,
+          error: null, // no error object — falls back to new Error('Sandbox execution failed')
+          violations: [],
+          resourceUsage: { memoryPeakMb: 0, cpuTimeMs: 0 },
+        }),
+        getCapabilities: vi.fn(),
+        isAvailable: vi.fn().mockReturnValue(true),
+      };
+      const { exec, rl } = await createSandboxExecutor(mockSandbox);
+      exec.registerHandler(createHandler({ execute: async () => ({ ok: true }) }));
+
+      const task = await exec.submit(
+        { type: TaskType.CODE_REVIEW, name: 'No-error Fail Task', input: { code: 'z' } },
+        defaultContext
+      );
+      expect(task.status).toBe('failed');
+      expect(task.result?.error?.message).toContain('Sandbox execution failed');
+      rl.stop();
+    });
+  });
+
+  describe('non-Error handler throws', () => {
+    it('reports "Unknown error" when handler throws a non-Error value', async () => {
+      executor.registerHandler(
+        createHandler({
+          execute: async () => {
+            throw 'plain string thrown';
+          },
+        })
+      );
+
+      const task = await executor.submit(
+        { type: TaskType.CODE_REVIEW, name: 'Non-Error Task', input: { code: 'x' } },
+        defaultContext
+      );
+      expect(task.status).toBe('failed');
+      expect(task.result?.error?.message).toBe('Unknown error');
+    });
+  });
+
+  describe('cancel() active tasks', () => {
+    it('cancels a running task and returns true', async () => {
+      const { auditChain: ac, rateLimiter: rl } = await createTestSetup();
+      await ac.initialize();
+
+      const longExecutor = createTaskExecutor(
+        new InputValidator({ maxInputLength: 10000, maxFileSize: 1048576, enableInjectionDetection: true }),
+        rl,
+        ac,
+        { maxConcurrent: 10, defaultTimeoutMs: 30000, maxTimeoutMs: 60000 }
+      );
+
+      let cancelResult: boolean | undefined;
+      longExecutor.registerHandler(
+        createHandler({
+          execute: async () => {
+            // Cancel the only active task — need to find its ID
+            const activeIds = [...(longExecutor as any).activeTasks.keys()];
+            if (activeIds[0]) {
+              cancelResult = await longExecutor.cancel(activeIds[0], defaultContext);
+            }
+            return { done: true };
+          },
+        })
+      );
+
+      await longExecutor.submit(
+        { type: TaskType.CODE_REVIEW, name: 'Cancellable', input: { code: 'x' } },
+        defaultContext
+      );
+
+      // cancel() was called inside the handler
+      expect(cancelResult).toBe(true);
+      rl.stop();
+    });
+  });
 });

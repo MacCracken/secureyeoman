@@ -148,4 +148,76 @@ describe('AuthStorage', () => {
       expect(found!.last_used_at).toBe(now);
     });
   });
+
+  // ── Users ──────────────────────────────────────────────────────────
+
+  describe('Users', () => {
+    it('should create and retrieve a user by id', async () => {
+      const user = await storage.createUser({ email: 'alice@example.com', displayName: 'Alice' });
+      expect(user.id).toBeDefined();
+      expect(user.email).toBe('alice@example.com');
+      expect(user.displayName).toBe('Alice');
+      expect(user.isAdmin).toBe(false);
+
+      const found = await storage.getUserById(user.id);
+      expect(found).not.toBeNull();
+      expect(found!.email).toBe('alice@example.com');
+    });
+
+    it('should return null getUserById for unknown id', async () => {
+      expect(await storage.getUserById('00000000-0000-0000-0000-000000000000')).toBeNull();
+    });
+
+    it('should retrieve a user by email', async () => {
+      await storage.createUser({ email: 'bob@example.com' });
+      const found = await storage.getUserByEmail('bob@example.com');
+      expect(found).not.toBeNull();
+      expect(found!.email).toBe('bob@example.com');
+    });
+
+    it('should return null getUserByEmail for unknown email', async () => {
+      expect(await storage.getUserByEmail('nobody@example.com')).toBeNull();
+    });
+
+    it('should list all users', async () => {
+      await storage.createUser({ email: 'u1@example.com' });
+      await storage.createUser({ email: 'u2@example.com' });
+      const users = await storage.listUsers();
+      expect(users.length).toBeGreaterThanOrEqual(2);
+    });
+
+    it('should return empty array when no users', async () => {
+      const users = await storage.listUsers();
+      expect(users).toHaveLength(0);
+    });
+
+    it('should update user display name', async () => {
+      const user = await storage.createUser({ email: 'update@example.com', displayName: 'Old' });
+      const updated = await storage.updateUser(user.id, { displayName: 'New' });
+      expect(updated!.displayName).toBe('New');
+    });
+
+    it('should return user unchanged when updateUser called with no fields', async () => {
+      const user = await storage.createUser({ email: 'noop@example.com', displayName: 'Same' });
+      const result = await storage.updateUser(user.id, {});
+      expect(result!.displayName).toBe('Same');
+    });
+
+    it('should return null updateUser for unknown id', async () => {
+      const result = await storage.updateUser('00000000-0000-0000-0000-000000000000', { displayName: 'x' });
+      expect(result).toBeNull();
+    });
+
+    it('should delete a user', async () => {
+      const user = await storage.createUser({ email: 'todelete@example.com' });
+      const ok = await storage.deleteUser(user.id);
+      expect(ok).toBe(true);
+      expect(await storage.getUserById(user.id)).toBeNull();
+    });
+
+    it('should not delete the admin user', async () => {
+      const ok = await storage.deleteUser('admin');
+      expect(ok).toBe(false);
+    });
+  });
 });

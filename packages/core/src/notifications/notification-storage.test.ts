@@ -234,6 +234,18 @@ describe('row mapping', () => {
     expect(typeof result.readAt).toBe('number');
   });
 
+  it('converts string timestamps to numbers (string read_at and created_at)', async () => {
+    const storage = new NotificationStorage();
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(
+      makeRow({ created_at: '1700000000000' as any, read_at: '1700000001000' as any })
+    );
+
+    const result = await storage.create({ type: 't', title: 'T', body: 'B' });
+
+    expect(result.createdAt).toBe(1700000000000);
+    expect(result.readAt).toBe(1700000001000);
+  });
+
   it('maps source null to undefined', async () => {
     const storage = new NotificationStorage();
     vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(
@@ -243,5 +255,26 @@ describe('row mapping', () => {
     const result = await storage.create({ type: 't', title: 'T', body: 'B' });
 
     expect(result.source).toBeUndefined();
+  });
+
+  it('maps metadata non-null to object', async () => {
+    const storage = new NotificationStorage();
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(
+      makeRow({ metadata: { key: 'val' } })
+    );
+
+    const result = await storage.create({ type: 't', title: 'T', body: 'B' });
+
+    expect(result.metadata).toEqual({ key: 'val' });
+  });
+
+  it('list() handles null countResult', async () => {
+    const storage = new NotificationStorage();
+    vi.spyOn(storage as any, 'queryMany').mockResolvedValueOnce([]);
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(null);
+
+    const result = await storage.list();
+
+    expect(result.total).toBe(0);
   });
 });

@@ -96,4 +96,55 @@ describe('Prometheus Metrics', () => {
     expect(output).toBeTruthy();
     expect(output.endsWith('\n')).toBe(true);
   });
+
+  it('should omit byStatus section when tasks.byStatus is not provided', () => {
+    const metrics: Partial<MetricsSnapshot> = {
+      tasks: {
+        total: 5,
+        byStatus: undefined as any,
+        byType: {},
+        successRate: 1,
+        failureRate: 0,
+        avgDurationMs: 50,
+        minDurationMs: 10,
+        maxDurationMs: 100,
+        p50DurationMs: 50,
+        p95DurationMs: 90,
+        p99DurationMs: 99,
+        queueDepth: 0,
+        inProgress: 0,
+      },
+    };
+    const output = formatPrometheusMetrics(metrics);
+    expect(output).not.toContain('friday_tasks_by_status');
+  });
+
+  it('should output 0 for auditChainValid when chain is invalid', () => {
+    const metrics: Partial<MetricsSnapshot> = {
+      security: {
+        authAttemptsTotal: 0,
+        authSuccessTotal: 0,
+        authFailuresTotal: 0,
+        activeSessions: 0,
+        permissionChecksTotal: 0,
+        permissionDenialsTotal: 0,
+        blockedRequestsTotal: 0,
+        rateLimitHitsTotal: 0,
+        injectionAttemptsTotal: 0,
+        eventsBySeverity: {},
+        eventsByType: {},
+        auditEntriesTotal: 0,
+        auditChainValid: false,
+        lastAuditVerification: Date.now(),
+      },
+    };
+    const output = formatPrometheusMetrics(metrics);
+    expect(output).toContain('friday_audit_chain_valid 0');
+  });
+
+  it('uses provided timestamp', () => {
+    const ts = 1700000000000;
+    const output = formatPrometheusMetrics({ timestamp: ts });
+    expect(output).toBeTruthy();
+  });
 });

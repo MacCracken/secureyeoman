@@ -77,7 +77,7 @@ describe('WorkflowStorage', () => {
     });
 
     it('returns null for a missing definition', async () => {
-      expect(await storage.getDefinition('nonexistent')).toBeNull();
+      expect(await storage.getDefinition('00000000-0000-0000-0000-000000000000')).toBeNull();
     });
   });
 
@@ -136,7 +136,7 @@ describe('WorkflowStorage', () => {
     });
 
     it('returns null when definition not found', async () => {
-      expect(await storage.updateDefinition('nonexistent', { name: 'x' })).toBeNull();
+      expect(await storage.updateDefinition('00000000-0000-0000-0000-000000000000', { name: 'x' })).toBeNull();
     });
   });
 
@@ -148,7 +148,7 @@ describe('WorkflowStorage', () => {
     });
 
     it('returns false when definition not found', async () => {
-      expect(await storage.deleteDefinition('nonexistent')).toBe(false);
+      expect(await storage.deleteDefinition('00000000-0000-0000-0000-000000000000')).toBe(false);
     });
   });
 
@@ -188,7 +188,7 @@ describe('WorkflowStorage', () => {
     });
 
     it('returns null for a missing run', async () => {
-      expect(await storage.getRun('nonexistent')).toBeNull();
+      expect(await storage.getRun('00000000-0000-0000-0000-000000000000')).toBeNull();
     });
   });
 

@@ -177,4 +177,146 @@ describe('UsageTracker', () => {
     expect(stats.costUsdToday).toBeCloseTo(0.01);
     expect(stats.costUsdMonth).toBeCloseTo(0.01);
   });
+
+  it('clears todayRecords when calendar day rolls over', () => {
+    // Add a record with "yesterday" as the current day key
+    tracker.record({
+      provider: 'anthropic',
+      model: 'test',
+      usage: makeUsage(500),
+      costUsd: 0.005,
+      timestamp: Date.now(),
+    });
+    expect(tracker.getStats().tokensUsedToday).toBe(500);
+
+    // Simulate midnight rollover by setting the day key to yesterday
+    (tracker as any).currentDayKey = '1970-01-01';
+
+    // Next record triggers the rollover logic
+    tracker.record({
+      provider: 'openai',
+      model: 'gpt-4o',
+      usage: makeUsage(300),
+      costUsd: 0.003,
+      timestamp: Date.now(),
+    });
+
+    // Only the new record's tokens should count as "today"
+    const stats = tracker.getStats();
+    expect(stats.tokensUsedToday).toBe(300);
+  });
+
+  it('init() returns early when no storage is set', async () => {
+    const noStorageTracker = new UsageTracker();
+    // Should resolve without error even with no storage
+    await expect(noStorageTracker.init()).resolves.toBeUndefined();
+  });
+
+  it('record() calls storage.insert and swallows insert errors', async () => {
+    let insertCallCount = 0;
+    const mockStorage = {
+      loadToday: async () => [],
+      getTotalCallCount: async () => 0,
+      loadMonthCostUsd: async () => 0,
+      loadProviderStats: async () => ({}),
+      getResetAt: async () => 0,
+      loadStats: async () => ({ errorCount: 0, latencyTotalMs: 0, latencyCallCount: 0 }),
+      insert: async () => {
+        insertCallCount++;
+        throw new Error('DB down');
+      },
+      insertError: async () => {},
+      setResetAt: async () => {},
+    } as any;
+
+    const t = new UsageTracker(undefined, mockStorage);
+    t.record({
+      provider: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+      usage: makeUsage(100),
+      costUsd: 0.001,
+      timestamp: Date.now(),
+    });
+
+    // Allow fire-and-forget to settle
+    await new Promise((r) => setTimeout(r, 10));
+    expect(insertCallCount).toBe(1);
+    // Should not throw — in-memory record is still kept
+    expect(t.getStats().apiCallsTotal).toBe(1);
+  });
+
+  it('recordError() calls storage.insertError when storage is available', async () => {
+    let insertErrorCalled = false;
+    const mockStorage = {
+      loadToday: async () => [],
+      getTotalCallCount: async () => 0,
+      loadMonthCostUsd: async () => 0,
+      loadProviderStats: async () => ({}),
+      getResetAt: async () => 0,
+      loadStats: async () => ({ errorCount: 0, latencyTotalMs: 0, latencyCallCount: 0 }),
+      insert: async () => {},
+      insertError: async () => { insertErrorCalled = true; },
+      setResetAt: async () => {},
+    } as any;
+
+    const t = new UsageTracker(undefined, mockStorage);
+    t.recordError('anthropic', 'claude-sonnet-4-20250514');
+
+    await new Promise((r) => setTimeout(r, 10));
+    expect(insertErrorCalled).toBe(true);
+    expect(t.getStats().apiErrorsTotal).toBe(1);
+    expect(t.getStats().apiCallsTotal).toBe(1);
+  });
+
+  it('resetErrors() resets error counter and calls storage.setResetAt', async () => {
+    let resetAtType = '';
+    let resetAtValue = 0;
+    const mockStorage = {
+      loadToday: async () => [],
+      getTotalCallCount: async () => 0,
+      loadMonthCostUsd: async () => 0,
+      loadProviderStats: async () => ({}),
+      getResetAt: async () => 0,
+      loadStats: async () => ({ errorCount: 0, latencyTotalMs: 0, latencyCallCount: 0 }),
+      insert: async () => {},
+      insertError: async () => {},
+      setResetAt: async (type: string, ts: number) => { resetAtType = type; resetAtValue = ts; },
+    } as any;
+
+    const t = new UsageTracker(undefined, mockStorage);
+    t.recordError();
+    t.recordError();
+    expect(t.getStats().apiErrorsTotal).toBe(2);
+
+    await t.resetErrors();
+    expect(t.getStats().apiErrorsTotal).toBe(0);
+    expect(resetAtType).toBe('errors');
+    expect(resetAtValue).toBeGreaterThan(0);
+  });
+
+  it('resetLatency() resets latency counters and calls storage.setResetAt', async () => {
+    let resetAtType = '';
+    const mockStorage = {
+      loadToday: async () => [],
+      getTotalCallCount: async () => 0,
+      loadMonthCostUsd: async () => 0,
+      loadProviderStats: async () => ({}),
+      getResetAt: async () => 0,
+      loadStats: async () => ({ errorCount: 0, latencyTotalMs: 0, latencyCallCount: 0 }),
+      insert: async () => {},
+      insertError: async () => {},
+      setResetAt: async (type: string) => { resetAtType = type; },
+    } as any;
+
+    const t = new UsageTracker(undefined, mockStorage);
+    t.recordLatency(500);
+    t.recordLatency(300);
+    expect(t.getStats().apiLatencyTotalMs).toBe(800);
+    expect(t.getStats().apiCallCount).toBe(2);
+
+    await t.resetLatency();
+    expect(t.getStats().apiLatencyTotalMs).toBe(0);
+    expect(t.getStats().apiCallCount).toBe(0);
+    expect(resetAtType).toBe('latency');
+  });
 });

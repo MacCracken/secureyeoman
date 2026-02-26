@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import Fastify from 'fastify';
 import {
   AutonomyAuditManager,
+  AutonomyAuditStorage,
   DEFAULT_CHECKLIST_ITEMS,
   type AuditRun,
   type ChecklistItem,
@@ -383,5 +384,201 @@ describe('POST /api/v1/autonomy/emergency-stop/:type/:id', () => {
     });
     expect(res.statusCode).toBe(200);
     expect(res.json().type).toBe('workflow');
+  });
+});
+
+// ─── AutonomyAuditStorage ─────────────────────────────────────────────────────
+
+const ITEMS = DEFAULT_CHECKLIST_ITEMS.map((i) => ({ ...i }));
+
+function makeAuditRunRow(overrides: Record<string, unknown> = {}) {
+  return {
+    id: 'run-1',
+    name: 'Test Audit',
+    status: 'in_progress',
+    items: ITEMS,
+    report_markdown: null,
+    report_json: null,
+    created_by: null,
+    created_at: NOW,
+    completed_at: null,
+    ...overrides,
+  };
+}
+
+describe('AutonomyAuditStorage.createAuditRun()', () => {
+  it('inserts and returns a run', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(makeAuditRunRow());
+
+    const run = await storage.createAuditRun('Test Audit', ITEMS);
+    expect(run.id).toBe('run-1');
+    expect(run.status).toBe('in_progress');
+    expect(run.items).toHaveLength(16);
+  });
+
+  it('passes createdBy to the query', async () => {
+    const storage = new AutonomyAuditStorage();
+    const spy = vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(makeAuditRunRow({ created_by: 'alice' }));
+
+    await storage.createAuditRun('Test', ITEMS, 'alice');
+    const params = spy.mock.calls[0][1];
+    expect(params).toContain('alice');
+  });
+});
+
+describe('AutonomyAuditStorage.updateAuditItem()', () => {
+  it('returns null when run not found', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(null);
+    expect(await storage.updateAuditItem('run-1', 'A1', { status: 'pass', note: '' })).toBeNull();
+  });
+
+  it('returns null when item not in run', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(makeAuditRunRow({ items: [] }));
+    expect(await storage.updateAuditItem('run-1', 'Z9', { status: 'pass', note: '' })).toBeNull();
+  });
+
+  it('updates the item and returns updated run', async () => {
+    const storage = new AutonomyAuditStorage();
+    const updatedRow = makeAuditRunRow({ items: ITEMS.map((i) => (i.id === 'A1' ? { ...i, status: 'pass' } : i)) });
+    vi.spyOn(storage as any, 'queryOne')
+      .mockResolvedValueOnce(makeAuditRunRow())  // getAuditRun
+      .mockResolvedValueOnce(updatedRow);         // UPDATE ... RETURNING *
+
+    const result = await storage.updateAuditItem('run-1', 'A1', { status: 'pass', note: 'good' });
+    expect(result?.items.find((i: ChecklistItem) => i.id === 'A1')?.status).toBe('pass');
+  });
+
+  it('returns null when UPDATE returns no row', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryOne')
+      .mockResolvedValueOnce(makeAuditRunRow())  // getAuditRun
+      .mockResolvedValueOnce(null);               // UPDATE returns null
+
+    const result = await storage.updateAuditItem('run-1', 'A1', { status: 'pass', note: '' });
+    expect(result).toBeNull();
+  });
+});
+
+describe('AutonomyAuditStorage.finalizeRun()', () => {
+  it('updates status to completed and returns run', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(
+      makeAuditRunRow({ status: 'completed', report_markdown: '# Report', completed_at: NOW })
+    );
+
+    const result = await storage.finalizeRun('run-1', '# Report', { summary: {} });
+    expect(result?.status).toBe('completed');
+    expect(result?.reportMarkdown).toBe('# Report');
+  });
+
+  it('returns null when run not found', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(null);
+    expect(await storage.finalizeRun('nonexistent', '', {})).toBeNull();
+  });
+});
+
+describe('AutonomyAuditStorage.listAuditRuns()', () => {
+  it('returns list of runs', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryMany').mockResolvedValueOnce([
+      makeAuditRunRow(),
+      makeAuditRunRow({ id: 'run-2', name: 'Run 2' }),
+    ]);
+
+    const runs = await storage.listAuditRuns();
+    expect(runs).toHaveLength(2);
+    expect(runs[0].id).toBe('run-1');
+    expect(runs[1].id).toBe('run-2');
+  });
+
+  it('maps completedAt correctly', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryMany').mockResolvedValueOnce([
+      makeAuditRunRow({ status: 'completed', completed_at: NOW + 1000 }),
+    ]);
+
+    const runs = await storage.listAuditRuns();
+    expect(runs[0].completedAt).toBe(NOW + 1000);
+  });
+});
+
+describe('AutonomyAuditStorage.getAuditRun()', () => {
+  it('returns run when found', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(makeAuditRunRow());
+    const run = await storage.getAuditRun('run-1');
+    expect(run?.id).toBe('run-1');
+  });
+
+  it('returns null when not found', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryOne').mockResolvedValueOnce(null);
+    expect(await storage.getAuditRun('missing')).toBeNull();
+  });
+});
+
+describe('AutonomyAuditStorage.getOverview()', () => {
+  it('groups skills and workflows by autonomy level', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryMany')
+      .mockResolvedValueOnce([
+        { id: 's1', name: 'Skill A', autonomy_level: 'L1', emergency_stop_procedure: null },
+        { id: 's2', name: 'Skill B', autonomy_level: 'L5', emergency_stop_procedure: 'Stop B' },
+      ])
+      .mockResolvedValueOnce([
+        { id: 'w1', name: 'Workflow A', autonomy_level: 'L2', emergency_stop_procedure: null },
+      ]);
+
+    const overview = await storage.getOverview();
+    expect(overview.byLevel.L1).toHaveLength(1);
+    expect(overview.byLevel.L5).toHaveLength(1);
+    expect(overview.byLevel.L5[0].emergencyStopProcedure).toBe('Stop B');
+    expect(overview.byLevel.L2).toHaveLength(1);
+    expect(overview.byLevel.L2[0].type).toBe('workflow');
+    expect(overview.totals.L1).toBe(1);
+    expect(overview.totals.L2).toBe(1);
+    expect(overview.totals.L5).toBe(1);
+  });
+
+  it('defaults skill level to L1 when null', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryMany')
+      .mockResolvedValueOnce([
+        { id: 's1', name: 'Skill', autonomy_level: null, emergency_stop_procedure: null },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const overview = await storage.getOverview();
+    expect(overview.byLevel.L1).toHaveLength(1);
+  });
+
+  it('defaults workflow level to L2 when null', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryMany')
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([
+        { id: 'w1', name: 'Workflow', autonomy_level: null, emergency_stop_procedure: null },
+      ]);
+
+    const overview = await storage.getOverview();
+    expect(overview.byLevel.L2).toHaveLength(1);
+  });
+
+  it('ignores skills with unknown autonomy level', async () => {
+    const storage = new AutonomyAuditStorage();
+    vi.spyOn(storage as any, 'queryMany')
+      .mockResolvedValueOnce([
+        { id: 's1', name: 'Skill', autonomy_level: 'INVALID', emergency_stop_procedure: null },
+      ])
+      .mockResolvedValueOnce([]);
+
+    const overview = await storage.getOverview();
+    // INVALID level is not in byLevel, so nothing added
+    const totalItems = Object.values(overview.byLevel).flat().length;
+    expect(totalItems).toBe(0);
   });
 });

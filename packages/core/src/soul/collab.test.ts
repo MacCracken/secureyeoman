@@ -292,4 +292,68 @@ describe('CollabManager', () => {
     const presence = manager.getPresence('personality:aaaaaaaa-0000-0000-0000-999999999999');
     expect(presence.size).toBe(0);
   });
+
+  it('handleMessage does nothing for unknown docId', () => {
+    // No join — docId not in map. Should not throw.
+    expect(() =>
+      manager.handleMessage('personality:unknown-doc', 'c1', new Uint8Array([0, 2, 1, 2, 3]))
+    ).not.toThrow();
+  });
+
+  it('leave does nothing for unknown docId', () => {
+    expect(() => manager.leave('personality:unknown-doc', 'c1')).not.toThrow();
+  });
+
+  it('seeds skill docId with instructions fieldName', async () => {
+    const ws = new FakeWebSocket();
+    await manager.join('skill:aaaaaaaa-0000-0000-0000-000000000001', 'c1', ws as never, 'u1', 'Dev', 'do stuff');
+    // Should send join messages without throwing
+    expect(ws.sent.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('does not relay broadcasts to closed WebSocket clients', async () => {
+    const docId = 'personality:aaaaaaaa-0000-0000-0000-000000000011';
+    const ws1 = new FakeWebSocket();
+    const ws2 = new FakeWebSocket();
+
+    await manager.join(docId, 'c1', ws1 as never, 'u1', 'Alice');
+    await manager.join(docId, 'c2', ws2 as never, 'u2', 'Bob');
+
+    // Close ws2
+    ws2.close();
+
+    const sentBefore = ws2.sent.length;
+    const updateDoc = new Y.Doc();
+    updateDoc.getText('systemPrompt').insert(0, 'Update');
+    manager.handleMessage(docId, 'c1', makeSyncStep2(updateDoc));
+
+    // ws2 is closed (readyState=3), should not receive broadcast
+    expect(ws2.sent.length).toBe(sentBefore);
+  });
+
+  it('handles persistNow error gracefully', async () => {
+    const brokenStorage = {
+      saveCollabDoc: vi.fn().mockRejectedValue(new Error('DB down')),
+      loadCollabDoc: vi.fn().mockResolvedValue(null),
+    } as unknown as SoulStorage;
+    const mgr = new CollabManager(brokenStorage);
+    const ws = new FakeWebSocket();
+    const docId = 'personality:aaaaaaaa-0000-0000-0000-000000000012';
+
+    await mgr.join(docId, 'c1', ws as never, 'u1', 'Alice');
+    mgr.leave(docId, 'c1');
+    // persist on leave — should not throw even though save fails
+    await vi.runAllTimersAsync();
+    expect(brokenStorage.saveCollabDoc).toHaveBeenCalled();
+  });
+
+  it('reuses existing doc entry on second join to same docId', async () => {
+    const docId = 'personality:aaaaaaaa-0000-0000-0000-000000000013';
+    const ws1 = new FakeWebSocket();
+    const ws2 = new FakeWebSocket();
+    await manager.join(docId, 'c1', ws1 as never, 'u1', 'Alice');
+    await manager.join(docId, 'c2', ws2 as never, 'u2', 'Bob');
+    // storage.loadCollabDoc should only be called once (second join reuses the entry)
+    expect(storage.loadCollabDoc).toHaveBeenCalledTimes(1);
+  });
 });

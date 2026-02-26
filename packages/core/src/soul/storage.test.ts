@@ -327,9 +327,11 @@ describe('SoulStorage', () => {
 
   describe('listSkills', () => {
     it('returns skills with total', async () => {
-      mockQuery
-        .mockResolvedValueOnce({ rows: [{ count: '1' }], rowCount: 1 })
-        .mockResolvedValueOnce({ rows: [skillRow], rowCount: 1 });
+      // listSkills uses a single window-function query (COUNT(*) OVER()) — one mock response
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...skillRow, total_count: '1' }],
+        rowCount: 1,
+      });
 
       const result = await storage.listSkills();
       expect(result.total).toBe(1);

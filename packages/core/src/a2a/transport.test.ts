@@ -87,4 +87,16 @@ describe('RemoteDelegationTransport.send', () => {
     expect(parsed.id).toBe('msg-1');
     expect(parsed.type).toBe('a2a:delegate');
   });
+
+  it('logs "Unknown error" when fetch throws a non-Error value', async () => {
+    vi.mocked(fetch).mockRejectedValueOnce('plain string error');
+    const logger = makeLogger();
+    const transport = new RemoteDelegationTransport({ logger: logger as any });
+    const result = await transport.send(PEER, MESSAGE);
+    expect(result).toBe(false);
+    expect(logger.warn).toHaveBeenCalledWith(
+      'Failed to send A2A message',
+      expect.objectContaining({ error: 'Unknown error' })
+    );
+  });
 });

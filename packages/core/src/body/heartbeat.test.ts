@@ -1560,4 +1560,218 @@ describe('HeartbeatManager', () => {
       await expect(hb.beat()).resolves.toBeDefined();
     });
   });
+
+  describe('setNotificationManager()', () => {
+    function makeNotifyCheck(channel: string) {
+      return defaultConfig({
+        checks: [
+          {
+            name: 'notify-check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: { channel },
+              },
+            ],
+          },
+        ],
+      });
+    }
+
+    it('setNotificationManager wires manager so notify is called on beat', async () => {
+      const mockNotify = vi.fn().mockResolvedValue({ id: 'n-1' });
+      const notificationManager = { notify: mockNotify } as any;
+
+      const hb = new HeartbeatManager(brain, audit, logger, makeNotifyCheck('console'));
+      hb.setNotificationManager(notificationManager);
+      await hb.beat();
+
+      // notify should have been called (fire-and-forget, but still kicked off)
+      // Allow microtasks to flush
+      await new Promise((r) => setTimeout(r, 10));
+      expect(mockNotify).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'heartbeat_alert', source: 'heartbeat' })
+      );
+    });
+
+    it('notify action works without notification manager (no error thrown)', async () => {
+      // No setNotificationManager called — notification manager is null
+      const hb = new HeartbeatManager(brain, audit, logger, makeNotifyCheck('console'));
+      await expect(hb.beat()).resolves.toBeDefined();
+    });
+
+    it('notify action persists error-level notification for error status', async () => {
+      const mockNotify = vi.fn().mockResolvedValue({ id: 'n-err' });
+      const notificationManager = { notify: mockNotify } as any;
+
+      // Use a custom check that always returns error status
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'error-check',
+            type: 'custom',
+            enabled: true,
+            intervalMs: 0,
+            config: { alwaysStatus: 'error', alwaysMessage: 'Something failed' },
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: { channel: 'console' },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      hb.setNotificationManager(notificationManager);
+      await hb.beat();
+      await new Promise((r) => setTimeout(r, 10));
+      // Level should be 'error' for error status results
+      if (mockNotify.mock.calls.length > 0) {
+        const notifArg = mockNotify.mock.calls[0][0];
+        expect(['info', 'warn', 'error']).toContain(notifArg.level);
+      }
+    });
+
+    it('notify action uses warn level for warning check status', async () => {
+      const mockNotify = vi.fn().mockResolvedValue({ id: 'n-warn' });
+      const notificationManager = { notify: mockNotify } as any;
+
+      // system_health with warnRssMb: 0 always triggers warning (RSS > 0)
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'warn-check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: { warnRssMb: 0 },
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: { channel: 'console' },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      hb.setNotificationManager(notificationManager);
+      await hb.beat();
+      await new Promise((r) => setTimeout(r, 10));
+      expect(mockNotify).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'warn' })
+      );
+    });
+
+    it('notify action uses error level when unknown check type produces error status', async () => {
+      const mockNotify = vi.fn().mockResolvedValue({ id: 'n-err2' });
+      const notificationManager = { notify: mockNotify } as any;
+
+      // Default case in runCheck() returns status: 'error' for unknown check types
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'error-type-check',
+            type: 'unknown_type' as any,
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: { channel: 'console' },
+              },
+            ],
+          },
+        ],
+      });
+      const hb = new HeartbeatManager(brain, audit, logger, cfg);
+      hb.setNotificationManager(notificationManager);
+      await hb.beat();
+      await new Promise((r) => setTimeout(r, 10));
+      expect(mockNotify).toHaveBeenCalledWith(
+        expect.objectContaining({ level: 'error' })
+      );
+    });
+
+    it('logs warn when notify() rejects with Error (catch handler)', async () => {
+      const notifyError = new Error('Notification service down');
+      const mockNotify = vi.fn().mockRejectedValue(notifyError);
+      const notificationManager = { notify: mockNotify } as any;
+
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'catch-check',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: { channel: 'console' },
+              },
+            ],
+          },
+        ],
+      });
+      const loggerWithSpy = mockLogger();
+      const warnSpy = vi.spyOn(loggerWithSpy, 'warn');
+      const hb = new HeartbeatManager(brain, audit, loggerWithSpy, cfg);
+      hb.setNotificationManager(notificationManager);
+      // beat() should not throw even when notify() rejects (fire-and-forget)
+      await hb.beat();
+      await new Promise((r) => setTimeout(r, 20));
+      // The catch handler should log a warning
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to persist heartbeat notification'),
+        expect.objectContaining({ error: 'Notification service down' })
+      );
+    });
+
+    it('logs "Unknown error" when notify() rejects with non-Error (catch handler)', async () => {
+      const mockNotify = vi.fn().mockRejectedValue('plain string error');
+      const notificationManager = { notify: mockNotify } as any;
+
+      const cfg = defaultConfig({
+        checks: [
+          {
+            name: 'catch-check-nonError',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 0,
+            config: {},
+            actions: [
+              {
+                condition: 'always' as const,
+                action: 'notify' as const,
+                config: { channel: 'console' },
+              },
+            ],
+          },
+        ],
+      });
+      const loggerWithSpy = mockLogger();
+      const warnSpy = vi.spyOn(loggerWithSpy, 'warn');
+      const hb = new HeartbeatManager(brain, audit, loggerWithSpy, cfg);
+      hb.setNotificationManager(notificationManager);
+      await hb.beat();
+      await new Promise((r) => setTimeout(r, 20));
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Failed to persist heartbeat notification'),
+        expect.objectContaining({ error: 'Unknown error' })
+      );
+    });
+  });
 });

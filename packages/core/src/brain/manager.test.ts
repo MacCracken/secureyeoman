@@ -732,4 +732,53 @@ describe('BrainManager', () => {
       expect(storage.close).toHaveBeenCalled();
     });
   });
+
+  describe('per-personality memory scoping (setActivePersonality / resolvePersonalityId)', () => {
+    it('remember passes personalityId to storage.createMemory', async () => {
+      const { manager, storage } = makeManager();
+      manager.setActivePersonality('p-1');
+      await manager.remember('semantic', 'test', 'user');
+      expect(storage.createMemory).toHaveBeenCalledWith(
+        expect.objectContaining({ content: 'test' }),
+        'p-1'
+      );
+    });
+
+    it('omnipresent mode passes undefined to storage (no filter)', async () => {
+      const { manager, storage } = makeManager();
+      manager.setActivePersonality('p-1', true); // omnipresent = true
+      await manager.remember('semantic', 'test', 'user');
+      expect(storage.createMemory).toHaveBeenCalledWith(
+        expect.objectContaining({ content: 'test' }),
+        undefined
+      );
+    });
+
+    it('explicit personalityId override takes precedence over active personality', async () => {
+      const { manager, storage } = makeManager();
+      manager.setActivePersonality('p-1');
+      await manager.remember('semantic', 'test', 'user', undefined, undefined, 'p-override');
+      expect(storage.createMemory).toHaveBeenCalledWith(
+        expect.anything(),
+        'p-override'
+      );
+    });
+
+    it('setActivePersonality with null clears active personality', async () => {
+      const { manager, storage } = makeManager();
+      manager.setActivePersonality('p-1');
+      manager.setActivePersonality(null);
+      await manager.remember('semantic', 'test', 'user');
+      expect(storage.createMemory).toHaveBeenCalledWith(
+        expect.anything(),
+        undefined
+      );
+    });
+
+    it('getStats passes personalityId when set', async () => {
+      const { manager, storage } = makeManager();
+      await manager.getStats('p-1');
+      expect(storage.getStats).toHaveBeenCalledWith('p-1');
+    });
+  });
 });

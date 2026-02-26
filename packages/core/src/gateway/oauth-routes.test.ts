@@ -248,6 +248,188 @@ describe('DELETE /api/v1/auth/oauth/tokens/:id', () => {
   });
 });
 
+describe('GET /api/v1/auth/oauth/:provider — google services get offline params', () => {
+  it('adds access_type=offline for gmail', async () => {
+    const app = buildApp({
+      isProviderConfigured: vi.fn().mockReturnValue(true),
+      getProvider: vi.fn().mockReturnValue({
+        ...MOCK_PROVIDER,
+        id: 'gmail',
+        authorizeUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+      }),
+    });
+    const res = await app.inject({ method: 'GET', url: '/api/v1/auth/oauth/gmail' });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toContain('access_type=offline');
+    expect(res.headers.location).toContain('prompt=consent');
+  });
+});
+
+describe('GET /api/v1/auth/oauth/:provider/callback — edge cases', () => {
+  it('redirects with invalid_state when state provider does not match URL provider', async () => {
+    const app = buildApp({
+      validateState: vi.fn().mockReturnValue({
+        provider: 'google', // mismatched — URL says gmail
+        redirectUri: 'http://localhost/callback',
+        createdAt: Date.now(),
+      }),
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/oauth/gmail/callback?code=auth-code&state=mock-state',
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toContain('invalid_state');
+  });
+
+  it('redirects to email error page on gmail exchange failure', async () => {
+    const app = buildApp({
+      validateState: vi.fn().mockReturnValue({
+        provider: 'gmail',
+        redirectUri: 'http://localhost/callback',
+        createdAt: Date.now(),
+      }),
+      exchangeCode: vi.fn().mockRejectedValue(new Error('gmail token failed')),
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/oauth/gmail/callback?code=auth-code&state=mock-state',
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toContain('/connections/email?error=');
+  });
+
+  it('redirects with "Unknown+error" when non-Error is thrown in callback', async () => {
+    const app = buildApp({
+      exchangeCode: vi.fn().mockRejectedValue('plain string error'),
+    });
+    const res = await app.inject({
+      method: 'GET',
+      url: '/api/v1/auth/oauth/google/callback?code=auth-code&state=mock-state',
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toContain('Unknown%20error');
+  });
+
+  it('calls storeToken and redirects to email on successful gmail callback with token service', async () => {
+    const fastifyApp = Fastify({ logger: false });
+    const oauthSvc = makeMockOAuthService({
+      validateState: vi.fn().mockReturnValue({
+        provider: 'gmail',
+        redirectUri: 'http://localhost/callback',
+        createdAt: Date.now(),
+      }),
+      generateOAuthConnectionToken: vi.fn().mockReturnValue('gmail-conn-tok-2'),
+      getUserInfo: vi.fn().mockResolvedValue({ id: 'u-gmail', email: 'user@gmail.com', name: 'User' }),
+    });
+    const ts = makeMockTokenService();
+    registerOAuthRoutes(fastifyApp, {
+      authService: {} as AuthService,
+      oauthService: oauthSvc,
+      baseUrl: 'http://localhost:3000',
+      oauthTokenService: ts,
+    });
+    const res = await fastifyApp.inject({
+      method: 'GET',
+      url: '/api/v1/auth/oauth/gmail/callback?code=auth-code&state=mock-state',
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toContain('/connections/email');
+    expect(ts.storeToken).toHaveBeenCalled();
+  });
+
+  it('calls storeToken and redirects to calendar on googlecalendar callback', async () => {
+    const fastifyApp = Fastify({ logger: false });
+    const oauthSvc = makeMockOAuthService({
+      validateState: vi.fn().mockReturnValue({
+        provider: 'googlecalendar',
+        redirectUri: 'http://localhost/callback',
+        createdAt: Date.now(),
+      }),
+      generateOAuthConnectionToken: vi.fn().mockReturnValue('cal-conn-tok'),
+      getUserInfo: vi.fn().mockResolvedValue({ id: 'u-cal', email: 'user@gmail.com', name: 'User' }),
+    });
+    const ts = makeMockTokenService();
+    registerOAuthRoutes(fastifyApp, {
+      authService: {} as AuthService,
+      oauthService: oauthSvc,
+      baseUrl: 'http://localhost:3000',
+      oauthTokenService: ts,
+    });
+    const res = await fastifyApp.inject({
+      method: 'GET',
+      url: '/api/v1/auth/oauth/googlecalendar/callback?code=auth-code&state=mock-state',
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toContain('/connections/calendar');
+    expect(ts.storeToken).toHaveBeenCalled();
+  });
+
+  it('redirects to drive on googledrive callback', async () => {
+    const fastifyApp = Fastify({ logger: false });
+    const oauthSvc = makeMockOAuthService({
+      validateState: vi.fn().mockReturnValue({
+        provider: 'googledrive',
+        redirectUri: 'http://localhost/callback',
+        createdAt: Date.now(),
+      }),
+      generateOAuthConnectionToken: vi.fn().mockReturnValue('drive-conn-tok'),
+      getUserInfo: vi.fn().mockResolvedValue({ id: 'u-drive', email: 'user@gmail.com', name: 'User' }),
+    });
+    const ts = makeMockTokenService();
+    registerOAuthRoutes(fastifyApp, {
+      authService: {} as AuthService,
+      oauthService: oauthSvc,
+      baseUrl: 'http://localhost:3000',
+      oauthTokenService: ts,
+    });
+    const res = await fastifyApp.inject({
+      method: 'GET',
+      url: '/api/v1/auth/oauth/googledrive/callback?code=auth-code&state=mock-state',
+    });
+    expect(res.statusCode).toBe(302);
+    expect(res.headers.location).toContain('/connections/drive');
+    expect(ts.storeToken).toHaveBeenCalled();
+  });
+});
+
+describe('POST /api/v1/auth/oauth/claim — success and token paths', () => {
+  it('returns success config on valid pending gmail claim', async () => {
+    // Use a fresh app instance that populates PENDING_GMAIL_TOKENS via gmail callback
+    const fastifyApp = Fastify({ logger: false });
+    const oauthSvc = makeMockOAuthService({
+      validateState: vi.fn().mockReturnValue({
+        provider: 'gmail',
+        redirectUri: 'http://localhost/callback',
+        createdAt: Date.now(),
+      }),
+      generateOAuthConnectionToken: vi.fn().mockReturnValue('valid-claim-tok'),
+      getUserInfo: vi.fn().mockResolvedValue({ id: 'u-1', email: 'claim@gmail.com', name: 'Claim User' }),
+    });
+    registerOAuthRoutes(fastifyApp, {
+      authService: {} as AuthService,
+      oauthService: oauthSvc,
+      baseUrl: 'http://localhost:3000',
+    });
+
+    // First, trigger gmail callback to populate PENDING_GMAIL_TOKENS
+    await fastifyApp.inject({
+      method: 'GET',
+      url: '/api/v1/auth/oauth/gmail/callback?code=c&state=s',
+    });
+
+    // Now claim the token
+    const res = await fastifyApp.inject({
+      method: 'POST',
+      url: '/api/v1/auth/oauth/claim',
+      payload: { connectionToken: 'valid-claim-tok', displayName: 'My Gmail' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(res.json().success).toBe(true);
+    expect(res.json().config.platform).toBe('gmail');
+  });
+});
+
 describe('OAuthService unit tests', () => {
   it('isProviderConfigured returns false when no config', () => {
     const svc = new OAuthService({});
@@ -288,5 +470,168 @@ describe('OAuthService unit tests', () => {
     const svc = new OAuthService({});
     const token1 = svc.generateOAuthConnectionToken('google', 'user-1');
     expect(token1).toHaveLength(64); // sha256 hex
+  });
+
+  it('validateState returns null for expired state', () => {
+    const svc = new OAuthService({});
+    const state = svc.generateState('google', 'http://localhost/cb');
+
+    // Mock Date.now to be 11 minutes after creation
+    const origNow = Date.now;
+    const futureTime = Date.now() + 11 * 60 * 1000;
+    Date.now = () => futureTime;
+    try {
+      expect(svc.validateState(state)).toBeNull();
+    } finally {
+      Date.now = origNow;
+    }
+  });
+
+  it('loadFromEnv loads Google OAuth credentials from env vars', () => {
+    process.env.GOOGLE_OAUTH_CLIENT_ID = 'env-google-id';
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'env-google-secret';
+    const svc = new OAuthService({});
+    expect(svc.isProviderConfigured('google')).toBe(true);
+    delete process.env.GOOGLE_OAUTH_CLIENT_ID;
+    delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  });
+
+  it('loadFromEnv loads GitHub OAuth credentials from env vars', () => {
+    process.env.GITHUB_OAUTH_CLIENT_ID = 'env-github-id';
+    process.env.GITHUB_OAUTH_CLIENT_SECRET = 'env-github-secret';
+    const svc = new OAuthService({});
+    expect(svc.isProviderConfigured('github')).toBe(true);
+    delete process.env.GITHUB_OAUTH_CLIENT_ID;
+    delete process.env.GITHUB_OAUTH_CLIENT_SECRET;
+  });
+
+  it('loadFromEnv loads Gmail credentials falling back to Google env vars', () => {
+    process.env.GOOGLE_OAUTH_CLIENT_ID = 'env-google-id';
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'env-google-secret';
+    const svc = new OAuthService({});
+    expect(svc.isProviderConfigured('gmail')).toBe(true);
+    delete process.env.GOOGLE_OAUTH_CLIENT_ID;
+    delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  });
+
+  it('loadFromEnv loads Google Calendar using Google OAuth creds as fallback', () => {
+    process.env.GOOGLE_OAUTH_CLIENT_ID = 'g-id';
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'g-secret';
+    const svc = new OAuthService({});
+    expect(svc.isProviderConfigured('googlecalendar')).toBe(true);
+    delete process.env.GOOGLE_OAUTH_CLIENT_ID;
+    delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  });
+
+  it('loadFromEnv loads Google Drive using Google OAuth creds as fallback', () => {
+    process.env.GOOGLE_OAUTH_CLIENT_ID = 'g-id';
+    process.env.GOOGLE_OAUTH_CLIENT_SECRET = 'g-secret';
+    const svc = new OAuthService({});
+    expect(svc.isProviderConfigured('googledrive')).toBe(true);
+    delete process.env.GOOGLE_OAUTH_CLIENT_ID;
+    delete process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  });
+});
+
+describe('OAuthService.exchangeCode()', () => {
+  it('fetches and returns accessToken and refreshToken on success', async () => {
+    const svc = new OAuthService({ google: { clientId: 'cid', clientSecret: 'csec' } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ access_token: 'acc-tok', refresh_token: 'ref-tok' }),
+    }));
+    const result = await svc.exchangeCode('google', 'auth-code', 'http://localhost/cb');
+    expect(result.accessToken).toBe('acc-tok');
+    expect(result.refreshToken).toBe('ref-tok');
+    vi.unstubAllGlobals();
+  });
+
+  it('returns undefined refreshToken when not present', async () => {
+    const svc = new OAuthService({ google: { clientId: 'cid', clientSecret: 'csec' } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ access_token: 'acc-only' }),
+    }));
+    const result = await svc.exchangeCode('google', 'code', 'http://localhost/cb');
+    expect(result.refreshToken).toBeUndefined();
+    vi.unstubAllGlobals();
+  });
+
+  it('throws when token exchange returns non-ok', async () => {
+    const svc = new OAuthService({ google: { clientId: 'cid', clientSecret: 'csec' } });
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      text: async () => 'Bad Request',
+    }));
+    await expect(svc.exchangeCode('google', 'code', 'http://localhost')).rejects.toThrow('Token exchange failed');
+    vi.unstubAllGlobals();
+  });
+
+  it('throws when provider not configured', async () => {
+    const svc = new OAuthService({});
+    await expect(svc.exchangeCode('google', 'code', 'http://localhost')).rejects.toThrow('not configured');
+  });
+});
+
+describe('OAuthService.getUserInfo()', () => {
+  it('maps google response fields', async () => {
+    const svc = new OAuthService({});
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'g-1', email: 'user@gmail.com', name: 'Test User', picture: 'https://photo.url' }),
+    }));
+    const info = await svc.getUserInfo('google', 'tok');
+    expect(info.id).toBe('g-1');
+    expect(info.email).toBe('user@gmail.com');
+    expect(info.avatarUrl).toBe('https://photo.url');
+    vi.unstubAllGlobals();
+  });
+
+  it('maps gmail response the same as google', async () => {
+    const svc = new OAuthService({});
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'gm-1', email: 'user@gmail.com', name: 'Gmail User' }),
+    }));
+    const info = await svc.getUserInfo('gmail', 'tok');
+    expect(info.id).toBe('gm-1');
+    vi.unstubAllGlobals();
+  });
+
+  it('maps github response fields including avatar_url', async () => {
+    const svc = new OAuthService({});
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'gh-1', email: 'dev@github.com', name: 'Dev', avatar_url: 'https://avatar.url' }),
+    }));
+    const info = await svc.getUserInfo('github', 'tok');
+    expect(info.id).toBe('gh-1');
+    expect(info.avatarUrl).toBe('https://avatar.url');
+    vi.unstubAllGlobals();
+  });
+
+  it('throws Unsupported provider for googlecalendar (no getUserInfo mapping)', async () => {
+    const svc = new OAuthService({});
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'cal-1' }),
+    }));
+    await expect(svc.getUserInfo('googlecalendar', 'tok')).rejects.toThrow('Unsupported provider');
+    vi.unstubAllGlobals();
+  });
+
+  it('throws Unknown provider when provider not in OAUTH_PROVIDERS', async () => {
+    const svc = new OAuthService({});
+    await expect(svc.getUserInfo('nonexistent', 'tok')).rejects.toThrow('Unknown provider');
+  });
+
+  it('throws when getUserInfo fetch returns non-ok', async () => {
+    const svc = new OAuthService({});
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      statusText: 'Unauthorized',
+    }));
+    await expect(svc.getUserInfo('google', 'bad-tok')).rejects.toThrow('Failed to get user info');
+    vi.unstubAllGlobals();
   });
 });

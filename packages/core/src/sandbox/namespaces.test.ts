@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { detectNamespaceSupport, buildUnshareCommand } from './namespaces.js';
+import { detectNamespaceSupport, buildUnshareCommand, runInNamespace, NamespaceError } from './namespaces.js';
 
 describe('namespaces', () => {
   it('should detect namespace capabilities', () => {
@@ -41,6 +41,40 @@ describe('namespaces', () => {
     if (process.platform !== 'linux') {
       expect(caps.userNamespaces).toBe(false);
       expect(caps.unshareAvailable).toBe(false);
+    }
+  });
+
+  it('should build unshare command with mount but no workDir (no --mount-proc)', () => {
+    const cmd = buildUnshareCommand('ls', { mount: true });
+    expect(cmd).toContain('--mount');
+    expect(cmd).not.toContain('--mount-proc');
+  });
+
+  it('should build basic command with no options', () => {
+    const cmd = buildUnshareCommand('date');
+    expect(cmd).toBe('unshare --user -- date');
+  });
+});
+
+describe('NamespaceError', () => {
+  it('has correct name, message, and code', () => {
+    const err = new NamespaceError('test message', 'TEST_CODE');
+    expect(err).toBeInstanceOf(Error);
+    expect(err.name).toBe('NamespaceError');
+    expect(err.message).toBe('test message');
+    expect(err.code).toBe('TEST_CODE');
+  });
+});
+
+describe('runInNamespace', () => {
+  it('throws NamespaceError when system does not support namespaces', () => {
+    const caps = detectNamespaceSupport();
+    if (!caps.unshareAvailable || !caps.userNamespaces) {
+      // Can't run namespaces — expect error
+      expect(() => runInNamespace('echo test')).toThrow(NamespaceError);
+    } else {
+      // System supports namespaces — should succeed with a simple command
+      expect(() => runInNamespace('echo test')).not.toThrow();
     }
   });
 });

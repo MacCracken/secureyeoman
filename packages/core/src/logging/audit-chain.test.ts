@@ -294,5 +294,180 @@ describe('InMemoryAuditStorage', () => {
       expect(result.offset).toBe(1);
       expect(result.total).toBe(5);
     });
+
+    it('should filter by level', async () => {
+      const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+      await chain.initialize();
+      await chain.record({ event: 'e1', level: 'info', message: 'Info entry' });
+      await chain.record({ event: 'e2', level: 'warn', message: 'Warn entry' });
+      await chain.record({ event: 'e3', level: 'error', message: 'Error entry' });
+
+      const result = await storage.query({ level: ['warn', 'error'] });
+      expect(result.total).toBe(2);
+      expect(result.entries.every((e) => e.level !== 'info')).toBe(true);
+    });
+
+    it('should filter by event', async () => {
+      const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+      await chain.initialize();
+      await chain.record({ event: 'login', level: 'info', message: 'Login' });
+      await chain.record({ event: 'logout', level: 'info', message: 'Logout' });
+      await chain.record({ event: 'login', level: 'info', message: 'Login again' });
+
+      const result = await storage.query({ event: ['login'] });
+      expect(result.total).toBe(2);
+      expect(result.entries.every((e) => e.event === 'login')).toBe(true);
+    });
+
+    it('should filter by userId', async () => {
+      const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+      await chain.initialize();
+      await chain.record({ event: 'e1', level: 'info', message: 'User A', userId: 'user-a' });
+      await chain.record({ event: 'e2', level: 'info', message: 'User B', userId: 'user-b' });
+
+      const result = await storage.query({ userId: 'user-a' });
+      expect(result.total).toBe(1);
+      expect(result.entries[0]!.userId).toBe('user-a');
+    });
+
+    it('should filter by taskId', async () => {
+      const taskId = '00000000-0000-0000-0000-000000000099';
+      const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+      await chain.initialize();
+      await chain.record({ event: 'e1', level: 'info', message: 'Task 1', taskId });
+      await chain.record({ event: 'e2', level: 'info', message: 'No task' });
+
+      const result = await storage.query({ taskId });
+      expect(result.total).toBe(1);
+      expect(result.entries[0]!.taskId).toBe(taskId);
+    });
+
+    it('should sort ascending when order=asc', async () => {
+      const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+      await chain.initialize();
+      await chain.record({ event: 'e1', level: 'info', message: 'First' });
+      await chain.record({ event: 'e2', level: 'info', message: 'Second' });
+
+      const result = await storage.query({ order: 'asc' });
+      expect(result.entries[0]!.event).toBe('e1');
+      expect(result.entries[1]!.event).toBe('e2');
+    });
+  });
+});
+
+describe('AuditChain additional branches', () => {
+  let storage: InMemoryAuditStorage;
+
+  beforeEach(() => {
+    storage = new InMemoryAuditStorage();
+  });
+
+  it('initialize() is idempotent — calling twice does not reinitialize', async () => {
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+    await chain.initialize(); // Second call should return early
+    // Should still work correctly
+    const entry = await chain.record({ event: 'e1', level: 'info', message: 'after double init' });
+    expect(entry).toBeDefined();
+  });
+
+  it('record() auto-initializes when initialize() was not called explicitly', async () => {
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    // Do NOT call initialize() — record() should call it internally
+    const entry = await chain.record({ event: 'auto_init', level: 'info', message: 'No explicit init' });
+    expect(entry.integrity.previousEntryHash).toBe('0'.repeat(64));
+  });
+
+  it('updateSigningKey() rejects short keys', async () => {
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+    await expect(chain.updateSigningKey('short')).rejects.toThrow('Signing key must be at least 32 characters');
+  });
+
+  it('updateSigningKey() records rotation entry and uses new key', async () => {
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+
+    await chain.record({ event: 'before', level: 'info', message: 'Before rotation' });
+    const newKey = 'z'.repeat(64);
+    await chain.updateSigningKey(newKey);
+    await chain.record({ event: 'after', level: 'info', message: 'After rotation' });
+
+    // Chain should still verify correctly
+    const result = await chain.verify();
+    expect(result.valid).toBe(true);
+    expect(result.entriesChecked).toBe(3); // before + rotation_event + after
+  });
+
+  it('verify() returns error when chain link is broken (previous hash mismatch)', async () => {
+    const chain = new AuditChain({ storage, signingKey: SIGNING_KEY });
+    await chain.initialize();
+    await chain.record({ event: 'e1', level: 'info', message: 'First' });
+    await chain.record({ event: 'e2', level: 'info', message: 'Second' });
+    await chain.record({ event: 'e3', level: 'info', message: 'Third' });
+
+    // Collect all 3 entries and tamper ONLY the MIDDLE entry's previousEntryHash.
+    // The LAST entry stays valid so initialize() can succeed.
+    const entries: any[] = [];
+    for await (const e of storage.iterate()) entries.push(e);
+    // Tamper entry[1] (middle), leave entry[2] (last) untouched
+    entries[1] = {
+      ...entries[1],
+      integrity: { ...entries[1].integrity, previousEntryHash: '0'.repeat(64) },
+    };
+
+    const tamperedStorage = new InMemoryAuditStorage();
+    for (const e of entries) await tamperedStorage.append(e);
+
+    // Initialize succeeds — the last entry (entry[2]) is untampered
+    const verifyChain = new AuditChain({ storage: tamperedStorage, signingKey: SIGNING_KEY });
+    await verifyChain.initialize();
+
+    // verify() will encounter the mismatch on entry[1]
+    const result = await verifyChain.verify();
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('previous hash mismatch');
+  });
+
+  it('verify() returns error when storage.iterate() throws', async () => {
+    // Use explicit mock that implements AuditChainStorage but throws in iterate()
+    const throwingStorage = {
+      append: async () => {},
+      getLast: async () => null,
+      count: async () => 0,
+      getById: async () => null,
+      async *iterate(): AsyncIterableIterator<never> {
+        throw new Error('Storage failure');
+        // eslint-disable-next-line no-unreachable
+        yield undefined as never;
+      },
+    };
+    const chain = new AuditChain({ storage: throwingStorage as any, signingKey: SIGNING_KEY });
+    await chain.initialize(); // Empty storage — succeeds
+
+    const result = await chain.verify();
+    expect(result.valid).toBe(false);
+    expect(result.error).toContain('Storage failure');
+  });
+
+  it('verify() returns non-Error exception message as "Unknown error"', async () => {
+    const throwingStorage = {
+      append: async () => {},
+      getLast: async () => null,
+      count: async () => 0,
+      getById: async () => null,
+      async *iterate(): AsyncIterableIterator<never> {
+        // eslint-disable-next-line no-throw-literal
+        throw 'plain string error';
+        // eslint-disable-next-line no-unreachable
+        yield undefined as never;
+      },
+    };
+    const chain = new AuditChain({ storage: throwingStorage as any, signingKey: SIGNING_KEY });
+    await chain.initialize(); // Empty storage — succeeds
+
+    const result = await chain.verify();
+    expect(result.valid).toBe(false);
+    expect(result.error).toBe('Unknown error');
   });
 });

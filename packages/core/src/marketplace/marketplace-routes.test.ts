@@ -44,7 +44,7 @@ describe('GET /api/v1/marketplace', () => {
       method: 'GET',
       url: '/api/v1/marketplace?query=hello&category=utility&limit=5&offset=10&source=community',
     });
-    expect(searchMock).toHaveBeenCalledWith('hello', 'utility', 5, 10, 'community');
+    expect(searchMock).toHaveBeenCalledWith('hello', 'utility', 5, 10, 'community', undefined);
   });
 });
 

@@ -161,4 +161,48 @@ describe('HeartManager', () => {
     const heart = new HeartManager(mockHeartbeatManager({ beatCount: 42 }));
     expect(heart.getStatus().beatCount).toBe(42);
   });
+
+  it('formats interval in hours when >= 1 hour', () => {
+    const now = Date.now();
+    const heart = new HeartManager(
+      mockHeartbeatManager({
+        beatCount: 1,
+        lastBeat: { timestamp: now, durationMs: 1, checks: [] },
+        tasks: [
+          {
+            name: 'daily_task',
+            type: 'reflective_task',
+            enabled: true,
+            intervalMs: 7_200_000, // 2 hours
+            lastRunAt: null,
+            config: {},
+          },
+        ],
+      })
+    );
+    const prompt = heart.composeHeartPrompt();
+    expect(prompt).toContain('daily_task: every 2h');
+  });
+
+  it('formats interval in seconds when < 1 minute', () => {
+    const now = Date.now();
+    const heart = new HeartManager(
+      mockHeartbeatManager({
+        beatCount: 1,
+        lastBeat: { timestamp: now, durationMs: 1, checks: [] },
+        tasks: [
+          {
+            name: 'fast_task',
+            type: 'system_health',
+            enabled: true,
+            intervalMs: 15_000, // 15 seconds
+            lastRunAt: null,
+            config: {},
+          },
+        ],
+      })
+    );
+    const prompt = heart.composeHeartPrompt();
+    expect(prompt).toContain('fast_task: every 15s');
+  });
 });

@@ -109,7 +109,6 @@ export class MarketplaceManager {
             id,
             error: err instanceof Error ? err.message : 'Unknown error',
           });
-          return false;
         }
       }
     }
@@ -144,13 +143,12 @@ export class MarketplaceManager {
             });
           }
         } else {
-          // No personality context: remove the global record (personality_id IS NULL)
-          const globalMatch = matches.find((s) => s.personalityId === null);
-          if (globalMatch) {
-            await this.brainManager.deleteSkill(globalMatch.id);
-            this.logger.info('Brain skill removed (marketplace uninstall, global)', {
+          // No personality context: remove ALL brain skill records for this marketplace skill
+          for (const match of matches) {
+            await this.brainManager.deleteSkill(match.id);
+            this.logger.info('Brain skill removed (marketplace uninstall)', {
               id,
-              brainSkillId: globalMatch.id,
+              brainSkillId: match.id,
             });
           }
         }

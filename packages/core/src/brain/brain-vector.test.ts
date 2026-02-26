@@ -74,6 +74,7 @@ function createMockStorage(): BrainStorage {
     queryKnowledgeBySimilarity: vi.fn(async () => []),
     updateMemoryEmbedding: vi.fn(async () => {}),
     updateKnowledgeEmbedding: vi.fn(async () => {}),
+    getMemoryBatch: vi.fn(async (ids: string[]) => ids.map((id) => makeMemory(id, `content for ${id}`))),
     queryMemoriesByRRF: vi.fn(async () => []),
     queryKnowledgeByRRF: vi.fn(async () => []),
     createChunks: vi.fn(async () => {}),
@@ -156,7 +157,7 @@ describe('BrainManager + Vector Memory', () => {
       const results = await brain.recall({ search: 'test query' });
 
       expect(vectorManager.searchMemories).toHaveBeenCalledWith('test query', 10, 0.7);
-      expect(storage.getMemory as any).toHaveBeenCalledWith('mem-1');
+      expect(storage.getMemoryBatch as any).toHaveBeenCalledWith(['mem-1']);
     });
 
     it('falls back to text search on vector failure', async () => {

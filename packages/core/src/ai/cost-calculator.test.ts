@@ -63,6 +63,15 @@ describe('CostCalculator', () => {
     expect(cost).toBeCloseTo(0.0075, 4);
   });
 
+  it('should use prefix match pricing for versioned model variants', () => {
+    const calc2 = new CostCalculator();
+    // 'claude-sonnet-4-newer' starts with prefix 'claude-sonnet-4' from 'claude-sonnet-4-20250514'
+    const pricing = calc2.getPricing('anthropic', 'claude-sonnet-4-newer-version');
+    // Should match claude-sonnet-4-20250514 pricing: $3/1M input, $15/1M output
+    expect(pricing.inputPer1M).toBe(3);
+    expect(pricing.outputPer1M).toBe(15);
+  });
+
   it('should handle zero usage', () => {
     const cost = calc.calculate('anthropic', 'claude-sonnet-4-20250514', usage(0, 0));
     expect(cost).toBe(0);
@@ -130,6 +139,8 @@ describe('getAvailableModelsAsync', () => {
     delete process.env['OPENAI_API_KEY'];
     delete process.env['OPENCODE_API_KEY'];
     delete process.env['OLLAMA_HOST'];
+    delete process.env['XAI_API_KEY'];
+    delete process.env['LETTA_API_KEY'];
   });
 
   it('should merge dynamically fetched Gemini models', async () => {
@@ -283,5 +294,59 @@ describe('getAvailableModelsAsync', () => {
     // Should still have static anthropic models
     expect(models['anthropic']).toBeDefined();
     expect(models['anthropic'].map((m) => m.model)).toContain('claude-sonnet-4-20250514');
+  });
+
+  it('should merge dynamically fetched Grok models when XAI_API_KEY is set', async () => {
+    process.env['XAI_API_KEY'] = 'xai-test-key';
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('x.ai')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            data: [
+              { id: 'grok-3', owned_by: 'xai' },
+              { id: 'grok-3-mini', owned_by: 'xai' },
+            ],
+          }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const models = await getAvailableModelsAsync();
+    const grokModels = models['grok'];
+
+    expect(grokModels).toBeDefined();
+    expect(grokModels.map((m) => m.model)).toContain('grok-3');
+    expect(grokModels.map((m) => m.model)).toContain('grok-3-mini');
+    // Models should have pricing (known or fallback)
+    expect(typeof grokModels[0].inputPer1M).toBe('number');
+    expect(typeof grokModels[0].outputPer1M).toBe('number');
+  });
+
+  it('should merge dynamically fetched Letta models when LETTA_API_KEY is set', async () => {
+    process.env['LETTA_API_KEY'] = 'letta-test-key';
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('letta')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            models: [
+              { id: 'letta-free', context_window: 32768 },
+            ],
+          }),
+        });
+      }
+      return Promise.resolve({ ok: false });
+    });
+
+    const models = await getAvailableModelsAsync();
+    const lettaModels = models['letta'];
+
+    expect(lettaModels).toBeDefined();
+    expect(lettaModels.map((m) => m.model)).toContain('letta-free');
+    // Models should have pricing (known or fallback)
+    expect(typeof lettaModels[0].inputPer1M).toBe('number');
+    expect(typeof lettaModels[0].outputPer1M).toBe('number');
   });
 });

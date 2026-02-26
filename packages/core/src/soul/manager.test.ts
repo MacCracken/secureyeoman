@@ -96,6 +96,7 @@ function makeStorage(overrides: any = {}) {
     getEnabledSkills: vi.fn().mockResolvedValue([SKILL]),
     approveSkill: vi.fn().mockResolvedValue({ ...SKILL, status: 'active' }),
     incrementUsage: vi.fn().mockResolvedValue(undefined),
+    incrementInvoked: vi.fn().mockResolvedValue(undefined),
     getUser: vi.fn().mockResolvedValue(USER),
     getUserByName: vi.fn().mockResolvedValue(USER),
     getOwner: vi.fn().mockResolvedValue(null),
@@ -678,6 +679,35 @@ describe('SoulManager', () => {
       });
       const prompt = await manager.composeSoulPrompt('tell me a joke');
       expect(prompt).not.toContain('Review the code carefully');
+    });
+
+    it('includes MCP tool restriction when mcpToolsAllowed is non-empty', async () => {
+      const restrictedSkill = {
+        ...SKILL,
+        name: 'Restricted Skill',
+        instructions: 'Use only allowed tools.',
+        mcpToolsAllowed: ['web_search', 'web_scrape'],
+      };
+      const { manager } = makeManager({
+        getEnabledSkills: vi.fn().mockResolvedValue([restrictedSkill]),
+      });
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('MCP tool restriction');
+      expect(prompt).toContain('web_search, web_scrape');
+    });
+
+    it('does not include MCP tool restriction when mcpToolsAllowed is null', async () => {
+      const nullToolSkill = {
+        ...SKILL,
+        name: 'Unrestricted Skill',
+        instructions: 'Do anything.',
+        mcpToolsAllowed: null as any,
+      };
+      const { manager } = makeManager({
+        getEnabledSkills: vi.fn().mockResolvedValue([nullToolSkill]),
+      });
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).not.toContain('MCP tool restriction');
     });
 
     it('includes spirit prompt when spirit available', async () => {

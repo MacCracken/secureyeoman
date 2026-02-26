@@ -992,7 +992,7 @@ export class SoulManager {
       if (!skill.instructions && !skill.successCriteria) continue;
       const instructions = expandOutputDir(skill);
       let section = `\n\n## Skill: ${skill.name}\n${instructions}`;
-      if (skill.mcpToolsAllowed.length > 0)
+      if ((skill.mcpToolsAllowed?.length ?? 0) > 0)
         section += `\n\n[MCP tool restriction: only ${skill.mcpToolsAllowed.join(', ')} may be used while this skill is active.]`;
       if (skill.successCriteria)
         section += `\n\nSuccess criteria: ${skill.successCriteria}`;

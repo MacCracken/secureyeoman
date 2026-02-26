@@ -157,6 +157,37 @@ describe('LinuxSandbox', () => {
       expect(result.result).toBe(123);
       expect(result.violations).toEqual([]);
     });
+
+    it('should detect CPU time limit violation', async () => {
+      const opts: SandboxOptions = {
+        resources: {
+          maxCpuPercent: 1, // 1% of 1000ms = 10ms limit
+        },
+        timeoutMs: 1000,
+      };
+      const result = await sandbox.run(async () => {
+        // Wait 50ms so cpuTimeMs (50) > maxCpuMs (10)
+        await new Promise((r) => setTimeout(r, 50));
+        return 'done';
+      }, opts);
+      expect(result.violations.some((v) => v.type === 'resource')).toBe(true);
+    });
+
+    it('should use Landlock worker fallback when worker file is missing', async () => {
+      // Only meaningful test on Linux where landlock might be supported
+      const caps = sandbox.getCapabilities();
+      if (!caps.landlock) {
+        // Not a Linux system with Landlock — skip
+        return;
+      }
+      // Create a sandbox with enforceLandlock=true. The compiled worker
+      // won't exist in test environment, so it falls back to V1.
+      const llSandbox = new LinuxSandbox({ enforceLandlock: true });
+      const result = await llSandbox.run(async () => 'landlock-fallback');
+      // Falls back to V1 successfully
+      expect(result.success).toBe(true);
+      expect(result.result).toBe('landlock-fallback');
+    });
   });
 
   describe('validatePath()', () => {

@@ -105,19 +105,22 @@ describe('MarketplaceManager', () => {
       const ok = await manager.install('skill-1');
       expect(ok).toBe(true);
       expect(storage.setInstalled).toHaveBeenCalledWith('skill-1', true);
-      expect(logger.info).toHaveBeenCalledWith('Marketplace skill installed', { id: 'skill-1' });
+      expect(logger.info).toHaveBeenCalledWith('Marketplace skill installed', { id: 'skill-1', personalityId: null });
     });
 
     it('creates brain skill when brainManager provided', async () => {
       const createSkill = vi.fn().mockResolvedValue({ id: 'brain-skill-1' });
-      const brainManager = { createSkill, listSkills: vi.fn(), deleteSkill: vi.fn() };
+      const brainManager = { createSkill, listSkills: vi.fn().mockResolvedValue([]), deleteSkill: vi.fn() };
       const { manager } = makeManager({}, { brainManager });
       await manager.install('skill-1');
       expect(createSkill).toHaveBeenCalled();
     });
 
     it('logs error when brain skill creation fails', async () => {
-      const brainManager = { createSkill: vi.fn().mockRejectedValue(new Error('create failed')) };
+      const brainManager = {
+        createSkill: vi.fn().mockRejectedValue(new Error('create failed')),
+        listSkills: vi.fn().mockResolvedValue([]),
+      };
       const { manager, logger } = makeManager({}, { brainManager });
       const ok = await manager.install('skill-1');
       expect(ok).toBe(true); // install still succeeds
@@ -136,7 +139,7 @@ describe('MarketplaceManager', () => {
       const ok = await manager.uninstall('skill-1');
       expect(ok).toBe(true);
       expect(storage.setInstalled).toHaveBeenCalledWith('skill-1', false);
-      expect(logger.info).toHaveBeenCalledWith('Marketplace skill uninstalled', { id: 'skill-1' });
+      expect(logger.info).toHaveBeenCalledWith('Marketplace skill uninstalled', { id: 'skill-1', personalityId: null });
     });
 
     it('removes matching brain skills when brainManager provided', async () => {
@@ -144,7 +147,7 @@ describe('MarketplaceManager', () => {
       const brainManager = {
         listSkills: vi
           .fn()
-          .mockResolvedValue([{ id: 'bs-1', name: 'Test Skill', source: 'marketplace' }]),
+          .mockResolvedValue([{ id: 'bs-1', name: 'Test Skill', source: 'marketplace', personalityId: null }]),
         deleteSkill,
       };
       const { manager } = makeManager(

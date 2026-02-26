@@ -285,4 +285,80 @@ describe('UsageStorage', () => {
       expect(calls.some((sql) => sql.includes('DELETE FROM usage_error_records'))).toBe(true);
     });
   });
+
+  describe('loadToday', () => {
+    it('returns records from today (midnight UTC to now)', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [usageRow], rowCount: 1 });
+      const result = await storage.loadToday();
+      expect(result).toHaveLength(1);
+      expect(result[0].provider).toBe('anthropic');
+      const sql = mockQuery.mock.calls[0][0] as string;
+      expect(sql).toContain('recorded_at >=');
+    });
+
+    it('returns empty array when no records today', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await storage.loadToday();
+      expect(result).toEqual([]);
+    });
+  });
+
+  describe('loadMonthCostUsd', () => {
+    it('returns total cost for the current month', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ total: '12.34' }], rowCount: 1 });
+      const result = await storage.loadMonthCostUsd();
+      expect(result).toBe(12.34);
+    });
+
+    it('returns 0 when no records this month', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ total: null }], rowCount: 1 });
+      const result = await storage.loadMonthCostUsd();
+      expect(result).toBe(0);
+    });
+
+    it('returns 0 when queryOne returns null', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await storage.loadMonthCostUsd();
+      expect(result).toBe(0);
+    });
+  });
+
+  describe('loadProviderStats', () => {
+    it('returns aggregated stats per provider', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [
+          { provider: 'anthropic', input: '1000', output: '500', total: '1500', cost: '0.05', calls: '10' },
+        ],
+        rowCount: 1,
+      });
+      const result = await storage.loadProviderStats();
+      expect(result.anthropic).toBeDefined();
+      expect(result.anthropic!.inputTokensUsed).toBe(1000);
+      expect(result.anthropic!.outputTokensUsed).toBe(500);
+      expect(result.anthropic!.tokensUsed).toBe(1500);
+      expect(result.anthropic!.costUsd).toBe(0.05);
+      expect(result.anthropic!.calls).toBe(10);
+      expect(result.anthropic!.errors).toBe(0);
+    });
+
+    it('returns empty object when no records', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await storage.loadProviderStats();
+      expect(result).toEqual({});
+    });
+  });
+
+  describe('getTotalCallCount', () => {
+    it('returns the total call count', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ count: '42' }], rowCount: 1 });
+      const result = await storage.getTotalCallCount();
+      expect(result).toBe(42);
+    });
+
+    it('returns 0 when queryOne returns null', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+      const result = await storage.getTotalCallCount();
+      expect(result).toBe(0);
+    });
+  });
 });

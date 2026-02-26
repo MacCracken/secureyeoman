@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { RBAC, PermissionDeniedError, getRBAC, initializeRBAC } from './rbac.js';
 
 describe('RBAC', () => {
@@ -320,9 +320,46 @@ describe('RBAC', () => {
       });
       expect(deniedResult.granted).toBe(false);
     });
+
+    it('denies permission when condition uses unknown operator', async () => {
+      // Define a role with an unsupported operator — falls to default: return false
+      await rbac.defineRole({
+        id: 'role_unknown_op',
+        name: 'Unknown Op',
+        description: 'Uses unsupported operator',
+        permissions: [
+          {
+            resource: 'docs',
+            actions: ['read'],
+            conditions: [{ field: 'x', operator: 'INVALID_OP' as any, value: 1 }],
+          },
+        ],
+      });
+      const result = rbac.checkPermission('unknown_op', {
+        resource: 'docs',
+        action: 'read',
+        context: { x: 1 },
+      });
+      expect(result.granted).toBe(false);
+    });
   });
 
   describe('Permission Caching', () => {
+    it('evicts oldest entry when cache reaches cacheMaxSize', () => {
+      // Fill the internal cache to 1000 entries using private access
+      const cache: Map<string, boolean> = (rbac as any).permissionCache;
+      for (let i = 0; i < 1000; i++) {
+        cache.set(`role_admin:resource_${i}:read`, true);
+      }
+      expect(cache.size).toBe(1000);
+
+      // One more check will trigger eviction
+      rbac.checkPermission('admin', { resource: 'eviction_trigger', action: 'read' });
+
+      // Cache should still be at most 1000 (one evicted, one added)
+      expect(cache.size).toBe(1000);
+    });
+
     it('should cache permission results', () => {
       // First check - should be evaluated
       const firstResult = rbac.checkPermission('admin', {
@@ -709,5 +746,250 @@ describe('Capture Permissions', () => {
         expect(permError.action).toBe('capture');
       }
     });
+  });
+});
+
+// ── User-role assignment (in-memory, no storage) ────────────────────────────
+
+describe('RBAC — User-role assignments (in-memory)', () => {
+  let rbac: RBAC;
+
+  beforeEach(() => {
+    rbac = new RBAC();
+  });
+
+  it('assigns a role to a user', async () => {
+    await rbac.assignUserRole('alice', 'role_operator', 'admin');
+    expect(rbac.getUserRole('alice')).toBe('role_operator');
+  });
+
+  it('throws when assigning unknown role', async () => {
+    await expect(rbac.assignUserRole('alice', 'role_nonexistent', 'admin')).rejects.toThrow(
+      'Cannot assign unknown role: role_nonexistent'
+    );
+  });
+
+  it('replaces existing assignment when reassigning', async () => {
+    await rbac.assignUserRole('alice', 'role_operator', 'admin');
+    await rbac.assignUserRole('alice', 'role_viewer', 'admin');
+    expect(rbac.getUserRole('alice')).toBe('role_viewer');
+  });
+
+  it('revokes an active role assignment', async () => {
+    await rbac.assignUserRole('alice', 'role_operator', 'admin');
+    const result = await rbac.revokeUserRole('alice');
+    expect(result).toBe(true);
+    expect(rbac.getUserRole('alice')).toBeUndefined();
+  });
+
+  it('returns false when revoking non-existent assignment', async () => {
+    const result = await rbac.revokeUserRole('nobody');
+    expect(result).toBe(false);
+  });
+
+  it('getUserRole returns undefined for unknown user', () => {
+    expect(rbac.getUserRole('unknown')).toBeUndefined();
+  });
+
+  it('listUserAssignments returns all active assignments', async () => {
+    await rbac.assignUserRole('alice', 'role_operator', 'admin');
+    await rbac.assignUserRole('bob', 'role_viewer', 'admin');
+    const assignments = rbac.listUserAssignments();
+    expect(assignments).toHaveLength(2);
+    expect(assignments.find((a) => a.userId === 'alice')?.roleId).toBe('role_operator');
+    expect(assignments.find((a) => a.userId === 'bob')?.roleId).toBe('role_viewer');
+  });
+
+  it('listUserAssignments returns empty array when no assignments', () => {
+    expect(rbac.listUserAssignments()).toHaveLength(0);
+  });
+
+  it('getUserRoleHistory returns empty array without storage', async () => {
+    const history = await rbac.getUserRoleHistory('alice');
+    expect(history).toEqual([]);
+  });
+});
+
+// ── User-role assignments with mock storage ────────────────────────────────
+
+describe('RBAC — User-role assignments with storage', () => {
+  function makeStorage(overrides: Record<string, unknown> = {}) {
+    return {
+      getAllRoleDefinitions: vi.fn().mockResolvedValue([]),
+      listActiveAssignments: vi.fn().mockResolvedValue([]),
+      saveRoleDefinition: vi.fn().mockResolvedValue(undefined),
+      deleteRoleDefinition: vi.fn().mockResolvedValue(undefined),
+      assignRole: vi.fn().mockResolvedValue(undefined),
+      revokeRole: vi.fn().mockResolvedValue(undefined),
+      getAssignmentHistory: vi.fn().mockResolvedValue([]),
+      ...overrides,
+    };
+  }
+
+  it('loadFromStorage merges persisted roles and assignments', async () => {
+    const customRole = {
+      id: 'role_custom',
+      name: 'Custom',
+      description: 'A custom role',
+      permissions: [{ resource: 'custom', actions: ['read'] }],
+    };
+    const storage = makeStorage({
+      getAllRoleDefinitions: vi.fn().mockResolvedValue([customRole]),
+      listActiveAssignments: vi.fn().mockResolvedValue([
+        { userId: 'alice', roleId: 'role_operator' },
+      ]),
+    });
+    const rbac = new RBAC(storage as any);
+    await rbac.loadFromStorage();
+
+    // Custom role loaded
+    expect(rbac.getRole('role_custom')).toBeDefined();
+    // Assignment loaded
+    expect(rbac.getUserRole('alice')).toBe('role_operator');
+  });
+
+  it('loadFromStorage is a no-op without storage', async () => {
+    const rbac = new RBAC();
+    await expect(rbac.loadFromStorage()).resolves.toBeUndefined();
+  });
+
+  it('assignUserRole persists to storage', async () => {
+    const storage = makeStorage();
+    const rbac = new RBAC(storage as any);
+    await rbac.assignUserRole('alice', 'role_operator', 'admin');
+    expect(storage.assignRole).toHaveBeenCalledWith('alice', 'role_operator', 'admin');
+  });
+
+  it('revokeUserRole persists revocation to storage', async () => {
+    const storage = makeStorage();
+    const rbac = new RBAC(storage as any);
+    await rbac.assignUserRole('alice', 'role_operator', 'admin');
+    await rbac.revokeUserRole('alice');
+    expect(storage.revokeRole).toHaveBeenCalledWith('alice');
+  });
+
+  it('defineRole persists to storage', async () => {
+    const storage = makeStorage();
+    const rbac = new RBAC(storage as any);
+    const role = { id: 'role_test', name: 'Test', description: '', permissions: [] };
+    await rbac.defineRole(role);
+    expect(storage.saveRoleDefinition).toHaveBeenCalledWith(role);
+  });
+
+  it('removeRole deletes from storage', async () => {
+    const storage = makeStorage();
+    const rbac = new RBAC(storage as any);
+    await rbac.removeRole('role_viewer');
+    expect(storage.deleteRoleDefinition).toHaveBeenCalledWith('role_viewer');
+  });
+
+  it('getUserRoleHistory delegates to storage', async () => {
+    const storage = makeStorage({
+      getAssignmentHistory: vi.fn().mockResolvedValue([
+        { role_id: 'role_operator', assigned_by: 'admin', assigned_at: 1000, revoked_at: null },
+      ]),
+    });
+    const rbac = new RBAC(storage as any);
+    const history = await rbac.getUserRoleHistory('alice');
+    expect(history).toHaveLength(1);
+    expect(history[0].roleId).toBe('role_operator');
+    expect(history[0].assignedBy).toBe('admin');
+    expect(history[0].revokedAt).toBeNull();
+  });
+});
+
+// ── evaluateCondition operator coverage ────────────────────────────────────
+
+describe('RBAC — evaluateCondition operators', () => {
+  let rbac: RBAC;
+
+  async function makeRoleWithCondition(operator: string, value: unknown) {
+    await rbac.defineRole({
+      id: 'role_op_test',
+      name: 'OpTest',
+      description: 'Tests evaluateCondition operators',
+      permissions: [
+        {
+          resource: 'res',
+          actions: ['read'],
+          conditions: [{ field: 'x', operator, value }],
+        },
+      ],
+    });
+  }
+
+  function check(contextValue: unknown) {
+    return rbac.checkPermission('op_test', { resource: 'res', action: 'read', context: { x: contextValue } });
+  }
+
+  beforeEach(() => {
+    rbac = new RBAC();
+  });
+
+  it('neq grants when values differ', async () => {
+    await makeRoleWithCondition('neq', 'blocked');
+    expect(check('allowed').granted).toBe(true);
+    rbac.clearCache();
+    expect(check('blocked').granted).toBe(false);
+  });
+
+  it('in grants when value is in the array', async () => {
+    await makeRoleWithCondition('in', ['a', 'b', 'c']);
+    expect(check('b').granted).toBe(true);
+    rbac.clearCache();
+    expect(check('d').granted).toBe(false);
+  });
+
+  it('nin grants when value is NOT in the array', async () => {
+    await makeRoleWithCondition('nin', ['bad1', 'bad2']);
+    expect(check('good').granted).toBe(true);
+    rbac.clearCache();
+    expect(check('bad1').granted).toBe(false);
+  });
+
+  it('gt grants when actual > threshold', async () => {
+    await makeRoleWithCondition('gt', 5);
+    expect(check(10).granted).toBe(true);
+    rbac.clearCache();
+    expect(check(3).granted).toBe(false);
+  });
+
+  it('gte grants when actual >= threshold', async () => {
+    await makeRoleWithCondition('gte', 5);
+    expect(check(5).granted).toBe(true);
+    rbac.clearCache();
+    expect(check(4).granted).toBe(false);
+  });
+
+  it('lt grants when actual < threshold', async () => {
+    await makeRoleWithCondition('lt', 10);
+    expect(check(5).granted).toBe(true);
+    rbac.clearCache();
+    expect(check(15).granted).toBe(false);
+  });
+
+  it('skips condition when condition.value is undefined', async () => {
+    // A condition with no value field — should be skipped, granting access
+    await rbac.defineRole({
+      id: 'role_undef_val',
+      name: 'UndefVal',
+      description: 'condition.value is undefined',
+      permissions: [
+        {
+          resource: 'secret',
+          actions: ['read'],
+          conditions: [{ field: 'x', operator: 'eq', value: undefined as any }],
+        },
+      ],
+    });
+    const result = rbac.checkPermission('undef_val', { resource: 'secret', action: 'read', context: { x: 'anything' } });
+    expect(result.granted).toBe(true); // condition was skipped
+  });
+
+  it('grants when conditions exist but no context provided', async () => {
+    // When check.context is absent, the conditions block is skipped entirely → grant
+    await makeRoleWithCondition('eq', 'required-value');
+    const result = rbac.checkPermission('op_test', { resource: 'res', action: 'read' }); // no context
+    expect(result.granted).toBe(true);
   });
 });
