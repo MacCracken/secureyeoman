@@ -282,17 +282,6 @@ export function SecurityPage() {
           Reports
         </button>
         <button
-          onClick={() => setActiveTab('nodes')}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'nodes'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Server className="w-4 h-4" />
-          System
-        </button>
-        <button
           onClick={() => setActiveTab('risk')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'risk'
@@ -302,6 +291,17 @@ export function SecurityPage() {
         >
           <TrendingUp className="w-4 h-4" />
           Risk
+        </button>
+        <button
+          onClick={() => setActiveTab('nodes')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'nodes'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Server className="w-4 h-4" />
+          System
         </button>
       </div>
 

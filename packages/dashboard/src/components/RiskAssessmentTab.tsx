@@ -184,7 +184,7 @@ function OverviewSection({
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-semibold">Risk Overview</h3>
-        <button className="btn btn-primary btn-sm gap-2" onClick={onRun} disabled={running}>
+        <button className="btn btn-ghost btn-sm gap-2" onClick={onRun} disabled={running}>
           {running ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
           Run Assessment
         </button>
@@ -490,7 +490,7 @@ function FindingsSection() {
       <div className="flex items-center gap-3 flex-wrap">
         <h3 className="text-lg font-semibold">External Findings</h3>
         <select
-          className="select select-sm select-bordered ml-auto"
+          className="bg-card border border-border rounded-lg px-3 py-1.5 text-sm ml-auto"
           value={filterStatus}
           onChange={(e) => setFilterStatus(e.target.value)}
         >
@@ -500,7 +500,7 @@ function FindingsSection() {
           <option value="resolved">Resolved</option>
         </select>
         <select
-          className="select select-sm select-bordered"
+          className="bg-card border border-border rounded-lg px-3 py-1.5 text-sm"
           value={filterSeverity}
           onChange={(e) => setFilterSeverity(e.target.value)}
         >
@@ -601,7 +601,7 @@ function FeedsSection() {
       <div className="flex items-center gap-3">
         <h3 className="text-lg font-semibold">External Feeds</h3>
         <button
-          className="btn btn-primary btn-sm gap-2 ml-auto"
+          className="btn btn-ghost btn-sm gap-2 ml-auto"
           onClick={() => setShowAdd(!showAdd)}
         >
           <Plus className="w-4 h-4" /> Add Feed

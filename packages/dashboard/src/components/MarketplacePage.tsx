@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Store, Download, Trash2, Loader2, Search } from 'lucide-react';
 import {
@@ -16,19 +16,27 @@ const ORIGIN_TABS: { value: OriginFilter; label: string }[] = [
   { value: 'community', label: 'Community' },
 ];
 
+const PAGE_SIZE = 20;
+
 export function MarketplacePage() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [originFilter, setOriginFilter] = useState<OriginFilter>('all');
+  const [page, setPage] = useState(0);
+
+  // Reset to first page when filter or search changes
+  useEffect(() => { setPage(0); }, [query, originFilter]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['marketplace', query, originFilter],
+    queryKey: ['marketplace', query, originFilter, page],
     queryFn: () =>
       fetchMarketplaceSkills(
         query || undefined,
         undefined,
         undefined,
-        originFilter !== 'all' ? originFilter : undefined
+        originFilter !== 'all' ? originFilter : undefined,
+        PAGE_SIZE,
+        page * PAGE_SIZE
       ),
   });
 
@@ -44,6 +52,10 @@ export function MarketplacePage() {
     mutationFn: (id: string) => uninstallMarketplaceSkill(id),
     onSuccess: invalidate,
   });
+
+  const total = data?.total ?? 0;
+  const skills = data?.skills ?? [];
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   return (
     <div className="space-y-6">
@@ -85,7 +97,7 @@ export function MarketplacePage() {
         <div className="flex justify-center py-12">
           <Loader2 className="w-8 h-8 animate-spin text-muted-foreground" />
         </div>
-      ) : !data?.skills.length ? (
+      ) : !skills.length ? (
         <div className="card p-12 text-center">
           <Store className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
           <p className="text-muted-foreground">
@@ -93,59 +105,87 @@ export function MarketplacePage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.skills.map((skill: MarketplaceSkill) => (
-            <div key={skill.id} className="card p-4 flex flex-col">
-              <div className="flex-1">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-medium">{skill.name}</h3>
-                  <div className="flex items-center gap-2">
-                    {skill.origin === 'community' && (
-                      <span className="badge badge-info text-xs">Community</span>
-                    )}
-                    <span className="text-xs text-muted-foreground">v{skill.version}</span>
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {skills.map((skill: MarketplaceSkill) => (
+              <div key={skill.id} className="card p-4 flex flex-col">
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">{skill.name}</h3>
+                    <div className="flex items-center gap-2">
+                      {skill.origin === 'community' && (
+                        <span className="badge badge-info text-xs">Community</span>
+                      )}
+                      <span className="text-xs text-muted-foreground">v{skill.version}</span>
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
+                    {skill.description}
+                  </p>
+                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                    <span>{skill.author}</span>
+                    <span>{skill.category}</span>
+                    <span>{skill.downloadCount} installs</span>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
-                  {skill.description}
-                </p>
-                <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-                  <span>{skill.author}</span>
-                  <span>{skill.category}</span>
-                  <span>{skill.downloadCount} installs</span>
+                <div className="mt-3 pt-3 border-t border-border">
+                  {skill.installed ? (
+                    <button
+                      className="btn btn-ghost text-destructive flex items-center gap-2 w-full justify-center"
+                      onClick={() => {
+                        uninstallMut.mutate(skill.id);
+                      }}
+                      disabled={uninstallMut.isPending}
+                    >
+                      <Trash2 className="w-4 h-4" /> Uninstall
+                    </button>
+                  ) : (
+                    <button
+                      className="btn btn-ghost flex items-center gap-2 w-full justify-center"
+                      onClick={() => {
+                        installMut.mutate(skill.id);
+                      }}
+                      disabled={installMut.isPending}
+                    >
+                      {installMut.isPending ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
+                      Install
+                    </button>
+                  )}
                 </div>
               </div>
-              <div className="mt-3 pt-3 border-t border-border">
-                {skill.installed ? (
-                  <button
-                    className="btn btn-ghost text-destructive flex items-center gap-2 w-full justify-center"
-                    onClick={() => {
-                      uninstallMut.mutate(skill.id);
-                    }}
-                    disabled={uninstallMut.isPending}
-                  >
-                    <Trash2 className="w-4 h-4" /> Uninstall
-                  </button>
-                ) : (
-                  <button
-                    className="btn btn-ghost flex items-center gap-2 w-full justify-center"
-                    onClick={() => {
-                      installMut.mutate(skill.id);
-                    }}
-                    disabled={installMut.isPending}
-                  >
-                    {installMut.isPending ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Download className="w-4 h-4" />
-                    )}
-                    Install
-                  </button>
-                )}
+            ))}
+          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-xs text-muted-foreground">
+                Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  ← Prev
+                </button>
+                <span className="text-xs text-muted-foreground">
+                  Page {page + 1} of {totalPages}
+                </span>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={page >= totalPages - 1}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next →
+                </button>
               </div>
             </div>
-          ))}
-        </div>
+          )}
+        </>
       )}
     </div>
   );

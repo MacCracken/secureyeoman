@@ -1651,11 +1651,14 @@ function MarketplaceTab() {
 
 // ─── Community Tab ────────────────────────────────────────────────────────────
 
+const COMMUNITY_PAGE_SIZE = 20;
+
 function CommunityTab() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
   const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>('');
   const [hasInitialized, setHasInitialized] = useState(false);
+  const [page, setPage] = useState(0);
   const [installingId, setInstallingId] = useState<string | null>(null);
   const [uninstallingId, setUninstallingId] = useState<string | null>(null);
   const [previewSkill, setPreviewSkill] = useState<MarketplaceSkill | null>(null);
@@ -1668,8 +1671,8 @@ function CommunityTab() {
   } | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['marketplace-community', query, selectedPersonalityId],
-    queryFn: () => fetchMarketplaceSkills(query || undefined, 'community', selectedPersonalityId),
+    queryKey: ['marketplace-community', query, selectedPersonalityId, page],
+    queryFn: () => fetchMarketplaceSkills(query || undefined, 'community', selectedPersonalityId, undefined, COMMUNITY_PAGE_SIZE, page * COMMUNITY_PAGE_SIZE),
     enabled: hasInitialized,
   });
 
@@ -1693,6 +1696,9 @@ function CommunityTab() {
       setHasInitialized(true);
     }
   }, [activePersonality, hasInitialized]);
+
+  // Reset to first page when search or personality filter changes
+  useEffect(() => { setPage(0); }, [query, selectedPersonalityId]);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['marketplace-community'] });
@@ -1878,7 +1884,7 @@ function CommunityTab() {
           <div className="flex items-center gap-2">
             <GitBranch className="w-4 h-4 text-muted-foreground" />
             <h3 className="text-sm font-semibold text-foreground">Community Skills</h3>
-            <span className="text-xs text-muted-foreground">({skills.length})</span>
+            <span className="text-xs text-muted-foreground">({data?.total ?? skills.length})</span>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {skills.map((skill) => (
@@ -1906,6 +1912,32 @@ function CommunityTab() {
               />
             ))}
           </div>
+          {(data?.total ?? 0) > COMMUNITY_PAGE_SIZE && (
+            <div className="flex items-center justify-between pt-2">
+              <span className="text-xs text-muted-foreground">
+                Showing {page * COMMUNITY_PAGE_SIZE + 1}–{Math.min((page + 1) * COMMUNITY_PAGE_SIZE, data?.total ?? 0)} of {data?.total ?? 0}
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={page === 0}
+                  onClick={() => setPage((p) => p - 1)}
+                >
+                  ← Prev
+                </button>
+                <span className="text-xs text-muted-foreground">
+                  Page {page + 1} of {Math.ceil((data?.total ?? 0) / COMMUNITY_PAGE_SIZE)}
+                </span>
+                <button
+                  className="btn btn-ghost btn-sm"
+                  disabled={(page + 1) * COMMUNITY_PAGE_SIZE >= (data?.total ?? 0)}
+                  onClick={() => setPage((p) => p + 1)}
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
