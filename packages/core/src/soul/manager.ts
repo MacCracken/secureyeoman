@@ -320,6 +320,14 @@ export class SoulManager {
     await this.storage.setActivePersonality(id);
   }
 
+  async getPersonality(id: string): Promise<Personality | null> {
+    return this.storage.getPersonality(id);
+  }
+
+  async updatePersonalityAvatar(id: string, avatarUrl: string | null): Promise<Personality> {
+    return this.storage.updatePersonalityAvatar(id, avatarUrl);
+  }
+
   async createPersonality(
     data: PersonalityCreate,
     opts?: { isArchetype?: boolean }

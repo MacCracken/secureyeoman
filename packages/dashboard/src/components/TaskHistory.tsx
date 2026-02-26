@@ -953,9 +953,11 @@ function TaskRow({
 
 function HeartbeatCard({ task, globalPersonalityMap }: { task: HeartbeatTask; globalPersonalityMap: Map<string, string> }) {
   const [expanded, setExpanded] = useState(false);
+  const [logPage, setLogPage] = useState(0);
+  const logPageSize = 10;
 
   // Fetch enough recent entries to cover all personalities (up to 20 per cycle).
-  // Used both for collapsed per-personality badges and expanded log view.
+  // Used for collapsed per-personality badges and header status badge.
   const { data: latestData } = useQuery({
     queryKey: ['heartbeat-log-latest', task.name],
     queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 20 }),
@@ -963,14 +965,19 @@ function HeartbeatCard({ task, globalPersonalityMap }: { task: HeartbeatTask; gl
     refetchInterval: 30_000,
   });
 
-  // Full history — lazy loaded only when expanded.
+  // Paginated history — lazy loaded only when expanded.
   const { data: logData, isLoading: logLoading } = useQuery({
-    queryKey: ['heartbeat-log', task.name],
-    queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 10 }),
+    queryKey: ['heartbeat-log', task.name, logPage],
+    queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: logPageSize, offset: logPage * logPageSize }),
     enabled: expanded,
     staleTime: 30_000,
     refetchInterval: expanded ? 30_000 : false,
   });
+
+  // Reset to first page when collapsing.
+  useEffect(() => {
+    if (!expanded) setLogPage(0);
+  }, [expanded]);
 
   const formatTime = (ts: number | null) => {
     if (!ts) return 'Never';
@@ -1010,8 +1017,7 @@ function HeartbeatCard({ task, globalPersonalityMap }: { task: HeartbeatTask; gl
     }
   }
   // Fallback: single most-recent entry for tasks with no personalities.
-  const globalLastEntry: HeartbeatLogEntry | null =
-    (expanded ? logData?.entries[0] : latestData?.entries[0]) ?? null;
+  const globalLastEntry: HeartbeatLogEntry | null = latestData?.entries[0] ?? null;
 
   return (
     <div className={`border-l-4 ${task.enabled ? 'border-l-success' : 'border-l-muted-foreground/30'}`}>
@@ -1109,9 +1115,14 @@ function HeartbeatCard({ task, globalPersonalityMap }: { task: HeartbeatTask; gl
       {/* Execution history — expanded */}
       {expanded && (
         <div className="px-4 pb-4 border-t border-border">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide pt-3 mb-2">
-            Recent Executions
-          </p>
+          <div className="flex items-center justify-between pt-3 mb-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+              Execution Log
+              {logData && logData.total > 0 && (
+                <span className="ml-1 normal-case font-normal">({logData.total} total)</span>
+              )}
+            </p>
+          </div>
           {logLoading ? (
             <div className="flex items-center gap-2 text-xs text-muted-foreground py-2">
               <Loader2 className="w-3 h-3 animate-spin" /> Loading…
@@ -1119,61 +1130,89 @@ function HeartbeatCard({ task, globalPersonalityMap }: { task: HeartbeatTask; gl
           ) : !logData?.entries.length ? (
             <p className="text-xs text-muted-foreground py-1">No executions recorded yet.</p>
           ) : (
-            <div className="overflow-y-auto" style={{ maxHeight: '240px' }}>
-            <table className="w-full text-xs">
-              <thead className="sticky top-0 bg-background">
-                <tr className="text-muted-foreground">
-                  <th className="text-left pb-1 pr-4 font-normal">Status</th>
-                  <th className="text-left pb-1 pr-4 font-normal">Agent</th>
-                  <th className="text-left pb-1 pr-4 font-normal hidden sm:table-cell">Ran at</th>
-                  <th className="text-left pb-1 pr-4 font-normal hidden lg:table-cell">Duration</th>
-                  <th className="text-left pb-1 font-normal">Message</th>
-                </tr>
-              </thead>
-              <tbody>
-                {logData.entries.map((entry) => {
-                  const agentName = entry.personalityId
-                    ? (personalityMap.get(entry.personalityId) ?? entry.personalityId)
-                    : null;
-                  return (
-                    <tr key={entry.id} className="border-t border-border/30">
-                      <td className="py-1 pr-4">
-                        <div className="flex items-center gap-1">
-                          {HEARTBEAT_STATUS_ICON[entry.status]}
-                          <span className={HEARTBEAT_STATUS_COLOR[entry.status]}>
-                            {entry.status}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-1 pr-4">
-                        {agentName ? (
-                          <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded whitespace-nowrap">
-                            {agentName}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground/50">system</span>
-                        )}
-                      </td>
-                      <td className="py-1 pr-4 text-muted-foreground hidden sm:table-cell">
-                        {formatTime(entry.ranAt)}
-                      </td>
-                      <td className="py-1 pr-4 font-mono text-muted-foreground hidden lg:table-cell">
-                        {fmtDuration(entry.durationMs)}
-                      </td>
-                      <td className="py-1 text-muted-foreground max-w-xs truncate">
-                        {entry.message}
-                        {entry.errorDetail && (
-                          <span className="text-destructive ml-1">
-                            ({entry.errorDetail.split('\n')[0]})
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-            </div>
+            <>
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-muted-foreground">
+                    <th className="text-left pb-1 pr-4 font-normal">Status</th>
+                    <th className="text-left pb-1 pr-4 font-normal">Agent</th>
+                    <th className="text-left pb-1 pr-4 font-normal hidden sm:table-cell">Ran at</th>
+                    <th className="text-left pb-1 pr-4 font-normal hidden lg:table-cell">Duration</th>
+                    <th className="text-left pb-1 font-normal">Message</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logData.entries.map((entry) => {
+                    const agentName = entry.personalityId
+                      ? (personalityMap.get(entry.personalityId) ?? entry.personalityId)
+                      : null;
+                    return (
+                      <tr key={entry.id} className="border-t border-border/30">
+                        <td className="py-1 pr-4">
+                          <div className="flex items-center gap-1">
+                            {HEARTBEAT_STATUS_ICON[entry.status]}
+                            <span className={HEARTBEAT_STATUS_COLOR[entry.status]}>
+                              {entry.status}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-1 pr-4">
+                          {agentName ? (
+                            <span className="px-1.5 py-0.5 bg-primary/10 text-primary rounded whitespace-nowrap">
+                              {agentName}
+                            </span>
+                          ) : (
+                            <span className="text-muted-foreground/50">system</span>
+                          )}
+                        </td>
+                        <td className="py-1 pr-4 text-muted-foreground hidden sm:table-cell">
+                          {formatTime(entry.ranAt)}
+                        </td>
+                        <td className="py-1 pr-4 font-mono text-muted-foreground hidden lg:table-cell">
+                          {fmtDuration(entry.durationMs)}
+                        </td>
+                        <td className="py-1 text-muted-foreground max-w-xs truncate">
+                          {entry.message}
+                          {entry.errorDetail && (
+                            <span className="text-destructive ml-1">
+                              ({entry.errorDetail.split('\n')[0]})
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {logData.total > logPageSize && (
+                <div className="flex items-center justify-between pt-3 border-t border-border/30 mt-1">
+                  <p className="text-xs text-muted-foreground">
+                    {logPage * logPageSize + 1}–{Math.min((logPage + 1) * logPageSize, logData.total)} of {logData.total}
+                  </p>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setLogPage((p) => Math.max(0, p - 1))}
+                      disabled={logPage === 0}
+                      className="btn-ghost p-1 disabled:opacity-40"
+                      aria-label="Previous page"
+                    >
+                      <ChevronLeft className="w-3.5 h-3.5" />
+                    </button>
+                    <span className="text-xs text-muted-foreground px-1">
+                      {logPage + 1} / {Math.ceil(logData.total / logPageSize)}
+                    </span>
+                    <button
+                      onClick={() => setLogPage((p) => Math.min(Math.ceil(logData.total / logPageSize) - 1, p + 1))}
+                      disabled={logPage >= Math.ceil(logData.total / logPageSize) - 1}
+                      className="btn-ghost p-1 disabled:opacity-40"
+                      aria-label="Next page"
+                    >
+                      <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       )}

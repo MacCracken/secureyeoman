@@ -226,6 +226,7 @@ export const PersonalitySchema = z.object({
   includeArchetypes: z.boolean().default(true),
   injectDateTime: z.boolean().default(false),
   empathyResonance: z.boolean().default(false),
+  avatarUrl: z.string().nullable().default(null),
   isActive: z.boolean().default(false),
   isDefault: z.boolean().default(false),
   isArchetype: z.boolean().default(false),

@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join, resolve } from 'node:path';
 import Fastify, { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import fastifyCompress from '@fastify/compress';
+import fastifyMultipart from '@fastify/multipart';
 import fastifyWebsocket from '@fastify/websocket';
 import fastifyStatic from '@fastify/static';
 import { WebSocket } from 'ws';
@@ -198,6 +199,11 @@ export class GatewayServer {
   private async setupMiddleware(): Promise<void> {
     // Register compression plugin (gzip/brotli for JSON + text responses)
     await this.app.register(fastifyCompress);
+
+    // Register multipart plugin for avatar uploads (max 2 MB per file)
+    await this.app.register(fastifyMultipart, {
+      limits: { fileSize: 2 * 1024 * 1024 },
+    });
 
     // Register WebSocket plugin
     await this.app.register(fastifyWebsocket, {

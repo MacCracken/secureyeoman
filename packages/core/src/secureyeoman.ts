@@ -1636,6 +1636,14 @@ export class SecureYeoman {
   }
 
   /**
+   * Get the data directory path (e.g. ~/.secureyeoman or $SECUREYEOMAN_DATA_DIR)
+   */
+  getDataDir(): string {
+    this.ensureInitialized();
+    return this.config.core.dataDir;
+  }
+
+  /**
    * Get the soul manager instance
    */
   getSoulManager(): SoulManager {

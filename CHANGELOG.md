@@ -1,4 +1,39 @@
+## [2026.2.26b] — 2026-02-26
+
+### Changed
+
+#### Dashboard — Skills page
+
+- **Personal tab scoped to default agent** — `MySkillsTab` now filters to skills whose `personalityId` matches the `isDefault` personality only, hiding all other agents' skills. A scope banner at the top reads *"These skills are personal to [default agent name]. To see all installed skills across every agent, visit the Installed tab."*
+- **Installed tab — consolidated skill cards** — Skills are grouped by name before rendering; one card per unique skill replaces the previous one-card-per-personality-instance layout that produced duplicates. Each card shows a **Personalities:** chip row listing every agent the skill is installed for. Enable/disable toggles and delete buttons removed from Installed cards — those actions belong in the Personal tab per-agent context.
+- **Installed tab — removed "Global (No Personality)" filter** — The `__global__` filter option is removed from the personality dropdown since there is no dashboard path to create global skills. Filter logic simplified to a two-branch test.
+
+#### Dashboard — Tasks > Heartbeats
+
+- **Expanded log no longer scrolls** — Removed the `overflow-y-auto` / `maxHeight: 240px` scrollable wrapper from the expanded execution log panel in each `HeartbeatCard`.
+- **Paginated execution log** — The expanded log now fetches 10 entries per page with `offset`-based API pagination. A **Previous / Next** control and `X–Y of Z` label appear below the table when there are more than 10 entries. Page resets to 0 when the card is collapsed. Section header shows the total entry count (`Execution Log (N total)`).
+- **Header badge always uses latest entry** — `globalLastEntry` now always reads from the always-running `latestData` query rather than switching to `logData.entries[0]` when expanded, so the collapsed status badge stays accurate while browsing deeper log pages.
+
 ## [2026.2.26] — 2026-02-26
+
+### Added
+
+#### Phase 53 — Risk Assessment & Reporting System
+
+- **`RiskAssessmentStorage`** (`src/risk-assessment/risk-assessment-storage.ts`) — `PgBaseStorage` subclass for three tables in the `risk` schema: `assessments`, `external_feeds`, `external_findings`. Supports create/list/get for assessments; CRUD + enable/disable for feeds; dedup ingest (by `source_ref` per feed) + acknowledge/resolve lifecycle for findings.
+- **`RiskAssessmentManager`** (`src/risk-assessment/risk-assessment-manager.ts`) — cross-domain risk scoring engine. Five domain scorers run in parallel: `security` (injection, sandbox violations, auth failures, secret access, audit-chain integrity — weight 30%), `autonomy` (L4/L5 items without emergency-stop, no completed audit run, open checklist items — 25%), `governance` (boundary violations, policy block rate, no active org intent — 20%), `infrastructure` (unhealthy MCP servers, disconnected integrations, untrusted A2A peers, TLS cert expiry, heartbeat errors — 15%), `external` (open critical/high/medium external findings — 10%). Composite score is a weighted average clamped to `[0, 100]`; mapped to `low / medium / high / critical` risk levels.
+- **`RiskReportGenerator`** (`src/risk-assessment/risk-assessment-report.ts`) — generates assessment reports in four formats: JSON (structured), HTML (styled, self-contained), Markdown, CSV (findings rows).
+- **Risk Assessment REST API** (`src/risk-assessment/risk-assessment-routes.ts`) at `/api/v1/risk/`: `POST /assessments` (run assessment), `GET /assessments` (list, with `status` filter), `GET /assessments/:id`, `GET /assessments/:id/report/:fmt` (download in json/html/markdown/csv). External feeds: `GET /feeds`, `POST /feeds`, `DELETE /feeds/:feedId`, `POST /feeds/:feedId/ingest`. Findings: `GET /findings` (filter by feed/status/severity), `POST /findings`, `PATCH /findings/:id/acknowledge`, `PATCH /findings/:id/resolve`.
+- **Migration `053_risk_assessment.sql`** — creates `risk` schema with `assessments`, `external_feeds`, `external_findings` tables. Stores domain scores, findings, and report bodies (JSON/HTML/Markdown/CSV) in a single row per assessment run.
+- **Auto-assessment on startup** — `secureyeoman.ts` Step 6e initialises `RiskAssessmentManager` and immediately runs a baseline full-domain `"Startup Assessment"` (non-fatal if any domain scorer fails).
+- **Dashboard: `RiskAssessmentTab.tsx`** — four sub-tabs in the Security page: **Overview** (composite score ring + per-domain score cards + recent findings table), **Assessments** (run new assessment, history list with status badges, download report in any format), **Findings** (external findings table with severity filter, acknowledge/resolve actions), **Feeds** (create/delete external feeds, ingest findings via JSON paste).
+- **Security page tab reorder** — "Risk" tab now appears before "System" in the Security page navigation.
+- Tests: `risk-assessment-manager.test.ts` (32), `risk-assessment-routes.test.ts` (30), `risk-assessment-storage.test.ts` (27) — 89 tests total.
+
+#### Marketplace & Community — Pagination
+
+- **`MarketplacePage` pagination** — page size 20; Previous/Next controls shown when total exceeds one page; page resets automatically on search or origin-filter change. Count label shows total from server response.
+- **`CommunityTab` (SkillsPage) pagination** — same page-size-20 pattern applied to the Community tab; count badge reflects server total.
 
 ### Fixed
 
@@ -25,6 +60,7 @@
   - Active Hours moved to immediately after the Thinking section.
   - Prompt Budget consolidated inside the Thinking `CollapsibleSection`.
   - External KB renamed to "External Brain Sync" and relocated as the last item in the Brain-Intellect section.
+- **PersonalityEditor — Brain section toggle polish** — Omnipresent Mind and Chronoception toggle rows changed from `border-b pb-3 mb-3` separator style to `rounded-lg border border-border p-3` card style for visual consistency. Extended Thinking and Prompt Budget toggles converted from native checkbox to pill-style toggle (matching all other toggles in the editor). Fixed `CollapsibleSection` indentation for the Extended Thinking block.
 - **Task History — agent name resolution** — `TaskRow` now resolves `personalityName` from a global `fetchPersonalities` query map, falling back to the UUID only when the personality is unknown. Added "Agent ID" column (hidden on `< xl` viewports) showing the truncated UUID with full value on hover.
 - **Workspaces `+ New Workspace` button** — Changed to `btn btn-ghost` to match the Users page pattern.
 - **Roadmap** — Sidebar Reorganization updated to show Intent promoted to top-level nav item.

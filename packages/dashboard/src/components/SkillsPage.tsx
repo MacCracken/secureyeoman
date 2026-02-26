@@ -260,7 +260,10 @@ function MySkillsTab() {
   const personalities = personalitiesData?.personalities ?? [];
   const activePersonality = personalities.find((p) => p.isActive);
 
-  const skills = data?.skills ?? [];
+  const defaultPersonality = personalities.find((p) => p.isDefault) ?? null;
+  const skills = defaultPersonality
+    ? (data?.skills ?? []).filter((s) => s.personalityId === defaultPersonality.id)
+    : [];
   const pendingCount = skills.filter((s) => s.status === 'pending_approval').length;
 
   useEffect(() => {
@@ -485,6 +488,19 @@ function MySkillsTab() {
         className="hidden"
         onChange={handleImportInputChange}
       />
+
+      {/* Scope notice */}
+      <div className="flex items-start gap-2 rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
+        <Bot className="w-4 h-4 shrink-0 mt-0.5 text-primary" />
+        <span>
+          These skills are personal to{' '}
+          <span className="font-medium text-foreground">
+            {defaultPersonality?.name ?? 'the default agent'}
+          </span>
+          . To see all installed skills across every agent, visit the{' '}
+          <span className="font-medium text-foreground">Installed</span> tab.
+        </span>
+      </div>
 
       <div className="flex flex-wrap items-center gap-2">
         <button
@@ -718,16 +734,6 @@ function MySkillsTab() {
                     <span className="text-xs text-muted-foreground">
                       {SOURCE_LABELS[skill.source] || skill.source}
                     </span>
-                    {skill.personalityId && skill.personalityName && (
-                      <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                        {skill.personalityName}
-                      </span>
-                    )}
-                    {!skill.personalityId && (
-                      <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
-                        Global
-                      </span>
-                    )}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
                     {sanitizeText(skill.description)}
@@ -896,9 +902,7 @@ const SOURCE_SECTIONS: {
 ];
 
 function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) => void }) {
-  const queryClient = useQueryClient();
   const [filterPersonalityId, setFilterPersonalityId] = useState<string>('');
-  const [deleteTarget, setDeleteTarget] = useState<Skill | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['skills', '', ''],
@@ -911,86 +915,59 @@ function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
   });
 
   const personalities = personalitiesData?.personalities ?? [];
+  const personalityMap = new Map<string, string>(personalities.map((p) => [p.id, p.name]));
 
   // All skills from every source are shown in Installed — not just marketplace/community.
   const allSkills = data?.skills ?? [];
 
-  const filteredSkills =
-    filterPersonalityId === '__global__'
-      ? allSkills.filter((s) => !s.personalityId)
-      : filterPersonalityId
-        ? allSkills.filter((s) => s.personalityId === filterPersonalityId)
-        : allSkills;
+  const filteredSkills = filterPersonalityId
+    ? allSkills.filter((s) => s.personalityId === filterPersonalityId)
+    : allSkills;
 
-  const invalidate = () => void queryClient.invalidateQueries({ queryKey: ['skills'] });
+  // Group a skill list by name to avoid duplicate cards when the same skill is
+  // installed for multiple personalities.
+  const groupSkillsByName = (skills: Skill[]): Skill[][] => {
+    const map = new Map<string, Skill[]>();
+    for (const s of skills) {
+      const existing = map.get(s.name);
+      if (existing) existing.push(s);
+      else map.set(s.name, [s]);
+    }
+    return Array.from(map.values());
+  };
 
-  const enableMut = useMutation({ mutationFn: enableSkill, onSuccess: invalidate });
-  const disableMut = useMutation({ mutationFn: disableSkill, onSuccess: invalidate });
-  const deleteMut = useMutation({ mutationFn: deleteSkill, onSuccess: invalidate });
+  const renderSkillGroup = (group: Skill[]) => {
+    const primary = group[0];
+    const agentLabel = (s: Skill) =>
+      s.personalityName ??
+      (s.personalityId ? (personalityMap.get(s.personalityId) ?? s.personalityId) : null) ??
+      'Global';
 
-  const renderSkill = (skill: Skill) => (
-    <div key={skill.id} className="card p-4">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="font-medium">{skill.name}</h3>
-            <span className={`badge ${STATUS_BADGES[skill.status] || 'badge'}`}>
-              {skill.status}
-            </span>
-            <span className="text-xs text-muted-foreground">
-              {SOURCE_LABELS[skill.source] || skill.source}
-            </span>
-            {skill.personalityId && skill.personalityName ? (
-              <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">
-                {skill.personalityName}
-              </span>
-            ) : (
-              <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">
-                Global
-              </span>
-            )}
-          </div>
-          <p className="text-sm text-muted-foreground mt-1">{sanitizeText(skill.description)}</p>
+    return (
+      <div key={primary.name} className="card p-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="font-medium">{primary.name}</h3>
+          <span className="text-xs text-muted-foreground">
+            {SOURCE_LABELS[primary.source] || primary.source}
+          </span>
         </div>
-        <div className="flex items-center gap-1">
-          <button
-            onClick={() => {
-              if (skill.enabled) {
-                disableMut.mutate(skill.id);
-              } else {
-                enableMut.mutate(skill.id);
-              }
-            }}
-            className="btn btn-ghost p-2"
-            title={skill.enabled ? 'Disable' : 'Enable'}
-          >
-            {skill.enabled ? (
-              <ToggleRight className="w-5 h-5 text-success" />
-            ) : (
-              <ToggleLeft className="w-5 h-5 text-muted-foreground" />
-            )}
-          </button>
-          {AI_SOURCES.has(skill.source) && (
-            <button
-              onClick={() => exportSkill(skill)}
-              className="btn btn-ghost p-2"
-              title="Export as JSON"
+        <p className="text-sm text-muted-foreground mt-1">{sanitizeText(primary.description)}</p>
+        <div className="flex items-center flex-wrap gap-1.5 mt-2">
+          <span className="text-xs text-muted-foreground">Personalities:</span>
+          {group.map((s) => (
+            <span
+              key={s.id}
+              className={`text-xs px-2 py-0.5 rounded ${
+                s.personalityId ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+              }`}
             >
-              <Download className="w-4 h-4 text-primary" />
-            </button>
-          )}
-          <button
-            onClick={() => {
-              setDeleteTarget(skill);
-            }}
-            className="btn btn-ghost p-2"
-          >
-            <Trash2 className="w-4 h-4 text-destructive" />
-          </button>
+              {agentLabel(s)}
+            </span>
+          ))}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -1006,7 +983,6 @@ function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
             className="bg-card border border-border rounded-lg pl-10 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all appearance-none cursor-pointer"
           >
             <option value="">All Personalities</option>
-            <option value="__global__">Global (No Personality)</option>
             {personalities.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name} {p.isActive ? '(Active)' : ''}
@@ -1088,27 +1064,13 @@ function InstalledSkillsTab({ onNavigateTab }: { onNavigateTab?: (tab: TabType) 
                   <h3 className="text-sm font-semibold">{section.label}</h3>
                   <span className="text-xs text-muted-foreground">({sectionSkills.length})</span>
                 </div>
-                <div className="space-y-2">{sectionSkills.map(renderSkill)}</div>
+                <div className="space-y-2">{groupSkillsByName(sectionSkills).map(renderSkillGroup)}</div>
               </section>
             );
           })}
         </div>
       )}
 
-      <ConfirmDialog
-        open={!!deleteTarget}
-        title="Remove Skill"
-        message={`Remove "${deleteTarget?.name}"? This cannot be undone.`}
-        confirmLabel="Remove"
-        destructive
-        onConfirm={() => {
-          deleteMut.mutate(deleteTarget!.id);
-          setDeleteTarget(null);
-        }}
-        onCancel={() => {
-          setDeleteTarget(null);
-        }}
-      />
     </div>
   );
 }

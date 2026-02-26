@@ -2,6 +2,11 @@
  * Soul Routes — API endpoints for personality and skill management.
  */
 
+import { mkdirSync, createReadStream, readdirSync } from 'node:fs';
+import { unlink } from 'node:fs/promises';
+import { join, extname } from 'node:path';
+import { pipeline } from 'node:stream/promises';
+import { createWriteStream } from 'node:fs';
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 import type { SoulManager } from './manager.js';
 import { isPersonalityWithinActiveHours } from './manager.js';
@@ -16,6 +21,7 @@ import type {
   UserProfileCreate,
   UserProfileUpdate,
 } from './types.js';
+import { getAvatarDir } from './storage.js';
 import { toErrorMessage, sendError } from '../utils/errors.js';
 import type { HeartbeatManager } from '../body/heartbeat.js';
 import type { InputValidator } from '../security/input-validator.js';
@@ -28,6 +34,7 @@ export interface SoulRoutesOptions {
   heartbeatManager?: HeartbeatManager | null;
   validator?: InputValidator;
   auditChain?: AuditChain;
+  dataDir?: string;
 }
 
 /**
@@ -61,8 +68,16 @@ export function detectCredentials(text: string): string[] {
   return warnings;
 }
 
+const MIME_EXT: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/gif': '.gif',
+  'image/webp': '.webp',
+  'image/svg+xml': '.svg',
+};
+
 export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions): void {
-  const { soulManager, approvalManager, broadcast, heartbeatManager, validator, auditChain } = opts;
+  const { soulManager, approvalManager, broadcast, heartbeatManager, validator, auditChain, dataDir } = opts;
 
   function withActiveHours(p: Personality): Personality & { isWithinActiveHours: boolean } {
     return { ...p, isWithinActiveHours: isPersonalityWithinActiveHours(p) };
@@ -710,6 +725,104 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
       const approval = await approvalManager.resolveApproval(request.params.id, 'rejected');
       if (!approval) return sendError(reply, 404, 'Approval not found or already resolved');
       return { approval };
+    }
+  );
+
+  // ── Avatar Upload ────────────────────────────────────────────
+
+  app.post(
+    '/api/v1/soul/personalities/:id/avatar',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      if (!dataDir) return sendError(reply, 503, 'Avatar storage not configured');
+      const { id } = request.params;
+
+      const personality = await soulManager.getPersonality(id);
+      if (!personality) return sendError(reply, 404, 'Personality not found');
+
+      const data = await request.file();
+      if (!data) return sendError(reply, 400, 'No file uploaded');
+
+      const mime = data.mimetype;
+      const ext = MIME_EXT[mime];
+      if (!ext) return sendError(reply, 400, `Unsupported image type: ${mime}`);
+
+      const avatarDir = getAvatarDir(dataDir);
+      mkdirSync(avatarDir, { recursive: true });
+
+      // Remove any existing avatar file for this personality
+      try {
+        const existing = readdirSync(avatarDir).filter((f) => f.startsWith(`${id}.`));
+        await Promise.all(existing.map((f) => unlink(join(avatarDir, f))));
+      } catch { /* ignore */ }
+
+      const destPath = join(avatarDir, `${id}${ext}`);
+      await pipeline(data.file, createWriteStream(destPath));
+
+      // Check if the stream was truncated (file too large)
+      if (data.file.truncated) {
+        await unlink(destPath).catch(() => {});
+        return sendError(reply, 413, 'File too large (max 2 MB)');
+      }
+
+      const avatarUrl = `/api/v1/soul/personalities/${id}/avatar`;
+      const updated = await soulManager.updatePersonalityAvatar(id, avatarUrl);
+      broadcast?.({ event: 'updated', type: 'personality', id });
+      return reply.code(200).send({ personality: updated });
+    }
+  );
+
+  app.delete(
+    '/api/v1/soul/personalities/:id/avatar',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      if (!dataDir) return sendError(reply, 503, 'Avatar storage not configured');
+      const { id } = request.params;
+
+      const personality = await soulManager.getPersonality(id);
+      if (!personality) return sendError(reply, 404, 'Personality not found');
+
+      // Remove avatar files from filesystem
+      if (dataDir) {
+        const avatarDir = getAvatarDir(dataDir);
+        try {
+          const existing = readdirSync(avatarDir).filter((f) => f.startsWith(`${id}.`));
+          await Promise.all(existing.map((f) => unlink(join(avatarDir, f))));
+        } catch { /* ignore — directory may not exist */ }
+      }
+
+      const updated = await soulManager.updatePersonalityAvatar(id, null);
+      broadcast?.({ event: 'updated', type: 'personality', id });
+      return { personality: updated };
+    }
+  );
+
+  app.get(
+    '/api/v1/soul/personalities/:id/avatar',
+    async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      if (!dataDir) return sendError(reply, 503, 'Avatar storage not configured');
+      const { id } = request.params;
+
+      const avatarDir = getAvatarDir(dataDir);
+      let avatarFile: string | undefined;
+      try {
+        avatarFile = readdirSync(avatarDir).find((f) => f.startsWith(`${id}.`));
+      } catch { /* directory doesn't exist */ }
+
+      if (!avatarFile) return sendError(reply, 404, 'No avatar found');
+
+      const filePath = join(avatarDir, avatarFile);
+      const fileExt = extname(avatarFile).toLowerCase();
+      const contentTypeMap: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+        '.webp': 'image/webp',
+        '.svg': 'image/svg+xml',
+      };
+      const contentType = contentTypeMap[fileExt] ?? 'application/octet-stream';
+
+      reply.header('Content-Type', contentType);
+      reply.header('Cache-Control', 'public, max-age=31536000');
+      return reply.send(createReadStream(filePath));
     }
   );
 }

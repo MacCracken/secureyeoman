@@ -9,7 +9,7 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
-| 53 | Dashboard Completion | **Next** |
+| 53 | Dashboard Completion | **In Progress** |
 | 54 | AI Safety Layer | Planned |
 | 55 | Notifications & Integrations | Planned |
 | 56 | Local-First AI | Planned |
@@ -37,9 +37,9 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ## Phase 53: Dashboard Completion
 
-**Status**: Next
+**Status**: In Progress
 
-Finishes the dashboard evolution: sidebar structural reorganization as the foundation, then Mission Control as the new home, Risk Assessment UI (backend already live in migration 053), advanced editor workspace, and visual polish.
+Sidebar structural reorganization as the foundation, then Mission Control as the new home, advanced editor workspace, and visual polish. Risk Assessment UI shipped in Phase 53 (tab in SecurityPage, full backend at `/api/v1/risk/*`).
 
 ### Sidebar Reorganization
 
@@ -69,12 +69,6 @@ Finishes the dashboard evolution: sidebar structural reorganization as the found
 ### Mission Control Dashboard
 
 - [ ] **Mission Control Dashboard** — Consolidated command-center view replacing Metrics as the default landing page. Multi-panel grid: (1) System status graph (expanded ReactFlow); (2) Active tasks with progress; (3) Live security event feed; (4) Resource monitoring (CPU, memory, tokens, costs); (5) Agent/Personality health heartbeats; (6) Integration status grid; (7) Audit stream; (8) Workflow runs with DAG preview; (9) Quick actions (emergency stop, pause all). Dark theme default, auto-refresh via WebSocket, click-to-drill.
-
-### Risk Assessment Dashboard
-
-*Backend complete (migration 053, `RiskAssessmentStorage`, routes at `/api/v1/risk/*`). UI only.*
-
-- [ ] **Risk Assessment page** — New page at `/risk` (sidebar entry under Administration). Sections: (1) Assessments list with status badges, composite score, risk level indicator; (2) "Run Assessment" modal with type selector (security / autonomy / governance / infrastructure / external) and window days; (3) Assessment detail view with domain score breakdown, findings table, report export (JSON / HTML / Markdown / CSV); (4) External Feeds panel (CRUD for feed config); (5) Findings panel (filter by feed, status, severity; acknowledge / resolve actions).
 
 ### Advanced Editor Mode
 
@@ -238,4 +232,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 — Re-organized phases: Phase 52 Dashboard Evolution closed (work folded into CHANGELOG); Phase 53 becomes Dashboard Completion (sidebar + Mission Control + Risk Assessment UI + editor + themes); Phase 54 = AI Safety Layer; Phase 55 = Notifications & Integrations; Phase 56 = Local-First AI; Phase 57 = Security Toolkit; Phase 58 = Audio Quality; Phases 59–61 = Voice/Community, Native Clients, Infrastructure (demand-gated). Risk Assessment Dashboard added (backend live in migration 053, UI pending).*
+*Last updated: 2026-02-26 — Removed completed Phase 53 items: Risk Assessment Dashboard (UI shipped as SecurityPage tab), Marketplace/Community pagination. Phase 53 status → In Progress. Remaining: Sidebar Reorganization, Mission Control, Advanced Editor, Visual Polish.*

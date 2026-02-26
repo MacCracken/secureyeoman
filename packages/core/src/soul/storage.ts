@@ -4,6 +4,7 @@
  * Extends PgBaseStorage for shared pool access, async methods, and transactions.
  */
 
+import { join } from 'node:path';
 import { PgBaseStorage } from '../storage/pg-base.js';
 import type {
   Personality,
@@ -34,6 +35,7 @@ interface PersonalityRow {
   include_archetypes: boolean;
   inject_date_time: boolean;
   empathy_resonance: boolean;
+  avatar_url: string | null;
   is_active: boolean;
   is_default: boolean;
   is_archetype: boolean;
@@ -94,6 +96,7 @@ function rowToPersonality(row: PersonalityRow): Personality {
     includeArchetypes: row.include_archetypes,
     injectDateTime: row.inject_date_time ?? false,
     empathyResonance: row.empathy_resonance ?? false,
+    avatarUrl: row.avatar_url ?? null,
     isActive: row.is_active,
     isDefault: row.is_default ?? false,
     isArchetype: row.is_archetype ?? false,
@@ -195,6 +198,11 @@ function rowToSkill(row: SkillRow): Skill {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
+}
+
+/** Returns the directory where personality avatar files are stored. */
+export function getAvatarDir(dataDir: string): string {
+  return join(dataDir, 'avatars');
 }
 
 export class SoulStorage extends PgBaseStorage {
@@ -323,6 +331,18 @@ export class SoulStorage extends PgBaseStorage {
       'SELECT * FROM soul.personalities WHERE is_active = true ORDER BY created_at DESC'
     );
     return rows.map(rowToPersonality);
+  }
+
+  async updatePersonalityAvatar(id: string, avatarUrl: string | null): Promise<Personality> {
+    const now = Date.now();
+    const count = await this.execute(
+      `UPDATE soul.personalities SET avatar_url = $1, updated_at = $2 WHERE id = $3`,
+      [avatarUrl, now, id]
+    );
+    if (count === 0) throw new Error(`Personality not found: ${id}`);
+    const result = await this.getPersonality(id);
+    if (!result) throw new Error(`Failed to retrieve personality after avatar update: ${id}`);
+    return result;
   }
 
   async updatePersonality(id: string, data: PersonalityUpdate): Promise<Personality> {
