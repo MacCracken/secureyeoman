@@ -719,55 +719,51 @@ function BrainSection({
       )}
 
       {/* Omnipresent Mind toggle */}
-      <div className="border-b pb-3 mb-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <p className="text-sm font-medium">Omnipresent Mind</p>
-              <p className="text-xs text-muted-foreground">
-                When enabled, this personality accesses the shared memory pool across all agents.
-                Disable to keep memories and knowledge private to this personality.
-              </p>
-            </div>
+      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Globe className="w-4 h-4 text-muted-foreground shrink-0" />
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <p className="text-sm font-medium">Omnipresent Mind</p>
+            <p className="text-xs text-muted-foreground">
+              When enabled, this personality accesses the shared memory pool across all agents.
+              Disable to keep memories and knowledge private to this personality.
+            </p>
           </div>
-          <label className="relative inline-flex items-center cursor-pointer shrink-0">
-            <input
-              type="checkbox"
-              checked={omnipresentMind}
-              onChange={(e) => onOmnipresentMindChange(e.target.checked)}
-              aria-label="Omnipresent Mind"
-              className="sr-only peer"
-            />
-            <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-          </label>
         </div>
+        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+          <input
+            type="checkbox"
+            checked={omnipresentMind}
+            onChange={(e) => onOmnipresentMindChange(e.target.checked)}
+            aria-label="Omnipresent Mind"
+            className="sr-only peer"
+          />
+          <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+        </label>
       </div>
 
       {/* Chronoception */}
-      <div className="border-b pb-3 mb-3">
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-            <div className="flex flex-col gap-0.5 min-w-0">
-              <p className="text-sm font-medium">Chronoception</p>
-              <p className="text-xs text-muted-foreground">Injects the current date and time into the system prompt so the personality always knows when it is</p>
-            </div>
+      <div className="flex items-center justify-between gap-3 p-3 rounded-lg border border-border">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
+          <div className="flex flex-col gap-0.5 min-w-0">
+            <p className="text-sm font-medium">Chronoception</p>
+            <p className="text-xs text-muted-foreground">Injects the current date and time into the system prompt so the personality always knows when it is</p>
           </div>
-          <label className="relative inline-flex items-center cursor-pointer shrink-0">
-            <input
-              type="checkbox"
-              checked={injectDateTime}
-              onChange={(e) => { onInjectDateTimeChange(e.target.checked); }}
-              className="sr-only peer"
-            />
-            <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
-          </label>
         </div>
+        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+          <input
+            type="checkbox"
+            checked={injectDateTime}
+            onChange={(e) => { onInjectDateTimeChange(e.target.checked); }}
+            className="sr-only peer"
+          />
+          <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+        </label>
       </div>
 
       {/* Default Model */}
-      <div className="border-b pb-3 mb-3 space-y-3">
+      <div className="space-y-4">
         <div>
           <label className="block text-sm font-medium mb-1">Default Model</label>
           <select
@@ -890,65 +886,71 @@ function BrainSection({
         </div>
       </div>
 
-        {/* Extended Thinking — raw token budget for power users */}
-        <CollapsibleSection title="Extended Thinking" defaultOpen={false}>
-          <div className="space-y-3">
-            <p className="text-xs text-muted-foreground">
-              Fine-grained token budget control. Analytical Depth above is the simplified version;
-              use this for exact budget values. Anthropic models only.
-            </p>
-            <label className="flex items-center gap-2 cursor-pointer">
+      {/* Extended Thinking — raw token budget for power users */}
+      <CollapsibleSection title="Extended Thinking" defaultOpen={false}>
+        <div className="space-y-3">
+          <p className="text-xs text-muted-foreground">
+            Fine-grained token budget control. Analytical Depth above is the simplified version;
+            use this for exact budget values. Anthropic models only.
+          </p>
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-sm">Enable extended thinking</span>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
               <input
                 type="checkbox"
                 checked={thinkingConfig.enabled}
                 onChange={(e) => {
                   onThinkingConfigChange({ ...thinkingConfig, enabled: e.target.checked });
                 }}
-                className="rounded border-muted-foreground"
+                className="sr-only peer"
               />
-              <span className="text-sm">Enable extended thinking</span>
+              <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
             </label>
-            {thinkingConfig.enabled && (
-              <div className="space-y-1">
-                <label className="text-xs text-muted-foreground block">
-                  Token budget: {thinkingConfig.budgetTokens.toLocaleString()} tokens
-                </label>
-                <input
-                  type="range"
-                  min={1024}
-                  max={64000}
-                  step={256}
-                  value={thinkingConfig.budgetTokens}
-                  onChange={(e) => {
-                    onThinkingConfigChange({ ...thinkingConfig, budgetTokens: Number(e.target.value) });
-                  }}
-                  className="w-full"
-                />
-                <div className="flex justify-between text-[10px] text-muted-foreground">
-                  <span>1,024</span>
-                  <span>64,000</span>
-                </div>
-              </div>
-            )}
           </div>
-        </CollapsibleSection>
+          {thinkingConfig.enabled && (
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground block">
+                Token budget: {thinkingConfig.budgetTokens.toLocaleString()} tokens
+              </label>
+              <input
+                type="range"
+                min={1024}
+                max={64000}
+                step={256}
+                value={thinkingConfig.budgetTokens}
+                onChange={(e) => {
+                  onThinkingConfigChange({ ...thinkingConfig, budgetTokens: Number(e.target.value) });
+                }}
+                className="w-full"
+              />
+              <div className="flex justify-between text-[10px] text-muted-foreground">
+                <span>1,024</span>
+                <span>64,000</span>
+              </div>
+            </div>
+          )}
+        </div>
+      </CollapsibleSection>
       <CollapsibleSection title="Prompt Budget" defaultOpen={false}>
         <div className="space-y-3">
           <p className="text-xs text-muted-foreground">
             Controls how many tokens are reserved for this soul&apos;s composed system prompt (identity,
             skills, context). Overrides the global server default when set.
           </p>
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={maxPromptTokens !== null}
-              onChange={(e) => {
-                onMaxPromptTokensChange(e.target.checked ? globalMaxPromptTokens : null);
-              }}
-              className="rounded border-muted-foreground"
-            />
+          <div className="flex items-center justify-between gap-3">
             <span className="text-sm">Override global prompt budget</span>
-          </label>
+            <label className="relative inline-flex items-center cursor-pointer shrink-0">
+              <input
+                type="checkbox"
+                checked={maxPromptTokens !== null}
+                onChange={(e) => {
+                  onMaxPromptTokensChange(e.target.checked ? globalMaxPromptTokens : null);
+                }}
+                className="sr-only peer"
+              />
+              <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-success after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+            </label>
+          </div>
           {maxPromptTokens !== null ? (
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground block">
