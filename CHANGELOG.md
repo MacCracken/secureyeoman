@@ -1,3 +1,30 @@
+## [2026.2.26-ui-theme-consistency] — 2026-02-26
+
+### Dashboard — UI Theme Consistency (Secrets & Intent)
+
+#### Changed
+
+- **Security > API Keys / Secrets — consistent visual language** — `SecretsPanel` in `SecuritySettings.tsx` was visually inconsistent with the adjacent `ApiKeysSettings` component. Overhauled to match:
+  - Wrapped in `card p-4 space-y-4` — same inner-card structure as API Keys.
+  - Added outer `space-y-6` wrapper with `h2 text-xl font-semibold text-primary` section header (matching API Keys).
+  - **"+ Add Secret" button**: `btn btn-primary btn-sm` → `btn btn-ghost text-sm flex items-center gap-1` with `w-4 h-4` icon — identical style to "Create Key".
+  - **Add Secret form container**: `card p-4` → `p-3 rounded-lg bg-muted/30 space-y-3` — matching the Create Key inline form.
+  - **Form inputs**: `input w-full font-mono text-sm` (utility class) → explicit `px-2 py-1 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary` — consistent with API Keys input styling.
+  - **Form buttons**: `btn-sm` → `text-sm px-3 py-1` (matching API Keys form).
+  - **Keys list rows**: heavy `divide-y border` wrapper → `space-y-2` with `bg-muted/30` per-row (matching API Keys row style).
+  - `ConfirmDialog` moved to top of render tree (matching API Keys pattern).
+  - `<form onSubmit>` converted to `<div onClick>` handler pattern (matching API Keys).
+
+- **Settings > Intent — Create Intent inline form** — `IntentEditor.tsx` "Create Intent" flow updated to match the shared theming:
+  - **"+ Create Intent" button**: raw `bg-primary text-primary-foreground rounded` inline styles → `btn btn-ghost text-sm flex items-center gap-1` with `w-4 h-4` icon — identical to "Create Key" / "Add Secret".
+  - **Create form**: full-screen `fixed inset-0 bg-black/50` modal replaced with an inline `p-3 rounded-lg bg-muted/30 space-y-3` panel — same pattern as Add Secret and Create Key.
+  - **Textarea**: raw border/bg classes → `px-2 py-1 rounded border bg-background text-foreground font-mono text-xs w-full focus:outline-none focus:ring-2 focus:ring-primary resize-y`.
+  - **Create/Cancel buttons**: raw inline styles → `btn btn-primary text-sm px-3 py-1` / `btn btn-ghost text-sm px-3 py-1`.
+  - Cancel now also resets the JSON editor back to the starter template.
+  - Empty state hidden while the create form is expanded (reduces visual clutter).
+
+---
+
 ## [2026.2.25-phase-51-real-time-infrastructure] — 2026-02-25
 
 ### Feature — Phase 51: Real-Time Infrastructure

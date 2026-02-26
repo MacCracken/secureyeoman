@@ -27,17 +27,8 @@
 
 Continuous bug discovery and repair pass — no fixed scope. As real-world usage surfaces regressions or rough edges, they are filed here, fixed, and moved to the Changelog. This phase never closes; it rolls forward with the project.
 
-### Open
-
-- [x] Investigation into notifications — no dedicated notification model exists. Audit log pipeline is intact (events → DB → REST → dashboard polling). "No items" = audit log, not a bug empty in that session. Missing feature: transient user-facing notification model. Promoted to Phase 51.
-
 ### Improvements
 
-- [x] Security Dashboard - re-org tab view; Overview, Audit Log, Autonomy, ML, Reports, System, Tasks
-- [x] Tasks History, separation of task and heartbeats into their own subviews.
-- [x] Tasks and History needs consolidation; remove from Security Dashboard.
-- [x] after Tasks consolidation - insure each personality is associated — heartbeat execution log now writes one entry **per active personality** per beat via `HeartbeatManager.setActivePersonalityIds()`. Full roster seeded at startup via `listPersonalities`; refreshed on every personality activate/update. All active agents (e.g. T.Ron + FRIDAY) appear as separate rows in the expanded card execution history.
-- [x] Agents > Sub-Agents > Profile shoud be first tab, but keep default as Active.
 - [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 133. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(New feature — no automated DB integration test yet)*
 - [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`. *(Quick win — AnalyserNode already wired)*
 - [ ] **Advanced Editor Mode** — Add toggle in Settings > Security > Developers. When enabled, replaces the current EditView with an advanced coding workspace featuring: (1) Canvas with movable terminal prompt windows; (2) Clean file manager as a sidebar column or popout; (3) Task list panel with Jira-style priorities, supporting internal task management or external integrations (Trello, GitHub Projects, etc.).
@@ -47,11 +38,6 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 ## Phase 51: Real-Time Infrastructure
 
 **Status**: Complete — see CHANGELOG for details
-
-- [x] **Notification table + API** — `notifications` table (migration 047). REST at `/api/v1/notifications` with list, count, markRead, markAllRead, delete.
-- [x] **WebSocket push** — `notifications` WS channel in `CHANNEL_PERMISSIONS`. `NotificationManager.setBroadcast()` wired at gateway startup.
-- [x] **Bell UI** — `NotificationBell.tsx` upgraded to merge server (DB-backed) + local (localStorage) notifications. Subscribes to `notifications` WS channel. markRead/delete call REST API for server notifications.
-- [x] **Heartbeat notify wiring** — `executeNotifyAction()` calls `notificationManager?.notify()` unconditionally. External delivery (Slack/Discord/email) stubs pending IntegrationManager interface audit.
 
 ### Deferred to follow-up
 
@@ -114,15 +100,6 @@ Reorganise the Soul tab fields so each section truly reflects its metaphor. Thre
 ## Phase 50: Governance Hardening
 
 **Status**: Complete — see [ADR 132](../adr/132-governance-hardening.md) and [Guide](../guides/governance-hardening.md)
-
-Closed all deferred items from Phase 48 (ADR 128) and Phase 49 (ADR 130).
-
-- [x] **OPA sidecar service** — `opa` service in `docker-compose.yml` (`opa` + `full` profiles). `opa/capabilities.json` blocks `http.send` and `net.lookup_ip_addr`. `OPA_ADDR` env var in core service. `@open-policy-agent/opa` v2.0.0 in `packages/core/package.json`. New `OpaClient` module at `src/intent/opa-client.ts`.
-- [x] **Wire `checkHardBoundaries()` to OPA** — `_matchesBoundaryWithOpa()` evaluates `boundary_{id}/allow` when OPA is configured and boundary has `rego`. Falls back to substring matching on OPA error/null.
-- [x] **Policy upload on save** — `IntentManager.syncPoliciesWithOpa(record)` uploads all `rego` fields from `hardBoundaries[]` and `policies[]` on create and update. Called from `POST /api/v1/intent` and `PUT /api/v1/intent/:id`.
-- [x] **CEL expression evaluation for `activeWhen`** — `src/intent/cel-evaluator.ts` implements a CEL subset (==, !=, <, >, <=, >=, &&, ||, !, grouping). Legacy `key=value AND` format remains backward-compatible via format detection heuristic.
-- [x] **Soft policies surface in dashboard** — Policies tab added to `IntentEditor.tsx` showing blocking/warning policies, OPA Rego badge, expandable Rego source view, enforcement event description.
-- [x] **MCP-tool-dispatch signal sources** — `_fetchMcpToolSignal()` added to `IntentManager`. Dispatches via optional `callMcpTool` callback injected at construction. Passes `schema` hint from `ds.schema`.
 
 ---
 

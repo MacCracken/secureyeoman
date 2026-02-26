@@ -1469,108 +1469,7 @@ export function SecretsPanel() {
   const keys = data?.keys ?? [];
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="font-semibold flex items-center gap-2">
-            <Lock className="w-4 h-4" />
-            Secrets
-          </h3>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Stored in the configured backend (env / keyring / file / vault). Values are write-only.
-          </p>
-        </div>
-        <button
-          onClick={() => setAdding((v) => !v)}
-          className="btn btn-primary btn-sm flex items-center gap-1"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          Add secret
-        </button>
-      </div>
-
-      {adding && (
-        <form
-          className="card p-4 space-y-3"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (newName && newValue) setMutation.mutate({ name: newName.toUpperCase(), value: newValue });
-          }}
-        >
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Name (uppercase)</label>
-              <input
-                className="input w-full font-mono text-sm"
-                placeholder="MY_SECRET_KEY"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">Value</label>
-              <input
-                className="input w-full font-mono text-sm"
-                type="password"
-                placeholder="••••••••"
-                value={newValue}
-                onChange={(e) => setNewValue(e.target.value)}
-              />
-            </div>
-          </div>
-          <div className="flex gap-2 justify-end">
-            <button
-              type="button"
-              onClick={() => {
-                setAdding(false);
-                setNewName('');
-                setNewValue('');
-              }}
-              className="btn btn-ghost btn-sm"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={!newName || !newValue || setMutation.isPending}
-              className="btn btn-primary btn-sm flex items-center gap-1"
-            >
-              {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
-              Save
-            </button>
-          </div>
-        </form>
-      )}
-
-      {isLoading ? (
-        <div className="flex items-center gap-2 text-muted-foreground py-4">
-          <Loader2 className="w-4 h-4 animate-spin" />
-          Loading secrets…
-        </div>
-      ) : error ? (
-        <div className="text-sm text-destructive">Failed to load secrets</div>
-      ) : keys.length === 0 ? (
-        <div className="card p-6 text-center text-muted-foreground text-sm">
-          No secrets stored yet.
-        </div>
-      ) : (
-        <div className="divide-y divide-border rounded-lg border border-border">
-          {keys.map((key) => (
-            <div key={key} className="flex items-center justify-between px-4 py-2.5">
-              <span className="font-mono text-sm">{key}</span>
-              <button
-                onClick={() => setConfirmDelete(key)}
-                className="btn btn-ghost btn-xs text-destructive hover:bg-destructive/10"
-                title="Delete secret"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
-
+    <div className="space-y-6">
       <ConfirmDialog
         open={!!confirmDelete}
         title="Delete Secret"
@@ -1582,6 +1481,111 @@ export function SecretsPanel() {
         }}
         onCancel={() => setConfirmDelete(null)}
       />
+
+      <div>
+        <h2 className="text-xl font-semibold text-primary flex items-center gap-2">
+          <Lock className="w-5 h-5" />
+          Secrets
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Stored in the configured backend (env / keyring / file / vault). Values are write-only.
+        </p>
+      </div>
+
+      <div className="card p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="font-medium text-sm flex items-center gap-2">
+            <Lock className="w-4 h-4" />
+            Stored Secrets
+          </h3>
+          <button
+            className="btn btn-ghost text-sm flex items-center gap-1"
+            onClick={() => setAdding((v) => !v)}
+          >
+            <Plus className="w-4 h-4" />
+            Add Secret
+          </button>
+        </div>
+
+        {adding && (
+          <div className="p-3 rounded-lg bg-muted/30 space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Name (uppercase)</label>
+                <input
+                  type="text"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value.toUpperCase().replace(/[^A-Z0-9_]/g, ''))}
+                  placeholder="MY_SECRET_KEY"
+                  className="px-2 py-1 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground block mb-1">Value</label>
+                <input
+                  type="password"
+                  value={newValue}
+                  onChange={(e) => setNewValue(e.target.value)}
+                  placeholder="••••••••"
+                  className="px-2 py-1 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                className="btn btn-primary text-sm px-3 py-1 flex items-center gap-1"
+                onClick={() => {
+                  if (newName && newValue) setMutation.mutate({ name: newName, value: newValue });
+                }}
+                disabled={!newName || !newValue || setMutation.isPending}
+              >
+                {setMutation.isPending && <Loader2 className="w-3 h-3 animate-spin" />}
+                Save
+              </button>
+              <button
+                className="btn btn-ghost text-sm px-3 py-1"
+                onClick={() => {
+                  setAdding(false);
+                  setNewName('');
+                  setNewValue('');
+                }}
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        ) : error ? (
+          <div className="text-sm text-destructive">Failed to load secrets</div>
+        ) : keys.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No secrets stored yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {keys.map((key) => (
+              <div
+                key={key}
+                className="flex items-center justify-between p-2 rounded bg-muted/30 text-sm"
+              >
+                <div className="flex items-center gap-3">
+                  <Lock className="w-3 h-3 text-muted-foreground" />
+                  <span className="font-mono font-medium">{key}</span>
+                </div>
+                <button
+                  className="text-destructive hover:text-destructive/80"
+                  onClick={() => setConfirmDelete(key)}
+                  aria-label={`Delete secret ${key}`}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

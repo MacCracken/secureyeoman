@@ -514,5 +514,272 @@ describe('GatewayServer', () => {
       const res = await fetch(`${apiBase}/health`, { method: 'OPTIONS' });
       expect(res.status).toBe(204);
     });
+
+    it('POST /api/v1/costs/reset with valid stat returns success', async () => {
+      const res = await fetch(`${apiBase}/api/v1/costs/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stat: 'errors' }),
+      });
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json.success).toBe(true);
+    });
+
+    it('POST /api/v1/costs/reset with invalid stat returns 400', async () => {
+      const res = await fetch(`${apiBase}/api/v1/costs/reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ stat: 'invalid' }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('GET /api/v1/tasks returns empty list when storage unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/tasks`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('tasks');
+    });
+
+    it('GET /api/v1/tasks/:id returns 500 when storage unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/tasks/task-1`);
+      expect(res.status).toBe(500);
+    });
+
+    it('POST /api/v1/tasks returns 500 when storage unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Test Task' }),
+      });
+      expect(res.status).toBe(500);
+    });
+
+    it('GET /api/v1/costs/history with query params returns records', async () => {
+      const res = await fetch(`${apiBase}/api/v1/costs/history?groupBy=hour&provider=anthropic`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('records');
+    });
+
+    it('GET /api/v1/security/events with from/to/limit/offset covers ternary arms', async () => {
+      const now = Date.now();
+      const res = await fetch(`${apiBase}/api/v1/security/events?from=${now - 3600000}&to=${now}&limit=10&offset=5`);
+      expect(res.status).toBe(200);
+    });
+
+    it('GET /api/v1/audit with all params covers ternary arms', async () => {
+      const now = Date.now();
+      const res = await fetch(`${apiBase}/api/v1/audit?from=${now - 3600000}&to=${now}&level=info&event=ai_request&limit=10&offset=5`);
+      expect(res.status).toBe(200);
+    });
+
+    it('GET /api/v1/audit/export with params covers ternary arms', async () => {
+      const now = Date.now();
+      const res = await fetch(`${apiBase}/api/v1/audit/export?from=${now - 3600000}&to=${now}&limit=500`);
+      expect(res.status).toBe(200);
+      const ct = res.headers.get('content-type') ?? '';
+      expect(ct).toContain('application/json');
+    });
+
+    it('POST /api/v1/audit/retention with invalid maxEntries returns 400', async () => {
+      const res = await fetch(`${apiBase}/api/v1/audit/retention`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxEntries: 50 }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('POST /api/v1/audit/retention with valid maxEntries returns 200', async () => {
+      const res = await fetch(`${apiBase}/api/v1/audit/retention`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ maxEntries: 1000 }),
+      });
+      expect(res.status).toBe(200);
+    });
+
+    it('PUT /api/v1/tasks/:id returns 500 when storage unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/tasks/task-1`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Updated Task' }),
+      });
+      expect(res.status).toBe(500);
+    });
+
+    it('DELETE /api/v1/tasks/:id returns 500 when storage unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/tasks/task-1`, { method: 'DELETE' });
+      expect(res.status).toBe(500);
+    });
+
+    it('GET /api/v1/secrets/:name returns 503 when secrets manager unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/secrets/MY_SECRET_KEY`);
+      expect(res.status).toBe(503);
+    });
+
+    it('PUT /api/v1/secrets/:name returns 503 when secrets manager unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/secrets/MY_SECRET_KEY`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: 'secret123' }),
+      });
+      expect(res.status).toBe(503);
+    });
+
+    it('DELETE /api/v1/secrets/:name returns 503 when secrets manager unavailable', async () => {
+      const res = await fetch(`${apiBase}/api/v1/secrets/MY_SECRET_KEY`, { method: 'DELETE' });
+      expect(res.status).toBe(503);
+    });
+
+    it('GET /api/v1/security/ml/summary with period=30d covers 30-day branch', async () => {
+      const res = await fetch(`${apiBase}/api/v1/security/ml/summary?period=30d`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json.period).toBe('30d');
+    });
+  });
+
+  describe('costs history with usage storage', () => {
+    let storageServer: GatewayServer | null = null;
+    const storagePort = 19770;
+    const storageBase = `http://127.0.0.1:${storagePort}`;
+
+    beforeAll(async () => {
+      const mockUsageStorage = {
+        queryHistory: async () => [
+          { inputTokens: 100, outputTokens: 200, totalTokens: 300, costUsd: 0.01, calls: 5 },
+        ],
+      };
+      storageServer = new GatewayServer({
+        config: createMinimalConfig({ port: storagePort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getUsageStorage: () => mockUsageStorage,
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+            },
+          }),
+        }) as any,
+      });
+      await storageServer.start();
+    });
+
+    afterAll(async () => {
+      if (storageServer) {
+        await storageServer.stop();
+        storageServer = null;
+      }
+    });
+
+    it('GET /api/v1/costs/history returns records and totals when storage available', async () => {
+      const res = await fetch(`${storageBase}/api/v1/costs/history`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('records');
+      expect(json).toHaveProperty('totals');
+      const totals = json.totals as Record<string, number>;
+      expect(totals.inputTokens).toBe(100);
+      expect(totals.calls).toBe(5);
+    });
+
+    it('GET /api/v1/costs/history with all query params covers parseNum branches', async () => {
+      const now = Date.now();
+      const res = await fetch(
+        `${storageBase}/api/v1/costs/history?from=${now - 3600000}&to=${now}&provider=anthropic&model=claude-3&personalityId=p1&groupBy=hour`
+      );
+      expect(res.status).toBe(200);
+    });
+  });
+
+  describe('ml summary with elevated risk from audit entries', () => {
+    let mlServer: GatewayServer | null = null;
+    const mlPort = 19780;
+    const mlBase = `http://127.0.0.1:${mlPort}`;
+
+    beforeAll(async () => {
+      const now = Date.now();
+      const entries = [
+        { event: 'anomaly', timestamp: now - 1000 },
+        { event: 'anomaly', timestamp: now - 2000 },
+        { event: 'anomaly', timestamp: now - 3000 },
+        { event: 'injection_attempt', timestamp: now - 4000 },
+        { event: 'injection_attempt', timestamp: now - 5000 },
+        { event: 'sandbox_violation', timestamp: now - 6000 },
+        { event: 'secret_access', timestamp: now - 7000 },
+      ];
+      mlServer = new GatewayServer({
+        config: createMinimalConfig({ port: mlPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          queryAuditLog: () =>
+            Promise.resolve({ entries, total: entries.length, limit: 10000, offset: 0 }),
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: true,
+            },
+          }),
+        }) as any,
+      });
+      await mlServer.start();
+    });
+
+    afterAll(async () => {
+      if (mlServer) {
+        await mlServer.stop();
+        mlServer = null;
+      }
+    });
+
+    it('returns elevated riskScore and critical riskLevel with many entries', async () => {
+      const res = await fetch(`${mlBase}/api/v1/security/ml/summary`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json.enabled).toBe(true);
+      expect(json.riskScore as number).toBeGreaterThan(0);
+      expect(json.riskLevel).toBe('critical');
+      const detections = json.detections as Record<string, number>;
+      expect(detections.total).toBeGreaterThan(0);
+    });
+
+    it('covers 24h bucket logic with entries present', async () => {
+      const res = await fetch(`${mlBase}/api/v1/security/ml/summary?period=24h`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json.period).toBe('24h');
+      expect(Array.isArray(json.trend)).toBe(true);
+    });
+  });
+
+  describe('allowRemoteAccess bypass', () => {
+    it('allows non-local IP when allowRemoteAccess is true', async () => {
+      const port = 19660;
+      const srv = new GatewayServer({
+        config: createMinimalConfig({ port, allowRemoteAccess: true }) as any,
+        secureYeoman: createMockSecureYeoman() as any,
+      });
+      await srv.start();
+      try {
+        const res = await fetch(`http://127.0.0.1:${port}/health`);
+        expect(res.status).toBe(200);
+      } finally {
+        await srv.stop();
+      }
+    });
   });
 });

@@ -736,15 +736,45 @@ export function IntentEditor() {
         <div className="space-y-4">
           <div className="flex justify-end">
             <button
-              onClick={() => setShowCreateModal(true)}
-              className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 transition-colors"
+              className="btn btn-ghost text-sm flex items-center gap-1"
+              onClick={() => { setShowCreateModal((v) => !v); setCreateError(''); }}
             >
-              <Plus className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
               Create Intent
             </button>
           </div>
 
-          {intents.length === 0 && (
+          {showCreateModal && (
+            <div className="p-3 rounded-lg bg-muted/30 space-y-3">
+              <p className="text-xs text-muted-foreground">
+                Enter a JSON document matching the OrgIntentDoc schema. Edit the template below.
+              </p>
+              <textarea
+                value={createJson}
+                onChange={(e) => setCreateJson(e.target.value)}
+                rows={18}
+                className="px-2 py-1 rounded border bg-background text-foreground font-mono text-xs w-full focus:outline-none focus:ring-2 focus:ring-primary resize-y"
+              />
+              {createError && <p className="text-xs text-destructive">{createError}</p>}
+              <div className="flex gap-2">
+                <button
+                  className="btn btn-primary text-sm px-3 py-1"
+                  onClick={handleCreate}
+                  disabled={createMutation.isPending}
+                >
+                  {createMutation.isPending ? 'Creating…' : 'Create'}
+                </button>
+                <button
+                  className="btn btn-ghost text-sm px-3 py-1"
+                  onClick={() => { setShowCreateModal(false); setCreateError(''); setCreateJson(STARTER_INTENT_YAML); }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+
+          {intents.length === 0 && !showCreateModal && (
             <div className="text-center py-8 border border-dashed border-border rounded-lg">
               <Globe className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-sm text-muted-foreground">No intent documents yet.</p>
@@ -787,55 +817,7 @@ export function IntentEditor() {
         )
       )}
 
-      {/* Create Intent Modal */}
-      {showCreateModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-background border border-border rounded-lg w-full max-w-2xl shadow-xl">
-            <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-              <h3 className="text-sm font-semibold">Create Intent Document</h3>
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setCreateError('');
-                }}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <XCircle className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-4 space-y-3">
-              <p className="text-xs text-muted-foreground">
-                Enter a JSON document matching the OrgIntentDoc schema. Edit the template below.
-              </p>
-              <textarea
-                value={createJson}
-                onChange={(e) => setCreateJson(e.target.value)}
-                rows={18}
-                className="w-full text-xs font-mono border border-border rounded p-2 bg-muted/30 resize-y focus:outline-none focus:ring-1 focus:ring-primary"
-              />
-              {createError && <p className="text-xs text-destructive">{createError}</p>}
-            </div>
-            <div className="flex justify-end gap-2 px-4 py-3 border-t border-border">
-              <button
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setCreateError('');
-                }}
-                className="text-xs px-3 py-1.5 border border-border rounded hover:bg-accent transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleCreate}
-                disabled={createMutation.isPending}
-                className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-50 transition-colors"
-              >
-                {createMutation.isPending ? 'Creating…' : 'Create'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }
