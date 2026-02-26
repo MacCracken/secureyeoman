@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, Fragment } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import {
+  Bot,
   User,
   Plus,
   Edit2,
@@ -93,7 +94,7 @@ const SEX_OPTIONS = ['unspecified', 'male', 'female', 'non-binary'] as const;
 
 const API_BASE = '/api/v1';
 
-/** Renders a personality avatar as a circle image, or falls back to the User icon. */
+/** Renders a personality avatar as a circle image, or falls back to the Bot icon. */
 export function PersonalityAvatar({
   personality,
   size = 24,
@@ -102,7 +103,7 @@ export function PersonalityAvatar({
   size?: number;
 }) {
   if (!personality.avatarUrl) {
-    return <User style={{ width: size, height: size }} />;
+    return <Bot style={{ width: size, height: size }} />;
   }
   return (
     <img
@@ -171,7 +172,7 @@ function AvatarUpload({
             className="w-full h-full object-cover"
           />
         ) : (
-          <User className="w-10 h-10 text-muted-foreground" />
+          <Bot className="w-10 h-10 text-muted-foreground" />
         )}
       </div>
       <div className="flex flex-col gap-2">

@@ -1,3 +1,9 @@
+## [2026.2.26d] — 2026-02-26
+
+### Changed
+
+- **Personality avatar default icon** — `PersonalityAvatar` and `AvatarUpload` placeholders now show a `<Bot />` icon instead of `<User />` when no avatar has been uploaded.
+
 ## [2026.2.26c] — 2026-02-26
 
 ### Added
