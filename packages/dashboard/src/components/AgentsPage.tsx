@@ -21,7 +21,7 @@ import { VectorMemoryExplorerPage } from './VectorMemoryExplorerPage';
 type SectionId = 'multimodal' | 'web' | 'vectorMemory' | 'delegation' | 'a2a';
 
 export function AgentsPage() {
-  const [activeSection, setActiveSection] = useState<SectionId>('delegation');
+  const [activeSection, setActiveSection] = useState<SectionId>('vectorMemory');
 
   const { data: agentConfig } = useQuery({
     queryKey: ['agentConfig'],
@@ -90,10 +90,10 @@ export function AgentsPage() {
 
   const sections: { id: SectionId; label: string; icon: React.ReactNode; enabled: boolean }[] = [
     {
-      id: 'multimodal',
-      label: 'Multimodal',
-      icon: <Wand2 className="w-4 h-4" />,
-      enabled: multimodalEnabled,
+      id: 'vectorMemory',
+      label: 'Vector Memory',
+      icon: <Brain className="w-4 h-4" />,
+      enabled: vectorMemoryEnabled,
     },
     {
       id: 'web',
@@ -102,14 +102,14 @@ export function AgentsPage() {
       enabled: webEnabled,
     },
     {
-      id: 'vectorMemory',
-      label: 'Vector Memory',
-      icon: <Brain className="w-4 h-4" />,
-      enabled: vectorMemoryEnabled,
+      id: 'multimodal',
+      label: 'Multimodal',
+      icon: <Wand2 className="w-4 h-4" />,
+      enabled: multimodalEnabled,
     },
     {
       id: 'delegation',
-      label: 'Sub-Agents',
+      label: 'Swarm',
       icon: <Users className="w-4 h-4" />,
       enabled: subAgentsEnabled,
     },

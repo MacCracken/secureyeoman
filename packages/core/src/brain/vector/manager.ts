@@ -27,6 +27,9 @@ export class VectorMemoryManager {
       type: 'memory',
       memoryType: memory.type,
       source: memory.source,
+      // Store personalityId so searches can filter to the correct scope.
+      // null means global/unscoped (accessible to all personalities).
+      personalityId: memory.personalityId ?? null,
     });
   }
 
@@ -37,15 +40,31 @@ export class VectorMemoryManager {
       type: 'knowledge',
       topic: entry.topic,
       source: entry.source,
+      personalityId: entry.personalityId ?? null,
     });
   }
 
-  async searchMemories(query: string, limit: number, threshold?: number): Promise<VectorResult[]> {
+  /**
+   * Search memories by semantic similarity.
+   * When personalityId is provided, only returns memories belonging to that
+   * personality or global (null) memories. Pass undefined to search all (omnipresent).
+   */
+  async searchMemories(
+    query: string,
+    limit: number,
+    threshold?: number,
+    personalityId?: string | null
+  ): Promise<VectorResult[]> {
     const [vector] = await this.embedding.embed([query]);
     const results = await this.store.search(vector!, limit * 2, threshold);
 
     return results
       .filter((r) => r.id.startsWith('memory:'))
+      .filter((r) => {
+        if (personalityId === undefined) return true; // omnipresent — see all
+        const storedPid = r.metadata?.personalityId ?? null;
+        return storedPid === null || storedPid === personalityId;
+      })
       .slice(0, limit)
       .map((r) => ({
         ...r,
@@ -53,12 +72,27 @@ export class VectorMemoryManager {
       }));
   }
 
-  async searchKnowledge(query: string, limit: number, threshold?: number): Promise<VectorResult[]> {
+  /**
+   * Search knowledge by semantic similarity.
+   * When personalityId is provided, only returns entries belonging to that
+   * personality or global (null) entries. Pass undefined to search all (omnipresent).
+   */
+  async searchKnowledge(
+    query: string,
+    limit: number,
+    threshold?: number,
+    personalityId?: string | null
+  ): Promise<VectorResult[]> {
     const [vector] = await this.embedding.embed([query]);
     const results = await this.store.search(vector!, limit * 2, threshold);
 
     return results
       .filter((r) => r.id.startsWith('knowledge:'))
+      .filter((r) => {
+        if (personalityId === undefined) return true; // omnipresent — see all
+        const storedPid = r.metadata?.personalityId ?? null;
+        return storedPid === null || storedPid === personalityId;
+      })
       .slice(0, limit)
       .map((r) => ({
         ...r,

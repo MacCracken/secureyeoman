@@ -2,6 +2,9 @@
 
 ### Fixed
 
+- **Vector memory recall now scopes to the active personality** — personalities no longer share each other's semantic search results.
+- **`seedBaseKnowledge` now seeds `self-identity` per-personality** with the correct name (e.g., "I am T.Ron" for T.Ron, "I am FRIDAY" for FRIDAY), removing the legacy global "I am F.R.I.D.A.Y." entry that all personalities incorrectly inherited.
+- **Legacy global self-identity knowledge entries** created before Phase 52 are automatically migrated to per-personality scoped entries on startup.
 - **Heartbeat tasks agent name** — `HeartbeatCard` now receives the global `personalityMap` fetched from `GET /api/v1/soul/personalities` and merges it with the task-local list, so log entry agent cells display personality names instead of raw UUIDs.
 - **`empathyResonance` missing from default personality objects** — Added `empathyResonance: false` to the inline `PersonalityCreate` objects in `creation-tool-executor.ts`, `manager.ts`, `presets.ts` (×2), and `soul-routes.ts` so `npm run build` succeeds after migration `048` added the required field.
 - **CPU usage always 0%** — `SecureYeoman.getMetrics()` now uses a rolling `process.cpuUsage()` delta sampler. Private fields `_lastCpuUsage` and `_lastCpuSampleAt` track the previous snapshot; each call computes `(userDelta + systemDelta µs) / elapsedMs / 10` → percentage. Value is clamped to `[0, 100]`.
@@ -24,6 +27,16 @@
 - **Roadmap** — Sidebar Reorganization updated to show Intent promoted to top-level nav item.
 
 ### Added
+
+#### Phase 52 — Vector Memory Multi-Personality Scoping
+
+- **Vector Memory Explorer personality filter** — Personality dropdown at the top of `VectorMemoryExplorerPage` — select any personality or "All Personalities" to browse memories and knowledge.
+- **Per-row personality badge** — In "All Personalities" view, each memory/knowledge row shows which personality it belongs to (or "Global").
+- **Semantic search personality scope** — Semantic search in Vector Memory Explorer also respects the selected personality scope.
+- **`/brain/search/similar` `personalityId` param** — `/brain/search/similar` API endpoint now accepts `personalityId` query parameter to scope vector similarity results.
+- **Vector Memory first tab in Agents** — Vector Memory is now the first/default tab in the Agents page; tab order: Vector Memory → Web → Multimodal → Swarm → A2A Network.
+- **`seedBaseKnowledge()` personalities array** — `seedBaseKnowledge()` accepts a `personalities` array and is called at every startup (not just onboarding) — new personalities added after first run get their self-identity seeded on next restart.
+- ADR 134 (`docs/adr/134-vector-memory-multi-personality.md`).
 
 #### Marketplace — Routing Quality Schema Alignment
 

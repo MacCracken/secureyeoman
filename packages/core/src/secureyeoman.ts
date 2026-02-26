@@ -617,11 +617,20 @@ export class SecureYeoman {
         }
         await this.soulManager.seedAvailablePresets();
         if ((await this.soulManager.getAgentName()) === 'FRIDAY') {
-          await this.brainManager.seedBaseKnowledge();
           await this.spiritManager.seedDefaultSpirit();
         }
         this.logger.debug('Soul personalities seeded (onboarding)');
       }
+
+      // Seed per-personality base knowledge at every startup (idempotent).
+      // This ensures new personalities added after first run also get their self-identity.
+      {
+        const allResult = await this.soulManager.listPersonalities({ limit: 200 });
+        await this.brainManager.seedBaseKnowledge(
+          allResult.personalities.map((p) => ({ id: p.id, name: p.name }))
+        );
+      }
+
       this.logger.debug('Soul manager initialized');
 
       // Wire SoulManager into AIClient for personality_id tracking

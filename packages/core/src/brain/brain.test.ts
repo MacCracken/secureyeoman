@@ -746,29 +746,57 @@ describe('BrainManager', () => {
   });
 
   describe('seedBaseKnowledge', () => {
-    it('should seed foundational knowledge entries', async () => {
-      await manager.seedBaseKnowledge();
+    const personalities = [
+      { id: 'p-friday', name: 'FRIDAY' },
+      { id: 'p-tron', name: 'T.Ron' },
+    ];
+
+    it('should seed global entries and per-personality self-identity', async () => {
+      await manager.seedBaseKnowledge(personalities);
       const all = await manager.queryKnowledge({});
-      expect(all.length).toBeGreaterThanOrEqual(4);
 
       const topics = all.map((k) => k.topic);
       expect(topics).toContain('self-identity');
       expect(topics).toContain('hierarchy');
       expect(topics).toContain('purpose');
       expect(topics).toContain('interaction');
+
+      // Each personality gets their own scoped self-identity
+      const selfIds = all.filter((k) => k.topic === 'self-identity');
+      expect(selfIds.some((k) => k.personalityId === 'p-friday')).toBe(true);
+      expect(selfIds.some((k) => k.personalityId === 'p-tron')).toBe(true);
+
+      // No global self-identity
+      expect(selfIds.some((k) => k.personalityId === null)).toBe(false);
+    });
+
+    it('should seed correct name in self-identity content', async () => {
+      await manager.seedBaseKnowledge(personalities);
+      const all = await manager.queryKnowledge({});
+      const fridayId = all.find((k) => k.topic === 'self-identity' && k.personalityId === 'p-friday');
+      const tronId = all.find((k) => k.topic === 'self-identity' && k.personalityId === 'p-tron');
+      expect(fridayId?.content).toBe('I am FRIDAY');
+      expect(tronId?.content).toBe('I am T.Ron');
     });
 
     it('should be idempotent on repeat calls', async () => {
-      await manager.seedBaseKnowledge();
+      await manager.seedBaseKnowledge(personalities);
       const firstCount = (await manager.queryKnowledge({})).length;
-      await manager.seedBaseKnowledge();
+      await manager.seedBaseKnowledge(personalities);
       const secondCount = (await manager.queryKnowledge({})).length;
       expect(secondCount).toBe(firstCount);
     });
 
+    it('should seed 3 generic entries without personalities', async () => {
+      await manager.seedBaseKnowledge([]);
+      const all = await manager.queryKnowledge({});
+      expect(all.length).toBe(3);
+      expect(all.map((k) => k.topic)).not.toContain('self-identity');
+    });
+
     it('should not seed when brain is disabled', async () => {
       const mgr = new BrainManager(storage, defaultConfig({ enabled: false }), createDeps());
-      await mgr.seedBaseKnowledge();
+      await mgr.seedBaseKnowledge(personalities);
       expect(await storage.getKnowledgeCount()).toBe(0);
     });
   });

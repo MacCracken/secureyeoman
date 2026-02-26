@@ -20,6 +20,8 @@ export interface AuditStorage {
 
 export interface Memory {
   id: string;
+  /** Personality this memory belongs to, or null for shared/global memories. */
+  personalityId: string | null;
   type: MemoryType;
   content: string;
   source: string;
@@ -58,6 +60,8 @@ export interface MemoryQuery {
 
 export interface KnowledgeEntry {
   id: string;
+  /** Personality this knowledge entry belongs to, or null for shared/global entries. */
+  personalityId: string | null;
   topic: string;
   content: string;
   source: string;

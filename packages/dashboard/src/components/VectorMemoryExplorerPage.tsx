@@ -11,10 +11,12 @@ import {
   Database,
   Sparkles,
   BookOpen,
+  User,
 } from 'lucide-react';
 import {
   fetchMemories,
   fetchKnowledge,
+  fetchPersonalities,
   searchSimilar,
   addMemory,
   deleteMemory,
@@ -36,6 +38,9 @@ const MEMORY_TYPE_LABELS: Record<string, string> = {
   preference: 'Preference',
 };
 
+/** Sentinel value meaning "show all personalities (omnipresent)" */
+const ALL_PERSONALITIES = '__all__';
+
 export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = {}) {
   const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState('');
@@ -47,6 +52,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
   const [activeTab, setActiveTab] = useState<'search' | 'memories' | 'knowledge' | 'add'>('search');
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
+  /** Selected personality filter: ALL_PERSONALITIES or a personality id */
+  const [selectedPersonalityId, setSelectedPersonalityId] = useState<string>(ALL_PERSONALITIES);
+
   // Add memory form
   const [newType, setNewType] = useState<'episodic' | 'semantic' | 'procedural' | 'preference'>(
     'semantic'
@@ -55,15 +63,27 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
   const [newSource, setNewSource] = useState('manual');
   const [newImportance, setNewImportance] = useState(0.5);
 
+  const { data: personalitiesData } = useQuery({
+    queryKey: ['personalities'],
+    queryFn: fetchPersonalities,
+    staleTime: 30000,
+  });
+
+  const personalities = personalitiesData?.personalities ?? [];
+
+  // Resolve personalityId to pass to API: null = all, string = scoped
+  const filterPersonalityId =
+    selectedPersonalityId === ALL_PERSONALITIES ? undefined : selectedPersonalityId;
+
   const { data: memoriesData, isLoading: memoriesLoading } = useQuery({
-    queryKey: ['memories'],
-    queryFn: () => fetchMemories(),
+    queryKey: ['memories', filterPersonalityId],
+    queryFn: () => fetchMemories({ personalityId: filterPersonalityId }),
     refetchInterval: 10000,
   });
 
   const { data: knowledgeData, isLoading: knowledgeLoading } = useQuery({
-    queryKey: ['knowledge'],
-    queryFn: fetchKnowledge,
+    queryKey: ['knowledge', filterPersonalityId],
+    queryFn: () => fetchKnowledge({ personalityId: filterPersonalityId }),
     refetchInterval: 10000,
   });
 
@@ -93,6 +113,12 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
   const memories = memoriesData?.memories ?? [];
   const knowledge = knowledgeData?.knowledge ?? [];
 
+  /** Name of the currently selected personality (for display) */
+  const selectedPersonalityName =
+    selectedPersonalityId === ALL_PERSONALITIES
+      ? 'All Personalities'
+      : (personalities.find((p) => p.id === selectedPersonalityId)?.name ?? selectedPersonalityId);
+
   async function handleSearch() {
     if (!searchQuery.trim()) return;
     setIsSearching(true);
@@ -103,6 +129,7 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
         threshold: searchThreshold,
         type: searchType === 'all' ? undefined : searchType,
         limit: 20,
+        personalityId: filterPersonalityId,
       });
       setSearchResults(result.results);
     } catch (err) {
@@ -153,6 +180,33 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
         </div>
       )}
 
+      {/* Personality selector */}
+      <div className="flex items-center gap-2 flex-wrap">
+        <User className="w-4 h-4 text-muted-foreground shrink-0" />
+        <label className="text-xs text-muted-foreground shrink-0">Personality:</label>
+        <select
+          value={selectedPersonalityId}
+          onChange={(e) => {
+            setSelectedPersonalityId(e.target.value);
+            setSearchResults(null);
+          }}
+          className="bg-card border border-border rounded-lg text-sm py-1 px-2 min-w-[160px]"
+        >
+          <option value={ALL_PERSONALITIES}>All Personalities</option>
+          {personalities.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+        {selectedPersonalityId !== ALL_PERSONALITIES && (
+          <span className="text-xs text-muted-foreground">
+            Showing memories scoped to <span className="font-medium">{selectedPersonalityName}</span>{' '}
+            + global
+          </span>
+        )}
+      </div>
+
       {/* Stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
         <StatCard label="Memories" value={memories.length} />
@@ -199,6 +253,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
           <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
             <Sparkles className="w-4 h-4 text-muted-foreground" />
             <h2 className="card-title text-sm sm:text-base">Semantic Search</h2>
+            {selectedPersonalityId !== ALL_PERSONALITIES && (
+              <span className="ml-auto text-xs text-muted-foreground">
+                Scoped to: {selectedPersonalityName}
+              </span>
+            )}
           </div>
           <div className="card-content space-y-3 p-3 sm:p-4 pt-0 sm:pt-0">
             <div className="flex flex-col sm:flex-row gap-2">
@@ -301,6 +360,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
           <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
             <Database className="w-4 h-4 text-muted-foreground" />
             <h2 className="card-title text-sm sm:text-base">Memories</h2>
+            {selectedPersonalityId !== ALL_PERSONALITIES && (
+              <span className="ml-auto text-xs text-muted-foreground">
+                Scoped to: {selectedPersonalityName}
+              </span>
+            )}
           </div>
           <div className="card-content p-3 sm:p-4 pt-0 sm:pt-0">
             {memoriesLoading ? (
@@ -309,12 +373,17 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
               </div>
             ) : memories.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">
-                No memories stored.
+                No memories stored{selectedPersonalityId !== ALL_PERSONALITIES ? ` for ${selectedPersonalityName}` : ''}.
               </div>
             ) : (
               <div className="space-y-0">
                 {memories.slice(0, 50).map((mem: Memory) => {
                   const expanded = expandedId === mem.id;
+                  const memPersonalityName =
+                    mem.personalityId == null
+                      ? 'Global'
+                      : (personalities.find((p) => p.id === mem.personalityId)?.name ??
+                        mem.personalityId);
                   return (
                     <React.Fragment key={mem.id}>
                       <div
@@ -331,6 +400,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                         <span className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">
                           {MEMORY_TYPE_LABELS[mem.type] ?? mem.type}
                         </span>
+                        {selectedPersonalityId === ALL_PERSONALITIES && (
+                          <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded shrink-0">
+                            {memPersonalityName}
+                          </span>
+                        )}
                         <span className="text-sm flex-1 truncate">{mem.content.slice(0, 80)}</span>
                         <span className="text-xs text-muted-foreground">
                           {mem.importance.toFixed(2)}
@@ -340,6 +414,9 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                         <div className="bg-muted/20 p-3 border-b text-xs space-y-1">
                           <div>
                             <span className="font-medium">ID:</span> {mem.id}
+                          </div>
+                          <div>
+                            <span className="font-medium">Personality:</span> {memPersonalityName}
                           </div>
                           <div>
                             <span className="font-medium">Source:</span> {mem.source}
@@ -389,6 +466,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
           <div className="card-header flex flex-row items-center gap-2 p-3 sm:p-4">
             <BookOpen className="w-4 h-4 text-muted-foreground" />
             <h2 className="card-title text-sm sm:text-base">Knowledge</h2>
+            {selectedPersonalityId !== ALL_PERSONALITIES && (
+              <span className="ml-auto text-xs text-muted-foreground">
+                Scoped to: {selectedPersonalityName}
+              </span>
+            )}
           </div>
           <div className="card-content p-3 sm:p-4 pt-0 sm:pt-0">
             {knowledgeLoading ? (
@@ -397,12 +479,17 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
               </div>
             ) : knowledge.length === 0 ? (
               <div className="text-center py-12 text-muted-foreground text-sm">
-                No knowledge entries stored.
+                No knowledge entries stored{selectedPersonalityId !== ALL_PERSONALITIES ? ` for ${selectedPersonalityName}` : ''}.
               </div>
             ) : (
               <div className="space-y-0">
                 {knowledge.slice(0, 50).map((entry: KnowledgeEntry) => {
                   const expanded = expandedId === entry.id;
+                  const entryPersonalityName =
+                    entry.personalityId == null
+                      ? 'Global'
+                      : (personalities.find((p) => p.id === entry.personalityId)?.name ??
+                        entry.personalityId);
                   return (
                     <React.Fragment key={entry.id}>
                       <div
@@ -419,6 +506,11 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                         <span className="text-xs bg-blue-500/10 text-blue-500 px-1.5 py-0.5 rounded">
                           {entry.topic}
                         </span>
+                        {selectedPersonalityId === ALL_PERSONALITIES && (
+                          <span className="text-xs bg-muted text-muted-foreground px-1.5 py-0.5 rounded shrink-0">
+                            {entryPersonalityName}
+                          </span>
+                        )}
                         <span className="text-sm flex-1 truncate">
                           {entry.content.slice(0, 80)}
                         </span>
@@ -430,6 +522,10 @@ export function VectorMemoryExplorerPage({ embedded }: { embedded?: boolean } = 
                         <div className="bg-muted/20 p-3 border-b text-xs space-y-1">
                           <div>
                             <span className="font-medium">ID:</span> {entry.id}
+                          </div>
+                          <div>
+                            <span className="font-medium">Personality:</span>{' '}
+                            {entryPersonalityName}
                           </div>
                           <div>
                             <span className="font-medium">Source:</span> {entry.source}

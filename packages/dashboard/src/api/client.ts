@@ -964,10 +964,16 @@ export async function submitFeedback(
   });
 }
 
-export async function fetchMemories(query?: string): Promise<{ memories: Memory[] }> {
-  const params = query ? `?search=${encodeURIComponent(query)}` : '';
+export async function fetchMemories(opts?: {
+  search?: string;
+  personalityId?: string | null;
+}): Promise<{ memories: Memory[] }> {
+  const params = new URLSearchParams();
+  if (opts?.search) params.set('search', opts.search);
+  if (opts?.personalityId) params.set('personalityId', opts.personalityId);
+  const qs = params.toString();
   try {
-    return await request(`/brain/memories${params}`);
+    return await request(`/brain/memories${qs ? `?${qs}` : ''}`);
   } catch {
     return { memories: [] };
   }
@@ -1141,9 +1147,14 @@ export async function deletePain(id: string): Promise<void> {
 
 // ─── Brain API ────────────────────────────────────────────────
 
-export async function fetchKnowledge(): Promise<{ knowledge: KnowledgeEntry[] }> {
+export async function fetchKnowledge(opts?: {
+  personalityId?: string | null;
+}): Promise<{ knowledge: KnowledgeEntry[] }> {
+  const params = new URLSearchParams();
+  if (opts?.personalityId) params.set('personalityId', opts.personalityId);
+  const qs = params.toString();
   try {
-    return await request('/brain/knowledge');
+    return await request(`/brain/knowledge${qs ? `?${qs}` : ''}`);
   } catch {
     return { knowledge: [] };
   }
@@ -1604,12 +1615,14 @@ export async function searchSimilar(params: {
   threshold?: number;
   type?: string;
   limit?: number;
+  personalityId?: string | null;
 }): Promise<{ results: { id: string; score: number; metadata?: Record<string, unknown> }[] }> {
   const queryParams = new URLSearchParams();
   queryParams.set('query', params.query);
   if (params.threshold !== undefined) queryParams.set('threshold', String(params.threshold));
   if (params.type) queryParams.set('type', params.type);
   if (params.limit) queryParams.set('limit', String(params.limit));
+  if (params.personalityId) queryParams.set('personalityId', params.personalityId);
   return request(`/brain/search/similar?${queryParams.toString()}`);
 }
 

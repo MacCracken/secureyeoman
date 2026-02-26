@@ -12,6 +12,7 @@ import type { BrainConfig } from '@secureyeoman/shared';
 function makeMemory(id: string, content: string): Memory {
   return {
     id,
+    personalityId: null,
     type: 'semantic',
     content,
     source: 'test',
@@ -28,6 +29,7 @@ function makeMemory(id: string, content: string): Memory {
 function makeKnowledge(id: string, topic: string, content: string): KnowledgeEntry {
   return {
     id,
+    personalityId: null,
     topic,
     content,
     source: 'test',
@@ -156,7 +158,7 @@ describe('BrainManager + Vector Memory', () => {
 
       const results = await brain.recall({ search: 'test query' });
 
-      expect(vectorManager.searchMemories).toHaveBeenCalledWith('test query', 10, 0.7);
+      expect(vectorManager.searchMemories).toHaveBeenCalledWith('test query', 10, 0.7, undefined);
       expect(storage.getMemoryBatch as any).toHaveBeenCalledWith(['mem-1']);
     });
 

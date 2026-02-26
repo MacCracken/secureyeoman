@@ -57,6 +57,37 @@ An omnipresent personality shows the full system aggregate, which is correct: it
 
 ---
 
+## Vector recall scoping (Phase 52)
+
+Prior to Phase 52, the vector search path in `BrainManager.recall()` queried the full embedding store without any personality filter — T.Ron's semantic search results could include FRIDAY's episodic memories. Phase 52 closes this gap.
+
+### How it works
+
+`recall()` now resolves a `personalityId` before entering the vector path and passes it through all three search layers:
+
+1. **External vector store** (`VectorMemoryManager.searchMemories` / `searchKnowledge`) — the `personalityId` is stored as metadata at index time and matched at query time.
+2. **pgvector RRF** (`queryMemoriesByRRF` / `queryKnowledgeByRRF`) — SQL filter `AND (personality_id = $N OR personality_id IS NULL)` added when a scoped personality ID is provided.
+3. **Post-fetch safety filter** — `getMemoryBatch` results are filtered in-process to handle index entries written before Phase 52 (which lack `personalityId` metadata).
+
+`undefined` as a personality ID means omnipresent — the query is unfiltered, which is the correct behaviour for personalities with **Omnipresent Mind** enabled.
+
+### Per-personality self-identity
+
+`seedBaseKnowledge()` is called at every startup with all enabled personalities. It seeds a `self-identity` knowledge entry per personality, scoped to that personality's ID, with content `"I am {name}"`. Legacy global `self-identity` entries (created before Phase 52 with `personality_id IS NULL`) are automatically deleted and replaced on startup.
+
+Generic entries (`hierarchy`, `purpose`, `interaction`) remain global — shared by all personalities.
+
+### Dashboard — Vector Memory Explorer
+
+The Agents page now shows a personality filter dropdown at the top of the Vector Memory Explorer tab:
+
+- **All Personalities** — shows all entries; each row has a personality badge (or "Global" for unowned entries).
+- **Specific personality** — filters memories, knowledge, and semantic search to that personality.
+
+Vector Memory is the first/default tab in the Agents page (tab order: Vector Memory → Web → Multimodal → Swarm → A2A Network).
+
+---
+
 ## API — scoped brain endpoints
 
 All brain query endpoints accept an optional `?personalityId=` query parameter:
@@ -66,6 +97,7 @@ All brain query endpoints accept an optional `?personalityId=` query parameter:
 | `GET /api/v1/brain/memories?personalityId=<id>` | List memories for one personality |
 | `GET /api/v1/brain/knowledge?personalityId=<id>` | List knowledge for one personality |
 | `GET /api/v1/brain/stats?personalityId=<id>` | Stats scoped to one personality |
+| `GET /api/v1/brain/search/similar?personalityId=<id>` | Semantic search scoped to one personality |
 
 Omit `personalityId` to get unscoped (system-wide) results.
 
@@ -116,4 +148,5 @@ curl "$BASE_URL/api/v1/brain/memories?personalityId=<personality-uuid>&limit=20"
 ## See also
 
 - [ADR 133 — Per-Personality Memory Scoping](../adr/133-per-personality-memory-scoping.md)
+- [ADR 134 — Vector Memory Multi-Personality Scoping](../adr/134-vector-memory-multi-personality.md)
 - [Personality Editor](./personality-editor.md) *(if it exists)*

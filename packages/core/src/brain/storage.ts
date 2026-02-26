@@ -77,6 +77,7 @@ interface SkillRow {
 function rowToMemory(row: MemoryRow): Memory {
   return {
     id: row.id,
+    personalityId: row.personality_id,
     type: row.type as MemoryType,
     content: row.content,
     source: row.source,
@@ -93,6 +94,7 @@ function rowToMemory(row: MemoryRow): Memory {
 function rowToKnowledge(row: KnowledgeRow): KnowledgeEntry {
   return {
     id: row.id,
+    personalityId: row.personality_id,
     topic: row.topic,
     content: row.content,
     source: row.source,
@@ -623,7 +625,10 @@ export class BrainStorage extends PgBaseStorage {
     embedding: number[] | null,
     limit: number,
     ftsWeight = 1.0,
-    vectorWeight = 1.0
+    vectorWeight = 1.0,
+    /** When set, only return memories for this personality or unscoped (NULL) ones.
+     *  When undefined (omnipresent / unscoped query), returns all memories. */
+    personalityId?: string
   ): Promise<(Memory & { rrfScore: number })[]> {
     const params: unknown[] = [];
     let idx = 1;
@@ -634,10 +639,18 @@ export class BrainStorage extends PgBaseStorage {
     params.push(tsQuery);
     const ftsParam = idx++;
 
+    // Personality scope clause — included in both FTS and vector subqueries
+    let personalityClause = '';
+    if (personalityId !== undefined) {
+      params.push(personalityId);
+      const pidParam = idx++;
+      personalityClause = `AND (personality_id = $${pidParam} OR personality_id IS NULL)`;
+    }
+
     const ftsSubquery = `
       SELECT id, ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, to_tsquery('english', $${ftsParam})) DESC) AS fts_rank
       FROM brain.memories
-      WHERE search_vec @@ to_tsquery('english', $${ftsParam})
+      WHERE search_vec @@ to_tsquery('english', $${ftsParam}) ${personalityClause}
     `;
 
     let vectorSubquery: string;
@@ -647,7 +660,7 @@ export class BrainStorage extends PgBaseStorage {
       const vecParam = idx++;
       vectorSubquery = `
         SELECT id, ROW_NUMBER() OVER (ORDER BY (embedding <=> $${vecParam}::vector) ASC) AS vec_rank
-        FROM brain.memories WHERE embedding IS NOT NULL
+        FROM brain.memories WHERE embedding IS NOT NULL ${personalityClause}
       `;
     } else {
       vectorSubquery = `SELECT id, NULL::bigint AS vec_rank FROM brain.memories WHERE FALSE`;
@@ -684,7 +697,10 @@ export class BrainStorage extends PgBaseStorage {
     embedding: number[] | null,
     limit: number,
     ftsWeight = 1.0,
-    vectorWeight = 1.0
+    vectorWeight = 1.0,
+    /** When set, only return knowledge for this personality or unscoped (NULL) ones.
+     *  When undefined (omnipresent / unscoped query), returns all knowledge. */
+    personalityId?: string
   ): Promise<(KnowledgeEntry & { rrfScore: number })[]> {
     const params: unknown[] = [];
     let idx = 1;
@@ -695,10 +711,18 @@ export class BrainStorage extends PgBaseStorage {
     params.push(tsQuery);
     const ftsParam = idx++;
 
+    // Personality scope clause
+    let personalityClause = '';
+    if (personalityId !== undefined) {
+      params.push(personalityId);
+      const pidParam = idx++;
+      personalityClause = `AND (personality_id = $${pidParam} OR personality_id IS NULL)`;
+    }
+
     const ftsSubquery = `
       SELECT id, ROW_NUMBER() OVER (ORDER BY ts_rank(search_vec, to_tsquery('english', $${ftsParam})) DESC) AS fts_rank
       FROM brain.knowledge
-      WHERE search_vec @@ to_tsquery('english', $${ftsParam})
+      WHERE search_vec @@ to_tsquery('english', $${ftsParam}) ${personalityClause}
     `;
 
     let vectorSubquery: string;
@@ -708,7 +732,7 @@ export class BrainStorage extends PgBaseStorage {
       const vecParam = idx++;
       vectorSubquery = `
         SELECT id, ROW_NUMBER() OVER (ORDER BY (embedding <=> $${vecParam}::vector) ASC) AS vec_rank
-        FROM brain.knowledge WHERE embedding IS NOT NULL
+        FROM brain.knowledge WHERE embedding IS NOT NULL ${personalityClause}
       `;
     } else {
       vectorSubquery = `SELECT id, NULL::bigint AS vec_rank FROM brain.knowledge WHERE FALSE`;

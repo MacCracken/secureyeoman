@@ -161,29 +161,38 @@ export class BrainManager {
       return [];
     }
 
+    // Resolve personality scope once — used by both vector and text paths.
+    // undefined = omnipresent (sees all); string = scoped to this personality + global
+    const resolvedPersonalityId = this.resolvePersonalityId(query.personalityId);
+
     // Hybrid RRF: combine vector search (primary) with FTS (supplementary).
     // The vector manager computes the embedding; the FTS path uses `search_vec`
     // tsvector columns added by migration 029. Results from both paths are
     // merged via application-level RRF scoring.
+    // Both paths respect the resolved personality scope.
     if (this.vectorEnabled && query.search) {
       try {
         const limit = query.limit ?? 10;
         const threshold = this.config.vector.similarityThreshold;
 
-        // Vector search — primary path, same call as before
+        // Vector search — scoped: only returns memories for this personality or global ones
         const vectorResults = await this.deps.vectorMemoryManager!.searchMemories(
           query.search,
           limit,
-          threshold
+          threshold,
+          resolvedPersonalityId  // undefined = omnipresent, string = scoped
         );
 
-        // FTS search — supplementary path, degrades gracefully pre-migration
+        // FTS search — supplementary path, scoped via SQL personality filter
         const ftsRrfScores = new Map<string, number>();
         try {
           const ftsResults = await this.storage.queryMemoriesByRRF(
             query.search,
             null, // embedding not needed for FTS-only contribution
-            limit
+            limit,
+            1.0,
+            1.0,
+            resolvedPersonalityId
           );
           ftsResults.forEach((r, i) => {
             ftsRrfScores.set(r.id, 1 / (60 + i + 1));
@@ -205,9 +214,16 @@ export class BrainManager {
           const sorted = [...combined.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
           const sortedIds = sorted.map(([id]) => id);
           const fetched = await this.storage.getMemoryBatch(sortedIds);
-          // Preserve RRF rank order
+          // Preserve RRF rank order; post-filter as safety net for legacy vector entries
+          // that predate personalityId metadata storage.
           const byId = new Map(fetched.map((m) => [m.id, m]));
-          const memories = sortedIds.map((id) => byId.get(id)).filter((m): m is Memory => m !== undefined);
+          const memories = sortedIds
+            .map((id) => byId.get(id))
+            .filter((m): m is Memory => m !== undefined)
+            .filter((m) => {
+              if (resolvedPersonalityId === undefined) return true; // omnipresent
+              return m.personalityId === null || m.personalityId === resolvedPersonalityId;
+            });
           if (memories.length > 0) {
             await this.storage.touchMemories(memories.map((m) => m.id));
             return memories;
@@ -220,7 +236,7 @@ export class BrainManager {
       }
     }
 
-    const resolvedPersonalityId = this.resolvePersonalityId(query.personalityId);
+    // resolvedPersonalityId already computed above
     const scopedQuery = resolvedPersonalityId !== undefined
       ? { ...query, personalityId: resolvedPersonalityId }
       : query;
@@ -374,12 +390,14 @@ export class BrainManager {
         const memResults = await this.deps.vectorMemoryManager!.searchMemories(
           input,
           Math.ceil(maxItems / 2),
-          threshold
+          threshold,
+          resolvedPid  // undefined = omnipresent, string = scoped
         );
         const knowResults = await this.deps.vectorMemoryManager!.searchKnowledge(
           input,
           Math.floor(maxItems / 2) || 1,
-          threshold
+          threshold,
+          resolvedPid
         );
 
         if (memResults.length > 0) {
@@ -481,7 +499,13 @@ export class BrainManager {
 
   async semanticSearch(
     query: string,
-    opts?: { limit?: number; threshold?: number; type?: 'memories' | 'knowledge' | 'all' }
+    opts?: {
+      limit?: number;
+      threshold?: number;
+      type?: 'memories' | 'knowledge' | 'all';
+      /** Scope search to this personality + global entries. Pass undefined for omnipresent access. */
+      personalityId?: string;
+    }
   ): Promise<VectorResult[]> {
     if (!this.vectorEnabled) {
       throw new Error('Vector memory is not enabled');
@@ -490,18 +514,19 @@ export class BrainManager {
     const limit = opts?.limit ?? this.config.vector.maxResults;
     const threshold = opts?.threshold ?? this.config.vector.similarityThreshold;
     const type = opts?.type ?? 'all';
+    const resolvedPid = this.resolvePersonalityId(opts?.personalityId);
 
     if (type === 'memories') {
-      return this.deps.vectorMemoryManager!.searchMemories(query, limit, threshold);
+      return this.deps.vectorMemoryManager!.searchMemories(query, limit, threshold, resolvedPid);
     }
     if (type === 'knowledge') {
-      return this.deps.vectorMemoryManager!.searchKnowledge(query, limit, threshold);
+      return this.deps.vectorMemoryManager!.searchKnowledge(query, limit, threshold, resolvedPid);
     }
 
     // Search both
     const [memResults, knowResults] = await Promise.all([
-      this.deps.vectorMemoryManager!.searchMemories(query, limit, threshold),
-      this.deps.vectorMemoryManager!.searchKnowledge(query, limit, threshold),
+      this.deps.vectorMemoryManager!.searchMemories(query, limit, threshold, resolvedPid),
+      this.deps.vectorMemoryManager!.searchKnowledge(query, limit, threshold, resolvedPid),
     ]);
 
     return [...memResults, ...knowResults].sort((a, b) => b.score - a.score).slice(0, limit);
@@ -639,17 +664,18 @@ export class BrainManager {
   // ── Base Knowledge Seeding ─────────────────────────────────
 
   /**
-   * Seeds foundational knowledge entries. Idempotent — skips topics
-   * that already exist in the knowledge base.
+   * Seeds foundational knowledge entries. Idempotent — safe to call on every startup.
+   *
+   * Generic entries (hierarchy, purpose, interaction) are global (no personalityId).
+   * self-identity is seeded per-personality so each agent knows their own name.
+   * Legacy global self-identity entries (pre-Phase 52) are deleted and replaced with
+   * personality-scoped ones.
    */
-  async seedBaseKnowledge(): Promise<void> {
+  async seedBaseKnowledge(personalities: Array<{ id: string; name: string }> = []): Promise<void> {
     if (!this.config.enabled) return;
 
-    const entries: { topic: string; content: string }[] = [
-      {
-        topic: 'self-identity',
-        content: 'I am F.R.I.D.A.Y. — Fully Responsive Integrated Digitally Adaptable Yeoman',
-      },
+    // 1. Generic global entries (personality-agnostic)
+    const globalEntries: { topic: string; content: string }[] = [
       {
         topic: 'hierarchy',
         content: 'My being follows the In Our Image hierarchy: Soul, Spirit, Brain, Body, Heart',
@@ -664,15 +690,44 @@ export class BrainManager {
       },
     ];
 
-    for (const entry of entries) {
+    for (const entry of globalEntries) {
       const existing = await this.storage.queryKnowledge({ topic: entry.topic });
-      if (existing.length === 0) {
+      const hasGlobal = existing.some((k) => k.personalityId === null);
+      if (!hasGlobal) {
         await this.storage.createKnowledge({
           topic: entry.topic,
           content: entry.content,
           source: 'base-knowledge',
           confidence: 1.0,
         });
+      }
+    }
+
+    // 2. self-identity: per-personality, scoped to each personality_id
+    if (personalities.length > 0) {
+      // Fetch all existing self-identity entries (scoped and global)
+      const allSelfIdentity = await this.storage.queryKnowledge({ topic: 'self-identity' });
+
+      for (const personality of personalities) {
+        const hasScoped = allSelfIdentity.some((k) => k.personalityId === personality.id);
+        if (!hasScoped) {
+          await this.storage.createKnowledge(
+            {
+              topic: 'self-identity',
+              content: `I am ${personality.name}`,
+              source: 'base-knowledge',
+              confidence: 1.0,
+            },
+            personality.id
+          );
+        }
+      }
+
+      // Remove legacy global self-identity entries (created before personality scoping).
+      // Each personality now has their own scoped entry.
+      const globalSelfIdentity = allSelfIdentity.filter((k) => k.personalityId === null);
+      for (const legacy of globalSelfIdentity) {
+        await this.storage.deleteKnowledge(legacy.id);
       }
     }
 

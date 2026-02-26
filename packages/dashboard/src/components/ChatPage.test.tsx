@@ -439,6 +439,7 @@ describe('ChatPage', () => {
     mockRememberChatMessage.mockResolvedValue({
       memory: {
         id: 'mem-1',
+        personalityId: null,
         type: 'episodic',
         content: 'test',
         source: 'dashboard_chat',

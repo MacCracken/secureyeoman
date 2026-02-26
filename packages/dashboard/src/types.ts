@@ -366,6 +366,7 @@ export interface Pain {
 
 export interface KnowledgeEntry {
   id: string;
+  personalityId: string | null;
   topic: string;
   content: string;
   source: string;
@@ -587,6 +588,7 @@ export interface IntegrationInfo {
 
 export interface Memory {
   id: string;
+  personalityId: string | null;
   type: 'episodic' | 'semantic' | 'procedural' | 'preference';
   content: string;
   source: string;

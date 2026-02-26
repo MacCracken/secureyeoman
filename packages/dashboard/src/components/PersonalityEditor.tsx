@@ -584,7 +584,7 @@ function BrainSection({
   const [editConfidence, setEditConfidence] = useState(0.5);
   const [deleteTarget, setDeleteTarget] = useState<KnowledgeEntry | null>(null);
 
-  const { data: knowledgeData } = useQuery({ queryKey: ['knowledge'], queryFn: fetchKnowledge });
+  const { data: knowledgeData } = useQuery({ queryKey: ['knowledge'], queryFn: () => fetchKnowledge() });
   const knowledge = knowledgeData?.knowledge ?? [];
 
   const { data: allSkillsData } = useQuery({ queryKey: ['skills'], queryFn: () => fetchSkills() });

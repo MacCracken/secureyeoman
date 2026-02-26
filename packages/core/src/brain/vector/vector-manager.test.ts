@@ -39,6 +39,7 @@ function mockVectorStore(): VectorStore & {
 function makeMemory(overrides: Partial<Memory> = {}): Memory {
   return {
     id: 'mem-1',
+    personalityId: null,
     type: 'semantic',
     content: 'Test memory content',
     source: 'test',
@@ -56,6 +57,7 @@ function makeMemory(overrides: Partial<Memory> = {}): Memory {
 function makeKnowledge(overrides: Partial<KnowledgeEntry> = {}): KnowledgeEntry {
   return {
     id: 'know-1',
+    personalityId: null,
     topic: 'test-topic',
     content: 'Test knowledge content',
     source: 'test',
@@ -91,6 +93,7 @@ describe('VectorMemoryManager', () => {
         type: 'memory',
         memoryType: 'semantic',
         source: 'test',
+        personalityId: null,
       });
     });
   });
@@ -105,6 +108,7 @@ describe('VectorMemoryManager', () => {
         type: 'knowledge',
         topic: 'test-topic',
         source: 'test',
+        personalityId: null,
       });
     });
   });

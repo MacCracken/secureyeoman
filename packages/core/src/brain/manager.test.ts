@@ -25,6 +25,7 @@ const MEMORY = {
 };
 const KNOWLEDGE = {
   id: 'know-1',
+  personalityId: null,
   topic: 'self-identity',
   content: 'I am FRIDAY',
   source: 'base',
@@ -665,22 +666,71 @@ describe('BrainManager', () => {
   describe('seedBaseKnowledge', () => {
     it('does nothing when disabled', async () => {
       const { manager, storage } = makeManager({}, { enabled: false });
-      await manager.seedBaseKnowledge();
+      await manager.seedBaseKnowledge([{ id: 'p1', name: 'FRIDAY' }]);
       expect(storage.createKnowledge).not.toHaveBeenCalled();
     });
 
-    it('creates entries for topics that do not exist', async () => {
+    it('creates 3 global entries and 1 self-identity per personality when all missing', async () => {
       const { manager, storage } = makeManager({ queryKnowledge: vi.fn().mockResolvedValue([]) });
-      await manager.seedBaseKnowledge();
+      await manager.seedBaseKnowledge([{ id: 'p1', name: 'FRIDAY' }]);
+      // 3 generic global entries + 1 self-identity for FRIDAY
       expect(storage.createKnowledge).toHaveBeenCalledTimes(4);
     });
 
-    it('skips topics that already exist', async () => {
+    it('creates self-identity for each personality independently', async () => {
+      const { manager, storage } = makeManager({ queryKnowledge: vi.fn().mockResolvedValue([]) });
+      await manager.seedBaseKnowledge([
+        { id: 'p1', name: 'FRIDAY' },
+        { id: 'p2', name: 'T.Ron' },
+      ]);
+      // 3 generic + 2 self-identity
+      expect(storage.createKnowledge).toHaveBeenCalledTimes(5);
+    });
+
+    it('skips global entry that already exists for that topic', async () => {
+      // Mock: returns a global entry only when queried for 'hierarchy'
+      const globalHierarchy = { ...KNOWLEDGE, topic: 'hierarchy', personalityId: null };
       const { manager, storage } = makeManager({
-        queryKnowledge: vi.fn().mockResolvedValue([KNOWLEDGE]),
+        queryKnowledge: vi.fn().mockImplementation(async (q: { topic?: string }) => {
+          if (q?.topic === 'hierarchy') return [globalHierarchy];
+          return [];
+        }),
       });
-      await manager.seedBaseKnowledge();
-      expect(storage.createKnowledge).not.toHaveBeenCalled();
+      await manager.seedBaseKnowledge([]);
+      // hierarchy exists globally — skip it; purpose and interaction don't — create them
+      expect(storage.createKnowledge).toHaveBeenCalledTimes(2);
+      expect(storage.createKnowledge).not.toHaveBeenCalledWith(
+        expect.objectContaining({ topic: 'hierarchy' }),
+        expect.anything()
+      );
+    });
+
+    it('skips self-identity if personality already has one scoped', async () => {
+      const scopedFriday = { ...KNOWLEDGE, topic: 'self-identity', personalityId: 'p1' };
+      const { manager, storage } = makeManager({
+        queryKnowledge: vi.fn().mockResolvedValue([scopedFriday]),
+      });
+      await manager.seedBaseKnowledge([{ id: 'p1', name: 'FRIDAY' }]);
+      // 3 generic + 0 self-identity (already exists for p1)
+      expect(storage.createKnowledge).toHaveBeenCalledTimes(3);
+    });
+
+    it('deletes legacy global self-identity when personalities are provided', async () => {
+      const globalSelfId = { ...KNOWLEDGE, topic: 'self-identity', personalityId: null };
+      const { manager, storage } = makeManager({
+        queryKnowledge: vi.fn().mockResolvedValue([globalSelfId]),
+      });
+      await manager.seedBaseKnowledge([{ id: 'p1', name: 'FRIDAY' }]);
+      expect(storage.deleteKnowledge).toHaveBeenCalledWith(globalSelfId.id);
+    });
+
+    it('does not delete legacy global self-identity when no personalities provided', async () => {
+      const globalSelfId = { ...KNOWLEDGE, topic: 'self-identity', personalityId: null };
+      const { manager, storage } = makeManager({
+        queryKnowledge: vi.fn().mockResolvedValue([globalSelfId]),
+      });
+      await manager.seedBaseKnowledge([]);
+      expect(storage.deleteKnowledge).not.toHaveBeenCalled();
     });
   });
 

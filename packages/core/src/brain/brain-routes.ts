@@ -429,12 +429,13 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
           limit?: string;
           threshold?: string;
           type?: string;
+          personalityId?: string;
         };
       }>,
       reply: FastifyReply
     ) => {
       try {
-        const { query, limit, threshold, type } = request.query;
+        const { query, limit, threshold, type, personalityId } = request.query;
         if (!query) {
           return sendError(reply, 400, 'Query parameter "query" is required');
         }
@@ -442,6 +443,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
           limit: limit ? Math.min(Number(limit), MAX_QUERY_LIMIT) : undefined,
           threshold: threshold ? Number(threshold) : undefined,
           type: type as 'memories' | 'knowledge' | 'all' | undefined,
+          personalityId,
         });
         return { results };
       } catch (err) {
