@@ -62,3 +62,11 @@ Rejected — consistent with the Extensions/Experiments pattern; developer tooli
 
 - This ADR does not involve the `metadata` pattern from ADR 053; Storybook is purely a UI integration with no platform adapter or message routing concerns.
 - Story files live in `packages/dashboard/src/stories/` and use minimal self-contained components (no external component imports required) to keep stories independent of application state.
+
+## Amendment — CSP & Mixed-Content Fix (2026-02-26)
+
+The original implementation hardcoded `http://localhost:6006` for both the external link and iframe `src`. Two issues surfaced:
+
+1. **CSP frame-src missing** — `dashboard/index.html`'s Content-Security-Policy meta tag had no explicit `frame-src` directive; `default-src 'self'` blocked the iframe. Fixed by adding `frame-src http://localhost:6006 https://localhost:6006;` to the CSP. The `connect-src` directive was also extended to include `wss://` and `https://` variants for TLS compatibility.
+
+2. **Hardcoded protocol** — When the dashboard is served over HTTPS (TLS enabled), an `http://` iframe is blocked as mixed content. Fixed by reading the URL from `VITE_STORYBOOK_URL` env var (fallback: `http://localhost:6006`). Set `VITE_STORYBOOK_URL=https://localhost:6006` if running Storybook with a TLS-enabled proxy.

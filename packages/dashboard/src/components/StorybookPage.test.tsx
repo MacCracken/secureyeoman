@@ -136,4 +136,33 @@ describe('StorybookPage', () => {
       expect(iframe?.src).toBe('http://localhost:6006/');
     });
   });
+
+  it('uses VITE_STORYBOOK_URL env var for link href when set', async () => {
+    vi.stubEnv('VITE_STORYBOOK_URL', 'https://localhost:6006');
+    mockFetchSecurityPolicy.mockResolvedValue({ ...BASE_POLICY, allowStorybook: true });
+
+    renderComponent();
+
+    await waitFor(() => {
+      const link = screen.getByRole('link', { name: /open in browser/i });
+      expect(link).toHaveAttribute('href', 'https://localhost:6006');
+    });
+
+    vi.unstubAllEnvs();
+  });
+
+  it('uses VITE_STORYBOOK_URL env var for iframe src when set', async () => {
+    vi.stubEnv('VITE_STORYBOOK_URL', 'https://localhost:6006');
+    mockFetchSecurityPolicy.mockResolvedValue({ ...BASE_POLICY, allowStorybook: true });
+
+    renderComponent();
+
+    await waitFor(() => {
+      const iframe = document.querySelector('iframe');
+      expect(iframe).toBeTruthy();
+      expect(iframe?.src).toBe('https://localhost:6006/');
+    });
+
+    vi.unstubAllEnvs();
+  });
 });

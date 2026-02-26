@@ -67,6 +67,8 @@ services:
     command: ["mcp-server"]
     ports:
       - "3001:3001"
+    volumes:
+      - data:/home/secureyeoman/.secureyeoman
     env_file: .env.dev
     environment:
       MCP_ENABLED: "${MCP_ENABLED:-true}"

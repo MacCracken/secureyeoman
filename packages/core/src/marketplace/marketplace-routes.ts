@@ -83,7 +83,7 @@ export function registerMarketplaceRoutes(
       request: FastifyRequest<{ Params: { id: string }; Body: { personalityId?: string } }>,
       reply: FastifyReply
     ) => {
-      const personalityId = request.body?.personalityId;
+      const personalityId = request.body?.personalityId || undefined;
       if (!(await marketplaceManager.uninstall(request.params.id, personalityId)))
         return sendError(reply, 404, 'Skill not found');
       return { message: 'Skill uninstalled' };
@@ -105,6 +105,9 @@ export function registerMarketplaceRoutes(
   app.delete(
     '/api/v1/marketplace/:id',
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
+      const skill = await marketplaceManager.getSkill(request.params.id);
+      if (!skill) return sendError(reply, 404, 'Skill not found');
+      if (skill.source === 'builtin') return sendError(reply, 403, 'Builtin skills cannot be deleted');
       if (!(await marketplaceManager.delete(request.params.id)))
         return sendError(reply, 404, 'Skill not found');
       return reply.code(204).send();

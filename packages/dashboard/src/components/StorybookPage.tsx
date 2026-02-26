@@ -10,6 +10,8 @@ const STORIES = [
 ];
 
 export function StorybookPage() {
+  const storybookUrl = import.meta.env.VITE_STORYBOOK_URL ?? 'http://localhost:6006';
+
   const { data: securityPolicy } = useQuery({
     queryKey: ['security-policy'],
     queryFn: fetchSecurityPolicy,
@@ -55,7 +57,7 @@ export function StorybookPage() {
           <span className="select-all">npm run storybook</span>
         </div>
         <a
-          href="http://localhost:6006"
+          href={storybookUrl}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex items-center gap-2 text-sm text-primary hover:underline"
@@ -82,7 +84,7 @@ export function StorybookPage() {
       <div className="space-y-2">
         <h2 className="text-base font-semibold">Preview</h2>
         <iframe
-          src="http://localhost:6006"
+          src={storybookUrl}
           title="Storybook"
           className="w-full h-96 rounded-lg border border-border"
         />

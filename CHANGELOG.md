@@ -2,6 +2,9 @@
 
 ### Fixed
 
+- **Storybook CSP framing blocked** — `dashboard/index.html` CSP meta tag now includes an explicit `frame-src http://localhost:6006 https://localhost:6006;` directive so the Storybook iframe is no longer blocked by the `default-src 'self'` fallback. Also added `wss://` and `https://` variants to `connect-src` so WebSocket and API connections work correctly when TLS is enabled. `StorybookPage.tsx` now reads the iframe/link URL from `VITE_STORYBOOK_URL` env var (fallback: `http://localhost:6006`) — set to `https://localhost:6006` when running Storybook behind a TLS proxy. Two new tests added to `StorybookPage.test.tsx` covering custom `VITE_STORYBOOK_URL` values.
+- **MCP filesystem tools non-functional in dev** — `MCP_EXPOSE_FILESYSTEM=true` and `MCP_ALLOWED_PATHS=/home/secureyeoman/.secureyeoman/workspace` are now set in `.env.dev`. The `mcp` service in `docker-compose.yml` now mounts the `data` named volume so the container can access the workspace directory. `.env.dev.example` documents `MCP_ALLOWED_PATHS` as a commented-out example.
+
 - **Vector memory recall now scopes to the active personality** — personalities no longer share each other's semantic search results.
 - **`seedBaseKnowledge` now seeds `self-identity` per-personality** with the correct name (e.g., "I am T.Ron" for T.Ron, "I am FRIDAY" for FRIDAY), removing the legacy global "I am F.R.I.D.A.Y." entry that all personalities incorrectly inherited.
 - **Legacy global self-identity knowledge entries** created before Phase 52 are automatically migrated to per-personality scoped entries on startup.

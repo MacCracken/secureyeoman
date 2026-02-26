@@ -129,6 +129,28 @@ describe('POST /api/v1/marketplace/:id/uninstall', () => {
     expect(res.json().message).toBe('Skill uninstalled');
   });
 
+  it('passes personalityId to uninstall', async () => {
+    const uninstallMock = vi.fn().mockResolvedValue(true);
+    const app = buildApp({ uninstall: uninstallMock });
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/marketplace/skill-1/uninstall',
+      payload: { personalityId: 'pers-1' },
+    });
+    expect(uninstallMock).toHaveBeenCalledWith('skill-1', 'pers-1');
+  });
+
+  it('normalizes empty personalityId to undefined', async () => {
+    const uninstallMock = vi.fn().mockResolvedValue(true);
+    const app = buildApp({ uninstall: uninstallMock });
+    await app.inject({
+      method: 'POST',
+      url: '/api/v1/marketplace/skill-1/uninstall',
+      payload: { personalityId: '' },
+    });
+    expect(uninstallMock).toHaveBeenCalledWith('skill-1', undefined);
+  });
+
   it('returns 404 when skill not found', async () => {
     const app = buildApp({ uninstall: vi.fn().mockResolvedValue(false) });
     const res = await app.inject({
@@ -163,14 +185,20 @@ describe('POST /api/v1/marketplace/publish', () => {
 });
 
 describe('DELETE /api/v1/marketplace/:id', () => {
-  it('deletes a skill and returns 204', async () => {
-    const app = buildApp();
+  it('deletes a non-builtin skill and returns 204', async () => {
+    const app = buildApp({ getSkill: vi.fn().mockResolvedValue({ ...SKILL, source: 'community' }) });
     const res = await app.inject({ method: 'DELETE', url: '/api/v1/marketplace/skill-1' });
     expect(res.statusCode).toBe(204);
   });
 
+  it('returns 403 when attempting to delete a builtin skill', async () => {
+    const app = buildApp({ getSkill: vi.fn().mockResolvedValue({ ...SKILL, source: 'builtin' }) });
+    const res = await app.inject({ method: 'DELETE', url: '/api/v1/marketplace/skill-1' });
+    expect(res.statusCode).toBe(403);
+  });
+
   it('returns 404 when skill not found', async () => {
-    const app = buildApp({ delete: vi.fn().mockResolvedValue(false) });
+    const app = buildApp({ getSkill: vi.fn().mockResolvedValue(null) });
     const res = await app.inject({ method: 'DELETE', url: '/api/v1/marketplace/missing' });
     expect(res.statusCode).toBe(404);
   });
