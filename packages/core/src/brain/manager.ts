@@ -29,11 +29,36 @@ export class BrainManager {
   private readonly storage: BrainStorage;
   private readonly config: BrainConfig;
   private readonly deps: BrainManagerDeps;
+  private activePersonalityId: string | null = null;
+  private activePersonalityOmnipresent = false;
 
   constructor(storage: BrainStorage, config: BrainConfig, deps: BrainManagerDeps) {
     this.storage = storage;
     this.config = config;
     this.deps = deps;
+  }
+
+  /**
+   * Set the active personality context for brain operations.
+   * Used by the heartbeat system to scope stats per personality.
+   * Chat routes pass personalityId directly to each method instead.
+   *
+   * @param id - Personality ID, or null to clear
+   * @param omnipresent - When true, all brain operations access the shared pool (no personality filter)
+   */
+  setActivePersonality(id: string | null, omnipresent = false): void {
+    this.activePersonalityId = id;
+    this.activePersonalityOmnipresent = omnipresent;
+  }
+
+  /**
+   * Resolve the effective personalityId for a brain operation.
+   * - If omnipresentMind is true: returns undefined (no filter — sees all)
+   * - Otherwise: returns the explicit override, or the active personality, or undefined
+   */
+  private resolvePersonalityId(override?: string): string | undefined {
+    if (this.activePersonalityOmnipresent) return undefined;
+    return override ?? this.activePersonalityId ?? undefined;
   }
 
   private get vectorEnabled(): boolean {
@@ -47,7 +72,8 @@ export class BrainManager {
     content: string,
     source: string,
     context?: Record<string, string>,
-    importance?: number
+    importance?: number,
+    personalityId?: string
   ): Promise<Memory> {
     if (!this.config.enabled) {
       throw new Error('Brain is not enabled');
@@ -91,7 +117,7 @@ export class BrainManager {
       data.expiresAt = Date.now() + this.config.memoryRetentionDays * 86_400_000;
     }
 
-    const memory = await this.storage.createMemory(data);
+    const memory = await this.storage.createMemory(data, this.resolvePersonalityId(personalityId));
 
     // Index via vector memory when enabled
     if (this.vectorEnabled) {
@@ -194,7 +220,11 @@ export class BrainManager {
       }
     }
 
-    const memories = await this.storage.queryMemories(query);
+    const resolvedPersonalityId = this.resolvePersonalityId(query.personalityId);
+    const scopedQuery = resolvedPersonalityId !== undefined
+      ? { ...query, personalityId: resolvedPersonalityId }
+      : query;
+    const memories = await this.storage.queryMemories(scopedQuery);
 
     // Batch-touch accessed memories to keep them alive (single query instead of N)
     if (memories.length > 0) {
@@ -231,7 +261,8 @@ export class BrainManager {
     topic: string,
     content: string,
     source: string,
-    confidence?: number
+    confidence?: number,
+    personalityId?: string
   ): Promise<KnowledgeEntry> {
     if (!this.config.enabled) {
       throw new Error('Brain is not enabled');
@@ -247,12 +278,10 @@ export class BrainManager {
       throw new Error(`Maximum knowledge limit reached (${this.config.maxKnowledge})`);
     }
 
-    const entry = await this.storage.createKnowledge({
-      topic,
-      content,
-      source,
-      confidence,
-    });
+    const entry = await this.storage.createKnowledge(
+      { topic, content, source, confidence },
+      this.resolvePersonalityId(personalityId)
+    );
 
     if (this.vectorEnabled) {
       try {
@@ -294,7 +323,11 @@ export class BrainManager {
     if (!this.config.enabled) {
       return [];
     }
-    return this.storage.queryKnowledge(query);
+    const resolvedPersonalityId = this.resolvePersonalityId(query.personalityId);
+    const scopedQuery = resolvedPersonalityId !== undefined
+      ? { ...query, personalityId: resolvedPersonalityId }
+      : query;
+    return this.storage.queryKnowledge(scopedQuery);
   }
 
   async updateKnowledge(
@@ -325,12 +358,13 @@ export class BrainManager {
 
   // ── Prompt Integration ─────────────────────────────────────
 
-  async getRelevantContext(input: string, limit?: number): Promise<string> {
+  async getRelevantContext(input: string, limit?: number, personalityId?: string): Promise<string> {
     if (!this.config.enabled) {
       return '';
     }
 
     const maxItems = limit ?? this.config.contextWindowMemories;
+    const resolvedPid = this.resolvePersonalityId(personalityId);
     const contentParts: string[] = [];
 
     // Use semantic search when vector memory is enabled
@@ -389,6 +423,7 @@ export class BrainManager {
     const memories = await this.storage.queryMemories({
       search: input,
       limit: Math.ceil(maxItems / 2),
+      ...(resolvedPid !== undefined ? { personalityId: resolvedPid } : {}),
     });
 
     if (memories.length > 0) {
@@ -403,6 +438,7 @@ export class BrainManager {
     const knowledge = await this.storage.queryKnowledge({
       search: input,
       limit: Math.floor(maxItems / 2) || 1,
+      ...(resolvedPid !== undefined ? { personalityId: resolvedPid } : {}),
     });
 
     if (knowledge.length > 0) {
@@ -678,8 +714,8 @@ export class BrainManager {
 
   // ── Stats ──────────────────────────────────────────────────
 
-  async getStats(): Promise<BrainStats> {
-    return this.storage.getStats();
+  async getStats(personalityId?: string): Promise<BrainStats> {
+    return this.storage.getStats(this.resolvePersonalityId(personalityId));
   }
 
   // ── Config ─────────────────────────────────────────────────

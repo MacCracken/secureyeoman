@@ -145,11 +145,17 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         const personality = await soulManager.updatePersonality(request.params.id, b);
         broadcast?.({ event: 'updated', type: 'personality', id: personality.id });
         if (heartbeatManager) {
-          const active = await soulManager.getActivePersonality();
+          const [active, allResult] = await Promise.all([
+            soulManager.getActivePersonality(),
+            soulManager.listPersonalities({ limit: 200 }),
+          ]);
           if (active?.id === personality.id) {
             heartbeatManager.setPersonalitySchedule(personality.body?.activeHours ?? null);
             heartbeatManager.setActivePersonalityId(personality.id);
           }
+          heartbeatManager.setActivePersonalityIds(
+            allResult.personalities.map((p) => ({ id: p.id, name: p.name, omnipresentMind: p.body?.omnipresentMind ?? false }))
+          );
         }
         return { personality };
       } catch (e) {
@@ -177,8 +183,12 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
         await soulManager.setPersonality(request.params.id);
         const personality = await soulManager.getActivePersonality();
         if (heartbeatManager && personality) {
+          const allResult = await soulManager.listPersonalities({ limit: 200 });
           heartbeatManager.setPersonalitySchedule(personality.body?.activeHours ?? null);
           heartbeatManager.setActivePersonalityId(personality.id);
+          heartbeatManager.setActivePersonalityIds(
+            allResult.personalities.map((p) => ({ id: p.id, name: p.name, omnipresentMind: p.body?.omnipresentMind ?? false }))
+          );
         }
         return { personality: personality ? withActiveHours(personality) : null };
       } catch (err) {
@@ -630,6 +640,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
               daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
               timezone: 'UTC',
             },
+            omnipresentMind: false,
           },
         };
 

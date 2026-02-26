@@ -257,6 +257,7 @@ export class SoulManager {
           daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
           timezone: 'UTC',
         },
+        omnipresentMind: false,
       },
     }, { isArchetype: true });
 

@@ -36,6 +36,7 @@ import type {
   AutonomyOverview,
   AuditRun,
   AuditItemStatus,
+  ServerNotification,
 } from '../types.js';
 
 const API_BASE = '/api/v1';
@@ -3508,4 +3509,45 @@ export async function finalizeAuditRun(id: string): Promise<AuditRun> {
 
 export async function emergencyStop(type: 'skill' | 'workflow', id: string): Promise<void> {
   await request(`/autonomy/emergency-stop/${type}/${encodeURIComponent(id)}`, { method: 'POST' });
+}
+
+// ─── Notifications API (Phase 51) ────────────────────────────────────────────
+
+export interface FetchNotificationsOptions {
+  unreadOnly?: boolean;
+  limit?: number;
+  offset?: number;
+}
+
+export interface FetchNotificationsResult {
+  notifications: ServerNotification[];
+  total: number;
+  unreadCount: number;
+}
+
+export async function fetchNotifications(
+  opts: FetchNotificationsOptions = {}
+): Promise<FetchNotificationsResult> {
+  const params = new URLSearchParams();
+  if (opts.unreadOnly) params.set('unreadOnly', 'true');
+  if (opts.limit != null) params.set('limit', String(opts.limit));
+  if (opts.offset != null) params.set('offset', String(opts.offset));
+  const qs = params.toString();
+  return request<FetchNotificationsResult>(`/notifications${qs ? `?${qs}` : ''}`);
+}
+
+export async function fetchNotificationCount(): Promise<{ unreadCount: number }> {
+  return request<{ unreadCount: number }>('/notifications/count');
+}
+
+export async function markNotificationRead(id: string): Promise<void> {
+  await request(`/notifications/${encodeURIComponent(id)}/read`, { method: 'POST' });
+}
+
+export async function markAllNotificationsRead(): Promise<{ updated: number }> {
+  return request<{ updated: number }>('/notifications/read-all', { method: 'POST' });
+}
+
+export async function deleteNotification(id: string): Promise<void> {
+  await request(`/notifications/${encodeURIComponent(id)}`, { method: 'DELETE' });
 }

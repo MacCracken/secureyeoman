@@ -86,6 +86,14 @@ function makeMockSync(overrides?: Partial<ExternalBrainSync>): ExternalBrainSync
 function makeMockSoul(overrides?: Partial<SoulManager>): SoulManager {
   return {
     getActivePersonality: vi.fn().mockResolvedValue({ id: 'soul-1', name: 'Friday' }),
+    getEnabledPersonalities: vi.fn().mockResolvedValue([{ id: 'soul-1', name: 'Friday' }]),
+    listPersonalities: vi.fn().mockResolvedValue({
+      personalities: [
+        { id: 'soul-1', name: 'Friday' },
+        { id: 'soul-2', name: 'Jarvis' },
+      ],
+      total: 2,
+    }),
     ...overrides,
   } as unknown as SoulManager;
 }
@@ -131,6 +139,13 @@ describe('GET /api/v1/brain/memories', () => {
     const app = buildApp({ recall: recallMock });
     await app.inject({ method: 'GET', url: '/api/v1/brain/memories?limit=9999' });
     expect(recallMock.mock.calls[0][0].limit).toBe(200);
+  });
+
+  it('passes personalityId to recall for memory scoping', async () => {
+    const recallMock = vi.fn().mockResolvedValue([]);
+    const app = buildApp({ recall: recallMock });
+    await app.inject({ method: 'GET', url: '/api/v1/brain/memories?personalityId=pers-1' });
+    expect(recallMock.mock.calls[0][0].personalityId).toBe('pers-1');
   });
 });
 
@@ -204,6 +219,13 @@ describe('GET /api/v1/brain/knowledge', () => {
     expect(callArg.minConfidence).toBe(0.7);
     expect(callArg.limit).toBe(10);
   });
+
+  it('passes personalityId to queryKnowledge for knowledge scoping', async () => {
+    const queryMock = vi.fn().mockResolvedValue([]);
+    const app = buildApp({ queryKnowledge: queryMock });
+    await app.inject({ method: 'GET', url: '/api/v1/brain/knowledge?personalityId=pers-2' });
+    expect(queryMock.mock.calls[0][0].personalityId).toBe('pers-2');
+  });
 });
 
 describe('POST /api/v1/brain/knowledge', () => {
@@ -269,6 +291,20 @@ describe('GET /api/v1/brain/stats', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json().stats.memories.total).toBe(5);
   });
+
+  it('passes personalityId to getStats for per-personality scoping', async () => {
+    const statsMock = vi.fn().mockResolvedValue(STATS);
+    const app = buildApp({ getStats: statsMock });
+    await app.inject({ method: 'GET', url: '/api/v1/brain/stats?personalityId=pers-3' });
+    expect(statsMock).toHaveBeenCalledWith('pers-3');
+  });
+
+  it('calls getStats with undefined when no personalityId', async () => {
+    const statsMock = vi.fn().mockResolvedValue(STATS);
+    const app = buildApp({ getStats: statsMock });
+    await app.inject({ method: 'GET', url: '/api/v1/brain/stats' });
+    expect(statsMock).toHaveBeenCalledWith(undefined);
+  });
 });
 
 describe('POST /api/v1/brain/maintenance', () => {
@@ -329,6 +365,16 @@ describe('GET /api/v1/brain/heartbeat/tasks', () => {
     expect(res.statusCode).toBe(200);
     expect(res.json().tasks).toHaveLength(1);
     expect(res.json().tasks[0].personalityName).toBe('Friday');
+  });
+
+  it('includes ALL personalities (not just enabled) in tasks.personalities', async () => {
+    const app = buildApp();
+    const res = await app.inject({ method: 'GET', url: '/api/v1/brain/heartbeat/tasks' });
+    expect(res.statusCode).toBe(200);
+    const personalities = res.json().tasks[0].personalities as { id: string; name: string }[];
+    expect(personalities).toHaveLength(2);
+    expect(personalities.map((p) => p.name)).toContain('Friday');
+    expect(personalities.map((p) => p.name)).toContain('Jarvis');
   });
 
   it('returns 503 when heartbeat not available', async () => {

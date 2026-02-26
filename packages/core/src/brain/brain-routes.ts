@@ -69,6 +69,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
           search?: string;
           minImportance?: string;
           limit?: string;
+          personalityId?: string;
         };
       }>
     ) => {
@@ -78,6 +79,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (q.source) query.source = q.source;
       if (q.search) query.search = q.search;
       if (q.minImportance) query.minImportance = Number(q.minImportance);
+      if (q.personalityId) query.personalityId = q.personalityId;
       query.limit = capLimit(q.limit);
 
       const memories = await brainManager.recall(query);
@@ -135,7 +137,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
     '/api/v1/brain/knowledge',
     async (
       request: FastifyRequest<{
-        Querystring: { topic?: string; search?: string; minConfidence?: string; limit?: string };
+        Querystring: { topic?: string; search?: string; minConfidence?: string; limit?: string; personalityId?: string };
       }>
     ) => {
       const q = request.query;
@@ -143,6 +145,7 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       if (q.topic) query.topic = q.topic;
       if (q.search) query.search = q.search;
       if (q.minConfidence) query.minConfidence = Number(q.minConfidence);
+      if (q.personalityId) query.personalityId = q.personalityId;
       query.limit = capLimit(q.limit);
 
       const knowledge = await brainManager.queryKnowledge(query);
@@ -212,10 +215,14 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
 
   // ── Stats ────────────────────────────────────────────────────
 
-  app.get('/api/v1/brain/stats', async () => {
-    const stats = await brainManager.getStats();
-    return { stats };
-  });
+  app.get(
+    '/api/v1/brain/stats',
+    async (request: FastifyRequest<{ Querystring: { personalityId?: string } }>) => {
+      const { personalityId } = request.query;
+      const stats = await brainManager.getStats(personalityId || undefined);
+      return { stats };
+    }
+  );
 
   // ── Maintenance ──────────────────────────────────────────────
 
@@ -271,28 +278,21 @@ export function registerBrainRoutes(app: FastifyInstance, opts: BrainRoutesOptio
       }
       const status = heartbeatManager.getStatus();
 
-      // Collect all personalities the heartbeat currently serves:
-      // every enabled (is_active) personality plus the default (is_default),
-      // deduplicated by id.
-      const [enabledPersonalities, defaultPersonality] = await Promise.all([
-        soulManager?.getEnabledPersonalities() ?? Promise.resolve([]),
+      // The heartbeat is system-wide — it serves every personality that exists.
+      // List all personalities (not just is_active=true) so the UI always shows
+      // the full roster regardless of which ones have been explicitly enabled.
+      const [allResult, defaultPersonality] = await Promise.all([
+        soulManager?.listPersonalities({ limit: 200 }) ?? Promise.resolve({ personalities: [] }),
         soulManager?.getActivePersonality() ?? Promise.resolve(null),
       ]);
-      const seen = new Set<string>();
-      const allPersonalities: { id: string; name: string }[] = [];
-      for (const p of enabledPersonalities) {
-        if (!seen.has(p.id)) { seen.add(p.id); allPersonalities.push({ id: p.id, name: p.name }); }
-      }
-      if (defaultPersonality && !seen.has(defaultPersonality.id)) {
-        allPersonalities.push({ id: defaultPersonality.id, name: defaultPersonality.name });
-      }
+      const allPersonalities = allResult.personalities.map((p) => ({ id: p.id, name: p.name }));
 
       const tasks = status.tasks.map((t) => ({
         ...t,
         // Legacy single fields kept for backwards compat — point at the default
         personalityId: defaultPersonality?.id ?? null,
         personalityName: defaultPersonality?.name ?? null,
-        // Multi-active: all personalities this heartbeat currently serves
+        // All personalities this heartbeat serves
         personalities: allPersonalities,
       }));
       return { tasks };

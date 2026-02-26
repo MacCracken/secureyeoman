@@ -182,13 +182,14 @@ interface BrainContextMeta {
 
 async function gatherBrainContext(
   secureYeoman: SecureYeoman,
-  message: string
+  message: string,
+  personalityId?: string
 ): Promise<BrainContextMeta> {
   try {
     const brainManager = secureYeoman.getBrainManager();
     const [memories, knowledge] = await Promise.all([
-      brainManager.recall({ search: message, limit: 5 }),
-      brainManager.queryKnowledge({ search: message, limit: 5 }),
+      brainManager.recall({ search: message, limit: 5, ...(personalityId ? { personalityId } : {}) }),
+      brainManager.queryKnowledge({ search: message, limit: 5, ...(personalityId ? { personalityId } : {}) }),
     ]);
     const snippets: string[] = [];
     for (const m of memories) snippets.push(`[${m.type}] ${m.content}`);
@@ -296,12 +297,23 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         );
       }
 
+      const soulManager = secureYeoman.getSoulManager();
+
+      // Resolve personality early so we can scope brain operations correctly.
+      // Omnipresent personalities access the shared pool (no filter); others use per-personality scoping.
+      const personality = personalityId
+        ? ((await soulManager.getPersonality(personalityId)) ??
+          (await soulManager.getActivePersonality()))
+        : await soulManager.getActivePersonality();
+      const effectivePersonalityId = (personality?.body?.omnipresentMind ?? false)
+        ? undefined
+        : (personality?.id ?? personalityId ?? undefined);
+
       // Gather Brain context metadata (best-effort — Brain may not be available)
       const brainContext: BrainContextMeta = memoryEnabled
-        ? await gatherBrainContext(secureYeoman, message)
+        ? await gatherBrainContext(secureYeoman, message, effectivePersonalityId)
         : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
-      const soulManager = secureYeoman.getSoulManager();
       let systemPrompt = memoryEnabled
         ? await soulManager.composeSoulPrompt(message, personalityId, { viewportHint })
         : await soulManager.composeSoulPrompt(undefined, personalityId, { viewportHint });
@@ -332,12 +344,6 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
       // Collect tools from personality MCP config + skill tools
       const tools: Tool[] = [];
-
-      // Resolve personality first so tool gathering is scoped correctly
-      const personality = personalityId
-        ? ((await soulManager.getPersonality(personalityId)) ??
-          (await soulManager.getActivePersonality()))
-        : await soulManager.getActivePersonality();
 
       // Rate limiting — global chat_requests rule + optional per-personality override
       {
@@ -746,7 +752,9 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
               'episodic',
               `User: ${message.trim()}\nAssistant: ${response.content}`,
               'dashboard_chat',
-              { personalityId: personalityId ?? 'default' }
+              { personalityId: personalityId ?? 'default' },
+              undefined,
+              effectivePersonalityId
             );
           } catch {
             // Brain not available — skip memory storage
@@ -910,12 +918,22 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
       try {
         // ── Setup (mirrors non-streaming path) ────────────────────────
 
+        const soulManager = secureYeoman.getSoulManager();
+
+        // Resolve personality early so we can scope brain operations correctly.
+        // Omnipresent personalities access the shared pool (no filter); others use per-personality scoping.
+        const personality = personalityId
+          ? ((await soulManager.getPersonality(personalityId)) ?? (await soulManager.getActivePersonality()))
+          : await soulManager.getActivePersonality();
+        const effectivePersonalityId = (personality?.body?.omnipresentMind ?? false)
+          ? undefined
+          : (personality?.id ?? personalityId ?? undefined);
+
         // Brain context
         const brainContext: BrainContextMeta = memoryEnabled
-          ? await gatherBrainContext(secureYeoman, message)
+          ? await gatherBrainContext(secureYeoman, message, effectivePersonalityId)
           : { memoriesUsed: 0, knowledgeUsed: 0, contextSnippets: [] };
 
-        const soulManager = secureYeoman.getSoulManager();
         let systemPrompt = memoryEnabled
           ? await soulManager.composeSoulPrompt(message, personalityId, { viewportHint: viewportHintS })
           : await soulManager.composeSoulPrompt(undefined, personalityId, { viewportHint: viewportHintS });
@@ -940,9 +958,6 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
         // Tools
         const tools: Tool[] = [];
-        const personality = personalityId
-          ? ((await soulManager.getPersonality(personalityId)) ?? (await soulManager.getActivePersonality()))
-          : await soulManager.getActivePersonality();
 
         // Rate limiting — global chat_requests rule + optional per-personality override
         {
@@ -1262,7 +1277,7 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         if (memoryEnabled && saveAsMemory) {
           try {
             const brainManager = secureYeoman.getBrainManager();
-            await brainManager.remember('episodic', `User: ${message.trim()}\nAssistant: ${safeContent}`, 'dashboard_chat', { personalityId: personalityId ?? 'default' });
+            await brainManager.remember('episodic', `User: ${message.trim()}\nAssistant: ${safeContent}`, 'dashboard_chat', { personalityId: personalityId ?? 'default' }, undefined, effectivePersonalityId);
           } catch { /* best-effort */ }
         }
 

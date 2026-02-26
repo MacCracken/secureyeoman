@@ -133,6 +133,8 @@ import { DynamicToolManager } from './soul/dynamic-tool-manager.js';
 import { IntentStorage } from './intent/storage.js';
 import { IntentManager } from './intent/manager.js';
 import { AutonomyAuditStorage, AutonomyAuditManager } from './security/autonomy-audit.js';
+import { NotificationStorage } from './notifications/notification-storage.js';
+import { NotificationManager } from './notifications/notification-manager.js';
 import { SystemPreferencesStorage } from './config/system-preferences-storage.js';
 import { GroupChatStorage } from './integrations/group-chat-storage.js';
 import { RoutingRulesStorage } from './integrations/routing-rules-storage.js';
@@ -236,6 +238,8 @@ export class SecureYeoman {
   private intentManager: IntentManager | null = null;
   private autonomyAuditStorage: AutonomyAuditStorage | null = null;
   private autonomyAuditManager: AutonomyAuditManager | null = null;
+  private notificationStorage: NotificationStorage | null = null;
+  private notificationManager: NotificationManager | null = null;
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
@@ -343,6 +347,11 @@ export class SecureYeoman {
 
       // Step 2.08: Initialize AutonomyAuditStorage (manager is wired lazily via getter)
       this.autonomyAuditStorage = new AutonomyAuditStorage();
+
+      // Step 2.09: Initialize NotificationStorage (manager is wired with broadcast after gateway starts)
+      this.notificationStorage = new NotificationStorage();
+      this.notificationManager = new NotificationManager(this.notificationStorage);
+      this.logger.debug('NotificationManager initialized (broadcast wired after gateway starts)');
 
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
@@ -804,24 +813,33 @@ export class SecureYeoman {
         );
         this.heartManager = new HeartManager(this.heartbeatManager);
         this.soulManager.setHeart(this.heartManager);
+        // Wire notification manager so heartbeat alerts create DB records
+        if (this.notificationManager) {
+          this.heartbeatManager.setNotificationManager(this.notificationManager);
+        }
         await this.heartbeatManager.initialize();
         this.heartbeatManager.start();
         this.logger.debug('Heart manager started', {
           intervalMs: this.config.heartbeat.intervalMs,
         });
         const hbmRef = this.heartbeatManager;
-        void this.soulManager
-          .getActivePersonality()
-          .then((active) => {
+        void Promise.all([
+          this.soulManager.getActivePersonality(),
+          this.soulManager.listPersonalities({ limit: 200 }),
+        ])
+          .then(([active, allResult]) => {
             if (active?.body?.activeHours) {
               hbmRef.setPersonalitySchedule(active.body.activeHours);
             }
             if (active?.id) {
               hbmRef.setActivePersonalityId(active.id);
             }
+            hbmRef.setActivePersonalityIds(
+              allResult.personalities.map((p) => ({ id: p.id, name: p.name, omnipresentMind: p.body?.omnipresentMind ?? false }))
+            );
           })
           .catch((err: unknown) => {
-            this.logger?.warn('Failed to seed personality active hours for heartbeat', {
+            this.logger?.warn('Failed to seed personality roster for heartbeat', {
               error: err instanceof Error ? err.message : 'Unknown error',
             });
           });
@@ -1827,6 +1845,15 @@ export class SecureYeoman {
       );
     }
     return this.autonomyAuditManager;
+  }
+
+  /**
+   * Get the notification manager instance (always available after initialization).
+   * The broadcast callback is wired by the gateway after it starts.
+   */
+  getNotificationManager(): NotificationManager | null {
+    this.ensureInitialized();
+    return this.notificationManager;
   }
 
   getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null {

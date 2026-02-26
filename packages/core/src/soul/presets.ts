@@ -82,6 +82,7 @@ const BASE_BODY: PersonalityCreate['body'] = {
     daysOfWeek: ['mon', 'tue', 'wed', 'thu', 'fri'],
     timezone: 'UTC',
   },
+  omnipresentMind: false,
 };
 
 // ── Preset definitions ───────────────────────────────────────────────────────

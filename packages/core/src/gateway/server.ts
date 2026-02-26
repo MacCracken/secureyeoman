@@ -65,6 +65,7 @@ import { registerGroupChatRoutes } from '../integrations/group-chat-routes.js';
 import { registerRoutingRulesRoutes } from '../integrations/routing-rules-routes.js';
 import { registerIntentRoutes } from '../intent/routes.js';
 import { registerAutonomyRoutes } from '../security/autonomy-routes.js';
+import { registerNotificationRoutes } from '../notifications/notification-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -109,6 +110,7 @@ const CHANNEL_PERMISSIONS: Record<string, { resource: string; action: string }> 
   workflows: { resource: 'workflows', action: 'read' },
   soul: { resource: 'soul', action: 'read' },
   group_chat: { resource: 'integrations', action: 'read' },
+  notifications: { resource: 'notifications', action: 'read' },
 };
 
 export interface GatewayServerOptions {
@@ -632,6 +634,25 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Autonomy audit routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Notification routes (Phase 51)
+    try {
+      const notificationManager = this.secureYeoman.getNotificationManager();
+      if (notificationManager) {
+        // Wire the broadcast callback so server-persisted notifications reach WS clients.
+        // This is done here (rather than at init) because broadcast() requires the gateway
+        // to be fully constructed.
+        notificationManager.setBroadcast((payload: unknown) =>
+          this.broadcast('notifications', payload)
+        );
+        registerNotificationRoutes(this.app, { notificationManager });
+        this.getLogger().info('Notification routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Notification routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }

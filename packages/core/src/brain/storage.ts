@@ -38,6 +38,7 @@ interface MemoryRow {
 
 interface KnowledgeRow {
   id: string;
+  personality_id: string | null;
   topic: string;
   content: string;
   source: string;
@@ -297,7 +298,14 @@ export class BrainStorage extends PgBaseStorage {
     return rows.map((r) => r.id);
   }
 
-  async getMemoryCount(): Promise<number> {
+  async getMemoryCount(personalityId?: string): Promise<number> {
+    if (personalityId !== undefined) {
+      const row = await this.queryOne<{ count: string }>(
+        'SELECT COUNT(*) as count FROM brain.memories WHERE personality_id = $1 OR personality_id IS NULL',
+        [personalityId]
+      );
+      return Number(row?.count ?? 0);
+    }
     const row = await this.queryOne<{ count: string }>(
       'SELECT COUNT(*) as count FROM brain.memories'
     );
@@ -317,14 +325,14 @@ export class BrainStorage extends PgBaseStorage {
 
   // ── Knowledge ────────────────────────────────────────────────
 
-  async createKnowledge(data: KnowledgeCreate): Promise<KnowledgeEntry> {
+  async createKnowledge(data: KnowledgeCreate, personalityId?: string): Promise<KnowledgeEntry> {
     const now = Date.now();
     const id = uuidv7();
 
     await this.query(
-      `INSERT INTO brain.knowledge (id, topic, content, source, confidence, supersedes, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, NULL, $6, $7)`,
-      [id, data.topic, data.content, data.source, data.confidence ?? 0.8, now, now]
+      `INSERT INTO brain.knowledge (id, personality_id, topic, content, source, confidence, supersedes, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8)`,
+      [id, personalityId ?? null, data.topic, data.content, data.source, data.confidence ?? 0.8, now, now]
     );
 
     const result = await this.getKnowledge(id);
@@ -343,6 +351,11 @@ export class BrainStorage extends PgBaseStorage {
     let sql = 'SELECT * FROM brain.knowledge WHERE 1=1';
     const params: unknown[] = [];
     let idx = 1;
+
+    if (query.personalityId !== undefined) {
+      sql += ` AND (personality_id = $${idx++} OR personality_id IS NULL)`;
+      params.push(query.personalityId);
+    }
 
     if (query.topic) {
       sql += ` AND topic = $${idx++}`;
@@ -409,7 +422,14 @@ export class BrainStorage extends PgBaseStorage {
     return count > 0;
   }
 
-  async getKnowledgeCount(): Promise<number> {
+  async getKnowledgeCount(personalityId?: string): Promise<number> {
+    if (personalityId !== undefined) {
+      const row = await this.queryOne<{ count: string }>(
+        'SELECT COUNT(*) as count FROM brain.knowledge WHERE personality_id = $1 OR personality_id IS NULL',
+        [personalityId]
+      );
+      return Number(row?.count ?? 0);
+    }
     const row = await this.queryOne<{ count: string }>(
       'SELECT COUNT(*) as count FROM brain.knowledge'
     );
@@ -875,14 +895,14 @@ export class BrainStorage extends PgBaseStorage {
 
   // ── Stats ────────────────────────────────────────────────────
 
-  async getStats(): Promise<BrainStats> {
+  async getStats(personalityId?: string): Promise<BrainStats> {
     return {
       memories: {
-        total: await this.getMemoryCount(),
+        total: await this.getMemoryCount(personalityId),
         byType: await this.getMemoryCountByType(),
       },
       knowledge: {
-        total: await this.getKnowledgeCount(),
+        total: await this.getKnowledgeCount(personalityId),
       },
       skills: {
         total: await this.getSkillCount(),

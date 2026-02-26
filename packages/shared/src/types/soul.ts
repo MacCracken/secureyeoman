@@ -199,6 +199,12 @@ export const BodyConfigSchema = z
      * Stored in the existing body JSONB column — no DB migration required.
      */
     maxPromptTokens: z.number().int().min(1024).max(100000).optional(),
+    /**
+     * When true, this personality accesses the shared memory pool across all agents.
+     * When false (default), memories and knowledge are scoped to this personality only.
+     * Legacy entries (personality_id IS NULL) are always visible to all personalities.
+     */
+    omnipresentMind: z.boolean().default(false),
   })
   .default({});
 

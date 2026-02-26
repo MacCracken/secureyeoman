@@ -1,3 +1,123 @@
+## [2026.2.25-phase-51-real-time-infrastructure] — 2026-02-25
+
+### Feature — Phase 51: Real-Time Infrastructure
+
+#### Added
+
+- **`notifications` table** (migration `047_notifications.sql`) — PostgreSQL-backed persistent
+  notification model. Stores `type`, `title`, `body`, `level` (info/warn/error/critical),
+  `source`, `metadata`, `read_at`, and `created_at`. Two indexes: descending `created_at` for
+  list queries and a partial index on unread rows for count queries.
+- **`NotificationStorage`** (`src/notifications/notification-storage.ts`) — `PgBaseStorage`
+  subclass with `create()`, `list()`, `markRead()`, `markAllRead()`, `delete()`, `unreadCount()`.
+- **`NotificationManager`** (`src/notifications/notification-manager.ts`) — thin orchestration
+  layer. `notify()` persists to DB and broadcasts to connected WebSocket clients via `setBroadcast()`.
+  The broadcast callback is wired by the gateway after startup to avoid circular dependencies.
+- **Notification REST API** (`src/notifications/notification-routes.ts`) at `/api/v1/notifications`:
+  - `GET /` — list with `unreadOnly`, `limit`, `offset` query params
+  - `GET /count` — lightweight unread count for badge polling
+  - `POST /:id/read` — mark single notification read
+  - `POST /read-all` — mark all read, returns updated count
+  - `DELETE /:id` — delete notification
+- **`notifications` WebSocket channel** — added to `CHANNEL_PERMISSIONS` in `gateway/server.ts`.
+  Notifications are broadcast as `{ type: 'update', channel: 'notifications', payload: { notification } }`.
+- **Heartbeat → notification wiring** — `HeartbeatManager.executeNotifyAction()` now calls
+  `notificationManager?.notify()` for every notify action (regardless of external channel),
+  creating a DB record and pushing to the WS channel. External delivery stubs unchanged.
+- **`HeartbeatManager.setNotificationManager()`** — new method for wiring, called in
+  `secureyeoman.ts` Step 6.6 after both managers are initialized.
+- **`SecureYeoman.getNotificationManager()`** — public getter.
+- **Dashboard API functions** (`packages/dashboard/src/api/client.ts`):
+  `fetchNotifications`, `fetchNotificationCount`, `markNotificationRead`,
+  `markAllNotificationsRead`, `deleteNotification`.
+- **`ServerNotification` type** (`packages/dashboard/src/types.ts`).
+- **`NotificationBell.tsx` upgrade** — now handles two notification origins:
+  - *Local* (existing behavior preserved): security and task WS events, `localStorage`-backed.
+  - *Server* (new): events from the `notifications` WS channel, DB-backed via REST API.
+  Subscribes to the `notifications` WS channel on mount. `markRead`/`delete` call the REST API
+  for server notifications. Combined unread count badge. Per-item dismiss button added.
+- **ADR 133** (`docs/adr/133-real-time-infrastructure.md`).
+- **Notifications guide** (`docs/guides/notifications.md`).
+
+#### Tests
+
+- `notification-storage.test.ts` — 14 unit tests with mocked `PgBaseStorage` methods.
+- `notification-routes.test.ts` — 15 route tests with mocked `NotificationManager`.
+
+#### Out of Scope (Phase 51)
+
+- Real Slack/Discord/email/Telegram delivery (stubs remain pending IntegrationManager interface audit)
+- Per-user notification preferences
+- Notification retention/cleanup job
+
+---
+
+## [2026.2.25-per-personality-memory-scoping] — 2026-02-25
+
+### Feature — Per-Personality Memory Scoping + Omnipresent Mind
+
+#### Added
+
+- **`omnipresentMind` toggle** — New boolean field on `BodyConfigSchema` (default `false`). When enabled, the personality queries the full cross-agent memory and knowledge pool (same unfiltered query as the previous system-wide behaviour). When disabled (default), queries are scoped to entries created by that personality plus legacy entries with no owner (`personality_id IS NULL`).
+- **Per-personality brain stats** — `GET /api/v1/brain/stats?personalityId=<id>` returns counts scoped to the given personality. The heartbeat `system_health` check now logs accurate per-personality stats instead of system-wide aggregates.
+- **Scoped memory + knowledge endpoints** — `GET /api/v1/brain/memories?personalityId=` and `GET /api/v1/brain/knowledge?personalityId=` filter results to a specific personality.
+- **Omnipresent Mind toggle in PersonalityEditor** — Brain section now includes an Omnipresent Mind toggle with a warning that enabling it grants cross-agent memory access.
+
+#### Changed
+
+- **`BrainManager.remember()` / `recall()` / `learn()` / `queryKnowledge()` / `getStats()`** — All core methods accept an optional `personalityId` override and resolve it through `resolvePersonalityId()` (returns `undefined` for omnipresent personalities, scoped ID otherwise).
+- **Chat routes** — `effectivePersonalityId` is computed once per request from the resolved personality's `omnipresentMind` flag (`undefined` if omnipresent, personality UUID if isolated). Threaded to `gatherBrainContext()` and the post-response memory save. Concurrent requests are safe — no shared mutable state is used.
+- **Heartbeat** — `setActivePersonalityIds()` now carries `omnipresentMind` per entry. For `system_health` checks, `effectivePid` is computed per personality inside the log-persistence loop; other check types (maintenance) run once to avoid duplication.
+- **`BodyConfig` in `soul/presets.ts`, `soul/manager.ts`, `soul/soul-routes.ts`** — All inline body config objects updated to include `omnipresentMind: false`.
+
+#### Efficiency
+
+- Omnipresent mode issues the same unfiltered SQL query used before scoping existed — zero performance regression.
+- Non-omnipresent mode adds a simple indexed `WHERE personality_id = $1 OR personality_id IS NULL` clause — potentially faster than the previous full scan.
+
+#### Tests
+
+- `brain-routes.test.ts` — 4 new tests: `GET /memories?personalityId=` passes id to `recall`; `GET /knowledge?personalityId=` passes id to `queryKnowledge`; `GET /stats?personalityId=` passes id to `getStats`; `GET /stats` without param calls `getStats(undefined)`.
+
+#### Docs
+
+- ADR 133: `docs/adr/133-per-personality-memory-scoping.md`
+- Guide: `docs/guides/per-personality-memory-scoping.md`
+
+---
+
+## [2026.2.25-heartbeat-multi-personality-log] — 2026-02-25
+
+### Fix — Heartbeat Execution Log Now Shows All Active Agents
+
+#### Fixed
+
+- **Execution log only ever showed T.Ron (the default personality)** — `HeartbeatManager.beat()` persisted a single log entry per check tagged with one `activePersonalityId`. With multiple active personalities, every run was attributed only to the default agent; FRIDAY never appeared in the expanded card history.
+- **`HeartbeatManager.setActivePersonalityIds(personalities)`** — new method stores the full roster of active personalities. On each beat, one log entry is written **per personality** so all agents appear in the execution history.
+- **Startup wiring** (`secureyeoman.ts` Step 6.6) — now calls `listPersonalities({ limit: 200 })` in parallel with `getActivePersonality()` and passes the full roster to `setActivePersonalityIds()`.
+- **`soul-routes.ts` — `POST /activate` and `PUT /:id`** — both routes refresh the full personality roster via `listPersonalities` and call `setActivePersonalityIds()` after every personality change.
+
+#### Changed
+
+- **Heartbeat card header pills** — switched from `flex-col` stacking back to `inline-block` horizontal layout with `overflow: visible` on the wrapper to prevent clipping by the parent `overflow-hidden` card container.
+- **Execution history scroll** — expanded card history capped at `240px` with internal scroll and sticky column headers; page no longer extends unboundedly when a card is expanded.
+
+---
+
+## [2026.2.25-heartbeat-all-personalities] — 2026-02-25
+
+### Fix — Heartbeat Task Cards Show All Personalities
+
+#### Fixed
+
+- **Heartbeat task cards only showed the default personality** — `/brain/heartbeat/tasks` was building the `personalities[]` list from `getEnabledPersonalities()` (WHERE is_active = true) plus the default. Because the standard activate flow is exclusive (one `is_active` at a time), only the active personality appeared. Changed to `listPersonalities({ limit: 200 })` so all created personalities are listed — the heartbeat is system-wide and serves every agent.
+
+#### Tests
+
+- `brain-routes.test.ts` — new test asserts `tasks[0].personalities` contains all personalities (not just the enabled one). `makeMockSoul()` updated with `getEnabledPersonalities` (was missing, causing a pre-existing 500 on the status test) and `listPersonalities` returning a two-personality roster.
+
+---
+
 ## [2026.2.25-heartbeat-personality-attribution] — 2026-02-25
 
 ### Fix — Heartbeat Log Entries Now Record the Active Personality

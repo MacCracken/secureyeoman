@@ -10,12 +10,14 @@
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
 | 50 | Governance Hardening | Complete |
-| 51 | Security Toolkit Completion | Planned |
-| 52 | Multimodal I/O Enhancement | Planned |
-| 53 | Local-First AI | Planned |
-| 54 | Marketplace Evolution | Demand-Gated |
-| 55 | Native Clients | Demand-Gated |
-| 56 | Infrastructure & Platform | Demand-Gated |
+| 51 | Real-Time Infrastructure | Complete |
+| 52 | Dashboard Evolution | Planned |
+| 53 | Security Toolkit Completion | Planned |
+| 54 | Local-First AI | Planned |
+| 55 | Multimodal I/O Enhancement | Planned |
+| 56 | Marketplace Evolution | Demand-Gated |
+| 57 | Native Clients | Demand-Gated |
+| 58 | Infrastructure & Platform | Demand-Gated |
 
 ---
 
@@ -27,19 +29,71 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Open
 
-- [x] Investigation into notifications — no dedicated notification model exists. Audit log pipeline is intact (events → DB → REST → dashboard polling). "No items" = audit log empty in that session, not a bug. Missing feature: transient user-facing notification model. Added as improvement item below.
+- [x] Investigation into notifications — no dedicated notification model exists. Audit log pipeline is intact (events → DB → REST → dashboard polling). "No items" = audit log, not a bug empty in that session. Missing feature: transient user-facing notification model. Promoted to Phase 51.
 
 ### Improvements
 
 - [x] Security Dashboard - re-org tab view; Overview, Audit Log, Autonomy, ML, Reports, System, Tasks
 - [x] Tasks History, separation of task and heartbeats into their own subviews.
 - [x] Tasks and History needs consolidation; remove from Security Dashboard.
-- [x] after Tasks consolidation - insure each personality is associated — heartbeat log entries now carry `personalityId` via `HeartbeatManager.setActivePersonalityId()`. Wired at startup, on activate, on update, and on set-default.
+- [x] after Tasks consolidation - insure each personality is associated — heartbeat execution log now writes one entry **per active personality** per beat via `HeartbeatManager.setActivePersonalityIds()`. Full roster seeded at startup via `listPersonalities`; refreshed on every personality activate/update. All active agents (e.g. T.Ron + FRIDAY) appear as separate rows in the expanded card execution history.
 - [x] Agents > Sub-Agents > Profile shoud be first tab, but keep default as Active.
+- [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 133. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(New feature — no automated DB integration test yet)*
+- [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`. *(Quick win — AnalyserNode already wired)*
 - [ ] **Advanced Editor Mode** — Add toggle in Settings > Security > Developers. When enabled, replaces the current EditView with an advanced coding workspace featuring: (1) Canvas with movable terminal prompt windows; (2) Clean file manager as a sidebar column or popout; (3) Task list panel with Jira-style priorities, supporting internal task management or external integrations (Trello, GitHub Projects, etc.).
-- [ ] **Notifications** — No transient user notification model exists. Heartbeat `notify` actions (Slack/Email/Discord) are stubs (console-only). Real-time event push is missing (dashboard polls REST every 10s). Acknowledgements are localStorage-only. Needs: notification table + API + bell UI + WebSocket push + heartbeat integration delivery.
-- [ ] dashboard - Allow for personality image to recieve an image
-- [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. Consider CSS variable-based theming for user extensibility or a larger built-in preset library.
+
+---
+
+## Phase 51: Real-Time Infrastructure
+
+**Status**: Complete — see CHANGELOG for details
+
+- [x] **Notification table + API** — `notifications` table (migration 047). REST at `/api/v1/notifications` with list, count, markRead, markAllRead, delete.
+- [x] **WebSocket push** — `notifications` WS channel in `CHANNEL_PERMISSIONS`. `NotificationManager.setBroadcast()` wired at gateway startup.
+- [x] **Bell UI** — `NotificationBell.tsx` upgraded to merge server (DB-backed) + local (localStorage) notifications. Subscribes to `notifications` WS channel. markRead/delete call REST API for server notifications.
+- [x] **Heartbeat notify wiring** — `executeNotifyAction()` calls `notificationManager?.notify()` unconditionally. External delivery (Slack/Discord/email) stubs pending IntegrationManager interface audit.
+
+### Deferred to follow-up
+
+- [ ] **Real Slack/Discord/email/Telegram delivery** — `executeNotifyAction()` stubs wired but external dispatch gated on IntegrationManager interface audit.
+- [ ] **Per-user notification preferences** — single shared notification stream for now.
+- [ ] **Notification retention/cleanup job** — no TTL or auto-prune yet.
+
+---
+
+## Phase 52: Dashboard Evolution
+
+**Status**: Planned — depends on Phase 51 (WebSocket push)
+
+Consolidates the major UX surface work: Mission Control as the new default landing page, sidebar reorganization, Personality Editor ontological restructure, and remaining visual polish items.
+
+### Sidebar Reorganization
+
+*Do first — structural foundation for all navigation changes below.*
+
+- [ ] **Sidebar Reorganization** — Consolidate nav into mission-aligned sections:
+
+  ```
+  Mission Control (default home)
+  Chat
+  Editor
+  Personality
+  Skills
+  Proactive
+  ┌ Automation (collapsible)
+  │   ├ Tasks
+  │   └ Workflows
+  Connections
+  ┌ Administration (collapsible)
+  │   ├ Settings
+  │   ├ Users
+  │   ├ Workspaces
+  │   └ API Keys
+  ```
+
+### Mission Control Dashboard
+
+- [ ] **Mission Control Dashboard** — Consolidated command-center view replacing Metrics as the default landing page. Multi-panel grid: (1) System status graph (expanded ReactFlow); (2) Active tasks with progress; (3) Live security event feed; (4) Resource monitoring (CPU, memory, tokens, costs); (5) Agent/Personality health heartbeats; (6) Integration status grid; (7) Audit stream; (8) Workflow runs with DAG preview; (9) Quick actions (emergency stop, pause all). Dark theme default, auto-refresh via WebSocket (requires Phase 51), click-to-drill.
 
 ### Personality Editor — Ontological Restructure
 
@@ -49,6 +103,11 @@ Reorganise the Soul tab fields so each section truly reflects its metaphor. Thre
 - [ ] **Brain — Intellect**: Move Default Model and Model Fallbacks from the Soul tab into the Brain section. These are the "grey matter" decisions — which model thinks for this personality and what it falls back to. Add an **Analytical Depth** control (maps to reasoning effort / extended thinking budget) so cognitive intensity is configured alongside the model itself.
 - [ ] **Body — Endowments**: Relocate Voice and Preferred Language from the Soul tab into the Body section. These are the physical expression layer — how the AI speaks and in what tongue. Body → Endowments is the natural home for anything that governs the sensory/physical interface with the world.
 - [ ] **Brain — Intellect (Chronoception)**: Move the Chronoception (date/time injection) toggle from the Soul — Essence section into Brain — Intellect. Knowing the current time is a cognitive/analytical concern, not an identity one.
+
+### Visual Polish
+
+- [ ] **Personality image upload** — Allow a personality to receive a custom avatar image.
+- [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. Consider CSS variable-based theming for user extensibility or a larger built-in preset library.
 
 ---
 
@@ -67,7 +126,7 @@ Closed all deferred items from Phase 48 (ADR 128) and Phase 49 (ADR 130).
 
 ---
 
-## Phase 51: Security Toolkit Completion
+## Phase 53: Security Toolkit Completion
 
 **Status**: Planned
 
@@ -80,26 +139,11 @@ Core Kali toolkit shipped (ADR 089). The `sec_*` MCP tools, `secureyeoman securi
 
 ---
 
-## Phase 52: Multimodal I/O Enhancement
+## Phase 54: Local-First AI
 
 **Status**: Planned
 
-Provider picker shipped in Phase 40; expanded to 10 TTS and 7 STT providers. This phase completes voice quality and usability improvements.
-
-- [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`.
-- [ ] **Streaming TTS via SSE** — Stream audio chunks from the TTS backend to the browser as they're generated. Reduces perceived latency for long text.
-- [ ] **Audio validation before STT** — Validate duration 2–30s, RMS > 0.01, peak < 0.99. Return a clear error rather than passing bad audio to the API.
-- [ ] **Whisper model size selection** — Expose `tiny | base | small | medium | large` in multimodal config. Surface as dropdown in the provider card UI alongside provider selection.
-- [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity.
-- [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call.
-
----
-
-## Phase 53: Local-First AI
-
-**Status**: Planned
-
-Privacy-first, offline-capable AI processing via on-device models. Completes the "sovereign AI" positioning — currently all inference goes to cloud providers even in a self-hosted deployment.
+Privacy-first, offline-capable AI processing via on-device models. Completes the "sovereign AI" positioning — currently all inference goes to cloud providers even in a self-hosted deployment. Elevated ahead of Multimodal I/O due to strategic differentiation value.
 
 **Feature toggle in `config.yml`:**
 
@@ -122,7 +166,21 @@ ai:
 
 ---
 
-## Phase 54: Marketplace Evolution
+## Phase 55: Multimodal I/O Enhancement
+
+**Status**: Planned
+
+Provider picker shipped in Phase 40; expanded to 10 TTS and 7 STT providers. This phase completes voice quality and usability improvements.
+
+- [ ] **Streaming TTS via SSE** — Stream audio chunks from the TTS backend to the browser as they're generated. Reduces perceived latency for long text.
+- [ ] **Audio validation before STT** — Validate duration 2–30s, RMS > 0.01, peak < 0.99. Return a clear error rather than passing bad audio to the API.
+- [ ] **Whisper model size selection** — Expose `tiny | base | small | medium | large` in multimodal config. Surface as dropdown in the provider card UI alongside provider selection.
+- [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity.
+- [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call.
+
+---
+
+## Phase 56: Marketplace Evolution
 
 **Status**: Demand-Gated — implement once the community skill repo has meaningful scale.
 
@@ -133,7 +191,7 @@ ai:
 
 ---
 
-## Phase 55: Native Clients
+## Phase 57: Native Clients
 
 **Status**: Demand-Gated — implement once REST/WebSocket API is stable and adoption justifies native packaging.
 
@@ -150,7 +208,7 @@ ai:
 
 ---
 
-## Phase 56: Infrastructure & Platform
+## Phase 58: Infrastructure & Platform
 
 **Status**: Demand-Gated — implement once operational scale or compliance requirements justify the investment.
 
@@ -188,4 +246,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-25 (Security Dashboard re-org; Tasks consolidated to /tasks with Tasks + Heartbeats sub-tabs; personality association; heartbeat log personality attribution fix)*
+*Last updated: 2026-02-25 (Phase restructure: Phase 51 Real-Time Infrastructure, Phase 52 Dashboard Evolution extracted from Phase XX; Local-First AI elevated to Phase 54 ahead of Multimodal I/O; Energy-based VAD moved to Phase XX quick wins; phases 56–58 renumbered)*

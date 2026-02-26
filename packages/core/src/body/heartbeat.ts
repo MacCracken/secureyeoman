@@ -19,6 +19,7 @@ import type { AuditChain } from '../logging/audit-chain.js';
 import type { IntegrationManager } from '../integrations/manager.js';
 import type { SecureLogger } from '../logging/logger.js';
 import type { HeartbeatLogStorage } from './heartbeat-log-storage.js';
+import type { NotificationManager } from '../notifications/notification-manager.js';
 // Type definitions for proactive heartbeat features
 // These extend the shared types with action and scheduling capabilities
 
@@ -86,6 +87,7 @@ export class HeartbeatManager {
   private readonly logger: SecureLogger;
   private readonly config: HeartbeatConfig;
   private readonly logStorage: HeartbeatLogStorage | null;
+  private notificationManager: NotificationManager | null = null;
   private interval: ReturnType<typeof setInterval> | null = null;
   private lastBeat: HeartbeatResult | null = null;
   private beatCount = 0;
@@ -93,6 +95,7 @@ export class HeartbeatManager {
   private taskLastRun = new Map<string, number>();
   private actionHistory = new Map<string, number>(); // Track last action execution per check
   private activePersonalityId: string | null = null;
+  private activePersonalityIds: { id: string; name: string; omnipresentMind?: boolean }[] = [];
   private personalitySchedule: {
     enabled: boolean;
     start: string;
@@ -115,6 +118,10 @@ export class HeartbeatManager {
     this.config = config;
     this.integrationManager = integrationManager ?? null;
     this.logStorage = logStorage ?? null;
+  }
+
+  setNotificationManager(notificationManager: NotificationManager): void {
+    this.notificationManager = notificationManager;
   }
 
   /**
@@ -364,6 +371,25 @@ export class HeartbeatManager {
       .replace('{{result.status}}', result.status)
       .replace('{{result.message}}', result.message);
 
+    // Always persist as an in-app notification (creates a DB record + WS broadcast)
+    const notifLevel =
+      result.status === 'error' ? 'error' : result.status === 'warning' ? 'warn' : 'info';
+    void this.notificationManager
+      ?.notify({
+        type: 'heartbeat_alert',
+        title: check.name,
+        body: message,
+        level: notifLevel,
+        source: 'heartbeat',
+        metadata: { checkType: check.type, status: result.status },
+      })
+      .catch((err: unknown) => {
+        this.logger.warn('Failed to persist heartbeat notification', {
+          check: check.name,
+          error: err instanceof Error ? err.message : 'Unknown error',
+        });
+      });
+
     // Console notification (always available)
     if (channel === 'console') {
       this.logger.info('[HEARTBEAT ALERT]', { message, check: check.name, result: result.status });
@@ -380,6 +406,9 @@ export class HeartbeatManager {
     }
 
     // Route to appropriate integration
+    // Note: Real delivery (Slack/Discord/email/Telegram) is gated on IntegrationManager
+    // interface audit. For now we log intent and return; external delivery ships in a
+    // follow-up phase once the integration dispatch API is confirmed stable.
     switch (channel) {
       case 'slack':
         this.logger.info('Slack heartbeat notification pending integration', {
@@ -550,6 +579,11 @@ export class HeartbeatManager {
     this.logger.debug('Active personality ID updated', { personalityId: id });
   }
 
+  setActivePersonalityIds(personalities: { id: string; name: string; omnipresentMind?: boolean }[]): void {
+    this.activePersonalityIds = personalities;
+    this.logger.debug('Active personality roster updated', { count: personalities.length });
+  }
+
   setPersonalitySchedule(
     schedule: {
       enabled: boolean;
@@ -608,23 +642,47 @@ export class HeartbeatManager {
 
       const checkDurationMs = Date.now() - checkStart;
 
-      // Persist execution result to heartbeat log
+      // Persist execution result to heartbeat log — one entry per active personality.
       if (this.logStorage) {
-        try {
-          await this.logStorage.persist({
-            checkName: check.name,
-            personalityId: this.activePersonalityId,
-            ranAt: checkStart,
-            status: result.status,
-            message: result.message,
-            durationMs: checkDurationMs,
-            errorDetail,
-          });
-        } catch (logErr) {
-          this.logger.warn('Failed to persist heartbeat log entry', {
-            check: check.name,
-            error: logErr instanceof Error ? logErr.message : 'Unknown error',
-          });
+        const logPersonalities =
+          this.activePersonalityIds.length > 0
+            ? this.activePersonalityIds
+            : this.activePersonalityId
+              ? [{ id: this.activePersonalityId, name: '', omnipresentMind: false }]
+              : [{ id: null as unknown as string, name: '', omnipresentMind: false }];
+        for (const p of logPersonalities) {
+          // For system_health, compute scoped stats per personality so each entry
+          // shows accurate per-personality memory/knowledge counts rather than
+          // system-wide aggregates. Omnipresent personalities use unscoped stats.
+          let persistStatus = result.status;
+          let persistMessage = result.message;
+          if (check.type === 'system_health') {
+            const effectivePid = (p.omnipresentMind ?? false) ? undefined : (p.id ?? undefined);
+            try {
+              const scopedResult = await this.checkSystemHealth(check, effectivePid);
+              persistStatus = scopedResult.status;
+              persistMessage = scopedResult.message;
+            } catch {
+              // Fall back to the already-computed system-wide result
+            }
+          }
+          try {
+            await this.logStorage.persist({
+              checkName: check.name,
+              personalityId: p.id ?? null,
+              ranAt: checkStart,
+              status: persistStatus,
+              message: persistMessage,
+              durationMs: checkDurationMs,
+              errorDetail,
+            });
+          } catch (logErr) {
+            this.logger.warn('Failed to persist heartbeat log entry', {
+              check: check.name,
+              personalityId: p.id,
+              error: logErr instanceof Error ? logErr.message : 'Unknown error',
+            });
+          }
         }
       }
 
@@ -738,10 +796,10 @@ export class HeartbeatManager {
     if (data.config !== undefined) check.config = data.config;
   }
 
-  private async runCheck(check: HeartbeatCheck): Promise<HeartbeatCheckResult> {
+  private async runCheck(check: HeartbeatCheck, personalityId?: string): Promise<HeartbeatCheckResult> {
     switch (check.type) {
       case 'system_health':
-        return this.checkSystemHealth(check);
+        return this.checkSystemHealth(check, personalityId);
       case 'memory_status':
         return this.checkMemoryStatus(check);
       case 'log_anomalies':
@@ -795,8 +853,8 @@ export class HeartbeatManager {
     };
   }
 
-  private async checkSystemHealth(check: HeartbeatCheck): Promise<HeartbeatCheckResult> {
-    const stats = await this.brain.getStats();
+  private async checkSystemHealth(check: HeartbeatCheck, personalityId?: string): Promise<HeartbeatCheckResult> {
+    const stats = await this.brain.getStats(personalityId);
     const mem = process.memoryUsage();
 
     const heapUsedMb = Math.round(mem.heapUsed / 1024 / 1024);

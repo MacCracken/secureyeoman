@@ -451,6 +451,8 @@ function BrainSection({
   exposeOrgIntentTools,
   onExposeOrgIntentToolsChange,
   orgIntentMcpEnabled,
+  omnipresentMind,
+  onOmnipresentMindChange,
 }: {
   personalityId: string | null;
   activeHours: {
@@ -475,6 +477,8 @@ function BrainSection({
   exposeOrgIntentTools: boolean;
   onExposeOrgIntentToolsChange: (v: boolean) => void;
   orgIntentMcpEnabled: boolean;
+  omnipresentMind: boolean;
+  onOmnipresentMindChange: (v: boolean) => void;
 }) {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
@@ -618,6 +622,29 @@ function BrainSection({
             </div>
           </div>
         )}
+      </div>
+
+      {/* Omnipresent Mind toggle */}
+      <div className="border-b pb-3 mb-3">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex flex-col gap-0.5">
+            <p className="text-sm font-medium">Omnipresent Mind</p>
+            <p className="text-xs text-muted-foreground">
+              When enabled, this personality accesses the shared memory pool across all agents.
+              Disable to keep memories and knowledge private to this personality.
+            </p>
+          </div>
+          <label className="relative inline-flex items-center cursor-pointer shrink-0">
+            <input
+              type="checkbox"
+              checked={omnipresentMind}
+              onChange={(e) => onOmnipresentMindChange(e.target.checked)}
+              aria-label="Omnipresent Mind"
+              className="sr-only peer"
+            />
+            <div className="w-9 h-5 rounded-full bg-muted-foreground/30 peer-checked:bg-green-500 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4" />
+          </label>
+        </div>
       </div>
 
       {/* 1. External Knowledge Base — moved to top */}
@@ -2893,6 +2920,7 @@ export function PersonalityEditor() {
 
   const [thinkingConfig, setThinkingConfig] = useState({ enabled: false, budgetTokens: 10000 });
   const [maxPromptTokens, setMaxPromptTokens] = useState<number | null>(null);
+  const [omnipresentMind, setOmnipresentMind] = useState(false);
 
   const [resourcePolicy, setResourcePolicy] = useState<{
     deletionMode: 'auto' | 'request' | 'manual';
@@ -3144,6 +3172,7 @@ export function PersonalityEditor() {
       budgetTokens: body.thinkingConfig?.budgetTokens ?? 10000,
     });
     setMaxPromptTokens(body.maxPromptTokens ?? null);
+    setOmnipresentMind(body.omnipresentMind ?? false);
     setSetActiveOnSave(false);
     setEditing(p.id);
   };
@@ -3244,6 +3273,7 @@ export function PersonalityEditor() {
     });
     setThinkingConfig({ enabled: false, budgetTokens: 10000 });
     setMaxPromptTokens(null);
+    setOmnipresentMind(false);
     setResourcePolicy({ deletionMode: 'auto', automationLevel: 'supervised_auto', emergencyStop: false });
     setSetActiveOnSave(false);
     setEditing('new');
@@ -3268,6 +3298,7 @@ export function PersonalityEditor() {
         activeHours,
         thinkingConfig,
         ...(maxPromptTokens !== null ? { maxPromptTokens } : {}),
+        omnipresentMind,
         resourcePolicy,
       },
     };
@@ -3771,6 +3802,8 @@ export function PersonalityEditor() {
             exposeOrgIntentTools={mcpFeatures.exposeOrgIntentTools}
             onExposeOrgIntentToolsChange={(v) => setMcpFeatures((f) => ({ ...f, exposeOrgIntentTools: v }))}
             orgIntentMcpEnabled={securityPolicy?.allowIntentEditor ?? false}
+            omnipresentMind={omnipresentMind}
+            onOmnipresentMindChange={setOmnipresentMind}
           />
 
           {/* Body Section */}

@@ -227,6 +227,7 @@ export interface Personality {
       budgetTokens?: number;
     };
     maxPromptTokens?: number;
+    omnipresentMind?: boolean;
     resourcePolicy?: {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
@@ -318,6 +319,7 @@ export interface PersonalityCreate {
       budgetTokens?: number;
     };
     maxPromptTokens?: number;
+    omnipresentMind?: boolean;
     resourcePolicy?: {
       deletionMode?: 'auto' | 'request' | 'manual';
       automationLevel?: 'full_manual' | 'semi_auto' | 'supervised_auto';
@@ -774,4 +776,21 @@ export interface SoulConfig {
   learningMode: string[];
   maxSkills: number;
   maxPromptTokens: number;
+}
+
+// ─── Notification Types (Phase 51) ─────────────────────────
+
+export type NotificationLevel = 'info' | 'warn' | 'error' | 'critical';
+
+/** Server-persisted notification (DB-backed, pushed via WebSocket). */
+export interface ServerNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  level: NotificationLevel;
+  source?: string;
+  metadata?: Record<string, unknown>;
+  readAt: number | null;
+  createdAt: number;
 }

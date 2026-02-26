@@ -188,7 +188,8 @@ export function TaskHistory() {
   const { data: heartbeatData, isLoading: heartbeatLoading } = useQuery({
     queryKey: ['heartbeat-tasks'],
     queryFn: fetchHeartbeatTasks,
-    staleTime: 30000,
+    staleTime: 0,
+    refetchOnMount: true,
   });
 
   const createTaskMutation = useMutation({
@@ -967,19 +968,18 @@ function HeartbeatCard({ task }: { task: HeartbeatTask }) {
       : task.personalityName
         ? [{ id: task.personalityId ?? '', name: task.personalityName }]
         : [];
-
   // Lookup map for resolving personalityId → name in log entries.
   const personalityMap = new Map(personalities.map((p) => [p.id, p.name]));
 
   return (
     <div className={`border-l-4 ${task.enabled ? 'border-l-success' : 'border-l-muted-foreground/30'}`}>
       {/* Header row */}
-      <div className="p-4 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-3 min-w-0">
+      <div className="p-4 flex items-start justify-between gap-3">
+        <div className="flex items-start gap-3 min-w-0">
           {task.enabled ? (
-            <Play className="w-4 h-4 text-success flex-shrink-0" />
+            <Play className="w-4 h-4 text-success flex-shrink-0 mt-0.5" />
           ) : (
-            <Pause className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+            <Pause className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
           )}
           <div className="min-w-0">
             <p className="font-medium text-sm">{task.name}</p>
@@ -993,11 +993,11 @@ function HeartbeatCard({ task }: { task: HeartbeatTask }) {
               </span>
             </div>
             {personalities.length > 0 && (
-              <div className="flex items-center gap-1 mt-1.5 flex-wrap">
-                {personalities.map((p) => (
+              <div className="mt-1.5" style={{ overflow: 'visible' }}>
+                {personalities.map((p, idx) => (
                   <span
-                    key={p.id || p.name}
-                    className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded"
+                    key={idx}
+                    className="inline-block text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded mr-1 mb-0.5"
                   >
                     {p.name}
                   </span>
@@ -1058,8 +1058,9 @@ function HeartbeatCard({ task }: { task: HeartbeatTask }) {
           ) : !logData?.entries.length ? (
             <p className="text-xs text-muted-foreground py-1">No executions recorded yet.</p>
           ) : (
+            <div className="overflow-y-auto" style={{ maxHeight: '240px' }}>
             <table className="w-full text-xs">
-              <thead>
+              <thead className="sticky top-0 bg-background">
                 <tr className="text-muted-foreground">
                   <th className="text-left pb-1 pr-4 font-normal">Status</th>
                   <th className="text-left pb-1 pr-4 font-normal">Agent</th>
@@ -1111,6 +1112,7 @@ function HeartbeatCard({ task }: { task: HeartbeatTask }) {
                 })}
               </tbody>
             </table>
+            </div>
           )}
         </div>
       )}
