@@ -91,4 +91,5 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '052_brain_skills_mcp_tools_allowed', sql: readSql('052_brain_skills_mcp_tools_allowed.sql') },
   { id: '053_risk_assessment', sql: readSql('053_risk_assessment.sql') },
   { id: '054_personality_avatar', sql: readSql('054_personality_avatar.sql') },
+  { id: '055_skill_output_schema', sql: readSql('055_skill_output_schema.sql') },
 ];

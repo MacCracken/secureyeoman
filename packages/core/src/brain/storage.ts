@@ -71,6 +71,8 @@ interface SkillRow {
   routing?: string;
   autonomy_level?: string;
   invoked_count?: number;
+  // Structured output schema (Phase 54) — column added by migration 055
+  output_schema?: Record<string, unknown> | null;
 }
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -142,6 +144,8 @@ function rowToSkill(row: SkillRow): Skill {
     updatedAt: row.updated_at,
     // Autonomy classification (Phase 49)
     autonomyLevel: (row.autonomy_level ?? 'L1') as Skill['autonomyLevel'],
+    // Structured output schema (Phase 54)
+    outputSchema: row.output_schema ?? null,
   };
 }
 
@@ -453,8 +457,8 @@ export class BrainStorage extends PgBaseStorage {
     const id = uuidv7();
 
     await this.query(
-      `INSERT INTO brain.skills (id, name, description, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, mcp_tools_allowed, routing, autonomy_level, enabled, source, status, personality_id, usage_count, last_used_at, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10::jsonb, $11, $12, $13, $14, $15, $16, 0, NULL, $17, $18)`,
+      `INSERT INTO brain.skills (id, name, description, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, mcp_tools_allowed, routing, autonomy_level, output_schema, enabled, source, status, personality_id, usage_count, last_used_at, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9, $10::jsonb, $11, $12, $13::jsonb, $14, $15, $16, $17, 0, NULL, $18, $19)`,
       [
         id,
         data.name,
@@ -468,6 +472,7 @@ export class BrainStorage extends PgBaseStorage {
         JSON.stringify(data.mcpToolsAllowed ?? []),
         data.routing ?? 'fuzzy',
         data.autonomyLevel ?? 'L1',
+        data.outputSchema != null ? JSON.stringify(data.outputSchema) : null,
         data.enabled ?? true,
         data.source ?? 'user',
         data.status ?? 'active',
@@ -505,11 +510,12 @@ export class BrainStorage extends PgBaseStorage {
          mcp_tools_allowed = $9::jsonb,
          routing = $10,
          autonomy_level = $11,
-         enabled = $12,
-         source = $13,
-         status = $14,
-         updated_at = $15
-       WHERE id = $16`,
+         output_schema = $12::jsonb,
+         enabled = $13,
+         source = $14,
+         status = $15,
+         updated_at = $16
+       WHERE id = $17`,
       [
         data.name ?? existing.name,
         data.description ?? existing.description,
@@ -522,6 +528,9 @@ export class BrainStorage extends PgBaseStorage {
         JSON.stringify(data.mcpToolsAllowed ?? existing.mcpToolsAllowed),
         data.routing ?? existing.routing,
         data.autonomyLevel ?? existing.autonomyLevel,
+        data.outputSchema !== undefined
+          ? (data.outputSchema != null ? JSON.stringify(data.outputSchema) : null)
+          : (existing.outputSchema != null ? JSON.stringify(existing.outputSchema) : null),
         data.enabled !== undefined ? data.enabled : existing.enabled,
         data.source ?? existing.source,
         data.status ?? existing.status,

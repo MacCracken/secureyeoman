@@ -21,6 +21,8 @@ import { PreferenceLearner, type FeedbackType } from '../brain/preference-learne
 import { sendError } from '../utils/errors.js';
 import { ToolOutputScanner } from '../security/tool-output-scanner.js';
 import { PromptGuard } from '../security/prompt-guard.js';
+import { createResponseGuard } from '../security/response-guard.js';
+import { LLMJudge } from '../security/llm-judge.js';
 import { ContextCompactor } from './context-compactor.js';
 import { getLogger } from '../logging/logger.js';
 import { executeCreationTool } from '../soul/creation-tool-executor.js';
@@ -226,6 +228,21 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
   // Prompt-assembly injection guard — scans fully assembled messages before LLM call.
   const promptGuard = new PromptGuard(secureYeoman.getConfig().security.promptGuard);
+
+  // Response-side safety scanner (Phase 54).
+  const responseGuard = createResponseGuard(secureYeoman.getConfig().security.responseGuard);
+
+  // LLM-as-Judge for high-autonomy tool calls (Phase 54).
+  let llmJudge: LLMJudge | null = null;
+  try {
+    llmJudge = new LLMJudge(secureYeoman.getConfig().security.llmJudge, {
+      aiClient: secureYeoman.getAIClient(),
+      intentManager: secureYeoman.getIntentManager?.() ?? null,
+    });
+  } catch {
+    // AI client not available yet — LLMJudge is disabled
+    llmJudge = null;
+  }
 
   // Context compactor — triggers at 80% of the model's context window.
   const compactor = new ContextCompactor();
@@ -547,7 +564,58 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
             personalityId: personality?.id ?? null,
             personalityName: personality?.name ?? null,
           };
+          const _intentMgrForJudge = secureYeoman.getIntentManager?.() ?? null;
           for (const toolCall of rawResponse.toolCalls) {
+            // ── LLM-as-Judge (Phase 54) ───────────────────────────────────────
+            if (llmJudge?.shouldJudge(personality ?? null)) {
+              try {
+                const activeIntent = _intentMgrForJudge?.getActiveIntent?.();
+                const judgeVerdict = await llmJudge.judge({
+                  toolName: toolCall.name,
+                  toolArgs: (toolCall.arguments ?? {}) as Record<string, unknown>,
+                  personality: personality ?? null,
+                  intentGoals: activeIntent?.goals?.map((g) => g.name),
+                  intentBoundaries: activeIntent?.hardBoundaries?.map((b) => b.rule),
+                  brainContextSnippets: brainContext?.contextSnippets,
+                });
+                if (judgeVerdict.decision === 'block') {
+                  messages.push({
+                    role: 'tool' as const,
+                    toolResult: {
+                      toolCallId: toolCall.id,
+                      content: JSON.stringify({
+                        error: `[BLOCKED by LLM Judge] ${judgeVerdict.reason}`,
+                      }),
+                      isError: true,
+                    },
+                  });
+                  void secureYeoman.getAuditChain().record({
+                    event: 'llm_judge_block',
+                    level: 'warn',
+                    message: `LLM Judge blocked tool: ${toolCall.name}`,
+                    metadata: { tool: toolCall.name, reason: judgeVerdict.reason, concerns: judgeVerdict.concerns },
+                  });
+                  continue;
+                }
+                if (judgeVerdict.decision === 'warn') {
+                  void secureYeoman.getAuditChain().record({
+                    event: 'llm_judge_warn',
+                    level: 'warn',
+                    message: `LLM Judge warned for tool: ${toolCall.name}`,
+                    metadata: { tool: toolCall.name, reason: judgeVerdict.reason, concerns: judgeVerdict.concerns },
+                  });
+                  try {
+                    await _intentMgrForJudge?.logEnforcement({
+                      eventType: 'policy_warn',
+                      rule: `llm_judge_warn: ${toolCall.name}`,
+                      actionAttempted: toolCall.name,
+                      metadata: { tool: toolCall.name, reason: judgeVerdict.reason },
+                    });
+                  } catch { /* best-effort */ }
+                }
+              } catch { /* fail-open: proceed */ }
+            }
+
             // ── Intent enforcement (Phase 48) ────────────────────────────────
             const intentMgr = secureYeoman.getIntentManager?.();
             if (intentMgr) {
@@ -713,6 +781,51 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         const response = scanResult.redacted
           ? { ...rawResponse, content: scanResult.text }
           : rawResponse;
+
+        // ── ResponseGuard (Phase 54) — output-side safety scan ────────────────
+        {
+          const rgResult = responseGuard.scan(response.content, {
+            source: 'dashboard_chat',
+          });
+          if (!rgResult.passed) {
+            void secureYeoman.getAuditChain().record({
+              event: 'response_injection_detected',
+              level: 'warn',
+              message: 'ResponseGuard blocked LLM response',
+              metadata: { findingCount: rgResult.findings.length, findings: rgResult.findings.map((f) => f.patternName) },
+            });
+            return sendError(reply, 400, 'Response blocked: safety policy violation');
+          }
+          if (rgResult.findings.length > 0) {
+            void secureYeoman.getAuditChain().record({
+              event: 'response_injection_detected',
+              level: 'warn',
+              message: 'ResponseGuard findings in LLM response (warn mode)',
+              metadata: { findingCount: rgResult.findings.length, findings: rgResult.findings.map((f) => f.patternName) },
+            });
+          }
+          // Brain consistency check — warn-only
+          responseGuard.checkBrainConsistency(response.content, {
+            contextSnippets: brainContext?.contextSnippets,
+            memoriesUsed: brainContext?.memoriesUsed,
+          });
+        }
+
+        // ── OPA output compliance (Phase 54) ──────────────────────────────────
+        try {
+          const _intentMgrNS = secureYeoman.getIntentManager?.();
+          if (_intentMgrNS) {
+            const complianceResult = await _intentMgrNS.checkOutputCompliance(response.content);
+            if (!complianceResult.compliant) {
+              void secureYeoman.getAuditChain().record({
+                event: 'output_compliance_warning',
+                level: 'warn',
+                message: 'OPA output compliance check failed',
+                metadata: { reason: complianceResult.reason },
+              });
+            }
+          }
+        } catch { /* best-effort */ }
 
         // Assemble thinking content now so it's available for both persistence and response.
         const thinkingContent = thinkingParts.join('\n\n---\n\n') || undefined;
@@ -1185,7 +1298,49 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
 
           // Execute tools
           const executionContextS = { personalityId: personality?.id ?? null, personalityName: personality?.name ?? null };
+          const _intentMgrJudgeS = secureYeoman.getIntentManager?.() ?? null;
           for (const toolCall of toolCallsForMsg) {
+            // ── LLM-as-Judge (Phase 54) ─────────────────────────────────────
+            if (llmJudge?.shouldJudge(personality ?? null)) {
+              try {
+                const activeIntentS = _intentMgrJudgeS?.getActiveIntent?.();
+                const judgeVerdictS = await llmJudge.judge({
+                  toolName: toolCall.name,
+                  toolArgs: (toolCall.arguments ?? {}) as Record<string, unknown>,
+                  personality: personality ?? null,
+                  intentGoals: activeIntentS?.goals?.map((g) => g.name),
+                  intentBoundaries: activeIntentS?.hardBoundaries?.map((b) => b.rule),
+                  brainContextSnippets: brainContext?.contextSnippets,
+                });
+                if (judgeVerdictS.decision === 'block') {
+                  emit({ type: 'tool_result', toolName: toolCall.name, success: false, isError: true });
+                  messages.push({
+                    role: 'tool' as const,
+                    toolResult: {
+                      toolCallId: toolCall.id,
+                      content: JSON.stringify({ error: `[BLOCKED by LLM Judge] ${judgeVerdictS.reason}` }),
+                      isError: true,
+                    },
+                  });
+                  void secureYeoman.getAuditChain().record({
+                    event: 'llm_judge_block',
+                    level: 'warn',
+                    message: `LLM Judge blocked tool: ${toolCall.name}`,
+                    metadata: { tool: toolCall.name, reason: judgeVerdictS.reason, concerns: judgeVerdictS.concerns },
+                  });
+                  continue;
+                }
+                if (judgeVerdictS.decision === 'warn') {
+                  void secureYeoman.getAuditChain().record({
+                    event: 'llm_judge_warn',
+                    level: 'warn',
+                    message: `LLM Judge warned for tool: ${toolCall.name}`,
+                    metadata: { tool: toolCall.name, reason: judgeVerdictS.reason, concerns: judgeVerdictS.concerns },
+                  });
+                }
+              } catch { /* fail-open */ }
+            }
+
             const mcpToolS = mcpClientStream?.getAllTools().find((t) => t.name === toolCall.name);
 
             if (mcpToolS) {
@@ -1255,6 +1410,49 @@ export function registerChatRoutes(app: FastifyInstance, opts: ChatRoutesOptions
         // Credential scan
         const scanResult = scanner.scan(finalContent, 'llm_response');
         const safeContent = scanResult.redacted ? scanResult.text : finalContent;
+
+        // ── ResponseGuard (Phase 54) — output-side safety scan ────────────────
+        {
+          const rgResult = responseGuard.scan(safeContent, { source: 'dashboard_chat_stream' });
+          if (!rgResult.passed) {
+            void secureYeoman.getAuditChain().record({
+              event: 'response_injection_detected',
+              level: 'warn',
+              message: 'ResponseGuard blocked streamed LLM response',
+              metadata: { findingCount: rgResult.findings.length, findings: rgResult.findings.map((f) => f.patternName) },
+            });
+            emit({ type: 'error', message: 'Response blocked: safety policy violation' });
+            return;
+          }
+          if (rgResult.findings.length > 0) {
+            void secureYeoman.getAuditChain().record({
+              event: 'response_injection_detected',
+              level: 'warn',
+              message: 'ResponseGuard findings in streamed LLM response (warn mode)',
+              metadata: { findingCount: rgResult.findings.length, findings: rgResult.findings.map((f) => f.patternName) },
+            });
+          }
+          responseGuard.checkBrainConsistency(safeContent, {
+            contextSnippets: brainContext?.contextSnippets,
+            memoriesUsed: brainContext?.memoriesUsed,
+          });
+        }
+
+        // ── OPA output compliance (Phase 54) ──────────────────────────────────
+        try {
+          const _intentMgrNSS = secureYeoman.getIntentManager?.();
+          if (_intentMgrNSS) {
+            const complianceResult = await _intentMgrNSS.checkOutputCompliance(safeContent);
+            if (!complianceResult.compliant) {
+              void secureYeoman.getAuditChain().record({
+                event: 'output_compliance_warning',
+                level: 'warn',
+                message: 'OPA output compliance check failed (stream)',
+                metadata: { reason: complianceResult.reason },
+              });
+            }
+          }
+        } catch { /* best-effort */ }
 
         // Persist conversation
         if (conversationId) {

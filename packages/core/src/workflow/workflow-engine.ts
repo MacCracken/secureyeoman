@@ -11,11 +11,14 @@ import type { SubAgentManager } from '../agents/manager.js';
 import type { SwarmManager } from '../agents/swarm-manager.js';
 import type { AuditChain } from '../logging/audit-chain.js';
 import { WorkflowStorage } from './workflow-storage.js';
+import { OutputSchemaValidator } from '../security/output-schema-validator.js';
 import type {
   WorkflowDefinition,
   WorkflowRun,
   WorkflowStep,
 } from '@secureyeoman/shared';
+
+const _outputSchemaValidator = new OutputSchemaValidator();
 
 export class WorkflowCycleError extends Error {
   constructor(cycleStepIds: string[]) {
@@ -172,6 +175,33 @@ export class WorkflowEngine {
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       try {
         output = await this.dispatchStep(step, ctx);
+
+        // ── Output schema validation (Phase 54) ───────────────────────────────
+        const stepOutputSchema = (step.config as Record<string, unknown> | undefined)?.outputSchema;
+        if (stepOutputSchema != null && output != null) {
+          const schemaValidation = _outputSchemaValidator.validate(
+            output,
+            stepOutputSchema as Record<string, unknown>
+          );
+          if (!schemaValidation.valid) {
+            this.logger.warn('Step output schema violation', {
+              stepId: step.id,
+              stepName: step.name,
+              errors: schemaValidation.errors,
+            });
+            void this.auditChain?.record({
+              event: 'step_output_schema_violation',
+              level: 'warn',
+              message: `Step "${step.name}" output failed schema validation`,
+              metadata: {
+                stepId: step.id,
+                errorCount: schemaValidation.errors.length,
+                errors: schemaValidation.errors.map((e) => `${e.path}: ${e.message}`),
+              },
+            });
+          }
+        }
+
         error = null;
         break;
       } catch (err) {

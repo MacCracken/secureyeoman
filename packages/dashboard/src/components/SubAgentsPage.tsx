@@ -153,7 +153,12 @@ export function SubAgentsPage({ embedded }: { embedded?: boolean } = {}) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        {!embedded && <h1 className="text-xl font-bold">Sub-Agents</h1>}
+        <div>
+          {!embedded && <h1 className="text-xl font-bold">Sub-Agents</h1>}
+          <p className="text-xs text-muted-foreground">
+            Swarm infers task complexity and scales automatically — from a single focused sub-agent to multiple agents working in parallel.
+          </p>
+        </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => {

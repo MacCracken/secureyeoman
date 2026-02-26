@@ -198,6 +198,7 @@ export class SoulManager {
       includeArchetypes: agentName === 'FRIDAY',
       injectDateTime: false,
       empathyResonance: false,
+      avatarUrl: null,
       body: {
         enabled: false,
         capabilities: [],

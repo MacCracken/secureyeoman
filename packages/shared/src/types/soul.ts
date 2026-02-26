@@ -427,6 +427,9 @@ export const BaseSkillSchema = z.object({
   // Autonomy classification (Phase 49)
   autonomyLevel: AutonomyLevelSchema.default('L1'),
 
+  // Structured output schema for validation (Phase 54)
+  outputSchema: z.record(z.unknown()).nullable().optional(),
+
   updatedAt: z.number().int().nonnegative(),
 });
 export type BaseSkill = z.infer<typeof BaseSkillSchema>;

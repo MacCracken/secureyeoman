@@ -224,6 +224,28 @@ const PromptGuardConfigSchema = z
 
 export type PromptGuardConfig = z.infer<typeof PromptGuardConfigSchema>;
 
+// ResponseGuard configuration (Phase 54)
+const ResponseGuardConfigSchema = z
+  .object({
+    mode: z.enum(['block', 'warn', 'disabled']).default('warn'),
+  })
+  .default({});
+export type ResponseGuardConfig = z.infer<typeof ResponseGuardConfigSchema>;
+
+// LLMJudge configuration (Phase 54)
+const LLMJudgeConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    model: z.string().optional(),
+    triggers: z
+      .object({
+        automationLevels: z.array(z.string()).default(['supervised_auto']),
+      })
+      .default({}),
+  })
+  .default({});
+export type LLMJudgeConfig = z.infer<typeof LLMJudgeConfigSchema>;
+
 // Security configuration
 export const SecurityConfigSchema = z.object({
   rbac: RbacConfigSchema,
@@ -232,6 +254,8 @@ export const SecurityConfigSchema = z.object({
   rateLimiting: RateLimitingConfigSchema,
   inputValidation: InputValidationConfigSchema,
   promptGuard: PromptGuardConfigSchema,
+  responseGuard: ResponseGuardConfigSchema,
+  llmJudge: LLMJudgeConfigSchema,
   /** Top-level kill switch for sub-agent delegation. When false, no personality can enable sub-agents. */
   allowSubAgents: z.boolean().default(false),
   /** Allow sub-agents with type='binary' to spawn child processes. Off by default. */

@@ -232,6 +232,7 @@ export async function executeCreationTool(
           includeArchetypes: false,
           injectDateTime: false,
           empathyResonance: false,
+          avatarUrl: null,
           body: {} as any,
         });
         return { output: { personality }, isError: false };

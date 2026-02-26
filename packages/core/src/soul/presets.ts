@@ -108,6 +108,7 @@ export const PERSONALITY_PRESETS: PersonalityPreset[] = [
       includeArchetypes: true,
       injectDateTime: false,
       empathyResonance: false,
+      avatarUrl: null,
       body: BASE_BODY,
     },
   },
@@ -158,6 +159,7 @@ Terse, factual, and structured. When flagging a concern, state exactly: (a) what
       includeArchetypes: true,
       injectDateTime: false,
       empathyResonance: false,
+      avatarUrl: null,
       body: {
         ...BASE_BODY,
         proactiveConfig: {

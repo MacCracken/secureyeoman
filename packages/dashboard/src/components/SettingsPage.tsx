@@ -33,20 +33,25 @@ import { SecuritySettings, RolesSettings, SecretsPanel } from './SecuritySetting
 import { ApiKeysSettings } from './ApiKeysSettings';
 import { UsersSettings } from './UsersSettings';
 import { WorkspacesSettings } from './WorkspacesSettings';
-import { IntentEditor } from './IntentEditor';
 
-type TabType = 'general' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles' | 'intent';
+type TabType = 'general' | 'security' | 'keys' | 'workspaces' | 'users' | 'roles';
+
+function getTabFromPath(path: string): TabType {
+  if (path.includes('/security-settings')) return 'security';
+  if (path.includes('/api-keys')) return 'keys';
+  if (path === '/users') return 'users';
+  if (path === '/workspaces') return 'workspaces';
+  if (path === '/roles') return 'roles';
+  return 'general';
+}
 
 export function SettingsPage() {
   const location = useLocation();
-  const getInitialTab = (): TabType => {
-    const path = location.pathname;
-    if (path.includes('/security-settings')) return 'security';
-    if (path.includes('/api-keys')) return 'keys';
-    return 'general';
-  };
+  const [activeTab, setActiveTab] = useState<TabType>(() => getTabFromPath(location.pathname));
 
-  const [activeTab, setActiveTab] = useState<TabType>(getInitialTab);
+  useEffect(() => {
+    setActiveTab(getTabFromPath(location.pathname));
+  }, [location.pathname]);
 
   return (
     <div className="space-y-6">
@@ -137,20 +142,6 @@ export function SettingsPage() {
           <Users className="w-4 h-4" />
           Roles
         </button>
-        <button
-          onClick={() => {
-            setActiveTab('intent');
-          }}
-          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'intent'
-              ? 'border-primary text-primary'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
-          }`}
-        >
-          <Zap className="w-4 h-4" />
-          Intent
-        </button>
-
       </div>
 
       {activeTab === 'general' && <GeneralTab />}
@@ -164,7 +155,6 @@ export function SettingsPage() {
       {activeTab === 'workspaces' && <WorkspacesSettings />}
       {activeTab === 'users' && <UsersSettings />}
       {activeTab === 'roles' && <RolesSettings />}
-      {activeTab === 'intent' && <IntentEditor />}
     </div>
   );
 }

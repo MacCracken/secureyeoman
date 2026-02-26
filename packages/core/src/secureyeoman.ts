@@ -1640,7 +1640,7 @@ export class SecureYeoman {
    */
   getDataDir(): string {
     this.ensureInitialized();
-    return this.config.core.dataDir;
+    return this.config!.core.dataDir;
   }
 
   /**

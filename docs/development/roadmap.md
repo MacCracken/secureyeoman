@@ -10,7 +10,7 @@
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
 | 53 | Dashboard Completion | **In Progress** |
-| 54 | AI Safety Layer | Planned |
+| 54 | AI Safety Layer | Complete |
 | 55 | Notifications & Integrations | Planned |
 | 56 | Local-First AI | Planned |
 | 57 | Security Toolkit | Planned |
@@ -45,25 +45,28 @@ Sidebar structural reorganization as the foundation, then Mission Control as the
 
 *Do first — structural foundation for all navigation changes below.*
 
-- [ ] **Sidebar Reorganization** — Consolidate nav into mission-aligned sections:
+- [x] **Sidebar Reorganization** — Consolidate nav into mission-aligned sections. ✅ Phase 53
 
   ```
-  Mission Control (default home)
+  Metrics (→ Mission Control)
   Chat
   Editor
   Personality
   Skills
   Proactive
+  [Agents — conditional]
   Intent                          ← promoted from Settings > Intent
-  ┌ Automation (collapsible)
+  ┌ Automation (collapsible, persisted)
   │   ├ Tasks
   │   └ Workflows
   Connections
-  ┌ Administration (collapsible)
+  Security
+  ┌ Administration (collapsible, persisted)
   │   ├ Settings
-  │   ├ Users
-  │   ├ Workspaces
-  │   └ API Keys
+  │   ├ Users          → /users (routes to Settings > Users tab)
+  │   ├ Workspaces     → /workspaces (routes to Settings > Workspaces tab)
+  │   ├ API Keys
+  │   └ Developers     (conditional)
   ```
 
 ### Mission Control Dashboard
@@ -77,21 +80,22 @@ Sidebar structural reorganization as the foundation, then Mission Control as the
 ### Visual Polish
 
 - [x] **Personality image upload** — Allow a personality to receive a custom avatar image. ✅ Phase 53 (ADR 136)
-- [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. Consider CSS variable-based theming for user extensibility.
+- [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. CSS variable-based theming already in place (`hsl(var(--X))` pattern). Pre-work required: audit remaining blue/primary buttons in dark theme — only light theme should use blue (`btn-primary`); dark theme uses muted/ghost variants. Complete button audit before adding preset switcher.
 
 ---
 
 ## Phase 54: AI Safety Layer
 
-**Status**: Planned
+**Status**: Complete ✅
 
-A symmetric output-side verification layer complementing existing input defenses (`input-validator.ts`, `prompt-guard.ts`). The current pipeline validates inputs and scans tool outputs for credentials, but LLM response semantics and safety are unchecked.
+A symmetric output-side verification layer complementing existing input defenses (`input-validator.ts`, `prompt-guard.ts`).
 
-- [ ] **Response Guard** — Counterpart to `prompt-guard.ts` applied to LLM *responses*. Scans for indirect prompt injection smuggled via AI output: instruction-injection patterns (`"From now on you must…"`), cross-turn influence attempts (`"Remember for future messages…"`), data exfiltration formatting signals, second-model self-escalation. Hooks at `chat-routes.ts` after credential scan, before persistence. Modes: `block | warn | disabled` mirroring PromptGuard.
-- [ ] **LLM-as-Judge for high-autonomy operations** — For L4/L5 autonomy skills and `supervised_auto` workflows, invoke a second independent model call to judge the *proposed action* before execution. Verdict dimensions: relevance, policy compliance, scope creep. Integrates with automation level gating in `creation-tool-executor.ts`.
-- [ ] **OPA output compliance check** — Extend the Phase 50 OPA integration to evaluate LLM *responses*, not just inputs. Define `output_policy/allow` rules verifying hard boundaries from `IntentManager` weren't violated in response text. Low engineering effort — client and policy upload infrastructure already exist.
-- [ ] **Structured output schema validation** — When skills or workflow steps return structured data (JSON, YAML), validate against a declared Zod schema before appending to context. Schema declared per-skill alongside `successCriteria`.
-- [ ] **Brain consistency check** — After retrieving `brainContext`, compare the LLM response against injected knowledge entries. Flag responses making factual claims that directly contradict stored knowledge, surfacing a warning in conversation metadata rather than blocking.
+- [x] **ResponseGuard** — Pattern-based output scanner (`src/security/response-guard.ts`). Six patterns covering injection, self-escalation, role confusion, and exfiltration. Modes: `block | warn | disabled`. Hooked in both stream and non-stream chat paths.
+- [x] **LLM-as-Judge** — Secondary LLM review for high-autonomy tool calls (`src/security/llm-judge.ts`). Triggers on `supervised_auto` personalities (configurable). Verdicts: allow/warn/block. Fail-open.
+- [x] **OPA output compliance check** — `IntentManager.checkOutputCompliance()` evaluates `output_compliance/allow` against active hard boundaries. `syncPoliciesWithOpa()` uploads the package automatically.
+- [x] **Structured output schema validation** — `OutputSchemaValidator` (`src/security/output-schema-validator.ts`) validates workflow step outputs. Skills gain `outputSchema` field. Migration 055.
+- [x] **Brain consistency check** — `ResponseGuard.checkBrainConsistency()` warns when response contradicts identity/memory context. Always warn-only.
+- [ ] Skill-level autonomy (L4/L5) LLM-as-Judge trigger — deferred (requires storage call in tool hot path)
 
 ---
 
@@ -232,4 +236,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 — Removed completed Phase 53 items: Risk Assessment Dashboard (UI shipped as SecurityPage tab), Marketplace/Community pagination. Phase 53 status → In Progress. Remaining: Sidebar Reorganization, Mission Control, Advanced Editor, Visual Polish.*
+*Last updated: 2026-02-26 — Sidebar Reorganization shipped: Intent promoted to top-level, collapsible Automation + Administration groups, /users + /workspaces routes. Theme Presets pre-work noted: dark-theme button audit required first. Remaining: Mission Control, Advanced Editor, Switchable Theme Presets.*

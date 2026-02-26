@@ -28,6 +28,14 @@ import {
   MessagesSquare,
   ClipboardList,
   GitMerge,
+  Target,
+  Layers,
+  SlidersHorizontal,
+  Building2,
+  Key,
+  UserCircle,
+  Users2,
+  ChevronRight,
 } from 'lucide-react';
 import { useSidebar } from '../hooks/useSidebar';
 import { useTheme } from '../hooks/useTheme';
@@ -49,25 +57,28 @@ export interface SidebarProps {
   onLogout: () => void;
 }
 
-const NAV_ITEMS_WITHOUT_AGENTS: {
-  to: string;
-  label: string;
-  icon: React.ReactNode;
-  end?: boolean;
-  enabled?: boolean;
-}[] = [
+type NavItem = { to: string; label: string; icon: React.ReactNode; end?: boolean };
+
+const BASE_TOP_ITEMS: NavItem[] = [
   { to: '/metrics', label: 'Metrics', icon: <BarChart2 className="w-5 h-5" /> },
   { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
-  { to: '/tasks', label: 'Tasks', icon: <ClipboardList className="w-5 h-5" /> },
   { to: '/chat', label: 'Chat', icon: <MessagesSquare className="w-5 h-5" /> },
   { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> },
   { to: '/personality', label: 'Personality', icon: <Brain className="w-5 h-5" /> },
   { to: '/skills', label: 'Skills', icon: <Zap className="w-5 h-5" /> },
-  { to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" />, enabled: true },
-  { to: '/workflows', label: 'Workflows', icon: <GitMerge className="w-5 h-5" /> },
+];
+
+const MID_ITEMS: NavItem[] = [
   { to: '/connections', label: 'Connections', icon: <Cable className="w-5 h-5" /> },
-  { to: '/developers', label: 'Developers', icon: <Code2 className="w-5 h-5" />, enabled: true },
+];
+
+const BASE_ADMIN_ITEMS: NavItem[] = [
   { to: '/settings', label: 'Settings', icon: <Settings className="w-5 h-5" /> },
+  { to: '/security-settings', label: 'Security', icon: <Shield className="w-5 h-5" /> },
+  { to: '/api-keys', label: 'Secrets', icon: <Key className="w-5 h-5" /> },
+  { to: '/workspaces', label: 'Workspaces', icon: <Building2 className="w-5 h-5" /> },
+  { to: '/users', label: 'Users', icon: <UserCircle className="w-5 h-5" /> },
+  { to: '/roles', label: 'Roles', icon: <Users2 className="w-5 h-5" /> },
 ];
 
 const navLinkClass = (isActive: boolean, collapsed: boolean) =>
@@ -101,6 +112,12 @@ export function Sidebar({
   const [profileOpen, setProfileOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [newDialogOpen, setNewDialogOpen] = useState(false);
+  const [automationOpen, setAutomationOpen] = useState(
+    () => { try { return localStorage.getItem('sy_automation_open') !== 'false'; } catch { return true; } }
+  );
+  const [adminOpen, setAdminOpen] = useState(
+    () => { try { return localStorage.getItem('sy_admin_open') !== 'false'; } catch { return true; } }
+  );
   const profileRef = useRef<HTMLDivElement>(null);
   const role = parseJwtRole();
 
@@ -147,22 +164,18 @@ export function Sidebar({
   const experimentsEnabled = securityPolicy?.allowExperiments ?? false;
   const storybookEnabled = securityPolicy?.allowStorybook ?? false;
 
-  const NAV_ITEMS = useMemo(() => {
-    const items = [...NAV_ITEMS_WITHOUT_AGENTS];
-    if (hasAgents) {
-      items.splice(8, 0, {
-        to: '/agents',
-        label: 'Agents',
-        icon: <Users className="w-5 h-5" />,
-      });
-    }
-    return items.filter((item) => {
-      if (item.to === '/developers')
-        return extensionsEnabled || experimentsEnabled || storybookEnabled;
-      if (item.to === '/proactive') return proactiveEnabled;
-      if (item.to === '/workflows') return workflowsEnabled;
-      return true;
-    });
+  const { topItems, automationItems, adminItems } = useMemo(() => {
+    const top: NavItem[] = [...BASE_TOP_ITEMS];
+    top.push({ to: '/intent', label: 'Intent', icon: <Target className="w-5 h-5" /> });
+    if (proactiveEnabled) top.push({ to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" /> });
+    if (hasAgents) top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
+
+    const automation: NavItem[] = [
+      { to: '/tasks', label: 'Tasks', icon: <ClipboardList className="w-5 h-5" /> },
+    ];
+    if (workflowsEnabled) automation.push({ to: '/workflows', label: 'Workflows', icon: <GitMerge className="w-5 h-5" /> });
+
+    return { topItems: top, automationItems: automation, adminItems: [...BASE_ADMIN_ITEMS] };
   }, [hasAgents, extensionsEnabled, proactiveEnabled, workflowsEnabled, experimentsEnabled, storybookEnabled]);
 
   useEffect(() => {
@@ -180,6 +193,32 @@ export function Sidebar({
       document.removeEventListener('mousedown', handler);
     };
   }, []);
+
+  useEffect(() => {
+    try { localStorage.setItem('sy_automation_open', String(automationOpen)); } catch {}
+  }, [automationOpen]);
+
+  useEffect(() => {
+    try { localStorage.setItem('sy_admin_open', String(adminOpen)); } catch {}
+  }, [adminOpen]);
+
+  const groupHeaderClass =
+    'flex items-center gap-3 px-3 py-2 w-full rounded-lg text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-all duration-200';
+
+  const renderNavItem = (item: NavItem) => (
+    <NavLink
+      key={item.to}
+      to={item.to}
+      end={item.end}
+      className={({ isActive }) => navLinkClass(isActive, collapsed)}
+    >
+      <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
+      <span className={`transition-opacity duration-200 ${collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'}`}>
+        {item.label}
+      </span>
+      {collapsed && <span className="sidebar-tooltip">{item.label}</span>}
+    </NavLink>
+  );
 
   const sidebarContent = (
     <div className="flex flex-col h-full">
@@ -207,24 +246,50 @@ export function Sidebar({
       <nav
         className={`flex-1 px-3 py-4 overflow-y-auto ${collapsed ? 'overflow-hidden scrollbar-hide space-y-0.5' : 'space-y-1'}`}
       >
-        {NAV_ITEMS.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) => navLinkClass(isActive, collapsed)}
-          >
-            <span className="w-5 h-5 flex-shrink-0">{item.icon}</span>
-            <span
-              className={`transition-opacity duration-200 ${
-                collapsed ? 'opacity-0 w-0 overflow-hidden' : 'opacity-100'
-              }`}
-            >
-              {item.label}
-            </span>
-            {collapsed && item.label && <span className="sidebar-tooltip">{item.label}</span>}
-          </NavLink>
-        ))}
+        {/* Top items: Metrics, Chat, Editor, Personality, Skills, [Proactive], [Agents], Intent */}
+        {topItems.map(renderNavItem)}
+
+        {/* Automation collapsible group */}
+        {collapsed && <div className="border-t border-border/30 mx-2 my-1" />}
+        <div className={collapsed ? '' : 'space-y-0.5 mt-1'}>
+          {!collapsed && (
+            <button onClick={() => setAutomationOpen((v) => !v)} className={groupHeaderClass}>
+              <Layers className="w-5 h-5 flex-shrink-0" />
+              <span className="flex-1 text-left">Automation</span>
+              <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${automationOpen ? 'rotate-90' : ''}`} />
+            </button>
+          )}
+          {(collapsed || automationOpen) && (
+            <div className={!collapsed ? 'ml-3 pl-3 border-l border-border/50 space-y-0.5' : ''}>
+              {automationItems.map(renderNavItem)}
+            </div>
+          )}
+        </div>
+
+        {/* Mid items: Connections, Security */}
+        {MID_ITEMS.map(renderNavItem)}
+
+        {/* Developers — conditional, flat item */}
+        {(extensionsEnabled || experimentsEnabled || storybookEnabled) && renderNavItem(
+          { to: '/developers', label: 'Developers', icon: <Code2 className="w-5 h-5" /> }
+        )}
+
+        {/* Administration collapsible group */}
+        {collapsed && <div className="border-t border-border/30 mx-2 my-1" />}
+        <div className={collapsed ? '' : 'space-y-0.5 mt-1'}>
+          {!collapsed && (
+            <button onClick={() => setAdminOpen((v) => !v)} className={groupHeaderClass}>
+              <SlidersHorizontal className="w-5 h-5 flex-shrink-0" />
+              <span className="flex-1 text-left">Administration</span>
+              <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${adminOpen ? 'rotate-90' : ''}`} />
+            </button>
+          )}
+          {(collapsed || adminOpen) && (
+            <div className={!collapsed ? 'ml-3 pl-3 border-l border-border/50 space-y-0.5' : ''}>
+              {adminItems.map(renderNavItem)}
+            </div>
+          )}
+        </div>
       </nav>
 
       <div className={`${collapsed ? 'px-2 py-2' : 'px-3 py-2'} border-t border-border`}>

@@ -1053,9 +1053,11 @@ describe('Phase 50 — syncPoliciesWithOpa', () => {
 
     await mgr.syncPoliciesWithOpa(record);
 
-    expect(uploadSpy).toHaveBeenCalledTimes(2);
+    // boundary_hb1 + policy_p1 + output_compliance (Phase 54)
+    expect(uploadSpy).toHaveBeenCalledTimes(3);
     expect(uploadSpy).toHaveBeenCalledWith('boundary_hb1', expect.stringContaining('allow'));
     expect(uploadSpy).toHaveBeenCalledWith('policy_p1', expect.stringContaining('allow'));
+    expect(uploadSpy).toHaveBeenCalledWith('output_compliance', expect.stringContaining('output_compliance'));
     // hb2 has no rego → should NOT be uploaded
     expect(uploadSpy).not.toHaveBeenCalledWith('boundary_hb2', expect.anything());
 
@@ -1093,5 +1095,88 @@ describe('Phase 50 — syncPoliciesWithOpa', () => {
 
     await expect(mgr.syncPoliciesWithOpa(record)).resolves.toBeUndefined();
     vi.restoreAllMocks();
+  });
+});
+
+// ── Phase 54: checkOutputCompliance ───────────────────────────────────────────
+
+describe('Phase 54 — checkOutputCompliance', () => {
+  it('returns compliant:true when no intent is set', async () => {
+    const mgr = new IntentManager({ storage: makeStorage(), opaClient: null });
+    const result = await mgr.checkOutputCompliance('Some response text');
+    expect(result.compliant).toBe(true);
+  });
+
+  it('returns compliant:true when OPA is not configured', async () => {
+    const mgr = new IntentManager({ storage: makeStorage(), opaClient: null });
+    await mgr.initialize();
+    const result = await mgr.checkOutputCompliance('Some response text');
+    expect(result.compliant).toBe(true);
+  });
+
+  it('returns compliant:true when there are no hard boundaries', async () => {
+    const evaluateSpy = vi.spyOn(OpaClient.prototype, 'evaluate').mockResolvedValue(true);
+    const opa = new OpaClient('http://opa:8181');
+    const mgr = new IntentManager({ storage: makeStorage(), opaClient: opa });
+    // Set active intent with no boundaries via initialize (storage returns null)
+    const result = await mgr.checkOutputCompliance('response');
+    expect(result.compliant).toBe(true);
+    // evaluate should NOT have been called (no active intent)
+    expect(evaluateSpy).not.toHaveBeenCalled();
+    evaluateSpy.mockRestore();
+  });
+
+  it('returns compliant:false when OPA returns false', async () => {
+    const evaluateSpy = vi.spyOn(OpaClient.prototype, 'evaluate').mockResolvedValue(false);
+    const uploadSpy = vi.spyOn(OpaClient.prototype, 'uploadPolicy').mockResolvedValue(undefined);
+
+    const opa = new OpaClient('http://opa:8181');
+    const storage = makeStorage();
+    // Manually set up active intent with a boundary
+    const record = makeIntent({
+      isActive: true,
+      hardBoundaries: [{ id: 'b1', rule: 'confidential', rationale: '' }],
+    });
+    vi.spyOn(storage, 'getActiveIntent').mockResolvedValue(record);
+
+    const mgr = new IntentManager({ storage, opaClient: opa });
+    await mgr.initialize();
+    const result = await mgr.checkOutputCompliance('This contains confidential data');
+    expect(result.compliant).toBe(false);
+    expect(result.reason).toBeDefined();
+
+    evaluateSpy.mockRestore();
+    uploadSpy.mockRestore();
+  });
+
+  it('returns compliant:true (fail-open) when OPA throws', async () => {
+    const evaluateSpy = vi.spyOn(OpaClient.prototype, 'evaluate').mockRejectedValue(new Error('OPA error'));
+    const uploadSpy = vi.spyOn(OpaClient.prototype, 'uploadPolicy').mockResolvedValue(undefined);
+
+    const opa = new OpaClient('http://opa:8181');
+    const storage = makeStorage();
+    const record = makeIntent({
+      isActive: true,
+      hardBoundaries: [{ id: 'b1', rule: 'secret', rationale: '' }],
+    });
+    vi.spyOn(storage, 'getActiveIntent').mockResolvedValue(record);
+
+    const mgr = new IntentManager({ storage, opaClient: opa });
+    await mgr.initialize();
+    const result = await mgr.checkOutputCompliance('Contains secret stuff');
+    expect(result.compliant).toBe(true);
+
+    evaluateSpy.mockRestore();
+    uploadSpy.mockRestore();
+  });
+
+  it('syncPoliciesWithOpa uploads output_compliance package', async () => {
+    const uploadSpy = vi.spyOn(OpaClient.prototype, 'uploadPolicy').mockResolvedValue(undefined);
+    const opa = new OpaClient('http://opa:8181');
+    const mgr = new IntentManager({ storage: makeStorage(), opaClient: opa });
+    const record = makeIntent({ hardBoundaries: [], policies: [] });
+    await mgr.syncPoliciesWithOpa(record);
+    expect(uploadSpy).toHaveBeenCalledWith('output_compliance', expect.stringContaining('package output_compliance'));
+    uploadSpy.mockRestore();
   });
 });

@@ -60,6 +60,13 @@ export interface BoundaryCheckResult {
   violated?: HardBoundary;
 }
 
+// ─── Output compliance result (Phase 54) ─────────────────────────────────────
+
+export interface OutputComplianceResult {
+  compliant: boolean;
+  reason?: string;
+}
+
 // ─── Action check result ──────────────────────────────────────────────────────
 
 export interface ActionCheckResult {
@@ -660,6 +667,21 @@ export class IntentManager {
       if (p.rego) toUpload.push({ id: `policy_${p.id}`, rego: p.rego });
     }
 
+    // Upload output_compliance package (Phase 54)
+    const outputComplianceRego = `package output_compliance
+import future.keywords.if
+import future.keywords.in
+
+default allow := true
+deny contains reason if {
+  boundary := input.hard_boundaries[_]
+  contains(lower(input.response), lower(boundary.description))
+  reason := concat("", ["Response may reference restricted boundary: ", boundary.id])
+}
+allow := false if count(deny) > 0
+`;
+    toUpload.push({ id: 'output_compliance', rego: outputComplianceRego });
+
     // Upload all policies with rego (errors are non-fatal — logged to stderr)
     await Promise.all(
       toUpload.map(({ id, rego }) =>
@@ -668,6 +690,41 @@ export class IntentManager {
         })
       )
     );
+  }
+
+  /**
+   * Check whether the given LLM response complies with output-side OPA policy.
+   *
+   * Evaluates OPA path `output_compliance/allow` with the response text and
+   * active hard boundaries as input. Returns compliant:true when:
+   *   - OPA is not configured
+   *   - no active intent / no boundaries
+   *   - OPA throws
+   * Callers treat non-compliant as warn-only (never blocking).
+   */
+  async checkOutputCompliance(responseText: string): Promise<OutputComplianceResult> {
+    if (!this.opa || !this.activeIntent) return { compliant: true };
+
+    const hardBoundaries = (this.activeIntent.hardBoundaries ?? []).map((b) => ({
+      id: b.id,
+      description: b.rule,
+    }));
+
+    if (hardBoundaries.length === 0) return { compliant: true };
+
+    try {
+      const result = await this.opa.evaluate('output_compliance/allow', {
+        response: responseText,
+        hard_boundaries: hardBoundaries,
+      });
+      if (result === false) {
+        return { compliant: false, reason: 'Response failed output_compliance OPA policy' };
+      }
+      return { compliant: true };
+    } catch {
+      // Fail open — OPA errors are non-fatal
+      return { compliant: true };
+    }
   }
 
   // ── Enforcement log passthrough ───────────────────────────────────────────────

@@ -596,6 +596,7 @@ export function registerSoulRoutes(app: FastifyInstance, opts: SoulRoutesOptions
           includeArchetypes: request.body?.includeArchetypes ?? agentName === 'FRIDAY',
           injectDateTime: request.body?.injectDateTime ?? false,
           empathyResonance: request.body?.empathyResonance ?? false,
+          avatarUrl: request.body?.avatarUrl ?? null,
           body: request.body?.body ?? {
             enabled: false,
             capabilities: [],

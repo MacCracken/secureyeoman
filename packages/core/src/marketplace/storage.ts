@@ -43,6 +43,7 @@ export class MarketplaceStorage extends PgBaseStorage {
       mcpToolsAllowed: data.mcpToolsAllowed ?? [],
       routing: data.routing ?? 'fuzzy',
       autonomyLevel: data.autonomyLevel ?? 'L1',
+      outputSchema: data.outputSchema ?? null,
       installed: data.installed ?? false,
       installedGlobally: data.installed ?? false,
       source,
@@ -52,8 +53,8 @@ export class MarketplaceStorage extends PgBaseStorage {
     };
     await this.execute(
       `INSERT INTO marketplace.skills
-        (id, name, description, version, author, author_info, category, tags, download_count, rating, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, routing, autonomy_level, mcp_tools_allowed, installed, source, published_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
+        (id, name, description, version, author, author_info, category, tags, download_count, rating, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, routing, autonomy_level, mcp_tools_allowed, output_schema, installed, source, published_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20::jsonb, $21, $22, $23, $24)`,
       [
         id,
         skill.name,
@@ -74,6 +75,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         skill.routing,
         skill.autonomyLevel,
         JSON.stringify(skill.mcpToolsAllowed),
+        skill.outputSchema != null ? JSON.stringify(skill.outputSchema) : null,
         skill.installed,
         skill.source,
         skill.publishedAt,
@@ -118,8 +120,9 @@ export class MarketplaceStorage extends PgBaseStorage {
         routing = COALESCE($13, routing),
         autonomy_level = COALESCE($14, autonomy_level),
         mcp_tools_allowed = COALESCE($15, mcp_tools_allowed),
-        updated_at = $16
-       WHERE id = $17`,
+        output_schema = COALESCE($16::jsonb, output_schema),
+        updated_at = $17
+       WHERE id = $18`,
       [
         data.name ?? null,
         data.description ?? null,
@@ -136,6 +139,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         data.routing ?? null,
         data.autonomyLevel ?? null,
         data.mcpToolsAllowed ? JSON.stringify(data.mcpToolsAllowed) : null,
+        data.outputSchema != null ? JSON.stringify(data.outputSchema) : null,
         now,
         id,
       ]
@@ -305,6 +309,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         : [],
       routing: ((row.routing as string) ?? 'fuzzy') as CatalogSkill['routing'],
       autonomyLevel: ((row.autonomy_level as string) ?? 'L1') as CatalogSkill['autonomyLevel'],
+      outputSchema: (row.output_schema as Record<string, unknown> | null | undefined) ?? null,
       installed: row.installed as boolean,
       installedGlobally: (row.installed as boolean) ?? false,
       source,

@@ -1,3 +1,18 @@
+## [2026.2.26e] — 2026-02-26
+
+### Added
+
+#### Phase 54 — AI Safety Layer
+
+- **ResponseGuard** (`src/security/response-guard.ts`) — output-side injection scanner, counterpart to `PromptGuard`. Six patterns: `instruction_injection_output`, `cross_turn_influence`, `self_escalation`, `role_confusion`, `base64_exfiltration`, `hex_exfiltration`. Modes: `block`, `warn` (default), `disabled`. Brain consistency check (always warn-only) detects responses that contradict established identity or deny used memories.
+- **OPA Output Compliance** — new `checkOutputCompliance(responseText)` on `IntentManager`. Evaluates `output_compliance/allow` OPA policy against active hard boundaries. `syncPoliciesWithOpa()` now automatically uploads the `output_compliance` Rego package. Non-compliant responses log `output_compliance_warning`, never block.
+- **LLM-as-Judge** (`src/security/llm-judge.ts`) — secondary LLM review for high-autonomy tool calls. Triggers when personality `automationLevel` matches configured list (default: `supervised_auto`). Verdicts: `allow`, `warn`, `block`. Fail-open on errors. Audit events: `llm_judge_block`, `llm_judge_warn`.
+- **OutputSchemaValidator** (`src/security/output-schema-validator.ts`) — minimal JSON Schema subset validator (no new runtime deps). Supports `type`, `required[]`, `properties{}`, `items{}`. Hooked into `WorkflowEngine.runStep()` — validates step output against `step.config.outputSchema`; logs `step_output_schema_violation` warning, never throws.
+- **`outputSchema` field on skills** — `BaseSkillSchema` gains `outputSchema: Record<string, unknown> | null`. Migration `055_skill_output_schema.sql` adds the `output_schema JSONB` column to `brain.skills` and `marketplace.skills`.
+- **Config schemas** — `ResponseGuardConfigSchema` and `LLMJudgeConfigSchema` added to `SecurityConfigSchema` in `packages/shared`.
+- **27 tests** in `response-guard.test.ts`, 17 in `output-schema-validator.test.ts`, 14 in `llm-judge.test.ts`, 6 new tests in `intent-manager.test.ts`.
+- **ADR 137** (`docs/adr/137-ai-safety-layer.md`) and **guide** (`docs/guides/ai-safety-layer.md`).
+
 ## [2026.2.26d] — 2026-02-26
 
 ### Changed
