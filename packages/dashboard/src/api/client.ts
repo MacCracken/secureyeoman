@@ -37,6 +37,12 @@ import type {
   AuditRun,
   AuditItemStatus,
   ServerNotification,
+  RiskAssessment,
+  ExternalFeed,
+  ExternalFinding,
+  CreateRiskAssessmentOptions,
+  CreateExternalFeedOptions,
+  CreateExternalFindingOptions,
 } from '../types.js';
 
 const API_BASE = '/api/v1';
@@ -3568,4 +3574,118 @@ export async function markAllNotificationsRead(): Promise<{ updated: number }> {
 
 export async function deleteNotification(id: string): Promise<void> {
   await request(`/notifications/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+// ── Risk Assessment API (Phase 53) ────────────────────────────────────────
+
+export async function runRiskAssessment(opts: CreateRiskAssessmentOptions): Promise<RiskAssessment> {
+  const res = await request<{ assessment: RiskAssessment }>('/risk/assessments', {
+    method: 'POST',
+    body: JSON.stringify(opts),
+  });
+  return res.assessment;
+}
+
+export async function fetchRiskAssessments(params?: {
+  limit?: number;
+  offset?: number;
+  status?: string;
+}): Promise<{ items: RiskAssessment[]; total: number }> {
+  const q = new URLSearchParams();
+  if (params?.limit != null) q.set('limit', String(params.limit));
+  if (params?.offset != null) q.set('offset', String(params.offset));
+  if (params?.status) q.set('status', params.status);
+  const qs = q.toString();
+  return request<{ items: RiskAssessment[]; total: number }>(
+    `/risk/assessments${qs ? `?${qs}` : ''}`
+  );
+}
+
+export async function fetchRiskAssessment(id: string): Promise<RiskAssessment> {
+  const res = await request<{ assessment: RiskAssessment }>(
+    `/risk/assessments/${encodeURIComponent(id)}`
+  );
+  return res.assessment;
+}
+
+export async function downloadRiskReport(id: string, format: string): Promise<string> {
+  const url = `/api/v1/risk/assessments/${encodeURIComponent(id)}/report/${encodeURIComponent(format)}`;
+  const token = getAccessToken();
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    throw new Error(`Failed to download report: ${response.status}`);
+  }
+  return response.text();
+}
+
+export async function fetchRiskFeeds(): Promise<ExternalFeed[]> {
+  const res = await request<{ feeds: ExternalFeed[] }>('/risk/feeds');
+  return res.feeds;
+}
+
+export async function createRiskFeed(data: CreateExternalFeedOptions): Promise<ExternalFeed> {
+  const res = await request<{ feed: ExternalFeed }>('/risk/feeds', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return res.feed;
+}
+
+export async function deleteRiskFeed(id: string): Promise<void> {
+  await request(`/risk/feeds/${encodeURIComponent(id)}`, { method: 'DELETE' });
+}
+
+export async function ingestRiskFindings(
+  feedId: string,
+  findings: unknown[]
+): Promise<{ created: number; skipped: number }> {
+  return request<{ created: number; skipped: number }>(
+    `/risk/feeds/${encodeURIComponent(feedId)}/ingest`,
+    { method: 'POST', body: JSON.stringify(findings) }
+  );
+}
+
+export async function fetchRiskFindings(params?: {
+  feedId?: string;
+  status?: string;
+  severity?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<{ items: ExternalFinding[]; total: number }> {
+  const q = new URLSearchParams();
+  if (params?.feedId) q.set('feedId', params.feedId);
+  if (params?.status) q.set('status', params.status);
+  if (params?.severity) q.set('severity', params.severity);
+  if (params?.limit != null) q.set('limit', String(params.limit));
+  if (params?.offset != null) q.set('offset', String(params.offset));
+  const qs = q.toString();
+  return request<{ items: ExternalFinding[]; total: number }>(
+    `/risk/findings${qs ? `?${qs}` : ''}`
+  );
+}
+
+export async function createRiskFinding(data: CreateExternalFindingOptions): Promise<ExternalFinding> {
+  const res = await request<{ finding: ExternalFinding }>('/risk/findings', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+  return res.finding;
+}
+
+export async function acknowledgeRiskFinding(id: string): Promise<ExternalFinding> {
+  const res = await request<{ finding: ExternalFinding }>(
+    `/risk/findings/${encodeURIComponent(id)}/acknowledge`,
+    { method: 'PATCH' }
+  );
+  return res.finding;
+}
+
+export async function resolveRiskFinding(id: string): Promise<ExternalFinding> {
+  const res = await request<{ finding: ExternalFinding }>(
+    `/risk/findings/${encodeURIComponent(id)}/resolve`,
+    { method: 'PATCH' }
+  );
+  return res.finding;
 }

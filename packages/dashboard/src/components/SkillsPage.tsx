@@ -733,12 +733,33 @@ function MySkillsTab() {
                     {sanitizeText(skill.description)}
                   </p>
                   {(skill.triggerPatterns || []).length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
+                    <div className="flex items-center flex-wrap gap-1 mt-2">
+                      <span className="text-xs font-medium text-muted-foreground mr-1">Triggers:</span>
                       {(skill.triggerPatterns || []).map((p, i) => (
-                        <span key={i} className="text-xs bg-muted px-2 py-0.5 rounded">
+                        <span key={i} className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded font-mono">
                           {p}
                         </span>
                       ))}
+                    </div>
+                  )}
+                  {(skill.mcpToolsAllowed || []).length > 0 && (
+                    <div className="flex items-center flex-wrap gap-1 mt-1.5">
+                      <Shield className="w-3 h-3 text-warning shrink-0" />
+                      <span className="text-xs font-medium text-muted-foreground mr-1">MCP Restricted:</span>
+                      {(skill.mcpToolsAllowed || []).map((t, i) => (
+                        <span key={i} className="text-xs bg-warning/10 text-warning px-2 py-0.5 rounded font-mono">
+                          {t}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {skill.linkedWorkflowId && (
+                    <div className="flex items-center gap-1.5 mt-1.5">
+                      <GitBranch className="w-3 h-3 text-info shrink-0" />
+                      <span className="text-xs font-medium text-muted-foreground">Workflow:</span>
+                      <span className="text-xs bg-info/10 text-info px-2 py-0.5 rounded font-mono">
+                        {skill.linkedWorkflowId}
+                      </span>
                     </div>
                   )}
                 </div>
@@ -1337,6 +1358,25 @@ function SkillPreviewModal({
               </div>
             </div>
           )}
+
+          {/* MCP Tool Allowlist */}
+          {(skill.mcpToolsAllowed || []).length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5 text-warning" />
+                MCP Restricted To ({(skill.mcpToolsAllowed || []).length})
+              </h3>
+              <p className="text-xs text-muted-foreground mb-1.5">Only these tools are available while this skill is active.</p>
+              <div className="flex flex-wrap gap-1.5">
+                {(skill.mcpToolsAllowed || []).map((t, i) => (
+                  <span key={i} className="text-[10px] bg-warning/10 text-warning px-2 py-0.5 rounded font-mono">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
         </div>
 
         {/* Footer */}

@@ -50,6 +50,11 @@ export const seniorSoftwareEngineerSkill: Partial<MarketplaceSkill> = {
     'clean-code',
     'scalability',
   ],
+  triggerPatterns: [
+    '(design|architect|implement|refactor|build|scale|structure|model).{0,30}(system|service|api|module|component|class|function|feature|database)',
+    '\\b(design pattern|clean architecture|solid principle|dependency injection|microservice|event.driven|distributed system|cqrs|event sourcing)\\b',
+    'how (do|should|would|can).{0,20}(implement|build|design|structure|scale|handle|approach)',
+  ],
   useWhen: 'User needs architecture advice, code design, technical trade-offs, or production-ready implementation',
   doNotUseWhen: 'User needs a code review or audit — use the Sr. Software Engineer - Audit skill instead',
   successCriteria: 'Scalable, maintainable solution delivered with rationale, trade-offs, and production-ready error handling',

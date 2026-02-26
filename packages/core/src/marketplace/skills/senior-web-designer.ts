@@ -52,6 +52,11 @@ export const seniorWebDesignerSkill: Partial<MarketplaceSkill> = {
     'Wait for answers before providing your final critique.',
   ].join('\n'),
   tags: ['design', 'ui', 'ux', 'cro', 'accessibility', 'mobile-first', 'web-design', 'conversion'],
+  triggerPatterns: [
+    '\\b(ui|ux|user interface|user experience|web design|wireframe|mockup|prototype|figma|sketch|design system|component library)\\b',
+    '(design|redesign|improve|optimize|review|critique).{0,30}(website|webpage|landing.?page|interface|layout|component|form|button|nav)',
+    '\\b(accessibility|wcag|cro|conversion rate|a.?b test|heatmap|user flow|navigation|responsive|mobile.first|visual hierarchy)\\b',
+  ],
   useWhen: 'User needs UI/UX design review, CRO advice, accessibility guidance, or web design critique',
   doNotUseWhen: 'User needs backend, infrastructure, or business logic work — use an engineering skill instead',
   successCriteria: 'Actionable critique covering visual hierarchy, user friction, technical feasibility, and accessibility compliance',

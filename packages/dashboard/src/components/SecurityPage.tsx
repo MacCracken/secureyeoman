@@ -60,6 +60,7 @@ import {
 } from '../api/client';
 import type { ReportSummary, MlSecuritySummary } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
+import { RiskAssessmentTab } from './RiskAssessmentTab';
 import type {
   MetricsSnapshot,
   HealthStatus,
@@ -74,7 +75,7 @@ import type {
   AutonomyLevel,
 } from '../types';
 
-type TabType = 'overview' | 'audit' | 'ml' | 'reports' | 'nodes' | 'autonomy';
+type TabType = 'overview' | 'audit' | 'ml' | 'reports' | 'nodes' | 'autonomy' | 'risk';
 
 const SEVERITY_ICONS: Record<string, React.ReactNode> = {
   info: <Info className="w-4 h-4 text-info" />,
@@ -117,6 +118,7 @@ export function SecurityPage() {
     if (tabParam === 'reports' || path.includes('/reports')) return 'reports';
     if (tabParam === 'nodes') return 'nodes';
     if (tabParam === 'autonomy') return 'autonomy';
+    if (tabParam === 'risk') return 'risk';
     return 'overview';
   };
 
@@ -290,6 +292,17 @@ export function SecurityPage() {
           <Server className="w-4 h-4" />
           System
         </button>
+        <button
+          onClick={() => setActiveTab('risk')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'risk'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <TrendingUp className="w-4 h-4" />
+          Risk
+        </button>
       </div>
 
       {activeTab === 'overview' && (
@@ -323,6 +336,8 @@ export function SecurityPage() {
       {activeTab === 'nodes' && <NodeDetailsTab />}
 
       {activeTab === 'autonomy' && <AutonomyTab />}
+
+      {activeTab === 'risk' && <RiskAssessmentTab />}
     </div>
   );
 }

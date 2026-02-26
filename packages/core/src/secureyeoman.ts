@@ -135,6 +135,8 @@ import { IntentManager } from './intent/manager.js';
 import { AutonomyAuditStorage, AutonomyAuditManager } from './security/autonomy-audit.js';
 import { NotificationStorage } from './notifications/notification-storage.js';
 import { NotificationManager } from './notifications/notification-manager.js';
+import { RiskAssessmentStorage } from './risk-assessment/risk-assessment-storage.js';
+import { RiskAssessmentManager } from './risk-assessment/risk-assessment-manager.js';
 import { SystemPreferencesStorage } from './config/system-preferences-storage.js';
 import { GroupChatStorage } from './integrations/group-chat-storage.js';
 import { RoutingRulesStorage } from './integrations/routing-rules-storage.js';
@@ -240,6 +242,9 @@ export class SecureYeoman {
   private autonomyAuditManager: AutonomyAuditManager | null = null;
   private notificationStorage: NotificationStorage | null = null;
   private notificationManager: NotificationManager | null = null;
+  private riskAssessmentStorage: RiskAssessmentStorage | null = null;
+  private riskAssessmentManager: RiskAssessmentManager | null = null;
+  private riskScheduleTimer: ReturnType<typeof setInterval> | null = null;
   private proactiveManager: import('./proactive/manager.js').ProactiveManager | null = null;
   private multimodalManager: import('./multimodal/manager.js').MultimodalManager | null = null;
   private browserSessionStorage: import('./browser/storage.js').BrowserSessionStorage | null = null;
@@ -355,6 +360,10 @@ export class SecureYeoman {
       this.notificationStorage = new NotificationStorage();
       this.notificationManager = new NotificationManager(this.notificationStorage);
       this.logger.debug('NotificationManager initialized (broadcast wired after gateway starts)');
+
+      // Step 2.10: Initialize RiskAssessmentStorage
+      this.riskAssessmentStorage = new RiskAssessmentStorage();
+      this.logger.debug('RiskAssessmentStorage initialized');
 
       // Step 3: Validate secrets are available
       validateSecrets(this.config);
@@ -1172,6 +1181,36 @@ export class SecureYeoman {
         }
       }
 
+      // Step 6e: Initialize RiskAssessmentManager (uses pool from Step 2.1)
+      if (this.riskAssessmentStorage) {
+        try {
+          const pool = getPool();
+          this.riskAssessmentManager = new RiskAssessmentManager({
+            storage: this.riskAssessmentStorage,
+            pool,
+            auditChain: this.auditChain,
+            tlsManager: this.tlsManager,
+          });
+          this.logger.debug('RiskAssessmentManager initialized');
+
+          // Schedule a daily automated assessment
+          const MS_PER_DAY = 24 * 60 * 60 * 1000;
+          this.riskScheduleTimer = setInterval(() => {
+            void this.riskAssessmentManager!.runAssessment({
+              name: `Scheduled ${new Date().toISOString()}`,
+              assessmentTypes: ['security', 'autonomy', 'governance', 'infrastructure', 'external'],
+              windowDays: 7,
+            }).catch(() => {
+              // non-fatal — logged by manager
+            });
+          }, MS_PER_DAY);
+        } catch (error) {
+          this.logger.warn('RiskAssessmentManager initialization failed (non-fatal)', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        }
+      }
+
       // Step 7: Record initialization in audit log
       await this.auditChain.record({
         event: 'system_initialized',
@@ -1881,6 +1920,14 @@ export class SecureYeoman {
     return this.notificationManager;
   }
 
+  /**
+   * Get the risk assessment manager instance (always available after initialization).
+   */
+  getRiskAssessmentManager(): RiskAssessmentManager | null {
+    this.ensureInitialized();
+    return this.riskAssessmentManager;
+  }
+
   getMultimodalManager(): import('./multimodal/manager.js').MultimodalManager | null {
     this.ensureInitialized();
     return this.multimodalManager;
@@ -2538,6 +2585,12 @@ export class SecureYeoman {
     if (this.usagePruneTimer) {
       clearInterval(this.usagePruneTimer);
       this.usagePruneTimer = null;
+    }
+
+    // Stop risk assessment scheduler
+    if (this.riskScheduleTimer) {
+      clearInterval(this.riskScheduleTimer);
+      this.riskScheduleTimer = null;
     }
 
     // Close conversation manager

@@ -62,6 +62,11 @@ export const seniorSoftwareEngineerAuditSkill: Partial<MarketplaceSkill> = {
     '- When in doubt about intent, ask clarifying questions rather than assuming the worst.',
   ].join('\n'),
   tags: ['development', 'code-review', 'audit', 'security', 'quality', 'best-practices'],
+  triggerPatterns: [
+    '(review|audit|check|analyse|analyze|critique|assess|evaluate).{0,30}(code|function|class|module|component|file|implementation|snippet)',
+    '\\b(code review|pr review|pull request review|code audit|security review|quality review)\\b',
+    'what.{0,20}(wrong|issue|problem|bug).{0,20}(with )?(this|the|my) (code|function|implementation)',
+  ],
   useWhen: 'User asks for a code review, audit, or quality assessment of existing code',
   doNotUseWhen: 'User needs new code written or architecture designed — use the Senior Software Engineer skill instead',
   successCriteria: 'Structured review with severity-rated findings (HIGH/MEDIUM/LOW), suggested fixes, and a summary checklist',

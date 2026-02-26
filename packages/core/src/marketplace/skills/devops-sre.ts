@@ -58,6 +58,11 @@ export const devopsSreSkill: Partial<MarketplaceSkill> = {
     'reliability',
     'automation',
   ],
+  triggerPatterns: [
+    '\\b(kubernetes|k8s|docker|terraform|helm|ansible|ci.?cd|pipeline|dockerfile|github.?action|gitlab.?ci|argocd|flux)\\b',
+    '(deploy|deployment|infrastructure|cluster|container|pod|service|ingress|load.?balanc|autoscal|provisioning)',
+    '\\b(devops|sre|site reliability|observability|monitoring|alerting|on.?call|incident|runbook|slo|sli|sla|prometheus|grafana|opentelemetry)\\b',
+  ],
   useWhen: 'User needs infrastructure design, IaC code, Kubernetes/Terraform help, or reliability/SRE guidance',
   doNotUseWhen: 'User needs application-level code or business logic — use the Senior Software Engineer skill instead',
   successCriteria: 'Reliable, observable infrastructure solution with risk assessment, rollback plan, and IaC snippets',

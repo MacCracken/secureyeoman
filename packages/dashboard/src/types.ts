@@ -375,20 +375,21 @@ export interface KnowledgeEntry {
   updatedAt: number;
 }
 
-export interface MarketplaceSkillAuthorInfo {
+export interface CatalogSkillAuthorInfo {
   name: string;
   github?: string;
   website?: string;
   license?: string;
 }
 
-export interface MarketplaceSkill {
+/** Canonical catalog-layer skill type — mirrors CatalogSkillSchema from @secureyeoman/shared. */
+export interface CatalogSkill {
   id: string;
   name: string;
   description: string;
   version: string;
   author: string;
-  authorInfo?: MarketplaceSkillAuthorInfo;
+  authorInfo?: CatalogSkillAuthorInfo;
   category: string;
   tags: string[];
   downloadCount: number;
@@ -411,8 +412,10 @@ export interface MarketplaceSkill {
   updatedAt: number;
 }
 
-/** @deprecated Use MarketplaceSkill. CatalogSkill is the canonical name. */
-export type CatalogSkill = MarketplaceSkill;
+/** @deprecated Use CatalogSkill. */
+export type MarketplaceSkill = CatalogSkill;
+/** @deprecated Use CatalogSkillAuthorInfo. */
+export type MarketplaceSkillAuthorInfo = CatalogSkillAuthorInfo;
 
 // ─── Autonomy Level (Phase 49) ──────────────────────────────
 export type AutonomyLevel = 'L1' | 'L2' | 'L3' | 'L4' | 'L5';
@@ -808,4 +811,105 @@ export interface ServerNotification {
   metadata?: Record<string, unknown>;
   readAt: number | null;
   createdAt: number;
+}
+
+// ─── Risk Assessment Types (Phase 53) ────────────────────────────────────────
+
+export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
+export type RiskDomain = 'security' | 'autonomy' | 'governance' | 'infrastructure' | 'external';
+export type RiskFindingSeverity = 'info' | 'low' | 'medium' | 'high' | 'critical';
+export type AssessmentStatus = 'pending' | 'running' | 'completed' | 'failed';
+export type ExternalFindingStatus = 'open' | 'acknowledged' | 'resolved';
+export type ExternalFeedSourceType = 'webhook' | 'upload' | 'manual';
+export type ExternalFeedCategory = 'finance' | 'compliance' | 'cyber' | 'other';
+
+export interface RiskFinding {
+  id: string;
+  domain: RiskDomain;
+  severity: RiskFindingSeverity;
+  title: string;
+  description: string;
+  affectedResource?: string;
+  recommendation?: string;
+  evidence?: Record<string, unknown>;
+}
+
+export interface RiskAssessment {
+  id: string;
+  name: string;
+  status: AssessmentStatus;
+  assessmentTypes: RiskDomain[];
+  windowDays: number;
+  compositeScore?: number;
+  riskLevel?: RiskLevel;
+  domainScores?: Record<string, number>;
+  findings?: RiskFinding[];
+  findingsCount: number;
+  options?: Record<string, unknown>;
+  createdBy?: string;
+  createdAt: number;
+  completedAt?: number;
+  error?: string;
+}
+
+export interface ExternalFeed {
+  id: string;
+  name: string;
+  description?: string;
+  sourceType: ExternalFeedSourceType;
+  category: ExternalFeedCategory;
+  enabled: boolean;
+  config?: Record<string, unknown>;
+  lastIngestedAt?: number;
+  recordCount: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ExternalFinding {
+  id: string;
+  feedId?: string;
+  sourceRef?: string;
+  category: ExternalFeedCategory;
+  severity: RiskFindingSeverity;
+  title: string;
+  description?: string;
+  affectedResource?: string;
+  recommendation?: string;
+  evidence?: Record<string, unknown>;
+  status: ExternalFindingStatus;
+  acknowledgedBy?: string;
+  acknowledgedAt?: number;
+  resolvedAt?: number;
+  sourceDate?: number;
+  importedAt: number;
+}
+
+export interface CreateRiskAssessmentOptions {
+  name: string;
+  assessmentTypes?: RiskDomain[];
+  windowDays?: number;
+  options?: Record<string, unknown>;
+}
+
+export interface CreateExternalFeedOptions {
+  name: string;
+  description?: string;
+  sourceType: ExternalFeedSourceType;
+  category: ExternalFeedCategory;
+  enabled?: boolean;
+  config?: Record<string, unknown>;
+}
+
+export interface CreateExternalFindingOptions {
+  feedId?: string;
+  sourceRef?: string;
+  category: ExternalFeedCategory;
+  severity: RiskFindingSeverity;
+  title: string;
+  description?: string;
+  affectedResource?: string;
+  recommendation?: string;
+  evidence?: Record<string, unknown>;
+  sourceDate?: number;
 }

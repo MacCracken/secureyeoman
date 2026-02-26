@@ -66,6 +66,7 @@ import { registerRoutingRulesRoutes } from '../integrations/routing-rules-routes
 import { registerIntentRoutes } from '../intent/routes.js';
 import { registerAutonomyRoutes } from '../security/autonomy-routes.js';
 import { registerNotificationRoutes } from '../notifications/notification-routes.js';
+import { registerRiskAssessmentRoutes } from '../risk-assessment/risk-assessment-routes.js';
 import { CollabManager } from '../soul/collab.js';
 import { SoulStorage } from '../soul/storage.js';
 import { formatPrometheusMetrics } from './prometheus.js';
@@ -653,6 +654,19 @@ export class GatewayServer {
       }
     } catch (err) {
       this.getLogger().debug('Notification routes skipped', {
+        reason: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // Risk Assessment routes (Phase 53)
+    try {
+      const riskAssessmentManager = this.secureYeoman.getRiskAssessmentManager();
+      if (riskAssessmentManager) {
+        registerRiskAssessmentRoutes(this.app, { riskAssessmentManager });
+        this.getLogger().info('Risk assessment routes registered');
+      }
+    } catch (err) {
+      this.getLogger().debug('Risk assessment routes skipped', {
         reason: err instanceof Error ? err.message : String(err),
       });
     }
