@@ -66,6 +66,10 @@ vi.mock('../api/client', () => ({
   fetchCostHistory: vi.fn(),
   fetchPersonalities: vi.fn(),
   resetUsageStat: vi.fn(),
+  fetchTasks: vi.fn(),
+  fetchSecurityEvents: vi.fn(),
+  fetchAuditEntries: vi.fn(),
+  fetchWorkflows: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -77,6 +81,10 @@ const mockFetchMetrics = vi.mocked(api.fetchMetrics);
 const mockFetchCostBreakdown = vi.mocked(api.fetchCostBreakdown);
 const mockFetchCostHistory = vi.mocked(api.fetchCostHistory);
 const mockFetchPersonalities = vi.mocked(api.fetchPersonalities);
+const mockFetchTasks = vi.mocked(api.fetchTasks);
+const mockFetchSecurityEvents = vi.mocked(api.fetchSecurityEvents);
+const mockFetchAuditEntries = vi.mocked(api.fetchAuditEntries);
+const mockFetchWorkflows = vi.mocked(api.fetchWorkflows);
 
 // ── Mock ErrorBoundary (prevents Suspense errors swallowing output) ───
 
@@ -137,18 +145,22 @@ describe('MetricsPage — layout and header', () => {
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
   });
 
-  it('renders the "Metrics" page heading', () => {
+  it('renders the "Mission Control" page heading', () => {
     renderMetricsPage();
-    expect(screen.getByRole('heading', { name: /metrics/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /mission control/i })).toBeInTheDocument();
   });
 
-  it('shows an Overview tab button selected by default', () => {
+  it('shows a Mission Control tab button selected by default', () => {
     renderMetricsPage();
-    const overviewBtn = screen.getByRole('tab', { name: /overview/i });
-    expect(overviewBtn).toBeInTheDocument();
-    expect(overviewBtn).toHaveAttribute('aria-selected', 'true');
+    const mcBtn = screen.getByRole('tab', { name: /mission control/i });
+    expect(mcBtn).toBeInTheDocument();
+    expect(mcBtn).toHaveAttribute('aria-selected', 'true');
   });
 
   it('shows a Full Metrics tab button', () => {
@@ -164,7 +176,7 @@ describe('MetricsPage — layout and header', () => {
   });
 });
 
-describe('MetricsPage — Overview tab', () => {
+describe('MetricsPage — Mission Control tab', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     capturedOnNodeClick = undefined;
@@ -184,9 +196,13 @@ describe('MetricsPage — Overview tab', () => {
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
   });
 
-  it('renders the MetricsGraph in the Overview tab', async () => {
+  it('renders the MetricsGraph in the Mission Control tab', async () => {
     renderMetricsPage();
     expect(await screen.findByTestId('metrics-graph')).toBeInTheDocument();
   });
@@ -199,9 +215,10 @@ describe('MetricsPage — Overview tab', () => {
 
   it('displays KPI stat card titles', () => {
     renderMetricsPage();
-    expect(screen.getByText('Active Tasks')).toBeInTheDocument();
+    // "Active Tasks" appears in both the KPI bar and the feed panel header
+    expect(screen.getAllByText('Active Tasks').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Tasks Today')).toBeInTheDocument();
-    expect(screen.getByText('Memory Usage')).toBeInTheDocument();
+    expect(screen.getByText('Cost Today')).toBeInTheDocument();
     expect(screen.getByText('Audit Entries')).toBeInTheDocument();
   });
 
@@ -215,8 +232,8 @@ describe('MetricsPage — Overview tab', () => {
   it('shows correct metric values from the snapshot', () => {
     const metrics = createMetricsSnapshot();
     renderMetricsPage({ metrics });
-    // Total tasks
-    expect(screen.getByText(String(metrics.tasks.total))).toBeInTheDocument();
+    // Active tasks (inProgress count)
+    expect(screen.getByText(String(metrics.tasks.inProgress))).toBeInTheDocument();
   });
 });
 
@@ -237,6 +254,10 @@ describe('MetricsPage — tab switching', () => {
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
   });
 
   it('switches to Full Metrics tab when clicked', () => {
@@ -244,7 +265,7 @@ describe('MetricsPage — tab switching', () => {
     const fullBtn = screen.getByRole('tab', { name: /full metrics/i });
     fireEvent.click(fullBtn);
     expect(fullBtn).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: /overview/i })).toHaveAttribute(
+    expect(screen.getByRole('tab', { name: /mission control/i })).toHaveAttribute(
       'aria-selected',
       'false'
     );
@@ -274,18 +295,18 @@ describe('MetricsPage — tab switching', () => {
     expect(screen.queryByTestId('metrics-graph')).not.toBeInTheDocument();
   });
 
-  it('can switch back to Overview from Full Metrics', () => {
+  it('can switch back to Mission Control from Full Metrics', () => {
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /full metrics/i }));
-    fireEvent.click(screen.getByRole('tab', { name: /overview/i }));
-    expect(screen.getByRole('tab', { name: /overview/i })).toHaveAttribute(
+    fireEvent.click(screen.getByRole('tab', { name: /mission control/i }));
+    expect(screen.getByRole('tab', { name: /mission control/i })).toHaveAttribute(
       'aria-selected',
       'true'
     );
   });
 });
 
-describe('MetricsPage — Overview node click routing', () => {
+describe('MetricsPage — Mission Control node click routing', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     capturedOnNodeClick = undefined;
@@ -304,6 +325,10 @@ describe('MetricsPage — Overview node click routing', () => {
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
   });
 
   it('navigates to /security?tab=overview when security node is clicked', async () => {
@@ -373,6 +398,10 @@ describe('MetricsPage — Full Metrics data display', () => {
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
   });
 
   it('shows task stat cards in Full Metrics', () => {
@@ -429,6 +458,10 @@ describe('MetricsPage — Costs tab', () => {
     mockFetchCostBreakdown.mockResolvedValue({ byProvider: {}, recommendations: [] });
     mockFetchCostHistory.mockResolvedValue({ records: [], totals: { inputTokens: 0, outputTokens: 0, totalTokens: 0, costUsd: 0, calls: 0 } });
     mockFetchPersonalities.mockResolvedValue({ personalities: [] });
+    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
+    mockFetchSecurityEvents.mockResolvedValue({ events: [], total: 0 });
+    mockFetchAuditEntries.mockResolvedValue({ entries: [], total: 0, limit: 6, offset: 0 });
+    mockFetchWorkflows.mockResolvedValue({ definitions: [], total: 0 });
   });
 
   it('shows a Costs tab button', () => {
@@ -438,11 +471,11 @@ describe('MetricsPage — Costs tab', () => {
     expect(costsBtn).toHaveAttribute('aria-selected', 'false');
   });
 
-  it('tab order is Overview | Costs | Full Metrics', () => {
+  it('tab order is Mission Control | Costs | Full Metrics', () => {
     renderMetricsPage();
     const tabs = screen.getAllByRole('tab');
     expect(tabs).toHaveLength(3);
-    expect(tabs[0]).toHaveTextContent(/overview/i);
+    expect(tabs[0]).toHaveTextContent(/mission control/i);
     expect(tabs[1]).toHaveTextContent(/costs/i);
     expect(tabs[2]).toHaveTextContent(/full metrics/i);
   });
@@ -452,7 +485,7 @@ describe('MetricsPage — Costs tab', () => {
     const costsBtn = screen.getByRole('tab', { name: /costs/i });
     fireEvent.click(costsBtn);
     expect(costsBtn).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('tab', { name: /overview/i })).toHaveAttribute('aria-selected', 'false');
+    expect(screen.getByRole('tab', { name: /mission control/i })).toHaveAttribute('aria-selected', 'false');
     expect(screen.getByRole('tab', { name: /full metrics/i })).toHaveAttribute('aria-selected', 'false');
   });
 
@@ -469,11 +502,11 @@ describe('MetricsPage — Costs tab', () => {
     expect(screen.queryByTestId('metrics-graph')).not.toBeInTheDocument();
   });
 
-  it('can switch back to Overview from Costs tab', () => {
+  it('can switch back to Mission Control from Costs tab', () => {
     renderMetricsPage();
     fireEvent.click(screen.getByRole('tab', { name: /costs/i }));
-    fireEvent.click(screen.getByRole('tab', { name: /overview/i }));
-    expect(screen.getByRole('tab', { name: /overview/i })).toHaveAttribute('aria-selected', 'true');
+    fireEvent.click(screen.getByRole('tab', { name: /mission control/i }));
+    expect(screen.getByRole('tab', { name: /mission control/i })).toHaveAttribute('aria-selected', 'true');
   });
 
   it('can navigate from Costs to Full Metrics tab', () => {

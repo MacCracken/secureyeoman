@@ -71,11 +71,19 @@ Sidebar structural reorganization as the foundation, then Mission Control as the
 
 ### Mission Control Dashboard
 
-- [ ] **Mission Control Dashboard** — Consolidated command-center view replacing Metrics as the default landing page. Multi-panel grid: (1) System status graph (expanded ReactFlow); (2) Active tasks with progress; (3) Live security event feed; (4) Resource monitoring (CPU, memory, tokens, costs); (5) Agent/Personality health heartbeats; (6) Integration status grid; (7) Audit stream; (8) Workflow runs with DAG preview; (9) Quick actions (emergency stop, pause all). Dark theme default, auto-refresh via WebSocket, click-to-drill.
+- [x] **Mission Control Dashboard** ✅ Phase 53 — Consolidated command-center view replacing Metrics as the default landing page. Multi-panel grid: (1) System status graph (expanded ReactFlow); (2) Active tasks with progress; (3) Live security event feed; (4) Resource monitoring (CPU, memory, tokens, costs); (5) Agent/Personality health heartbeats; (6) Integration status grid; (7) Audit stream; (8) Workflow runs with DAG preview; (9) Quick actions (emergency stop, pause all). Dark theme default, auto-refresh via WebSocket, click-to-drill. Costs tab preserved under Mission Control tabs.
 
 ### Advanced Editor Mode
 
 - [ ] **Advanced Editor Mode** — Add toggle in Settings > Security > Developers. When enabled, replaces the current EditView with an advanced coding workspace featuring: (1) Canvas with movable terminal prompt windows; (2) Clean file manager as a sidebar column or popout; (3) Task list panel with Jira-style priorities, supporting internal task management or external integrations (Trello, GitHub Projects, etc.).
+
+### Automation View Consolidation
+
+- [x] **Automation View — Unified Task + Workflow View** ✅ Phase 53 — Consolidated separate Tasks and Workflows sidebar entries into a single `/automation` route with a Tasks | Workflows tab switcher (`AutomationPage`). Old `/tasks` and `/workflows` routes now redirect to `/automation`. Sidebar Automation group replaced by a single flat nav link.
+
+### Security > Automations View
+
+- [x] **Security > Automations** ✅ Phase 53 — Replaces the former "Settings > Tasks" roadmap item. New "Automations" tab in SecurityPage (between Audit Log and Autonomy). Three subviews (order: Heartbeats → Tasks → Workflows): (1) **Heartbeats** — per-monitor `HeartbeatCard` list (extracted from TaskHistory), default view, `system_health` cards have no left-border highlight; (2) **Tasks** — read-only paginated audit table of all task executions, filterable by status, no create/edit/delete actions; (3) **Workflows** — list of all workflow definitions with enabled/disabled badge; expandable rows fetch the last 5 runs per workflow via `fetchWorkflowRuns`. Tab switcher uses Mission Control pill-tab style.
 
 ### Visual Polish
 
@@ -236,4 +244,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 — Sidebar Reorganization shipped: Intent promoted to top-level, collapsible Automation + Administration groups, /users + /workspaces routes. Theme Presets pre-work noted: dark-theme button audit required first. Remaining: Mission Control, Advanced Editor, Switchable Theme Presets.*
+*Last updated: 2026-02-26 — Mission Control shipped; Automation View Consolidation shipped (Tasks + Workflows); Security > Automations shipped (Heartbeats → Tasks → Workflows, pill-tab style, Heartbeats as default). Remaining: Advanced Editor, Switchable Theme Presets (dark-theme button audit required first).*

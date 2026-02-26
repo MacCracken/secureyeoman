@@ -47,6 +47,8 @@ import {
   Loader2,
   X,
   RotateCcw,
+  ClipboardList,
+  GitMerge,
 } from 'lucide-react';
 import {
   fetchHeartbeatStatus,
@@ -57,10 +59,14 @@ import {
   fetchCostHistory,
   fetchPersonalities,
   resetUsageStat,
+  fetchTasks,
+  fetchSecurityEvents,
+  fetchAuditEntries,
+  fetchWorkflows,
 } from '../api/client';
-import type { CostBreakdownResponse, CostHistoryParams } from '../api/client';
+import type { CostBreakdownResponse, CostHistoryParams, WorkflowDefinition } from '../api/client';
 import { ErrorBoundary } from './common/ErrorBoundary';
-import type { MetricsSnapshot, HealthStatus, McpServerConfig, Personality } from '../types';
+import type { MetricsSnapshot, HealthStatus, McpServerConfig, Personality, HeartbeatStatus, Task, SecurityEvent, AuditEntry } from '../types';
 
 // Lazy-load ReactFlow graph — keeps it out of the initial MetricsPage chunk
 const MetricsGraph = lazy(() =>
@@ -88,7 +94,7 @@ const TOOLTIP_STYLE = {
   fontSize: '12px',
 } as const;
 
-type Tab = 'overview' | 'costs' | 'full';
+type Tab = 'control' | 'costs' | 'full';
 
 interface HistoryPoint {
   time: string;
@@ -126,7 +132,7 @@ interface MetricsPageProps {
 }
 
 export function MetricsPage({ metrics, health }: MetricsPageProps) {
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
+  const [activeTab, setActiveTab] = useState<Tab>('control');
   const navigate = useNavigate();
 
   const { data: heartbeatStatus } = useQuery({
@@ -184,7 +190,7 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
   const defaultPersonality = personalities.find((p: Personality) => p.isDefault);
 
   const TAB_LABELS: Record<Tab, string> = {
-    overview: 'Overview',
+    control: 'Mission Control',
     costs: 'Costs',
     full: 'Full Metrics',
   };
@@ -194,17 +200,17 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
       {/* Page header with tab switcher */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Metrics</h1>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight">Mission Control</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Real-time performance, cost analytics, and security health
+            Command center — live status, tasks, costs, and security health
           </p>
         </div>
         <div
           className="flex items-center gap-1 bg-muted/50 border rounded-lg p-1 self-start sm:self-auto"
           role="tablist"
-          aria-label="Metrics views"
+          aria-label="Mission Control views"
         >
-          {(['overview', 'costs', 'full'] as Tab[]).map((tab) => (
+          {(['control', 'costs', 'full'] as Tab[]).map((tab) => (
             <button
               key={tab}
               role="tab"
@@ -222,8 +228,8 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
         </div>
       </div>
 
-      {activeTab === 'overview' && (
-        <OverviewTab
+      {activeTab === 'control' && (
+        <MissionControlTab
           metrics={metrics}
           health={health}
           history={history}
@@ -232,7 +238,6 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
           enabledMcp={enabledMcp}
           enabledHb={enabledHb}
           totalHbTasks={totalHbTasks}
-          heartbeatTasks={heartbeatTasks}
           activeDelegations={activeDelegations}
           activePersonalities={activePersonalities}
           defaultPersonality={defaultPersonality}
@@ -253,18 +258,17 @@ export function MetricsPage({ metrics, health }: MetricsPageProps) {
   );
 }
 
-// ── OverviewTab ───────────────────────────────────────────────────────
+// ── MissionControlTab ────────────────────────────────────────────────
 
-interface OverviewTabProps {
+interface MissionControlTabProps {
   metrics?: MetricsSnapshot;
   health?: HealthStatus;
   history: HistoryPoint[];
-  heartbeatStatus: { running: boolean; beatCount: number } | undefined;
+  heartbeatStatus: HeartbeatStatus | undefined;
   mcpServers: McpServerConfig[];
   enabledMcp: number;
   enabledHb: number;
   totalHbTasks: number;
-  heartbeatTasks: { enabled: boolean }[];
   activeDelegations: { delegations?: { depth: number }[] } | undefined;
   activePersonalities: Personality[];
   defaultPersonality: Personality | undefined;
@@ -272,28 +276,69 @@ interface OverviewTabProps {
   onViewCosts: () => void;
 }
 
-function OverviewTab({
+function MissionControlTab({
   metrics,
   health,
   history,
   heartbeatStatus,
   mcpServers,
   enabledMcp,
-  enabledHb,
-  totalHbTasks,
-  heartbeatTasks,
   activeDelegations,
   activePersonalities,
   defaultPersonality,
   navigate,
   onViewCosts,
-}: OverviewTabProps) {
+}: MissionControlTabProps) {
   const heartbeatRunning = heartbeatStatus?.running ?? false;
 
+  // Live data feeds
+  const { data: tasksData } = useQuery({
+    queryKey: ['tasks-running'],
+    queryFn: () => fetchTasks({ status: 'running', limit: 5 }),
+    refetchInterval: 5_000,
+  });
+
+  const { data: eventsData } = useQuery({
+    queryKey: ['security-events-feed'],
+    queryFn: () => fetchSecurityEvents({ limit: 6 }),
+    refetchInterval: 10_000,
+  });
+
+  const { data: auditData } = useQuery({
+    queryKey: ['audit-feed'],
+    queryFn: () => fetchAuditEntries({ limit: 6 }),
+    refetchInterval: 15_000,
+  });
+
+  const { data: workflowsData } = useQuery({
+    queryKey: ['workflows-mc'],
+    queryFn: () => fetchWorkflows({ limit: 6 }),
+    refetchInterval: 30_000,
+  });
+
+  const activeTasks: Task[] = tasksData?.tasks ?? [];
+  const securityEvents: SecurityEvent[] = eventsData?.events ?? [];
+  const auditEntries: AuditEntry[] = auditData?.entries ?? [];
+  const workflows: WorkflowDefinition[] = workflowsData?.definitions ?? [];
+
+  const SEV_DOT: Record<string, string> = {
+    critical: 'bg-destructive',
+    error: 'bg-orange-500',
+    warn: 'bg-warning',
+    info: 'bg-primary',
+  };
+
+  const LEVEL_DOT: Record<string, string> = {
+    error: 'bg-destructive',
+    critical: 'bg-destructive',
+    security: 'bg-orange-500',
+    warn: 'bg-warning',
+  };
+
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* KPI stat cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-4">
+    <div className="space-y-4 sm:space-y-5">
+      {/* ── KPI Stat Bar ────────────────────────────────────────────── */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
         <StatCard
           title="Active Agents"
           value={activePersonalities.length + (activeDelegations?.delegations?.length ?? 0)}
@@ -303,17 +348,15 @@ function OverviewTab({
             const subPart = activeDelegations?.delegations?.length
               ? ` · ${activeDelegations.delegations.length} sub-agent${activeDelegations.delegations.length !== 1 ? 's' : ''}`
               : '';
-            return defaultPersonality
-              ? `${defaultPersonality.name}${subPart}`
-              : `${soulPart}${subPart}`;
+            return defaultPersonality ? `${defaultPersonality.name}${subPart}` : `${soulPart}${subPart}`;
           })()}
           onClick={() => navigate('/personality')}
         />
         <StatCard
           title="Heartbeat"
-          value={totalHbTasks}
+          value={heartbeatStatus?.tasks?.length ?? 0}
           icon={<Heart className="w-4 h-4 sm:w-5 sm:h-5" />}
-          subtitle={`${enabledHb}/${totalHbTasks} tasks`}
+          subtitle={`${heartbeatStatus?.tasks?.filter((t) => t.enabled).length ?? 0} enabled`}
           trend={heartbeatRunning ? 'Running' : 'Stopped'}
           trendUp={heartbeatRunning}
           onClick={() => navigate('/security?tab=tasks&heartbeat=1')}
@@ -323,6 +366,7 @@ function OverviewTab({
           value={metrics?.tasks?.inProgress ?? 0}
           icon={<Clock className="w-4 h-4 sm:w-5 sm:h-5" />}
           subtitle={`${metrics?.tasks?.queueDepth ?? 0} queued`}
+          onClick={() => navigate('/tasks')}
         />
         <StatCard
           title="Tasks Today"
@@ -336,14 +380,11 @@ function OverviewTab({
           trendUp={metrics?.tasks?.successRate ? metrics.tasks.successRate > 0.9 : undefined}
         />
         <StatCard
-          title="Memory Usage"
-          value={`${(metrics?.resources?.memoryUsedMb ?? 0).toFixed(1)} MB`}
-          icon={<HardDrive className="w-4 h-4 sm:w-5 sm:h-5" />}
-          subtitle={
-            metrics?.resources?.memoryPercent
-              ? `${metrics.resources.memoryPercent.toFixed(1)}% of limit`
-              : undefined
-          }
+          title="Cost Today"
+          value={`$${(metrics?.resources?.costUsdToday ?? 0).toFixed(4)}`}
+          icon={<DollarSign className="w-4 h-4 sm:w-5 sm:h-5" />}
+          subtitle={`$${(metrics?.resources?.costUsdMonth ?? 0).toFixed(2)} this month`}
+          onClick={onViewCosts}
         />
         <StatCard
           title="Audit Entries"
@@ -355,270 +396,461 @@ function OverviewTab({
         />
       </div>
 
-      {/* System health + resource sparkline */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
-        {/* System health */}
-        <div className="card">
+      {/* ── Topology + Health + Quick Actions ───────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* System Topology Graph — spans 2 cols */}
+        <div className="card lg:col-span-2">
           <div className="card-header">
-            <h2 className="card-title text-base">System Health</h2>
-            <p className="card-description text-xs">Infrastructure status at a glance</p>
+            <h2 className="card-title text-base">System Topology</h2>
+            <p className="card-description text-xs">Live infrastructure — click nodes to drill down</p>
           </div>
-          <div className="card-content space-y-0.5">
-            <ServiceStatusRow
-              label="Core"
-              ok={health?.status === 'ok'}
-              detail={health?.status ?? 'unknown'}
-              icon={<Server className="w-3.5 h-3.5" />}
-            />
-            <ServiceStatusRow
-              label="Database"
-              ok={health?.checks?.database ?? false}
-              detail={health?.checks?.database ? 'Connected' : 'Down'}
-              icon={<Database className="w-3.5 h-3.5" />}
-            />
-            <ServiceStatusRow
-              label="Audit Chain"
-              ok={health?.checks?.auditChain ?? false}
-              detail={health?.checks?.auditChain ? 'Valid' : 'Invalid'}
-              icon={<Shield className="w-3.5 h-3.5" />}
-            />
-            <ServiceStatusRow
-              label="MCP"
-              ok={enabledMcp > 0}
-              detail={`${enabledMcp}/${mcpServers.length} servers`}
-              icon={<Link className="w-3.5 h-3.5" />}
-              onClick={() => navigate('/mcp')}
-            />
-            <ServiceStatusRow
-              label="Uptime"
-              ok={true}
-              detail={health?.uptime ? formatUptime(health.uptime) : '—'}
-              icon={<Clock className="w-3.5 h-3.5" />}
-            />
-            <ServiceStatusRow
-              label="Version"
-              ok={true}
-              detail={health?.version ?? '—'}
-              icon={<Activity className="w-3.5 h-3.5" />}
-            />
+          <div className="card-content">
+            <ErrorBoundary fallbackTitle="Graph failed to render">
+              <Suspense
+                fallback={
+                  <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
+                    Loading graph…
+                  </div>
+                }
+              >
+                <MetricsGraph
+                  metrics={metrics}
+                  health={health}
+                  mcpServers={mcpServers}
+                  onNodeClick={(nodeId) => {
+                    const routes: Record<string, string> = {
+                      security: '/security?tab=overview',
+                      audit: '/security?tab=audit',
+                      tasks: '/security?tab=tasks',
+                      mcp: '/mcp',
+                    };
+                    navigate(routes[nodeId] ?? `/security?tab=nodes&node=${nodeId}`);
+                  }}
+                />
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </div>
 
-        {/* CPU + Memory sparkline */}
-        <div className="card lg:col-span-2">
+        {/* Right column: System Health + Quick Actions */}
+        <div className="space-y-4">
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title text-base">System Health</h2>
+            </div>
+            <div className="card-content space-y-0.5">
+              <ServiceStatusRow
+                label="Core"
+                ok={health?.status === 'ok'}
+                detail={health?.status ?? 'unknown'}
+                icon={<Server className="w-3.5 h-3.5" />}
+              />
+              <ServiceStatusRow
+                label="Database"
+                ok={health?.checks?.database ?? false}
+                detail={health?.checks?.database ? 'Connected' : 'Down'}
+                icon={<Database className="w-3.5 h-3.5" />}
+              />
+              <ServiceStatusRow
+                label="Audit Chain"
+                ok={health?.checks?.auditChain ?? false}
+                detail={health?.checks?.auditChain ? 'Valid' : 'Invalid'}
+                icon={<Shield className="w-3.5 h-3.5" />}
+              />
+              <ServiceStatusRow
+                label="MCP"
+                ok={enabledMcp > 0}
+                detail={`${enabledMcp}/${mcpServers.length} servers`}
+                icon={<Link className="w-3.5 h-3.5" />}
+                onClick={() => navigate('/mcp')}
+              />
+              <ServiceStatusRow
+                label="Uptime"
+                ok={true}
+                detail={health?.uptime ? formatUptime(health.uptime) : '—'}
+                icon={<Clock className="w-3.5 h-3.5" />}
+              />
+            </div>
+          </div>
+
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title text-base">Quick Actions</h2>
+            </div>
+            <div className="card-content space-y-1.5">
+              {[
+                { label: 'Active Tasks', icon: <ClipboardList className="w-4 h-4 text-primary" />, to: '/tasks' },
+                { label: 'Audit Log', icon: <Shield className="w-4 h-4 text-primary" />, to: '/security?tab=audit' },
+                { label: 'Connections', icon: <Link className="w-4 h-4 text-primary" />, to: '/connections' },
+                { label: 'Workflows', icon: <GitMerge className="w-4 h-4 text-primary" />, to: '/workflows' },
+              ].map((action) => (
+                <button
+                  key={action.to}
+                  className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm bg-muted/40 hover:bg-muted/70 transition-colors text-left"
+                  onClick={() => navigate(action.to)}
+                >
+                  {action.icon}
+                  <span>{action.label}</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-auto text-muted-foreground" />
+                </button>
+              ))}
+              <button
+                className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm bg-muted/40 hover:bg-muted/70 transition-colors text-left"
+                onClick={onViewCosts}
+              >
+                <DollarSign className="w-4 h-4 text-success" />
+                <span>Cost Analytics</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-auto text-muted-foreground" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Live Feed Row: Active Tasks · Security Events · Agent Health ── */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Active Tasks feed */}
+        <div className="card">
           <div className="card-header">
-            <h2 className="card-title text-base">Resource Trend</h2>
-            <p className="card-description text-xs">CPU % and memory MB over time</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="card-title text-sm">Active Tasks</h2>
+                <p className="card-description text-xs">Currently running</p>
+              </div>
+              <button
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
+                onClick={() => navigate('/tasks')}
+              >
+                All <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
           <div className="card-content">
-            <div className="h-[200px]">
+            {activeTasks.length === 0 ? (
+              <p className="text-center py-6 text-sm text-muted-foreground">
+                {(metrics?.tasks?.inProgress ?? 0) === 0 ? 'No active tasks' : 'Loading…'}
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {activeTasks.map((task) => (
+                  <div key={task.id} className="flex items-start gap-2 p-2 rounded-md bg-muted/30">
+                    <Loader2 className="w-3.5 h-3.5 text-primary animate-spin mt-0.5 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium truncate">{task.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">{task.type}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Security Events feed */}
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="card-title text-sm">Security Events</h2>
+                <p className="card-description text-xs">Recent activity</p>
+              </div>
+              <button
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
+                onClick={() => navigate('/security?tab=events')}
+              >
+                All <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+          <div className="card-content">
+            {securityEvents.length === 0 ? (
+              <p className="text-center py-6 text-sm text-muted-foreground">No recent events</p>
+            ) : (
+              <div className="space-y-2">
+                {securityEvents.slice(0, 5).map((evt) => (
+                  <div key={evt.id} className="flex items-start gap-2 text-xs">
+                    <span
+                      className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${SEV_DOT[evt.severity] ?? 'bg-muted'}`}
+                    />
+                    <div className="min-w-0">
+                      <p className="font-medium truncate capitalize">{evt.type.replace(/_/g, ' ')}</p>
+                      <p className="text-muted-foreground truncate">{evt.message}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Agent Health / Heartbeat */}
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="card-title text-sm">Agent Health</h2>
+                <p className="card-description text-xs">Heartbeat status</p>
+              </div>
+              <div
+                className={`flex items-center gap-1 text-xs ${heartbeatRunning ? 'text-success' : 'text-muted-foreground'}`}
+              >
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${heartbeatRunning ? 'bg-success animate-pulse' : 'bg-muted-foreground'}`}
+                />
+                {heartbeatRunning ? 'Running' : 'Stopped'}
+              </div>
+            </div>
+          </div>
+          <div className="card-content">
+            {activePersonalities.length === 0 ? (
+              <p className="text-center py-6 text-sm text-muted-foreground">No active agents</p>
+            ) : (
+              <div className="space-y-1.5">
+                {activePersonalities.slice(0, 5).map((p) => (
+                  <div
+                    key={p.id}
+                    className="flex items-center gap-2 p-1.5 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate('/personality')}
+                  >
+                    {p.avatarUrl ? (
+                      <img
+                        src={p.avatarUrl}
+                        alt={p.name}
+                        className="w-5 h-5 rounded-full object-cover flex-shrink-0"
+                      />
+                    ) : (
+                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center flex-shrink-0">
+                        <Bot className="w-3 h-3 text-primary" />
+                      </div>
+                    )}
+                    <span className="text-xs font-medium truncate flex-1">{p.name}</span>
+                    <span
+                      className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${heartbeatRunning ? 'bg-success' : 'bg-muted-foreground'}`}
+                    />
+                  </div>
+                ))}
+                {activePersonalities.length > 5 && (
+                  <p className="text-xs text-muted-foreground text-center pt-1">
+                    +{activePersonalities.length - 5} more
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Resource Monitor + Integration Grid ─────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Resource Monitor */}
+        <div className="card">
+          <div className="card-header">
+            <h2 className="card-title text-base">Resource Monitoring</h2>
+            <p className="card-description text-xs">CPU, memory, tokens over time</p>
+          </div>
+          <div className="card-content space-y-3">
+            <div className="h-[130px]">
               {history.length > 1 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={history}>
                     <defs>
-                      <linearGradient id="ovCpuGrad" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="mcCpuGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={C.primary} stopOpacity={0.3} />
                         <stop offset="95%" stopColor={C.primary} stopOpacity={0} />
                       </linearGradient>
-                      <linearGradient id="ovMemGrad" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient id="mcMemGrad" x1="0" y1="0" x2="0" y2="1">
                         <stop offset="5%" stopColor={C.success} stopOpacity={0.3} />
                         <stop offset="95%" stopColor={C.success} stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#333" opacity={0.1} />
-                    <XAxis
-                      dataKey="time"
-                      tick={{ fontSize: 10 }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
+                    <XAxis dataKey="time" tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
+                    <YAxis tick={{ fontSize: 9 }} tickLine={false} axisLine={false} />
                     <Tooltip contentStyle={TOOLTIP_STYLE} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Area
-                      type="monotone"
-                      dataKey="cpu"
-                      name="CPU %"
-                      stroke={C.primary}
-                      fill="url(#ovCpuGrad)"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="memory"
-                      name="Memory MB"
-                      stroke={C.success}
-                      fill="url(#ovMemGrad)"
-                      strokeWidth={2}
-                      dot={false}
-                    />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Area type="monotone" dataKey="cpu" name="CPU %" stroke={C.primary} fill="url(#mcCpuGrad)" strokeWidth={2} dot={false} />
+                    <Area type="monotone" dataKey="memory" name="Memory MB" stroke={C.success} fill="url(#mcMemGrad)" strokeWidth={2} dot={false} />
                   </AreaChart>
                 </ResponsiveContainer>
               ) : (
-                <EmptyChart message="Collecting resource data…" />
+                <EmptyChart message="Collecting data…" />
               )}
             </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick metric cards: tokens, task perf, cost */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Token usage */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title text-sm flex items-center gap-2">
-              <Zap className="w-4 h-4 text-primary" /> Token Usage
-            </h3>
-          </div>
-          <div className="card-content flex items-center gap-4">
-            <div>
-              <p className="text-2xl font-bold">
-                {(metrics?.resources?.tokensUsedToday ?? 0).toLocaleString()}
-              </p>
-              <p className="text-xs text-muted-foreground">total today</p>
-              <p className="text-xs text-muted-foreground mt-1">
-                {(metrics?.resources?.inputTokensToday ?? 0).toLocaleString()} in
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {(metrics?.resources?.outputTokensToday ?? 0).toLocaleString()} out
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {(metrics?.resources?.tokensCachedToday ?? 0).toLocaleString()} cached
-              </p>
-            </div>
-            <div className="flex-1 h-[80px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={[
-                      { name: 'Input', value: metrics?.resources?.inputTokensToday ?? 0 },
-                      { name: 'Output', value: metrics?.resources?.outputTokensToday ?? 0 },
-                      { name: 'Cached', value: metrics?.resources?.tokensCachedToday ?? 0 },
-                    ]}
-                    innerRadius={25}
-                    outerRadius={35}
-                    paddingAngle={2}
-                    dataKey="value"
-                  >
-                    <Cell fill={C.primary} />
-                    <Cell fill={C.success} />
-                  </Pie>
-                  <Tooltip contentStyle={TOOLTIP_STYLE} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Task performance */}
-        <div className="card">
-          <div className="card-header">
-            <h3 className="card-title text-sm flex items-center gap-2">
-              <Activity className="w-4 h-4 text-primary" /> Task Performance
-            </h3>
-          </div>
-          <div className="card-content space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-sm text-muted-foreground">Success Rate</span>
-              <span
-                className={`text-sm font-bold ${
-                  (metrics?.tasks?.successRate ?? 0) > 0.9 ? 'text-success' : 'text-warning'
-                }`}
-              >
-                {((metrics?.tasks?.successRate ?? 0) * 100).toFixed(1)}%
-              </span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
+            <div className="grid grid-cols-4 gap-2">
+              <div className="p-2 rounded-md bg-muted/30 text-center">
+                <p className="text-xs text-muted-foreground">CPU</p>
+                <p className="text-sm font-bold">{(metrics?.resources?.cpuPercent ?? 0).toFixed(1)}%</p>
+              </div>
+              <div className="p-2 rounded-md bg-muted/30 text-center">
+                <p className="text-xs text-muted-foreground">Memory</p>
+                <p className="text-sm font-bold">{(metrics?.resources?.memoryUsedMb ?? 0).toFixed(0)} MB</p>
+              </div>
+              <div className="p-2 rounded-md bg-muted/30 text-center">
+                <p className="text-xs text-muted-foreground">Tokens</p>
+                <p className="text-sm font-bold">{((metrics?.resources?.tokensUsedToday ?? 0) / 1000).toFixed(1)}k</p>
+              </div>
               <div
-                className={`h-full rounded-full transition-all ${
-                  (metrics?.tasks?.successRate ?? 0) > 0.9 ? 'bg-success' : 'bg-warning'
-                }`}
-                style={{ width: `${(metrics?.tasks?.successRate ?? 0) * 100}%` }}
-              />
-            </div>
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>Avg: {fmtMs(metrics?.tasks?.avgDurationMs ?? 0)}</span>
-              <span>p99: {fmtMs(metrics?.tasks?.p99DurationMs ?? 0)}</span>
+                className="p-2 rounded-md bg-muted/30 text-center cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={onViewCosts}
+                title="View cost analytics"
+              >
+                <p className="text-xs text-muted-foreground">Cost</p>
+                <p className="text-sm font-bold text-success">${(metrics?.resources?.costUsdToday ?? 0).toFixed(3)}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Estimated cost — clicking switches to Costs tab */}
-        <div
-          className="card cursor-pointer hover:bg-muted/30 transition-colors"
-          onClick={onViewCosts}
-          title="View cost analytics"
-        >
+        {/* Integration Status Grid */}
+        <div className="card">
           <div className="card-header">
-            <h3 className="card-title text-sm flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-success" /> Estimated Cost
-            </h3>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="card-title text-base">Integrations</h2>
+                <p className="card-description text-xs">MCP servers &amp; connections</p>
+              </div>
+              <button
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
+                onClick={() => navigate('/connections')}
+              >
+                Manage <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
           </div>
           <div className="card-content">
-            <div className="flex items-baseline gap-4">
-              <div>
-                <p className="text-2xl font-bold">
-                  ${(metrics?.resources?.costUsdToday ?? 0).toFixed(4)}
-                </p>
-                <p className="text-xs text-muted-foreground">Today</p>
+            {mcpServers.length === 0 ? (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                No MCP servers configured.{' '}
+                <button
+                  className="text-primary hover:underline"
+                  onClick={() => navigate('/connections')}
+                >
+                  Add one
+                </button>
               </div>
-              <div>
-                <p className="text-xl font-bold">
-                  ${(metrics?.resources?.costUsdMonth ?? 0).toFixed(2)}
-                </p>
-                <p className="text-xs text-muted-foreground">This Month</p>
+            ) : (
+              <div className="grid grid-cols-2 gap-2">
+                {mcpServers.slice(0, 8).map((srv) => (
+                  <div
+                    key={srv.id}
+                    className="flex items-center gap-2 p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate('/connections')}
+                  >
+                    <span
+                      className={`w-2 h-2 rounded-full flex-shrink-0 ${srv.enabled ? 'bg-success' : 'bg-muted-foreground'}`}
+                    />
+                    <span className="text-xs truncate">{srv.name}</span>
+                  </div>
+                ))}
+                {mcpServers.length > 8 && (
+                  <div
+                    className="flex items-center justify-center p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 col-span-2 text-xs text-muted-foreground"
+                    onClick={() => navigate('/connections')}
+                  >
+                    +{mcpServers.length - 8} more servers
+                  </div>
+                )}
               </div>
-            </div>
-            <div className="flex items-center gap-3 mt-2">
-              <span className="text-xs text-muted-foreground">
-                {(metrics?.resources?.apiCallsTotal ?? 0).toLocaleString()} API calls
-              </span>
-              {(metrics?.resources?.apiErrorsTotal ?? 0) > 0 && (
-                <span className="text-xs text-destructive">
-                  {metrics!.resources.apiErrorsTotal} errors
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-primary mt-2">View cost analytics →</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* System topology graph */}
-      <div className="card">
-        <div className="card-header">
-          <h2 className="card-title text-base sm:text-lg">System Topology</h2>
-          <p className="card-description text-xs sm:text-sm">
-            Live infrastructure visualization — click nodes to drill down
-          </p>
+      {/* ── Audit Stream + Workflow Runs ─────────────────────────────── */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Audit Stream */}
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="card-title text-sm">Audit Stream</h2>
+                <p className="card-description text-xs">Recent tamper-evident log entries</p>
+              </div>
+              <button
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
+                onClick={() => navigate('/security?tab=audit')}
+              >
+                Full log <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+          <div className="card-content">
+            {auditEntries.length === 0 ? (
+              <p className="text-center py-6 text-sm text-muted-foreground">No audit entries</p>
+            ) : (
+              <div className="space-y-1.5">
+                {auditEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-start gap-2 text-xs border-b border-border/30 pb-1.5 last:border-0"
+                  >
+                    <span
+                      className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${LEVEL_DOT[entry.level] ?? 'bg-primary'}`}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate capitalize">{entry.event.replace(/_/g, ' ')}</p>
+                      <p className="text-muted-foreground truncate">{entry.message}</p>
+                    </div>
+                    <span className="text-muted-foreground flex-shrink-0 font-mono text-[10px]">
+                      {new Date(entry.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-        <div className="card-content">
-          <ErrorBoundary fallbackTitle="Graph failed to render">
-            <Suspense
-              fallback={
-                <div className="h-64 flex items-center justify-center text-sm text-muted-foreground">
-                  Loading graph…
-                </div>
-              }
-            >
-              <MetricsGraph
-                metrics={metrics}
-                health={health}
-                mcpServers={mcpServers}
-                onNodeClick={(nodeId) => {
-                  const routes: Record<string, string> = {
-                    security: '/security?tab=overview',
-                    audit: '/security?tab=audit',
-                    tasks: '/security?tab=tasks',
-                    mcp: '/mcp',
-                  };
-                  navigate(routes[nodeId] ?? `/security?tab=nodes&node=${nodeId}`);
-                }}
-              />
-            </Suspense>
-          </ErrorBoundary>
+
+        {/* Workflow Runs */}
+        <div className="card">
+          <div className="card-header">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="card-title text-sm">Workflows</h2>
+                <p className="card-description text-xs">Active workflow definitions</p>
+              </div>
+              <button
+                className="text-xs text-primary hover:text-primary/80 flex items-center gap-0.5"
+                onClick={() => navigate('/workflows')}
+              >
+                All <ArrowRight className="w-3 h-3" />
+              </button>
+            </div>
+          </div>
+          <div className="card-content">
+            {workflows.length === 0 ? (
+              <div className="text-center py-6 text-sm text-muted-foreground">
+                No workflows.{' '}
+                <button
+                  className="text-primary hover:underline"
+                  onClick={() => navigate('/workflows')}
+                >
+                  Create one
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                {workflows.map((wf) => (
+                  <div
+                    key={wf.id}
+                    className="flex items-center gap-2 p-2 rounded-md bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+                    onClick={() => navigate('/workflows')}
+                  >
+                    <GitMerge className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium truncate">{wf.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {wf.description ?? 'No description'}
+                      </p>
+                    </div>
+                    <span
+                      className={`w-2 h-2 rounded-full flex-shrink-0 ${wf.isEnabled ? 'bg-success' : 'bg-muted-foreground'}`}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

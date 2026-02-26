@@ -40,11 +40,8 @@ const DeveloperPage = lazy(() =>
 const ProactivePage = lazy(() =>
   import('./ProactivePage').then((m) => ({ default: m.ProactivePage }))
 );
-const TaskHistory = lazy(() =>
-  import('./TaskHistory').then((m) => ({ default: m.TaskHistory }))
-);
-const WorkflowsPage = lazy(() =>
-  import('../pages/WorkflowsPage').then((m) => ({ default: m.WorkflowsPage }))
+const AutomationPage = lazy(() =>
+  import('../pages/AutomationPage').then((m) => ({ default: m.AutomationPage }))
 );
 const WorkflowBuilder = lazy(() =>
   import('../pages/WorkflowBuilder').then((m) => ({ default: m.WorkflowBuilder }))
@@ -181,8 +178,9 @@ export function DashboardLayout() {
                   <Route path="/editor" element={<EditorPage />} />
                   <Route path="/code" element={<Navigate to="/editor" replace />} />
                   <Route path="/security" element={<SecurityPage />} />
-                  <Route path="/tasks" element={<TaskHistory />} />
-                  <Route path="/workflows" element={<WorkflowsPage />} />
+                  <Route path="/automation" element={<AutomationPage />} />
+                  <Route path="/tasks" element={<Navigate to="/automation" replace />} />
+                  <Route path="/workflows" element={<Navigate to="/automation" replace />} />
                   <Route path="/workflows/:id/builder" element={<WorkflowBuilder />} />
                   <Route path="/workflows/runs/:runId" element={<WorkflowRunDetail />} />
                   <Route path="/reports" element={<SecurityPage />} />

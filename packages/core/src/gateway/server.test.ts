@@ -12,6 +12,8 @@ function createMockSecureYeoman(overrides?: Record<string, unknown>) {
     getConfig: () => ({
       security: {
         promptGuard: { mode: 'disabled' },
+        responseGuard: { mode: 'disabled' },
+        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
         allowSubAgents: false,
         allowA2A: false,
         allowMultimodal: false,
@@ -344,6 +346,8 @@ describe('GatewayServer', () => {
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
+        responseGuard: { mode: 'disabled' },
+        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
               allowMultimodal: false,
@@ -672,6 +676,8 @@ describe('GatewayServer', () => {
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
+        responseGuard: { mode: 'disabled' },
+        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
               allowMultimodal: false,
@@ -781,6 +787,8 @@ describe('GatewayServer', () => {
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
+        responseGuard: { mode: 'disabled' },
+        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
               allowMultimodal: false,
@@ -846,6 +854,8 @@ describe('GatewayServer', () => {
             core: { environment: 'development' },
             security: {
               promptGuard: { mode: 'disabled' },
+        responseGuard: { mode: 'disabled' },
+        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
               allowSubAgents: false,
               allowA2A: false,
               allowMultimodal: false,

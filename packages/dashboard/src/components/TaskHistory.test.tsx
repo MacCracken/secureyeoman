@@ -13,8 +13,7 @@ vi.mock('../api/client', () => ({
   createTask: vi.fn(),
   deleteTask: vi.fn(),
   updateTask: vi.fn(),
-  fetchHeartbeatTasks: vi.fn(),
-  fetchHeartbeatLog: vi.fn(),
+  fetchPersonalities: vi.fn(),
 }));
 
 import * as api from '../api/client';
@@ -23,8 +22,6 @@ const mockFetchTasks = vi.mocked(api.fetchTasks);
 const mockCreateTask = vi.mocked(api.createTask);
 const mockUpdateTask = vi.mocked(api.updateTask);
 const mockDeleteTask = vi.mocked(api.deleteTask);
-const mockFetchHeartbeatTasks = vi.mocked(api.fetchHeartbeatTasks);
-const mockFetchHeartbeatLog = vi.mocked(api.fetchHeartbeatLog);
 
 // ── Helpers ──────────────────────────────────────────────────────
 
@@ -53,8 +50,7 @@ describe('TaskHistory', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
-    mockFetchHeartbeatTasks.mockResolvedValue({ tasks: [] });
-    mockFetchHeartbeatLog.mockResolvedValue({ entries: [], total: 0 });
+    vi.mocked(api.fetchPersonalities).mockResolvedValue({ personalities: [] });
   });
 
   it('renders the Task History heading', async () => {
@@ -279,118 +275,6 @@ describe('TaskHistory', () => {
     const createButton = screen.getByText('Create Task');
     expect(createButton).toBeDisabled();
   });
-
-  // ── Heartbeat Task Tests ──────────────────────────────────────────
-
-  it('renders heartbeat tasks alongside regular tasks with personality name', async () => {
-    const tasks = createTaskList(2);
-    mockFetchTasks.mockResolvedValue({ tasks, total: 2 });
-    mockFetchHeartbeatTasks.mockResolvedValue({
-      tasks: [
-        {
-          name: 'system_health',
-          type: 'system_health',
-          enabled: true,
-          intervalMs: 300000,
-          lastRunAt: Date.now() - 60000,
-          config: {},
-          personalityId: 'p-1',
-          personalityName: 'Friday',
-        },
-        {
-          name: 'memory_status',
-          type: 'memory_status',
-          enabled: false,
-          intervalMs: 600000,
-          lastRunAt: null,
-          config: {},
-          personalityId: 'p-1',
-          personalityName: 'Friday',
-        },
-      ],
-    });
-    renderComponent();
-
-    // Regular tasks show
-    expect(await screen.findByText('Run deployment script')).toBeInTheDocument();
-
-    // Heartbeat section header shows with personality name
-    expect(screen.getByText('Heartbeat Tasks')).toBeInTheDocument();
-    expect(screen.getAllByText(/Friday/).length).toBeGreaterThanOrEqual(1);
-
-    // Heartbeat tasks show (name appears in both name cell and type badge)
-    expect(screen.getAllByText('system_health').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText('memory_status').length).toBeGreaterThanOrEqual(1);
-
-    // Per-row personality attribution
-    expect(screen.getAllByText(/Managed by Friday/).length).toBe(2);
-  });
-
-  it('shows heartbeat tasks even when no regular tasks exist', async () => {
-    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
-    mockFetchHeartbeatTasks.mockResolvedValue({
-      tasks: [
-        {
-          name: 'system_health',
-          type: 'system_health',
-          enabled: true,
-          intervalMs: 300000,
-          lastRunAt: Date.now() - 60000,
-          config: {},
-          personalityId: null,
-          personalityName: null,
-        },
-      ],
-    });
-    renderComponent();
-
-    // "No tasks found" should NOT show when heartbeat tasks exist
-    expect(screen.queryByText('No tasks found')).not.toBeInTheDocument();
-
-    // Heartbeat section and task should be visible
-    expect(await screen.findByText('Heartbeat Tasks')).toBeInTheDocument();
-    expect(screen.getAllByText('system_health').length).toBeGreaterThanOrEqual(1);
-
-    // Falls back to generic text when no personality is set
-    expect(screen.getByText('Managed by Personality')).toBeInTheDocument();
-  });
-
-  it('shows "No tasks found" only when no regular AND no heartbeat tasks exist', async () => {
-    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
-    mockFetchHeartbeatTasks.mockResolvedValue({ tasks: [] });
-    renderComponent();
-
-    expect(await screen.findByText('No tasks found')).toBeInTheDocument();
-  });
-
-  it('shows heartbeat Active/Disabled status', async () => {
-    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
-    mockFetchHeartbeatTasks.mockResolvedValue({
-      tasks: [
-        {
-          name: 'enabled_task',
-          type: 'system_health',
-          enabled: true,
-          intervalMs: 300000,
-          lastRunAt: null,
-          config: {},
-        },
-        {
-          name: 'disabled_task',
-          type: 'memory_status',
-          enabled: false,
-          intervalMs: 600000,
-          lastRunAt: null,
-          config: {},
-        },
-      ],
-    });
-    renderComponent();
-
-    expect(await screen.findByText('Active')).toBeInTheDocument();
-    expect(screen.getByText('Disabled')).toBeInTheDocument();
-  });
-
   // ── Edit Task Tests ────────────────────────────────────────────────
 
   it('opens edit dialog when edit button is clicked', async () => {
@@ -481,129 +365,6 @@ describe('TaskHistory', () => {
     await user.click(cancelButtons[cancelButtons.length - 1]);
 
     expect(screen.queryByText(/Are you sure you want to delete/)).not.toBeInTheDocument();
-  });
-
-  // ── Heartbeat status badge from log data ───────────────────────────────────
-
-  it('shows Active/Disabled when no log data is available yet', async () => {
-    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
-    mockFetchHeartbeatTasks.mockResolvedValue({
-      tasks: [
-        {
-          name: 'system_health',
-          type: 'system_health',
-          enabled: true,
-          intervalMs: 300000,
-          lastRunAt: null,
-          config: {},
-        },
-      ],
-    });
-    // log not fetched until row is expanded — mock returns empty
-    mockFetchHeartbeatLog.mockResolvedValue({ entries: [], total: 0 });
-
-    renderComponent();
-
-    expect(await screen.findAllByText('system_health')).toBeTruthy();
-    // Before expanding, fall back to enabled/disabled badge
-    expect(screen.getByText('Active')).toBeInTheDocument();
-  });
-
-  it('shows last-result status badge after expanding the row and log loads', async () => {
-    const user = userEvent.setup();
-    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
-    mockFetchHeartbeatTasks.mockResolvedValue({
-      tasks: [
-        {
-          name: 'system_health',
-          type: 'system_health',
-          enabled: true,
-          intervalMs: 300000,
-          lastRunAt: Date.now() - 5000,
-          config: {},
-        },
-      ],
-    });
-    mockFetchHeartbeatLog.mockResolvedValue({
-      entries: [
-        {
-          id: 'log-1',
-          checkName: 'system_health',
-          personalityId: null,
-          ranAt: Date.now() - 5000,
-          status: 'warning',
-          message: 'High memory usage: 850/900MB',
-          durationMs: 23,
-          errorDetail: null,
-        },
-      ],
-      total: 1,
-    });
-
-    renderComponent();
-    expect(await screen.findAllByText('system_health')).toBeTruthy();
-
-    // Click the status button to expand
-    const expandButton = screen.getByTitle('Toggle execution history');
-    await user.click(expandButton);
-
-    // Log entry should now be visible
-    expect(await screen.findByText('High memory usage: 850/900MB')).toBeInTheDocument();
-    expect(screen.getByText('Recent Executions')).toBeInTheDocument();
-    // warning status should appear (in the log table row)
-    expect(screen.getAllByText('warning').length).toBeGreaterThanOrEqual(1);
-  });
-
-  it('shows "No executions recorded yet" when log is empty after expanding', async () => {
-    const user = userEvent.setup();
-    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
-    mockFetchHeartbeatTasks.mockResolvedValue({
-      tasks: [
-        {
-          name: 'memory_status',
-          type: 'memory_status',
-          enabled: false,
-          intervalMs: 600000,
-          lastRunAt: null,
-          config: {},
-        },
-      ],
-    });
-    mockFetchHeartbeatLog.mockResolvedValue({ entries: [], total: 0 });
-
-    renderComponent();
-    expect(await screen.findAllByText('memory_status')).toBeTruthy();
-
-    await user.click(screen.getByTitle('Toggle execution history'));
-
-    expect(await screen.findByText('No executions recorded yet.')).toBeInTheDocument();
-  });
-
-  it('calls fetchHeartbeatLog with the correct checkName when expanded', async () => {
-    const user = userEvent.setup();
-    mockFetchTasks.mockResolvedValue({ tasks: [], total: 0 });
-    mockFetchHeartbeatTasks.mockResolvedValue({
-      tasks: [
-        {
-          name: 'log_anomalies',
-          type: 'log_anomalies',
-          enabled: true,
-          intervalMs: 300000,
-          lastRunAt: null,
-          config: {},
-        },
-      ],
-    });
-    mockFetchHeartbeatLog.mockResolvedValue({ entries: [], total: 0 });
-
-    renderComponent();
-    expect(await screen.findAllByText('log_anomalies')).toBeTruthy();
-
-    await user.click(screen.getByTitle('Toggle execution history'));
-
-    expect(mockFetchHeartbeatLog).toHaveBeenCalledWith(
-      expect.objectContaining({ checkName: 'log_anomalies', limit: 10 })
-    );
   });
 
   // ── Polling / refetchInterval behaviour ───────────────────────────
@@ -697,8 +458,7 @@ describe('TaskHistory', () => {
       for (const status of ['failed', 'timeout', 'cancelled'] as const) {
         vi.clearAllMocks();
         mockFetchTasks.mockResolvedValue({ tasks: [createTask({ status })], total: 1 });
-        mockFetchHeartbeatTasks.mockResolvedValue({ tasks: [] });
-        mockFetchHeartbeatLog.mockResolvedValue({ entries: [], total: 0 });
+        vi.mocked(api.fetchPersonalities).mockResolvedValue({ personalities: [] });
 
         const { unmount } = renderComponent();
 

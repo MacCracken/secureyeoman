@@ -91,7 +91,11 @@ function createMockSecureYeoman(
           })
         : vi.fn().mockReturnValue(overrides.brainManager ?? mockBrainManager),
     getConfig: vi.fn().mockReturnValue({
-      security: { promptGuard: { mode: 'disabled' } },
+      security: {
+        promptGuard: { mode: 'disabled' },
+        responseGuard: { mode: 'disabled' },
+        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+      },
     }),
     getValidator: vi.fn().mockReturnValue({
       validate: vi.fn().mockReturnValue({ blocked: false }),
@@ -1256,7 +1260,11 @@ describe('Chat Routes — additional branch coverage', () => {
     // Override the PromptGuard via config mode=block
     const { mock } = createMockSecureYeoman();
     (mock as any).getConfig = vi.fn().mockReturnValue({
-      security: { promptGuard: { mode: 'block' } },
+      security: {
+        promptGuard: { mode: 'block' },
+        responseGuard: { mode: 'disabled' },
+        llmJudge: { enabled: false, triggers: { automationLevels: ['supervised_auto'] } },
+      },
     });
     registerChatRoutes(app, { secureYeoman: mock });
 

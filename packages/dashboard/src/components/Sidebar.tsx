@@ -3,7 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import {
   Shield,
-  BarChart2,
+  LayoutDashboard,
   ShieldAlert,
   Brain,
   Zap,
@@ -60,7 +60,7 @@ export interface SidebarProps {
 type NavItem = { to: string; label: string; icon: React.ReactNode; end?: boolean };
 
 const BASE_TOP_ITEMS: NavItem[] = [
-  { to: '/metrics', label: 'Metrics', icon: <BarChart2 className="w-5 h-5" /> },
+  { to: '/metrics', label: 'Mission Control', icon: <LayoutDashboard className="w-5 h-5" /> },
   { to: '/security', label: 'Security', icon: <ShieldAlert className="w-5 h-5" /> },
   { to: '/chat', label: 'Chat', icon: <MessagesSquare className="w-5 h-5" /> },
   { to: '/editor', label: 'Editor', icon: <Code className="w-5 h-5" /> },
@@ -112,9 +112,6 @@ export function Sidebar({
   const [profileOpen, setProfileOpen] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [newDialogOpen, setNewDialogOpen] = useState(false);
-  const [automationOpen, setAutomationOpen] = useState(
-    () => { try { return localStorage.getItem('sy_automation_open') !== 'false'; } catch { return true; } }
-  );
   const [adminOpen, setAdminOpen] = useState(
     () => { try { return localStorage.getItem('sy_admin_open') !== 'false'; } catch { return true; } }
   );
@@ -160,23 +157,18 @@ export function Sidebar({
     (securityPolicy?.allowExtensions ?? false) || extensionConfig?.config?.enabled === true;
   const proactiveEnabled =
     (securityPolicy?.allowProactive ?? false) || (proactiveConfig?.config as any)?.enabled === true;
-  const workflowsEnabled = securityPolicy?.allowWorkflows ?? false;
   const experimentsEnabled = securityPolicy?.allowExperiments ?? false;
   const storybookEnabled = securityPolicy?.allowStorybook ?? false;
 
-  const { topItems, automationItems, adminItems } = useMemo(() => {
+  const { topItems, adminItems } = useMemo(() => {
     const top: NavItem[] = [...BASE_TOP_ITEMS];
     top.push({ to: '/intent', label: 'Intent', icon: <Target className="w-5 h-5" /> });
     if (proactiveEnabled) top.push({ to: '/proactive', label: 'Proactive', icon: <Sparkles className="w-5 h-5" /> });
     if (hasAgents) top.push({ to: '/agents', label: 'Agents', icon: <Users className="w-5 h-5" /> });
+    top.push({ to: '/automation', label: 'Automation', icon: <Layers className="w-5 h-5" /> });
 
-    const automation: NavItem[] = [
-      { to: '/tasks', label: 'Tasks', icon: <ClipboardList className="w-5 h-5" /> },
-    ];
-    if (workflowsEnabled) automation.push({ to: '/workflows', label: 'Workflows', icon: <GitMerge className="w-5 h-5" /> });
-
-    return { topItems: top, automationItems: automation, adminItems: [...BASE_ADMIN_ITEMS] };
-  }, [hasAgents, extensionsEnabled, proactiveEnabled, workflowsEnabled, experimentsEnabled, storybookEnabled]);
+    return { topItems: top, adminItems: [...BASE_ADMIN_ITEMS] };
+  }, [hasAgents, extensionsEnabled, proactiveEnabled, experimentsEnabled, storybookEnabled]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -193,10 +185,6 @@ export function Sidebar({
       document.removeEventListener('mousedown', handler);
     };
   }, []);
-
-  useEffect(() => {
-    try { localStorage.setItem('sy_automation_open', String(automationOpen)); } catch {}
-  }, [automationOpen]);
 
   useEffect(() => {
     try { localStorage.setItem('sy_admin_open', String(adminOpen)); } catch {}
@@ -248,23 +236,6 @@ export function Sidebar({
       >
         {/* Top items: Metrics, Chat, Editor, Personality, Skills, [Proactive], [Agents], Intent */}
         {topItems.map(renderNavItem)}
-
-        {/* Automation collapsible group */}
-        {collapsed && <div className="border-t border-border/30 mx-2 my-1" />}
-        <div className={collapsed ? '' : 'space-y-0.5 mt-1'}>
-          {!collapsed && (
-            <button onClick={() => setAutomationOpen((v) => !v)} className={groupHeaderClass}>
-              <Layers className="w-5 h-5 flex-shrink-0" />
-              <span className="flex-1 text-left">Automation</span>
-              <ChevronRight className={`w-3.5 h-3.5 transition-transform duration-200 ${automationOpen ? 'rotate-90' : ''}`} />
-            </button>
-          )}
-          {(collapsed || automationOpen) && (
-            <div className={!collapsed ? 'ml-3 pl-3 border-l border-border/50 space-y-0.5' : ''}>
-              {automationItems.map(renderNavItem)}
-            </div>
-          )}
-        </div>
 
         {/* Mid items: Connections, Security */}
         {MID_ITEMS.map(renderNavItem)}

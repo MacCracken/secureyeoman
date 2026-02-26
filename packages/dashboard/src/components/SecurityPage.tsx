@@ -34,6 +34,11 @@ import {
   Lock,
   LockOpen,
   RefreshCcw,
+  Layers,
+  ClipboardList,
+  GitMerge,
+  Clock,
+  Heart,
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import {
@@ -57,10 +62,14 @@ import {
   updateAuditItem,
   finalizeAuditRun,
   emergencyStop,
+  fetchTasks,
+  fetchWorkflows,
+  fetchWorkflowRuns,
 } from '../api/client';
-import type { ReportSummary, MlSecuritySummary } from '../api/client';
+import type { ReportSummary, MlSecuritySummary, WorkflowDefinition, WorkflowRun } from '../api/client';
 import { ConfirmDialog } from './common/ConfirmDialog';
 import { RiskAssessmentTab } from './RiskAssessmentTab';
+import { HeartbeatsView } from './HeartbeatsView';
 import type {
   MetricsSnapshot,
   HealthStatus,
@@ -73,9 +82,10 @@ import type {
   ChecklistItem,
   AuditItemStatus,
   AutonomyLevel,
+  Task,
 } from '../types';
 
-type TabType = 'overview' | 'audit' | 'ml' | 'reports' | 'nodes' | 'autonomy' | 'risk';
+type TabType = 'overview' | 'audit' | 'automations' | 'ml' | 'reports' | 'nodes' | 'autonomy' | 'risk';
 
 const SEVERITY_ICONS: Record<string, React.ReactNode> = {
   info: <Info className="w-4 h-4 text-info" />,
@@ -114,6 +124,7 @@ export function SecurityPage() {
     const params = new URLSearchParams(location.search);
     const tabParam = params.get('tab');
     if (tabParam === 'audit') return 'audit';
+    if (tabParam === 'automations') return 'automations';
     if (tabParam === 'ml') return 'ml';
     if (tabParam === 'reports' || path.includes('/reports')) return 'reports';
     if (tabParam === 'nodes') return 'nodes';
@@ -246,6 +257,17 @@ export function SecurityPage() {
           Audit Log
         </button>
         <button
+          onClick={() => setActiveTab('automations')}
+          className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'automations'
+              ? 'border-primary text-primary'
+              : 'border-transparent text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          <Layers className="w-4 h-4" />
+          Automations
+        </button>
+        <button
           onClick={() => setActiveTab('autonomy')}
           className={`flex items-center gap-2 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'autonomy'
@@ -329,6 +351,8 @@ export function SecurityPage() {
         />
       )}
 
+      {activeTab === 'automations' && <AutomationsSecurityTab />}
+
       {activeTab === 'ml' && <MLSecurityTab />}
 
       {activeTab === 'reports' && <ReportsTab />}
@@ -338,6 +362,326 @@ export function SecurityPage() {
       {activeTab === 'autonomy' && <AutonomyTab />}
 
       {activeTab === 'risk' && <RiskAssessmentTab />}
+    </div>
+  );
+}
+
+// ─── Automations Security Tab ─────────────────────────────────────────────────
+
+const TASK_STATUS_COLORS: Record<string, string> = {
+  completed: 'badge-success',
+  failed: 'badge-error',
+  timeout: 'badge-warning',
+  running: 'badge-info',
+  pending: 'badge',
+  cancelled: 'badge',
+};
+
+const WF_RUN_STATUS_COLORS: Record<string, string> = {
+  completed: 'badge-success',
+  failed: 'badge-error',
+  running: 'badge-info',
+  pending: 'badge',
+  cancelled: 'badge',
+};
+
+type AutomationsSubview = 'tasks' | 'workflows' | 'heartbeats';
+
+function AutomationsSecurityTab() {
+  const [subview, setSubview] = useState<AutomationsSubview>('heartbeats');
+
+  const SUBVIEW_LABELS: Record<AutomationsSubview, string> = {
+    heartbeats: 'Heartbeats',
+    tasks: 'Tasks',
+    workflows: 'Workflows',
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h3 className="text-base font-semibold flex items-center gap-2">
+            <Layers className="w-4 h-4" />
+            Automations
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Security audit of heartbeat monitors, task executions, and workflow runs
+          </p>
+        </div>
+        <div
+          className="flex items-center gap-1 bg-muted/50 border rounded-lg p-1 self-start sm:self-auto"
+          role="tablist"
+          aria-label="Automations views"
+        >
+          {(['heartbeats', 'tasks', 'workflows'] as AutomationsSubview[]).map((v) => (
+            <button
+              key={v}
+              role="tab"
+              aria-selected={subview === v}
+              onClick={() => setSubview(v)}
+              className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${
+                subview === v
+                  ? 'bg-card shadow-sm text-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {SUBVIEW_LABELS[v]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {subview === 'heartbeats' && <HeartbeatsView />}
+      {subview === 'tasks' && <AutomationsTasksView />}
+      {subview === 'workflows' && <AutomationsWorkflowsView />}
+    </div>
+  );
+}
+
+function AutomationsTasksView() {
+  const [statusFilter, setStatusFilter] = useState('');
+  const [page, setPage] = useState(0);
+  const PAGE_SIZE = 10;
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['security-automations-tasks', statusFilter, page],
+    queryFn: () =>
+      fetchTasks({
+        status: statusFilter || undefined,
+        limit: PAGE_SIZE,
+        offset: page * PAGE_SIZE,
+      }),
+  });
+
+  const tasks = data?.tasks ?? [];
+  const total = data?.total ?? 0;
+  const totalPages = Math.ceil(total / PAGE_SIZE);
+
+  const formatDuration = (start?: number | null, end?: number | null) => {
+    if (!start || !end) return '—';
+    const ms = end - start;
+    if (ms < 1000) return `${ms}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${Math.floor(ms / 60000)}m ${Math.floor((ms % 60000) / 1000)}s`;
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 flex-wrap">
+        <Filter className="w-4 h-4 text-muted-foreground" />
+        <select
+          value={statusFilter}
+          onChange={(e) => {
+            setStatusFilter(e.target.value);
+            setPage(0);
+          }}
+          className="px-3 py-1.5 text-sm border rounded-md bg-background"
+          aria-label="Filter by status"
+        >
+          <option value="">All statuses</option>
+          <option value="completed">Completed</option>
+          <option value="failed">Failed</option>
+          <option value="timeout">Timeout</option>
+          <option value="running">Running</option>
+          <option value="pending">Pending</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+        {statusFilter && (
+          <button
+            onClick={() => {
+              setStatusFilter('');
+              setPage(0);
+            }}
+            className="btn btn-ghost btn-sm text-xs gap-1"
+          >
+            <X className="w-3 h-3" /> Clear
+          </button>
+        )}
+        <span className="ml-auto text-xs text-muted-foreground">
+          {total} task{total !== 1 ? 's' : ''}
+        </span>
+      </div>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : tasks.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-8">No tasks found</p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-border bg-muted/30">
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Name</th>
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Type</th>
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground">Status</th>
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground hidden sm:table-cell">Started</th>
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground hidden sm:table-cell">Duration</th>
+                <th className="text-left px-3 py-2 font-medium text-xs text-muted-foreground hidden lg:table-cell">Error</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tasks.map((task: Task) => (
+                <tr key={task.id} className="border-b border-border/50 hover:bg-muted/20">
+                  <td className="px-3 py-2 font-medium max-w-[160px] truncate" title={task.name}>
+                    {task.name}
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className="badge badge-sm text-xs capitalize">{task.type ?? '—'}</span>
+                  </td>
+                  <td className="px-3 py-2">
+                    <span className={`badge badge-sm text-xs ${TASK_STATUS_COLORS[task.status] ?? 'badge'}`}>
+                      {task.status}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">
+                    {task.startedAt ? new Date(task.startedAt).toLocaleString() : '—'}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-muted-foreground hidden sm:table-cell">
+                    {formatDuration(task.startedAt, task.completedAt)}
+                  </td>
+                  <td className="px-3 py-2 text-xs text-destructive hidden lg:table-cell max-w-[200px] truncate"
+                    title={task.result?.success === false ? task.result.error?.message : ''}>
+                    {task.result?.success === false ? task.result.error?.message ?? '' : ''}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            Showing {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, total)} of {total}
+          </span>
+          <div className="flex gap-1">
+            <button
+              disabled={page === 0}
+              onClick={() => setPage((p) => p - 1)}
+              className="btn btn-ghost btn-sm disabled:opacity-40"
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+            </button>
+            <button
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+              className="btn btn-ghost btn-sm disabled:opacity-40"
+            >
+              <ChevronRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AutomationsWorkflowsView() {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['security-automations-workflows'],
+    queryFn: () => fetchWorkflows({ limit: 50 }),
+  });
+
+  const { data: runsData, isLoading: runsLoading } = useQuery({
+    queryKey: ['security-automations-runs', expanded],
+    queryFn: () =>
+      expanded
+        ? fetchWorkflowRuns(expanded, { limit: 5 })
+        : Promise.resolve({ runs: [], total: 0 }),
+    enabled: !!expanded,
+  });
+
+  const definitions = data?.definitions ?? [];
+
+  return (
+    <div className="space-y-3">
+      <span className="text-xs text-muted-foreground">
+        {data?.total ?? 0} workflow{(data?.total ?? 0) !== 1 ? 's' : ''}
+      </span>
+
+      {isLoading ? (
+        <div className="flex justify-center py-8">
+          <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+        </div>
+      ) : definitions.length === 0 ? (
+        <p className="text-sm text-muted-foreground text-center py-8">No workflows found</p>
+      ) : (
+        <div className="space-y-2">
+          {definitions.map((wf: WorkflowDefinition) => (
+            <div key={wf.id} className="rounded-lg border border-border overflow-hidden">
+              <button
+                onClick={() => setExpanded(expanded === wf.id ? null : wf.id)}
+                className="w-full flex items-center gap-3 px-4 py-3 hover:bg-muted/30 transition-colors text-left"
+              >
+                <GitMerge className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium truncate">{wf.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {wf.steps?.length ?? 0} step{(wf.steps?.length ?? 0) !== 1 ? 's' : ''}
+                    {wf.autonomyLevel ? ` · ${wf.autonomyLevel}` : ''}
+                  </p>
+                </div>
+                <span className={`badge badge-sm text-xs ${wf.isEnabled ? 'badge-success' : 'badge'}`}>
+                  {wf.isEnabled ? 'Enabled' : 'Disabled'}
+                </span>
+                {expanded === wf.id ? (
+                  <ChevronUp className="w-4 h-4 text-muted-foreground" />
+                ) : (
+                  <ChevronDown className="w-4 h-4 text-muted-foreground" />
+                )}
+              </button>
+
+              {expanded === wf.id && (
+                <div className="border-t border-border px-4 py-3 bg-muted/10">
+                  <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5" />
+                    Recent runs (last 5)
+                  </p>
+                  {runsLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                  ) : (runsData?.runs ?? []).length === 0 ? (
+                    <p className="text-xs text-muted-foreground">No runs recorded</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {(runsData?.runs ?? []).map((run: WorkflowRun) => (
+                        <div
+                          key={run.id}
+                          className="flex items-center gap-3 text-xs py-1.5 border-b border-border/30 last:border-0"
+                        >
+                          <span
+                            className={`badge badge-sm ${WF_RUN_STATUS_COLORS[run.status] ?? 'badge'}`}
+                          >
+                            {run.status}
+                          </span>
+                          <span className="text-muted-foreground whitespace-nowrap">
+                            {new Date(run.createdAt).toLocaleString()}
+                          </span>
+                          <span className="text-muted-foreground truncate flex-1">
+                            by {run.triggeredBy}
+                          </span>
+                          {run.error && (
+                            <span
+                              className="text-destructive truncate max-w-[140px]"
+                              title={run.error}
+                            >
+                              {run.error}
+                            </span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,3 +1,57 @@
+## [2026.2.26h] — 2026-02-26
+
+### Changed
+
+#### Phase 53 — Heartbeats moved to Security > Automations; Automation View polish
+
+- **Heartbeats view extracted** — `HeartbeatsView.tsx` (new self-contained component) extracted from `TaskHistory`. Fetches `fetchHeartbeatStatus` + `fetchPersonalities`; renders per-monitor `HeartbeatCard` components. Heartbeats sub-tab removed from `TaskHistory` entirely.
+- **`system_health` card border fix** — `HeartbeatCard` no longer renders the left `border-l-4` highlight on `system_health`-type monitors (was `border-l-4 border-l-success`/`border-l-muted-foreground/30`).
+- **Security > Automations > Heartbeats** — Added Heartbeats as the default (first) subview in the Security Automations tab. Subview order: **Heartbeats → Tasks → Workflows**. Tab switcher uses the Mission Control pill-tab style (`bg-muted/50` container, `bg-card shadow-sm` active state).
+- **Security > Automations task filter** — Status filter `<select>` now uses `bg-background border rounded-md` (theme-aware) matching the TaskHistory filter style.
+- **Automation page polish** — `AutomationPage` tab switcher upgraded to Mission Control pill-tab style: title promoted to `text-2xl font-bold tracking-tight`, pill tabs (`bg-muted/50 border rounded-lg p-1`) replace the old border-bottom tabs.
+
+### Tests
+
+- `SecurityPage.test.tsx` — 35/35 pass; replaced `fetchHeartbeatTasks` mock with `fetchHeartbeatStatus` + `fetchPersonalities`; updated Automations tab tests to reflect default Heartbeats subview and pill-tab `role="tab"` selectors; added "shows Heartbeats content as default subview" test.
+- `TaskHistory.test.tsx` — 34/34 pass; replaced `fetchHeartbeatTasks`/`fetchHeartbeatLog` mock with `fetchPersonalities`; removed all heartbeat-specific tests (moved to HeartbeatsView).
+
+## [2026.2.26g] — 2026-02-26
+
+### Added
+
+#### Phase 53 — Automation View Consolidation + Security > Automations Tab
+
+- **`AutomationPage`** (`src/pages/AutomationPage.tsx`) — New unified automation management view at `/automation`. A Tasks | Workflows tab switcher renders the full `TaskHistory` component (including its own Tasks/Heartbeats sub-tabs) or `WorkflowsPage` respectively. Old routes `/tasks` and `/workflows` now redirect to `/automation`.
+- **Sidebar consolidation** — Removed the collapsible "Automation" group with separate Tasks and Workflows items. Replaced with a single flat `Automation → /automation` nav link (Layers icon), removing the per-feature conditional Workflows entry and the expand/collapse state.
+- **Security > Automations tab** — New `Automations` tab in `SecurityPage` inserted between "Audit Log" and "Autonomy". Contains two security-audit subviews:
+  - **Tasks subview** — Read-only paginated table of all task executions. Columns: Name, Type, Status (badged), Started, Duration, Error. Status filter dropdown. No create/edit/delete controls (audit lens only).
+  - **Workflows subview** — List of all workflow definitions with Enabled/Disabled badge and step count. Each row is expandable: on expand, fetches the last 5 runs via `fetchWorkflowRuns` and shows Status, Timestamp, Triggered-by, and Error inline.
+
+### Tests
+
+- `SecurityPage.test.tsx` — 34/34 pass; added 6 new Automations tab tests (tab renders, Tasks/Workflows subviews, empty states, data display, subview switching); added mocks for `fetchTlsStatus`, `fetchAutonomyOverview`, `fetchAuditRuns`, `fetchWorkflows`, `fetchWorkflowRuns`.
+- `Sidebar.test.tsx` — 6/6 pass; updated to assert `Automation → /automation` link.
+
+## [2026.2.26f] — 2026-02-26
+
+### Added
+
+#### Phase 53 — Mission Control Dashboard
+
+- **Mission Control tab** — Replaces the old "Overview" tab in `MetricsPage` as the default landing view. Renders a multi-panel command-center grid with live auto-refresh data:
+  - **KPI stat bar** — 6 cards: Active Agents, Heartbeat status, Active Tasks, Tasks Today, Cost Today (click-to-drill into Costs tab), Audit Entries.
+  - **System topology** — existing ReactFlow topology graph (lg:col-span-2) alongside System Health card (latency, memory, uptime, version) and Quick Actions (5 shortcut buttons: Active Tasks, Audit Log, Connections, Workflows, Cost Analytics).
+  - **Live feeds row** — Active Tasks feed (running tasks with progress bar), Security Events feed (recent events with severity badge), Agent Health panel (heartbeat status per personality).
+  - **Resource monitoring** — CPU/memory AreaChart sparkline + 4 mini stat chips (CPU %, Memory MB, Tokens, Cost), beside Integration Status grid (MCP server connections, up to 8 shown, 2-col).
+  - **Audit stream** — recent audit entries with timestamp and actor. **Workflow runs** — workflow definitions list with enabled/disabled status badge.
+- **Costs tab preserved** — Full provider breakdown table, history filters, cost-over-time chart, and recommendations remain intact as the second tab. The "Cost Today" KPI card on Mission Control links to it.
+- **Sidebar rename** — "Metrics" nav item renamed to "Mission Control" with `LayoutDashboard` icon (was `BarChart2`); route unchanged (`/metrics`).
+
+### Tests
+
+- `MetricsPage.test.tsx` — 34/34 pass; added mocks for `fetchTasks`, `fetchSecurityEvents`, `fetchAuditEntries`, `fetchWorkflows`; updated assertions to "Mission Control" terminology.
+- `Sidebar.test.tsx` — 9/9 pass; fixed pre-existing ambiguous `/security/i` selector (uses `getAllByRole()[0]`); corrected Tasks/Skills ordering assertion to reflect automation-group DOM structure.
+
 ## [2026.2.26e] — 2026-02-26
 
 ### Added
