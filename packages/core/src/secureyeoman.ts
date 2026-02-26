@@ -251,6 +251,9 @@ export class SecureYeoman {
   private initialized = false;
   private startedAt: number | null = null;
   private shutdownPromise: Promise<void> | null = null;
+  // CPU usage sampler — updated every getMetrics() call to compute a rolling delta
+  private _lastCpuUsage: NodeJS.CpuUsage = process.cpuUsage();
+  private _lastCpuSampleAt: number = Date.now();
 
   constructor(private readonly options: SecureYeomanOptions = {}) {}
 
@@ -1293,7 +1296,20 @@ export class SecureYeoman {
         inProgress: this.taskExecutor!.getActiveCount(),
       },
       resources: {
-        cpuPercent: 0,
+        // process.cpuUsage() measures only THIS process's CPU time (user + system),
+        // not system-wide CPU. The delta form process.cpuUsage(previous) returns
+        // microseconds consumed since the previous sample.
+        cpuPercent: (() => {
+          const now = Date.now();
+          const elapsedMs = now - this._lastCpuSampleAt;
+          // delta: µs of CPU time this process used since last sample
+          const delta = process.cpuUsage(this._lastCpuUsage);
+          this._lastCpuUsage = process.cpuUsage();
+          this._lastCpuSampleAt = now;
+          if (elapsedMs <= 0) return 0;
+          // (µs → ms) / elapsed ms → fraction → percent
+          return Math.min(100, Math.max(0, ((delta.user + delta.system) / 1000 / elapsedMs) * 100));
+        })(),
         memoryUsedMb: process.memoryUsage().heapUsed / 1024 / 1024,
         memoryLimitMb: 0,
         memoryPercent: 0,

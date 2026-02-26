@@ -954,10 +954,11 @@ function TaskRow({
 function HeartbeatCard({ task, globalPersonalityMap }: { task: HeartbeatTask; globalPersonalityMap: Map<string, string> }) {
   const [expanded, setExpanded] = useState(false);
 
-  // Always fetch latest entry for the status badge when collapsed.
+  // Fetch enough recent entries to cover all personalities (up to 20 per cycle).
+  // Used both for collapsed per-personality badges and expanded log view.
   const { data: latestData } = useQuery({
     queryKey: ['heartbeat-log-latest', task.name],
-    queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 1 }),
+    queryFn: () => fetchHeartbeatLog({ checkName: task.name, limit: 20 }),
     staleTime: 30_000,
     refetchInterval: 30_000,
   });
@@ -970,9 +971,6 @@ function HeartbeatCard({ task, globalPersonalityMap }: { task: HeartbeatTask; gl
     staleTime: 30_000,
     refetchInterval: expanded ? 30_000 : false,
   });
-
-  const lastEntry: HeartbeatLogEntry | null =
-    (expanded ? logData?.entries[0] : latestData?.entries[0]) ?? null;
 
   const formatTime = (ts: number | null) => {
     if (!ts) return 'Never';
@@ -1003,6 +1001,18 @@ function HeartbeatCard({ task, globalPersonalityMap }: { task: HeartbeatTask; gl
   // Merge global map first so task-local entries (if any) take precedence.
   const personalityMap = new Map([...globalPersonalityMap, ...personalities.map((p): [string, string] => [p.id, p.name])]);
 
+  // Build a map of personalityId → most-recent log entry for per-personality status badges.
+  const latestByPersonality = new Map<string, HeartbeatLogEntry>();
+  for (const entry of latestData?.entries ?? []) {
+    const pid = entry.personalityId ?? '';
+    if (!latestByPersonality.has(pid)) {
+      latestByPersonality.set(pid, entry);
+    }
+  }
+  // Fallback: single most-recent entry for tasks with no personalities.
+  const globalLastEntry: HeartbeatLogEntry | null =
+    (expanded ? logData?.entries[0] : latestData?.entries[0]) ?? null;
+
   return (
     <div className={`border-l-4 ${task.enabled ? 'border-l-success' : 'border-l-muted-foreground/30'}`}>
       {/* Header row */}
@@ -1024,27 +1034,46 @@ function HeartbeatCard({ task, globalPersonalityMap }: { task: HeartbeatTask; gl
                 {task.lastRunAt ? `last run ${formatTime(task.lastRunAt)}` : 'never run'}
               </span>
             </div>
-            {personalities.length > 0 && (
-              <div className="mt-1.5" style={{ overflow: 'visible' }}>
-                {personalities.map((p, idx) => (
-                  <span
-                    key={idx}
-                    className="inline-block text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded mr-1 mb-0.5"
-                  >
-                    {p.name}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
-          {lastEntry ? (
+        <div className="flex items-start gap-2 shrink-0">
+          {personalities.length > 0 ? (
+            // Per-personality status badges — each agent shows its own last result
+            <div className="flex flex-col items-end gap-1">
+              {personalities.map((p) => {
+                const entry = latestByPersonality.get(p.id);
+                return (
+                  <div key={p.id} className="flex items-center gap-1.5">
+                    <span className="text-xs text-muted-foreground">{p.name}</span>
+                    {entry ? (
+                      <>
+                        {HEARTBEAT_STATUS_ICON[entry.status]}
+                        <span className={`text-xs ${HEARTBEAT_STATUS_COLOR[entry.status]}`}>
+                          {entry.status}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        {task.enabled ? (
+                          <CheckCircle className="w-4 h-4 text-success" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-muted-foreground" />
+                        )}
+                        <span className={`text-xs ${task.enabled ? 'text-success' : 'text-muted-foreground'}`}>
+                          {task.enabled ? 'Active' : 'Disabled'}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : globalLastEntry ? (
             <div className="flex items-center gap-1.5">
-              {HEARTBEAT_STATUS_ICON[lastEntry.status]}
-              <span className={`text-xs ${HEARTBEAT_STATUS_COLOR[lastEntry.status]}`}>
-                {lastEntry.status}
+              {HEARTBEAT_STATUS_ICON[globalLastEntry.status]}
+              <span className={`text-xs ${HEARTBEAT_STATUS_COLOR[globalLastEntry.status]}`}>
+                {globalLastEntry.status}
               </span>
             </div>
           ) : (

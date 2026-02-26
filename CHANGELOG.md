@@ -4,6 +4,8 @@
 
 - **Heartbeat tasks agent name** — `HeartbeatCard` now receives the global `personalityMap` fetched from `GET /api/v1/soul/personalities` and merges it with the task-local list, so log entry agent cells display personality names instead of raw UUIDs.
 - **`empathyResonance` missing from default personality objects** — Added `empathyResonance: false` to the inline `PersonalityCreate` objects in `creation-tool-executor.ts`, `manager.ts`, `presets.ts` (×2), and `soul-routes.ts` so `npm run build` succeeds after migration `048` added the required field.
+- **CPU usage always 0%** — `SecureYeoman.getMetrics()` now uses a rolling `process.cpuUsage()` delta sampler. Private fields `_lastCpuUsage` and `_lastCpuSampleAt` track the previous snapshot; each call computes `(userDelta + systemDelta µs) / elapsedMs / 10` → percentage. Value is clamped to `[0, 100]`.
+- **Heartbeat Tasks same stats across agents** — `HeartbeatCard` now fetches up to 20 recent log entries and builds a `latestByPersonality` map (first entry per `personalityId`). The collapsed header renders a per-personality row showing each agent's name + its own most-recent status badge, so FRIDAY and T.Ron (or any multi-agent task) display independent statuses side by side.
 
 ### Changed
 
