@@ -642,6 +642,126 @@ describe('GatewayServer', () => {
     });
   });
 
+  describe('task routes with storage mock', () => {
+    let taskServer: GatewayServer | null = null;
+    const taskPort = 19790;
+    const taskBase = `http://127.0.0.1:${taskPort}`;
+
+    beforeAll(async () => {
+      const tasks = new Map<string, unknown>();
+      const mockTaskStorage = {
+        listTasks: async () => ({ tasks: Array.from(tasks.values()), total: tasks.size }),
+        getTask: async (id: string) => tasks.get(id) ?? null,
+        storeTask: async (task: unknown) => {
+          tasks.set((task as Record<string, string>).id, task);
+        },
+        updateTaskMetadata: async (id: string, data: unknown) => {
+          const existing = tasks.get(id);
+          if (existing) tasks.set(id, { ...(existing as object), ...(data as object) });
+        },
+        deleteTask: async (id: string) => {
+          tasks.delete(id);
+        },
+      };
+      taskServer = new GatewayServer({
+        config: createMinimalConfig({ port: taskPort }) as any,
+        secureYeoman: createMockSecureYeoman({
+          getTaskStorage: () => mockTaskStorage,
+          getTaskExecutor: () => null,
+          getConfig: () => ({
+            core: { environment: 'development' },
+            security: {
+              promptGuard: { mode: 'disabled' },
+              allowSubAgents: false,
+              allowA2A: false,
+              allowMultimodal: false,
+              allowDesktopControl: false,
+              allowCamera: false,
+              allowAnomalyDetection: false,
+            },
+          }),
+        }) as any,
+      });
+      await taskServer.start();
+    });
+
+    afterAll(async () => {
+      if (taskServer) {
+        await taskServer.stop();
+        taskServer = null;
+      }
+    });
+
+    it('GET /api/v1/tasks returns tasks list when storage available', async () => {
+      const res = await fetch(`${taskBase}/api/v1/tasks`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json).toHaveProperty('tasks');
+      expect(json).toHaveProperty('total');
+    });
+
+    it('GET /api/v1/tasks with all query params covers parseTimestamp', async () => {
+      const res = await fetch(
+        `${taskBase}/api/v1/tasks?status=pending&type=execute&from=2024-01-01&to=2024-12-31&limit=10&offset=0`
+      );
+      expect(res.status).toBe(200);
+    });
+
+    it('GET /api/v1/tasks with numeric from/to params', async () => {
+      const now = Date.now();
+      const res = await fetch(
+        `${taskBase}/api/v1/tasks?from=${now - 3600000}&to=${now}&limit=5&offset=0`
+      );
+      expect(res.status).toBe(200);
+    });
+
+    it('POST /api/v1/tasks without name returns 400', async () => {
+      const res = await fetch(`${taskBase}/api/v1/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: 'no name here' }),
+      });
+      expect(res.status).toBe(400);
+    });
+
+    it('POST /api/v1/tasks with name creates task and returns 201', async () => {
+      const res = await fetch(`${taskBase}/api/v1/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Test Task', description: 'A test task' }),
+      });
+      expect(res.status).toBe(201);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json.name).toBe('Test Task');
+    });
+
+    it('GET /api/v1/tasks/:id returns 404 when task not found', async () => {
+      const res = await fetch(`${taskBase}/api/v1/tasks/nonexistent-id`);
+      expect(res.status).toBe(404);
+    });
+
+    it('GET /api/v1/tasks/:id returns task when found', async () => {
+      // First create a task
+      const createRes = await fetch(`${taskBase}/api/v1/tasks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: 'Lookup Task' }),
+      });
+      const created = await createRes.json() as Record<string, unknown>;
+
+      // Now get it by ID
+      const res = await fetch(`${taskBase}/api/v1/tasks/${created.id}`);
+      expect(res.status).toBe(200);
+      const json = await res.json() as Record<string, unknown>;
+      expect(json.id).toBe(created.id);
+    });
+
+    it('DELETE /api/v1/tasks/:id returns 404 when task not found', async () => {
+      const res = await fetch(`${taskBase}/api/v1/tasks/nonexistent-id`, { method: 'DELETE' });
+      expect(res.status).toBe(404);
+    });
+  });
+
   describe('costs history with usage storage', () => {
     let storageServer: GatewayServer | null = null;
     const storagePort = 19770;

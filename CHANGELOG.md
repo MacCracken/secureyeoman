@@ -1,470 +1,150 @@
-## [2026.2.26-ui-theme-consistency] — 2026-02-26
-
-### Dashboard — UI Theme Consistency (Secrets & Intent)
-
-#### Changed
-
-- **Security > API Keys / Secrets — consistent visual language** — `SecretsPanel` in `SecuritySettings.tsx` was visually inconsistent with the adjacent `ApiKeysSettings` component. Overhauled to match:
-  - Wrapped in `card p-4 space-y-4` — same inner-card structure as API Keys.
-  - Added outer `space-y-6` wrapper with `h2 text-xl font-semibold text-primary` section header (matching API Keys).
-  - **"+ Add Secret" button**: `btn btn-primary btn-sm` → `btn btn-ghost text-sm flex items-center gap-1` with `w-4 h-4` icon — identical style to "Create Key".
-  - **Add Secret form container**: `card p-4` → `p-3 rounded-lg bg-muted/30 space-y-3` — matching the Create Key inline form.
-  - **Form inputs**: `input w-full font-mono text-sm` (utility class) → explicit `px-2 py-1 rounded border bg-background text-foreground font-mono text-sm w-full focus:outline-none focus:ring-2 focus:ring-primary` — consistent with API Keys input styling.
-  - **Form buttons**: `btn-sm` → `text-sm px-3 py-1` (matching API Keys form).
-  - **Keys list rows**: heavy `divide-y border` wrapper → `space-y-2` with `bg-muted/30` per-row (matching API Keys row style).
-  - `ConfirmDialog` moved to top of render tree (matching API Keys pattern).
-  - `<form onSubmit>` converted to `<div onClick>` handler pattern (matching API Keys).
-
-- **Settings > Intent — Create Intent inline form** — `IntentEditor.tsx` "Create Intent" flow updated to match the shared theming:
-  - **"+ Create Intent" button**: raw `bg-primary text-primary-foreground rounded` inline styles → `btn btn-ghost text-sm flex items-center gap-1` with `w-4 h-4` icon — identical to "Create Key" / "Add Secret".
-  - **Create form**: full-screen `fixed inset-0 bg-black/50` modal replaced with an inline `p-3 rounded-lg bg-muted/30 space-y-3` panel — same pattern as Add Secret and Create Key.
-  - **Textarea**: raw border/bg classes → `px-2 py-1 rounded border bg-background text-foreground font-mono text-xs w-full focus:outline-none focus:ring-2 focus:ring-primary resize-y`.
-  - **Create/Cancel buttons**: raw inline styles → `btn btn-primary text-sm px-3 py-1` / `btn btn-ghost text-sm px-3 py-1`.
-  - Cancel now also resets the JSON editor back to the starter template.
-  - Empty state hidden while the create form is expanded (reduces visual clutter).
-
----
-
-## [2026.2.25-phase-51-real-time-infrastructure] — 2026-02-25
-
-### Feature — Phase 51: Real-Time Infrastructure
-
-#### Added
-
-- **`notifications` table** (migration `047_notifications.sql`) — PostgreSQL-backed persistent
-  notification model. Stores `type`, `title`, `body`, `level` (info/warn/error/critical),
-  `source`, `metadata`, `read_at`, and `created_at`. Two indexes: descending `created_at` for
-  list queries and a partial index on unread rows for count queries.
-- **`NotificationStorage`** (`src/notifications/notification-storage.ts`) — `PgBaseStorage`
-  subclass with `create()`, `list()`, `markRead()`, `markAllRead()`, `delete()`, `unreadCount()`.
-- **`NotificationManager`** (`src/notifications/notification-manager.ts`) — thin orchestration
-  layer. `notify()` persists to DB and broadcasts to connected WebSocket clients via `setBroadcast()`.
-  The broadcast callback is wired by the gateway after startup to avoid circular dependencies.
-- **Notification REST API** (`src/notifications/notification-routes.ts`) at `/api/v1/notifications`:
-  - `GET /` — list with `unreadOnly`, `limit`, `offset` query params
-  - `GET /count` — lightweight unread count for badge polling
-  - `POST /:id/read` — mark single notification read
-  - `POST /read-all` — mark all read, returns updated count
-  - `DELETE /:id` — delete notification
-- **`notifications` WebSocket channel** — added to `CHANNEL_PERMISSIONS` in `gateway/server.ts`.
-  Notifications are broadcast as `{ type: 'update', channel: 'notifications', payload: { notification } }`.
-- **Heartbeat → notification wiring** — `HeartbeatManager.executeNotifyAction()` now calls
-  `notificationManager?.notify()` for every notify action (regardless of external channel),
-  creating a DB record and pushing to the WS channel. External delivery stubs unchanged.
-- **`HeartbeatManager.setNotificationManager()`** — new method for wiring, called in
-  `secureyeoman.ts` Step 6.6 after both managers are initialized.
-- **`SecureYeoman.getNotificationManager()`** — public getter.
-- **Dashboard API functions** (`packages/dashboard/src/api/client.ts`):
-  `fetchNotifications`, `fetchNotificationCount`, `markNotificationRead`,
-  `markAllNotificationsRead`, `deleteNotification`.
-- **`ServerNotification` type** (`packages/dashboard/src/types.ts`).
-- **`NotificationBell.tsx` upgrade** — now handles two notification origins:
-  - *Local* (existing behavior preserved): security and task WS events, `localStorage`-backed.
-  - *Server* (new): events from the `notifications` WS channel, DB-backed via REST API.
-  Subscribes to the `notifications` WS channel on mount. `markRead`/`delete` call the REST API
-  for server notifications. Combined unread count badge. Per-item dismiss button added.
-- **ADR 133** (`docs/adr/133-real-time-infrastructure.md`).
-- **Notifications guide** (`docs/guides/notifications.md`).
-
-#### Tests
-
-- `notification-storage.test.ts` — 14 unit tests with mocked `PgBaseStorage` methods.
-- `notification-routes.test.ts` — 15 route tests with mocked `NotificationManager`.
-
-#### Out of Scope (Phase 51)
-
-- Real Slack/Discord/email/Telegram delivery (stubs remain pending IntegrationManager interface audit)
-- Per-user notification preferences
-- Notification retention/cleanup job
-
----
-
-## [2026.2.25-per-personality-memory-scoping] — 2026-02-25
-
-### Feature — Per-Personality Memory Scoping + Omnipresent Mind
-
-#### Added
-
-- **`omnipresentMind` toggle** — New boolean field on `BodyConfigSchema` (default `false`). When enabled, the personality queries the full cross-agent memory and knowledge pool (same unfiltered query as the previous system-wide behaviour). When disabled (default), queries are scoped to entries created by that personality plus legacy entries with no owner (`personality_id IS NULL`).
-- **Per-personality brain stats** — `GET /api/v1/brain/stats?personalityId=<id>` returns counts scoped to the given personality. The heartbeat `system_health` check now logs accurate per-personality stats instead of system-wide aggregates.
-- **Scoped memory + knowledge endpoints** — `GET /api/v1/brain/memories?personalityId=` and `GET /api/v1/brain/knowledge?personalityId=` filter results to a specific personality.
-- **Omnipresent Mind toggle in PersonalityEditor** — Brain section now includes an Omnipresent Mind toggle with a warning that enabling it grants cross-agent memory access.
-
-#### Changed
-
-- **`BrainManager.remember()` / `recall()` / `learn()` / `queryKnowledge()` / `getStats()`** — All core methods accept an optional `personalityId` override and resolve it through `resolvePersonalityId()` (returns `undefined` for omnipresent personalities, scoped ID otherwise).
-- **Chat routes** — `effectivePersonalityId` is computed once per request from the resolved personality's `omnipresentMind` flag (`undefined` if omnipresent, personality UUID if isolated). Threaded to `gatherBrainContext()` and the post-response memory save. Concurrent requests are safe — no shared mutable state is used.
-- **Heartbeat** — `setActivePersonalityIds()` now carries `omnipresentMind` per entry. For `system_health` checks, `effectivePid` is computed per personality inside the log-persistence loop; other check types (maintenance) run once to avoid duplication.
-- **`BodyConfig` in `soul/presets.ts`, `soul/manager.ts`, `soul/soul-routes.ts`** — All inline body config objects updated to include `omnipresentMind: false`.
-
-#### Efficiency
-
-- Omnipresent mode issues the same unfiltered SQL query used before scoping existed — zero performance regression.
-- Non-omnipresent mode adds a simple indexed `WHERE personality_id = $1 OR personality_id IS NULL` clause — potentially faster than the previous full scan.
-
-#### Tests
-
-- `brain-routes.test.ts` — 4 new tests: `GET /memories?personalityId=` passes id to `recall`; `GET /knowledge?personalityId=` passes id to `queryKnowledge`; `GET /stats?personalityId=` passes id to `getStats`; `GET /stats` without param calls `getStats(undefined)`.
-
-#### Docs
-
-- ADR 133: `docs/adr/133-per-personality-memory-scoping.md`
-- Guide: `docs/guides/per-personality-memory-scoping.md`
-
----
-
-## [2026.2.25-heartbeat-multi-personality-log] — 2026-02-25
-
-### Fix — Heartbeat Execution Log Now Shows All Active Agents
-
-#### Fixed
-
-- **Execution log only ever showed T.Ron (the default personality)** — `HeartbeatManager.beat()` persisted a single log entry per check tagged with one `activePersonalityId`. With multiple active personalities, every run was attributed only to the default agent; FRIDAY never appeared in the expanded card history.
-- **`HeartbeatManager.setActivePersonalityIds(personalities)`** — new method stores the full roster of active personalities. On each beat, one log entry is written **per personality** so all agents appear in the execution history.
-- **Startup wiring** (`secureyeoman.ts` Step 6.6) — now calls `listPersonalities({ limit: 200 })` in parallel with `getActivePersonality()` and passes the full roster to `setActivePersonalityIds()`.
-- **`soul-routes.ts` — `POST /activate` and `PUT /:id`** — both routes refresh the full personality roster via `listPersonalities` and call `setActivePersonalityIds()` after every personality change.
-
-#### Changed
-
-- **Heartbeat card header pills** — switched from `flex-col` stacking back to `inline-block` horizontal layout with `overflow: visible` on the wrapper to prevent clipping by the parent `overflow-hidden` card container.
-- **Execution history scroll** — expanded card history capped at `240px` with internal scroll and sticky column headers; page no longer extends unboundedly when a card is expanded.
-
----
-
-## [2026.2.25-heartbeat-all-personalities] — 2026-02-25
-
-### Fix — Heartbeat Task Cards Show All Personalities
-
-#### Fixed
-
-- **Heartbeat task cards only showed the default personality** — `/brain/heartbeat/tasks` was building the `personalities[]` list from `getEnabledPersonalities()` (WHERE is_active = true) plus the default. Because the standard activate flow is exclusive (one `is_active` at a time), only the active personality appeared. Changed to `listPersonalities({ limit: 200 })` so all created personalities are listed — the heartbeat is system-wide and serves every agent.
-
-#### Tests
-
-- `brain-routes.test.ts` — new test asserts `tasks[0].personalities` contains all personalities (not just the enabled one). `makeMockSoul()` updated with `getEnabledPersonalities` (was missing, causing a pre-existing 500 on the status test) and `listPersonalities` returning a two-personality roster.
-
----
-
-## [2026.2.25-heartbeat-personality-attribution] — 2026-02-25
-
-### Fix — Heartbeat Log Entries Now Record the Active Personality
-
-#### Fixed
-
-- **Heartbeat log entries always showed "system"** — `HeartbeatManager.beat()` was hardcoding `personalityId: null` on every `logStorage.persist()` call. Log entries are now tagged with the currently active personality's ID.
-- **`HeartbeatManager.setActivePersonalityId(id)`** — new method (mirrors `setPersonalitySchedule`) stores the active personality ID and stamps it on all subsequent log entries.
-- **Startup wiring** (`secureyeoman.ts` Step 6.6) — after resolving the active personality's schedule, its ID is also passed to `setActivePersonalityId` so the first beat after server start is already attributed.
-- **`soul-routes.ts` — `POST /activate` and `PUT /:id`** — both routes now call `setActivePersonalityId` alongside the existing `setPersonalitySchedule` call whenever the active personality changes.
-- **`SoulManager.setDefaultPersonality` / `clearDefaultPersonality`** — both methods now call `setActivePersonalityId` to keep attribution in sync when the default personality changes via the manager layer.
-
-#### Tests
-
-- `heartbeat.test.ts` — 3 new tests in `heartbeat log storage`: null personalityId before `setActivePersonalityId`, correct ID after calling it, revert to null after `setActivePersonalityId(null)`.
-- `soul-routes.test.ts` — 3 new tests in `heartbeatManager wiring`: POST activate calls `setActivePersonalityId`, PUT update calls it for the active personality, PUT update does NOT call it for a non-active personality. `mockHeartbeatManager()` updated to include `setActivePersonalityId: vi.fn()`.
-
----
-
-## [2026.2.25-task-consolidation] — 2026-02-25
-
-### Dashboard — Security Dashboard Re-org + Task Consolidation
-
-#### Changed
-
-- **Security Dashboard tab order** — tabs are now: Overview, Audit Log, Autonomy, ML *(conditional)*, Reports, System. Tasks tab removed from Security Dashboard.
-- **Tasks page consolidated** — `/tasks` is the single source of truth for all task management. Two sub-tabs: **Tasks** (paginated history, CRUD, filters, date range, CSV/JSON export) and **Heartbeats** (card view with expandable execution history and per-personality association). Sub-tab selection preserved in URL (`?view=heartbeats`).
-- **Heartbeat cards** — Heartbeats sub-tab shows a card per monitor: enabled/disabled indicator, type badge, interval, last-run time, personality pills, live status badge (ok/warning/error from last execution), expandable execution history table.
-- **Personality association** — Agent/Personality column in the Tasks table now renders personality names as styled pill badges (`.bg-primary/10`) instead of plain text.
-- **Security page subtitle** updated: "Monitor security events, manage tasks, and generate reports" → "Monitor security events, audit logs, and system health".
-
----
-
-## [2026.2.25-governance-hardening] — 2026-02-25
-
-### Phase 50: Governance Hardening
-
-Closes the deferred items from Phase 48 (Organizational Intent) and Phase 49 (AI Autonomy Audit). ADR 132.
-
-### Added
-
-- **OPA sidecar service** — `opa` Docker Compose service (`opa` and `full` profiles) using `openpolicyagent/opa:latest`. SSRF-blocking capabilities config (`opa/capabilities.json`) disables `http.send` and `net.lookup_ip_addr` before accepting user-authored Rego.
-- **`OpaClient` module** (`src/intent/opa-client.ts`) — typed wrapper for the OPA REST API: `uploadPolicy`, `deletePolicy`, `evaluate`, `isHealthy`. `fromEnv()` factory auto-detects `OPA_ADDR`. All operations are non-fatal (fall back on network error).
-- **`CelEvaluator` module** (`src/intent/cel-evaluator.ts`) — CEL expression evaluator supporting `==`, `!=`, `<`, `>`, `<=`, `>=`, `&&`, `||`, `!`, parentheses, string/number/boolean literals, and `ctx.key` field access. Legacy `key=value AND key=value` format is auto-detected and remains fully backward-compatible.
-- **`IntentManager.syncPoliciesWithOpa(record)`** — uploads `rego` fields from `hardBoundaries[]` and `policies[]` to OPA on every create/update. Called automatically by intent routes.
-- **Hard boundary OPA evaluation** — `checkHardBoundaries()` now evaluates `boundary_{id}/allow` via OPA when configured and boundary has a `rego` field. Falls back to substring matching on OPA error or when OPA is not configured.
-- **MCP tool signal dispatch** — `_fetchMcpToolSignal()` handles `mcp_tool`-typed data sources via optional `callMcpTool` callback injected into `IntentManagerDeps`.
-- **Dashboard Policies tab** — New **Policies** tab in `IntentEditor.tsx` shows the active intent's policies grouped by enforcement mode (block/warn), with OPA Rego badge and expandable Rego source viewer.
-- **96 tests** — 24 new CEL evaluator tests, 15 new OPA client tests, 32 new IntentManager tests (CEL, OPA boundary, MCP signal, syncPoliciesWithOpa). All pass.
-- **Docs** — `docs/adr/132-governance-hardening.md`, `docs/guides/governance-hardening.md`.
-
-### Changed
-
-- `_evalActiveWhen()` in `IntentManager` — delegates to `evalCel()` instead of the inline simple parser.
-- `_matchesPolicy()` in `IntentManager` — uses injected `OpaClient` instance instead of ad-hoc `fetch(process.env.OPA_ADDR)`.
-- `IntentManagerDeps` — adds `opaClient?: OpaClient | null` and `callMcpTool?` optional fields.
-- `POST /api/v1/intent` and `PUT /api/v1/intent/:id` — call `syncPoliciesWithOpa()` after save.
-- `packages/core/package.json` — added `@open-policy-agent/opa: ^2.0.0`.
-
----
-
-## [2026.2.25-sub-agents-tab-order] — 2026-02-25
-
-### Sub-Agents — Profiles Tab First
-
-### Changed
-
-- **Sub-Agents tab order** — Profiles is now the first tab (`Profiles → Active → Swarms → History`). Default selected tab on open remains `Active`. The change makes the profile library immediately discoverable without affecting the runtime-focused default view.
-
----
-
-## [2026.2.25-marketplace-skill-preview] — 2026-02-25
-
-### Marketplace & Community — Skill Preview Before Installation
-
-### Added
-
-- **Skill preview modal** — Every skill card in the Marketplace and Community tabs now has a **Preview** button (eye icon). Clicking it opens a full-detail modal before the user commits to installing. The modal shows:
-  - Name, version badge, source badge (YEOMAN / Community), category, install count
-  - Author name with clickable GitHub and website links (when present) and license
-  - Full description
-  - Complete **Instructions** (the system prompt injected when the skill is active) in a scrollable monospace block
-  - **Trigger Patterns** — each regex pattern that activates the skill, displayed as code blocks
-  - **MCP Tools** — names of any MCP tools the skill requires, as chips
-  - Tags
-  - Last-updated date
-  - Install / Uninstall / Close actions in the footer — the user can install directly from the preview without closing first
-  - Closes on Escape key or clicking the backdrop
-
-### Changed
-
-- **`SkillCard` footer layout** — The single full-width Install/Uninstall button is now accompanied by a small **Preview** ghost button to its left. The install CTA retains visual priority (`flex-1`).
-- **`MarketplaceSkill` dashboard type** (`types.ts`) — Added `authorInfo?: { name, github?, website?, license? }`, `tools: { name, description }[]`, and `triggerPatterns: string[]` to match the fields already present in the shared Zod schema and returned by the API.
-
----
-
-## [2026.2.25-personality-editor-relabelling] — 2026-02-25
-
-### Personality Editor — Language & Label Overhaul
-
-Renamed labels throughout the Personality Editor's Soul tab to better reflect the platform's ontological vocabulary. No functional changes — purely cosmetic.
-
-### Changed
-
-- **Section header** `Soul — Identity` → `Soul — Essence`
-- **Name** → `Identity`
-- **Description** → `Identity Abstract`
-- **System Prompt** → `Core Heuristics`
-- **Traits** → `Disposition`
-- **Sex** → `Physiognomy (Gender)` *(dropdown options unchanged: unspecified / male / female / non-binary)*
-- **FRIDAY preset Core Heuristics** updated — removed generic "helpful assistant" framing; now reads: *"You are FRIDAY, a security-first assistant specializing in infrastructure hardening, code vulnerability analysis, and operational resilience. You combine technical precision with proactive threat mitigation, catching security flaws before they reach production."*
-- **Morphogenesis** toggle (formerly "Include Sacred Archetypes") — description updated to *"Weaves the Sacred Archetypes into the system prompt — these are the foundational patterns that give this personality its actual shape and character"*
-- **Ontostasis** toggle (formerly "Protect from deletion") — description updated to *"Locks this personality's existence — prevents any AI-initiated deletion. Only a human admin can remove it from the dashboard"*
-- **Protostasis** toggle (formerly "Default personality") — description updated to reflect first-presence framing for both create and edit states
-
----
-
-## [2026.2.25-chronoception-and-coverage] — 2026-02-25
-
-### Chronoception, Chat Bubble Timestamps & Test Coverage
-
-### Added
-
-- **Chronoception — per-personality date/time injection** — New `injectDateTime` toggle (labelled "Chronoception") in the Personality Editor. When enabled, the current date and time are injected into the personality's system prompt on every conversation turn so the AI always knows when it is without being asked. The timestamp is formatted using the personality's configured active-hours timezone. Backed by:
-  - DB migration `046_personality_inject_datetime.sql` (`inject_date_time BOOLEAN DEFAULT false`)
-  - `PersonalitySchema` — `injectDateTime: z.boolean().default(false)`
-  - `composeSoulPrompt()` — injects a `## Current Date & Time` section when enabled, locale-formatted with the personality's timezone
-  - `PersonalityEditor.tsx` — "Chronoception" toggle with description "Injects the current date and time into the system prompt so the personality always knows when it is"
-
-- **Chat bubble timestamps** — Every message bubble (user and assistant) now shows the date and time it was sent/received (`Mon DD YYYY HH:MM:SS`) in the bubble header, derived from the existing `ChatMessage.timestamp` field. The date is included for historical conversation reference. No schema changes required.
-
-### Improved
-
-- **`creation-tool-executor.ts` test coverage** — Test suite expanded from 40 → 82 tests, covering all previously untested tool branches:
-  - `create_skill` — success path, `normalizeSkillName()` snake_case and kebab-case normalisation, personality scoping, error catch
-  - `update_skill`, `delete_skill` (including name-fallback when skill not found)
-  - `update_task` — with/without task storage
-  - `create_personality` (including sex defaulting), `update_personality`
-  - `delegate_task`, `list_sub_agents`, `get_delegation_result` — with/without sub-agent manager
-  - `create_swarm` — with/without swarm manager
-  - `create_custom_role` — including `action` (singular) vs `actions` (plural) permissions normalisation; `assign_role`
-  - `create_experiment` — with/without experiment manager
-  - `a2a_connect`, `a2a_send` — with/without A2A manager
-  - `create_workflow`, `update_workflow`, `delete_workflow`, `trigger_workflow` — with/without workflow manager
-  - Gating edge cases: policy-fetch error falls through (fail-safe allow), approval store unavailable returns error, no `personalityId` skips policy check entirely
-
----
-
-## [2026.2.25-marketplace-install-state] — 2026-02-25
-
-### Marketplace & Community — Contextual Install State
-
-### Fixed
-
-- **Install button shows as "installed" across all personalities** — `marketplace.skills.installed` was a single global boolean set to `true` the moment any personality installed a skill. Switching to a different personality continued to show "Uninstall" even though that personality had no installation. Fixed by computing `installed` contextually from `brain.skills` per the selected personality (or global) context.
-
-### Changed
-
-- **GET `/api/v1/marketplace`** now accepts an optional `personalityId` query param:
-  - `personalityId=` (empty string) → **Global context**: `installed = true` only if a `personality_id IS NULL` brain skill record exists for this skill.
-  - `personalityId=<uuid>` → **Personality context**: `installed = true` only if a personality-specific brain skill record exists; `installedGlobally = true` if a global record also exists.
-  - Omitted → backward-compatible: uses the stored boolean (for existing API callers).
-- **`MarketplaceSkill`** gains an `installedGlobally: boolean` field — `true` when the skill has a global (`personality_id IS NULL`) brain skill record.
-- **POST `/api/v1/marketplace/:id/uninstall`** now accepts `personalityId` in the body. Removes only the matching brain skill record (personality-specific or global). The marketplace catalog `installed` flag is only reset to `false` when no brain skill records remain for that skill across all contexts.
-- **POST `/api/v1/marketplace/:id/install`** no longer exits early on `skill.installed`. Checks whether the target context (personality or global) already has a brain skill record before creating one, preventing duplicates.
-- **Marketplace & Community tabs**: query key includes `selectedPersonalityId` so the installed state re-evaluates when the user switches the "Install to" dropdown. Queries are gated on `hasInitialized` to avoid a flash of stored-boolean data before personality list loads.
-- **SkillCard** renders three states:
-  - `installed = true` → **Uninstall** button (personality-specific installation)
-  - `installed = false`, `installedGlobally = true` → **"Installed globally"** label with globe icon (managed from Global context)
-  - neither → **Install** button
-
----
-
-## [2026.2.25-agent-quality] — 2026-02-25
-
-### Agent Quality & Chat Stream Reliability
-
-### Fixed
-
-- **Chat response duplication in agentic tool loops** — The streaming route was passing the cumulative content from *all* previous iterations as the `content` field of each assistant turn pushed to the messages array. This caused the model to re-state the full response preamble on every continuation turn after a tool call, producing exponentially growing duplicate output. Fixed by tracking `iterContentStart` (the index into `contentPartsS` where the current iteration begins) and only including that iteration's text in the assistant push message. The `done` event still sends the full accumulated content as before.
-- **Personality "dying" during long tool chains** — `MAX_TOOL_ITERATIONS` raised from 10 → 20 in both the streaming and non-streaming routes. Comprehensive multi-tool tasks (system tests, diagnostics) were hitting the 10-iteration cap and terminating mid-response.
-- **Sub-agent profile token budget floor mismatch** — The dashboard Sub-Agents profile form allowed `maxTokenBudget` as low as 1,000 (`min={1000}`), but `manager.ts` enforces a hard `MIN_TOKEN_BUDGET = 20_000`. Changed the UI minimum to 20,000 to match, preventing profiles that store a misleadingly low budget in the DB.
-
-### Improved
-
-- **SSE keepalive during long tool chains** — Streaming route now emits an SSE comment line (`: keepalive`) between tool execution iterations. This resets connection timeout timers on proxies and browsers without triggering the client-side data handler, preventing stream disconnects on multi-tool tasks.
-- **Soul prompt token budget raised** — `maxPromptTokens` schema max lifted 32,000 → 100,000 (both global `SoulConfigSchema` and per-personality `BodySchema`). Global default raised 32,000 → 64,000. With many skills, large knowledge bases, and memories, 32 k was insufficient for power users. Settings pages updated to reflect new ranges (1,024–100,000 tokens).
-- **Thinking token budget raised** — `ThinkingPersonalityConfigSchema.budgetTokens` max lifted 32,000 → 64,000 to match Claude's extended-thinking ceiling. Slider in PersonalityEditor updated accordingly.
-
-- **Metrics page stale after personality enable/disable** — Global `QueryClient` has `staleTime: 30_000`, so navigating away and back within 30 seconds served cached heartbeat/personality counts without re-fetching. Added `staleTime: 0` override to `heartbeatStatus` and `personalities` queries in `MetricsPage` so they always fetch fresh data on mount.
-- **Org intent toggle greyed out in personality editor** — Toggle was gated on `allowOrgIntent` (a server-side security policy with no dashboard UI control) instead of `allowIntentEditor` (the user-facing toggle in Settings → Security → Developers). Fixed gate condition and updated help text.
-
-### Investigation
-
-- **Sub-agent overhead root-cause documented** — Identified that the primary driver of the 30 K–50 K per-delegation overhead is unconditional injection of all registered MCP tools into every sub-agent call (~10,000–15,000 tokens across 20–30 tools). The `MIN_TOKEN_BUDGET = 20_000` hard floor adds a further baseline. No soul prompt or brain context is injected into sub-agents (good).
-
-### Sub-agent tool pruning
-
-- **`toolMatchesProfile()` helper in `manager.ts`** — Wildcard-aware tool filter that runs on every sub-agent delegation. Supports `[]` (all tools, backwards-compatible), `*` (all), `prefix_*` (prefix match, e.g. `web_*`, `fs_*`), and exact names. Empty `allowedTools` on user-created profiles is unchanged — all tools remain accessible by default.
-- **Built-in profiles focused** (`profiles.ts`) — Each of the four built-in profiles now carries a focused `allowedTools` list rather than `[]`:
-  - **researcher** — `web_*`, `memory_recall`, `knowledge_search`, `knowledge_get`, `knowledge_store` (~8–10 tools, was 200+)
-  - **coder** — `fs_*`, `git_*`, `memory_recall`, `knowledge_search`, `knowledge_get` (~20 tools, was 200+)
-  - **analyst** — 14 specific tools: targeted web search, memory, knowledge, system metrics, audit, task queries
-  - **summarizer** — 3 tools: memory recall + knowledge lookup only
-  - Profile changes auto-apply on next restart via `ON CONFLICT DO UPDATE` seed.
-- **`allowedTools` input in Sub-Agents profile form** — New textarea in the Create Profile panel accepts tool patterns (one per line, blank = all tools). Parsed and passed to the API on create. Profile cards now display the pattern count ("3 tool patterns") or "All tools" when unconstrained.
-
----
-
-## [2026.2.25-tls2] — 2026-02-25
-
-### TLS via Env Vars, MCP HTTPS Fix, Dashboard Local-Network Guard Removed
-
-### Added
-
-- **TLS gateway config via env vars** — All gateway TLS settings are now controllable through environment variables, eliminating the need for a `secureyeoman.yaml` file for the common TLS dev setup. New vars: `SECUREYEOMAN_TLS_ENABLED`, `SECUREYEOMAN_TLS_CERT_PATH`, `SECUREYEOMAN_TLS_KEY_PATH`, `SECUREYEOMAN_TLS_CA_PATH`, `SECUREYEOMAN_TLS_AUTO_GENERATE`, `SECUREYEOMAN_ALLOW_REMOTE_ACCESS`, `SECUREYEOMAN_CORS_ORIGINS`. Env vars override yaml config; yaml still works for advanced use.
-- **MCP `CoreApiClient` HTTPS dispatcher** — `core-client.ts` now creates a per-connection undici `Agent` with `rejectUnauthorized: false` specifically for MCP→core HTTPS traffic. This allows MCP to reach the core when the TLS cert is for a public hostname (e.g. `dev.example.com`) without needing `NODE_TLS_REJECT_UNAUTHORIZED=0` globally. All other HTTPS calls (web tools, external APIs) still verify certificates normally.
-
-### Fixed
-
-- **Dashboard client-side `isLocalNetwork` guard removed** — `DashboardLayout.tsx` had a frontend hostname check that blocked access from any hostname not in a hardcoded RFC 1918 / `localhost` list (e.g. `dev.secureyeoman.ai` or any custom hostname). This was redundant with the server-side guard and incorrectly blocked valid `allowRemoteAccess` deployments. Removed. Access control is now entirely server-side.
-
-### Changed
-
-- **`secureyeoman.yaml` no longer required for TLS dev setup** — The `./secureyeoman.yaml:/app/secureyeoman.yaml:ro` bind mount removed from `docker-compose.yml`. All TLS, remote-access, and CORS config now flows via `.env.dev`. The yaml file still works for advanced/production config if present at any of the standard search paths.
-- **`NODE_TLS_REJECT_UNAUTHORIZED=0` removed** — No longer needed in `.env.dev` or `docker-compose.yml` environment section. The MCP client handles this internally per-connection.
-
----
-
-## [2026.2.25-tls] — 2026-02-25
-
-### Remote Access, Dual HTTP/HTTPS & IPv6-mapped IP Fix
-
-### Added
-
-- **`gateway.allowRemoteAccess`** — New boolean config option (default `false`). When `true`, bypasses the local-network-only guard so the gateway is reachable from public/routable IPs. Intended for enterprise deployments with a wildcard or CA-signed TLS cert. Without TLS, the default remains local-only. SecureYeoman stays **local-first** — this is an explicit opt-in only.
-- **`VITE_GATEWAY_URL` / `MCP_CORE_URL` in `.env.dev`** — Gateway URLs are set directly in `.env.dev` (e.g. `https://core:18789`) rather than via a `GATEWAY_SCHEME` interpolation variable. Docker Compose variable substitution only reads from the host shell or root `.env`, not from `env_file:` — setting the full URLs directly avoids this footgun.
-- **Dual-protocol Docker healthcheck** — `core` container healthcheck tries HTTPS first (`NODE_TLS_REJECT_UNAUTHORIZED=0 node … health --url https://...`), falls back to HTTP. Works in both plain and TLS configurations without changes.
-- **`secureyeoman.yaml` local config file** — Documented pattern for machine-specific config (TLS paths, remote access, CORS origins) via a gitignored `secureyeoman.yaml` at the repo root, bind-mounted into the `core` container.
-- **`certs/` bind mount in docker-compose** — `core` service mounts `./certs:/app/certs:ro` and `./secureyeoman.yaml:/app/secureyeoman.yaml:ro` so cert files and local config are available at runtime without baking them into the image.
-- **`NODE_TLS_REJECT_UNAUTHORIZED=0` for MCP container** — MCP service uses Node.js native `fetch()` to reach core; when core serves HTTPS with a hostname-specific cert (e.g. `dev.secureyeoman.ai`), inter-container traffic to `https://core:18789` fails hostname validation. Dev-only workaround in `docker-compose.yml`. Does not affect production where the cert hostname matches or where the MCP service reaches core via a matching hostname.
-
-### Fixed
-
-- **IPv6-mapped IPv4 addresses blocked by local-network guard** — `isPrivateIP()` in `gateway/server.ts` did not handle `::ffff:`-prefixed addresses (e.g. `::ffff:172.20.0.3`), causing Docker inter-container requests to be rejected as non-local. Strips the `::ffff:` prefix before the RFC 1918 range checks.
-- **Duplicate `MCP_CORE_URL` in `.env.dev`** — The URL was declared twice (once for HTTPS at the top, once for HTTP in the MCP section). The later value always won, silently reverting to HTTP. Removed the duplicate; a single `MCP_CORE_URL` now lives at the top of the file.
-
----
-
-
-
-### Dev HTTPS & Wildcard Certificate Support
-
-### Added
-
-- **Vite dev server HTTPS** — `vite.config.ts` now reads `VITE_TLS_CERT` and `VITE_TLS_KEY` from `.env.dev` (via `loadEnv`) to serve the dashboard over HTTPS in development. Cert paths are resolved relative to the repo root.
-- **`VITE_ALLOWED_HOSTS` support** — Vite's `allowedHosts` is driven by `VITE_ALLOWED_HOSTS` (comma-separated) in `.env.dev`, keeping custom hostnames out of version control.
-- **Gateway TLS config** — `gateway.tls.certPath`, `keyPath`, `caPath` documented for wildcard/ACM cert use. `certs/` directory gitignored.
-
-### Fixed
-
-- **Encrypted ACM private key** — AWS ACM exports private keys with a passphrase. The dev server would fail with `bad decrypt` if the encrypted key was passed directly. Documented `openssl rsa` decrypt step; `.env.dev` now points to `certs/private_key_decrypted.txt`.
-- **`loadEnv` not reading `.env.dev` in container** — `vite.config.ts` previously used `process.env` directly, missing file-based env vars inside the Docker `dashboard-dev` container. Switched to `loadEnv(mode, repoRoot, '')` merged with `process.env` (process env takes priority, preserving Docker-injected `VITE_GATEWAY_URL`).
-- **Duplicate `buildFrontMatter` export in MCP** — `web-tools.ts` exported `buildFrontMatter` both via `export { buildFrontMatter }` (re-export from utils) and in the bottom `export {}` block, causing `TS2300` and breaking the MCP build.
-
-### Documentation
-
-- `docs/guides/tls-certificates.md` — Added AWS ACM wildcard cert setup, encrypted key decrypt instructions, and Vite dev server HTTPS section.
-- `docs/configuration.md` — Added `VITE_GATEWAY_URL`, `VITE_HOST`, `VITE_ALLOWED_HOSTS`, `VITE_TLS_CERT`, `VITE_TLS_KEY` env var reference.
-- `.env.dev.example` / `.env.example` — Added `VITE_ALLOWED_HOSTS`, `VITE_TLS_CERT`, `VITE_TLS_KEY` with placeholder values.
-
----
-
 ## [2026.2.25] — 2026-02-25
 
-### Phase XX.8 — Memory, Performance & Code Quality Sprint
+### Added
 
-A comprehensive audit of memory leaks, performance bottlenecks, and code duplication. 27 items found across three categories; all resolved without behavioral changes.
+#### Phase 51 — Real-Time Infrastructure
 
-### Security
+- **`notifications` table** (migration `047_notifications.sql`) — PostgreSQL-backed persistent notification model. Stores `type`, `title`, `body`, `level` (info/warn/error/critical), `source`, `metadata`, `read_at`, and `created_at`. Two indexes: descending `created_at` for list queries, partial index on unread rows for count queries.
+- **`NotificationStorage`** (`src/notifications/notification-storage.ts`) — `PgBaseStorage` subclass with `create()`, `list()`, `markRead()`, `markAllRead()`, `delete()`, `unreadCount()`.
+- **`NotificationManager`** (`src/notifications/notification-manager.ts`) — `notify()` persists to DB and broadcasts to connected WebSocket clients. `setBroadcast()` callback wired by the gateway after startup to avoid circular dependencies.
+- **Notification REST API** (`src/notifications/notification-routes.ts`) at `/api/v1/notifications`: `GET /` (list, `unreadOnly`/`limit`/`offset`), `GET /count`, `POST /:id/read`, `POST /read-all`, `DELETE /:id`.
+- **`notifications` WebSocket channel** — added to `CHANNEL_PERMISSIONS`. Broadcast as `{ type: 'update', channel: 'notifications', payload: { notification } }`.
+- **`NotificationBell.tsx` upgrade** — handles two origins: *Local* (security/task WS events, `localStorage`-backed) and *Server* (DB-backed, `notifications` WS channel, REST mark-read/delete). Combined unread count badge; per-item dismiss button.
+- **Heartbeat → notification wiring** — `HeartbeatManager.executeNotifyAction()` calls `notificationManager?.notify()` for every notify action. `setNotificationManager()` method added; wired at Step 6.6 in `secureyeoman.ts`. `SecureYeoman.getNotificationManager()` public getter.
+- ADR 133 (`docs/adr/133-real-time-infrastructure.md`); guide: `docs/guides/notifications.md`.
+- Tests: `notification-storage.test.ts` (14), `notification-routes.test.ts` (15).
 
-- **Streaming tool-filter security gap closed** — The `/api/v1/chat/stream` handler previously skipped the network-tool and Twingate-tool gate checks that the non-streaming path enforced. All MCP tool categories (git, fs, web, browser, network, Twingate) are now filtered via a shared `filterMcpTools()` function applied identically to both paths (`chat-routes.ts`).
+#### Phase 50 — Governance Hardening (OPA + CEL)
+
+- **OPA sidecar service** — `opa` Docker Compose service (`opa` and `full` profiles) using `openpolicyagent/opa:latest`. SSRF-blocking `opa/capabilities.json` disables `http.send` and `net.lookup_ip_addr`.
+- **`OpaClient`** (`src/intent/opa-client.ts`) — typed wrapper: `uploadPolicy`, `deletePolicy`, `evaluate`, `isHealthy`; `fromEnv()` factory; all operations non-fatal on network error.
+- **`CelEvaluator`** (`src/intent/cel-evaluator.ts`) — CEL subset: `==`, `!=`, `<`, `>`, `<=`, `>=`, `&&`, `||`, `!`, parentheses, string/number/boolean literals, `ctx.key`. Legacy `key=value AND` format auto-detected and preserved (no-quote heuristic).
+- **`IntentManager.syncPoliciesWithOpa(record)`** — uploads Rego from `hardBoundaries[]` and `policies[]` to OPA on every create/update; called automatically by intent routes.
+- **Hard boundary OPA evaluation** — `checkHardBoundaries()` evaluates `boundary_{id}/allow` via OPA when configured, falls back to substring matching on error or when OPA is unconfigured.
+- **MCP tool signal dispatch** — `_fetchMcpToolSignal()` handles `mcp_tool`-typed data sources via optional `callMcpTool` callback in `IntentManagerDeps`.
+- **Dashboard Policies tab** — New tab in `IntentEditor.tsx` showing the active intent's policies grouped by enforcement mode (block/warn), with OPA Rego badge and expandable Rego source viewer.
+- ADR 132 (`docs/adr/132-governance-hardening.md`); guide: `docs/guides/governance-hardening.md`.
+- Tests: CEL evaluator (24 new), OPA client (15 new), IntentManager (32 new — 135 total across intent test files).
+
+#### Per-Personality Memory Scoping + Omnipresent Mind
+
+- **`omnipresentMind` toggle** — New boolean on `BodyConfigSchema` (default `false`). When `false`, brain queries are scoped to the personality's own entries plus legacy un-owned entries (`personality_id IS NULL`). When `true`, queries the full cross-agent pool (prior behavior). Indexed `WHERE` clause; no performance regression in either mode.
+- **Per-personality brain stats** — `GET /api/v1/brain/stats?personalityId=<id>` returns scoped counts. Heartbeat `system_health` now logs accurate per-personality stats instead of system-wide aggregates.
+- **Scoped memory + knowledge endpoints** — `GET /api/v1/brain/memories?personalityId=` and `GET /brain/knowledge?personalityId=` filter results to the given personality.
+- **`BrainManager` core methods** — `remember()`, `recall()`, `learn()`, `queryKnowledge()`, `getStats()` all accept optional `personalityId` resolved through `resolvePersonalityId()`.
+- **Omnipresent Mind toggle** in PersonalityEditor Brain section with cross-agent access warning.
+- ADR 133 (`docs/adr/133-per-personality-memory-scoping.md`); guide: `docs/guides/per-personality-memory-scoping.md`.
+- Tests: 4 new tests in `brain-routes.test.ts`.
+
+#### Chronoception & Chat Bubble Timestamps
+
+- **Chronoception** — Per-personality `injectDateTime` toggle ("Chronoception") in Personality Editor. When enabled, current date/time (locale-formatted using the personality's active-hours timezone) is injected as `## Current Date & Time` in the system prompt every turn. Migration `046_personality_inject_datetime.sql`; `PersonalitySchema` field; `PersonalityEditor.tsx` toggle.
+- **Chat bubble timestamps** — Every message bubble (user and assistant) now shows send/receive time (`Mon DD YYYY HH:MM:SS`) in the bubble header from the existing `ChatMessage.timestamp` field.
+
+#### Marketplace — Skill Preview Before Installation
+
+- **Skill preview modal** — Preview button (eye icon) on every Marketplace and Community skill card. Full-detail modal: name, version badge, source badge, category, author (GitHub/website links, license), full description, instructions in a scrollable monospace block, trigger patterns as code blocks, required MCP tools as chips, tags, last-updated date, and Install/Uninstall/Close footer actions. Closes on Escape or backdrop click.
+- **`SkillCard` footer** — Small Preview ghost button alongside the primary Install/Uninstall button.
+- **`MarketplaceSkill` type** (`types.ts`) — Added `authorInfo?`, `tools`, `triggerPatterns` fields.
+
+#### TLS & Remote Access
+
+- **TLS gateway config via env vars** — `SECUREYEOMAN_TLS_ENABLED`, `SECUREYEOMAN_TLS_CERT_PATH`, `SECUREYEOMAN_TLS_KEY_PATH`, `SECUREYEOMAN_TLS_CA_PATH`, `SECUREYEOMAN_TLS_AUTO_GENERATE`, `SECUREYEOMAN_ALLOW_REMOTE_ACCESS`, `SECUREYEOMAN_CORS_ORIGINS`. Env vars override yaml config; yaml still works for advanced use. `secureyeoman.yaml` bind mount removed from docker-compose (all TLS config flows via `.env.dev`).
+- **MCP `CoreApiClient` HTTPS dispatcher** — Per-connection undici `Agent` with `rejectUnauthorized: false` for MCP→core HTTPS traffic only; all other HTTPS calls verify certificates normally. `NODE_TLS_REJECT_UNAUTHORIZED=0` no longer needed.
+- **`gateway.allowRemoteAccess`** — New boolean config (default `false`). When `true`, bypasses the local-network-only guard for public/routable IPs. SecureYeoman remains local-first by default.
+- **Dual-protocol Docker healthcheck** — Tries HTTPS first, falls back to HTTP without code changes.
+- **`certs/` bind mount** — `./certs:/app/certs:ro` in docker-compose for wildcard/ACM cert files.
+
+#### Sub-Agent Tool Pruning
+
+- **`toolMatchesProfile()` helper** (`manager.ts`) — Wildcard-aware tool filter: `[]`/`*` = all tools, `prefix_*` = prefix match, exact name = exact match. Runs on every sub-agent delegation.
+- **Built-in profiles focused** — `researcher`: `web_*` + memory/knowledge (~8–10 tools); `coder`: `fs_*` + `git_*` + memory/knowledge (~20 tools); `analyst`: 14 specific tools; `summarizer`: 3 tools. Profile changes applied via `ON CONFLICT DO UPDATE` on restart.
+- **`allowedTools` textarea** in Sub-Agents profile Create form — one pattern per line, blank = all tools. Profile cards display "N tool patterns" or "All tools".
+
+---
 
 ### Fixed
 
-- **`nextCronRun()` was a stub** — `SkillScheduler.nextCronRun()` returned `from + checkIntervalMs` for all cron expressions (a placeholder). Replaced with a full 5-field cron parser supporting `*`, `*/N`, `a-b`, `a-b/N`, and comma-separated lists. Skills now fire at their actual scheduled times.
-- **`signalCache` leaked stale signals on intent reload** — `IntentManager.reloadActiveIntent()` rebuilt the goal index without clearing `signalCache`, so stale signal evaluations persisted. Added `this.signalCache.clear()` at the top of `reloadActiveIntent()`.
-- **`skill-resources` loaded all skills to serve one** — The `yeoman://skills/{id}` MCP resource fetched all skills from `GET /api/v1/soul/skills` and searched locally. Changed to `GET /api/v1/soul/skills/:id` — O(n) → O(1).
+#### Agent Quality & Chat Stream Reliability
 
-### Performance
+- **Chat response duplication in agentic tool loops** — Streaming route now tracks `iterContentStart` so only the current iteration's text is included in the assistant push message. The `done` event still sends full accumulated content.
+- **`MAX_TOOL_ITERATIONS` raised 10 → 20** — Comprehensive multi-tool tasks (diagnostics, system tests) were hitting the cap and terminating mid-response.
+- **Sub-agent profile token budget floor** — Dashboard `min` raised 1,000 → 20,000 to match the hard `MIN_TOKEN_BUDGET = 20_000` enforced in `manager.ts`.
+- **SSE keepalive during long tool chains** — Streaming route emits `: keepalive` SSE comment between tool iterations to reset proxy/browser timeout timers without triggering the client-side data handler.
+- **Soul prompt token budget raised** — `maxPromptTokens` schema max: 32,000 → 100,000; global default: 32,000 → 64,000. Thinking budget max: 32,000 → 64,000. Settings pages updated to reflect new ranges.
+- **Metrics page stale after personality changes** — `heartbeatStatus` and `personalities` queries in `MetricsPage` now use `staleTime: 0` to always fetch fresh data on mount.
+- **Org intent toggle in personality editor** — Gated on `allowIntentEditor` (user-facing developer toggle) instead of `allowOrgIntent` (server policy with no dashboard UI control).
+- **Streaming tool-filter security gap** — `/api/v1/chat/stream` now applies the same network-tool and Twingate-tool gate checks as the non-streaming path via shared `filterMcpTools()`.
 
-- **Parallel brain recall** — `brainManager.recall()` and `brainManager.queryKnowledge()` were sequential awaits in both streaming and non-streaming handlers. Wrapped in `Promise.all([...])` in both paths.
-- **Batch memory fetch** — `BrainManager` hybrid search issued N individual `getMemory(id)` calls after RRF ranking. Replaced with a single `WHERE id = ANY($1)` batch query.
-- **`mcpStorage.getConfig()` cache** — `McpStorage.getConfig()` made a DB round-trip on every tool-filter check (once per chat request). Added a 5-second in-process cache; `setConfig()` invalidates it immediately.
-- **DB indexes** — Added three missing indexes via migration `045_performance_indexes.sql`: `soul.skills (enabled, status, usage_count DESC)`, `autonomy_audit_runs (status)`, `intent_enforcement_log (personality_id)`.
-- **`listSkills` window function** — `SoulStorage.listSkills()` ran separate `COUNT(*)` and `SELECT` queries. Replaced with `COUNT(*) OVER ()` window function in a single query.
-- **`ResponseCache` auto-eviction** — `ResponseCache` exposed `evictExpired()` but had no background timer; expired entries only left when the FIFO limit was hit. Added a `setInterval` timer (period = TTL) so stale entries are proactively purged.
-- **Pre-compiled trigger RegExp** — `isSkillInContext()` called `new RegExp(pattern, 'i')` on every invocation. Added a module-level `Map<string, RegExp | null>` cache (`triggerPatternCache`) so each pattern string compiles once.
+#### Heartbeat — Multi-Agent Attribution & Execution Log
 
-### Memory
+- **Execution log only showed default personality** — `HeartbeatManager.beat()` now writes one log entry per active personality via `setActivePersonalityIds(personalities)`. Startup wiring calls `listPersonalities({ limit: 200 })`; `POST /activate` and `PUT /:id` soul routes refresh the roster on change.
+- **Log entries tagged with personality** — `setActivePersonalityId(id)` new method stamps all log entries with the active personality's ID. Wired from startup and from soul activate/update routes; `SoulManager.setDefaultPersonality()`/`clearDefaultPersonality()` both call it.
+- **Heartbeat task cards showed only default personality** — `/brain/heartbeat/tasks` switched from `getEnabledPersonalities()` to `listPersonalities({ limit: 200 })` so all created personalities appear.
+- **Heartbeat card header pills** — Restored `inline-block` horizontal layout with `overflow: visible` to prevent clipping by the parent `overflow-hidden` container.
+- **Execution history scroll** — Expanded card history capped at 240px with internal scroll and sticky column headers.
+- Tests: 3 new `heartbeat.test.ts` tests; 3 new `soul-routes.test.ts` wiring tests; `brain-routes.test.ts` updated with multi-personality roster.
 
-- **`UsageTracker` unbounded growth** — `UsageTracker` loaded up to 90 days of usage records into a `records[]` array on startup and kept them forever. Replaced with `todayRecords[]` (today only, typically <100 entries) plus DB-aggregated `monthCostUsd` and `providerStats` accumulators seeded at init. `UsageStorage` gained `loadToday()`, `loadMonthCostUsd()`, `loadProviderStats()`, and `getTotalCallCount()` helpers.
-- **`tokenCache` unbounded** — The module-level `tokenCache: Map<string, number>` in `token-counter.ts` grew without bound. Capped at 2 000 entries with FIFO eviction.
-- **`agentReports` ephemeral store** — The `agentReports` Map in `diagnostic-routes.ts` had no TTL. Added a background `setInterval` that evicts reports older than 10 minutes every 5 minutes (timer `.unref()`'d).
+#### Marketplace — Contextual Install State
 
-### Refactoring
+- **Install button showed "Installed" across all personalities** — `installed` is now computed per-personality context from `brain.skills` records rather than a single global boolean.
+- **`GET /api/v1/marketplace`** — accepts optional `personalityId`: empty string = global context, UUID = personality context. `MarketplaceSkill` gains `installedGlobally: boolean`.
+- **`POST /marketplace/:id/uninstall`** — accepts `personalityId`; removes only the matching context record. Resets `installed` flag only when no brain skill records remain across all contexts.
+- **`POST /marketplace/:id/install`** — checks target context before creating to prevent duplicates.
+- **SkillCard** — three states: Uninstall (personality install), "Installed globally" with globe icon (global install), Install.
 
-- **`buildFrontMatter` shared utility** — The function was copy-pasted in three files (`web-tools.ts`, `personality-resources.ts`, `skill-resources.ts`). Extracted to `packages/mcp/src/utils/front-matter.ts`; all three import from there.
-- **Brain context helpers** — The brain recall + preference-injection block was duplicated verbatim in the non-streaming and streaming chat handlers (~30 lines each). Extracted to `gatherBrainContext()` and `applyPreferenceInjection()` module-level helpers.
-- **`AbortSignal.timeout()` in twingate-tools** — `twingateQuery()` and `mcpJsonRpc()` used the verbose `AbortController + setTimeout + try/finally clearTimeout` pattern. The rest of the codebase already uses `AbortSignal.timeout()` (available since Node.js 17, required ≥20). Both functions updated to match.
-- **`SkillScheduler` uses `setInterval`** — The scheduler used recursive `setTimeout` (a new timer object each cycle). Replaced with a single `setInterval` instance, cleaned up in `stop()`.
+#### Bug Fixes (Phase XX.8 — Memory, Performance & Code Quality)
 
-### Tests
+- **`nextCronRun()` was a stub** — `SkillScheduler.nextCronRun()` returned a placeholder. Replaced with a full 5-field cron parser supporting `*`, `*/N`, `a-b`, `a-b/N`, and comma-separated lists.
+- **`signalCache` leaked stale signals on intent reload** — `IntentManager.reloadActiveIntent()` now calls `this.signalCache.clear()` before rebuilding the goal index.
+- **`skill-resources` loaded all skills to serve one** — Changed from `GET /api/v1/soul/skills` (O(n)) to `GET /api/v1/soul/skills/:id` (O(1)).
+- **IPv6-mapped IPv4 addresses blocked by local-network guard** — `isPrivateIP()` strips `::ffff:` prefix before RFC 1918 range checks, fixing Docker inter-container routing.
 
-- **`skill-scheduler.test.ts`** — 4 new cron-expression tests covering `*/5 * * * *` (step fields), `0 9 * * *` (specific hour), `0 0 1 * *` (day-of-month), and `5,35 * * * *` (comma-separated values).
-- **`response-cache.test.ts`** — 2 new tests verifying the background auto-eviction timer fires and evicts expired entries, and that `clear()` stops the timer.
+---
 
-### Documentation
+### Changed
 
-- **ADR 131** — `docs/adr/131-memory-performance-code-quality-sprint.md` documents all 18 changes, their root causes, and the resolution approach.
+#### Dashboard — Security Dashboard Re-org & Task Consolidation
+
+- **Security Dashboard tab order**: Overview, Audit Log, Autonomy, ML *(conditional)*, Reports, System. Tasks tab removed from Security Dashboard.
+- **Tasks page consolidated** — `/tasks` is the single source of truth with two sub-tabs: **Tasks** (paginated history, CRUD, filters, date range, CSV/JSON export) and **Heartbeats** (card view with expandable execution history and per-personality association). Sub-tab preserved in URL (`?view=heartbeats`).
+- **Personality association** — Agent/Personality column in the Tasks table renders personality names as `.bg-primary/10` pill badges.
+- **Security page subtitle** updated: "Monitor security events, manage tasks, and generate reports" → "Monitor security events, audit logs, and system health".
+
+#### Dashboard — UI Theme Consistency (Secrets & Intent)
+
+- **Security > API Keys / Secrets** — `SecretsPanel` overhauled to match `ApiKeysSettings`: `card p-4 space-y-4` wrapper, ghost-button "Add Secret", inline `bg-muted/30` form, `space-y-2` row list with `bg-muted/30` per-row, `ConfirmDialog` at top of render tree.
+- **Settings > Intent — Create Intent** — Inline `p-3 rounded-lg bg-muted/30` panel replaces the full-screen `fixed inset-0 bg-black/50` modal. Cancel resets the JSON editor to the starter template. Empty state hidden while form is expanded.
+
+#### Personality Editor — Language & Label Overhaul
+
+- Section header `Soul — Identity` → `Soul — Essence`. Fields: Name → Identity; Description → Identity Abstract; System Prompt → Core Heuristics; Traits → Disposition; Sex → Physiognomy (Gender).
+- **FRIDAY preset Core Heuristics** updated to security-first framing: *"You are FRIDAY, a security-first assistant specializing in infrastructure hardening, code vulnerability analysis, and operational resilience…"*
+- **Morphogenesis** toggle description updated to clarify sacred archetype weaving; **Ontostasis** and **Protostasis** toggle descriptions updated with ontological framing.
+
+#### Sub-Agents — Profiles Tab First
+
+- **Sub-Agents tab order**: Profiles → Active → Swarms → History. Default selected tab on open remains Active; the Profiles library is now immediately discoverable.
+
+---
+
+### Performance & Engineering
+
+#### Phase XX.8 — Memory, Performance & Code Quality Sprint
+
+27 items across security, performance, memory, and refactoring:
+
+- **Security** — Streaming tool-filter security gap closed; `filterMcpTools()` shared between streaming and non-streaming chat paths.
+- **Performance** — Parallel `recall()` + `queryKnowledge()` via `Promise.all`; batch `WHERE id = ANY($1)` memory fetch; `mcpStorage.getConfig()` 5-second in-process cache; DB indexes on `soul.skills`, `autonomy_audit_runs`, `intent_enforcement_log` (migration `045_performance_indexes.sql`); `listSkills` single window-function query; `ResponseCache` background auto-eviction timer; pre-compiled trigger RegExp cache.
+- **Memory** — `UsageTracker` bounded to today's records + DB-aggregated accumulators; `tokenCache` capped at 2,000 entries with FIFO eviction; `agentReports` 10-minute TTL with 5-minute background eviction.
+- **Refactoring** — `buildFrontMatter` extracted to `packages/mcp/src/utils/front-matter.ts`; `gatherBrainContext()` and `applyPreferenceInjection()` module-level helpers; `AbortSignal.timeout()` in twingate-tools; `SkillScheduler` uses `setInterval` instead of recursive `setTimeout`.
+- ADR 131: `docs/adr/131-memory-performance-code-quality-sprint.md`.
+
+#### Test Coverage — All Thresholds Met
+
+- **Vitest v8 thresholds** for `packages/core` now pass on every CI run: statements ≥ 87%, functions ≥ 87%, lines ≥ 87%, branches ≥ 75%.
+- **351 test files, 7,619 tests** pass (1 skipped).
+- Key additions: `gateway/server.test.ts` (62 tests across 6 server instances — inline routes, task routes, cost history, ML risk scoring, secrets), `soul/manager.test.ts` (clearDefaultPersonality, getEnabledPersonalities, composeSoulPrompt intent/capability paths), `workflow/workflow-engine.test.ts` (webhook headersTemplate resolution).
 
 ---
 

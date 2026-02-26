@@ -748,6 +748,8 @@ img {
   transition: all var(--transition);
   position: relative;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .feature-card::before {
@@ -812,6 +814,7 @@ img {
   font-size: 0.9375rem;
   line-height: 1.6;
   margin-bottom: var(--space-5);
+  flex: 1;
 }
 
 .feature-list {
@@ -851,6 +854,8 @@ img {
   border-radius: var(--radius-xl);
   padding: var(--space-8);
   transition: all var(--transition);
+  display: flex;
+  flex-direction: column;
 }
 
 .use-case-card:hover {
@@ -885,6 +890,7 @@ img {
   color: var(--text-secondary);
   font-size: 0.9375rem;
   line-height: 1.6;
+  flex: 1;
 }
 
 /* Architecture Section */
@@ -1282,6 +1288,8 @@ img {
   border-radius: var(--radius-xl);
   overflow: hidden;
   transition: var(--transition);
+  display: flex;
+  flex-direction: column;
 }
 
 .community-card:hover {
@@ -1310,6 +1318,7 @@ img {
 
 .card-content {
   padding: var(--space-5);
+  flex: 1;
 }
 
 .stat-row {
@@ -2120,6 +2129,8 @@ button:focus-visible {
   border-radius: var(--radius-xl);
   padding: var(--space-6);
   transition: border-color 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
 }
 .diff-card:hover {
   border-color: var(--primary);
@@ -2145,6 +2156,7 @@ button:focus-visible {
   color: var(--text-tertiary);
   line-height: 1.6;
   margin: 0;
+  flex: 1;
 }
 .diff-card p code {
   font-family: var(--font-mono);
@@ -2258,6 +2270,8 @@ button:focus-visible {
   border-radius: var(--radius-xl);
   padding: var(--space-8);
   transition: border-color 0.2s, transform 0.2s;
+  display: flex;
+  flex-direction: column;
 }
 .exec-card:hover {
   border-color: var(--border-light);
@@ -2313,6 +2327,7 @@ button:focus-visible {
   color: var(--text-secondary);
   line-height: 1.7;
   margin: 0 0 var(--space-5) 0;
+  flex: 1;
 }
 .exec-proof {
   display: flex;

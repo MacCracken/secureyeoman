@@ -9,15 +9,12 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
-| 50 | Governance Hardening | Complete |
-| 51 | Real-Time Infrastructure | Complete |
-| 52 | Dashboard Evolution | Planned |
-| 53 | Security Toolkit Completion | Planned |
+| 52 | Dashboard Evolution | Next |
+| 53 | Security, Audio & Integrations | Planned |
 | 54 | Local-First AI | Planned |
-| 55 | Multimodal I/O Enhancement | Planned |
-| 56 | Marketplace Evolution | Demand-Gated |
-| 57 | Native Clients | Demand-Gated |
-| 58 | Infrastructure & Platform | Demand-Gated |
+| 55 | Voice & Community | Demand-Gated |
+| 56 | Native Clients | Demand-Gated |
+| 57 | Infrastructure & Platform | Demand-Gated |
 
 ---
 
@@ -27,31 +24,19 @@
 
 Continuous bug discovery and repair pass — no fixed scope. As real-world usage surfaces regressions or rough edges, they are filed here, fixed, and moved to the Changelog. This phase never closes; it rolls forward with the project.
 
-### Improvements
+### Open Items
 
+- [x] **Coverage thresholds** — `packages/core` v8 coverage now meets all four thresholds (statements ≥ 87%, functions ≥ 87%, lines ≥ 87%, branches ≥ 75%). *(Closed 2026-02-25)*
+- [ ] **Bug**: Dashboard Tasks > Heartbeat Task count at the top still displays 4/4 when more than 1 personality is active; update like metrics page.
 - [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 133. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(New feature — no automated DB integration test yet)*
-- [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`. *(Quick win — AnalyserNode already wired)*
-- [ ] **Advanced Editor Mode** — Add toggle in Settings > Security > Developers. When enabled, replaces the current EditView with an advanced coding workspace featuring: (1) Canvas with movable terminal prompt windows; (2) Clean file manager as a sidebar column or popout; (3) Task list panel with Jira-style priorities, supporting internal task management or external integrations (Trello, GitHub Projects, etc.).
-
----
-
-## Phase 51: Real-Time Infrastructure
-
-**Status**: Complete — see CHANGELOG for details
-
-### Deferred to follow-up
-
-- [ ] **Real Slack/Discord/email/Telegram delivery** — `executeNotifyAction()` stubs wired but external dispatch gated on IntegrationManager interface audit.
-- [ ] **Per-user notification preferences** — single shared notification stream for now.
-- [ ] **Notification retention/cleanup job** — no TTL or auto-prune yet.
 
 ---
 
 ## Phase 52: Dashboard Evolution
 
-**Status**: Planned — depends on Phase 51 (WebSocket push)
+**Status**: Next — Phase 51 WebSocket push complete
 
-Consolidates the major UX surface work: Mission Control as the new default landing page, sidebar reorganization, Personality Editor ontological restructure, and remaining visual polish items.
+Consolidates major UX surface work: Mission Control as the new default landing page, sidebar reorganization, Personality Editor ontological restructure, advanced editor workspace, and voice activity detection.
 
 ### Sidebar Reorganization
 
@@ -79,62 +64,82 @@ Consolidates the major UX surface work: Mission Control as the new default landi
 
 ### Mission Control Dashboard
 
-- [ ] **Mission Control Dashboard** — Consolidated command-center view replacing Metrics as the default landing page. Multi-panel grid: (1) System status graph (expanded ReactFlow); (2) Active tasks with progress; (3) Live security event feed; (4) Resource monitoring (CPU, memory, tokens, costs); (5) Agent/Personality health heartbeats; (6) Integration status grid; (7) Audit stream; (8) Workflow runs with DAG preview; (9) Quick actions (emergency stop, pause all). Dark theme default, auto-refresh via WebSocket (requires Phase 51), click-to-drill.
+- [ ] **Mission Control Dashboard** — Consolidated command-center view replacing Metrics as the default landing page. Multi-panel grid: (1) System status graph (expanded ReactFlow); (2) Active tasks with progress; (3) Live security event feed; (4) Resource monitoring (CPU, memory, tokens, costs); (5) Agent/Personality health heartbeats; (6) Integration status grid; (7) Audit stream; (8) Workflow runs with DAG preview; (9) Quick actions (emergency stop, pause all). Dark theme default, auto-refresh via WebSocket, click-to-drill.
 
 ### Personality Editor — Ontological Restructure
 
 Reorganise the Soul tab fields so each section truly reflects its metaphor. Three targeted moves plus two new capability toggles:
 
-- [ ] **Spirit — Pathos**: Relocate the Morphogenesis toggle (Sacred Archetypes) into the Spirit section. This is the "soul" of the character — the foundational archetypes that give it form belong here, not in a generic settings list. Add an **Empathy Resonance** toggle that controls how strongly the personality mirrors and adapts to the user's detected emotional register.
-- [ ] **Brain — Intellect**: Move Default Model and Model Fallbacks from the Soul tab into the Brain section. These are the "grey matter" decisions — which model thinks for this personality and what it falls back to. Add an **Analytical Depth** control (maps to reasoning effort / extended thinking budget) so cognitive intensity is configured alongside the model itself.
-- [ ] **Body — Endowments**: Relocate Voice and Preferred Language from the Soul tab into the Body section. These are the physical expression layer — how the AI speaks and in what tongue. Body → Endowments is the natural home for anything that governs the sensory/physical interface with the world.
-- [ ] **Brain — Intellect (Chronoception)**: Move the Chronoception (date/time injection) toggle from the Soul — Essence section into Brain — Intellect. Knowing the current time is a cognitive/analytical concern, not an identity one.
+- [ ] **Spirit — Pathos**: Relocate the Morphogenesis toggle (Sacred Archetypes) into the Spirit section. Add an **Empathy Resonance** toggle that controls how strongly the personality mirrors and adapts to the user's detected emotional register.
+- [ ] **Brain — Intellect**: Move Default Model and Model Fallbacks into the Brain section. Add an **Analytical Depth** control (maps to reasoning effort / extended thinking budget) so cognitive intensity is configured alongside the model itself.
+- [ ] **Body — Endowments**: Relocate Voice and Preferred Language from the Soul tab into the Body section. These are the physical expression layer — how the AI speaks and in what tongue.
+- [ ] **Brain — Intellect (Chronoception)**: Move the Chronoception (date/time injection) toggle from Soul — Essence into Brain — Intellect. Knowing the current time is a cognitive/analytical concern, not an identity one.
+
+### Advanced Editor Mode
+
+- [ ] **Advanced Editor Mode** — Add toggle in Settings > Security > Developers. When enabled, replaces the current EditView with an advanced coding workspace featuring: (1) Canvas with movable terminal prompt windows; (2) Clean file manager as a sidebar column or popout; (3) Task list panel with Jira-style priorities, supporting internal task management or external integrations (Trello, GitHub Projects, etc.).
+
+### Voice Activity Detection
+
+- [ ] **Energy-based VAD** — Replace the fixed 2-second silence timer in `usePushToTalk` and `useTalkMode` with RMS-threshold Voice Activity Detection. The Web Audio API `AnalyserNode` is already wired in both hooks — needs threshold logic instead of a `setTimeout`. *(Quick win — AnalyserNode already wired)*
 
 ### Visual Polish
 
 - [ ] **Personality image upload** — Allow a personality to receive a custom avatar image.
-- [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. Consider CSS variable-based theming for user extensibility or a larger built-in preset library.
+- [ ] **Switchable Theme Presets** — Expand beyond light/dark binary. Implement theme presets (e.g., opencode, vi, vscode) with a theme picker in dashboard settings. Consider CSS variable-based theming for user extensibility.
 
 ---
 
-## Phase 50: Governance Hardening
-
-**Status**: Complete — see [ADR 132](../adr/132-governance-hardening.md) and [Guide](../guides/governance-hardening.md)
-
----
-
-## Phase 53: Security Toolkit Completion
+## Phase 53: Security, Audio & Integrations
 
 **Status**: Planned
 
-Core Kali toolkit shipped (ADR 089). The `sec_*` MCP tools, `secureyeoman security` CLI, and three deployment modes (native/docker-exec/prebuilt) are live. This phase completes the remaining toolkit items.
+Completes the Kali security toolkit, hardens audio input/output, and delivers real external notification delivery deferred from Phase 51.
+
+### Security Toolkit Completion
+
+Core Kali toolkit shipped (ADR 089). The `sec_*` MCP tools, `secureyeoman security` CLI, and three deployment modes are live.
 
 - [ ] **Scope manifest UI** — Dashboard panel for managing `MCP_ALLOWED_TARGETS` — add/remove CIDRs, hostnames, URL prefixes. Wildcard (`*`) mode requires explicit acknowledgement checkbox. Reads/writes the running server's environment or a persisted config table.
-- [ ] **Structured output normalization** — Parse nmap XML (`-oX`), sqlmap JSON (`--output-format=json`), nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining (e.g. nmap port list → gobuster per open port → nuclei per service).
-- [ ] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — Publish a versioned Kali-based Docker image as a one-click MCP prebuilt in `McpPrebuilts.tsx` for cloud deployments where `secureyeoman security setup` is not convenient.
+- [ ] **Structured output normalization** — Parse nmap XML (`-oX`), sqlmap JSON (`--output-format=json`), nuclei JSONL (`-j`), and gobuster output into a consistent `{ tool, target, command, parsed, exit_code }` MCP envelope for richer agent chaining.
+- [ ] **`ghcr.io/secureyeoman/mcp-security-toolkit` prebuilt image** — Publish a versioned Kali-based Docker image as a one-click MCP prebuilt in `McpPrebuilts.tsx` for cloud deployments.
 - [ ] **Hydra live brute-force** — Credential testing against authorized targets. Requires scope enforcement proven stable and an additional per-tool authorization flag beyond `MCP_ALLOWED_TARGETS`.
+
+### Audio Quality
+
+- [ ] **Streaming TTS via SSE** — Stream audio chunks from the TTS backend to the browser as they're generated. Reduces perceived latency for long text.
+- [ ] **Audio validation before STT** — Validate duration 2–30s, RMS > 0.01, peak < 0.99. Return a clear error rather than passing bad audio to the API.
+- [ ] **Whisper model size selection** — Expose `tiny | base | small | medium | large` in multimodal config. Surface as dropdown in the provider card UI alongside provider selection.
+
+### Notification Delivery
+
+*Delivery stubs wired in Phase 51 — this section provides real dispatch.*
+
+- [ ] **Real Slack/Discord/email/Telegram delivery** — Implement actual external dispatch behind the `executeNotifyAction()` stubs, gated on IntegrationManager interface audit.
+- [ ] **Per-user notification preferences** — Per-user channel preferences and quiet-hours configuration.
+- [ ] **Notification retention/cleanup job** — TTL and auto-prune policy for the notifications table.
 
 ---
 
 ## Phase 54: Local-First AI
 
-**Status**: Planned
+**Status**: Planned — strategic priority for sovereign AI positioning
 
-Privacy-first, offline-capable AI processing via on-device models. Completes the "sovereign AI" positioning — currently all inference goes to cloud providers even in a self-hosted deployment. Elevated ahead of Multimodal I/O due to strategic differentiation value.
+Privacy-first, offline-capable AI processing via on-device models. Completes the "sovereign AI" positioning — currently all inference goes to cloud providers even in a self-hosted deployment.
 
 **Feature toggle in `config.yml`:**
 
 ```yaml
 ai:
   localMode:
-    enabled: true                    # Switch: local vs cloud
+    enabled: true
     provider: "ollama"               # ollama | lmstudio | localai
     model: "llama3.1:8b-instruct-q4_K_M"
     embeddingModel: "nomic-embed-text"
-    fallbackToCloud: false           # If local fails, fail or use cloud
+    fallbackToCloud: false
 ```
 
-- [ ] **Local model inference** — When `ai.localMode.enabled: true`, route LLM requests to the configured local provider instead of cloud APIs. Swap provider/model at runtime via `ai.localMode` config reload.
+- [ ] **Local model inference** — When `ai.localMode.enabled: true`, route LLM requests to the configured local provider instead of cloud APIs. Swap provider/model at runtime via config reload.
 - [ ] **Local embedding generation** — Use `nomic-embed-text` (or configured `embeddingModel`) for vectorizing memories, knowledge, and document chunks. Eliminates external embedding API calls.
 - [ ] **Hybrid cloud/local switch** — Runtime toggle between local-only, cloud-only, or local-first-with-cloud-fallback. Expose in dashboard settings alongside the existing model picker.
 - [ ] **Offline detection** — When `ai.localMode.enabled: true` and the local provider is unreachable, surface a clear "Local AI Unavailable" state in the dashboard — don't silently fall back to cloud unless `fallbackToCloud: true`.
@@ -143,23 +148,20 @@ ai:
 
 ---
 
-## Phase 55: Multimodal I/O Enhancement
+## Phase 55: Voice & Community
 
-**Status**: Planned
+**Status**: Demand-Gated — implement when voice profile and marketplace demand justifies the investment.
 
-Provider picker shipped in Phase 40; expanded to 10 TTS and 7 STT providers. This phase completes voice quality and usability improvements.
+Completes voice identity infrastructure and community skill distribution.
 
-- [ ] **Streaming TTS via SSE** — Stream audio chunks from the TTS backend to the browser as they're generated. Reduces perceived latency for long text.
-- [ ] **Audio validation before STT** — Validate duration 2–30s, RMS > 0.01, peak < 0.99. Return a clear error rather than passing bad audio to the API.
-- [ ] **Whisper model size selection** — Expose `tiny | base | small | medium | large` in multimodal config. Surface as dropdown in the provider card UI alongside provider selection.
+### Voice Profiles
+
 - [ ] **Voice profile system** — Named voice identities (`voice_profile_create`, `voice_profile_list`, `voice_profile_speak` MCP tools) backed by Voicebox profiles. Each personality can have a persistent voice identity.
 - [ ] **Two-tier voice prompt caching** — Cache Voicebox voice prompts in memory (session) and on disk (MD5 keyed on audio bytes + reference text), avoiding reprocessing reference audio on every TTS call.
 
----
+### Marketplace Evolution
 
-## Phase 56: Marketplace Evolution
-
-**Status**: Demand-Gated — implement once the community skill repo has meaningful scale.
+*Implement once the community skill repo has meaningful scale.*
 
 - [ ] **Scheduled Auto-Sync** — Optional cron-style background sync from the configured community repo (configurable interval, off by default).
 - [ ] **Hosted Discovery API** — A lightweight read-only API for browsing available community skills without cloning.
@@ -168,7 +170,7 @@ Provider picker shipped in Phase 40; expanded to 10 TTS and 7 STT providers. Thi
 
 ---
 
-## Phase 57: Native Clients
+## Phase 56: Native Clients
 
 **Status**: Demand-Gated — implement once REST/WebSocket API is stable and adoption justifies native packaging.
 
@@ -185,7 +187,7 @@ Provider picker shipped in Phase 40; expanded to 10 TTS and 7 STT providers. Thi
 
 ---
 
-## Phase 58: Infrastructure & Platform
+## Phase 57: Infrastructure & Platform
 
 **Status**: Demand-Gated — implement once operational scale or compliance requirements justify the investment.
 
@@ -223,4 +225,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-25 (Phase restructure: Phase 51 Real-Time Infrastructure, Phase 52 Dashboard Evolution extracted from Phase XX; Local-First AI elevated to Phase 54 ahead of Multimodal I/O; Energy-based VAD moved to Phase XX quick wins; phases 56–58 renumbered)*
+*Last updated: 2026-02-25 (Roadmap reorganization: removed completed phases 50–51; consolidated 8 open phases into 5 (52–57); merged Security Toolkit + Audio + Notification Delivery into Phase 53; moved Energy-based VAD and Advanced Editor Mode into Phase 52; merged Marketplace Evolution into Phase 55 with Voice Profiles; renumbered demand-gated phases)*

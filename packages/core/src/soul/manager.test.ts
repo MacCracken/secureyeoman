@@ -327,6 +327,62 @@ describe('SoulManager', () => {
       const result = await manager.listPersonalities();
       expect(result.personalities).toHaveLength(1);
     });
+
+    it('deletePersonality throws when personality is archetype', async () => {
+      const { manager } = makeManager({
+        getPersonality: vi.fn().mockResolvedValue({ ...PERSONALITY, isArchetype: true }),
+      });
+      await expect(manager.deletePersonality('p-1')).rejects.toThrow(
+        'Cannot delete a system archetype personality'
+      );
+    });
+
+    it('enablePersonality delegates to storage', async () => {
+      const enablePersonality = vi.fn().mockResolvedValue(undefined);
+      const { manager } = makeManager({ enablePersonality });
+      await manager.enablePersonality('p-1');
+      expect(enablePersonality).toHaveBeenCalledWith('p-1');
+    });
+
+    it('disablePersonality delegates to storage', async () => {
+      const disablePersonality = vi.fn().mockResolvedValue(undefined);
+      const { manager } = makeManager({ disablePersonality });
+      await manager.disablePersonality('p-1');
+      expect(disablePersonality).toHaveBeenCalledWith('p-1');
+    });
+
+    it('setDefaultPersonality delegates to storage', async () => {
+      const setDefaultPersonality = vi.fn().mockResolvedValue(undefined);
+      const { manager } = makeManager({ setDefaultPersonality });
+      await manager.setDefaultPersonality('p-1');
+      expect(setDefaultPersonality).toHaveBeenCalledWith('p-1');
+    });
+
+    it('clearDefaultPersonality delegates to storage', async () => {
+      const clearDefaultPersonality = vi.fn().mockResolvedValue(undefined);
+      const { manager } = makeManager({ clearDefaultPersonality });
+      await manager.clearDefaultPersonality();
+      expect(clearDefaultPersonality).toHaveBeenCalled();
+    });
+
+    it('getEnabledPersonalities delegates to storage', async () => {
+      const getEnabledPersonalities = vi.fn().mockResolvedValue([PERSONALITY]);
+      const { manager } = makeManager({ getEnabledPersonalities });
+      const result = await manager.getEnabledPersonalities();
+      expect(result).toHaveLength(1);
+    });
+
+    it('setDynamicToolManager sets the internal manager', () => {
+      const { manager } = makeManager();
+      const dtm = {} as any;
+      expect(() => manager.setDynamicToolManager(dtm)).not.toThrow();
+    });
+
+    it('setIntentManager sets the internal manager', () => {
+      const { manager } = makeManager();
+      const im = {} as any;
+      expect(() => manager.setIntentManager(im)).not.toThrow();
+    });
   });
 
   describe('skill operations (without brain)', () => {
@@ -717,6 +773,164 @@ describe('SoulManager', () => {
       const { manager } = makeManager({}, {}, undefined, spirit);
       const prompt = await manager.composeSoulPrompt();
       expect(prompt).toContain('music');
+    });
+
+    it('includes diagnostics section when diagnostics capability enabled', async () => {
+      const diagPersonality = {
+        ...PERSONALITY,
+        body: { ...PERSONALITY.body, enabled: true, capabilities: ['diagnostics'] },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(diagPersonality),
+      });
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Diagnostics');
+      expect(prompt).toContain('diag_ping_integrations');
+    });
+
+    it('includes diagnostics section with allowSubAgents path', async () => {
+      const diagPersonality = {
+        ...PERSONALITY,
+        body: { ...PERSONALITY.body, enabled: true, capabilities: ['diagnostics'] },
+      };
+      const storage = makeStorage({
+        getActivePersonality: vi.fn().mockResolvedValue(diagPersonality),
+      });
+      const logger = makeLogger();
+      const manager = new SoulManager(storage as any, makeConfig() as any, {
+        logger: logger as any,
+        securityConfig: { allowSubAgents: true } as any,
+      });
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Diagnostics');
+      expect(prompt).toContain('diag_report_status');
+    });
+
+    it('includes vision section with desktop control and camera enabled', async () => {
+      const visionPersonality = {
+        ...PERSONALITY,
+        body: { ...PERSONALITY.body, enabled: true, capabilities: ['vision', 'limb_movement'] },
+      };
+      const storage = makeStorage({
+        getActivePersonality: vi.fn().mockResolvedValue(visionPersonality),
+      });
+      const logger = makeLogger();
+      const manager = new SoulManager(storage as any, makeConfig() as any, {
+        logger: logger as any,
+        securityConfig: { allowDesktopControl: true, allowCamera: true } as any,
+      });
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Vision');
+      expect(prompt).toContain('desktop_screenshot');
+      expect(prompt).toContain('desktop_camera_capture');
+    });
+
+    it('includes vision and limb_movement disabled when desktop control not enabled', async () => {
+      const visionPersonality = {
+        ...PERSONALITY,
+        body: { ...PERSONALITY.body, enabled: true, capabilities: ['vision', 'limb_movement'] },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(visionPersonality),
+      });
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Vision');
+      expect(prompt).toContain('disabled');
+    });
+
+    it('includes injectDateTime section when personality has injectDateTime enabled', async () => {
+      const datePersonality = {
+        ...PERSONALITY,
+        injectDateTime: true,
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(datePersonality),
+      });
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('Current Date');
+    });
+
+    it('appends viewport hint when clientContext has viewportHint', async () => {
+      const { manager } = makeManager();
+      const prompt = await manager.composeSoulPrompt(undefined, undefined, {
+        viewportHint: 'mobile',
+      });
+      expect(prompt).toContain('[Interface: mobile');
+    });
+
+    it('includes skill with routing=explicit in catalog', async () => {
+      const routedSkill = {
+        ...SKILL,
+        name: 'Routed Skill',
+        routing: 'explicit',
+        instructions: 'Use this skill explicitly.',
+      };
+      const { manager } = makeManager({
+        getEnabledSkills: vi.fn().mockResolvedValue([routedSkill]),
+      });
+      const prompt = await manager.composeSoulPrompt('please routed skill');
+      expect(prompt).toContain('Routed Skill');
+    });
+
+    it('includes MCP connections with exposeWeb disabled path', async () => {
+      const bodyPersonality = {
+        ...PERSONALITY,
+        body: {
+          ...PERSONALITY.body,
+          enabled: true,
+          selectedServers: ['YEOMAN MCP'],
+          mcpFeatures: {
+            exposeGit: false,
+            exposeFilesystem: false,
+            exposeWeb: false,
+            exposeWebScraping: false,
+            exposeWebSearch: false,
+            exposeBrowser: false,
+          },
+        },
+      };
+      const { manager } = makeManager({
+        getActivePersonality: vi.fn().mockResolvedValue(bodyPersonality),
+      });
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('MCP Connections');
+    });
+
+    it('composeSoulPrompt with personalityId fetches specific personality', async () => {
+      const { manager } = makeManager();
+      const prompt = await manager.composeSoulPrompt(undefined, 'p-1');
+      expect(prompt).toContain('FRIDAY');
+    });
+
+    it('composeSoulPrompt injects intent context when intentManager returns content', async () => {
+      const { manager } = makeManager();
+      const mockIntentManager = {
+        composeSoulContext: vi.fn().mockResolvedValue('## Intent\nGoal: be helpful'),
+        getGoalSkillSlugs: vi.fn().mockReturnValue(new Set()),
+      };
+      manager.setIntentManager(mockIntentManager as any);
+      const prompt = await manager.composeSoulPrompt();
+      expect(prompt).toContain('be helpful');
+    });
+
+    it('composeSoulPrompt elevates goal-linked skills via intentManager', async () => {
+      const goalSkill = {
+        ...SKILL,
+        name: 'Goal Skill',
+        instructions: 'Follow this goal.',
+        triggerPatterns: [],
+      };
+      const { manager } = makeManager({
+        getEnabledSkills: vi.fn().mockResolvedValue([goalSkill]),
+      });
+      const mockIntentManager = {
+        composeSoulContext: vi.fn().mockResolvedValue(null),
+        getGoalSkillSlugs: vi.fn().mockReturnValue(new Set(['Goal Skill'])),
+      };
+      manager.setIntentManager(mockIntentManager as any);
+      // input doesn't match the skill name but intentManager forces it in
+      const prompt = await manager.composeSoulPrompt('xyz xyz xyz');
+      expect(prompt).toContain('Follow this goal');
     });
   });
 

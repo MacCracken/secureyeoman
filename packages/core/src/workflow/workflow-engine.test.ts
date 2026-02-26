@@ -525,6 +525,41 @@ describe('WorkflowEngine.execute — step dispatch: webhook', () => {
   });
 });
 
+describe('WorkflowEngine.execute — step dispatch: webhook with headersTemplate', () => {
+  it('merges resolved headersTemplate into request headers', async () => {
+    const mockFetch = vi.fn().mockResolvedValue({
+      status: 200,
+      text: vi.fn().mockResolvedValue('{}'),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    const storage = makeStorage();
+    const engine = makeEngine({ storage });
+    const run = makeRun({ input: { tok: 'my-token' } });
+
+    const step = makeStep({
+      id: 'hook2',
+      type: 'webhook',
+      config: {
+        url: 'https://example.com/hook',
+        method: 'GET',
+        headersTemplate: '{"Authorization":"Bearer {{input.tok}}"}',
+      },
+    });
+
+    await engine.execute(run, makeDefinition([step]));
+
+    expect(mockFetch).toHaveBeenCalledWith(
+      'https://example.com/hook',
+      expect.objectContaining({
+        headers: expect.objectContaining({ Authorization: 'Bearer my-token' }),
+      })
+    );
+
+    vi.unstubAllGlobals();
+  });
+});
+
 describe('WorkflowEngine.execute — step dispatch: unknown type', () => {
   it('fails workflow for unrecognised step type', async () => {
     const storage = makeStorage();
