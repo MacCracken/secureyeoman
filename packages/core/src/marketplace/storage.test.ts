@@ -39,6 +39,13 @@ const skillRow = {
   rating: 4.5,
   instructions: 'Use me wisely',
   tools: ['search'],
+  trigger_patterns: [],
+  use_when: '',
+  do_not_use_when: '',
+  success_criteria: '',
+  mcp_tools_allowed: [],
+  routing: 'fuzzy',
+  autonomy_level: 'L1',
   installed: false,
   source: 'published',
   published_at: 1000,
@@ -112,6 +119,42 @@ describe('MarketplaceStorage', () => {
       expect(result!.name).toBe('My Skill');
       expect(result!.downloadCount).toBe(42);
       expect(result!.rating).toBe(4.5);
+    });
+
+    it('derives origin=marketplace for published source', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...skillRow, source: 'published' }], rowCount: 1 });
+      const result = await storage.getSkill('skill-1');
+      expect(result!.origin).toBe('marketplace');
+    });
+
+    it('derives origin=marketplace for builtin source', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...skillRow, source: 'builtin' }], rowCount: 1 });
+      const result = await storage.getSkill('skill-1');
+      expect(result!.origin).toBe('marketplace');
+    });
+
+    it('derives origin=community for community source', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [{ ...skillRow, source: 'community' }], rowCount: 1 });
+      const result = await storage.getSkill('skill-1');
+      expect(result!.origin).toBe('community');
+    });
+
+    it('returns mcpToolsAllowed from row', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...skillRow, mcp_tools_allowed: ['web_search', 'file_read'] }],
+        rowCount: 1,
+      });
+      const result = await storage.getSkill('skill-1');
+      expect(result!.mcpToolsAllowed).toEqual(['web_search', 'file_read']);
+    });
+
+    it('defaults mcpToolsAllowed to [] when column is null/missing', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ ...skillRow, mcp_tools_allowed: null }],
+        rowCount: 1,
+      });
+      const result = await storage.getSkill('skill-1');
+      expect(result!.mcpToolsAllowed).toEqual([]);
     });
 
     it('returns null when not found', async () => {
@@ -281,9 +324,9 @@ describe('MarketplaceStorage', () => {
 
       await storage.seedBuiltinSkills();
 
-      // Should have called queryOne (SELECT 1) for each skill
+      // Should have called queryOne (SELECT id) for each skill
       const selectCalls = mockQuery.mock.calls.filter(
-        (c: any[]) => typeof c[0] === 'string' && c[0].includes('SELECT 1')
+        (c: any[]) => typeof c[0] === 'string' && c[0].includes('SELECT id FROM marketplace.skills')
       );
       expect(selectCalls).toHaveLength(6);
     });

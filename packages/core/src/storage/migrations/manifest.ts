@@ -87,4 +87,7 @@ export const MIGRATION_MANIFEST: { id: string; sql: string }[] = [
   { id: '048_personality_empathy_resonance', sql: readSql('048_personality_empathy_resonance.sql') },
   { id: '049_marketplace_routing_quality', sql: readSql('049_marketplace_routing_quality.sql') },
   { id: '050_brain_skills_routing_quality', sql: readSql('050_brain_skills_routing_quality.sql') },
+  { id: '051_marketplace_mcp_tools_allowed', sql: readSql('051_marketplace_mcp_tools_allowed.sql') },
+  { id: '052_brain_skills_mcp_tools_allowed', sql: readSql('052_brain_skills_mcp_tools_allowed.sql') },
+  { id: '053_risk_assessment', sql: readSql('053_risk_assessment.sql') },
 ];

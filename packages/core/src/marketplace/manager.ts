@@ -4,7 +4,7 @@
 
 import fs from 'fs';
 import path from 'path';
-import type { MarketplaceSkill } from '@secureyeoman/shared';
+import type { CatalogSkill } from '@secureyeoman/shared';
 import { SkillCreateSchema } from '@secureyeoman/shared';
 import type { SecureLogger } from '../logging/logger.js';
 import type { BrainManager } from '../brain/manager.js';
@@ -65,7 +65,7 @@ export class MarketplaceManager {
     return await this.storage.search(query, category, limit, offset, source, personalityId);
   }
 
-  async getSkill(id: string): Promise<MarketplaceSkill | null> {
+  async getSkill(id: string): Promise<CatalogSkill | null> {
     return await this.storage.getSkill(id);
   }
 
@@ -74,7 +74,7 @@ export class MarketplaceManager {
     if (!skill) return false;
 
     if (this.brainManager) {
-      const brainSource = skill.source === 'community' ? 'community' : 'marketplace';
+      const brainSource = skill.origin === 'community' ? 'community' : 'marketplace';
       const existing = await this.brainManager.listSkills({ source: brainSource });
       // Skip creating a brain skill if this exact context is already covered:
       // - personality-specific record already exists for this personality
@@ -96,6 +96,7 @@ export class MarketplaceManager {
               useWhen: skill.useWhen ?? '',
               doNotUseWhen: skill.doNotUseWhen ?? '',
               successCriteria: skill.successCriteria ?? '',
+              mcpToolsAllowed: skill.mcpToolsAllowed ?? [],
               routing: skill.routing ?? 'fuzzy',
               autonomyLevel: skill.autonomyLevel ?? 'L1',
               source: brainSource,
@@ -132,7 +133,7 @@ export class MarketplaceManager {
 
     if (this.brainManager) {
       try {
-        const brainSource = skill.source === 'community' ? 'community' : 'marketplace';
+        const brainSource = skill.origin === 'community' ? 'community' : 'marketplace';
         const brainSkills = await this.brainManager.listSkills({ source: brainSource });
         const matches = brainSkills.filter((s) => s.name === skill.name);
 
@@ -215,7 +216,7 @@ export class MarketplaceManager {
     }
   }
 
-  async publish(data: Partial<MarketplaceSkill>): Promise<MarketplaceSkill> {
+  async publish(data: Partial<CatalogSkill>): Promise<CatalogSkill> {
     const skill = await this.storage.addSkill(data);
     this.logger.info('Skill published to marketplace', { id: skill.id, name: skill.name });
     return skill;
@@ -286,7 +287,7 @@ export class MarketplaceManager {
         // Parse author: string or object (backward compat)
         const rawAuthor = data.author;
         let authorDisplay = 'community';
-        let authorInfo: MarketplaceSkill['authorInfo'];
+        let authorInfo: CatalogSkill['authorInfo'];
         if (typeof rawAuthor === 'string') {
           authorDisplay = rawAuthor;
         } else if (rawAuthor && typeof rawAuthor === 'object') {
@@ -300,7 +301,7 @@ export class MarketplaceManager {
           };
         }
 
-        const skillData: Partial<MarketplaceSkill> = {
+        const skillData: Partial<CatalogSkill> = {
           name: data.name,
           description: typeof data.description === 'string' ? data.description : '',
           version: typeof data.version === 'string' ? data.version : '1.0.0',
@@ -315,6 +316,7 @@ export class MarketplaceManager {
           useWhen: typeof data.useWhen === 'string' ? data.useWhen : '',
           doNotUseWhen: typeof data.doNotUseWhen === 'string' ? data.doNotUseWhen : '',
           successCriteria: typeof data.successCriteria === 'string' ? data.successCriteria : '',
+          mcpToolsAllowed: Array.isArray(data.mcpToolsAllowed) ? (data.mcpToolsAllowed as string[]) : [],
           routing: (data.routing === 'explicit' ? 'explicit' : 'fuzzy') as 'fuzzy' | 'explicit',
           autonomyLevel: (['L1','L2','L3','L4','L5'].includes(data.autonomyLevel as string)
             ? data.autonomyLevel

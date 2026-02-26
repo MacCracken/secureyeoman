@@ -38,6 +38,25 @@
 - **`seedBaseKnowledge()` personalities array** — `seedBaseKnowledge()` accepts a `personalities` array and is called at every startup (not just onboarding) — new personalities added after first run get their self-identity seeded on next restart.
 - ADR 134 (`docs/adr/134-vector-memory-multi-personality.md`).
 
+#### Phase 52 — One Skill Schema: CatalogSkillSchema + BaseSkillSchema Unification (ADR 135)
+
+- **`BaseSkillSchema`** extracted from `SkillSchema` in `packages/shared/src/types/soul.ts` — owns all fields shared between the catalog and brain layers: `id`, `name`, `description`, `instructions`, `tools`, `triggerPatterns`, `useWhen`, `doNotUseWhen`, `successCriteria`, `mcpToolsAllowed`, `routing`, `autonomyLevel`, `updatedAt`. Both `SkillSchema` and `CatalogSkillSchema` extend it.
+- **`CatalogSkillSchema`** (new canonical name) in `packages/shared/src/types/marketplace.ts` — extends `BaseSkillSchema` with catalog-distribution fields: `version`, `author`, `authorInfo`, `category`, `tags`, `downloadCount`, `rating`, `installed`, `source`, `origin`, `publishedAt`. `MarketplaceSkillSchema` and `MarketplaceSkill` are retained as backward-compat aliases.
+- **`origin: 'marketplace' | 'community'`** — derived field on `CatalogSkillSchema`. Set by `rowToSkill()` from `source` (`'community'` → `'community'`, `'builtin'`/`'published'` → `'marketplace'`). Not stored as a DB column. Replaces scattered `skill.source === 'community'` checks throughout `manager.ts`.
+- **`mcpToolsAllowed` now survives the full lifecycle** — community JSON → `marketplace.skills` → `brain.skills` → inference prompt. Previously dropped silently at every boundary.
+- **Migration `051_marketplace_mcp_tools_allowed.sql`** — adds `mcp_tools_allowed JSONB NOT NULL DEFAULT '[]'` to `marketplace.skills`.
+- **Migration `052_brain_skills_mcp_tools_allowed.sql`** — adds the same column to `brain.skills` (separate migration to handle environments where 051 was already applied before the brain column was identified as missing).
+- **`brain/storage.ts`** — `SkillRow` interface gains `mcp_tools_allowed?`; `rowToSkill`, `createSkill`, `updateSkill` all read/write the new column.
+- **`MarketplaceManager.install()`** — uses `skill.origin` for `brainSource`; passes `mcpToolsAllowed` to `SkillCreateSchema`.
+- **`MarketplaceManager.uninstall()`** — uses `skill.origin` for `brainSource`.
+- **`marketplace-routes.ts`** — accepts `origin` query param; translates to `source != 'community'` (marketplace) or `source = 'community'` (community) for storage layer.
+- **Dashboard: Marketplace origin filter tabs** — `MarketplacePage.tsx` gains **All / Marketplace / Community** tabs. Community skills display a `Community` badge on their card.
+- **Dashboard: Skills Manager community label** — `SOURCE_LABELS` in `SkillsManager.tsx` gains `community: 'Community'`.
+- **Community skill JSON cleanup** — `emoji-mood-detector.json` stripped of brain-runtime-only fields (`source`, `status`, `personalityId`, `actions`, `triggers`, `dependencies`, `provides`, `requireApproval`, `allowedPermissions`, `enabled`); `autonomyLevel: "L1"` added.
+- **Community JSON schema** (`skill.schema.json`) — `autonomyLevel` property added (enum L1–L5, default L1).
+- **Tests**: 10 new tests across `marketplace.test.ts` (integration), `manager.test.ts`, `storage.test.ts`, `marketplace-routes.test.ts`; pre-existing `seedBuiltinSkills` SELECT assertion fixed.
+- **Docs**: ADR 135 (`docs/adr/135-one-skill-schema-catalog-unification.md`), guide (`docs/guides/skill-catalog.md`).
+
 #### Marketplace — Routing Quality Schema Alignment
 
 - **`MarketplaceSkillSchema`** gains five Phase 44/49 fields: `useWhen`, `doNotUseWhen`, `successCriteria`, `routing` (`fuzzy | explicit`, default `fuzzy`), `autonomyLevel` (`L1`–`L5`, default `L1`).

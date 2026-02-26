@@ -34,6 +34,8 @@ const SKILL = {
   tags: [],
   instructions: 'Do things.',
   source: 'builtin',
+  origin: 'marketplace' as const,
+  mcpToolsAllowed: [],
   installed: false,
   createdAt: 1000,
   updatedAt: 1000,
@@ -114,6 +116,31 @@ describe('MarketplaceManager', () => {
       const { manager } = makeManager({}, { brainManager });
       await manager.install('skill-1');
       expect(createSkill).toHaveBeenCalled();
+    });
+
+    it('passes mcpToolsAllowed from catalog skill to brain skill on install', async () => {
+      const createSkill = vi.fn().mockResolvedValue({ id: 'brain-skill-1' });
+      const brainManager = { createSkill, listSkills: vi.fn().mockResolvedValue([]), deleteSkill: vi.fn() };
+      const { manager } = makeManager(
+        { getSkill: vi.fn().mockResolvedValue({ ...SKILL, mcpToolsAllowed: ['web_search', 'file_read'] }) },
+        { brainManager }
+      );
+      await manager.install('skill-1');
+      const callArgs = createSkill.mock.calls[0][0];
+      expect(callArgs.mcpToolsAllowed).toEqual(['web_search', 'file_read']);
+    });
+
+    it('uses skill.origin to determine brain source (community)', async () => {
+      const createSkill = vi.fn().mockResolvedValue({ id: 'brain-skill-1' });
+      const brainManager = { createSkill, listSkills: vi.fn().mockResolvedValue([]), deleteSkill: vi.fn() };
+      const communitySkill = { ...SKILL, source: 'community' as const, origin: 'community' as const };
+      const { manager } = makeManager(
+        { getSkill: vi.fn().mockResolvedValue(communitySkill) },
+        { brainManager }
+      );
+      await manager.install('skill-1');
+      const callArgs = createSkill.mock.calls[0][0];
+      expect(callArgs.source).toBe('community');
     });
 
     it('logs error when brain skill creation fails', async () => {

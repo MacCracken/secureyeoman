@@ -26,18 +26,11 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ### Open Items
 
-- [x] **Coverage thresholds** — `packages/core` v8 coverage now meets all four thresholds (statements ≥ 87%, functions ≥ 87%, lines ≥ 87%, branches ≥ 75%). *(Closed 2026-02-25)*
-- [x] **Bug**: Dashboard Tasks > Heartbeat Task count now uses server-computed personality-aware `enabledTasks`/`totalTasks` from the status endpoint, matching MetricsPage. *(Closed 2026-02-26)*
-- [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 133. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(New feature — no automated DB integration test yet)*
+- [ ] **Manual test: Per-Personality Memory Scoping** — End-to-end verification of ADR 134. Steps: (1) Chat with T.Ron → save a memory, confirm it appears in T.Ron recall but NOT in FRIDAY recall; (2) Check heartbeat stats show different Memories counts for T.Ron and FRIDAY; (3) Enable Omnipresent Mind on FRIDAY → confirm FRIDAY can now recall T.Ron's memories; (4) Disable Omnipresent Mind → scoping restored; (5) Verify `/api/v1/brain/stats?personalityId=<id>` returns per-personality counts. *(No automated DB integration test yet)*
+- [ ] **Manual test: One Skill Schema + Community Marketplace** — End-to-end verification of ADR 135. Steps: (1) Dashboard → Marketplace → confirm All / Marketplace / Community filter tabs render; (2) Sync community skills via `POST /api/v1/marketplace/community/sync` with a local repo path; (3) Switch to Community tab → confirm community skills appear with "Community" badge; (4) Install a community skill that has `mcpToolsAllowed` set → confirm the brain skill record carries the same `mcpToolsAllowed` value; (5) Dashboard → Agents → Skills Manager → confirm the installed community skill shows "Community" in the Source column; (6) Uninstall the skill → confirm `installed` resets to false.
 - [ ] **Bug**: https issues with storybook - Framing 'http://localhost:6006/' violates the following Content Security Policy directive: "default-src 'self'". The request has been blocked. Note that 'frame-src' was not explicitly set, so 'default-src' is used as a fallback. - probably need a cleaner way to .env the http/https switch.
-- [x] **Bug: CPU usage always shows 0%** — Implemented rolling `process.cpuUsage()` delta sampler in `SecureYeoman.getMetrics()`. Private fields `_lastCpuUsage` and `_lastCpuSampleAt` track the previous sample; each call computes `(user + system delta µs) / elapsed µs × 100`. *(Closed 2026-02-26)*
-- [x] **Bug: Heartbeat Tasks show same status for all agents** — `HeartbeatCard` now fetches up to 20 recent log entries and builds a `latestByPersonality` map. The collapsed header shows a per-personality row (agent name + status badge) instead of a single global last-entry badge. *(Closed 2026-02-26)*
-- [x] **Vector Memory multi-personality scoping** — all personalities now get their own scoped self-identity; vector recall scoped per personality; omnipresentMind sees all. *(Closed 2026-02-26)*
-- [x] **Agents > Vector Memory per-personality view** — personality dropdown selector, per-row personality badge. *(Closed 2026-02-26)*
-- [x] **Vector Memory promoted to first tab in Agents (default view)**, tab order: Vector Memory → Web → Multimodal → Swarm → A2A Network. *(Closed 2026-02-26)*
 - [ ] **Base knowledge generic entries need per-personality review** — `hierarchy`, `purpose`, and `interaction` are currently seeded globally (shared by all personalities). These may need per-personality variants or at least personality-aware content (e.g., T.Ron's purpose may differ from FRIDAY's). Low urgency — global entries are contextually correct for now.
 - [ ] **Bug: MCP filesystem tools require explicit path configuration** — FRIDAY capability test revealed `fs_read`, `fs_write`, `fs_list`, `fs_search` are registered but fail at runtime because `MCP_EXPOSE_FILESYSTEM=false` and `MCP_ALLOWED_PATHS` is unset in `.env.dev`. Fix: (1) Set `MCP_EXPOSE_FILESYSTEM=true` in `.env.dev`; (2) Mount the `data` named volume in the `mcp` service in `docker-compose.yml` so the container sees `/home/secureyeoman/.secureyeoman/workspace`; (3) Set `MCP_ALLOWED_PATHS=/home/secureyeoman/.secureyeoman/workspace`; (4) Update `.env.dev.example` to document the env vars with commented-out defaults.
-- [ ] **Roadmap: Marketplace/Community — One Schema + `origin` field** — Marketplace skills (TypeScript builtins, marketplace DB) and community skills (JSON files, soul DB) currently share routing quality fields but diverge on distribution metadata and storage. Goal: (1) Unify under a single canonical `Skill` schema with `origin: 'marketplace' | 'community'` replacing the current split `source` enum; (2) Remove the dual-schema maintenance burden in `MarketplaceSkillSchema` vs `SkillSchema`; (3) Community JSON files and marketplace builtins both validated against the same type; (4) Install path from marketplace → brain carries all fields without translation. *(Planned — no milestone assigned)*
 
 ---
 
@@ -76,17 +69,9 @@ Consolidates major UX surface work: Mission Control as the new default landing p
 
 - [ ] **Mission Control Dashboard** — Consolidated command-center view replacing Metrics as the default landing page. Multi-panel grid: (1) System status graph (expanded ReactFlow); (2) Active tasks with progress; (3) Live security event feed; (4) Resource monitoring (CPU, memory, tokens, costs); (5) Agent/Personality health heartbeats; (6) Integration status grid; (7) Audit stream; (8) Workflow runs with DAG preview; (9) Quick actions (emergency stop, pause all). Dark theme default, auto-refresh via WebSocket, click-to-drill.
 
-### Personality Editor — Ontological Restructure
-
-- [x] **Ontological restructure complete** — Spirit-Pathos: Morphogenesis + new Empathy Resonance toggle. Brain-Intellect: Chronoception, Default Model, Model Fallbacks, Analytical Depth (5-level pill selector over thinkingConfig), Extended Thinking — all grouped in a "Thinking" sub-section. Body-Endowments: Voice + Preferred Language at the top. Soul-Essence: stripped to identity-only fields. Migration `048_personality_empathy_resonance.sql` adds `empathy_resonance BOOLEAN` to DB. *(Closed 2026-02-26)*
-
 ### Advanced Editor Mode
 
 - [ ] **Advanced Editor Mode** — Add toggle in Settings > Security > Developers. When enabled, replaces the current EditView with an advanced coding workspace featuring: (1) Canvas with movable terminal prompt windows; (2) Clean file manager as a sidebar column or popout; (3) Task list panel with Jira-style priorities, supporting internal task management or external integrations (Trello, GitHub Projects, etc.).
-
-### Voice Activity Detection
-
-- [x] **Energy-based VAD** — Replaced fixed silence timers with RMS-threshold VAD using `getByteTimeDomainData`. `hasVoicedRef` guards against premature stop. `vadThreshold: 0.015` default added to both hook configs. *(Closed 2026-02-26)*
 
 ### Visual Polish
 
@@ -123,6 +108,16 @@ Core Kali toolkit shipped (ADR 089). The `sec_*` MCP tools, `secureyeoman securi
 - [ ] **Real Slack/Discord/email/Telegram delivery** — Implement actual external dispatch behind the `executeNotifyAction()` stubs, gated on IntegrationManager interface audit.
 - [ ] **Per-user notification preferences** — Per-user channel preferences and quiet-hours configuration.
 - [ ] **Notification retention/cleanup job** — TTL and auto-prune policy for the notifications table.
+
+### AI Output Verification
+
+*Complements existing input-side defenses (`input-validator.ts`, `prompt-guard.ts`) with a symmetric output-side verification layer. The existing pipeline validates inputs and scans tool outputs for credentials, but output semantics and safety are not yet checked.*
+
+- [ ] **Response Guard** — A counterpart to `prompt-guard.ts` applied to LLM *responses*. Scans for indirect prompt injection smuggled via AI output: instruction-injection patterns (`"From now on you must…"`), cross-turn influence attempts (`"Remember for future messages…"`), data exfiltration formatting signals, and second-model self-escalation attempts. Hooks at `chat-routes.ts` line 712 (after credential scan, before persistence). Modes: `block | warn | disabled` mirroring PromptGuard.
+- [ ] **LLM-as-Judge for high-autonomy operations** — For L4/L5 autonomy skills and `supervised_auto` workflows (Phase 49), invoke a second independent model call to judge the *proposed action* before execution. Verdict dimensions: relevance (does the action address the original request?), policy compliance (does it respect organizational intent hard boundaries?), scope creep (is it doing more than asked?). Integrates with the automation level gating in `creation-tool-executor.ts`.
+- [ ] **OPA output compliance check** — Extend the Phase 50 OPA integration (`opa-client.ts`) to evaluate LLM *responses*, not just inputs. Define `output_policy/allow` rules that verify hard boundaries from `IntentManager` weren't violated in response text, and that authorized actions weren't exceeded. Low engineering effort — the OPA client and policy upload infrastructure already exist.
+- [ ] **Structured output schema validation** — When skills or workflow steps are expected to return structured data (JSON, YAML), validate the output against a declared Zod schema before appending to context. Prevents malformed or hallucinated structure from propagating through multi-step workflows. Schema declared per-skill alongside `successCriteria` (Phase 44).
+- [ ] **Brain consistency check** — After retrieving `brainContext` (Phase 52 vector recall), compare the LLM response against the injected knowledge entries. Flag responses that make factual claims directly contradicting stored knowledge, surfacing a warning in the conversation metadata rather than blocking. Useful for catching hallucination against your own knowledge base.
 
 ---
 
@@ -230,4 +225,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 (CPU 0% bug fixed — rolling process.cpuUsage() sampler in getMetrics(). Heartbeat Tasks same-stats bug fixed — per-personality status badges in HeartbeatCard. Marketplace/Community One Schema + origin field roadmapped in Phase XX.)*
+*Last updated: 2026-02-26 (One Skill Schema — CatalogSkillSchema + BaseSkillSchema unification complete, ADR 135. Community Marketplace origin filter tabs live. Manual test items added for per-personality memory scoping and community marketplace. Completed Phase XX + Phase 52 items removed.)*

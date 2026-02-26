@@ -403,10 +403,15 @@ export type SkillSource = z.infer<typeof SkillSourceSchema>;
 export const SkillStatusSchema = z.enum(['active', 'pending_approval', 'disabled']);
 export type SkillStatus = z.infer<typeof SkillStatusSchema>;
 
-export const SkillSchema = z.object({
+/**
+ * BaseSkillSchema — canonical fields shared by both catalog (CatalogSkillSchema)
+ * and runtime brain (SkillSchema) skills. Any new routing/autonomy/capability
+ * fields should be added here so both lifecycle stages carry them.
+ */
+export const BaseSkillSchema = z.object({
   id: z.string().min(1),
-  name: z.string().min(1).max(100),
-  description: z.string().max(1000).default(''),
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000).default(''),
   instructions: z.string().max(8000).default(''),
   tools: z.array(ToolSchema).default([]),
   triggerPatterns: z.array(z.string().max(500)).default([]),
@@ -417,10 +422,17 @@ export const SkillSchema = z.object({
   successCriteria: z.string().max(300).default(''),
   mcpToolsAllowed: z.array(z.string()).default([]),
   routing: z.enum(['fuzzy', 'explicit']).default('fuzzy'),
-  linkedWorkflowId: z.string().nullable().optional(),
 
   // Autonomy classification (Phase 49)
   autonomyLevel: AutonomyLevelSchema.default('L1'),
+
+  updatedAt: z.number().int().nonnegative(),
+});
+export type BaseSkill = z.infer<typeof BaseSkillSchema>;
+
+export const SkillSchema = BaseSkillSchema.extend({
+  // Brain-runtime-only fields
+  linkedWorkflowId: z.string().nullable().optional(),
   emergencyStopProcedure: z.string().max(1000).optional(),
 
   // Actions (ADR 021)
@@ -446,7 +458,6 @@ export const SkillSchema = z.object({
   personalityId: z.string().nullable().optional(),
   personalityName: z.string().nullable().optional(),
   createdAt: z.number().int().nonnegative(),
-  updatedAt: z.number().int().nonnegative(),
 });
 
 export type Skill = z.infer<typeof SkillSchema>;

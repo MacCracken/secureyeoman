@@ -2,7 +2,7 @@
  * Marketplace Storage — PostgreSQL local skill registry
  */
 
-import type { MarketplaceSkill, AuthorInfo } from '@secureyeoman/shared';
+import type { CatalogSkill, AuthorInfo } from '@secureyeoman/shared';
 import { PgBaseStorage } from '../storage/pg-base.js';
 import { uuidv7 } from '../utils/crypto.js';
 import {
@@ -19,10 +19,11 @@ export class MarketplaceStorage extends PgBaseStorage {
     super();
   }
 
-  async addSkill(data: Partial<MarketplaceSkill>): Promise<MarketplaceSkill> {
+  async addSkill(data: Partial<CatalogSkill>): Promise<CatalogSkill> {
     const now = Date.now();
     const id = data.id ?? uuidv7();
-    const skill: MarketplaceSkill = {
+    const source = data.source ?? 'published';
+    const skill: CatalogSkill = {
       id,
       name: data.name ?? '',
       description: data.description ?? '',
@@ -39,18 +40,20 @@ export class MarketplaceStorage extends PgBaseStorage {
       useWhen: data.useWhen ?? '',
       doNotUseWhen: data.doNotUseWhen ?? '',
       successCriteria: data.successCriteria ?? '',
+      mcpToolsAllowed: data.mcpToolsAllowed ?? [],
       routing: data.routing ?? 'fuzzy',
       autonomyLevel: data.autonomyLevel ?? 'L1',
       installed: data.installed ?? false,
       installedGlobally: data.installed ?? false,
-      source: data.source ?? 'published',
+      source,
+      origin: source === 'community' ? 'community' : 'marketplace',
       publishedAt: data.publishedAt ?? now,
       updatedAt: data.updatedAt ?? now,
     };
     await this.execute(
       `INSERT INTO marketplace.skills
-        (id, name, description, version, author, author_info, category, tags, download_count, rating, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, routing, autonomy_level, installed, source, published_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22)`,
+        (id, name, description, version, author, author_info, category, tags, download_count, rating, instructions, tools, trigger_patterns, use_when, do_not_use_when, success_criteria, routing, autonomy_level, mcp_tools_allowed, installed, source, published_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)`,
       [
         id,
         skill.name,
@@ -70,6 +73,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         skill.successCriteria,
         skill.routing,
         skill.autonomyLevel,
+        JSON.stringify(skill.mcpToolsAllowed),
         skill.installed,
         skill.source,
         skill.publishedAt,
@@ -79,7 +83,7 @@ export class MarketplaceStorage extends PgBaseStorage {
     return skill;
   }
 
-  async getSkill(id: string): Promise<MarketplaceSkill | null> {
+  async getSkill(id: string): Promise<CatalogSkill | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM marketplace.skills WHERE id = $1',
       [id]
@@ -87,7 +91,7 @@ export class MarketplaceStorage extends PgBaseStorage {
     return row ? this.rowToSkill(row) : null;
   }
 
-  async findByNameAndSource(name: string, source: string): Promise<MarketplaceSkill | null> {
+  async findByNameAndSource(name: string, source: string): Promise<CatalogSkill | null> {
     const row = await this.queryOne<Record<string, unknown>>(
       'SELECT * FROM marketplace.skills WHERE name = $1 AND source = $2',
       [name, source]
@@ -95,7 +99,7 @@ export class MarketplaceStorage extends PgBaseStorage {
     return row ? this.rowToSkill(row) : null;
   }
 
-  async updateSkill(id: string, data: Partial<MarketplaceSkill>): Promise<boolean> {
+  async updateSkill(id: string, data: Partial<CatalogSkill>): Promise<boolean> {
     const now = Date.now();
     const changes = await this.execute(
       `UPDATE marketplace.skills SET
@@ -113,8 +117,9 @@ export class MarketplaceStorage extends PgBaseStorage {
         success_criteria = COALESCE($12, success_criteria),
         routing = COALESCE($13, routing),
         autonomy_level = COALESCE($14, autonomy_level),
-        updated_at = $15
-       WHERE id = $16`,
+        mcp_tools_allowed = COALESCE($15, mcp_tools_allowed),
+        updated_at = $16
+       WHERE id = $17`,
       [
         data.name ?? null,
         data.description ?? null,
@@ -130,6 +135,7 @@ export class MarketplaceStorage extends PgBaseStorage {
         data.successCriteria ?? null,
         data.routing ?? null,
         data.autonomyLevel ?? null,
+        data.mcpToolsAllowed ? JSON.stringify(data.mcpToolsAllowed) : null,
         now,
         id,
       ]
@@ -144,7 +150,7 @@ export class MarketplaceStorage extends PgBaseStorage {
     offset = 0,
     source?: string,
     personalityId?: string
-  ): Promise<{ skills: MarketplaceSkill[]; total: number }> {
+  ): Promise<{ skills: CatalogSkill[]; total: number }> {
     let paramIdx = 1;
     let where = ' WHERE 1=1';
     const params: unknown[] = [];
@@ -159,7 +165,12 @@ export class MarketplaceStorage extends PgBaseStorage {
       params.push(category);
       paramIdx += 1;
     }
-    if (source) {
+    if (source === 'marketplace') {
+      // origin=marketplace means all non-community catalog entries
+      where += ` AND source != $${paramIdx}`;
+      params.push('community');
+      paramIdx += 1;
+    } else if (source) {
       where += ` AND source = $${paramIdx}`;
       params.push(source);
       paramIdx += 1;
@@ -261,14 +272,15 @@ export class MarketplaceStorage extends PgBaseStorage {
     return changes > 0;
   }
 
-  private rowToSkill(row: Record<string, unknown>): MarketplaceSkill {
+  private rowToSkill(row: Record<string, unknown>): CatalogSkill {
     const rawAuthorInfo = row.author_info;
     const authorInfo =
       rawAuthorInfo != null && typeof rawAuthorInfo === 'object'
-        ? (rawAuthorInfo as MarketplaceSkill['authorInfo'])
+        ? (rawAuthorInfo as CatalogSkill['authorInfo'])
         : typeof rawAuthorInfo === 'string'
-          ? (JSON.parse(rawAuthorInfo) as MarketplaceSkill['authorInfo'])
+          ? (JSON.parse(rawAuthorInfo) as CatalogSkill['authorInfo'])
           : undefined;
+    const source = ((row.source as string) ?? 'published') as CatalogSkill['source'];
     return {
       id: row.id as string,
       name: row.name as string,
@@ -281,18 +293,22 @@ export class MarketplaceStorage extends PgBaseStorage {
       downloadCount: (row.download_count as number) ?? 0,
       rating: (row.rating as number) ?? 0,
       instructions: (row.instructions as string) ?? '',
-      tools: row.tools as MarketplaceSkill['tools'],
+      tools: row.tools as CatalogSkill['tools'],
       triggerPatterns: Array.isArray(row.trigger_patterns)
         ? (row.trigger_patterns as string[])
         : [],
       useWhen: (row.use_when as string) ?? '',
       doNotUseWhen: (row.do_not_use_when as string) ?? '',
       successCriteria: (row.success_criteria as string) ?? '',
-      routing: ((row.routing as string) ?? 'fuzzy') as MarketplaceSkill['routing'],
-      autonomyLevel: ((row.autonomy_level as string) ?? 'L1') as MarketplaceSkill['autonomyLevel'],
+      mcpToolsAllowed: Array.isArray(row.mcp_tools_allowed)
+        ? (row.mcp_tools_allowed as string[])
+        : [],
+      routing: ((row.routing as string) ?? 'fuzzy') as CatalogSkill['routing'],
+      autonomyLevel: ((row.autonomy_level as string) ?? 'L1') as CatalogSkill['autonomyLevel'],
       installed: row.installed as boolean,
       installedGlobally: (row.installed as boolean) ?? false,
-      source: ((row.source as string) ?? 'published') as MarketplaceSkill['source'],
+      source,
+      origin: source === 'community' ? 'community' : 'marketplace',
       publishedAt: row.published_at as number,
       updatedAt: row.updated_at as number,
     };

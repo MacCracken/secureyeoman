@@ -6,25 +6,32 @@ import {
   installMarketplaceSkill,
   uninstallMarketplaceSkill,
 } from '../api/client';
+import type { MarketplaceSkill } from '../types';
 
-interface MarketplaceSkill {
-  id: string;
-  name: string;
-  description: string;
-  version: string;
-  author: string;
-  category: string;
-  downloadCount: number;
-  installed: boolean;
-}
+type OriginFilter = 'all' | 'marketplace' | 'community';
+
+const ORIGIN_TABS: { value: OriginFilter; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'marketplace', label: 'Marketplace' },
+  { value: 'community', label: 'Community' },
+];
 
 export function MarketplacePage() {
   const queryClient = useQueryClient();
   const [query, setQuery] = useState('');
+  const [originFilter, setOriginFilter] = useState<OriginFilter>('all');
+
   const { data, isLoading } = useQuery({
-    queryKey: ['marketplace', query],
-    queryFn: () => fetchMarketplaceSkills(query || undefined),
+    queryKey: ['marketplace', query, originFilter],
+    queryFn: () =>
+      fetchMarketplaceSkills(
+        query || undefined,
+        undefined,
+        undefined,
+        originFilter !== 'all' ? originFilter : undefined
+      ),
   });
+
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: ['marketplace'] });
     void queryClient.invalidateQueries({ queryKey: ['skills'] });
@@ -43,6 +50,23 @@ export function MarketplacePage() {
       <div>
         <h1 className="text-2xl font-bold">Skill Marketplace</h1>
         <p className="text-muted-foreground text-sm mt-1">Browse and install skills</p>
+      </div>
+
+      {/* Origin filter tabs */}
+      <div className="flex gap-1 border-b border-border">
+        {ORIGIN_TABS.map((tab) => (
+          <button
+            key={tab.value}
+            className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              originFilter === tab.value
+                ? 'border-primary text-primary'
+                : 'border-transparent text-muted-foreground hover:text-foreground'
+            }`}
+            onClick={() => setOriginFilter(tab.value)}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
 
       <div className="relative">
@@ -70,12 +94,17 @@ export function MarketplacePage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {data.skills.map((skill) => (
+          {data.skills.map((skill: MarketplaceSkill) => (
             <div key={skill.id} className="card p-4 flex flex-col">
               <div className="flex-1">
                 <div className="flex items-center justify-between">
                   <h3 className="font-medium">{skill.name}</h3>
-                  <span className="text-xs text-muted-foreground">v{skill.version}</span>
+                  <div className="flex items-center gap-2">
+                    {skill.origin === 'community' && (
+                      <span className="badge badge-info text-xs">Community</span>
+                    )}
+                    <span className="text-xs text-muted-foreground">v{skill.version}</span>
+                  </div>
                 </div>
                 <p className="text-xs text-muted-foreground mt-1 line-clamp-2">
                   {skill.description}

@@ -39,6 +39,7 @@ const SOURCE_LABELS: Record<string, string> = {
   ai_proposed: 'AI Proposed',
   ai_learned: 'AI Learned',
   marketplace: 'Marketplace',
+  community: 'Community',
 };
 
 const STATUS_BADGES: Record<string, string> = {

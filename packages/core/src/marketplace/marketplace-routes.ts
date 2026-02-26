@@ -28,17 +28,28 @@ export function registerMarketplaceRoutes(
           limit?: string;
           offset?: string;
           source?: string;
+          /** origin is the preferred discriminator: 'marketplace' or 'community'.
+           *  Translated to the storage-level `source` filter. Overrides `source` when set. */
+          origin?: string;
           personalityId?: string;
         };
       }>
     ) => {
       const q = request.query;
+      // Translate `origin` to the storage source filter. `origin` takes precedence over `source`.
+      let effectiveSource = q.source;
+      if (q.origin === 'community') {
+        effectiveSource = 'community';
+      } else if (q.origin === 'marketplace') {
+        // Storage treats source='marketplace' as NOT community (builtin + published)
+        effectiveSource = 'marketplace';
+      }
       return await marketplaceManager.search(
         q.query,
         q.category,
         q.limit ? Number(q.limit) : undefined,
         q.offset ? Number(q.offset) : undefined,
-        q.source,
+        effectiveSource,
         q.personalityId  // undefined when not provided → stored boolean fallback
       );
     }

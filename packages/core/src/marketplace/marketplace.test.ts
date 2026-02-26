@@ -233,6 +233,24 @@ describe('MarketplaceManager with BrainManager', () => {
     expect(brainSkills[0].autonomyLevel).toBe('L2');
   });
 
+  it('should carry mcpToolsAllowed through install to brain skill', async () => {
+    const skill = await manager.publish({
+      name: 'MCP Scoped Skill',
+      instructions: 'Uses only specific MCP tools',
+      mcpToolsAllowed: ['web_search', 'file_read'],
+    });
+    await manager.install(skill.id);
+
+    const brainSkills = await brainManager.listSkills({ source: 'marketplace' });
+    expect(brainSkills).toHaveLength(1);
+    expect(brainSkills[0].mcpToolsAllowed).toEqual(['web_search', 'file_read']);
+  });
+
+  it('should set origin=marketplace on published catalog skill', async () => {
+    const skill = await manager.publish({ name: 'Origin Test Skill', instructions: 'Test' });
+    expect(skill.origin).toBe('marketplace');
+  });
+
   it('should remove the brain skill on uninstall', async () => {
     const skill = await manager.publish({
       name: 'Removable Skill',
@@ -424,6 +442,31 @@ describe('Community Skill Sync', () => {
     const communityBrainSkills = await brainManager.listSkills({ source: 'community' });
     expect(communityBrainSkills).toHaveLength(1);
     expect(communityBrainSkills[0].name).toBe('Community Helper');
+  });
+
+  it('should set origin=community on synced community skill', async () => {
+    writeSkill('skills/general/origin-skill.json', {
+      name: 'Origin Check Skill',
+      instructions: 'Tests origin derivation',
+    });
+
+    await manager.syncFromCommunity();
+    const { skills } = await manager.search(undefined, undefined, 20, 0, 'community');
+    expect(skills).toHaveLength(1);
+    expect(skills[0].origin).toBe('community');
+  });
+
+  it('should propagate mcpToolsAllowed from JSON through sync → marketplace DB', async () => {
+    writeSkill('skills/general/mcp-skill.json', {
+      name: 'MCP Community Skill',
+      instructions: 'Has mcp tool restrictions',
+      mcpToolsAllowed: ['web_search'],
+    });
+
+    await manager.syncFromCommunity();
+    const { skills } = await manager.search(undefined, undefined, 20, 0, 'community');
+    expect(skills).toHaveLength(1);
+    expect(skills[0].mcpToolsAllowed).toEqual(['web_search']);
   });
 
   it('should propagate routing quality fields from JSON through sync → marketplace DB', async () => {

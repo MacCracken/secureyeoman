@@ -396,12 +396,23 @@ export interface MarketplaceSkill {
   instructions: string;
   tools: { name: string; description: string }[];
   triggerPatterns: string[];
+  useWhen?: string;
+  doNotUseWhen?: string;
+  successCriteria?: string;
+  mcpToolsAllowed?: string[];
+  routing?: 'fuzzy' | 'explicit';
+  autonomyLevel?: AutonomyLevel;
   installed: boolean;
   installedGlobally: boolean;
   source: 'builtin' | 'community' | 'published';
+  /** Derived from source: 'community' when source='community', else 'marketplace'. */
+  origin: 'marketplace' | 'community';
   publishedAt: number;
   updatedAt: number;
 }
+
+/** @deprecated Use MarketplaceSkill. CatalogSkill is the canonical name. */
+export type CatalogSkill = MarketplaceSkill;
 
 // ─── Autonomy Level (Phase 49) ──────────────────────────────
 export type AutonomyLevel = 'L1' | 'L2' | 'L3' | 'L4' | 'L5';

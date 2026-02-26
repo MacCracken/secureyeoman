@@ -113,6 +113,8 @@ export {
   PersonalitySchema,
   PersonalityCreateSchema,
   PersonalityUpdateSchema,
+  BaseSkillSchema,
+  type BaseSkill,
   SkillSchema,
   SkillCreateSchema,
   SkillUpdateSchema,
@@ -341,6 +343,9 @@ export {
 // Marketplace types
 export {
   AuthorInfoSchema,
+  CatalogSkillSchema,
+  type CatalogSkill,
+  // backward compat aliases
   MarketplaceSkillSchema,
   MarketplaceSearchSchema,
   type AuthorInfo,
@@ -524,6 +529,38 @@ export {
   type MultimodalJob,
   type MultimodalConfig,
 } from './multimodal.js';
+
+// Risk Assessment types (Phase 53)
+export {
+  RiskLevelSchema,
+  RiskDomainSchema,
+  RiskFindingSeveritySchema,
+  AssessmentStatusSchema,
+  ExternalFindingStatusSchema,
+  ExternalFeedSourceTypeSchema,
+  ExternalFeedCategorySchema,
+  RiskFindingSchema,
+  RiskAssessmentSchema,
+  CreateRiskAssessmentSchema,
+  ExternalFeedSchema,
+  CreateExternalFeedSchema,
+  ExternalFindingSchema,
+  CreateExternalFindingSchema,
+  type RiskLevel,
+  type RiskDomain,
+  type RiskFindingSeverity,
+  type AssessmentStatus,
+  type ExternalFindingStatus,
+  type ExternalFeedSourceType,
+  type ExternalFeedCategory,
+  type RiskFinding,
+  type RiskAssessment,
+  type CreateRiskAssessment,
+  type ExternalFeed,
+  type CreateExternalFeed,
+  type ExternalFinding,
+  type CreateExternalFinding,
+} from './risk-assessment.js';
 
 export {
   WorkflowStepTypeSchema,

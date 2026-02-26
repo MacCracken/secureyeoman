@@ -1460,11 +1460,16 @@ export async function deleteMcpCredential(serverId: string, key: string): Promis
 export async function fetchMarketplaceSkills(
   query?: string,
   source?: string,
-  personalityId?: string
+  personalityId?: string,
+  origin?: 'marketplace' | 'community'
 ): Promise<{ skills: import('../types').MarketplaceSkill[]; total: number }> {
   const params = new URLSearchParams();
   if (query) params.set('query', query);
-  if (source) params.set('source', source);
+  if (origin) {
+    params.set('origin', origin);
+  } else if (source) {
+    params.set('source', source);
+  }
   if (personalityId !== undefined) params.set('personalityId', personalityId);
   const qs = params.toString();
   return request(`/marketplace${qs ? `?${qs}` : ''}`);
