@@ -140,7 +140,7 @@ packages/
         └── *.test.ts          # React component tests (jsdom, no DB required)
 ```
 
-**Current totals**: 348 test files · 6326 tests · 6325 passing · 1 intentionally skipped
+**Current totals**: 400 test files · 8420 tests · 8419 passing · 1 intentionally skipped
 
 ### Test Categories
 

@@ -2614,6 +2614,37 @@ export async function generateImage(data: {
   });
 }
 
+export async function synthesizeSpeechStream(data: {
+  text: string;
+  voice?: string;
+  model?: string;
+  responseFormat?: string;
+}): Promise<string> {
+  const token = getAccessToken();
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(`${API_BASE}/multimodal/audio/speak/stream`, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) {
+    throw new Error(`TTS stream error: ${response.status}`);
+  }
+  const blob = await response.blob();
+  return URL.createObjectURL(blob);
+}
+
+export async function updateMultimodalModel(
+  type: 'stt' | 'tts',
+  model: string
+): Promise<void> {
+  await request('/multimodal/model', {
+    method: 'PATCH',
+    body: JSON.stringify({ type, model }),
+  });
+}
+
 // ─── Browser Automation (Phase 13) ─────────────────────────────────
 
 export async function fetchBrowserSessions(params?: {

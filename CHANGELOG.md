@@ -1,3 +1,18 @@
+## [2026.2.26m] — 2026-02-26
+
+### Added
+
+#### Phase 58 — Audio Quality
+
+- **Streaming TTS binary route** — `POST /api/v1/multimodal/audio/speak/stream` returns raw binary audio with the correct `Content-Type` header (`audio/mpeg`, `audio/ogg; codecs=opus`, etc.). OpenAI path uses a direct `arrayBuffer()` fetch — no base64 roundtrip. All other TTS providers convert their existing base64 result to a `Buffer`. `Content-Length` and `X-Duration-Ms` headers included. Dashboard adds `synthesizeSpeechStream()` (returns a blob URL) and `updateMultimodalModel()`.
+- **Audio validation before STT** — `validateAudioBuffer()` runs in the transcription route after schema parse. All formats: reject if `< 1000` bytes. WAV format additionally: parse RIFF header for channels/sample-rate/bit-depth, reject if duration `< 2s` or `> 30s`, compute RMS/peak on first 10s of PCM samples, reject `audio_too_quiet` (RMS < 0.01) or `audio_clipped` (peak ≥ 0.99). Returns HTTP 422 with descriptive error code.
+- **Whisper model size selection** — `MultimodalManager.resolveSTTModel()` resolves model via `WHISPER_MODEL` env → DB pref → config default. `setModel(type, model)` persists to `prefsStorage`. New `PATCH /api/v1/multimodal/model` route (validates `type ∈ stt|tts` and non-empty model string). `detectAvailableProviders()` now includes `stt.model` in its response, surfaced via `GET /api/v1/multimodal/config`. MultimodalPage provider card shows a model selector for STT: local providers (voicebox, openedai) get a `<select>` with `tiny | base | small | medium | large | large-v2 | large-v3`; OpenAI shows a non-interactive `whisper-1` chip.
+- **Tests** — 52 tests in `multimodal-routes.test.ts` (audio validation ×9, model route ×6, streaming TTS ×8, plus all existing) + 84 tests in `manager.test.ts` (new: `synthesizeSpeechBinary` ×7, STT model resolution ×7). 136 total pass across both files. Dashboard `tsc --noEmit` = 0 errors.
+- **ADR 139** — `docs/adr/139-audio-quality-improvements.md` covers streaming TTS design, WAV validation rule rationale, and Whisper model resolution order.
+- **Guide** — `docs/guides/audio-quality.md` covers streaming TTS curl/client usage, validation error codes, and Whisper model size selection (API, env var, config, dashboard UI).
+
+---
+
 ## [2026.2.26l] — 2026-02-26
 
 ### Added

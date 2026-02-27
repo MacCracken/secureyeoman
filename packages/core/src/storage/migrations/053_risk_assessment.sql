@@ -5,7 +5,7 @@ CREATE SCHEMA IF NOT EXISTS risk;
 
 -- ── Risk Assessments ─────────────────────────────────────────────────────────
 
-CREATE TABLE risk.assessments (
+CREATE TABLE IF NOT EXISTS risk.assessments (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   status TEXT NOT NULL DEFAULT 'pending',
@@ -27,12 +27,12 @@ CREATE TABLE risk.assessments (
   error TEXT
 );
 
-CREATE INDEX idx_risk_assessments_created_at ON risk.assessments(created_at DESC);
-CREATE INDEX idx_risk_assessments_status ON risk.assessments(status);
+CREATE INDEX IF NOT EXISTS idx_risk_assessments_created_at ON risk.assessments(created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_risk_assessments_status ON risk.assessments(status);
 
 -- ── External Feeds ────────────────────────────────────────────────────────────
 
-CREATE TABLE risk.external_feeds (
+CREATE TABLE IF NOT EXISTS risk.external_feeds (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   description TEXT,
@@ -48,7 +48,7 @@ CREATE TABLE risk.external_feeds (
 
 -- ── External Findings ─────────────────────────────────────────────────────────
 
-CREATE TABLE risk.external_findings (
+CREATE TABLE IF NOT EXISTS risk.external_findings (
   id TEXT PRIMARY KEY,
   feed_id TEXT REFERENCES risk.external_feeds(id) ON DELETE CASCADE,
   source_ref TEXT,
@@ -67,7 +67,7 @@ CREATE TABLE risk.external_findings (
   imported_at BIGINT NOT NULL
 );
 
-CREATE INDEX idx_ext_findings_feed_id ON risk.external_findings(feed_id);
-CREATE INDEX idx_ext_findings_status ON risk.external_findings(status);
-CREATE INDEX idx_ext_findings_severity ON risk.external_findings(severity);
-CREATE INDEX idx_ext_findings_imported_at ON risk.external_findings(imported_at DESC);
+CREATE INDEX IF NOT EXISTS idx_ext_findings_feed_id ON risk.external_findings(feed_id);
+CREATE INDEX IF NOT EXISTS idx_ext_findings_status ON risk.external_findings(status);
+CREATE INDEX IF NOT EXISTS idx_ext_findings_severity ON risk.external_findings(severity);
+CREATE INDEX IF NOT EXISTS idx_ext_findings_imported_at ON risk.external_findings(imported_at DESC);

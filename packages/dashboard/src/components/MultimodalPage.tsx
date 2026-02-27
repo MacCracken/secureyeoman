@@ -20,6 +20,7 @@ import {
   fetchMultimodalJobs,
   fetchSecurityPolicy,
   updateMultimodalProvider,
+  updateMultimodalModel,
 } from '../api/client';
 
 type JobType = 'vision' | 'stt' | 'tts' | 'image_gen';
@@ -87,6 +88,14 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
     },
   });
 
+  const modelMutation = useMutation({
+    mutationFn: ({ type, model }: { type: 'stt' | 'tts'; model: string }) =>
+      updateMultimodalModel(type, model),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['multimodalConfig'] });
+    },
+  });
+
   const { data, isLoading } = useQuery({
     queryKey: ['multimodalJobs', typeFilter, statusFilter, page],
     queryFn: () =>
@@ -144,6 +153,9 @@ export function MultimodalPage({ embedded }: { embedded?: boolean } = {}) {
         config={configData}
         onSelectProvider={(type, provider) => {
           providerMutation.mutate({ type, provider });
+        }}
+        onSelectModel={(type, model) => {
+          modelMutation.mutate({ type, model });
         }}
         isPending={providerMutation.isPending}
       />
@@ -363,6 +375,7 @@ interface ProviderInfo {
   active: string;
   available: string[];
   configured: string[];
+  model?: string;
   voiceboxUrl?: string;
   metadata?: Record<string, ProviderMeta>;
 }
@@ -405,21 +418,26 @@ function ProviderBadge({
   );
 }
 
+const WHISPER_MODELS = ['tiny', 'base', 'small', 'medium', 'large', 'large-v2', 'large-v3'];
+
 function ProviderSection({
   type,
   label,
   info,
   onSelect,
+  onSelectModel,
   isPending,
 }: {
   type: 'vision' | 'tts' | 'stt';
   label: string;
   info: ProviderInfo | undefined;
   onSelect: (type: 'vision' | 'tts' | 'stt', provider: string) => void;
+  onSelectModel?: (type: 'stt' | 'tts', model: string) => void;
   isPending: boolean;
 }) {
   const configured = info?.configured ?? [];
   const active = info?.active ?? '';
+  const model = info?.model ?? '';
   const metadata = info?.metadata ?? {};
 
   const getLabel = (p: string): string =>
@@ -429,6 +447,10 @@ function ProviderSection({
 
   const cloudProviders = configured.filter((p) => getCategory(p) === 'cloud');
   const localProviders = configured.filter((p) => getCategory(p) === 'local');
+
+  // Model selector for STT: local providers get whisper model picker; openai shows fixed chip
+  const showModelSelector = type === 'stt' && active !== '';
+  const isLocalSTT = ['voicebox', 'openedai'].includes(active);
 
   return (
     <div className="space-y-2">
@@ -470,6 +492,27 @@ function ProviderSection({
               ))}
             </div>
           )}
+          {showModelSelector && (
+            <div className="flex items-center gap-2 pt-0.5">
+              <span className="text-[10px] text-muted-foreground/50">model</span>
+              {isLocalSTT ? (
+                <select
+                  value={model || 'whisper-1'}
+                  onChange={(e) => onSelectModel?.('stt', e.target.value)}
+                  className="bg-card border border-border rounded text-xs py-0.5 px-1.5"
+                  disabled={isPending}
+                >
+                  {WHISPER_MODELS.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              ) : (
+                <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full border border-border bg-muted/30 text-muted-foreground">
+                  {model || 'whisper-1'}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -479,10 +522,12 @@ function ProviderSection({
 function ProviderCard({
   config,
   onSelectProvider,
+  onSelectModel,
   isPending,
 }: {
   config: Record<string, unknown> | undefined;
   onSelectProvider: (type: 'vision' | 'tts' | 'stt', provider: string) => void;
+  onSelectModel: (type: 'stt' | 'tts', model: string) => void;
   isPending: boolean;
 }) {
   const providers = (config?.providers ?? {}) as ProvidersConfig;
@@ -514,6 +559,7 @@ function ProviderCard({
           label="Speech-to-Text"
           info={providers.stt}
           onSelect={onSelectProvider}
+          onSelectModel={onSelectModel}
           isPending={isPending}
         />
       </div>

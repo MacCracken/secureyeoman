@@ -1240,3 +1240,301 @@ describe('MultimodalManager — additional STT providers', () => {
     ).rejects.toThrow('AssemblyAI transcription error: Audio too short');
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 58 — synthesizeSpeechBinary
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('MultimodalManager — synthesizeSpeechBinary', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+  let manager: MultimodalManager;
+
+  beforeEach(async () => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    manager = new MultimodalManager(storage, deps, defaultConfig);
+    await manager.initialize();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    for (const k of [
+      'TTS_PROVIDER', 'OPENAI_API_KEY', 'VOICEBOX_PROFILE_ID', 'VOICEBOX_URL',
+      'ELEVENLABS_API_KEY', 'DEEPGRAM_API_KEY',
+    ]) {
+      delete process.env[k];
+    }
+  });
+
+  it('throws when TTS is disabled', async () => {
+    const disabledMgr = new MultimodalManager(storage, deps, {
+      ...defaultConfig,
+      tts: { ...defaultConfig.tts, enabled: false },
+    });
+    await disabledMgr.initialize();
+
+    await expect(
+      disabledMgr.synthesizeSpeechBinary({
+        text: 'Hello',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
+    ).rejects.toThrow('Text-to-speech capability is disabled');
+  });
+
+  it('returns Buffer from OpenAI (default provider), creates and completes job, emits hook', async () => {
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+    const audioBytes = Buffer.from('fake-mp3-audio');
+    const ab = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => ab,
+    }));
+
+    const result = await manager.synthesizeSpeechBinary({
+      text: 'Hello world',
+      voice: 'alloy',
+      model: 'tts-1',
+      responseFormat: 'mp3',
+    });
+
+    expect(result.buffer).toBeInstanceOf(Buffer);
+    expect(result.buffer.toString()).toBe('fake-mp3-audio');
+    expect(result.format).toBe('mp3');
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
+    expect(storage.createJob).toHaveBeenCalledWith('tts', expect.any(Object));
+    expect(storage.completeJob).toHaveBeenCalled();
+    expect(deps.extensionManager!.emit).toHaveBeenCalledWith(
+      'multimodal:speech-generated',
+      expect.any(Object)
+    );
+  });
+
+  it('throws when OPENAI_API_KEY is missing (default provider) and fails job', async () => {
+    delete process.env.OPENAI_API_KEY;
+
+    await expect(
+      manager.synthesizeSpeechBinary({
+        text: 'Hello',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
+    ).rejects.toThrow('OPENAI_API_KEY');
+
+    expect(storage.failJob).toHaveBeenCalled();
+  });
+
+  it('throws and fails job when OpenAI returns non-ok status', async () => {
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () => 'Bad Request',
+    }));
+
+    await expect(
+      manager.synthesizeSpeechBinary({
+        text: 'Hello',
+        voice: 'alloy',
+        model: 'tts-1',
+        responseFormat: 'mp3',
+      })
+    ).rejects.toThrow('TTS API error (400)');
+
+    expect(storage.failJob).toHaveBeenCalled();
+  });
+
+  it('converts voicebox base64 result to Buffer', async () => {
+    process.env.TTS_PROVIDER = 'voicebox';
+    process.env.VOICEBOX_PROFILE_ID = 'profile-abc';
+    process.env.VOICEBOX_URL = 'http://localhost:17493';
+
+    const audioBytes = Buffer.from('fake-voicebox-audio');
+    const ab = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+
+    vi.stubGlobal('fetch', vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 'gen-123' }),
+        text: async () => '',
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        arrayBuffer: async () => ab,
+      })
+    );
+
+    const result = await manager.synthesizeSpeechBinary({
+      text: 'Hello voicebox',
+      voice: 'alloy',
+      model: 'tts-1',
+      responseFormat: 'mp3',
+    });
+
+    expect(result.buffer).toBeInstanceOf(Buffer);
+    expect(result.buffer.toString()).toBe('fake-voicebox-audio');
+    expect(result.format).toBe('wav');
+  });
+
+  it('converts elevenlabs base64 result to Buffer', async () => {
+    process.env.TTS_PROVIDER = 'elevenlabs';
+    process.env.ELEVENLABS_API_KEY = 'sk_test_elevenlabs_key';
+
+    const audioBytes = Buffer.from('elevenlabs-audio-data');
+    const ab = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => ab,
+    }));
+
+    const result = await manager.synthesizeSpeechBinary({
+      text: 'Hello ElevenLabs',
+      voice: 'alloy',
+      model: 'tts-1',
+      responseFormat: 'mp3',
+    });
+
+    expect(result.buffer).toBeInstanceOf(Buffer);
+    expect(result.format).toBe('mp3');
+  });
+
+  it('converts deepgram base64 result to Buffer', async () => {
+    process.env.TTS_PROVIDER = 'deepgram';
+    process.env.DEEPGRAM_API_KEY = 'dg-test-key';
+
+    const audioBytes = Buffer.from('deepgram-audio-data');
+    const ab = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
+
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      arrayBuffer: async () => ab,
+    }));
+
+    const result = await manager.synthesizeSpeechBinary({
+      text: 'Hello Deepgram',
+      voice: 'alloy',
+      model: 'tts-1',
+      responseFormat: 'mp3',
+    });
+
+    expect(result.buffer).toBeInstanceOf(Buffer);
+    expect(result.format).toBe('mp3');
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Phase 58 — STT model resolution (resolveSTTModel, setModel, detectAvailableProviders.stt.model)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('MultimodalManager — STT model resolution (Phase 58)', () => {
+  let storage: MultimodalStorage;
+  let deps: ReturnType<typeof createMockDeps>;
+
+  beforeEach(() => {
+    vi.resetAllMocks();
+    storage = createMockStorage();
+    deps = createMockDeps();
+    delete process.env.WHISPER_MODEL;
+  });
+
+  afterEach(() => {
+    delete process.env.WHISPER_MODEL;
+    vi.unstubAllGlobals();
+  });
+
+  it('detectAvailableProviders includes stt.model from config default', async () => {
+    const mgr = new MultimodalManager(storage, deps, defaultConfig);
+    await mgr.initialize();
+
+    const providers = await mgr.detectAvailableProviders();
+    expect(providers.stt.model).toBe('whisper-1');
+  });
+
+  it('detectAvailableProviders stt.model reflects WHISPER_MODEL env var (highest priority)', async () => {
+    process.env.WHISPER_MODEL = 'large-v3';
+    const mgr = new MultimodalManager(storage, deps, defaultConfig);
+    await mgr.initialize();
+
+    const providers = await mgr.detectAvailableProviders();
+    expect(providers.stt.model).toBe('large-v3');
+  });
+
+  it('detectAvailableProviders stt.model reflects prefsStorage value when no env var', async () => {
+    const prefsStorage = {
+      get: vi.fn().mockImplementation((key: string) => {
+        if (key === 'multimodal.stt.model') return Promise.resolve('medium');
+        return Promise.resolve(null);
+      }),
+      set: vi.fn(),
+    };
+    const mgr = new MultimodalManager(storage, { ...deps, prefsStorage }, defaultConfig);
+    await mgr.initialize();
+
+    const providers = await mgr.detectAvailableProviders();
+    expect(providers.stt.model).toBe('medium');
+    expect(prefsStorage.get).toHaveBeenCalledWith('multimodal.stt.model');
+  });
+
+  it('detectAvailableProviders stt.model falls back to config when no env or pref', async () => {
+    const prefsStorage = {
+      get: vi.fn().mockResolvedValue(null),
+      set: vi.fn(),
+    };
+    const cfgWithLarge = {
+      ...defaultConfig,
+      stt: { ...defaultConfig.stt, model: 'large-v2' },
+    };
+    const mgr = new MultimodalManager(storage, { ...deps, prefsStorage }, cfgWithLarge);
+    await mgr.initialize();
+
+    const providers = await mgr.detectAvailableProviders();
+    expect(providers.stt.model).toBe('large-v2');
+  });
+
+  it('setModel persists stt model to prefsStorage', async () => {
+    const prefsStorage = { get: vi.fn().mockResolvedValue(null), set: vi.fn() };
+    const mgr = new MultimodalManager(storage, { ...deps, prefsStorage }, defaultConfig);
+    await mgr.initialize();
+
+    await mgr.setModel('stt', 'large-v3');
+    expect(prefsStorage.set).toHaveBeenCalledWith('multimodal.stt.model', 'large-v3');
+  });
+
+  it('setModel persists tts model to prefsStorage', async () => {
+    const prefsStorage = { get: vi.fn().mockResolvedValue(null), set: vi.fn() };
+    const mgr = new MultimodalManager(storage, { ...deps, prefsStorage }, defaultConfig);
+    await mgr.initialize();
+
+    await mgr.setModel('tts', 'tts-1-hd');
+    expect(prefsStorage.set).toHaveBeenCalledWith('multimodal.tts.model', 'tts-1-hd');
+  });
+
+  it('transcribeAudio sends resolved model to OpenAI (WHISPER_MODEL env override)', async () => {
+    process.env.OPENAI_API_KEY = 'sk-test-key-for-unit-test';
+    process.env.WHISPER_MODEL = 'large-v3';
+
+    const mgr = new MultimodalManager(storage, deps, defaultConfig);
+    await mgr.initialize();
+
+    const mockFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ text: 'hello', language: 'en' }),
+    });
+    vi.stubGlobal('fetch', mockFetch);
+
+    await mgr.transcribeAudio({ audioBase64: 'dGVzdA==', format: 'wav' });
+
+    const fetchCall = mockFetch.mock.calls[0];
+    const formData = fetchCall[1].body as FormData;
+    expect(formData.get('model')).toBe('large-v3');
+
+    delete process.env.OPENAI_API_KEY;
+  });
+});

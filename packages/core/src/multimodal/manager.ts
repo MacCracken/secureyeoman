@@ -137,6 +137,14 @@ export class MultimodalManager {
     return (this.config.stt.provider ?? 'openai').toLowerCase();
   }
 
+  /** Resolve the active STT model: env var > DB pref > config default. */
+  private async resolveSTTModel(): Promise<string> {
+    if (process.env.WHISPER_MODEL) return process.env.WHISPER_MODEL;
+    const pref = await this.deps.prefsStorage?.get('multimodal.stt.model');
+    if (pref) return pref;
+    return this.config.stt.model ?? 'whisper-1';
+  }
+
   /** Check whether the Voicebox service is reachable. */
   private async isVoiceboxReachable(): Promise<boolean> {
     try {
@@ -199,6 +207,7 @@ export class MultimodalManager {
       available: string[];
       configured: string[];
       active: string;
+      model: string;
       voiceboxUrl?: string;
       metadata: Record<string, ProviderMeta>;
     };
@@ -248,10 +257,11 @@ export class MultimodalManager {
     if (hasGoogleSpeech) sttConfigured.push('google');
     if (hasAzure) sttConfigured.push('azure');
 
-    const [activeVision, activeTTS, activeSTT] = await Promise.all([
+    const [activeVision, activeTTS, activeSTT, activeSTTModel] = await Promise.all([
       this.resolveVisionProvider(),
       this.resolveTTSProvider(),
       this.resolveSTTProvider(),
+      this.resolveSTTModel(),
     ]);
 
     // Build metadata subset for only the configured providers in each category
@@ -276,6 +286,7 @@ export class MultimodalManager {
         available: ['openai', 'voicebox', 'deepgram', 'elevenlabs', 'assemblyai', 'google', 'azure'],
         configured: sttConfigured,
         active: activeSTT,
+        model: activeSTTModel,
         voiceboxUrl,
         metadata: metaFor(sttConfigured),
       },
@@ -285,6 +296,11 @@ export class MultimodalManager {
   /** Update the active provider preference in storage. */
   async setProvider(type: 'vision' | 'tts' | 'stt', provider: string): Promise<void> {
     await this.deps.prefsStorage?.set(`multimodal.${type}.provider`, provider);
+  }
+
+  /** Update the active model preference in storage. */
+  async setModel(type: 'stt' | 'tts', model: string): Promise<void> {
+    await this.deps.prefsStorage?.set(`multimodal.${type}.model`, model);
   }
 
   /** Transcribe audio via the Voicebox local Whisper backend. */
@@ -1012,7 +1028,7 @@ export class MultimodalManager {
 
           const formData = new FormData();
           formData.append('file', blob, `audio.${request.format}`);
-          formData.append('model', this.config.stt.model);
+          formData.append('model', await this.resolveSTTModel());
           if (request.language) formData.append('language', request.language);
 
           const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -1143,6 +1159,96 @@ export class MultimodalManager {
       const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
       await this.storage.failJob(jobId, msg);
       this.deps.logger.error('Speech synthesis failed', { error: msg });
+      throw new Error(msg);
+    }
+  }
+
+  /**
+   * Synthesize speech and return raw binary buffer — avoids base64 overhead.
+   * For OpenAI, fetches the audio directly; for other providers converts from base64.
+   */
+  async synthesizeSpeechBinary(
+    request: TTSRequest
+  ): Promise<{ buffer: Buffer; format: string; durationMs: number }> {
+    if (!this.config.tts.enabled) {
+      throw new Error('Text-to-speech capability is disabled');
+    }
+
+    const jobId = await this.storage.createJob('tts', {
+      textLength: request.text.length,
+      voice: request.voice,
+      model: request.model,
+    });
+
+    const start = Date.now();
+    try {
+      const provider = await this.resolveTTSProvider();
+
+      let buffer: Buffer;
+      let format: string;
+
+      const OTHER_PROVIDERS = ['voicebox', 'elevenlabs', 'deepgram', 'cartesia', 'google', 'azure', 'playht', 'openedai', 'kokoro'];
+
+      if (!OTHER_PROVIDERS.includes(provider)) {
+        // OpenAI (default): fetch binary directly — no base64 roundtrip
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) throw new Error('OPENAI_API_KEY environment variable is not set');
+        const response = await fetch('https://api.openai.com/v1/audio/speech', {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: request.model,
+            input: request.text,
+            voice: request.voice,
+            response_format: request.responseFormat,
+          }),
+          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+        });
+        if (!response.ok) {
+          const errBody = await response.text();
+          throw new Error(`TTS API error (${response.status}): ${errBody}`);
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        buffer = Buffer.from(arrayBuffer);
+        format = request.responseFormat ?? 'mp3';
+      } else {
+        // All other providers: use their existing base64-returning methods
+        let b64result: { audioBase64: string; format: string };
+        switch (provider) {
+          case 'voicebox': b64result = await this.synthesizeViaVoicebox(request); break;
+          case 'elevenlabs': b64result = await this.synthesizeViaElevenLabs(request); break;
+          case 'deepgram': b64result = await this.synthesizeViaDeepgram(request); break;
+          case 'cartesia': b64result = await this.synthesizeViaCartesia(request); break;
+          case 'google': b64result = await this.synthesizeViaGoogle(request); break;
+          case 'azure': b64result = await this.synthesizeViaAzure(request); break;
+          case 'playht': b64result = await this.synthesizeViaPlayHT(request); break;
+          case 'openedai': b64result = await this.synthesizeViaOpenedAI(request); break;
+          case 'kokoro': b64result = await this.synthesizeViaKokoro(request); break;
+          default: throw new Error(`Unknown TTS provider: ${provider}`);
+        }
+        buffer = Buffer.from(b64result.audioBase64, 'base64');
+        format = b64result.format;
+      }
+
+      const durationMs = Date.now() - start;
+      await this.storage.completeJob(
+        jobId,
+        { format, durationMs, audioSizeBytes: buffer.length },
+        durationMs
+      );
+      void this.deps.extensionManager?.emit('multimodal:speech-generated', {
+        event: 'multimodal:speech-generated',
+        data: { jobId, format },
+        timestamp: Date.now(),
+      });
+      return { buffer, format, durationMs };
+    } catch (error) {
+      const msg = sanitizeErrorMessage(error instanceof Error ? error.message : String(error));
+      await this.storage.failJob(jobId, msg);
+      this.deps.logger.error('Speech synthesis (binary) failed', { error: msg });
       throw new Error(msg);
     }
   }
