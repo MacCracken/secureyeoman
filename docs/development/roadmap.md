@@ -9,12 +9,12 @@
 | Phase | Name | Status |
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
-| 62 | Dashboard UX | Near-Term |
-| 57 | Security Toolkit | Planned |
-| 56 | Local-First AI | Planned |
-| 59 | Voice & Community | Demand-Gated |
-| 60 | Native Clients | Demand-Gated |
-| 61 | Infrastructure & Platform | Demand-Gated |
+| 57 | Dashboard UX | Near-Term |
+| 58 | Security Toolkit | Planned |
+| 59 | Local-First AI | Planned |
+| 60 | Voice & Community | Demand-Gated |
+| 61 | Native Clients | Demand-Gated |
+| 62 | Infrastructure & Platform | Demand-Gated |
 
 ---
 
@@ -32,7 +32,7 @@ Continuous bug discovery and repair pass — no fixed scope. As real-world usage
 
 ---
 
-## Phase 62: Dashboard UX
+## Phase 57: Dashboard UX
 
 **Status**: Near-Term
 
@@ -43,7 +43,7 @@ Deferred visual polish and power-user tooling from Phase 53. CSS variable themin
 
 ---
 
-## Phase 57: Security Toolkit Completion
+## Phase 58: Security Toolkit Completion
 
 **Status**: Planned
 
@@ -56,7 +56,7 @@ Core Kali toolkit shipped (ADR 089). This phase hardens its operational surface.
 
 ---
 
-## Phase 56: Local-First AI
+## Phase 59: Local-First AI
 
 **Status**: Planned — strategic priority for sovereign AI positioning
 
@@ -83,7 +83,7 @@ ai:
 
 ---
 
-## Phase 59: Voice & Community
+## Phase 60: Voice & Community
 
 **Status**: Demand-Gated — implement when voice profile and marketplace demand justifies the investment.
 
@@ -103,7 +103,7 @@ ai:
 
 ---
 
-## Phase 60: Native Clients
+## Phase 61: Native Clients
 
 **Status**: Demand-Gated — implement once REST/WebSocket API is stable and adoption justifies native packaging.
 
@@ -120,7 +120,7 @@ ai:
 
 ---
 
-## Phase 61: Infrastructure & Platform
+## Phase 62: Infrastructure & Platform
 
 **Status**: Demand-Gated — implement once operational scale or compliance requirements justify the investment.
 
