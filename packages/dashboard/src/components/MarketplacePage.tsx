@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Store, Download, Trash2, Loader2, Search } from 'lucide-react';
 import {
-  fetchCatalogSkills,
-  installCatalogSkill,
-  uninstallCatalogSkill,
+  fetchMarketplaceSkills,
+  installMarketplaceSkill,
+  uninstallMarketplaceSkill,
 } from '../api/client';
 import type { CatalogSkill } from '../types';
 
@@ -32,7 +32,7 @@ export function MarketplacePage() {
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace', query, originFilter, page],
     queryFn: () =>
-      fetchCatalogSkills(
+      fetchMarketplaceSkills(
         query || undefined,
         undefined,
         undefined,
@@ -47,11 +47,11 @@ export function MarketplacePage() {
     void queryClient.invalidateQueries({ queryKey: ['skills'] });
   };
   const installMut = useMutation({
-    mutationFn: (id: string) => installCatalogSkill(id),
+    mutationFn: (id: string) => installMarketplaceSkill(id),
     onSuccess: invalidate,
   });
   const uninstallMut = useMutation({
-    mutationFn: (id: string) => uninstallCatalogSkill(id),
+    mutationFn: (id: string) => uninstallMarketplaceSkill(id),
     onSuccess: invalidate,
   });
 

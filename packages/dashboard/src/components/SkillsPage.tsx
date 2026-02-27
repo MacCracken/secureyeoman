@@ -39,9 +39,9 @@ import {
   disableSkill,
   approveSkill,
   rejectSkill,
-  fetchCatalogSkills,
-  installCatalogSkill,
-  uninstallCatalogSkill,
+  fetchMarketplaceSkills,
+  installMarketplaceSkill,
+  uninstallMarketplaceSkill,
   syncCommunitySkills,
   fetchCommunityStatus,
   fetchPersonalities,
@@ -1512,7 +1512,7 @@ function MarketplaceTab() {
   // Fetch all non-community skills — keyed on personalityId so results refresh when selection changes
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace', query, selectedPersonalityId],
-    queryFn: () => fetchCatalogSkills(query || undefined, undefined, selectedPersonalityId),
+    queryFn: () => fetchMarketplaceSkills(query || undefined, undefined, selectedPersonalityId),
     enabled: hasInitialized,
   });
 
@@ -1538,7 +1538,7 @@ function MarketplaceTab() {
 
   const installMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
-      installCatalogSkill(id, personalityId),
+      installMarketplaceSkill(id, personalityId),
     onSuccess: () => {
       invalidate();
       setInstallingId(null);
@@ -1550,7 +1550,7 @@ function MarketplaceTab() {
 
   const uninstallMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
-      uninstallCatalogSkill(id, personalityId),
+      uninstallMarketplaceSkill(id, personalityId),
     onSuccess: () => {
       invalidate();
       setUninstallingId(null);
@@ -1561,9 +1561,9 @@ function MarketplaceTab() {
   });
 
   // Separate builtin and published, exclude community
-  const allSkills = (data?.skills ?? []).filter((s) => s.source !== 'community');
-  const builtinSkills = allSkills.filter((s) => s.source === 'builtin');
-  const publishedSkills = allSkills.filter((s) => s.source === 'published');
+  const allSkills = (data?.skills ?? []).filter((s: CatalogSkill) => s.source !== 'community');
+  const builtinSkills = allSkills.filter((s: CatalogSkill) => s.source === 'builtin');
+  const publishedSkills = allSkills.filter((s: CatalogSkill) => s.source === 'published');
 
   const renderGrid = (
     skills: CatalogSkill[],
@@ -1717,7 +1717,7 @@ function CommunityTab() {
   const { data, isLoading } = useQuery({
     queryKey: ['marketplace-community', query, selectedPersonalityId, page],
     queryFn: () =>
-      fetchCatalogSkills(
+      fetchMarketplaceSkills(
         query || undefined,
         'community',
         selectedPersonalityId,
@@ -1770,7 +1770,7 @@ function CommunityTab() {
 
   const installMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId: string }) =>
-      installCatalogSkill(id, personalityId),
+      installMarketplaceSkill(id, personalityId),
     onSuccess: () => {
       invalidate();
       setInstallingId(null);
@@ -1782,7 +1782,7 @@ function CommunityTab() {
 
   const uninstallMut = useMutation({
     mutationFn: ({ id, personalityId }: { id: string; personalityId?: string }) =>
-      uninstallCatalogSkill(id, personalityId),
+      uninstallMarketplaceSkill(id, personalityId),
     onSuccess: () => {
       invalidate();
       setUninstallingId(null);
@@ -1792,7 +1792,7 @@ function CommunityTab() {
     },
   });
 
-  const skills = data?.skills ?? [];
+  const skills: CatalogSkill[] = data?.skills ?? [];
   const canInstall = !!selectedPersonalityId;
 
   const lastSynced = statusData?.lastSyncedAt

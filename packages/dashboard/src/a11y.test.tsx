@@ -3,9 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-// @ts-expect-error — vitest-axe may lack types until tsconfig is augmented
 import { configureAxe } from 'vitest-axe';
-// @ts-expect-error — vitest-axe/matchers has no type declarations
 import * as axeMatchers from 'vitest-axe/matchers';
 
 // Only fail on critical a11y violations to avoid pre-existing minor issues blocking CI

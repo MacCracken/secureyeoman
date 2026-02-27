@@ -3477,6 +3477,23 @@ function OAuthTab({
   onDelete: (id: string) => void;
   isDeleting: boolean;
 }) {
+  const location = useLocation();
+  const [successBanner, setSuccessBanner] = useState<{ provider: string; email: string; name: string } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const connected = params.get('connected') === 'true';
+    const provider = params.get('provider') || '';
+    if (connected && (provider === 'google' || provider === 'github')) {
+      setSuccessBanner({
+        provider,
+        email: params.get('email') || '',
+        name: params.get('name') || '',
+      });
+      window.history.replaceState({}, '', '/connections/oauth');
+    }
+  }, [location.search]);
+
   const oauthProviders = [
     {
       id: 'google_oauth',
@@ -3506,6 +3523,17 @@ function OAuthTab({
         Connect your account with OAuth providers for secure authentication. OAuth connections allow
         you to sign in using your existing accounts from supported providers.
       </p>
+
+      {successBanner && (
+        <div className="flex items-center gap-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-700 dark:text-green-400">
+          <CheckCircle className="w-4 h-4 shrink-0" />
+          <div className="text-sm">
+            <span className="font-medium capitalize">{successBanner.provider}</span> account connected
+            {successBanner.email && <span> as <span className="font-medium">{successBanner.email}</span></span>}
+          </div>
+          <button onClick={() => setSuccessBanner(null)} className="ml-auto text-xs opacity-60 hover:opacity-100">✕</button>
+        </div>
+      )}
 
       {connectedOAuth.length > 0 && (
         <div className="space-y-3">

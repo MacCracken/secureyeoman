@@ -136,6 +136,14 @@ interface PendingGmailTokens {
 const PENDING_GMAIL_TOKENS = new Map<string, PendingGmailTokens>();
 const PENDING_TOKEN_EXPIRY_MS = 10 * 60 * 1000;
 
+/** Short-lived store for generic Google/GitHub OAuth user info pending dashboard acknowledgement */
+interface PendingOAuthUserInfo {
+  email: string;
+  name: string;
+  createdAt: number;
+}
+const PENDING_OAUTH_USERINFO = new Map<string, PendingOAuthUserInfo>();
+
 export class OAuthService {
   private config: OAuthServiceConfig;
 
@@ -507,8 +515,16 @@ export function registerOAuthRoutes(app: FastifyInstance, opts: OAuthRoutesOptio
           );
         }
 
+        // Store user info short-lived for dashboard display
+        PENDING_OAUTH_USERINFO.set(connectionToken, {
+          email: userInfo.email || '',
+          name: userInfo.name || '',
+          createdAt: Date.now(),
+        });
+        setTimeout(() => PENDING_OAUTH_USERINFO.delete(connectionToken), PENDING_TOKEN_EXPIRY_MS);
+
         return await reply.redirect(
-          `/connections/oauth?connected=true&provider=${providerId}&token=${connectionToken}`
+          `/connections/oauth?connected=true&provider=${providerId}&email=${encodeURIComponent(userInfo.email || '')}&name=${encodeURIComponent(userInfo.name || '')}&token=${connectionToken}`
         );
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Unknown error';
