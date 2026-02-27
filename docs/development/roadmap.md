@@ -10,11 +10,11 @@
 |-------|------|--------|
 | XX | Find & Repair (Ongoing) | Ongoing |
 | 53 | Dashboard Completion | In Progress |
-| 54 | AI Safety Layer | Complete |
+| 54 | AI Safety Layer | Complete ✅ |
 | 55 | Notifications & Integrations | Complete ✅ |
 | 56 | Local-First AI | Planned |
 | 57 | Security Toolkit | Planned |
-| 58 | Audio Quality | Planned |
+| 58 | Audio Quality | Complete ✅ |
 | 59 | Voice & Community | Demand-Gated |
 | 60 | Native Clients | Demand-Gated |
 | 61 | Infrastructure & Platform | Demand-Gated |
@@ -96,17 +96,6 @@ Core Kali toolkit shipped (ADR 089). This phase hardens its operational surface.
 
 ---
 
-## Phase 58: Audio Quality
-
-**Status**: Complete ✅
-
-- [x] **Streaming TTS (binary route)** — `POST /api/v1/multimodal/audio/speak/stream` returns raw binary audio with correct `Content-Type`. OpenAI path avoids base64 overhead via direct `arrayBuffer()` fetch; other providers convert from existing base64. Dashboard `synthesizeSpeechStream()` returns a blob URL for `new Audio(url)` playback.
-- [x] **Audio validation before STT** — `validateAudioBuffer()` checks all formats for `< 1000` byte minimum. WAV format gets full structural validation: duration 2–30s, RMS > 0.01, peak < 0.99. Returns 422 with descriptive error codes (`audio_too_short`, `audio_too_quiet`, `audio_clipped`).
-- [x] **Whisper model size selection** — `resolveSTTModel()` resolves via env `WHISPER_MODEL` → DB pref → config default. `setModel()` persists to `prefsStorage`. `PATCH /api/v1/multimodal/model` route. `detectAvailableProviders()` now returns `stt.model`. MultimodalPage shows model selector: local providers (voicebox/openedai) get a `<select>` with `tiny|base|small|medium|large|large-v2|large-v3`; OpenAI shows a static `whisper-1` chip.
-- [x] **Tests** — 52 route tests + 84 manager tests (136 total across two files). ADR 139. Guide: `docs/guides/audio-quality.md`.
-
----
-
 ## Phase 59: Voice & Community
 
 **Status**: Demand-Gated — implement when voice profile and marketplace demand justifies the investment.
@@ -182,4 +171,4 @@ See [dependency-watch.md](dependency-watch.md) for tracked third-party dependenc
 
 ---
 
-*Last updated: 2026-02-26 — Phase 55 (Notifications & Integrations) complete. Phase 53 remaining: Advanced Editor, Switchable Theme Presets. Phase 54 deferred: LLM-as-Judge skill-level trigger.*
+*Last updated: 2026-02-26 — Phase 58 (Audio Quality) complete. Phase 55 (Notifications & Integrations) complete. Phase 53 remaining: Advanced Editor, Switchable Theme Presets. Phase 54 deferred: LLM-as-Judge skill-level trigger.*
